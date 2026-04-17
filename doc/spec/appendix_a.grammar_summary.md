@@ -247,13 +247,14 @@ type_args         = ( "of" | "over" ) argument_list ;
 argument_list     = term_expression { "," term_expression } ;
 
 builtin_type      = "object" | "set" ;
-attribute_name    = user_symbol ;   (* registered by Ch.6 *)
-mode_name         = user_symbol ;   (* registered by Ch.7 *)
-struct_name       = user_symbol ;   (* registered by Ch.5 *)
+attribute_name    = qualified_symbol ;   (* registered by Ch.6 *)
+mode_name         = qualified_symbol ;   (* registered by Ch.7 *)
+struct_name       = qualified_symbol ;   (* registered by Ch.5 *)
 ```
 
-* `struct_name "." attribute_name` is a struct-qualified attribute reference; the `.` follows the namespace-separator rule of §A.2.5 (Dot Disambiguation, rule 4) and is shadowed by any in-scope variable of the same name.
-* `attribute_name`, `mode_name`, and `struct_name` are `user_symbol`s (§A.2.5.2) registered in the active lexicon by their defining chapters; a name matches these positions only when present in that lexicon.
+* `qualified_symbol` is defined in Ch.12 §12.7 as `{ namespace_segment "." } user_symbol`, where `namespace_segment` is an `identifier`. It supports both bare and namespace-qualified forms such as `Group` and `std.algebra.Group`.
+* `struct_name "." attribute_name` is a struct-qualified attribute reference; every `.` in the chain follows the namespace-separator rule of §A.2.5 (Dot Disambiguation, rule 4), and any segment shadowed by an in-scope variable is reinterpreted as selector access.
+* The trailing `user_symbol` of a `qualified_symbol` (§A.2.5.2) must be present in the active lexicon, registered by the defining chapter (Ch.5 structs / Ch.6 attributes / Ch.7 modes).
 * `parameter` and `parameter_list` are template parameters defined in Ch.18.
 * `type_args` and `param_prefix` have alternative bracket-form productions introduced by Ch.18; those forms extend, but do not replace, the productions above.
 
