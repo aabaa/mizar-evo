@@ -255,6 +255,7 @@ struct_name       = user_symbol ;   (* registered by Ch.5 *)
 * `struct_name "." attribute_name` is a struct-qualified attribute reference; the `.` follows the namespace-separator rule of §A.2.5 (Dot Disambiguation, rule 4) and is shadowed by any in-scope variable of the same name.
 * `attribute_name`, `mode_name`, and `struct_name` are `user_symbol`s (§A.2.5.2) registered in the active lexicon by their defining chapters; a name matches these positions only when present in that lexicon.
 * `parameter` and `parameter_list` are template parameters defined in Ch.18.
+* `type_args` and `param_prefix` have alternative bracket-form productions introduced by Ch.18; those forms extend, but do not replace, the productions above.
 
 ### A.3.3 Built-in Types
 
