@@ -14,6 +14,11 @@ This appendix consolidates the EBNF productions and lexical rules introduced thr
     * [A.2.8 File and Module Naming](#a28-file-and-module-naming)
     * [A.2.9 Comments and Annotations](#a29-comments-and-annotations)
     * [A.2.10 Lexer / Parser Responsibility Split](#a210-lexer--parser-responsibility-split)
+  * [A.3 Type System](#a3-type-system)
+    * [A.3.1 Type Categories](#a31-type-categories)
+    * [A.3.2 Type Expression Grammar](#a32-type-expression-grammar)
+    * [A.3.3 Built-in Types](#a33-built-in-types)
+    * [A.3.4 Subtyping Semantics](#a34-subtyping-semantics)
 
 
 ## A.2 Lexical Structure
@@ -209,3 +214,58 @@ Lexing and parsing are split as follows (see §2 discussion):
 | Variable shadowing of namespace paths | Name resolver |
 
 The lexer emits a uniform token stream; context-dependent interpretation of `"`, `'`, and `.` is performed by the parser and name resolver against the active lexicon and the current scope.
+
+
+## A.3 Type System
+
+Normative reference: [Chapter 3 (Type System)](./03.type_system.md). Mizar uses a **soft type system** layered on untyped set theory: types guide checking and readability but are erased for the logical core.
+
+### A.3.1 Type Categories
+
+| Category | Role | Defined In |
+|---|---|---|
+| Radix-types | Root of the type hierarchy — built-ins (`object`, `set`) and user-defined structures | §A.3.3, Ch.5 |
+| Mode-types | Named types; each unfolds to `attribute_chain radix_type` | Ch.7 |
+| Attributes | Predicates that refine a type | Ch.6 |
+| Clusters | Registration mechanism for type inference | Ch.17 |
+
+Radix-types and mode-types form two disjoint syntactic categories, both usable at the head of a type expression.
+
+### A.3.2 Type Expression Grammar
+
+```ebnf
+type_expression   = attribute_chain type_head ;
+type_head         = radix_type | mode_type ;
+attribute_chain   = { [ "non" ] attribute_ref } ;
+attribute_ref     = [ param_prefix ] [ struct_name "." ] attribute_name ;
+param_prefix      = parameter "-" | "(" parameter_list ")" "-" ;
+
+radix_type        = builtin_type | struct_name [ type_args ] ;
+mode_type         = mode_name [ type_args ] ;
+
+type_args         = ( "of" | "over" ) argument_list ;
+argument_list     = term_expression { "," term_expression } ;
+
+builtin_type      = "object" | "set" ;
+attribute_name    = identifier ;
+mode_name         = identifier ;
+struct_name       = identifier ;
+```
+
+* `struct_name "." attribute_name` is a struct-qualified attribute reference; the `.` follows the namespace-separator rule of §A.2.5 (Dot Disambiguation, rule 4) and is shadowed by any in-scope variable of the same name.
+* `parameter` and `parameter_list` are template parameters defined in Ch.18.
+
+### A.3.3 Built-in Types
+
+| Type | Description |
+|---|---|
+| `object` | Universal type — every value in the Mizar universe, including structures |
+| `set` | ZFC-style mathematical set; subtype of `object` |
+
+`struct`-defined types are subtypes of `object` but not of `set`.
+
+### A.3.4 Subtyping Semantics
+
+"`S` is a subtype of `T`" means every member of `S` is a member of `T`, encoded in FOL as `∀x. is_S(x) ⇒ is_T(x)`. Widening (to a supertype) is automatic; narrowing (to a subtype) requires `reconsider` (Ch.15) with a proof obligation.
+
+Types are erased when exporting to ATPs: variable declarations become untyped, type assumptions become hypotheses, and attribute chains become conjunctions.
