@@ -132,11 +132,14 @@ A namespace component that is also in scope as a variable resolves as the variab
 
 ```ebnf
 identifier = ( letter | "_" ) { letter | digit | "_" | "'" } ;
+label_identifier = identifier ;
 letter     = "a"..."z" | "A"..."Z" ;
 digit      = "0"..."9" ;
 ```
 
 An identifier must not match a reserved word. Identifiers are case-sensitive. A token whose shape matches both the identifier grammar and a registered user symbol is classified as a symbol iff it appears in the active lexicon.
+
+Labels use `label_identifier`. They share the identifier token shape, but occupy label namespaces described in §16.4.2 and the item-specific chapters.
 
 ### A.2.7 Numerals and String Literals
 
@@ -159,13 +162,13 @@ sq_char         = ? any character except "'" or '\' ? ;
 escape_seq      = "\" ( '"' | "'" | "\" ) ;
 ```
 
-**Contextual recognition**: `"` and `'` are tokenized as string delimiters **only at grammar positions that require a string literal**. At every other position they participate in ordinary lexing as parts of identifiers or user-defined symbols. In particular, the postfix inverse operator `f"` (§11) is a user-symbol use of `"`, not a string delimiter.
+**Contextual recognition**: `"` and `'` are tokenized as string delimiters **only at grammar positions that require a string literal argument**. Outside documentation comments, every string literal appears inside a designated form immediately after `(` or `,`. At every other position they participate in ordinary lexing as parts of identifiers or user-defined symbols. In particular, the postfix inverse operator `f"` (§11) is a user-symbol use of `"`, not a string delimiter.
 
 Grammar positions currently requiring a string literal:
 
 | Position | Reference |
 |---|---|
-| `infix_operator STRING : ...`, `prefix_operator STRING : ...`, `postfix_operator STRING : ...` — first argument | §10.7, §13 |
+| `infix_operator(STRING, ...)`, `prefix_operator(STRING, ...)`, `postfix_operator(STRING, ...)` — first argument | §10.7, §13 |
 | `@latex(STRING)` and other string-valued annotation arguments | §21 |
 
 ### A.2.8 File and Module Naming
@@ -189,8 +192,10 @@ block_comment  = "::=" { character } "=::" ;
 doc_comment    = ":::" { character - newline } newline ;
 
 annotation_name  = "@" identifier ;
-library_annot    = "@[" label_list "]" ;
-label_list       = label { "," label } ;
+library_annot    = "@[" label_name { "," label_name } "]" ;
+label_name       = label_identifier [ "(" annotation_args ")" ] ;
+annotation_args  = annotation_arg { "," annotation_arg } ;
+annotation_arg   = identifier | numeral | string_literal ;
 ```
 
 * Comments are removed before parsing (§A.2.10).
