@@ -59,10 +59,10 @@ Tokenization is governed by the **longest-match rule** against the currently act
 Reserved words are case-sensitive and cannot be used as identifiers or user symbols.
 
 ```
-algorithm and antonym as assert assume asymmetry attr
+algorithm and antonym as assert assume assumed asymmetry attr
 be being break by
 case cases claim cluster coherence commutativity compatibility computation
-conjecture connectedness const consider consistency continue contradiction
+conditional connectedness const consider consistency continue contradiction
 decreasing deffunc definition defpred do does downto
 else end ensures equals ex exhaustive existence export extends
 field for from func
@@ -70,10 +70,10 @@ ghost given
 hence hereby holds
 idempotence if iff implies import in infix_operator inherit invariant
 involutiveness irreflexivity is it
-left let
+left lemma let
 match means mode
 nest non none not now
-object of or otherwise over
+object of open or otherwise over
 per postfix_operator pred prefix_operator private processed
 projectivity proof property public
 qua
