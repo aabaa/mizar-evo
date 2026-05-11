@@ -1,5 +1,9 @@
 # Sample Codes
 
+These examples are illustrative library sketches. They are intended to show how
+the surface syntax from the specification fits together; omitted proofs are
+written as `...`, and omitted correctness obligations are shown only by name.
+
 ## Directory structure
 
 ```bash
@@ -18,7 +22,7 @@ mml/
     ```mizar
     definition
       let X,Y be set;
-      mode Function of X,Y is quasi_total PartFunc of X,Y;
+      mode FunctionDef: Function of X,Y is quasi_total PartFunc of X,Y;
     end;
     ```
 
@@ -30,7 +34,7 @@ mml/
 
     definition
       let S be 1-sorted;
-      mode BinOp of S is Function of [: S.carrier, S.carrier :], S.carrier;
+      mode BinOpDef: BinOp of S is Function of [: S.carrier, S.carrier :], S.carrier;
     end;
     ```
 
@@ -50,10 +54,10 @@ mml/
       :: Inherit all functors and attributes from set.
       :: `it` means `set` itself.
       :: Sometimes a `field ... from ...` syntax requires type conversion.
-      :: In the case, you have to prove the consistency of the type conversion
-      :: with a `correctness` statement.
+      :: In that case, prove the consistency of the type conversion
+      :: with a `coherence` block.
       :: `cluster` statements might be useful.
-      inherit 1-sorted from set where
+      inherit 1-sorted extends set where
         field carrier from it;
       end;
     end;
@@ -65,7 +69,7 @@ mml/
       end;
 
       :: If some fields or properties of the base structure are not inherited,
-      :: the Mizar analyzer will give a error message.
+      :: the Mizar analyzer will give an error message.
       inherit UnitStr extends 1-sorted;
     end;
 
@@ -214,17 +218,25 @@ mml/
       inherit DoubleLoopStr extends MulLoopStr;
     end;
 
-    notation
+    definition
       let A be AddLoopStr;
-      let x,y be Element of AddLoopStr;
-      synonym x+y for A.binop(x,y);
+      let x,y be Element of A.carrier;
+
+      @latex("x+y")
+      func AddDef: x + y -> Element of A.carrier equals A.add(x,y);
     end;
 
-    notation
+    infix_operator("+", left, 80);
+
+    definition
       let M be MulLoopStr;
-      let x,y be Element of MulLoopStr;
-      synonym x*y for M.binop(x,y);
+      let x,y be Element of M.carrier;
+
+      @latex("x\\cdot y")
+      func MulDef: x * y -> Element of M.carrier equals M.mul(x,y);
     end;
+
+    infix_operator("*", left, 90);
 
     ```
 
@@ -237,22 +249,22 @@ mml/
       let M be Magma;
 
       attr M is associative means
-        for x,y,z be Element of M holds
+        for x,y,z being Element of M holds
         M.binop(M.binop(x,y),z) = M.binop(x,M.binop(y,z));
 
       attr M is unital means
-        ex e be Element of M st
-        for x be Element of M holds
+        ex e being Element of M st
+        for x being Element of M holds
         M.binop(x,e) = x & M.binop(e,x) = x;
 
       func id. M -> Element of unital M means
-        for x be Element of M holds
+        for x being Element of M holds
         M.binop(x, it) = x & M.binop(it, x) = x;
       existence;
       uniqueness;
 
       attr M is commutative means
-        for x,y be Element of M holds
+        for x,y being Element of M holds
         M.binop(x,y) = M.binop(y,x);
     end;
 
@@ -263,13 +275,12 @@ mml/
         (M qua Magma) is unital & M.unit = id. M;
 
       attr M is invertible means
-        for x be Element of M
-        ex y be Element of M
+        for x being Element of M
+        ex y being Element of M
         st M.binop(x,y) = M.unit
          & M.binop(y,x) = M.unit;
 
-      mode M is Group means
-      M is non empty associative invertible unital;
+      mode GroupDef: Group is non empty associative invertible unital LoopStr;
     end;
     ```
 
@@ -281,12 +292,14 @@ mml/
     definition
       let R be DoubleLoopStr;
 
-      mode R is Ring means
-      (R qua AddLoopStr) is commutative Group &
-      (R qua MulLoopStr) is associative unital &
-      R.zero <> R.one &
-      for x,y,z be Element of R holds
-      x * (y+z) = x*y + x*z;
+      attr RingLikeDef: R is ring_like means
+        (R qua AddLoopStr) is commutative Group &
+        (R qua MulLoopStr) is associative unital &
+        R.zero <> R.one &
+        for x,y,z being Element of R holds
+        x * (y+z) = x*y + x*z;
+
+      mode RingDef: Ring is ring_like DoubleLoopStr;
     end;
 
     definition
@@ -313,3 +326,43 @@ mml/
 - rational.miz
 - real.miz
 - complex.miz
+
+## Annotation and proof-development snippets
+
+The following snippets illustrate the annotation forms summarized in
+[Appendix E](./appendix_e.annotation_quick_reference.md).
+
+```mizar
+definition
+  let a,b be Nat;
+
+  @latex("\\gcd(a,b)")
+  func GcdDef: Gcd(a,b) -> Nat means ...;
+
+  ::: Computes the greatest common divisor of two positive natural numbers.
+  :::
+  ::: @param a  the first input
+  ::: @param b  the second input
+  ::: @returns  the greatest common divisor of `a` and `b`
+  ::: @requires `a > 0 & b > 0`
+  terminating algorithm euclid_gcd(a, b) -> Nat
+    requires a > 0 & b > 0
+    ensures result = Gcd(a, b)
+    decreasing a + b
+  do
+    ...
+  end;
+end;
+
+theorem Gcd_commutes:
+  for a,b being Nat st a > 0 & b > 0 holds
+    Gcd(a,b) = Gcd(b,a)
+proof
+  @show_thesis
+  @proof_hint(max_axioms: 32, solver: vampire)
+  thus thesis by Gcd_def, Euclid_step;
+end;
+
+@show_type(euclid_gcd(48, 18))
+@eval(euclid_gcd(48, 18))
+```
