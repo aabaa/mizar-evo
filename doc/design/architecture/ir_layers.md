@@ -1,0 +1,800 @@
+# Architecture: IR Layers
+
+## Purpose
+
+Mizar Evo の処理パイプラインで使う中間表現（IR: Intermediate Representation）の層構造を定義する。
+
+この文書は、各 IR がどのフェーズで生成され、何を所有し、何を所有しないかを明確にする。目的は、frontend、resolver、checker、VC generator、ATP translator、kernel、artifact emitter が互いの内部実装に依存しすぎないようにし、incremental build と diagnostics の境界を安定させることである。
+
+## Context
+
+- [00.pipeline_overview.md](./00.pipeline_overview.md) — 全体パイプライン。本文書は `IR Layering` を詳細化する
+- [doc/spec/02.lexical_structure.md](../../spec/02.lexical_structure.md) — source text, comments, annotations, tokenization
+- [doc/spec/03.type_system.md](../../spec/03.type_system.md) — type expressions, soft type system
+- [doc/spec/08.type_inference.md](../../spec/08.type_inference.md) — inferred types and coercions
+- [doc/spec/11.symbol_management.md](../../spec/11.symbol_management.md) — symbol registration
+- [doc/spec/12.modules_and_namespaces.md](../../spec/12.modules_and_namespaces.md) — namespace and imports
+- [doc/spec/16.theorems_and_proofs.md](../../spec/16.theorems_and_proofs.md) — proof structure and thesis tracking
+- [doc/spec/17.clusters_and_registrations.md](../../spec/17.clusters_and_registrations.md) — cluster facts and registration resolution
+- [doc/spec/19.overload_resolution.md](../../spec/19.overload_resolution.md) — overload winners and inserted coercions
+- [doc/spec/20.algorithm_and_verification.md](../../spec/20.algorithm_and_verification.md) — control-flow, contracts, ghost variables, VCs
+- [doc/spec/21.source_code_annotation_and_atp.md](../../spec/21.source_code_annotation_and_atp.md) — ATP problem translation and metadata output
+- [doc/spec/23.package_management_and_build_system.md](../../spec/23.package_management_and_build_system.md) — artifacts, cache, LSP metadata
+- [reasoning_boundary.md](./reasoning_boundary.md) — proof responsibility boundary
+- [atp_interface_protocol.md](./atp_interface_protocol.md) — `AtpProblem` to concrete prover formats
+
+### Pipeline Position
+
+本文書は全フェーズにまたがるが、特に以下の受け渡し境界を定義する。
+
+| Boundary | From | To |
+|---|---|---|
+| Source boundary | Phase 1 | Phase 2-3 |
+| Syntax boundary | Phase 3 | Phase 4-5 |
+| Semantic frontend boundary | Phase 4-8 | Phase 9 |
+| Logical core boundary | Phase 9 | Phase 10-14 |
+| Verification boundary | Phase 11-14 | Phase 15-16 |
+
+## Design Decisions
+
+### IRs Are Immutable Snapshots
+
+各 IR は、その生成フェーズが完了した時点の immutable snapshot として扱う。
+
+- 後続フェーズは前段 IR を直接書き換えない。
+- 追加情報は、新しい IR か side table として生成する。
+- node identity は後続フェーズでも追跡できるように、安定した `NodeId` / `ExprId` / `ItemId` を持つ。
+- diagnostics は各 IR の source mapping を通じて source span に戻す。
+
+この方針により、cache key、incremental invalidation、LSP metadata、debug dump を設計しやすくする。
+
+### Surface Preservation Ends at Elaboration
+
+`SurfaceAst`, `ResolvedAst`, `TypedAst`, `ResolvedTypedAst` は、可能な限り source syntax の形を保存する。
+一方で `CoreIr` 以降は、証明・検証・kernel check に適した正規化済み表現とする。
+
+| Layer | Source Shape | Semantic Completeness | Main Consumer |
+|---|---|---|---|
+| `SourceUnit` / `TokenStream` | exact / lexical | none | lexer, parser, diagnostics |
+| `SurfaceAst` | high | low | resolver |
+| `ResolvedAst` | high | medium | checker |
+| `TypedAst` | high | high, but overload may remain open | registration / overload |
+| `ResolvedTypedAst` | high | complete surface semantics | elaborator, LSP |
+| `CoreIr` | low | complete logical semantics | VC generator, kernel |
+| `VcIr` / `AtpProblem` | none | proof obligation semantics | prover pipeline |
+| `VerifiedArtifact` | projected | verified public metadata | downstream tools |
+
+### Name, Type, and Proof Facts Have Different Lifetimes
+
+名前解決、型推論、証明義務は lifecycle が異なるため、同じ AST node に無理に全情報を詰め込まない。
+
+- name resolution result は `ResolvedAst` と `SymbolEnv` に保持する。
+- inferred type, coercion candidate, type fact は `TypedAst` と `TypeFactTable` に保持する。
+- cluster derivation は `ResolutionTrace` に保持し、kernel replay 可能にする。
+- overload winner と inserted `qua` は `ResolvedTypedAst` に確定情報として保持する。
+- proof obligation は `VcIr` に抽出し、AST の内部 node に閉じ込めない。
+
+### Stable External Artifacts Are Projections, Not Raw IR Dumps
+
+`VerifiedArtifact` は raw IR の dump ではなく、downstream package、LSP、documentation、AI tooling に必要な情報だけを投影した安定 schema とする。
+
+- raw IR は compiler-internal であり、version 間で変更可能。
+- artifact schema は `schema_version` を持ち、互換性方針を明示する。
+- source range、resolved symbol、inferred type、obligation status、proof witness ref は artifact に含める。
+- solver-internal logs や kernel-internal proof state は、必要に応じて別 artifact として参照する。
+
+## IR Overview
+
+| IR | Produced By | Consumed By | Cache Unit | Stable Outside Compiler |
+|---|---|---|---|---|
+| `SourceUnit` | Source Loading | all diagnostics, preprocessing | source file | no |
+| `PreprocessedSource` | Preprocessing | Lexing | source file + import pre-scan | no |
+| `TokenStream` | Lexing | Parsing | source file + active lexicon | no |
+| `SurfaceAst` | Parsing | Name Resolution | source file | no |
+| `ResolvedAst` | Name Resolution | Signature Collection, Type Checking | source file + import graph | no |
+| `SymbolEnv` | Signature Collection | Name Resolution, Type Checking, downstream files | package / module graph | no |
+| `TypedAst` | Type Checking | Registration, Overload, LSP draft metadata | source file + symbol env | no |
+| `ResolutionTrace` | Registration Resolution | Kernel, diagnostics, artifacts | source file + registration index | partially |
+| `ResolvedTypedAst` | Cluster / Overload Resolution | Elaboration, LSP metadata | source file + checker inputs | no |
+| `CoreIr` | Elaboration | VC Generation, Kernel | source file + typed AST | no |
+| `ControlFlowIr` | Algorithm Preparation | VC Generation, Extraction | algorithm item | no |
+| `VcIr` | VC Generation | Pre-ATP, ATP Translation | obligation | no |
+| `AtpProblem` | ATP Translation | ATP Backend | obligation + backend profile | no |
+| `ProofCertificate` | ATP Backend | Kernel Certificate Check | obligation + backend result | backend-dependent |
+| `VerifiedArtifact` | Artifact Emit | LSP, docs, downstream packages | source file | yes |
+
+## Layer Definitions
+
+### SourceUnit
+
+`SourceUnit` is the canonical view of one source file.
+
+```rust
+struct SourceUnit {
+    source_id: SourceId,
+    package_id: PackageId,
+    module_path: ModulePath,
+    file_path: PathBuf,
+    source_text: Arc<str>,
+    source_hash: Hash,
+    line_map: LineMap,
+}
+```
+
+Owns:
+
+- original source text
+- file/module identity
+- source hash
+- line/column mapping for diagnostics
+
+Does not own:
+
+- parsed syntax
+- comments classified as documentation
+- semantic information
+
+Notes:
+
+- all later source spans refer back to a `SourceId`;
+- source text is immutable once loaded;
+- code-region ASCII validation diagnostics are anchored here.
+
+### PreprocessedSource
+
+`PreprocessedSource` separates lexical input from comments and source-level metadata.
+
+```rust
+struct PreprocessedSource {
+    source_id: SourceId,
+    lexical_text: LexicalText,
+    comments: Vec<Comment>,
+    doc_comments: Vec<DocComment>,
+    raw_annotations: Vec<RawAnnotation>,
+    import_stubs: Vec<ImportStub>,
+}
+```
+
+Owns:
+
+- comment-stripped lexical text or equivalent text mapping
+- doc comment blocks
+- raw annotation tokens that can be attached after parsing
+- import pre-scan result sufficient to build active lexicon seeds
+
+Does not own:
+
+- fully resolved imports
+- token classification that depends on final active lexicon
+- AST attachment of doc comments
+
+Notes:
+
+- preprocessing must preserve source mapping exactly enough for diagnostics;
+- import pre-scan is intentionally shallow and cannot perform semantic name resolution.
+
+### TokenStream
+
+`TokenStream` is the parser input after applying the active lexicon.
+
+```rust
+struct TokenStream {
+    source_id: SourceId,
+    tokens: Vec<Token>,
+    lexical_diagnostics: Vec<Diagnostic>,
+}
+
+struct Token {
+    kind: TokenKind,
+    span: SourceRange,
+    text: InternedText,
+}
+```
+
+Owns:
+
+- token kind
+- token source span
+- interned spelling
+
+Does not own:
+
+- parser context
+- namespace interpretation of `.`
+- string literal interpretation outside string-required positions
+- symbol resolution
+
+Notes:
+
+- user-defined symbolic names are recognized against the active lexicon;
+- ambiguous roles of `.` are left to parser/name resolver according to the lexical spec.
+
+### SurfaceAst
+
+`SurfaceAst` preserves the parsed source structure.
+
+```rust
+struct SurfaceAst {
+    source_id: SourceId,
+    module: SurfaceModule,
+    nodes: AstArena<SurfaceNode>,
+    trivia: TriviaMap,
+}
+```
+
+Owns:
+
+- declarations and items in source order
+- terms, formulas, statements, proof blocks, algorithm bodies
+- syntactic annotations attached to nearby items
+- parser recovery markers
+
+Does not own:
+
+- resolved symbol identities
+- inferred types
+- overload winners
+- cluster facts
+
+Notes:
+
+- diagnostics in this layer are syntax-oriented;
+- source fidelity matters for documentation and code actions;
+- syntax nodes should not assume semantic validity.
+
+### ResolvedAst
+
+`ResolvedAst` records name and module resolution results while preserving surface shape.
+
+```rust
+struct ResolvedAst {
+    source_id: SourceId,
+    module_id: ModuleId,
+    nodes: AstArena<ResolvedNode>,
+    name_refs: NameRefTable,
+    label_refs: LabelRefTable,
+    imports: ResolvedImports,
+}
+```
+
+Owns:
+
+- module identity
+- import/export resolution
+- namespace-qualified name resolution
+- label reference resolution
+- selector-vs-namespace decisions where name context is enough
+
+Does not own:
+
+- type-directed overload winners
+- inferred type of expressions
+- cluster-derived attributes
+- generated proof obligations
+
+Notes:
+
+- unresolved or ambiguous references are represented explicitly for diagnostics;
+- downstream phases should use `SymbolId`, not raw strings, when a symbol was resolved.
+
+### SymbolEnv
+
+`SymbolEnv` is the indexed signature environment visible to a module.
+
+```rust
+struct SymbolEnv {
+    module_id: ModuleId,
+    visible_symbols: SymbolIndex,
+    definitions: DefinitionIndex,
+    overload_sets: OverloadIndex,
+    registration_index: RegistrationIndex,
+    namespace_graph: NamespaceGraph,
+}
+```
+
+Owns:
+
+- exported and imported symbols
+- declaration signatures
+- overload candidate groups
+- registration declarations before firing
+- namespace visibility graph
+
+Does not own:
+
+- type inference result for arbitrary expressions
+- registration resolution result for a specific term
+- proof status
+
+Notes:
+
+- `SymbolEnv` can be shared by multiple files that import the same dependency closure;
+- incremental invalidation should track which source unit contributed each symbol.
+
+### TypedAst
+
+`TypedAst` attaches type-checking results before final registration and overload completion.
+
+```rust
+struct TypedAst {
+    source_id: SourceId,
+    module_id: ModuleId,
+    nodes: AstArena<TypedNode>,
+    expr_types: TypeTable,
+    type_facts: TypeFactTable,
+    coercion_candidates: CoercionTable,
+    initial_obligations: Vec<InitialObligation>,
+}
+```
+
+Owns:
+
+- inferred type expressions
+- local type context
+- known type facts
+- widening / narrowing / `qua` coercion candidates
+- sethood checks and narrowing obligations
+
+Does not own:
+
+- final overload winner for every overloaded application
+- complete cluster closure
+- final proof obligations for the prover pipeline
+
+Notes:
+
+- soft types are semantic metadata and do not replace the logical core;
+- type errors should still expose partially inferred information where possible.
+
+### ResolutionTrace
+
+`ResolutionTrace` records cluster and registration derivations.
+
+```rust
+struct ResolutionTrace {
+    source_id: SourceId,
+    derivations: Vec<ResolutionStep>,
+    failures: Vec<ResolutionFailure>,
+}
+
+struct ResolutionStep {
+    target: ExprOrTypeId,
+    rule: RegistrationId,
+    antecedents: Vec<FactId>,
+    consequent: FactId,
+}
+```
+
+Owns:
+
+- ordered rule applications
+- antecedent facts used for each application
+- derived attribute facts
+- failure or ambiguity explanations
+
+Does not own:
+
+- theorem-proving proof search
+- ATP premise selection
+- arbitrary first-order reasoning
+
+Notes:
+
+- trace replay must be linear or near-linear in trace size;
+- successful traces can be emitted as artifacts for explanation and kernel checking;
+- failed traces feed diagnostics and LSP explanation APIs.
+
+### ResolvedTypedAst
+
+`ResolvedTypedAst` is the final source-shaped semantic AST.
+
+```rust
+struct ResolvedTypedAst {
+    source_id: SourceId,
+    module_id: ModuleId,
+    nodes: AstArena<ResolvedTypedNode>,
+    expr_metadata: ExpressionMetadataTable,
+    resolved_overloads: OverloadResolutionTable,
+    inserted_coercions: CoercionInsertionTable,
+    cluster_facts: ClusterFactTable,
+}
+```
+
+Owns:
+
+- final inferred types
+- final overload winners
+- inserted `qua` coercions
+- derived cluster attributes
+- expression metadata used by LSP and artifacts
+
+Does not own:
+
+- lowered logical clauses
+- VC-specific local proof context
+- ATP encoding
+
+Notes:
+
+- this is the main source of hover and `@show_resolution` data;
+- elaboration should consume this layer rather than re-running resolver/checker logic.
+
+### CoreIr
+
+`CoreIr` is the normalized logical representation.
+
+```rust
+struct CoreIr {
+    module_id: ModuleId,
+    items: Vec<CoreItem>,
+    definitions: CoreDefinitionTable,
+    theorem_bodies: CoreProofTable,
+    source_map: CoreSourceMap,
+}
+```
+
+Owns:
+
+- desugared terms and formulas
+- instantiated templates
+- normalized definition boundaries
+- proof structure in a kernel-oriented representation
+- source map back to `ResolvedTypedAst`
+
+Does not own:
+
+- parser trivia
+- unresolved names
+- surface-only syntax details
+- backend-specific ATP encoding
+
+Notes:
+
+- `CoreIr` should be small enough for kernel and VC generation to reason about;
+- erasure decisions for soft type annotations must be explicit, not accidental.
+
+### ControlFlowIr
+
+`ControlFlowIr` represents executable algorithm bodies for verification and extraction.
+
+```rust
+struct ControlFlowIr {
+    algorithm_id: AlgorithmId,
+    blocks: Vec<BasicBlock>,
+    locals: LocalTable,
+    contracts: ContractSet,
+    ghost_effects: GhostEffectTable,
+    termination: Option<TerminationMeasure>,
+}
+```
+
+Owns:
+
+- control-flow graph
+- local mutable/immutable binding information
+- ghost variable tracking
+- preconditions, postconditions, assertions, invariants
+- termination measures
+
+Does not own:
+
+- proof search result
+- extracted target-language code
+- theorem-level global proof context
+
+Notes:
+
+- runtime and ghost effects must be distinguished before extraction;
+- use-before-assignment and unreachable code diagnostics are naturally attached here.
+
+### VcIr
+
+`VcIr` is the prover-independent representation of verification conditions.
+
+```rust
+struct VcIr {
+    vc_id: VcId,
+    source_range: SourceRange,
+    kind: VcKind,
+    local_context: LocalContext,
+    premises: Vec<PremiseRef>,
+    goal: CoreFormula,
+    proof_hint: Option<ProofHint>,
+}
+```
+
+Owns:
+
+- local assumptions
+- cited premises
+- goal formula
+- VC kind and source location
+- proof hint annotations
+
+Does not own:
+
+- concrete TPTP / SMT-LIB text
+- backend process configuration beyond abstract hints
+- proof certificate
+
+Notes:
+
+- `VcIr` is the boundary between Mizar-side obligation generation and prover-side translation;
+- premise references should remain symbolic until ATP translation selects an encoding.
+
+### AtpProblem
+
+`AtpProblem` is a backend-neutral prover problem.
+
+```rust
+struct AtpProblem {
+    problem_id: AtpProblemId,
+    vc_id: VcId,
+    logic_profile: LogicProfile,
+    declarations: Vec<AtpDeclaration>,
+    axioms: Vec<AtpFormula>,
+    conjecture: AtpFormula,
+    type_context: AtpTypeContext,
+    properties: Vec<EncodedProperty>,
+}
+```
+
+Owns:
+
+- encoded declarations
+- selected axioms
+- conjecture
+- type context needed by prover encoding
+- property encoding decisions before concrete syntax emission
+
+Does not own:
+
+- external process status
+- certificate
+- final kernel proof status
+
+Notes:
+
+- one `VcIr` may produce multiple `AtpProblem`s for different backends;
+- backend-specific concrete syntax is emitted from this layer by protocol encoders.
+
+### ProofCertificate
+
+`ProofCertificate` wraps backend proof evidence.
+
+```rust
+struct ProofCertificate {
+    vc_id: VcId,
+    backend: BackendId,
+    format: CertificateFormat,
+    payload: CertificatePayload,
+    used_axioms: Vec<PremiseRef>,
+    backend_metadata: BackendMetadata,
+}
+```
+
+Owns:
+
+- backend identity and version metadata
+- certificate format tag
+- raw or parsed proof payload
+- used axiom list when available
+- solver timing/resource metadata
+
+Does not own:
+
+- trusted proof status
+- kernel replay result
+- source-level diagnostics by itself
+
+Notes:
+
+- a certificate is evidence, not acceptance;
+- kernel certificate check produces the trusted result.
+
+### VerifiedArtifact
+
+`VerifiedArtifact` is the stable external projection of a verified source file.
+
+```rust
+struct VerifiedArtifact {
+    schema_version: String,
+    source_file: PathBuf,
+    source_hash: Hash,
+    module_id: ModuleId,
+    exports: Vec<ExportedItem>,
+    expressions: Vec<ExpressionMetadata>,
+    obligations: Vec<ObligationMetadata>,
+    proof_witnesses: Vec<ProofWitnessRef>,
+    diagnostics: Vec<Diagnostic>,
+}
+```
+
+Owns:
+
+- public exports
+- expression metadata for IDE / AI tooling
+- verification obligation status
+- references to proof witnesses and ATP logs
+- diagnostics emitted during build
+
+Does not own:
+
+- raw AST arena
+- raw source text
+- full ATP process stdout/stderr
+- kernel-internal proof state
+
+Notes:
+
+- downstream packages should depend on exported declarations and verified status, not raw compiler IR;
+- artifact schema changes require explicit `schema_version` handling.
+
+## Cross-Layer Identity
+
+### Identifiers
+
+IR nodes need stable identity without pretending that every layer has the same node shape.
+
+| Identifier | Scope | Purpose |
+|---|---|---|
+| `SourceId` | build session | source file lookup |
+| `ModuleId` | package graph | module identity |
+| `ItemId` | module | top-level definition/theorem/registration identity |
+| `NodeId` | AST arena | syntax node tracking within one AST layer |
+| `ExprId` | source file | expression metadata and LSP hover |
+| `FactId` | checker context | type/cluster fact tracking |
+| `VcId` | source file or build | verification condition identity |
+
+IDs must be deterministic for identical source, dependency graph, and toolchain. Where source edits make perfect stability impossible, IDs should degrade predictably and artifacts should not expose internal arena indices as stable API.
+
+### Source Mapping
+
+Every layer after parsing must be able to point back to source.
+
+- `SourceRange` always references a `SourceId`.
+- Lowered nodes in `CoreIr` and `VcIr` may map to multiple source ranges.
+- Synthetic nodes must carry a `GeneratedFrom` marker that references the source construct that caused generation.
+- Diagnostics should prefer the most user-facing source range, even when the internal error is discovered in a lowered IR.
+
+## Incremental Boundaries
+
+The IR layers define cache and invalidation units.
+
+| Change | Invalidates |
+|---|---|
+| whitespace-only source edit outside comments | `SourceUnit`, possibly diagnostics display only |
+| doc comment edit | documentation artifacts, `VerifiedArtifact` doc projection |
+| import edit | active lexicon, `TokenStream`, `SurfaceAst`, all semantic layers for the file and reverse dependencies |
+| symbol declaration edit | `SymbolEnv`, dependent `ResolvedAst` and later layers |
+| registration edit | `RegistrationIndex`, `ResolutionTrace`, `ResolvedTypedAst`, VCs depending on derived facts |
+| theorem body proof edit | proof-related `CoreIr`, `VcIr`, certificates, artifact status |
+| algorithm body edit | `ControlFlowIr`, related VCs, extraction output |
+
+The build system may choose coarser invalidation initially, but the IR ownership model should not prevent finer invalidation later.
+
+## Diagnostics and Debuggability
+
+Each IR layer should support a human-readable debug dump for compiler development.
+
+- dumps are not stable artifacts;
+- dumps should include IDs, source ranges, and key semantic fields;
+- dumps should avoid embedding absolute paths unless explicitly requested;
+- diagnostics should refer to stable diagnostic codes, not debug dump field names.
+
+For LSP and AI tooling, use `VerifiedArtifact` and dedicated explanation artifacts rather than raw debug dumps.
+
+## Alternatives Considered
+
+### Alternative 1: Single Annotated AST
+
+One AST would be mutated in place through all phases.
+
+This is simple at first, but it couples parser, resolver, checker, ATP, and artifact emitter. It also makes cache invalidation and partial diagnostics difficult, because every later phase can accidentally depend on a field that should have been private to an earlier phase.
+
+### Alternative 2: Raw IR Dump as Public Artifact
+
+The compiler could emit its internal IR directly as `*.mizir.json`.
+
+This would be easy to implement early, but it would freeze internal design decisions as external API. A projected `VerifiedArtifact` keeps external tools stable while allowing internal IRs to evolve.
+
+### Alternative 3: Kernel IR as the Only Semantic IR
+
+The frontend could elaborate directly from parsed AST to kernel-oriented formulas.
+
+This makes the trusted core clearer, but it loses source-shaped semantic information needed by diagnostics, overload explanations, LSP hover, documentation, and interactive proof development. Mizar Evo needs both source-shaped semantic IR and a smaller logical core.
+
+## Adopted Approach
+
+Use a layered IR pipeline:
+
+1. Preserve source shape through `ResolvedTypedAst`.
+2. Lower to `CoreIr` only after name, type, registration, and overload semantics are complete.
+3. Extract proof obligations into `VcIr`.
+4. Translate `VcIr` to backend-neutral `AtpProblem`, then to concrete prover protocols.
+5. Accept proof results only through kernel-checked certificates.
+6. Emit stable external metadata through `VerifiedArtifact`, not raw compiler IR.
+
+This design keeps the compiler pleasant to debug while preserving the trust boundary around the kernel and the API boundary around artifacts.
+
+## Interface Definitions
+
+### Common Phase Output
+
+All IR-producing phases should use a common result shape.
+
+```rust
+struct IrPhaseOutput<T> {
+    ir: Option<T>,
+    diagnostics: Vec<Diagnostic>,
+    dependencies: Vec<IrDependency>,
+    debug_artifacts: Vec<DebugArtifactRef>,
+}
+```
+
+`ir = None` means the phase cannot produce a usable IR for downstream phases. Warnings and informational diagnostics can coexist with `Some(ir)`.
+
+### Source-Spanned Values
+
+Semantic values that can appear in diagnostics should retain source mapping.
+
+```rust
+struct Spanned<T> {
+    value: T,
+    span: SourceRange,
+}
+```
+
+Synthetic values should use an explicit generated marker.
+
+```rust
+enum Origin {
+    Source(SourceRange),
+    GeneratedFrom(SourceRange, GeneratedKind),
+}
+```
+
+### Metadata Projection
+
+The artifact emitter projects internal metadata into stable records.
+
+```rust
+struct ExpressionMetadata {
+    expr_id: ExprId,
+    source_range: SourceRange,
+    kind: ExpressionKind,
+    inferred_type: SurfaceTypeRepr,
+    resolved_symbol: Option<SymbolId>,
+    inserted_coercions: Vec<SurfaceCoercionRepr>,
+    active_thesis: Option<SurfaceFormulaRepr>,
+    overload_resolution: Option<OverloadMetadata>,
+}
+```
+
+## Affected Modules
+
+現時点では Rust crate 構成が未確定のため、想定モジュール名を以下に置く。
+
+- `doc/design/mizar-frontend/source.md` — `SourceUnit`, `PreprocessedSource`
+- `doc/design/mizar-frontend/token.md` — `TokenStream`, `Token`
+- `doc/design/mizar-syntax/ast.md` — `SurfaceAst`
+- `doc/design/mizar-resolve/resolved_ast.md` — `ResolvedAst`
+- `doc/design/mizar-resolve/symbol_env.md` — `SymbolEnv`
+- `doc/design/mizar-checker/typed_ast.md` — `TypedAst`, `ResolvedTypedAst`
+- `doc/design/mizar-checker/resolution_trace.md` — `ResolutionTrace`
+- `doc/design/mizar-core/core_ir.md` — `CoreIr`
+- `doc/design/mizar-core/control_flow_ir.md` — `ControlFlowIr`
+- `doc/design/mizar-vc/vc_ir.md` — `VcIr`
+- `doc/design/mizar-atp/problem.md` — `AtpProblem`
+- `doc/design/mizar-atp/certificate.md` — `ProofCertificate`
+- `doc/design/mizar-artifact/verified_artifact.md` — `VerifiedArtifact`
+
+## Constraints and Assumptions
+
+- IR names in this document are architectural names; final Rust type names may differ if module-level design justifies it.
+- Every diagnostic must be traceable to `SourceUnit` even if discovered in a lowered IR.
+- Internal IRs are not stable external APIs.
+- `VerifiedArtifact` is the primary stable API for downstream packages, LSP, documentation, and AI tooling.
+- `CoreIr` must be small and explicit enough for VC generation and kernel checking.
+- `AtpProblem` and `ProofCertificate` remain outside the trusted acceptance boundary until kernel certificate check succeeds.
+- All deterministic IDs and artifact projections must be reproducible under identical source, lockfile, toolchain, and verifier settings.
