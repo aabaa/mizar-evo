@@ -13,11 +13,14 @@ While module-level specs (`doc/design/<crate>/<module>.md`) describe individual 
 
 ## Index
 
-| Document | Description | Status |
-|---|---|---|
-| [reasoning_boundary.md](./reasoning_boundary.md) | Mizar側 vs ATP側 の推論の切り分け方針 | Draft |
-| [atp_interface_protocol.md](./atp_interface_protocol.md) | 外部ATPとの通信言語（TPTP/SMT-LIB）の設計 | Draft |
-| [atp_backend_integration.md](./atp_backend_integration.md) | 外部ATPとの接続方式（プロセス管理等） | Draft |
+| Document | Pipeline Phase | Description | Status |
+|---|---:|---|---|
+| [00.pipeline_overview.md](./00.pipeline_overview.md) | All | ソースから検証済み成果物までの全体処理パイプライン | Draft |
+| [reasoning_boundary.md](./reasoning_boundary.md) | 12-14 | Mizar側 / ATP側 / kernel側 の推論責務境界 | Draft |
+| [atp_interface_protocol.md](./atp_interface_protocol.md) | 13 | 外部ATPとの通信言語（TPTP/SMT-LIB）の設計 | Draft |
+| [atp_backend_integration.md](./atp_backend_integration.md) | 13 | 外部ATPとの接続方式（プロセス管理等） | Draft |
+
+`00.pipeline_overview.md` is the parent document for this directory. Other architecture documents should state which pipeline phase(s) they refine and should link back to the overview in their Context section.
 
 ## Document Template
 

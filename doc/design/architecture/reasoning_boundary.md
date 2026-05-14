@@ -7,10 +7,23 @@ Mizar Evo における**推論責務の切り分け**を定義する。
 
 ## Context
 
+- [00.pipeline_overview.md](./00.pipeline_overview.md) — 全体パイプライン。本文書は Phase 12-14 を詳細化する
 - [doc/spec/16.theorems_and_proofs.md](../../spec/16.theorems_and_proofs.md) — 証明構文と `by` justification
 - [doc/spec/17.clusters_and_registrations.md](../../spec/17.clusters_and_registrations.md) — クラスタ登録
+- [doc/spec/20.algorithm_and_verification.md](../../spec/20.algorithm_and_verification.md) — algorithm verification と verification condition
+- [doc/spec/21.source_code_annotation_and_atp.md](../../spec/21.source_code_annotation_and_atp.md) — annotation と ATP integration
+- [doc/spec/23.package_management_and_build_system.md](../../spec/23.package_management_and_build_system.md) — build lifecycle, cluster-db, artifact output
 - [doc/idea/property_verification_and_atp.md](../../idea/property_verification_and_atp.md) — 最小カーネル設計の初期アイデア
-- Spec Index Ch.23 §23.7–23.8 — Property-based Verification Pipeline / ATP Integration
+
+### Pipeline Position
+
+本文書は以下のフェーズ境界を扱う。
+
+| Phase | Responsibility |
+|---|---|
+| 12. Pre-ATP Discharge | Mizar 側で閉じられる obligation を処理する |
+| 13. ATP Translation / Dispatch | open VC を ATP problem に変換し、外部 prover に委譲する |
+| 14. Kernel Certificate Check | ATP 結果を独立検証し、verified proof status を確定する |
 
 ## Design Decisions
 
@@ -65,8 +78,10 @@ ATP バックエンド
 ## Affected Modules
 
 - `doc/design/mizar-kernel/checker.md` — 型チェック・クラスタ推論
+- `doc/design/mizar-vc/generator.md` — verification condition 生成
 - `doc/design/mizar-atp/translator.md` — 問題変換
 - `doc/design/mizar-atp/backend.md` — ATP呼び出し
+- `doc/design/mizar-kernel/certificate.md` — 証明証明書検証
 - → [atp_interface_protocol.md](./atp_interface_protocol.md)
 - → [atp_backend_integration.md](./atp_backend_integration.md)
 
