@@ -17,6 +17,7 @@ While module-level specs (`doc/design/<crate>/<module>.md`) describe individual 
 |---|---:|---|---|
 | [00.pipeline_overview.md](./00.pipeline_overview.md) | All | ソースから検証済み成果物までの全体処理パイプライン | Draft |
 | [ir_layers.md](./ir_layers.md) | All | パイプライン各フェーズで受け渡す IR 層の責務と安定境界 | Draft |
+| [source_and_frontend.md](./source_and_frontend.md) | 1-3 | source loading, preprocessing, lexing, parsing の境界 | Draft |
 | [reasoning_boundary.md](./reasoning_boundary.md) | 12-14 | Mizar側 / ATP側 / kernel側 の推論責務境界 | Draft |
 | [atp_interface_protocol.md](./atp_interface_protocol.md) | 13 | 外部ATPとの通信言語（TPTP/SMT-LIB）の設計 | Draft |
 | [atp_backend_integration.md](./atp_backend_integration.md) | 13 | 外部ATPとの接続方式（プロセス管理等） | Draft |
