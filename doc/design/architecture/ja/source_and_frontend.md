@@ -4,65 +4,497 @@
 
 ## 目的
 
-`.miz` source file を読み込み、`SourceUnit -> PreprocessedSource -> TokenStream -> SurfaceAst` へ変換する frontend の設計を定義する。
-frontend は syntax を作るが、semantic name resolution や type checking は行わない。
+この文書は、Mizar Evo frontend が `.miz` source file を読み込み、それを comments、tokens、source-shaped syntax tree に変換して module and name resolution へ渡す方法を定義する。
 
-## 対象フェーズ
+これは [00.pipeline_overview.md](./00.pipeline_overview.md) の phases 1-3 を詳細化する。特に、context-sensitive lexing、active lexicons、user-defined symbols、dot handling、fully tokenized string literals、doc comments、annotation attachment の boundary を定義する。
 
-| Phase | Output | Responsibility |
+## Context
+
+- [00.pipeline_overview.md](./00.pipeline_overview.md) — overall pipeline。この文書は phases 1-3 を詳細化する
+- [ir_layers.md](./ir_layers.md) — `SourceUnit`, `PreprocessedSource`, `TokenStream`, `SurfaceAst`
+- [doc/spec/02.lexical_structure.md](../../../spec/02.lexical_structure.md) — lexical structure、comments、annotations、lexer/parser responsibility split
+- [doc/spec/11.symbol_management.md](../../../spec/11.symbol_management.md) — user-defined symbols and active lexicon
+- [doc/spec/12.modules_and_namespaces.md](../../../spec/12.modules_and_namespaces.md) — module paths and namespace references
+- [doc/spec/16.theorems_and_proofs.md](../../../spec/16.theorems_and_proofs.md) — citations and proof syntax
+- [doc/spec/21.source_code_annotation_and_atp.md](../../../spec/21.source_code_annotation_and_atp.md) — library annotations and display annotations
+- [doc/spec/22.error_handling_and_diagnostics.md](../../../spec/22.error_handling_and_diagnostics.md) — syntax diagnostics and source spans
+- [doc/spec/23.package_management_and_build_system.md](../../../spec/23.package_management_and_build_system.md) — package layout and build lifecycle
+
+### Pipeline Position
+
+| Phase | Input | Output | This Document Defines |
+|---|---|---|---|
+| 1. Source Loading / Preprocessing | `.miz` files, `BuildPlan` | `SourceUnit`, `PreprocessedSource` | file validation、line map、comment/doc comment separation、import pre-scan |
+| 2. Lexing | `PreprocessedSource`, active lexicon seed | `TokenStream` | reserved tokens、user symbols、longest-match、source-preserving tokens |
+| 3. Parsing | `TokenStream` | `SurfaceAst` | syntax tree、annotation attachment、recovery |
+
+## Design Decisions
+
+### Frontend Produces Syntax, Not Semantics
+
+frontend は semantic name resolution や type checking を実行してはならない。
+
+frontend が行ってよいこと:
+
+- UTF-8 と code-region ASCII constraints を検証する。
+- comments と doc comments を識別する。
+- active lexicon seed を要求できるだけの import declarations を pre-scan する。
+- reserved words、reserved symbols、active user symbols を使って tokenization する。
+- source-shaped AST へ parse する。
+- syntax-level error recovery を行う。
+
+frontend が行ってはならないこと:
+
+- scope knowledge が必要な場合に、dotted path が namespace か selected term かを決定する。
+- overload winner を選ぶ。
+- expression type を推論する。
+- cluster registrations を fire する。
+- proof obligations を生成する。
+
+### Import Pre-Scan Is Shallow
+
+imported modules は active lexicon を拡張するため、frontend は final tokenization の前に import information を必要とする。しかし、full import resolution は module resolver の責務である。
+
+そのため preprocessing は shallow import pre-scan だけを行う。
+
+- restricted lexical mode を使って top-level `import` forms を認識する。
+- raw dotted module paths と source spans を抽出する。
+- lexicon loading を妨げる malformed import syntax だけを報告する。
+- package/module existence、visibility、export checks は後続 phase に委譲する。
+
+build planner / module resolver はこれらの `ImportStub` から `ActiveLexiconSeed` を構築し、その後 lexing はそれら imports から見える symbols で進む。
+
+### Lexing Uses an Active Lexicon but Remains Syntax-Oriented
+
+lexer は次のものに対して longest-match rule を適用する。
+
+1. reserved words
+2. reserved special symbols
+3. active lexicon 由来の user-defined symbols
+4. identifier and numeral rules
+
+token shape が identifier syntax と active user symbol の両方に一致する場合、lexer は symbol token を emit する。その shape が active user symbol でない場合は identifier token を emit する。
+
+lexer は、symbol use が term/formula context で legal に適用可能かどうかは知らない。それは parser/checker の concern である。
+
+### Dot Handling Is Split Across Lexer, Parser, and Resolver
+
+`.` は意図的に一箇所では解決しない。
+
+| Role | Layer | Rule |
 |---|---|---|
-| 1. Source Loading / Preprocessing | `SourceUnit`, `PreprocessedSource` | file validation, line map, comments/doc comments, import pre-scan |
-| 2. Lexing | `TokenStream` | active lexicon に基づく tokenization |
-| 3. Parsing | `SurfaceAst` | source-shaped AST, annotation attachment, syntax recovery |
+| compound reserved tokens `.{`, `.*`, `.=`, `...` | lexer | single reserved tokens として認識する |
+| user-defined symbols containing `.` | lexer | active lexicon と longest-match により認識する |
+| selector access / update | parser + resolver | term context で possible selector chain として parse する |
+| namespace separator | parser + resolver | import、citation、annotation、qualified-name context で parse する |
+| variable shadowing of namespace paths | resolver | local variables が namespace components に勝つ |
 
-## 設計判断
+semantic scope が必要な場合、frontend は `DottedPathOrSelection` のような ambiguous source-shaped representation を生成してよい。resolver が後で namespace か selector かを確定する。
 
-### Import pre-scan は浅く行う
+### String Literals Are Fully Tokenized by the Lexer
 
-import は active lexicon に影響するため、tokenization 前に最低限の import path を読む必要がある。
-ただし package/module の存在確認、visibility、export check は module resolver の責務とする。
+`"` と `'` は admissible user-symbol characters であるため、lexer はそれらを global に string delimiters として扱えない。
 
-### Lexing は active lexicon を使う
+それでも frontend は parsing 前に complete `TokenStream` を生成する。これを安全に行うため、lexer は grammar-derived `StringPositionRecognizer` を使い、parser callbacks を要求せずに string-required positions を認識する。
 
-lexer は reserved words、reserved symbols、active user symbols、identifier、numeral を longest-match で token 化する。
-identifier 形状の token が active user symbol と一致する場合は symbol token とする。
+String literals は、明示的に string literal を要求する grammar positions でのみ認識される。
 
-### `.` の解釈は分担する
+- `@latex("...")` のような annotation arguments
+- `infix_operator("+", left, 80)` のような operator declaration arguments
+- 将来 string-valued arguments として登録される grammar positions
 
-- `.{`, `.*`, `.=`, `...` は lexer が compound reserved token として扱う。
-- `.` を含む user symbol は active lexicon と longest-match により lexer が扱う。
-- selector access / namespace separator の最終判断は parser + resolver が行う。
-- namespace path と local variable の shadowing は resolver が判断する。
+これらの位置以外では、quote characters は active lexicon と longest-match rule に従う通常の symbol characters である。
 
-### String literal は lexer が完全 token 化する
+parser は既に token 化された `StringLiteral` tokens を consume する。parser が lexer cursor を直接 drive することはない。
 
-parser が lexer cursor を動かす方式にはしない。
-lexer は grammar-derived `StringPositionRecognizer` を使い、string が許される位置だけで `StringLiteral` token を生成する。
-それ以外の場所では quote は user symbol の一部として扱う。
+### Comments and Doc Comments Are Source Metadata
 
-### Annotation は parser が所有する
+comments は lexical input から除去されるが、破棄されない。
 
-preprocessing は annotation を別 metadata channel に切り出さない。
-annotation token は lexical text に残し、parser が `SurfaceAst` の annotation node として attach する。
+- ordinary comments は formatting/debug tooling のためだけに保持する。
+- doc comments は可能な場合、後続の documentable item に attach する。
+- doc comment attachment は syntactic なままであり、target が documentable でない場合は後で reject され得る。
+- structured doc tags は tag name、raw arguments、source spans を保持できる程度に parse する。
 
-## 主なデータ構造
+### Annotations Are Parser-Owned Syntax
 
-- `SourceUnit`: source text, file path, module path, source hash, line map
-- `PreprocessedSource`: lexical text, comments, doc comments, import stubs, lexical source map
-- `ImportStub`: shallow import pre-scan の結果
-- `ActiveLexiconSeed`: reserved tables と imported user symbols
-- `TokenStream`: source span 付き token 列
-- `SurfaceAst`: source-shaped syntax tree
+annotations は surface syntax の一部であり、source location と raw arguments を保持しなければならない。
+
+preprocessing は annotations を別の metadata channel に集めない。annotation tokens は `lexical_text` に残り、`TokenStream` に emit され、parser によって `SurfaceAst` annotation nodes へ parse される。
+
+parser は annotation syntax を検証するが、semantic effects は deferred される。
+
+- `@[...]` library annotations は raw library labels として items に attach する。
+- `@latex`, `@proof_hint`, `@show_*`, `@eval` は annotation nodes として表現する。
+- annotation registry validation は syntax のため parser で行ってもよいが、meaning は later phases が解釈する。
+- annotations は core language semantics を変更してはならない。
+
+## Frontend Pipeline
+
+### Step 1: Load SourceUnit
+
+Input:
+
+- package/workspace `BuildPlan`
+- `.miz` file path
+- expected package root and `src/` root
+
+Output:
+
+- `SourceUnit`
+
+Responsibilities:
+
+- source bytes を読む。
+- UTF-8 を検証する。
+- `source_hash` を計算する。
+- file path から module path を導出する。
+- Unicode scalar column rules を使って `LineMap` を構築する。
+- file-level diagnostics を emit する。
+
+Failure examples:
+
+- unreadable source file
+- invalid UTF-8
+- file outside package `src/` root
+- invalid `.miz` module filename
+
+### Step 2: Preprocess Source
+
+Input:
+
+- `SourceUnit`
+
+Output:
+
+- `PreprocessedSource`
+
+Responsibilities:
+
+- comments と annotations に Unicode を許しつつ、code-region ASCII を検証する。
+- ordinary comments を識別し lexical input から除去する。
+- doc comments を source spans 付きで保持する。
+- parser ownership のため annotation syntax を lexical input に残す。
+- top-level imports を shallow-scan する。
+- lexical text から source ranges への exact mapping を保持する。
+
+Failure examples:
+
+- unterminated block comment
+- illegal non-ASCII character in code region
+- import pre-scan failure that prevents active lexicon construction
+
+### Step 3: Build ActiveLexiconSeed
+
+Input:
+
+- preprocessing 由来の `ImportStub`s
+- build plan から利用可能な package/module indexes
+- already-built dependency symbol exports
+
+Output:
+
+- `ActiveLexiconSeed`
+
+Responsibilities:
+
+- imported modules が export する user-defined symbolic names を集める。
+- built-in reserved symbols と keyword table を含める。
+- equal-length user-symbol tie breaking のため import order を記録する。
+- diagnostics のため symbol provenance を記録する。
+
+この step は frontend-adjacent service である。frontend 由来の shallow imports を使うが、full import legality は module resolution の一部であり続ける。
+
+### Step 4: Lex
+
+Input:
+
+- `PreprocessedSource`
+- `ActiveLexiconSeed`
+
+Output:
+
+- `TokenStream`
+
+Responsibilities:
+
+- reserved words and reserved special symbols を emit する。
+- longest-match のもとで user-defined symbols を emit する。
+- identifiers and numerals を emit する。
+- string-required positions で `StringLiteral` tokens を emit する。
+- source spans と original spelling を保持する。
+- recoverable tokens を失わずに lexical diagnostics を expose する。
+
+Failure examples:
+
+- unknown or malformed token sequence
+- invalid numeral form
+- malformed string literal in a string-required position
+
+### Step 5: Parse
+
+Input:
+
+- `TokenStream`
+
+Output:
+
+- `SurfaceAst`
+
+Responsibilities:
+
+- modules、definitions、registrations、statements、terms、formulas、theorems、proofs、algorithms を parse する。
+- annotation argument lists を parse し、annotations を syntax nodes に attach する。
+- doc comments を近くの documentable items に attach する。
+- source order と source ranges を保持する。
+- `;`, `end`, top-level item keywords などの synchronization points で syntax errors から recover する。
+
+Failure examples:
+
+- unexpected token
+- unmatched delimiter
+- missing `end`
+- expected string literal token is missing
+
+## Interface Definitions
+
+### SourceUnit
+
+```rust
+struct SourceUnit {
+    source_id: SourceId,
+    package_id: PackageId,
+    module_path: ModulePath,
+    file_path: PathBuf,
+    source_text: Arc<str>,
+    source_hash: Hash,
+    line_map: LineMap,
+}
+```
+
+### PreprocessedSource
+
+```rust
+struct PreprocessedSource {
+    source_id: SourceId,
+    lexical_text: LexicalText,
+    comments: Vec<Comment>,
+    doc_comments: Vec<DocComment>,
+    import_stubs: Vec<ImportStub>,
+    source_map: LexicalSourceMap,
+}
+```
+
+### ImportStub
+
+```rust
+struct ImportStub {
+    source_range: SourceRange,
+    raw_path: Vec<IdentifierText>,
+    kind: ImportKind,
+}
+
+enum ImportKind {
+    Module,
+    Open,
+    Reexport,
+}
+```
+
+`ImportStub` は resolved import ではない。lexicon entries を request し、lexicon loading が失敗した場合に良い diagnostics を出すには十分である。
+
+### ActiveLexiconSeed
+
+```rust
+struct ActiveLexiconSeed {
+    reserved_words: ReservedWordTable,
+    reserved_symbols: ReservedSymbolTable,
+    user_symbols: Vec<LexiconEntry>,
+}
+
+struct LexiconEntry {
+    spelling: SymbolText,
+    symbol_id: Option<SymbolId>,
+    source_module: ModuleId,
+    import_rank: ImportRank,
+}
+```
+
+full module resolution が完了する前に index から読み込まれた symbols では、`symbol_id` が存在しない場合がある。resolver が後で symbol identity を validate and canonicalize する。
+
+### TokenStream
+
+```rust
+struct TokenStream {
+    source_id: SourceId,
+    tokens: Vec<Token>,
+    diagnostics: Vec<Diagnostic>,
+}
+
+struct Token {
+    kind: TokenKind,
+    span: SourceRange,
+    text: InternedText,
+}
+
+enum TokenKind {
+    ReservedWord(ReservedWord),
+    ReservedSymbol(ReservedSymbol),
+    UserSymbol(UserSymbolToken),
+    Identifier,
+    Numeral,
+    StringLiteral,
+    Error,
+}
+```
+
+`StringLiteral` は、lexer が grammar-defined string-required position を認識した場所でのみ現れる。
+
+### SurfaceAst
+
+```rust
+struct SurfaceAst {
+    source_id: SourceId,
+    module: SurfaceModule,
+    nodes: AstArena<SurfaceNode>,
+    trivia: TriviaMap,
+    diagnostics: Vec<Diagnostic>,
+}
+```
+
+### FrontendOutput
+
+```rust
+struct FrontendOutput {
+    source: SourceUnit,
+    preprocessed: PreprocessedSource,
+    tokens: TokenStream,
+    ast: Option<SurfaceAst>,
+    diagnostics: Vec<Diagnostic>,
+}
+```
+
+`ast = None` は、parsing が later phases で使えるだけの構造へ recover できなかったことを意味する。Lexical and syntax diagnostics はそれでも返される。
 
 ## Error Recovery
 
-lexer は malformed span に `TokenKind::Error` を出し、可能なら tokenization を継続する。
-parser は `;`, `end`, top-level item keyword などで同期し、error node を作る。
-semantic fact を捏造せず、後続 phase が明示的に skip / reject できる形にする。
+Frontend recovery は、semantic facts を捏造せずに複数の有用な diagnostics を報告することを目指す。
+
+Lexer recovery:
+
+- 可能な場合、malformed spans に `TokenKind::Error` を emit する。
+- whitespace、reserved delimiters、line boundaries で resume する。
+- diagnostics のため malformed source range を保持する。
+
+Parser recovery:
+
+- `;`, `end`, `definition`, `registration`, `theorem`, `lemma`, `proof`, `algorithm`, EOF で synchronize する。
+- construct が欠けている場所に explicit error nodes を作る。
+- fake identifiers や fake resolved symbols を作らない。
+- attachment に失敗しても doc comments を元の source location 付近に保持する。
+- malformed annotations は可能なら syntax-level error nodes として保持する。
+
+Recovered AST nodes は、later phases が明示的に skip または degrade gracefully できるように mark されなければならない。
+
+## Diagnostics
+
+Frontend diagnostics は [doc/spec/22.error_handling_and_diagnostics.md](../../../spec/22.error_handling_and_diagnostics.md) の syntax/lexical ranges を使う。
+
+| Diagnostic Class | Phase | Example |
+|---|---|---|
+| lexical precondition | source loading / preprocessing | invalid UTF-8, non-ASCII code character |
+| comment structure | preprocessing | unterminated block comment |
+| tokenization | lexing | malformed literal, unknown token |
+| syntax | parsing | unexpected token, missing `end`, unmatched delimiter |
+| annotation syntax | parsing | malformed annotation argument list |
+
+Frontend diagnostics は次を含まなければならない。
+
+- stable diagnostic code
+- primary source span
+- useful な場合 secondary span。例: missing close に対する opening delimiter
+- later diagnostics が影響を受ける可能性がある場合の recovery note
+
+Frontend diagnostics は "undefined symbol" や "ambiguous overload" のような semantic facts を主張してはならない。それらは later phases の責務である。
 
 ## Incrementality
 
-- comment-only edit は documentation metadata を無効化するが、lexical text が同じなら semantic output を再利用できる可能性がある。
-- import edit は active lexicon, token stream, AST, semantic layers を無効化する。
-- dependency export の変更は local source が同じでも tokenization を無効化し得る。
-- parser version と language edition は AST cache key に含める。
+Frontend cache keys は layer 化される。
+
+| Output | Cache Key |
+|---|---|
+| `SourceUnit` | file path, source bytes |
+| `PreprocessedSource` | `source_hash`, frontend version |
+| `ActiveLexiconSeed` | import stubs, dependency export hashes, import order |
+| `TokenStream` | preprocessed hash, active lexicon hash |
+| `SurfaceAst` | token stream hash, parser version, edition |
+
+Important invalidation rules:
+
+- comment-only edits は `PreprocessedSource` と documentation metadata を invalidate するが、lexical text が同じなら semantic outputs を reuse できる可能性がある。
+- import edits は active lexicon、token stream、AST、その source file のすべての semantic layers を invalidate する。
+- dependency symbol export edits は local source file が変わっていなくても tokenization を invalidate し得る。
+- parser version と language edition は AST cache key の一部である。
+
+## Alternatives Considered
+
+### Alternative 1: Pure Lexer Before Import Resolution
+
+imported user symbols を考慮せずにすべての source files を lex し、その後 parsing または name resolution 中に tokens を reinterpret する案。
+
+これは lexing を単純にするが、identifier-shaped user symbols と longest-match rules に反する。また later phases に token sequences の split/merge を強制し、source spans と parser recovery を脆くする。
+
+### Alternative 2: Full Module Resolution Before Lexing
+
+各 file を lexing する前に imports を完全に resolve する案。
+
+これは lexer に precise symbol identities を与えるが、cycle を作る。module contents を理解するには parsing が必要であり、lexing には imported symbols が必要である。採用した shallow pre-scan は、この cycle を壊しつつ active lexicon を構築するのに十分な情報を保つ。
+
+### Alternative 3: Lexer Decides All Dot Roles
+
+`.` を selector、namespace separator、user functor として lexer が直接 classify する案。
+
+これは variable shadowing や term context が正しい interpretation を決める場合に失敗する。採用した split は compound tokens と active user symbols を lexer に残し、selector/namespace decisions を parser と resolver に残す。
+
+### Alternative 4: Treat Quotes as Global String Delimiters
+
+`'...'` と `"..."` を常に string literals として lex する案。
+
+これは postfix inverse notation のような user symbols と衝突する。採用した contextual lexer は、parsing 前に complete `TokenStream` を生成しつつ、string literals を必要とする grammar positions だけで認識する。
+
+## Adopted Approach
+
+staged frontend を使う。
+
+1. source を load し source mapping を構築する。
+2. comments、doc comments、shallow imports を preprocess する。
+3. shallow imports と dependency exports から active lexicon seed を構築する。
+4. reserved and active symbols に対して longest-match で lex し、contextual string literal recognition も行う。
+5. explicit recovery nodes を持つ source-shaped `SurfaceAst` へ parse する。
+
+この設計は frontend output を source-faithful に保ちつつ、module resolution と type checking に属する semantic commitments を避ける。
+
+## Affected Modules
+
+Rust crate layout は未確定である。想定される module specs は次の通り。
+
+- `doc/design/mizar-frontend/source.md` — source loading, UTF-8 validation, line map
+- `doc/design/mizar-frontend/preprocess.md` — comments, doc comments, import pre-scan
+- `doc/design/mizar-frontend/lexicon.md` — active lexicon seed and longest-match tables
+- `doc/design/mizar-frontend/lexer.md` — tokenization
+- `doc/design/mizar-frontend/parser.md` — parser and recovery
+- `doc/design/mizar-syntax/ast.md` — `SurfaceAst` node definitions
+- `doc/design/mizar-diagnostics/source_map.md` — source ranges and line/column mapping
+- `doc/design/mizar-resolve/imports.md` — full import resolution consuming `ImportStub`
+
+## Constraints and Assumptions
+
+- Source files are UTF-8 and end with `.miz`.
+- Code regions are ASCII; comments and annotations may contain Unicode.
+- Import pre-scan is intentionally incomplete and cannot replace module resolution.
+- Active lexicon can affect token boundaries, so tokenization depends on dependency export hashes.
+- The lexer recognizes compound reserved tokens and active user symbols, but not semantic selector/namespace roles.
+- The lexer emits complete `StringLiteral` tokens only at grammar positions that explicitly require strings.
+- The parser owns annotation syntax and attachment; preprocessing does not collect annotations as a separate metadata channel.
+- `SurfaceAst` is source-shaped and may contain recovery nodes; later semantic phases must tolerate or reject these explicitly.
+- Frontend artifacts are internal compiler data, not stable public build artifacts.
