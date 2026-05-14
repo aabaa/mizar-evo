@@ -1,0 +1,97 @@
+# Architecture: Reasoning Boundary
+
+> Canonical language: English. Japanese companion: [../ja/reasoning_boundary.md](../ja/reasoning_boundary.md).
+
+## Purpose
+
+This document defines the reasoning responsibility boundary in Mizar Evo: which checks are performed by the Mizar-side verifier, which obligations are delegated to external ATP/SMT backends, and which results must be accepted by the trusted kernel.
+
+## Context
+
+- [00.pipeline_overview.md](./00.pipeline_overview.md) — overall pipeline; this document refines phases 12-14
+- [doc/spec/16.theorems_and_proofs.md](../../../spec/16.theorems_and_proofs.md) — proof syntax and `by` justification
+- [doc/spec/17.clusters_and_registrations.md](../../../spec/17.clusters_and_registrations.md) — clusters and registrations
+- [doc/spec/20.algorithm_and_verification.md](../../../spec/20.algorithm_and_verification.md) — algorithm verification and verification conditions
+- [doc/spec/21.source_code_annotation_and_atp.md](../../../spec/21.source_code_annotation_and_atp.md) — annotations and ATP integration
+- [doc/spec/23.package_management_and_build_system.md](../../../spec/23.package_management_and_build_system.md) — build lifecycle, cluster-db, and artifact output
+
+### Pipeline Position
+
+| Phase | Responsibility |
+|---|---|
+| 12. Pre-ATP Discharge | Discharge obligations that can be solved by Mizar-side deterministic machinery |
+| 13. ATP Translation / Dispatch | Translate open VCs to ATP problems and dispatch external provers |
+| 14. Kernel Certificate Check | Independently validate ATP evidence and finalize proof status |
+
+## Design Decisions
+
+### Mizar-Side Reasoning
+
+The Mizar-side verifier owns deterministic semantic processing:
+
+- type checking, subtype checks, and coercion checks;
+- sethood checks for Fraenkel expressions;
+- cluster and registration resolution;
+- overload resolution;
+- elaboration from surface syntax to core logical IR;
+- definitional expansion boundaries;
+- trivial VC discharge, computation-based discharge, and type-derived facts.
+
+These responsibilities must be completed before ATP translation.
+
+### ATP-Side Reasoning
+
+External provers are used for search-heavy logical reasoning:
+
+- first-order reasoning for `by` justification steps;
+- equational reasoning over cited premises and local hypotheses;
+- property-based reasoning such as commutativity, symmetry, and reflexivity;
+- refutation-style proof search when supported by the backend.
+
+ATP backends do not perform type inference, overload resolution, cluster resolution, or namespace resolution.
+
+### Kernel Responsibility
+
+The kernel accepts only independently checkable evidence.
+
+- ATP results are evidence, not trusted proof status.
+- Proof certificates or replayable witnesses must be checked before acceptance.
+- `externally_attested` proofs may be recorded as policy-controlled exceptions, but they are not equivalent to kernel-verified proofs.
+
+## Alternatives Considered
+
+1. **All reasoning inside Mizar**: simpler trust story, but poor automation and a larger verifier.
+2. **All reasoning delegated to ATPs**: powerful search, but weak control over language-specific semantics and trust.
+3. **Hybrid boundary**: Mizar owns semantic processing; ATPs own logical search; the kernel owns acceptance.
+
+## Adopted Approach
+
+Mizar Evo adopts the hybrid boundary. This keeps the trusted base small, keeps language-specific checks deterministic, and still uses ATP/SMT backends where they are strongest.
+
+## Interface Definitions
+
+```text
+Typed and elaborated Mizar context
+  -> local VC + cited premises
+  -> ATP translation
+  -> backend certificate or witness
+  -> kernel certificate check
+  -> verified proof status
+```
+
+## Affected Modules
+
+- `doc/design/mizar-checker/types.md` — type checking and type-derived facts
+- `doc/design/mizar-checker/registrations.md` — cluster and registration resolution
+- `doc/design/mizar-vc/generator.md` — verification condition generation
+- `doc/design/mizar-atp/translator.md` — ATP problem translation
+- `doc/design/mizar-atp/backend.md` — ATP backend invocation
+- `doc/design/mizar-kernel/certificate.md` — proof certificate validation
+- [atp_interface_protocol.md](./atp_interface_protocol.md)
+- [atp_backend_integration.md](./atp_backend_integration.md)
+
+## Constraints and Assumptions
+
+- The kernel must not blindly trust ATP output.
+- ATP unavailability must not prevent parsing, name resolution, type checking, or cluster resolution.
+- Certificate validation failure is a proof error, even if the backend reported success.

@@ -1,0 +1,100 @@
+# Architecture: ATP Backend Integration
+
+> Canonical language: English. Japanese companion: [../ja/atp_backend_integration.md](../ja/atp_backend_integration.md).
+
+## Purpose
+
+This document defines how Mizar Evo runs external ATP/SMT backends: process execution, timeout handling, portfolio execution, result classification, and proof certificate collection.
+
+It refines pipeline phase 13, specifically backend dispatch. Problem encoding is covered by [atp_interface_protocol.md](./atp_interface_protocol.md), and proof acceptance is finalized by phase 14 kernel certificate checking.
+
+## Context
+
+- [00.pipeline_overview.md](./00.pipeline_overview.md) — overall pipeline
+- [reasoning_boundary.md](./reasoning_boundary.md) — reasoning responsibility split
+- [atp_interface_protocol.md](./atp_interface_protocol.md) — problem encoding protocols
+- [doc/spec/21.source_code_annotation_and_atp.md](../../../spec/21.source_code_annotation_and_atp.md) — backend provers, portfolio execution, and certificate formats
+- [doc/spec/22.error_handling_and_diagnostics.md](../../../spec/22.error_handling_and_diagnostics.md) — ATP timeout and proof diagnostics
+- [doc/spec/23.package_management_and_build_system.md](../../../spec/23.package_management_and_build_system.md) — verifier config, logs, and artifact output
+
+## Design Decisions
+
+### Supported Backends
+
+| Backend | Type | Input Format | Certificate Format | Priority |
+|---|---|---|---|---|
+| Vampire | ATP | TPTP | TSTP | Primary |
+| E | ATP | TPTP | TSTP | Primary |
+| CVC5 | SMT | SMT-LIB | LFSC / Alethe | Primary for theory-heavy goals |
+| Z3 | SMT | SMT-LIB | proof log / externally attested | Optional |
+
+### Process Model
+
+Backends are launched as child processes.
+
+- Input is passed via stdin or a temporary problem file.
+- Stdout and stderr are captured for logs.
+- Timeout is configured per obligation; the default is `[verifier].atp_timeout` in `mizar.pkg`.
+- Crashed backends are reported as backend errors and do not crash the verifier.
+
+### Portfolio Execution
+
+When the selected solver is `auto`, Mizar Evo may launch multiple backends in parallel. The first backend that returns a kernel-accepted certificate wins. Remaining processes are terminated.
+
+For reproducibility, portfolio runs must record:
+
+- backend names and versions;
+- concrete input hash;
+- timeout and resource limits;
+- random seed when applicable;
+- certificate status.
+
+### Result Classification
+
+```rust
+enum ATPResult {
+    Proved(ProofCertificate),
+    Disproved,
+    Timeout,
+    Unknown,
+    Error(ATPError),
+}
+```
+
+`Proved` means the backend produced evidence. It does not mean the proof has been accepted by the kernel.
+
+## Alternatives Considered
+
+1. **Library linking**: lower process overhead, but harder licensing and version isolation.
+2. **Long-running prover daemon**: lower startup cost, but more complicated resource management.
+3. **Child process execution**: simple isolation and version management, with acceptable overhead.
+
+## Adopted Approach
+
+Mizar Evo uses child process execution with optional portfolio parallelism.
+
+## Interface Definitions
+
+```rust
+trait ATPBackend {
+    fn name(&self) -> &str;
+    fn solve(&self, problem: EncodedProblem, timeout: Duration) -> Result<ATPResult, ATPError>;
+}
+```
+
+`EncodedProblem` carries concrete backend input plus metadata needed for logs and reproducibility.
+
+## Affected Modules
+
+- `doc/design/mizar-atp/backend.md` — backend trait and process execution
+- `doc/design/mizar-atp/portfolio.md` — portfolio execution strategy
+- `doc/design/mizar-atp/certificate.md` — certificate parsing
+- `doc/design/mizar-kernel/certificate.md` — certificate validation
+- [atp_interface_protocol.md](./atp_interface_protocol.md)
+
+## Constraints and Assumptions
+
+- Backend binaries are expected to be available on `PATH` or configured explicitly.
+- Backend versions are recorded in verifier artifacts and ATP logs.
+- Backend crashes are handled gracefully.
+- Kernel certificate checking is the trusted acceptance boundary.

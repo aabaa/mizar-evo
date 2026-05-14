@@ -1,31 +1,33 @@
 # Architecture: IR Layers
 
+> Canonical language: English. Japanese companion: [../ja/ir_layers.md](../ja/ir_layers.md).
+
 ## Purpose
 
-Mizar Evo の処理パイプラインで使う中間表現（IR: Intermediate Representation）の層構造を定義する。
+This document defines the intermediate representation (IR) layers used by the Mizar Evo processing pipeline.
 
-この文書は、各 IR がどのフェーズで生成され、何を所有し、何を所有しないかを明確にする。目的は、frontend、resolver、checker、VC generator、ATP translator、kernel、artifact emitter が互いの内部実装に依存しすぎないようにし、incremental build と diagnostics の境界を安定させることである。
+It clarifies which phase produces each IR, what each IR owns, and what it intentionally does not own. The goal is to keep the frontend, resolver, checker, VC generator, ATP translator, kernel, and artifact emitter from depending too strongly on each other's internals, while keeping incremental build and diagnostic boundaries stable.
 
 ## Context
 
-- [00.pipeline_overview.md](./00.pipeline_overview.md) — 全体パイプライン。本文書は `IR Layering` を詳細化する
-- [doc/spec/02.lexical_structure.md](../../spec/02.lexical_structure.md) — source text, comments, annotations, tokenization
-- [doc/spec/03.type_system.md](../../spec/03.type_system.md) — type expressions, soft type system
-- [doc/spec/08.type_inference.md](../../spec/08.type_inference.md) — inferred types and coercions
-- [doc/spec/11.symbol_management.md](../../spec/11.symbol_management.md) — symbol registration
-- [doc/spec/12.modules_and_namespaces.md](../../spec/12.modules_and_namespaces.md) — namespace and imports
-- [doc/spec/16.theorems_and_proofs.md](../../spec/16.theorems_and_proofs.md) — proof structure and thesis tracking
-- [doc/spec/17.clusters_and_registrations.md](../../spec/17.clusters_and_registrations.md) — cluster facts and registration resolution
-- [doc/spec/19.overload_resolution.md](../../spec/19.overload_resolution.md) — overload winners and inserted coercions
-- [doc/spec/20.algorithm_and_verification.md](../../spec/20.algorithm_and_verification.md) — control-flow, contracts, ghost variables, VCs
-- [doc/spec/21.source_code_annotation_and_atp.md](../../spec/21.source_code_annotation_and_atp.md) — ATP problem translation and metadata output
-- [doc/spec/23.package_management_and_build_system.md](../../spec/23.package_management_and_build_system.md) — artifacts, cache, LSP metadata
+- [00.pipeline_overview.md](./00.pipeline_overview.md) — overall pipeline; this document refines `IR Layering`
+- [doc/spec/02.lexical_structure.md](../../../spec/02.lexical_structure.md) — source text, comments, annotations, tokenization
+- [doc/spec/03.type_system.md](../../../spec/03.type_system.md) — type expressions, soft type system
+- [doc/spec/08.type_inference.md](../../../spec/08.type_inference.md) — inferred types and coercions
+- [doc/spec/11.symbol_management.md](../../../spec/11.symbol_management.md) — symbol registration
+- [doc/spec/12.modules_and_namespaces.md](../../../spec/12.modules_and_namespaces.md) — namespace and imports
+- [doc/spec/16.theorems_and_proofs.md](../../../spec/16.theorems_and_proofs.md) — proof structure and thesis tracking
+- [doc/spec/17.clusters_and_registrations.md](../../../spec/17.clusters_and_registrations.md) — cluster facts and registration resolution
+- [doc/spec/19.overload_resolution.md](../../../spec/19.overload_resolution.md) — overload winners and inserted coercions
+- [doc/spec/20.algorithm_and_verification.md](../../../spec/20.algorithm_and_verification.md) — control-flow, contracts, ghost variables, VCs
+- [doc/spec/21.source_code_annotation_and_atp.md](../../../spec/21.source_code_annotation_and_atp.md) — ATP problem translation and metadata output
+- [doc/spec/23.package_management_and_build_system.md](../../../spec/23.package_management_and_build_system.md) — artifacts, cache, LSP metadata
 - [reasoning_boundary.md](./reasoning_boundary.md) — proof responsibility boundary
 - [atp_interface_protocol.md](./atp_interface_protocol.md) — `AtpProblem` to concrete prover formats
 
 ### Pipeline Position
 
-本文書は全フェーズにまたがるが、特に以下の受け渡し境界を定義する。
+This document spans all phases, but it primarily defines the following handoff boundaries.
 
 | Boundary | From | To |
 |---|---|---|
@@ -39,19 +41,19 @@ Mizar Evo の処理パイプラインで使う中間表現（IR: Intermediate Re
 
 ### IRs Are Immutable Snapshots
 
-各 IR は、その生成フェーズが完了した時点の immutable snapshot として扱う。
+Each IR is treated as an immutable snapshot once its producing phase completes.
 
-- 後続フェーズは前段 IR を直接書き換えない。
-- 追加情報は、新しい IR か side table として生成する。
-- node identity は後続フェーズでも追跡できるように、安定した `NodeId` / `ExprId` / `ItemId` を持つ。
-- diagnostics は各 IR の source mapping を通じて source span に戻す。
+- Later phases do not mutate earlier IRs directly.
+- Additional information is produced as a new IR or as a side table.
+- Node identity is tracked through stable `NodeId`, `ExprId`, or `ItemId` values where appropriate.
+- Diagnostics map back to source spans through each IR's source mapping.
 
-この方針により、cache key、incremental invalidation、LSP metadata、debug dump を設計しやすくする。
+This makes cache keys, incremental invalidation, LSP metadata, and debug dumps easier to design.
 
 ### Surface Preservation Ends at Elaboration
 
-`SurfaceAst`, `ResolvedAst`, `TypedAst`, `ResolvedTypedAst` は、可能な限り source syntax の形を保存する。
-一方で `CoreIr` 以降は、証明・検証・kernel check に適した正規化済み表現とする。
+`SurfaceAst`, `ResolvedAst`, `TypedAst`, and `ResolvedTypedAst` preserve source syntax shape as much as possible.
+`CoreIr` and later layers are normalized representations for proof, verification, and kernel checking.
 
 | Layer | Source Shape | Semantic Completeness | Main Consumer |
 |---|---|---|---|
@@ -66,22 +68,22 @@ Mizar Evo の処理パイプラインで使う中間表現（IR: Intermediate Re
 
 ### Name, Type, and Proof Facts Have Different Lifetimes
 
-名前解決、型推論、証明義務は lifecycle が異なるため、同じ AST node に無理に全情報を詰め込まない。
+Name resolution, type inference, and proof obligations have different lifetimes, so they should not all be forced into the same AST node.
 
-- name resolution result は `ResolvedAst` と `SymbolEnv` に保持する。
-- inferred type, coercion candidate, type fact は `TypedAst` と `TypeFactTable` に保持する。
-- cluster derivation は `ResolutionTrace` に保持し、kernel replay 可能にする。
-- overload winner と inserted `qua` は `ResolvedTypedAst` に確定情報として保持する。
-- proof obligation は `VcIr` に抽出し、AST の内部 node に閉じ込めない。
+- Name resolution results are stored in `ResolvedAst` and `SymbolEnv`.
+- Inferred types, coercion candidates, and type facts are stored in `TypedAst` and `TypeFactTable`.
+- Cluster derivations are stored in `ResolutionTrace` so the kernel can replay them.
+- Overload winners and inserted `qua` coercions are finalized in `ResolvedTypedAst`.
+- Proof obligations are extracted into `VcIr` instead of being hidden inside AST nodes.
 
 ### Stable External Artifacts Are Projections, Not Raw IR Dumps
 
-`VerifiedArtifact` は raw IR の dump ではなく、downstream package、LSP、documentation、AI tooling に必要な情報だけを投影した安定 schema とする。
+`VerifiedArtifact` is not a raw IR dump. It is a stable schema that projects only the information needed by downstream packages, LSP, documentation, and AI tooling.
 
-- raw IR は compiler-internal であり、version 間で変更可能。
-- artifact schema は `schema_version` を持ち、互換性方針を明示する。
-- source range、resolved symbol、inferred type、obligation status、proof witness ref は artifact に含める。
-- solver-internal logs や kernel-internal proof state は、必要に応じて別 artifact として参照する。
+- Raw IR is compiler-internal and may change between versions.
+- Artifact schemas carry `schema_version` and an explicit compatibility policy.
+- Source ranges, resolved symbols, inferred types, obligation status, and proof witness references are included in artifacts.
+- Solver-internal logs and kernel-internal proof state are referenced through separate artifacts when needed.
 
 ## IR Overview
 
@@ -773,7 +775,7 @@ struct ExpressionMetadata {
 
 ## Affected Modules
 
-現時点では Rust crate 構成が未確定のため、想定モジュール名を以下に置く。
+The Rust crate layout is not finalized. Expected module specs include:
 
 - `doc/design/mizar-frontend/source.md` — `SourceUnit`, `PreprocessedSource`
 - `doc/design/mizar-frontend/token.md` — `TokenStream`, `Token`

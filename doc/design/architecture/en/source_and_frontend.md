@@ -1,22 +1,24 @@
 # Architecture: Source and Frontend
 
+> Canonical language: English. Japanese companion: [../ja/source_and_frontend.md](../ja/source_and_frontend.md).
+
 ## Purpose
 
-Mizar Evo の frontend が、`.miz` source file を読み込み、comments / tokens / syntax tree に分解して、後続の module and name resolution に渡すまでの設計を定義する。
+This document defines how the Mizar Evo frontend loads `.miz` source files and turns them into comments, tokens, and a source-shaped syntax tree for module and name resolution.
 
-この文書は、[00.pipeline_overview.md](./00.pipeline_overview.md) の Phase 1-3 を詳細化する。特に、Mizar Evo 特有の context-sensitive lexing、active lexicon、user-defined symbols、`.` の役割分担、string literal の完全 token 化、doc comment / annotation attachment の境界を明確にする。
+It refines phases 1-3 of [00.pipeline_overview.md](./00.pipeline_overview.md). In particular, it defines the boundaries for context-sensitive lexing, active lexicons, user-defined symbols, dot handling, fully tokenized string literals, doc comments, and annotation attachment.
 
 ## Context
 
-- [00.pipeline_overview.md](./00.pipeline_overview.md) — 全体パイプライン。本文書は Phase 1-3 を詳細化する
+- [00.pipeline_overview.md](./00.pipeline_overview.md) — overall pipeline; this document refines phases 1-3
 - [ir_layers.md](./ir_layers.md) — `SourceUnit`, `PreprocessedSource`, `TokenStream`, `SurfaceAst`
-- [doc/spec/02.lexical_structure.md](../../spec/02.lexical_structure.md) — lexical structure, comments, annotations, lexer/parser responsibility split
-- [doc/spec/11.symbol_management.md](../../spec/11.symbol_management.md) — user-defined symbols and active lexicon
-- [doc/spec/12.modules_and_namespaces.md](../../spec/12.modules_and_namespaces.md) — module paths and namespace references
-- [doc/spec/16.theorems_and_proofs.md](../../spec/16.theorems_and_proofs.md) — citations and proof syntax
-- [doc/spec/21.source_code_annotation_and_atp.md](../../spec/21.source_code_annotation_and_atp.md) — library annotations and display annotations
-- [doc/spec/22.error_handling_and_diagnostics.md](../../spec/22.error_handling_and_diagnostics.md) — syntax diagnostics and source spans
-- [doc/spec/23.package_management_and_build_system.md](../../spec/23.package_management_and_build_system.md) — package layout and build lifecycle
+- [doc/spec/02.lexical_structure.md](../../../spec/02.lexical_structure.md) — lexical structure, comments, annotations, lexer/parser responsibility split
+- [doc/spec/11.symbol_management.md](../../../spec/11.symbol_management.md) — user-defined symbols and active lexicon
+- [doc/spec/12.modules_and_namespaces.md](../../../spec/12.modules_and_namespaces.md) — module paths and namespace references
+- [doc/spec/16.theorems_and_proofs.md](../../../spec/16.theorems_and_proofs.md) — citations and proof syntax
+- [doc/spec/21.source_code_annotation_and_atp.md](../../../spec/21.source_code_annotation_and_atp.md) — library annotations and display annotations
+- [doc/spec/22.error_handling_and_diagnostics.md](../../../spec/22.error_handling_and_diagnostics.md) — syntax diagnostics and source spans
+- [doc/spec/23.package_management_and_build_system.md](../../../spec/23.package_management_and_build_system.md) — package layout and build lifecycle
 
 ### Pipeline Position
 
@@ -396,7 +398,7 @@ Recovered AST nodes must be marked so later phases can skip or degrade gracefull
 
 ## Diagnostics
 
-Frontend diagnostics use the syntax/lexical ranges from [doc/spec/22.error_handling_and_diagnostics.md](../../spec/22.error_handling_and_diagnostics.md).
+Frontend diagnostics use the syntax/lexical ranges from [doc/spec/22.error_handling_and_diagnostics.md](../../../spec/22.error_handling_and_diagnostics.md).
 
 | Diagnostic Class | Phase | Example |
 |---|---|---|
@@ -474,7 +476,7 @@ This design keeps frontend output source-faithful while avoiding semantic commit
 
 ## Affected Modules
 
-現時点では Rust crate 構成が未確定のため、想定モジュール名を以下に置く。
+The Rust crate layout is not finalized. Expected module specs include:
 
 - `doc/design/mizar-frontend/source.md` — source loading, UTF-8 validation, line map
 - `doc/design/mizar-frontend/preprocess.md` — comments, doc comments, import pre-scan
