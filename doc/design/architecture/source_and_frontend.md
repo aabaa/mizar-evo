@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Mizar Evo の frontend が、`.miz` source file を読み込み、comment / annotation / token / syntax tree に分解して、後続の module and name resolution に渡すまでの設計を定義する。
+Mizar Evo の frontend が、`.miz` source file を読み込み、comments / tokens / syntax tree に分解して、後続の module and name resolution に渡すまでの設計を定義する。
 
-この文書は、[00.pipeline_overview.md](./00.pipeline_overview.md) の Phase 1-3 を詳細化する。特に、Mizar Evo 特有の context-sensitive lexing、active lexicon、user-defined symbols、`.` の役割分担、parser-assisted string literal、doc comment / annotation attachment の境界を明確にする。
+この文書は、[00.pipeline_overview.md](./00.pipeline_overview.md) の Phase 1-3 を詳細化する。特に、Mizar Evo 特有の context-sensitive lexing、active lexicon、user-defined symbols、`.` の役割分担、string literal の完全 token 化、doc comment / annotation attachment の境界を明確にする。
 
 ## Context
 
@@ -24,7 +24,7 @@ Mizar Evo の frontend が、`.miz` source file を読み込み、comment / anno
 |---|---|---|---|
 | 1. Source Loading / Preprocessing | `.miz` files, `BuildPlan` | `SourceUnit`, `PreprocessedSource` | file validation, line map, comment/doc comment separation, import pre-scan |
 | 2. Lexing | `PreprocessedSource`, active lexicon seed | `TokenStream` | reserved tokens, user symbols, longest-match, source-preserving tokens |
-| 3. Parsing | `TokenStream` | `SurfaceAst` | syntax tree, parser-assisted string literals, annotation attachment, recovery |
+| 3. Parsing | `TokenStream` | `SurfaceAst` | syntax tree, annotation attachment, recovery |
 
 ## Design Decisions
 
@@ -35,7 +35,7 @@ The frontend must not perform semantic name resolution or type checking.
 It may:
 
 - validate UTF-8 and code-region ASCII constraints;
-- identify comments, doc comments, and raw annotations;
+- identify comments and doc comments;
 - pre-scan import declarations enough to request an active lexicon seed;
 - tokenize using reserved words, reserved symbols, and active user symbols;
 - parse source into a surface-shaped AST;
@@ -89,17 +89,21 @@ The lexer does not know whether a symbol use is legally applicable in a term/for
 
 The frontend may produce an ambiguous source-shaped representation such as `DottedPathOrSelection` where semantic scope is required. The resolver later commits to namespace or selector interpretation.
 
-### String Literals Are Parser-Assisted
+### String Literals Are Fully Tokenized by the Lexer
 
 `"` and `'` are admissible user-symbol characters, so the lexer cannot treat them as string delimiters globally.
 
-The parser enters a string-required lexical submode only at grammar positions that explicitly require a string literal, such as:
+The frontend still produces a complete `TokenStream` before parsing. To do this safely, the lexer uses a small grammar-derived `StringPositionRecognizer` that recognizes string-required positions without requiring parser callbacks.
+
+String literals are recognized only at grammar positions that explicitly require a string literal, such as:
 
 - annotation arguments like `@latex("...")`;
 - operator declaration arguments such as `infix_operator("+", left, 80)`;
 - future grammar positions registered as string-valued arguments.
 
 Outside these positions, quote characters remain ordinary symbol characters governed by the active lexicon and longest-match rule.
+
+The parser consumes already-tokenized `StringLiteral` tokens. It never drives the lexer cursor directly.
 
 ### Comments and Doc Comments Are Source Metadata
 
@@ -110,11 +114,13 @@ Comments are removed from lexical input, but they are not discarded.
 - doc comment attachment remains syntactic and may later be rejected if the target is not documentable;
 - structured doc tags are parsed enough to preserve tag name, raw arguments, and source spans.
 
-### Annotations Are Parsed but Semantically Neutral
+### Annotations Are Parser-Owned Syntax
 
 Annotations are part of the surface syntax and must preserve source location and raw arguments.
 
-The frontend validates annotation shape and known lexical forms, but semantic effects are deferred:
+Preprocessing does not collect annotations into a separate metadata channel. Annotation tokens remain in `lexical_text`, are emitted into `TokenStream`, and are parsed by the parser into `SurfaceAst` annotation nodes.
+
+The parser validates annotation syntax, but semantic effects are deferred:
 
 - `@[...]` library annotations attach to items as raw library labels;
 - `@latex`, `@proof_hint`, `@show_*`, `@eval` are represented as annotation nodes;
@@ -166,7 +172,7 @@ Responsibilities:
 - validate code-region ASCII while allowing Unicode in comments and annotations;
 - identify and remove ordinary comments from lexical input;
 - preserve doc comments with source spans;
-- collect raw annotation regions;
+- preserve annotation syntax in lexical input for parser ownership;
 - shallow-scan top-level imports;
 - preserve exact mapping from lexical text back to source ranges.
 
@@ -174,7 +180,6 @@ Failure examples:
 
 - unterminated block comment;
 - illegal non-ASCII character in code region;
-- malformed annotation opener that cannot be tokenized;
 - import pre-scan failure that prevents active lexicon construction.
 
 ### Step 3: Build ActiveLexiconSeed
@@ -214,6 +219,7 @@ Responsibilities:
 - emit reserved words and reserved special symbols;
 - emit user-defined symbols under longest-match;
 - emit identifiers and numerals;
+- emit `StringLiteral` tokens at string-required positions;
 - preserve source spans and original spelling;
 - expose lexical diagnostics without losing recoverable tokens.
 
@@ -221,14 +227,13 @@ Failure examples:
 
 - unknown or malformed token sequence;
 - invalid numeral form;
-- annotation token malformed at lexical level.
+- malformed string literal in a string-required position.
 
 ### Step 5: Parse
 
 Input:
 
-- `TokenStream`;
-- parser access to string-required lexical submode.
+- `TokenStream`.
 
 Output:
 
@@ -247,7 +252,7 @@ Failure examples:
 - unexpected token;
 - unmatched delimiter;
 - missing `end`;
-- string literal expected but not found in a string-required position.
+- expected string literal token is missing.
 
 ## Interface Definitions
 
@@ -273,7 +278,6 @@ struct PreprocessedSource {
     lexical_text: LexicalText,
     comments: Vec<Comment>,
     doc_comments: Vec<DocComment>,
-    raw_annotations: Vec<RawAnnotation>,
     import_stubs: Vec<ImportStub>,
     source_map: LexicalSourceMap,
 }
@@ -342,7 +346,7 @@ enum TokenKind {
 }
 ```
 
-`StringLiteral` appears only when the parser requests string lexing at a string-required position.
+`StringLiteral` appears only where the lexer recognizes a grammar-defined string-required position.
 
 ### SurfaceAst
 
@@ -385,7 +389,8 @@ Parser recovery:
 - synchronizes at `;`, `end`, `definition`, `registration`, `theorem`, `lemma`, `proof`, `algorithm`, and EOF;
 - creates explicit error nodes where a construct is missing;
 - avoids creating fake identifiers or fake resolved symbols;
-- keeps doc comments and annotations near their original source location, even if attachment fails.
+- keeps doc comments near their original source location, even if attachment fails.
+- keeps malformed annotations as syntax-level error nodes when possible.
 
 Recovered AST nodes must be marked so later phases can skip or degrade gracefully.
 
@@ -453,16 +458,16 @@ This fails when variable shadowing or term context determines the correct interp
 
 Always lex `'...'` and `"..."` as string literals.
 
-This would conflict with user symbols such as postfix inverse notation. The adopted parser-assisted submode recognizes string literals only at grammar positions that require them.
+This would conflict with user symbols such as postfix inverse notation. The adopted contextual lexer recognizes string literals only at grammar positions that require them while still producing a complete `TokenStream` before parsing.
 
 ## Adopted Approach
 
 Use a staged frontend:
 
 1. load source and build source mapping;
-2. preprocess comments, doc comments, raw annotations, and shallow imports;
+2. preprocess comments, doc comments, and shallow imports;
 3. build an active lexicon seed from shallow imports and dependency exports;
-4. lex with longest-match against reserved and active symbols;
+4. lex with longest-match against reserved and active symbols, including contextual string literal recognition;
 5. parse into source-shaped `SurfaceAst` with explicit recovery nodes.
 
 This design keeps frontend output source-faithful while avoiding semantic commitments that belong to module resolution and type checking.
@@ -472,7 +477,7 @@ This design keeps frontend output source-faithful while avoiding semantic commit
 現時点では Rust crate 構成が未確定のため、想定モジュール名を以下に置く。
 
 - `doc/design/mizar-frontend/source.md` — source loading, UTF-8 validation, line map
-- `doc/design/mizar-frontend/preprocess.md` — comments, doc comments, raw annotations, import pre-scan
+- `doc/design/mizar-frontend/preprocess.md` — comments, doc comments, import pre-scan
 - `doc/design/mizar-frontend/lexicon.md` — active lexicon seed and longest-match tables
 - `doc/design/mizar-frontend/lexer.md` — tokenization
 - `doc/design/mizar-frontend/parser.md` — parser and recovery
@@ -487,6 +492,7 @@ This design keeps frontend output source-faithful while avoiding semantic commit
 - Import pre-scan is intentionally incomplete and cannot replace module resolution.
 - Active lexicon can affect token boundaries, so tokenization depends on dependency export hashes.
 - The lexer recognizes compound reserved tokens and active user symbols, but not semantic selector/namespace roles.
-- The parser may request string literal lexing only at grammar positions that explicitly require strings.
+- The lexer emits complete `StringLiteral` tokens only at grammar positions that explicitly require strings.
+- The parser owns annotation syntax and attachment; preprocessing does not collect annotations as a separate metadata channel.
 - `SurfaceAst` is source-shaped and may contain recovery nodes; later semantic phases must tolerate or reject these explicitly.
 - Frontend artifacts are internal compiler data, not stable public build artifacts.

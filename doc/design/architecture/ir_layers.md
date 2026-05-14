@@ -150,7 +150,6 @@ struct PreprocessedSource {
     lexical_text: LexicalText,
     comments: Vec<Comment>,
     doc_comments: Vec<DocComment>,
-    raw_annotations: Vec<RawAnnotation>,
     import_stubs: Vec<ImportStub>,
 }
 ```
@@ -159,7 +158,6 @@ Owns:
 
 - comment-stripped lexical text or equivalent text mapping
 - doc comment blocks
-- raw annotation tokens that can be attached after parsing
 - import pre-scan result sufficient to build active lexicon seeds
 
 Does not own:
@@ -167,10 +165,12 @@ Does not own:
 - fully resolved imports
 - token classification that depends on final active lexicon
 - AST attachment of doc comments
+- annotation syntax ownership
 
 Notes:
 
 - preprocessing must preserve source mapping exactly enough for diagnostics;
+- annotations remain in lexical text and are owned by parser syntax;
 - import pre-scan is intentionally shallow and cannot perform semantic name resolution.
 
 ### TokenStream

@@ -13,7 +13,6 @@ Mizar Evo における**推論責務の切り分け**を定義する。
 - [doc/spec/20.algorithm_and_verification.md](../../spec/20.algorithm_and_verification.md) — algorithm verification と verification condition
 - [doc/spec/21.source_code_annotation_and_atp.md](../../spec/21.source_code_annotation_and_atp.md) — annotation と ATP integration
 - [doc/spec/23.package_management_and_build_system.md](../../spec/23.package_management_and_build_system.md) — build lifecycle, cluster-db, artifact output
-- [doc/idea/property_verification_and_atp.md](../../idea/property_verification_and_atp.md) — 最小カーネル設計の初期アイデア
 
 ### Pipeline Position
 
