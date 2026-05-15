@@ -117,7 +117,7 @@ Generated spans は best available source anchor and reason を指す origin を
 1. `LineMap` source text length に対して range を validate する。
 2. `line_starts` を binary search して start and end lines を locate する。
 3. Line start から各 offset まで Unicode scalar values を count する。
-4. Diagnostics/LSP adapters が protocol requirements に合わせて format できるよう、one-based lines and zero-based columns を返す。
+4. Diagnostics、artifacts、CLI formatting のため one-based lines and one-based columns を返す。
 
 LSP conversion は protocol の UTF-16 position rules を `mizar-lsp` bridge で apply しなければならない。この module は source-stable coordinates を expose する。
 

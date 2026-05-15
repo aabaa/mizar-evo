@@ -117,7 +117,7 @@ Generated spans must include an origin that points to the best available source 
 1. Validate the range against the `LineMap` source text length.
 2. Locate start and end lines by binary searching `line_starts`.
 3. Count Unicode scalar values from the line start to each offset.
-4. Return one-based lines and zero-based columns for diagnostics/LSP adapters to format as required by their protocol.
+4. Return one-based lines and one-based columns for diagnostics, artifacts, and CLI formatting.
 
 LSP conversion must apply the protocol's UTF-16 position rules in the `mizar-lsp` bridge, not inside this module. This module exposes source-stable coordinates.
 

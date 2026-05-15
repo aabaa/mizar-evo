@@ -14,7 +14,7 @@
 pub struct BuildSnapshot {
     pub id: BuildSnapshotId,
     pub workspace_root: WorkspaceRoot,
-    pub sources: Vec<SourceVersion>,
+    pub source_versions: Vec<SourceVersion>,
     pub dependency_artifacts: Vec<DependencyArtifactRef>,
     pub lockfile_hash: Hash,
     pub toolchain: ToolchainInfo,
