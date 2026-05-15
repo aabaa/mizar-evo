@@ -23,7 +23,7 @@ Architecture documents are numbered by reading order and design dependency, not 
 | [01.ir_layers.md](./01.ir_layers.md) | All | IR ownership boundaries and stability rules across pipeline phases | Draft |
 | [02.source_and_frontend.md](./02.source_and_frontend.md) | 1-3 | Source loading, preprocessing, lexing, and parsing boundaries | Draft |
 | [03.module_and_symbol_resolution.md](./03.module_and_symbol_resolution.md) | 0, 4-5 | Package, module, namespace, label, and symbol table resolution | Draft |
-| `04.type_and_registration_resolution.md` | 6-7 | Type checking, cluster database, and resolution traces | Planned |
+| [04.type_and_registration_resolution.md](./04.type_and_registration_resolution.md) | 6-7 | Type checking, cluster database, and resolution traces | Draft |
 | `05.overload_resolution.md` | 8 | Candidate selection, subsumption DAG, and `qua` insertion | Planned |
 | `06.elaboration_and_core_ir.md` | 9 | Lowering surface language into core logic | Planned |
 | `07.vc_generation.md` | 10-12 | Algorithm verification preparation and obligation generation | Planned |
