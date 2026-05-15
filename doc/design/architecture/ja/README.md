@@ -15,15 +15,24 @@ module-level spec（`doc/design/<crate>/<module>.md`）が個別の Rust source 
 
 ## Index
 
+Architecture documents は、厳密な pipeline phase ではなく、読み順と設計依存順で番号付けする。未作成の番号付き文書は planned slot として残す。
+
 | Document | Pipeline Phase | Description | Status |
 |---|---:|---|---|
 | [00.pipeline_overview.md](./00.pipeline_overview.md) | All | source file から verified artifact までの end-to-end pipeline | Draft |
-| [ir_layers.md](./ir_layers.md) | All | pipeline phase 間の IR ownership boundary と安定性ルール | Draft |
-| [source_and_frontend.md](./source_and_frontend.md) | 1-3 | source loading, preprocessing, lexing, parsing の境界 | Draft |
-| [module_and_symbol_resolution.md](./module_and_symbol_resolution.md) | 0, 4-5 | package、module、namespace、label、symbol table resolution | Draft |
-| [reasoning_boundary.md](./reasoning_boundary.md) | 12-14 | Mizar、ATP backend、kernel の reasoning responsibility split | Draft |
-| [atp_interface_protocol.md](./atp_interface_protocol.md) | 13 | ATP problem format と encoding strategy | Draft |
-| [atp_backend_integration.md](./atp_backend_integration.md) | 13 | 外部 ATP process execution、timeout handling、certificate collection | Draft |
+| [01.ir_layers.md](./01.ir_layers.md) | All | pipeline phase 間の IR ownership boundary と安定性ルール | Draft |
+| [02.source_and_frontend.md](./02.source_and_frontend.md) | 1-3 | source loading, preprocessing, lexing, parsing の境界 | Draft |
+| [03.module_and_symbol_resolution.md](./03.module_and_symbol_resolution.md) | 0, 4-5 | package、module、namespace、label、symbol table resolution | Draft |
+| `04.type_and_registration_resolution.md` | 6-7 | type checking、cluster database、resolution traces | Planned |
+| `05.overload_resolution.md` | 8 | candidate selection、subsumption DAG、`qua` insertion | Planned |
+| `06.elaboration_and_core_ir.md` | 9 | surface language から core logic への lowering | Planned |
+| `07.vc_generation.md` | 10-12 | algorithm verification preparation and obligation generation | Planned |
+| [08.reasoning_boundary.md](./08.reasoning_boundary.md) | 12-14 | Mizar、ATP backend、kernel の reasoning responsibility split | Draft |
+| [09.atp_interface_protocol.md](./09.atp_interface_protocol.md) | 13 | ATP problem format と encoding strategy | Draft |
+| [10.atp_backend_integration.md](./10.atp_backend_integration.md) | 13 | 外部 ATP process execution、timeout handling、certificate collection | Draft |
+| `11.artifact_and_incremental_build.md` | 15 | artifact schema、cache update、reproducibility | Planned |
+| `12.diagnostics_and_lsp.md` | All, 15 | diagnostics、metadata、IDE integration | Planned |
+| `13.documentation_and_extraction.md` | 16 | documentation generation and code extraction | Planned |
 
 `00.pipeline_overview.md` はこのディレクトリの親文書である。他の architecture 文書は、自分がどの pipeline phase を詳細化するかを明記し、Context section から overview へ link する。
 

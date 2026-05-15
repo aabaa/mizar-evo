@@ -15,15 +15,24 @@ While module-level specs (`doc/design/<crate>/<module>.md`) describe individual 
 
 ## Index
 
+Architecture documents are numbered by reading order and design dependency, not strictly by pipeline phase. Missing numbered documents are planned slots.
+
 | Document | Pipeline Phase | Description | Status |
 |---|---:|---|---|
 | [00.pipeline_overview.md](./00.pipeline_overview.md) | All | End-to-end pipeline from source files to verified artifacts | Draft |
-| [ir_layers.md](./ir_layers.md) | All | IR ownership boundaries and stability rules across pipeline phases | Draft |
-| [source_and_frontend.md](./source_and_frontend.md) | 1-3 | Source loading, preprocessing, lexing, and parsing boundaries | Draft |
-| [module_and_symbol_resolution.md](./module_and_symbol_resolution.md) | 0, 4-5 | Package, module, namespace, label, and symbol table resolution | Draft |
-| [reasoning_boundary.md](./reasoning_boundary.md) | 12-14 | Reasoning responsibility split between Mizar, ATP backends, and the kernel | Draft |
-| [atp_interface_protocol.md](./atp_interface_protocol.md) | 13 | ATP problem formats and encoding strategy | Draft |
-| [atp_backend_integration.md](./atp_backend_integration.md) | 13 | External ATP process execution, timeout handling, and certificate collection | Draft |
+| [01.ir_layers.md](./01.ir_layers.md) | All | IR ownership boundaries and stability rules across pipeline phases | Draft |
+| [02.source_and_frontend.md](./02.source_and_frontend.md) | 1-3 | Source loading, preprocessing, lexing, and parsing boundaries | Draft |
+| [03.module_and_symbol_resolution.md](./03.module_and_symbol_resolution.md) | 0, 4-5 | Package, module, namespace, label, and symbol table resolution | Draft |
+| `04.type_and_registration_resolution.md` | 6-7 | Type checking, cluster database, and resolution traces | Planned |
+| `05.overload_resolution.md` | 8 | Candidate selection, subsumption DAG, and `qua` insertion | Planned |
+| `06.elaboration_and_core_ir.md` | 9 | Lowering surface language into core logic | Planned |
+| `07.vc_generation.md` | 10-12 | Algorithm verification preparation and obligation generation | Planned |
+| [08.reasoning_boundary.md](./08.reasoning_boundary.md) | 12-14 | Reasoning responsibility split between Mizar, ATP backends, and the kernel | Draft |
+| [09.atp_interface_protocol.md](./09.atp_interface_protocol.md) | 13 | ATP problem formats and encoding strategy | Draft |
+| [10.atp_backend_integration.md](./10.atp_backend_integration.md) | 13 | External ATP process execution, timeout handling, and certificate collection | Draft |
+| `11.artifact_and_incremental_build.md` | 15 | Artifact schema, cache update, and reproducibility | Planned |
+| `12.diagnostics_and_lsp.md` | All, 15 | Diagnostics, metadata, and IDE integration | Planned |
+| `13.documentation_and_extraction.md` | 16 | Documentation generation and code extraction | Planned |
 
 `00.pipeline_overview.md` is the parent document for this directory. Other architecture documents should state which pipeline phase(s) they refine and should link back to the overview in their Context section.
 
