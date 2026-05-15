@@ -31,7 +31,7 @@ Architecture documents は、厳密な pipeline phase ではなく、読み順�
 | [09.atp_interface_protocol.md](./09.atp_interface_protocol.md) | 13 | ATP problem format と encoding strategy | Draft |
 | [10.atp_backend_integration.md](./10.atp_backend_integration.md) | 13 | 外部 ATP process execution、timeout handling、certificate collection | Draft |
 | [11.artifact_and_incremental_build.md](./11.artifact_and_incremental_build.md) | 15 | artifact schema、cache update、reproducibility | Draft |
-| `12.diagnostics_and_lsp.md` | All, 15 | diagnostics、metadata、IDE integration | Planned |
+| [12.diagnostics_and_lsp.md](./12.diagnostics_and_lsp.md) | All, 15 | diagnostics、metadata、IDE integration | Draft |
 | `13.documentation_and_extraction.md` | 16 | documentation generation and code extraction | Planned |
 | `14.parallel_verification_and_scheduling.md` | 0, 10-15 | verification task graph、parallel scheduling、cancellation、deterministic result ordering | Planned |
 
