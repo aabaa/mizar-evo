@@ -25,7 +25,7 @@ Documents are numbered by implementation dependency order. Missing numbered docu
 | [00.internal_overview.md](./00.internal_overview.md) | All | Internal design scope, crate/service boundaries, and relationship to architecture documents | Draft |
 | [01.compiler_driver_and_pipeline_scheduler.md](./01.compiler_driver_and_pipeline_scheduler.md) | 0-16 | Compiler driver, task graph scheduler, phase services, cancellation, cache lookup, diagnostics, and artifact commit orchestration | Draft |
 | [02.artifact_store_cache_key_and_manifest.md](./02.artifact_store_cache_key_and_manifest.md) | 15 | Artifact store, cache key construction, manifest transactions, and reproducible write protocol | Draft |
-| `03.diagnostics_model_and_lsp_bridge.md` | All, 15 | Diagnostic registry, aggregation, explanation handles, LSP snapshot bridge, and editor freshness model | Planned |
+| [03.diagnostics_model_and_lsp_bridge.md](./03.diagnostics_model_and_lsp_bridge.md) | All, 15 | Diagnostic registry, aggregation, explanation handles, LSP snapshot bridge, and editor freshness model | Draft |
 | `04.atp_portfolio_and_kernel_check_integration.md` | 13-14 | ATP portfolio execution, backend evidence selection, proof witness storage, and kernel check scheduling | Planned |
 | `05.documentation_extraction.md` | 16 | Documentation extraction inputs, render model, code extraction boundary, and artifact consumers | Planned |
 
