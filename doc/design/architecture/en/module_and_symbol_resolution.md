@@ -1,0 +1,491 @@
+# Architecture: Module and Symbol Resolution
+
+> Canonical language: English. Japanese companion: [../ja/module_and_symbol_resolution.md](../ja/module_and_symbol_resolution.md).
+
+## Purpose
+
+This document defines how Mizar Evo resolves package modules, imports, namespaces, labels, and symbol identities after parsing.
+
+It refines phases 0, 4, and 5 of [00.pipeline_overview.md](./00.pipeline_overview.md). In particular, it defines the boundary between frontend syntax, module graph construction, name resolution, and signature collection.
+
+## Context
+
+- [00.pipeline_overview.md](./00.pipeline_overview.md) — overall pipeline; this document refines phases 0, 4, and 5
+- [ir_layers.md](./ir_layers.md) — `SurfaceAst`, `ResolvedAst`, and `SymbolEnv` ownership
+- [source_and_frontend.md](./source_and_frontend.md) — import pre-scan, active lexicon seed, parser boundary
+- [doc/spec/en/11.symbol_management.md](../../../spec/en/11.symbol_management.md) — symbol visibility, synonyms, antonyms, and import conflict rules
+- [doc/spec/en/12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md) — module paths, namespace roots, imports, exports, and FQNs
+- [doc/spec/en/16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md) — theorem labels, proof labels, and citations
+- [doc/spec/en/19.overload_resolution.md](../../../spec/en/19.overload_resolution.md) — overload candidate selection after name resolution
+- [doc/spec/en/22.error_handling_and_diagnostics.md](../../../spec/en/22.error_handling_and_diagnostics.md) — resolver diagnostic classes
+- [doc/spec/en/23.package_management_and_build_system.md](../../../spec/en/23.package_management_and_build_system.md) — package graph, artifacts, cache, and LSP metadata
+
+### Pipeline Position
+
+| Phase | Input | Output | This Document Defines |
+|---|---|---|---|
+| 0. Package / Workspace Resolution | manifests, lockfile, source roots | `BuildPlan`, module index | package identity, source-root mapping, module graph baseline |
+| 4. Module / Name Resolution | `SurfaceAst`, import graph, symbol indexes | `ResolvedAst` | imports/exports, namespace paths, labels, item references, ambiguity policy |
+| 5. Signature Collection | `ResolvedAst` | `SymbolEnv` | declared item identities, visibility, export surface, resolver indexes |
+
+## Design Decisions
+
+### Resolver Is the First Semantic Owner
+
+The frontend produces source-shaped syntax. The resolver is the first phase allowed to attach stable semantic identity.
+
+It owns:
+
+- mapping parsed module paths to canonical `ModuleId`s;
+- validating imports, aliases, exports, visibility, and cycles;
+- resolving namespace-qualified names;
+- resolving labels and local references;
+- assigning stable `SymbolId`s to declared items;
+- building the `SymbolEnv` used by type checking and downstream files.
+
+It does not own:
+
+- choosing overload winners;
+- inferring expression types;
+- firing cluster registrations;
+- lowering syntax into core logic;
+- deciding proof validity.
+
+This keeps semantic identity available before type checking while preventing the resolver from depending on checker-specific facts.
+
+### Package Planning and Module Resolution Are Separate but Coupled
+
+Package planning resolves package versions, roots, editions, and verifier settings. Module resolution uses that plan to map source files and import paths to modules.
+
+The package planner produces a package-level view:
+
+- package ids and package names;
+- physical source roots;
+- dependency versions from the lockfile;
+- enabled language edition and verifier settings;
+- package visibility and registry/source metadata.
+
+The module resolver produces a module-level view:
+
+- canonical `ModuleId` for every source file;
+- `ModulePath` derived from the package namespace and file path;
+- import edges and re-export edges;
+- topological build order;
+- cycle diagnostics with edge spans.
+
+The same `BuildPlan` can be shared by batch verification, LSP sessions, and documentation builds. The resolver may refine it with per-source import edges discovered from parsed ASTs.
+
+### Import Resolution Has Two Passes
+
+Import resolution is intentionally split because lexing needs a shallow active lexicon before full semantic resolution.
+
+| Pass | Input | Output | Allowed Decisions |
+|---|---|---|---|
+| Import pre-scan | `PreprocessedSource` | `ImportStub`s | raw import syntax sufficient to load candidate exported symbols |
+| Semantic import resolution | `SurfaceAst`, `BuildPlan`, module index | `ResolvedImport`s | module existence, alias binding, visibility, re-export legality, conflict diagnostics |
+
+The active lexicon seed may contain symbolic names from candidate imports before the import is fully validated. Full validation happens during semantic import resolution, and invalid imports make later symbol uses unresolved even if tokenization succeeded.
+
+### Namespaces Resolve Before Symbols
+
+A qualified reference is resolved in two layers:
+
+1. Resolve the leading path as a module namespace or import alias.
+2. Resolve the final name or symbol spelling within that namespace's exported symbol table.
+
+For unqualified references, the resolver searches scopes in this order:
+
+1. local proof or block bindings;
+2. current definition or theorem parameters;
+3. current module private and public declarations;
+4. explicitly imported symbols;
+5. re-exported symbols made visible through imported facade modules;
+6. built-in prelude symbols, if the edition enables an implicit prelude.
+
+Local bindings shadow namespace components. If `G` is a local variable, `G.x` is parsed and resolved as selector access, not as namespace path `G.x`. If resolving selector access requires type information, the resolver records a `DottedTerm` node for the checker instead of guessing.
+
+### Symbol Identity Is Stable and Fully Qualified
+
+Every declared item receives a stable `SymbolId` and a canonical fully qualified name.
+
+The FQN is derived from:
+
+- package identity and namespace root;
+- module path;
+- declaration-local item name or symbolic spelling;
+- overload slot or declaration label when multiple declarations share a surface spelling;
+- synonym or antonym relationship metadata, when applicable.
+
+The FQN is for identity and artifacts. The user-facing spelling remains source-shaped and may use aliases, imported names, synonyms, or symbolic notation.
+
+### Signature Collection Is a Declaration Pass, Not Type Checking
+
+Signature collection registers declarations early enough that later declarations can refer to them, but it does not prove or infer their full semantics.
+
+It records:
+
+- structs, modes, attributes, predicates, functors, theorems, lemmas, schemes, registrations, templates, synonyms, and antonyms;
+- declaration parameters and syntactic arity;
+- visibility and export status;
+- defining source range and doc comment attachment;
+- symbolic spellings contributed to downstream active lexicons;
+- preliminary kind-specific signature data required by type checking.
+
+It rejects:
+
+- duplicate declarations that cannot form an overload set;
+- illegal private re-exports;
+- malformed synonym or antonym references at the name level;
+- declarations whose names cannot be represented in the active edition.
+
+It defers:
+
+- type correctness of signatures;
+- attribute consistency;
+- overload winner selection;
+- proof obligations for definitions, registrations, and theorems.
+
+### Exports Are Explicit Interface Projections
+
+A module's public interface is a projection of its declarations and re-export statements.
+
+The resolver builds two related tables:
+
+- `local_symbols`: all declarations visible inside the current module, including private items;
+- `exported_symbols`: public declarations and legal re-exports visible to importers.
+
+Private symbols never appear in `exported_symbols`. Re-exporting an imported module does not copy private items, and it records provenance so diagnostics and artifacts can point to the original defining module.
+
+### Label Resolution Is Scoped Separately from Item Resolution
+
+Labels are not ordinary symbols. The resolver keeps theorem/proof labels in dedicated label scopes.
+
+| Label Kind | Scope | Consumer |
+|---|---|---|
+| theorem / lemma label | module export surface if public, module-local if private | citations, artifacts, ATP premise selection |
+| definition label | defining item and generated obligations | checker, VC generation |
+| proof step label | current proof block and nested child blocks according to proof rules | proof justification |
+| registration label | registration database and resolution trace | checker, kernel replay, diagnostics |
+
+When a citation uses a qualified module path, the module part is resolved through namespace rules and the label part is resolved in that module's exported label table.
+
+### Resolver Output Must Preserve Recoverability
+
+The resolver should continue after recoverable name errors so that editors can still provide useful diagnostics and navigation.
+
+Unresolved or ambiguous nodes are represented explicitly in `ResolvedAst`, with attached diagnostics and candidate information when available. Later phases must skip or degrade these nodes instead of receiving fabricated symbol identities.
+
+## Resolution Pipeline
+
+### Step 1: Build Package and Module Indexes
+
+Input:
+
+- `mizar.pkg`, `mizar.workspace`, `mizar.lock`;
+- package source roots;
+- previously built dependency artifacts.
+
+Output:
+
+- `BuildPlan`;
+- `PackageIndex`;
+- initial `ModuleIndex`.
+
+Responsibilities:
+
+- assign `PackageId`s;
+- map namespace roots and package names to source roots or artifact roots;
+- discover source files in the current workspace;
+- load exported module summaries from dependencies;
+- reject duplicate canonical module paths.
+
+### Step 2: Resolve Import Graph
+
+Input:
+
+- parsed module directives from `SurfaceAst`;
+- package and module indexes;
+- dependency module summaries.
+
+Output:
+
+- `ImportGraph`;
+- `ResolvedImport`s per module;
+- topological module order.
+
+Responsibilities:
+
+- resolve absolute and relative module paths;
+- bind aliases;
+- validate import visibility;
+- detect cycles;
+- record import and re-export edges with source spans;
+- produce deterministic ordering for builds and artifacts.
+
+### Step 3: Build Local Declaration Shells
+
+Input:
+
+- `SurfaceAst`;
+- current module identity;
+- resolved imports.
+
+Output:
+
+- local declaration shells;
+- preliminary `SymbolId`s;
+- local label scopes.
+
+Responsibilities:
+
+- allocate identity for top-level and definition-block declarations;
+- register labels;
+- classify item kind and visibility;
+- record symbolic spellings for the module's export surface;
+- detect duplicate labels and illegal declarations.
+
+Declaration shells allow forward references where the language permits them, but contain only name-level information.
+
+### Step 4: Resolve Names Inside the Module
+
+Input:
+
+- `SurfaceAst`;
+- declaration shells;
+- imported exported symbols;
+- label scopes.
+
+Output:
+
+- `ResolvedAst`;
+- resolver diagnostics.
+
+Responsibilities:
+
+- resolve namespace paths, aliases, item names, and labels;
+- attach `SymbolRef`s to resolved item references;
+- attach `LabelRef`s to citations;
+- preserve ambiguous dotted syntax for checker-owned selector decisions;
+- record unresolved and ambiguous references explicitly.
+
+### Step 5: Collect Signature Environment
+
+Input:
+
+- `ResolvedAst`;
+- local declaration shells;
+- imported module summaries.
+
+Output:
+
+- `SymbolEnv`;
+- `ModuleSummary` for downstream modules;
+- active lexicon export contribution.
+
+Responsibilities:
+
+- build visible symbol tables for the checker;
+- build exported module summary for importers;
+- record synonym and antonym links at the name level;
+- record declaration dependency edges;
+- produce stable ordering for cache keys and artifact output.
+
+## Interface Definitions
+
+### Module Identity
+
+```rust
+struct ModuleId {
+    package: PackageId,
+    path: ModulePath,
+}
+
+struct ModulePath {
+    components: Vec<Ident>,
+}
+```
+
+`ModuleId` is canonical. Import aliases are local names that point to a `ModuleId`; they are never part of the canonical identity.
+
+### Resolved Import
+
+```rust
+struct ResolvedImport {
+    source_range: SourceRange,
+    module: ModuleId,
+    alias: Option<Ident>,
+    kind: ImportKind,
+    visibility: ImportVisibility,
+}
+
+enum ImportKind {
+    Use,
+    Reexport,
+}
+```
+
+### Symbol Identity
+
+```rust
+struct SymbolId {
+    module: ModuleId,
+    local: LocalSymbolId,
+}
+
+struct SymbolDef {
+    id: SymbolId,
+    fqn: FullyQualifiedName,
+    kind: SymbolKind,
+    visibility: Visibility,
+    primary_spelling: SymbolText,
+    source_range: SourceRange,
+    doc: Option<DocCommentId>,
+}
+```
+
+`primary_spelling` is the declaration spelling used for diagnostics. Synonyms and antonyms point to a target `SymbolId` through separate relation records.
+
+### Resolved AST References
+
+```rust
+enum NameResolution {
+    Resolved(SymbolRef),
+    ResolvedLabel(LabelRef),
+    Builtin(BuiltinId),
+    Ambiguous { candidates: Vec<ResolutionCandidate> },
+    Unresolved,
+    DeferredSelector { base: AstNodeId, member: Ident },
+}
+
+struct SymbolRef {
+    symbol: SymbolId,
+    source_range: SourceRange,
+    import_path: Option<ImportPathId>,
+}
+```
+
+`DeferredSelector` is used when the parser produced dotted syntax and the resolver can identify a term base but cannot decide the selector without type information.
+
+### Symbol Environment
+
+```rust
+struct SymbolEnv {
+    module: ModuleId,
+    imports: Vec<ResolvedImport>,
+    local_symbols: SymbolTable,
+    exported_symbols: SymbolTable,
+    labels: LabelTable,
+    namespace_index: NamespaceIndex,
+    declaration_dependencies: DependencyGraph<SymbolId>,
+}
+```
+
+`SymbolEnv` is the resolver/checker boundary. It should be sufficient for type checking without re-reading dependency source files.
+
+### Module Summary
+
+```rust
+struct ModuleSummary {
+    module: ModuleId,
+    source_hash: Hash,
+    exported_symbols: Vec<SymbolDef>,
+    exported_labels: Vec<LabelDef>,
+    exported_lexicon: Vec<LexiconEntry>,
+    reexports: Vec<ModuleId>,
+    schema_version: String,
+}
+```
+
+`ModuleSummary` is the dependency-facing projection used by downstream modules and incremental builds.
+
+## Diagnostics
+
+Resolver diagnostics are semantic diagnostics over source syntax.
+
+| Diagnostic Class | Example |
+|---|---|
+| module resolution | module not found, relative import escapes package root |
+| import graph | import cycle, duplicate alias |
+| visibility | private symbol imported or re-exported |
+| symbol lookup | undefined symbol, ambiguous unqualified name |
+| namespace lookup | unknown namespace segment, alias conflict |
+| label lookup | duplicate label, unresolved citation label |
+| declaration collection | duplicate declaration, invalid overload grouping |
+
+Diagnostics should include:
+
+- primary span at the use site;
+- secondary span for the declaration, import, or conflicting candidate;
+- machine-readable candidate lists for ambiguous names;
+- stable diagnostic codes from the resolver range in the external diagnostic spec.
+
+## Incrementality and Reproducibility
+
+Resolver cache keys include:
+
+- source hash;
+- parsed import directives;
+- dependency `ModuleSummary` hashes;
+- package lockfile hash;
+- language edition;
+- resolver schema version.
+
+A change invalidates:
+
+- the changed module's `ResolvedAst` and `SymbolEnv`;
+- downstream modules that import a changed exported symbol, exported label, re-export edge, or active lexicon entry;
+- downstream modules that depend on a changed alias or namespace facade;
+- type/checker phases that consume the changed `SymbolEnv`.
+
+Ordering must be deterministic:
+
+- imported modules are sorted by canonical `ModuleId` after source-order conflict checks;
+- exported symbol tables are serialized by FQN;
+- ambiguous candidate lists are sorted by canonical FQN and source range;
+- diagnostics with equal source ranges are ordered by diagnostic code and stable candidate key.
+
+## Alternatives Considered
+
+### Single Combined Frontend and Resolver
+
+Combining parsing and name resolution would simplify early implementation, but it would make active lexicon bootstrapping, syntax recovery, and LSP partial parsing harder. Keeping the parser semantic-free preserves a clean syntax boundary.
+
+### Checker-Owned Name Resolution
+
+Letting type checking resolve names would make selector and overload cases feel local, but it would blur symbol identity with type inference. The adopted design gives the checker a stable `SymbolEnv` while still allowing checker-owned decisions for selectors, coercions, and overload winners.
+
+### Fully Expanded Import Environments
+
+Flattening all imported symbols into one environment is simple, but it loses provenance and makes diagnostics, re-exports, and incremental invalidation coarse. The adopted design keeps provenance through `ModuleSummary`, `ResolvedImport`, and `import_path` references.
+
+## Adopted Approach
+
+Mizar Evo uses a two-level resolver.
+
+Package and module resolution establish canonical module identity and import graph order. Name and symbol resolution then converts `SurfaceAst` into `ResolvedAst` and builds `SymbolEnv` / `ModuleSummary` projections. The resolver records semantic identity without performing type checking or proof reasoning.
+
+This gives later phases stable inputs, makes dependency artifacts compact, and preserves enough provenance for diagnostics, LSP navigation, and reproducible builds.
+
+## Affected Modules
+
+Crate layout is not yet finalized. Expected module specs:
+
+- `doc/design/mizar-build/planner.md`
+- `doc/design/mizar-build/module_index.md`
+- `doc/design/mizar-resolve/imports.md`
+- `doc/design/mizar-resolve/names.md`
+- `doc/design/mizar-resolve/symbols.md`
+- `doc/design/mizar-resolve/labels.md`
+- `doc/design/mizar-resolve/env.md`
+- `doc/design/mizar-artifact/module_summary.md`
+- `doc/design/mizar-lsp/navigation.md`
+
+## Constraints and Assumptions
+
+- A `.miz` file is the unit of module identity.
+- Import cycles are rejected.
+- Canonical module identity does not depend on local aliases.
+- Resolver output may contain explicit unresolved or ambiguous nodes after recoverable diagnostics.
+- Private symbols are visible inside the defining module only.
+- Dependency source files do not need to be re-read when their `ModuleSummary` artifacts are available and schema-compatible.
+- Active lexicon construction may use candidate import summaries, but only semantic import resolution validates whether those imports are legal.

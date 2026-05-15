@@ -20,6 +20,7 @@ module-level spec（`doc/design/<crate>/<module>.md`）が個別の Rust source 
 | [00.pipeline_overview.md](./00.pipeline_overview.md) | All | source file から verified artifact までの end-to-end pipeline | Draft |
 | [ir_layers.md](./ir_layers.md) | All | pipeline phase 間の IR ownership boundary と安定性ルール | Draft |
 | [source_and_frontend.md](./source_and_frontend.md) | 1-3 | source loading, preprocessing, lexing, parsing の境界 | Draft |
+| [module_and_symbol_resolution.md](./module_and_symbol_resolution.md) | 0, 4-5 | package、module、namespace、label、symbol table resolution | Draft |
 | [reasoning_boundary.md](./reasoning_boundary.md) | 12-14 | Mizar、ATP backend、kernel の reasoning responsibility split | Draft |
 | [atp_interface_protocol.md](./atp_interface_protocol.md) | 13 | ATP problem format と encoding strategy | Draft |
 | [atp_backend_integration.md](./atp_backend_integration.md) | 13 | 外部 ATP process execution、timeout handling、certificate collection | Draft |

@@ -1,0 +1,491 @@
+# Architecture: Module and Symbol Resolution
+
+> Canonical language: English. English canonical version: [../en/module_and_symbol_resolution.md](../en/module_and_symbol_resolution.md).
+
+## 目的
+
+この文書は、Mizar Evo が parsing 後に package module、imports、namespaces、labels、symbol identities をどのように解決するかを定義する。
+
+これは [00.pipeline_overview.md](./00.pipeline_overview.md) の phase 0、4、5 を詳細化する。特に、frontend syntax、module graph construction、name resolution、signature collection の境界を定義する。
+
+## Context
+
+- [00.pipeline_overview.md](./00.pipeline_overview.md) — 全体 pipeline。この文書は phase 0、4、5 を詳細化する
+- [ir_layers.md](./ir_layers.md) — `SurfaceAst`、`ResolvedAst`、`SymbolEnv` の ownership
+- [source_and_frontend.md](./source_and_frontend.md) — import pre-scan、active lexicon seed、parser boundary
+- [doc/spec/en/11.symbol_management.md](../../../spec/en/11.symbol_management.md) — symbol visibility、synonym、antonym、import conflict rules
+- [doc/spec/en/12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md) — module paths、namespace roots、imports、exports、FQNs
+- [doc/spec/en/16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md) — theorem labels、proof labels、citations
+- [doc/spec/en/19.overload_resolution.md](../../../spec/en/19.overload_resolution.md) — name resolution 後の overload candidate selection
+- [doc/spec/en/22.error_handling_and_diagnostics.md](../../../spec/en/22.error_handling_and_diagnostics.md) — resolver diagnostic classes
+- [doc/spec/en/23.package_management_and_build_system.md](../../../spec/en/23.package_management_and_build_system.md) — package graph、artifacts、cache、LSP metadata
+
+### Pipeline Position
+
+| Phase | Input | Output | This Document Defines |
+|---|---|---|---|
+| 0. Package / Workspace Resolution | manifests, lockfile, source roots | `BuildPlan`, module index | package identity、source-root mapping、module graph baseline |
+| 4. Module / Name Resolution | `SurfaceAst`, import graph, symbol indexes | `ResolvedAst` | imports/exports、namespace paths、labels、item references、ambiguity policy |
+| 5. Signature Collection | `ResolvedAst` | `SymbolEnv` | declared item identities、visibility、export surface、resolver indexes |
+
+## Design Decisions
+
+### Resolver Is the First Semantic Owner
+
+Frontend は source-shaped syntax を生成する。resolver は stable semantic identity を付与してよい最初の phase である。
+
+Resolver は次を所有する。
+
+- parsed module path から canonical `ModuleId` への mapping
+- imports、aliases、exports、visibility、cycles の検証
+- namespace-qualified names の解決
+- labels と local references の解決
+- declared items への stable `SymbolId` の割り当て
+- type checking と downstream files が使う `SymbolEnv` の構築
+
+Resolver は次を所有しない。
+
+- overload winner の選択
+- expression type の推論
+- cluster registrations の発火
+- syntax から core logic への lowering
+- proof validity の判断
+
+これにより type checking 前に semantic identity を利用可能にしつつ、resolver が checker-specific facts に依存しないようにする。
+
+### Package Planning and Module Resolution Are Separate but Coupled
+
+Package planning は package versions、roots、editions、verifier settings を解決する。module resolution はその plan を使って source files と import paths を modules へ写像する。
+
+Package planner は package-level view を生成する。
+
+- package ids と package names
+- physical source roots
+- lockfile 由来の dependency versions
+- 有効な language edition と verifier settings
+- package visibility と registry/source metadata
+
+Module resolver は module-level view を生成する。
+
+- 各 source file の canonical `ModuleId`
+- package namespace と file path から導出される `ModulePath`
+- import edges と re-export edges
+- topological build order
+- edge spans 付きの cycle diagnostics
+
+同じ `BuildPlan` は batch verification、LSP sessions、documentation builds で共有できる。resolver は parsed AST から得た per-source import edges によってこれを詳細化してよい。
+
+### Import Resolution Has Two Passes
+
+Lexing は full semantic resolution より前に shallow active lexicon を必要とするため、import resolution は意図的に分割される。
+
+| Pass | Input | Output | Allowed Decisions |
+|---|---|---|---|
+| Import pre-scan | `PreprocessedSource` | `ImportStub`s | candidate exported symbols を読み込むために十分な raw import syntax |
+| Semantic import resolution | `SurfaceAst`, `BuildPlan`, module index | `ResolvedImport`s | module existence、alias binding、visibility、re-export legality、conflict diagnostics |
+
+Active lexicon seed は、import が完全に検証される前に candidate imports 由来の symbolic names を含んでもよい。完全な検証は semantic import resolution で行われる。不正な import は、tokenization が成功していても後続の symbol use を unresolved にする。
+
+### Namespaces Resolve Before Symbols
+
+Qualified reference は 2 層で解決する。
+
+1. leading path を module namespace または import alias として解決する。
+2. final name または symbol spelling を、その namespace の exported symbol table 内で解決する。
+
+Unqualified reference では resolver は次の順序で scope を検索する。
+
+1. local proof or block bindings
+2. current definition or theorem parameters
+3. current module の private and public declarations
+4. explicitly imported symbols
+5. imported facade modules を通じて可視になる re-exported symbols
+6. edition が implicit prelude を有効化している場合の built-in prelude symbols
+
+Local bindings は namespace components を shadow する。`G` が local variable なら、`G.x` は namespace path `G.x` ではなく selector access として parse/resolution される。selector access の解決に type information が必要な場合、resolver は推測せず checker 向けに `DottedTerm` node を記録する。
+
+### Symbol Identity Is Stable and Fully Qualified
+
+すべての declared item は stable `SymbolId` と canonical fully qualified name を受け取る。
+
+FQN は次から導出される。
+
+- package identity と namespace root
+- module path
+- declaration-local item name または symbolic spelling
+- 複数 declaration が同じ surface spelling を共有する場合の overload slot または declaration label
+- 必要に応じた synonym / antonym relationship metadata
+
+FQN は identity と artifacts のためのものである。ユーザー向け spelling は source-shaped のままであり、aliases、imported names、synonyms、symbolic notation を使ってよい。
+
+### Signature Collection Is a Declaration Pass, Not Type Checking
+
+Signature collection は、後続 declaration から参照できるよう十分早く declarations を登録するが、その完全な semantics を証明または推論しない。
+
+これは次を記録する。
+
+- structs、modes、attributes、predicates、functors、theorems、lemmas、schemes、registrations、templates、synonyms、antonyms
+- declaration parameters と syntactic arity
+- visibility と export status
+- defining source range と doc comment attachment
+- downstream active lexicons へ提供される symbolic spellings
+- type checking に必要な preliminary kind-specific signature data
+
+これは次を拒否する。
+
+- overload set を形成できない duplicate declarations
+- illegal private re-exports
+- name level で malformed な synonym / antonym references
+- active edition で表現できない名前を持つ declarations
+
+これは次を後続 phase へ委ねる。
+
+- signatures の type correctness
+- attribute consistency
+- overload winner selection
+- definitions、registrations、theorems の proof obligations
+
+### Exports Are Explicit Interface Projections
+
+Module の public interface は、その declarations と re-export statements の projection である。
+
+Resolver は関連する 2 つの table を構築する。
+
+- `local_symbols`: private items を含む、current module 内で可視なすべての declarations
+- `exported_symbols`: importers から可視な public declarations と legal re-exports
+
+Private symbols は `exported_symbols` に現れない。imported module の re-export は private items を copy せず、diagnostics と artifacts が original defining module を指せるよう provenance を記録する。
+
+### Label Resolution Is Scoped Separately from Item Resolution
+
+Labels は ordinary symbols ではない。resolver は theorem/proof labels を専用の label scopes に保持する。
+
+| Label Kind | Scope | Consumer |
+|---|---|---|
+| theorem / lemma label | public なら module export surface、private なら module-local | citations、artifacts、ATP premise selection |
+| definition label | defining item と generated obligations | checker、VC generation |
+| proof step label | proof rules に従う current proof block と nested child blocks | proof justification |
+| registration label | registration database と resolution trace | checker、kernel replay、diagnostics |
+
+Citation が qualified module path を使う場合、module 部分は namespace rules によって解決され、label 部分はその module の exported label table で解決される。
+
+### Resolver Output Must Preserve Recoverability
+
+Resolver は recoverable name errors の後も処理を継続し、editors が有用な diagnostics と navigation を提供できるようにするべきである。
+
+Unresolved または ambiguous nodes は、可能なら diagnostics と candidate information を伴って `ResolvedAst` 内に明示的に表現される。後続 phases は fabricated symbol identities を受け取るのではなく、これらの nodes を skip または degrade しなければならない。
+
+## Resolution Pipeline
+
+### Step 1: Build Package and Module Indexes
+
+Input:
+
+- `mizar.pkg`, `mizar.workspace`, `mizar.lock`
+- package source roots
+- previously built dependency artifacts
+
+Output:
+
+- `BuildPlan`
+- `PackageIndex`
+- initial `ModuleIndex`
+
+Responsibilities:
+
+- `PackageId`s を割り当てる
+- namespace roots と package names を source roots または artifact roots へ写像する
+- current workspace の source files を discover する
+- dependencies から exported module summaries を読み込む
+- duplicate canonical module paths を拒否する
+
+### Step 2: Resolve Import Graph
+
+Input:
+
+- `SurfaceAst` 由来の parsed module directives
+- package and module indexes
+- dependency module summaries
+
+Output:
+
+- `ImportGraph`
+- module ごとの `ResolvedImport`s
+- topological module order
+
+Responsibilities:
+
+- absolute and relative module paths を解決する
+- aliases を bind する
+- import visibility を検証する
+- cycles を検出する
+- source spans 付きで import and re-export edges を記録する
+- builds と artifacts のために deterministic ordering を生成する
+
+### Step 3: Build Local Declaration Shells
+
+Input:
+
+- `SurfaceAst`
+- current module identity
+- resolved imports
+
+Output:
+
+- local declaration shells
+- preliminary `SymbolId`s
+- local label scopes
+
+Responsibilities:
+
+- top-level and definition-block declarations の identity を割り当てる
+- labels を登録する
+- item kind と visibility を分類する
+- module の export surface に寄与する symbolic spellings を記録する
+- duplicate labels と illegal declarations を検出する
+
+Declaration shells は、言語が許す範囲で forward references を可能にするが、name-level information だけを含む。
+
+### Step 4: Resolve Names Inside the Module
+
+Input:
+
+- `SurfaceAst`
+- declaration shells
+- imported exported symbols
+- label scopes
+
+Output:
+
+- `ResolvedAst`
+- resolver diagnostics
+
+Responsibilities:
+
+- namespace paths、aliases、item names、labels を解決する
+- resolved item references に `SymbolRef`s を付与する
+- citations に `LabelRef`s を付与する
+- checker-owned selector decisions のために ambiguous dotted syntax を保持する
+- unresolved and ambiguous references を明示的に記録する
+
+### Step 5: Collect Signature Environment
+
+Input:
+
+- `ResolvedAst`
+- local declaration shells
+- imported module summaries
+
+Output:
+
+- `SymbolEnv`
+- downstream modules 向け `ModuleSummary`
+- active lexicon export contribution
+
+Responsibilities:
+
+- checker 向け visible symbol tables を構築する
+- importers 向け exported module summary を構築する
+- synonym and antonym links を name level で記録する
+- declaration dependency edges を記録する
+- cache keys と artifact output のために stable ordering を生成する
+
+## Interface Definitions
+
+### Module Identity
+
+```rust
+struct ModuleId {
+    package: PackageId,
+    path: ModulePath,
+}
+
+struct ModulePath {
+    components: Vec<Ident>,
+}
+```
+
+`ModuleId` は canonical である。Import aliases は `ModuleId` を指す local names であり、canonical identity の一部ではない。
+
+### Resolved Import
+
+```rust
+struct ResolvedImport {
+    source_range: SourceRange,
+    module: ModuleId,
+    alias: Option<Ident>,
+    kind: ImportKind,
+    visibility: ImportVisibility,
+}
+
+enum ImportKind {
+    Use,
+    Reexport,
+}
+```
+
+### Symbol Identity
+
+```rust
+struct SymbolId {
+    module: ModuleId,
+    local: LocalSymbolId,
+}
+
+struct SymbolDef {
+    id: SymbolId,
+    fqn: FullyQualifiedName,
+    kind: SymbolKind,
+    visibility: Visibility,
+    primary_spelling: SymbolText,
+    source_range: SourceRange,
+    doc: Option<DocCommentId>,
+}
+```
+
+`primary_spelling` は diagnostics に使う declaration spelling である。Synonyms と antonyms は別の relation records を通じて target `SymbolId` を指す。
+
+### Resolved AST References
+
+```rust
+enum NameResolution {
+    Resolved(SymbolRef),
+    ResolvedLabel(LabelRef),
+    Builtin(BuiltinId),
+    Ambiguous { candidates: Vec<ResolutionCandidate> },
+    Unresolved,
+    DeferredSelector { base: AstNodeId, member: Ident },
+}
+
+struct SymbolRef {
+    symbol: SymbolId,
+    source_range: SourceRange,
+    import_path: Option<ImportPathId>,
+}
+```
+
+`DeferredSelector` は、parser が dotted syntax を生成し、resolver が term base を識別できるが type information なしに selector を決定できない場合に使う。
+
+### Symbol Environment
+
+```rust
+struct SymbolEnv {
+    module: ModuleId,
+    imports: Vec<ResolvedImport>,
+    local_symbols: SymbolTable,
+    exported_symbols: SymbolTable,
+    labels: LabelTable,
+    namespace_index: NamespaceIndex,
+    declaration_dependencies: DependencyGraph<SymbolId>,
+}
+```
+
+`SymbolEnv` は resolver/checker boundary である。Dependency source files を再読込せずに type checking できるだけの情報を持つべきである。
+
+### Module Summary
+
+```rust
+struct ModuleSummary {
+    module: ModuleId,
+    source_hash: Hash,
+    exported_symbols: Vec<SymbolDef>,
+    exported_labels: Vec<LabelDef>,
+    exported_lexicon: Vec<LexiconEntry>,
+    reexports: Vec<ModuleId>,
+    schema_version: String,
+}
+```
+
+`ModuleSummary` は downstream modules と incremental builds が使う dependency-facing projection である。
+
+## Diagnostics
+
+Resolver diagnostics は source syntax 上の semantic diagnostics である。
+
+| Diagnostic Class | Example |
+|---|---|
+| module resolution | module not found、relative import escapes package root |
+| import graph | import cycle、duplicate alias |
+| visibility | private symbol imported or re-exported |
+| symbol lookup | undefined symbol、ambiguous unqualified name |
+| namespace lookup | unknown namespace segment、alias conflict |
+| label lookup | duplicate label、unresolved citation label |
+| declaration collection | duplicate declaration、invalid overload grouping |
+
+Diagnostics は次を含むべきである。
+
+- use site の primary span
+- declaration、import、conflicting candidate の secondary span
+- ambiguous names の machine-readable candidate lists
+- external diagnostic spec の resolver range に属する stable diagnostic codes
+
+## Incrementality and Reproducibility
+
+Resolver cache keys は次を含む。
+
+- source hash
+- parsed import directives
+- dependency `ModuleSummary` hashes
+- package lockfile hash
+- language edition
+- resolver schema version
+
+変更は次を invalidate する。
+
+- changed module の `ResolvedAst` と `SymbolEnv`
+- changed exported symbol、exported label、re-export edge、active lexicon entry を import する downstream modules
+- changed alias または namespace facade に依存する downstream modules
+- changed `SymbolEnv` を consume する type/checker phases
+
+Ordering は deterministic でなければならない。
+
+- source-order conflict checks 後、imported modules は canonical `ModuleId` で sort する
+- exported symbol tables は FQN で serialize する
+- ambiguous candidate lists は canonical FQN と source range で sort する
+- 同じ source range の diagnostics は diagnostic code と stable candidate key で order する
+
+## Alternatives Considered
+
+### Single Combined Frontend and Resolver
+
+Parsing と name resolution を結合すると初期実装は単純になるが、active lexicon bootstrapping、syntax recovery、LSP partial parsing が難しくなる。Parser を semantic-free に保つことで、明確な syntax boundary を維持する。
+
+### Checker-Owned Name Resolution
+
+Type checking に name resolution を持たせると selector と overload の局所性は高くなるが、symbol identity と type inference が混ざる。採用案では checker に stable `SymbolEnv` を与えつつ、selectors、coercions、overload winners については checker-owned decisions を残す。
+
+### Fully Expanded Import Environments
+
+すべての imported symbols を 1 つの environment に flatten するのは単純だが、provenance が失われ、diagnostics、re-exports、incremental invalidation が粗くなる。採用案では `ModuleSummary`、`ResolvedImport`、`import_path` references によって provenance を保持する。
+
+## Adopted Approach
+
+Mizar Evo は two-level resolver を採用する。
+
+Package and module resolution は canonical module identity と import graph order を確立する。その後、name and symbol resolution が `SurfaceAst` を `ResolvedAst` へ変換し、`SymbolEnv` / `ModuleSummary` projections を構築する。Resolver は semantic identity を記録するが、type checking や proof reasoning は行わない。
+
+これにより後続 phases に stable inputs を与え、dependency artifacts を compact に保ち、diagnostics、LSP navigation、reproducible builds のための provenance を保持できる。
+
+## Affected Modules
+
+Crate layout は未確定である。想定される module specs は次の通り。
+
+- `doc/design/mizar-build/planner.md`
+- `doc/design/mizar-build/module_index.md`
+- `doc/design/mizar-resolve/imports.md`
+- `doc/design/mizar-resolve/names.md`
+- `doc/design/mizar-resolve/symbols.md`
+- `doc/design/mizar-resolve/labels.md`
+- `doc/design/mizar-resolve/env.md`
+- `doc/design/mizar-artifact/module_summary.md`
+- `doc/design/mizar-lsp/navigation.md`
+
+## Constraints and Assumptions
+
+- `.miz` file は module identity の単位である。
+- Import cycles は rejected される。
+- Canonical module identity は local aliases に依存しない。
+- Resolver output は recoverable diagnostics 後に explicit unresolved or ambiguous nodes を含んでよい。
+- Private symbols は defining module 内だけで visible である。
+- Dependency source files は、schema-compatible な `ModuleSummary` artifacts が利用可能なら再読込する必要はない。
+- Active lexicon construction は candidate import summaries を使ってよいが、それらの imports が legal かどうかは semantic import resolution だけが検証する。

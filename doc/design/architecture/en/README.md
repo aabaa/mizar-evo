@@ -20,6 +20,7 @@ While module-level specs (`doc/design/<crate>/<module>.md`) describe individual 
 | [00.pipeline_overview.md](./00.pipeline_overview.md) | All | End-to-end pipeline from source files to verified artifacts | Draft |
 | [ir_layers.md](./ir_layers.md) | All | IR ownership boundaries and stability rules across pipeline phases | Draft |
 | [source_and_frontend.md](./source_and_frontend.md) | 1-3 | Source loading, preprocessing, lexing, and parsing boundaries | Draft |
+| [module_and_symbol_resolution.md](./module_and_symbol_resolution.md) | 0, 4-5 | Package, module, namespace, label, and symbol table resolution | Draft |
 | [reasoning_boundary.md](./reasoning_boundary.md) | 12-14 | Reasoning responsibility split between Mizar, ATP backends, and the kernel | Draft |
 | [atp_interface_protocol.md](./atp_interface_protocol.md) | 13 | ATP problem formats and encoding strategy | Draft |
 | [atp_backend_integration.md](./atp_backend_integration.md) | 13 | External ATP process execution, timeout handling, and certificate collection | Draft |
