@@ -7,3 +7,9 @@ Documentation maintenance policy:
 - Keep file names aligned across language directories whenever possible.
 - If an English document changes but the Japanese companion cannot be updated in the same change, explicitly note the reason and mark the Japanese document as needing synchronization.
 - When adding a new English documentation file in a bilingual area, add the corresponding Japanese companion or a clearly marked Japanese placeholder that links to the canonical English file.
+
+Commit message policy:
+
+- After editing source code or documentation, include a suggested commit message in the final response.
+- Prefer a concise Conventional Commits-style subject such as `docs: ...`, `fix: ...`, or `feat: ...`.
+- When the change is broad enough to need context, include an optional short body explaining the main changes.
