@@ -1,4 +1,6 @@
-Documentation maintenance policy:
+# Project Instructions
+
+## Documentation Maintenance
 
 - English is the canonical documentation language.
 - When updating bilingual documentation, maintain both the English canonical document and the Japanese companion document in the same change.
