@@ -26,7 +26,7 @@ Architecture documents are numbered by reading order and design dependency, not 
 | [04.type_and_registration_resolution.md](./04.type_and_registration_resolution.md) | 6-7 | Type checking, cluster database, and resolution traces | Draft |
 | [05.overload_resolution.md](./05.overload_resolution.md) | 8 | Candidate selection, subsumption DAG, and `qua` insertion | Draft |
 | [06.elaboration_and_core_ir.md](./06.elaboration_and_core_ir.md) | 9 | Lowering surface language into core logic | Draft |
-| `07.vc_generation.md` | 10-12 | Algorithm verification preparation and obligation generation | Planned |
+| [07.vc_generation.md](./07.vc_generation.md) | 10-12 | Algorithm verification preparation and obligation generation | Draft |
 | [08.reasoning_boundary.md](./08.reasoning_boundary.md) | 12-14 | Reasoning responsibility split between Mizar, ATP backends, and the kernel | Draft |
 | [09.atp_interface_protocol.md](./09.atp_interface_protocol.md) | 13 | ATP problem formats and encoding strategy | Draft |
 | [10.atp_backend_integration.md](./10.atp_backend_integration.md) | 13 | External ATP process execution, timeout handling, and certificate collection | Draft |

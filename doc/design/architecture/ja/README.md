@@ -26,7 +26,7 @@ Architecture documents は、厳密な pipeline phase ではなく、読み順�
 | [04.type_and_registration_resolution.md](./04.type_and_registration_resolution.md) | 6-7 | type checking、cluster database、resolution traces | Draft |
 | [05.overload_resolution.md](./05.overload_resolution.md) | 8 | candidate selection、subsumption DAG、`qua` insertion | Draft |
 | [06.elaboration_and_core_ir.md](./06.elaboration_and_core_ir.md) | 9 | surface language から core logic への lowering | Draft |
-| `07.vc_generation.md` | 10-12 | algorithm verification preparation and obligation generation | Planned |
+| [07.vc_generation.md](./07.vc_generation.md) | 10-12 | algorithm verification preparation and obligation generation | Draft |
 | [08.reasoning_boundary.md](./08.reasoning_boundary.md) | 12-14 | Mizar、ATP backend、kernel の reasoning responsibility split | Draft |
 | [09.atp_interface_protocol.md](./09.atp_interface_protocol.md) | 13 | ATP problem format と encoding strategy | Draft |
 | [10.atp_backend_integration.md](./10.atp_backend_integration.md) | 13 | 外部 ATP process execution、timeout handling、certificate collection | Draft |
