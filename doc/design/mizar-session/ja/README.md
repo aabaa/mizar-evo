@@ -20,16 +20,11 @@ Task scheduling、IR storage、artifact publication、diagnostic aggregation は
 
 | Document | Maps To | Description | Status |
 |---|---|---|---|
+| [ids.md](./ids.md) | `crates/mizar-session/src/ids.rs` | Opaque session identifiers、ordering、serialization boundaries、compatibility rules | Draft |
+| [source.md](./source.md) | `crates/mizar-session/src/source.rs` | Source loading records、normalized paths、source hashes、open-buffer source text | Draft |
 | [snapshot.md](./snapshot.md) | `crates/mizar-session/src/snapshot.rs` | `BuildSnapshot`、`SourceVersion`、snapshot identity、retention、freshness contracts | Draft |
 | [source_map.md](./source_map.md) | `crates/mizar-session/src/source_map.rs` | `LineMap`、source ranges、preprocessing maps、generated spans、coordinate conversion | Draft |
-
-## Planned Documents
-
-| Document | Maps To | Description |
-|---|---|---|
-| `source.rs` | `crates/mizar-session/src/source.rs` | Source loading records、normalized paths、source hashes、open-buffer source text |
-| `retention.rs` | `crates/mizar-session/src/retention.rs` | Snapshot leases、LSP/watch retention、garbage-collection policy |
-| `ids.rs` | `crates/mizar-session/src/ids.rs` | Downstream crates が共有する opaque session identifiers |
+| [retention.md](./retention.md) | `crates/mizar-session/src/retention.rs` | Snapshot leases、LSP/watch retention、garbage-collection policy | Draft |
 
 ## Crate Boundary
 
