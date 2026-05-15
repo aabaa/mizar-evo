@@ -69,7 +69,7 @@ The module resolver produces a module-level view:
 
 - canonical `ModuleId` for every source file;
 - `ModulePath` derived from the package namespace and file path;
-- import edges and re-export edges;
+- import edges and export edges;
 - topological build order;
 - cycle diagnostics with edge spans.
 
@@ -82,9 +82,11 @@ Import resolution is intentionally split because lexing needs a shallow active l
 | Pass | Input | Output | Allowed Decisions |
 |---|---|---|---|
 | Import pre-scan | `PreprocessedSource` | `ImportStub`s | raw import syntax sufficient to load candidate exported symbols |
-| Semantic import resolution | `SurfaceAst`, `BuildPlan`, module index | `ResolvedImport`s | module existence, alias binding, visibility, re-export legality, conflict diagnostics |
+| Semantic import/export resolution | `SurfaceAst`, `BuildPlan`, module index | `ResolvedImport`s, `ResolvedExport`s | module existence, alias binding, visibility, re-export legality, conflict diagnostics |
 
 The active lexicon seed may contain symbolic names from candidate imports before the import is fully validated. Full validation happens during semantic import resolution, and invalid imports make later symbol uses unresolved even if tokenization succeeded.
+
+Any token whose classification depends on a lexicon entry from a semantically invalid import must be marked with lexicon provenance. Batch verification treats those tokens as tainted and suppresses downstream semantic commitments that depend on them. LSP recovery may still use the tainted tokenization for navigation and follow-on diagnostics. A module-not-found import contributes no lexicon entries, because there is no candidate module summary to load.
 
 ### Namespaces Resolve Before Symbols
 
@@ -114,7 +116,7 @@ The FQN is derived from:
 - module path;
 - declaration-local item name or symbolic spelling;
 - overload slot or declaration label when multiple declarations share a surface spelling;
-- synonym or antonym relationship metadata, when applicable.
+- declaration-local identity for relation declarations such as synonyms and antonyms.
 
 The FQN is for identity and artifacts. The user-facing spelling remains source-shaped and may use aliases, imported names, synonyms, or symbolic notation.
 
@@ -210,7 +212,7 @@ Input:
 Output:
 
 - `ImportGraph`;
-- `ResolvedImport`s per module;
+- `ResolvedImport`s and `ResolvedExport`s per module;
 - topological module order.
 
 Responsibilities:
@@ -218,8 +220,9 @@ Responsibilities:
 - resolve absolute and relative module paths;
 - bind aliases;
 - validate import visibility;
+- validate export targets and private-item restrictions;
 - detect cycles;
-- record import and re-export edges with source spans;
+- record import and export edges with source spans;
 - produce deterministic ordering for builds and artifacts.
 
 ### Step 3: Build Local Declaration Shells
@@ -314,15 +317,27 @@ struct ResolvedImport {
     source_range: SourceRange,
     module: ModuleId,
     alias: Option<Ident>,
-    kind: ImportKind,
-    visibility: ImportVisibility,
-}
-
-enum ImportKind {
-    Use,
-    Reexport,
 }
 ```
+
+`ResolvedImport` represents an `import` directive only. It binds a dependency module into the current module's namespace and may introduce a local alias.
+
+### Resolved Export
+
+```rust
+struct ResolvedExport {
+    source_range: SourceRange,
+    target: ExportTarget,
+}
+
+enum ExportTarget {
+    Module(ModuleId),
+    ImportAlias(Ident, ModuleId),
+    Symbol(SymbolId),
+}
+```
+
+`ResolvedExport` represents an `export` directive. Exporting an alias records both the alias spelling and the canonical target module so artifacts remain stable if the local alias changes.
 
 ### Symbol Identity
 
@@ -372,15 +387,19 @@ struct SymbolRef {
 struct SymbolEnv {
     module: ModuleId,
     imports: Vec<ResolvedImport>,
+    exports: Vec<ResolvedExport>,
     local_symbols: SymbolTable,
     exported_symbols: SymbolTable,
+    visible_symbols: SymbolTable,
+    visible_labels: LabelTable,
     labels: LabelTable,
     namespace_index: NamespaceIndex,
+    module_summaries: ModuleSummaryIndex,
     declaration_dependencies: DependencyGraph<SymbolId>,
 }
 ```
 
-`SymbolEnv` is the resolver/checker boundary. It should be sufficient for type checking without re-reading dependency source files.
+`SymbolEnv` is the resolver/checker boundary. `visible_symbols` and `visible_labels` contain the current module's local entries plus all entries made visible by imports and legal re-exports. `module_summaries` is an in-memory index of loaded dependency summaries, keyed by `ModuleId`. Together these fields should be sufficient for type checking without re-reading dependency source files.
 
 ### Module Summary
 
@@ -418,6 +437,8 @@ Diagnostics should include:
 - secondary span for the declaration, import, or conflicting candidate;
 - machine-readable candidate lists for ambiguous names;
 - stable diagnostic codes from the resolver range in the external diagnostic spec.
+
+The current diagnostic specification defines syntax, type, overload/template, proof, and logical-inconsistency ranges, but does not yet allocate a dedicated name/module resolver range. Before implementation, [doc/spec/en/22.error_handling_and_diagnostics.md](../../../spec/en/22.error_handling_and_diagnostics.md) must either reserve resolver codes or explicitly place module/name diagnostics in an existing range.
 
 ## Incrementality and Reproducibility
 
