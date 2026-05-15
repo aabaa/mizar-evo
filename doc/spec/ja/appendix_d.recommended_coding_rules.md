@@ -1,6 +1,6 @@
 # 付録 D. 推奨されるコーディング ルール
 
-> Canonical language: English. English canonical version: [../appendix_d.recommended_coding_rules.md](../appendix_d.recommended_coding_rules.md).
+> Canonical language: English. English canonical version: [../en/appendix_d.recommended_coding_rules.md](../en/appendix_d.recommended_coding_rules.md).
 
 この付録では、Mizar Evolution source fileに対する非規範的なコーディングの推奨事項を示します。これらのルールは、可読性、証明の安定性、診断、ドキュメントの品質、および長期的な保守性を向上させることを目的としています。主な仕様を超える構文や検証要件は追加されません。
 

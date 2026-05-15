@@ -1,6 +1,6 @@
 # 付録 A. 文法概要
 
-> Canonical language: English. English canonical version: [../appendix_a.grammar_summary.md](../appendix_a.grammar_summary.md).
+> Canonical language: English. English canonical version: [../en/appendix_a.grammar_summary.md](../en/appendix_a.grammar_summary.md).
 
 この付録には、主要仕様全体で導入されている EBNF 生成と語彙規則が統合されています。セクション番号は、ルールが規範的に定義されている章と一致します。ここのテキストは参照の概要であり、再定義ではありません。
 

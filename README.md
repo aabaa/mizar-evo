@@ -31,10 +31,13 @@ mizar-evo/
 │
 ├── doc/
 │   ├── spec/              ← Language specification (external)
-│   │   ├── 00.index.md
-│   │   ├── 01.introduction.md
-│   │   ├── ...
-│   │   └── 17.clusters_and_registrations.md
+│   │   ├── README.md
+│   │   ├── en/            Canonical English language specs
+│   │   │   ├── 00.index.md
+│   │   │   ├── 01.introduction.md
+│   │   │   ├── ...
+│   │   │   └── 24.documentation_generation.md
+│   │   └── ja/            Japanese companion language specs
 │   │
 │   ├── design/            ← Implementation specification (internal)
 │   │   ├── README.md

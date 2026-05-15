@@ -9,11 +9,11 @@
 ## Context
 
 - [00.pipeline_overview.md](./00.pipeline_overview.md) — overall pipeline。この文書は phases 12-14 を詳細化する
-- [doc/spec/16.theorems_and_proofs.md](../../../spec/16.theorems_and_proofs.md) — proof syntax and `by` justification
-- [doc/spec/17.clusters_and_registrations.md](../../../spec/17.clusters_and_registrations.md) — clusters and registrations
-- [doc/spec/20.algorithm_and_verification.md](../../../spec/20.algorithm_and_verification.md) — algorithm verification and verification conditions
-- [doc/spec/21.source_code_annotation_and_atp.md](../../../spec/21.source_code_annotation_and_atp.md) — annotations and ATP integration
-- [doc/spec/23.package_management_and_build_system.md](../../../spec/23.package_management_and_build_system.md) — build lifecycle、cluster-db、artifact output
+- [doc/spec/en/16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md) — proof syntax and `by` justification
+- [doc/spec/en/17.clusters_and_registrations.md](../../../spec/en/17.clusters_and_registrations.md) — clusters and registrations
+- [doc/spec/en/20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md) — algorithm verification and verification conditions
+- [doc/spec/en/21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md) — annotations and ATP integration
+- [doc/spec/en/23.package_management_and_build_system.md](../../../spec/en/23.package_management_and_build_system.md) — build lifecycle、cluster-db、artifact output
 
 ### Pipeline Position
 

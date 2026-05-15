@@ -1,6 +1,6 @@
 # サンプルコード
 
-> Canonical language: English. English canonical version: [../sample_codes.md](../sample_codes.md).
+> Canonical language: English. English canonical version: [../en/sample_codes.md](../en/sample_codes.md).
 
 これらの例は、library のスケッチを説明するためのものです。それらは、その方法を示すことを目的としています。
 仕様の表面構文は適合します。省略された証明は

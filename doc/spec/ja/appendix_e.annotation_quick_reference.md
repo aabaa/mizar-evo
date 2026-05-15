@@ -1,6 +1,6 @@
 # 付録 E. 注釈クイックリファレンス
 
-> Canonical language: English. English canonical version: [../appendix_e.annotation_quick_reference.md](../appendix_e.annotation_quick_reference.md).
+> Canonical language: English. English canonical version: [../en/appendix_e.annotation_quick_reference.md](../en/appendix_e.annotation_quick_reference.md).
 
 この付録は、Mizar Evolution source fileで使用される注釈フォームに関する非標準のクイック リファレンスです。標準的な構文と意味論は、[第 2 章、§2.9](./02.lexical_structure.md#29-comments-and-annotations)、[第21章](./21.source_code_annotation_and_atp.md)、[第22章](./22.error_handling_and_diagnostics.md)、および [第 24 章、§24.1](./24.documentation_generation.md#241-documentation-comments-syntax) で定義されています。
 

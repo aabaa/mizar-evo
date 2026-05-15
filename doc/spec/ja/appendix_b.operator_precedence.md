@@ -1,6 +1,6 @@
 # 付録 B. 演算子の優先順位
 
-> Canonical language: English. English canonical version: [../appendix_b.operator_precedence.md](../appendix_b.operator_precedence.md).
+> Canonical language: English. English canonical version: [../en/appendix_b.operator_precedence.md](../en/appendix_b.operator_precedence.md).
 
 この付録では、用語の式と数式を解析するときに使用される優先順位と結合規則を要約します。規範的な定義は主要な章に残ります。シンボリック関手宣言は [第 10 章、§10.9](./10.functors.md#109-operator-precedence-and-associativity) および [第 13 章、§13.7](./13.term_expression.md#137-operator-precedence-and-associativity) で指定されます。式の優先順位は[第 14 章、§14.6](./14.formulas.md#146-precedence-and-associativity)で指定されます。
 

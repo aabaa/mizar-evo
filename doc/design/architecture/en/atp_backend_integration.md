@@ -13,9 +13,9 @@ It refines pipeline phase 13, specifically backend dispatch. Problem encoding is
 - [00.pipeline_overview.md](./00.pipeline_overview.md) — overall pipeline
 - [reasoning_boundary.md](./reasoning_boundary.md) — reasoning responsibility split
 - [atp_interface_protocol.md](./atp_interface_protocol.md) — problem encoding protocols
-- [doc/spec/21.source_code_annotation_and_atp.md](../../../spec/21.source_code_annotation_and_atp.md) — backend provers, portfolio execution, and certificate formats
-- [doc/spec/22.error_handling_and_diagnostics.md](../../../spec/22.error_handling_and_diagnostics.md) — ATP timeout and proof diagnostics
-- [doc/spec/23.package_management_and_build_system.md](../../../spec/23.package_management_and_build_system.md) — verifier config, logs, and artifact output
+- [doc/spec/en/21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md) — backend provers, portfolio execution, and certificate formats
+- [doc/spec/en/22.error_handling_and_diagnostics.md](../../../spec/en/22.error_handling_and_diagnostics.md) — ATP timeout and proof diagnostics
+- [doc/spec/en/23.package_management_and_build_system.md](../../../spec/en/23.package_management_and_build_system.md) — verifier config, logs, and artifact output
 
 ## Design Decisions
 

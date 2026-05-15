@@ -12,13 +12,13 @@
 
 - [00.pipeline_overview.md](./00.pipeline_overview.md) — overall pipeline。この文書は phases 1-3 を詳細化する
 - [ir_layers.md](./ir_layers.md) — `SourceUnit`, `PreprocessedSource`, `TokenStream`, `SurfaceAst`
-- [doc/spec/02.lexical_structure.md](../../../spec/02.lexical_structure.md) — lexical structure、comments、annotations、lexer/parser responsibility split
-- [doc/spec/11.symbol_management.md](../../../spec/11.symbol_management.md) — user-defined symbols and active lexicon
-- [doc/spec/12.modules_and_namespaces.md](../../../spec/12.modules_and_namespaces.md) — module paths and namespace references
-- [doc/spec/16.theorems_and_proofs.md](../../../spec/16.theorems_and_proofs.md) — citations and proof syntax
-- [doc/spec/21.source_code_annotation_and_atp.md](../../../spec/21.source_code_annotation_and_atp.md) — library annotations and display annotations
-- [doc/spec/22.error_handling_and_diagnostics.md](../../../spec/22.error_handling_and_diagnostics.md) — syntax diagnostics and source spans
-- [doc/spec/23.package_management_and_build_system.md](../../../spec/23.package_management_and_build_system.md) — package layout and build lifecycle
+- [doc/spec/en/02.lexical_structure.md](../../../spec/en/02.lexical_structure.md) — lexical structure、comments、annotations、lexer/parser responsibility split
+- [doc/spec/en/11.symbol_management.md](../../../spec/en/11.symbol_management.md) — user-defined symbols and active lexicon
+- [doc/spec/en/12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md) — module paths and namespace references
+- [doc/spec/en/16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md) — citations and proof syntax
+- [doc/spec/en/21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md) — library annotations and display annotations
+- [doc/spec/en/22.error_handling_and_diagnostics.md](../../../spec/en/22.error_handling_and_diagnostics.md) — syntax diagnostics and source spans
+- [doc/spec/en/23.package_management_and_build_system.md](../../../spec/en/23.package_management_and_build_system.md) — package layout and build lifecycle
 
 ### Pipeline Position
 
@@ -398,7 +398,7 @@ Recovered AST nodes は、later phases が明示的に skip または degrade gr
 
 ## Diagnostics
 
-Frontend diagnostics は [doc/spec/22.error_handling_and_diagnostics.md](../../../spec/22.error_handling_and_diagnostics.md) の syntax/lexical ranges を使う。
+Frontend diagnostics は [doc/spec/en/22.error_handling_and_diagnostics.md](../../../spec/en/22.error_handling_and_diagnostics.md) の syntax/lexical ranges を使う。
 
 | Diagnostic Class | Phase | Example |
 |---|---|---|

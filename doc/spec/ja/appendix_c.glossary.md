@@ -1,6 +1,6 @@
 # 付録 C. 用語集
 
-> Canonical language: English. English canonical version: [../appendix_c.glossary.md](../appendix_c.glossary.md).
+> Canonical language: English. English canonical version: [../en/appendix_c.glossary.md](../en/appendix_c.glossary.md).
 
 この付録では、Mizar Evolution 仕様で繰り返される用語の短く、非規範的な定義を示します。主要な章には依然として権威があります。各エントリは、その用語が最も直接的に指定または使用されている章を指します。
 

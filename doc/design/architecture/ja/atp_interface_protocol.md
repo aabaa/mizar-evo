@@ -12,8 +12,8 @@
 
 - [00.pipeline_overview.md](./00.pipeline_overview.md) — overall pipeline
 - [reasoning_boundary.md](./reasoning_boundary.md) — reasoning responsibility split
-- [doc/spec/21.source_code_annotation_and_atp.md](../../../spec/21.source_code_annotation_and_atp.md) — ATP translation、property encoding、proof certificates
-- [doc/spec/23.package_management_and_build_system.md](../../../spec/23.package_management_and_build_system.md) — verifier settings、ATP logs、used-axiom recording
+- [doc/spec/en/21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md) — ATP translation、property encoding、proof certificates
+- [doc/spec/en/23.package_management_and_build_system.md](../../../spec/en/23.package_management_and_build_system.md) — verifier settings、ATP logs、used-axiom recording
 
 ## Design Decisions
 

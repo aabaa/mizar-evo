@@ -62,6 +62,6 @@ performance requirements, security considerations, compatibility など。
 
 | Layer | Directory | Granularity | Audience |
 |---|---|---|---|
-| External Spec | `doc/spec/` | Language features | Users |
+| External Spec | `doc/spec/en/` | Language features | Users |
 | **Architecture** | **`doc/design/architecture/`** | **Cross-cutting subsystems** | **Developers** |
 | Module Spec | `doc/design/<crate>/` | Individual files (1:1) | Developers |

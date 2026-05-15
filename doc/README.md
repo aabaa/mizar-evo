@@ -14,6 +14,11 @@ This repository uses **English as the canonical documentation language** and pro
 
 ```text
 doc/
+  spec/
+    README.md      # language entrypoint
+    en/            # canonical English language specs
+    ja/            # Japanese companion language specs
+
   design/
     architecture/
       README.md      # language entrypoint

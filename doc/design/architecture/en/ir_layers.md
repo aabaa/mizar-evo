@@ -11,17 +11,17 @@ It clarifies which phase produces each IR, what each IR owns, and what it intent
 ## Context
 
 - [00.pipeline_overview.md](./00.pipeline_overview.md) — overall pipeline; this document refines `IR Layering`
-- [doc/spec/02.lexical_structure.md](../../../spec/02.lexical_structure.md) — source text, comments, annotations, tokenization
-- [doc/spec/03.type_system.md](../../../spec/03.type_system.md) — type expressions, soft type system
-- [doc/spec/08.type_inference.md](../../../spec/08.type_inference.md) — inferred types and coercions
-- [doc/spec/11.symbol_management.md](../../../spec/11.symbol_management.md) — symbol registration
-- [doc/spec/12.modules_and_namespaces.md](../../../spec/12.modules_and_namespaces.md) — namespace and imports
-- [doc/spec/16.theorems_and_proofs.md](../../../spec/16.theorems_and_proofs.md) — proof structure and thesis tracking
-- [doc/spec/17.clusters_and_registrations.md](../../../spec/17.clusters_and_registrations.md) — cluster facts and registration resolution
-- [doc/spec/19.overload_resolution.md](../../../spec/19.overload_resolution.md) — overload winners and inserted coercions
-- [doc/spec/20.algorithm_and_verification.md](../../../spec/20.algorithm_and_verification.md) — control-flow, contracts, ghost variables, VCs
-- [doc/spec/21.source_code_annotation_and_atp.md](../../../spec/21.source_code_annotation_and_atp.md) — ATP problem translation and metadata output
-- [doc/spec/23.package_management_and_build_system.md](../../../spec/23.package_management_and_build_system.md) — artifacts, cache, LSP metadata
+- [doc/spec/en/02.lexical_structure.md](../../../spec/en/02.lexical_structure.md) — source text, comments, annotations, tokenization
+- [doc/spec/en/03.type_system.md](../../../spec/en/03.type_system.md) — type expressions, soft type system
+- [doc/spec/en/08.type_inference.md](../../../spec/en/08.type_inference.md) — inferred types and coercions
+- [doc/spec/en/11.symbol_management.md](../../../spec/en/11.symbol_management.md) — symbol registration
+- [doc/spec/en/12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md) — namespace and imports
+- [doc/spec/en/16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md) — proof structure and thesis tracking
+- [doc/spec/en/17.clusters_and_registrations.md](../../../spec/en/17.clusters_and_registrations.md) — cluster facts and registration resolution
+- [doc/spec/en/19.overload_resolution.md](../../../spec/en/19.overload_resolution.md) — overload winners and inserted coercions
+- [doc/spec/en/20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md) — control-flow, contracts, ghost variables, VCs
+- [doc/spec/en/21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md) — ATP problem translation and metadata output
+- [doc/spec/en/23.package_management_and_build_system.md](../../../spec/en/23.package_management_and_build_system.md) — artifacts, cache, LSP metadata
 - [reasoning_boundary.md](./reasoning_boundary.md) — proof responsibility boundary
 - [atp_interface_protocol.md](./atp_interface_protocol.md) — `AtpProblem` to concrete prover formats
 
