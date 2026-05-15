@@ -24,7 +24,7 @@ Architecture documents は、厳密な pipeline phase ではなく、読み順�
 | [02.source_and_frontend.md](./02.source_and_frontend.md) | 1-3 | source loading, preprocessing, lexing, parsing の境界 | Draft |
 | [03.module_and_symbol_resolution.md](./03.module_and_symbol_resolution.md) | 0, 4-5 | package、module、namespace、label、symbol table resolution | Draft |
 | [04.type_and_registration_resolution.md](./04.type_and_registration_resolution.md) | 6-7 | type checking、cluster database、resolution traces | Draft |
-| `05.overload_resolution.md` | 8 | candidate selection、subsumption DAG、`qua` insertion | Planned |
+| [05.overload_resolution.md](./05.overload_resolution.md) | 8 | candidate selection、subsumption DAG、`qua` insertion | Draft |
 | `06.elaboration_and_core_ir.md` | 9 | surface language から core logic への lowering | Planned |
 | `07.vc_generation.md` | 10-12 | algorithm verification preparation and obligation generation | Planned |
 | [08.reasoning_boundary.md](./08.reasoning_boundary.md) | 12-14 | Mizar、ATP backend、kernel の reasoning responsibility split | Draft |
