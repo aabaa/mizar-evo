@@ -30,7 +30,7 @@ Architecture documents are numbered by reading order and design dependency, not 
 | [08.reasoning_boundary.md](./08.reasoning_boundary.md) | 12-14 | Reasoning responsibility split between Mizar, ATP backends, and the kernel | Draft |
 | [09.atp_interface_protocol.md](./09.atp_interface_protocol.md) | 13 | ATP problem formats and encoding strategy | Draft |
 | [10.atp_backend_integration.md](./10.atp_backend_integration.md) | 13 | External ATP process execution, timeout handling, and certificate collection | Draft |
-| `11.artifact_and_incremental_build.md` | 15 | Artifact schema, cache update, and reproducibility | Planned |
+| [11.artifact_and_incremental_build.md](./11.artifact_and_incremental_build.md) | 15 | Artifact schema, cache update, and reproducibility | Draft |
 | `12.diagnostics_and_lsp.md` | All, 15 | Diagnostics, metadata, and IDE integration | Planned |
 | `13.documentation_and_extraction.md` | 16 | Documentation generation and code extraction | Planned |
 | `14.parallel_verification_and_scheduling.md` | 0, 10-15 | Verification task graph, parallel scheduling, cancellation, and deterministic result ordering | Planned |
