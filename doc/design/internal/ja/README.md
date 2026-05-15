@@ -27,7 +27,7 @@ Documents は implementation dependency order で番号付けする。未作成�
 | [02.artifact_store_cache_key_and_manifest.md](./02.artifact_store_cache_key_and_manifest.md) | 15 | artifact store、cache key construction、manifest transactions、reproducible write protocol | Draft |
 | [03.diagnostics_model_and_lsp_bridge.md](./03.diagnostics_model_and_lsp_bridge.md) | All, 15 | diagnostic registry、aggregation、explanation handles、LSP snapshot bridge、editor freshness model | Draft |
 | [04.atp_portfolio_and_kernel_check_integration.md](./04.atp_portfolio_and_kernel_check_integration.md) | 13-14 | ATP portfolio execution、backend evidence selection、proof witness storage、kernel check scheduling | Draft |
-| `05.documentation_extraction.md` | 16 | documentation extraction inputs、render model、code extraction boundary、artifact consumers | Planned |
+| [05.documentation_extraction.md](./05.documentation_extraction.md) | 16 | documentation extraction inputs、render model、code extraction boundary、artifact consumers | Draft |
 
 ## 文書テンプレート
 
