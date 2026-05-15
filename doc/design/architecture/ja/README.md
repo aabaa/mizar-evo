@@ -6,7 +6,7 @@
 
 ## 目的
 
-module-level spec（`doc/design/<crate>/<module>.md`）が個別の Rust source file を説明するのに対し、architecture spec は単一 module だけでは答えられない問題を扱う。
+module-level spec（`doc/design/<crate>/<language>/<module>.md`）が個別の Rust source file を説明するのに対し、architecture spec は単一 module だけでは答えられない問題を扱う。
 
 - **どこが subsystem の境界か？** 例: kernel と ATP の境界
 - **subsystem 間をつなぐ protocol は何か？** 例: TPTP, SMT-LIB
@@ -63,7 +63,7 @@ subsystem 間の境界、API、data format。
 
 ## Affected Modules
 この設計を実装する module-level spec と source file。
-- `doc/design/<crate>/<module>.md` → `crates/<crate>/src/<module>.rs`
+- `doc/design/<crate>/<language>/<module>.md` → `crates/<crate>/src/<module>.rs`
 
 ## Constraints and Assumptions
 performance requirements, security considerations, compatibility など。

@@ -41,8 +41,14 @@ See [`internal/README.md`](./internal/README.md) for details and the document te
 Detailed specifications that map **1:1** to Rust source files.
 
 ```
-doc/design/<crate-name>/<module>.md  →  crates/<crate-name>/src/<module>.rs
+doc/design/<crate-name>/<language>/<module>.md  →  crates/<crate-name>/src/<module>.rs
 ```
+
+For module specifications, English documents are canonical and Japanese documents are companions when both are present.
+
+Current module specification roots:
+
+- [`mizar-session/`](./mizar-session/README.md) - source identity, build snapshots, source maps, and snapshot retention
 
 ### Module Specification Template
 
@@ -83,7 +89,8 @@ doc/design/architecture/           Confirmed cross-cutting design decisions
    ↓  (refined)
 doc/design/internal/               Subsystem APIs, data structures, execution contracts
    ↓  (decomposed into modules)
-doc/design/<crate>/<module>.md     Per-file implementation specifications
+doc/design/<crate>/<language>/<module>.md
+                                    Per-file implementation specifications
    ↓  (implemented)
 crates/<crate>/src/<module>.rs     Rust source code
 ```
@@ -93,7 +100,7 @@ crates/<crate>/src/<module>.rs     Rust source code
 1. Start with an idea in `doc/idea/`
 2. When a design decision is confirmed, promote it to `doc/design/architecture/`
 3. Refine cross-cutting designs into internal subsystem designs in `doc/design/internal/`
-4. Decompose into module-level specs in `doc/design/<crate>/`
+4. Decompose into module-level specs in `doc/design/<crate>/<language>/`
 5. Implement (or ask AI to implement) the corresponding Rust source
 6. Run tests to verify the implementation matches the spec
 7. Keep specs and code in sync — update both together

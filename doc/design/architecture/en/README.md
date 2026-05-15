@@ -6,7 +6,7 @@ This directory contains **cross-cutting internal design documents** that define 
 
 ## Purpose
 
-While module-level specs (`doc/design/<crate>/<module>.md`) describe individual Rust source files, architecture specs address questions that cannot be answered at the single-module level:
+While module-level specs (`doc/design/<crate>/<language>/<module>.md`) describe individual Rust source files, architecture specs address questions that cannot be answered at the single-module level:
 
 - **Where** is the boundary between subsystems? (e.g., kernel vs. ATP)
 - **What** protocols connect subsystems? (e.g., TPTP, SMT-LIB)
@@ -63,7 +63,7 @@ Boundaries, APIs, and data formats between subsystems.
 
 ## Affected Modules
 List of module-level specs and source files that implement this design.
-- `doc/design/<crate>/<module>.md` → `crates/<crate>/src/<module>.rs`
+- `doc/design/<crate>/<language>/<module>.md` → `crates/<crate>/src/<module>.rs`
 
 ## Constraints and Assumptions
 Performance requirements, security considerations, compatibility, etc.
