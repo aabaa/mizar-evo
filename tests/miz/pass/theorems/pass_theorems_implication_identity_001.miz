@@ -1,4 +1,0 @@
-theorem
-  (1 = 1 implies 1 = 1);
-proof
-end;

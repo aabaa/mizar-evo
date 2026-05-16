@@ -1,9 +1,0 @@
-schema_version = 1
-id = "pass_attributes_single_registration_001"
-kind = "pass"
-domain = "attributes"
-source = "pass_attributes_single_registration_001.miz"
-expected_outcome = "pass"
-expected_phase = "elaboration"
-diagnostic_codes = []
-stable_detail_key = "attributes.single_registration"

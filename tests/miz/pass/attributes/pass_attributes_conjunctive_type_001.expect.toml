@@ -1,9 +1,0 @@
-schema_version = 1
-id = "pass_attributes_conjunctive_type_001"
-kind = "pass"
-domain = "attributes"
-source = "pass_attributes_conjunctive_type_001.miz"
-expected_outcome = "pass"
-expected_phase = "type_check"
-diagnostic_codes = []
-stable_detail_key = "attributes.conjunctive_type"

@@ -1,5 +1,0 @@
-theorem
-  1 = 0;
-proof
-  by external_atp;
-end;

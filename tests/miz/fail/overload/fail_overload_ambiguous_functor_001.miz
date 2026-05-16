@@ -1,9 +1,0 @@
-definition
-  func value(set) -> set;
-  func value(object) -> set;
-end;
-
-theorem
-  value({}) = value({});
-proof
-end;

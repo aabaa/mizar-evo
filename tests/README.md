@@ -1,9 +1,30 @@
 # Mizar Evo Test Corpus
 
-This directory contains the evo2 test corpus seed.
+This directory contains the evo2 test corpus.
 
 The corpus is an implementation asset. Expectations are explicit sidecars and
 must not be inferred from the current compiler behavior.
+
+## Strategy
+
+Committed `.miz` tests are added in specification order, following the
+structure of `doc/spec/`.
+
+This is a V-model contract:
+
+- each language specification section owns corresponding pass/fail tests;
+- a test is added only after the referenced syntax and semantic prerequisites
+  are clear in `doc/spec/`;
+- the expected failure phase must match the earliest phase that can soundly
+  reject the input;
+- tests must not rely on undefined library symbols unless the test explicitly
+  targets name resolution;
+- higher-level tests, such as overload, substitution, verification, and kernel
+  soundness cases, are added only after their lower-level syntax and name
+  dependencies have their own tests.
+
+The previous draft `.miz` seed corpus has been removed. New corpus additions
+should start from the earliest applicable spec chapter and grow forward.
 
 ## Layout
 

@@ -1,9 +1,0 @@
-schema_version = 1
-id = "pass_theorems_reflexive_equality_001"
-kind = "pass"
-domain = "theorems"
-source = "pass_theorems_reflexive_equality_001.miz"
-expected_outcome = "pass"
-expected_phase = "verification"
-diagnostic_codes = []
-stable_detail_key = "theorems.reflexive_equality.one"

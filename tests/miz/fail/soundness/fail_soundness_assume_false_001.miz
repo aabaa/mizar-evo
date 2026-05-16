@@ -1,4 +1,0 @@
-theorem
-  contradiction implies 1 = 0;
-proof
-end;

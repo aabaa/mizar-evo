@@ -1,8 +1,0 @@
-definition
-  let X be set;
-  let x be Element of X;
-  theorem
-    x = x;
-  proof
-  end;
-end;

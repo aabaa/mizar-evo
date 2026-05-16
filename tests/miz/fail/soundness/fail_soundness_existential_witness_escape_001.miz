@@ -1,4 +1,0 @@
-theorem
-  for X being set holds ex y being Element of X st y = y;
-proof
-end;

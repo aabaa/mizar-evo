@@ -1,6 +1,0 @@
-scheme MalformedSubstitution {
-  P[set]
-}:
-  P[the set]
-provided
-  P[];

@@ -1,4 +1,0 @@
-registration
-  cluster red -> blue for set;
-  cluster blue -> red for set;
-end;

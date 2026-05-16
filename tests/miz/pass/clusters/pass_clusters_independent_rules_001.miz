@@ -1,4 +1,0 @@
-registration
-  cluster empty -> finite for set;
-  cluster singleton -> finite for set;
-end;

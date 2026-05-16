@@ -1,4 +1,0 @@
-theorem
-  for X being set holds X = {};
-proof
-end;

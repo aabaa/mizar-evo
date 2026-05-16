@@ -1,7 +1,0 @@
-definition
-  let X be empty set;
-  theorem
-    X = X;
-  proof
-  end;
-end;

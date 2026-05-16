@@ -1,6 +1,0 @@
-definition
-  theorem
-    1 = 1;
-  proof
-  end;
-end;
