@@ -1,0 +1,7 @@
+definition
+  let X be UnknownMode;
+  theorem
+    X = X;
+  proof
+  end;
+end;

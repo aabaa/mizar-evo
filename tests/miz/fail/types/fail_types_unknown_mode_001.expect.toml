@@ -1,0 +1,11 @@
+schema_version = 1
+id = "fail_types_unknown_mode_001"
+kind = "fail"
+domain = "types"
+source = "fail_types_unknown_mode_001.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+rejection_reason = "unresolved_symbol"
+diagnostic_codes = ["E-RESOLVE-UNKNOWN-MODE"]
+stable_detail_key = "types.unknown_mode.UnknownMode"

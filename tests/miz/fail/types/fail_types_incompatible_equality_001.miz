@@ -1,0 +1,8 @@
+definition
+  let X be set;
+  let P be bool;
+  theorem
+    X = P;
+  proof
+  end;
+end;

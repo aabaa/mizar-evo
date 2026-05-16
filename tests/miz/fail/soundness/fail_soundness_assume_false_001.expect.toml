@@ -1,0 +1,11 @@
+schema_version = 1
+id = "fail_soundness_assume_false_001"
+kind = "fail"
+domain = "soundness"
+source = "fail_soundness_assume_false_001.miz"
+expected_outcome = "fail"
+expected_phase = "verification"
+failure_category = "kernel_rejection"
+rejection_reason = "invalid_sat_proof"
+diagnostic_codes = ["E-KERNEL-INVALID-PROOF"]
+stable_detail_key = "soundness.assume_false.contradiction_token"

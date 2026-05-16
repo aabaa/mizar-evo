@@ -1,0 +1,10 @@
+definition
+  func coerce(set) -> object;
+  func f(set) -> set;
+  func f(object) -> set;
+end;
+
+theorem
+  f(coerce({})) = f(coerce({}));
+proof
+end;

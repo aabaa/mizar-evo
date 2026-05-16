@@ -1,0 +1,11 @@
+schema_version = 1
+id = "fail_overload_ambiguous_functor_001"
+kind = "fail"
+domain = "overload"
+source = "fail_overload_ambiguous_functor_001.miz"
+expected_outcome = "fail"
+expected_phase = "overload_resolution"
+failure_category = "overload_ambiguity"
+rejection_reason = "ambiguous_candidate"
+diagnostic_codes = ["E-OVERLOAD-AMBIGUOUS-FUNCTOR"]
+stable_detail_key = "overload.ambiguous_functor.value_set_object"

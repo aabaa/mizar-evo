@@ -1,0 +1,11 @@
+schema_version = 1
+id = "fail_clusters_self_cycle_001"
+kind = "fail"
+domain = "clusters"
+source = "fail_clusters_self_cycle_001.miz"
+expected_outcome = "fail"
+expected_phase = "cluster_resolution"
+failure_category = "cluster_loop"
+rejection_reason = "cyclic_registration"
+diagnostic_codes = ["E-CLUSTER-SELF-CYCLE"]
+stable_detail_key = "clusters.self_cycle.finite"

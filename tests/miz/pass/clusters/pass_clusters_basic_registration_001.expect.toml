@@ -1,0 +1,9 @@
+schema_version = 1
+id = "pass_clusters_basic_registration_001"
+kind = "pass"
+domain = "clusters"
+source = "pass_clusters_basic_registration_001.miz"
+expected_outcome = "pass"
+expected_phase = "cluster_resolution"
+diagnostic_codes = []
+stable_detail_key = "clusters.basic_registration.empty_to_finite"

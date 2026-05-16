@@ -1,0 +1,11 @@
+schema_version = 1
+id = "fail_soundness_existential_witness_escape_001"
+kind = "fail"
+domain = "soundness"
+source = "fail_soundness_existential_witness_escape_001.miz"
+expected_outcome = "fail"
+expected_phase = "verification"
+failure_category = "kernel_rejection"
+rejection_reason = "invalid_substitution"
+diagnostic_codes = ["E-KERNEL-WITNESS-ESCAPE"]
+stable_detail_key = "soundness.existential_witness_escape.empty_set"

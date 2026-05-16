@@ -1,0 +1,11 @@
+schema_version = 1
+id = "fail_substitution_malformed_001"
+kind = "fail"
+domain = "substitution"
+source = "fail_substitution_malformed_001.miz"
+expected_outcome = "fail"
+expected_phase = "elaboration"
+failure_category = "kernel_rejection"
+rejection_reason = "invalid_substitution"
+diagnostic_codes = ["E-KERNEL-MALFORMED-SUBSTITUTION"]
+stable_detail_key = "substitution.malformed.arity_mismatch"

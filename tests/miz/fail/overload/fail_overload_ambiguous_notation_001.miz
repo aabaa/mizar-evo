@@ -1,0 +1,11 @@
+definition
+  pred _ relates _ means
+    truth;
+  pred _ relates _ means
+    truth;
+end;
+
+theorem
+  1 relates 1;
+proof
+end;

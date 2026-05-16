@@ -1,0 +1,11 @@
+schema_version = 1
+id = "fail_types_element_of_non_set_001"
+kind = "fail"
+domain = "types"
+source = "fail_types_element_of_non_set_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "type_error"
+rejection_reason = "invalid_type_argument"
+diagnostic_codes = ["E-TYPE-ELEMENT-OF-NON-SET"]
+stable_detail_key = "types.element_of_non_set.Truth"

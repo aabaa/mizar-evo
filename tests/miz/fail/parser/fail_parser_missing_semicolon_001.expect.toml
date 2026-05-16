@@ -1,0 +1,11 @@
+schema_version = 1
+id = "fail_parser_missing_semicolon_001"
+kind = "fail"
+domain = "parser"
+source = "fail_parser_missing_semicolon_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "parse_error"
+rejection_reason = "syntax_error"
+diagnostic_codes = ["E-PARSE-MISSING-SEMICOLON"]
+stable_detail_key = "parser.missing_semicolon.after_theorem_statement"

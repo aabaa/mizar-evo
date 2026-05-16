@@ -1,0 +1,6 @@
+scheme BinderCollision {
+  P[set, set]
+}:
+  for x being set holds P[x, x]
+provided
+  for x being set holds P[x, y];

@@ -1,0 +1,12 @@
+definition
+  attr finite means
+    it has finitely many elements;
+end;
+
+definition
+  let X be finite empty set;
+  theorem
+    X = X;
+  proof
+  end;
+end;

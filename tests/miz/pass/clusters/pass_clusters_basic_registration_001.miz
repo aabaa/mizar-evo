@@ -1,0 +1,3 @@
+registration
+  cluster empty -> finite for set;
+end;

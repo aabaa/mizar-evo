@@ -1,0 +1,6 @@
+scheme Capture {
+  P[set]
+}:
+  for x being set holds P[x]
+provided
+  for y being set holds P[x];

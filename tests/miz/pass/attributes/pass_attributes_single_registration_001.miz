@@ -1,0 +1,4 @@
+definition
+  attr empty means
+    it has no elements;
+end;

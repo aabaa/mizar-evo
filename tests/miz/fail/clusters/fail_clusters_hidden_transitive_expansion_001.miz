@@ -1,0 +1,5 @@
+registration
+  cluster small -> medium for set;
+  cluster medium -> large for set;
+  cluster large -> small for set;
+end;

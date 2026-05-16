@@ -1,0 +1,6 @@
+scheme AlphaConversion {
+  P[set]
+}:
+  for x being set holds P[x]
+provided
+  for x being set holds P[y];
