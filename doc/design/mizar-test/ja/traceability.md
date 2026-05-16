@@ -118,12 +118,26 @@ Harness は次を validate する。
 4. Every listed test sidecar points back to the requirement id.
 5. Every sidecar `spec_refs` entry exists in the manifest.
 6. Stage names match the staged model.
-7. Required coverage shapes are satisfied.
+7. Validation mode が coverage completeness を要求する場合、required coverage shapes are satisfied.
 8. Deferred required items include a `deferred_reason`.
 9. Obsolete items are not referenced by active tests.
 10. Manifest records are sorted deterministically by `id`.
 
 Validation は referenced files が存在すること以外に `doc/spec/` prose を parse してはならない。Requirement granularity は manifest が所有する。
+
+## Validation Modes
+
+Traceability validation は modes を持つ。
+
+| Mode | Purpose | Coverage Completeness |
+|---|---|---|
+| `metadata` | Minimal crate and local editing. | Required ではない。Tests なしの planned items は最大でも warnings。 |
+| `development` | Implementation 中の normal CI. | `status = "covered"` or `partial` の requirements にのみ required。 |
+| `release` | Release readiness gate. | `status = "deferred"` with reason を除き、every `required = true` requirement に required。 |
+
+All modes は manifest syntax、unique ids、source file existence、known stage ids、known sidecar references、sidecar back-references を validate する。
+
+Missing required coverage を error にするのは `release` mode だけである。これにより compiler pipeline が存在する前から complete planned coverage map を維持できる。
 
 ## Coverage Status
 
@@ -137,7 +151,7 @@ Rules:
 - `deferred` means coverage is intentionally postponed.
 - `obsolete` means the requirement no longer applies and active tests must not claim it.
 
-Report は stored status と computed status が一致しない場合に flag する。
+Report は stored status と computed status が一致しない場合に flag する。その severity は validation mode によって決まる。
 
 ## Stage Interaction
 

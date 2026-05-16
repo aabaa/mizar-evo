@@ -25,15 +25,19 @@ Coverage mapping:  doc/spec chapter and section
 
 ## Stages
 
-| Stage | Fixture Style | Primary Pipeline Boundary | Spec Coverage |
-|---|---|---|---|
-| 1. Lexical | token fixtures, minimal source snippets | lexer | `02.lexical_structure` |
-| 2. Parse-only | `.miz` snippets checked only through parsing | parser | syntax portions of each chapter |
-| 3. Declaration / symbol | declarations plus resolution expectations | symbol collection and name resolution | structs, attributes, modes, predicates, functors, modules |
-| 4. Type / elaboration | typed declarations and expressions | type checking and elaboration | type system, attributes, modes, terms, formulas |
-| 5. Formula / statement | formulas and statements with resolved symbols | typed AST and statement checking | terms, formulas, statements |
-| 6. Proof / verification | theorem/proof fixtures | VC generation and verification | theorems, proofs, algorithms |
-| 7. Advanced semantics | focused integration and negative tests | clusters, overload, templates, substitution, ATP, certificates, kernel | advanced semantic chapters and guardrails |
+| Stage | Stage Id | Fixture Style | Primary Pipeline Boundary | Spec Coverage |
+|---|---|---|---|---|
+| 1. Lexical | `lexical` | token fixtures, minimal source snippets | lexer | `02.lexical_structure` |
+| 2. Parse-only | `parse_only` | `.miz` snippets checked only through parsing | parser | syntax portions of each chapter |
+| 3. Declaration / symbol | `declaration_symbol` | declarations plus resolution expectations | symbol collection and name resolution | structs, attributes, modes, predicates, functors, modules |
+| 4. Type / elaboration | `type_elaboration` | typed declarations and expressions | type checking and elaboration | type system, attributes, modes, terms, formulas |
+| 5. Formula / statement | `formula_statement` | formulas and statements with resolved symbols | typed AST and statement checking | terms, formulas, statements |
+| 6. Proof / verification | `proof_verification` | theorem/proof fixtures | VC generation and verification | theorems, proofs, algorithms |
+| 7. Advanced semantics | `advanced_semantics` | focused integration and negative tests | clusters, overload, templates, substitution, ATP, certificates, kernel | advanced semantic chapters and guardrails |
+
+`Stage Id` is the canonical value used in `.expect.toml`,
+`tests/coverage/spec_trace.toml`, reports, and Rust enums. Display names may be
+localized; stage ids must not be localized.
 
 ## Stage Rules
 

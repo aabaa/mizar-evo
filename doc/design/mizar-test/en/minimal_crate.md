@@ -57,6 +57,7 @@ pub struct DiscoveryConfig {
     pub tests_root: Utf8PathBuf,
     pub manifest_path: Utf8PathBuf,
     pub profile: TestProfile,
+    pub validation_mode: ValidationMode,
 }
 
 pub struct TestPlan {
@@ -104,7 +105,8 @@ The initial CLI command is:
 mizar-test plan --tests-root tests --manifest tests/coverage/spec_trace.toml
 ```
 
-It performs discovery and validation, then prints a deterministic summary:
+The default validation mode is `metadata`. It performs discovery and validation,
+then prints a deterministic summary:
 
 ```text
 test cases: 0
@@ -136,6 +138,12 @@ mode and reported in strict mode.
 
 Files are sorted by canonical relative path before validation. Directory
 iteration order must never affect the plan.
+
+Executable payload extensions are inherited from [layout.md](./layout.md):
+`.miz`, `.src`, `.cert.json`, and `.fixture.toml`. Every discovered executable
+payload requires an adjacent `.expect.toml` in the same directory. Non-payload
+files such as `README.md`, `.gitkeep`, and snapshot output files are ignored by
+payload pairing.
 
 ## Empty Corpus Behavior
 
@@ -175,6 +183,10 @@ Warnings may be used for:
 
 Warnings must not hide errors.
 
+Coverage completeness is not an error in the minimal crate's default
+`metadata` mode. Release coverage gating is a later harness mode and uses the
+rules in [traceability.md](./traceability.md).
+
 ## Determinism
 
 All emitted diagnostics are ordered by:
@@ -194,7 +206,7 @@ The crate's own tests cover:
 - malformed TOML fails;
 - duplicate expectation ids fail;
 - missing source fails;
-- missing sidecar for a fail payload fails;
+- missing sidecar for any executable payload fails;
 - unknown `spec_refs` fail;
 - manifest duplicate ids fail;
 - deterministic ordering is stable for shuffled input files.

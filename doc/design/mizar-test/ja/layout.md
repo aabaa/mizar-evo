@@ -41,9 +41,12 @@ authoritative expectations は sidecar files に置く。fail、soundness、cert
 
 ## Directory Layout
 
-required directories:
+Committed corpus roots:
 
 ```text
+tests/lexical/pass/
+tests/lexical/fail/
+
 tests/miz/pass/parser/
 tests/miz/pass/types/
 tests/miz/pass/attributes/
@@ -65,7 +68,22 @@ tests/certificates/
 tests/snapshots/
 ```
 
+Roots は first committed test まで存在しなくてもよい。Root が executable payloads を含む場合、それらの payloads は同じ sidecar and deterministic discovery rules に従う。
+
 追加 subdirectories は pass/fail/snapshot の区別を保つ場合にのみ追加できる。
+
+### Executable Payloads
+
+Executable payloads は test inputs を表す files である。
+
+| Extension | Meaning |
+|---|---|
+| `.miz` | Mizar source input. |
+| `.src` | Lexical or parser source snippet input. |
+| `.cert.json` | Certificate payload input. |
+| `.fixture.toml` | Structured non-source fixture input. |
+
+Committed corpus の every executable payload は、同じ stem の adjacent `.expect.toml` を持たなければならない。`README.md`、`.gitkeep`、snapshot output files は executable payloads ではない。
 
 ### Certificate Test Layout
 
@@ -126,8 +144,8 @@ test discovery:
 
 1. known test roots だけを walk する。
 2. paths を canonical relative path で sort する。
-3. `.miz` files と sidecar metadata を pair する。
-4. fail、soundness、certificate、snapshot tests で metadata が missing の場合 reject する。
+3. executable payload files と sidecar metadata を pair する。
+4. every committed executable payload で metadata が missing の場合 reject する。
 5. deterministic `TestPlan` を構築する。
 
 ## Tests
@@ -135,7 +153,7 @@ test discovery:
 key scenarios:
 
 - discovery order が filesystems をまたいで stable
-- missing fail metadata は error
+- missing executable payload metadata は error
 - duplicate test ids は reject
 - generated / fuzz-minimized tests は discoverable だが origin で mark される
 - unknown directories は explicit harness mode に従って ignore または reject
@@ -144,5 +162,5 @@ key scenarios:
 
 - test discovery は OS directory iteration order に依存してはならない。
 - sidecar metadata schema は versioned である。
-- pass tests は diagnostics なしを期待する場合にのみ expected diagnostics を省略できる。
-- fail tests は expected failure category を明記しなければならない。
+- pass tests は diagnostics なしを期待する場合 `diagnostic_codes = []` を記録する。
+- fail tests は expected failure category and stable detail key を明記しなければならない。

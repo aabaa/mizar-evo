@@ -41,9 +41,12 @@ Authoritative expectations live in sidecar files. Fail, soundness, certificate, 
 
 ## Directory Layout
 
-Required directories:
+Committed corpus roots:
 
 ```text
+tests/lexical/pass/
+tests/lexical/fail/
+
 tests/miz/pass/parser/
 tests/miz/pass/types/
 tests/miz/pass/attributes/
@@ -65,7 +68,27 @@ tests/certificates/
 tests/snapshots/
 ```
 
-Additional subdirectories may be added only when they preserve the pass/fail/snapshot distinction.
+Roots may be absent until their first committed test. Once a root contains
+executable payloads, those payloads follow the same sidecar and deterministic
+discovery rules.
+
+Additional subdirectories may be added only when they preserve the
+pass/fail/snapshot distinction.
+
+### Executable Payloads
+
+Executable payloads are files that represent test inputs:
+
+| Extension | Meaning |
+|---|---|
+| `.miz` | Mizar source input. |
+| `.src` | Lexical or parser source snippet input. |
+| `.cert.json` | Certificate payload input. |
+| `.fixture.toml` | Structured non-source fixture input. |
+
+Every executable payload in the committed corpus must have an adjacent
+`.expect.toml` with the same stem. Files such as `README.md`, `.gitkeep`, and
+snapshot output files are not executable payloads.
 
 ### Certificate Test Layout
 
@@ -126,8 +149,8 @@ Test discovery:
 
 1. Walk only known test roots.
 2. Sort paths by canonical relative path.
-3. Pair `.miz` files with sidecar metadata.
-4. Reject missing metadata for fail, soundness, certificate, and snapshot tests.
+3. Pair executable payload files with sidecar metadata.
+4. Reject missing metadata for every committed executable payload.
 5. Build a deterministic `TestPlan`.
 
 ## Tests
@@ -135,7 +158,7 @@ Test discovery:
 Key scenarios:
 
 - discovery order is stable across filesystems;
-- missing fail metadata is an error;
+- missing executable payload metadata is an error;
 - duplicate test ids are rejected;
 - generated and fuzz-minimized tests are discoverable but marked by origin;
 - unknown directories are ignored or rejected according to explicit harness mode.
@@ -144,5 +167,5 @@ Key scenarios:
 
 - Test discovery must not depend on OS directory iteration order.
 - Sidecar metadata schema is versioned.
-- Pass tests may omit expected diagnostics only when they expect no diagnostics.
-- Fail tests must state the expected failure category.
+- Pass tests record `diagnostic_codes = []` when they expect no diagnostics.
+- Fail tests must state the expected failure category and stable detail key.

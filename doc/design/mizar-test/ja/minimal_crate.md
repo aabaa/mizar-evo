@@ -52,6 +52,7 @@ pub struct DiscoveryConfig {
     pub tests_root: Utf8PathBuf,
     pub manifest_path: Utf8PathBuf,
     pub profile: TestProfile,
+    pub validation_mode: ValidationMode,
 }
 
 pub struct TestPlan {
@@ -99,7 +100,7 @@ Initial CLI command:
 mizar-test plan --tests-root tests --manifest tests/coverage/spec_trace.toml
 ```
 
-Discovery and validation を実行し、deterministic summary を出力する。
+Default validation mode は `metadata` である。Discovery and validation を実行し、deterministic summary を出力する。
 
 ```text
 test cases: 0
@@ -127,6 +128,8 @@ tests/snapshots/
 Missing optional roots は allowed。Unknown roots は permissive mode では ignored、strict mode では reported とする。
 
 Files は validation 前に canonical relative path で sort される。Directory iteration order が plan に影響してはならない。
+
+Executable payload extensions は [layout.md](./layout.md) から継承する: `.miz`, `.src`, `.cert.json`, `.fixture.toml`。Every discovered executable payload は同じ directory に adjacent `.expect.toml` を必要とする。`README.md`、`.gitkeep`、snapshot output files のような non-payload files は payload pairing では ignore する。
 
 ## Empty Corpus Behavior
 
@@ -165,6 +168,8 @@ Warnings may be used for:
 
 Warnings must not hide errors.
 
+Coverage completeness は minimal crate の default `metadata` mode では error ではない。Release coverage gating は later harness mode であり、[traceability.md](./traceability.md) の rules を使う。
+
 ## Determinism
 
 All emitted diagnostics are ordered by:
@@ -184,7 +189,7 @@ Crate 自身の tests は次を cover する。
 - malformed TOML fails
 - duplicate expectation ids fail
 - missing source fails
-- missing sidecar for a fail payload fails
+- missing sidecar for any executable payload fails
 - unknown `spec_refs` fail
 - manifest duplicate ids fail
 - deterministic ordering is stable for shuffled input files

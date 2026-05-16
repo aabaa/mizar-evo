@@ -125,13 +125,31 @@ The harness validates:
 4. Every listed test sidecar points back to the requirement id.
 5. Every sidecar `spec_refs` entry exists in the manifest.
 6. Stage names match the staged model.
-7. Required coverage shapes are satisfied.
+7. Required coverage shapes are satisfied when the validation mode requires
+   coverage completeness.
 8. Deferred required items include a `deferred_reason`.
 9. Obsolete items are not referenced by active tests.
 10. Manifest records are sorted deterministically by `id`.
 
 Validation must not parse `doc/spec/` prose beyond checking that referenced
 files exist. The manifest owns the granularity of requirements.
+
+## Validation Modes
+
+Traceability validation has modes:
+
+| Mode | Purpose | Coverage Completeness |
+|---|---|---|
+| `metadata` | Minimal crate and local editing. | Not required; planned items without tests are warnings at most. |
+| `development` | Normal CI during implementation. | Required only for requirements marked `status = "covered"` or `partial`. |
+| `release` | Release readiness gate. | Required for every `required = true` requirement unless `status = "deferred"` with a reason. |
+
+All modes validate manifest syntax, unique ids, source file existence, known
+stage ids, known sidecar references, and sidecar back-references.
+
+Only `release` mode turns missing required coverage into an error. This allows
+the project to maintain a complete planned coverage map before the compiler
+pipeline exists.
 
 ## Coverage Status
 
@@ -148,7 +166,8 @@ Rules:
 - `obsolete` means the requirement no longer applies and active tests must not
   claim it.
 
-The report flags stored status when it disagrees with computed status.
+The report flags stored status when it disagrees with computed status. The
+severity of that disagreement is determined by validation mode.
 
 ## Stage Interaction
 

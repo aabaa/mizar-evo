@@ -87,6 +87,64 @@ advanced_semantics
 
 String values は [staged_model.md](./staged_model.md) と一致する。
 
+## Kind And Outcome Compatibility
+
+`kind` は corpus role を表す。`expected_outcome` は harness result contract を表す。
+
+Allowed `kind` values:
+
+| Kind | Meaning |
+|---|---|
+| `pass` | Ordinary accepting test. |
+| `fail` | Ordinary rejecting test. |
+| `snapshot` | Snapshot comparison test. |
+| `generated` | Generated test with stored origin metadata. |
+| `fuzz_seed` | Fuzz seed or promoted fuzz regression. |
+| `property_seed` | Property-test seed or promoted property regression. |
+
+Allowed `expected_outcome` values:
+
+| Outcome | Meaning |
+|---|---|
+| `pass` | Payload は `expected_phase` まで accepted されなければならない。 |
+| `fail` | Payload は `expected_phase` で rejected されなければならない。 |
+| `snapshot` | Snapshot hashes が一致しなければならない。 |
+| `metadata_only` | Sidecar は validate されるが payload execution は期待しない。 |
+
+Compatibility:
+
+| `kind` | Allowed `expected_outcome` |
+|---|---|
+| `pass` | `pass`, `snapshot` |
+| `fail` | `fail`, `snapshot` |
+| `snapshot` | `snapshot` |
+| `generated` | `pass`, `fail`, `snapshot` |
+| `fuzz_seed` | `fail`, `metadata_only` |
+| `property_seed` | `pass`, `fail`, `metadata_only` |
+
+`metadata_only` は current profile で実行されない seed metadata にのみ許可する。Default fast profile の committed `.miz`、`.src`、`.cert.json` payloads では valid ではない。
+
+## Pipeline Phase Values
+
+Allowed `expected_phase` values:
+
+| Phase | Meaning |
+|---|---|
+| `lex` | Lexical analysis. |
+| `parse` | Parsing and surface syntax recovery. |
+| `resolve` | Declaration collection and name/module resolution. |
+| `type_check` | Type checking, attribute/mode checking, and early elaboration. |
+| `elaboration` | Core elaboration and binder normalization. |
+| `cluster_resolution` | Registration and cluster expansion. |
+| `overload_resolution` | Overload and template candidate selection. |
+| `statement_check` | Typed statement and local context checking. |
+| `vc_generation` | Verification-condition generation. |
+| `verification` | Proof search/policy verification boundary. |
+| `certificate_check` | Certificate parsing and structural validation. |
+| `kernel_check` | Kernel replay and rejection boundary. |
+
+Later compiler crates は internal phases を refine してよいが、expectation files はこれら stable external phase ids を使う。
+
 ## Pass Expectations
 
 Pass expectations は failure identity を必要としない。
@@ -280,6 +338,8 @@ Harness は次を validate する。
 10. Snapshot entries use supported hash algorithms.
 11. Generated/fuzz/property tests include origin metadata.
 12. Unknown fields are rejected unless the schema version explicitly permits extensions.
+
+Coverage completeness の validation は [traceability.md](./traceability.md) で定義される validation mode に依存する。Schema validation 自体は mode independent である。
 
 ## Constraints And Assumptions
 

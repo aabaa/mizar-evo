@@ -91,6 +91,68 @@ advanced_semantics
 
 The string values match [staged_model.md](./staged_model.md).
 
+## Kind And Outcome Compatibility
+
+`kind` describes the corpus role. `expected_outcome` describes the harness
+result contract.
+
+Allowed `kind` values:
+
+| Kind | Meaning |
+|---|---|
+| `pass` | Ordinary accepting test. |
+| `fail` | Ordinary rejecting test. |
+| `snapshot` | Snapshot comparison test. |
+| `generated` | Generated test with stored origin metadata. |
+| `fuzz_seed` | Fuzz seed or promoted fuzz regression. |
+| `property_seed` | Property-test seed or promoted property regression. |
+
+Allowed `expected_outcome` values:
+
+| Outcome | Meaning |
+|---|---|
+| `pass` | The payload must be accepted through `expected_phase`. |
+| `fail` | The payload must be rejected at `expected_phase`. |
+| `snapshot` | Snapshot hashes must match. |
+| `metadata_only` | The sidecar is validated but no payload execution is expected. |
+
+Compatibility:
+
+| `kind` | Allowed `expected_outcome` |
+|---|---|
+| `pass` | `pass`, `snapshot` |
+| `fail` | `fail`, `snapshot` |
+| `snapshot` | `snapshot` |
+| `generated` | `pass`, `fail`, `snapshot` |
+| `fuzz_seed` | `fail`, `metadata_only` |
+| `property_seed` | `pass`, `fail`, `metadata_only` |
+
+`metadata_only` is allowed only for seed metadata that is not executed by the
+current profile. It is not valid for committed `.miz`, `.src`, or `.cert.json`
+payloads in the default fast profile.
+
+## Pipeline Phase Values
+
+Allowed `expected_phase` values:
+
+| Phase | Meaning |
+|---|---|
+| `lex` | Lexical analysis. |
+| `parse` | Parsing and surface syntax recovery. |
+| `resolve` | Declaration collection and name/module resolution. |
+| `type_check` | Type checking, attribute/mode checking, and early elaboration. |
+| `elaboration` | Core elaboration and binder normalization. |
+| `cluster_resolution` | Registration and cluster expansion. |
+| `overload_resolution` | Overload and template candidate selection. |
+| `statement_check` | Typed statement and local context checking. |
+| `vc_generation` | Verification-condition generation. |
+| `verification` | Proof search/policy verification boundary. |
+| `certificate_check` | Certificate parsing and structural validation. |
+| `kernel_check` | Kernel replay and rejection boundary. |
+
+Later compiler crates may refine internal phases, but expectation files use
+these stable external phase ids.
+
 ## Pass Expectations
 
 Pass expectations require no failure identity.
@@ -301,6 +363,10 @@ The harness validates:
 11. Generated/fuzz/property tests include origin metadata.
 12. Unknown fields are rejected unless the schema version explicitly permits
    extensions.
+
+Validation of coverage completeness depends on the validation mode defined in
+[traceability.md](./traceability.md). Schema validation itself is mode
+independent.
 
 ## Constraints And Assumptions
 

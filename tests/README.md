@@ -60,7 +60,7 @@ domain, and the numeric suffix is never reused for unrelated cases.
 
 ## Sidecars
 
-Every committed `.miz` seed has an adjacent `.expect.toml`.
+Every committed executable payload has an adjacent `.expect.toml`.
 
 Required fields:
 
@@ -68,6 +68,7 @@ Required fields:
 schema_version = 1
 id = "fail_soundness_false_arithmetic_001"
 kind = "fail"
+stage = "proof_verification"
 domain = "soundness"
 source = "fail_soundness_false_arithmetic_001.miz"
 expected_outcome = "fail"
@@ -76,6 +77,9 @@ failure_category = "kernel_rejection"
 rejection_reason = "invalid_sat_proof"
 diagnostic_codes = ["E-KERNEL-INVALID-PROOF"]
 stable_detail_key = "soundness.false_arithmetic.one_eq_zero"
+spec_refs = [
+  "spec.en.16.theorems_and_proofs.false_theorem_rejection",
+]
 ```
 
 Pass cases use `expected_outcome = "pass"` and may use an empty
