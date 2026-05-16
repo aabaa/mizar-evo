@@ -67,6 +67,28 @@ tests/snapshots/
 
 追加 subdirectories は pass/fail/snapshot の区別を保つ場合にのみ追加できる。
 
+### Certificate Test Layout
+
+certificate tests は、多くの certificate failure が `.miz` source file を必要としないため、専用の pass/fail split を使う。
+
+```text
+tests/certificates/pass/
+tests/certificates/fail/malformed/
+tests/certificates/fail/substitution/
+tests/certificates/fail/sat/
+tests/certificates/fail/symbols/
+tests/certificates/fail/resources/
+```
+
+certificate payloads は、後続 schema が compact binary format を定義しない限り `.cert.json` を使う。すべての certificate test は隣接する `.expect.toml` を持つ。
+
+```text
+tests/certificates/fail/sat/fail_certificate_invalid_resolution_001.cert.json
+tests/certificates/fail/sat/fail_certificate_invalid_resolution_001.expect.toml
+```
+
+expectation は expected `certificate_rejection` または `kernel_rejection` category と、`invalid_sat_proof`、`invalid_substitution`、`malformed_certificate`、`unresolved_symbol`、`timeout`、`resource_exhaustion` のような stable rejection reason を記録する。
+
 ## Naming Rules
 
 test file names は stable snake_case names を使う。

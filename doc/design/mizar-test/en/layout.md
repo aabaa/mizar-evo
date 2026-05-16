@@ -67,6 +67,28 @@ tests/snapshots/
 
 Additional subdirectories may be added only when they preserve the pass/fail/snapshot distinction.
 
+### Certificate Test Layout
+
+Certificate tests use their own pass/fail split because many certificate failures do not require a `.miz` source file.
+
+```text
+tests/certificates/pass/
+tests/certificates/fail/malformed/
+tests/certificates/fail/substitution/
+tests/certificates/fail/sat/
+tests/certificates/fail/symbols/
+tests/certificates/fail/resources/
+```
+
+Certificate payloads use `.cert.json` unless a later schema defines a compact binary format. Every certificate test has an adjacent `.expect.toml`.
+
+```text
+tests/certificates/fail/sat/fail_certificate_invalid_resolution_001.cert.json
+tests/certificates/fail/sat/fail_certificate_invalid_resolution_001.expect.toml
+```
+
+The expectation records the expected `certificate_rejection` or `kernel_rejection` category and the stable rejection reason, such as `invalid_sat_proof`, `invalid_substitution`, `malformed_certificate`, `unresolved_symbol`, `timeout`, or `resource_exhaustion`.
+
 ## Naming Rules
 
 Test file names use stable snake_case names:

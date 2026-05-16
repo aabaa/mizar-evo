@@ -49,6 +49,7 @@ For module specifications, English documents are canonical and Japanese document
 Current module specification roots:
 
 - [`mizar-session/`](./mizar-session/README.md) - source identity, build snapshots, source maps, and snapshot retention
+- [`mizar-test/`](./mizar-test/README.md) - test corpus layout, `.miz` corpus strategy, fail/soundness tests, snapshots, and harness behavior
 
 ### Module Specification Template
 
