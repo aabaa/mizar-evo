@@ -34,6 +34,12 @@ Architecture documents are numbered by reading order and design dependency, not 
 | [12.diagnostics_and_lsp.md](./12.diagnostics_and_lsp.md) | All, 15 | Diagnostics, metadata, and IDE integration | Draft |
 | [13.documentation_and_extraction.md](./13.documentation_and_extraction.md) | 16 | Documentation generation and code extraction | Draft |
 | [14.parallel_verification_and_scheduling.md](./14.parallel_verification_and_scheduling.md) | 0, 10-15 | Verification task graph, parallel scheduling, cancellation, and deterministic result ordering | Draft |
+| [15.kernel_certificate_format.md](./15.kernel_certificate_format.md) | 13-14 | Final certificate schema, clause trace checking, and kernel rejection semantics | Draft |
+| [16.substitution_and_binding.md](./16.substitution_and_binding.md) | 4, 6, 9, 14 | Bound variables, alpha-equivalence, capture avoidance, and binder normalization | Draft |
+| [17.cluster_trace_format.md](./17.cluster_trace_format.md) | 7, 11, 14-15 | Replayable cluster and registration expansion traces | Draft |
+| [18.dependency_fingerprint.md](./18.dependency_fingerprint.md) | 0, 4-7, 11, 15 | Dependency slices, fingerprints, and incremental rebuild triggers | Draft |
+| [19.failure_semantics.md](./19.failure_semantics.md) | All | Stable failure classification, propagation, and deterministic error ordering | Draft |
+| [20.test_strategy.md](./20.test_strategy.md) | All | Regression strategy prioritizing fail and soundness tests | Draft |
 
 `00.pipeline_overview.md` is the parent document for this directory. Other architecture documents should state which pipeline phase(s) they refine and should link back to the overview in their Context section.
 

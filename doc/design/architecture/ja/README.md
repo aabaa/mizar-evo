@@ -34,6 +34,12 @@ Architecture documents は、厳密な pipeline phase ではなく、読み順�
 | [12.diagnostics_and_lsp.md](./12.diagnostics_and_lsp.md) | All, 15 | diagnostics、metadata、IDE integration | Draft |
 | [13.documentation_and_extraction.md](./13.documentation_and_extraction.md) | 16 | documentation generation and code extraction | Draft |
 | [14.parallel_verification_and_scheduling.md](./14.parallel_verification_and_scheduling.md) | 0, 10-15 | verification task graph、parallel scheduling、cancellation、deterministic result ordering | Draft |
+| [15.kernel_certificate_format.md](./15.kernel_certificate_format.md) | 13-14 | final certificate schema、clause trace checking、kernel rejection semantics | Draft |
+| [16.substitution_and_binding.md](./16.substitution_and_binding.md) | 4, 6, 9, 14 | bound variables、alpha-equivalence、capture avoidance、binder normalization | Draft |
+| [17.cluster_trace_format.md](./17.cluster_trace_format.md) | 7, 11, 14-15 | replayable cluster / registration expansion traces | Draft |
+| [18.dependency_fingerprint.md](./18.dependency_fingerprint.md) | 0, 4-7, 11, 15 | dependency slices、fingerprints、incremental rebuild triggers | Draft |
+| [19.failure_semantics.md](./19.failure_semantics.md) | All | stable failure classification、propagation、deterministic error ordering | Draft |
+| [20.test_strategy.md](./20.test_strategy.md) | All | fail / soundness tests を優先する regression strategy | Draft |
 
 `00.pipeline_overview.md` はこのディレクトリの親文書である。他の architecture 文書は、自分がどの pipeline phase を詳細化するかを明記し、Context section から overview へ link する。
 
