@@ -22,6 +22,7 @@ compiler semantics は所有しない。implementation crates が deterministic 
 | Document | Maps To | Description | Status |
 |---|---|---|---|
 | [layout.md](./layout.md) | `crates/mizar-test/src/layout.rs` | test directory layout、case metadata、naming rules、expected result files | Draft |
+| [expectation_schema.md](./expectation_schema.md) | `crates/mizar-test/src/expectation.rs` | `.expect.toml` sidecar schema、outcome contracts、validation rules | Draft |
 | [staged_model.md](./staged_model.md) | `crates/mizar-test/src/staged_model.rs` | pipeline-first staged test admission model and spec coverage mapping | Draft |
 | [traceability.md](./traceability.md) | `crates/mizar-test/src/traceability.rs` | spec-to-test manifest schema、bidirectional validation、coverage reporting | Draft |
 | [miz_corpus.md](./miz_corpus.md) | `crates/mizar-test/src/corpus.rs` | `.miz` corpus classes、growth targets、generation policy、review rules | Draft |

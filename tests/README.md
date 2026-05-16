@@ -17,6 +17,9 @@ Spec coverage is tracked outside the specification text by
 `tests/coverage/spec_trace.toml`, as defined in
 `doc/design/mizar-test/en/traceability.md`.
 
+Expectation sidecars use the schema defined in
+`doc/design/mizar-test/en/expectation_schema.md`.
+
 This is a V-model contract:
 
 - each language specification section owns corresponding pass/fail tests;
