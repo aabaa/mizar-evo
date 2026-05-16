@@ -23,6 +23,7 @@ It does not own compiler semantics. It encodes expected behavior so implementati
 |---|---|---|---|
 | [layout.md](./layout.md) | `crates/mizar-test/src/layout.rs` | Test directory layout, case metadata, naming rules, and expected result files | Draft |
 | [staged_model.md](./staged_model.md) | `crates/mizar-test/src/staged_model.rs` | Pipeline-first staged test admission model and spec coverage mapping | Draft |
+| [traceability.md](./traceability.md) | `crates/mizar-test/src/traceability.rs` | Spec-to-test manifest schema, bidirectional validation, and coverage reporting | Draft |
 | [miz_corpus.md](./miz_corpus.md) | `crates/mizar-test/src/corpus.rs` | `.miz` corpus classes, growth targets, generation policy, and review rules | Draft |
 | [fail_soundness.md](./fail_soundness.md) | `crates/mizar-test/src/fail_soundness.rs` | Negative tests that must not pass, expected failure categories, and rejection reasons | Draft |
 | [snapshot.md](./snapshot.md) | `crates/mizar-test/src/snapshot.rs` | Snapshot artifact format, canonical hashing, and update policy | Draft |

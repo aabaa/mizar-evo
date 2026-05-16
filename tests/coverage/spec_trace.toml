@@ -1,0 +1,15 @@
+# Canonical specification-to-test traceability manifest.
+#
+# See doc/design/mizar-test/en/traceability.md.
+#
+# Example:
+#
+# [[requirement]]
+# id = "spec.en.02.lexical.identifiers.basic"
+# source = "doc/spec/en/02.lexical_structure.md"
+# section = "2.6 Identifiers"
+# stage = "lexical"
+# status = "planned"
+# required = true
+# coverage = "pass_and_fail"
+# tests = []

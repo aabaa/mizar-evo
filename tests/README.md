@@ -13,6 +13,10 @@ Committed `.miz` tests follow the staged model defined in
 Pipeline maturity is the primary ordering axis. `doc/spec/` chapter and section
 references are the coverage axis.
 
+Spec coverage is tracked outside the specification text by
+`tests/coverage/spec_trace.toml`, as defined in
+`doc/design/mizar-test/en/traceability.md`.
+
 This is a V-model contract:
 
 - each language specification section owns corresponding pass/fail tests;
