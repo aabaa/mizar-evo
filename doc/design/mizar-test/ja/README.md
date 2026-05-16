@@ -25,6 +25,7 @@ compiler semantics は所有しない。implementation crates が deterministic 
 | [expectation_schema.md](./expectation_schema.md) | `crates/mizar-test/src/expectation.rs` | `.expect.toml` sidecar schema、outcome contracts、validation rules | Draft |
 | [staged_model.md](./staged_model.md) | `crates/mizar-test/src/staged_model.rs` | pipeline-first staged test admission model and spec coverage mapping | Draft |
 | [traceability.md](./traceability.md) | `crates/mizar-test/src/traceability.rs` | spec-to-test manifest schema、bidirectional validation、coverage reporting | Draft |
+| [minimal_crate.md](./minimal_crate.md) | `crates/mizar-test` | metadata-only discovery and validation の first implementation scope | Draft |
 | [miz_corpus.md](./miz_corpus.md) | `crates/mizar-test/src/corpus.rs` | `.miz` corpus classes、growth targets、generation policy、review rules | Draft |
 | [fail_soundness.md](./fail_soundness.md) | `crates/mizar-test/src/fail_soundness.rs` | pass してはならない negative tests、expected failure categories、rejection reasons | Draft |
 | [snapshot.md](./snapshot.md) | `crates/mizar-test/src/snapshot.rs` | snapshot artifact format、canonical hashing、update policy | Draft |
