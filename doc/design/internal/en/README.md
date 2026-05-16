@@ -29,6 +29,7 @@ Documents are numbered by implementation dependency order. Missing numbered docu
 | [04.atp_portfolio_and_kernel_check_integration.md](./04.atp_portfolio_and_kernel_check_integration.md) | 13-14 | ATP portfolio execution, backend evidence selection, proof witness storage, and kernel check scheduling | Draft |
 | [05.documentation_extraction.md](./05.documentation_extraction.md) | 16 | Documentation extraction inputs, render model, code extraction boundary, and artifact consumers | Draft |
 | [06.ir_storage_and_snapshot_handles.md](./06.ir_storage_and_snapshot_handles.md) | All | IR output storage, snapshot handles, identity rules, lifetimes, and cache/publication boundaries | Draft |
+| [07.crate_module_layout.md](./07.crate_module_layout.md) | All | Expected crate ownership and minimum module-level spec layout | Draft |
 
 ## Document Template
 

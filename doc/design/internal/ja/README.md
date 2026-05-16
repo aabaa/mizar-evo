@@ -29,6 +29,7 @@ Documents は implementation dependency order で番号付けする。未作成�
 | [04.atp_portfolio_and_kernel_check_integration.md](./04.atp_portfolio_and_kernel_check_integration.md) | 13-14 | ATP portfolio execution、backend evidence selection、proof witness storage、kernel check scheduling | Draft |
 | [05.documentation_extraction.md](./05.documentation_extraction.md) | 16 | documentation extraction inputs、render model、code extraction boundary、artifact consumers | Draft |
 | [06.ir_storage_and_snapshot_handles.md](./06.ir_storage_and_snapshot_handles.md) | All | IR output storage、snapshot handles、identity rules、lifetimes、cache/publication boundaries | Draft |
+| [07.crate_module_layout.md](./07.crate_module_layout.md) | All | expected crate ownership and minimum module-level spec layout | Draft |
 
 ## 文書テンプレート
 
