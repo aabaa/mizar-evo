@@ -7,8 +7,11 @@ must not be inferred from the current compiler behavior.
 
 ## Strategy
 
-Committed `.miz` tests are added in specification order, following the
-structure of `doc/spec/`.
+Committed `.miz` tests follow the staged model defined in
+`doc/design/mizar-test/en/staged_model.md`.
+
+Pipeline maturity is the primary ordering axis. `doc/spec/` chapter and section
+references are the coverage axis.
 
 This is a V-model contract:
 
