@@ -1,0 +1,7 @@
+definition
+  let X be set;
+  theorem
+    X = X;
+  proof
+  end;
+end;
