@@ -54,7 +54,7 @@ A Mizar source file, after comment stripping (§A.2.9) and macro-level import re
 4. **Numerals** (§A.2.7) — unsigned integer literals.
 5. **String literals** (§A.2.7) — quoted character sequences, recognised only at grammar positions that require them.
 
-Tokenization is governed by the **longest-match rule** against the currently active lexicon. The active lexicon is extended dynamically by `import` statements (§A.2.10).
+Tokenization is governed by the **longest-match rule** against the file-scoped active lexicon. That lexicon is built once from the top-of-file import prelude before final tokenization (§A.2.10).
 
 ### A.2.4 Reserved Words
 
@@ -212,7 +212,7 @@ Lexing and parsing are split as follows (see §2 discussion):
 | Concern | Layer |
 |---|---|
 | Comment stripping | Preprocessing |
-| Import resolution | Preprocessing (before tokenization) |
+| Import prelude scan and import resolution | Preprocessing (before final tokenization) |
 | Reserved words / reserved special symbols | Lexer |
 | User-symbol recognition (active lexicon, longest-match) | Lexer |
 | Numeral recognition | Lexer |

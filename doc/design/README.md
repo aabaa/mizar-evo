@@ -50,6 +50,7 @@ Current module specification roots:
 
 - [`mizar-session/`](./mizar-session/README.md) - source identity, build snapshots, source maps, and snapshot retention
 - [`mizar-test/`](./mizar-test/README.md) - test corpus layout, `.miz` corpus strategy, fail/soundness tests, snapshots, and harness behavior
+- [`mizar-lexer/`](./mizar-lexer/README.md) - raw lexical scanning, lexeme runs, and context-sensitive token disambiguation boundaries
 
 ### Module Specification Template
 

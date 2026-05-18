@@ -54,7 +54,7 @@ newline       = ? ASCII 0x0A | 0x0D 0x0A ? ;
 4. **数値** (§A.2.7) — 符号なし整数リテラル。
 5. **文字列リテラル** (§A.2.7) — 引用符で囲まれた文字シーケンス。文法上の必要な位置でのみ認識されます。
 
-token化は、現在アクティブな辞書に対する **最長一致ルール** によって管理されます。アクティブなレキシコンは、`import` ステートメントによって動的に拡張されます (§A.2.10)。
+token化は、file-scoped active lexicon に対する **最長一致ルール** によって管理されます。この lexicon は final tokenization の前に top-of-file import prelude から一度だけ構築されます (§A.2.10)。
 
 ### A.2.4 予約​​語
 
@@ -212,7 +212,7 @@ annotation_arg   = identifier | numeral | string_literal ;
 |懸念事項 |レイヤー |
 |---|---|
 |コメントの削除 |前処理 |
-|インポート解像度 |前処理 (token化前) |
+|import prelude scan and import resolution |前処理 (final tokenization 前) |
 |予約語 / 予約された特殊記号 |レクサー |
 |ユーザー記号認識 (アクティブな辞書、最長一致) |レクサー |
 |数字認識 |レクサー |
