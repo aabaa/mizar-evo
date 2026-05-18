@@ -5,6 +5,7 @@ use std::str::FromStr;
 
 use crate::diagnostic::ValidationDiagnostic;
 pub use crate::expectation::SpecRequirementId;
+use crate::path_rules::clean_relative_path;
 use crate::staged_model::Stage;
 use crate::toml_lite::{self, TomlTable};
 
@@ -110,7 +111,19 @@ pub fn validate_manifest(
             ));
         }
 
-        if !workspace_root.join(&requirement.source).is_file() {
+        if !clean_relative_path(&requirement.source) {
+            diagnostics.push(ValidationDiagnostic::error(
+                manifest_path,
+                "manifest",
+                "E-MANIFEST-SOURCE-PATH",
+                format!("manifest.source.{}", requirement.id.0),
+                format!(
+                    "requirement `{}` source `{}` must be a clean relative path",
+                    requirement.id.0,
+                    requirement.source.display()
+                ),
+            ));
+        } else if !workspace_root.join(&requirement.source).is_file() {
             diagnostics.push(ValidationDiagnostic::error(
                 manifest_path,
                 "manifest",
@@ -122,6 +135,22 @@ pub fn validate_manifest(
                     requirement.source.display()
                 ),
             ));
+        }
+
+        for test in &requirement.tests {
+            if !clean_relative_path(test) {
+                diagnostics.push(ValidationDiagnostic::error(
+                    manifest_path,
+                    "manifest",
+                    "E-MANIFEST-TEST-PATH",
+                    format!("manifest.tests.{}.{}", requirement.id.0, test.display()),
+                    format!(
+                        "requirement `{}` test `{}` must be a clean relative path",
+                        requirement.id.0,
+                        test.display()
+                    ),
+                ));
+            }
         }
 
         if requirement.status == RequirementStatus::Deferred

@@ -7,6 +7,7 @@ use crate::expectation::{
     Expectation, TestCaseId, parse_expectation_file, validate_expectation_path,
 };
 use crate::layout;
+use crate::path_rules::{absolute_from, clean_relative_path};
 use crate::traceability::{TraceManifest, parse_trace_manifest, validate_manifest};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -71,6 +72,8 @@ impl TestPlan {
 }
 
 pub fn build_test_plan(config: &DiscoveryConfig) -> Result<TestPlan, HarnessError> {
+    let config = normalized_config(config)?;
+
     if !config.tests_root.is_dir() {
         return Err(HarnessError::Infrastructure(format!(
             "tests root `{}` is not a directory",
@@ -212,6 +215,10 @@ fn validate_manifest_test_links(
                 ));
             }
 
+            if !clean_relative_path(test_path) {
+                continue;
+            }
+
             if !workspace_root.join(test_path).is_file() {
                 diagnostics.push(ValidationDiagnostic::error(
                     manifest_path,
@@ -262,6 +269,20 @@ fn validate_manifest_test_links(
             }
         }
     }
+}
+
+fn normalized_config(config: &DiscoveryConfig) -> Result<DiscoveryConfig, HarnessError> {
+    let current_dir = std::env::current_dir().map_err(|error| {
+        HarnessError::Infrastructure(format!("failed to read current directory: {error}"))
+    })?;
+    let workspace_root = absolute_from(&current_dir, &config.workspace_root);
+    Ok(DiscoveryConfig {
+        workspace_root: workspace_root.clone(),
+        tests_root: absolute_from(&workspace_root, &config.tests_root),
+        manifest_path: absolute_from(&workspace_root, &config.manifest_path),
+        profile: config.profile,
+        validation_mode: config.validation_mode,
+    })
 }
 
 impl Default for TestProfile {

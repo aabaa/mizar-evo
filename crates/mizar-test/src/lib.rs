@@ -2,6 +2,7 @@ pub mod diagnostic;
 pub mod expectation;
 pub mod harness;
 pub mod layout;
+pub mod path_rules;
 pub mod staged_model;
 pub mod toml_lite;
 pub mod traceability;

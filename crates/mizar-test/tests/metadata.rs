@@ -90,6 +90,75 @@ fn unknown_spec_refs_fail() {
 }
 
 #[test]
+fn manifest_test_back_reference_succeeds() {
+    let corpus = Corpus::new();
+    corpus.add_case("tests/lexical/pass/linked", "linked", "spec.en.test.basic");
+    corpus.add_requirement(
+        "spec.en.test.basic",
+        &["tests/lexical/pass/linked.expect.toml"],
+    );
+
+    let plan = corpus.plan();
+
+    assert_eq!(plan.error_count(), 0, "{:#?}", plan.diagnostics);
+    assert_eq!(plan.cases.len(), 1);
+}
+
+#[test]
+fn expectation_source_must_be_clean_relative_path() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write("tests/lexical/pass/escape.src", "");
+    corpus.write(
+        "tests/lexical/pass/escape.expect.toml",
+        expectation("escape", "../escape.src", "spec.en.test.basic"),
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SOURCE-PATH");
+}
+
+#[test]
+fn expectation_source_must_use_payload_extension() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write("tests/lexical/pass/not_payload.txt", "");
+    corpus.write(
+        "tests/lexical/pass/not_payload.expect.toml",
+        expectation("not_payload", "not_payload.txt", "spec.en.test.basic"),
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SOURCE-EXTENSION");
+}
+
+#[test]
+fn manifest_paths_must_be_clean_relative_paths() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.basic"
+source = "../doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = ["../tests/lexical/pass/escape.expect.toml"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-MANIFEST-SOURCE-PATH");
+    assert_has_code(&plan, "E-MANIFEST-TEST-PATH");
+}
+
+#[test]
 fn manifest_duplicate_ids_fail() {
     let corpus = Corpus::new();
     corpus.write(

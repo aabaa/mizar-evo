@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 
 use crate::diagnostic::ValidationDiagnostic;
 use crate::expectation::{expectation_stem, payload_stem};
+use crate::path_rules::executable_payload_stem;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DiscoveredLayout {
@@ -110,11 +111,5 @@ fn walk(
 }
 
 fn is_payload(path: &Path) -> bool {
-    let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
-        return false;
-    };
-    name.ends_with(".miz")
-        || name.ends_with(".src")
-        || name.ends_with(".cert.json")
-        || name.ends_with(".fixture.toml")
+    executable_payload_stem(path).is_some()
 }

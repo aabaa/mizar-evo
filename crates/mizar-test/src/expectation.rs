@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use crate::diagnostic::ValidationDiagnostic;
+use crate::path_rules::{clean_relative_path, executable_payload_stem};
 use crate::staged_model::Stage;
 use crate::toml_lite::{self, TomlTable};
 
@@ -165,6 +166,20 @@ pub fn validate_expectation_path(
         ));
     }
 
+    if !clean_relative_path(&expectation.source) {
+        diagnostics.push(ValidationDiagnostic::error(
+            path,
+            "expectation",
+            "E-EXPECT-SOURCE-PATH",
+            "expectation.source_path",
+            format!(
+                "source `{}` must be a clean relative path",
+                expectation.source.display()
+            ),
+        ));
+        return diagnostics;
+    }
+
     let source_path = path
         .parent()
         .unwrap_or_else(|| Path::new(""))
@@ -179,15 +194,27 @@ pub fn validate_expectation_path(
         ));
     }
 
-    let source_stem = payload_stem(&expectation.source).unwrap_or_default();
-    if !source_stem.is_empty() && source_stem != sidecar_stem {
-        diagnostics.push(ValidationDiagnostic::error(
+    match executable_payload_stem(&expectation.source) {
+        Some(source_stem) if source_stem != sidecar_stem => {
+            diagnostics.push(ValidationDiagnostic::error(
+                path,
+                "expectation",
+                "E-EXPECT-SOURCE-STEM",
+                "expectation.source_stem",
+                format!("source stem `{source_stem}` does not match sidecar stem `{sidecar_stem}`"),
+            ));
+        }
+        Some(_) => {}
+        None => diagnostics.push(ValidationDiagnostic::error(
             path,
             "expectation",
-            "E-EXPECT-SOURCE-STEM",
-            "expectation.source_stem",
-            format!("source stem `{source_stem}` does not match sidecar stem `{sidecar_stem}`"),
-        ));
+            "E-EXPECT-SOURCE-EXTENSION",
+            "expectation.source_extension",
+            format!(
+                "source `{}` must use .miz, .src, .cert.json, or .fixture.toml",
+                expectation.source.display()
+            ),
+        )),
     }
 
     if expectation.spec_refs.is_empty() {
