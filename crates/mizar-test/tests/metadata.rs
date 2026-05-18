@@ -504,10 +504,128 @@ fn repository_corpus_plan_succeeds() {
         case.id.0 == "pass_lexical_identifier_basic_001"
             && case
                 .expectation
+                .tokens
+                .iter()
+                .any(|token| token.kind == "identifier" && token.lexeme == "alpha")
+            && case
+                .expectation
                 .spec_refs
                 .iter()
                 .any(|spec_ref| spec_ref.0 == "spec.en.02.lexical.identifiers.basic")
     }));
+}
+
+#[test]
+fn lexical_token_expectations_parse() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write("tests/lexical/pass/tokenized.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/tokenized.expect.toml",
+        r#"schema_version = 1
+id = "tokenized"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "tokenized.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+
+[[tokens]]
+kind = "identifier"
+lexeme = "alpha"
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_eq!(plan.error_count(), 0, "{:#?}", plan.diagnostics);
+    assert_eq!(plan.cases[0].expectation.tokens.len(), 1);
+    assert_eq!(plan.cases[0].expectation.tokens[0].kind, "identifier");
+    assert_eq!(plan.cases[0].expectation.tokens[0].lexeme, "alpha");
+}
+
+#[test]
+fn token_expectations_reject_unknown_or_empty_fields() {
+    let corpus = Corpus::new();
+    corpus.write("tests/lexical/pass/bad_token_unknown.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/bad_token_unknown.expect.toml",
+        r#"schema_version = 1
+id = "bad_token_unknown"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "bad_token_unknown.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+
+[[tokens]]
+kind = "identifier"
+lexeme = "alpha"
+span = "0..5"
+"#,
+    );
+    corpus.write("tests/lexical/pass/bad_token_empty.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/bad_token_empty.expect.toml",
+        r#"schema_version = 1
+id = "bad_token_empty"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "bad_token_empty.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+
+[[tokens]]
+kind = ""
+lexeme = "alpha"
+"#,
+    );
+
+    let plan = corpus.plan();
+    let schema_errors = plan
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.code.0 == "E-EXPECT-SCHEMA")
+        .count();
+
+    assert_eq!(schema_errors, 2, "{:#?}", plan.diagnostics);
+}
+
+#[test]
+fn token_expectations_are_lexical_only() {
+    let corpus = Corpus::new();
+    corpus.write("tests/miz/pass/parser/token_in_parse_stage.miz", "alpha");
+    corpus.write(
+        "tests/miz/pass/parser/token_in_parse_stage.expect.toml",
+        r#"schema_version = 1
+id = "token_in_parse_stage"
+kind = "pass"
+stage = "parse_only"
+domain = "parser"
+source = "token_in_parse_stage.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+
+[[tokens]]
+kind = "identifier"
+lexeme = "alpha"
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SCHEMA");
 }
 
 struct Corpus {

@@ -10,3 +10,7 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.02.lexical.identifiers.basic",
 ]
+
+[[tokens]]
+kind = "identifier"
+lexeme = "alpha"

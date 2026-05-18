@@ -64,6 +64,13 @@ pub struct Expectation {
     pub rejection_reason: Option<String>,
     pub diagnostic_codes: Vec<String>,
     pub stable_detail_key: Option<String>,
+    pub tokens: Vec<TokenExpectation>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TokenExpectation {
+    pub kind: String,
+    pub lexeme: String,
 }
 
 pub fn parse_expectation_file(path: &Path) -> Result<Expectation, ValidationDiagnostic> {
@@ -88,13 +95,17 @@ pub fn parse_expectation_file(path: &Path) -> Result<Expectation, ValidationDiag
 }
 
 pub fn parse_expectation_str(content: &str) -> Result<Expectation, String> {
-    let table = toml_lite::parse_table(content)
+    let (table, token_tables) = toml_lite::parse_expectation_tables(content)
         .map_err(|error| format!("TOML parse error on line {}: {}", error.line, error.message))?;
-    expectation_from_table(&table)
+    expectation_from_table(&table, &token_tables)
 }
 
-fn expectation_from_table(table: &TomlTable) -> Result<Expectation, String> {
+fn expectation_from_table(
+    table: &TomlTable,
+    token_tables: &[TomlTable],
+) -> Result<Expectation, String> {
     validate_known_fields(table)?;
+    let tokens = parse_token_expectations(token_tables)?;
 
     let schema_version = toml_lite::required_u32(table, "schema_version")?;
     if schema_version != 1 {
@@ -157,6 +168,9 @@ fn expectation_from_table(table: &TomlTable) -> Result<Expectation, String> {
     validate_optional_metadata_fields(table)?;
 
     validate_kind_outcome(kind, expected_outcome)?;
+    if !tokens.is_empty() && stage != Stage::Lexical {
+        return Err("token expectations are only valid for `stage = \"lexical\"`".to_owned());
+    }
     if matches!(
         expected_outcome,
         ExpectedOutcome::Pass | ExpectedOutcome::Fail
@@ -199,7 +213,36 @@ fn expectation_from_table(table: &TomlTable) -> Result<Expectation, String> {
         rejection_reason,
         diagnostic_codes,
         stable_detail_key,
+        tokens,
     })
+}
+
+fn parse_token_expectations(token_tables: &[TomlTable]) -> Result<Vec<TokenExpectation>, String> {
+    let mut tokens = Vec::with_capacity(token_tables.len());
+    for table in token_tables {
+        validate_token_fields(table)?;
+        let kind = toml_lite::required_string(table, "kind")?;
+        if kind.is_empty() {
+            return Err("`tokens.kind` must not be empty".to_owned());
+        }
+        let lexeme = toml_lite::required_string(table, "lexeme")?;
+        if lexeme.is_empty() {
+            return Err("`tokens.lexeme` must not be empty".to_owned());
+        }
+        tokens.push(TokenExpectation { kind, lexeme });
+    }
+    Ok(tokens)
+}
+
+fn validate_token_fields(table: &TomlTable) -> Result<(), String> {
+    const KNOWN_TOKEN_FIELDS: &[&str] = &["kind", "lexeme"];
+
+    for key in table.keys() {
+        if !KNOWN_TOKEN_FIELDS.contains(&key.as_str()) {
+            return Err(format!("unknown token expectation field `{key}`"));
+        }
+    }
+    Ok(())
 }
 
 fn validate_known_fields(table: &TomlTable) -> Result<(), String> {

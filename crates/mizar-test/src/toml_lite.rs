@@ -1,4 +1,6 @@
 use std::collections::BTreeMap;
+use std::iter::Peekable;
+use std::str::Lines;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TomlValue {
@@ -41,26 +43,52 @@ pub fn parse_table(input: &str) -> Result<TomlTable, TomlError> {
             ));
         }
         let (key, raw_value) = split_key_value(line, line_no)?;
-        let value =
-            if raw_value.trim_start().starts_with('[') && !raw_value.trim_end().ends_with(']') {
-                let mut merged = String::from(raw_value);
-                for (_, continuation) in lines.by_ref() {
-                    let stripped = strip_comment(continuation);
-                    merged.push('\n');
-                    merged.push_str(stripped);
-                    if stripped.trim_end().ends_with(']') {
-                        break;
-                    }
-                }
-                parse_value(&merged, line_no)?
-            } else {
-                parse_value(raw_value, line_no)?
-            };
+        let value = parse_value_with_continuation(raw_value, line_no, &mut lines)?;
         if table.insert(key.to_owned(), value).is_some() {
             return Err(TomlError::new(line_no, format!("duplicate key `{key}`")));
         }
     }
     Ok(table)
+}
+
+pub fn parse_expectation_tables(input: &str) -> Result<(TomlTable, Vec<TomlTable>), TomlError> {
+    let mut root = TomlTable::new();
+    let mut tokens = Vec::new();
+    let mut current_token: Option<TomlTable> = None;
+    let mut lines = input.lines().enumerate().peekable();
+
+    while let Some((line_idx, raw_line)) = lines.next() {
+        let line_no = line_idx + 1;
+        let line = strip_comment(raw_line).trim();
+        if line.is_empty() {
+            continue;
+        }
+        if line == "[[tokens]]" {
+            if let Some(token) = current_token.take() {
+                tokens.push(token);
+            }
+            current_token = Some(TomlTable::new());
+            continue;
+        }
+        if line.starts_with('[') {
+            return Err(TomlError::new(
+                line_no,
+                format!("unsupported expectation table `{line}`"),
+            ));
+        }
+
+        let (key, raw_value) = split_key_value(line, line_no)?;
+        let value = parse_value_with_continuation(raw_value, line_no, &mut lines)?;
+        let table = current_token.as_mut().unwrap_or(&mut root);
+        if table.insert(key.to_owned(), value).is_some() {
+            return Err(TomlError::new(line_no, format!("duplicate key `{key}`")));
+        }
+    }
+
+    if let Some(token) = current_token {
+        tokens.push(token);
+    }
+    Ok((root, tokens))
 }
 
 pub fn parse_requirement_tables(input: &str) -> Result<Vec<TomlTable>, TomlError> {
@@ -94,21 +122,7 @@ pub fn parse_requirement_tables(input: &str) -> Result<Vec<TomlTable>, TomlError
             ));
         };
         let (key, raw_value) = split_key_value(line, line_no)?;
-        let value =
-            if raw_value.trim_start().starts_with('[') && !raw_value.trim_end().ends_with(']') {
-                let mut merged = String::from(raw_value);
-                for (_, continuation) in lines.by_ref() {
-                    let stripped = strip_comment(continuation);
-                    merged.push('\n');
-                    merged.push_str(stripped);
-                    if stripped.trim_end().ends_with(']') {
-                        break;
-                    }
-                }
-                parse_value(&merged, line_no)?
-            } else {
-                parse_value(raw_value, line_no)?
-            };
+        let value = parse_value_with_continuation(raw_value, line_no, &mut lines)?;
         if record.insert(key.to_owned(), value).is_some() {
             return Err(TomlError::new(line_no, format!("duplicate key `{key}`")));
         }
@@ -177,6 +191,27 @@ fn split_key_value(line: &str, line_no: usize) -> Result<(&str, &str), TomlError
         return Err(TomlError::new(line_no, "empty key"));
     }
     Ok((key, value.trim()))
+}
+
+fn parse_value_with_continuation<'a>(
+    raw_value: &str,
+    line_no: usize,
+    lines: &mut Peekable<std::iter::Enumerate<Lines<'a>>>,
+) -> Result<TomlValue, TomlError> {
+    if raw_value.trim_start().starts_with('[') && !raw_value.trim_end().ends_with(']') {
+        let mut merged = String::from(raw_value);
+        for (_, continuation) in lines.by_ref() {
+            let stripped = strip_comment(continuation);
+            merged.push('\n');
+            merged.push_str(stripped);
+            if stripped.trim_end().ends_with(']') {
+                break;
+            }
+        }
+        parse_value(&merged, line_no)
+    } else {
+        parse_value(raw_value, line_no)
+    }
 }
 
 fn parse_value(value: &str, line_no: usize) -> Result<TomlValue, TomlError> {
