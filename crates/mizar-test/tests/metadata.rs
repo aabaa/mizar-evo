@@ -159,6 +159,225 @@ fn expectation_source_must_use_payload_extension() {
 }
 
 #[test]
+fn expectation_unknown_fields_fail() {
+    let corpus = Corpus::new();
+    corpus.write("tests/lexical/pass/unknown_field.src", "");
+    corpus.write(
+        "tests/lexical/pass/unknown_field.expect.toml",
+        r#"schema_version = 1
+id = "unknown_field"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "unknown_field.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+surprise = "nope"
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SCHEMA");
+}
+
+#[test]
+fn pass_expectation_requires_expected_phase() {
+    let corpus = Corpus::new();
+    corpus.write("tests/lexical/pass/no_phase.src", "");
+    corpus.write(
+        "tests/lexical/pass/no_phase.expect.toml",
+        r#"schema_version = 1
+id = "no_phase"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "no_phase.src"
+expected_outcome = "pass"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SCHEMA");
+}
+
+#[test]
+fn expectation_requires_diagnostic_codes() {
+    let corpus = Corpus::new();
+    corpus.write("tests/lexical/pass/no_diagnostics.src", "");
+    corpus.write(
+        "tests/lexical/pass/no_diagnostics.expect.toml",
+        r#"schema_version = 1
+id = "no_diagnostics"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "no_diagnostics.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SCHEMA");
+}
+
+#[test]
+fn expectation_identity_fields_must_not_be_empty() {
+    let corpus = Corpus::new();
+    corpus.write("tests/lexical/pass/empty_identity.src", "");
+    corpus.write(
+        "tests/lexical/pass/empty_identity.expect.toml",
+        r#"schema_version = 1
+id = ""
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "empty_identity.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+    corpus.write("tests/lexical/pass/empty_domain.src", "");
+    corpus.write(
+        "tests/lexical/pass/empty_domain.expect.toml",
+        r#"schema_version = 1
+id = "empty_domain"
+kind = "pass"
+stage = "lexical"
+domain = ""
+source = "empty_domain.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+    corpus.write("tests/lexical/pass/empty_spec_ref.src", "");
+    corpus.write(
+        "tests/lexical/pass/empty_spec_ref.expect.toml",
+        r#"schema_version = 1
+id = "empty_spec_ref"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "empty_spec_ref.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [""]
+"#,
+    );
+
+    let plan = corpus.plan();
+    let schema_errors = plan
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.code.0 == "E-EXPECT-SCHEMA")
+        .count();
+
+    assert_eq!(schema_errors, 3, "{:#?}", plan.diagnostics);
+}
+
+#[test]
+fn metadata_only_is_not_valid_for_source_payloads() {
+    let corpus = Corpus::new();
+    corpus.write("tests/lexical/pass/metadata_only.src", "");
+    corpus.write(
+        "tests/lexical/pass/metadata_only.expect.toml",
+        r#"schema_version = 1
+id = "metadata_only"
+kind = "property_seed"
+stage = "lexical"
+domain = "lexical"
+source = "metadata_only.src"
+expected_outcome = "metadata_only"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SCHEMA");
+}
+
+#[test]
+fn fail_identity_fields_must_not_be_empty() {
+    let corpus = Corpus::new();
+    corpus.write("tests/lexical/fail/empty_failure_category.src", "");
+    corpus.write(
+        "tests/lexical/fail/empty_failure_category.expect.toml",
+        r#"schema_version = 1
+id = "empty_failure_category"
+kind = "fail"
+stage = "lexical"
+domain = "lexical"
+source = "empty_failure_category.src"
+expected_outcome = "fail"
+expected_phase = "lex"
+failure_category = ""
+diagnostic_codes = ["E-LEX-TEST"]
+stable_detail_key = "lexical.test"
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+    corpus.write("tests/lexical/fail/empty_detail_key.src", "");
+    corpus.write(
+        "tests/lexical/fail/empty_detail_key.expect.toml",
+        r#"schema_version = 1
+id = "empty_detail_key"
+kind = "fail"
+stage = "lexical"
+domain = "lexical"
+source = "empty_detail_key.src"
+expected_outcome = "fail"
+expected_phase = "lex"
+failure_category = "lex_error"
+diagnostic_codes = ["E-LEX-TEST"]
+stable_detail_key = ""
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+    corpus.write("tests/lexical/fail/empty_rejection_reason.src", "");
+    corpus.write(
+        "tests/lexical/fail/empty_rejection_reason.expect.toml",
+        r#"schema_version = 1
+id = "empty_rejection_reason"
+kind = "fail"
+stage = "lexical"
+domain = "lexical"
+source = "empty_rejection_reason.src"
+expected_outcome = "fail"
+expected_phase = "lex"
+failure_category = "lex_error"
+rejection_reason = ""
+diagnostic_codes = ["E-LEX-TEST"]
+stable_detail_key = "lexical.test"
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let plan = corpus.plan();
+    let schema_errors = plan
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.code.0 == "E-EXPECT-SCHEMA")
+        .count();
+
+    assert_eq!(schema_errors, 3, "{:#?}", plan.diagnostics);
+}
+
+#[test]
 fn manifest_paths_must_be_clean_relative_paths() {
     let corpus = Corpus::new();
     corpus.write(

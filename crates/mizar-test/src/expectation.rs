@@ -94,40 +94,95 @@ pub fn parse_expectation_str(content: &str) -> Result<Expectation, String> {
 }
 
 fn expectation_from_table(table: &TomlTable) -> Result<Expectation, String> {
+    validate_known_fields(table)?;
+
     let schema_version = toml_lite::required_u32(table, "schema_version")?;
     if schema_version != 1 {
         return Err(format!("unsupported schema_version `{schema_version}`"));
     }
 
     let id = TestCaseId(toml_lite::required_string(table, "id")?);
+    if id.0.is_empty() {
+        return Err("`id` must not be empty".to_owned());
+    }
     let kind = toml_lite::required_string(table, "kind")?.parse()?;
     let stage = toml_lite::required_string(table, "stage")?.parse()?;
     let domain = toml_lite::required_string(table, "domain")?;
+    if domain.is_empty() {
+        return Err("`domain` must not be empty".to_owned());
+    }
     let source = PathBuf::from(toml_lite::required_string(table, "source")?);
     let expected_outcome = toml_lite::required_string(table, "expected_outcome")?.parse()?;
     let spec_refs = toml_lite::string_array(table, "spec_refs")?
         .into_iter()
-        .map(SpecRequirementId)
-        .collect();
+        .map(|spec_ref| {
+            if spec_ref.is_empty() {
+                Err("`spec_refs` entries must not be empty".to_owned())
+            } else {
+                Ok(SpecRequirementId(spec_ref))
+            }
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     let expected_phase = toml_lite::optional_string(table, "expected_phase")?
-        .map(|phase| phase.parse())
+        .map(|phase| {
+            if phase.is_empty() {
+                Err("`expected_phase` must not be empty".to_owned())
+            } else {
+                phase.parse()
+            }
+        })
         .transpose()?;
     let failure_category = toml_lite::optional_string(table, "failure_category")?;
     let rejection_reason = toml_lite::optional_string(table, "rejection_reason")?;
-    let diagnostic_codes = match table.get("diagnostic_codes") {
-        Some(_) => toml_lite::string_array(table, "diagnostic_codes")?,
-        None => Vec::new(),
-    };
+    let diagnostic_codes = toml_lite::string_array(table, "diagnostic_codes")?
+        .into_iter()
+        .map(|diagnostic_code| {
+            if diagnostic_code.is_empty() {
+                Err("`diagnostic_codes` entries must not be empty".to_owned())
+            } else {
+                Ok(diagnostic_code)
+            }
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     let stable_detail_key = toml_lite::optional_string(table, "stable_detail_key")?;
+    for (field, value) in [
+        ("failure_category", failure_category.as_deref()),
+        ("rejection_reason", rejection_reason.as_deref()),
+        ("stable_detail_key", stable_detail_key.as_deref()),
+    ] {
+        if value.is_some_and(str::is_empty) {
+            return Err(format!("`{field}` must not be empty when present"));
+        }
+    }
+    validate_optional_metadata_fields(table)?;
 
     validate_kind_outcome(kind, expected_outcome)?;
+    if matches!(
+        expected_outcome,
+        ExpectedOutcome::Pass | ExpectedOutcome::Fail
+    ) && expected_phase.is_none()
+    {
+        return Err("pass and fail expectations require `expected_phase`".to_owned());
+    }
     if expected_outcome == ExpectedOutcome::Fail {
-        if failure_category.is_none() {
+        if failure_category.as_deref().is_none_or(str::is_empty) {
             return Err("fail expectations require `failure_category`".to_owned());
         }
-        if stable_detail_key.is_none() {
+        if stable_detail_key.as_deref().is_none_or(str::is_empty) {
             return Err("fail expectations require `stable_detail_key`".to_owned());
         }
+    }
+    if expected_outcome == ExpectedOutcome::MetadataOnly
+        && source
+            .file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(|name| {
+                name.ends_with(".miz") || name.ends_with(".src") || name.ends_with(".cert.json")
+            })
+    {
+        return Err(
+            "`metadata_only` is not valid for .miz, .src, or .cert.json payloads".to_owned(),
+        );
     }
 
     Ok(Expectation {
@@ -145,6 +200,51 @@ fn expectation_from_table(table: &TomlTable) -> Result<Expectation, String> {
         diagnostic_codes,
         stable_detail_key,
     })
+}
+
+fn validate_known_fields(table: &TomlTable) -> Result<(), String> {
+    const KNOWN_FIELDS: &[&str] = &[
+        "schema_version",
+        "id",
+        "kind",
+        "stage",
+        "domain",
+        "source",
+        "expected_outcome",
+        "spec_refs",
+        "profiles",
+        "tags",
+        "notes",
+        "expected_phase",
+        "diagnostic_codes",
+        "snapshots",
+        "failure_category",
+        "rejection_reason",
+        "stable_detail_key",
+        "ast_profile",
+        "snapshot_profiles",
+    ];
+
+    for key in table.keys() {
+        if !KNOWN_FIELDS.contains(&key.as_str()) {
+            return Err(format!("unknown expectation field `{key}`"));
+        }
+    }
+    Ok(())
+}
+
+fn validate_optional_metadata_fields(table: &TomlTable) -> Result<(), String> {
+    for key in ["profiles", "tags", "snapshot_profiles"] {
+        if table.contains_key(key) {
+            toml_lite::string_array(table, key)?;
+        }
+    }
+    for key in ["notes", "snapshots", "ast_profile"] {
+        if table.contains_key(key) {
+            toml_lite::optional_string(table, key)?;
+        }
+    }
+    Ok(())
 }
 
 pub fn validate_expectation_path(
