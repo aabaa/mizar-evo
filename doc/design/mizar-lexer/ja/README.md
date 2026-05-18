@@ -19,6 +19,10 @@ Mizar の字句分類は import、active user symbols、parser position、scoped
 | Document | Maps To | Description | Status |
 |---|---|---|---|
 | [raw_lexer.md](./raw_lexer.md) | `crates/mizar-lexer/src/lib.rs` initially; later split modules | Raw scanning, `LexemeRun`, disambiguation boundary, scope-sensitive symbol/identifier rules | Draft |
+| [import_prescan.md](./import_prescan.md) | `crates/mizar-lexer/src/import_prescan.rs` | Import prelude scanning and `ImportStub` extraction from raw tokens | Draft |
+| [lexical_environment.md](./lexical_environment.md) | `crates/mizar-lexer/src/lexical_environment.rs` | Active lexical environment construction from reserved tables and module lexical summaries | Draft |
+| [scope_skeleton.md](./scope_skeleton.md) | `crates/mizar-lexer/src/scope_skeleton.rs` | Reserved-keyword-based lexical scope skeleton and `ScopeLexView` projection | Draft |
+| [disambiguator.md](./disambiguator.md) | `crates/mizar-lexer/src/disambiguator.rs` | Context-sensitive longest-match token disambiguation from `LexemeRun` to final tokens | Draft |
 
 ## Crate Boundary
 

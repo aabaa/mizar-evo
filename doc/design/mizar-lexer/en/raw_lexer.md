@@ -19,6 +19,8 @@ The source-loading layer owns:
 - reading files;
 - validating UTF-8;
 - normalizing platform newlines to LF-only text;
+- removing ordinary comments from lexical input while preserving comment metadata elsewhere;
+- preserving documentation comments as trivia metadata for later attachment;
 - preserving a source map back to original file offsets when needed;
 - validating code-region ASCII rules before lexing.
 
@@ -44,7 +46,6 @@ Raw units are not final language tokens. In particular, `LexemeRun` is a graphic
 pub enum RawTokenKind {
     LexemeRun,
     NumeralLike,
-    StringLiteralLike,
     AnnotationMarker,
     Layout,
     Error,
@@ -65,6 +66,10 @@ x*+y
 
 The raw scanner must preserve spans, spelling, and enough structure for later longest-match disambiguation. It must not split too early in ways that prevent later recognition of active user symbols.
 
+`LexemeRun` is deliberately coarse. Reserved punctuation such as `.`, `..`, `,`, `;`, quotes, and operator characters may appear inside a run. Later modules may inspect and split a run internally, but they must preserve source spans and must not require the raw scanner to know grammar context.
+
+Comments and documentation comments are not raw tokens. The source-loading and preprocessing layers remove ordinary comments from lexical input and retain documentation comments as trivia metadata. Import pre-scan and scope skeleton construction may skip that trivia via the preprocessed source metadata, but they do not receive comments as `RawTokenKind` values.
+
 ### Import Pre-Scan and Active Lexical Environment
 
 The raw scanner does not interpret imports and does not know the module system. It only produces raw units.
@@ -83,7 +88,7 @@ LF-only source text
        ActiveLexicalEnvironment
 ```
 
-The import pre-scan reads raw lexer output using a restricted syntax mode. It recognizes only enough top-level import structure to extract module path spellings and source spans. It must not resolve package/module existence, visibility, re-export legality, or imported symbol identity.
+The import pre-scan reads raw lexer output using a restricted syntax mode. It is allowed to inspect and split inside `LexemeRun` spans for import syntax such as `.`, `..`, `,`, and `;`. It recognizes only enough top-level import structure to extract module path spellings and source spans. It must not resolve package/module existence, visibility, re-export legality, or imported symbol identity.
 
 The active lexical environment is the input consumed by the disambiguator. It contains built-in reserved tables and exported user-symbol shapes from imported module lexical summaries. Constructing it is outside raw scanning.
 
@@ -263,7 +268,6 @@ Raw scanning errors are for malformed source shapes at the lexical layer:
 
 - non-LF carriage returns after source loading;
 - unsupported non-ASCII code characters if source loading did not reject them;
-- unterminated literal-like spans once literal scanning exists;
 - impossible annotation markers.
 
 Disambiguation errors are for tokenization failures after context is considered:
