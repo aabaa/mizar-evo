@@ -13,3 +13,15 @@
 # required = true
 # coverage = "pass_and_fail"
 # tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.identifiers.basic"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.6 Identifiers"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_identifier_basic_001.expect.toml",
+]

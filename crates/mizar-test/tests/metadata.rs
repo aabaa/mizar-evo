@@ -263,6 +263,34 @@ fn plan_order_is_deterministic_by_expectation_path() {
     );
 }
 
+#[test]
+fn repository_corpus_plan_succeeds() {
+    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .unwrap()
+        .to_path_buf();
+    let config = DiscoveryConfig {
+        workspace_root: workspace_root.clone(),
+        tests_root: workspace_root.join("tests"),
+        manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+        profile: TestProfile::Fast,
+        validation_mode: ValidationMode::Metadata,
+    };
+
+    let plan = build_test_plan(&config).unwrap();
+
+    assert_eq!(plan.error_count(), 0, "{:#?}", plan.diagnostics);
+    assert!(plan.cases.iter().any(|case| {
+        case.id.0 == "pass_lexical_identifier_basic_001"
+            && case
+                .expectation
+                .spec_refs
+                .iter()
+                .any(|spec_ref| spec_ref.0 == "spec.en.02.lexical.identifiers.basic")
+    }));
+}
+
 struct Corpus {
     root: PathBuf,
 }
