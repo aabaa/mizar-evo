@@ -19,8 +19,9 @@ pub struct DiscoveryConfig {
     pub validation_mode: ValidationMode,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum TestProfile {
+    #[default]
     Fast,
     Full,
     Stress,
@@ -28,8 +29,9 @@ pub enum TestProfile {
     SnapshotUpdate,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum ValidationMode {
+    #[default]
     Metadata,
     Development,
     Release,
@@ -283,18 +285,6 @@ fn normalized_config(config: &DiscoveryConfig) -> Result<DiscoveryConfig, Harnes
         profile: config.profile,
         validation_mode: config.validation_mode,
     })
-}
-
-impl Default for TestProfile {
-    fn default() -> Self {
-        Self::Fast
-    }
-}
-
-impl Default for ValidationMode {
-    fn default() -> Self {
-        Self::Metadata
-    }
 }
 
 impl fmt::Display for HarnessError {
