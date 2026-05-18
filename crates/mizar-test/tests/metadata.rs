@@ -120,6 +120,30 @@ fn expectation_source_must_be_clean_relative_path() {
 }
 
 #[test]
+fn expectation_source_path_error_does_not_hide_spec_ref_errors() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/lexical/pass/escape.expect.toml",
+        r#"schema_version = 1
+id = "escape"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "../escape.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = []
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SOURCE-PATH");
+    assert_has_code(&plan, "E-EXPECT-SPEC-REFS");
+}
+
+#[test]
 fn expectation_source_must_use_payload_extension() {
     let corpus = Corpus::new();
     corpus.add_requirement("spec.en.test.basic", &[]);
@@ -149,6 +173,30 @@ status = "planned"
 required = true
 coverage = "pass"
 tests = ["../tests/lexical/pass/escape.expect.toml"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-MANIFEST-SOURCE-PATH");
+    assert_has_code(&plan, "E-MANIFEST-TEST-PATH");
+}
+
+#[test]
+fn manifest_paths_must_not_contain_current_dir_components() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.basic"
+source = "doc/./spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = ["tests/./lexical/pass/linked.expect.toml"]
 "#,
     );
 

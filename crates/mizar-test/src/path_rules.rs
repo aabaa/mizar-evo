@@ -1,10 +1,17 @@
 use std::path::{Component, Path, PathBuf};
 
 pub fn clean_relative_path(path: &Path) -> bool {
+    let Some(raw_path) = path.to_str() else {
+        return false;
+    };
+
     !path.as_os_str().is_empty()
+        && raw_path
+            .split(['/', '\\'])
+            .all(|component| !matches!(component, "" | "." | ".."))
         && path
             .components()
-            .all(|component| matches!(component, Component::Normal(_) | Component::CurDir))
+            .all(|component| matches!(component, Component::Normal(_)))
 }
 
 pub fn absolute_from(base: &Path, path: &Path) -> PathBuf {

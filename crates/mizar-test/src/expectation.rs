@@ -166,7 +166,8 @@ pub fn validate_expectation_path(
         ));
     }
 
-    if !clean_relative_path(&expectation.source) {
+    let clean_source_path = clean_relative_path(&expectation.source);
+    if !clean_source_path {
         diagnostics.push(ValidationDiagnostic::error(
             path,
             "expectation",
@@ -177,14 +178,10 @@ pub fn validate_expectation_path(
                 expectation.source.display()
             ),
         ));
-        return diagnostics;
     }
 
-    let source_path = path
-        .parent()
-        .unwrap_or_else(|| Path::new(""))
-        .join(&expectation.source);
-    if !source_path.is_file() {
+    let source_path = path.parent().unwrap_or_else(|| Path::new(""));
+    if clean_source_path && !source_path.join(&expectation.source).is_file() {
         diagnostics.push(ValidationDiagnostic::error(
             path,
             "expectation",
