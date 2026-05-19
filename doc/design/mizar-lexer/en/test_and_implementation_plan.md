@@ -179,7 +179,7 @@ Exit criteria:
 - reserved tables are data-driven or otherwise easy to audit against the spec;
 - tests distinguish raw spelling recognition from context-sensitive disambiguation.
 
-## Phase 3: Import Pre-Scan
+## Phase 3: Import Pre-Scan -> Done
 
 Target API direction:
 
