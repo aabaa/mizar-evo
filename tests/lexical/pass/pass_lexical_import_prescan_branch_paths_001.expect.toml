@@ -1,0 +1,55 @@
+schema_version = 1
+id = "pass_lexical_import_prescan_branch_paths_001"
+kind = "pass"
+stage = "lexical"
+domain = "import_prescan"
+source = "pass_lexical_import_prescan_branch_paths_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.preprocessing.import_prelude_prescan",
+  "spec.en.12.modules.import_prelude.branch",
+]
+
+[[tokens]]
+kind = "import_path"
+lexeme = "algebra.linear.eigen_value"
+span_start = 7
+span_end = 34
+
+[[tokens]]
+kind = "import_path_segment"
+lexeme = "algebra.linear.eigen_value"
+span_start = 7
+span_end = 21
+
+[[tokens]]
+kind = "import_path_segment"
+lexeme = "algebra.linear.eigen_value"
+span_start = 23
+span_end = 34
+
+[[tokens]]
+kind = "import_path"
+lexeme = "algebra.linear.jordan"
+span_start = 7
+span_end = 42
+
+[[tokens]]
+kind = "import_path_segment"
+lexeme = "algebra.linear.jordan"
+span_start = 7
+span_end = 21
+
+[[tokens]]
+kind = "import_path_segment"
+lexeme = "algebra.linear.jordan"
+span_start = 36
+span_end = 42
+
+[[tokens]]
+kind = "prelude_end"
+lexeme = "prelude_end"
+span_start = 44
+span_end = 44

@@ -1,0 +1,19 @@
+schema_version = 1
+id = "pass_lexical_import_prescan_empty_001"
+kind = "pass"
+stage = "lexical"
+domain = "import_prescan"
+source = "pass_lexical_import_prescan_empty_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.preprocessing.import_prelude_prescan",
+  "spec.en.12.modules.import_prelude.basic",
+]
+
+[[tokens]]
+kind = "prelude_end"
+lexeme = "prelude_end"
+span_start = 0
+span_end = 0

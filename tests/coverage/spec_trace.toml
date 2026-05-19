@@ -220,10 +220,21 @@ id = "spec.en.02.lexical.preprocessing.import_prelude_prescan"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.10 Lexical Preprocessing"
 stage = "lexical"
-status = "planned"
+status = "covered"
 required = true
 coverage = "pass"
-tests = []
+tests = [
+  "tests/lexical/pass/pass_lexical_import_prescan_empty_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_one_import_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_comma_alias_relative_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_termination_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_theorem_termination_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_malformed_recovery_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_missing_semicolon_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_multiple_statements_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_rich_multi_path_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_branch_paths_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.raw.lexeme_runs"
@@ -349,4 +360,87 @@ required = true
 coverage = "pass"
 tests = [
   "tests/lexical/pass/pass_lexical_reserved_symbols_longest_compound_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.12.modules.import_prelude.alias"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.3.3 Aliasing"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_import_prescan_comma_alias_relative_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_multiple_statements_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_rich_multi_path_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.12.modules.import_prelude.basic"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.3 Import Statements"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_import_prescan_empty_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_one_import_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_comma_alias_relative_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_multiple_statements_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_rich_multi_path_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.12.modules.import_prelude.branch"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.3 Import Statements"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_import_prescan_branch_paths_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.12.modules.import_prelude.malformed_recovery"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.3 Import Statements"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/lexical/pass/pass_lexical_import_prescan_malformed_recovery_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_missing_semicolon_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.12.modules.import_prelude.relative"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.3.2 Resolution Rules"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_import_prescan_comma_alias_relative_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_rich_multi_path_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.12.modules.import_prelude.termination"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.3.1 Placement Rules"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_import_prescan_termination_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_theorem_termination_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_missing_semicolon_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_import_prescan_rich_multi_path_001.expect.toml",
 ]

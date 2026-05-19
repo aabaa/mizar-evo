@@ -25,6 +25,13 @@ pub struct ImportStub {
     pub span: SourceRange,
 }
 
+pub struct RawModulePath {
+    pub spelling: String,
+    pub components: Vec<RawModulePathComponent>,
+    pub source_segments: Vec<SourceRange>,
+    pub span: SourceRange,
+}
+
 pub fn scan_import_prelude(raw: &RawTokenStream) -> ImportPrelude;
 ```
 
@@ -50,7 +57,10 @@ The pre-scan recognizes the Chapter 12 import syntax:
 
 ```ebnf
 import_stmt       ::= "import" module_alias_decl { "," module_alias_decl } ";" ;
-module_alias_decl ::= module_path [ "as" module_identifier ] ;
+module_alias_decl ::= module_path [ "as" module_identifier ]
+                    | module_branch_import ;
+module_branch_import
+                  ::= module_path ".{" module_identifier { "," module_identifier } "}" ;
 module_path       ::= [ relative_prefix ] module_identifier { "." module_identifier } ;
 relative_prefix   ::= "." | ".." ;
 module_identifier ::= identifier ;
@@ -58,7 +68,9 @@ module_identifier ::= identifier ;
 
 Recognition is spelling-based. `import` and `as` are reserved-word spellings, and module path components are identifier-shaped raw lexemes.
 
-The pre-scan must not require raw scan to split punctuation in advance. It may inspect and split inside a `LexemeRun` to recognize `.`, `..`, `,`, and `;` while preserving source spans. For example, a raw run covering `std.algebra.group;` can still yield the module path `std.algebra.group` and the terminating semicolon.
+Branch import syntax is shorthand for multiple module paths under the same prefix. For example, `import algebra.linear.{eigen_value, jordan};` contributes raw stubs for `algebra.linear.eigen_value` and `algebra.linear.jordan`. Because a branch-expanded spelling is not necessarily contiguous in source text, consumers should use `source_segments` when they need exact source coverage.
+
+The pre-scan must not require raw scan to split punctuation in advance. It may inspect and split inside a `LexemeRun` to recognize `.`, `..`, `,`, `;`, `.{`, and `}` while preserving source spans. For example, a raw run covering `std.algebra.group;` can still yield the module path `std.algebra.group` and the terminating semicolon.
 
 ## Non-Goals
 
@@ -90,6 +102,7 @@ Tests should cover:
 - empty prelude;
 - one import;
 - comma-separated imports;
+- branch imports;
 - aliases;
 - relative imports;
 - prelude termination at `export`, `definition`, `registration`, and theorem-like items;

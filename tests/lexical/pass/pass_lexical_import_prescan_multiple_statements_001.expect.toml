@@ -1,0 +1,44 @@
+schema_version = 1
+id = "pass_lexical_import_prescan_multiple_statements_001"
+kind = "pass"
+stage = "lexical"
+domain = "import_prescan"
+source = "pass_lexical_import_prescan_multiple_statements_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.preprocessing.import_prelude_prescan",
+  "spec.en.12.modules.import_prelude.basic",
+  "spec.en.12.modules.import_prelude.alias",
+]
+
+[[tokens]]
+kind = "import_path"
+lexeme = "std.algebra.group"
+span_start = 7
+span_end = 24
+
+[[tokens]]
+kind = "import_path"
+lexeme = "std.topology.metric_space"
+span_start = 33
+span_end = 58
+
+[[tokens]]
+kind = "import_alias"
+lexeme = "Metric"
+span_start = 62
+span_end = 68
+
+[[tokens]]
+kind = "import_path"
+lexeme = "pkg.mathcomp_mizar.algebra.ring"
+span_start = 77
+span_end = 108
+
+[[tokens]]
+kind = "prelude_end"
+lexeme = "prelude_end"
+span_start = 109
+span_end = 109

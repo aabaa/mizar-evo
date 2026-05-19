@@ -1,0 +1,64 @@
+schema_version = 1
+id = "pass_lexical_import_prescan_rich_multi_path_001"
+kind = "pass"
+stage = "lexical"
+domain = "import_prescan"
+source = "pass_lexical_import_prescan_rich_multi_path_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.preprocessing.import_prelude_prescan",
+  "spec.en.12.modules.import_prelude.basic",
+  "spec.en.12.modules.import_prelude.alias",
+  "spec.en.12.modules.import_prelude.relative",
+  "spec.en.12.modules.import_prelude.termination",
+]
+
+[[tokens]]
+kind = "import_path"
+lexeme = "std.algebra.group"
+span_start = 7
+span_end = 24
+
+[[tokens]]
+kind = "import_path"
+lexeme = "std.topology.metric_space"
+span_start = 26
+span_end = 51
+
+[[tokens]]
+kind = "import_alias"
+lexeme = "Metric"
+span_start = 55
+span_end = 61
+
+[[tokens]]
+kind = "import_path"
+lexeme = "pkg.bourbaki.topology.filters"
+span_start = 63
+span_end = 92
+
+[[tokens]]
+kind = "import_alias"
+lexeme = "filters"
+span_start = 96
+span_end = 103
+
+[[tokens]]
+kind = "import_path"
+lexeme = "..common"
+span_start = 105
+span_end = 113
+
+[[tokens]]
+kind = "import_path"
+lexeme = ".utils"
+span_start = 115
+span_end = 121
+
+[[tokens]]
+kind = "prelude_end"
+lexeme = "prelude_end"
+span_start = 122
+span_end = 122

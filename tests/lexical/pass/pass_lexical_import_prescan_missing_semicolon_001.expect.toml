@@ -1,0 +1,28 @@
+schema_version = 1
+id = "pass_lexical_import_prescan_missing_semicolon_001"
+kind = "pass"
+stage = "lexical"
+domain = "import_prescan"
+source = "pass_lexical_import_prescan_missing_semicolon_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = [
+  "missing_semicolon",
+]
+spec_refs = [
+  "spec.en.02.lexical.preprocessing.import_prelude_prescan",
+  "spec.en.12.modules.import_prelude.malformed_recovery",
+  "spec.en.12.modules.import_prelude.termination",
+]
+
+[[tokens]]
+kind = "import_path"
+lexeme = "std.core"
+span_start = 7
+span_end = 15
+
+[[tokens]]
+kind = "prelude_end"
+lexeme = "prelude_end"
+span_start = 15
+span_end = 15

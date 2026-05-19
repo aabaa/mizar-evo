@@ -1,0 +1,3 @@
+import std.logic;
+theorem T:
+import dev.late;

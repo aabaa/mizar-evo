@@ -148,7 +148,7 @@ Exit criteria:
 - raw spans are covered by tests or snapshots;
 - punctuation is no longer tested as a permanent lexer error.
 
-## Phase 2: Reserved Tables And Final Token Shell
+## Phase 2: Reserved Tables And Final Token Shell -> Done
 
 Target implementation:
 
@@ -192,6 +192,7 @@ Tests should cover:
 - empty prelude;
 - one import;
 - comma-separated imports;
+- branch imports;
 - aliases using `as`;
 - relative imports using `.` and `..`;
 - prelude termination at `export`, `definition`, `registration`, theorem-like items, or other non-import top-level text;
@@ -204,6 +205,7 @@ Recommended requirement ids:
 spec.en.12.modules.import_prelude.basic
 spec.en.12.modules.import_prelude.alias
 spec.en.12.modules.import_prelude.relative
+spec.en.12.modules.import_prelude.branch
 spec.en.12.modules.import_prelude.termination
 spec.en.12.modules.import_prelude.malformed_recovery
 ```

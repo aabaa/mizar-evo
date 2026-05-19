@@ -25,6 +25,13 @@ pub struct ImportStub {
     pub span: SourceRange,
 }
 
+pub struct RawModulePath {
+    pub spelling: String,
+    pub components: Vec<RawModulePathComponent>,
+    pub source_segments: Vec<SourceRange>,
+    pub span: SourceRange,
+}
+
 pub fn scan_import_prelude(raw: &RawTokenStream) -> ImportPrelude;
 ```
 
@@ -50,7 +57,10 @@ The pre-scan recognizes the Chapter 12 import syntax:
 
 ```ebnf
 import_stmt       ::= "import" module_alias_decl { "," module_alias_decl } ";" ;
-module_alias_decl ::= module_path [ "as" module_identifier ] ;
+module_alias_decl ::= module_path [ "as" module_identifier ]
+                    | module_branch_import ;
+module_branch_import
+                  ::= module_path ".{" module_identifier { "," module_identifier } "}" ;
 module_path       ::= [ relative_prefix ] module_identifier { "." module_identifier } ;
 relative_prefix   ::= "." | ".." ;
 module_identifier ::= identifier ;
@@ -58,7 +68,9 @@ module_identifier ::= identifier ;
 
 Recognition is spelling-based. `import` and `as` are reserved-word spellings, and module path components are identifier-shaped raw lexemes.
 
-Pre-scan は raw scan が punctuation を事前に分割することを要求してはいけません。`.`、`..`、`,`、`;` を認識するために `LexemeRun` の内部を inspect and split してよいですが、source spans を保持しなければなりません。たとえば `std.algebra.group;` を覆う raw run からも、module path `std.algebra.group` と terminating semicolon を抽出できます。
+Branch import syntax は、同じ prefix 配下の複数 module paths の shorthand です。たとえば `import algebra.linear.{eigen_value, jordan};` は `algebra.linear.eigen_value` と `algebra.linear.jordan` の raw stubs に展開されます。Branch 展開された spelling は source text 上で必ずしも contiguous ではないため、正確な source coverage が必要な consumer は `source_segments` を使います。
+
+Pre-scan は raw scan が punctuation を事前に分割することを要求してはいけません。`.`、`..`、`,`、`;`、`.{`、`}` を認識するために `LexemeRun` の内部を inspect and split してよいですが、source spans を保持しなければなりません。たとえば `std.algebra.group;` を覆う raw run からも、module path `std.algebra.group` と terminating semicolon を抽出できます。
 
 ## Non-Goals
 
@@ -90,6 +102,7 @@ Tests should cover:
 - empty prelude;
 - one import;
 - comma-separated imports;
+- branch imports;
 - aliases;
 - relative imports;
 - prelude termination at `export`, `definition`, `registration`, and theorem-like items;
