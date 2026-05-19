@@ -1,0 +1,15 @@
+schema_version = 1
+id = "lexical_environment_phase4_001"
+kind = "property_seed"
+stage = "lexical"
+domain = "lexical_environment"
+source = "lexical_environment_phase4_001.fixture.toml"
+expected_outcome = "metadata_only"
+diagnostic_codes = []
+notes = "Traceability anchor for Phase 4 crate-local lexical environment unit tests in crates/mizar-lexer/src/lib.rs."
+spec_refs = [
+  "spec.en.11.symbol_management.active_lexicon.imported_symbols",
+  "spec.en.11.symbol_management.active_lexicon.import_conflicts",
+  "spec.en.11.symbol_management.active_lexicon.reserved_collisions",
+  "spec.en.11.symbol_management.active_lexicon.fingerprint",
+]

@@ -363,6 +363,54 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.11.symbol_management.active_lexicon.imported_symbols"
+source = "doc/spec/en/11.symbol_management.md"
+section = "11.2.3 Imported Symbols"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "manual_review"
+tests = [
+  "tests/property/lexical_environment_phase4_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.11.symbol_management.active_lexicon.import_conflicts"
+source = "doc/spec/en/11.symbol_management.md"
+section = "11.2.4 Precedence Rules"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "manual_review"
+tests = [
+  "tests/property/lexical_environment_phase4_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.11.symbol_management.active_lexicon.reserved_collisions"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.5.2 User-Defined Symbolic Names"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "manual_review"
+tests = [
+  "tests/property/lexical_environment_phase4_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.11.symbol_management.active_lexicon.fingerprint"
+source = "doc/design/mizar-lexer/en/lexical_environment.md"
+section = "Algorithm"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "manual_review"
+tests = [
+  "tests/property/lexical_environment_phase4_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.12.modules.import_prelude.alias"
 source = "doc/spec/en/12.modules_and_namespaces.md"
 section = "12.3.3 Aliasing"

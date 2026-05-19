@@ -1,0 +1,2 @@
+schema_version = 1
+description = "Phase 4 active lexical environment coverage is implemented by crate-local unit tests."

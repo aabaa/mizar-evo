@@ -215,7 +215,7 @@ Exit criteria:
 - pre-scan は raw path spellings と source spans だけを返す;
 - pre-scan は module existence、visibility、import cycles、exported symbols を resolve しない。
 
-## Phase 4: Active Lexical Environment
+## Phase 4: Active Lexical Environment -> Done
 
 Target API direction:
 
@@ -232,7 +232,7 @@ Tests should cover:
 - imported punctuation-shaped symbols が visible;
 - imported identifier-shaped symbols が visible;
 - `.` を含む symbols を index できる;
-- later imports が earlier equal-length user symbols を deterministic に shadow する;
+- equal-spelling user symbols from different imports が deterministic に reject される;
 - illegal reserved-word and reserved-symbol collisions が reject される;
 - environment fingerprints が deterministic input ordering に対して stable;
 - longest-match lookup が identifier-shaped and punctuation-shaped symbols の両方で機能する。
@@ -241,7 +241,7 @@ Recommended requirement ids:
 
 ```text
 spec.en.11.symbol_management.active_lexicon.imported_symbols
-spec.en.11.symbol_management.active_lexicon.shadowing
+spec.en.11.symbol_management.active_lexicon.import_conflicts
 spec.en.11.symbol_management.active_lexicon.reserved_collisions
 spec.en.11.symbol_management.active_lexicon.fingerprint
 ```
@@ -250,6 +250,7 @@ Exit criteria:
 
 - environment tests は full module IR ではなく lightweight module lexical summaries を使う;
 - lookup behavior が repeated runs で deterministic。
+- raw scanner tests、final token shell tests、import pre-scan tests とは分離し、crate-local lexical environment unit tests と traceability manifest で coverage を記録する。
 
 ## Phase 5: Scope Skeleton
 
@@ -307,7 +308,7 @@ Tests should cover:
 - namespace-path context;
 - compound reserved tokens、user symbols、selector access、namespace paths に関する dot disambiguation;
 - string literals は string-required parser contexts でのみ認識されること;
-- lexical environment 経由の equal-length import tie breaking;
+- lexical environment 経由の import conflict reporting;
 - recovery が stable `Error` tokens and diagnostics を emit すること。
 
 Recommended requirement ids:
@@ -336,7 +337,7 @@ Recommended test families:
 - raw scanning panic or nondeterminism に対する committed minimized fuzz regressions;
 - span coverage and concatenation/re-tokenization invariants の property tests;
 - generated user-symbol overlap cases;
-- generated import-order shadowing cases;
+- generated import-conflict cases;
 - format が安定した raw streams and final token streams の snapshot tests.
 
 Promotion rule:

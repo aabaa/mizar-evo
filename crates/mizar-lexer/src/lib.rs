@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt;
 
@@ -243,6 +244,146 @@ pub const RESERVED_SYMBOLS: &[&str] = &[
     "}", "=", "&",
 ];
 
+pub type ReservedWordTable = &'static [&'static str];
+pub type ReservedSymbolTable = &'static [&'static str];
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ModuleId(pub String);
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SymbolId(pub String);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ExportRank(pub u32);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct LexicalSummaryFingerprint(pub u64);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct LexicalEnvironmentFingerprint(pub u64);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedImport {
+    pub module_id: ModuleId,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ModuleLexicalSummary {
+    pub module_id: ModuleId,
+    pub exported_symbols: Vec<ExportedSymbolShape>,
+    pub fingerprint: LexicalSummaryFingerprint,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExportedSymbolShape {
+    pub spelling: String,
+    pub symbol_id: SymbolId,
+    pub source_module: ModuleId,
+    pub export_rank: ExportRank,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActiveLexicalEnvironment {
+    pub reserved_words: ReservedWordTable,
+    pub reserved_symbols: ReservedSymbolTable,
+    pub user_symbols: UserSymbolIndex,
+    pub fingerprint: LexicalEnvironmentFingerprint,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct UserSymbolIndex {
+    symbols_by_spelling: BTreeMap<String, Vec<UserSymbolCandidate>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UserSymbolCandidate {
+    pub spelling: String,
+    pub symbol_id: SymbolId,
+    pub source_module: ModuleId,
+    pub imported_module: ModuleId,
+    pub import_ordinal: usize,
+    pub export_rank: ExportRank,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LexicalEnvironmentError {
+    MissingModuleSummary {
+        module_id: ModuleId,
+    },
+    InconsistentDuplicateSummary {
+        module_id: ModuleId,
+    },
+    InvalidUserSymbolSpelling {
+        spelling: String,
+        module_id: ModuleId,
+    },
+    ReservedWordCollision {
+        spelling: String,
+        module_id: ModuleId,
+    },
+    ReservedSymbolCollision {
+        spelling: String,
+        module_id: ModuleId,
+    },
+    UserSymbolImportConflict {
+        spelling: String,
+        earlier_import: ModuleId,
+        later_import: ModuleId,
+    },
+}
+
+impl fmt::Display for LexicalEnvironmentError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MissingModuleSummary { module_id } => {
+                write!(f, "missing lexical summary for module `{}`", module_id.0)
+            }
+            Self::InconsistentDuplicateSummary { module_id } => {
+                write!(
+                    f,
+                    "inconsistent duplicate lexical summary for module `{}`",
+                    module_id.0
+                )
+            }
+            Self::InvalidUserSymbolSpelling {
+                spelling,
+                module_id,
+            } => write!(
+                f,
+                "invalid user symbol spelling `{spelling}` exported by module `{}`",
+                module_id.0
+            ),
+            Self::ReservedWordCollision {
+                spelling,
+                module_id,
+            } => write!(
+                f,
+                "user symbol `{spelling}` exported by module `{}` collides with a reserved word",
+                module_id.0
+            ),
+            Self::ReservedSymbolCollision {
+                spelling,
+                module_id,
+            } => write!(
+                f,
+                "user symbol `{spelling}` exported by module `{}` collides with a reserved symbol",
+                module_id.0
+            ),
+            Self::UserSymbolImportConflict {
+                spelling,
+                earlier_import,
+                later_import,
+            } => write!(
+                f,
+                "user symbol `{spelling}` exported by module `{}` conflicts with earlier import from module `{}`",
+                later_import.0, earlier_import.0
+            ),
+        }
+    }
+}
+
+impl Error for LexicalEnvironmentError {}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LexError {
     message: String,
@@ -401,6 +542,61 @@ pub fn scan_import_prelude(raw: &RawTokenStream) -> ImportPrelude {
     }
 }
 
+pub fn build_lexical_environment(
+    imports: &[ResolvedImport],
+    summaries: &[ModuleLexicalSummary],
+) -> Result<ActiveLexicalEnvironment, LexicalEnvironmentError> {
+    let summaries_by_module = index_module_lexical_summaries(summaries)?;
+    let mut user_symbols = UserSymbolIndex::default();
+    let mut fingerprint = StableFingerprint::new();
+
+    fingerprint.write_str("mizar-lexer.active-lexical-environment.v1");
+    fingerprint.write_str("reserved-words");
+    for word in RESERVED_WORDS {
+        fingerprint.write_str(word);
+    }
+    fingerprint.write_str("reserved-symbols");
+    for symbol in RESERVED_SYMBOLS {
+        fingerprint.write_str(symbol);
+    }
+
+    for (import_ordinal, import) in imports.iter().enumerate() {
+        let summary = summaries_by_module.get(&import.module_id).ok_or_else(|| {
+            LexicalEnvironmentError::MissingModuleSummary {
+                module_id: import.module_id.clone(),
+            }
+        })?;
+
+        fingerprint.write_usize(import_ordinal);
+        fingerprint.write_str(&import.module_id.0);
+        fingerprint.write_u64(summary.fingerprint.0);
+
+        for exported in &summary.exported_symbols {
+            validate_exported_symbol_shape(exported)?;
+            fingerprint.write_str(&exported.spelling);
+            fingerprint.write_str(&exported.symbol_id.0);
+            fingerprint.write_str(&exported.source_module.0);
+            fingerprint.write_u64(u64::from(exported.export_rank.0));
+
+            user_symbols.insert(UserSymbolCandidate {
+                spelling: exported.spelling.clone(),
+                symbol_id: exported.symbol_id.clone(),
+                source_module: exported.source_module.clone(),
+                imported_module: import.module_id.clone(),
+                import_ordinal,
+                export_rank: exported.export_rank,
+            })?;
+        }
+    }
+
+    Ok(ActiveLexicalEnvironment {
+        reserved_words: RESERVED_WORDS,
+        reserved_symbols: RESERVED_SYMBOLS,
+        user_symbols,
+        fingerprint: LexicalEnvironmentFingerprint(fingerprint.finish()),
+    })
+}
+
 fn raw_token(input: &str, kind: RawTokenKind, start: usize, end: usize) -> RawToken {
     RawToken {
         kind,
@@ -483,6 +679,184 @@ pub fn longest_reserved_symbol_prefix(value: &str) -> Option<&'static str> {
         .copied()
         .filter(|symbol| value.starts_with(symbol))
         .max_by_key(|symbol| symbol.len())
+}
+
+impl ActiveLexicalEnvironment {
+    pub fn reserved_word(&self, spelling: &str) -> Option<&'static str> {
+        self.reserved_words
+            .iter()
+            .copied()
+            .find(|word| *word == spelling)
+    }
+
+    pub fn reserved_symbol(&self, spelling: &str) -> Option<&'static str> {
+        self.reserved_symbols
+            .iter()
+            .copied()
+            .find(|symbol| *symbol == spelling)
+    }
+
+    pub fn user_symbol(&self, spelling: &str) -> Option<&UserSymbolCandidate> {
+        self.user_symbols.visible_symbol(spelling)
+    }
+
+    pub fn longest_user_symbol_at(&self, input: &str, start: usize) -> Vec<UserSymbolCandidate> {
+        self.user_symbols.longest_at(input, start)
+    }
+}
+
+impl UserSymbolIndex {
+    pub fn visible_symbol(&self, spelling: &str) -> Option<&UserSymbolCandidate> {
+        self.symbols_by_spelling
+            .get(spelling)
+            .and_then(|candidates| candidates.last())
+    }
+
+    pub fn longest_at(&self, input: &str, start: usize) -> Vec<UserSymbolCandidate> {
+        let Some(rest) = input.get(start..) else {
+            return Vec::new();
+        };
+
+        let mut longest_len = 0;
+        let mut candidates = Vec::new();
+        for (spelling, spelling_candidates) in &self.symbols_by_spelling {
+            if !rest.starts_with(spelling) {
+                continue;
+            }
+            let spelling_len = spelling.len();
+            if spelling_len < longest_len {
+                continue;
+            }
+            if spelling_len > longest_len {
+                longest_len = spelling_len;
+                candidates.clear();
+            }
+            let visible_import = spelling_candidates
+                .last()
+                .expect("index entries are never empty")
+                .import_ordinal;
+            for candidate in spelling_candidates
+                .iter()
+                .filter(|candidate| candidate.import_ordinal == visible_import)
+            {
+                candidates.push(candidate.clone());
+            }
+        }
+
+        candidates.sort_by(|left, right| {
+            right
+                .import_ordinal
+                .cmp(&left.import_ordinal)
+                .then_with(|| left.spelling.cmp(&right.spelling))
+                .then_with(|| left.symbol_id.cmp(&right.symbol_id))
+        });
+        candidates
+    }
+
+    fn insert(&mut self, candidate: UserSymbolCandidate) -> Result<(), LexicalEnvironmentError> {
+        let candidates = self
+            .symbols_by_spelling
+            .entry(candidate.spelling.clone())
+            .or_default();
+        if let Some(previous) = candidates
+            .iter()
+            .find(|previous| previous.import_ordinal != candidate.import_ordinal)
+        {
+            return Err(LexicalEnvironmentError::UserSymbolImportConflict {
+                spelling: candidate.spelling,
+                earlier_import: previous.imported_module.clone(),
+                later_import: candidate.imported_module,
+            });
+        }
+
+        candidates.push(candidate);
+        candidates.sort_by(|left, right| {
+            left.import_ordinal
+                .cmp(&right.import_ordinal)
+                .then_with(|| left.export_rank.cmp(&right.export_rank))
+                .then_with(|| left.source_module.cmp(&right.source_module))
+                .then_with(|| left.symbol_id.cmp(&right.symbol_id))
+        });
+        Ok(())
+    }
+}
+
+fn index_module_lexical_summaries(
+    summaries: &[ModuleLexicalSummary],
+) -> Result<BTreeMap<ModuleId, &ModuleLexicalSummary>, LexicalEnvironmentError> {
+    let mut summaries_by_module = BTreeMap::new();
+    for summary in summaries {
+        if let Some(previous) = summaries_by_module.insert(summary.module_id.clone(), summary)
+            && previous != summary
+        {
+            return Err(LexicalEnvironmentError::InconsistentDuplicateSummary {
+                module_id: summary.module_id.clone(),
+            });
+        }
+    }
+    Ok(summaries_by_module)
+}
+
+fn validate_exported_symbol_shape(
+    exported: &ExportedSymbolShape,
+) -> Result<(), LexicalEnvironmentError> {
+    if !is_user_symbol_spelling(&exported.spelling) {
+        return Err(LexicalEnvironmentError::InvalidUserSymbolSpelling {
+            spelling: exported.spelling.clone(),
+            module_id: exported.source_module.clone(),
+        });
+    }
+    if is_reserved_word(&exported.spelling) {
+        return Err(LexicalEnvironmentError::ReservedWordCollision {
+            spelling: exported.spelling.clone(),
+            module_id: exported.source_module.clone(),
+        });
+    }
+    if is_reserved_symbol(&exported.spelling) && exported.spelling != "." {
+        return Err(LexicalEnvironmentError::ReservedSymbolCollision {
+            spelling: exported.spelling.clone(),
+            module_id: exported.source_module.clone(),
+        });
+    }
+    Ok(())
+}
+
+struct StableFingerprint {
+    value: u64,
+}
+
+impl StableFingerprint {
+    fn new() -> Self {
+        Self {
+            value: 0xcbf29ce484222325,
+        }
+    }
+
+    fn write_str(&mut self, value: &str) {
+        self.write_usize(value.len());
+        for byte in value.as_bytes() {
+            self.write_byte(*byte);
+        }
+    }
+
+    fn write_usize(&mut self, value: usize) {
+        self.write_u64(value as u64);
+    }
+
+    fn write_u64(&mut self, value: u64) {
+        for byte in value.to_le_bytes() {
+            self.write_byte(byte);
+        }
+    }
+
+    fn write_byte(&mut self, byte: u8) {
+        self.value ^= u64::from(byte);
+        self.value = self.value.wrapping_mul(0x100000001b3);
+    }
+
+    fn finish(self) -> u64 {
+        self.value
+    }
 }
 
 fn classify_lexeme_run_shell(raw_token: &RawToken) -> Token {
@@ -1042,10 +1416,13 @@ fn push_import_piece(
 #[cfg(test)]
 mod tests {
     use super::{
-        ImportPrescanDiagnosticCode, RESERVED_SYMBOLS, RESERVED_WORDS, RawModuleRelativePrefix,
-        RawToken, RawTokenKind, SourceSpan, Token, TokenKind, is_identifier, is_layout, is_numeral,
-        is_reserved_symbol, is_reserved_word, is_string_literal_spelling, is_user_symbol_spelling,
-        lex, longest_reserved_symbol_prefix, scan_import_prelude, scan_raw,
+        ExportRank, ExportedSymbolShape, ImportPrescanDiagnosticCode, LexicalEnvironmentError,
+        LexicalSummaryFingerprint, ModuleId, ModuleLexicalSummary, RESERVED_SYMBOLS,
+        RESERVED_WORDS, RawModuleRelativePrefix, RawToken, RawTokenKind, ResolvedImport,
+        SourceSpan, SymbolId, Token, TokenKind, UserSymbolCandidate, build_lexical_environment,
+        is_identifier, is_layout, is_numeral, is_reserved_symbol, is_reserved_word,
+        is_string_literal_spelling, is_user_symbol_spelling, lex, longest_reserved_symbol_prefix,
+        scan_import_prelude, scan_raw,
     };
 
     #[test]
@@ -1450,5 +1827,437 @@ import pkg.mathcomp_mizar.algebra.ring;";
             prelude.diagnostics[0].code,
             ImportPrescanDiagnosticCode::MissingSemicolon
         );
+    }
+
+    #[test]
+    fn lexical_environment_always_contains_reserved_tables() {
+        let env = build_lexical_environment(&[], &[]).expect("empty imports should build");
+
+        assert_eq!(env.reserved_word("theorem"), Some("theorem"));
+        assert_eq!(env.reserved_symbol(":="), Some(":="));
+        assert!(env.user_symbol("+").is_none());
+    }
+
+    #[test]
+    fn lexical_environment_imports_identifier_punctuation_and_dot_symbols() {
+        let env = build_lexical_environment(
+            &[resolved_import("std.algebra.ops")],
+            &[summary(
+                "std.algebra.ops",
+                11,
+                &[
+                    exported("succ", "std.algebra.ops#succ", "std.algebra.ops", 0),
+                    exported("*+", "std.algebra.ops#star_plus", "std.algebra.ops", 1),
+                    exported("|.", "std.algebra.ops#abs_open", "std.algebra.ops", 2),
+                    exported("grp.mul", "std.algebra.ops#qualified", "std.algebra.ops", 3),
+                ],
+            )],
+        )
+        .expect("environment should build");
+
+        assert_eq!(
+            env.user_symbol("succ")
+                .expect("identifier-shaped symbol")
+                .symbol_id,
+            symbol_id("std.algebra.ops#succ")
+        );
+        assert_eq!(
+            env.longest_user_symbol_at("*+x", 0)[0].symbol_id,
+            symbol_id("std.algebra.ops#star_plus")
+        );
+        assert_eq!(
+            env.longest_user_symbol_at("|.x.|", 0)[0].symbol_id,
+            symbol_id("std.algebra.ops#abs_open")
+        );
+        assert_eq!(
+            env.longest_user_symbol_at("let grp.mul be", 4)[0].symbol_id,
+            symbol_id("std.algebra.ops#qualified")
+        );
+    }
+
+    #[test]
+    fn lexical_environment_longest_match_prefers_longest_user_symbol() {
+        let env = build_lexical_environment(
+            &[resolved_import("std.algebra.ops")],
+            &[summary(
+                "std.algebra.ops",
+                12,
+                &[
+                    exported("+", "std.algebra.ops#plus", "std.algebra.ops", 0),
+                    exported("+*", "std.algebra.ops#plus_star", "std.algebra.ops", 1),
+                    exported(
+                        "+*+",
+                        "std.algebra.ops#plus_star_plus",
+                        "std.algebra.ops",
+                        2,
+                    ),
+                ],
+            )],
+        )
+        .expect("environment should build");
+
+        assert_eq!(
+            env.longest_user_symbol_at("+*+x", 0),
+            vec![UserSymbolCandidate {
+                spelling: "+*+".to_owned(),
+                symbol_id: symbol_id("std.algebra.ops#plus_star_plus"),
+                source_module: module_id("std.algebra.ops"),
+                imported_module: module_id("std.algebra.ops"),
+                import_ordinal: 0,
+                export_rank: ExportRank(2),
+            }]
+        );
+    }
+
+    #[test]
+    fn lexical_environment_distinguishes_equal_length_symbols_by_spelling() {
+        let env = build_lexical_environment(
+            &[resolved_import("std.first"), resolved_import("std.second")],
+            &[
+                summary(
+                    "std.first",
+                    13,
+                    &[exported("++", "std.first#plusplus", "std.first", 0)],
+                ),
+                summary(
+                    "std.second",
+                    14,
+                    &[exported("+*", "std.second#plus_star", "std.second", 0)],
+                ),
+            ],
+        )
+        .expect("environment should build");
+
+        let candidates = env.longest_user_symbol_at("+*++", 0);
+        assert_eq!(
+            candidates
+                .iter()
+                .map(|candidate| candidate.symbol_id.clone())
+                .collect::<Vec<_>>(),
+            vec![symbol_id("std.second#plus_star")]
+        );
+
+        let same_start = env.longest_user_symbol_at("++", 0);
+        assert_eq!(
+            same_start
+                .iter()
+                .map(|candidate| candidate.symbol_id.clone())
+                .collect::<Vec<_>>(),
+            vec![symbol_id("std.first#plusplus")]
+        );
+    }
+
+    #[test]
+    fn lexical_environment_returns_empty_lookup_for_invalid_offsets() {
+        let env = build_lexical_environment(
+            &[resolved_import("std.unicode_fixture")],
+            &[summary(
+                "std.unicode_fixture",
+                15,
+                &[exported(
+                    "+",
+                    "std.unicode_fixture#plus",
+                    "std.unicode_fixture",
+                    0,
+                )],
+            )],
+        )
+        .expect("environment should build");
+
+        assert!(env.longest_user_symbol_at("+", 4).is_empty());
+        assert!(env.longest_user_symbol_at("aé+", 2).is_empty());
+    }
+
+    #[test]
+    fn lexical_environment_rejects_equal_spelling_across_imports() {
+        let error = build_lexical_environment(
+            &[resolved_import("std.first"), resolved_import("std.second")],
+            &[
+                summary(
+                    "std.first",
+                    21,
+                    &[exported("+", "std.first#plus", "std.first", 0)],
+                ),
+                summary(
+                    "std.second",
+                    22,
+                    &[exported("+", "std.second#plus", "std.second", 0)],
+                ),
+            ],
+        )
+        .expect_err("equal imported user-symbol spelling should be a conflict");
+
+        assert!(matches!(
+            error,
+            LexicalEnvironmentError::UserSymbolImportConflict { .. }
+        ));
+    }
+
+    #[test]
+    fn lexical_environment_import_conflict_reports_imported_modules() {
+        let error = build_lexical_environment(
+            &[resolved_import("facade.a"), resolved_import("facade.b")],
+            &[
+                summary(
+                    "facade.a",
+                    24,
+                    &[exported("+", "std.origin#plus", "std.origin", 0)],
+                ),
+                summary(
+                    "facade.b",
+                    25,
+                    &[exported("+", "std.origin#plus", "std.origin", 0)],
+                ),
+            ],
+        )
+        .expect_err("conflict diagnostics should mention imported modules");
+
+        assert_eq!(
+            error,
+            LexicalEnvironmentError::UserSymbolImportConflict {
+                spelling: "+".to_owned(),
+                earlier_import: module_id("facade.a"),
+                later_import: module_id("facade.b"),
+            }
+        );
+    }
+
+    #[test]
+    fn lexical_environment_keeps_same_import_candidates_for_same_spelling() {
+        let env = build_lexical_environment(
+            &[resolved_import("std.overloaded")],
+            &[summary(
+                "std.overloaded",
+                23,
+                &[
+                    exported("+", "std.overloaded#plus_nat", "std.overloaded", 0),
+                    exported("+", "std.overloaded#plus_real", "std.overloaded", 1),
+                ],
+            )],
+        )
+        .expect("same imported module may export overloaded notation candidates");
+
+        assert_eq!(
+            env.longest_user_symbol_at("+ x", 0)
+                .iter()
+                .map(|candidate| candidate.symbol_id.clone())
+                .collect::<Vec<_>>(),
+            vec![
+                symbol_id("std.overloaded#plus_nat"),
+                symbol_id("std.overloaded#plus_real")
+            ]
+        );
+    }
+
+    #[test]
+    fn lexical_environment_rejects_illegal_reserved_collisions() {
+        let word_error = build_lexical_environment(
+            &[resolved_import("bad.words")],
+            &[summary(
+                "bad.words",
+                31,
+                &[exported("theorem", "bad.words#theorem", "bad.words", 0)],
+            )],
+        )
+        .expect_err("reserved word collision should fail");
+        assert!(matches!(
+            word_error,
+            LexicalEnvironmentError::ReservedWordCollision { .. }
+        ));
+
+        let symbol_error = build_lexical_environment(
+            &[resolved_import("bad.symbols")],
+            &[summary(
+                "bad.symbols",
+                32,
+                &[exported(":=", "bad.symbols#assign", "bad.symbols", 0)],
+            )],
+        )
+        .expect_err("reserved symbol collision should fail");
+        assert!(matches!(
+            symbol_error,
+            LexicalEnvironmentError::ReservedSymbolCollision { .. }
+        ));
+    }
+
+    #[test]
+    fn lexical_environment_rejects_invalid_user_symbol_spelling() {
+        let error = build_lexical_environment(
+            &[resolved_import("bad.annotations")],
+            &[summary(
+                "bad.annotations",
+                34,
+                &[exported(
+                    "@bad",
+                    "bad.annotations#bad",
+                    "bad.annotations",
+                    0,
+                )],
+            )],
+        )
+        .expect_err("annotation marker characters are not valid user symbols");
+
+        assert!(matches!(
+            error,
+            LexicalEnvironmentError::InvalidUserSymbolSpelling { .. }
+        ));
+    }
+
+    #[test]
+    fn lexical_environment_allows_dot_user_symbol_exception() {
+        let env = build_lexical_environment(
+            &[resolved_import("std.application")],
+            &[summary(
+                "std.application",
+                33,
+                &[exported(".", "std.application#dot", "std.application", 0)],
+            )],
+        )
+        .expect("dot is the reserved-symbol collision exception");
+
+        assert_eq!(
+            env.user_symbol(".").expect("dot user symbol").symbol_id,
+            symbol_id("std.application#dot")
+        );
+    }
+
+    #[test]
+    fn lexical_environment_fingerprint_is_stable_for_same_ordered_inputs() {
+        let imports = vec![resolved_import("std.first"), resolved_import("std.second")];
+        let summaries = vec![
+            summary(
+                "std.second",
+                42,
+                &[exported("*+", "s#star", "std.second", 0)],
+            ),
+            summary(
+                "std.first",
+                41,
+                &[exported("succ", "f#succ", "std.first", 0)],
+            ),
+        ];
+
+        let first = build_lexical_environment(&imports, &summaries)
+            .expect("first environment should build");
+        let second = build_lexical_environment(&imports, &summaries)
+            .expect("second environment should build");
+        let reversed_imports = vec![resolved_import("std.second"), resolved_import("std.first")];
+        let reversed = build_lexical_environment(&reversed_imports, &summaries)
+            .expect("reversed environment should build");
+
+        assert_eq!(first.fingerprint, second.fingerprint);
+        assert_ne!(first.fingerprint, reversed.fingerprint);
+    }
+
+    #[test]
+    fn lexical_environment_reports_missing_and_inconsistent_summaries() {
+        let missing = build_lexical_environment(&[resolved_import("missing")], &[])
+            .expect_err("missing summary should fail");
+        assert!(matches!(
+            missing,
+            LexicalEnvironmentError::MissingModuleSummary { .. }
+        ));
+
+        let inconsistent = build_lexical_environment(
+            &[resolved_import("dup")],
+            &[
+                summary("dup", 1, &[exported("+", "dup#plus", "dup", 0)]),
+                summary("dup", 2, &[exported("+", "dup#plus", "dup", 0)]),
+            ],
+        )
+        .expect_err("inconsistent duplicate summary should fail");
+        assert!(matches!(
+            inconsistent,
+            LexicalEnvironmentError::InconsistentDuplicateSummary { .. }
+        ));
+
+        let same_fingerprint_different_exports = build_lexical_environment(
+            &[resolved_import("same_hash")],
+            &[
+                summary(
+                    "same_hash",
+                    5,
+                    &[exported("+", "same_hash#plus", "same_hash", 0)],
+                ),
+                summary(
+                    "same_hash",
+                    5,
+                    &[exported("*", "same_hash#star", "same_hash", 0)],
+                ),
+            ],
+        )
+        .expect_err("duplicate summary content must match exactly");
+        assert!(matches!(
+            same_fingerprint_different_exports,
+            LexicalEnvironmentError::InconsistentDuplicateSummary { .. }
+        ));
+    }
+
+    #[test]
+    fn lexical_environment_treats_summary_order_as_canonical_input() {
+        let imports = vec![resolved_import("canonical")];
+        let canonical = vec![summary(
+            "canonical",
+            61,
+            &[
+                exported("+", "canonical#plus", "canonical", 0),
+                exported("*", "canonical#star", "canonical", 1),
+            ],
+        )];
+        let reordered = vec![summary(
+            "canonical",
+            61,
+            &[
+                exported("*", "canonical#star", "canonical", 1),
+                exported("+", "canonical#plus", "canonical", 0),
+            ],
+        )];
+
+        let canonical_env = build_lexical_environment(&imports, &canonical)
+            .expect("canonical summary should build");
+        let reordered_env = build_lexical_environment(&imports, &reordered)
+            .expect("environment does not recanonicalize summaries");
+
+        assert_ne!(canonical_env.fingerprint, reordered_env.fingerprint);
+    }
+
+    fn resolved_import(module: &str) -> ResolvedImport {
+        ResolvedImport {
+            module_id: module_id(module),
+        }
+    }
+
+    fn summary(
+        module: &str,
+        fingerprint: u64,
+        exported_symbols: &[ExportedSymbolShape],
+    ) -> ModuleLexicalSummary {
+        ModuleLexicalSummary {
+            module_id: module_id(module),
+            exported_symbols: exported_symbols.to_vec(),
+            fingerprint: LexicalSummaryFingerprint(fingerprint),
+        }
+    }
+
+    fn exported(
+        spelling: &str,
+        symbol: &str,
+        source_module: &str,
+        rank: u32,
+    ) -> ExportedSymbolShape {
+        ExportedSymbolShape {
+            spelling: spelling.to_owned(),
+            symbol_id: symbol_id(symbol),
+            source_module: module_id(source_module),
+            export_rank: ExportRank(rank),
+        }
+    }
+
+    fn module_id(value: &str) -> ModuleId {
+        ModuleId(value.to_owned())
+    }
+
+    fn symbol_id(value: &str) -> SymbolId {
+        SymbolId(value.to_owned())
     }
 }

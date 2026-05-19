@@ -215,7 +215,7 @@ Exit criteria:
 - pre-scan returns raw path spellings and source spans only;
 - pre-scan does not resolve module existence, visibility, import cycles, or exported symbols.
 
-## Phase 4: Active Lexical Environment
+## Phase 4: Active Lexical Environment -> Done
 
 Target API direction:
 
@@ -232,7 +232,7 @@ Tests should cover:
 - imported punctuation-shaped symbols are visible;
 - imported identifier-shaped symbols are visible;
 - symbols containing `.` can be indexed;
-- later imports shadow earlier equal-length user symbols deterministically;
+- equal-spelling user symbols from different imports are rejected deterministically;
 - illegal reserved-word and reserved-symbol collisions are rejected;
 - environment fingerprints are stable for deterministic input ordering;
 - longest-match lookup works for identifier-shaped and punctuation-shaped symbols.
@@ -241,7 +241,7 @@ Recommended requirement ids:
 
 ```text
 spec.en.11.symbol_management.active_lexicon.imported_symbols
-spec.en.11.symbol_management.active_lexicon.shadowing
+spec.en.11.symbol_management.active_lexicon.import_conflicts
 spec.en.11.symbol_management.active_lexicon.reserved_collisions
 spec.en.11.symbol_management.active_lexicon.fingerprint
 ```
@@ -250,6 +250,7 @@ Exit criteria:
 
 - environment tests use lightweight module lexical summaries, not full module IR;
 - lookup behavior is deterministic under repeated runs.
+- raw scanner tests, final token shell tests, and import pre-scan tests remain separate; coverage is recorded through crate-local lexical environment unit tests and the traceability manifest.
 
 ## Phase 5: Scope Skeleton
 
@@ -307,7 +308,7 @@ Tests should cover:
 - namespace-path context;
 - dot disambiguation for compound reserved tokens, user symbols, selector access, and namespace paths;
 - string literals only in string-required parser contexts;
-- equal-length import tie breaking through the lexical environment;
+- import conflict reporting through the lexical environment;
 - recovery emits stable `Error` tokens and diagnostics.
 
 Recommended requirement ids:
@@ -336,7 +337,7 @@ Recommended test families:
 - committed minimized fuzz regressions for raw scanning panics or nondeterminism;
 - property tests for span coverage and concatenation/re-tokenization invariants;
 - generated user-symbol overlap cases;
-- generated import-order shadowing cases;
+- generated import-conflict cases;
 - snapshot tests for raw streams and final token streams when the format is stable.
 
 Promotion rule:
