@@ -51,7 +51,7 @@ The first inventory should include at least:
 
 Only requirements with committed tests should be `covered`. For example, in the current bootstrap state, `spec.en.02.lexical.identifiers.basic` may be covered by `pass_lexical_identifier_basic_001`, while reserved words, numerals, symbolic names, annotations, and context-sensitive disambiguation should remain `planned` or `deferred`.
 
-## Phase 0: Bootstrap Identifier Lexer
+## Phase 0: Bootstrap Identifier Lexer -> Done
 
 Status: current implementation surface.
 
@@ -107,7 +107,7 @@ Exit criteria:
 - traceability manifest references every new sidecar;
 - `cargo test -p mizar-lexer` and metadata validation pass.
 
-## Phase 1: Raw Scanner API
+## Phase 1: Raw Scanner API -> Done
 
 Target API direction:
 
