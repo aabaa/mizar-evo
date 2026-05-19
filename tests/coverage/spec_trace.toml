@@ -109,10 +109,12 @@ id = "spec.en.02.lexical.identifiers.reserved_word_exclusion"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.6 Identifiers"
 stage = "lexical"
-status = "planned"
+status = "partial"
 required = true
-coverage = "pass_and_fail"
-tests = []
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_reserved_words_case_sensitive_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.identifiers.start_ascii"
@@ -154,10 +156,12 @@ id = "spec.en.02.lexical.longest_match"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.3 Tokens and Lexicon"
 stage = "lexical"
-status = "planned"
+status = "partial"
 required = true
 coverage = "pass"
-tests = []
+tests = [
+  "tests/lexical/pass/pass_lexical_reserved_symbols_longest_compound_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.module_naming.file_extension"
@@ -184,10 +188,12 @@ id = "spec.en.02.lexical.numerals.basic"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.7 Numerals and Literals"
 stage = "lexical"
-status = "planned"
+status = "covered"
 required = true
 coverage = "pass"
-tests = []
+tests = [
+  "tests/lexical/pass/pass_lexical_numerals_basic_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.preprocessing.active_lexicon"
@@ -250,40 +256,48 @@ id = "spec.en.02.lexical.reserved_symbols.longest_compound"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.5.1 Reserved Special Symbols"
 stage = "lexical"
-status = "planned"
+status = "covered"
 required = true
 coverage = "pass"
-tests = []
+tests = [
+  "tests/lexical/pass/pass_lexical_reserved_symbols_longest_compound_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.reserved_symbols.table"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.5.1 Reserved Special Symbols"
 stage = "lexical"
-status = "planned"
+status = "covered"
 required = true
 coverage = "pass"
-tests = []
+tests = [
+  "tests/lexical/pass/pass_lexical_reserved_symbols_table_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.reserved_words.case_sensitive"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.4 Reserved Words"
 stage = "lexical"
-status = "planned"
+status = "covered"
 required = true
-coverage = "pass_and_fail"
-tests = []
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_reserved_words_case_sensitive_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.reserved_words.table"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.4 Reserved Words"
 stage = "lexical"
-status = "planned"
+status = "covered"
 required = true
 coverage = "pass"
-tests = []
+tests = [
+  "tests/lexical/pass/pass_lexical_reserved_words_table_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.string_literals.context_sensitive"
@@ -330,7 +344,9 @@ id = "spec.en.02.lexical.user_symbols.free_form"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.5.2 User-Defined Symbolic Names"
 stage = "lexical"
-status = "planned"
+status = "partial"
 required = true
-coverage = "pass_and_fail"
-tests = []
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_reserved_symbols_longest_compound_001.expect.toml",
+]

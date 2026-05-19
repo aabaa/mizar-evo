@@ -37,7 +37,151 @@ pub struct SourceSpan {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenKind {
     Identifier,
+    ReservedWord,
+    ReservedSymbol,
+    Numeral,
+    LexemeRun,
+    UserSymbol,
+    StringLiteral,
+    ErrorRecovery,
 }
+
+pub const RESERVED_WORDS: &[&str] = &[
+    "algorithm",
+    "and",
+    "antonym",
+    "as",
+    "assert",
+    "assume",
+    "assumed",
+    "asymmetry",
+    "attr",
+    "be",
+    "being",
+    "break",
+    "by",
+    "case",
+    "cases",
+    "claim",
+    "cluster",
+    "coherence",
+    "commutativity",
+    "compatibility",
+    "computation",
+    "conditional",
+    "connectedness",
+    "const",
+    "consider",
+    "consistency",
+    "continue",
+    "contradiction",
+    "decreasing",
+    "deffunc",
+    "definition",
+    "defpred",
+    "do",
+    "does",
+    "downto",
+    "else",
+    "end",
+    "ensures",
+    "equals",
+    "ex",
+    "exhaustive",
+    "existence",
+    "export",
+    "extends",
+    "field",
+    "for",
+    "from",
+    "func",
+    "ghost",
+    "given",
+    "hence",
+    "hereby",
+    "holds",
+    "idempotence",
+    "if",
+    "iff",
+    "implies",
+    "import",
+    "in",
+    "infix_operator",
+    "inherit",
+    "invariant",
+    "involutiveness",
+    "irreflexivity",
+    "is",
+    "it",
+    "left",
+    "lemma",
+    "let",
+    "match",
+    "means",
+    "mode",
+    "nest",
+    "non",
+    "none",
+    "not",
+    "now",
+    "object",
+    "of",
+    "open",
+    "or",
+    "otherwise",
+    "over",
+    "per",
+    "postfix_operator",
+    "pred",
+    "prefix_operator",
+    "private",
+    "processed",
+    "projectivity",
+    "proof",
+    "property",
+    "public",
+    "qua",
+    "reconsider",
+    "reduce",
+    "reducibility",
+    "redefine",
+    "reflexivity",
+    "registration",
+    "requires",
+    "reserve",
+    "return",
+    "right",
+    "set",
+    "sethood",
+    "snapshot",
+    "st",
+    "struct",
+    "such",
+    "suppose",
+    "symmetry",
+    "synonym",
+    "take",
+    "terminating",
+    "that",
+    "the",
+    "then",
+    "theorem",
+    "thesis",
+    "thus",
+    "to",
+    "transitivity",
+    "type",
+    "uniqueness",
+    "var",
+    "where",
+    "while",
+    "with",
+];
+
+pub const RESERVED_SYMBOLS: &[&str] = &[
+    "...", ":=", ".{", "<>", "->", ".=", ".*", "@[", ",", ".", ";", ":", "(", ")", "[", "]", "{",
+    "}", "=", "&",
+];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LexError {
@@ -148,17 +292,28 @@ pub fn scan_raw(input: &str) -> Result<RawTokenStream, LexError> {
 
 pub fn lex(input: &str) -> Result<Vec<Token>, LexError> {
     let raw = scan_raw(input)?;
+    disambiguate_reserved_shell(&raw)
+}
+
+pub fn disambiguate_reserved_shell(raw: &RawTokenStream) -> Result<Vec<Token>, LexError> {
     let mut tokens = Vec::new();
 
-    for raw_token in raw.tokens {
+    for raw_token in &raw.tokens {
         match raw_token.kind {
             RawTokenKind::Layout => {}
-            RawTokenKind::LexemeRun if is_identifier(&raw_token.lexeme) => {
+            RawTokenKind::NumeralLike => {
                 tokens.push(Token {
-                    kind: TokenKind::Identifier,
-                    lexeme: raw_token.lexeme,
+                    kind: TokenKind::Numeral,
+                    lexeme: raw_token.lexeme.clone(),
                 });
             }
+            RawTokenKind::AnnotationMarker if raw_token.lexeme == "@[" => {
+                tokens.push(Token {
+                    kind: TokenKind::ReservedSymbol,
+                    lexeme: raw_token.lexeme.clone(),
+                });
+            }
+            RawTokenKind::LexemeRun => tokens.push(classify_lexeme_run_shell(raw_token)),
             _ => {
                 return Err(LexError::new(format!(
                     "unsupported lexer token at byte {}: {:?}",
@@ -179,33 +334,107 @@ fn raw_token(input: &str, kind: RawTokenKind, start: usize, end: usize) -> RawTo
     }
 }
 
-fn is_layout(ch: char) -> bool {
+pub fn is_layout(ch: char) -> bool {
     matches!(ch, ' ' | '\t' | '\n')
 }
 
-fn is_lexeme_run_char(ch: char) -> bool {
+pub fn is_lexeme_run_char(ch: char) -> bool {
     ch.is_ascii_graphic() && ch != '@'
 }
 
-fn is_identifier(value: &str) -> bool {
+pub fn is_identifier(value: &str) -> bool {
     let mut chars = value.chars();
     let Some(first) = chars.next() else {
         return false;
     };
-    is_identifier_start(first) && chars.all(is_identifier_continue)
+    is_identifier_start(first) && chars.all(is_identifier_continue) && !is_reserved_word(value)
 }
 
-fn is_identifier_start(ch: char) -> bool {
+pub fn is_identifier_start(ch: char) -> bool {
     ch.is_ascii_alphabetic() || ch == '_'
 }
 
-fn is_identifier_continue(ch: char) -> bool {
+pub fn is_identifier_continue(ch: char) -> bool {
     ch.is_ascii_alphanumeric() || ch == '_' || ch == '\''
+}
+
+pub fn is_numeral(value: &str) -> bool {
+    !value.is_empty() && value.chars().all(|ch| ch.is_ascii_digit())
+}
+
+pub fn is_reserved_word(value: &str) -> bool {
+    RESERVED_WORDS.contains(&value)
+}
+
+pub fn is_reserved_symbol(value: &str) -> bool {
+    RESERVED_SYMBOLS.contains(&value)
+}
+
+pub fn is_user_symbol_spelling(value: &str) -> bool {
+    !value.is_empty() && value.chars().all(|ch| ch.is_ascii_graphic() && ch != '@')
+}
+
+pub fn is_string_literal_spelling(value: &str) -> bool {
+    let Some(quote) = value.chars().next() else {
+        return false;
+    };
+    if quote != '"' && quote != '\'' {
+        return false;
+    }
+    let mut chars = value[quote.len_utf8()..].chars();
+    let mut escaped = false;
+    while let Some(ch) = chars.next() {
+        if escaped {
+            if !matches!(ch, '"' | '\'' | '\\') {
+                return false;
+            }
+            escaped = false;
+            continue;
+        }
+        if ch == '\\' {
+            escaped = true;
+            continue;
+        }
+        if ch == quote {
+            return chars.next().is_none();
+        }
+    }
+    false
+}
+
+pub fn longest_reserved_symbol_prefix(value: &str) -> Option<&'static str> {
+    RESERVED_SYMBOLS
+        .iter()
+        .copied()
+        .filter(|symbol| value.starts_with(symbol))
+        .max_by_key(|symbol| symbol.len())
+}
+
+fn classify_lexeme_run_shell(raw_token: &RawToken) -> Token {
+    let kind = if is_reserved_symbol(&raw_token.lexeme) {
+        TokenKind::ReservedSymbol
+    } else if is_reserved_word(&raw_token.lexeme) {
+        TokenKind::ReservedWord
+    } else if is_identifier(&raw_token.lexeme) {
+        TokenKind::Identifier
+    } else {
+        TokenKind::LexemeRun
+    };
+
+    Token {
+        kind,
+        lexeme: raw_token.lexeme.clone(),
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{RawToken, RawTokenKind, SourceSpan, Token, TokenKind, lex, scan_raw};
+    use super::{
+        RESERVED_SYMBOLS, RESERVED_WORDS, RawToken, RawTokenKind, SourceSpan, Token, TokenKind,
+        is_identifier, is_layout, is_numeral, is_reserved_symbol, is_reserved_word,
+        is_string_literal_spelling, is_user_symbol_spelling, lex, longest_reserved_symbol_prefix,
+        scan_raw,
+    };
 
     #[test]
     fn lexes_alpha_as_identifier() {
@@ -261,13 +490,95 @@ mod tests {
     }
 
     #[test]
-    fn rejects_unsupported_numeral_until_numeral_tokens_exist() {
-        assert!(lex("1alpha").is_err());
+    fn keeps_digit_leading_symbol_shapes_unsplit() {
+        let tokens = lex("1alpha").expect("digit-leading symbol shape should lex");
+
+        assert_eq!(
+            tokens,
+            vec![Token {
+                kind: TokenKind::LexemeRun,
+                lexeme: "1alpha".to_owned(),
+            }]
+        );
     }
 
     #[test]
-    fn rejects_unsupported_punctuation_until_final_tokens_exist() {
-        assert!(lex("alpha+beta").is_err());
+    fn keeps_symbol_shaped_raw_runs_unsplit() {
+        let tokens = lex("alpha:=beta").expect("symbol-shaped raw run should lex");
+
+        assert_eq!(
+            tokens,
+            vec![Token {
+                kind: TokenKind::LexemeRun,
+                lexeme: "alpha:=beta".to_owned(),
+            }]
+        );
+    }
+
+    #[test]
+    fn recognizes_reserved_word_table_entries() {
+        for word in RESERVED_WORDS {
+            assert!(is_reserved_word(word), "{word} should be reserved");
+            assert!(!is_identifier(word), "{word} should not be an identifier");
+            assert_eq!(
+                lex(word).expect("reserved word should lex"),
+                vec![Token {
+                    kind: TokenKind::ReservedWord,
+                    lexeme: (*word).to_owned(),
+                }]
+            );
+        }
+    }
+
+    #[test]
+    fn recognizes_reserved_symbol_table_entries() {
+        for symbol in RESERVED_SYMBOLS {
+            assert!(is_reserved_symbol(symbol), "{symbol} should be reserved");
+            assert_eq!(
+                lex(symbol).expect("reserved symbol should lex"),
+                vec![Token {
+                    kind: TokenKind::ReservedSymbol,
+                    lexeme: (*symbol).to_owned(),
+                }]
+            );
+        }
+    }
+
+    #[test]
+    fn reserved_words_are_case_sensitive() {
+        assert_eq!(
+            lex("Theorem").expect("case-distinct spelling should lex"),
+            vec![Token {
+                kind: TokenKind::Identifier,
+                lexeme: "Theorem".to_owned(),
+            }]
+        );
+    }
+
+    #[test]
+    fn helper_recognizes_numerals() {
+        assert!(is_numeral("42"));
+        assert!(!is_numeral(""));
+        assert!(!is_numeral("42abc"));
+    }
+
+    #[test]
+    fn helpers_recognize_layout_symbol_shapes_and_string_shells() {
+        assert!(is_layout(' '));
+        assert!(is_layout('\t'));
+        assert!(is_layout('\n'));
+        assert!(!is_layout('\r'));
+
+        assert!(is_user_symbol_spelling("*+"));
+        assert!(is_user_symbol_spelling("succ"));
+        assert!(!is_user_symbol_spelling("@latex"));
+
+        assert!(is_string_literal_spelling("\"say \\\"hi\\\"\""));
+        assert!(is_string_literal_spelling("'say \"hi\"'"));
+        assert!(!is_string_literal_spelling("\"unterminated"));
+
+        assert_eq!(longest_reserved_symbol_prefix("..."), Some("..."));
+        assert_eq!(longest_reserved_symbol_prefix(".{"), Some(".{"));
     }
 
     #[test]

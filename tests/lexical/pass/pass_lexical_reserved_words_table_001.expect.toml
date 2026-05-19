@@ -1,0 +1,528 @@
+schema_version = 1
+id = "pass_lexical_reserved_words_table_001"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "pass_lexical_reserved_words_table_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.reserved_words.table",
+]
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "algorithm"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "and"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "antonym"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "as"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "assert"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "assume"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "assumed"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "asymmetry"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "attr"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "be"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "being"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "break"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "by"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "case"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "cases"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "claim"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "cluster"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "coherence"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "commutativity"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "compatibility"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "computation"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "conditional"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "connectedness"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "const"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "consider"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "consistency"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "continue"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "contradiction"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "decreasing"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "deffunc"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "definition"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "defpred"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "do"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "does"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "downto"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "else"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "end"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "ensures"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "equals"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "ex"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "exhaustive"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "existence"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "export"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "extends"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "field"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "for"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "from"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "func"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "ghost"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "given"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "hence"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "hereby"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "holds"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "idempotence"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "if"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "iff"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "implies"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "import"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "in"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "infix_operator"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "inherit"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "invariant"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "involutiveness"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "irreflexivity"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "is"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "it"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "left"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "lemma"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "let"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "match"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "means"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "mode"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "nest"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "non"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "none"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "not"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "now"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "object"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "of"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "open"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "or"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "otherwise"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "over"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "per"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "postfix_operator"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "pred"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "prefix_operator"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "private"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "processed"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "projectivity"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "proof"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "property"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "public"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "qua"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "reconsider"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "reduce"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "reducibility"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "redefine"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "reflexivity"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "registration"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "requires"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "reserve"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "return"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "right"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "set"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "sethood"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "snapshot"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "st"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "struct"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "such"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "suppose"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "symmetry"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "synonym"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "take"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "terminating"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "that"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "the"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "then"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "theorem"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "thesis"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "thus"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "to"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "transitivity"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "type"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "uniqueness"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "var"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "where"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "while"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "with"

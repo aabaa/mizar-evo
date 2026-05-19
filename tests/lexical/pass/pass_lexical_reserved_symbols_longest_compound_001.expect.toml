@@ -1,0 +1,38 @@
+schema_version = 1
+id = "pass_lexical_reserved_symbols_longest_compound_001"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "pass_lexical_reserved_symbols_longest_compound_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.reserved_symbols.longest_compound",
+  "spec.en.02.lexical.longest_match",
+  "spec.en.02.lexical.user_symbols.free_form",
+]
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ".{"
+
+[[tokens]]
+kind = "lexeme_run"
+lexeme = ".*="
+
+[[tokens]]
+kind = "lexeme_run"
+lexeme = ".=="
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = "..."
+
+[[tokens]]
+kind = "lexeme_run"
+lexeme = ".."
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ":="

@@ -110,13 +110,20 @@ fn lexical_pass_corpus_matches_token_expectations() {
         }
     }
 
-    assert_eq!(final_checked, 6);
+    assert_eq!(final_checked, 11);
     assert_eq!(raw_checked, 5);
 }
 
 fn token_kind_name(kind: TokenKind) -> &'static str {
     match kind {
         TokenKind::Identifier => "identifier",
+        TokenKind::ReservedWord => "reserved_word",
+        TokenKind::ReservedSymbol => "reserved_symbol",
+        TokenKind::Numeral => "numeral",
+        TokenKind::LexemeRun => "lexeme_run",
+        TokenKind::UserSymbol => "user_symbol",
+        TokenKind::StringLiteral => "string_literal",
+        TokenKind::ErrorRecovery => "error_recovery",
     }
 }
 

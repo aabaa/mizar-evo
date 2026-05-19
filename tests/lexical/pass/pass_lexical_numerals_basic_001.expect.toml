@@ -1,0 +1,24 @@
+schema_version = 1
+id = "pass_lexical_numerals_basic_001"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "pass_lexical_numerals_basic_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.numerals.basic",
+]
+
+[[tokens]]
+kind = "numeral"
+lexeme = "0"
+
+[[tokens]]
+kind = "numeral"
+lexeme = "1"
+
+[[tokens]]
+kind = "numeral"
+lexeme = "42"

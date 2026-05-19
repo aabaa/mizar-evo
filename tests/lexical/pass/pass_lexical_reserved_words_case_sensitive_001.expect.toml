@@ -1,0 +1,33 @@
+schema_version = 1
+id = "pass_lexical_reserved_words_case_sensitive_001"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "pass_lexical_reserved_words_case_sensitive_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.reserved_words.case_sensitive",
+  "spec.en.02.lexical.identifiers.reserved_word_exclusion",
+]
+
+[[tokens]]
+kind = "identifier"
+lexeme = "Theorem"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "theorem"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "theorematic"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "end2"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "_definition"
