@@ -19,10 +19,12 @@ id = "spec.en.02.lexical.annotations.markers"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.9.2 Annotations"
 stage = "lexical"
-status = "planned"
+status = "covered"
 required = true
 coverage = "pass"
-tests = []
+tests = [
+  "tests/lexical/pass/pass_lexical_raw_annotation_markers_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.character_set.utf8_ascii_code"
@@ -144,6 +146,7 @@ required = true
 coverage = "pass"
 tests = [
   "tests/lexical/pass/pass_lexical_layout_space_tab_lf_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_raw_layout_runs_001.expect.toml",
 ]
 
 [[requirement]]
@@ -217,6 +220,32 @@ coverage = "pass"
 tests = []
 
 [[requirement]]
+id = "spec.en.02.lexical.raw.lexeme_runs"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.3 Tokens and Lexicon"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_raw_empty_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_raw_layout_runs_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_raw_lexeme_runs_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.02.lexical.raw.numeral_like"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.7 Numerals and Literals"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_raw_numeral_like_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.02.lexical.reserved_symbols.longest_compound"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.5.1 Reserved Special Symbols"
@@ -264,6 +293,16 @@ stage = "lexical"
 status = "planned"
 required = true
 coverage = "pass_and_fail"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.preprocessing.comments_not_raw_tokens"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.10 Lexical Preprocessing"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "manual_review"
 tests = []
 
 [[requirement]]

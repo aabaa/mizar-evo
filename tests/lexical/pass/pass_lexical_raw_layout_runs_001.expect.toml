@@ -1,0 +1,37 @@
+schema_version = 1
+id = "pass_lexical_raw_layout_runs_001"
+kind = "pass"
+stage = "lexical"
+domain = "raw_lexer"
+source = "pass_lexical_raw_layout_runs_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.raw.lexeme_runs",
+  "spec.en.02.lexical.layout.space_tab_lf",
+]
+
+[[tokens]]
+kind = "raw_lexeme_run"
+lexeme = "alpha"
+span_start = 0
+span_end = 5
+
+[[tokens]]
+kind = "raw_layout"
+lexeme = " \t\n"
+span_start = 5
+span_end = 8
+
+[[tokens]]
+kind = "raw_lexeme_run"
+lexeme = "beta"
+span_start = 8
+span_end = 12
+
+[[tokens]]
+kind = "raw_layout"
+lexeme = "\n"
+span_start = 12
+span_end = 13

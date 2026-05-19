@@ -51,7 +51,7 @@ First inventory では、少なくとも次を含める。
 
 Committed tests を持つ requirements だけを `covered` にする。たとえば current bootstrap state では、`spec.en.02.lexical.identifiers.basic` は `pass_lexical_identifier_basic_001` により covered とできる一方、reserved words、numerals、symbolic names、annotations、context-sensitive disambiguation は `planned` または `deferred` のままにする。
 
-## Phase 0: Bootstrap Identifier Lexer
+## Phase 0: Bootstrap Identifier Lexer -> Done
 
 Status: current implementation surface.
 
@@ -107,7 +107,7 @@ Exit criteria:
 - traceability manifest がすべての new sidecar を参照する;
 - `cargo test -p mizar-lexer` と metadata validation が pass する。
 
-## Phase 1: Raw Scanner API
+## Phase 1: Raw Scanner API -> Done
 
 Target API direction:
 

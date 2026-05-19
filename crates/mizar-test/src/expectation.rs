@@ -71,6 +71,8 @@ pub struct Expectation {
 pub struct TokenExpectation {
     pub kind: String,
     pub lexeme: String,
+    pub span_start: Option<u32>,
+    pub span_end: Option<u32>,
 }
 
 pub fn parse_expectation_file(path: &Path) -> Result<Expectation, ValidationDiagnostic> {
@@ -229,13 +231,30 @@ fn parse_token_expectations(token_tables: &[TomlTable]) -> Result<Vec<TokenExpec
         if lexeme.is_empty() {
             return Err("`tokens.lexeme` must not be empty".to_owned());
         }
-        tokens.push(TokenExpectation { kind, lexeme });
+        let span_start = toml_lite::optional_u32(table, "span_start")?;
+        let span_end = toml_lite::optional_u32(table, "span_end")?;
+        if span_start.is_some() != span_end.is_some() {
+            return Err(
+                "`tokens.span_start` and `tokens.span_end` must be provided together".to_owned(),
+            );
+        }
+        if let (Some(start), Some(end)) = (span_start, span_end)
+            && start > end
+        {
+            return Err("`tokens.span_start` must not exceed `tokens.span_end`".to_owned());
+        }
+        tokens.push(TokenExpectation {
+            kind,
+            lexeme,
+            span_start,
+            span_end,
+        });
     }
     Ok(tokens)
 }
 
 fn validate_token_fields(table: &TomlTable) -> Result<(), String> {
-    const KNOWN_TOKEN_FIELDS: &[&str] = &["kind", "lexeme"];
+    const KNOWN_TOKEN_FIELDS: &[&str] = &["kind", "lexeme", "span_start", "span_end"];
 
     for key in table.keys() {
         if !KNOWN_TOKEN_FIELDS.contains(&key.as_str()) {

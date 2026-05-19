@@ -160,6 +160,16 @@ pub fn required_u32(table: &TomlTable, key: &str) -> Result<u32, String> {
     }
 }
 
+pub fn optional_u32(table: &TomlTable, key: &str) -> Result<Option<u32>, String> {
+    match table.get(key) {
+        Some(TomlValue::Integer(value)) if *value >= 0 && *value <= u32::MAX as i64 => {
+            Ok(Some(*value as u32))
+        }
+        Some(_) => Err(format!("`{key}` must be a non-negative integer")),
+        None => Ok(None),
+    }
+}
+
 pub fn required_bool(table: &TomlTable, key: &str) -> Result<bool, String> {
     match table.get(key) {
         Some(TomlValue::Boolean(value)) => Ok(*value),

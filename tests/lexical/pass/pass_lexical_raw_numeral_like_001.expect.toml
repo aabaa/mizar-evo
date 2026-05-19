@@ -1,0 +1,36 @@
+schema_version = 1
+id = "pass_lexical_raw_numeral_like_001"
+kind = "pass"
+stage = "lexical"
+domain = "raw_lexer"
+source = "pass_lexical_raw_numeral_like_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.raw.numeral_like",
+]
+
+[[tokens]]
+kind = "raw_numeral_like"
+lexeme = "0"
+span_start = 0
+span_end = 1
+
+[[tokens]]
+kind = "raw_layout"
+lexeme = " "
+span_start = 1
+span_end = 2
+
+[[tokens]]
+kind = "raw_numeral_like"
+lexeme = "42"
+span_start = 2
+span_end = 4
+
+[[tokens]]
+kind = "raw_layout"
+lexeme = "\n"
+span_start = 4
+span_end = 5

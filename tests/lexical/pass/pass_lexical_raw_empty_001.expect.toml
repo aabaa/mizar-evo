@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_lexical_raw_empty_001"
+kind = "pass"
+stage = "lexical"
+domain = "raw_lexer"
+source = "pass_lexical_raw_empty_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.raw.lexeme_runs",
+]
