@@ -23,6 +23,7 @@ The crate must preserve the distinction between raw lexical scanning and final t
 | [lexical_environment.md](./lexical_environment.md) | `crates/mizar-lexer/src/lexical_environment.rs` | Active lexical environment construction from reserved tables and module lexical summaries | Draft |
 | [scope_skeleton.md](./scope_skeleton.md) | `crates/mizar-lexer/src/scope_skeleton.rs` | Reserved-keyword-based lexical scope skeleton and `ScopeLexView` projection | Draft |
 | [disambiguator.md](./disambiguator.md) | `crates/mizar-lexer/src/disambiguator.rs` | Context-sensitive longest-match token disambiguation from `LexemeRun` to final tokens | Draft |
+| [test_and_implementation_plan.md](./test_and_implementation_plan.md) | `tests/lexical`, `tests/coverage/spec_trace.toml`, `crates/mizar-lexer` | Ordered lexer test corpus and implementation checklist | Draft |
 
 ## Crate Boundary
 
