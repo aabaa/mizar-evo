@@ -8,3 +8,6 @@ repository.workspace = true
 [lib]
 name = "mizar_lexer"
 path = "src/lib.rs"
+
+[dev-dependencies]
+mizar-test = { path = "../mizar-test" }

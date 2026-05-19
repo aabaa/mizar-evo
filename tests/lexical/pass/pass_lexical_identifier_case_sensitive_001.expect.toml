@@ -1,0 +1,24 @@
+schema_version = 1
+id = "pass_lexical_identifier_case_sensitive_001"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "pass_lexical_identifier_case_sensitive_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.identifiers.case_sensitive",
+]
+
+[[tokens]]
+kind = "identifier"
+lexeme = "Foo"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "foo"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "FOO"

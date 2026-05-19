@@ -15,6 +15,58 @@
 # tests = []
 
 [[requirement]]
+id = "spec.en.02.lexical.annotations.markers"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.9.2 Annotations"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.character_set.utf8_ascii_code"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.1 Character Set and Encoding"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass_and_fail"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.comments.forms"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.9.1 Comment Types"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.dot_disambiguation"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.5.3 Dot Disambiguation"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.identifiers.apostrophe"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.6 Identifiers"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_identifier_apostrophe_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.02.lexical.identifiers.basic"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.6 Identifiers"
@@ -25,3 +77,221 @@ coverage = "pass"
 tests = [
   "tests/lexical/pass/pass_lexical_identifier_basic_001.expect.toml",
 ]
+
+[[requirement]]
+id = "spec.en.02.lexical.identifiers.case_sensitive"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.6 Identifiers"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_identifier_case_sensitive_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.02.lexical.identifiers.continue_ascii"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.6 Identifiers"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_identifier_continue_ascii_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.02.lexical.identifiers.reserved_word_exclusion"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.6 Identifiers"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass_and_fail"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.identifiers.start_ascii"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.6 Identifiers"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_identifier_start_ascii_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.02.lexical.layout.lf_only_boundary"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.2 Whitespace and Formatting"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "fail"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.layout.space_tab_lf"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.2 Whitespace and Formatting"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_layout_space_tab_lf_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.02.lexical.longest_match"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.3 Tokens and Lexicon"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.module_naming.file_extension"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.8 File and Module Naming"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass_and_fail"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.module_naming.namespace_components"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.8 File and Module Naming"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass_and_fail"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.numerals.basic"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.7 Numerals and Literals"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.preprocessing.active_lexicon"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.10 Lexical Preprocessing"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.preprocessing.comments_removed"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.10 Lexical Preprocessing"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.preprocessing.import_prelude_prescan"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.10 Lexical Preprocessing"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.reserved_symbols.longest_compound"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.5.1 Reserved Special Symbols"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.reserved_symbols.table"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.5.1 Reserved Special Symbols"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.reserved_words.case_sensitive"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.4 Reserved Words"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass_and_fail"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.reserved_words.table"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.4 Reserved Words"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.string_literals.context_sensitive"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.7 Numerals and Literals"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass_and_fail"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.tokens.lexicon_classes"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.3 Tokens and Lexicon"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "manual_review"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.user_symbols.collision_rules"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.5.2 User-Defined Symbolic Names"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "diagnostic"
+tests = []
+
+[[requirement]]
+id = "spec.en.02.lexical.user_symbols.free_form"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.5.2 User-Defined Symbolic Names"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass_and_fail"
+tests = []

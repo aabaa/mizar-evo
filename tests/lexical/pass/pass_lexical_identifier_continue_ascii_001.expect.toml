@@ -1,0 +1,16 @@
+schema_version = 1
+id = "pass_lexical_identifier_continue_ascii_001"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "pass_lexical_identifier_continue_ascii_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.identifiers.continue_ascii",
+]
+
+[[tokens]]
+kind = "identifier"
+lexeme = "aZz_09"

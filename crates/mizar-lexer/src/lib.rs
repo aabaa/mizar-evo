@@ -146,6 +146,11 @@ mod tests {
     }
 
     #[test]
+    fn rejects_unsupported_punctuation_until_raw_scanning_exists() {
+        assert!(lex("alpha+beta").is_err());
+    }
+
+    #[test]
     fn rejects_non_spec_layout_characters() {
         assert!(lex("alpha\rbeta").is_err());
     }

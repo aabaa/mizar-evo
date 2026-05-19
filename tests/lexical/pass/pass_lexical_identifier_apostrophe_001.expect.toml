@@ -1,0 +1,24 @@
+schema_version = 1
+id = "pass_lexical_identifier_apostrophe_001"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "pass_lexical_identifier_apostrophe_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.identifiers.apostrophe",
+]
+
+[[tokens]]
+kind = "identifier"
+lexeme = "x'"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "y''"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "z'end"

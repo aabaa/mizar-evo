@@ -1,0 +1,28 @@
+schema_version = 1
+id = "pass_lexical_layout_space_tab_lf_001"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "pass_lexical_layout_space_tab_lf_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.layout.space_tab_lf",
+]
+
+[[tokens]]
+kind = "identifier"
+lexeme = "alpha"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "beta"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "gamma"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "delta"
