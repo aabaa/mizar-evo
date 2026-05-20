@@ -66,6 +66,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.02.lexical.dot_disambiguation.selector_shadowing_handoff"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.5.3 Dot Disambiguation"
+stage = "declaration_symbol"
+status = "partial"
+required = true
+coverage = "manual_review"
+tests = [
+  "tests/property/lexer_phase7_spec_boundary_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.02.lexical.identifiers.apostrophe"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.6 Identifiers"

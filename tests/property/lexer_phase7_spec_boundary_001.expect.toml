@@ -10,6 +10,7 @@ notes = "Traceability anchor for Chapter 2 lexical-structure requirements whose 
 spec_refs = [
   "spec.en.02.lexical.character_set.utf8_ascii_code",
   "spec.en.02.lexical.comments.forms",
+  "spec.en.02.lexical.dot_disambiguation.selector_shadowing_handoff",
   "spec.en.02.lexical.layout.lf_only_boundary",
   "spec.en.02.lexical.module_naming.file_extension",
   "spec.en.02.lexical.module_naming.namespace_components",

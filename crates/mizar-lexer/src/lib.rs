@@ -84,6 +84,9 @@ pub struct ModuleSourceName {
 pub enum ModuleNamingError {
     MissingMizExtension { path: String },
     MissingFileStem { path: String },
+    InvalidPackageName { package_name: String },
+    MissingSourceRoot { path: String },
+    PackageRootMismatch { package_name: String, root: String },
     InvalidNamespaceComponent { component: String },
 }
 
@@ -95,6 +98,18 @@ impl fmt::Display for ModuleNamingError {
             }
             Self::MissingFileStem { path } => {
                 write!(f, "module source path `{path}` must include a file name")
+            }
+            Self::InvalidPackageName { package_name } => {
+                write!(f, "invalid package namespace root `{package_name}`")
+            }
+            Self::MissingSourceRoot { path } => {
+                write!(f, "module source path `{path}` must be under a `src` root")
+            }
+            Self::PackageRootMismatch { package_name, root } => {
+                write!(
+                    f,
+                    "module source package root `{root}` must match package `{package_name}`"
+                )
             }
             Self::InvalidNamespaceComponent { component } => {
                 write!(f, "invalid namespace component `{component}`")
@@ -681,7 +696,16 @@ pub fn preprocess_source_for_lexing(input: &str) -> PreprocessedLexicalSource {
     }
 }
 
-pub fn module_source_name_from_path(path: &str) -> Result<ModuleSourceName, ModuleNamingError> {
+pub fn module_source_name_from_path(
+    package_name: &str,
+    path: &str,
+) -> Result<ModuleSourceName, ModuleNamingError> {
+    if !is_identifier(package_name) {
+        return Err(ModuleNamingError::InvalidPackageName {
+            package_name: package_name.to_owned(),
+        });
+    }
+
     let normalized = path.replace('\\', "/");
     let Some(file_name) = normalized
         .rsplit('/')
@@ -704,13 +728,27 @@ pub fn module_source_name_from_path(path: &str) -> Result<ModuleSourceName, Modu
     let path_without_extension = normalized
         .strip_suffix(".miz")
         .expect("extension was just validated");
-    let source_relative = path_without_extension
-        .split_once("/src/")
-        .map_or(path_without_extension, |(_, relative)| relative);
-    let namespace_components = source_relative
-        .split('/')
-        .map(str::to_owned)
-        .collect::<Vec<_>>();
+    let Some((package_root, source_relative)) = path_without_extension.split_once("/src/") else {
+        return Err(ModuleNamingError::MissingSourceRoot {
+            path: path.to_owned(),
+        });
+    };
+    let root_name = package_root.rsplit('/').next().unwrap_or(package_root);
+    if root_name != package_name {
+        return Err(ModuleNamingError::PackageRootMismatch {
+            package_name: package_name.to_owned(),
+            root: root_name.to_owned(),
+        });
+    }
+
+    let mut namespace_components = Vec::new();
+    namespace_components.push(package_name.to_owned());
+    namespace_components.extend(
+        source_relative
+            .split('/')
+            .map(str::to_owned)
+            .collect::<Vec<_>>(),
+    );
 
     for component in &namespace_components {
         if !is_identifier(component) {
@@ -3417,24 +3455,49 @@ mod tests {
     }
 
     #[test]
+    fn preprocess_source_keeps_annotations_parser_visible() {
+        let preprocessed = preprocess_source_for_lexing("@latex(\"alpha\")\n@[Lemma]\n");
+
+        assert_eq!(preprocessed.lexical_text, "@latex(\"alpha\")\n@[Lemma]\n");
+        assert!(preprocessed.comments.is_empty());
+        assert!(preprocessed.diagnostics.is_empty());
+    }
+
+    #[test]
     fn module_source_name_api_derives_miz_module_and_namespace() {
-        let naming = module_source_name_from_path("algebra/src/groups/basic.miz")
+        let naming = module_source_name_from_path("algebra", "algebra/src/groups/basic.miz")
             .expect(".miz module path should derive names");
 
         assert_eq!(naming.file_name, "basic.miz");
         assert_eq!(naming.module_name, "basic");
         assert_eq!(
             naming.namespace_components,
-            vec!["groups".to_owned(), "basic".to_owned()]
+            vec![
+                "algebra".to_owned(),
+                "groups".to_owned(),
+                "basic".to_owned()
+            ]
         );
 
         assert!(matches!(
-            module_source_name_from_path("algebra/src/groups/basic.txt"),
+            module_source_name_from_path("algebra", "algebra/src/groups/basic.txt"),
             Err(ModuleNamingError::MissingMizExtension { .. })
         ));
         assert!(matches!(
-            module_source_name_from_path("algebra/src/bad-name.miz"),
+            module_source_name_from_path("algebra", "algebra/src/bad-name.miz"),
             Err(ModuleNamingError::InvalidNamespaceComponent { .. })
+        ));
+        assert!(matches!(
+            module_source_name_from_path("algebra", "groups/basic.miz"),
+            Err(ModuleNamingError::MissingSourceRoot { .. })
+        ));
+        assert!(matches!(
+            module_source_name_from_path("bad-name", "algebra/src/groups/basic.miz"),
+            Err(ModuleNamingError::InvalidPackageName { .. })
+        ));
+        assert!(matches!(
+            module_source_name_from_path("algebra", "analysis/src/groups/basic.miz"),
+            Err(ModuleNamingError::PackageRootMismatch { .. })
         ));
     }
 

@@ -344,6 +344,14 @@ Promotion rule:
 
 - A generated or fuzz-discovered failure should be minimized, given a stable human-readable name, paired with `.expect.toml`, and linked from `tests/coverage/spec_trace.toml` before becoming part of the committed corpus.
 
+Completion criteria:
+
+- Have we verified that the code meets the specifications `doc/spec/en/02.lexical_structure.md`?
+- Have we included error handling?
+- Have we included complex composite cases in our tests?
+- Have we reviewed the algorithm?
+
+
 ## Review Checklist For New Lexer Tests
 
 Before committing a new lexer test:

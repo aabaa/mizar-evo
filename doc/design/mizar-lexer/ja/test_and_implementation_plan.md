@@ -344,6 +344,13 @@ Promotion rule:
 
 - Generated or fuzz-discovered failure は、committed corpus に入れる前に minimize し、stable human-readable name を付け、`.expect.toml` と pair し、`tests/coverage/spec_trace.toml` から link する。
 
+Completion criteria:
+
+- 仕様書 `doc/spec/en/02.lexical_structure.md` を満たしていることをテストできているか?
+- エラー処理を含めているか?
+- 複雑な複合ケースをテストに含めているか?
+- アルゴリズムをレビューしたか
+
 ## Review Checklist For New Lexer Tests
 
 New lexer test を commit する前に確認すること。
