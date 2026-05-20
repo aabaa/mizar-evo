@@ -285,7 +285,7 @@ Exit criteria:
 - skeleton diagnostics は structural and recoverable;
 - skeleton output は lexical override questions だけに答えられる。
 
-## Phase 6: Disambiguator
+## Phase 6: Disambiguator -> Done
 
 Target API direction:
 
