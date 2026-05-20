@@ -1,0 +1,10 @@
+algorithm
+do
+for succ in Items processed Seen do
+succ;
+Seen;
+end;
+succ;
+Seen;
+end;
+end;

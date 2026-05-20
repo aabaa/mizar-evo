@@ -1,0 +1,127 @@
+schema_version = 1
+id = "pass_lexical_disambiguator_nested_scope_override_001"
+kind = "pass"
+stage = "lexical"
+domain = "disambiguator"
+source = "pass_lexical_disambiguator_nested_scope_override_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.user_symbols.identifier_shaped",
+  "spec.en.02.lexical.scope_override.skeleton",
+  "spec.en.04.variables_and_constants.binders.lexical_shapes",
+  "spec.en.16.theorems_and_proofs.blocks.lexical_ranges",
+]
+
+[[tokens]]
+kind = "user_symbol"
+lexeme = "succ"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ";"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "definition"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "let"
+
+[[tokens]]
+kind = "user_symbol"
+lexeme = "succ"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "be"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "set"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ";"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "succ"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ";"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "now"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "succ"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ";"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "let"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "inner"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "be"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "set"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ";"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "inner"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ";"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "end"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ";"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "succ"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ";"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "end"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ";"
+
+[[tokens]]
+kind = "user_symbol"
+lexeme = "succ"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ";"

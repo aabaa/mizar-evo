@@ -55,6 +55,7 @@ status = "partial"
 required = true
 coverage = "pass"
 tests = [
+  "tests/lexical/pass/pass_lexical_disambiguator_dot_user_general_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_namespace_path_001.expect.toml",
 ]
 
@@ -340,7 +341,11 @@ tests = [
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_002.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_003.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_004.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_algorithm_do_override_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_nested_scope_override_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_nested_shadowing_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_scope_override_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_statement_local_override_001.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_lifetimes_001.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_shadowing_001.expect.toml",
   "tests/property/scope_skeleton_phase5_001.expect.toml",
@@ -397,8 +402,13 @@ status = "partial"
 required = true
 coverage = "pass"
 tests = [
+  "tests/lexical/pass/pass_lexical_disambiguator_dot_user_general_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_namespace_path_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_algorithm_do_override_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_nested_scope_override_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_nested_shadowing_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_scope_override_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_statement_local_override_001.expect.toml",
 ]
 
 [[requirement]]
@@ -475,6 +485,10 @@ tests = [
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_002.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_003.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_004.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_algorithm_do_override_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_nested_scope_override_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_nested_shadowing_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_statement_local_override_001.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_lifetimes_001.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_shadowing_001.expect.toml",
   "tests/property/scope_skeleton_phase5_001.expect.toml",
@@ -577,6 +591,9 @@ tests = [
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_002.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_003.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_004.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_algorithm_do_override_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_nested_scope_override_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_nested_shadowing_001.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_lifetimes_001.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_shadowing_001.expect.toml",
   "tests/property/scope_skeleton_phase5_001.expect.toml",

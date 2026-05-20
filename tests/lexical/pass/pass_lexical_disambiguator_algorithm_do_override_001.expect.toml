@@ -1,0 +1,107 @@
+schema_version = 1
+id = "pass_lexical_disambiguator_algorithm_do_override_001"
+kind = "pass"
+stage = "lexical"
+domain = "disambiguator"
+source = "pass_lexical_disambiguator_algorithm_do_override_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.user_symbols.identifier_shaped",
+  "spec.en.02.lexical.scope_override.skeleton",
+  "spec.en.04.variables_and_constants.binders.lexical_shapes",
+  "spec.en.16.theorems_and_proofs.blocks.lexical_ranges",
+]
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "algorithm"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "do"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "for"
+
+[[tokens]]
+kind = "user_symbol"
+lexeme = "succ"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "in"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "Items"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "processed"
+
+[[tokens]]
+kind = "user_symbol"
+lexeme = "Seen"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "do"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "succ"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ";"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "Seen"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ";"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "end"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ";"
+
+[[tokens]]
+kind = "user_symbol"
+lexeme = "succ"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ";"
+
+[[tokens]]
+kind = "user_symbol"
+lexeme = "Seen"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ";"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "end"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ";"
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "end"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ";"

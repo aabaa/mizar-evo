@@ -366,7 +366,7 @@ fn lexical_pass_corpus_matches_token_expectations() {
     assert_eq!(raw_checked, 5);
     assert_eq!(import_prescan_checked, 10);
     assert_eq!(scope_skeleton_checked, 7);
-    assert_eq!(disambiguator_checked, 5);
+    assert_eq!(disambiguator_checked, 10);
 }
 
 fn token_kind_name(kind: TokenKind) -> &'static str {
@@ -485,6 +485,7 @@ fn disambiguator_fixture_environment() -> mizar_lexer::ActiveLexicalEnvironment 
                 exported("+*+", "fixture#plus_star_plus", 2),
                 exported("succ", "fixture#succ", 3),
                 exported(".", "fixture#dot", 4),
+                exported("Seen", "fixture#Seen", 5),
             ],
         }],
     )

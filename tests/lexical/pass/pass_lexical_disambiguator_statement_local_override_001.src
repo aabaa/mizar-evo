@@ -1,0 +1,3 @@
+succ;
+for succ holds succ = succ;
+succ;
