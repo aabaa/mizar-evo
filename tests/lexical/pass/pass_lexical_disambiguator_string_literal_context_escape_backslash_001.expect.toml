@@ -1,0 +1,20 @@
+schema_version = 1
+id = "pass_lexical_disambiguator_string_literal_context_escape_backslash_001"
+kind = "pass"
+stage = "lexical"
+domain = "disambiguator"
+source = "pass_lexical_disambiguator_string_literal_context_escape_backslash_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.string_literals.context_sensitive",
+]
+
+[[tokens]]
+kind = "string_literal"
+lexeme = "\"slash\\\\path\""
+
+[[tokens]]
+kind = "string_literal"
+lexeme = "'it\\'s'"

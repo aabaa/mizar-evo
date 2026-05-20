@@ -1,0 +1,19 @@
+schema_version = 1
+id = "lexer_phase7_spec_boundary_001"
+kind = "property_seed"
+stage = "lexical"
+domain = "lexer_phase7"
+source = "lexer_phase7_spec_boundary_001.fixture.toml"
+expected_outcome = "metadata_only"
+diagnostic_codes = []
+notes = "Traceability anchor for Chapter 2 lexical-structure requirements whose executable checks are crate-local property tests or upstream source/package handoff contracts."
+spec_refs = [
+  "spec.en.02.lexical.character_set.utf8_ascii_code",
+  "spec.en.02.lexical.comments.forms",
+  "spec.en.02.lexical.layout.lf_only_boundary",
+  "spec.en.02.lexical.module_naming.file_extension",
+  "spec.en.02.lexical.module_naming.namespace_components",
+  "spec.en.02.lexical.preprocessing.comments_not_raw_tokens",
+  "spec.en.02.lexical.preprocessing.comments_removed",
+  "spec.en.02.lexical.tokens.lexicon_classes",
+]

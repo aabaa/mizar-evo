@@ -8,6 +8,7 @@ expected_outcome = "metadata_only"
 diagnostic_codes = []
 notes = "Traceability anchor for Phase 4 crate-local lexical environment unit tests in crates/mizar-lexer/src/lib.rs."
 spec_refs = [
+  "spec.en.02.lexical.preprocessing.active_lexicon",
   "spec.en.11.symbol_management.active_lexicon.imported_symbols",
   "spec.en.11.symbol_management.active_lexicon.import_conflicts",
   "spec.en.11.symbol_management.active_lexicon.reserved_collisions",

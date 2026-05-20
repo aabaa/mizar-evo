@@ -1,0 +1,30 @@
+schema_version = 1
+id = "pass_lexical_disambiguator_reserved_dot_compounds_001"
+kind = "pass"
+stage = "lexical"
+domain = "disambiguator"
+source = "pass_lexical_disambiguator_reserved_dot_compounds_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.dot_disambiguation",
+  "spec.en.02.lexical.longest_match",
+  "spec.en.02.lexical.reserved_symbols.longest_compound",
+]
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ".{"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ".*"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ".="
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = "..."

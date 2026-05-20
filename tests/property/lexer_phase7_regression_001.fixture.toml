@@ -1,0 +1,10 @@
+[phase]
+name = "mizar-lexer-phase-7-regression-property"
+
+[[case]]
+name = "raw span coverage and retokenization"
+description = "Crate-local Phase 7 unit tests cover raw span contiguity, deterministic re-scan, and final shell layout-free retokenization."
+
+[[case]]
+name = "generated lexical matrices"
+description = "Crate-local Phase 7 unit tests cover generated-style user-symbol overlap and import-conflict matrices without parser, resolver, or type checker semantics."

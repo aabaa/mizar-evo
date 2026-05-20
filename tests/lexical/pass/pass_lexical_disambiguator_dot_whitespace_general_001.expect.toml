@@ -1,0 +1,36 @@
+schema_version = 1
+id = "pass_lexical_disambiguator_dot_whitespace_general_001"
+kind = "pass"
+stage = "lexical"
+domain = "disambiguator"
+source = "pass_lexical_disambiguator_dot_whitespace_general_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.dot_disambiguation",
+]
+
+[[tokens]]
+kind = "identifier"
+lexeme = "A"
+
+[[tokens]]
+kind = "user_symbol"
+lexeme = "."
+
+[[tokens]]
+kind = "user_symbol"
+lexeme = "succ"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "A"
+
+[[tokens]]
+kind = "user_symbol"
+lexeme = "."
+
+[[tokens]]
+kind = "user_symbol"
+lexeme = "succ"

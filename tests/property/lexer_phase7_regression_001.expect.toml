@@ -1,0 +1,18 @@
+schema_version = 1
+id = "lexer_phase7_regression_001"
+kind = "property_seed"
+stage = "lexical"
+domain = "lexer_phase7"
+source = "lexer_phase7_regression_001.fixture.toml"
+expected_outcome = "metadata_only"
+diagnostic_codes = []
+notes = "Traceability anchor for Phase 7 regression/property unit tests in crates/mizar-lexer/src/lib.rs."
+spec_refs = [
+  "spec.en.02.lexical.raw.span_preservation",
+  "spec.en.02.lexical.phase7.regression_property",
+  "spec.en.02.lexical.longest_match",
+  "spec.en.02.lexical.user_symbols.collision_rules",
+  "spec.en.02.lexical.user_symbols.free_form",
+  "spec.en.02.lexical.user_symbols.identifier_shaped",
+  "spec.en.02.lexical.user_symbols.punctuation_shaped",
+]

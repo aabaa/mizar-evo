@@ -366,7 +366,7 @@ fn lexical_pass_corpus_matches_token_expectations() {
     assert_eq!(raw_checked, 5);
     assert_eq!(import_prescan_checked, 10);
     assert_eq!(scope_skeleton_checked, 7);
-    assert_eq!(disambiguator_checked, 10);
+    assert_eq!(disambiguator_checked, 16);
 }
 
 fn token_kind_name(kind: TokenKind) -> &'static str {

@@ -31,32 +31,38 @@ id = "spec.en.02.lexical.character_set.utf8_ascii_code"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.1 Character Set and Encoding"
 stage = "lexical"
-status = "planned"
+status = "covered"
 required = true
-coverage = "pass_and_fail"
-tests = []
+coverage = "manual_review"
+tests = [
+  "tests/property/lexer_phase7_spec_boundary_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.comments.forms"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.9.1 Comment Types"
 stage = "lexical"
-status = "planned"
+status = "covered"
 required = true
-coverage = "pass"
-tests = []
+coverage = "manual_review"
+tests = [
+  "tests/property/lexer_phase7_spec_boundary_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.dot_disambiguation"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.5.3 Dot Disambiguation"
 stage = "lexical"
-status = "partial"
+status = "covered"
 required = true
 coverage = "pass"
 tests = [
+  "tests/lexical/pass/pass_lexical_disambiguator_reserved_dot_compounds_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_dot_user_general_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_namespace_path_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_dot_whitespace_general_001.expect.toml",
 ]
 
 [[requirement]]
@@ -112,7 +118,7 @@ id = "spec.en.02.lexical.identifiers.reserved_word_exclusion"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.6 Identifiers"
 stage = "lexical"
-status = "partial"
+status = "covered"
 required = true
 coverage = "pass"
 tests = [
@@ -136,10 +142,12 @@ id = "spec.en.02.lexical.layout.lf_only_boundary"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.2 Whitespace and Formatting"
 stage = "lexical"
-status = "planned"
+status = "covered"
 required = true
-coverage = "fail"
-tests = []
+coverage = "manual_review"
+tests = [
+  "tests/property/lexer_phase7_spec_boundary_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.layout.space_tab_lf"
@@ -159,12 +167,14 @@ id = "spec.en.02.lexical.longest_match"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.3 Tokens and Lexicon"
 stage = "lexical"
-status = "partial"
+status = "covered"
 required = true
 coverage = "pass"
 tests = [
+  "tests/lexical/pass/pass_lexical_disambiguator_reserved_dot_compounds_001.expect.toml",
   "tests/lexical/pass/pass_lexical_reserved_symbols_longest_compound_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_user_symbol_longest_001.expect.toml",
+  "tests/property/lexer_phase7_regression_001.expect.toml",
 ]
 
 [[requirement]]
@@ -172,20 +182,24 @@ id = "spec.en.02.lexical.module_naming.file_extension"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.8 File and Module Naming"
 stage = "lexical"
-status = "planned"
+status = "covered"
 required = true
-coverage = "pass_and_fail"
-tests = []
+coverage = "manual_review"
+tests = [
+  "tests/property/lexer_phase7_spec_boundary_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.module_naming.namespace_components"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.8 File and Module Naming"
 stage = "lexical"
-status = "planned"
+status = "covered"
 required = true
-coverage = "pass_and_fail"
-tests = []
+coverage = "manual_review"
+tests = [
+  "tests/property/lexer_phase7_spec_boundary_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.numerals.basic"
@@ -204,20 +218,48 @@ id = "spec.en.02.lexical.preprocessing.active_lexicon"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.10 Lexical Preprocessing"
 stage = "lexical"
-status = "planned"
+status = "covered"
 required = true
-coverage = "pass"
-tests = []
+coverage = "property"
+tests = [
+  "tests/property/lexical_environment_phase4_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.preprocessing.comments_removed"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.10 Lexical Preprocessing"
 stage = "lexical"
-status = "planned"
+status = "covered"
 required = true
-coverage = "pass"
-tests = []
+coverage = "manual_review"
+tests = [
+  "tests/property/lexer_phase7_spec_boundary_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.02.lexical.phase7.fuzz_handoff"
+source = "doc/design/mizar-lexer/en/test_and_implementation_plan.md"
+section = "Phase 7: Regression, Property, And Fuzz Handoff"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "manual_review"
+tests = [
+  "tests/fuzz/lexer_phase7_fuzz_handoff_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.02.lexical.phase7.regression_property"
+source = "doc/design/mizar-lexer/en/test_and_implementation_plan.md"
+section = "Phase 7: Regression, Property, And Fuzz Handoff"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "property"
+tests = [
+  "tests/property/lexer_phase7_regression_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.preprocessing.import_prelude_prescan"
@@ -238,6 +280,19 @@ tests = [
   "tests/lexical/pass/pass_lexical_import_prescan_multiple_statements_001.expect.toml",
   "tests/lexical/pass/pass_lexical_import_prescan_rich_multi_path_001.expect.toml",
   "tests/lexical/pass/pass_lexical_import_prescan_branch_paths_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.02.lexical.raw.span_preservation"
+source = "doc/design/mizar-lexer/en/raw_lexer.md"
+section = "Stage 1: Raw Scan"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "property"
+tests = [
+  "tests/property/lexer_phase7_regression_001.expect.toml",
+  "tests/fuzz/lexer_phase7_fuzz_handoff_001.expect.toml",
 ]
 
 [[requirement]]
@@ -275,6 +330,7 @@ status = "covered"
 required = true
 coverage = "pass"
 tests = [
+  "tests/lexical/pass/pass_lexical_disambiguator_reserved_dot_compounds_001.expect.toml",
   "tests/lexical/pass/pass_lexical_reserved_symbols_longest_compound_001.expect.toml",
 ]
 
@@ -319,11 +375,15 @@ id = "spec.en.02.lexical.string_literals.context_sensitive"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.7 Numerals and Literals"
 stage = "lexical"
-status = "partial"
+status = "covered"
 required = true
 coverage = "pass_and_fail"
 tests = [
   "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_single_escape_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_escape_backslash_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_malformed_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_invalid_escape_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_string_outside_context_001.expect.toml",
 ]
 
@@ -356,41 +416,48 @@ id = "spec.en.02.lexical.preprocessing.comments_not_raw_tokens"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.10 Lexical Preprocessing"
 stage = "lexical"
-status = "planned"
+status = "covered"
 required = true
 coverage = "manual_review"
-tests = []
+tests = [
+  "tests/property/lexer_phase7_spec_boundary_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.tokens.lexicon_classes"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.3 Tokens and Lexicon"
 stage = "lexical"
-status = "planned"
+status = "covered"
 required = true
 coverage = "manual_review"
-tests = []
+tests = [
+  "tests/property/lexer_phase7_spec_boundary_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.user_symbols.collision_rules"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.5.2 User-Defined Symbolic Names"
 stage = "lexical"
-status = "planned"
+status = "covered"
 required = true
-coverage = "diagnostic"
-tests = []
+coverage = "property"
+tests = [
+  "tests/property/lexer_phase7_regression_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.user_symbols.free_form"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.5.2 User-Defined Symbolic Names"
 stage = "lexical"
-status = "partial"
+status = "covered"
 required = true
 coverage = "pass"
 tests = [
   "tests/lexical/pass/pass_lexical_reserved_symbols_longest_compound_001.expect.toml",
+  "tests/property/lexer_phase7_regression_001.expect.toml",
 ]
 
 [[requirement]]
@@ -398,7 +465,7 @@ id = "spec.en.02.lexical.user_symbols.identifier_shaped"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.5.2 User-Defined Symbolic Names"
 stage = "lexical"
-status = "partial"
+status = "covered"
 required = true
 coverage = "pass"
 tests = [
@@ -409,6 +476,7 @@ tests = [
   "tests/lexical/pass/pass_lexical_disambiguator_nested_shadowing_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_scope_override_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_statement_local_override_001.expect.toml",
+  "tests/property/lexer_phase7_regression_001.expect.toml",
 ]
 
 [[requirement]]
@@ -416,11 +484,12 @@ id = "spec.en.02.lexical.user_symbols.punctuation_shaped"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.5.2 User-Defined Symbolic Names"
 stage = "lexical"
-status = "partial"
+status = "covered"
 required = true
 coverage = "pass"
 tests = [
   "tests/lexical/pass/pass_lexical_disambiguator_user_symbol_longest_001.expect.toml",
+  "tests/property/lexer_phase7_regression_001.expect.toml",
 ]
 
 [[requirement]]

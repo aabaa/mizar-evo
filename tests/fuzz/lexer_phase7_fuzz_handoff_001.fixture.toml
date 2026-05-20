@@ -1,0 +1,15 @@
+[phase]
+name = "mizar-lexer-phase-7-fuzz-handoff"
+
+[[seed]]
+name = "raw_scanner_ascii_graphic_layout_mix"
+target = "scan_raw"
+description = "Valid LF-only seed mixing layout, numeral-like runs, punctuation-shaped symbols, and annotation opener."
+
+[[seed]]
+name = "disambiguator_quote_context_boundary"
+target = "disambiguate"
+description = "Valid raw seed preserving quote characters inside LexemeRun for context-sensitive string handling."
+
+[[promotion_rule]]
+description = "Fuzz-discovered failures are minimized, given a stable snake_case name, paired with an expectation sidecar, and linked from tests/coverage/spec_trace.toml before promotion."

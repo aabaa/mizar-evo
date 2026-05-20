@@ -1,0 +1,14 @@
+[phase]
+name = "mizar-lexer-phase-7-spec-boundary"
+
+[[case]]
+name = "source loading preconditions"
+description = "preprocess_source_for_lexing exposes the lexer boundary for LF-only checks, code-region ASCII diagnostics, comment removal, and documentation trivia preservation."
+
+[[case]]
+name = "module naming handoff"
+description = "module_source_name_from_path exposes the .miz file-stem and namespace-component contract without loading packages or resolving modules."
+
+[[case]]
+name = "lexicon class inventory"
+description = "Reserved words, reserved symbols, identifiers, numerals, string literals, raw runs, active user symbols, parser lexical context, and scope override are covered by the Phase 0-7 lexical corpus and crate-local tests."

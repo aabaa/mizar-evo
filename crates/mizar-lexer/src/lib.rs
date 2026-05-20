@@ -39,6 +39,73 @@ pub type SourcePos = usize;
 pub type SourceRange = SourceSpan;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PreprocessedLexicalSource {
+    pub lexical_text: String,
+    pub comments: Vec<CommentTrivia>,
+    pub diagnostics: Vec<SourcePreprocessDiagnostic>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CommentTrivia {
+    pub kind: CommentKind,
+    pub lexeme: String,
+    pub span: SourceRange,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CommentKind {
+    SingleLine,
+    MultiLine,
+    Documentation,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePreprocessDiagnostic {
+    pub code: SourcePreprocessDiagnosticCode,
+    pub message: String,
+    pub span: SourceRange,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SourcePreprocessDiagnosticCode {
+    CarriageReturn,
+    NonAsciiCode,
+    UnterminatedMultiLineComment,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ModuleSourceName {
+    pub file_name: String,
+    pub module_name: String,
+    pub namespace_components: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ModuleNamingError {
+    MissingMizExtension { path: String },
+    MissingFileStem { path: String },
+    InvalidNamespaceComponent { component: String },
+}
+
+impl fmt::Display for ModuleNamingError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MissingMizExtension { path } => {
+                write!(f, "module source path `{path}` must end with `.miz`")
+            }
+            Self::MissingFileStem { path } => {
+                write!(f, "module source path `{path}` must include a file name")
+            }
+            Self::InvalidNamespaceComponent { component } => {
+                write!(f, "invalid namespace component `{component}`")
+            }
+        }
+    }
+}
+
+impl Error for ModuleNamingError {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImportPrelude {
     pub imports: Vec<ImportStub>,
     pub end: SourcePos,
@@ -531,6 +598,135 @@ impl fmt::Display for LexError {
 
 impl Error for LexError {}
 
+pub fn preprocess_source_for_lexing(input: &str) -> PreprocessedLexicalSource {
+    let mut lexical_text = String::with_capacity(input.len());
+    let mut comments = Vec::new();
+    let mut diagnostics = Vec::new();
+    let mut cursor = 0;
+
+    while cursor < input.len() {
+        let rest = &input[cursor..];
+        if rest.starts_with(":::") {
+            let end = line_comment_end(input, cursor);
+            comments.push(CommentTrivia {
+                kind: CommentKind::Documentation,
+                lexeme: input[cursor..end].to_owned(),
+                span: SourceSpan { start: cursor, end },
+            });
+            preserve_comment_newlines(&input[cursor..end], &mut lexical_text);
+            cursor = end;
+            continue;
+        }
+
+        if rest.starts_with("::=") {
+            let end = match rest.find("=::") {
+                Some(relative) => cursor + relative + "=::".len(),
+                None => {
+                    diagnostics.push(SourcePreprocessDiagnostic {
+                        code: SourcePreprocessDiagnosticCode::UnterminatedMultiLineComment,
+                        message: "unterminated multi-line comment".to_owned(),
+                        span: SourceSpan {
+                            start: cursor,
+                            end: input.len(),
+                        },
+                    });
+                    input.len()
+                }
+            };
+            comments.push(CommentTrivia {
+                kind: CommentKind::MultiLine,
+                lexeme: input[cursor..end].to_owned(),
+                span: SourceSpan { start: cursor, end },
+            });
+            preserve_comment_newlines(&input[cursor..end], &mut lexical_text);
+            cursor = end;
+            continue;
+        }
+
+        if rest.starts_with("::") {
+            let end = line_comment_end(input, cursor);
+            comments.push(CommentTrivia {
+                kind: CommentKind::SingleLine,
+                lexeme: input[cursor..end].to_owned(),
+                span: SourceSpan { start: cursor, end },
+            });
+            preserve_comment_newlines(&input[cursor..end], &mut lexical_text);
+            cursor = end;
+            continue;
+        }
+
+        let ch = rest.chars().next().expect("cursor is inside source");
+        let end = cursor + ch.len_utf8();
+        if ch == '\r' {
+            diagnostics.push(SourcePreprocessDiagnostic {
+                code: SourcePreprocessDiagnosticCode::CarriageReturn,
+                message: "source text must be LF-only before lexing".to_owned(),
+                span: SourceSpan { start: cursor, end },
+            });
+        } else if !ch.is_ascii() {
+            diagnostics.push(SourcePreprocessDiagnostic {
+                code: SourcePreprocessDiagnosticCode::NonAsciiCode,
+                message: "code regions must be ASCII before lexing".to_owned(),
+                span: SourceSpan { start: cursor, end },
+            });
+        }
+        lexical_text.push(ch);
+        cursor = end;
+    }
+
+    PreprocessedLexicalSource {
+        lexical_text,
+        comments,
+        diagnostics,
+    }
+}
+
+pub fn module_source_name_from_path(path: &str) -> Result<ModuleSourceName, ModuleNamingError> {
+    let normalized = path.replace('\\', "/");
+    let Some(file_name) = normalized
+        .rsplit('/')
+        .next()
+        .filter(|name| !name.is_empty())
+    else {
+        return Err(ModuleNamingError::MissingFileStem {
+            path: path.to_owned(),
+        });
+    };
+    let Some(module_name) = file_name
+        .strip_suffix(".miz")
+        .filter(|stem| !stem.is_empty())
+    else {
+        return Err(ModuleNamingError::MissingMizExtension {
+            path: path.to_owned(),
+        });
+    };
+
+    let path_without_extension = normalized
+        .strip_suffix(".miz")
+        .expect("extension was just validated");
+    let source_relative = path_without_extension
+        .split_once("/src/")
+        .map_or(path_without_extension, |(_, relative)| relative);
+    let namespace_components = source_relative
+        .split('/')
+        .map(str::to_owned)
+        .collect::<Vec<_>>();
+
+    for component in &namespace_components {
+        if !is_identifier(component) {
+            return Err(ModuleNamingError::InvalidNamespaceComponent {
+                component: component.clone(),
+            });
+        }
+    }
+
+    Ok(ModuleSourceName {
+        file_name: file_name.to_owned(),
+        module_name: module_name.to_owned(),
+        namespace_components,
+    })
+}
+
 pub fn scan_raw(input: &str) -> Result<RawTokenStream, LexError> {
     let mut tokens = Vec::new();
     let mut chars = input.char_indices().peekable();
@@ -742,6 +938,20 @@ fn raw_token(input: &str, kind: RawTokenKind, start: usize, end: usize) -> RawTo
         kind,
         lexeme: input[start..end].to_owned(),
         span: SourceSpan { start, end },
+    }
+}
+
+fn line_comment_end(input: &str, start: usize) -> usize {
+    input[start..]
+        .find('\n')
+        .map_or(input.len(), |relative| start + relative + '\n'.len_utf8())
+}
+
+fn preserve_comment_newlines(comment: &str, output: &mut String) {
+    for ch in comment.chars() {
+        if ch == '\n' {
+            output.push('\n');
+        }
     }
 }
 
@@ -2901,15 +3111,16 @@ fn push_import_piece(
 #[cfg(test)]
 mod tests {
     use super::{
-        ExportRank, ExportedSymbolShape, ImportPrescanDiagnosticCode, LexDiagnosticCode,
-        LexicalBlockKind, LexicalEnvironmentError, LexicalSummaryFingerprint, ModuleId,
-        ModuleLexicalSummary, ParserLexContext, RESERVED_SYMBOLS, RESERVED_WORDS,
-        RawModuleRelativePrefix, RawToken, RawTokenKind, ResolvedImport, ScopeLexView,
-        ScopeSkeletonDiagnosticCode, SourceSpan, SymbolId, Token, TokenKind, UserSymbolCandidate,
-        build_lexical_environment, build_scope_skeleton, disambiguate, is_identifier, is_layout,
-        is_numeral, is_reserved_symbol, is_reserved_word, is_string_literal_spelling,
-        is_user_symbol_spelling, lex, longest_reserved_symbol_prefix, scan_import_prelude,
-        scan_raw,
+        CommentKind, ExportRank, ExportedSymbolShape, ImportPrescanDiagnosticCode,
+        LexDiagnosticCode, LexicalBlockKind, LexicalEnvironmentError, LexicalSummaryFingerprint,
+        ModuleId, ModuleLexicalSummary, ModuleNamingError, ParserLexContext, RESERVED_SYMBOLS,
+        RESERVED_WORDS, RawModuleRelativePrefix, RawToken, RawTokenKind, ResolvedImport,
+        ScopeLexView, ScopeSkeletonDiagnosticCode, SourcePreprocessDiagnosticCode, SourceSpan,
+        SymbolId, Token, TokenKind, UserSymbolCandidate, build_lexical_environment,
+        build_scope_skeleton, disambiguate, is_identifier, is_layout, is_numeral,
+        is_reserved_symbol, is_reserved_word, is_string_literal_spelling, is_user_symbol_spelling,
+        lex, longest_reserved_symbol_prefix, module_source_name_from_path,
+        preprocess_source_for_lexing, scan_import_prelude, scan_raw,
     };
 
     #[test]
@@ -3162,6 +3373,69 @@ mod tests {
         let error = scan_raw("@-").expect_err("bare annotation marker should be rejected");
 
         assert_eq!("unsupported annotation marker at byte 0", error.to_string());
+    }
+
+    #[test]
+    fn preprocess_source_removes_comments_and_preserves_trivia() {
+        let source = "alpha :: comment \u{03b1}\n::: doc \u{03b2}\n::=\nblock \u{03b3}\n=::\nomega";
+        let preprocessed = preprocess_source_for_lexing(source);
+
+        assert_eq!(preprocessed.lexical_text, "alpha \n\n\n\n\nomega");
+        assert_eq!(
+            preprocessed
+                .comments
+                .iter()
+                .map(|comment| comment.kind)
+                .collect::<Vec<_>>(),
+            vec![
+                CommentKind::SingleLine,
+                CommentKind::Documentation,
+                CommentKind::MultiLine,
+            ]
+        );
+        assert!(preprocessed.diagnostics.is_empty());
+        assert!(scan_raw(&preprocessed.lexical_text).is_ok());
+    }
+
+    #[test]
+    fn preprocess_source_reports_code_region_precondition_violations() {
+        let preprocessed =
+            preprocess_source_for_lexing("alpha\r\n\u{03b2}\n::: doc \u{03b2}\nomega");
+
+        assert_eq!(
+            preprocessed
+                .diagnostics
+                .iter()
+                .map(|diagnostic| diagnostic.code)
+                .collect::<Vec<_>>(),
+            vec![
+                SourcePreprocessDiagnosticCode::CarriageReturn,
+                SourcePreprocessDiagnosticCode::NonAsciiCode,
+            ]
+        );
+        assert_eq!(preprocessed.comments[0].kind, CommentKind::Documentation);
+    }
+
+    #[test]
+    fn module_source_name_api_derives_miz_module_and_namespace() {
+        let naming = module_source_name_from_path("algebra/src/groups/basic.miz")
+            .expect(".miz module path should derive names");
+
+        assert_eq!(naming.file_name, "basic.miz");
+        assert_eq!(naming.module_name, "basic");
+        assert_eq!(
+            naming.namespace_components,
+            vec!["groups".to_owned(), "basic".to_owned()]
+        );
+
+        assert!(matches!(
+            module_source_name_from_path("algebra/src/groups/basic.txt"),
+            Err(ModuleNamingError::MissingMizExtension { .. })
+        ));
+        assert!(matches!(
+            module_source_name_from_path("algebra/src/bad-name.miz"),
+            Err(ModuleNamingError::InvalidNamespaceComponent { .. })
+        ));
     }
 
     #[test]
@@ -3933,6 +4207,233 @@ import pkg.mathcomp_mizar.algebra.ring;";
                 .collect::<Vec<_>>(),
             vec![LexDiagnosticCode::ParserContextRejectedCandidate]
         );
+    }
+
+    #[test]
+    fn phase7_raw_scanner_spans_are_contiguous_and_deterministic() {
+        let seeds = [
+            "",
+            "alpha \t\n+*+42",
+            "@[ import std.core;\n",
+            "\"quoted\" 'tick' |.x.|",
+            "definition\nlet x be set;\nend;",
+        ];
+
+        for source in seeds {
+            let first = scan_raw(source).expect("phase7 seed should raw scan");
+            let second = scan_raw(source).expect("phase7 seed should scan deterministically");
+            assert_eq!(first, second, "{source:?}");
+
+            let mut cursor = 0;
+            let mut reconstructed = String::new();
+            for token in &first.tokens {
+                assert_eq!(token.span.start, cursor, "{source:?}");
+                assert!(token.span.start <= token.span.end, "{source:?}");
+                assert_eq!(&source[token.span.start..token.span.end], token.lexeme);
+                reconstructed.push_str(&token.lexeme);
+                cursor = token.span.end;
+            }
+
+            assert_eq!(cursor, source.len(), "{source:?}");
+            assert_eq!(reconstructed, source);
+            assert_eq!(scan_raw(&reconstructed), Ok(first), "{source:?}");
+        }
+    }
+
+    #[test]
+    fn phase7_final_shell_retokenizes_layout_free_token_concatenation() {
+        let seeds = ["alpha", "theorem", "42", "@[", ":="];
+
+        for source in seeds {
+            let first = lex(source).expect("phase7 final shell seed should lex");
+            let concatenated = first
+                .iter()
+                .map(|token| token.lexeme.as_str())
+                .collect::<String>();
+            let source_without_layout = source
+                .chars()
+                .filter(|ch| !is_layout(*ch))
+                .collect::<String>();
+
+            assert_eq!(concatenated, source_without_layout, "{source:?}");
+            assert_eq!(
+                lex(&concatenated).expect("layout-free token stream should re-lex"),
+                first,
+                "{source:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn phase7_generated_user_symbol_overlap_matrix_keeps_longest_match() {
+        let env = build_lexical_environment(
+            &[resolved_import("generated.overlap")],
+            &[summary(
+                "generated.overlap",
+                91,
+                &[
+                    exported("+", "generated.overlap#plus", "generated.overlap", 0),
+                    exported("+*", "generated.overlap#plus_star", "generated.overlap", 1),
+                    exported(
+                        "+*+",
+                        "generated.overlap#plus_star_plus",
+                        "generated.overlap",
+                        2,
+                    ),
+                    exported("|.", "generated.overlap#abs_open", "generated.overlap", 3),
+                    exported(
+                        "[:",
+                        "generated.overlap#product_open",
+                        "generated.overlap",
+                        4,
+                    ),
+                    exported(
+                        ":]",
+                        "generated.overlap#product_close",
+                        "generated.overlap",
+                        5,
+                    ),
+                    exported("f'", "generated.overlap#prime", "generated.overlap", 6),
+                    exported("q\"", "generated.overlap#quote", "generated.overlap", 7),
+                    exported(
+                        "|.x.|",
+                        "generated.overlap#absolute_x",
+                        "generated.overlap",
+                        8,
+                    ),
+                    exported("succ", "generated.overlap#succ", "generated.overlap", 9),
+                    exported("succ2", "generated.overlap#succ2", "generated.overlap", 10),
+                ],
+            )],
+        )
+        .expect("generated overlap environment should build");
+
+        for (source, expected) in [
+            (
+                "a+*+b",
+                vec![
+                    (TokenKind::Identifier, "a"),
+                    (TokenKind::UserSymbol, "+*+"),
+                    (TokenKind::Identifier, "b"),
+                ],
+            ),
+            (
+                "|.x.|+*",
+                vec![
+                    (TokenKind::UserSymbol, "|.x.|"),
+                    (TokenKind::UserSymbol, "+*"),
+                ],
+            ),
+            (
+                "succ2+succ",
+                vec![
+                    (TokenKind::UserSymbol, "succ2"),
+                    (TokenKind::UserSymbol, "+"),
+                    (TokenKind::UserSymbol, "succ"),
+                ],
+            ),
+            (
+                "[:f':]q\"",
+                vec![
+                    (TokenKind::UserSymbol, "[:"),
+                    (TokenKind::UserSymbol, "f'"),
+                    (TokenKind::UserSymbol, ":]"),
+                    (TokenKind::UserSymbol, "q\""),
+                ],
+            ),
+        ] {
+            let raw = scan_raw(source).expect("generated source should raw scan");
+            let skeleton = build_scope_skeleton(&raw);
+            let stream = disambiguate(&raw, &env, &ParserLexContext::general(), &skeleton);
+
+            assert_eq!(
+                stream
+                    .tokens
+                    .iter()
+                    .map(|token| (token.kind, token.lexeme.as_str()))
+                    .collect::<Vec<_>>(),
+                expected,
+                "{source:?}"
+            );
+            assert!(stream.diagnostics.is_empty(), "{source:?}");
+        }
+    }
+
+    #[test]
+    fn phase7_generated_import_conflict_matrix_stays_lexer_local() {
+        let conflict = build_lexical_environment(
+            &[
+                resolved_import("generated.left"),
+                resolved_import("generated.right"),
+            ],
+            &[
+                summary(
+                    "generated.left",
+                    101,
+                    &[exported("+", "generated.left#plus", "generated.left", 0)],
+                ),
+                summary(
+                    "generated.right",
+                    102,
+                    &[exported("+", "generated.right#plus", "generated.right", 0)],
+                ),
+            ],
+        )
+        .expect_err("equal spelling from distinct imports is an environment conflict");
+        assert!(matches!(
+            conflict,
+            LexicalEnvironmentError::UserSymbolImportConflict { .. }
+        ));
+
+        let env = build_lexical_environment(
+            &[resolved_import("generated.same_import")],
+            &[summary(
+                "generated.same_import",
+                103,
+                &[
+                    exported(
+                        "+",
+                        "generated.same_import#plus_nat",
+                        "generated.same_import",
+                        0,
+                    ),
+                    exported(
+                        "+",
+                        "generated.same_import#plus_real",
+                        "generated.same_import",
+                        1,
+                    ),
+                ],
+            )],
+        )
+        .expect("same-import overloads stay in the active lexicon");
+        let raw = scan_raw("x+y").expect("source should raw scan");
+        let skeleton = build_scope_skeleton(&raw);
+        let stream = disambiguate(&raw, &env, &ParserLexContext::general(), &skeleton);
+
+        assert_eq!(
+            env.longest_user_symbol_at("+", 0)
+                .iter()
+                .map(|candidate| candidate.symbol_id.clone())
+                .collect::<Vec<_>>(),
+            vec![
+                symbol_id("generated.same_import#plus_nat"),
+                symbol_id("generated.same_import#plus_real"),
+            ]
+        );
+        assert_eq!(
+            stream
+                .tokens
+                .iter()
+                .map(|token| (token.kind, token.lexeme.as_str()))
+                .collect::<Vec<_>>(),
+            vec![
+                (TokenKind::Identifier, "x"),
+                (TokenKind::UserSymbol, "+"),
+                (TokenKind::Identifier, "y"),
+            ]
+        );
+        assert!(stream.diagnostics.is_empty());
     }
 
     #[test]

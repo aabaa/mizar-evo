@@ -1,0 +1,13 @@
+schema_version = 1
+id = "lexer_phase7_fuzz_handoff_001"
+kind = "fuzz_seed"
+stage = "lexical"
+domain = "lexer_phase7"
+source = "lexer_phase7_fuzz_handoff_001.fixture.toml"
+expected_outcome = "metadata_only"
+diagnostic_codes = []
+notes = "Metadata-only handoff anchor for minimized Phase 7 lexer fuzz regressions."
+spec_refs = [
+  "spec.en.02.lexical.raw.span_preservation",
+  "spec.en.02.lexical.phase7.fuzz_handoff",
+]
