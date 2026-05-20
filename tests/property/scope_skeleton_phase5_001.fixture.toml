@@ -1,0 +1,6 @@
+[phase]
+name = "mizar-lexer-phase-5-scope-skeleton"
+
+[[case]]
+name = "crate-local unit tests"
+description = "Scope skeleton API, binders, nested block ranges, diagnostics, ScopeLexView, and determinism are covered in crates/mizar-lexer/src/lib.rs."

@@ -17,29 +17,39 @@ spec_refs = [
 [[tokens]]
 kind = "import_path"
 lexeme = "std.core"
-span_start = 7
-span_end = 15
+span_start_line = 1
+span_start_col = 8
+span_end_line = 1
+span_end_col = 16
 
 [[tokens]]
 kind = "import_path"
 lexeme = "..common"
-span_start = 17
-span_end = 25
+span_start_line = 1
+span_start_col = 18
+span_end_line = 1
+span_end_col = 26
 
 [[tokens]]
 kind = "import_alias"
 lexeme = "C"
-span_start = 29
-span_end = 30
+span_start_line = 1
+span_start_col = 30
+span_end_line = 1
+span_end_col = 31
 
 [[tokens]]
 kind = "import_path"
 lexeme = ".utils"
-span_start = 32
-span_end = 38
+span_start_line = 1
+span_start_col = 33
+span_end_line = 1
+span_end_col = 39
 
 [[tokens]]
 kind = "prelude_end"
 lexeme = "prelude_end"
-span_start = 39
-span_end = 39
+span_start_line = 1
+span_start_col = 40
+span_end_line = 1
+span_end_col = 40

@@ -16,29 +16,39 @@ spec_refs = [
 [[tokens]]
 kind = "import_path"
 lexeme = "std.algebra.group"
-span_start = 7
-span_end = 24
+span_start_line = 1
+span_start_col = 8
+span_end_line = 1
+span_end_col = 25
 
 [[tokens]]
 kind = "import_path"
 lexeme = "std.topology.metric_space"
-span_start = 33
-span_end = 58
+span_start_line = 2
+span_start_col = 8
+span_end_line = 2
+span_end_col = 33
 
 [[tokens]]
 kind = "import_alias"
 lexeme = "Metric"
-span_start = 62
-span_end = 68
+span_start_line = 2
+span_start_col = 37
+span_end_line = 2
+span_end_col = 43
 
 [[tokens]]
 kind = "import_path"
 lexeme = "pkg.mathcomp_mizar.algebra.ring"
-span_start = 77
-span_end = 108
+span_start_line = 3
+span_start_col = 8
+span_end_line = 3
+span_end_col = 39
 
 [[tokens]]
 kind = "prelude_end"
 lexeme = "prelude_end"
-span_start = 109
-span_end = 109
+span_start_line = 3
+span_start_col = 40
+span_end_line = 3
+span_end_col = 40

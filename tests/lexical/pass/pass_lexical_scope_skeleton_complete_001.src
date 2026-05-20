@@ -1,0 +1,39 @@
+reserve R for set;
+definition
+let x be set;
+proof
+given g being object;
+consider c being object such that c = c;
+set s = c;
+reconsider rc = c as object;
+take tk = c;
+deffunc F(object) = c;
+defpred P[object] means c = c;
+for q holds q = q;
+ex e st e = e;
+case
+let k be set;
+end;
+suppose x = x;
+let sp be set;
+end;
+end;
+end;
+algorithm
+do
+var a, b = (c, d);
+const n = 1;
+ghost var gv;
+ghost const gc = 2;
+for i = 0 to 2 do
+var inner;
+end;
+for item in Items processed Seen do
+var consumed;
+end;
+end;
+end;
+g;
+c;
+a;
+R;

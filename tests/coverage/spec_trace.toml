@@ -321,6 +321,24 @@ coverage = "pass_and_fail"
 tests = []
 
 [[requirement]]
+id = "spec.en.02.lexical.scope_override.skeleton"
+source = "doc/design/mizar-lexer/en/scope_skeleton.md"
+section = "ScopeLexView"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_scope_skeleton_basic_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_002.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_003.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_lifetimes_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_shadowing_001.expect.toml",
+  "tests/property/scope_skeleton_phase5_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.02.lexical.preprocessing.comments_not_raw_tokens"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.10 Lexical Preprocessing"
@@ -411,6 +429,24 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.04.variables_and_constants.binders.lexical_shapes"
+source = "doc/spec/en/04.variables_and_constants.md"
+section = "4 Variables and Constants"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_scope_skeleton_basic_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_002.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_003.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_lifetimes_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_shadowing_001.expect.toml",
+  "tests/property/scope_skeleton_phase5_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.12.modules.import_prelude.alias"
 source = "doc/spec/en/12.modules_and_namespaces.md"
 section = "12.3.3 Aliasing"
@@ -491,4 +527,22 @@ tests = [
   "tests/lexical/pass/pass_lexical_import_prescan_theorem_termination_001.expect.toml",
   "tests/lexical/pass/pass_lexical_import_prescan_missing_semicolon_001.expect.toml",
   "tests/lexical/pass/pass_lexical_import_prescan_rich_multi_path_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.16.theorems_and_proofs.blocks.lexical_ranges"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16 Theorems and Proofs"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_scope_skeleton_basic_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_002.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_003.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_lifetimes_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_shadowing_001.expect.toml",
+  "tests/property/scope_skeleton_phase5_001.expect.toml",
 ]

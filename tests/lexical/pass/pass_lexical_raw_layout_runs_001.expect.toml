@@ -15,23 +15,31 @@ spec_refs = [
 [[tokens]]
 kind = "raw_lexeme_run"
 lexeme = "alpha"
-span_start = 0
-span_end = 5
+span_start_line = 1
+span_start_col = 1
+span_end_line = 1
+span_end_col = 6
 
 [[tokens]]
 kind = "raw_layout"
 lexeme = " \t\n"
-span_start = 5
-span_end = 8
+span_start_line = 1
+span_start_col = 6
+span_end_line = 2
+span_end_col = 1
 
 [[tokens]]
 kind = "raw_lexeme_run"
 lexeme = "beta"
-span_start = 8
-span_end = 12
+span_start_line = 2
+span_start_col = 1
+span_end_line = 2
+span_end_col = 5
 
 [[tokens]]
 kind = "raw_layout"
 lexeme = "\n"
-span_start = 12
-span_end = 13
+span_start_line = 2
+span_start_col = 5
+span_end_line = 3
+span_end_col = 1

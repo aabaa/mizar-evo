@@ -15,41 +15,55 @@ spec_refs = [
 [[tokens]]
 kind = "import_path"
 lexeme = "algebra.linear.eigen_value"
-span_start = 7
-span_end = 34
+span_start_line = 1
+span_start_col = 8
+span_end_line = 1
+span_end_col = 35
 
 [[tokens]]
 kind = "import_path_segment"
 lexeme = "algebra.linear.eigen_value"
-span_start = 7
-span_end = 21
+span_start_line = 1
+span_start_col = 8
+span_end_line = 1
+span_end_col = 22
 
 [[tokens]]
 kind = "import_path_segment"
 lexeme = "algebra.linear.eigen_value"
-span_start = 23
-span_end = 34
+span_start_line = 1
+span_start_col = 24
+span_end_line = 1
+span_end_col = 35
 
 [[tokens]]
 kind = "import_path"
 lexeme = "algebra.linear.jordan"
-span_start = 7
-span_end = 42
+span_start_line = 1
+span_start_col = 8
+span_end_line = 1
+span_end_col = 43
 
 [[tokens]]
 kind = "import_path_segment"
 lexeme = "algebra.linear.jordan"
-span_start = 7
-span_end = 21
+span_start_line = 1
+span_start_col = 8
+span_end_line = 1
+span_end_col = 22
 
 [[tokens]]
 kind = "import_path_segment"
 lexeme = "algebra.linear.jordan"
-span_start = 36
-span_end = 42
+span_start_line = 1
+span_start_col = 37
+span_end_line = 1
+span_end_col = 43
 
 [[tokens]]
 kind = "prelude_end"
 lexeme = "prelude_end"
-span_start = 44
-span_end = 44
+span_start_line = 1
+span_start_col = 45
+span_end_line = 1
+span_end_col = 45

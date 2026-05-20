@@ -14,23 +14,31 @@ spec_refs = [
 [[tokens]]
 kind = "raw_annotation_marker"
 lexeme = "@latex"
-span_start = 0
-span_end = 6
+span_start_line = 1
+span_start_col = 1
+span_end_line = 1
+span_end_col = 7
 
 [[tokens]]
 kind = "raw_layout"
 lexeme = " "
-span_start = 6
-span_end = 7
+span_start_line = 1
+span_start_col = 7
+span_end_line = 1
+span_end_col = 8
 
 [[tokens]]
 kind = "raw_annotation_marker"
 lexeme = "@["
-span_start = 7
-span_end = 9
+span_start_line = 1
+span_start_col = 8
+span_end_line = 1
+span_end_col = 10
 
 [[tokens]]
 kind = "raw_layout"
 lexeme = "\n"
-span_start = 9
-span_end = 10
+span_start_line = 1
+span_start_col = 10
+span_end_line = 2
+span_end_col = 1

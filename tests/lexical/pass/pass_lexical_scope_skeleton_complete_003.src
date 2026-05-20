@@ -1,0 +1,16 @@
+reserve Global for set;
+definition
+let dup be set;
+let dup be set;
+now
+let inner, inner be set;
+reserve Bad for set;
+take 42;
+reconsider dup as object;
+ghost foo;
+dup;
+inner;
+end;
+end;
+Global;
+dup;

@@ -1,0 +1,33 @@
+reserve A, B for set;
+definition
+let a be set;
+proof
+now
+let n be set;
+case
+let a be set;
+for q holds a = q;
+end;
+suppose n = n;
+given w being object;
+w;
+end;
+hereby
+consider h being object such that h = h;
+end;
+end;
+end;
+end;
+algorithm
+do
+var a;
+for j = 1 to 3 do
+const local = j;
+end;
+case value do
+var branch;
+end;
+end;
+end;
+a;
+A;

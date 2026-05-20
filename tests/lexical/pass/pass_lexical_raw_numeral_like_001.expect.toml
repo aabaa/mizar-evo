@@ -14,23 +14,31 @@ spec_refs = [
 [[tokens]]
 kind = "raw_numeral_like"
 lexeme = "0"
-span_start = 0
-span_end = 1
+span_start_line = 1
+span_start_col = 1
+span_end_line = 1
+span_end_col = 2
 
 [[tokens]]
 kind = "raw_layout"
 lexeme = " "
-span_start = 1
-span_end = 2
+span_start_line = 1
+span_start_col = 2
+span_end_line = 1
+span_end_col = 3
 
 [[tokens]]
 kind = "raw_numeral_like"
 lexeme = "42"
-span_start = 2
-span_end = 4
+span_start_line = 1
+span_start_col = 3
+span_end_line = 1
+span_end_col = 5
 
 [[tokens]]
 kind = "raw_layout"
 lexeme = "\n"
-span_start = 4
-span_end = 5
+span_start_line = 1
+span_start_col = 5
+span_end_line = 2
+span_end_col = 1

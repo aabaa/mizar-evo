@@ -1,0 +1,9 @@
+definition
+let x be set;
+now
+let x be set;
+x;
+end;
+x;
+end;
+x;

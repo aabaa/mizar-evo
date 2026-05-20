@@ -15,11 +15,15 @@ spec_refs = [
 [[tokens]]
 kind = "import_path"
 lexeme = "std.algebra.group"
-span_start = 7
-span_end = 24
+span_start_line = 1
+span_start_col = 8
+span_end_line = 1
+span_end_col = 25
 
 [[tokens]]
 kind = "prelude_end"
 lexeme = "prelude_end"
-span_start = 25
-span_end = 25
+span_start_line = 1
+span_start_col = 26
+span_end_line = 1
+span_end_col = 26

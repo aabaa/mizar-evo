@@ -15,5 +15,7 @@ spec_refs = [
 [[tokens]]
 kind = "prelude_end"
 lexeme = "prelude_end"
-span_start = 0
-span_end = 0
+span_start_line = 1
+span_start_col = 1
+span_end_line = 1
+span_end_col = 1

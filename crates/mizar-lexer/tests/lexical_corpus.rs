@@ -2,7 +2,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use mizar_lexer::{
-    ImportPrescanDiagnosticCode, RawTokenKind, TokenKind, lex, scan_import_prelude, scan_raw,
+    BindingShapeKind, ImportPrescanDiagnosticCode, RawTokenKind, ScopeLexView,
+    ScopeSkeletonDiagnosticCode, TokenKind, build_scope_skeleton, lex, scan_import_prelude,
+    scan_raw,
 };
 use mizar_test::{
     DiscoveryConfig, ExpectedOutcome, PipelinePhase, TestProfile, ValidationMode, build_test_plan,
@@ -25,6 +27,7 @@ fn lexical_pass_corpus_matches_token_expectations() {
     let mut final_checked = 0;
     let mut raw_checked = 0;
     let mut import_prescan_checked = 0;
+    let mut scope_skeleton_checked = 0;
     for case in plan.cases {
         let expectation = &case.expectation;
         if expectation.expected_outcome != ExpectedOutcome::Pass
@@ -82,15 +85,9 @@ fn lexical_pass_corpus_matches_token_expectations() {
                     .tokens
                     .iter()
                     .map(|token| {
-                        let span_start = token.span_start.unwrap_or_else(|| {
+                        let (span_start, span_end) = expected_span(token, &source, || {
                             panic!(
                                 "{} raw token expectations require span_start",
-                                case.expectation_path.display()
-                            )
-                        });
-                        let span_end = token.span_end.unwrap_or_else(|| {
-                            panic!(
-                                "{} raw token expectations require span_end",
                                 case.expectation_path.display()
                             )
                         });
@@ -151,15 +148,9 @@ fn lexical_pass_corpus_matches_token_expectations() {
                     .tokens
                     .iter()
                     .map(|token| {
-                        let span_start = token.span_start.unwrap_or_else(|| {
+                        let (span_start, span_end) = expected_span(token, &source, || {
                             panic!(
                                 "{} import pre-scan expectations require span_start",
-                                case.expectation_path.display()
-                            )
-                        });
-                        let span_end = token.span_end.unwrap_or_else(|| {
-                            panic!(
-                                "{} import pre-scan expectations require span_end",
                                 case.expectation_path.display()
                             )
                         });
@@ -191,6 +182,102 @@ fn lexical_pass_corpus_matches_token_expectations() {
                 );
                 import_prescan_checked += 1;
             }
+            "scope_skeleton" => {
+                let raw = scan_raw(&source).unwrap_or_else(|error| {
+                    panic!(
+                        "scan_raw failed for {}: {error}",
+                        case.source_path.display()
+                    )
+                });
+                let skeleton = build_scope_skeleton(&raw);
+                let mut actual = Vec::new();
+                for frame in &skeleton.frames {
+                    actual.push((
+                        "scope_frame",
+                        "scope_frame",
+                        frame.range.start as u32,
+                        frame.range.end as u32,
+                    ));
+                    for binding in &frame.bindings {
+                        actual.push((
+                            binding_shape_kind_name(binding.kind),
+                            binding.spelling.as_str(),
+                            binding.introduced_at.start as u32,
+                            binding.introduced_at.end as u32,
+                        ));
+                    }
+                }
+                let expected_structure = expectation
+                    .tokens
+                    .iter()
+                    .filter(|token| !is_scope_probe_kind(&token.kind))
+                    .map(|token| {
+                        let (span_start, span_end) = expected_span(token, &source, || {
+                            panic!(
+                                "{} scope skeleton expectations require span_start",
+                                case.expectation_path.display()
+                            )
+                        });
+                        (
+                            token.kind.as_str(),
+                            token.lexeme.as_str(),
+                            span_start,
+                            span_end,
+                        )
+                    })
+                    .collect::<Vec<_>>();
+                for token in expectation
+                    .tokens
+                    .iter()
+                    .filter(|token| is_scope_probe_kind(&token.kind))
+                {
+                    let (position, _) = expected_span(token, &source, || {
+                        panic!(
+                            "{} scope probe expectations require span_start",
+                            case.expectation_path.display()
+                        )
+                    });
+                    let position = position as usize;
+                    let actual_active = skeleton.binding_overrides_symbol(&token.lexeme, position);
+                    let expected_active = match token.kind.as_str() {
+                        "scope_active" => true,
+                        "scope_inactive" => false,
+                        _ => unreachable!("filtered to scope probe kinds"),
+                    };
+                    assert_eq!(
+                        actual_active,
+                        expected_active,
+                        "{} probe `{}` at byte {}",
+                        case.expectation_path.display(),
+                        token.lexeme,
+                        position
+                    );
+                }
+                let actual_diagnostics = skeleton
+                    .diagnostics
+                    .iter()
+                    .map(|diagnostic| scope_skeleton_diagnostic_code_name(diagnostic.code))
+                    .collect::<Vec<_>>();
+                let expected_diagnostics = expectation
+                    .diagnostic_codes
+                    .iter()
+                    .map(String::as_str)
+                    .collect::<Vec<_>>();
+
+                assert_eq!(
+                    actual,
+                    expected_structure,
+                    "{}",
+                    case.expectation_path.display()
+                );
+                assert_eq!(
+                    actual_diagnostics,
+                    expected_diagnostics,
+                    "{}",
+                    case.expectation_path.display()
+                );
+                scope_skeleton_checked += 1;
+            }
             other => panic!(
                 "unsupported lexical corpus domain `{other}` in {}",
                 case.expectation_path.display()
@@ -201,6 +288,7 @@ fn lexical_pass_corpus_matches_token_expectations() {
     assert_eq!(final_checked, 11);
     assert_eq!(raw_checked, 5);
     assert_eq!(import_prescan_checked, 10);
+    assert_eq!(scope_skeleton_checked, 6);
 }
 
 fn token_kind_name(kind: TokenKind) -> &'static str {
@@ -234,6 +322,82 @@ fn import_prescan_diagnostic_code_name(code: ImportPrescanDiagnosticCode) -> &'s
         ImportPrescanDiagnosticCode::MissingSemicolon => "missing_semicolon",
         ImportPrescanDiagnosticCode::UnexpectedToken => "unexpected_token",
     }
+}
+
+fn binding_shape_kind_name(kind: BindingShapeKind) -> &'static str {
+    match kind {
+        BindingShapeKind::Let => "scope_binding_let",
+        BindingShapeKind::For => "scope_binding_for",
+        BindingShapeKind::Ex => "scope_binding_ex",
+        BindingShapeKind::Reserve => "scope_binding_reserve",
+        BindingShapeKind::Given => "scope_binding_given",
+        BindingShapeKind::Consider => "scope_binding_consider",
+        BindingShapeKind::Set => "scope_binding_set",
+        BindingShapeKind::Reconsider => "scope_binding_reconsider",
+        BindingShapeKind::Take => "scope_binding_take",
+        BindingShapeKind::Deffunc => "scope_binding_deffunc",
+        BindingShapeKind::Defpred => "scope_binding_defpred",
+        BindingShapeKind::Var => "scope_binding_var",
+        BindingShapeKind::Const => "scope_binding_const",
+        BindingShapeKind::Processed => "scope_binding_processed",
+    }
+}
+
+fn scope_skeleton_diagnostic_code_name(code: ScopeSkeletonDiagnosticCode) -> &'static str {
+    match code {
+        ScopeSkeletonDiagnosticCode::MalformedBinderList => "malformed_binder_list",
+        ScopeSkeletonDiagnosticCode::UnsupportedBinderShape => "unsupported_binder_shape",
+        ScopeSkeletonDiagnosticCode::DuplicateBindingName => "duplicate_binding_name",
+        ScopeSkeletonDiagnosticCode::UnmatchedEnd => "unmatched_end",
+        ScopeSkeletonDiagnosticCode::MissingEnd => "missing_end",
+    }
+}
+
+fn is_scope_probe_kind(kind: &str) -> bool {
+    matches!(kind, "scope_active" | "scope_inactive")
+}
+
+fn expected_span(
+    token: &mizar_test::expectation::TokenExpectation,
+    source: &str,
+    missing: impl FnOnce(),
+) -> (u32, u32) {
+    if let (Some(start), Some(end)) = (token.span_start, token.span_end) {
+        return (start, end);
+    }
+    if let (Some(start_line), Some(start_col), Some(end_line), Some(end_col)) = (
+        token.span_start_line,
+        token.span_start_col,
+        token.span_end_line,
+        token.span_end_col,
+    ) {
+        return (
+            source_pos_from_line_col(source, start_line, start_col),
+            source_pos_from_line_col(source, end_line, end_col),
+        );
+    }
+    missing();
+    unreachable!("missing span callback should not return")
+}
+
+fn source_pos_from_line_col(source: &str, line: u32, col: u32) -> u32 {
+    let mut current_line = 1;
+    let mut current_col = 1;
+    for (index, ch) in source.char_indices() {
+        if current_line == line && current_col == col {
+            return index as u32;
+        }
+        if ch == '\n' {
+            current_line += 1;
+            current_col = 1;
+        } else {
+            current_col += 1;
+        }
+    }
+    if current_line == line && current_col == col {
+        return source.len() as u32;
+    }
+    panic!("line/column span {line}:{col} is outside source");
 }
 
 fn workspace_root() -> PathBuf {

@@ -14,59 +14,79 @@ spec_refs = [
 [[tokens]]
 kind = "raw_lexeme_run"
 lexeme = "+"
-span_start = 0
-span_end = 1
+span_start_line = 1
+span_start_col = 1
+span_end_line = 1
+span_end_col = 2
 
 [[tokens]]
 kind = "raw_layout"
 lexeme = " "
-span_start = 1
-span_end = 2
+span_start_line = 1
+span_start_col = 2
+span_end_line = 1
+span_end_col = 3
 
 [[tokens]]
 kind = "raw_lexeme_run"
 lexeme = "*+"
-span_start = 2
-span_end = 4
+span_start_line = 1
+span_start_col = 3
+span_end_line = 1
+span_end_col = 5
 
 [[tokens]]
 kind = "raw_layout"
 lexeme = " "
-span_start = 4
-span_end = 5
+span_start_line = 1
+span_start_col = 5
+span_end_line = 1
+span_end_col = 6
 
 [[tokens]]
 kind = "raw_lexeme_run"
 lexeme = "|."
-span_start = 5
-span_end = 7
+span_start_line = 1
+span_start_col = 6
+span_end_line = 1
+span_end_col = 8
 
 [[tokens]]
 kind = "raw_layout"
 lexeme = " "
-span_start = 7
-span_end = 8
+span_start_line = 1
+span_start_col = 8
+span_end_line = 1
+span_end_col = 9
 
 [[tokens]]
 kind = "raw_lexeme_run"
 lexeme = ".|"
-span_start = 8
-span_end = 10
+span_start_line = 1
+span_start_col = 9
+span_end_line = 1
+span_end_col = 11
 
 [[tokens]]
 kind = "raw_layout"
 lexeme = " "
-span_start = 10
-span_end = 11
+span_start_line = 1
+span_start_col = 11
+span_end_line = 1
+span_end_col = 12
 
 [[tokens]]
 kind = "raw_lexeme_run"
 lexeme = "x*+y"
-span_start = 11
-span_end = 15
+span_start_line = 1
+span_start_col = 12
+span_end_line = 1
+span_end_col = 16
 
 [[tokens]]
 kind = "raw_layout"
 lexeme = "\n"
-span_start = 15
-span_end = 16
+span_start_line = 1
+span_start_col = 16
+span_end_line = 2
+span_end_col = 1

@@ -18,47 +18,63 @@ spec_refs = [
 [[tokens]]
 kind = "import_path"
 lexeme = "std.algebra.group"
-span_start = 7
-span_end = 24
+span_start_line = 1
+span_start_col = 8
+span_end_line = 1
+span_end_col = 25
 
 [[tokens]]
 kind = "import_path"
 lexeme = "std.topology.metric_space"
-span_start = 26
-span_end = 51
+span_start_line = 1
+span_start_col = 27
+span_end_line = 1
+span_end_col = 52
 
 [[tokens]]
 kind = "import_alias"
 lexeme = "Metric"
-span_start = 55
-span_end = 61
+span_start_line = 1
+span_start_col = 56
+span_end_line = 1
+span_end_col = 62
 
 [[tokens]]
 kind = "import_path"
 lexeme = "pkg.bourbaki.topology.filters"
-span_start = 63
-span_end = 92
+span_start_line = 1
+span_start_col = 64
+span_end_line = 1
+span_end_col = 93
 
 [[tokens]]
 kind = "import_alias"
 lexeme = "filters"
-span_start = 96
-span_end = 103
+span_start_line = 1
+span_start_col = 97
+span_end_line = 1
+span_end_col = 104
 
 [[tokens]]
 kind = "import_path"
 lexeme = "..common"
-span_start = 105
-span_end = 113
+span_start_line = 1
+span_start_col = 106
+span_end_line = 1
+span_end_col = 114
 
 [[tokens]]
 kind = "import_path"
 lexeme = ".utils"
-span_start = 115
-span_end = 121
+span_start_line = 1
+span_start_col = 116
+span_end_line = 1
+span_end_col = 122
 
 [[tokens]]
 kind = "prelude_end"
 lexeme = "prelude_end"
-span_start = 122
-span_end = 122
+span_start_line = 1
+span_start_col = 123
+span_end_line = 1
+span_end_col = 123

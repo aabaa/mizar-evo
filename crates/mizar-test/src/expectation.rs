@@ -73,6 +73,10 @@ pub struct TokenExpectation {
     pub lexeme: String,
     pub span_start: Option<u32>,
     pub span_end: Option<u32>,
+    pub span_start_line: Option<u32>,
+    pub span_start_col: Option<u32>,
+    pub span_end_line: Option<u32>,
+    pub span_end_col: Option<u32>,
 }
 
 pub fn parse_expectation_file(path: &Path) -> Result<Expectation, ValidationDiagnostic> {
@@ -233,9 +237,27 @@ fn parse_token_expectations(token_tables: &[TomlTable]) -> Result<Vec<TokenExpec
         }
         let span_start = toml_lite::optional_u32(table, "span_start")?;
         let span_end = toml_lite::optional_u32(table, "span_end")?;
+        let span_start_line = toml_lite::optional_u32(table, "span_start_line")?;
+        let span_start_col = toml_lite::optional_u32(table, "span_start_col")?;
+        let span_end_line = toml_lite::optional_u32(table, "span_end_line")?;
+        let span_end_col = toml_lite::optional_u32(table, "span_end_col")?;
         if span_start.is_some() != span_end.is_some() {
             return Err(
                 "`tokens.span_start` and `tokens.span_end` must be provided together".to_owned(),
+            );
+        }
+        let line_col_fields = [span_start_line, span_start_col, span_end_line, span_end_col];
+        if line_col_fields.iter().any(Option::is_some)
+            && !line_col_fields.iter().all(Option::is_some)
+        {
+            return Err(
+                "`tokens.span_*_line` and `tokens.span_*_col` must be provided together".to_owned(),
+            );
+        }
+        if span_start.is_some() && span_start_line.is_some() {
+            return Err(
+                "`tokens.span_start`/`span_end` and line/column spans are mutually exclusive"
+                    .to_owned(),
             );
         }
         if let (Some(start), Some(end)) = (span_start, span_end)
@@ -243,18 +265,44 @@ fn parse_token_expectations(token_tables: &[TomlTable]) -> Result<Vec<TokenExpec
         {
             return Err("`tokens.span_start` must not exceed `tokens.span_end`".to_owned());
         }
+        if let (Some(start_line), Some(start_col), Some(end_line), Some(end_col)) =
+            (span_start_line, span_start_col, span_end_line, span_end_col)
+        {
+            if start_line == 0 || start_col == 0 || end_line == 0 || end_col == 0 {
+                return Err("line/column spans are 1-based and must be non-zero".to_owned());
+            }
+            if (start_line, start_col) > (end_line, end_col) {
+                return Err(
+                    "`tokens.span_start_line`/`span_start_col` must not exceed end line/column"
+                        .to_owned(),
+                );
+            }
+        }
         tokens.push(TokenExpectation {
             kind,
             lexeme,
             span_start,
             span_end,
+            span_start_line,
+            span_start_col,
+            span_end_line,
+            span_end_col,
         });
     }
     Ok(tokens)
 }
 
 fn validate_token_fields(table: &TomlTable) -> Result<(), String> {
-    const KNOWN_TOKEN_FIELDS: &[&str] = &["kind", "lexeme", "span_start", "span_end"];
+    const KNOWN_TOKEN_FIELDS: &[&str] = &[
+        "kind",
+        "lexeme",
+        "span_start",
+        "span_end",
+        "span_start_line",
+        "span_start_col",
+        "span_end_line",
+        "span_end_col",
+    ];
 
     for key in table.keys() {
         if !KNOWN_TOKEN_FIELDS.contains(&key.as_str()) {

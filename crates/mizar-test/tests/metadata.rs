@@ -536,6 +536,10 @@ spec_refs = ["spec.en.test.basic"]
 [[tokens]]
 kind = "identifier"
 lexeme = "alpha"
+span_start_line = 1
+span_start_col = 1
+span_end_line = 1
+span_end_col = 6
 "#,
     );
 
@@ -545,6 +549,10 @@ lexeme = "alpha"
     assert_eq!(plan.cases[0].expectation.tokens.len(), 1);
     assert_eq!(plan.cases[0].expectation.tokens[0].kind, "identifier");
     assert_eq!(plan.cases[0].expectation.tokens[0].lexeme, "alpha");
+    assert_eq!(plan.cases[0].expectation.tokens[0].span_start_line, Some(1));
+    assert_eq!(plan.cases[0].expectation.tokens[0].span_start_col, Some(1));
+    assert_eq!(plan.cases[0].expectation.tokens[0].span_end_line, Some(1));
+    assert_eq!(plan.cases[0].expectation.tokens[0].span_end_col, Some(6));
 }
 
 #[test]

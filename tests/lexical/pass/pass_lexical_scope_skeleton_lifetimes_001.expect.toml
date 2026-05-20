@@ -1,0 +1,142 @@
+schema_version = 1
+id = "pass_lexical_scope_skeleton_lifetimes_001"
+kind = "pass"
+stage = "lexical"
+domain = "scope_skeleton"
+source = "pass_lexical_scope_skeleton_lifetimes_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.scope_override.skeleton",
+  "spec.en.04.variables_and_constants.binders.lexical_shapes",
+  "spec.en.16.theorems_and_proofs.blocks.lexical_ranges",
+]
+
+[[tokens]]
+kind = "scope_frame"
+lexeme = "scope_frame"
+span_start_line = 1
+span_start_col = 1
+span_end_line = 12
+span_end_col = 3
+
+[[tokens]]
+kind = "scope_binding_reserve"
+lexeme = "R"
+span_start_line = 1
+span_start_col = 9
+span_end_line = 1
+span_end_col = 10
+
+[[tokens]]
+kind = "scope_frame"
+lexeme = "scope_frame"
+span_start_line = 2
+span_start_col = 1
+span_end_line = 10
+span_end_col = 4
+
+[[tokens]]
+kind = "scope_binding_let"
+lexeme = "x"
+span_start_line = 3
+span_start_col = 5
+span_end_line = 3
+span_end_col = 6
+
+[[tokens]]
+kind = "scope_frame"
+lexeme = "scope_frame"
+span_start_line = 4
+span_start_col = 1
+span_end_line = 8
+span_end_col = 4
+
+[[tokens]]
+kind = "scope_binding_let"
+lexeme = "y"
+span_start_line = 5
+span_start_col = 5
+span_end_line = 5
+span_end_col = 6
+
+[[tokens]]
+kind = "scope_frame"
+lexeme = "scope_frame"
+span_start_line = 6
+span_start_col = 1
+span_end_line = 6
+span_end_col = 19
+
+[[tokens]]
+kind = "scope_binding_for"
+lexeme = "z"
+span_start_line = 6
+span_start_col = 5
+span_end_line = 6
+span_end_col = 6
+
+[[tokens]]
+kind = "scope_inactive"
+lexeme = "R"
+span_start_line = 1
+span_start_col = 9
+span_end_line = 1
+span_end_col = 9
+
+[[tokens]]
+kind = "scope_active"
+lexeme = "R"
+span_start_line = 12
+span_start_col = 1
+span_end_line = 12
+span_end_col = 1
+
+[[tokens]]
+kind = "scope_active"
+lexeme = "x"
+span_start_line = 3
+span_start_col = 7
+span_end_line = 3
+span_end_col = 7
+
+[[tokens]]
+kind = "scope_inactive"
+lexeme = "x"
+span_start_line = 11
+span_start_col = 1
+span_end_line = 11
+span_end_col = 1
+
+[[tokens]]
+kind = "scope_active"
+lexeme = "y"
+span_start_line = 6
+span_start_col = 13
+span_end_line = 6
+span_end_col = 13
+
+[[tokens]]
+kind = "scope_inactive"
+lexeme = "y"
+span_start_line = 9
+span_start_col = 1
+span_end_line = 9
+span_end_col = 1
+
+[[tokens]]
+kind = "scope_active"
+lexeme = "z"
+span_start_line = 6
+span_start_col = 17
+span_end_line = 6
+span_end_col = 17
+
+[[tokens]]
+kind = "scope_inactive"
+lexeme = "z"
+span_start_line = 7
+span_start_col = 1
+span_end_line = 7
+span_end_col = 1

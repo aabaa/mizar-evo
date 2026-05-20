@@ -1,0 +1,12 @@
+reserve R for set;
+definition
+let x be set;
+now
+let y be set;
+for z holds y = z;
+y;
+end;
+y;
+end;
+x;
+R;

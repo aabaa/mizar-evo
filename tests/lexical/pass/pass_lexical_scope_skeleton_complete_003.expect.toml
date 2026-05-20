@@ -1,0 +1,117 @@
+schema_version = 1
+id = "pass_lexical_scope_skeleton_complete_003"
+kind = "pass"
+stage = "lexical"
+domain = "scope_skeleton"
+source = "pass_lexical_scope_skeleton_complete_003.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = [
+  "duplicate_binding_name",
+  "duplicate_binding_name",
+  "unsupported_binder_shape",
+  "unsupported_binder_shape",
+  "unsupported_binder_shape",
+  "unsupported_binder_shape",
+]
+spec_refs = [
+  "spec.en.02.lexical.scope_override.skeleton",
+  "spec.en.04.variables_and_constants.binders.lexical_shapes",
+  "spec.en.16.theorems_and_proofs.blocks.lexical_ranges",
+]
+
+[[tokens]]
+kind = "scope_frame"
+lexeme = "scope_frame"
+span_start_line = 1
+span_start_col = 1
+span_end_line = 16
+span_end_col = 5
+
+[[tokens]]
+kind = "scope_binding_reserve"
+lexeme = "Global"
+span_start_line = 1
+span_start_col = 9
+span_end_line = 1
+span_end_col = 15
+
+[[tokens]]
+kind = "scope_frame"
+lexeme = "scope_frame"
+span_start_line = 2
+span_start_col = 1
+span_end_line = 14
+span_end_col = 4
+
+[[tokens]]
+kind = "scope_binding_let"
+lexeme = "dup"
+span_start_line = 3
+span_start_col = 5
+span_end_line = 3
+span_end_col = 8
+
+[[tokens]]
+kind = "scope_frame"
+lexeme = "scope_frame"
+span_start_line = 5
+span_start_col = 1
+span_end_line = 13
+span_end_col = 4
+
+[[tokens]]
+kind = "scope_binding_let"
+lexeme = "inner"
+span_start_line = 6
+span_start_col = 5
+span_end_line = 6
+span_end_col = 10
+
+[[tokens]]
+kind = "scope_active"
+lexeme = "Global"
+span_start_line = 15
+span_start_col = 1
+span_end_line = 15
+span_end_col = 1
+
+[[tokens]]
+kind = "scope_active"
+lexeme = "dup"
+span_start_line = 11
+span_start_col = 1
+span_end_line = 11
+span_end_col = 1
+
+[[tokens]]
+kind = "scope_inactive"
+lexeme = "dup"
+span_start_line = 16
+span_start_col = 1
+span_end_line = 16
+span_end_col = 1
+
+[[tokens]]
+kind = "scope_active"
+lexeme = "inner"
+span_start_line = 12
+span_start_col = 1
+span_end_line = 12
+span_end_col = 1
+
+[[tokens]]
+kind = "scope_inactive"
+lexeme = "Bad"
+span_start_line = 8
+span_start_col = 1
+span_end_line = 8
+span_end_col = 1
+
+[[tokens]]
+kind = "scope_inactive"
+lexeme = "foo"
+span_start_line = 11
+span_start_col = 1
+span_end_line = 11
+span_end_col = 1

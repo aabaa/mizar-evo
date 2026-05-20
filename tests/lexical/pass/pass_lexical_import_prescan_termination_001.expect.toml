@@ -15,11 +15,15 @@ spec_refs = [
 [[tokens]]
 kind = "import_path"
 lexeme = "std.core"
-span_start = 7
-span_end = 15
+span_start_line = 1
+span_start_col = 8
+span_end_line = 1
+span_end_col = 16
 
 [[tokens]]
 kind = "prelude_end"
 lexeme = "prelude_end"
-span_start = 16
-span_end = 16
+span_start_line = 1
+span_start_col = 17
+span_end_line = 1
+span_end_col = 17

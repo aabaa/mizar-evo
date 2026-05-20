@@ -18,17 +18,23 @@ spec_refs = [
 [[tokens]]
 kind = "import_path"
 lexeme = "std."
-span_start = 7
-span_end = 11
+span_start_line = 1
+span_start_col = 8
+span_end_line = 1
+span_end_col = 12
 
 [[tokens]]
 kind = "import_path"
 lexeme = "pkg.math"
-span_start = 13
-span_end = 21
+span_start_line = 1
+span_start_col = 14
+span_end_line = 1
+span_end_col = 22
 
 [[tokens]]
 kind = "prelude_end"
 lexeme = "prelude_end"
-span_start = 26
-span_end = 26
+span_start_line = 1
+span_start_col = 27
+span_end_line = 1
+span_end_col = 27
