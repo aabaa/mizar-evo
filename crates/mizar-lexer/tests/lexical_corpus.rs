@@ -2,9 +2,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use mizar_lexer::{
-    BindingShapeKind, ImportPrescanDiagnosticCode, RawTokenKind, ScopeLexView,
-    ScopeSkeletonDiagnosticCode, TokenKind, build_scope_skeleton, lex, scan_import_prelude,
-    scan_raw,
+    BindingShapeKind, ImportPrescanDiagnosticCode, LexicalBlockKind, LexicalStatementKind,
+    RawTokenKind, ScopeLexView, ScopeSkeletonDiagnosticCode, TokenKind, build_scope_skeleton, lex,
+    scan_import_prelude, scan_raw,
 };
 use mizar_test::{
     DiscoveryConfig, ExpectedOutcome, PipelinePhase, TestProfile, ValidationMode, build_test_plan,
@@ -190,21 +190,54 @@ fn lexical_pass_corpus_matches_token_expectations() {
                     )
                 });
                 let skeleton = build_scope_skeleton(&raw);
+                let expects_frames = expectation.tokens.iter().any(|token| {
+                    token.kind == "scope_frame" || token.kind.starts_with("scope_binding_")
+                });
+                let expects_blocks = expectation
+                    .tokens
+                    .iter()
+                    .any(|token| token.kind.starts_with("scope_block_"));
+                let expects_statements = expectation
+                    .tokens
+                    .iter()
+                    .any(|token| token.kind.starts_with("scope_statement_"));
                 let mut actual = Vec::new();
-                for frame in &skeleton.frames {
-                    actual.push((
-                        "scope_frame",
-                        "scope_frame",
-                        frame.range.start as u32,
-                        frame.range.end as u32,
-                    ));
-                    for binding in &frame.bindings {
+                if expects_blocks {
+                    for block in &skeleton.blocks {
                         actual.push((
-                            binding_shape_kind_name(binding.kind),
-                            binding.spelling.as_str(),
-                            binding.introduced_at.start as u32,
-                            binding.introduced_at.end as u32,
+                            block_kind_name(block.kind),
+                            "scope_block",
+                            block.range.start as u32,
+                            block.range.end as u32,
                         ));
+                    }
+                }
+                if expects_statements {
+                    for statement in &skeleton.statements {
+                        actual.push((
+                            statement_kind_name(statement.kind),
+                            "scope_statement",
+                            statement.range.start as u32,
+                            statement.range.end as u32,
+                        ));
+                    }
+                }
+                if expects_frames {
+                    for frame in &skeleton.frames {
+                        actual.push((
+                            "scope_frame",
+                            "scope_frame",
+                            frame.range.start as u32,
+                            frame.range.end as u32,
+                        ));
+                        for binding in &frame.bindings {
+                            actual.push((
+                                binding_shape_kind_name(binding.kind),
+                                binding.spelling.as_str(),
+                                binding.introduced_at.start as u32,
+                                binding.introduced_at.end as u32,
+                            ));
+                        }
                     }
                 }
                 let expected_structure = expectation
@@ -288,7 +321,7 @@ fn lexical_pass_corpus_matches_token_expectations() {
     assert_eq!(final_checked, 11);
     assert_eq!(raw_checked, 5);
     assert_eq!(import_prescan_checked, 10);
-    assert_eq!(scope_skeleton_checked, 6);
+    assert_eq!(scope_skeleton_checked, 7);
 }
 
 fn token_kind_name(kind: TokenKind) -> &'static str {
@@ -340,6 +373,26 @@ fn binding_shape_kind_name(kind: BindingShapeKind) -> &'static str {
         BindingShapeKind::Var => "scope_binding_var",
         BindingShapeKind::Const => "scope_binding_const",
         BindingShapeKind::Processed => "scope_binding_processed",
+    }
+}
+
+fn block_kind_name(kind: LexicalBlockKind) -> &'static str {
+    match kind {
+        LexicalBlockKind::Algorithm => "scope_block_algorithm",
+        LexicalBlockKind::Definition => "scope_block_definition",
+        LexicalBlockKind::Proof => "scope_block_proof",
+        LexicalBlockKind::Now => "scope_block_now",
+        LexicalBlockKind::Case => "scope_block_case",
+        LexicalBlockKind::Suppose => "scope_block_suppose",
+        LexicalBlockKind::Hereby => "scope_block_hereby",
+        LexicalBlockKind::Do => "scope_block_do",
+    }
+}
+
+fn statement_kind_name(kind: LexicalStatementKind) -> &'static str {
+    match kind {
+        LexicalStatementKind::Binder => "scope_statement_binder",
+        LexicalStatementKind::Other => "scope_statement_other",
     }
 }
 

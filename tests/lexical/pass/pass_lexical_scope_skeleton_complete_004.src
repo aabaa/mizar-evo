@@ -1,0 +1,17 @@
+definition
+let x be set;
+proof
+given g being object;
+now
+let y be set;
+end;
+end;
+end;
+algorithm
+do
+var a, b;
+for i = 0 to 2 do
+var inner;
+end;
+end;
+end;
