@@ -252,7 +252,7 @@ Exit criteria:
 - lookup behavior が repeated runs で deterministic。
 - raw scanner tests、final token shell tests、import pre-scan tests とは分離し、crate-local lexical environment unit tests と traceability manifest で coverage を記録する。
 
-## Phase 5: Scope Skeleton
+## Phase 5: Scope Skeleton -> Done
 
 Target API direction:
 
