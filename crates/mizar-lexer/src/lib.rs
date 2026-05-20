@@ -1222,7 +1222,7 @@ impl ScopeSkeletonBuilder {
                 .then_with(|| left.range.end.cmp(&right.range.end))
         });
         self.diagnostics
-            .sort_by(|left, right| left.span.start.cmp(&right.span.start));
+            .sort_by_key(|diagnostic| diagnostic.span.start);
 
         ScopeSkeleton {
             frames: self.frames,
@@ -1280,11 +1280,7 @@ impl ScopeSkeletonBuilder {
         let mut saw_malformed = false;
         let mut bindings = Vec::new();
 
-        loop {
-            let Some(token) = self.peek().cloned() else {
-                break;
-            };
-
+        while let Some(token) = self.peek().cloned() {
             if token.kind == ScopeSkeletonTokenKind::Semicolon {
                 break;
             }
