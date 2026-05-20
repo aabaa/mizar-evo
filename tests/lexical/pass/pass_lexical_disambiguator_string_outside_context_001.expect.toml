@@ -1,0 +1,27 @@
+schema_version = 1
+id = "pass_lexical_disambiguator_string_outside_context_001"
+kind = "pass"
+stage = "lexical"
+domain = "disambiguator"
+source = "pass_lexical_disambiguator_string_outside_context_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = [
+  "no_valid_token_candidate",
+  "no_valid_token_candidate",
+]
+spec_refs = [
+  "spec.en.02.lexical.string_literals.context_sensitive",
+]
+
+[[tokens]]
+kind = "error_recovery"
+lexeme = "\""
+
+[[tokens]]
+kind = "identifier"
+lexeme = "alpha"
+
+[[tokens]]
+kind = "error_recovery"
+lexeme = "\""

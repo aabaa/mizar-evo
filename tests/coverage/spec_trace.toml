@@ -51,10 +51,12 @@ id = "spec.en.02.lexical.dot_disambiguation"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.5.3 Dot Disambiguation"
 stage = "lexical"
-status = "planned"
+status = "partial"
 required = true
 coverage = "pass"
-tests = []
+tests = [
+  "tests/lexical/pass/pass_lexical_disambiguator_namespace_path_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.identifiers.apostrophe"
@@ -161,6 +163,7 @@ required = true
 coverage = "pass"
 tests = [
   "tests/lexical/pass/pass_lexical_reserved_symbols_longest_compound_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_user_symbol_longest_001.expect.toml",
 ]
 
 [[requirement]]
@@ -315,10 +318,13 @@ id = "spec.en.02.lexical.string_literals.context_sensitive"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.7 Numerals and Literals"
 stage = "lexical"
-status = "planned"
+status = "partial"
 required = true
 coverage = "pass_and_fail"
-tests = []
+tests = [
+  "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_string_outside_context_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.02.lexical.scope_override.skeleton"
@@ -334,6 +340,7 @@ tests = [
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_002.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_003.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_004.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_scope_override_001.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_lifetimes_001.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_shadowing_001.expect.toml",
   "tests/property/scope_skeleton_phase5_001.expect.toml",
@@ -379,6 +386,31 @@ required = true
 coverage = "pass"
 tests = [
   "tests/lexical/pass/pass_lexical_reserved_symbols_longest_compound_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.02.lexical.user_symbols.identifier_shaped"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.5.2 User-Defined Symbolic Names"
+stage = "lexical"
+status = "partial"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_disambiguator_namespace_path_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_scope_override_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.02.lexical.user_symbols.punctuation_shaped"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.5.2 User-Defined Symbolic Names"
+stage = "lexical"
+status = "partial"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_disambiguator_user_symbol_longest_001.expect.toml",
 ]
 
 [[requirement]]

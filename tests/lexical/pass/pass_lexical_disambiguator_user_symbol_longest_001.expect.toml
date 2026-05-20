@@ -1,0 +1,25 @@
+schema_version = 1
+id = "pass_lexical_disambiguator_user_symbol_longest_001"
+kind = "pass"
+stage = "lexical"
+domain = "disambiguator"
+source = "pass_lexical_disambiguator_user_symbol_longest_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.longest_match",
+  "spec.en.02.lexical.user_symbols.punctuation_shaped",
+]
+
+[[tokens]]
+kind = "identifier"
+lexeme = "x"
+
+[[tokens]]
+kind = "user_symbol"
+lexeme = "+*+"
+
+[[tokens]]
+kind = "identifier"
+lexeme = "y"

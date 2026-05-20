@@ -2,9 +2,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use mizar_lexer::{
-    BindingShapeKind, ImportPrescanDiagnosticCode, LexicalBlockKind, LexicalStatementKind,
-    RawTokenKind, ScopeLexView, ScopeSkeletonDiagnosticCode, TokenKind, build_scope_skeleton, lex,
-    scan_import_prelude, scan_raw,
+    BindingShapeKind, ExportRank, ExportedSymbolShape, ImportPrescanDiagnosticCode,
+    LexDiagnosticCode, LexicalBlockKind, LexicalStatementKind, LexicalSummaryFingerprint, ModuleId,
+    ModuleLexicalSummary, ParserLexContext, RawTokenKind, ResolvedImport, ScopeLexView,
+    ScopeSkeletonDiagnosticCode, SymbolId, TokenKind, build_lexical_environment,
+    build_scope_skeleton, disambiguate, lex, scan_import_prelude, scan_raw,
 };
 use mizar_test::{
     DiscoveryConfig, ExpectedOutcome, PipelinePhase, TestProfile, ValidationMode, build_test_plan,
@@ -28,6 +30,7 @@ fn lexical_pass_corpus_matches_token_expectations() {
     let mut raw_checked = 0;
     let mut import_prescan_checked = 0;
     let mut scope_skeleton_checked = 0;
+    let mut disambiguator_checked = 0;
     for case in plan.cases {
         let expectation = &case.expectation;
         if expectation.expected_outcome != ExpectedOutcome::Pass
@@ -311,6 +314,47 @@ fn lexical_pass_corpus_matches_token_expectations() {
                 );
                 scope_skeleton_checked += 1;
             }
+            "disambiguator" => {
+                let raw = scan_raw(&source).unwrap_or_else(|error| {
+                    panic!(
+                        "scan_raw failed for {}: {error}",
+                        case.source_path.display()
+                    )
+                });
+                let skeleton = build_scope_skeleton(&raw);
+                let env = disambiguator_fixture_environment();
+                let context = disambiguator_fixture_context(expectation.id.0.as_str());
+                let stream = disambiguate(&raw, &env, &context, &skeleton);
+                let actual = stream
+                    .tokens
+                    .iter()
+                    .map(|token| (token_kind_name(token.kind), token.lexeme.as_str()))
+                    .collect::<Vec<_>>();
+                let expected = expectation
+                    .tokens
+                    .iter()
+                    .map(|token| (token.kind.as_str(), token.lexeme.as_str()))
+                    .collect::<Vec<_>>();
+                let actual_diagnostics = stream
+                    .diagnostics
+                    .iter()
+                    .map(|diagnostic| lex_diagnostic_code_name(diagnostic.code))
+                    .collect::<Vec<_>>();
+                let expected_diagnostics = expectation
+                    .diagnostic_codes
+                    .iter()
+                    .map(String::as_str)
+                    .collect::<Vec<_>>();
+
+                assert_eq!(actual, expected, "{}", case.expectation_path.display());
+                assert_eq!(
+                    actual_diagnostics,
+                    expected_diagnostics,
+                    "{}",
+                    case.expectation_path.display()
+                );
+                disambiguator_checked += 1;
+            }
             other => panic!(
                 "unsupported lexical corpus domain `{other}` in {}",
                 case.expectation_path.display()
@@ -322,6 +366,7 @@ fn lexical_pass_corpus_matches_token_expectations() {
     assert_eq!(raw_checked, 5);
     assert_eq!(import_prescan_checked, 10);
     assert_eq!(scope_skeleton_checked, 7);
+    assert_eq!(disambiguator_checked, 5);
 }
 
 fn token_kind_name(kind: TokenKind) -> &'static str {
@@ -403,6 +448,55 @@ fn scope_skeleton_diagnostic_code_name(code: ScopeSkeletonDiagnosticCode) -> &'s
         ScopeSkeletonDiagnosticCode::DuplicateBindingName => "duplicate_binding_name",
         ScopeSkeletonDiagnosticCode::UnmatchedEnd => "unmatched_end",
         ScopeSkeletonDiagnosticCode::MissingEnd => "missing_end",
+    }
+}
+
+fn lex_diagnostic_code_name(code: LexDiagnosticCode) -> &'static str {
+    match code {
+        LexDiagnosticCode::NoValidTokenCandidate => "no_valid_token_candidate",
+        LexDiagnosticCode::ParserContextRejectedCandidate => "parser_context_rejected_candidate",
+        LexDiagnosticCode::AmbiguousUserSymbol => "ambiguous_user_symbol",
+        LexDiagnosticCode::MalformedStringLiteral => "malformed_string_literal",
+        LexDiagnosticCode::UnsupportedRawToken => "unsupported_raw_token",
+    }
+}
+
+fn disambiguator_fixture_context(id: &str) -> ParserLexContext {
+    if id.contains("string_literal_context") {
+        ParserLexContext::string_required()
+    } else if id.contains("namespace_path") {
+        ParserLexContext::namespace_path()
+    } else {
+        ParserLexContext::general()
+    }
+}
+
+fn disambiguator_fixture_environment() -> mizar_lexer::ActiveLexicalEnvironment {
+    build_lexical_environment(
+        &[ResolvedImport {
+            module_id: ModuleId("fixture.symbols".to_owned()),
+        }],
+        &[ModuleLexicalSummary {
+            module_id: ModuleId("fixture.symbols".to_owned()),
+            fingerprint: LexicalSummaryFingerprint(9001),
+            exported_symbols: vec![
+                exported("+", "fixture#plus", 0),
+                exported("+*", "fixture#plus_star", 1),
+                exported("+*+", "fixture#plus_star_plus", 2),
+                exported("succ", "fixture#succ", 3),
+                exported(".", "fixture#dot", 4),
+            ],
+        }],
+    )
+    .expect("disambiguator fixture environment should build")
+}
+
+fn exported(spelling: &str, symbol: &str, rank: u32) -> ExportedSymbolShape {
+    ExportedSymbolShape {
+        spelling: spelling.to_owned(),
+        symbol_id: SymbolId(symbol.to_owned()),
+        source_module: ModuleId("fixture.symbols".to_owned()),
+        export_rank: ExportRank(rank),
     }
 }
 

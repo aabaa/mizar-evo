@@ -1,0 +1,25 @@
+schema_version = 1
+id = "pass_lexical_disambiguator_namespace_path_001"
+kind = "pass"
+stage = "lexical"
+domain = "disambiguator"
+source = "pass_lexical_disambiguator_namespace_path_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.dot_disambiguation",
+  "spec.en.02.lexical.user_symbols.identifier_shaped",
+]
+
+[[tokens]]
+kind = "identifier"
+lexeme = "A"
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = "."
+
+[[tokens]]
+kind = "identifier"
+lexeme = "succ"
