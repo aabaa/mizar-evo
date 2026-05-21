@@ -13,7 +13,7 @@ use mizar_test::{
 };
 
 #[test]
-fn lexical_pass_corpus_matches_token_expectations() {
+fn lexical_corpus_matches_token_expectations() {
     let workspace_root = workspace_root();
     let plan = build_test_plan(&DiscoveryConfig {
         workspace_root: workspace_root.clone(),
@@ -31,12 +31,20 @@ fn lexical_pass_corpus_matches_token_expectations() {
     let mut import_prescan_checked = 0;
     let mut scope_skeleton_checked = 0;
     let mut disambiguator_checked = 0;
+    let mut fail_checked = 0;
     for case in plan.cases {
         let expectation = &case.expectation;
-        if expectation.expected_outcome != ExpectedOutcome::Pass
-            || expectation.expected_phase != Some(PipelinePhase::Lex)
-        {
+        if expectation.expected_phase != Some(PipelinePhase::Lex) {
             continue;
+        }
+        if !matches!(
+            expectation.expected_outcome,
+            ExpectedOutcome::Pass | ExpectedOutcome::Fail
+        ) {
+            continue;
+        }
+        if expectation.expected_outcome == ExpectedOutcome::Fail {
+            fail_checked += 1;
         }
 
         let source = fs::read_to_string(&case.source_path).unwrap_or_else(|error| {
@@ -66,6 +74,30 @@ fn lexical_pass_corpus_matches_token_expectations() {
                 final_checked += 1;
             }
             "raw_lexer" => {
+                if expectation.expected_outcome == ExpectedOutcome::Fail {
+                    let error = scan_raw(&source).expect_err("raw fail fixture should fail");
+                    let actual_diagnostics = vec![raw_lexer_error_code(&error.to_string())];
+                    let expected_diagnostics = expectation
+                        .diagnostic_codes
+                        .iter()
+                        .map(String::as_str)
+                        .collect::<Vec<_>>();
+
+                    assert_eq!(
+                        actual_diagnostics,
+                        expected_diagnostics,
+                        "{}",
+                        case.expectation_path.display()
+                    );
+                    assert!(
+                        expectation.tokens.is_empty(),
+                        "{} raw hard-error expectations should not include tokens",
+                        case.expectation_path.display()
+                    );
+                    raw_checked += 1;
+                    continue;
+                }
+
                 let actual = scan_raw(&source).unwrap_or_else(|error| {
                     panic!(
                         "scan_raw failed for {}: {error}",
@@ -363,10 +395,11 @@ fn lexical_pass_corpus_matches_token_expectations() {
     }
 
     assert_eq!(final_checked, 11);
-    assert_eq!(raw_checked, 6);
-    assert_eq!(import_prescan_checked, 10);
+    assert_eq!(raw_checked, 8);
+    assert_eq!(import_prescan_checked, 12);
     assert_eq!(scope_skeleton_checked, 7);
-    assert_eq!(disambiguator_checked, 19);
+    assert_eq!(disambiguator_checked, 20);
+    assert_eq!(fail_checked, 11);
 }
 
 fn token_kind_name(kind: TokenKind) -> &'static str {
@@ -389,6 +422,16 @@ fn raw_token_kind_name(kind: RawTokenKind) -> &'static str {
         RawTokenKind::AnnotationMarker => "raw_annotation_marker",
         RawTokenKind::Layout => "raw_layout",
         RawTokenKind::Error => "raw_error",
+    }
+}
+
+fn raw_lexer_error_code(message: &str) -> &'static str {
+    if message.starts_with("unsupported annotation marker") {
+        "unsupported_annotation_marker"
+    } else if message.starts_with("unsupported raw lexer input") {
+        "unsupported_raw_input"
+    } else {
+        panic!("unsupported raw lexer error message: {message}")
     }
 }
 

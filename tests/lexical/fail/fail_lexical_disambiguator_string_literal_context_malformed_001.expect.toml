@@ -1,0 +1,20 @@
+schema_version = 1
+id = "fail_lexical_disambiguator_string_literal_context_malformed_001"
+kind = "fail"
+stage = "lexical"
+domain = "disambiguator"
+source = "fail_lexical_disambiguator_string_literal_context_malformed_001.src"
+expected_outcome = "fail"
+expected_phase = "lex"
+failure_category = "lexical_diagnostic"
+stable_detail_key = "fail_lexical_disambiguator_string_literal_context_malformed_001"
+diagnostic_codes = [
+  "malformed_string_literal",
+]
+spec_refs = [
+  "spec.en.02.lexical.string_literals.context_sensitive",
+]
+
+[[tokens]]
+kind = "error_recovery"
+lexeme = "\"unterminated"

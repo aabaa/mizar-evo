@@ -21,10 +21,12 @@ section = "2.9.2 Annotations"
 stage = "lexical"
 status = "covered"
 required = true
-coverage = "pass"
+coverage = "pass_and_fail"
 tests = [
   "tests/lexical/pass/pass_lexical_raw_annotation_markers_001.expect.toml",
   "tests/lexical/pass/pass_lexical_raw_annotation_names_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_disambiguator_unsupported_annotation_marker_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_raw_malformed_annotation_marker_001.expect.toml",
 ]
 
 [[requirement]]
@@ -34,9 +36,10 @@ section = "2.1 Character Set and Encoding"
 stage = "lexical"
 status = "covered"
 required = true
-coverage = "manual_review"
+coverage = "pass_and_fail"
 tests = [
   "tests/property/lexer_phase7_spec_boundary_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_raw_unsupported_character_001.expect.toml",
 ]
 
 [[requirement]]
@@ -58,7 +61,7 @@ section = "2.5.3 Dot Disambiguation"
 stage = "lexical"
 status = "covered"
 required = true
-coverage = "pass"
+coverage = "pass_and_fail"
 tests = [
   "tests/lexical/pass/pass_lexical_disambiguator_reserved_dot_compounds_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_dot_user_general_001.expect.toml",
@@ -281,15 +284,17 @@ section = "2.10 Lexical Preprocessing"
 stage = "lexical"
 status = "covered"
 required = true
-coverage = "pass"
+coverage = "pass_and_fail"
 tests = [
   "tests/lexical/pass/pass_lexical_import_prescan_empty_001.expect.toml",
   "tests/lexical/pass/pass_lexical_import_prescan_one_import_001.expect.toml",
   "tests/lexical/pass/pass_lexical_import_prescan_comma_alias_relative_001.expect.toml",
   "tests/lexical/pass/pass_lexical_import_prescan_termination_001.expect.toml",
   "tests/lexical/pass/pass_lexical_import_prescan_theorem_termination_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_import_prescan_malformed_recovery_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_import_prescan_missing_semicolon_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_import_prescan_malformed_recovery_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_import_prescan_missing_semicolon_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_import_prescan_missing_module_path_recovery_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_import_prescan_unexpected_token_001.expect.toml",
   "tests/lexical/pass/pass_lexical_import_prescan_multiple_statements_001.expect.toml",
   "tests/lexical/pass/pass_lexical_import_prescan_rich_multi_path_001.expect.toml",
   "tests/lexical/pass/pass_lexical_import_prescan_branch_paths_001.expect.toml",
@@ -315,7 +320,7 @@ section = "2.3 Tokens and Lexicon"
 stage = "lexical"
 status = "covered"
 required = true
-coverage = "pass"
+coverage = "pass_and_fail"
 tests = [
   "tests/lexical/pass/pass_lexical_raw_empty_001.expect.toml",
   "tests/lexical/pass/pass_lexical_raw_layout_runs_001.expect.toml",
@@ -329,7 +334,7 @@ section = "2.7 Numerals and Literals"
 stage = "lexical"
 status = "covered"
 required = true
-coverage = "pass"
+coverage = "pass_and_fail"
 tests = [
   "tests/lexical/pass/pass_lexical_raw_numeral_like_001.expect.toml",
 ]
@@ -397,9 +402,9 @@ tests = [
   "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_escape_matrix_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_single_escape_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_escape_backslash_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_malformed_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_invalid_escape_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_disambiguator_string_outside_context_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_disambiguator_string_literal_context_malformed_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_disambiguator_string_literal_context_invalid_escape_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_disambiguator_string_outside_context_001.expect.toml",
 ]
 
 [[requirement]]
@@ -409,12 +414,12 @@ section = "ScopeLexView"
 stage = "lexical"
 status = "covered"
 required = true
-coverage = "pass"
+coverage = "pass_and_fail"
 tests = [
   "tests/lexical/pass/pass_lexical_scope_skeleton_basic_001.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_001.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_002.expect.toml",
-  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_003.expect.toml",
+  "tests/lexical/fail/fail_lexical_scope_skeleton_complete_003.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_004.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_algorithm_do_override_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_nested_scope_override_001.expect.toml",
@@ -570,7 +575,7 @@ tests = [
   "tests/lexical/pass/pass_lexical_scope_skeleton_basic_001.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_001.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_002.expect.toml",
-  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_003.expect.toml",
+  "tests/lexical/fail/fail_lexical_scope_skeleton_complete_003.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_004.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_algorithm_do_override_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_nested_scope_override_001.expect.toml",
@@ -632,8 +637,10 @@ status = "covered"
 required = true
 coverage = "diagnostic"
 tests = [
-  "tests/lexical/pass/pass_lexical_import_prescan_malformed_recovery_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_import_prescan_missing_semicolon_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_import_prescan_malformed_recovery_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_import_prescan_missing_semicolon_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_import_prescan_missing_module_path_recovery_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_import_prescan_unexpected_token_001.expect.toml",
 ]
 
 [[requirement]]
@@ -656,11 +663,11 @@ section = "12.3.1 Placement Rules"
 stage = "lexical"
 status = "covered"
 required = true
-coverage = "pass"
+coverage = "pass_and_fail"
 tests = [
   "tests/lexical/pass/pass_lexical_import_prescan_termination_001.expect.toml",
   "tests/lexical/pass/pass_lexical_import_prescan_theorem_termination_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_import_prescan_missing_semicolon_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_import_prescan_missing_semicolon_001.expect.toml",
   "tests/lexical/pass/pass_lexical_import_prescan_rich_multi_path_001.expect.toml",
 ]
 
@@ -671,12 +678,12 @@ section = "16 Theorems and Proofs"
 stage = "lexical"
 status = "covered"
 required = true
-coverage = "pass"
+coverage = "pass_and_fail"
 tests = [
   "tests/lexical/pass/pass_lexical_scope_skeleton_basic_001.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_001.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_002.expect.toml",
-  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_003.expect.toml",
+  "tests/lexical/fail/fail_lexical_scope_skeleton_complete_003.expect.toml",
   "tests/lexical/pass/pass_lexical_scope_skeleton_complete_004.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_algorithm_do_override_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_nested_scope_override_001.expect.toml",

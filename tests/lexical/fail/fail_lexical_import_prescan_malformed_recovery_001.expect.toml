@@ -1,11 +1,13 @@
 schema_version = 1
-id = "pass_lexical_import_prescan_malformed_recovery_001"
-kind = "pass"
+id = "fail_lexical_import_prescan_malformed_recovery_001"
+kind = "fail"
 stage = "lexical"
 domain = "import_prescan"
-source = "pass_lexical_import_prescan_malformed_recovery_001.src"
-expected_outcome = "pass"
+source = "fail_lexical_import_prescan_malformed_recovery_001.src"
+expected_outcome = "fail"
 expected_phase = "lex"
+failure_category = "lexical_diagnostic"
+stable_detail_key = "fail_lexical_import_prescan_malformed_recovery_001"
 diagnostic_codes = [
   "empty_module_path_component",
   "missing_alias",

@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_lexical_raw_malformed_annotation_marker_001"
+kind = "fail"
+stage = "lexical"
+domain = "raw_lexer"
+source = "fail_lexical_raw_malformed_annotation_marker_001.src"
+expected_outcome = "fail"
+expected_phase = "lex"
+failure_category = "raw_lexer_error"
+stable_detail_key = "fail_lexical_raw_malformed_annotation_marker_001"
+diagnostic_codes = [
+  "unsupported_annotation_marker",
+]
+spec_refs = [
+  "spec.en.02.lexical.annotations.markers",
+]

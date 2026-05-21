@@ -1,11 +1,13 @@
 schema_version = 1
-id = "pass_lexical_scope_skeleton_complete_003"
-kind = "pass"
+id = "fail_lexical_scope_skeleton_complete_003"
+kind = "fail"
 stage = "lexical"
 domain = "scope_skeleton"
-source = "pass_lexical_scope_skeleton_complete_003.src"
-expected_outcome = "pass"
+source = "fail_lexical_scope_skeleton_complete_003.src"
+expected_outcome = "fail"
 expected_phase = "lex"
+failure_category = "lexical_diagnostic"
+stable_detail_key = "fail_lexical_scope_skeleton_complete_003"
 diagnostic_codes = [
   "duplicate_binding_name",
   "duplicate_binding_name",

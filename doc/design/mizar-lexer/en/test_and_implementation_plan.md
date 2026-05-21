@@ -348,7 +348,7 @@ Completion criteria:
 
 1. Have we verified that the code meets the specifications `doc/spec/en/02.lexical_structure.md`?
 2. Have we refactored the code?
-3. Have we included error handling, and added failure test cases?
+3. Have we included error handling, and added negative test cases?
 4. Have we included complex composite cases in our tests?
 5. Have we reviewed the algorithm?
 

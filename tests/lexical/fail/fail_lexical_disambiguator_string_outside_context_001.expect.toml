@@ -1,11 +1,13 @@
 schema_version = 1
-id = "pass_lexical_disambiguator_string_outside_context_001"
-kind = "pass"
+id = "fail_lexical_disambiguator_string_outside_context_001"
+kind = "fail"
 stage = "lexical"
 domain = "disambiguator"
-source = "pass_lexical_disambiguator_string_outside_context_001.src"
-expected_outcome = "pass"
+source = "fail_lexical_disambiguator_string_outside_context_001.src"
+expected_outcome = "fail"
 expected_phase = "lex"
+failure_category = "lexical_diagnostic"
+stable_detail_key = "fail_lexical_disambiguator_string_outside_context_001"
 diagnostic_codes = [
   "no_valid_token_candidate",
   "no_valid_token_candidate",
