@@ -2,9 +2,9 @@
 
 > Canonical language: English. English canonical version: [../en/README.md](../en/README.md).
 
-`mizar-lexer` は Mizar Evo の source-text tokenization primitives を担当します。
+`mizar-lexer` は、Mizar Evo の source text を token 化するための基盤機能を担当します。
 
-Mizar の字句分類は import、active user symbols、parser position、scoped identifier bindings に依存します。そのため、この crate は raw lexical scanning と final token disambiguation を分けて扱います。
+Mizar の字句分類は、import、active user symbol、parser position、scoped identifier binding に依存します。そのため、この crate では raw lexical scanning と final token disambiguation を明確に分けて扱います。
 
 ## Context
 
@@ -35,10 +35,10 @@ Mizar の字句分類は import、active user symbols、parser position、scoped
 - identifier, numeral, layout, reserved word, symbol shape recognition の helper API;
 - lexical environment, parser expectation, scoped bindings を受け取る final token disambiguation support.
 
-It must not:
+この crate は以下を行いません。
 
-- file read や platform newline normalization を行う;
-- import resolution を単独で行う;
+- file read や platform newline normalization;
+- import resolution;
 - imported file の full module IR を読み込む;
 - identifier が undefined かどうかを決める;
-- type checking, overload resolution, proof-related semantics を行う.
+- type checking、overload resolution、proof-related semantics.

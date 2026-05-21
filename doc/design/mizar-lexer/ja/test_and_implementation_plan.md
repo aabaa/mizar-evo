@@ -157,7 +157,7 @@ Target implementation:
 - 必要に応じた reserved words、reserved symbols、numerals、user symbols、string literals、error recovery 用の final `TokenKind` variants;
 - identifier、numeral、layout、reserved word、symbol-shape recognition の helper APIs.
 
-Tests should cover:
+テストでは以下を確認します。
 
 - reserved word table の各 entry が spelling で認識される;
 - reserved words は case-sensitive;
@@ -187,7 +187,7 @@ Target API direction:
 pub fn scan_import_prelude(raw: &RawTokenStream) -> ImportPrelude;
 ```
 
-Tests should cover:
+テストでは以下を確認します。
 
 - empty prelude;
 - one import;
@@ -226,7 +226,7 @@ pub fn build_lexical_environment(
 ) -> Result<ActiveLexicalEnvironment, LexicalEnvironmentError>;
 ```
 
-Tests should cover:
+テストでは以下を確認します。
 
 - reserved tables は常に存在する;
 - imported punctuation-shaped symbols が visible;
@@ -260,7 +260,7 @@ Target API direction:
 pub fn build_scope_skeleton(raw: &RawTokenStream) -> ScopeSkeleton;
 ```
 
-Tests should cover:
+テストでは以下を確認します。
 
 - empty skeleton;
 - simple `let x`-style binding;
@@ -298,7 +298,7 @@ pub fn disambiguate(
 ) -> TokenStream;
 ```
 
-Tests should cover:
+テストでは以下を確認します。
 
 - punctuation-shaped user symbols の longest-match;
 - identifier-shaped user symbol と ordinary identifier の区別;
@@ -309,7 +309,7 @@ Tests should cover:
 - compound reserved tokens、user symbols、selector access、namespace paths に関する dot disambiguation;
 - string literals は string-required parser contexts でのみ認識されること;
 - lexical environment 経由の import conflict reporting;
-- recovery が stable `Error` tokens and diagnostics を emit すること。
+- recovery が stable な `ErrorRecovery` token と diagnostic を emit すること。
 
 Recommended requirement ids:
 
@@ -328,7 +328,7 @@ Exit criteria:
 - undefined identifiers は lexical `Identifier` tokens のままで、name resolution が later phase で reject する;
 - diagnostics は order and identity が stable。
 
-## Phase 7: Regression, Property, And Fuzz Handoff
+## Phase 7: Regression, Property, And Fuzz Handoff -> Done
 
 Staged lexer APIs が安定した後、より広い regression coverage を追加する。
 
@@ -370,5 +370,5 @@ New lexer test を commit する前に確認すること。
 - sidecar は `schema_version`, `id`, `kind`, `stage`, `domain`, `source`, `expected_outcome`, `expected_phase`, `diagnostic_codes`, `spec_refs` を含むか。
 - すべての `spec_refs` entry は `tests/coverage/spec_trace.toml` に存在するか。
 - manifest は sidecar へ back-reference しているか。
-- fixture は minimal で、stable snake_case name を持つか。
+- fixture は十分に小さく、stable snake_case name を持つか。
 - diagnostics and token expectations は deterministic か。

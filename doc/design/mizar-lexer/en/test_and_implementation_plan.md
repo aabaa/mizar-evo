@@ -328,7 +328,7 @@ Exit criteria:
 - undefined identifiers remain lexical `Identifier` tokens and are rejected later by name resolution;
 - diagnostics are stable in order and identity.
 
-## Phase 7: Regression, Property, And Fuzz Handoff
+## Phase 7: Regression, Property, And Fuzz Handoff -> Done
 
 After the staged lexer APIs are stable, add broader regression coverage.
 
