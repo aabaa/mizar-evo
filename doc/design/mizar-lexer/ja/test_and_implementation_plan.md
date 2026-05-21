@@ -346,10 +346,11 @@ Promotion rule:
 
 Completion criteria:
 
-- 仕様書 `doc/spec/en/02.lexical_structure.md` を満たしていることをテストできているか?
-- エラー処理を含めているか?
-- 複雑な複合ケースをテストに含めているか?
-- アルゴリズムをレビューしたか
+1. 仕様書 `doc/spec/en/02.lexical_structure.md` を満たしていることをテストできているか?
+2. リファクタリングは行ったか?
+3. エラー処理を含めているか、また負例をテストに含めたか?
+4. 複雑な複合ケースをテストに含めているか?
+5. アルゴリズムをレビューしたか
 
 ## Review Checklist For New Lexer Tests
 

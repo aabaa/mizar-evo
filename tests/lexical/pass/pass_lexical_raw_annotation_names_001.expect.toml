@@ -1,0 +1,72 @@
+schema_version = 1
+id = "pass_lexical_raw_annotation_names_001"
+kind = "pass"
+stage = "lexical"
+domain = "raw_lexer"
+source = "pass_lexical_raw_annotation_names_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.annotations.markers",
+]
+
+[[tokens]]
+kind = "raw_annotation_marker"
+lexeme = "@proof_hint"
+span_start = 0
+span_end = 11
+
+[[tokens]]
+kind = "raw_layout"
+lexeme = " "
+span_start = 11
+span_end = 12
+
+[[tokens]]
+kind = "raw_annotation_marker"
+lexeme = "@show_thesis"
+span_start = 12
+span_end = 24
+
+[[tokens]]
+kind = "raw_layout"
+lexeme = " "
+span_start = 24
+span_end = 25
+
+[[tokens]]
+kind = "raw_annotation_marker"
+lexeme = "@eval"
+span_start = 25
+span_end = 30
+
+[[tokens]]
+kind = "raw_layout"
+lexeme = " "
+span_start = 30
+span_end = 31
+
+[[tokens]]
+kind = "raw_annotation_marker"
+lexeme = "@suppress"
+span_start = 31
+span_end = 40
+
+[[tokens]]
+kind = "raw_layout"
+lexeme = " "
+span_start = 40
+span_end = 41
+
+[[tokens]]
+kind = "raw_annotation_marker"
+lexeme = "@["
+span_start = 41
+span_end = 43
+
+[[tokens]]
+kind = "raw_layout"
+lexeme = "\n"
+span_start = 43
+span_end = 44

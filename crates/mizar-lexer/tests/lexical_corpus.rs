@@ -363,10 +363,10 @@ fn lexical_pass_corpus_matches_token_expectations() {
     }
 
     assert_eq!(final_checked, 11);
-    assert_eq!(raw_checked, 5);
+    assert_eq!(raw_checked, 6);
     assert_eq!(import_prescan_checked, 10);
     assert_eq!(scope_skeleton_checked, 7);
-    assert_eq!(disambiguator_checked, 16);
+    assert_eq!(disambiguator_checked, 19);
 }
 
 fn token_kind_name(kind: TokenKind) -> &'static str {
@@ -486,6 +486,8 @@ fn disambiguator_fixture_environment() -> mizar_lexer::ActiveLexicalEnvironment 
                 exported("succ", "fixture#succ", 3),
                 exported(".", "fixture#dot", 4),
                 exported("Seen", "fixture#Seen", 5),
+                exported("!#~", "fixture#bang_hash_tilde", 6),
+                exported("A_1`", "fixture#identifier_graphic", 7),
             ],
         }],
     )

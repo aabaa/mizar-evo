@@ -3297,9 +3297,44 @@ mod tests {
         assert!(is_user_symbol_spelling("*+"));
         assert!(is_user_symbol_spelling("succ"));
         assert!(!is_user_symbol_spelling("@latex"));
+        for byte in b'!'..=b'~' {
+            let ch = char::from(byte);
+            assert_eq!(
+                is_user_symbol_spelling(&ch.to_string()),
+                ch != '@',
+                "{ch:?}"
+            );
+        }
+        for spelling in ["", " ", "\t", "\n", "alpha beta", "@", "é"] {
+            assert!(
+                !is_user_symbol_spelling(spelling),
+                "{spelling:?} should not be a user symbol spelling"
+            );
+        }
 
         assert!(is_string_literal_spelling("\"say \\\"hi\\\"\""));
         assert!(is_string_literal_spelling("'say \"hi\"'"));
+        assert!(is_string_literal_spelling("\"slash\\\\path\""));
+        for spelling in [
+            r#""quote\"""#,
+            r#""quote\'""#,
+            r#""slash\\""#,
+            r#"'quote\''"#,
+            r#"'quote\"'"#,
+            r#"'slash\\'"#,
+        ] {
+            assert!(
+                is_string_literal_spelling(spelling),
+                "{spelling:?} should be a valid escaped string literal"
+            );
+        }
+        for spelling in [r#""bad\n""#, r#"'bad\t'"#, "\"dangling\\", "'dangling\\"] {
+            assert!(
+                !is_string_literal_spelling(spelling),
+                "{spelling:?} should reject unsupported or dangling escapes"
+            );
+        }
+        assert!(!is_string_literal_spelling("\"bad\\n\""));
         assert!(!is_string_literal_spelling("\"unterminated"));
 
         assert_eq!(longest_reserved_symbol_prefix("..."), Some("..."));
@@ -3397,6 +3432,52 @@ mod tests {
     }
 
     #[test]
+    fn scans_annotation_names_with_identifier_boundaries() {
+        let raw = scan_raw("@proof_hint @show_thesis @bad-name")
+            .expect("annotation names should use identifier-shaped spelling");
+
+        assert_eq!(
+            raw.tokens,
+            vec![
+                RawToken {
+                    kind: RawTokenKind::AnnotationMarker,
+                    lexeme: "@proof_hint".to_owned(),
+                    span: SourceSpan { start: 0, end: 11 },
+                },
+                RawToken {
+                    kind: RawTokenKind::Layout,
+                    lexeme: " ".to_owned(),
+                    span: SourceSpan { start: 11, end: 12 },
+                },
+                RawToken {
+                    kind: RawTokenKind::AnnotationMarker,
+                    lexeme: "@show_thesis".to_owned(),
+                    span: SourceSpan { start: 12, end: 24 },
+                },
+                RawToken {
+                    kind: RawTokenKind::Layout,
+                    lexeme: " ".to_owned(),
+                    span: SourceSpan { start: 24, end: 25 },
+                },
+                RawToken {
+                    kind: RawTokenKind::AnnotationMarker,
+                    lexeme: "@bad".to_owned(),
+                    span: SourceSpan { start: 25, end: 29 },
+                },
+                RawToken {
+                    kind: RawTokenKind::LexemeRun,
+                    lexeme: "-name".to_owned(),
+                    span: SourceSpan { start: 29, end: 34 },
+                },
+            ]
+        );
+
+        for source in ["@", "@-", "@ name", "@1bad"] {
+            assert!(scan_raw(source).is_err(), "{source:?}");
+        }
+    }
+
+    #[test]
     fn reports_stable_raw_diagnostics_for_malformed_characters() {
         let error = scan_raw("alpha\rbeta").expect_err("CR is outside lexer layout");
 
@@ -3452,6 +3533,22 @@ mod tests {
             ]
         );
         assert_eq!(preprocessed.comments[0].kind, CommentKind::Documentation);
+    }
+
+    #[test]
+    fn preprocess_source_reports_unterminated_multiline_comment() {
+        let preprocessed = preprocess_source_for_lexing("alpha\n::=\nopen block");
+
+        assert_eq!(
+            preprocessed
+                .diagnostics
+                .iter()
+                .map(|diagnostic| diagnostic.code)
+                .collect::<Vec<_>>(),
+            vec![SourcePreprocessDiagnosticCode::UnterminatedMultiLineComment]
+        );
+        assert_eq!(preprocessed.comments[0].kind, CommentKind::MultiLine);
+        assert_eq!(preprocessed.lexical_text, "alpha\n\n");
     }
 
     #[test]
