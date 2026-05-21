@@ -24,6 +24,7 @@ Mizar の字句分類は、import、active user symbol、parser position、scope
 | [scope_skeleton.md](./scope_skeleton.md) | `crates/mizar-lexer/src/scope_skeleton.rs` | Reserved-keyword-based lexical scope skeleton and `ScopeLexView` projection | Draft |
 | [disambiguator.md](./disambiguator.md) | `crates/mizar-lexer/src/disambiguator.rs` | Context-sensitive longest-match token disambiguation from `LexemeRun` to final tokens | Draft |
 | [test_and_implementation_plan.md](./test_and_implementation_plan.md) | `tests/lexical`, `tests/coverage/spec_trace.toml`, `crates/mizar-lexer` | Ordered lexer test corpus and implementation checklist | Draft |
+| [todo.md](./todo.md) | `crates/mizar-lexer`, `tests/lexical`, review follow-ups | Quality-review follow-up tasks | Living |
 
 ## Crate Boundary
 
