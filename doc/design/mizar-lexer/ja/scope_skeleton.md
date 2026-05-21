@@ -10,7 +10,7 @@ Token disambiguation は、scoped identifier binding が active user symbol を 
 
 ## Public API
 
-Expected API direction:
+Implemented API:
 
 ```rust
 pub struct ScopeSkeleton {
@@ -69,6 +69,21 @@ Lexical lifetime は保守的に扱います:
 - algorithm `for ... do` の binder と optional `processed name` は後続の `do` block に bind します。
 
 Skeleton pre-scan は raw scan が punctuation を事前に分割することを要求してはいけません。binding-list recovery に必要な `,`, `;`, block-closing punctuation などを認識するために、`LexemeRun` spans の内部を inspect してよいです。
+
+## 実装上のアルゴリズムの流れ
+
+実装は、縮約した token stream に対する保守的な single pass です。
+
+1. `RawTokenStream` を scope skeleton 専用 token に変換します。layout は無視します。`LexemeRun` は identifier-shaped な `Word`、comma、semicolon、parentheses、`Other` runs に分割します。それ以外の raw token kind は `Other` として扱います。
+2. byte `0` から始まる synthetic root frame、空の block stack、空の `pending_do_bindings` を初期化します。`pending_do_bindings` は algorithm `for ... do` forms の binder を後続 `do` block に渡すための一時 buffer です。
+3. token を左から右へ走査します。`algorithm`, `definition`, `proof`, `now`, `suppose`, `hereby`, `do` は block-opening word として open frame を push します。`case` は、その statement の残りに `do` が含まれない場合だけ proof branch の frame を開きます。これにより algorithm `case ... do` を proof branch と誤認しません。`end` は frame を pop し、block range と lexical scope frame の両方を記録します。
+4. binder word は shape-specific parser に委譲します。`let x, y be ...` のような plain binder list は、comma、semicolon、stop word まで identifier-shaped names を読みます。`set x = ...`, `reconsider x = ...`, `take x = ...` のような named-equals binders は `name =` shape を要求します。algorithm `var` / `const` は parentheses depth を追跡しながら comma-separated declaration heads を読むため、initializer tuple が余計な binders を作ることはありません。
+5. `ghost var` と `ghost const` は algorithm binders として扱います。それ以外の `ghost` form は recoverable diagnostic を出し、binding を捏造しません。
+6. binding lifetime は shape ごとに決めます。`reserve` は nested block 外でのみ root frame に入ります。`for`, `ex`, `given` は statement-local frame を作ります。`consider`、block 内の `let`、named-equals binders、`deffunc`、`defpred`、`var`、`const`、`processed` は open block があれば current block frame を拡張し、なければ statement-local frame に fallback します。algorithm `for ... do` は binder と optional `processed name` を `pending_do_bindings` 経由で次の `do` block に移します。
+7. binding を frame に入れる前に、同じ lexical scope 内の既存 name と重複しないか確認します。duplicate は diagnostic を出して無視します。これにより、同じ spelling/range に対して競合する override が skeleton 内に作られません。
+8. EOF に到達した時点で stack に残っている block は `source_end` で閉じ、`MissingEnd` diagnostic を出します。root frame は binding を持つ場合だけ出力します。最後に frames、blocks、statements、diagnostics を source span 順に sort して返します。
+
+`ScopeLexView::binding_overrides_symbol` は、意図的に狭い質問だけに答えます。position `p` が frame 内にあり、spelling が一致し、かつ binding 自身の introduction span がすでに終わっている場合にのみ override を true にします。最後の条件により、binder occurrence そのものが早すぎる段階で identifier に再分類されることを防ぎます。
 
 ## Override Semantics
 

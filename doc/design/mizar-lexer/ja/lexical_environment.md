@@ -95,11 +95,17 @@ rather than to an ad hoc order chosen by the environment builder.
 
 ## Algorithm
 
-1. Built-in reserved words and reserved special symbols から開始する。
-2. import-prelude order で resolved imports 由来の exported symbol shapes を追加する。
-3. reserved-word or reserved-symbol collision rules に違反する conflicts を reject or mark する。
-4. longest-match 用に trie などの prefix index を構築する。
-5. import order, imported module summary fingerprints, built-in table versions から deterministic fingerprint を計算する。
+現在の実装は、すでに resolve 済みの imports から deterministic lookup object を構築します。
+
+1. `ModuleLexicalSummary` を `ModuleId` で index します。同じ module id の summary が複数渡された場合、Rust value として完全に同一なら受け入れます。内容が異なる duplicate summary は construction error です。
+2. stable FNV-style fingerprint に version string と built-in reserved word / reserved symbol tables を宣言順で書き込みます。
+3. `ResolvedImport` を import-prelude order で走査します。各 import について対応する lexical summary を必須とし、import ordinal、module id、summary fingerprint を active environment fingerprint に加えます。
+4. summary 内の exported symbol shape は、index する前に spelling を検証します。spelling は user-symbol spelling でなければならず、reserved word と衝突してはいけません。reserved special symbol との完全一致も原則として禁止しますが、仕様上の例外である `.` だけは許可します。
+5. exported shape を `UserSymbolCandidate` に変換します。このとき、symbol を定義・export した `source_module` と、現在の file が import した `imported_module` の両方を保持します。前者は provenance、後者は conflict diagnostics に効きます。
+6. candidate を `UserSymbolIndex` に挿入します。異なる import から同じ spelling が来た場合は `UserSymbolImportConflict` として拒否します。同じ import 内の同じ spelling は overload candidates として保持でき、export rank、source module、symbol id の順で安定化します。
+7. borrowed reserved tables、完成した user-symbol index、deterministic fingerprint を持つ `ActiveLexicalEnvironment` を返します。
+
+lookup structure は trie ではなく `BTreeMap<String, Vec<UserSymbolCandidate>>` です。`longest_user_symbol_at` は map を走査し、指定 byte offset から始まる source slice に prefix-match する spelling だけを残します。その中で最長 byte length の spelling を選び、同じ spelling の候補から visible import ordinal のものだけを返します。現在の corpus size では十分に単純で deterministic です。将来 trie に差し替える場合も、この public semantics は変えません。
 
 Current implementation notes:
 

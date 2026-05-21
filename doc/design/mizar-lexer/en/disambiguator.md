@@ -10,7 +10,7 @@ It owns context-sensitive longest-match over `LexemeRun` content. It consumes th
 
 ## Public API
 
-Expected API direction:
+Implemented API:
 
 ```rust
 pub struct TokenStream {
@@ -20,18 +20,18 @@ pub struct TokenStream {
 
 pub struct Token {
     pub kind: TokenKind,
-    pub span: SourceRange,
     pub lexeme: String,
 }
 
 pub enum TokenKind {
     Identifier,
-    ReservedWord(ReservedWord),
-    ReservedSymbol(ReservedSymbol),
-    UserSymbol(SymbolId),
+    ReservedWord,
+    ReservedSymbol,
     Numeral,
+    LexemeRun,
+    UserSymbol,
     StringLiteral,
-    Error,
+    ErrorRecovery,
 }
 
 pub fn disambiguate(
@@ -44,17 +44,19 @@ pub fn disambiguate(
 
 ## Candidate Selection
 
-At each position inside a `LexemeRun`, the disambiguator gathers candidates:
+The implemented `disambiguate` algorithm processes raw tokens in order and emits a `TokenStream` containing final tokens plus recoverable diagnostics.
 
-1. reserved compound symbols;
-2. active user symbols;
-3. reserved words;
-4. identifier syntax;
-5. numeral syntax for digit-starting runs;
-6. string-literal candidates scanned inside `LexemeRun` only where parser context allows them;
-7. fallback error candidates.
+1. Layout is skipped.
+2. `NumeralLike` becomes `Numeral` only when the parser context admits numerals; otherwise the original spelling becomes `ErrorRecovery` with `ParserContextRejectedCandidate`.
+3. Annotation marker `@[` becomes a reserved symbol only when the parser context admits symbols. Other annotation markers and raw error tokens become `ErrorRecovery` with `UnsupportedRawToken`.
+4. Each `LexemeRun` is scanned with an internal byte cursor. In string-required context, a leading quote starts string-literal scanning before normal candidate selection. The literal must close with the same quote and may only escape `"`, `'`, and `\`; malformed strings consume the rest of the run as one recovery token.
+5. At every other cursor position, the disambiguator gathers candidates from reserved compound symbols, active user symbols, reserved words, identifier syntax, numeral syntax, and fallback recovery. String-literal candidates are intentionally handled before this normal candidate set because they are admitted only in string-required context.
 
 The selected candidate is the longest valid candidate after parser expectation and scope override rules are applied.
+
+Candidate priority breaks equal-length ties after length has been considered. Namespace-path `.` as a reserved symbol has the highest priority, scoped identifier override of an identifier-shaped user symbol comes next, then active user symbols, reserved symbols, reserved words, identifiers, and numerals. If no admitted candidate exists but at least one raw candidate shape was present, the diagnostic is `ParserContextRejectedCandidate`; otherwise it is `NoValidTokenCandidate`.
+
+The current implementation has an `AmbiguousUserSymbol` diagnostic code reserved for future cases, but equal-spelling same-import overloads remain a deterministic candidate set in the lexical environment and are intentionally left for later resolution phases.
 
 ## Identifier and Symbol Override
 
@@ -83,17 +85,27 @@ The disambiguator must not mutate parser state except by returning tokens and di
 
 Quote characters remain part of `LexemeRun` during raw scanning. The disambiguator is responsible for recognizing string literals only when `ParserLexContext` marks the current position as string-required. Outside those positions, quotes are ordinary symbol characters and participate in user-symbol matching.
 
+The implemented modes admit candidates as follows:
+
+| Mode | Identifiers | Reserved Words | Reserved Symbols | User Symbols | Numerals | Strings |
+|---|---|---|---|---|---|---|
+| `General` | yes | yes | yes | yes | yes | no |
+| `IdentifierRequired` | yes | no | no | no | no | no |
+| `Symbolic` | yes | yes | yes | yes | yes | no |
+| `StringRequired` | no | no | no | no | no | yes |
+| `NamespacePath` | yes | no | only `.` | no | no | no |
+| `Recovery` | yes | yes | yes | yes | yes | no |
+
 ## Error Handling
 
 Disambiguation diagnostics include:
 
 - no valid token candidate in a raw run;
 - parser context rejects every candidate;
-- equal-length ambiguity without a deterministic shadowing rule;
 - malformed string literal in a string-required position;
-- unsupported numeral form.
+- unsupported raw tokens such as malformed annotation markers passed through from raw scanning.
 
-Whenever possible, the disambiguator emits an `Error` token with the original source span and resumes at the next recoverable boundary.
+Whenever possible, the disambiguator emits an `ErrorRecovery` token with the original spelling and resumes at the next recoverable byte boundary.
 
 ## Tests
 
@@ -105,4 +117,4 @@ Tests should cover:
 - namespace-path context;
 - string literal only in string-required positions;
 - equal-length import tie breaking through lexical environment;
-- recovery emits stable `Error` tokens and diagnostics.
+- recovery emits stable `ErrorRecovery` tokens and diagnostics.

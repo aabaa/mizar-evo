@@ -8,21 +8,27 @@ This module defines the lexer boundary for Mizar Evo.
 
 Mizar lexical classification is context-sensitive: imported modules add user-defined symbols, user symbols may be identifier-shaped, and scoped identifier bindings may override symbols. Therefore the lexer must not be designed as a single context-free pass that permanently decides every `Identifier` vs `UserSymbol` classification.
 
-The first implementation is intentionally smaller: it exposes `Token`, `TokenKind::Identifier`, `LexError`, and `lex(&str)` for initial identifier tests. This document defines how that minimal API grows without painting the lexer/parser boundary into a corner.
+The current implementation exposes both the low-level raw scanner and higher-level disambiguation entry points. This document keeps the boundary explicit so callers do not accidentally treat the convenience `lex(&str)` shell as the full context-sensitive lexer.
 
 ## Source Preconditions
 
 Input to `mizar-lexer` is not raw file bytes.
 
-The source-loading layer owns:
+The source-loading layer outside this crate owns:
 
 - reading files;
 - validating UTF-8;
-- normalizing platform newlines to LF-only text;
-- removing ordinary comments from lexical input while preserving comment metadata elsewhere;
-- preserving documentation comments as trivia metadata for later attachment;
+- normalizing platform newlines to LF-only text before scanner entry points are used;
 - preserving a source map back to original file offsets when needed;
-- validating code-region ASCII rules before lexing.
+- deciding how source files are located in packages.
+
+`mizar-lexer` provides source-preprocessing helpers for the lexical boundary:
+
+- removing ordinary, documentation, and multi-line comments from lexical input;
+- preserving comment trivia with source spans;
+- preserving newline characters from comment text so line structure is not collapsed;
+- reporting carriage returns, non-ASCII code-region text, and unterminated multi-line comments as preprocessing diagnostics;
+- validating package-rooted `.miz` source names when requested.
 
 `mizar-lexer` may assume layout uses only:
 
@@ -35,6 +41,18 @@ Carriage return is not layout at this layer. A `\r` reaching the lexer is either
 ## Core Design
 
 Lexing is split into two conceptual stages.
+
+## Implemented Algorithm Flow
+
+The current crate separates source preparation, raw scanning, and final disambiguation even when a caller uses the convenience `lex` entry point.
+
+1. `preprocess_source_for_lexing` walks the input byte span in source order. It removes ordinary comments from lexical text, preserves only newline characters from comment bodies, stores comment trivia with source spans, and reports carriage returns, non-ASCII code characters, or unterminated multi-line comments as preprocessing diagnostics. It does not read files or normalize platform-specific paths.
+2. `scan_raw` consumes LF-only lexical text with a `char_indices` cursor. It coalesces adjacent layout into one `Layout`, recognizes annotation markers beginning with `@`, coalesces ASCII graphic non-`@` characters into either `NumeralLike` when all characters are digits or `LexemeRun` otherwise, and rejects unsupported characters with `LexError`.
+3. `disambiguate_reserved_shell` is the context-free shell used by `lex`. It drops layout, maps `NumeralLike` to `Numeral`, maps `@[` to a reserved symbol, and classifies whole `LexemeRun` values as reserved symbols, reserved words, identifiers, or opaque `LexemeRun` values.
+4. Context-sensitive callers use `disambiguate` instead. That path keeps raw scanning deliberately coarse and lets the disambiguator split each `LexemeRun` using reserved tables, the active lexical environment, parser lexical context, and `ScopeLexView`.
+5. `module_source_name_from_path` is a source-boundary helper rather than a scanner. It validates the package name, requires a `.miz` file under a `src` root, checks that the source root matches the package name, normalizes path separators, and emits namespace components that are all identifier-shaped.
+
+The raw scanner's main invariant is span contiguity: every emitted raw token points back to the exact byte slice it came from, and the concatenation of raw token lexemes reconstructs the raw scanner input.
 
 ### Stage 1: Raw Scan
 
@@ -52,6 +70,8 @@ pub enum RawTokenKind {
 }
 ```
 
+`scan_raw` currently returns `LexError` for unsupported raw input instead of emitting `RawTokenKind::Error`. The `Error` variant is reserved for callers or future recovery paths that need to carry malformed raw units into later disambiguation.
+
 `LexemeRun` is the central raw unit. It covers both identifier-shaped and punctuation-shaped spelling:
 
 ```text
@@ -68,7 +88,7 @@ The raw scanner must preserve spans, spelling, and enough structure for later lo
 
 `LexemeRun` is deliberately coarse. Reserved punctuation such as `.`, `..`, `,`, `;`, quotes, and operator characters may appear inside a run. Later modules may inspect and split a run internally, but they must preserve source spans and must not require the raw scanner to know grammar context.
 
-Comments and documentation comments are not raw tokens. The source-loading and preprocessing layers remove ordinary comments from lexical input and retain documentation comments as trivia metadata. Import pre-scan and scope skeleton construction may skip that trivia via the preprocessed source metadata, but they do not receive comments as `RawTokenKind` values.
+Comments and documentation comments are not raw tokens. `preprocess_source_for_lexing` removes them from lexical input, preserves their trivia and spans separately, and keeps only their newline characters in `lexical_text`. Import pre-scan and scope skeleton construction operate on the resulting lexical text; they never receive comments as `RawTokenKind` values.
 
 ### Import Pre-Scan and Active Lexical Environment
 
@@ -131,7 +151,7 @@ It may recognize constructs such as:
 - block delimiters that affect lexical scope, such as `definition`, `proof`, `now`, and `end`;
 - binder-introducing reserved words and forms, such as `let`, `for`, `reserve`, and `given`;
 - comma-separated binding lists where their shape is recoverable from reserved syntax;
-- labels or local names whose binding range can be approximated without full expression parsing.
+- local names whose binding range can be approximated without full expression parsing.
 
 The result is a scope skeleton that can answer only lexical override questions:
 
@@ -190,14 +210,14 @@ Longest-match is applied by the disambiguator, not by early raw token splitting.
 
 At each position inside a `LexemeRun`, the disambiguator considers candidates from:
 
-1. reserved compound symbols;
-2. active user symbols;
+1. active user symbols;
+2. reserved compound symbols;
 3. reserved words;
 4. identifier syntax;
 5. numeral syntax when the raw unit starts with a digit;
 6. fallback error recovery.
 
-The selected candidate is the longest valid candidate for the current parser expectation and override environment. If equal-length user symbols are active, import-order shadowing rules from the lexical environment decide the winner.
+The selected candidate is the longest valid candidate for the current parser expectation and override environment. The lexical environment has already rejected equal-spelling symbols imported from different modules. Same-import overload candidates with the same spelling remain representable for later semantic resolution, but they do not change the final token spelling chosen by the lexer.
 
 Parser expectation may rule out otherwise valid candidates. For example, a grammar position expecting a binder identifier may prefer an identifier interpretation, while an expression position may admit symbol interpretations.
 
@@ -219,11 +239,21 @@ The active lexical environment is assembled from these summaries and from built-
 
 Full module IR is read only by later phases that need syntax, resolution, verification, or artifact data.
 
-## Minimal Public API
+## Current Public API
 
-The current crate-local API is:
+The current crate-local API has grown beyond the bootstrap identifier lexer:
 
 ```rust
+pub fn preprocess_source_for_lexing(input: &str) -> PreprocessedLexicalSource;
+pub fn module_source_name_from_path(
+    package_name: &str,
+    path: &str,
+) -> Result<ModuleSourceName, ModuleNamingError>;
+
+pub fn scan_raw(input: &str) -> Result<RawTokenStream, LexError>;
+pub fn disambiguate_reserved_shell(raw: &RawTokenStream) -> Result<Vec<Token>, LexError>;
+pub fn lex(input: &str) -> Result<Vec<Token>, LexError>;
+
 pub struct Token {
     pub kind: TokenKind,
     pub lexeme: String,
@@ -231,33 +261,33 @@ pub struct Token {
 
 pub enum TokenKind {
     Identifier,
+    ReservedWord,
+    ReservedSymbol,
+    Numeral,
+    LexemeRun,
+    UserSymbol,
+    StringLiteral,
+    ErrorRecovery,
 }
-
-pub fn lex(input: &str) -> Result<Vec<Token>, LexError>;
 ```
 
-This API is a bootstrap surface for lexical tests. It represents only the first implemented subset:
+`lex` remains a convenience wrapper for raw scanning plus reserved-shell disambiguation. The context-sensitive API lives in `disambiguator.md` and should be used when imports, parser context, or scope override can affect token classification.
 
-- ASCII identifier start: `A-Z`, `a-z`, `_`;
-- ASCII identifier continuation: `A-Z`, `a-z`, `0-9`, `_`, `'`;
-- layout skipping for space, tab, and LF;
-- `LexError` for unsupported token classes.
+Helper predicates define the low-level spelling rules used across modules: layout is exactly space, tab, or LF; identifiers start with ASCII alphabetic or `_`; identifier continuation additionally admits digits and `'`; numerals are ASCII digit runs; user-symbol spellings are non-empty ASCII graphic runs excluding `@`; string-literal spellings must close with the same quote and may only escape `"`, `'`, or `\`.
 
-It must not be treated as the final context-sensitive lexer interface.
+## Context-Sensitive API Direction
 
-## Future Public API Direction
-
-The crate should grow toward explicit raw scanning and disambiguation APIs:
+The explicit raw scanning and disambiguation API is now present:
 
 ```rust
 pub fn scan_raw(input: &str) -> Result<RawTokenStream, LexError>;
 
 pub fn disambiguate(
     raw: &RawTokenStream,
-    lexical_env: &LexicalEnvironment,
+    lexical_env: &ActiveLexicalEnvironment,
     parser_context: &ParserLexContext,
-    scope_view: &ScopeLexView,
-) -> Result<TokenStream, LexError>;
+    scope_view: &dyn ScopeLexView,
+) -> TokenStream;
 ```
 
 `ScopeLexView` must be a narrow read-only view produced outside the disambiguator. It must answer only questions needed for lexical disambiguation, such as whether a scoped identifier binding overrides an active symbol at a source position. It must not expose the full resolver or type checker to the lexer.
@@ -273,26 +303,20 @@ Raw scanning errors are for malformed source shapes at the lexical layer:
 Disambiguation errors are for tokenization failures after context is considered:
 
 - no valid token candidate at a source position;
-- ambiguous equal-length candidates without a deterministic shadowing rule;
 - grammar context forbids all candidates in a raw run.
 
 Undefined identifiers are not lexing errors.
 
 ## Tests
 
-The minimal crate tests cover:
+The crate and corpus tests cover:
 
-- `alpha` lexes as one identifier;
-- identifier body characters include digits, `_`, and apostrophe after the first character;
-- space, tab, and LF separate identifiers;
-- unsupported numerals currently return `LexError` until numeral tokens exist;
-- carriage return is rejected because source loading must normalize LF-only text.
-
-Future tests should be added before implementing:
-
+- identifier, numeral, layout, annotation marker, reserved word, and reserved symbol tables;
+- source preprocessing diagnostics and module source naming boundaries;
 - `scan_raw` preserves `LexemeRun` spans without premature splitting;
 - a scope skeleton can be built from reserved-keyword-shaped binding structure before full parsing;
 - longest-match chooses the longest active user symbol;
 - identifier-shaped user symbols are disambiguated with lexical environment and scope override rules;
 - imported symbol summaries are enough for lexical disambiguation without loading full IR;
-- unresolved identifiers remain tokens and are rejected later by name resolution diagnostics.
+- unresolved identifiers remain tokens and are rejected later by name resolution diagnostics;
+- Phase 7 regression tests preserve span coverage, deterministic raw scanning, retokenization, import conflict, and composite disambiguation behavior.

@@ -10,7 +10,7 @@ The import pre-scan exists so the active lexical environment can be built before
 
 ## Public API
 
-Expected API direction:
+Implemented API:
 
 ```rust
 pub struct ImportPrelude {
@@ -27,6 +27,7 @@ pub struct ImportStub {
 
 pub struct RawModulePath {
     pub spelling: String,
+    pub relative: Option<RawModuleRelativePrefix>,
     pub components: Vec<RawModulePathComponent>,
     pub source_segments: Vec<SourceRange>,
     pub span: SourceRange,
@@ -35,7 +36,7 @@ pub struct RawModulePath {
 pub fn scan_import_prelude(raw: &RawTokenStream) -> ImportPrelude;
 ```
 
-The exact Rust names may evolve, but the ownership must remain:
+The ownership boundary is:
 
 - input is `RawTokenStream`;
 - output is raw import spelling and source spans;
@@ -43,13 +44,20 @@ The exact Rust names may evolve, but the ownership must remain:
 
 ## Algorithm
 
-1. Skip leading layout and module-level documentation trivia preserved by preprocessing.
-2. Read contiguous top-level `import` statements.
-3. For each import statement, collect one or more module alias declarations.
-4. Stop at the first non-import top-level raw unit.
-5. Report a syntax diagnostic for any malformed import statement that prevents reliable prelude extraction.
+The implemented scanner is a small token splitter plus a recoverable statement parser.
+
+1. Convert `RawTokenStream` into import-pre-scan tokens. Layout is ignored. `LexemeRun` values are split into `Word`, `.`, `..`, `,`, `;`, `*`, `{`, `}`, and `Other` pieces while preserving byte spans. `NumeralLike`, annotation markers, and raw errors are represented as `Other`.
+2. Initialize the prelude end position to the first non-layout token start, or `0` for an empty stream.
+3. While the cursor sees the word `import`, parse one import statement. The parser consumes the `import` word, then repeatedly parses comma-separated module alias declarations until it reaches `;`, EOF, or a malformed statement boundary.
+4. `parse_module_path` accepts an optional relative prefix (`.` or `..`), then one or more identifier-shaped path components separated by dots. A dot followed by `{` is reserved for branch import parsing and does not become part of the base path.
+5. `parse_module_alias_decls` adds an optional `as alias` suffix. The alias must be identifier-shaped. Missing aliases are diagnostic-only; the import stub is still kept when the path was recovered.
+6. Branch imports consume `base.{child, other}` and expand them into multiple `ImportStub` values. Because the expanded spelling is not contiguous in source text, `source_segments` records both the base span and the branch component span.
+7. On malformed input, diagnostics are attached to the smallest reliable span. If at least one declaration was recovered but no semicolon follows, the parser reports `MissingSemicolon`; otherwise it reports `UnexpectedToken` or a more specific path/alias diagnostic and recovers to the statement end.
+8. Scanning stops permanently at the first token that is not the start of a top-level import statement.
 
 The scanner must not continue looking for imports after the prelude ends. Later import-shaped text is owned by the parser as a syntax error under Chapter 12 import-placement rules.
+
+The algorithm intentionally does not ask the reserved table whether `import` or `as` are currently legal parser tokens. It is a pre-parser pass whose only job is to gather enough raw import shape to let later phases resolve modules and build an active lexical environment.
 
 ## Accepted Syntax
 
@@ -91,8 +99,10 @@ Malformed import prelude syntax emits diagnostics but should preserve as many `I
 Examples:
 
 - missing semicolon after an import statement;
+- missing module path before a comma or after a relative prefix;
 - `as` without an alias;
 - empty module path component;
+- missing `}` after a branch import list;
 - unexpected token before the prelude terminator.
 
 ## Tests

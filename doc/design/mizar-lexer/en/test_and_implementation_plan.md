@@ -53,7 +53,7 @@ Only requirements with committed tests should be `covered`. For example, in the 
 
 ## Phase 0: Bootstrap Identifier Lexer -> Done
 
-Status: current implementation surface.
+Status: historical bootstrap surface. Later phases have expanded the current implementation beyond this API.
 
 Implementation surface:
 
@@ -131,7 +131,7 @@ Raw tests should cover:
 Important boundary:
 
 - Raw scanner tests must not require import resolution, active user symbols, parser position, or scoped bindings.
-- Comments should not be raw tokens. Source loading and preprocessing own comment stripping and documentation trivia retention.
+- Comments should not be raw tokens. `mizar-lexer` preprocessing owns comment stripping and trivia capture after source loading has provided normalized source text.
 
 Recommended requirement ids:
 
@@ -306,10 +306,10 @@ Tests should cover:
 - reserved word emission;
 - reserved compound symbol emission;
 - namespace-path context;
-- dot disambiguation for compound reserved tokens, user symbols, selector access, and namespace paths;
+- dot disambiguation for compound reserved tokens, user symbols, namespace paths, and selector-access handoff;
 - string literals only in string-required parser contexts;
 - import conflict reporting through the lexical environment;
-- recovery emits stable `Error` tokens and diagnostics.
+- recovery emits stable `ErrorRecovery` tokens and diagnostics.
 
 Recommended requirement ids:
 
@@ -351,6 +351,14 @@ Completion criteria:
 3. Have we included error handling, and added negative test cases?
 4. Have we included complex composite cases in our tests?
 5. Have we reviewed the algorithm?
+
+Algorithm review material is recorded in the module design documents rather than duplicated here:
+
+- [raw_lexer.md](./raw_lexer.md) documents source preprocessing, raw scanning, and reserved-shell disambiguation flow.
+- [import_prescan.md](./import_prescan.md) documents the import token splitter, statement parser, and recovery strategy.
+- [lexical_environment.md](./lexical_environment.md) documents active environment construction, validation, lookup, and fingerprinting.
+- [scope_skeleton.md](./scope_skeleton.md) documents frame construction, binder lifetime assignment, recovery, and override semantics.
+- [disambiguator.md](./disambiguator.md) documents raw-token processing, candidate selection, parser-context filtering, string handling, and recovery.
 
 
 ## Review Checklist For New Lexer Tests

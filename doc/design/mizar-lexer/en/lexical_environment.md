@@ -10,7 +10,7 @@ The environment combines built-in reserved tables with exported lexical symbol s
 
 ## Public API
 
-Implemented API direction:
+Implemented API:
 
 ```rust
 pub type ReservedWordTable = &'static [&'static str];
@@ -39,7 +39,7 @@ pub fn build_lexical_environment(
 ) -> Result<ActiveLexicalEnvironment, LexicalEnvironmentError>;
 ```
 
-The module may expose lookup helpers optimized for longest-match:
+The module exposes lookup helpers used by longest-match disambiguation:
 
 ```rust
 impl ActiveLexicalEnvironment {
@@ -95,11 +95,17 @@ rather than to an ad hoc order chosen by the environment builder.
 
 ## Algorithm
 
-1. Start from built-in reserved words and reserved special symbols.
-2. Add exported symbol shapes from each resolved import in import-prelude order.
-3. Reject or mark conflicts that violate reserved-word or reserved-symbol collision rules.
-4. Build lookup structures, preferably tries or equivalent prefix indexes, for longest-match.
-5. Compute a deterministic fingerprint from import order, imported module summary fingerprints, and built-in table versions.
+The implemented builder constructs a deterministic lookup object from already-resolved imports.
+
+1. Index `ModuleLexicalSummary` values by `ModuleId`. Duplicate summaries are accepted only if they are byte-for-byte equivalent as Rust values; inconsistent duplicates fail construction.
+2. Seed a stable FNV-style fingerprint with a version string and the built-in reserved word and reserved symbol tables in their declared order.
+3. Walk `ResolvedImport` values in import-prelude order. For each import, require a matching lexical summary and add the import ordinal, module id, and summary fingerprint to the active-environment fingerprint.
+4. For every exported symbol shape in that summary, validate the spelling before indexing it. The spelling must be a user-symbol spelling, must not collide with a reserved word, and must not collide with a reserved special symbol except for the spec-defined `.` exception.
+5. Convert the exported shape into a `UserSymbolCandidate`, preserving both the source module that exported the symbol and the imported module through which the current file sees it.
+6. Insert the candidate into `UserSymbolIndex`. Equal spellings from different imports are rejected as `UserSymbolImportConflict`. Equal spellings from the same import remain representable as overload candidates and are stored deterministically by import ordinal, export rank, source module, and symbol id.
+7. Return `ActiveLexicalEnvironment` containing borrowed reserved tables, the completed user-symbol index, and the deterministic fingerprint.
+
+Lookup uses a `BTreeMap<String, Vec<UserSymbolCandidate>>` rather than a trie. `longest_user_symbol_at` scans the map, keeps only spellings that prefix-match the source slice at the requested byte offset, retains the greatest byte length, and returns the candidates from the visible import ordinal for that spelling. The result is deterministic and sufficient for the current corpus size; a trie can replace it later without changing the public semantics.
 
 Current implementation notes:
 
@@ -129,9 +135,9 @@ Errors are environment construction failures, not tokenization failures:
 - inconsistent duplicate summary for the same module id;
 - exported symbol collides illegally with a reserved word or reserved special symbol;
 - equal-spelling user symbols exported by different imports conflict;
-- nondeterministic import order or summary order.
+- invalid user-symbol spelling.
 
-Ambiguous same-spelling user symbols from the same imported module remain representable as deterministic candidates; same-spelling symbols from different imports are rejected as conflicts.
+Ambiguous same-spelling user symbols from the same imported module remain representable as deterministic candidates; same-spelling symbols from different imports are rejected as conflicts. Import order and summary order are not diagnosed as errors, but they are part of the deterministic input contract and are reflected in the environment fingerprint.
 
 ## Tests
 

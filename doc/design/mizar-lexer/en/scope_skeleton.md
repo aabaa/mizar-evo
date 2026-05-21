@@ -10,7 +10,7 @@ Token disambiguation may need to know whether a scoped identifier binding overri
 
 ## Public API
 
-Expected API direction:
+Implemented API:
 
 ```rust
 pub struct ScopeSkeleton {
@@ -55,7 +55,7 @@ The skeleton pre-scan recognizes only reserved-keyword-shaped structure needed t
 - block boundaries such as `definition`, `proof`, `now`, `case`, `suppose`, `hereby`, `algorithm`, `do`, and `end`;
 - binder-introducing forms such as `let`, `for`, `ex`, `reserve`, `given`, `consider`, `set`, `reconsider`, `take`, `deffunc`, `defpred`, and algorithm `var` / `const` forms;
 - comma-separated binding lists in recognized binder positions;
-- labels or local names whose binding range can be approximated without parsing expressions.
+- local names whose binding range can be approximated without parsing expressions.
 
 It is intentionally not a parser. It may under-approximate bindings when source is malformed or when a binding form is not yet implemented.
 
@@ -69,6 +69,21 @@ Lexical lifetimes are conservative:
 - algorithm `for ... do` binders, including optional `processed name`, bind in the following `do` block.
 
 The skeleton pre-scan must not require raw scan to split punctuation in advance. It may inspect inside `LexemeRun` spans to recognize delimiters such as `,`, `;`, and block-closing punctuation needed for binding-list recovery.
+
+## Implemented Algorithm Flow
+
+The implementation is a conservative single pass over a reduced token stream.
+
+1. Convert `RawTokenStream` into scope-skeleton tokens. Layout is ignored. `LexemeRun` values are split into identifier-shaped `Word` pieces, comma, semicolon, parentheses, and `Other` runs. Other raw token kinds become `Other`.
+2. Initialize a synthetic root frame starting at byte `0`, an empty block stack, and an empty `pending_do_bindings` buffer used by algorithm `for ... do` forms.
+3. Walk tokens from left to right. Recognized block-opening words (`algorithm`, `definition`, `proof`, `now`, `suppose`, `hereby`, and `do`) push an open frame. `case` opens a frame only when the rest of the statement does not contain `do`, so algorithm `case ... do` does not look like a proof branch. `end` pops one frame and records both a block range and a lexical scope frame.
+4. Recognized binder words delegate to shape-specific parsers. Plain binder lists such as `let x, y be ...` accept identifier-shaped names until a comma, semicolon, or stop word. Named-equals binders such as `set x = ...`, `reconsider x = ...`, and `take x = ...` require the `name =` shape. Algorithm `var` and `const` binders scan comma-separated declaration heads while tracking parenthesis depth so initializer tuples do not create extra binders.
+5. `ghost var` and `ghost const` are treated as algorithm binders; unsupported `ghost` forms produce a recoverable diagnostic and do not invent bindings.
+6. Binder lifetimes are assigned by shape. `reserve` contributes to the root frame only outside nested blocks. `for`, `ex`, and `given` create statement-local frames. `consider`, `let` inside a block, named-equals binders, `deffunc`, `defpred`, `var`, `const`, and `processed` extend the current block frame when one exists, otherwise fall back to a statement-local frame. Algorithm `for ... do` moves its binders, plus optional `processed name`, into the following `do` block via `pending_do_bindings`.
+7. Before bindings enter a frame, names are deduplicated against existing names in that same lexical scope. Duplicates are ignored with a diagnostic so the skeleton cannot create two competing overrides for the same spelling and range.
+8. At EOF, any still-open block is closed at `source_end` and reported as `MissingEnd`. The root frame is emitted only if it contains bindings. Frames, blocks, statements, and diagnostics are sorted by source span before returning.
+
+`ScopeLexView::binding_overrides_symbol` then answers a narrow question: a binding overrides a spelling at position `p` only when `p` lies inside the frame, the spelling matches, and the binding's own introduction span has already ended. This last condition prevents the binder occurrence itself from being reclassified as an identifier too early.
 
 ## Override Semantics
 

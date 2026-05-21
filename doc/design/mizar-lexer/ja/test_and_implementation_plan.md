@@ -352,6 +352,14 @@ Completion criteria:
 4. 複雑な複合ケースをテストに含めているか?
 5. アルゴリズムをレビューしたか
 
+アルゴリズムレビューの内容は、この計画書に重複して書かず、各 module design document に記録します。
+
+- [raw_lexer.md](./raw_lexer.md): source preprocessing、raw scanning、reserved-shell disambiguation の流れ。
+- [import_prescan.md](./import_prescan.md): import 専用 token splitter、statement parser、recovery strategy。
+- [lexical_environment.md](./lexical_environment.md): active environment construction、validation、lookup、fingerprinting。
+- [scope_skeleton.md](./scope_skeleton.md): frame construction、binder lifetime assignment、recovery、override semantics。
+- [disambiguator.md](./disambiguator.md): raw-token processing、candidate selection、parser-context filtering、string handling、recovery。
+
 ## Review Checklist For New Lexer Tests
 
 New lexer test を commit する前に確認すること。

@@ -18,7 +18,7 @@ Mizar の字句分類は import、active user symbols、parser position、scoped
 
 | Document | Maps To | Description | Status |
 |---|---|---|---|
-| [raw_lexer.md](./raw_lexer.md) | `crates/mizar-lexer/src/lib.rs` initially; later split modules | Raw scanning, `LexemeRun`, disambiguation boundary, scope-sensitive symbol/identifier rules | Draft |
+| [raw_lexer.md](./raw_lexer.md) | `crates/mizar-lexer/src/raw_lexer.rs`, source/tables 境界の補足を含む | Raw scanning, `LexemeRun`, source preprocessing handoff, reserved tables, disambiguation boundary | Draft |
 | [import_prescan.md](./import_prescan.md) | `crates/mizar-lexer/src/import_prescan.rs` | Import prelude scanning and `ImportStub` extraction from raw tokens | Draft |
 | [lexical_environment.md](./lexical_environment.md) | `crates/mizar-lexer/src/lexical_environment.rs` | Active lexical environment construction from reserved tables and module lexical summaries | Draft |
 | [scope_skeleton.md](./scope_skeleton.md) | `crates/mizar-lexer/src/scope_skeleton.rs` | Reserved-keyword-based lexical scope skeleton and `ScopeLexView` projection | Draft |
@@ -30,9 +30,10 @@ Mizar の字句分類は import、active user symbols、parser position、scoped
 `mizar-lexer` provides:
 
 - source loading が LF-only に正規化した後の raw lexical scanning;
+- comment stripping、LF/ASCII diagnostics、module source naming contract を扱う source preprocessing helpers;
 - source span を保持する raw lexical units;
 - identifier, numeral, layout, reserved word, symbol shape recognition の helper API;
-- lexical environment, parser expectation, scoped bindings を受け取る将来の disambiguation support.
+- lexical environment, parser expectation, scoped bindings を受け取る final token disambiguation support.
 
 It must not:
 
