@@ -398,7 +398,7 @@ fn lexical_corpus_matches_token_expectations() {
     assert_eq!(raw_checked, 8);
     assert_eq!(import_prescan_checked, 12);
     assert_eq!(scope_skeleton_checked, 7);
-    assert_eq!(disambiguator_checked, 20);
+    assert_eq!(disambiguator_checked, 22);
     assert_eq!(fail_checked, 11);
 }
 
