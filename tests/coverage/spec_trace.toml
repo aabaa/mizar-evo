@@ -192,6 +192,7 @@ tests = [
   "tests/lexical/pass/pass_lexical_disambiguator_reserved_dot_compounds_001.expect.toml",
   "tests/lexical/pass/pass_lexical_reserved_symbols_longest_compound_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_user_symbol_longest_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_final_token_spans_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_composite_longest_scope_dot_001.expect.toml",
   "tests/property/lexer_phase7_regression_001.expect.toml",
 ]
@@ -518,6 +519,7 @@ coverage = "pass"
 tests = [
   "tests/lexical/pass/pass_lexical_disambiguator_user_symbol_ascii_graphic_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_user_symbol_longest_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_final_token_spans_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_composite_longest_scope_dot_001.expect.toml",
   "tests/property/lexer_phase7_regression_001.expect.toml",
 ]

@@ -15,19 +15,29 @@ spec_refs = [
 [[tokens]]
 kind = "identifier"
 lexeme = "Theorem"
+span_start = 0
+span_end = 7
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "theorem"
+span_start = 8
+span_end = 15
 
 [[tokens]]
 kind = "identifier"
 lexeme = "theorematic"
+span_start = 16
+span_end = 27
 
 [[tokens]]
 kind = "identifier"
 lexeme = "end2"
+span_start = 28
+span_end = 32
 
 [[tokens]]
 kind = "identifier"
 lexeme = "_definition"
+span_start = 33
+span_end = 44

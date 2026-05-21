@@ -32,8 +32,9 @@ pub use scope_skeleton::{
 };
 pub use source::{
     CommentKind, CommentTrivia, ModuleNamingError, ModuleSourceName, PreprocessedLexicalSource,
-    SourcePos, SourcePreprocessDiagnostic, SourcePreprocessDiagnosticCode, SourceRange, SourceSpan,
-    module_source_name_from_path, preprocess_source_for_lexing,
+    SourceLineIndex, SourceLocation, SourceLocationRange, SourcePos, SourcePreprocessDiagnostic,
+    SourcePreprocessDiagnosticCode, SourceRange, SourceSpan, module_source_name_from_path,
+    preprocess_source_for_lexing,
 };
 pub use tables::{
     RESERVED_SYMBOLS, RESERVED_WORDS, ReservedSymbolTable, ReservedWordTable, is_reserved_symbol,
@@ -47,38 +48,34 @@ mod tests {
         LexDiagnosticCode, LexicalBlockKind, LexicalEnvironmentError, LexicalSummaryFingerprint,
         ModuleId, ModuleLexicalSummary, ModuleNamingError, ParserLexContext, RESERVED_SYMBOLS,
         RESERVED_WORDS, RawModuleRelativePrefix, RawToken, RawTokenKind, ResolvedImport,
-        ScopeLexView, ScopeSkeletonDiagnosticCode, SourcePreprocessDiagnosticCode, SourceSpan,
-        SymbolId, Token, TokenKind, UserSymbolCandidate, build_lexical_environment,
-        build_scope_skeleton, disambiguate, is_identifier, is_layout, is_numeral,
-        is_reserved_symbol, is_reserved_word, is_string_literal_spelling, is_user_symbol_spelling,
-        lex, longest_reserved_symbol_prefix, module_source_name_from_path,
-        preprocess_source_for_lexing, scan_import_prelude, scan_raw,
+        ScopeLexView, ScopeSkeletonDiagnosticCode, SourceLineIndex, SourceLocation,
+        SourceLocationRange, SourcePreprocessDiagnosticCode, SourceSpan, SymbolId, Token,
+        TokenKind, UserSymbolCandidate, build_lexical_environment, build_scope_skeleton,
+        disambiguate, is_identifier, is_layout, is_numeral, is_reserved_symbol, is_reserved_word,
+        is_string_literal_spelling, is_user_symbol_spelling, lex, longest_reserved_symbol_prefix,
+        module_source_name_from_path, preprocess_source_for_lexing, scan_import_prelude, scan_raw,
     };
+
+    fn token(kind: TokenKind, lexeme: &str, start: usize, end: usize) -> Token {
+        Token {
+            kind,
+            lexeme: lexeme.to_owned(),
+            span: SourceSpan { start, end },
+        }
+    }
 
     #[test]
     fn lexes_alpha_as_identifier() {
         let tokens = lex("alpha").expect("alpha should lex as an identifier");
 
-        assert_eq!(
-            tokens,
-            vec![Token {
-                kind: TokenKind::Identifier,
-                lexeme: "alpha".to_owned(),
-            }]
-        );
+        assert_eq!(tokens, vec![token(TokenKind::Identifier, "alpha", 0, 5)]);
     }
 
     #[test]
     fn lexes_identifier_body_characters() {
         let tokens = lex("_alpha1'").expect("identifier body characters should be supported");
 
-        assert_eq!(
-            tokens,
-            vec![Token {
-                kind: TokenKind::Identifier,
-                lexeme: "_alpha1'".to_owned(),
-            }]
-        );
+        assert_eq!(tokens, vec![token(TokenKind::Identifier, "_alpha1'", 0, 8)]);
     }
 
     #[test]
@@ -88,22 +85,10 @@ mod tests {
         assert_eq!(
             tokens,
             vec![
-                Token {
-                    kind: TokenKind::Identifier,
-                    lexeme: "alpha".to_owned(),
-                },
-                Token {
-                    kind: TokenKind::Identifier,
-                    lexeme: "beta".to_owned(),
-                },
-                Token {
-                    kind: TokenKind::Identifier,
-                    lexeme: "gamma".to_owned(),
-                },
-                Token {
-                    kind: TokenKind::Identifier,
-                    lexeme: "_delta".to_owned(),
-                },
+                token(TokenKind::Identifier, "alpha", 0, 5),
+                token(TokenKind::Identifier, "beta", 6, 10),
+                token(TokenKind::Identifier, "gamma", 11, 16),
+                token(TokenKind::Identifier, "_delta", 17, 23),
             ]
         );
     }
@@ -112,13 +97,7 @@ mod tests {
     fn keeps_digit_leading_symbol_shapes_unsplit() {
         let tokens = lex("1alpha").expect("digit-leading symbol shape should lex");
 
-        assert_eq!(
-            tokens,
-            vec![Token {
-                kind: TokenKind::LexemeRun,
-                lexeme: "1alpha".to_owned(),
-            }]
-        );
+        assert_eq!(tokens, vec![token(TokenKind::LexemeRun, "1alpha", 0, 6)]);
     }
 
     #[test]
@@ -127,10 +106,7 @@ mod tests {
 
         assert_eq!(
             tokens,
-            vec![Token {
-                kind: TokenKind::LexemeRun,
-                lexeme: "alpha:=beta".to_owned(),
-            }]
+            vec![token(TokenKind::LexemeRun, "alpha:=beta", 0, 11)]
         );
     }
 
@@ -141,10 +117,7 @@ mod tests {
             assert!(!is_identifier(word), "{word} should not be an identifier");
             assert_eq!(
                 lex(word).expect("reserved word should lex"),
-                vec![Token {
-                    kind: TokenKind::ReservedWord,
-                    lexeme: (*word).to_owned(),
-                }]
+                vec![token(TokenKind::ReservedWord, word, 0, word.len())]
             );
         }
     }
@@ -155,10 +128,7 @@ mod tests {
             assert!(is_reserved_symbol(symbol), "{symbol} should be reserved");
             assert_eq!(
                 lex(symbol).expect("reserved symbol should lex"),
-                vec![Token {
-                    kind: TokenKind::ReservedSymbol,
-                    lexeme: (*symbol).to_owned(),
-                }]
+                vec![token(TokenKind::ReservedSymbol, symbol, 0, symbol.len())]
             );
         }
     }
@@ -167,10 +137,7 @@ mod tests {
     fn reserved_words_are_case_sensitive() {
         assert_eq!(
             lex("Theorem").expect("case-distinct spelling should lex"),
-            vec![Token {
-                kind: TokenKind::Identifier,
-                lexeme: "Theorem".to_owned(),
-            }]
+            vec![token(TokenKind::Identifier, "Theorem", 0, 7)]
         );
     }
 
@@ -179,6 +146,34 @@ mod tests {
         assert!(is_numeral("42"));
         assert!(!is_numeral(""));
         assert!(!is_numeral("42abc"));
+    }
+
+    #[test]
+    fn source_line_index_maps_byte_spans_to_zero_based_locations() {
+        let source = "alpha\nβeta\n";
+        let index = SourceLineIndex::new(source);
+
+        assert_eq!(
+            index.location(0),
+            Some(SourceLocation { line: 0, column: 0 })
+        );
+        assert_eq!(
+            index.location(6),
+            Some(SourceLocation { line: 1, column: 0 })
+        );
+        assert_eq!(
+            index.location(source.len()),
+            Some(SourceLocation { line: 2, column: 0 })
+        );
+        assert_eq!(
+            index.range(SourceSpan { start: 0, end: 11 }),
+            Some(SourceLocationRange {
+                start: SourceLocation { line: 0, column: 0 },
+                end: SourceLocation { line: 1, column: 5 },
+            })
+        );
+        assert_eq!(index.location(source.len() + 1), None);
+        assert_eq!(index.range(SourceSpan { start: 2, end: 1 }), None);
     }
 
     #[test]
@@ -1234,6 +1229,32 @@ import pkg.mathcomp_mizar.algebra.ring;";
     }
 
     #[test]
+    fn disambiguator_preserves_final_token_spans() {
+        let env = build_lexical_environment(
+            &[resolved_import("std.symbols")],
+            &[summary(
+                "std.symbols",
+                88,
+                &[exported("*+", "std.symbols#star_plus", "std.symbols", 0)],
+            )],
+        )
+        .expect("environment should build");
+        let raw = scan_raw("x*+y").expect("source should raw scan");
+        let skeleton = build_scope_skeleton(&raw);
+        let stream = disambiguate(&raw, &env, &ParserLexContext::general(), &skeleton);
+
+        assert_eq!(
+            stream.tokens,
+            vec![
+                token(TokenKind::Identifier, "x", 0, 1),
+                token(TokenKind::UserSymbol, "*+", 1, 3),
+                token(TokenKind::Identifier, "y", 3, 4),
+            ]
+        );
+        assert!(stream.diagnostics.is_empty());
+    }
+
+    #[test]
     fn disambiguator_reports_context_rejection_stably() {
         let env = build_lexical_environment(&[], &[]).expect("environment should build");
         let raw = scan_raw(":").expect("source should raw scan");
@@ -1261,6 +1282,7 @@ import pkg.mathcomp_mizar.algebra.ring;";
                 .collect::<Vec<_>>(),
             vec![LexDiagnosticCode::ParserContextRejectedCandidate]
         );
+        assert_eq!(stream.tokens[0].span, stream.diagnostics[0].span);
     }
 
     #[test]

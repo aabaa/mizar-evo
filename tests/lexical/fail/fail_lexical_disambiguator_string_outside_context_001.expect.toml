@@ -19,11 +19,17 @@ spec_refs = [
 [[tokens]]
 kind = "error_recovery"
 lexeme = "\""
+span_start = 0
+span_end = 1
 
 [[tokens]]
 kind = "identifier"
 lexeme = "alpha"
+span_start = 1
+span_end = 6
 
 [[tokens]]
 kind = "error_recovery"
 lexeme = "\""
+span_start = 6
+span_end = 7

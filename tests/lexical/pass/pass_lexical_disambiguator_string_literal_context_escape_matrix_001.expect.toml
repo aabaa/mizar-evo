@@ -14,11 +14,17 @@ spec_refs = [
 [[tokens]]
 kind = "string_literal"
 lexeme = "\"quote\\'\""
+span_start = 0
+span_end = 9
 
 [[tokens]]
 kind = "string_literal"
 lexeme = "'quote\\\"'"
+span_start = 10
+span_end = 19
 
 [[tokens]]
 kind = "string_literal"
 lexeme = "\"slash\\\\\""
+span_start = 20
+span_end = 29

@@ -16,15 +16,23 @@ spec_refs = [
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ".{"
+span_start = 0
+span_end = 2
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ".*"
+span_start = 2
+span_end = 4
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ".="
+span_start = 4
+span_end = 6
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "..."
+span_start = 6
+span_end = 9

@@ -14,11 +14,17 @@ spec_refs = [
 [[tokens]]
 kind = "identifier"
 lexeme = "Alpha"
+span_start = 0
+span_end = 5
 
 [[tokens]]
 kind = "identifier"
 lexeme = "zeta"
+span_start = 6
+span_end = 10
 
 [[tokens]]
 kind = "identifier"
 lexeme = "_hidden"
+span_start = 11
+span_end = 18

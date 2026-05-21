@@ -17,95 +17,143 @@ spec_refs = [
 [[tokens]]
 kind = "reserved_word"
 lexeme = "definition"
+span_start = 0
+span_end = 10
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "let"
+span_start = 11
+span_end = 14
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "succ"
+span_start = 15
+span_end = 19
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "be"
+span_start = 20
+span_end = 22
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "set"
+span_start = 23
+span_end = 26
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 26
+span_end = 27
 
 [[tokens]]
 kind = "identifier"
 lexeme = "succ"
+span_start = 28
+span_end = 32
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 32
+span_end = 33
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "now"
+span_start = 34
+span_end = 37
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "let"
+span_start = 38
+span_end = 41
 
 [[tokens]]
 kind = "identifier"
 lexeme = "succ"
+span_start = 42
+span_end = 46
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "be"
+span_start = 47
+span_end = 49
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "set"
+span_start = 50
+span_end = 53
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 53
+span_end = 54
 
 [[tokens]]
 kind = "identifier"
 lexeme = "succ"
+span_start = 55
+span_end = 59
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 59
+span_end = 60
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "end"
+span_start = 61
+span_end = 64
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 64
+span_end = 65
 
 [[tokens]]
 kind = "identifier"
 lexeme = "succ"
+span_start = 66
+span_end = 70
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 70
+span_end = 71
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "end"
+span_start = 72
+span_end = 75
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 75
+span_end = 76
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "succ"
+span_start = 77
+span_end = 81
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 81
+span_end = 82

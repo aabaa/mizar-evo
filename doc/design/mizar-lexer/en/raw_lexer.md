@@ -54,6 +54,45 @@ The current crate separates source preparation, raw scanning, and final disambig
 
 The raw scanner's main invariant is span contiguity: every emitted raw token points back to the exact byte slice it came from, and the concatenation of raw token lexemes reconstructs the raw scanner input.
 
+### Source Coordinates
+
+`SourceSpan` is the canonical coordinate type inside `mizar-lexer`. It stores byte offsets into the exact text that produced the token or diagnostic and represents a half-open range `[start, end)`.
+
+Callers must keep the coordinate space explicit. Raw tokens and final tokens produced from `scan_raw` and `disambiguate` point into the scanner input passed to `scan_raw`. When that input is `PreprocessedLexicalSource.lexical_text`, the spans are lexical-text offsets, not necessarily offsets into the original loaded `.miz` text. A `SourceLineIndex` must always be built from the same text that the spans address.
+
+Mapping lexical-text offsets back to original loaded-source offsets belongs to a source map or the session layer. The lexer must not silently treat spans from preprocessed text as original file coordinates.
+
+The lexer must not store line and column numbers on every raw or final token. Line and column positions are derived views computed from the source text when diagnostics, debug output, snapshots, or LSP bridges need human-readable coordinates. This avoids duplicating location data and avoids mixing multiple coordinate systems in token values.
+
+`mizar-lexer` provides a lightweight line-index helper for lexer-local use:
+
+```rust
+pub struct SourceLineIndex {
+    line_starts: Vec<usize>,
+    source_len: usize,
+}
+
+pub struct SourceLocation {
+    pub line: usize,
+    pub column: usize,
+}
+
+pub struct SourceLocationRange {
+    pub start: SourceLocation,
+    pub end: SourceLocation,
+}
+
+impl SourceLineIndex {
+    pub fn new(source: &str) -> Self;
+    pub fn location(&self, offset: usize) -> Option<SourceLocation>;
+    pub fn range(&self, span: SourceSpan) -> Option<SourceLocationRange>;
+}
+```
+
+The internal convention is zero-based line and zero-based byte column. `location` and `range` return `None` when the requested offset or span is outside the indexed source text. Human-facing diagnostics can convert to one-based display numbers at formatting time. LSP-specific UTF-16 positions are not stored in tokens; they are computed by the LSP bridge or a dedicated adapter from the same byte offsets.
+
+This helper is intentionally not a source-loading abstraction. The session layer may keep a richer `LineMap` on `LoadedSource` for open buffers, snapshots, source maps, and LSP integration. `mizar-lexer` only needs enough coordinate conversion to make lexer diagnostics and tests readable from a `&str`.
+
 ### Stage 1: Raw Scan
 
 The raw scanner reads LF-only source text and produces source-span-preserving raw units.
@@ -257,6 +296,7 @@ pub fn lex(input: &str) -> Result<Vec<Token>, LexError>;
 pub struct Token {
     pub kind: TokenKind,
     pub lexeme: String,
+    pub span: SourceSpan,
 }
 
 pub enum TokenKind {
@@ -271,7 +311,7 @@ pub enum TokenKind {
 }
 ```
 
-`lex` remains a convenience wrapper for raw scanning plus reserved-shell disambiguation. The context-sensitive API lives in `disambiguator.md` and should be used when imports, parser context, or scope override can affect token classification.
+`lex` remains a convenience wrapper for raw scanning plus reserved-shell disambiguation. It still returns span-bearing final tokens; context-free classification is not allowed to drop source locations. The context-sensitive API lives in `disambiguator.md` and should be used when imports, parser context, or scope override can affect token classification.
 
 Helper predicates define the low-level spelling rules used across modules: layout is exactly space, tab, or LF; identifiers start with ASCII alphabetic or `_`; identifier continuation additionally admits digits and `'`; numerals are ASCII digit runs; user-symbol spellings are non-empty ASCII graphic runs excluding `@`; string-literal spellings must close with the same quote and may only escape `"`, `'`, or `\`.
 
@@ -306,6 +346,10 @@ Disambiguation errors are for tokenization failures after context is considered:
 - grammar context forbids all candidates in a raw run.
 
 Undefined identifiers are not lexing errors.
+
+Final token spans are part of the lexer boundary. `RawToken` spans are copied for one-to-one mappings and subdivided when a `LexemeRun` yields multiple final tokens. Downstream parser, diagnostic, LSP, formatter, and incremental-analysis layers must be able to locate every final token without consulting raw tokens again.
+
+Line and column values are derived from final token spans through `SourceLineIndex` or the session layer's `LineMap`. They are not stored on `Token`.
 
 ## Tests
 

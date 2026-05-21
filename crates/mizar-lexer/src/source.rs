@@ -12,6 +12,24 @@ pub type SourcePos = usize;
 pub type SourceRange = SourceSpan;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceLineIndex {
+    line_starts: Vec<usize>,
+    source_len: usize,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SourceLocation {
+    pub line: usize,
+    pub column: usize,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SourceLocationRange {
+    pub start: SourceLocation,
+    pub end: SourceLocation,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PreprocessedLexicalSource {
     pub lexical_text: String,
     pub comments: Vec<CommentTrivia>,
@@ -92,6 +110,46 @@ impl fmt::Display for ModuleNamingError {
 }
 
 impl Error for ModuleNamingError {}
+impl SourceLineIndex {
+    pub fn new(source: &str) -> Self {
+        let mut line_starts = vec![0];
+        for (index, ch) in source.char_indices() {
+            if ch == '\n' {
+                line_starts.push(index + ch.len_utf8());
+            }
+        }
+        Self {
+            line_starts,
+            source_len: source.len(),
+        }
+    }
+
+    pub fn location(&self, offset: usize) -> Option<SourceLocation> {
+        if offset > self.source_len {
+            return None;
+        }
+        let line = match self.line_starts.binary_search(&offset) {
+            Ok(line) => line,
+            Err(0) => return None,
+            Err(next_line) => next_line - 1,
+        };
+        Some(SourceLocation {
+            line,
+            column: offset - self.line_starts[line],
+        })
+    }
+
+    pub fn range(&self, span: SourceSpan) -> Option<SourceLocationRange> {
+        if span.start > span.end {
+            return None;
+        }
+        Some(SourceLocationRange {
+            start: self.location(span.start)?,
+            end: self.location(span.end)?,
+        })
+    }
+}
+
 pub fn preprocess_source_for_lexing(input: &str) -> PreprocessedLexicalSource {
     let mut lexical_text = String::with_capacity(input.len());
     let mut comments = Vec::new();

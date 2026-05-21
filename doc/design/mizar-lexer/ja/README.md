@@ -32,6 +32,7 @@ Mizar の字句分類は、import、active user symbol、parser position、scope
 - source loading が LF-only に正規化した後の raw lexical scanning;
 - comment stripping、LF/ASCII diagnostics、module source naming contract を扱う source preprocessing helpers;
 - source span を保持する raw lexical units;
+- lexer diagnostics and tests のための lightweight source-span to line/column conversion helpers;
 - identifier, numeral, layout, reserved word, symbol shape recognition の helper API;
 - lexical environment, parser expectation, scoped bindings を受け取る final token disambiguation support.
 

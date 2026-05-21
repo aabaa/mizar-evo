@@ -11,6 +11,7 @@ use crate::tables::{is_reserved_symbol, is_reserved_word, longest_reserved_symbo
 pub struct Token {
     pub kind: TokenKind,
     pub lexeme: String,
+    pub span: SourceSpan,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -76,12 +77,14 @@ pub fn disambiguate_reserved_shell(raw: &RawTokenStream) -> Result<Vec<Token>, L
                 tokens.push(Token {
                     kind: TokenKind::Numeral,
                     lexeme: raw_token.lexeme.clone(),
+                    span: raw_token.span,
                 });
             }
             RawTokenKind::AnnotationMarker if raw_token.lexeme == "@[" => {
                 tokens.push(Token {
                     kind: TokenKind::ReservedSymbol,
                     lexeme: raw_token.lexeme.clone(),
+                    span: raw_token.span,
                 });
             }
             RawTokenKind::LexemeRun => tokens.push(classify_lexeme_run_shell(raw_token)),
@@ -204,6 +207,7 @@ fn classify_lexeme_run_shell(raw_token: &RawToken) -> Token {
     Token {
         kind,
         lexeme: raw_token.lexeme.clone(),
+        span: raw_token.span,
     }
 }
 
@@ -248,7 +252,11 @@ impl<'a> Disambiguator<'a> {
                 RawTokenKind::LexemeRun => self.disambiguate_lexeme_run(raw_token),
                 RawTokenKind::AnnotationMarker if raw_token.lexeme == "@[" => {
                     if self.parser_context.admits_symbol("@[") {
-                        self.push_token(TokenKind::ReservedSymbol, &raw_token.lexeme);
+                        self.push_token(
+                            TokenKind::ReservedSymbol,
+                            &raw_token.lexeme,
+                            raw_token.span,
+                        );
                     } else {
                         self.push_error(
                             LexDiagnosticCode::ParserContextRejectedCandidate,
@@ -276,7 +284,7 @@ impl<'a> Disambiguator<'a> {
 
     fn disambiguate_numeral_like(&mut self, raw_token: &RawToken) {
         if self.parser_context.admits_numeral() {
-            self.push_token(TokenKind::Numeral, &raw_token.lexeme);
+            self.push_token(TokenKind::Numeral, &raw_token.lexeme, raw_token.span);
         } else {
             self.push_error(
                 LexDiagnosticCode::ParserContextRejectedCandidate,
@@ -297,9 +305,14 @@ impl<'a> Disambiguator<'a> {
             if self.parser_context.requires_string() && starts_string {
                 match string_literal_prefix_len(&raw_token.lexeme[cursor..]) {
                     Some(len) => {
+                        let span = SourceSpan {
+                            start: raw_token.span.start + cursor,
+                            end: raw_token.span.start + cursor + len,
+                        };
                         self.push_token(
                             TokenKind::StringLiteral,
                             &raw_token.lexeme[cursor..cursor + len],
+                            span,
                         );
                         cursor += len;
                     }
@@ -321,9 +334,14 @@ impl<'a> Disambiguator<'a> {
 
             match self.best_candidate(raw_token, cursor) {
                 Some(candidate) => {
+                    let span = SourceSpan {
+                        start: raw_token.span.start + cursor,
+                        end: raw_token.span.start + cursor + candidate.len,
+                    };
                     self.push_token(
                         candidate.kind,
                         &raw_token.lexeme[cursor..cursor + candidate.len],
+                        span,
                     );
                     cursor += candidate.len;
                 }
@@ -483,10 +501,11 @@ impl<'a> Disambiguator<'a> {
                 .is_empty()
     }
 
-    fn push_token(&mut self, kind: TokenKind, lexeme: &str) {
+    fn push_token(&mut self, kind: TokenKind, lexeme: &str, span: SourceRange) {
         self.tokens.push(Token {
             kind,
             lexeme: lexeme.to_owned(),
+            span,
         });
     }
 
@@ -502,7 +521,7 @@ impl<'a> Disambiguator<'a> {
             message: message.into(),
             span,
         });
-        self.push_token(TokenKind::ErrorRecovery, lexeme);
+        self.push_token(TokenKind::ErrorRecovery, lexeme, span);
     }
 }
 

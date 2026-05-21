@@ -15,11 +15,17 @@ spec_refs = [
 [[tokens]]
 kind = "identifier"
 lexeme = "A"
+span_start = 0
+span_end = 1
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "."
+span_start = 1
+span_end = 2
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "succ"
+span_start = 2
+span_end = 6

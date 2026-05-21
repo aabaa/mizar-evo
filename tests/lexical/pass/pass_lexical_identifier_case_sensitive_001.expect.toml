@@ -14,11 +14,17 @@ spec_refs = [
 [[tokens]]
 kind = "identifier"
 lexeme = "Foo"
+span_start = 0
+span_end = 3
 
 [[tokens]]
 kind = "identifier"
 lexeme = "foo"
+span_start = 4
+span_end = 7
 
 [[tokens]]
 kind = "identifier"
 lexeme = "FOO"
+span_start = 8
+span_end = 11

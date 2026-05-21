@@ -16,43 +16,65 @@ spec_refs = [
 [[tokens]]
 kind = "user_symbol"
 lexeme = "succ"
+span_start = 0
+span_end = 4
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 4
+span_end = 5
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "for"
+span_start = 6
+span_end = 9
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "succ"
+span_start = 10
+span_end = 14
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "holds"
+span_start = 15
+span_end = 20
 
 [[tokens]]
 kind = "identifier"
 lexeme = "succ"
+span_start = 21
+span_end = 25
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "="
+span_start = 26
+span_end = 27
 
 [[tokens]]
 kind = "identifier"
 lexeme = "succ"
+span_start = 28
+span_end = 32
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 32
+span_end = 33
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "succ"
+span_start = 34
+span_end = 38
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 38
+span_end = 39

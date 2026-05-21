@@ -14,7 +14,11 @@ spec_refs = [
 [[tokens]]
 kind = "string_literal"
 lexeme = "\"slash\\\\path\""
+span_start = 0
+span_end = 13
 
 [[tokens]]
 kind = "string_literal"
 lexeme = "'it\\'s'"
+span_start = 14
+span_end = 21

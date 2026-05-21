@@ -310,6 +310,8 @@ Tests should cover:
 - string literals only in string-required parser contexts;
 - import conflict reporting through the lexical environment;
 - recovery emits stable `ErrorRecovery` tokens and diagnostics.
+- final `Token` values preserve source spans for raw one-to-one mappings, `LexemeRun` splits, string literals, and recovery tokens.
+- source-span to line/column conversion is available through a lightweight line index built from the same text addressed by the span, without storing line/column on tokens.
 
 Recommended requirement ids:
 
@@ -327,6 +329,8 @@ Exit criteria:
 - disambiguator consumes environment, parser context, and scope view without building them;
 - undefined identifiers remain lexical `Identifier` tokens and are rejected later by name resolution;
 - diagnostics are stable in order and identity.
+- every final token has a source span; for contiguous source text, `token.lexeme` matches the source slice addressed by that span.
+- line/column helpers derive zero-based byte-column locations from valid `SourceSpan` values and return `None` for out-of-range offsets; human-facing one-based and LSP UTF-16 positions remain formatting/adapter concerns.
 
 ## Phase 7: Regression, Property, And Fuzz Handoff -> Done
 

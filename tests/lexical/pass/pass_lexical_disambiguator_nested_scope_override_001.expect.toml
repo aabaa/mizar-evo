@@ -17,111 +17,167 @@ spec_refs = [
 [[tokens]]
 kind = "user_symbol"
 lexeme = "succ"
+span_start = 0
+span_end = 4
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 4
+span_end = 5
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "definition"
+span_start = 6
+span_end = 16
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "let"
+span_start = 17
+span_end = 20
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "succ"
+span_start = 21
+span_end = 25
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "be"
+span_start = 26
+span_end = 28
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "set"
+span_start = 29
+span_end = 32
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 32
+span_end = 33
 
 [[tokens]]
 kind = "identifier"
 lexeme = "succ"
+span_start = 34
+span_end = 38
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 38
+span_end = 39
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "now"
+span_start = 40
+span_end = 43
 
 [[tokens]]
 kind = "identifier"
 lexeme = "succ"
+span_start = 44
+span_end = 48
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 48
+span_end = 49
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "let"
+span_start = 50
+span_end = 53
 
 [[tokens]]
 kind = "identifier"
 lexeme = "inner"
+span_start = 54
+span_end = 59
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "be"
+span_start = 60
+span_end = 62
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "set"
+span_start = 63
+span_end = 66
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 66
+span_end = 67
 
 [[tokens]]
 kind = "identifier"
 lexeme = "inner"
+span_start = 68
+span_end = 73
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 73
+span_end = 74
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "end"
+span_start = 75
+span_end = 78
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 78
+span_end = 79
 
 [[tokens]]
 kind = "identifier"
 lexeme = "succ"
+span_start = 80
+span_end = 84
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 84
+span_end = 85
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "end"
+span_start = 86
+span_end = 89
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 89
+span_end = 90
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "succ"
+span_start = 91
+span_end = 95
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 95
+span_end = 96

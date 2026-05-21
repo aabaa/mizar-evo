@@ -14,11 +14,17 @@ spec_refs = [
 [[tokens]]
 kind = "string_literal"
 lexeme = "\"n!\""
+span_start = 0
+span_end = 4
 
 [[tokens]]
 kind = "string_literal"
 lexeme = "'say\"hi\"'"
+span_start = 4
+span_end = 13
 
 [[tokens]]
 kind = "string_literal"
 lexeme = "\"+\""
+span_start = 13
+span_end = 16

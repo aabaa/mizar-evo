@@ -21,6 +21,7 @@ pub struct TokenStream {
 pub struct Token {
     pub kind: TokenKind,
     pub lexeme: String,
+    pub span: SourceSpan,
 }
 
 pub enum TokenKind {
@@ -57,6 +58,35 @@ The selected candidate is the longest valid candidate after parser expectation a
 Candidate priority breaks equal-length ties after length has been considered. Namespace-path `.` as a reserved symbol has the highest priority, scoped identifier override of an identifier-shaped user symbol comes next, then active user symbols, reserved symbols, reserved words, identifiers, and numerals. If no admitted candidate exists but at least one raw candidate shape was present, the diagnostic is `ParserContextRejectedCandidate`; otherwise it is `NoValidTokenCandidate`.
 
 The current implementation has an `AmbiguousUserSymbol` diagnostic code reserved for future cases, but equal-spelling same-import overloads remain a deterministic candidate set in the lexical environment and are intentionally left for later resolution phases.
+
+## Final Token Spans
+
+Every final `Token` must carry the byte span of the source spelling that produced it. Raw scanning already preserves spans on `RawToken`; disambiguation must not discard that information.
+
+`Token` stores only the byte span, not line and column coordinates. Line and column are derived later from the same text addressed by the span through `SourceLineIndex`, or from the original loaded source through the session layer's `LineMap` plus source-map information when preprocessing changed offsets.
+
+The span invariant is:
+
+- `token.lexeme == source[token.span.start..token.span.end]` for tokens emitted from contiguous source text;
+- `token.span.start < token.span.end` for every emitted token;
+- tokens emitted from a single `RawToken` are ordered and non-overlapping within the raw token span;
+- layout raw tokens are skipped and therefore do not produce final token spans;
+- `ErrorRecovery` tokens use the same span as the diagnostic that caused them whenever the recovery token covers the malformed spelling.
+
+For raw tokens that are mapped one-to-one, such as `NumeralLike` to `Numeral` or `@[` to `ReservedSymbol`, the final token span is copied directly from the raw token.
+
+For tokens split out of a `LexemeRun`, the disambiguator computes spans from the raw token's start offset plus the internal byte cursor:
+
+```rust
+SourceSpan {
+    start: raw_token.span.start + cursor,
+    end: raw_token.span.start + cursor + candidate_len,
+}
+```
+
+String literals recognized in `StringRequired` context use the same rule. A malformed string literal consumes the rest of the raw run as one `ErrorRecovery` token whose span starts at the opening quote and ends at the raw token end.
+
+The convenience `lex` and `disambiguate_reserved_shell` APIs also return span-bearing `Token` values. They are context-free, but they still preserve the source locations produced by `scan_raw`.
 
 ## Identifier and Symbol Override
 
@@ -113,6 +143,8 @@ Tests should cover:
 
 - longest-match over punctuation-shaped user symbols;
 - identifier-shaped user symbol vs scoped identifier override;
+- final token spans for one-to-one raw token mapping and for tokens split out of a `LexemeRun`;
+- `ErrorRecovery` token spans matching the associated diagnostic span;
 - reserved word emission;
 - namespace-path context;
 - string literal only in string-required positions;

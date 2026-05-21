@@ -17,91 +17,137 @@ spec_refs = [
 [[tokens]]
 kind = "reserved_word"
 lexeme = "algorithm"
+span_start = 0
+span_end = 9
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "do"
+span_start = 10
+span_end = 12
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "for"
+span_start = 13
+span_end = 16
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "succ"
+span_start = 17
+span_end = 21
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "in"
+span_start = 22
+span_end = 24
 
 [[tokens]]
 kind = "identifier"
 lexeme = "Items"
+span_start = 25
+span_end = 30
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "processed"
+span_start = 31
+span_end = 40
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "Seen"
+span_start = 41
+span_end = 45
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "do"
+span_start = 46
+span_end = 48
 
 [[tokens]]
 kind = "identifier"
 lexeme = "succ"
+span_start = 49
+span_end = 53
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 53
+span_end = 54
 
 [[tokens]]
 kind = "identifier"
 lexeme = "Seen"
+span_start = 55
+span_end = 59
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 59
+span_end = 60
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "end"
+span_start = 61
+span_end = 64
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 64
+span_end = 65
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "succ"
+span_start = 66
+span_end = 70
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 70
+span_end = 71
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "Seen"
+span_start = 72
+span_end = 76
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 76
+span_end = 77
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "end"
+span_start = 78
+span_end = 81
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 81
+span_end = 82
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "end"
+span_start = 83
+span_end = 86
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 86
+span_end = 87

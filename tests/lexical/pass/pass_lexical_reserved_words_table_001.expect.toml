@@ -14,515 +14,773 @@ spec_refs = [
 [[tokens]]
 kind = "reserved_word"
 lexeme = "algorithm"
+span_start = 0
+span_end = 9
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "and"
+span_start = 10
+span_end = 13
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "antonym"
+span_start = 14
+span_end = 21
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "as"
+span_start = 22
+span_end = 24
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "assert"
+span_start = 25
+span_end = 31
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "assume"
+span_start = 32
+span_end = 38
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "assumed"
+span_start = 39
+span_end = 46
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "asymmetry"
+span_start = 47
+span_end = 56
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "attr"
+span_start = 57
+span_end = 61
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "be"
+span_start = 62
+span_end = 64
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "being"
+span_start = 65
+span_end = 70
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "break"
+span_start = 71
+span_end = 76
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "by"
+span_start = 77
+span_end = 79
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "case"
+span_start = 80
+span_end = 84
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "cases"
+span_start = 85
+span_end = 90
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "claim"
+span_start = 91
+span_end = 96
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "cluster"
+span_start = 97
+span_end = 104
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "coherence"
+span_start = 105
+span_end = 114
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "commutativity"
+span_start = 115
+span_end = 128
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "compatibility"
+span_start = 129
+span_end = 142
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "computation"
+span_start = 143
+span_end = 154
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "conditional"
+span_start = 155
+span_end = 166
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "connectedness"
+span_start = 167
+span_end = 180
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "const"
+span_start = 181
+span_end = 186
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "consider"
+span_start = 187
+span_end = 195
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "consistency"
+span_start = 196
+span_end = 207
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "continue"
+span_start = 208
+span_end = 216
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "contradiction"
+span_start = 217
+span_end = 230
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "decreasing"
+span_start = 231
+span_end = 241
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "deffunc"
+span_start = 242
+span_end = 249
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "definition"
+span_start = 250
+span_end = 260
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "defpred"
+span_start = 261
+span_end = 268
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "do"
+span_start = 269
+span_end = 271
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "does"
+span_start = 272
+span_end = 276
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "downto"
+span_start = 277
+span_end = 283
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "else"
+span_start = 284
+span_end = 288
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "end"
+span_start = 289
+span_end = 292
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "ensures"
+span_start = 293
+span_end = 300
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "equals"
+span_start = 301
+span_end = 307
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "ex"
+span_start = 308
+span_end = 310
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "exhaustive"
+span_start = 311
+span_end = 321
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "existence"
+span_start = 322
+span_end = 331
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "export"
+span_start = 332
+span_end = 338
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "extends"
+span_start = 339
+span_end = 346
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "field"
+span_start = 347
+span_end = 352
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "for"
+span_start = 353
+span_end = 356
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "from"
+span_start = 357
+span_end = 361
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "func"
+span_start = 362
+span_end = 366
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "ghost"
+span_start = 367
+span_end = 372
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "given"
+span_start = 373
+span_end = 378
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "hence"
+span_start = 379
+span_end = 384
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "hereby"
+span_start = 385
+span_end = 391
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "holds"
+span_start = 392
+span_end = 397
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "idempotence"
+span_start = 398
+span_end = 409
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "if"
+span_start = 410
+span_end = 412
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "iff"
+span_start = 413
+span_end = 416
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "implies"
+span_start = 417
+span_end = 424
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "import"
+span_start = 425
+span_end = 431
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "in"
+span_start = 432
+span_end = 434
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "infix_operator"
+span_start = 435
+span_end = 449
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "inherit"
+span_start = 450
+span_end = 457
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "invariant"
+span_start = 458
+span_end = 467
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "involutiveness"
+span_start = 468
+span_end = 482
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "irreflexivity"
+span_start = 483
+span_end = 496
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "is"
+span_start = 497
+span_end = 499
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "it"
+span_start = 500
+span_end = 502
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "left"
+span_start = 503
+span_end = 507
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "lemma"
+span_start = 508
+span_end = 513
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "let"
+span_start = 514
+span_end = 517
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "match"
+span_start = 518
+span_end = 523
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "means"
+span_start = 524
+span_end = 529
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "mode"
+span_start = 530
+span_end = 534
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "nest"
+span_start = 535
+span_end = 539
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "non"
+span_start = 540
+span_end = 543
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "none"
+span_start = 544
+span_end = 548
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "not"
+span_start = 549
+span_end = 552
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "now"
+span_start = 553
+span_end = 556
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "object"
+span_start = 557
+span_end = 563
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "of"
+span_start = 564
+span_end = 566
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "open"
+span_start = 567
+span_end = 571
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "or"
+span_start = 572
+span_end = 574
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "otherwise"
+span_start = 575
+span_end = 584
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "over"
+span_start = 585
+span_end = 589
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "per"
+span_start = 590
+span_end = 593
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "postfix_operator"
+span_start = 594
+span_end = 610
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "pred"
+span_start = 611
+span_end = 615
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "prefix_operator"
+span_start = 616
+span_end = 631
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "private"
+span_start = 632
+span_end = 639
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "processed"
+span_start = 640
+span_end = 649
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "projectivity"
+span_start = 650
+span_end = 662
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "proof"
+span_start = 663
+span_end = 668
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "property"
+span_start = 669
+span_end = 677
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "public"
+span_start = 678
+span_end = 684
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "qua"
+span_start = 685
+span_end = 688
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "reconsider"
+span_start = 689
+span_end = 699
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "reduce"
+span_start = 700
+span_end = 706
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "reducibility"
+span_start = 707
+span_end = 719
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "redefine"
+span_start = 720
+span_end = 728
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "reflexivity"
+span_start = 729
+span_end = 740
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "registration"
+span_start = 741
+span_end = 753
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "requires"
+span_start = 754
+span_end = 762
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "reserve"
+span_start = 763
+span_end = 770
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "return"
+span_start = 771
+span_end = 777
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "right"
+span_start = 778
+span_end = 783
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "set"
+span_start = 784
+span_end = 787
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "sethood"
+span_start = 788
+span_end = 795
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "snapshot"
+span_start = 796
+span_end = 804
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "st"
+span_start = 805
+span_end = 807
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "struct"
+span_start = 808
+span_end = 814
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "such"
+span_start = 815
+span_end = 819
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "suppose"
+span_start = 820
+span_end = 827
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "symmetry"
+span_start = 828
+span_end = 836
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "synonym"
+span_start = 837
+span_end = 844
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "take"
+span_start = 845
+span_end = 849
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "terminating"
+span_start = 850
+span_end = 861
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "that"
+span_start = 862
+span_end = 866
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "the"
+span_start = 867
+span_end = 870
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "then"
+span_start = 871
+span_end = 875
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "theorem"
+span_start = 876
+span_end = 883
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "thesis"
+span_start = 884
+span_end = 890
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "thus"
+span_start = 891
+span_end = 895
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "to"
+span_start = 896
+span_end = 898
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "transitivity"
+span_start = 899
+span_end = 911
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "type"
+span_start = 912
+span_end = 916
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "uniqueness"
+span_start = 917
+span_end = 927
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "var"
+span_start = 928
+span_end = 931
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "where"
+span_start = 932
+span_end = 937
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "while"
+span_start = 938
+span_end = 943
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "with"
+span_start = 944
+span_end = 948

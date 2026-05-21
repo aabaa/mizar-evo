@@ -54,6 +54,45 @@ Lexing は概念的に 2 段階に分けます。
 
 Raw scanner の重要な不変条件は span contiguity です。出力された raw token は必ず元入力の正確な byte slice を指し、raw token の lexeme を連結すると scanner input が復元できます。
 
+### Source Coordinates
+
+`SourceSpan` は `mizar-lexer` 内部の canonical coordinate type です。これは token または diagnostic を生成した正確な text に対する byte offset を保持し、半開区間 `[start, end)` を表します。
+
+caller は coordinate space を明示的に扱わなければなりません。`scan_raw` と `disambiguate` から生成される raw token と final token は、`scan_raw` に渡された scanner input を指します。その input が `PreprocessedLexicalSource.lexical_text` の場合、span は lexical-text offset であり、元の loaded `.miz` text への offset とは限りません。`SourceLineIndex` は、必ず span が指している text と同じ text から構築します。
+
+lexical-text offset から original loaded-source offset への mapping は source map または session layer の責務です。lexer は preprocessed text 上の span を original file coordinate として暗黙に扱ってはいけません。
+
+lexer は raw token や final token のすべてに line/column number を保存してはいけません。Line/column は diagnostics、debug output、snapshots、LSP bridge が human-readable coordinate を必要とする時に、source text から計算する derived view です。これにより location data の重複を避け、token value の中で複数の coordinate system が混ざることを防ぎます。
+
+`mizar-lexer` は lexer-local に使える lightweight line-index helper を提供します。
+
+```rust
+pub struct SourceLineIndex {
+    line_starts: Vec<usize>,
+    source_len: usize,
+}
+
+pub struct SourceLocation {
+    pub line: usize,
+    pub column: usize,
+}
+
+pub struct SourceLocationRange {
+    pub start: SourceLocation,
+    pub end: SourceLocation,
+}
+
+impl SourceLineIndex {
+    pub fn new(source: &str) -> Self;
+    pub fn location(&self, offset: usize) -> Option<SourceLocation>;
+    pub fn range(&self, span: SourceSpan) -> Option<SourceLocationRange>;
+}
+```
+
+内部規約は zero-based line と zero-based byte column です。`location` と `range` は、要求された offset または span が indexed source text の外側を指す場合に `None` を返します。人間向け diagnostics では formatting 時に one-based display number へ変換できます。LSP-specific な UTF-16 position は token に保存せず、同じ byte offset から LSP bridge または dedicated adapter が計算します。
+
+この helper は source-loading abstraction ではありません。Session layer は open buffers、snapshots、source maps、LSP integration のために `LoadedSource` 上でより rich な `LineMap` を保持できます。`mizar-lexer` が持つのは、`&str` から lexer diagnostics and tests を読みやすくするために必要な coordinate conversion だけです。
+
 ### Stage 1: Raw Scan
 
 Raw scanner は LF-only source text を読み、source span を保持する raw unit を生成します。
@@ -257,6 +296,7 @@ pub fn lex(input: &str) -> Result<Vec<Token>, LexError>;
 pub struct Token {
     pub kind: TokenKind,
     pub lexeme: String,
+    pub span: SourceSpan,
 }
 
 pub enum TokenKind {
@@ -271,7 +311,7 @@ pub enum TokenKind {
 }
 ```
 
-`lex` は raw scanning と reserved-shell disambiguation を組み合わせた convenience wrapper です。context-sensitive な分類が必要な場合は、[disambiguator.md](./disambiguator.md) に記載する `disambiguate` API を使います。
+`lex` は raw scanning と reserved-shell disambiguation を組み合わせた convenience wrapper です。この context-free classification でも source location を落としてはいけないため、span 付き final token を返します。context-sensitive な分類が必要な場合は、[disambiguator.md](./disambiguator.md) に記載する `disambiguate` API を使います。
 
 低レベルの spelling rule は helper predicate に集約されています。layout は space、tab、LF のみです。identifier は ASCII alphabetic または `_` で始まり、継続文字には digit と `'` も使えます。numeral は ASCII digit run です。user-symbol spelling は空でない ASCII graphic run で、`@` を含みません。string literal spelling は同じ quote で閉じる必要があり、escape できるのは `"`, `'`, `\` だけです。
 
@@ -306,6 +346,10 @@ Disambiguation error は parser context などを考慮した後の tokenization
 - grammar context が raw run 内のすべての candidates を禁止している.
 
 未定義の identifier は lexing error ではありません。
+
+Final token span は lexer boundary の一部です。1 対 1 の対応では `RawToken` span をコピーし、`LexemeRun` が複数の final token に分割される場合は raw span の内側を subdivide します。下流の parser、diagnostic、LSP、formatter、incremental-analysis layer は、raw token を再参照しなくてもすべての final token の位置を特定できなければなりません。
+
+Line/column values は final token span から `SourceLineIndex` または session layer の `LineMap` を通じて derive します。`Token` には保存しません。
 
 ## Tests
 

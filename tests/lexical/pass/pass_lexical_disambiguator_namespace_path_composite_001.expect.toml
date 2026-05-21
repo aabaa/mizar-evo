@@ -15,39 +15,59 @@ spec_refs = [
 [[tokens]]
 kind = "identifier"
 lexeme = "fixture"
+span_start = 0
+span_end = 7
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "."
+span_start = 7
+span_end = 8
 
 [[tokens]]
 kind = "identifier"
 lexeme = "symbols"
+span_start = 8
+span_end = 15
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "."
+span_start = 15
+span_end = 16
 
 [[tokens]]
 kind = "identifier"
 lexeme = "succ"
+span_start = 16
+span_end = 20
 
 [[tokens]]
 kind = "identifier"
 lexeme = "A"
+span_start = 21
+span_end = 22
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "."
+span_start = 22
+span_end = 23
 
 [[tokens]]
 kind = "identifier"
 lexeme = "Seen"
+span_start = 23
+span_end = 27
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "."
+span_start = 27
+span_end = 28
 
 [[tokens]]
 kind = "identifier"
 lexeme = "succ"
+span_start = 28
+span_end = 32

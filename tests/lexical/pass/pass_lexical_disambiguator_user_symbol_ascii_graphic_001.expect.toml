@@ -16,15 +16,23 @@ spec_refs = [
 [[tokens]]
 kind = "identifier"
 lexeme = "x"
+span_start = 0
+span_end = 1
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "!#~"
+span_start = 1
+span_end = 4
 
 [[tokens]]
 kind = "identifier"
 lexeme = "y"
+span_start = 4
+span_end = 5
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "A_1`"
+span_start = 6
+span_end = 10

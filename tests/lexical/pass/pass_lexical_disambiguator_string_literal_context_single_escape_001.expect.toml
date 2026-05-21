@@ -14,7 +14,11 @@ spec_refs = [
 [[tokens]]
 kind = "string_literal"
 lexeme = "'alpha'"
+span_start = 0
+span_end = 7
 
 [[tokens]]
 kind = "string_literal"
 lexeme = "\"say\\\"hi\""
+span_start = 8
+span_end = 17

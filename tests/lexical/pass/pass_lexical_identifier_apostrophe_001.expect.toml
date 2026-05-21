@@ -14,11 +14,17 @@ spec_refs = [
 [[tokens]]
 kind = "identifier"
 lexeme = "x'"
+span_start = 0
+span_end = 2
 
 [[tokens]]
 kind = "identifier"
 lexeme = "y''"
+span_start = 3
+span_end = 6
 
 [[tokens]]
 kind = "identifier"
 lexeme = "z'end"
+span_start = 7
+span_end = 12

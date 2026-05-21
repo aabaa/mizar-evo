@@ -14,15 +14,23 @@ spec_refs = [
 [[tokens]]
 kind = "identifier"
 lexeme = "alpha"
+span_start = 0
+span_end = 5
 
 [[tokens]]
 kind = "identifier"
 lexeme = "beta"
+span_start = 6
+span_end = 10
 
 [[tokens]]
 kind = "identifier"
 lexeme = "gamma"
+span_start = 11
+span_end = 16
 
 [[tokens]]
 kind = "identifier"
 lexeme = "delta"
+span_start = 17
+span_end = 22

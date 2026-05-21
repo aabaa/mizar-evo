@@ -14,79 +14,119 @@ spec_refs = [
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ","
+span_start = 0
+span_end = 1
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "."
+span_start = 2
+span_end = 3
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 4
+span_end = 5
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ":"
+span_start = 6
+span_end = 7
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ":="
+span_start = 8
+span_end = 10
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "("
+span_start = 11
+span_end = 12
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ")"
+span_start = 13
+span_end = 14
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "["
+span_start = 15
+span_end = 16
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "]"
+span_start = 17
+span_end = 18
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "{"
+span_start = 19
+span_end = 20
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "}"
+span_start = 21
+span_end = 22
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ".{"
+span_start = 23
+span_end = 25
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "="
+span_start = 26
+span_end = 27
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "<>"
+span_start = 28
+span_end = 30
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "&"
+span_start = 31
+span_end = 32
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "->"
+span_start = 33
+span_end = 35
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ".="
+span_start = 36
+span_end = 38
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ".*"
+span_start = 39
+span_end = 41
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "@["
+span_start = 42
+span_end = 44
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = "..."
+span_start = 45
+span_end = 48

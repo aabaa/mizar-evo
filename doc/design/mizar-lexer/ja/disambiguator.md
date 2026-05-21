@@ -21,6 +21,7 @@ pub struct TokenStream {
 pub struct Token {
     pub kind: TokenKind,
     pub lexeme: String,
+    pub span: SourceSpan,
 }
 
 pub enum TokenKind {
@@ -57,6 +58,35 @@ pub fn disambiguate(
 candidate はまず length で比較し、同じ length の場合は priority で比較します。namespace-path context の `.` reserved symbol が最も高い priority を持ちます。次に identifier-shaped user symbol に対する scoped identifier override、active user symbol、reserved symbol、reserved word、identifier、numeral の順です。parser context に許可された candidate がないものの、raw spelling としては候補が存在した場合は `ParserContextRejectedCandidate`、候補形そのものがなければ `NoValidTokenCandidate` を出します。
 
 現在の実装には将来用の `AmbiguousUserSymbol` diagnostic code があります。ただし、同一 import 内の same-spelling overload は lexical environment 内の deterministic candidate set として保持し、最終的な解決は後続 phase に委ねます。
+
+## Final Token Spans
+
+すべての final `Token` は、その token の spelling が由来する source byte span を保持しなければなりません。Raw scanning はすでに `RawToken` に span を保持しているため、disambiguation はその情報を落としてはいけません。
+
+`Token` が保存するのは byte span だけで、line/column coordinate は保存しません。Line/column は、span が指す同じ text から `SourceLineIndex` で derive するか、preprocessing により offset が変わった場合は source-map information と session layer の `LineMap` を組み合わせて original loaded source から derive します。
+
+span の不変条件は以下です。
+
+- contiguous な source text から emit された token では `token.lexeme == source[token.span.start..token.span.end]` が成り立つ;
+- emit されるすべての token で `token.span.start < token.span.end` が成り立つ;
+- 1 個の `RawToken` から emit された tokens は、その raw token span の内側で順序を保ち、互いに重ならない;
+- layout raw token は捨てられるため、final token span を生成しない;
+- `ErrorRecovery` token は、recovery token が malformed spelling 全体を覆う場合、原因となった diagnostic と同じ span を使う。
+
+`NumeralLike` から `Numeral`、`@[` から `ReservedSymbol` のように raw token と final token が 1 対 1 で対応する場合、final token span は raw token からそのままコピーします。
+
+`LexemeRun` の内部を分割して token を emit する場合、disambiguator は raw token の start offset と内部 byte cursor から span を計算します。
+
+```rust
+SourceSpan {
+    start: raw_token.span.start + cursor,
+    end: raw_token.span.start + cursor + candidate_len,
+}
+```
+
+`StringRequired` context で認識される string literal も同じ規則を使います。malformed string literal は raw run の残りを 1 個の `ErrorRecovery` token として消費し、その span は opening quote から raw token end までです。
+
+convenience API である `lex` と `disambiguate_reserved_shell` も span 付き `Token` を返します。これらは context-free ですが、`scan_raw` が生成した source location は保持します。
 
 ## Identifier and Symbol Override
 
@@ -113,6 +143,8 @@ Disambiguation diagnostic には以下があります。
 
 - punctuation-shaped user symbol の longest-match;
 - identifier-shaped user symbol と scoped identifier override の切り替え;
+- raw token と 1 対 1 に対応する final token、および `LexemeRun` から分割された final token の span;
+- `ErrorRecovery` token の span が対応する diagnostic span と一致すること;
 - reserved word emission;
 - namespace-path context;
 - string literal が string-required position でだけ認識されること;

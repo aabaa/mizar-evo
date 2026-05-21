@@ -62,12 +62,32 @@ fn lexical_corpus_matches_token_expectations() {
                 });
                 let actual = actual
                     .iter()
-                    .map(|token| (token_kind_name(token.kind), token.lexeme.as_str()))
+                    .map(|token| {
+                        (
+                            token_kind_name(token.kind),
+                            token.lexeme.as_str(),
+                            token.span.start as u32,
+                            token.span.end as u32,
+                        )
+                    })
                     .collect::<Vec<_>>();
                 let expected = expectation
                     .tokens
                     .iter()
-                    .map(|token| (token.kind.as_str(), token.lexeme.as_str()))
+                    .map(|token| {
+                        let (span_start, span_end) = expected_span(token, &source, || {
+                            panic!(
+                                "{} final token expectations require span_start",
+                                case.expectation_path.display()
+                            )
+                        });
+                        (
+                            token.kind.as_str(),
+                            token.lexeme.as_str(),
+                            span_start,
+                            span_end,
+                        )
+                    })
                     .collect::<Vec<_>>();
 
                 assert_eq!(actual, expected, "{}", case.expectation_path.display());
@@ -360,12 +380,32 @@ fn lexical_corpus_matches_token_expectations() {
                 let actual = stream
                     .tokens
                     .iter()
-                    .map(|token| (token_kind_name(token.kind), token.lexeme.as_str()))
+                    .map(|token| {
+                        (
+                            token_kind_name(token.kind),
+                            token.lexeme.as_str(),
+                            token.span.start as u32,
+                            token.span.end as u32,
+                        )
+                    })
                     .collect::<Vec<_>>();
                 let expected = expectation
                     .tokens
                     .iter()
-                    .map(|token| (token.kind.as_str(), token.lexeme.as_str()))
+                    .map(|token| {
+                        let (span_start, span_end) = expected_span(token, &source, || {
+                            panic!(
+                                "{} disambiguator token expectations require span_start",
+                                case.expectation_path.display()
+                            )
+                        });
+                        (
+                            token.kind.as_str(),
+                            token.lexeme.as_str(),
+                            span_start,
+                            span_end,
+                        )
+                    })
                     .collect::<Vec<_>>();
                 let actual_diagnostics = stream
                     .diagnostics
@@ -398,7 +438,7 @@ fn lexical_corpus_matches_token_expectations() {
     assert_eq!(raw_checked, 8);
     assert_eq!(import_prescan_checked, 12);
     assert_eq!(scope_skeleton_checked, 7);
-    assert_eq!(disambiguator_checked, 22);
+    assert_eq!(disambiguator_checked, 23);
     assert_eq!(fail_checked, 11);
 }
 

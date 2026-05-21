@@ -18,3 +18,5 @@ spec_refs = [
 [[tokens]]
 kind = "error_recovery"
 lexeme = "@latex"
+span_start = 0
+span_end = 6

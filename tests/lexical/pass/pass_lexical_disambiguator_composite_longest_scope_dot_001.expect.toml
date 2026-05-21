@@ -18,119 +18,179 @@ spec_refs = [
 [[tokens]]
 kind = "identifier"
 lexeme = "x"
+span_start = 0
+span_end = 1
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "+*+"
+span_start = 1
+span_end = 4
 
 [[tokens]]
 kind = "identifier"
 lexeme = "y"
+span_start = 4
+span_end = 5
 
 [[tokens]]
 kind = "identifier"
 lexeme = "A"
+span_start = 6
+span_end = 7
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "."
+span_start = 7
+span_end = 8
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "succ"
+span_start = 8
+span_end = 12
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "definition"
+span_start = 13
+span_end = 23
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "let"
+span_start = 24
+span_end = 27
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "succ"
+span_start = 28
+span_end = 32
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "be"
+span_start = 33
+span_end = 35
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "set"
+span_start = 36
+span_end = 39
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 39
+span_end = 40
 
 [[tokens]]
 kind = "identifier"
 lexeme = "succ"
+span_start = 41
+span_end = 45
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "+*"
+span_start = 45
+span_end = 47
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "Seen"
+span_start = 47
+span_end = 51
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 51
+span_end = 52
 
 [[tokens]]
 kind = "identifier"
 lexeme = "A"
+span_start = 53
+span_end = 54
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "."
+span_start = 54
+span_end = 55
 
 [[tokens]]
 kind = "identifier"
 lexeme = "succ"
+span_start = 55
+span_end = 59
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 59
+span_end = 60
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "end"
+span_start = 61
+span_end = 64
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 64
+span_end = 65
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "succ"
+span_start = 66
+span_end = 70
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "+*"
+span_start = 70
+span_end = 72
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "Seen"
+span_start = 72
+span_end = 76
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 76
+span_end = 77
 
 [[tokens]]
 kind = "identifier"
 lexeme = "A"
+span_start = 78
+span_end = 79
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "."
+span_start = 79
+span_end = 80
 
 [[tokens]]
 kind = "user_symbol"
 lexeme = "succ"
+span_start = 80
+span_end = 84
 
 [[tokens]]
 kind = "reserved_symbol"
 lexeme = ";"
+span_start = 84
+span_end = 85

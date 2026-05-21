@@ -32,6 +32,7 @@ The crate must preserve the distinction between raw lexical scanning and final t
 - LF-only raw lexical scanning after source loading has normalized newlines;
 - source preprocessing helpers for comment stripping, LF/ASCII diagnostics, and module source naming contracts;
 - source span preserving raw lexical units;
+- lightweight source-span to line/column conversion helpers for lexer diagnostics and tests;
 - helper APIs for identifier, numeral, layout, reserved word, and symbol-shape recognition;
 - final token disambiguation support that consumes lexical environment, parser expectation, and scoped bindings.
 

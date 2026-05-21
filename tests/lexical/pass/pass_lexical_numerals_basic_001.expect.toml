@@ -14,11 +14,17 @@ spec_refs = [
 [[tokens]]
 kind = "numeral"
 lexeme = "0"
+span_start = 0
+span_end = 1
 
 [[tokens]]
 kind = "numeral"
 lexeme = "1"
+span_start = 2
+span_end = 3
 
 [[tokens]]
 kind = "numeral"
 lexeme = "42"
+span_start = 4
+span_end = 6

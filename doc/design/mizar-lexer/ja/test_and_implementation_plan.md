@@ -310,6 +310,8 @@ pub fn disambiguate(
 - string literals は string-required parser contexts でのみ認識されること;
 - lexical environment 経由の import conflict reporting;
 - recovery が stable な `ErrorRecovery` token と diagnostic を emit すること。
+- raw token と 1 対 1 に対応する場合、`LexemeRun` を分割する場合、string literal、recovery token のいずれでも final `Token` が source span を保持すること。
+- token に line/column を保存せず、span が指す text と同じ text から構築した lightweight line index を通じて source span から line/column に変換できること。
 
 Recommended requirement ids:
 
@@ -327,6 +329,8 @@ Exit criteria:
 - disambiguator は environment、parser context、scope view を consume するが build しない;
 - undefined identifiers は lexical `Identifier` tokens のままで、name resolution が later phase で reject する;
 - diagnostics は order and identity が stable。
+- すべての final token が source span を持つこと。contiguous な source text に由来する token では、`token.lexeme` がその span の指す source slice と一致すること。
+- line/column helper は valid な `SourceSpan` から zero-based byte-column location を derive し、out-of-range offset では `None` を返す。human-facing one-based position と LSP UTF-16 position は formatting/adapter の責務とする。
 
 ## Phase 7: Regression, Property, And Fuzz Handoff -> Done
 
