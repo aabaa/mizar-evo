@@ -6,61 +6,57 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-1. Expand comment-removal edge tests.
-   - Cover adjacent comments, comments at EOF, comments immediately between token-shaped text, and multi-line comments with multiple preserved newlines after source loading.
-   - Assert that lexical text preserves line structure and does not accidentally concatenate tokens.
-
-2. Decide nested multi-line comment policy.
+1. Decide nested multi-line comment policy.
    - Document whether nested `::=` ... `=::` comments are unsupported or should be recognized.
    - Add tests for the chosen behavior, including spans and preserved newlines.
 
-3. Add minimal documentation tests or examples.
+2. Add minimal documentation tests or examples.
    - Add examples for `scan_raw`, `lex`, and `disambiguate`.
    - Show that token spans are byte offsets into the scanner input.
    - Keep examples small enough that they stay stable as the parser-facing API evolves.
 
-4. Decide public API stability policy.
+3. Decide public API stability policy.
    - Consider `#[non_exhaustive]` for public enums such as `TokenKind`, `RawTokenKind`, `LexDiagnosticCode`, `ImportPrescanDiagnosticCode`, `ScopeSkeletonDiagnosticCode`, `SourcePreprocessDiagnosticCode`, and `LexicalEnvironmentError`.
    - Alternatively document that the `0.1` API may make breaking changes without compatibility guarantees.
    - Review whether any currently public fields should be narrowed to `pub(crate)` before downstream crates depend on them.
 
-5. Document source-text normalization policy.
+4. Document source-text normalization policy.
    - State that the lexer does not perform Unicode normalization and that code-region identifiers/symbols remain ASCII-only.
    - Keep comments and documentation text as raw Unicode unless a later documentation/source-loading layer adds warnings.
 
-6. Add fuzz coverage.
+5. Add fuzz coverage.
    - Add a `cargo-fuzz` target for `scan_raw` over arbitrary byte input or valid UTF-8 strings.
    - Include arbitrary valid UTF-8 input for `preprocess_source_for_lexing` and `scan_raw`.
    - Minimize any discovered failures and promote stable cases into `tests/lexical` before committing them as corpus regressions.
 
-7. Add performance benchmarking.
+6. Add performance benchmarking.
    - Benchmark `scan_raw` throughput on a large `.miz`-like source.
    - Measure raw scanning, preprocessing, and `SourceLineIndex` construction separately.
    - Keep benchmarks independent of module resolution, parser context, and imported symbol loading.
 
-8. Decide UTF-8 BOM handling policy at the source-loading boundary.
+7. Decide UTF-8 BOM handling policy at the source-loading boundary.
    - Prefer accepting a leading UTF-8 BOM in raw file input and stripping it before `mizar-lexer` entry points receive `&str`.
    - Keep direct lexer helper calls strict: a `U+FEFF` that reaches `preprocess_source_for_lexing` or `scan_raw` should remain a malformed source precondition rather than silently disappearing.
    - Document whether token spans after BOM stripping are measured in loaded text offsets and how the source map relates them back to original file byte offsets.
    - Add source-loading tests once the frontend/session source loader exists; avoid changing lexer behavior until that boundary is implemented.
 
-9. Specify and test UTF-8 file loading.
+8. Specify and test UTF-8 file loading.
    - Reject invalid UTF-8 before lexer entry and avoid lossy decoding into `U+FFFD`.
    - Decide and test leading UTF-8 BOM stripping, including original-byte-offset source-map behavior.
 
-10. Specify and test newline normalization.
+9. Specify and test newline normalization.
    - Define CRLF-to-LF behavior before lexer entry.
    - Ensure the source map can relate normalized lexical/source text offsets back to original file byte offsets.
 
-11. Implement preprocess source-map tests.
+10. Implement preprocess source-map tests.
    - Cover ordinary comment removal, documentation comment retention, synthetic whitespace/newline segments, and lexical ranges spanning removed comments.
    - Ensure diagnostics from lexer/preprocessor helpers can be mapped back to original source ranges.
 
-12. Keep user-facing column conversion outside lexer.
+11. Keep user-facing column conversion outside lexer.
     - Test Unicode scalar columns in the source-map/session layer.
     - Test LSP UTF-16 conversion in the LSP bridge, not in `mizar-lexer`.
 
-13. Cover source path normalization outside lexer.
+12. Cover source path normalization outside lexer.
     - Test `.`/`..`, symlinks, case policy, package-root escape attempts, and platform-specific separators in the source-loading/path layer.
 
 ## Completed Tasks
@@ -81,6 +77,10 @@ This document records follow-up tasks identified during the lexer quality review
 4. Pinned unsupported ASCII control characters.
    - Crate-local tests now cover vertical tab and form feed in code regions.
    - These cases assert that the characters are not layout and produce stable raw-scan hard errors rather than being treated as valid token text.
+
+5. Expanded comment-removal edge tests.
+   - Crate-local preprocessing tests now cover adjacent comments, comments at EOF, comments immediately between token-shaped text, and multi-line comments with multiple preserved newlines.
+   - Inline comment removal now inserts synthetic layout when needed so lexical text preserves line structure and does not accidentally concatenate tokens.
 
 ## Suggested Verification
 
@@ -111,7 +111,7 @@ This first-pass audit records common text-processing pitfalls and whether the cu
 | Unicode normalization and confusables | Not normalized by lexer | Identifier, numeral, and user-symbol helpers are ASCII-only, so non-ASCII code identifiers are rejected rather than normalized. Comments remain raw Unicode. | Document that lexer does not normalize source text; source-loading may optionally warn on suspicious Unicode in comments/doc text later. |
 | Unicode whitespace and ASCII controls | Strictly rejected outside comments | Raw layout is exactly space, tab, LF; preprocessor reports non-ASCII code chars, and raw scanner hard-errors on unsupported ASCII controls such as vertical tab and form feed. | Keep source-loading and diagnostic-renderer policy aligned with this strict lexer boundary. |
 | Tab display width | Delegated | Lexer stores byte spans only and treats tab as layout; diagnostics/source map own display columns. | Diagnostic renderer should test tab expansion policy. |
-| Comment stripping and newline preservation | Partially covered | Tests cover ordinary/doc/multi-line comment removal, trivia retention, and newline preservation. | Add edge tests for CRLF inside comments after source loading, adjacent comments, comments at EOF, and comment removal around token boundaries. |
+| Comment stripping and newline preservation | Lexer boundary covered for known edge cases | Tests cover ordinary/doc/multi-line comment removal, trivia retention, newline preservation, adjacent comments, EOF comments, and synthetic layout around token boundaries. | Source-map tests should cover mapping synthetic whitespace/newline segments back to original source ranges. |
 | Nested multi-line comments | Policy unclear | Current preprocessor searches the first `=::`; no nested-comment policy is documented in lexer TODO. | Decide and document whether nested block comments are unsupported, then add tests. |
 | Unterminated comments | Covered | Preprocessor emits `UnterminatedMultiLineComment` and preserves line structure; unit test exists. | Ensure frontend maps the diagnostic to original source after source-map implementation. |
 | Annotation visibility | Covered at lexer boundary | Tests confirm annotation syntax remains in lexical text for parser ownership. | Parser tests should own annotation argument validation. |

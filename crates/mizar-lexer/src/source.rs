@@ -1,4 +1,4 @@
-use crate::raw_lexer::is_identifier;
+use crate::raw_lexer::{is_identifier, is_layout};
 use std::error::Error;
 use std::fmt;
 
@@ -170,7 +170,7 @@ pub fn preprocess_source_for_lexing(input: &str) -> PreprocessedLexicalSource {
                 lexeme: input[cursor..end].to_owned(),
                 span: SourceSpan { start: cursor, end },
             });
-            preserve_comment_newlines(&input[cursor..end], &mut lexical_text);
+            preserve_comment_replacement(input, cursor, end, &mut lexical_text);
             cursor = end;
             continue;
         }
@@ -195,7 +195,7 @@ pub fn preprocess_source_for_lexing(input: &str) -> PreprocessedLexicalSource {
                 lexeme: input[cursor..end].to_owned(),
                 span: SourceSpan { start: cursor, end },
             });
-            preserve_comment_newlines(&input[cursor..end], &mut lexical_text);
+            preserve_comment_replacement(input, cursor, end, &mut lexical_text);
             cursor = end;
             continue;
         }
@@ -207,7 +207,7 @@ pub fn preprocess_source_for_lexing(input: &str) -> PreprocessedLexicalSource {
                 lexeme: input[cursor..end].to_owned(),
                 span: SourceSpan { start: cursor, end },
             });
-            preserve_comment_newlines(&input[cursor..end], &mut lexical_text);
+            preserve_comment_replacement(input, cursor, end, &mut lexical_text);
             cursor = end;
             continue;
         }
@@ -311,6 +311,25 @@ fn line_comment_end(input: &str, start: usize) -> usize {
     input[start..]
         .find('\n')
         .map_or(input.len(), |relative| start + relative + '\n'.len_utf8())
+}
+
+fn preserve_comment_replacement(input: &str, start: usize, end: usize, output: &mut String) {
+    let comment = &input[start..end];
+    let had_newline = comment.contains('\n');
+    preserve_comment_newlines(comment, output);
+    if !had_newline && comment_removal_would_concatenate_tokens(input, end, output) {
+        output.push(' ');
+    }
+}
+
+fn comment_removal_would_concatenate_tokens(input: &str, end: usize, output: &str) -> bool {
+    let Some(previous) = output.chars().next_back() else {
+        return false;
+    };
+    let Some(next) = input[end..].chars().next() else {
+        return false;
+    };
+    !is_layout(previous) && !is_layout(next)
 }
 
 fn preserve_comment_newlines(comment: &str, output: &mut String) {

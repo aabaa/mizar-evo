@@ -27,6 +27,7 @@ The source-loading layer outside this crate owns:
 - removing ordinary, documentation, and multi-line comments from lexical input;
 - preserving comment trivia with source spans;
 - preserving newline characters from comment text so line structure is not collapsed;
+- inserting synthetic layout when comment removal would otherwise concatenate adjacent token-shaped text;
 - reporting carriage returns, non-ASCII code-region text, and unterminated multi-line comments as preprocessing diagnostics;
 - validating package-rooted `.miz` source names when requested.
 
@@ -46,7 +47,7 @@ Lexing is split into two conceptual stages.
 
 The current crate separates source preparation, raw scanning, and final disambiguation even when a caller uses the convenience `lex` entry point.
 
-1. `preprocess_source_for_lexing` walks the input byte span in source order. It removes ordinary comments from lexical text, preserves only newline characters from comment bodies, stores comment trivia with source spans, and reports carriage returns, non-ASCII code characters, or unterminated multi-line comments as preprocessing diagnostics. It does not read files or normalize platform-specific paths.
+1. `preprocess_source_for_lexing` walks the input byte span in source order. It removes comments from lexical text, preserves newline characters from comment bodies, inserts synthetic layout when removal would concatenate adjacent token-shaped text, stores comment trivia with source spans, and reports carriage returns, non-ASCII code characters, or unterminated multi-line comments as preprocessing diagnostics. It does not read files or normalize platform-specific paths.
 2. `scan_raw` consumes LF-only lexical text with a `char_indices` cursor. It coalesces adjacent layout into one `Layout`, recognizes annotation markers beginning with `@`, coalesces ASCII graphic non-`@` characters into either `NumeralLike` when all characters are digits or `LexemeRun` otherwise, and rejects unsupported characters with `LexError`.
 3. `disambiguate_reserved_shell` is the context-free shell used by `lex`. It drops layout, maps `NumeralLike` to `Numeral`, maps `@[` to a reserved symbol, and classifies whole `LexemeRun` values as reserved symbols, reserved words, identifiers, or opaque `LexemeRun` values.
 4. Context-sensitive callers use `disambiguate` instead. That path keeps raw scanning deliberately coarse and lets the disambiguator split each `LexemeRun` using reserved tables, the active lexical environment, parser lexical context, and `ScopeLexView`.
@@ -128,7 +129,7 @@ The raw scanner must preserve spans, spelling, and enough structure for later lo
 
 `LexemeRun` is deliberately coarse. Reserved punctuation such as `.`, `..`, `,`, `;`, quotes, and operator characters may appear inside a run. Later modules may inspect and split a run internally, but they must preserve source spans and must not require the raw scanner to know grammar context.
 
-Comments and documentation comments are not raw tokens. `preprocess_source_for_lexing` removes them from lexical input, preserves their trivia and spans separately, and keeps only their newline characters in `lexical_text`. Import pre-scan and scope skeleton construction operate on the resulting lexical text; they never receive comments as `RawTokenKind` values.
+Comments and documentation comments are not raw tokens. `preprocess_source_for_lexing` removes them from lexical input, preserves their trivia and spans separately, keeps their newline characters in `lexical_text`, and inserts a synthetic space when removing an inline comment would otherwise concatenate adjacent token-shaped text. Import pre-scan and scope skeleton construction operate on the resulting lexical text; they never receive comments as `RawTokenKind` values.
 
 ### Import Pre-Scan and Active Lexical Environment
 

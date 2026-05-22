@@ -517,6 +517,64 @@ mod tests {
     }
 
     #[test]
+    fn preprocess_source_covers_comment_removal_edges() {
+        for (name, source, expected_lexical_text, expected_kinds) in [
+            (
+                "adjacent line comments",
+                "alpha:: first\n:: second\nomega",
+                "alpha\n\nomega",
+                vec![CommentKind::SingleLine, CommentKind::SingleLine],
+            ),
+            (
+                "comment at eof",
+                "alpha\n:: eof",
+                "alpha\n",
+                vec![CommentKind::SingleLine],
+            ),
+            (
+                "inline block comment between token-shaped text",
+                "alpha::= hidden =::beta",
+                "alpha beta",
+                vec![CommentKind::MultiLine],
+            ),
+            (
+                "adjacent inline block comments between token-shaped text",
+                "alpha::= first =::::= second =::beta",
+                "alpha beta",
+                vec![CommentKind::MultiLine, CommentKind::MultiLine],
+            ),
+            (
+                "multi-line comment preserves multiple newlines",
+                "alpha::=\nline 1\nline 2\n=::omega",
+                "alpha\n\n\nomega",
+                vec![CommentKind::MultiLine],
+            ),
+        ] {
+            let preprocessed = preprocess_source_for_lexing(source);
+
+            assert_eq!(preprocessed.lexical_text, expected_lexical_text, "{name}");
+            assert_eq!(
+                preprocessed
+                    .comments
+                    .iter()
+                    .map(|comment| comment.kind)
+                    .collect::<Vec<_>>(),
+                expected_kinds,
+                "{name}"
+            );
+            assert!(preprocessed.diagnostics.is_empty(), "{name}");
+            assert!(scan_raw(&preprocessed.lexical_text).is_ok(), "{name}");
+            for comment in &preprocessed.comments {
+                assert_eq!(
+                    &source[comment.span.start..comment.span.end],
+                    comment.lexeme,
+                    "{name}"
+                );
+            }
+        }
+    }
+
+    #[test]
     fn preprocess_source_reports_code_region_precondition_violations() {
         let preprocessed =
             preprocess_source_for_lexing("alpha\r\n\u{03b2}\n::: doc \u{03b2}\nomega");
