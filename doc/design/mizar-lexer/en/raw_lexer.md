@@ -69,6 +69,7 @@ The lexer must not store line and column numbers on every raw or final token. Li
 ```rust
 pub struct SourceLineIndex {
     line_starts: Vec<usize>,
+    char_boundaries: Vec<usize>,
     source_len: usize,
 }
 
@@ -89,7 +90,7 @@ impl SourceLineIndex {
 }
 ```
 
-The internal convention is zero-based line and zero-based byte column. `location` and `range` return `None` when the requested offset or span is outside the indexed source text. Human-facing diagnostics can convert to one-based display numbers at formatting time. LSP-specific UTF-16 positions are not stored in tokens; they are computed by the LSP bridge or a dedicated adapter from the same byte offsets.
+The internal convention is zero-based line and zero-based byte column. `location` and `range` return `None` when the requested offset or span is outside the indexed source text or does not land on a UTF-8 character boundary. Human-facing diagnostics can convert to one-based display numbers at formatting time. LSP-specific UTF-16 positions are not stored in tokens; they are computed by the LSP bridge or a dedicated adapter from the same byte offsets.
 
 This helper is intentionally not a source-loading abstraction. The session layer may keep a richer `LineMap` on `LoadedSource` for open buffers, snapshots, source maps, and LSP integration. `mizar-lexer` only needs enough coordinate conversion to make lexer diagnostics and tests readable from a `&str`.
 
@@ -338,6 +339,7 @@ Raw scanning errors are for malformed source shapes at the lexical layer:
 
 - non-LF carriage returns after source loading;
 - unsupported non-ASCII code characters if source loading did not reject them;
+- unsupported ASCII control characters such as vertical tab or form feed;
 - impossible annotation markers.
 
 Disambiguation errors are for tokenization failures after context is considered:
@@ -357,10 +359,11 @@ The crate and corpus tests cover:
 
 - identifier, numeral, layout, annotation marker, reserved word, and reserved symbol tables;
 - source preprocessing diagnostics and module source naming boundaries;
+- unsupported Unicode code-region characters and unsupported ASCII control characters remain diagnostics or stable raw-scan hard errors rather than layout or token text;
 - `scan_raw` preserves `LexemeRun` spans without premature splitting;
 - a scope skeleton can be built from reserved-keyword-shaped binding structure before full parsing;
 - longest-match chooses the longest active user symbol;
 - identifier-shaped user symbols are disambiguated with lexical environment and scope override rules;
 - imported symbol summaries are enough for lexical disambiguation without loading full IR;
 - unresolved identifiers remain tokens and are rejected later by name resolution diagnostics;
-- Phase 7 regression tests preserve span coverage, deterministic raw scanning, retokenization, import conflict, and composite disambiguation behavior.
+- Phase 7 regression tests preserve raw/final span coverage, deterministic raw scanning, retokenization, import conflict, recovery spans, and composite disambiguation behavior.

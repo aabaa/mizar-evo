@@ -243,6 +243,8 @@ mod tests {
         assert!(is_layout('\t'));
         assert!(is_layout('\n'));
         assert!(!is_layout('\r'));
+        assert!(!is_layout('\u{000b}'));
+        assert!(!is_layout('\u{000c}'));
 
         assert!(is_user_symbol_spelling("*+"));
         assert!(is_user_symbol_spelling("succ"));
@@ -294,6 +296,8 @@ mod tests {
     #[test]
     fn rejects_non_spec_layout_characters() {
         assert!(lex("alpha\rbeta").is_err());
+        assert!(lex("alpha\u{000b}beta").is_err());
+        assert!(lex("alpha\u{000c}beta").is_err());
     }
 
     #[test]
@@ -435,6 +439,27 @@ mod tests {
             "unsupported raw lexer input at byte 5: '\\r'",
             error.to_string()
         );
+    }
+
+    #[test]
+    fn reports_stable_raw_diagnostics_for_unsupported_ascii_controls() {
+        for (name, ch) in [("vertical tab", '\u{000b}'), ("form feed", '\u{000c}')] {
+            let source = format!("alpha{ch}beta");
+            let preprocessed = preprocess_source_for_lexing(&source);
+            let error = match scan_raw(&preprocessed.lexical_text) {
+                Ok(_) => panic!("{name} should not be treated as raw layout or token text"),
+                Err(error) => error,
+            };
+
+            assert_eq!(preprocessed.lexical_text, source, "{name}");
+            assert!(preprocessed.comments.is_empty(), "{name}");
+            assert!(preprocessed.diagnostics.is_empty(), "{name}");
+            assert_eq!(
+                format!("unsupported raw lexer input at byte 5: {ch:?}"),
+                error.to_string(),
+                "{name}"
+            );
+        }
     }
 
     #[test]
