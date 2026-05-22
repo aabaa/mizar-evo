@@ -6,57 +6,53 @@
 
 ## Ordered Task List
 
-1. nested multi-line comment policy を決める。
-   - nested `::=` ... `=::` comments を unsupported とするか、認識するかを文書化する。
-   - 選んだ挙動について spans と preserved newlines を含む tests を追加する。
-
-2. 最小限の documentation tests / examples を追加する。
+1. 最小限の documentation tests / examples を追加する。
    - `scan_raw`, `lex`, `disambiguate` の examples を追加する。
    - token span が scanner input への byte offset であることを示す。
    - parser-facing API が進化しても安定する小さな examples に留める。
 
-3. public API stability policy を決める。
+2. public API stability policy を決める。
    - `TokenKind`, `RawTokenKind`, `LexDiagnosticCode`, `ImportPrescanDiagnosticCode`, `ScopeSkeletonDiagnosticCode`, `SourcePreprocessDiagnosticCode`, `LexicalEnvironmentError` などの public enum に `#[non_exhaustive]` を付けるか検討する。
    - 代替案として、`0.1` API では compatibility guarantee なしで breaking change を行う可能性があることを明記する。
    - downstream crates が依存する前に、現在 public な fields の一部を `pub(crate)` に絞るべきか review する。
 
-4. source-text normalization policy を文書化する。
+3. source-text normalization policy を文書化する。
    - lexer は Unicode normalization を行わず、code-region identifiers/symbols は ASCII-only のままであることを明記する。
    - comments と documentation text は、後続の documentation/source-loading layer が warning を追加しない限り raw Unicode のまま保持する。
 
-5. fuzz coverage を追加する。
+4. fuzz coverage を追加する。
    - arbitrary byte input または valid UTF-8 strings を対象にした `scan_raw` 用 `cargo-fuzz` target を追加する。
    - `preprocess_source_for_lexing` と `scan_raw` に arbitrary valid UTF-8 input を与える。
    - 見つかった failure は minimize し、corpus regression として commit する前に stable case として `tests/lexical` に昇格する。
 
-6. performance benchmarking を追加する。
+5. performance benchmarking を追加する。
    - large `.miz`-like source に対する `scan_raw` throughput を benchmark する。
    - raw scanning、preprocessing、`SourceLineIndex` construction を分けて測定する。
    - module resolution、parser context、imported symbol loading から独立した benchmarks にする。
 
-7. source-loading boundary における UTF-8 BOM handling policy を決める。
+6. source-loading boundary における UTF-8 BOM handling policy を決める。
    - raw file input の先頭 UTF-8 BOM は受け入れ、`mizar-lexer` entry point が `&str` を受け取る前に source-loading 側で取り除く方針を優先する。
    - direct lexer helper calls は strict のままにする。`preprocess_source_for_lexing` や `scan_raw` に届いた `U+FEFF` は silently disappear させず、malformed source precondition として扱う。
    - BOM stripping 後の token span が loaded text offsets で測られること、および source map が original file byte offsets にどう対応するかを文書化する。
    - frontend/session source loader ができた段階で source-loading tests を追加する。それまでは lexer behavior は変更しない。
 
-8. UTF-8 file loading を仕様化して test する。
+7. UTF-8 file loading を仕様化して test する。
    - invalid UTF-8 を lexer entry 前に reject し、lossy decode で `U+FFFD` にしない。
    - 先頭 UTF-8 BOM stripping を決めて test し、original-byte-offset source-map behavior も確認する。
 
-9. newline normalization を仕様化して test する。
+8. newline normalization を仕様化して test する。
    - lexer entry 前の CRLF-to-LF behavior を定義する。
    - source map が normalized lexical/source text offsets を original file byte offsets に対応付けられることを確認する。
 
-10. preprocess source-map tests を実装する。
+9. preprocess source-map tests を実装する。
    - ordinary comment removal、documentation comment retention、synthetic whitespace/newline segments、removed comments をまたぐ lexical ranges を cover する。
    - lexer/preprocessor helpers 由来の diagnostics を original source ranges に map できることを確認する。
 
-11. user-facing column conversion は lexer 外に保つ。
+10. user-facing column conversion は lexer 外に保つ。
     - Unicode scalar columns は source-map/session layer で test する。
     - LSP UTF-16 conversion は `mizar-lexer` ではなく LSP bridge で test する。
 
-12. source path normalization は lexer 外で cover する。
+11. source path normalization は lexer 外で cover する。
     - `.`/`..`、symlinks、case policy、package-root escape attempts、platform-specific separators を source-loading/path layer で test する。
 
 ## Completed Tasks
@@ -81,6 +77,10 @@
 5. comment-removal edge tests を拡充した。
    - crate-local preprocessing tests で adjacent comments、EOF comments、token-shaped text の間にある comments、複数の preserved newlines を含む multi-line comments を cover するようにした。
    - inline comment removal では、lexical text が line structure を保ち token を accidental に concat しないよう、必要に応じて synthetic layout を挿入する。
+
+6. nested multi-line comment policy を決定した。
+   - multi-line comments は non-nesting と文書化した。`::=` opener の後に最初に現れる `=::` が comment を閉じる。
+   - crate-local preprocessing tests で内部の `::=` spelling を通常の comment text として扱うことを、trivia spans と preserved newlines を含めて cover するようにした。
 
 ## Suggested Verification
 
@@ -112,7 +112,7 @@ API stability、fuzz、benchmark 作業では、この TODO file の更新また
 | Unicode whitespace and ASCII controls | comments 外では strict reject | raw layout は space, tab, LF のみ。preprocessor は non-ASCII code chars を報告し、raw scanner は vertical tab や form feed などの unsupported ASCII controls を hard error にする。 | この strict lexer boundary と source-loading / diagnostic-renderer policy を同期し続ける。 |
 | tab display width | delegated | lexer は byte spans のみを保持し、tab は layout として扱う。diagnostics/source map が display columns を担当する。 | diagnostic renderer で tab expansion policy を test する。 |
 | comment stripping and newline preservation | known edge cases は lexer boundary で covered | ordinary/doc/multi-line comment removal、trivia retention、newline preservation、adjacent comments、EOF comments、token boundary 付近の synthetic layout の tests がある。 | source-map tests で synthetic whitespace/newline segments から original source ranges への mapping を cover する。 |
-| nested multi-line comments | policy unclear | 現在の preprocessor は最初の `=::` を探す。nested-comment policy は lexer TODO では未文書化。 | nested block comments を unsupported とするか決め、文書化して tests を追加する。 |
+| nested multi-line comments | non-nesting policy は covered | multi-line comments は最初の `=::` で閉じ、内部の `::=` spelling は通常の comment text として扱う。tests は spans と preserved newlines を cover する。 | source-map tests でも comment trivia mapping 時に同じ non-nesting interpretation を保つ。 |
 | unterminated comments | covered | preprocessor は `UnterminatedMultiLineComment` を emit し、line structure を保持する。unit test あり。 | source-map implementation 後に frontend が diagnostic を original source に map することを確認する。 |
 | annotation visibility | lexer boundary では covered | annotation syntax が parser ownership のため lexical text に残ることを tests が確認している。 | annotation argument validation は parser tests が担当する。 |
 | string literal escapes and recovery | partially covered | helper と disambiguator tests は supported escapes、invalid escapes、malformed strings、context-required string positions を cover している。 | property/fuzz tests に string-required context と malformed recovery spans を含める。 |

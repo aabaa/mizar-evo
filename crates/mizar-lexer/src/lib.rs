@@ -575,6 +575,46 @@ mod tests {
     }
 
     #[test]
+    fn preprocess_source_treats_nested_multiline_comment_markers_as_text() {
+        for (name, source, expected_lexical_text, expected_comment) in [
+            (
+                "inline nested marker",
+                "alpha::= outer ::= inner =::omega",
+                "alpha omega",
+                "::= outer ::= inner =::",
+            ),
+            (
+                "nested marker with preserved newlines",
+                "alpha::=\nouter ::= inner\n=::omega",
+                "alpha\n\nomega",
+                "::=\nouter ::= inner\n=::",
+            ),
+        ] {
+            let preprocessed = preprocess_source_for_lexing(source);
+
+            assert_eq!(preprocessed.lexical_text, expected_lexical_text, "{name}");
+            assert_eq!(preprocessed.comments.len(), 1, "{name}");
+            assert_eq!(
+                preprocessed.comments[0].kind,
+                CommentKind::MultiLine,
+                "{name}"
+            );
+            assert!(
+                preprocessed.comments[0].lexeme.contains("::= inner"),
+                "{name}"
+            );
+            assert_eq!(preprocessed.comments[0].lexeme, expected_comment, "{name}");
+            assert_eq!(
+                &source[preprocessed.comments[0].span.start..preprocessed.comments[0].span.end],
+                preprocessed.comments[0].lexeme,
+                "{name}"
+            );
+            assert!(preprocessed.diagnostics.is_empty(), "{name}");
+            assert!(scan_raw(&preprocessed.lexical_text).is_ok(), "{name}");
+        }
+    }
+
+    #[test]
     fn preprocess_source_reports_code_region_precondition_violations() {
         let preprocessed =
             preprocess_source_for_lexing("alpha\r\n\u{03b2}\n::: doc \u{03b2}\nomega");
