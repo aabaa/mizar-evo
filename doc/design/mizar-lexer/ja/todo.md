@@ -6,48 +6,43 @@
 
 ## Ordered Task List
 
-1. public API stability policy を決める。
-   - `TokenKind`, `RawTokenKind`, `LexDiagnosticCode`, `ImportPrescanDiagnosticCode`, `ScopeSkeletonDiagnosticCode`, `SourcePreprocessDiagnosticCode`, `LexicalEnvironmentError` などの public enum に `#[non_exhaustive]` を付けるか検討する。
-   - 代替案として、`0.1` API では compatibility guarantee なしで breaking change を行う可能性があることを明記する。
-   - downstream crates が依存する前に、現在 public な fields の一部を `pub(crate)` に絞るべきか review する。
-
-2. source-text normalization policy を文書化する。
+1. source-text normalization policy を文書化する。
    - lexer は Unicode normalization を行わず、code-region identifiers/symbols は ASCII-only のままであることを明記する。
    - comments と documentation text は、後続の documentation/source-loading layer が warning を追加しない限り raw Unicode のまま保持する。
 
-3. fuzz coverage を追加する。
+2. fuzz coverage を追加する。
    - arbitrary byte input または valid UTF-8 strings を対象にした `scan_raw` 用 `cargo-fuzz` target を追加する。
    - `preprocess_source_for_lexing` と `scan_raw` に arbitrary valid UTF-8 input を与える。
    - 見つかった failure は minimize し、corpus regression として commit する前に stable case として `tests/lexical` に昇格する。
 
-4. performance benchmarking を追加する。
+3. performance benchmarking を追加する。
    - large `.miz`-like source に対する `scan_raw` throughput を benchmark する。
    - raw scanning、preprocessing、`SourceLineIndex` construction を分けて測定する。
    - module resolution、parser context、imported symbol loading から独立した benchmarks にする。
 
-5. source-loading boundary における UTF-8 BOM handling policy を決める。
+4. source-loading boundary における UTF-8 BOM handling policy を決める。
    - raw file input の先頭 UTF-8 BOM は受け入れ、`mizar-lexer` entry point が `&str` を受け取る前に source-loading 側で取り除く方針を優先する。
    - direct lexer helper calls は strict のままにする。`preprocess_source_for_lexing` や `scan_raw` に届いた `U+FEFF` は silently disappear させず、malformed source precondition として扱う。
    - BOM stripping 後の token span が loaded text offsets で測られること、および source map が original file byte offsets にどう対応するかを文書化する。
    - frontend/session source loader ができた段階で source-loading tests を追加する。それまでは lexer behavior は変更しない。
 
-6. UTF-8 file loading を仕様化して test する。
+5. UTF-8 file loading を仕様化して test する。
    - invalid UTF-8 を lexer entry 前に reject し、lossy decode で `U+FFFD` にしない。
    - 先頭 UTF-8 BOM stripping を決めて test し、original-byte-offset source-map behavior も確認する。
 
-7. newline normalization を仕様化して test する。
+6. newline normalization を仕様化して test する。
    - lexer entry 前の CRLF-to-LF behavior を定義する。
    - source map が normalized lexical/source text offsets を original file byte offsets に対応付けられることを確認する。
 
-8. preprocess source-map tests を実装する。
+7. preprocess source-map tests を実装する。
    - ordinary comment removal、documentation comment retention、synthetic whitespace/newline segments、removed comments をまたぐ lexical ranges を cover する。
    - lexer/preprocessor helpers 由来の diagnostics を original source ranges に map できることを確認する。
 
-9. user-facing column conversion は lexer 外に保つ。
+8. user-facing column conversion は lexer 外に保つ。
     - Unicode scalar columns は source-map/session layer で test する。
     - LSP UTF-16 conversion は `mizar-lexer` ではなく LSP bridge で test する。
 
-10. source path normalization は lexer 外で cover する。
+9. source path normalization は lexer 外で cover する。
     - `.`/`..`、symlinks、case policy、package-root escape attempts、platform-specific separators を source-loading/path layer で test する。
 
 ## Completed Tasks
@@ -81,6 +76,11 @@
    - crate-level doctests で `scan_raw`, `lex`, `disambiguate` を cover するようにした。
    - examples で token span が scanner input への byte offset であることを示した。
    - parser-facing API の小さく安定した surface に留めた。
+
+8. public API stability policy を決定した。
+   - public enums に `#[non_exhaustive]` を付け、今後増える可能性のある categories に対して downstream crates が wildcard match arms を保つようにした。
+   - public data struct fields は corpus と初期 integration code が使う parser-facing transfer objects なので visible のままにした。
+   - crate-level docs と raw lexer design notes に、`0.1` APIs は後続の stability milestone までは provisional であることを明記した。
 
 ## Suggested Verification
 

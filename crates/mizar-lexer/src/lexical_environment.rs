@@ -66,6 +66,7 @@ pub struct UserSymbolCandidate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum LexicalEnvironmentError {
     MissingModuleSummary {
         module_id: ModuleId,

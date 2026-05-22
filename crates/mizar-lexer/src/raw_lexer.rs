@@ -16,6 +16,7 @@ pub struct RawToken {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum RawTokenKind {
     LexemeRun,
     NumeralLike,

@@ -27,6 +27,7 @@ pub struct ScopedBindingShape {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum BindingShapeKind {
     Let,
     For,
@@ -51,6 +52,7 @@ pub struct LexicalBlockRange {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum LexicalBlockKind {
     Algorithm,
     Definition,
@@ -69,6 +71,7 @@ pub struct LexicalStatementRange {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum LexicalStatementKind {
     Binder,
     Other,
@@ -82,6 +85,7 @@ pub struct ScopeSkeletonDiagnostic {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ScopeSkeletonDiagnosticCode {
     MalformedBinderList,
     UnsupportedBinderShape,

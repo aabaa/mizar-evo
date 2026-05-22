@@ -28,6 +28,7 @@ pub struct RawModulePath {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum RawModuleRelativePrefix {
     Current,
     Parent,
@@ -53,6 +54,7 @@ pub struct ImportPrescanDiagnostic {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ImportPrescanDiagnosticCode {
     MissingModulePath,
     EmptyModulePathComponent,

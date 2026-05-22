@@ -45,6 +45,7 @@ pub struct CommentTrivia {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum CommentKind {
     SingleLine,
     MultiLine,
@@ -59,6 +60,7 @@ pub struct SourcePreprocessDiagnostic {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SourcePreprocessDiagnosticCode {
     CarriageReturn,
     NonAsciiCode,
@@ -73,6 +75,7 @@ pub struct ModuleSourceName {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ModuleNamingError {
     MissingMizExtension { path: String },
     MissingFileStem { path: String },

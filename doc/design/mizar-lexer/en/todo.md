@@ -6,48 +6,43 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-1. Decide public API stability policy.
-   - Consider `#[non_exhaustive]` for public enums such as `TokenKind`, `RawTokenKind`, `LexDiagnosticCode`, `ImportPrescanDiagnosticCode`, `ScopeSkeletonDiagnosticCode`, `SourcePreprocessDiagnosticCode`, and `LexicalEnvironmentError`.
-   - Alternatively document that the `0.1` API may make breaking changes without compatibility guarantees.
-   - Review whether any currently public fields should be narrowed to `pub(crate)` before downstream crates depend on them.
-
-2. Document source-text normalization policy.
+1. Document source-text normalization policy.
    - State that the lexer does not perform Unicode normalization and that code-region identifiers/symbols remain ASCII-only.
    - Keep comments and documentation text as raw Unicode unless a later documentation/source-loading layer adds warnings.
 
-3. Add fuzz coverage.
+2. Add fuzz coverage.
    - Add a `cargo-fuzz` target for `scan_raw` over arbitrary byte input or valid UTF-8 strings.
    - Include arbitrary valid UTF-8 input for `preprocess_source_for_lexing` and `scan_raw`.
    - Minimize any discovered failures and promote stable cases into `tests/lexical` before committing them as corpus regressions.
 
-4. Add performance benchmarking.
+3. Add performance benchmarking.
    - Benchmark `scan_raw` throughput on a large `.miz`-like source.
    - Measure raw scanning, preprocessing, and `SourceLineIndex` construction separately.
    - Keep benchmarks independent of module resolution, parser context, and imported symbol loading.
 
-5. Decide UTF-8 BOM handling policy at the source-loading boundary.
+4. Decide UTF-8 BOM handling policy at the source-loading boundary.
    - Prefer accepting a leading UTF-8 BOM in raw file input and stripping it before `mizar-lexer` entry points receive `&str`.
    - Keep direct lexer helper calls strict: a `U+FEFF` that reaches `preprocess_source_for_lexing` or `scan_raw` should remain a malformed source precondition rather than silently disappearing.
    - Document whether token spans after BOM stripping are measured in loaded text offsets and how the source map relates them back to original file byte offsets.
    - Add source-loading tests once the frontend/session source loader exists; avoid changing lexer behavior until that boundary is implemented.
 
-6. Specify and test UTF-8 file loading.
+5. Specify and test UTF-8 file loading.
    - Reject invalid UTF-8 before lexer entry and avoid lossy decoding into `U+FFFD`.
    - Decide and test leading UTF-8 BOM stripping, including original-byte-offset source-map behavior.
 
-7. Specify and test newline normalization.
+6. Specify and test newline normalization.
    - Define CRLF-to-LF behavior before lexer entry.
    - Ensure the source map can relate normalized lexical/source text offsets back to original file byte offsets.
 
-8. Implement preprocess source-map tests.
+7. Implement preprocess source-map tests.
    - Cover ordinary comment removal, documentation comment retention, synthetic whitespace/newline segments, and lexical ranges spanning removed comments.
    - Ensure diagnostics from lexer/preprocessor helpers can be mapped back to original source ranges.
 
-9. Keep user-facing column conversion outside lexer.
+8. Keep user-facing column conversion outside lexer.
     - Test Unicode scalar columns in the source-map/session layer.
     - Test LSP UTF-16 conversion in the LSP bridge, not in `mizar-lexer`.
 
-10. Cover source path normalization outside lexer.
+9. Cover source path normalization outside lexer.
     - Test `.`/`..`, symlinks, case policy, package-root escape attempts, and platform-specific separators in the source-loading/path layer.
 
 ## Completed Tasks
@@ -81,6 +76,11 @@ This document records follow-up tasks identified during the lexer quality review
    - Crate-level doctests now cover `scan_raw`, `lex`, and `disambiguate`.
    - The examples show that token spans are byte offsets into the scanner input.
    - The examples stay on small, stable parser-facing API surfaces.
+
+8. Decided public API stability policy.
+   - Public enums are now marked `#[non_exhaustive]` so downstream crates keep wildcard match arms for categories that may grow.
+   - Public data struct fields remain visible because they are parser-facing transfer objects used by corpus and early integration code.
+   - Crate-level docs and the raw lexer design notes now state that `0.1` APIs remain provisional until a later stability milestone.
 
 ## Suggested Verification
 

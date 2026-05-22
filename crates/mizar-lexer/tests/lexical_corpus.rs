@@ -452,6 +452,7 @@ fn token_kind_name(kind: TokenKind) -> &'static str {
         TokenKind::UserSymbol => "user_symbol",
         TokenKind::StringLiteral => "string_literal",
         TokenKind::ErrorRecovery => "error_recovery",
+        _ => panic!("unsupported token kind: {kind:?}"),
     }
 }
 
@@ -462,6 +463,7 @@ fn raw_token_kind_name(kind: RawTokenKind) -> &'static str {
         RawTokenKind::AnnotationMarker => "raw_annotation_marker",
         RawTokenKind::Layout => "raw_layout",
         RawTokenKind::Error => "raw_error",
+        _ => panic!("unsupported raw token kind: {kind:?}"),
     }
 }
 
@@ -482,6 +484,7 @@ fn import_prescan_diagnostic_code_name(code: ImportPrescanDiagnosticCode) -> &'s
         ImportPrescanDiagnosticCode::MissingAlias => "missing_alias",
         ImportPrescanDiagnosticCode::MissingSemicolon => "missing_semicolon",
         ImportPrescanDiagnosticCode::UnexpectedToken => "unexpected_token",
+        _ => panic!("unsupported import pre-scan diagnostic code: {code:?}"),
     }
 }
 
@@ -501,6 +504,7 @@ fn binding_shape_kind_name(kind: BindingShapeKind) -> &'static str {
         BindingShapeKind::Var => "scope_binding_var",
         BindingShapeKind::Const => "scope_binding_const",
         BindingShapeKind::Processed => "scope_binding_processed",
+        _ => panic!("unsupported binding shape kind: {kind:?}"),
     }
 }
 
@@ -514,6 +518,7 @@ fn block_kind_name(kind: LexicalBlockKind) -> &'static str {
         LexicalBlockKind::Suppose => "scope_block_suppose",
         LexicalBlockKind::Hereby => "scope_block_hereby",
         LexicalBlockKind::Do => "scope_block_do",
+        _ => panic!("unsupported lexical block kind: {kind:?}"),
     }
 }
 
@@ -521,6 +526,7 @@ fn statement_kind_name(kind: LexicalStatementKind) -> &'static str {
     match kind {
         LexicalStatementKind::Binder => "scope_statement_binder",
         LexicalStatementKind::Other => "scope_statement_other",
+        _ => panic!("unsupported lexical statement kind: {kind:?}"),
     }
 }
 
@@ -531,6 +537,7 @@ fn scope_skeleton_diagnostic_code_name(code: ScopeSkeletonDiagnosticCode) -> &'s
         ScopeSkeletonDiagnosticCode::DuplicateBindingName => "duplicate_binding_name",
         ScopeSkeletonDiagnosticCode::UnmatchedEnd => "unmatched_end",
         ScopeSkeletonDiagnosticCode::MissingEnd => "missing_end",
+        _ => panic!("unsupported scope skeleton diagnostic code: {code:?}"),
     }
 }
 
@@ -541,6 +548,7 @@ fn lex_diagnostic_code_name(code: LexDiagnosticCode) -> &'static str {
         LexDiagnosticCode::AmbiguousUserSymbol => "ambiguous_user_symbol",
         LexDiagnosticCode::MalformedStringLiteral => "malformed_string_literal",
         LexDiagnosticCode::UnsupportedRawToken => "unsupported_raw_token",
+        _ => panic!("unsupported lexer diagnostic code: {code:?}"),
     }
 }
 

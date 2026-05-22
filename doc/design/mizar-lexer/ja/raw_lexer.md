@@ -10,6 +10,14 @@ Mizar の字句分類は文脈に依存します。import された module は u
 
 現在の実装は、低レベルの raw scanner と、より高レベルな disambiguation entry point の両方を公開しています。この文書では、便利関数 `lex(&str)` の shell を完全な context-sensitive lexer と誤解しないよう、各層の責務境界を明確にします。
 
+## Public API Stability
+
+`mizar-lexer` は現在 `0.1` crate です。public data structures は parser-facing transfer objects として扱い、初期段階の parser、corpus、integration code が直接 inspect / construct できるよう fields を visible のままにします。
+
+public enums には `#[non_exhaustive]` を付けます。downstream crates は token kinds、raw token kinds、diagnostic codes、parser modes、import pre-scan categories、scope-skeleton categories、source-preprocessing categories、lexical-environment errors を match するとき wildcard arm を含める必要があります。これにより parser-facing API が成熟するまで category を追加できる余地を保ちます。
+
+明示的な stability milestone を後で設けるまでは、`0.1` minor releases でも lexer boundary の一貫性を保つために public fields、constructors、helper functions に breaking changes を加える可能性があります。
+
 ## Source Preconditions
 
 `mizar-lexer` に渡される入力は raw file bytes ではありません。
@@ -102,6 +110,7 @@ Raw scanner は LF-only source text を読み、source span を保持する raw 
 Raw unit は final language token ではありません。特に `LexemeRun` は graphic character の連続であり、後で 1 個以上の final token に変換されます。
 
 ```rust
+#[non_exhaustive]
 pub enum RawTokenKind {
     LexemeRun,
     NumeralLike,
@@ -301,6 +310,7 @@ pub struct Token {
     pub span: SourceSpan,
 }
 
+#[non_exhaustive]
 pub enum TokenKind {
     Identifier,
     ReservedWord,

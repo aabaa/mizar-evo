@@ -7,6 +7,19 @@
 //!
 //! Token spans are byte offsets into the string passed to the scanner.
 //!
+//! ## API stability
+//!
+//! This crate is still a `0.1` lexer boundary. Public enums are
+//! `#[non_exhaustive]` so downstream callers keep wildcard arms for token,
+//! diagnostic, parser-mode, scope-skeleton, source-preprocessing, import, and
+//! lexical-environment categories that may grow as the parser integration
+//! matures.
+//!
+//! Public data structs intentionally keep their fields visible for now because
+//! they are parser-facing transfer objects used by tests, corpus metadata, and
+//! early integration code. Those fields should still be treated as provisional
+//! while the crate remains below `1.0`.
+//!
 //! ```
 //! use mizar_lexer::{scan_raw, RawTokenKind};
 //!

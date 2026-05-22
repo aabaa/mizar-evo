@@ -28,6 +28,7 @@ pub struct LexDiagnostic {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum LexDiagnosticCode {
     NoValidTokenCandidate,
     ParserContextRejectedCandidate,
@@ -42,6 +43,7 @@ pub struct ParserLexContext {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ParserLexMode {
     General,
     IdentifierRequired,
@@ -52,6 +54,7 @@ pub enum ParserLexMode {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum TokenKind {
     Identifier,
     ReservedWord,

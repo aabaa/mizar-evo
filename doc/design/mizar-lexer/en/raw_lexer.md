@@ -10,6 +10,14 @@ Mizar lexical classification is context-sensitive: imported modules add user-def
 
 The current implementation exposes both the low-level raw scanner and higher-level disambiguation entry points. This document keeps the boundary explicit so callers do not accidentally treat the convenience `lex(&str)` shell as the full context-sensitive lexer.
 
+## Public API Stability
+
+`mizar-lexer` is currently a `0.1` crate. Public data structures remain parser-facing transfer objects with visible fields so early parser, corpus, and integration code can inspect and construct them directly.
+
+Public enums are marked `#[non_exhaustive]`. Downstream crates must include wildcard arms when matching token kinds, raw token kinds, diagnostic codes, parser modes, import pre-scan categories, scope-skeleton categories, source-preprocessing categories, and lexical-environment errors. This keeps the crate free to add categories as the parser-facing API matures.
+
+Until a later explicit stability milestone, `0.1` minor releases may still make breaking changes to public fields, constructors, and helper functions when that is needed to keep the lexer boundary coherent.
+
 ## Source Preconditions
 
 Input to `mizar-lexer` is not raw file bytes.
@@ -102,6 +110,7 @@ The raw scanner reads LF-only source text and produces source-span-preserving ra
 Raw units are not final language tokens. In particular, `LexemeRun` is a graphic run that may later become one or more final tokens.
 
 ```rust
+#[non_exhaustive]
 pub enum RawTokenKind {
     LexemeRun,
     NumeralLike,
@@ -301,6 +310,7 @@ pub struct Token {
     pub span: SourceSpan,
 }
 
+#[non_exhaustive]
 pub enum TokenKind {
     Identifier,
     ReservedWord,

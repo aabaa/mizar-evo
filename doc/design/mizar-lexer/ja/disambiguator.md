@@ -24,6 +24,7 @@ pub struct Token {
     pub span: SourceSpan,
 }
 
+#[non_exhaustive]
 pub enum TokenKind {
     Identifier,
     ReservedWord,
