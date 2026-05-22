@@ -32,6 +32,7 @@ The crate must preserve the distinction between raw lexical scanning and final t
 
 - LF-only raw lexical scanning after source loading has normalized newlines;
 - source preprocessing helpers for comment stripping, LF/ASCII diagnostics, and module source naming contracts;
+- strict ASCII-only code-region spelling rules without Unicode normalization;
 - source span preserving raw lexical units;
 - lightweight source-span to line/column conversion helpers for lexer diagnostics and tests;
 - helper APIs for identifier, numeral, layout, reserved word, and symbol-shape recognition;
@@ -40,6 +41,7 @@ The crate must preserve the distinction between raw lexical scanning and final t
 It must not:
 
 - read files or normalize platform newlines;
+- normalize Unicode source text or accept non-ASCII code identifiers/symbols by normalization;
 - resolve imports by itself;
 - load full module IR for imported files;
 - decide that an identifier is undefined;

@@ -7,6 +7,15 @@
 //!
 //! Token spans are byte offsets into the string passed to the scanner.
 //!
+//! ## Source-text normalization
+//!
+//! The lexer does not perform Unicode normalization. Code-region identifiers,
+//! numerals, and user-symbol spellings are ASCII-only, and non-ASCII code text
+//! that reaches preprocessing is reported as malformed input rather than
+//! normalized into an accepted spelling. Comment and documentation text is
+//! preserved as raw Unicode trivia unless a later source-loading or
+//! documentation layer decides to issue warnings.
+//!
 //! ## API stability
 //!
 //! This crate is still a `0.1` lexer boundary. Public enums are

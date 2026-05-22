@@ -6,43 +6,39 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-1. Document source-text normalization policy.
-   - State that the lexer does not perform Unicode normalization and that code-region identifiers/symbols remain ASCII-only.
-   - Keep comments and documentation text as raw Unicode unless a later documentation/source-loading layer adds warnings.
-
-2. Add fuzz coverage.
+1. Add fuzz coverage.
    - Add a `cargo-fuzz` target for `scan_raw` over arbitrary byte input or valid UTF-8 strings.
    - Include arbitrary valid UTF-8 input for `preprocess_source_for_lexing` and `scan_raw`.
    - Minimize any discovered failures and promote stable cases into `tests/lexical` before committing them as corpus regressions.
 
-3. Add performance benchmarking.
+2. Add performance benchmarking.
    - Benchmark `scan_raw` throughput on a large `.miz`-like source.
    - Measure raw scanning, preprocessing, and `SourceLineIndex` construction separately.
    - Keep benchmarks independent of module resolution, parser context, and imported symbol loading.
 
-4. Decide UTF-8 BOM handling policy at the source-loading boundary.
+3. Decide UTF-8 BOM handling policy at the source-loading boundary.
    - Prefer accepting a leading UTF-8 BOM in raw file input and stripping it before `mizar-lexer` entry points receive `&str`.
    - Keep direct lexer helper calls strict: a `U+FEFF` that reaches `preprocess_source_for_lexing` or `scan_raw` should remain a malformed source precondition rather than silently disappearing.
    - Document whether token spans after BOM stripping are measured in loaded text offsets and how the source map relates them back to original file byte offsets.
    - Add source-loading tests once the frontend/session source loader exists; avoid changing lexer behavior until that boundary is implemented.
 
-5. Specify and test UTF-8 file loading.
+4. Specify and test UTF-8 file loading.
    - Reject invalid UTF-8 before lexer entry and avoid lossy decoding into `U+FFFD`.
    - Decide and test leading UTF-8 BOM stripping, including original-byte-offset source-map behavior.
 
-6. Specify and test newline normalization.
+5. Specify and test newline normalization.
    - Define CRLF-to-LF behavior before lexer entry.
    - Ensure the source map can relate normalized lexical/source text offsets back to original file byte offsets.
 
-7. Implement preprocess source-map tests.
+6. Implement preprocess source-map tests.
    - Cover ordinary comment removal, documentation comment retention, synthetic whitespace/newline segments, and lexical ranges spanning removed comments.
    - Ensure diagnostics from lexer/preprocessor helpers can be mapped back to original source ranges.
 
-8. Keep user-facing column conversion outside lexer.
+7. Keep user-facing column conversion outside lexer.
     - Test Unicode scalar columns in the source-map/session layer.
     - Test LSP UTF-16 conversion in the LSP bridge, not in `mizar-lexer`.
 
-9. Cover source path normalization outside lexer.
+8. Cover source path normalization outside lexer.
     - Test `.`/`..`, symlinks, case policy, package-root escape attempts, and platform-specific separators in the source-loading/path layer.
 
 ## Completed Tasks
@@ -81,6 +77,11 @@ This document records follow-up tasks identified during the lexer quality review
    - Public enums are now marked `#[non_exhaustive]` so downstream crates keep wildcard match arms for categories that may grow.
    - Public data struct fields remain visible because they are parser-facing transfer objects used by corpus and early integration code.
    - Crate-level docs and the raw lexer design notes now state that `0.1` APIs remain provisional until a later stability milestone.
+
+9. Documented source-text normalization policy.
+   - Crate-level docs and design notes now state that the lexer does not perform Unicode normalization.
+   - Code-region identifiers, numerals, reserved spellings, and user-symbol spellings remain ASCII-only at the lexer boundary.
+   - Comment and documentation text remains raw Unicode trivia unless a later documentation/source-loading layer adds warnings.
 
 ## Suggested Verification
 

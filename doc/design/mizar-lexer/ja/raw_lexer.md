@@ -47,6 +47,14 @@ space, tab, newline
 
 Carriage return はこの layer では layout ではありません。`\r` が lexer に届いた場合、それは source-loading 側の不備か、意図的な malformed test fixture です。
 
+## Source-Text Normalization Policy
+
+`mizar-lexer` は Unicode normalization を行いません。code text に対して canonical normalization や compatibility normalization を適用してから lexical spelling rules を判定することはありません。
+
+この layer では、code-region identifiers、numerals、reserved words、reserved symbols、user-symbol spellings は ASCII-only です。code region に届いた non-ASCII text は lexer boundary における malformed input です。preprocessing は `NonAsciiCode` として報告し、direct raw scanning は unsupported characters を reject します。ASCII spelling へ変換して受け入れることはありません。
+
+comments と documentation comments は別扱いです。その text は source span 付きの raw Unicode trivia として保持されます。ただし、上記の comment-stripping rules に従い、newline structure は `lexical_text` に残します。lexer は comment/documentation text 内の Unicode を normalize せず、warning も reject も行いません。将来の documentation、source-loading、diagnostic policy は、lexer tokenization を変更せずに suspicious Unicode、confusables、normalization-sensitive text への warning を追加できます。
+
 ## Core Design
 
 Lexing は概念的に 2 段階に分けます。

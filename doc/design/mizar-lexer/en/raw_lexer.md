@@ -47,6 +47,14 @@ space, tab, newline
 
 Carriage return is not layout at this layer. A `\r` reaching the lexer is either a source-loading bug or an intentionally malformed test fixture.
 
+## Source-Text Normalization Policy
+
+`mizar-lexer` does not perform Unicode normalization. It neither canonicalizes nor compatibility-normalizes code text before applying lexical spelling rules.
+
+Code-region identifiers, numerals, reserved words, reserved symbols, and user-symbol spellings are ASCII-only at this layer. Non-ASCII text that reaches a code region is malformed input for the lexer boundary: preprocessing reports it as `NonAsciiCode`, and direct raw scanning rejects unsupported characters instead of converting them into ASCII spellings.
+
+Comments and documentation comments are different. Their text is preserved as raw Unicode trivia with source spans, except that newline structure is retained in `lexical_text` according to the comment-stripping rules above. The lexer does not normalize, warn about, or reject Unicode in comment/documentation text. A later documentation, source-loading, or diagnostic policy may add warnings for suspicious Unicode, confusables, or normalization-sensitive text without changing lexer tokenization.
+
 ## Core Design
 
 Lexing is split into two conceptual stages.

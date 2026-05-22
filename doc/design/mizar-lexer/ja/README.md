@@ -32,6 +32,7 @@ Mizar の字句分類は、import、active user symbol、parser position、scope
 
 - source loading が LF-only に正規化した後の raw lexical scanning;
 - comment stripping、LF/ASCII diagnostics、module source naming contract を扱う source preprocessing helpers;
+- Unicode normalization を行わない strict な ASCII-only code-region spelling rules;
 - source span を保持する raw lexical units;
 - lexer diagnostics and tests のための lightweight source-span to line/column conversion helpers;
 - identifier, numeral, layout, reserved word, symbol shape recognition の helper API;
@@ -40,6 +41,7 @@ Mizar の字句分類は、import、active user symbol、parser position、scope
 この crate は以下を行いません。
 
 - file read や platform newline normalization;
+- Unicode source text の normalization、または normalization による non-ASCII code identifiers/symbols の受理;
 - import resolution;
 - imported file の full module IR を読み込む;
 - identifier が undefined かどうかを決める;
