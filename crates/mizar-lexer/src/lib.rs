@@ -438,6 +438,31 @@ mod tests {
     }
 
     #[test]
+    fn reports_stable_raw_diagnostics_for_unsupported_unicode_code_characters() {
+        for (name, ch) in [
+            ("NBSP", '\u{00a0}'),
+            ("zero-width space", '\u{200b}'),
+            ("zero-width non-joiner", '\u{200c}'),
+            ("zero-width joiner", '\u{200d}'),
+            ("full-width comma", '\u{ff0c}'),
+            ("full-width semicolon", '\u{ff1b}'),
+            ("BOM", '\u{feff}'),
+        ] {
+            let source = format!("alpha{ch}beta");
+            let error = match scan_raw(&source) {
+                Ok(_) => panic!("{name} should not be treated as raw layout or token text"),
+                Err(error) => error,
+            };
+
+            assert_eq!(
+                format!("unsupported raw lexer input at byte 5: {ch:?}"),
+                error.to_string(),
+                "{name}"
+            );
+        }
+    }
+
+    #[test]
     fn reports_stable_raw_diagnostics_for_malformed_annotation_markers() {
         let error = scan_raw("@-").expect_err("bare annotation marker should be rejected");
 
@@ -483,6 +508,40 @@ mod tests {
             ]
         );
         assert_eq!(preprocessed.comments[0].kind, CommentKind::Documentation);
+    }
+
+    #[test]
+    fn preprocess_source_pins_unsupported_unicode_code_region_diagnostics() {
+        for (name, ch) in [
+            ("NBSP", '\u{00a0}'),
+            ("zero-width space", '\u{200b}'),
+            ("zero-width non-joiner", '\u{200c}'),
+            ("zero-width joiner", '\u{200d}'),
+            ("full-width comma", '\u{ff0c}'),
+            ("full-width semicolon", '\u{ff1b}'),
+            ("BOM", '\u{feff}'),
+        ] {
+            let source = format!("alpha{ch}beta");
+            let preprocessed = preprocess_source_for_lexing(&source);
+            let expected_span = SourceSpan {
+                start: "alpha".len(),
+                end: "alpha".len() + ch.len_utf8(),
+            };
+
+            assert_eq!(preprocessed.lexical_text, source, "{name}");
+            assert!(preprocessed.comments.is_empty(), "{name}");
+            assert_eq!(preprocessed.diagnostics.len(), 1, "{name}");
+            assert_eq!(
+                preprocessed.diagnostics[0].code,
+                SourcePreprocessDiagnosticCode::NonAsciiCode,
+                "{name}"
+            );
+            assert_eq!(preprocessed.diagnostics[0].span, expected_span, "{name}");
+            assert!(
+                scan_raw(&preprocessed.lexical_text).is_err(),
+                "{name} must remain unsupported if it reaches raw scanning"
+            );
+        }
     }
 
     #[test]
