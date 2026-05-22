@@ -6,34 +6,29 @@
 
 ## Ordered Task List
 
-1. performance benchmarking を追加する。
-   - large `.miz`-like source に対する `scan_raw` throughput を benchmark する。
-   - raw scanning、preprocessing、`SourceLineIndex` construction を分けて測定する。
-   - module resolution、parser context、imported symbol loading から独立した benchmarks にする。
-
-2. source-loading boundary における UTF-8 BOM handling policy を決める。
+1. source-loading boundary における UTF-8 BOM handling policy を決める。
    - raw file input の先頭 UTF-8 BOM は受け入れ、`mizar-lexer` entry point が `&str` を受け取る前に source-loading 側で取り除く方針を優先する。
    - direct lexer helper calls は strict のままにする。`preprocess_source_for_lexing` や `scan_raw` に届いた `U+FEFF` は silently disappear させず、malformed source precondition として扱う。
    - BOM stripping 後の token span が loaded text offsets で測られること、および source map が original file byte offsets にどう対応するかを文書化する。
    - frontend/session source loader ができた段階で source-loading tests を追加する。それまでは lexer behavior は変更しない。
 
-3. UTF-8 file loading を仕様化して test する。
+2. UTF-8 file loading を仕様化して test する。
    - invalid UTF-8 を lexer entry 前に reject し、lossy decode で `U+FFFD` にしない。
    - 先頭 UTF-8 BOM stripping を決めて test し、original-byte-offset source-map behavior も確認する。
 
-4. newline normalization を仕様化して test する。
+3. newline normalization を仕様化して test する。
    - lexer entry 前の CRLF-to-LF behavior を定義する。
    - source map が normalized lexical/source text offsets を original file byte offsets に対応付けられることを確認する。
 
-5. preprocess source-map tests を実装する。
+4. preprocess source-map tests を実装する。
    - ordinary comment removal、documentation comment retention、synthetic whitespace/newline segments、removed comments をまたぐ lexical ranges を cover する。
    - lexer/preprocessor helpers 由来の diagnostics を original source ranges に map できることを確認する。
 
-6. user-facing column conversion は lexer 外に保つ。
+5. user-facing column conversion は lexer 外に保つ。
     - Unicode scalar columns は source-map/session layer で test する。
     - LSP UTF-16 conversion は `mizar-lexer` ではなく LSP bridge で test する。
 
-7. source path normalization は lexer 外で cover する。
+6. source path normalization は lexer 外で cover する。
     - `.`/`..`、symlinks、case policy、package-root escape attempts、platform-specific separators を source-loading/path layer で test する。
 
 ## Completed Tasks
@@ -84,6 +79,11 @@
    - fuzz assertion で span validity、comment lexeme slicing、raw token lexeme slicing、成功した raw scan の full input coverage を固定した。
    - seed corpus entry は ASCII/layout/annotation text と documentation/comment/code region 内 Unicode を cover する。
 
+11. performance benchmarking を追加した。
+   - large `.miz`-like source 用の Criterion benchmark を追加した。
+   - benchmark は `preprocess_source_for_lexing`、`scan_raw`、`SourceLineIndex` construction を分けて測定する。
+   - module resolution、parser context、imported symbol loading を含めず、lexer-local に保つ。
+
 ## Suggested Verification
 
 各 task の後に以下を実行します。
@@ -121,6 +121,6 @@ API stability、fuzz、benchmark 作業では、この TODO file の更新また
 | quote characters as user symbols | partially covered | design は strings を contextual と定め、disambiguator tests は string-required context と string outside context を cover している。 | grammar integration が変わるときに parser-context API tests を広げる。 |
 | raw/final token span integrity | crate-local seeds で covered | tests は raw span contiguity、final token span preservation、`lex` と `disambiguate` を横断する property-style final token span checks を cover する。 | 後で fuzz coverage により広げる。 |
 | error-recovery token spans | crate-local seeds で covered | disambiguator recovery diagnostics/tokens は final-token span invariant seeds に含まれている。 | 後で fuzz coverage により広げる。 |
-| huge files / long lines / memory | not covered | `SourceLineIndex` は全 char boundaries を保持し、raw scanning は token lexemes を clone する。benchmark は未実施。 | benchmark task で large `.miz`-like input と long-line behavior を測定する。 |
+| huge files / long lines / memory | large `.miz`-like input は benchmark covered | `lexer_pipeline` が preprocessing、raw scanning、`SourceLineIndex` construction を分けて測定する。 | 今後の profiling で line-length sensitivity が見えた場合は specialized long-line benchmarks を追加する。 |
 | panic safety under arbitrary text | lexer の valid UTF-8 entry points は covered | `lexer_valid_utf8` cargo-fuzz target が `preprocess_source_for_lexing`、direct `scan_raw`、preprocessed lexical text 上の `scan_raw` を exercise する。 | fuzz failure が見つかった場合は minimize して committed corpus に昇格する。 |
 | file/path text normalization | lexing 外で partially covered | `module_source_name_from_path` は separators を normalize し、identifier-shaped components を validate する。 | symlink、case、`.`/`..`、platform path edge cases は source-loading/path layer が担当する。 |

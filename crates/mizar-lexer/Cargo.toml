@@ -10,4 +10,9 @@ name = "mizar_lexer"
 path = "src/lib.rs"
 
 [dev-dependencies]
+criterion = "0.7"
 mizar-test = { path = "../mizar-test" }
+
+[[bench]]
+name = "lexer_pipeline"
+harness = false
