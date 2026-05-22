@@ -177,6 +177,45 @@ mod tests {
     }
 
     #[test]
+    fn source_line_index_rejects_non_utf8_boundary_offsets() {
+        let source = "a\nβeta\n漢字";
+        let index = SourceLineIndex::new(source);
+
+        assert_eq!(
+            index.location(2),
+            Some(SourceLocation { line: 1, column: 0 })
+        );
+        assert_eq!(index.location(3), None);
+        assert_eq!(
+            index.location(4),
+            Some(SourceLocation { line: 1, column: 2 })
+        );
+        assert_eq!(
+            index.location(8),
+            Some(SourceLocation { line: 2, column: 0 })
+        );
+        assert_eq!(index.location(9), None);
+        assert_eq!(index.location(10), None);
+        assert_eq!(
+            index.location(11),
+            Some(SourceLocation { line: 2, column: 3 })
+        );
+        assert_eq!(
+            index.location(source.len()),
+            Some(SourceLocation { line: 2, column: 6 })
+        );
+        assert_eq!(
+            index.range(SourceSpan { start: 2, end: 5 }),
+            Some(SourceLocationRange {
+                start: SourceLocation { line: 1, column: 0 },
+                end: SourceLocation { line: 1, column: 3 },
+            })
+        );
+        assert_eq!(index.range(SourceSpan { start: 2, end: 3 }), None);
+        assert_eq!(index.range(SourceSpan { start: 8, end: 10 }), None);
+    }
+
+    #[test]
     fn helpers_recognize_layout_symbol_shapes_and_string_shells() {
         assert!(is_layout(' '));
         assert!(is_layout('\t'));

@@ -14,6 +14,7 @@ pub type SourceRange = SourceSpan;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceLineIndex {
     line_starts: Vec<usize>,
+    char_boundaries: Vec<usize>,
     source_len: usize,
 }
 
@@ -113,19 +114,23 @@ impl Error for ModuleNamingError {}
 impl SourceLineIndex {
     pub fn new(source: &str) -> Self {
         let mut line_starts = vec![0];
+        let mut char_boundaries = Vec::new();
         for (index, ch) in source.char_indices() {
+            char_boundaries.push(index);
             if ch == '\n' {
                 line_starts.push(index + ch.len_utf8());
             }
         }
+        char_boundaries.push(source.len());
         Self {
             line_starts,
+            char_boundaries,
             source_len: source.len(),
         }
     }
 
     pub fn location(&self, offset: usize) -> Option<SourceLocation> {
-        if offset > self.source_len {
+        if offset > self.source_len || self.char_boundaries.binary_search(&offset).is_err() {
             return None;
         }
         let line = match self.line_starts.binary_search(&offset) {
