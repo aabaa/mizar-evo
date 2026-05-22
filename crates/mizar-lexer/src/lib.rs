@@ -64,6 +64,28 @@ mod tests {
         }
     }
 
+    fn assert_final_token_spans_point_to_lexemes(source: &str, tokens: &[Token]) {
+        for token in tokens {
+            assert!(
+                token.span.start <= token.span.end,
+                "{source:?}: invalid span {:?} for {:?}",
+                token.span,
+                token
+            );
+            assert!(
+                token.span.end <= source.len(),
+                "{source:?}: out-of-bounds span {:?} for {:?}",
+                token.span,
+                token
+            );
+            assert_eq!(
+                &source[token.span.start..token.span.end],
+                token.lexeme,
+                "{source:?}: final token span should point back to its spelling"
+            );
+        }
+    }
+
     #[test]
     fn lexes_alpha_as_identifier() {
         let tokens = lex("alpha").expect("alpha should lex as an identifier");
@@ -1376,6 +1398,110 @@ import pkg.mathcomp_mizar.algebra.ring;";
                 first,
                 "{source:?}"
             );
+        }
+    }
+
+    #[test]
+    fn phase7_final_shell_spans_point_to_original_spellings() {
+        let seeds = [
+            "",
+            "alpha beta\tgamma\n_delta",
+            "theorem iff not",
+            "42 007 12345",
+            "@[ : .{ .* .= ... ;",
+            "alpha:=beta 1alpha |.x.|",
+        ];
+
+        for source in seeds {
+            let tokens = lex(source).expect("phase7 final shell span seed should lex");
+
+            assert_final_token_spans_point_to_lexemes(source, &tokens);
+        }
+    }
+
+    #[test]
+    fn phase7_disambiguated_final_spans_point_to_original_spellings() {
+        let env = build_lexical_environment(
+            &[resolved_import("generated.final_spans")],
+            &[summary(
+                "generated.final_spans",
+                111,
+                &[
+                    exported(
+                        "+",
+                        "generated.final_spans#plus",
+                        "generated.final_spans",
+                        0,
+                    ),
+                    exported(
+                        "+*",
+                        "generated.final_spans#plus_star",
+                        "generated.final_spans",
+                        1,
+                    ),
+                    exported(
+                        "+*+",
+                        "generated.final_spans#plus_star_plus",
+                        "generated.final_spans",
+                        2,
+                    ),
+                    exported(
+                        "|.x.|",
+                        "generated.final_spans#absolute_x",
+                        "generated.final_spans",
+                        3,
+                    ),
+                    exported(
+                        "succ",
+                        "generated.final_spans#succ",
+                        "generated.final_spans",
+                        4,
+                    ),
+                    exported(".", "generated.final_spans#dot", "generated.final_spans", 5),
+                    exported("B", "generated.final_spans#B", "generated.final_spans", 6),
+                    exported(
+                        "q\"",
+                        "generated.final_spans#quote",
+                        "generated.final_spans",
+                        7,
+                    ),
+                ],
+            )],
+        )
+        .expect("final span environment should build");
+        let seeds = [
+            ("x+*+y", ParserLexContext::general()),
+            ("A.B", ParserLexContext::namespace_path()),
+            ("|.x.|+* q\"", ParserLexContext::general()),
+            (
+                "succ\ndefinition\nlet succ be set;\nsucc;\nend;",
+                ParserLexContext::general(),
+            ),
+            (r#""abc\"def""#, ParserLexContext::string_required()),
+            (r#""bad\n" tail"#, ParserLexContext::string_required()),
+            (r#""abc""#, ParserLexContext::general()),
+            (":", ParserLexContext::identifier_required()),
+            ("@foo", ParserLexContext::general()),
+        ];
+
+        for (source, context) in seeds {
+            let raw = scan_raw(source).expect("phase7 disambiguator span seed should raw scan");
+            let skeleton = build_scope_skeleton(&raw);
+            let stream = disambiguate(&raw, &env, &context, &skeleton);
+
+            assert_final_token_spans_point_to_lexemes(source, &stream.tokens);
+            for diagnostic in &stream.diagnostics {
+                assert!(
+                    diagnostic.span.start <= diagnostic.span.end,
+                    "{source:?}: invalid diagnostic span {:?}",
+                    diagnostic.span
+                );
+                assert!(
+                    diagnostic.span.end <= source.len(),
+                    "{source:?}: out-of-bounds diagnostic span {:?}",
+                    diagnostic.span
+                );
+            }
         }
     }
 
