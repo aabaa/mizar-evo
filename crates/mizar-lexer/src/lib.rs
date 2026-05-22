@@ -1,3 +1,60 @@
+//! Lexical analysis helpers for Mizar source text.
+//!
+//! The lexer exposes a small pipeline: [`scan_raw`] performs strict raw
+//! scanning, [`lex`] applies reserved-word and reserved-symbol shell
+//! disambiguation, and [`disambiguate`] uses the active lexical environment plus
+//! parser context when callers need the full parser-facing token stream.
+//!
+//! Token spans are byte offsets into the string passed to the scanner.
+//!
+//! ```
+//! use mizar_lexer::{scan_raw, RawTokenKind};
+//!
+//! let source = "alpha beta";
+//! let raw = scan_raw(source)?;
+//!
+//! assert_eq!(raw.tokens[0].kind, RawTokenKind::LexemeRun);
+//! assert_eq!(&source[raw.tokens[0].span.start..raw.tokens[0].span.end], "alpha");
+//! # Ok::<(), mizar_lexer::LexError>(())
+//! ```
+//!
+//! ```
+//! use mizar_lexer::{lex, TokenKind};
+//!
+//! let source = "alpha beta";
+//! let tokens = lex(source)?;
+//!
+//! assert_eq!(tokens[1].kind, TokenKind::Identifier);
+//! assert_eq!(&source[tokens[1].span.start..tokens[1].span.end], "beta");
+//! # Ok::<(), mizar_lexer::LexError>(())
+//! ```
+//!
+//! ```
+//! use mizar_lexer::{
+//!     build_lexical_environment, build_scope_skeleton, disambiguate, scan_raw,
+//!     ParserLexContext, TokenKind,
+//! };
+//!
+//! let source = "alpha:=beta";
+//! let raw = scan_raw(source)?;
+//! let environment = build_lexical_environment(&[], &[])?;
+//! let scopes = build_scope_skeleton(&raw);
+//! let stream = disambiguate(&raw, &environment, &ParserLexContext::general(), &scopes);
+//!
+//! assert!(stream.diagnostics.is_empty());
+//! assert_eq!(
+//!     stream
+//!         .tokens
+//!         .iter()
+//!         .map(|token| token.lexeme.as_str())
+//!         .collect::<Vec<_>>(),
+//!     vec!["alpha", ":=", "beta"],
+//! );
+//! assert_eq!(stream.tokens[1].kind, TokenKind::ReservedSymbol);
+//! assert_eq!(&source[stream.tokens[1].span.start..stream.tokens[1].span.end], ":=");
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
 mod disambiguator;
 mod import_prescan;
 mod lexical_environment;
