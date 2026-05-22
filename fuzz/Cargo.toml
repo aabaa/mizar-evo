@@ -1,0 +1,19 @@
+[package]
+name = "mizar-lexer-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+mizar-lexer = { path = "../crates/mizar-lexer" }
+
+[[bin]]
+name = "lexer_valid_utf8"
+path = "fuzz_targets/lexer_valid_utf8.rs"
+test = false
+doc = false
+bench = false

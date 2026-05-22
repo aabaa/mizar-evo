@@ -6,39 +6,34 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-1. Add fuzz coverage.
-   - Add a `cargo-fuzz` target for `scan_raw` over arbitrary byte input or valid UTF-8 strings.
-   - Include arbitrary valid UTF-8 input for `preprocess_source_for_lexing` and `scan_raw`.
-   - Minimize any discovered failures and promote stable cases into `tests/lexical` before committing them as corpus regressions.
-
-2. Add performance benchmarking.
+1. Add performance benchmarking.
    - Benchmark `scan_raw` throughput on a large `.miz`-like source.
    - Measure raw scanning, preprocessing, and `SourceLineIndex` construction separately.
    - Keep benchmarks independent of module resolution, parser context, and imported symbol loading.
 
-3. Decide UTF-8 BOM handling policy at the source-loading boundary.
+2. Decide UTF-8 BOM handling policy at the source-loading boundary.
    - Prefer accepting a leading UTF-8 BOM in raw file input and stripping it before `mizar-lexer` entry points receive `&str`.
    - Keep direct lexer helper calls strict: a `U+FEFF` that reaches `preprocess_source_for_lexing` or `scan_raw` should remain a malformed source precondition rather than silently disappearing.
    - Document whether token spans after BOM stripping are measured in loaded text offsets and how the source map relates them back to original file byte offsets.
    - Add source-loading tests once the frontend/session source loader exists; avoid changing lexer behavior until that boundary is implemented.
 
-4. Specify and test UTF-8 file loading.
+3. Specify and test UTF-8 file loading.
    - Reject invalid UTF-8 before lexer entry and avoid lossy decoding into `U+FFFD`.
    - Decide and test leading UTF-8 BOM stripping, including original-byte-offset source-map behavior.
 
-5. Specify and test newline normalization.
+4. Specify and test newline normalization.
    - Define CRLF-to-LF behavior before lexer entry.
    - Ensure the source map can relate normalized lexical/source text offsets back to original file byte offsets.
 
-6. Implement preprocess source-map tests.
+5. Implement preprocess source-map tests.
    - Cover ordinary comment removal, documentation comment retention, synthetic whitespace/newline segments, and lexical ranges spanning removed comments.
    - Ensure diagnostics from lexer/preprocessor helpers can be mapped back to original source ranges.
 
-7. Keep user-facing column conversion outside lexer.
+6. Keep user-facing column conversion outside lexer.
     - Test Unicode scalar columns in the source-map/session layer.
     - Test LSP UTF-16 conversion in the LSP bridge, not in `mizar-lexer`.
 
-8. Cover source path normalization outside lexer.
+7. Cover source path normalization outside lexer.
     - Test `.`/`..`, symlinks, case policy, package-root escape attempts, and platform-specific separators in the source-loading/path layer.
 
 ## Completed Tasks
@@ -83,6 +78,12 @@ This document records follow-up tasks identified during the lexer quality review
    - Code-region identifiers, numerals, reserved spellings, and user-symbol spellings remain ASCII-only at the lexer boundary.
    - Comment and documentation text remains raw Unicode trivia unless a later documentation/source-loading layer adds warnings.
 
+10. Added fuzz coverage.
+   - Added a `cargo-fuzz` target, `lexer_valid_utf8`, for arbitrary valid UTF-8 strings.
+   - The target exercises `preprocess_source_for_lexing`, direct `scan_raw`, and `scan_raw` over preprocessed lexical text.
+   - Fuzz assertions pin span validity, comment lexeme slicing, raw token lexeme slicing, and full raw-token input coverage for successful scans.
+   - Seed corpus entries cover ASCII/layout/annotation text and Unicode in documentation/comment/code regions.
+
 ## Suggested Verification
 
 After each task, run:
@@ -121,5 +122,5 @@ This first-pass audit records common text-processing pitfalls and whether the cu
 | Raw/final token span integrity | Covered by crate-local seeds | Tests cover raw span contiguity, final token span preservation, and property-style final token span checks across `lex` and `disambiguate`. | Broaden with fuzz coverage later. |
 | Error-recovery token spans | Covered by crate-local seeds | Disambiguator recovery diagnostics/tokens are included in final-token span invariant seeds. | Broaden with fuzz coverage later. |
 | Huge files / long lines / memory | Not covered | `SourceLineIndex` stores all character boundaries; raw scanning clones token lexemes. No benchmark yet. | Use benchmark task to measure large `.miz`-like input and long-line behavior. |
-| Panic safety under arbitrary text | Partially covered | Scanner uses `char_indices`; fuzz task is still pending. | Add fuzz target for valid UTF-8 strings and promote regressions into corpus. |
+| Panic safety under arbitrary text | Covered for lexer valid UTF-8 entry points | The `lexer_valid_utf8` cargo-fuzz target exercises `preprocess_source_for_lexing`, direct `scan_raw`, and `scan_raw` over preprocessed lexical text. | Promote minimized fuzz failures into the committed corpus when discovered. |
 | File/path text normalization | Partially covered outside lexing | `module_source_name_from_path` normalizes separators and validates identifier-shaped components. | Source-loading/path layer should own symlink, case, `.`/`..`, and platform path edge cases. |

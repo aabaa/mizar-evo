@@ -385,4 +385,5 @@ crate tests と corpus tests は以下を確認します。
 - identifier-shaped user symbol が lexical environment と scope override rule に従って disambiguate されること;
 - full IR を読み込まなくても imported symbol summary だけで lexical disambiguation に足りること;
 - unresolved identifier は token として残り、name resolution diagnostics は後続 phase に委ねられること;
+- `cargo-fuzz` coverage により、arbitrary valid UTF-8 input に対する `preprocess_source_for_lexing`、direct `scan_raw`、preprocessed lexical text 上の `scan_raw` を exercise すること;
 - Phase 7 regression tests により raw/final span coverage、deterministic raw scanning、retokenization、import conflict、recovery spans、composite disambiguation behavior が保たれること。

@@ -1,5 +1,6 @@
 [workspace]
 members = ["crates/mizar-lexer", "crates/mizar-test"]
+exclude = ["fuzz"]
 resolver = "3"
 
 [workspace.package]

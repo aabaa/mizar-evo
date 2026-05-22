@@ -385,4 +385,5 @@ The crate and corpus tests cover:
 - identifier-shaped user symbols are disambiguated with lexical environment and scope override rules;
 - imported symbol summaries are enough for lexical disambiguation without loading full IR;
 - unresolved identifiers remain tokens and are rejected later by name resolution diagnostics;
+- `cargo-fuzz` coverage exercises `preprocess_source_for_lexing`, direct `scan_raw`, and `scan_raw` over preprocessed lexical text for arbitrary valid UTF-8 input;
 - Phase 7 regression tests preserve raw/final span coverage, deterministic raw scanning, retokenization, import conflict, recovery spans, and composite disambiguation behavior.
