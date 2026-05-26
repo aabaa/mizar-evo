@@ -26,6 +26,7 @@ The source-loading layer outside this crate owns:
 
 - reading files;
 - validating UTF-8;
+- accepting and stripping a leading UTF-8 BOM from package-authored source text before lexer entry;
 - normalizing platform newlines to LF-only text before scanner entry points are used;
 - preserving a source map back to original file offsets when needed;
 - deciding how source files are located in packages.
@@ -46,6 +47,8 @@ space, tab, newline
 ```
 
 Carriage return is not layout at this layer. A `\r` reaching the lexer is either a source-loading bug or an intentionally malformed test fixture.
+
+A leading UTF-8 BOM is also a source-loading concern, not a lexer feature. Disk input may contain the byte sequence `EF BB BF`, and package-authored open-buffer text may contain the corresponding leading `U+FEFF`; the source loader strips exactly that leading signature before constructing `LoadedSource.text` or calling lexer entry points. Any `U+FEFF` that reaches `preprocess_source_for_lexing` or `scan_raw`, including a non-leading one, remains malformed lexer-boundary input and must not be silently discarded here.
 
 ## Source-Text Normalization Policy
 
@@ -78,6 +81,8 @@ The raw scanner's main invariant is span contiguity: every emitted raw token poi
 Callers must keep the coordinate space explicit. Raw tokens and final tokens produced from `scan_raw` and `disambiguate` point into the scanner input passed to `scan_raw`. When that input is `PreprocessedLexicalSource.lexical_text`, the spans are lexical-text offsets, not necessarily offsets into the original loaded `.miz` text. A `SourceLineIndex` must always be built from the same text that the spans address.
 
 Mapping lexical-text offsets back to original loaded-source offsets belongs to a source map or the session layer. The lexer must not silently treat spans from preprocessed text as original file coordinates.
+
+When source loading strips a leading BOM, lexer spans are measured in the post-strip loaded text, not in raw file bytes. For disk sources, `LoadingMap` relates those loaded-text offsets back to original file byte offsets: offset `0` in loaded text maps to byte offset `3` in the original file when a BOM was stripped, and subsequent offsets carry the same three-byte adjustment until later loading transforms such as newline normalization add their own mapping entries. The stripped BOM has no lexer `SourceSpan`.
 
 The lexer must not store line and column numbers on every raw or final token. Line and column positions are derived views computed from the source text when diagnostics, debug output, snapshots, or LSP bridges need human-readable coordinates. This avoids duplicating location data and avoids mixing multiple coordinate systems in token values.
 

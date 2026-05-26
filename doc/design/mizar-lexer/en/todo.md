@@ -6,29 +6,23 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-1. Decide UTF-8 BOM handling policy at the source-loading boundary.
-   - Prefer accepting a leading UTF-8 BOM in raw file input and stripping it before `mizar-lexer` entry points receive `&str`.
-   - Keep direct lexer helper calls strict: a `U+FEFF` that reaches `preprocess_source_for_lexing` or `scan_raw` should remain a malformed source precondition rather than silently disappearing.
-   - Document whether token spans after BOM stripping are measured in loaded text offsets and how the source map relates them back to original file byte offsets.
-   - Add source-loading tests once the frontend/session source loader exists; avoid changing lexer behavior until that boundary is implemented.
-
-2. Specify and test UTF-8 file loading.
+1. Specify and test UTF-8 file loading.
    - Reject invalid UTF-8 before lexer entry and avoid lossy decoding into `U+FFFD`.
-   - Decide and test leading UTF-8 BOM stripping, including original-byte-offset source-map behavior.
+   - Test leading UTF-8 BOM stripping, including original-byte-offset source-map behavior.
 
-3. Specify and test newline normalization.
+2. Specify and test newline normalization.
    - Define CRLF-to-LF behavior before lexer entry.
    - Ensure the source map can relate normalized lexical/source text offsets back to original file byte offsets.
 
-4. Implement preprocess source-map tests.
+3. Implement preprocess source-map tests.
    - Cover ordinary comment removal, documentation comment retention, synthetic whitespace/newline segments, and lexical ranges spanning removed comments.
    - Ensure diagnostics from lexer/preprocessor helpers can be mapped back to original source ranges.
 
-5. Keep user-facing column conversion outside lexer.
+4. Keep user-facing column conversion outside lexer.
     - Test Unicode scalar columns in the source-map/session layer.
     - Test LSP UTF-16 conversion in the LSP bridge, not in `mizar-lexer`.
 
-6. Cover source path normalization outside lexer.
+5. Cover source path normalization outside lexer.
     - Test `.`/`..`, symlinks, case policy, package-root escape attempts, and platform-specific separators in the source-loading/path layer.
 
 ## Completed Tasks
@@ -84,6 +78,12 @@ This document records follow-up tasks identified during the lexer quality review
    - The benchmark measures `preprocess_source_for_lexing`, `scan_raw`, and `SourceLineIndex` construction separately.
    - The benchmark stays lexer-local and does not involve module resolution, parser context, or imported symbol loading.
 
+12. Decided UTF-8 BOM handling policy at the source-loading boundary.
+   - Package-authored source loading accepts one leading UTF-8 BOM and strips it before constructing `LoadedSource.text` or calling `mizar-lexer`.
+   - Direct lexer helper calls stay strict: `U+FEFF` reaching `preprocess_source_for_lexing` or `scan_raw` remains malformed lexer-boundary input.
+   - Lexer spans after BOM stripping are byte offsets into post-strip loaded text; `LoadingMap` relates loaded offset `0` to original file byte offset `3` for BOM-prefixed disk files.
+   - Source-loading tests remain deferred until the frontend/session source loader is implemented; lexer behavior is unchanged.
+
 ## Suggested Verification
 
 After each task, run:
@@ -102,7 +102,7 @@ This first-pass audit records common text-processing pitfalls and whether the cu
 | Topic | Current status | Owner / evidence | Follow-up |
 |---|---|---|---|
 | UTF-8 validation | Delegated by design | `mizar-lexer` receives `&str`; source loading validates file bytes before lexer entry. See `raw_lexer.md` Source Preconditions and architecture source loading step. | Implement source-loader tests when that crate exists. |
-| UTF-8 BOM | Deferred | Current lexer helpers treat `U+FEFF` as malformed/non-ASCII. Priority task 6 records the intended source-loading policy. | Decide and test BOM stripping at source-loading boundary. |
+| UTF-8 BOM | Decided, tests deferred | Source loading strips one leading UTF-8 BOM before lexer entry; lexer helpers still treat any reached `U+FEFF` as malformed/non-ASCII. See `raw_lexer.md`, `mizar-session/source.md`, and `mizar-session/source_map.md`. | Implement source-loader tests when that crate exists. |
 | Replacement character `U+FFFD` | Mostly rejected in code regions | `preprocess_source_for_lexing` reports any non-ASCII code-region char as `NonAsciiCode`; comments may contain Unicode. | Add explicit source-loading policy that invalid UTF-8 must not be decoded lossy into `U+FFFD`. |
 | LF / CRLF / CR handling | Delegated plus guarded | Source loading is expected to normalize platform newlines; lexer helper reports `CarriageReturn`; raw scanner rejects `\r`. | Source loader and source-map tests must cover CRLF-to-LF mapping. |
 | Missing final newline / empty file / trailing newlines | Covered at lexer level | Empty raw stream is tested; `SourceLineIndex` accepts EOF; scanner does not require final newline. | Add corpus cases only if later parser/import prelude behavior depends on final newline. |

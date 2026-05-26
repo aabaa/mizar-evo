@@ -26,6 +26,7 @@ public enums には `#[non_exhaustive]` を付けます。downstream crates は 
 
 - file read;
 - UTF-8 validation;
+- package-authored source text の先頭 UTF-8 BOM を lexer entry 前に受け入れて取り除くこと;
 - scanner entry point に渡す前の platform newline から LF-only text への正規化;
 - 必要に応じた original file offsets への source map;
 - package 内で source file をどのように見つけるかの決定。
@@ -46,6 +47,8 @@ space, tab, newline
 ```
 
 Carriage return はこの layer では layout ではありません。`\r` が lexer に届いた場合、それは source-loading 側の不備か、意図的な malformed test fixture です。
+
+先頭 UTF-8 BOM も lexer feature ではなく source-loading の責務です。Disk input は byte sequence `EF BB BF` を含んでよく、package-authored open-buffer text は対応する先頭 `U+FEFF` を含んでよいです。source loader は、`LoadedSource.text` を構築する前、または lexer entry point を呼ぶ前に、その先頭 signature だけを取り除きます。`preprocess_source_for_lexing` または `scan_raw` に届いた `U+FEFF` は、先頭以外のものを含めて malformed lexer-boundary input のままであり、この layer で silently discard してはいけません。
 
 ## Source-Text Normalization Policy
 
@@ -78,6 +81,8 @@ Raw scanner の重要な不変条件は span contiguity です。出力された
 caller は coordinate space を明示的に扱わなければなりません。`scan_raw` と `disambiguate` から生成される raw token と final token は、`scan_raw` に渡された scanner input を指します。その input が `PreprocessedLexicalSource.lexical_text` の場合、span は lexical-text offset であり、元の loaded `.miz` text への offset とは限りません。`SourceLineIndex` は、必ず span が指している text と同じ text から構築します。
 
 lexical-text offset から original loaded-source offset への mapping は source map または session layer の責務です。lexer は preprocessed text 上の span を original file coordinate として暗黙に扱ってはいけません。
+
+source loading が先頭 BOM を取り除いた場合、lexer span は raw file bytes ではなく post-strip loaded text への byte offset として測られます。Disk source では、`LoadingMap` がそれらの loaded-text offsets を original file byte offsets へ関連付けます。BOM が取り除かれている場合、loaded text の offset `0` は original file の byte offset `3` に対応し、それ以降の offset も newline normalization など後続の loading transform が独自の mapping entry を追加するまで同じ 3-byte adjustment を持ちます。取り除かれた BOM は lexer `SourceSpan` を持ちません。
 
 lexer は raw token や final token のすべてに line/column number を保存してはいけません。Line/column は diagnostics、debug output、snapshots、LSP bridge が human-readable coordinate を必要とする時に、source text から計算する derived view です。これにより location data の重複を避け、token value の中で複数の coordinate system が混ざることを防ぎます。
 

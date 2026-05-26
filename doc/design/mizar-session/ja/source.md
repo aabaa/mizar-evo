@@ -35,6 +35,7 @@ pub struct LoadedSource {
     pub edition: Edition,
     pub origin: SourceOrigin,
     pub line_map: LineMap,
+    pub loading_map: Option<LoadingMap>,
 }
 
 pub trait SourceLoader {
@@ -70,9 +71,11 @@ Local diagnostics は absolute display path を別に持ってよい。Published
 
 ### Loaded Source
 
-`LoadedSource` は validated UTF-8 text と、その exact text 用の `LineMap` を含む。Construction 後 immutable であり、snapshot leases、LSP snapshots、diagnostic indexes、source-map handles によって retain され得る。
+`LoadedSource` は source-loading normalization 後の validated UTF-8 text と、その exact text 用の `LineMap` を含む。Construction 後 immutable であり、snapshot leases、LSP snapshots、diagnostic indexes、source-map handles によって retain され得る。
 
-`source_hash` は request が観測した exact source text から計算される。Open buffers では on-disk file ではなく editor-provided text である。
+`source_hash` は UTF-8 validation と、先頭 BOM stripping や newline normalization などの source-loading normalization 後の `LoadedSource.text` から計算される。Open buffers では on-disk file ではなく normalized editor-provided text である。Packaging or diagnostics のために byte-exact provenance が必要な場合は、`source_hash` を再定義せず、origin metadata または separate raw-content hash を使う。
+
+`loading_map` は、`LoadedSource.text` が作られる前に source loading が offset を変更した場合に存在する。Normalized loaded-text ranges を source-loading input へ戻す map であり、disk sources では original file byte offsets、open buffers では editor-provided text byte offsets、generated inputs では generated-source anchor を指す。Source-loading transform が offset を変えなかった場合、mapping は identity なので省略してよい。
 
 ### Source Origin
 
@@ -92,9 +95,14 @@ Open-buffer sources は targeted LSP request or watch generation に限って di
 2. Package source tree の外側の path を reject する。
 3. Disk から bytes を read する。
 4. UTF-8 を validate する。
-5. Source hash を compute する。
-6. `LineMap` を build する。
-7. `LoadedSource` を返す。
+5. Validated text が UTF-8 BOM signature で始まる場合、先頭 `U+FEFF` を strip する。
+6. Frontend newline policy に従って source-loading newlines を normalize する。
+7. BOM stripping or newline normalization が offset を変更した場合、normalized loaded-text offsets から original file byte offsets への `LoadingMap` を記録する。
+8. `LoadedSource.text` から source hash を compute する。
+9. `LoadedSource.text` 上に `LineMap` を build する。
+10. `LoadedSource` を返す。
+
+Encoding signature として扱うのは先頭 UTF-8 BOM だけです。それ以外の位置にある `U+FEFF` は loaded text に保持され、code に現れた場合は malformed lexer-boundary character のままです。
 
 Code-region ASCII validation は preprocessing に属する。この module は text encoding and source identity のみ validate する。
 
@@ -103,10 +111,13 @@ Code-region ASCII validation は preprocessing に属する。この module は 
 1. LSP bridge が提供した document version を validate する。
 2. Document URI を package source path に normalize する。
 3. その request では editor-provided text を authoritative として使う。
-4. その text から source hash and `LineMap` を compute する。
-5. Origin を `OpenBuffer` として mark する。
+4. BOM-prefixed disk file の editor view が disk source loading と一致するように、package-authored open-buffer text から先頭 `U+FEFF` を一つ strip する。
+5. Frontend newline policy に従って source-loading newlines を normalize する。
+6. Stripping or newline normalization が offset を変更した場合、normalized loaded-text offsets から editor-provided text byte offsets への `LoadingMap` を記録する。
+7. `LoadedSource.text` から source hash and `LineMap` を compute する。
+8. Origin を `OpenBuffer` として mark する。
 
-Open-buffer text は last verified artifact より fresh な場合がある。Consumers は artifact data を暗黙に current として扱わず freshness metadata を carry しなければならない。
+Open-buffer text は last verified artifact より fresh な場合がある。Consumers は artifact data を暗黙に current として扱わず freshness metadata を carry しなければならない。LSP diagnostics and edits は editor document に対する protocol UTF-16 position rules を適用する前に、`LoadedSource.text` offsets から `loading_map` を通して変換しなければならない。
 
 ### Generated Source Loading
 
@@ -134,6 +145,9 @@ Key scenarios:
 - disk and open-buffer sources with identical text produce the same source hash but different origins
 - open-buffer source overrides disk text only for the matching document version
 - invalid UTF-8 is rejected before line-map construction
+- leading UTF-8 BOM is accepted and stripped before line-map construction
+- non-leading `U+FEFF` is not stripped by source loading
+- open-buffer BOM stripping and newline normalization preserve a loading map back to editor-provided text offsets
 - path normalization rejects paths outside the package root
 - CRLF and LF handling matches `LineMap` expectations
 - generated sources preserve generator metadata and anchors
