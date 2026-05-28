@@ -6,23 +6,19 @@
 
 ## Ordered Task List
 
-1. UTF-8 file loading を仕様化して test する。
-   - invalid UTF-8 を lexer entry 前に reject し、lossy decode で `U+FFFD` にしない。
-   - 先頭 UTF-8 BOM stripping を test し、original-byte-offset source-map behavior も確認する。
-
-2. newline normalization を仕様化して test する。
+1. newline normalization を仕様化して test する。
    - lexer entry 前の CRLF-to-LF behavior を定義する。
    - source map が normalized lexical/source text offsets を original file byte offsets に対応付けられることを確認する。
 
-3. preprocess source-map tests を実装する。
+2. preprocess source-map tests を実装する。
    - ordinary comment removal、documentation comment retention、synthetic whitespace/newline segments、removed comments をまたぐ lexical ranges を cover する。
    - lexer/preprocessor helpers 由来の diagnostics を original source ranges に map できることを確認する。
 
-4. user-facing column conversion は lexer 外に保つ。
+3. user-facing column conversion は lexer 外に保つ。
     - Unicode scalar columns は source-map/session layer で test する。
     - LSP UTF-16 conversion は `mizar-lexer` ではなく LSP bridge で test する。
 
-5. source path normalization は lexer 外で cover する。
+4. source path normalization は lexer 外で cover する。
     - `.`/`..`、symlinks、case policy、package-root escape attempts、platform-specific separators を source-loading/path layer で test する。
 
 ## Completed Tasks
@@ -82,7 +78,12 @@
    - Package-authored source loading は先頭 UTF-8 BOM を一つ受け入れ、`LoadedSource.text` を構築する前、または `mizar-lexer` を呼ぶ前に strip する。
    - Direct lexer helper calls は strict のままにする。`preprocess_source_for_lexing` や `scan_raw` に届いた `U+FEFF` は malformed lexer-boundary input のままである。
    - BOM stripping 後の lexer span は post-strip loaded text への byte offset であり、BOM-prefixed disk file では `LoadingMap` が loaded offset `0` を original file byte offset `3` へ対応付ける。
-   - Source-loading tests は frontend/session source loader 実装まで deferred とし、lexer behavior は変更しない。
+
+13. UTF-8 file loading boundary behavior を仕様化して test した。
+   - UTF-8 validation と leading BOM stripping の executable boundary として crate-local `load_source_text_from_bytes` を追加した。
+   - Invalid UTF-8 は lexer entry 前に `SourceLoadError::InvalidUtf8` を返し、lossy decode で `U+FFFD` にしない。
+   - 先頭 UTF-8 BOM stripping は `LoadedSourceText.loading_map` で test し、loaded offset `0` が original byte offset `3` に map されることを確認した。
+   - Non-leading `U+FEFF` は loaded text に残り、code に現れた場合は lexer-boundary preprocessing/raw scanning で reject されるままにした。
 
 ## Suggested Verification
 
@@ -101,9 +102,9 @@ API stability、fuzz、benchmark 作業では、この TODO file の更新また
 
 | Topic | Current status | Owner / evidence | Follow-up |
 |---|---|---|---|
-| UTF-8 validation | design 上は委譲済み | `mizar-lexer` は `&str` を受け取る。file bytes の validation は lexer entry 前の source loading が担当する。`raw_lexer.md` Source Preconditions と architecture source loading step を参照。 | source-loader crate ができた段階で tests を実装する。 |
-| UTF-8 BOM | 決定済み、tests は deferred | Source loading は lexer entry 前に先頭 UTF-8 BOM を一つ strip する。lexer helpers は、届いた `U+FEFF` を malformed/non-ASCII として扱い続ける。`raw_lexer.md`、`mizar-session/source.md`、`mizar-session/source_map.md` を参照。 | source-loader crate ができた段階で tests を実装する。 |
-| replacement character `U+FFFD` | code region では概ね reject | `preprocess_source_for_lexing` は code-region の non-ASCII char を `NonAsciiCode` として報告する。comments は Unicode allowed。 | invalid UTF-8 を lossy decode して `U+FFFD` にしないことを source-loading policy として明記する。 |
+| UTF-8 validation | executable boundary で covered | `load_source_text_from_bytes` は source bytes を validate し、lexer entry 前に `SourceLoadError::InvalidUtf8` を返す。scanner APIs は引き続き `&str` を受け取る。 | frontend/session source loader ができた段階で、この behavior を reuse または mirror する。 |
+| UTF-8 BOM | UTF-8 boundary では covered | `load_source_text_from_bytes` は先頭 UTF-8 BOM を一つ strip し、loading map を記録する。lexer helpers は、届いた `U+FEFF` を malformed/non-ASCII として扱い続ける。`raw_lexer.md`、`mizar-session/source.md`、`mizar-session/source_map.md` を参照。 | newline normalization と richer source-map tests は source-loading/session layer に残る。 |
+| replacement character `U+FFFD` | invalid bytes と code region で covered | Invalid UTF-8 は lossy decode で `U+FFFD` にしない。`preprocess_source_for_lexing` は valid non-ASCII code-region characters を `NonAsciiCode` として報告する。comments は Unicode allowed。 | comments/doc text の suspicious Unicode warning は将来 source-loading/docs 側で検討する。 |
 | LF / CRLF / CR handling | 委譲 + guard 済み | source loading が platform newline を normalize する想定。lexer helper は `CarriageReturn` を報告し、raw scanner は `\r` を reject する。 | source loader と source-map tests で CRLF-to-LF mapping を cover する。 |
 | missing final newline / empty file / trailing newlines | lexer level では covered | empty raw stream の test があり、`SourceLineIndex` は EOF を受け入れる。scanner は final newline を要求しない。 | parser/import prelude が final newline に依存する場合のみ corpus cases を追加する。 |
 | byte offset vs character column | lexer-local policy は covered | lexer spans は byte offsets。`SourceLineIndex` は zero-based byte columns を使い、non-UTF-8-boundary offsets を reject する。session source map は user-facing Unicode scalar columns を規定する。 | human-facing conversion は source-map layer が担当する。 |

@@ -1,6 +1,9 @@
 use crate::raw_lexer::{is_identifier, is_layout};
 use std::error::Error;
 use std::fmt;
+use std::str::Utf8Error;
+
+const UTF8_BOM: &str = "\u{feff}";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SourceSpan {
@@ -16,6 +19,29 @@ pub struct SourceLineIndex {
     line_starts: Vec<usize>,
     char_boundaries: Vec<usize>,
     source_len: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LoadedSourceText {
+    pub text: String,
+    pub loading_map: Option<SourceLoadingMap>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceLoadingMap {
+    pub segments: Vec<SourceLoadingMapSegment>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceLoadingMapSegment {
+    Original {
+        loaded: SourceRange,
+        original: SourceRange,
+    },
+    RemovedLeadingBom {
+        original: SourceRange,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -85,6 +111,15 @@ pub enum ModuleNamingError {
     InvalidNamespaceComponent { component: String },
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceLoadError {
+    InvalidUtf8 {
+        valid_up_to: usize,
+        error_len: Option<usize>,
+    },
+}
+
 impl fmt::Display for ModuleNamingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -114,6 +149,80 @@ impl fmt::Display for ModuleNamingError {
 }
 
 impl Error for ModuleNamingError {}
+
+impl fmt::Display for SourceLoadError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidUtf8 {
+                valid_up_to,
+                error_len,
+            } => match error_len {
+                Some(error_len) => write!(
+                    f,
+                    "source bytes are not valid UTF-8 at byte {valid_up_to} over {error_len} byte(s)"
+                ),
+                None => write!(
+                    f,
+                    "source bytes end with an incomplete UTF-8 sequence starting at byte {valid_up_to}"
+                ),
+            },
+        }
+    }
+}
+
+impl Error for SourceLoadError {}
+
+impl From<Utf8Error> for SourceLoadError {
+    fn from(error: Utf8Error) -> Self {
+        Self::InvalidUtf8 {
+            valid_up_to: error.valid_up_to(),
+            error_len: error.error_len(),
+        }
+    }
+}
+
+impl SourceLoadingMap {
+    pub fn original_offset_for_loaded(&self, offset: SourcePos) -> Option<SourcePos> {
+        self.segments.iter().find_map(|segment| match segment {
+            SourceLoadingMapSegment::Original { loaded, original }
+                if loaded.start <= offset && offset <= loaded.end =>
+            {
+                Some(original.start + (offset - loaded.start))
+            }
+            _ => None,
+        })
+    }
+}
+
+pub fn load_source_text_from_bytes(bytes: &[u8]) -> Result<LoadedSourceText, SourceLoadError> {
+    let text = std::str::from_utf8(bytes)?;
+    let Some(stripped) = text.strip_prefix(UTF8_BOM) else {
+        return Ok(LoadedSourceText {
+            text: text.to_owned(),
+            loading_map: None,
+        });
+    };
+
+    let mut segments = vec![SourceLoadingMapSegment::RemovedLeadingBom {
+        original: SourceSpan { start: 0, end: 3 },
+    }];
+    segments.push(SourceLoadingMapSegment::Original {
+        loaded: SourceSpan {
+            start: 0,
+            end: stripped.len(),
+        },
+        original: SourceSpan {
+            start: 3,
+            end: bytes.len(),
+        },
+    });
+
+    Ok(LoadedSourceText {
+        text: stripped.to_owned(),
+        loading_map: Some(SourceLoadingMap { segments }),
+    })
+}
+
 impl SourceLineIndex {
     pub fn new(source: &str) -> Self {
         let mut line_starts = vec![0];

@@ -94,7 +94,7 @@ Open-buffer sources can override disk sources only for the targeted LSP request 
 1. Normalize the path relative to the package source root.
 2. Reject paths outside the package source tree.
 3. Read bytes from disk.
-4. Validate UTF-8.
+4. Validate UTF-8. Invalid bytes are rejected before line-map construction and must not be decoded lossily into `U+FFFD`.
 5. If the validated text starts with a UTF-8 BOM signature, strip that leading `U+FEFF`.
 6. Normalize source-loading newlines according to the frontend newline policy.
 7. Record a `LoadingMap` from normalized loaded-text offsets back to original file byte offsets when BOM stripping or newline normalization changed offsets.
@@ -144,7 +144,7 @@ Key scenarios:
 
 - disk and open-buffer sources with identical text produce the same source hash but different origins;
 - open-buffer source overrides disk text only for the matching document version;
-- invalid UTF-8 is rejected before line-map construction;
+- invalid UTF-8 is rejected before line-map construction and is not turned into replacement characters by lossy decoding;
 - a leading UTF-8 BOM is accepted and stripped before line-map construction;
 - non-leading `U+FEFF` is not stripped by source loading;
 - open-buffer BOM stripping and newline normalization preserve a loading map back to editor-provided text offsets;

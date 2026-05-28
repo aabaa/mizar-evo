@@ -94,7 +94,7 @@ Open-buffer sources は targeted LSP request or watch generation に限って di
 1. Package source root からの relative path に normalize する。
 2. Package source tree の外側の path を reject する。
 3. Disk から bytes を read する。
-4. UTF-8 を validate する。
+4. UTF-8 を validate する。Invalid bytes は line-map construction 前に reject し、lossy decode によって `U+FFFD` にしてはいけない。
 5. Validated text が UTF-8 BOM signature で始まる場合、先頭 `U+FEFF` を strip する。
 6. Frontend newline policy に従って source-loading newlines を normalize する。
 7. BOM stripping or newline normalization が offset を変更した場合、normalized loaded-text offsets から original file byte offsets への `LoadingMap` を記録する。
@@ -144,7 +144,7 @@ Key scenarios:
 
 - disk and open-buffer sources with identical text produce the same source hash but different origins
 - open-buffer source overrides disk text only for the matching document version
-- invalid UTF-8 is rejected before line-map construction
+- invalid UTF-8 is rejected before line-map construction and is not turned into replacement characters by lossy decoding
 - leading UTF-8 BOM is accepted and stripped before line-map construction
 - non-leading `U+FEFF` is not stripped by source loading
 - open-buffer BOM stripping and newline normalization preserve a loading map back to editor-provided text offsets

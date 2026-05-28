@@ -33,6 +33,8 @@ public enums には `#[non_exhaustive]` を付けます。downstream crates は 
 
 一方、`mizar-lexer` は lexical boundary 用の source preprocessing helpers を提供します。
 
+- tests や early integration code が executable な source-loading boundary を必要とする場合、crate-local `load_source_text_from_bytes` helper で UTF-8 source bytes を validate する;
+- その helper で先頭 UTF-8 BOM を一つ strip し、post-strip loaded-text offsets から original byte offsets への最小限の loading map を記録する;
 - ordinary comment、documentation comment、multi-line comment を lexical input から取り除く;
 - comment trivia を source span とともに保持する;
 - コメント内の newline だけを残し、行構造を崩さないようにする;
@@ -83,6 +85,8 @@ caller は coordinate space を明示的に扱わなければなりません。`
 lexical-text offset から original loaded-source offset への mapping は source map または session layer の責務です。lexer は preprocessed text 上の span を original file coordinate として暗黙に扱ってはいけません。
 
 source loading が先頭 BOM を取り除いた場合、lexer span は raw file bytes ではなく post-strip loaded text への byte offset として測られます。Disk source では、`LoadingMap` がそれらの loaded-text offsets を original file byte offsets へ関連付けます。BOM が取り除かれている場合、loaded text の offset `0` は original file の byte offset `3` に対応し、それ以降の offset も newline normalization など後続の loading transform が独自の mapping entry を追加するまで同じ 3-byte adjustment を持ちます。取り除かれた BOM は lexer `SourceSpan` を持ちません。
+
+Crate-local `load_source_text_from_bytes` helper は、この contract の UTF-8/BOM 部分だけを実装します。Invalid UTF-8 は `SourceLoadError::InvalidUtf8` として reject し、bytes を lossy decode して `U+FFFD` にすることはありません。先頭 BOM を strip した場合、`LoadedSourceText.loading_map` は `RemovedLeadingBom { original: [0, 3) }` と、loaded offset `0` を original byte offset `3` に map する `Original` segment を返します。Full file I/O、path normalization、newline normalization、hashes、rich session `LineMap` ownership は引き続き `mizar-lexer` の外側にあります。
 
 lexer は raw token や final token のすべてに line/column number を保存してはいけません。Line/column は diagnostics、debug output、snapshots、LSP bridge が human-readable coordinate を必要とする時に、source text から計算する derived view です。これにより location data の重複を避け、token value の中で複数の coordinate system が混ざることを防ぎます。
 

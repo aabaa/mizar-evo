@@ -33,6 +33,8 @@ The source-loading layer outside this crate owns:
 
 `mizar-lexer` provides source-preprocessing helpers for the lexical boundary:
 
+- validating UTF-8 source bytes with the crate-local `load_source_text_from_bytes` helper when tests or early integration code need an executable source-loading boundary;
+- stripping one leading UTF-8 BOM in that helper and recording a minimal loading map from post-strip loaded-text offsets back to original byte offsets;
 - removing ordinary, documentation, and multi-line comments from lexical input;
 - preserving comment trivia with source spans;
 - preserving newline characters from comment text so line structure is not collapsed;
@@ -83,6 +85,8 @@ Callers must keep the coordinate space explicit. Raw tokens and final tokens pro
 Mapping lexical-text offsets back to original loaded-source offsets belongs to a source map or the session layer. The lexer must not silently treat spans from preprocessed text as original file coordinates.
 
 When source loading strips a leading BOM, lexer spans are measured in the post-strip loaded text, not in raw file bytes. For disk sources, `LoadingMap` relates those loaded-text offsets back to original file byte offsets: offset `0` in loaded text maps to byte offset `3` in the original file when a BOM was stripped, and subsequent offsets carry the same three-byte adjustment until later loading transforms such as newline normalization add their own mapping entries. The stripped BOM has no lexer `SourceSpan`.
+
+The crate-local `load_source_text_from_bytes` helper implements only the UTF-8/BOM part of that contract. It rejects invalid UTF-8 with `SourceLoadError::InvalidUtf8` and never decodes bytes lossily into `U+FFFD`. When it strips a leading BOM, it returns `LoadedSourceText.loading_map` with `RemovedLeadingBom { original: [0, 3) }` and an `Original` segment that maps loaded offset `0` to original byte offset `3`. Full file I/O, path normalization, newline normalization, hashes, and rich session `LineMap` ownership remain outside `mizar-lexer`.
 
 The lexer must not store line and column numbers on every raw or final token. Line and column positions are derived views computed from the source text when diagnostics, debug output, snapshots, or LSP bridges need human-readable coordinates. This avoids duplicating location data and avoids mixing multiple coordinate systems in token values.
 

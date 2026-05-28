@@ -6,6 +6,9 @@
 //! parser context when callers need the full parser-facing token stream.
 //!
 //! Token spans are byte offsets into the string passed to the scanner.
+//! File-loading callers should validate UTF-8 bytes with
+//! [`load_source_text_from_bytes`] before lexer entry when they need the
+//! source-loading boundary helper used by this crate's tests.
 //!
 //! ## Source-text normalization
 //!
@@ -110,10 +113,11 @@ pub use scope_skeleton::{
     ScopeSkeletonDiagnosticCode, ScopedBindingShape, build_scope_skeleton,
 };
 pub use source::{
-    CommentKind, CommentTrivia, ModuleNamingError, ModuleSourceName, PreprocessedLexicalSource,
-    SourceLineIndex, SourceLocation, SourceLocationRange, SourcePos, SourcePreprocessDiagnostic,
-    SourcePreprocessDiagnosticCode, SourceRange, SourceSpan, module_source_name_from_path,
-    preprocess_source_for_lexing,
+    CommentKind, CommentTrivia, LoadedSourceText, ModuleNamingError, ModuleSourceName,
+    PreprocessedLexicalSource, SourceLineIndex, SourceLoadError, SourceLoadingMap,
+    SourceLoadingMapSegment, SourceLocation, SourceLocationRange, SourcePos,
+    SourcePreprocessDiagnostic, SourcePreprocessDiagnosticCode, SourceRange, SourceSpan,
+    load_source_text_from_bytes, module_source_name_from_path, preprocess_source_for_lexing,
 };
 pub use tables::{
     RESERVED_SYMBOLS, RESERVED_WORDS, ReservedSymbolTable, ReservedWordTable, is_reserved_symbol,
@@ -127,12 +131,14 @@ mod tests {
         LexDiagnosticCode, LexicalBlockKind, LexicalEnvironmentError, LexicalSummaryFingerprint,
         ModuleId, ModuleLexicalSummary, ModuleNamingError, ParserLexContext, RESERVED_SYMBOLS,
         RESERVED_WORDS, RawModuleRelativePrefix, RawToken, RawTokenKind, ResolvedImport,
-        ScopeLexView, ScopeSkeletonDiagnosticCode, SourceLineIndex, SourceLocation,
-        SourceLocationRange, SourcePreprocessDiagnosticCode, SourceSpan, SymbolId, Token,
-        TokenKind, UserSymbolCandidate, build_lexical_environment, build_scope_skeleton,
-        disambiguate, is_identifier, is_layout, is_numeral, is_reserved_symbol, is_reserved_word,
-        is_string_literal_spelling, is_user_symbol_spelling, lex, longest_reserved_symbol_prefix,
-        module_source_name_from_path, preprocess_source_for_lexing, scan_import_prelude, scan_raw,
+        ScopeLexView, ScopeSkeletonDiagnosticCode, SourceLineIndex, SourceLoadError,
+        SourceLoadingMapSegment, SourceLocation, SourceLocationRange,
+        SourcePreprocessDiagnosticCode, SourceSpan, SymbolId, Token, TokenKind,
+        UserSymbolCandidate, build_lexical_environment, build_scope_skeleton, disambiguate,
+        is_identifier, is_layout, is_numeral, is_reserved_symbol, is_reserved_word,
+        is_string_literal_spelling, is_user_symbol_spelling, lex, load_source_text_from_bytes,
+        longest_reserved_symbol_prefix, module_source_name_from_path, preprocess_source_for_lexing,
+        scan_import_prelude, scan_raw,
     };
 
     fn token(kind: TokenKind, lexeme: &str, start: usize, end: usize) -> Token {
@@ -314,6 +320,90 @@ mod tests {
         );
         assert_eq!(index.range(SourceSpan { start: 2, end: 3 }), None);
         assert_eq!(index.range(SourceSpan { start: 8, end: 10 }), None);
+    }
+
+    #[test]
+    fn source_loading_rejects_invalid_utf8_without_lossy_replacement() {
+        let error = load_source_text_from_bytes(b"alpha \xff beta")
+            .expect_err("invalid UTF-8 must fail before lexer entry");
+
+        assert_eq!(
+            error,
+            SourceLoadError::InvalidUtf8 {
+                valid_up_to: 6,
+                error_len: Some(1),
+            }
+        );
+        let lossy = String::from_utf8_lossy(b"alpha \xff beta");
+        assert!(lossy.contains('\u{fffd}'));
+    }
+
+    #[test]
+    fn source_loading_strips_leading_utf8_bom_and_maps_original_offsets() {
+        let loaded = load_source_text_from_bytes(b"\xef\xbb\xbfalpha\nbeta")
+            .expect("leading UTF-8 BOM should be accepted");
+
+        assert_eq!(loaded.text, "alpha\nbeta");
+        assert_eq!(
+            loaded.loading_map.as_ref().map(|map| &map.segments),
+            Some(&vec![
+                SourceLoadingMapSegment::RemovedLeadingBom {
+                    original: SourceSpan { start: 0, end: 3 },
+                },
+                SourceLoadingMapSegment::Original {
+                    loaded: SourceSpan { start: 0, end: 10 },
+                    original: SourceSpan { start: 3, end: 13 },
+                },
+            ])
+        );
+
+        let map = loaded
+            .loading_map
+            .as_ref()
+            .expect("BOM stripping should record a loading map");
+        assert_eq!(map.original_offset_for_loaded(0), Some(3));
+        assert_eq!(map.original_offset_for_loaded(5), Some(8));
+        assert_eq!(map.original_offset_for_loaded(loaded.text.len()), Some(13));
+    }
+
+    #[test]
+    fn source_loading_maps_empty_text_after_bom_stripping() {
+        let loaded =
+            load_source_text_from_bytes(b"\xef\xbb\xbf").expect("BOM-only input is valid UTF-8");
+
+        assert_eq!(loaded.text, "");
+        assert_eq!(
+            loaded.loading_map.as_ref().map(|map| &map.segments),
+            Some(&vec![
+                SourceLoadingMapSegment::RemovedLeadingBom {
+                    original: SourceSpan { start: 0, end: 3 },
+                },
+                SourceLoadingMapSegment::Original {
+                    loaded: SourceSpan { start: 0, end: 0 },
+                    original: SourceSpan { start: 3, end: 3 },
+                },
+            ])
+        );
+
+        let map = loaded
+            .loading_map
+            .as_ref()
+            .expect("BOM-only stripping should still record an insertion-point map");
+        assert_eq!(map.original_offset_for_loaded(0), Some(3));
+    }
+
+    #[test]
+    fn source_loading_preserves_non_leading_bom_for_lexer_boundary() {
+        let loaded = load_source_text_from_bytes("alpha\u{feff}beta".as_bytes())
+            .expect("non-leading U+FEFF is valid UTF-8 source text");
+
+        assert_eq!(loaded.text, "alpha\u{feff}beta");
+        assert_eq!(loaded.loading_map, None);
+        assert_eq!(
+            preprocess_source_for_lexing(&loaded.text).diagnostics[0].code,
+            SourcePreprocessDiagnosticCode::NonAsciiCode
+        );
+        assert!(scan_raw(&loaded.text).is_err());
     }
 
     #[test]
