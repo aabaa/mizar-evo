@@ -4,9 +4,9 @@
 
 ## Purpose
 
-この module は `mizar-session` が所有する opaque identifiers を定義する。
+このモジュールは、`mizar-session` が所有する不透明な識別子を定義します。
 
-Identifiers により、source、snapshot、diagnostic、LSP、cache、IR-facing crates は paths、memory addresses、scheduler counters、unstable frontend internals を expose せずに identity について合意できる。各 id type は scope、ordering rules、serialization boundary を文書化する。
+これらの識別子により、ソース・スナップショット・診断・LSP・キャッシュ・IR 側の各 crate は、パス、メモリアドレス、スケジューラのカウンタ、不安定なフロントエンド内部構造を露出させることなく、同一性について合意できます。各 ID 型は、自身のスコープ、順序付けの規則、シリアライズ境界を文書化します。
 
 ## Public API
 
@@ -27,14 +27,14 @@ pub trait SessionIdAllocator {
 }
 ```
 
-`BuildSnapshotId` は content-derived fingerprint である。その他の ids は opaque registry identities であり、その値は発行した registry を通してのみ意味を持つ。
+`BuildSnapshotId` は内容から導出されるフィンガープリントです。その他の ID は不透明なレジストリ上の同一性であり、その値は発行元のレジストリを通してのみ意味を持ちます。
 
 ## Dependencies
 
-- Internal: none
-- External: hashing and stable encoding utilities
+- Internal: なし
+- External: ハッシュ計算と安定したエンコードのユーティリティ
 
-この module は他のすべての `mizar-session` modules と、snapshot or source handles を保存する downstream crates から consume される。
+このモジュールは、他のすべての `mizar-session` モジュールと、スナップショットやソースのハンドルを保存する下流の crate から消費されます。
 
 ## Data Structures
 
@@ -42,74 +42,74 @@ pub trait SessionIdAllocator {
 
 | Identifier | Scope | Derived From | May Persist? |
 |---|---|---|---|
-| `BuildSessionId` | one compiler-driver run | allocator | no |
-| `BuildRequestId` | one batch/watch/LSP request generation | allocator | no |
-| `BuildSnapshotId` | complete build input state | canonical snapshot hash | yes, as provenance |
-| `SourceId` | one `BuildSnapshotId` | snapshot registry assignment | no |
-| `SourceMapId` | one retained source map | allocator | no |
-| `SnapshotLeaseId` | one live retention lease | allocator | no |
+| `BuildSessionId` | コンパイラドライバの 1 回の実行 | アロケータ | no |
+| `BuildRequestId` | batch/watch/LSP リクエストの 1 世代 | アロケータ | no |
+| `BuildSnapshotId` | ビルド入力の状態全体 | 正準スナップショットハッシュ | yes（来歴として） |
+| `SourceId` | 1 つの `BuildSnapshotId` | スナップショットレジストリの割り当て | no |
+| `SourceMapId` | 保持される 1 つのソースマップ | アロケータ | no |
+| `SnapshotLeaseId` | 生存中の 1 つの保持リース | アロケータ | no |
 
-Persisted artifacts は allocator-issued ids を compatibility promises として扱ってはならない。Schema が明示的に許す場合、content-derived ids を provenance として record してよい。
+永続化されるアーティファクトは、アロケータが発行した ID を互換性の保証として扱ってはなりません。スキーマが明示的に許す場合に限り、内容から導出される ID を来歴として記録してよいものとします。
 
 ### Ordering
 
-Ids は semantic order を定義しない。
+ID は意味的な順序を定義しません。
 
-Deterministic ordering が必要な場合、callers は canonical keys で sort しなければならない。
+決定的な順序付けが必要な場合、呼び出し側は正準キーでソートしなければなりません。
 
-- source versions by package id, module path, normalized path, and source hash
-- diagnostics by source range and diagnostic identity
-- artifacts by module path and stable artifact ids
+- ソースバージョンは、パッケージ ID、モジュールパス、正規化パス、ソースハッシュの順
+- 診断は、ソース範囲と診断の同一性の順
+- アーティファクトは、モジュールパスと安定したアーティファクト ID の順
 
-Allocator-issued ids は in-memory maps and debug output のためにのみ order してよい。
+アロケータが発行した ID は、インメモリのマップとデバッグ出力に限って順序付けしてよいものとします。
 
 ### Serialization
 
-Content-derived ids は canonical lowercase hex encoding で serialize してよい。
+内容から導出される ID は、正準的な小文字 16 進エンコードでシリアライズしてよいものとします。
 
-Allocator-issued ids は、local debug dumps、logs、non-portable と明示された development artifacts に限って serialize してよい。Published artifacts and cache keys は canonical source、dependency、toolchain、configuration hashes を使わなければならない。
+アロケータが発行した ID は、ローカルなデバッグダンプ、ログ、および可搬性がないと明示された開発用アーティファクトに限ってシリアライズしてよいものとします。公開アーティファクトとキャッシュキーは、代わりに正準的なソース・依存・ツールチェイン・構成の各ハッシュを用いなければなりません。
 
 ## Algorithm / Logic
 
 ### Content-Derived Id Construction
 
-`BuildSnapshotId` は canonical snapshot encoding から計算される。Encoding must:
+`BuildSnapshotId` は正準的なスナップショットエンコードから計算します。このエンコードは次を満たさなければなりません。
 
-1. id kind の domain separator を含む。
-2. interpretation が依存する場合、relevant schema and toolchain identity を含む。
-3. unordered collections を hashing 前に sort する。
-4. session-local ids、task ids、memory addresses、timestamps、lease ids を除外する。
+1. ID 種別を表すドメイン区切り子を含める。
+2. 解釈がそれらに依存する場合、関連するスキーマとツールチェインの同一性を含める。
+3. 順序のないコレクションは、ハッシュ計算の前にソートする。
+4. セッションローカルな ID、タスク ID、メモリアドレス、タイムスタンプ、リース ID を除外する。
 
 ### Allocator-Issued Id Construction
 
-Allocator-issued ids は owning registry 内で unique でなければならない。Callers が value から semantics を推測できない限り、monotonic counters、random nonces、arena indexes のいずれでもよい。
+アロケータが発行する ID は、所有元のレジストリ内で一意でなければなりません。呼び出し側が値から意味を推測できない限り、単調増加カウンタ、ランダムなノンス、アリーナ索引のいずれであってもかまいません。
 
 ## Error Handling
 
-`IdError` includes:
+`IdError` には次が含まれます。
 
-- malformed serialized content-derived id
-- wrong id domain separator
-- id from an unknown snapshot registry
-- allocator overflow
-- attempt to serialize a non-persistable id into a published schema
+- 内容由来 ID のシリアライズ形式が不正
+- ID のドメイン区切り子が誤り
+- 未知のスナップショットレジストリ由来の ID
+- アロケータのオーバーフロー
+- 永続化できない ID を公開スキーマへシリアライズしようとした
 
-Well-formed id を wrong snapshot で使うことは stale-handle error であり、この module ではなく `snapshot` or `retention` が report する。
+整形式の ID を誤ったスナップショットで用いることは失効ハンドルエラーであり、このモジュールではなく `snapshot` または `retention` が報告します。
 
 ## Tests
 
-Key scenarios:
+主なシナリオ:
 
-- content-derived ids are deterministic for identical canonical input
-- changing the domain separator changes the id
-- unordered source inputs hash identically after canonical sorting
-- session-local ids are absent from snapshot hashes
-- allocator-issued ids are unique within one registry
-- published-schema serialization rejects non-persistable ids
+- 同一の正準入力に対して、内容由来 ID は決定的である
+- ドメイン区切り子を変えると ID が変わる
+- 順序のないソース入力は、正準的なソート後に同一のハッシュになる
+- セッションローカルな ID はスナップショットハッシュに含まれない
+- アロケータが発行する ID は 1 つのレジストリ内で一意である
+- 公開スキーマへのシリアライズは、永続化できない ID を拒否する
 
 ## Constraints and Assumptions
 
-- Id values are not user-facing names.
-- `SourceId` is snapshot-scoped and must not be used as a stable artifact identity.
-- `BuildSnapshotId` is an identity and freshness token, not proof authority.
-- Debug output may include opaque ids, but reproducible artifacts must not depend on them.
+- ID の値は、利用者向けの名前ではない。
+- `SourceId` はスナップショットスコープであり、安定したアーティファクト同一性として用いてはならない。
+- `BuildSnapshotId` は同一性と鮮度のトークンであり、証明上の権威ではない。
+- デバッグ出力には不透明な ID を含めてよいが、再現可能なアーティファクトはそれらに依存してはならない。

@@ -4,9 +4,9 @@
 
 ## Purpose
 
-この module は `mizar-session` の source coordinate tables and range conversion を定義する。
+このモジュールは、`mizar-session` のソース座標テーブルと範囲変換を定義します。
 
-Frontend、diagnostics、LSP、documentation、extraction、artifacts、IR side tables が mutable source text や frontend internals を共有せずに source ranges について合意できるようにする。Raw source ranges、line/column conversion、preprocessing maps、generated spans、synthesized text 用の degraded mappings を扱う。
+フロントエンド・診断・LSP・ドキュメント・抽出・アーティファクト・IR サイドテーブルが、可変なソーステキストやフロントエンド内部構造を共有することなく、ソース範囲について合意できるようにします。生ソース範囲、行・列変換、前処理マップ、生成スパン、および合成テキスト向けの劣化した対応付けを扱います。
 
 ## Public API
 
@@ -91,130 +91,130 @@ pub trait SourceMapService {
 }
 ```
 
-Offsets は source-loading normalization 後の validated UTF-8 `LoadedSource.text` への byte offsets である。User-facing columns は frontend architecture が定義する Unicode scalar column rule を使うため、consumers が ad hoc に計算せず `LineMap` を通して変換しなければならない。
+オフセットは、ソース読み込みの正規化後の検証済み UTF-8 `LoadedSource.text` へのバイトオフセットです。利用者向けの列は、フロントエンドアーキテクチャが定義する Unicode スカラー列の規則を用いるため、利用側が場当たり的に計算するのではなく、`LineMap` を通して変換しなければなりません。
 
-`LineColumn` は意図的に `usize` ではなく `u32` を使う。これらは raw memory indexes ではなく presentation and protocol-adjacent coordinates であり、bounded に保つことで diagnostics、artifact metadata、LSP adapters と揃う。Loaded source が `u32::MAX` を超える user-facing lines を持つ場合、または一つの line が `u32::MAX` を超える Unicode scalar columns を持つ場合、`LineMap` は saturate、wrap、silent narrowing をせず `SourceMapError::LineColumnOverflow` を返す。LSP positions は `u32` のままとし、`mizar-lsp` bridge が UTF-16 columns の explicit checked narrowing を行う。
+`LineColumn` は意図的に `usize` ではなく `u32` を用います。これらは生のメモリ索引ではなく、表示およびプロトコルに近い座標であり、範囲を有界に保つことで診断・アーティファクトメタデータ・LSP アダプタと揃います。読み込み済みソースが `u32::MAX` を超える利用者向け行数を持つ場合、または 1 行が `u32::MAX` を超える Unicode スカラー列を持つ場合、`LineMap` は飽和・ラップ・暗黙の縮小を行わず、`SourceMapError::LineColumnOverflow` を返します。LSP の位置は `u32` のままとし、UTF-16 の列については `mizar-lsp` ブリッジが独自に明示的なチェック付き縮小を行います。
 
 ## Dependencies
 
-- Internal: `SourceId` and source-version identity のための `snapshot`
-- External: hashing、UTF-8 text utilities、LSP range types
+- Internal: `SourceId` とソースバージョンの同一性のための `snapshot`
+- External: ハッシュ計算、UTF-8 テキストユーティリティ、LSP の範囲型
 
-この module は frontend phases、`mizar-ir` side tables、`mizar-diagnostics`、`mizar-lsp`、`mizar-artifact`、`mizar-doc`、`mizar-extract` から consume される。
+このモジュールは、フロントエンドの各フェーズ、`mizar-ir` のサイドテーブル、`mizar-diagnostics`、`mizar-lsp`、`mizar-artifact`、`mizar-doc`、`mizar-extract` から消費されます。
 
 ## Data Structures
 
 ### Line Map
 
-`LineMap` は `SourceVersion` が表す exact source text の line starts を記録する。
+`LineMap` は、`SourceVersion` が表すソーステキストそのものについて、各行の開始位置を記録します。
 
-Construction 後 immutable である。Consumers は offsets を user-facing line/column values に変換する前に、`source_id` が report 対象 snapshot に属することを検証しなければならない。
+構築後は不変です。利用側は、オフセットを利用者向けの行・列値に変換する前に、`source_id` が報告対象のスナップショットに属することを検証しなければなりません。
 
-Disk source loading が先頭 UTF-8 BOM を取り除いた場合、`LineMap` の byte offset `0` は original file ではその BOM の直後の最初の byte を指す。Raw-file byte positions は `SourceRange` や lexer span coordinates を変更するのではなく、`LoadingMap` を通して復元する。
+ディスクのソース読み込みが先頭の UTF-8 BOM を除去した場合、`LineMap` のバイトオフセット `0` は、元ファイルにおけるその BOM の直後の最初のバイトに当たります。生ファイルのバイト位置は、`SourceRange` や字句解析器のスパン座標を変更するのではなく、`LoadingMap` を通して復元します。
 
 ### Source Range
 
-`SourceRange` は half-open である: `start <= offset < end`。
+`SourceRange` は半開区間です（`start <= offset < end`）。
 
-Ranges must:
+範囲は次を満たさなければなりません。
 
-- 一つの `SourceId` を reference する
-- UTF-8 scalar boundaries に aligned した byte offsets を使う
-- source text length の内側に残る
-- zero-length ranges は insertion points and synthesized anchors に限って preserve する
+- 1 つの `SourceId` を参照する
+- UTF-8 スカラー境界に整列したバイトオフセットを用いる
+- ソーステキストの長さの内側にとどまる
+- 長さ 0 の範囲は、挿入点と合成アンカーに限って保つ
 
 ### Loading Map
 
-`LoadingMap` は normalized `LoadedSource.text` と、BOM stripping or newline normalization 前の source-loading input を関連付ける。Disk sources では `original` ranges は UTF-8 validation 後の original file bytes への byte offsets である。Open buffers では `original` ranges は editor-provided UTF-8 text への byte offsets であり、その後 `mizar-lsp` bridge が protocol UTF-16 positions に変換する。Generated sources は original text range がない場合 anchor を使う。
+`LoadingMap` は、正規化された `LoadedSource.text` を、BOM 除去や改行正規化の前のソース読み込み入力と関連付けます。ディスクソースでは、`original` の範囲は UTF-8 検証後の元ファイルバイトへのバイトオフセットです。オープンバッファでは、`original` の範囲はエディタ提供 UTF-8 テキストへのバイトオフセットであり、その後 `mizar-lsp` ブリッジがプロトコルの UTF-16 位置へ変換します。生成ソースは、対応する元テキストの範囲がない場合にアンカーを用います。
 
-先頭 UTF-8 BOM が strip された場合、この map は original byte range `[0, 3)` 用の `RemovedLeadingBom` segment を記録し、最初の `Original` loaded segment は loaded offset `0` と original byte offset `3` から始まる。Source loading は loaded text が source-loading input と offset-identical な場合に限り `LoadingMap` を省略してよい。
+先頭の UTF-8 BOM が除去された場合、この対応付けは元バイト範囲 `[0, 3)` に対する `RemovedLeadingBom` セグメントを記録し、最初の `Original` 読み込みセグメントは読み込みオフセット `0`・元バイトオフセット `3` から始まります。ソース読み込みが `LoadingMap` を省略してよいのは、読み込み済みテキストがソース読み込み入力とオフセットの上で同一である場合に限ります。
 
 ### Preprocess Map
 
-`PreprocessMap` は lexer が consume する lexical text と original source を関連付ける。
+`PreprocessMap` は、字句解析器が消費する字句テキストを元ソースと関連付けます。
 
-Original segments は lexical ranges を source ranges に戻す。Removed comment segments は comments が lexical input から消えていても ordinary and doc-comment locations を preserve する。Synthetic whitespace segments は comment removal or recovery の後に token separation を保つため inserted された text を表す。
+`Original` セグメントは字句範囲をソース範囲へ戻します。`RemovedComment` セグメントは、コメントが字句入力から消えていても、通常コメントとドキュメントコメントの位置を保ちます。`SyntheticWhitespace` セグメントは、コメント除去やリカバリの後にトークンの分離を保つために挿入されたテキストを表します。
 
-Frontend はこの map の snapshot retention と service access を所有する。retained session `PreprocessMap` を構築するとき、lexer helper が生成する lightweight preprocess map を reuse または mirror してよい。Later phases は original source locations に diagnostics and syntax nodes を attach するために consume する。
+この対応付けについては、フロントエンドがスナップショット保持とサービスアクセスを所有します。保持されるセッションの `PreprocessMap` を構築する際、字句解析器のヘルパーが生成する軽量な前処理マップを再利用またはミラーしてよいものとします。後続のフェーズは、診断や構文ノードを元のソース位置に結び付けるためにこれを消費します。
 
 ### Generated Spans
 
-Generated spans は compiler-created item に exact source range がない場合に使う。Examples:
+生成スパンは、コンパイラが生成した要素に対応する正確なソース範囲がない場合に用います。たとえば次のようなものです。
 
-- implicit obligations
-- inserted coercions or `qua` nodes
-- generated proof replay steps
-- multiple inputs から derived された documentation or extraction records
+- 暗黙の義務
+- 挿入された型強制や `qua` ノード
+- 生成された証明の再生ステップ
+- 複数の入力から導出されたドキュメントまたは抽出のレコード
 
-Generated spans は best available source anchor and reason を指す origin を含めなければならない。Diagnostics は generated spans を secondary information として表示してよいが、primary diagnostics は available な場合 original source ranges を prefer するべきである。
+生成スパンは、利用可能な最善のソースアンカーと理由を指す由来を含めなければなりません。診断は生成スパンを副次的な情報として表示してよいものの、主要な診断は、利用できる場合は元のソース範囲を優先すべきです。
 
 ## Algorithm / Logic
 
 ### Line/Column Conversion
 
-1. `LineMap` source text length に対して range を validate する。
-2. `line_starts` を binary search して start and end lines を locate する。
-3. Line start から各 offset まで Unicode scalar values を count する。
-4. Diagnostics、artifacts、CLI formatting のため one-based lines and one-based columns を返す。
+1. `LineMap` のソーステキスト長に対して範囲を検証する。
+2. `line_starts` を二分探索して、開始行と終了行を特定する。
+3. 各行の開始位置から各オフセットまでの Unicode スカラー値を数える。
+4. 診断・アーティファクト・CLI 整形のために、1 始まりの行と 1 始まりの列を返す。
 
-LSP conversion は protocol の UTF-16 position rules を `mizar-lsp` bridge で apply しなければならない。この module は source-stable coordinates を expose する。
+LSP 変換は、プロトコルの UTF-16 位置規則を `mizar-lsp` ブリッジで適用しなければならず、このモジュール内では行いません。このモジュールはソースに対して安定した座標を公開します。
 
 ### Loaded-to-Original Mapping
 
-1. `SourceId` に対応する `LoadingMap` が存在する場合はそれを使う。
-2. `LoadingMap` がない場合、loaded-text offsets は source-loading input への identity offsets として扱う。
-3. Loaded range が removed or normalized segments をまたぐ場合、primary loaded text と secondary original anchors を持つ composite mapping を返す。
-4. Open buffers では editor-text byte offsets を返す。最終的な UTF-16 conversion は LSP bridge が行う。
+1. `SourceId` に対応する `LoadingMap` が存在する場合は、それを用いる。
+2. `LoadingMap` がない場合、読み込み済みテキストのオフセットを、ソース読み込み入力への恒等オフセットとして扱う。
+3. 読み込み範囲が除去済みまたは正規化済みのセグメントをまたぐ場合、主要な読み込みテキストと副次的な元アンカーを持つ複合対応付けを返す。
+4. オープンバッファでは、エディタテキストのバイトオフセットを返す。最終的な UTF-16 変換は LSP ブリッジが行う。
 
 ### Lexical-to-Source Mapping
 
-1. Lexical range と intersect する preprocess segments をすべて見つける。
-2. Range が一つの contiguous loaded source range に map できる場合、diagnostics が source-loading input coordinates を必要とする時は loaded-to-original mapping を通して map する。
-3. Removed or synthetic segments をまたぐ場合、primary and secondary anchors を持つ composite mapping を返す。
-4. Original source が存在しない場合、generated anchor を返す。
+1. 字句範囲と交差する前処理セグメントをすべて見つける。
+2. 範囲が 1 つの連続した読み込みソース範囲に対応付けられる場合、診断がソース読み込み入力の座標を必要とするときは、その範囲を loaded-to-original 対応付けを通して対応付ける。
+3. 除去済みまたは合成のセグメントをまたぐ場合、主要・副次のアンカーを持つ複合対応付けを返す。
+4. 元ソースが存在しない場合、生成アンカーを返す。
 
-Composite mappings は diagnostics、documentation attachment、explanation metadata に許可される。Cache keys and artifact hashes は source hashes and stable ids を使わなければならず、composite mappings の serialized pretty forms を使ってはならない。
+複合対応付けは、診断・ドキュメントへの結び付け・説明メタデータに許可されます。キャッシュキーとアーティファクトハッシュは、ソースハッシュと安定した ID を用いなければならず、複合対応付けをシリアライズした整形済み形式を用いてはなりません。
 
 ### Source Map Retention
 
-Source maps は、snapshot lease、diagnostic index、LSP publication、IR side table のいずれかが参照している間、owning snapshot と一緒に retain される。Owning snapshot が collected された後に drop してよい。
+ソースマップは、スナップショットリース・診断インデックス・LSP 公開・IR サイドテーブルのいずれかが参照している間、所有元のスナップショットとともに保持されます。所有元のスナップショットが回収された後は破棄してよいものとします。
 
 ## Error Handling
 
-`SourceMapError` includes:
+`SourceMapError` には次が含まれます。
 
-- unknown source id
-- range outside source text
-- offset not aligned to a UTF-8 boundary
-- line or column coordinate not representable as `u32`
-- lexical range outside preprocessed text
-- missing loading map segment
-- missing preprocess segment
-- generated span without an origin reason
+- 未知のソース ID
+- ソーステキストの外側にある範囲
+- UTF-8 境界に整列していないオフセット
+- `u32` で表現できない行・列座標
+- 前処理済みテキストの外側にある字句範囲
+- 欠落した loading map セグメント
+- 欠落した前処理セグメント
+- 由来の理由を欠く生成スパン
 
-Malformed user source は frontend diagnostics によって reported される。Source-map errors は、explicitly stale LSP request に由来する場合を除き compiler bugs or stale handles を示す。
+不正な利用者ソースは、フロントエンドの診断が報告します。ソースマップエラーは、明示的に失効した LSP リクエストに由来する場合を除き、コンパイラのバグまたは失効ハンドルを示します。
 
 ## Tests
 
-Key scenarios:
+主なシナリオ:
 
-- line maps convert byte offsets to Unicode scalar columns
-- line maps report overflow instead of silently narrowing unrepresentable line or column values
-- BOM-prefixed disk files の line maps は stripped BOM 後の loaded-text offset `0` から始まる
-- `LoadingMap` は leading BOM が strip された場合に loaded-text offset `0` を original file byte offset `3` へ対応付ける
-- Open buffers の `LoadingMap` は LSP UTF-16 conversion 前に loaded-text offsets を editor-provided text byte offsets へ戻す
-- CRLF and LF inputs produce deterministic line starts according to source-loading rules
-- removed comments map to preserved comment source ranges
-- lexical ranges spanning comment removal produce composite mappings
-- synthetic whitespace does not become a primary user source range
-- generated anchors preserve their origin reason
-- invalid byte offsets and cross-source ranges are rejected
-- LSP UTF-16 conversion remains outside this module
-- LSP UTF-16 narrowing is explicit and reports overflow rather than using unchecked casts
+- 行マップがバイトオフセットを Unicode スカラー列に変換する
+- 行マップは、表現できない行・列値を暗黙に縮小せず、オーバーフローを報告する
+- BOM 付きディスクファイルの行マップは、除去された BOM の後の読み込みテキストオフセット `0` から始まる
+- 先頭 BOM が除去された場合、`LoadingMap` は読み込みテキストオフセット `0` を元ファイルバイトオフセット `3` へ対応付ける
+- オープンバッファの `LoadingMap` は、LSP の UTF-16 変換の前に、読み込みテキストオフセットをエディタ提供テキストのバイトオフセットへ戻す
+- CRLF と LF の入力は、ソース読み込み規則に従って決定的な行開始位置を生成する
+- 除去されたコメントは、保たれたコメントのソース範囲へ対応付けられる
+- コメント除去をまたぐ字句範囲は、複合対応付けを生成する
+- 合成空白は、主要な利用者ソース範囲にはならない
+- 生成アンカーは、その由来の理由を保つ
+- 不正なバイトオフセットとソースをまたぐ範囲は拒否される
+- LSP の UTF-16 変換はこのモジュールの外側にとどまる
+- LSP の UTF-16 縮小は明示的であり、チェックなしのキャストを用いず、オーバーフローを報告する
 
 ## Constraints and Assumptions
 
-- Source maps are internal compiler data and are not published as a stable schema by this crate.
-- Published artifacts may include projected source ranges, but not the full preprocessing map.
-- Source range conversion must be deterministic and independent of scheduling order.
-- The module must not read files directly; it works from source text and identity supplied by source loading and snapshot creation.
+- ソースマップは内部のコンパイラデータであり、この crate からは安定したスキーマとして公開されない。
+- 公開アーティファクトには射影されたソース範囲を含めてよいが、前処理マップ全体は含めない。
+- ソース範囲の変換は決定的でなければならず、スケジューリング順序に依存してはならない。
+- このモジュールはファイルを直接読み込んではならない。ソース読み込みとスナップショット生成が提供するソーステキストと同一性をもとに動作する。

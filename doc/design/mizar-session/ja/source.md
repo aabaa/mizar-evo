@@ -4,9 +4,9 @@
 
 ## Purpose
 
-この module は `SourceVersion` values を作るための source records を定義する。
+このモジュールは、`SourceVersion` 値を作るためのソースレコードを定義します。
 
-Normalized source paths、validated source text handles、source hashes、LSP requests が提供する open-buffer source text を所有する。Snapshots 用の source identity を準備するが、comments の preprocess、tokenize、parse、import resolution は行わない。
+正規化されたソースパス、検証済みのソーステキストハンドル、ソースハッシュ、および LSP リクエストが提供するオープンバッファのソーステキストを所有します。スナップショット用のソース同一性を準備しますが、コメントの前処理、トークン化、構文解析、インポート解決は行いません。
 
 ## Public API
 
@@ -45,117 +45,117 @@ pub trait SourceLoader {
 }
 ```
 
-`LoadedSource` は immutable source-text handle である。Snapshot creation は loaded sources を consume し、その `SourceVersion` summaries を record する。
+`LoadedSource` は不変のソーステキストハンドルです。スナップショット生成は読み込み済みソースを消費し、その `SourceVersion` の要約を記録します。
 
 ## Dependencies
 
 - Internal: `ids`, `source_map`, `snapshot`
-- External: filesystem、package metadata、hashing、UTF-8 validation、LSP document synchronization types
+- External: ファイルシステム、パッケージメタデータ、ハッシュ計算、UTF-8 検証、LSP のドキュメント同期型
 
-この module は snapshot creation、frontend source loading、LSP open-buffer overlay construction、diagnostics、documentation/extraction source consumers から consume される。
+このモジュールは、スナップショット生成、フロントエンドのソース読み込み、LSP のオープンバッファオーバーレイ構築、診断、ドキュメント／抽出のソース利用側から消費されます。
 
 ## Data Structures
 
 ### Normalized Path
 
-`NormalizedPath` は normalized separators を持ち、`.` or `..` components を含まない workspace- or package-relative path である。
+`NormalizedPath` は、区切り子が正規化され、`.` や `..` の要素を含まない、ワークスペース相対またはパッケージ相対のパスです。
 
-含んではならないもの:
+次を含んではなりません。
 
-- absolute path prefixes
-- local-only と明示されない symlink-expanded host-specific paths
-- platform-specific separator differences
-- package-managed source paths に対する non-canonical case variants
+- 絶対パスのプレフィックス
+- local-only と明示されない、シンボリックリンクを展開したホスト固有のパス
+- プラットフォーム固有の区切り子の差異
+- パッケージ管理下のソースパスに対する、正準でない大文字小文字の変種
 
-Local diagnostics は absolute display path を別に持ってよい。Published artifacts は normalized paths を使う。
+ローカル診断は、表示用の絶対パスを別に保持してよいものとします。公開アーティファクトは正規化パスを用います。
 
 ### Loaded Source
 
-`LoadedSource` は source-loading normalization 後の validated UTF-8 text と、その exact text 用の `LineMap` を含む。Construction 後 immutable であり、snapshot leases、LSP snapshots、diagnostic indexes、source-map handles によって retain され得る。
+`LoadedSource` は、ソース読み込みの正規化後の検証済み UTF-8 テキストと、そのテキストそのものに対する `LineMap` を含みます。構築後は不変であり、スナップショットリース、LSP スナップショット、診断インデックス、ソースマップハンドルによって保持されることがあります。
 
-`source_hash` は UTF-8 validation と、先頭 BOM stripping や newline normalization などの source-loading normalization 後の `LoadedSource.text` から計算される。Open buffers では on-disk file ではなく normalized editor-provided text である。Packaging or diagnostics のために byte-exact provenance が必要な場合は、`source_hash` を再定義せず、origin metadata または separate raw-content hash を使う。
+`source_hash` は、UTF-8 検証と、先頭 BOM の除去や改行の正規化といったソース読み込みの正規化を経た後の `LoadedSource.text` から計算されます。オープンバッファの場合は、ディスク上のファイルではなく、正規化されたエディタ提供テキストが対象です。パッケージ化や診断のためにバイト単位で正確な来歴が必要な場合は、`source_hash` を再定義せず、来歴メタデータまたは別個の生コンテンツハッシュを用います。
 
-`loading_map` は、`LoadedSource.text` が作られる前に source loading が offset を変更した場合に存在する。Normalized loaded-text ranges を source-loading input へ戻す map であり、disk sources では original file byte offsets、open buffers では editor-provided text byte offsets、generated inputs では generated-source anchor を指す。Source-loading transform が offset を変えなかった場合、mapping は identity なので省略してよい。
+`loading_map` は、`LoadedSource.text` が作られる前にソース読み込みがオフセットを変更した場合に存在します。これは正規化された読み込み済みテキストの範囲をソース読み込みの入力へ対応付けるもので、ディスクソースでは元ファイルのバイトオフセット、オープンバッファではエディタ提供テキストのバイトオフセット、生成入力では生成ソースのアンカーを指します。ソース読み込みの変換がオフセットを変えなかった場合、この対応付けは恒等であり、省略してよいものとします。
 
 ### Source Origin
 
-`SourceOrigin` は text の由来を区別する。
+`SourceOrigin` は、テキストの由来を区別します。
 
-- `Disk`: package tree から読まれた source files
-- `OpenBuffer`: unsaved editor text
-- `Generated`: compiler-created or tool-provided source fragments
+- `Disk`: パッケージツリーから読み込んだソースファイル
+- `OpenBuffer`: 未保存のエディタテキスト
+- `Generated`: コンパイラが生成した、またはツールが提供したソースフラグメント
 
-Open-buffer sources は targeted LSP request or watch generation に限って disk sources を override できる。Normal artifact output には書き込まない。
+オープンバッファのソースは、対象とする LSP リクエストまたは watch 世代に限ってディスクソースを上書きできます。通常のアーティファクト出力には書き込まれません。
 
 ## Algorithm / Logic
 
 ### Disk Source Loading
 
-1. Package source root からの relative path に normalize する。
-2. Package source tree の外側の path を reject する。
-3. Disk から bytes を read する。
-4. UTF-8 を validate する。Invalid bytes は line-map construction 前に reject し、lossy decode によって `U+FFFD` にしてはいけない。
-5. Validated text が UTF-8 BOM signature で始まる場合、先頭 `U+FEFF` を strip する。
-6. CRLF pairs を LF 一つに置き換えて source-loading newlines を normalize する。Lone `\r` は platform newline として扱わず、preprocessing に届いた場合は malformed lexer-boundary input のままにする。
-7. BOM stripping or newline normalization が offset を変更した場合、normalized loaded-text offsets から original file byte offsets への `LoadingMap` を記録する。
-8. `LoadedSource.text` から source hash を compute する。
-9. `LoadedSource.text` 上に `LineMap` を build する。
+1. パッケージのソースルートからの相対パスへ正規化する。
+2. パッケージのソースツリーの外側にあるパスを拒否する。
+3. ディスクからバイト列を読み込む。
+4. UTF-8 を検証する。不正なバイトは行マップ構築の前に拒否し、損失のあるデコードで `U+FFFD` に置き換えてはならない。
+5. 検証済みテキストが UTF-8 BOM シグネチャで始まる場合、先頭の `U+FEFF` を除去する。
+6. 各 CRLF を 1 つの LF に置き換えて、ソース読み込みの改行を正規化する。単独の `\r` はプラットフォーム改行として扱わず、前処理へ届いた場合は不正な字句境界入力のままとする。
+7. BOM の除去または改行の正規化がオフセットを変更した場合、正規化済み読み込みテキストのオフセットから元ファイルのバイトオフセットへの `LoadingMap` を記録する。
+8. `LoadedSource.text` からソースハッシュを計算する。
+9. `LoadedSource.text` 上に `LineMap` を構築する。
 10. `LoadedSource` を返す。
 
-Encoding signature として扱うのは先頭 UTF-8 BOM だけです。それ以外の位置にある `U+FEFF` は loaded text に保持され、code に現れた場合は malformed lexer-boundary character のままです。
+エンコードシグネチャとして扱うのは先頭の UTF-8 BOM だけです。それ以外の位置にある `U+FEFF` は読み込み済みテキストに保持され、コード中に現れた場合は不正な字句境界文字のままです。
 
-Code-region ASCII validation は preprocessing に属する。この module は text encoding and source identity のみ validate する。
+コード領域の ASCII 検証は前処理の責務です。このモジュールは、テキストのエンコードとソースの同一性のみを検証します。
 
 ### Open-Buffer Source Loading
 
-1. LSP bridge が提供した document version を validate する。
-2. Document URI を package source path に normalize する。
-3. その request では editor-provided text を authoritative として使う。
-4. BOM-prefixed disk file の editor view が disk source loading と一致するように、package-authored open-buffer text から先頭 `U+FEFF` を一つ strip する。
-5. CRLF pairs を LF 一つに置き換えて source-loading newlines を normalize する。Lone `\r` は frontend/lexer diagnostics が一貫して reject できるよう preserve する。
-6. Stripping or newline normalization が offset を変更した場合、normalized loaded-text offsets から editor-provided text byte offsets への `LoadingMap` を記録する。
-7. `LoadedSource.text` から source hash and `LineMap` を compute する。
-8. Origin を `OpenBuffer` として mark する。
+1. LSP ブリッジが提供したドキュメントバージョンを検証する。
+2. ドキュメント URI をパッケージのソースパスへ正規化する。
+3. そのリクエストでは、エディタ提供テキストを正本として用いる。
+4. BOM 付きディスクファイルのエディタ表示がディスクのソース読み込みと一致するように、パッケージが記述したオープンバッファテキストから先頭の `U+FEFF` を 1 つ除去する。
+5. 各 CRLF を 1 つの LF に置き換えて、ソース読み込みの改行を正規化する。単独の `\r` は、フロントエンドや字句解析器の診断が一貫して拒否できるよう保持する。
+6. 除去または改行の正規化がオフセットを変更した場合、正規化済み読み込みテキストのオフセットからエディタ提供テキストのバイトオフセットへの `LoadingMap` を記録する。
+7. `LoadedSource.text` からソースハッシュと `LineMap` を計算する。
+8. 由来を `OpenBuffer` として記録する。
 
-Open-buffer text は last verified artifact より fresh な場合がある。Consumers は artifact data を暗黙に current として扱わず freshness metadata を carry しなければならない。LSP diagnostics and edits は editor document に対する protocol UTF-16 position rules を適用する前に、`LoadedSource.text` offsets から `loading_map` を通して変換しなければならない。
+オープンバッファのテキストは、最後に検証されたアーティファクトより新しいことがあります。利用側は、アーティファクトのデータを暗黙のうちに最新として扱うのではなく、鮮度メタデータを引き回さなければなりません。LSP の診断と編集は、エディタドキュメントに対してプロトコルの UTF-16 位置規則を適用する前に、`LoadedSource.text` のオフセットを `loading_map` を通して変換しなければなりません。
 
 ### Generated Source Loading
 
-Generated sources は generator kind と、可能な場合は original source への anchor を必要とする。Generated source text は diagnostics、documentation、extraction に使ってよいが、package-authored `.miz` source と取り違えてはならない。
+生成ソースには、生成器の種別と、可能な場合は元ソースへのアンカーが必要です。生成ソースのテキストは診断・ドキュメント・抽出に用いてよいものの、パッケージが記述した `.miz` ソースと取り違えてはなりません。
 
 ## Error Handling
 
-`SourceLoadError` includes:
+`SourceLoadError` には次が含まれます。
 
-- source path outside package root
-- unsupported file extension
-- invalid UTF-8
-- unreadable source file
-- duplicate module path supplied by the build plan
-- stale LSP document version
-- open-buffer URI that cannot be mapped to a package source
-- generated source without required generator metadata
+- パッケージルートの外側にあるソースパス
+- 未対応のファイル拡張子
+- 不正な UTF-8
+- 読み取れないソースファイル
+- ビルドプランが与えた重複するモジュールパス
+- 失効した LSP ドキュメントバージョン
+- パッケージソースへ対応付けられないオープンバッファ URI
+- 必須の生成器メタデータを欠く生成ソース
 
-User-facing read and encoding failures は frontend/build diagnostics として emitted される。Internal callers は structured errors も受け取り、snapshot creation が build request を fatal or recoverable と判断できるようにする。
+利用者向けの読み取り失敗・エンコード失敗は、フロントエンドやビルドの診断として発行されます。内部の呼び出し側は構造化エラーも受け取るため、スナップショット生成はビルドリクエストが致命的か回復可能かを判断できます。
 
 ## Tests
 
-Key scenarios:
+主なシナリオ:
 
-- disk and open-buffer sources with identical text produce the same source hash but different origins
-- open-buffer source overrides disk text only for the matching document version
-- invalid UTF-8 is rejected before line-map construction and is not turned into replacement characters by lossy decoding
-- leading UTF-8 BOM is accepted and stripped before line-map construction
-- non-leading `U+FEFF` is not stripped by source loading
-- open-buffer BOM stripping and newline normalization preserve a loading map back to editor-provided text offsets
-- path normalization rejects paths outside the package root
-- CRLF and LF handling matches `LineMap` expectations
-- generated sources preserve generator metadata and anchors
-- source hashes do not include absolute paths or document versions
+- 同一テキストのディスクソースとオープンバッファソースは、同じソースハッシュを生成するが由来は異なる
+- オープンバッファソースは、一致するドキュメントバージョンに限ってディスクテキストを上書きする
+- 不正な UTF-8 は行マップ構築の前に拒否され、損失のあるデコードで置換文字に変換されない
+- 先頭の UTF-8 BOM は受理され、行マップ構築の前に除去される
+- 先頭以外の `U+FEFF` は、ソース読み込みで除去されない
+- オープンバッファの BOM 除去と改行正規化は、エディタ提供テキストのオフセットへ戻す loading map を保つ
+- パス正規化は、パッケージルートの外側にあるパスを拒否する
+- CRLF と LF の扱いが `LineMap` の期待と一致する
+- 生成ソースは、生成器メタデータとアンカーを保つ
+- ソースハッシュは、絶対パスやドキュメントバージョンを含まない
 
 ## Constraints and Assumptions
 
-- This module does not parse, preprocess, or tokenize source text.
-- Source hashes are content hashes, not freshness decisions by themselves.
-- Absolute paths are local diagnostic metadata and are excluded from published source identity.
-- Source text is retained only while snapshots, source maps, diagnostics, LSP views, or downstream consumers hold leases.
+- このモジュールは、ソーステキストの構文解析・前処理・トークン化を行わない。
+- ソースハッシュはコンテンツハッシュであり、それ自体が鮮度の判断ではない。
+- 絶対パスはローカル診断用のメタデータであり、公開されるソース同一性からは除外される。
+- ソーステキストは、スナップショット・ソースマップ・診断・LSP ビュー・下流の利用側がリースを保持している間だけ保持される。

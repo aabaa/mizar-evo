@@ -4,9 +4,9 @@
 
 ## Purpose
 
-この module は `mizar-session` の retention leases and collection policy を定義する。
+このモジュールは、`mizar-session` の保持リースと回収方針を定義します。
 
-Batch、watch、LSP、diagnostics、explanation、cache、artifact、IR consumers が source text、source maps、snapshot metadata を参照している間、それらを alive に保つ。Typed IR outputs は直接 retain しない。`mizar-ir` が IR output retention を所有し、その handles が live な間 snapshot leases を保持してよい。
+batch・watch・LSP・診断・説明・キャッシュ・アーティファクト・IR の各利用側がまだソーステキスト・ソースマップ・スナップショットメタデータを参照している間、それらを生かし続けます。型付き IR 出力を直接保持することはありません。IR 出力の保持は `mizar-ir` が所有し、そのハンドルが生存している間はスナップショットリースを保持してよいものとします。
 
 ## Public API
 
@@ -57,109 +57,109 @@ pub trait SnapshotRetention {
 }
 ```
 
-`RetainGuard` release は caller から見ると idempotent であるべきだが、duplicate release attempts は developer diagnostics 用に記録される。
+`RetainGuard` の解放は、呼び出し側から見ると冪等であるべきですが、重複した解放の試行は開発者向け診断のために記録されます。
 
 ## Dependencies
 
 - Internal: `ids`, `snapshot`, `source`, `source_map`
-- External: weak-reference or arena storage utilities、tracing/logging
+- External: 弱参照またはアリーナストレージのユーティリティ、トレース／ロギング
 
-この module は snapshot registry、LSP snapshot publication、diagnostic aggregation、explanation queries、cache/artifact writers、`mizar-ir` から使われる。
+このモジュールは、スナップショットレジストリ、LSP スナップショットの公開、診断の集約、説明クエリ、キャッシュ／アーティファクトのライタ、`mizar-ir` から利用されます。
 
 ## Data Structures
 
 ### Retention Record
 
-各 retained snapshot は次を含む record を持つ。
+保持される各スナップショットは、次を含むレコードを持ちます。
 
-- snapshot id
-- reference counts by owner and reason
-- current request generations naming it
-- retained loaded sources
-- retained line maps and preprocessing maps
-- collection eligibility metadata
-- optional debug creation/release traces
+- スナップショット ID
+- 所有者と理由ごとの参照カウント
+- それを指名する現行のリクエスト世代
+- 保持中の読み込み済みソース
+- 保持中の行マップと前処理マップ
+- 回収可否のメタデータ
+- 任意で、デバッグ用の生成／解放トレース
 
-Record は session-local retention state を追跡する。Published artifacts には serialize しない。
+このレコードはセッションローカルな保持状態を追跡します。公開アーティファクトにはシリアライズされません。
 
 ### Current Marks
 
-Current mark は build request generation が snapshot を current として report できることを意味する。Lease とは別である。Current mark は collection を防ぎ freshness を制御する一方、lease は collection のみを防ぐ。
+現行マークは、あるビルドリクエスト世代がそのスナップショットを現行として報告してよいことを意味します。これはリースとは別物です。現行マークは回収を防ぎつつ鮮度を制御するのに対し、リースは回収を防ぐだけです。
 
-Newer snapshot が current になった後でも、old snapshots は stale diagnostics or explanation requests のため lease を retain してよい。
+新しいスナップショットが現行になった後でも、古いスナップショットは、失効した診断や説明リクエストのためにリースを保持してよいものとします。
 
 ### Collection Summary
 
-`CollectionSummary` reports:
+`CollectionSummary` は次を報告します。
 
-- snapshots scanned
-- snapshots collected
-- sources and maps released
-- snapshots skipped because of current marks
-- snapshots skipped because of live leases
-- stale or mismatched lease diagnostics
+- 走査したスナップショット数
+- 回収したスナップショット数
+- 解放したソースとマップ
+- 現行マークのために回収を見送ったスナップショット
+- 生存中のリースのために回収を見送ったスナップショット
+- 失効または不一致のリースに関する診断
 
-Build semantics ではなく logging and tests 用である。
+これはロギングとテストを目的とし、ビルドの意味論のためのものではありません。
 
 ## Algorithm / Logic
 
 ### Retain
 
-1. Snapshot が存在することを validate する。
-2. `SnapshotLeaseId` を allocate する。
-3. Owner/reason count を increment する。
+1. スナップショットが存在することを検証する。
+2. `SnapshotLeaseId` を割り当てる。
+3. 所有者／理由のカウントを増やす。
 4. `RetainGuard` を返す。
 
-Diagnostic、explanation、LSP stale-artifact display、IR output retention の reason では stale snapshot を retain してよい。それによって snapshot を current にしてはならない。
+理由が診断・説明・LSP の失効アーティファクト表示・IR 出力の保持のいずれかである場合、失効したスナップショットを保持してよいものとします。ただし、それによってスナップショットを現行にしてはなりません。
 
 ### Release
 
-1. Lease id and snapshot id を validate する。
-2. Owner/reason count を decrement する。
-3. Lease を released として mark する。
-4. Lease and current mark が残っていなければ snapshot を collection eligible にする。
+1. リース ID とスナップショット ID を検証する。
+2. 所有者／理由のカウントを減らす。
+3. リースを解放済みとして記録する。
+4. リースも現行マークも残っていなければ、スナップショットを回収可能にする。
 
-Release は、active guard を通して別 thread がまだ読める data を同期的に delete してはならない。
+解放は、別のスレッドが生存中のガードを通してまだ読み取れるデータを、同期的に削除してはなりません。
 
 ### Collection
 
-Collector は次の条件を満たす snapshot を remove してよい。
+回収器は、次の条件を満たすスナップショットを取り除いてよいものとします。
 
-- no live lease references it
-- no current mark references it
-- no source map, diagnostic explanation, or LSP publication is registered against it
-- downstream `mizar-ir` has released any phase-output retention lease for it
+- それを参照する生存中のリースがない
+- それを参照する現行マークがない
+- それに対して登録されたソースマップ・診断の説明・LSP 公開がない
+- 下流の `mizar-ir` が、それに対するフェーズ出力の保持リースをすべて解放済みである
 
-Collection は in-memory source text、source maps、snapshot metadata を drop する。Published artifacts or cache records は削除しない。
+回収は、インメモリのソーステキスト・ソースマップ・スナップショットメタデータを破棄します。公開アーティファクトやキャッシュレコードは削除しません。
 
 ## Error Handling
 
-`RetentionError` includes:
+`RetentionError` には次が含まれます。
 
-- unknown snapshot id
-- unknown or already-released lease id
-- lease snapshot mismatch
-- invalid owner/reason combination
-- attempt to mark a missing snapshot as current
-- collection blocked by inconsistent retention state
+- 未知のスナップショット ID
+- 未知、または既に解放済みのリース ID
+- リースとスナップショットの不一致
+- 不正な所有者／理由の組み合わせ
+- 存在しないスナップショットを現行としてマークしようとした
+- 一貫性のない保持状態によって回収がブロックされた
 
-Invalid retention state は compiler internal error である。User-facing builds は可能なら previous coherent snapshot を使い続けるべきである。
+不正な保持状態はコンパイラの内部エラーです。利用者向けのビルドは、可能な場合は以前の整合したスナップショットを使い続けるべきです。
 
 ## Tests
 
-Key scenarios:
+主なシナリオ:
 
-- active build lease prevents collection
-- current mark prevents collection even without other leases
-- stale LSP or diagnostic lease retains old source maps without marking the snapshot current
-- releasing the final lease makes the snapshot collectible
-- `mizar-ir` phase-output lease blocks snapshot collection until released
-- duplicate release is reported but does not underflow counts
-- collection does not delete artifacts or cache records
+- 実行中ビルドのリースが回収を防ぐ
+- 現行マークは、他のリースがなくても回収を防ぐ
+- 失効した LSP または診断のリースは、スナップショットを現行にすることなく古いソースマップを保持する
+- 最後のリースを解放すると、スナップショットが回収可能になる
+- `mizar-ir` のフェーズ出力リースは、解放されるまでスナップショットの回収をブロックする
+- 重複した解放は報告されるが、カウントをアンダーフローさせない
+- 回収はアーティファクトやキャッシュレコードを削除しない
 
 ## Constraints and Assumptions
 
-- Retention controls memory lifetime, not semantic validity.
-- Old snapshots may be readable while referenced, but cannot be reported as current after replacement.
-- Collection order must not affect deterministic build output.
-- The retention manager must avoid retaining all historical snapshots indefinitely in watch/LSP mode.
+- 保持はメモリの寿命を制御するものであり、意味的な有効性を制御するものではない。
+- 古いスナップショットは、参照されている間は読み取り可能だが、置き換え後に現行として報告することはできない。
+- 回収の順序が、決定的なビルド出力に影響してはならない。
+- 保持マネージャは、watch／LSP モードにおいて、すべての過去のスナップショットを無期限に保持し続けることを避けなければならない。

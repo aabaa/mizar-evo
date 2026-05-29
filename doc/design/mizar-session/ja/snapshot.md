@@ -4,9 +4,9 @@
 
 ## Purpose
 
-この module は `mizar-session` の immutable build snapshot identity を定義する。
+このモジュールは、`mizar-session` の不変なビルドスナップショットの同一性を定義します。
 
-`BuildSnapshot` は一つの batch、watch、LSP build request が観測する complete build input state を識別する。Source versions、dependency artifacts、lockfile state、toolchain identity、verifier configuration を含む。Downstream crates は `BuildSnapshotId` を使い、stale handles を拒否し、previous outputs を reuse する前に cache validation が必要かどうかを判断する。
+`BuildSnapshot` は、1 つの batch・watch・LSP ビルドリクエストが観測する、ビルド入力の状態全体を識別します。ソースバージョン、依存アーティファクト、ロックファイルの状態、ツールチェインの同一性、検証器構成を対象とします。下流の crate は `BuildSnapshotId` を用いて、失効したハンドルを拒否し、以前の出力を再利用する前にキャッシュ検証が必要かどうかを判断します。
 
 ## Public API
 
@@ -51,122 +51,122 @@ pub trait SnapshotRegistry {
 }
 ```
 
-Concrete registry は snapshots を memory に保持し、source/cache-facing fingerprints だけを persist してよい。Public identifiers は opaque であり、paths、timestamps、memory addresses、task-local counters を encode してはならない。
+具象レジストリは、スナップショットをメモリに保持し、ソース／キャッシュ向けのフィンガープリントだけを永続化してよいものとします。公開される識別子は不透明であり、パス、タイムスタンプ、メモリアドレス、タスクローカルなカウンタをエンコードしてはなりません。
 
 ## Dependencies
 
-- Internal: `SourceVersion` に attach される source coordinate tables のための `source_map`
-- External: path normalization、hashing、package metadata、LSP document-version types
+- Internal: `SourceVersion` に付随するソース座標テーブルのための `source_map`
+- External: パス正規化、ハッシュ計算、パッケージメタデータ、LSP のドキュメントバージョン型
 
-この module は `mizar-build`、`mizar-ir`、`mizar-cache`、`mizar-artifact`、`mizar-diagnostics`、`mizar-lsp` から consume される。
+このモジュールは、`mizar-build`、`mizar-ir`、`mizar-cache`、`mizar-artifact`、`mizar-diagnostics`、`mizar-lsp` から消費されます。
 
 ## Data Structures
 
 ### Snapshot Identity
 
-`BuildSnapshotId` は canonical snapshot input から導出される。
+`BuildSnapshotId` は、正準的なスナップショット入力から導出されます。
 
-- normalization 後の workspace root identity
-- sorted source-version summaries
-- dependency artifact identity and content hashes
-- lockfile hash
-- toolchain identity and relevant schema versions
-- verifier configuration hash
+- 正規化後のワークスペースルートの同一性
+- ソートされたソースバージョンの要約
+- 依存アーティファクトの同一性とコンテンツハッシュ
+- ロックファイルのハッシュ
+- ツールチェインの同一性と関連するスキーマバージョン
+- 検証器構成のハッシュ
 
-Build-session ids、scheduler task ids、wall-clock time、memory addresses、retention leases からは導出しない。
+ビルドセッション ID、スケジューラのタスク ID、実時刻、メモリアドレス、保持リースからは導出しません。
 
-同じ source text でも dependency artifacts、lockfile state、toolchain identity、verifier configuration が異なる場合、別の `BuildSnapshotId` を受け取らなければならない。
+ソーステキストが同一でも、依存アーティファクト、ロックファイルの状態、ツールチェインの同一性、検証器構成のいずれかが異なる 2 つのスナップショットは、異なる `BuildSnapshotId` を受け取らなければなりません。
 
 ### Source Version
 
-`SourceVersion` は cache keys、artifacts、diagnostics、LSP overlays が使う source-facing unit である。
+`SourceVersion` は、キャッシュキー・アーティファクト・診断・LSP オーバーレイが用いる、ソース側の単位です。
 
-記録するもの:
+記録する内容:
 
-- snapshot 内の stable source identity
-- package and module identity
-- 可能な場合は workspace or package root からの normalized path
-- source content hash
-- language edition
-- LSP builds 用の open-buffer versions を含む origin
+- スナップショット内での安定したソース同一性
+- パッケージとモジュールの同一性
+- 可能な場合は、ワークスペースまたはパッケージルートからの正規化パス
+- ソースのコンテンツハッシュ
+- 言語エディション
+- 由来。LSP ビルドのオープンバッファバージョンを含む
 
-`SourceId` は snapshot に scope される。Published artifacts は `SourceId` を compatibility promise として expose せず、module path、normalized path、source hash を通して stable source identity を project しなければならない。
+`SourceId` はスナップショットにスコープされます。公開アーティファクトは、`SourceId` を互換性の保証として露出させるのではなく、モジュールパス・正規化パス・ソースハッシュを通して安定したソース同一性を射影しなければなりません。
 
 ### Snapshot Lease
 
-`SnapshotLease` は external consumer が snapshot を参照している可能性がある間、その snapshot が collect されることを防ぐ。
+`SnapshotLease` は、外部の利用側がまだスナップショットを参照している可能性がある間、そのスナップショットが回収されるのを防ぎます。
 
-Lease reasons:
+リースの理由には次があります。
 
-- active build request
-- watch baseline
-- published LSP snapshot
-- diagnostic index
-- explanation request
-- `mizar-ir` における phase-output retention
-- pending cache or artifact writer
+- 実行中のビルドリクエスト
+- watch のベースライン
+- 公開された LSP スナップショット
+- 診断インデックス
+- 説明リクエスト
+- `mizar-ir` におけるフェーズ出力の保持
+- 保留中のキャッシュまたはアーティファクトのライタ
 
-Leases は snapshot metadata and source maps を retain する。すべての IR outputs をそれだけで retain するわけではない。`mizar-ir` が phase-output retention を所有し、snapshot への lease を別途持ってよい。
+リースはスナップショットのメタデータとソースマップを保持します。ただし、それ自体ですべての IR 出力を保持するわけではありません。フェーズ出力の保持は `mizar-ir` が所有し、スナップショットへのリースを別途保持してよいものとします。
 
 ## Algorithm / Logic
 
 ### Snapshot Creation
 
-1. Workspace、package、source paths を normalize する。
-2. Request が選択した disk files、open buffers、generated sources から `SourceVersion` records を作る。
-3. Source and dependency summaries を canonical keys で sort する。
-4. Canonical snapshot input を hash して `BuildSnapshotId` を作る。
-5. Immutable snapshot を registry に insert する。
-6. Snapshot と active-build lease を caller に返す。
+1. ワークスペース・パッケージ・ソースの各パスを正規化する。
+2. リクエストが選択したディスクファイル・オープンバッファ・生成ソースから `SourceVersion` レコードを作る。
+3. ソースと依存の要約を正準キーでソートする。
+4. 正準的なスナップショット入力をハッシュして `BuildSnapshotId` を作る。
+5. 不変のスナップショットをレジストリに挿入する。
+6. スナップショットと、実行中ビルドのリースを呼び出し側に返す。
 
 ### Freshness Check
 
-Snapshot は、その request generation に accepted された most recent snapshot である場合だけ current である。Watch and LSP builds は diagnostics and editor display のため older snapshots を alive に保ってよいが、older snapshots を current build results として報告してはならない。
+スナップショットが「現行」であるのは、それがそのリクエスト世代について受理された最新のスナップショットである場合に限ります。watch および LSP ビルドは、診断やエディタ表示のために古いスナップショットを生かしておいてよいものの、古いスナップショットを現行のビルド結果として報告してはなりません。
 
-Downstream crates は handles を consume する前に `BuildSnapshotId` を比較するべきである。Ids が異なる場合、consumer は handle を stale として reject するか、responsible cache layer の cache compatibility validation を呼び出さなければならない。
+下流の crate は、ハンドルを消費する前に `BuildSnapshotId` を比較すべきです。ID が異なる場合、利用側はそのハンドルを失効として拒否するか、担当するキャッシュ層でキャッシュ互換性の検証を呼び出さなければなりません。
 
 ### Retention and Collection
 
-Registry は次の条件を満たす snapshot を collect してよい。
+レジストリは、次の条件を満たすスナップショットを回収してよいものとします。
 
-- lease が参照していない
-- current request generation が名前を持っていない
-- retained source map or diagnostic explanation が指していない
-- `mizar-ir` がその snapshot の phase-output references を release 済み
+- それを参照するリースがない
+- それを指名する現行のリクエスト世代がない
+- それを指す、保持中のソースマップや診断の説明がない
+- `mizar-ir` がそのスナップショットのフェーズ出力参照を解放済みである
 
-Collection は in-memory source text and maps を remove する。ただし、別 layer が stable artifact or cache data として明示的に保存したものは除く。
+回収は、インメモリのソーステキストとマップを取り除きます。ただし、別の層が安定したアーティファクトやキャッシュのデータとして明示的に保存したものは対象外です。
 
 ## Error Handling
 
-`SnapshotError` includes:
+`SnapshotError` には次が含まれます。
 
-- invalid or non-normalizable source path
-- one package snapshot 内の duplicate module path
-- build plan が参照する missing dependency artifact
-- unsupported lockfile or toolchain metadata
-- stale open-buffer version
-- unknown snapshot id
-- lease release mismatch
+- 不正、または正規化できないソースパス
+- 1 つのパッケージスナップショット内の重複するモジュールパス
+- ビルドプランが参照する、欠落した依存アーティファクト
+- 未対応のロックファイルまたはツールチェインのメタデータ
+- 失効したオープンバッファバージョン
+- 未知のスナップショット ID
+- リース解放の不一致
 
-Source readability and UTF-8 validation diagnostics は frontend source-loading flow が produce する。この module は source loading が valid source identity を produce した後でのみ resulting source version を record する。
+ソースの可読性と UTF-8 検証の診断は、フロントエンドのソース読み込みフローが生成します。このモジュールは、ソース読み込みが有効なソース同一性を生成した後でのみ、結果のソースバージョンを記録します。
 
 ## Tests
 
-Key scenarios:
+主なシナリオ:
 
-- identical canonical inputs produce the same `BuildSnapshotId`
-- source text changes change the snapshot id
-- dependency artifact hash changes change the snapshot id
-- verifier configuration changes change the snapshot id
-- path normalization prevents duplicate source identities
-- open-buffer versions supersede disk versions only for the targeted LSP request
-- stale `BuildSnapshotId` values are rejected by freshness checks
-- leases keep snapshots alive until all consumers release them
-- collected snapshots cannot be retrieved by `get`
+- 同一の正準入力は、同じ `BuildSnapshotId` を生成する
+- ソーステキストの変更はスナップショット ID を変える
+- 依存アーティファクトのハッシュの変更はスナップショット ID を変える
+- 検証器構成の変更はスナップショット ID を変える
+- パス正規化は、重複するソース同一性を防ぐ
+- オープンバッファバージョンは、対象とする LSP リクエストに限ってディスクバージョンに優先する
+- 失効した `BuildSnapshotId` は鮮度チェックで拒否される
+- リースは、すべての利用側が解放するまでスナップショットを生かし続ける
+- 回収されたスナップショットは `get` で取得できない
 
 ## Constraints and Assumptions
 
-- Snapshot identity must be deterministic across machines for the same normalized workspace inputs.
-- Absolute paths are not included in published artifacts unless explicitly requested for local diagnostics.
-- `BuildSnapshotId` is an identity and freshness token, not proof authority.
-- Cache reuse across snapshots belongs to `mizar-cache`; this module only provides the inputs needed to validate equivalence.
+- スナップショットの同一性は、同じ正規化済みワークスペース入力に対して、マシンをまたいで決定的でなければならない。
+- 絶対パスは、ローカル診断のために明示的に要求されない限り、公開アーティファクトに含めない。
+- `BuildSnapshotId` は同一性と鮮度のトークンであり、証明上の権威ではない。
+- スナップショットをまたぐキャッシュの再利用は `mizar-cache` の責務である。このモジュールは、等価性を検証するために必要な入力を提供するにとどまる。
