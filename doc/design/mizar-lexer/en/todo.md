@@ -6,22 +6,17 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-1. Split crate-local lexer tests by concern.
-   - Move the large `src/lib.rs` unit-test block into focused module test files or integration tests for raw lexing, preprocessing/source maps, import pre-scan, scope skeletons, lexical environments, and disambiguation.
-   - Keep the existing corpus fixture test as the end-to-end lexical regression layer.
-   - Preserve current coverage while making it easier to review failures by subsystem.
-
-2. Revisit the public API stability boundary before the next parser integration milestone.
+1. Revisit the public API stability boundary before the next parser integration milestone.
    - Audit public transfer structs with visible fields and decide which should remain provisional, gain constructors/accessors, or move behind more stable wrapper APIs.
    - Keep `#[non_exhaustive]` on externally matched enums unless a category is intentionally frozen.
    - Document the concrete compatibility promise expected for the next `0.x` milestone.
 
-3. Structure lexer diagnostics for downstream tooling.
+2. Structure lexer diagnostics for downstream tooling.
    - Keep stable diagnostic codes and byte spans, but add structured payloads where useful for recovery, rejected parser-context candidates, unsupported raw input, malformed strings, and source-preprocessing errors.
    - Identify which diagnostics should carry source-map anchors, related spans, or machine-readable recovery hints for frontend/LSP consumers.
    - Ensure fixture expectations can assert the structured fields without depending on unstable human-facing message text.
 
-4. Reconfirm responsibility boundaries between lexer, session/source, parser, diagnostics, and LSP crates.
+3. Reconfirm responsibility boundaries between lexer, session/source, parser, diagnostics, and LSP crates.
    - Decide which source-loading, preprocessing-map, module-naming, import-prelude, and scope-skeleton helpers should stay in `mizar-lexer` versus move to a frontend/session/parser adapter layer.
    - Keep lexer token spans byte-oriented and make any human-facing or protocol-facing coordinate conversion explicit at crate boundaries.
    - Record the intended long-term dependency direction so future parser/session work does not accidentally make lexer own higher-level source or diagnostic policy.
@@ -141,6 +136,11 @@ This document records follow-up tasks identified during the lexer quality review
    - `ParserLexContext` can restrict admitted active user symbols with a `UserSymbolKindSet` without rebuilding the active lexical environment.
    - Final `UserSymbol` tokens still keep only spelling and span; downstream phases recover candidate metadata from the active lexical environment.
    - Environment fingerprints include symbol kind and arity metadata, and tests cover same-spelling metadata preservation, kind-filtered parser contexts, invalid arity shapes, and metadata-sensitive fingerprints.
+
+24. Split crate-local lexer tests by concern.
+   - Replaced the large inline `src/lib.rs` unit-test module with `src/tests/mod.rs` and focused test modules for shell lexing, raw lexing, source loading/preprocessing/maps, import pre-scan, lexical environments, disambiguation, Phase 7 invariants, and scope skeletons.
+   - Moved shared fixtures and assertion helpers into `src/tests/common.rs`.
+   - Kept the existing corpus fixture test as the end-to-end lexical regression layer.
 
 ## Suggested Verification
 
