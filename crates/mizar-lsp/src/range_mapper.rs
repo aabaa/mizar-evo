@@ -1,3 +1,4 @@
+use mizar_lexer::SourceSpan as LexerSourceSpan;
 use mizar_session::{LineMap, SourceMapError, SourceRange};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -35,6 +36,20 @@ pub fn lsp_range_from_source_range(
     })
 }
 
+pub fn lsp_range_from_lexer_span(
+    line_map: &LineMap,
+    span: LexerSourceSpan,
+) -> Result<LspRange, RangeMapError> {
+    lsp_range_from_source_range(line_map, source_range_from_lexer_span(span))
+}
+
+pub fn source_range_from_lexer_span(span: LexerSourceSpan) -> SourceRange {
+    SourceRange {
+        start: span.start,
+        end: span.end,
+    }
+}
+
 fn lsp_position(line_map: &LineMap, offset: usize) -> Result<LspPosition, RangeMapError> {
     let line_column = line_map.line_column(offset)?;
     let line_start = line_start_offset(line_map.source(), offset);
@@ -53,9 +68,13 @@ fn line_start_offset(source: &str, offset: usize) -> usize {
 
 #[cfg(test)]
 mod tests {
+    use mizar_lexer::{SourceSpan as LexerSourceSpan, lex};
     use mizar_session::{LineColumn, LineMap, SourceMapError, SourceRange};
 
-    use super::{LspPosition, LspRange, RangeMapError, lsp_range_from_source_range};
+    use super::{
+        LspPosition, LspRange, RangeMapError, lsp_range_from_lexer_span,
+        lsp_range_from_source_range, source_range_from_lexer_span,
+    };
 
     #[test]
     fn lsp_range_uses_zero_based_utf16_columns_at_lsp_boundary() {
@@ -191,6 +210,91 @@ mod tests {
                     character: 0,
                 },
             })
+        );
+    }
+
+    #[test]
+    fn lsp_range_maps_lexer_token_span_through_session_range() {
+        let source = "alpha\nbeta";
+        let line_map = LineMap::new(source);
+        let tokens = lex(source).expect("ASCII source should lex");
+        let beta = tokens
+            .iter()
+            .find(|token| token.lexeme == "beta")
+            .expect("token should be present");
+
+        assert_eq!(
+            source_range_from_lexer_span(beta.span),
+            SourceRange { start: 6, end: 10 }
+        );
+        assert_eq!(
+            lsp_range_from_lexer_span(&line_map, beta.span),
+            Ok(LspRange {
+                start: LspPosition {
+                    line: 1,
+                    character: 0,
+                },
+                end: LspPosition {
+                    line: 1,
+                    character: 4,
+                },
+            })
+        );
+    }
+
+    #[test]
+    fn source_range_from_lexer_span_is_a_field_copy() {
+        let span = LexerSourceSpan { start: 7, end: 13 };
+
+        assert_eq!(
+            source_range_from_lexer_span(span),
+            SourceRange { start: 7, end: 13 }
+        );
+    }
+
+    #[test]
+    fn lsp_range_maps_lexer_token_span_with_utf16_columns() {
+        let source = "a😀 beta";
+        let line_map = LineMap::new(source);
+        let span = LexerSourceSpan {
+            start: "a😀 ".len(),
+            end: source.len(),
+        };
+
+        assert_eq!(
+            lsp_range_from_lexer_span(&line_map, span),
+            Ok(LspRange {
+                start: LspPosition {
+                    line: 0,
+                    character: 4,
+                },
+                end: LspPosition {
+                    line: 0,
+                    character: 8,
+                },
+            })
+        );
+    }
+
+    #[test]
+    fn lsp_range_from_lexer_span_rejects_reversed_spans() {
+        let source = "abc";
+        let line_map = LineMap::new(source);
+
+        assert_eq!(
+            lsp_range_from_lexer_span(&line_map, LexerSourceSpan { start: 2, end: 1 }),
+            Err(RangeMapError::SourceMap(SourceMapError::ReversedRange))
+        );
+    }
+
+    #[test]
+    fn lsp_range_from_lexer_span_rejects_out_of_bounds_spans() {
+        let source = "abc";
+        let line_map = LineMap::new(source);
+
+        assert_eq!(
+            lsp_range_from_lexer_span(&line_map, LexerSourceSpan { start: 1, end: 4 }),
+            Err(RangeMapError::SourceMap(SourceMapError::OffsetOutOfBounds))
         );
     }
 

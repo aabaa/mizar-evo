@@ -249,6 +249,7 @@ dependencies = [
 name = "mizar-lsp"
 version = "0.1.0"
 dependencies = [
+ "mizar-lexer",
  "mizar-session",
 ]
 

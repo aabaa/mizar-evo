@@ -10,4 +10,5 @@ name = "mizar_lsp"
 path = "src/lib.rs"
 
 [dependencies]
+mizar-lexer = { path = "../mizar-lexer" }
 mizar-session = { path = "../mizar-session" }

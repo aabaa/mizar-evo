@@ -6,13 +6,14 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-1. Decide shared source-span ownership across lexer, session, and LSP crates.
-    - Revisit whether `SourceRange` should stay crate-local with explicit conversion APIs or move to a common source-coordinate crate.
-    - Do this when lexer token spans are wired into session/LSP diagnostics so the integration pressure is real.
-
-2. Decide line/column overflow policy for session source maps.
+1. Decide line/column overflow policy for session source maps.
     - `mizar-session::LineMap` currently reports user-facing line/column values as `u32`; review whether session APIs should use `usize` or return an overflow error for extremely large files or lines.
     - Keep LSP protocol positions `u32`, but make any narrowing from session coordinates explicit and tested.
+
+2. Revisit long-term LSP/lexer dependency layering.
+    - `mizar-lsp` currently depends directly on `mizar-lexer` for explicit `SourceSpan` bridge conversion.
+    - When frontend/diagnostic adapter crates become concrete, decide whether this bridge should move there so LSP can depend only on session-facing source coordinates.
+    - Keep the current direct dependency until the alternative owner exists; avoid adding a shared source-coordinate crate solely for this bridge.
 
 ## Completed Tasks
 
@@ -101,6 +102,11 @@ This document records follow-up tasks identified during the lexer quality review
    - Added `mizar-session::normalize_source_path` and `NormalizedPath` for package-relative `.miz` source identities.
    - Tests cover `.`/`..`, symlink alias/escape rejection, canonical case spelling, package-root escape attempts, source-root enforcement, extension validation, ASCII identifier-shaped namespace components, and platform-specific separator normalization.
    - The lexer-local `module_source_name_from_path` remains only a boundary naming helper; filesystem-aware source identity now lives in the session source layer.
+
+19. Decided shared source-span ownership across lexer, session, and LSP crates.
+   - Kept lexer `SourceSpan` and session `SourceRange` crate-local instead of adding a common source-coordinate crate at this stage.
+   - Added explicit LSP bridge conversion APIs: `source_range_from_lexer_span` and `lsp_range_from_lexer_span`.
+   - Added LSP bridge tests for lexer-token spans, UTF-16 column conversion, pure field-copy conversion, and error propagation for invalid lexer spans, keeping coordinate-space conversion visible at the boundary.
 
 ## Suggested Verification
 

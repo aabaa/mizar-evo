@@ -6,13 +6,14 @@
 
 ## Ordered Task List
 
-1. lexer、session、LSP crates 間の shared source-span ownership を決める。
-    - `SourceRange` を crate-local のまま explicit conversion APIs でつなぐか、common source-coordinate crate に移すかを再検討する。
-    - lexer token spans を session/LSP diagnostics へ接続し、実際の integration pressure が見えてから判断する。
-
-2. session source maps の line/column overflow policy を決める。
+1. session source maps の line/column overflow policy を決める。
     - `mizar-session::LineMap` は現在 user-facing line/column values を `u32` として返す。extremely large files または long lines に対して、session APIs が `usize` を使うべきか overflow error を返すべきかを review する。
     - LSP protocol positions は `u32` のままにしつつ、session coordinates から narrow する箇所は explicit かつ tested にする。
+
+2. long-term LSP/lexer dependency layering を再検討する。
+    - `mizar-lsp` は現在、明示的な `SourceSpan` bridge conversion のために `mizar-lexer` へ直接依存している。
+    - frontend/diagnostic adapter crates が具体化したら、この bridge をそちらへ移し、LSP が session-facing source coordinates のみに依存できるようにするか決める。
+    - 代替 owner が存在するまでは current direct dependency を保ち、この bridge だけのために shared source-coordinate crate を追加しない。
 
 ## Completed Tasks
 
@@ -101,6 +102,11 @@
    - package-relative `.miz` source identities 用に `mizar-session::normalize_source_path` と `NormalizedPath` を追加した。
    - Tests は `.`/`..`、symlink alias/escape rejection、canonical case spelling、package-root escape attempts、source-root enforcement、extension validation、ASCII identifier-shaped namespace components、platform-specific separator normalization を cover する。
    - lexer-local な `module_source_name_from_path` は boundary naming helper のままにし、filesystem-aware source identity は session source layer に置いた。
+
+19. lexer、session、LSP crates 間の shared source-span ownership を決定した。
+   - この段階では common source-coordinate crate を追加せず、lexer `SourceSpan` と session `SourceRange` は crate-local のままにした。
+   - 明示的な LSP bridge conversion API として `source_range_from_lexer_span` と `lsp_range_from_lexer_span` を追加した。
+   - lexer-token spans、UTF-16 column conversion、pure field-copy conversion、invalid lexer spans の error propagation 用の LSP bridge tests を追加し、coordinate-space conversion が boundary で見えるようにした。
 
 ## Suggested Verification
 
