@@ -93,6 +93,8 @@ pub trait SourceMapService {
 
 Offsets are byte offsets into validated UTF-8 `LoadedSource.text` after source-loading normalization. User-facing columns use the Unicode scalar column rule defined by the frontend architecture and must be converted through `LineMap` rather than computed by consumers ad hoc.
 
+`LineColumn` intentionally uses `u32` rather than `usize`. These values are presentation and protocol-adjacent coordinates, not raw memory indexes, and keeping them bounded matches diagnostics, artifact metadata, and LSP adapters. If a loaded source has more than `u32::MAX` user-facing lines or a line with more than `u32::MAX` Unicode scalar columns, `LineMap` returns `SourceMapError::LineColumnOverflow` instead of saturating, wrapping, or silently narrowing. LSP positions remain `u32`; the `mizar-lsp` bridge performs its own explicit checked narrowing for UTF-16 columns.
+
 ## Dependencies
 
 - Internal: `snapshot` for `SourceId` and source-version identity
@@ -184,6 +186,7 @@ Source maps are retained with the owning snapshot while any snapshot lease, diag
 - unknown source id;
 - range outside source text;
 - offset not aligned to a UTF-8 boundary;
+- line or column coordinate not representable as `u32`;
 - lexical range outside preprocessed text;
 - missing loading map segment;
 - missing preprocess segment;
@@ -196,6 +199,7 @@ Malformed user source is reported by frontend diagnostics. Source-map errors ind
 Key scenarios:
 
 - line maps convert byte offsets to Unicode scalar columns;
+- line maps report overflow instead of silently narrowing unrepresentable line or column values;
 - line maps for BOM-prefixed disk files start at loaded-text offset `0` after the stripped BOM;
 - `LoadingMap` relates loaded-text offset `0` to original file byte offset `3` when a leading BOM was stripped;
 - `LoadingMap` for open buffers relates loaded-text offsets back to editor-provided text byte offsets before LSP UTF-16 conversion;
@@ -206,6 +210,7 @@ Key scenarios:
 - generated anchors preserve their origin reason;
 - invalid byte offsets and cross-source ranges are rejected;
 - LSP UTF-16 conversion remains outside this module.
+- LSP UTF-16 narrowing is explicit and reports overflow rather than using unchecked casts.
 
 ## Constraints and Assumptions
 

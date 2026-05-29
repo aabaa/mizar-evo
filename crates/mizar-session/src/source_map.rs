@@ -29,7 +29,10 @@ pub enum SourceMapError {
     ReversedRange,
     OffsetOutOfBounds,
     OffsetNotCharBoundary,
+    LineColumnOverflow,
 }
+
+const MAX_LINE_COLUMN: usize = u32::MAX as usize;
 
 impl LineMap {
     pub fn new(source: &str) -> Self {
@@ -54,6 +57,14 @@ impl LineMap {
     }
 
     pub fn line_column(&self, offset: usize) -> Result<LineColumn, SourceMapError> {
+        self.line_column_with_max(offset, MAX_LINE_COLUMN)
+    }
+
+    fn line_column_with_max(
+        &self,
+        offset: usize,
+        max_coordinate: usize,
+    ) -> Result<LineColumn, SourceMapError> {
         self.validate_offset(offset)?;
         let line_index = match self.line_starts.binary_search(&offset) {
             Ok(line) => line,
@@ -61,10 +72,10 @@ impl LineMap {
             Err(next_line) => next_line - 1,
         };
         let line_start = self.line_starts[line_index];
-        let column = self.text[line_start..offset].chars().count() + 1;
+        let column_index = self.text[line_start..offset].chars().count();
         Ok(LineColumn {
-            line: (line_index + 1) as u32,
-            column: column as u32,
+            line: one_based_u32(line_index, max_coordinate)?,
+            column: one_based_u32(column_index, max_coordinate)?,
         })
     }
 
@@ -87,6 +98,16 @@ impl LineMap {
         }
         Ok(())
     }
+}
+
+fn one_based_u32(zero_based: usize, max_coordinate: usize) -> Result<u32, SourceMapError> {
+    let one_based = zero_based
+        .checked_add(1)
+        .ok_or(SourceMapError::LineColumnOverflow)?;
+    if one_based > max_coordinate {
+        return Err(SourceMapError::LineColumnOverflow);
+    }
+    u32::try_from(one_based).map_err(|_| SourceMapError::LineColumnOverflow)
 }
 
 #[cfg(test)]
@@ -213,6 +234,38 @@ mod tests {
                 start: LineColumn { line: 1, column: 1 },
                 end: LineColumn { line: 1, column: 1 },
             })
+        );
+    }
+
+    #[test]
+    fn line_map_narrowing_reports_overflow_for_unrepresentable_coordinates() {
+        assert_eq!(super::one_based_u32(0, u32::MAX as usize), Ok(1));
+        assert_eq!(
+            super::one_based_u32(u32::MAX as usize - 1, u32::MAX as usize),
+            Ok(u32::MAX)
+        );
+        assert_eq!(
+            super::one_based_u32(u32::MAX as usize, u32::MAX as usize),
+            Err(SourceMapError::LineColumnOverflow)
+        );
+    }
+
+    #[test]
+    fn line_map_reports_overflow_through_coordinate_conversion_path() {
+        let source = "aβ😀z\n漢字";
+        let map = LineMap::new(source);
+
+        assert_eq!(
+            map.line_column_with_max("aβ😀".len(), 3),
+            Err(SourceMapError::LineColumnOverflow)
+        );
+        assert_eq!(
+            map.line_column_with_max("aβ😀z\n".len(), 1),
+            Err(SourceMapError::LineColumnOverflow)
+        );
+        assert_eq!(
+            map.line_column_with_max("aβ😀".len(), 4),
+            Ok(LineColumn { line: 1, column: 4 })
         );
     }
 }

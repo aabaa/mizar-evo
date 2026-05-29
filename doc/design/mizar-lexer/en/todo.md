@@ -6,11 +6,7 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-1. Decide line/column overflow policy for session source maps.
-    - `mizar-session::LineMap` currently reports user-facing line/column values as `u32`; review whether session APIs should use `usize` or return an overflow error for extremely large files or lines.
-    - Keep LSP protocol positions `u32`, but make any narrowing from session coordinates explicit and tested.
-
-2. Revisit long-term LSP/lexer dependency layering.
+1. Revisit long-term LSP/lexer dependency layering.
     - `mizar-lsp` currently depends directly on `mizar-lexer` for explicit `SourceSpan` bridge conversion.
     - When frontend/diagnostic adapter crates become concrete, decide whether this bridge should move there so LSP can depend only on session-facing source coordinates.
     - Keep the current direct dependency until the alternative owner exists; avoid adding a shared source-coordinate crate solely for this bridge.
@@ -107,6 +103,11 @@ This document records follow-up tasks identified during the lexer quality review
    - Kept lexer `SourceSpan` and session `SourceRange` crate-local instead of adding a common source-coordinate crate at this stage.
    - Added explicit LSP bridge conversion APIs: `source_range_from_lexer_span` and `lsp_range_from_lexer_span`.
    - Added LSP bridge tests for lexer-token spans, UTF-16 column conversion, pure field-copy conversion, and error propagation for invalid lexer spans, keeping coordinate-space conversion visible at the boundary.
+
+20. Decided line/column overflow policy for session source maps.
+   - Kept `mizar-session::LineColumn` values as `u32` because they are presentation and protocol-adjacent coordinates, not raw memory indexes.
+   - Added `SourceMapError::LineColumnOverflow` so `LineMap` reports unrepresentable line or Unicode scalar column values instead of saturating, wrapping, or silently narrowing from `usize`.
+   - Kept LSP protocol positions as `u32` and added explicit checked narrowing for UTF-16 columns in the LSP bridge.
 
 ## Suggested Verification
 

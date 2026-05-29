@@ -17,7 +17,10 @@ pub struct LspRange {
 #[non_exhaustive]
 pub enum RangeMapError {
     SourceMap(SourceMapError),
+    PositionOverflow,
 }
+
+const MAX_LSP_POSITION: usize = u32::MAX as usize;
 
 impl From<SourceMapError> for RangeMapError {
     fn from(error: SourceMapError) -> Self {
@@ -29,10 +32,18 @@ pub fn lsp_range_from_source_range(
     line_map: &LineMap,
     range: SourceRange,
 ) -> Result<LspRange, RangeMapError> {
+    lsp_range_from_source_range_with_max_utf16_column(line_map, range, MAX_LSP_POSITION)
+}
+
+fn lsp_range_from_source_range_with_max_utf16_column(
+    line_map: &LineMap,
+    range: SourceRange,
+    max_utf16_column: usize,
+) -> Result<LspRange, RangeMapError> {
     line_map.line_column_range(range)?;
     Ok(LspRange {
-        start: lsp_position(line_map, range.start)?,
-        end: lsp_position(line_map, range.end)?,
+        start: lsp_position(line_map, range.start, max_utf16_column)?,
+        end: lsp_position(line_map, range.end, max_utf16_column)?,
     })
 }
 
@@ -50,10 +61,17 @@ pub fn source_range_from_lexer_span(span: LexerSourceSpan) -> SourceRange {
     }
 }
 
-fn lsp_position(line_map: &LineMap, offset: usize) -> Result<LspPosition, RangeMapError> {
+fn lsp_position(
+    line_map: &LineMap,
+    offset: usize,
+    max_utf16_column: usize,
+) -> Result<LspPosition, RangeMapError> {
     let line_column = line_map.line_column(offset)?;
     let line_start = line_start_offset(line_map.source(), offset);
-    let utf16_column = line_map.source()[line_start..offset].encode_utf16().count() as u32;
+    let utf16_column = u32_lsp_coordinate(
+        line_map.source()[line_start..offset].encode_utf16().count(),
+        max_utf16_column,
+    )?;
     Ok(LspPosition {
         line: line_column.line - 1,
         character: utf16_column,
@@ -64,6 +82,13 @@ fn line_start_offset(source: &str, offset: usize) -> usize {
     source[..offset]
         .rfind('\n')
         .map_or(0, |newline| newline + '\n'.len_utf8())
+}
+
+fn u32_lsp_coordinate(value: usize, max_coordinate: usize) -> Result<u32, RangeMapError> {
+    if value > max_coordinate {
+        return Err(RangeMapError::PositionOverflow);
+    }
+    u32::try_from(value).map_err(|_| RangeMapError::PositionOverflow)
 }
 
 #[cfg(test)]
@@ -330,6 +355,57 @@ mod tests {
         assert_eq!(
             lsp_range_from_source_range(&line_map, SourceRange { start: 1, end: 4 }),
             Err(RangeMapError::SourceMap(SourceMapError::OffsetOutOfBounds))
+        );
+    }
+
+    #[test]
+    fn lsp_coordinate_narrowing_reports_overflow() {
+        assert_eq!(super::u32_lsp_coordinate(0, u32::MAX as usize), Ok(0));
+        assert_eq!(
+            super::u32_lsp_coordinate(u32::MAX as usize, u32::MAX as usize),
+            Ok(u32::MAX)
+        );
+        assert_eq!(
+            super::u32_lsp_coordinate(u32::MAX as usize + 1, u32::MAX as usize),
+            Err(RangeMapError::PositionOverflow)
+        );
+    }
+
+    #[test]
+    fn lsp_range_reports_utf16_overflow_through_range_conversion_path() {
+        let source = "a😀β";
+        let line_map = LineMap::new(source);
+
+        assert_eq!(
+            super::lsp_range_from_source_range_with_max_utf16_column(
+                &line_map,
+                SourceRange {
+                    start: 0,
+                    end: source.len(),
+                },
+                3,
+            ),
+            Err(RangeMapError::PositionOverflow)
+        );
+        assert_eq!(
+            super::lsp_range_from_source_range_with_max_utf16_column(
+                &line_map,
+                SourceRange {
+                    start: 0,
+                    end: source.len(),
+                },
+                4,
+            ),
+            Ok(LspRange {
+                start: LspPosition {
+                    line: 0,
+                    character: 0,
+                },
+                end: LspPosition {
+                    line: 0,
+                    character: 4,
+                },
+            })
         );
     }
 }

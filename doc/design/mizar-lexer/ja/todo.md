@@ -6,11 +6,7 @@
 
 ## Ordered Task List
 
-1. session source maps の line/column overflow policy を決める。
-    - `mizar-session::LineMap` は現在 user-facing line/column values を `u32` として返す。extremely large files または long lines に対して、session APIs が `usize` を使うべきか overflow error を返すべきかを review する。
-    - LSP protocol positions は `u32` のままにしつつ、session coordinates から narrow する箇所は explicit かつ tested にする。
-
-2. long-term LSP/lexer dependency layering を再検討する。
+1. long-term LSP/lexer dependency layering を再検討する。
     - `mizar-lsp` は現在、明示的な `SourceSpan` bridge conversion のために `mizar-lexer` へ直接依存している。
     - frontend/diagnostic adapter crates が具体化したら、この bridge をそちらへ移し、LSP が session-facing source coordinates のみに依存できるようにするか決める。
     - 代替 owner が存在するまでは current direct dependency を保ち、この bridge だけのために shared source-coordinate crate を追加しない。
@@ -107,6 +103,11 @@
    - この段階では common source-coordinate crate を追加せず、lexer `SourceSpan` と session `SourceRange` は crate-local のままにした。
    - 明示的な LSP bridge conversion API として `source_range_from_lexer_span` と `lsp_range_from_lexer_span` を追加した。
    - lexer-token spans、UTF-16 column conversion、pure field-copy conversion、invalid lexer spans の error propagation 用の LSP bridge tests を追加し、coordinate-space conversion が boundary で見えるようにした。
+
+20. session source maps の line/column overflow policy を決定した。
+   - `mizar-session::LineColumn` values は raw memory indexes ではなく presentation and protocol-adjacent coordinates なので、`u32` のままにした。
+   - `SourceMapError::LineColumnOverflow` を追加し、`LineMap` は表現できない line または Unicode scalar column values に対して、saturate、wrap、silent narrowing をせず overflow error を返すようにした。
+   - LSP protocol positions は `u32` のままにし、LSP bridge で UTF-16 columns の explicit checked narrowing を追加した。
 
 ## Suggested Verification
 
