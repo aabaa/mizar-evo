@@ -6,7 +6,25 @@
 
 ## Ordered Task List
 
-この review batch 由来の open ordered task は残っていません。
+1. crate-local lexer tests を concern ごとに分割する。
+   - `src/lib.rs` の大きな unit-test block を、raw lexing、preprocessing/source maps、import pre-scan、scope skeletons、lexical environments、disambiguation などの focused module test files または integration tests に移す。
+   - 既存の corpus fixture test は end-to-end lexical regression layer として維持する。
+   - 現在の coverage を保ったまま、subsystem ごとの failure review をしやすくする。
+
+2. 次の parser integration milestone の前に public API stability boundary を再確認する。
+   - visible fields を持つ public transfer structs を audit し、どれを provisional のままにするか、constructors/accessors を追加するか、より stable な wrapper APIs の背後へ移すかを決める。
+   - 外部 crate が match する enums には、category を意図的に freeze する場合を除き `#[non_exhaustive]` を維持する。
+   - 次の `0.x` milestone で期待する concrete compatibility promise を文書化する。
+
+3. downstream tooling 向けに lexer diagnostics を構造化する。
+   - stable diagnostic codes と byte spans は維持しつつ、recovery、rejected parser-context candidates、unsupported raw input、malformed strings、source-preprocessing errors などに有用な structured payloads を追加する。
+   - frontend/LSP consumers 向けに、どの diagnostics が source-map anchors、related spans、machine-readable recovery hints を持つべきかを整理する。
+   - fixture expectations は unstable な human-facing message text に依存せず、structured fields を assert できるようにする。
+
+4. lexer、session/source、parser、diagnostics、LSP crates 間の responsibility boundaries を再確認する。
+   - source-loading、preprocessing-map、module-naming、import-prelude、scope-skeleton helpers のうち、どれを `mizar-lexer` に残し、どれを frontend/session/parser adapter layer へ移すべきかを決める。
+   - lexer token spans は byte-oriented のままにし、human-facing または protocol-facing coordinate conversion は crate boundaries で明示する。
+   - 将来の parser/session work によって lexer が higher-level source policy や diagnostic policy を偶発的に所有しないよう、意図する long-term dependency direction を記録する。
 
 ## Completed Tasks
 
