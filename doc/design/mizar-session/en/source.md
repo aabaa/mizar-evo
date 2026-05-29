@@ -96,7 +96,7 @@ Open-buffer sources can override disk sources only for the targeted LSP request 
 3. Read bytes from disk.
 4. Validate UTF-8. Invalid bytes are rejected before line-map construction and must not be decoded lossily into `U+FFFD`.
 5. If the validated text starts with a UTF-8 BOM signature, strip that leading `U+FEFF`.
-6. Normalize source-loading newlines according to the frontend newline policy.
+6. Normalize source-loading newlines by replacing each CRLF pair with one LF. Lone `\r` is not treated as a platform newline and remains malformed lexer-boundary input if it reaches preprocessing.
 7. Record a `LoadingMap` from normalized loaded-text offsets back to original file byte offsets when BOM stripping or newline normalization changed offsets.
 8. Compute the source hash from `LoadedSource.text`.
 9. Build the `LineMap` over `LoadedSource.text`.
@@ -112,7 +112,7 @@ Code-region ASCII validation belongs to preprocessing. This module only validate
 2. Normalize the document URI to a package source path.
 3. Use the editor-provided text as authoritative for the request.
 4. Strip one leading `U+FEFF` from package-authored open-buffer text so editor views of a BOM-prefixed disk file match disk source loading.
-5. Normalize source-loading newlines according to the frontend newline policy.
+5. Normalize source-loading newlines by replacing each CRLF pair with one LF. Lone `\r` is preserved so frontend/lexer diagnostics can reject it consistently.
 6. If stripping or newline normalization changed offsets, record a `LoadingMap` from normalized loaded-text offsets back to editor-provided text byte offsets.
 7. Compute source hash and `LineMap` from `LoadedSource.text`.
 8. Mark the origin as `OpenBuffer`.

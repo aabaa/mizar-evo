@@ -6,19 +6,15 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-1. Specify and test newline normalization.
-   - Define CRLF-to-LF behavior before lexer entry.
-   - Ensure the source map can relate normalized lexical/source text offsets back to original file byte offsets.
-
-2. Implement preprocess source-map tests.
+1. Implement preprocess source-map tests.
    - Cover ordinary comment removal, documentation comment retention, synthetic whitespace/newline segments, and lexical ranges spanning removed comments.
    - Ensure diagnostics from lexer/preprocessor helpers can be mapped back to original source ranges.
 
-3. Keep user-facing column conversion outside lexer.
+2. Keep user-facing column conversion outside lexer.
     - Test Unicode scalar columns in the source-map/session layer.
     - Test LSP UTF-16 conversion in the LSP bridge, not in `mizar-lexer`.
 
-4. Cover source path normalization outside lexer.
+3. Cover source path normalization outside lexer.
     - Test `.`/`..`, symlinks, case policy, package-root escape attempts, and platform-specific separators in the source-loading/path layer.
 
 ## Completed Tasks
@@ -85,6 +81,11 @@ This document records follow-up tasks identified during the lexer quality review
    - Leading UTF-8 BOM stripping is tested with `LoadedSourceText.loading_map`; loaded offset `0` maps back to original byte offset `3`.
    - Non-leading `U+FEFF` remains in loaded text and is still rejected by lexer-boundary preprocessing/raw scanning when it appears in code.
 
+14. Specified and tested newline normalization.
+   - `load_source_text_from_bytes` now normalizes CRLF pairs to LF before lexer entry.
+   - `SourceLoadingMapSegment::NormalizedNewline` records each normalized LF against the original two-byte CRLF range.
+   - Tests cover plain CRLF input, CRLF after leading BOM stripping, and preserving lone `\r` as malformed lexer-boundary input.
+
 ## Suggested Verification
 
 After each task, run:
@@ -103,9 +104,9 @@ This first-pass audit records common text-processing pitfalls and whether the cu
 | Topic | Current status | Owner / evidence | Follow-up |
 |---|---|---|---|
 | UTF-8 validation | Covered at the executable boundary | `load_source_text_from_bytes` validates source bytes and returns `SourceLoadError::InvalidUtf8` before lexer entry; `mizar-lexer` scanner APIs still receive `&str`. | Frontend/session source loader should reuse or mirror this behavior when that crate exists. |
-| UTF-8 BOM | Covered for the UTF-8 boundary | `load_source_text_from_bytes` strips one leading UTF-8 BOM and records a loading map; lexer helpers still treat any reached `U+FEFF` as malformed/non-ASCII. See `raw_lexer.md`, `mizar-session/source.md`, and `mizar-session/source_map.md`. | Newline normalization and richer source-map tests remain in the source-loading/session layer. |
+| UTF-8 BOM | Covered for the UTF-8 boundary | `load_source_text_from_bytes` strips one leading UTF-8 BOM and records a loading map; lexer helpers still treat any reached `U+FEFF` as malformed/non-ASCII. See `raw_lexer.md`, `mizar-session/source.md`, and `mizar-session/source_map.md`. | Richer source-map tests remain in the source-loading/session layer. |
 | Replacement character `U+FFFD` | Covered for invalid bytes and rejected in code regions | Invalid UTF-8 is not decoded lossily into `U+FFFD`; `preprocess_source_for_lexing` reports valid non-ASCII code-region characters as `NonAsciiCode`; comments may contain Unicode. | Source-loading/docs may optionally warn on suspicious Unicode in comments/doc text later. |
-| LF / CRLF / CR handling | Delegated plus guarded | Source loading is expected to normalize platform newlines; lexer helper reports `CarriageReturn`; raw scanner rejects `\r`. | Source loader and source-map tests must cover CRLF-to-LF mapping. |
+| LF / CRLF / CR handling | Covered at the executable boundary | `load_source_text_from_bytes` normalizes CRLF pairs to LF and records `NormalizedNewline` loading-map segments; lone `\r` remains a `CarriageReturn` preprocessing diagnostic and raw-scan error. | Session source-map tests should mirror the same CRLF-to-LF mapping policy. |
 | Missing final newline / empty file / trailing newlines | Covered at lexer level | Empty raw stream is tested; `SourceLineIndex` accepts EOF; scanner does not require final newline. | Add corpus cases only if later parser/import prelude behavior depends on final newline. |
 | Byte offset vs character column | Lexer-local policy covered | Lexer spans are byte offsets; `SourceLineIndex` uses zero-based byte columns and rejects non-UTF-8-boundary offsets. Session source map specifies user-facing Unicode scalar columns. | Source-map layer must own human-facing conversion. |
 | LSP UTF-16 columns | Delegated by design | `raw_lexer.md` and `source_map.md` keep LSP UTF-16 conversion outside lexer. | Add LSP bridge tests when available. |

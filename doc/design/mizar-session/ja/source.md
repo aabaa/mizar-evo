@@ -96,7 +96,7 @@ Open-buffer sources は targeted LSP request or watch generation に限って di
 3. Disk から bytes を read する。
 4. UTF-8 を validate する。Invalid bytes は line-map construction 前に reject し、lossy decode によって `U+FFFD` にしてはいけない。
 5. Validated text が UTF-8 BOM signature で始まる場合、先頭 `U+FEFF` を strip する。
-6. Frontend newline policy に従って source-loading newlines を normalize する。
+6. CRLF pairs を LF 一つに置き換えて source-loading newlines を normalize する。Lone `\r` は platform newline として扱わず、preprocessing に届いた場合は malformed lexer-boundary input のままにする。
 7. BOM stripping or newline normalization が offset を変更した場合、normalized loaded-text offsets から original file byte offsets への `LoadingMap` を記録する。
 8. `LoadedSource.text` から source hash を compute する。
 9. `LoadedSource.text` 上に `LineMap` を build する。
@@ -112,7 +112,7 @@ Code-region ASCII validation は preprocessing に属する。この module は 
 2. Document URI を package source path に normalize する。
 3. その request では editor-provided text を authoritative として使う。
 4. BOM-prefixed disk file の editor view が disk source loading と一致するように、package-authored open-buffer text から先頭 `U+FEFF` を一つ strip する。
-5. Frontend newline policy に従って source-loading newlines を normalize する。
+5. CRLF pairs を LF 一つに置き換えて source-loading newlines を normalize する。Lone `\r` は frontend/lexer diagnostics が一貫して reject できるよう preserve する。
 6. Stripping or newline normalization が offset を変更した場合、normalized loaded-text offsets から editor-provided text byte offsets への `LoadingMap` を記録する。
 7. `LoadedSource.text` から source hash and `LineMap` を compute する。
 8. Origin を `OpenBuffer` として mark する。

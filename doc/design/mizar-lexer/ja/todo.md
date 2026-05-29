@@ -6,19 +6,15 @@
 
 ## Ordered Task List
 
-1. newline normalization を仕様化して test する。
-   - lexer entry 前の CRLF-to-LF behavior を定義する。
-   - source map が normalized lexical/source text offsets を original file byte offsets に対応付けられることを確認する。
-
-2. preprocess source-map tests を実装する。
+1. preprocess source-map tests を実装する。
    - ordinary comment removal、documentation comment retention、synthetic whitespace/newline segments、removed comments をまたぐ lexical ranges を cover する。
    - lexer/preprocessor helpers 由来の diagnostics を original source ranges に map できることを確認する。
 
-3. user-facing column conversion は lexer 外に保つ。
+2. user-facing column conversion は lexer 外に保つ。
     - Unicode scalar columns は source-map/session layer で test する。
     - LSP UTF-16 conversion は `mizar-lexer` ではなく LSP bridge で test する。
 
-4. source path normalization は lexer 外で cover する。
+3. source path normalization は lexer 外で cover する。
     - `.`/`..`、symlinks、case policy、package-root escape attempts、platform-specific separators を source-loading/path layer で test する。
 
 ## Completed Tasks
@@ -85,6 +81,11 @@
    - 先頭 UTF-8 BOM stripping は `LoadedSourceText.loading_map` で test し、loaded offset `0` が original byte offset `3` に map されることを確認した。
    - Non-leading `U+FEFF` は loaded text に残り、code に現れた場合は lexer-boundary preprocessing/raw scanning で reject されるままにした。
 
+14. newline normalization を仕様化して test した。
+   - `load_source_text_from_bytes` は lexer entry 前に CRLF pairs を LF に normalize する。
+   - `SourceLoadingMapSegment::NormalizedNewline` は normalized LF と original two-byte CRLF range の対応を記録する。
+   - plain CRLF input、leading BOM stripping 後の CRLF、lone `\r` を malformed lexer-boundary input として保持する case を test した。
+
 ## Suggested Verification
 
 各 task の後に以下を実行します。
@@ -103,9 +104,9 @@ API stability、fuzz、benchmark 作業では、この TODO file の更新また
 | Topic | Current status | Owner / evidence | Follow-up |
 |---|---|---|---|
 | UTF-8 validation | executable boundary で covered | `load_source_text_from_bytes` は source bytes を validate し、lexer entry 前に `SourceLoadError::InvalidUtf8` を返す。scanner APIs は引き続き `&str` を受け取る。 | frontend/session source loader ができた段階で、この behavior を reuse または mirror する。 |
-| UTF-8 BOM | UTF-8 boundary では covered | `load_source_text_from_bytes` は先頭 UTF-8 BOM を一つ strip し、loading map を記録する。lexer helpers は、届いた `U+FEFF` を malformed/non-ASCII として扱い続ける。`raw_lexer.md`、`mizar-session/source.md`、`mizar-session/source_map.md` を参照。 | newline normalization と richer source-map tests は source-loading/session layer に残る。 |
+| UTF-8 BOM | UTF-8 boundary では covered | `load_source_text_from_bytes` は先頭 UTF-8 BOM を一つ strip し、loading map を記録する。lexer helpers は、届いた `U+FEFF` を malformed/non-ASCII として扱い続ける。`raw_lexer.md`、`mizar-session/source.md`、`mizar-session/source_map.md` を参照。 | richer source-map tests は source-loading/session layer に残る。 |
 | replacement character `U+FFFD` | invalid bytes と code region で covered | Invalid UTF-8 は lossy decode で `U+FFFD` にしない。`preprocess_source_for_lexing` は valid non-ASCII code-region characters を `NonAsciiCode` として報告する。comments は Unicode allowed。 | comments/doc text の suspicious Unicode warning は将来 source-loading/docs 側で検討する。 |
-| LF / CRLF / CR handling | 委譲 + guard 済み | source loading が platform newline を normalize する想定。lexer helper は `CarriageReturn` を報告し、raw scanner は `\r` を reject する。 | source loader と source-map tests で CRLF-to-LF mapping を cover する。 |
+| LF / CRLF / CR handling | executable boundary で covered | `load_source_text_from_bytes` は CRLF pairs を LF に normalize し、`NormalizedNewline` loading-map segments を記録する。lone `\r` は `CarriageReturn` preprocessing diagnostic と raw-scan error のまま。 | session source-map tests は同じ CRLF-to-LF mapping policy を mirror する。 |
 | missing final newline / empty file / trailing newlines | lexer level では covered | empty raw stream の test があり、`SourceLineIndex` は EOF を受け入れる。scanner は final newline を要求しない。 | parser/import prelude が final newline に依存する場合のみ corpus cases を追加する。 |
 | byte offset vs character column | lexer-local policy は covered | lexer spans は byte offsets。`SourceLineIndex` は zero-based byte columns を使い、non-UTF-8-boundary offsets を reject する。session source map は user-facing Unicode scalar columns を規定する。 | human-facing conversion は source-map layer が担当する。 |
 | LSP UTF-16 columns | design 上は委譲済み | `raw_lexer.md` と `source_map.md` は LSP UTF-16 conversion を lexer 外に置いている。 | LSP bridge ができた段階で tests を追加する。 |

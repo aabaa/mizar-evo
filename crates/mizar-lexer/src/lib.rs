@@ -8,7 +8,9 @@
 //! Token spans are byte offsets into the string passed to the scanner.
 //! File-loading callers should validate UTF-8 bytes with
 //! [`load_source_text_from_bytes`] before lexer entry when they need the
-//! source-loading boundary helper used by this crate's tests.
+//! source-loading boundary helper used by this crate's tests. That helper also
+//! strips one leading UTF-8 BOM and normalizes CRLF newline pairs to LF while
+//! keeping a loading map back to original input byte offsets.
 //!
 //! ## Source-text normalization
 //!
@@ -402,6 +404,102 @@ mod tests {
         assert_eq!(
             preprocess_source_for_lexing(&loaded.text).diagnostics[0].code,
             SourcePreprocessDiagnosticCode::NonAsciiCode
+        );
+        assert!(scan_raw(&loaded.text).is_err());
+    }
+
+    #[test]
+    fn source_loading_normalizes_crlf_to_lf_and_maps_original_offsets() {
+        let loaded = load_source_text_from_bytes(b"alpha\r\nbeta\r\ngamma")
+            .expect("CRLF input should normalize before lexer entry");
+
+        assert_eq!(loaded.text, "alpha\nbeta\ngamma");
+        assert_eq!(
+            loaded.loading_map.as_ref().map(|map| &map.segments),
+            Some(&vec![
+                SourceLoadingMapSegment::Original {
+                    loaded: SourceSpan { start: 0, end: 5 },
+                    original: SourceSpan { start: 0, end: 5 },
+                },
+                SourceLoadingMapSegment::NormalizedNewline {
+                    loaded: SourceSpan { start: 5, end: 6 },
+                    original: SourceSpan { start: 5, end: 7 },
+                },
+                SourceLoadingMapSegment::Original {
+                    loaded: SourceSpan { start: 6, end: 10 },
+                    original: SourceSpan { start: 7, end: 11 },
+                },
+                SourceLoadingMapSegment::NormalizedNewline {
+                    loaded: SourceSpan { start: 10, end: 11 },
+                    original: SourceSpan { start: 11, end: 13 },
+                },
+                SourceLoadingMapSegment::Original {
+                    loaded: SourceSpan { start: 11, end: 16 },
+                    original: SourceSpan { start: 13, end: 18 },
+                },
+            ])
+        );
+
+        let map = loaded
+            .loading_map
+            .as_ref()
+            .expect("CRLF normalization should record a loading map");
+        assert_eq!(map.original_offset_for_loaded(0), Some(0));
+        assert_eq!(map.original_offset_for_loaded(5), Some(5));
+        assert_eq!(map.original_offset_for_loaded(6), Some(7));
+        assert_eq!(map.original_offset_for_loaded(10), Some(11));
+        assert_eq!(map.original_offset_for_loaded(11), Some(13));
+        assert_eq!(map.original_offset_for_loaded(loaded.text.len()), Some(18));
+        scan_raw(&loaded.text).expect("normalized LF-only text should scan");
+    }
+
+    #[test]
+    fn source_loading_combines_bom_stripping_with_crlf_mapping() {
+        let loaded = load_source_text_from_bytes(b"\xef\xbb\xbfalpha\r\nbeta")
+            .expect("BOM and CRLF should normalize before lexer entry");
+
+        assert_eq!(loaded.text, "alpha\nbeta");
+        assert_eq!(
+            loaded.loading_map.as_ref().map(|map| &map.segments),
+            Some(&vec![
+                SourceLoadingMapSegment::RemovedLeadingBom {
+                    original: SourceSpan { start: 0, end: 3 },
+                },
+                SourceLoadingMapSegment::Original {
+                    loaded: SourceSpan { start: 0, end: 5 },
+                    original: SourceSpan { start: 3, end: 8 },
+                },
+                SourceLoadingMapSegment::NormalizedNewline {
+                    loaded: SourceSpan { start: 5, end: 6 },
+                    original: SourceSpan { start: 8, end: 10 },
+                },
+                SourceLoadingMapSegment::Original {
+                    loaded: SourceSpan { start: 6, end: 10 },
+                    original: SourceSpan { start: 10, end: 14 },
+                },
+            ])
+        );
+
+        let map = loaded
+            .loading_map
+            .as_ref()
+            .expect("BOM stripping plus CRLF normalization should record a loading map");
+        assert_eq!(map.original_offset_for_loaded(0), Some(3));
+        assert_eq!(map.original_offset_for_loaded(5), Some(8));
+        assert_eq!(map.original_offset_for_loaded(6), Some(10));
+        assert_eq!(map.original_offset_for_loaded(loaded.text.len()), Some(14));
+    }
+
+    #[test]
+    fn source_loading_preserves_lone_cr_for_lexer_boundary_diagnostics() {
+        let loaded = load_source_text_from_bytes(b"alpha\rbeta")
+            .expect("lone CR is valid UTF-8 but not a platform newline pair");
+
+        assert_eq!(loaded.text, "alpha\rbeta");
+        assert_eq!(loaded.loading_map, None);
+        assert_eq!(
+            preprocess_source_for_lexing(&loaded.text).diagnostics[0].code,
+            SourcePreprocessDiagnosticCode::CarriageReturn
         );
         assert!(scan_raw(&loaded.text).is_err());
     }

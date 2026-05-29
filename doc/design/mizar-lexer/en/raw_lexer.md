@@ -35,6 +35,7 @@ The source-loading layer outside this crate owns:
 
 - validating UTF-8 source bytes with the crate-local `load_source_text_from_bytes` helper when tests or early integration code need an executable source-loading boundary;
 - stripping one leading UTF-8 BOM in that helper and recording a minimal loading map from post-strip loaded-text offsets back to original byte offsets;
+- normalizing CRLF newline pairs to LF in that helper before lexer entry and recording normalized-newline map segments back to original byte ranges;
 - removing ordinary, documentation, and multi-line comments from lexical input;
 - preserving comment trivia with source spans;
 - preserving newline characters from comment text so line structure is not collapsed;
@@ -48,7 +49,7 @@ The source-loading layer outside this crate owns:
 space, tab, newline
 ```
 
-Carriage return is not layout at this layer. A `\r` reaching the lexer is either a source-loading bug or an intentionally malformed test fixture.
+Carriage return is not layout at this layer. Source loading normalizes CRLF pairs to LF before scanner entry; a lone `\r` reaching the lexer is either a source-loading bug, non-platform-newline malformed input, or an intentionally malformed test fixture.
 
 A leading UTF-8 BOM is also a source-loading concern, not a lexer feature. Disk input may contain the byte sequence `EF BB BF`, and package-authored open-buffer text may contain the corresponding leading `U+FEFF`; the source loader strips exactly that leading signature before constructing `LoadedSource.text` or calling lexer entry points. Any `U+FEFF` that reaches `preprocess_source_for_lexing` or `scan_raw`, including a non-leading one, remains malformed lexer-boundary input and must not be silently discarded here.
 
@@ -84,9 +85,9 @@ Callers must keep the coordinate space explicit. Raw tokens and final tokens pro
 
 Mapping lexical-text offsets back to original loaded-source offsets belongs to a source map or the session layer. The lexer must not silently treat spans from preprocessed text as original file coordinates.
 
-When source loading strips a leading BOM, lexer spans are measured in the post-strip loaded text, not in raw file bytes. For disk sources, `LoadingMap` relates those loaded-text offsets back to original file byte offsets: offset `0` in loaded text maps to byte offset `3` in the original file when a BOM was stripped, and subsequent offsets carry the same three-byte adjustment until later loading transforms such as newline normalization add their own mapping entries. The stripped BOM has no lexer `SourceSpan`.
+When source loading strips a leading BOM or normalizes CRLF newline pairs, lexer spans are measured in the normalized loaded text, not in raw file bytes. For disk sources, `LoadingMap` relates those loaded-text offsets back to original file byte offsets: offset `0` in loaded text maps to byte offset `3` in the original file when a BOM was stripped, and each normalized LF maps to the original two-byte CRLF range. The stripped BOM has no lexer `SourceSpan`.
 
-The crate-local `load_source_text_from_bytes` helper implements only the UTF-8/BOM part of that contract. It rejects invalid UTF-8 with `SourceLoadError::InvalidUtf8` and never decodes bytes lossily into `U+FFFD`. When it strips a leading BOM, it returns `LoadedSourceText.loading_map` with `RemovedLeadingBom { original: [0, 3) }` and an `Original` segment that maps loaded offset `0` to original byte offset `3`. Full file I/O, path normalization, newline normalization, hashes, and rich session `LineMap` ownership remain outside `mizar-lexer`.
+The crate-local `load_source_text_from_bytes` helper implements the UTF-8, leading-BOM, and CRLF-to-LF parts of that contract. It rejects invalid UTF-8 with `SourceLoadError::InvalidUtf8` and never decodes bytes lossily into `U+FFFD`. When it strips a leading BOM, it returns `LoadedSourceText.loading_map` with `RemovedLeadingBom { original: [0, 3) }` and following segments that map loaded offsets to original byte offsets. When it normalizes CRLF, it records `NormalizedNewline` segments whose loaded range is the single LF byte and whose original range is the two-byte CRLF spelling. Lone `\r` is not normalized by this helper and remains malformed lexer-boundary input. Full file I/O, path normalization, hashes, and rich session `LineMap` ownership remain outside `mizar-lexer`.
 
 The lexer must not store line and column numbers on every raw or final token. Line and column positions are derived views computed from the source text when diagnostics, debug output, snapshots, or LSP bridges need human-readable coordinates. This avoids duplicating location data and avoids mixing multiple coordinate systems in token values.
 

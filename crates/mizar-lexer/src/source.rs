@@ -39,6 +39,10 @@ pub enum SourceLoadingMapSegment {
         loaded: SourceRange,
         original: SourceRange,
     },
+    NormalizedNewline {
+        loaded: SourceRange,
+        original: SourceRange,
+    },
     RemovedLeadingBom {
         original: SourceRange,
     },
@@ -189,6 +193,15 @@ impl SourceLoadingMap {
             {
                 Some(original.start + (offset - loaded.start))
             }
+            SourceLoadingMapSegment::NormalizedNewline { loaded, original }
+                if loaded.start <= offset && offset <= loaded.end =>
+            {
+                Some(if offset == loaded.start {
+                    original.start
+                } else {
+                    original.end
+                })
+            }
             _ => None,
         })
     }
@@ -196,31 +209,108 @@ impl SourceLoadingMap {
 
 pub fn load_source_text_from_bytes(bytes: &[u8]) -> Result<LoadedSourceText, SourceLoadError> {
     let text = std::str::from_utf8(bytes)?;
-    let Some(stripped) = text.strip_prefix(UTF8_BOM) else {
+    let (source_text, original_base, mut segments) =
+        if let Some(stripped) = text.strip_prefix(UTF8_BOM) {
+            (
+                stripped,
+                UTF8_BOM.len(),
+                vec![SourceLoadingMapSegment::RemovedLeadingBom {
+                    original: SourceSpan { start: 0, end: 3 },
+                }],
+            )
+        } else {
+            (text, 0, Vec::new())
+        };
+
+    if !source_text.contains("\r\n") {
+        if !segments.is_empty() {
+            segments.push(SourceLoadingMapSegment::Original {
+                loaded: SourceSpan {
+                    start: 0,
+                    end: source_text.len(),
+                },
+                original: SourceSpan {
+                    start: original_base,
+                    end: original_base + source_text.len(),
+                },
+            });
+            return Ok(LoadedSourceText {
+                text: source_text.to_owned(),
+                loading_map: Some(SourceLoadingMap { segments }),
+            });
+        }
+
         return Ok(LoadedSourceText {
             text: text.to_owned(),
             loading_map: None,
         });
-    };
+    }
 
-    let mut segments = vec![SourceLoadingMapSegment::RemovedLeadingBom {
-        original: SourceSpan { start: 0, end: 3 },
-    }];
-    segments.push(SourceLoadingMapSegment::Original {
-        loaded: SourceSpan {
-            start: 0,
-            end: stripped.len(),
-        },
-        original: SourceSpan {
-            start: 3,
-            end: bytes.len(),
-        },
-    });
-
+    let normalized = normalize_crlf_to_lf(source_text, original_base, &mut segments);
     Ok(LoadedSourceText {
-        text: stripped.to_owned(),
+        text: normalized,
         loading_map: Some(SourceLoadingMap { segments }),
     })
+}
+
+fn normalize_crlf_to_lf(
+    source_text: &str,
+    original_base: usize,
+    segments: &mut Vec<SourceLoadingMapSegment>,
+) -> String {
+    let mut normalized = String::with_capacity(source_text.len());
+    let mut cursor = 0;
+    let mut next_crlf = source_text.find("\r\n");
+
+    while let Some(crlf_start) = next_crlf {
+        normalized.push_str(&source_text[cursor..crlf_start]);
+        if cursor < crlf_start {
+            segments.push(SourceLoadingMapSegment::Original {
+                loaded: SourceSpan {
+                    start: normalized.len() - (crlf_start - cursor),
+                    end: normalized.len(),
+                },
+                original: SourceSpan {
+                    start: original_base + cursor,
+                    end: original_base + crlf_start,
+                },
+            });
+        }
+
+        let loaded_start = normalized.len();
+        normalized.push('\n');
+        segments.push(SourceLoadingMapSegment::NormalizedNewline {
+            loaded: SourceSpan {
+                start: loaded_start,
+                end: loaded_start + 1,
+            },
+            original: SourceSpan {
+                start: original_base + crlf_start,
+                end: original_base + crlf_start + 2,
+            },
+        });
+
+        cursor = crlf_start + 2;
+        next_crlf = source_text[cursor..]
+            .find("\r\n")
+            .map(|relative| cursor + relative);
+    }
+
+    normalized.push_str(&source_text[cursor..]);
+    if cursor < source_text.len() {
+        segments.push(SourceLoadingMapSegment::Original {
+            loaded: SourceSpan {
+                start: normalized.len() - (source_text.len() - cursor),
+                end: normalized.len(),
+            },
+            original: SourceSpan {
+                start: original_base + cursor,
+                end: original_base + source_text.len(),
+            },
+        });
+    }
+
+    normalized
 }
 
 impl SourceLineIndex {
