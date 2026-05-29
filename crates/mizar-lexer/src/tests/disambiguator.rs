@@ -21,8 +21,8 @@ fn parser_facing_token_types_expose_stable_accessors() {
     assert_eq!(diagnostic.message(), "no candidate");
     assert_eq!(diagnostic.span(), SourceSpan::new(6, 7));
     assert_eq!(diagnostic.payload(), &LexDiagnosticPayload::None);
-    assert_eq!(stream.tokens(), &[token.clone()]);
-    assert_eq!(stream.diagnostics(), &[diagnostic.clone()]);
+    assert_eq!(stream.tokens(), std::slice::from_ref(&token));
+    assert_eq!(stream.diagnostics(), std::slice::from_ref(&diagnostic));
     assert_eq!(stream.into_parts(), (vec![token], vec![diagnostic]));
 }
 
