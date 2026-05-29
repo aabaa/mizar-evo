@@ -1,4 +1,6 @@
-use crate::lexical_environment::ActiveLexicalEnvironment;
+use crate::lexical_environment::{
+    ActiveLexicalEnvironment, UserSymbolCandidate, UserSymbolKindSet,
+};
 use crate::raw_lexer::{
     LexError, RawToken, RawTokenKind, RawTokenStream, is_identifier, is_identifier_continue,
     is_identifier_start, scan_raw,
@@ -40,6 +42,7 @@ pub enum LexDiagnosticCode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ParserLexContext {
     mode: ParserLexMode,
+    user_symbol_kinds: UserSymbolKindSet,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -114,41 +117,56 @@ impl ParserLexContext {
     pub fn general() -> Self {
         Self {
             mode: ParserLexMode::General,
+            user_symbol_kinds: UserSymbolKindSet::all(),
         }
     }
 
     pub fn identifier_required() -> Self {
         Self {
             mode: ParserLexMode::IdentifierRequired,
+            user_symbol_kinds: UserSymbolKindSet::all(),
         }
     }
 
     pub fn symbolic() -> Self {
         Self {
             mode: ParserLexMode::Symbolic,
+            user_symbol_kinds: UserSymbolKindSet::all(),
         }
     }
 
     pub fn string_required() -> Self {
         Self {
             mode: ParserLexMode::StringRequired,
+            user_symbol_kinds: UserSymbolKindSet::all(),
         }
     }
 
     pub fn namespace_path() -> Self {
         Self {
             mode: ParserLexMode::NamespacePath,
+            user_symbol_kinds: UserSymbolKindSet::all(),
         }
     }
 
     pub fn recovery() -> Self {
         Self {
             mode: ParserLexMode::Recovery,
+            user_symbol_kinds: UserSymbolKindSet::all(),
         }
     }
 
     pub fn mode(&self) -> ParserLexMode {
         self.mode
+    }
+
+    pub fn with_user_symbol_kinds(mut self, kinds: UserSymbolKindSet) -> Self {
+        self.user_symbol_kinds = kinds;
+        self
+    }
+
+    pub fn user_symbol_kinds(&self) -> UserSymbolKindSet {
+        self.user_symbol_kinds
     }
 
     fn admits_identifier(self) -> bool {
@@ -177,9 +195,13 @@ impl ParserLexContext {
         }
     }
 
-    fn admits_user_symbol(self, _spelling: &str) -> bool {
+    fn admits_user_symbol(self, candidates: &[UserSymbolCandidate]) -> bool {
         match self.mode {
-            ParserLexMode::General | ParserLexMode::Symbolic | ParserLexMode::Recovery => true,
+            ParserLexMode::General | ParserLexMode::Symbolic | ParserLexMode::Recovery => {
+                candidates
+                    .iter()
+                    .any(|candidate| self.user_symbol_kinds.contains(candidate.kind))
+            }
             ParserLexMode::NamespacePath => false,
             ParserLexMode::IdentifierRequired | ParserLexMode::StringRequired => false,
         }
@@ -417,7 +439,7 @@ impl<'a> Disambiguator<'a> {
             });
             return;
         }
-        if self.parser_context.admits_user_symbol(spelling) {
+        if self.parser_context.admits_user_symbol(&user_symbols) {
             candidates.push(DisambiguationCandidate {
                 kind: TokenKind::UserSymbol,
                 len: spelling.len(),

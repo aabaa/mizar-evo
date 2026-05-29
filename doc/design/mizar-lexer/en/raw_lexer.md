@@ -178,7 +178,7 @@ LF-only source text
 
 The import pre-scan reads raw lexer output using a restricted syntax mode. It is allowed to inspect and split inside `LexemeRun` spans for import syntax such as `.`, `..`, `,`, and `;`. It recognizes only enough top-level import structure to extract module path spellings and source spans. It must not resolve package/module existence, visibility, re-export legality, or imported symbol identity.
 
-The active lexical environment is the input consumed by the disambiguator. It contains built-in reserved tables and exported user-symbol shapes from imported module lexical summaries. Constructing it is outside raw scanning.
+The active lexical environment is the input consumed by the disambiguator. It contains built-in reserved tables and exported user-symbol shapes from imported module lexical summaries, including lightweight kind and arity metadata for later parser/resolver filtering. Constructing it is outside raw scanning.
 
 ### Stage 2: Disambiguation
 
@@ -285,7 +285,7 @@ At each position inside a `LexemeRun`, the disambiguator considers candidates fr
 5. numeral syntax when the raw unit starts with a digit;
 6. fallback error recovery.
 
-The selected candidate is the longest valid candidate for the current parser expectation and override environment. The lexical environment has already rejected equal-spelling symbols imported from different modules. Same-import overload candidates with the same spelling remain representable for later semantic resolution, but they do not change the final token spelling chosen by the lexer.
+The selected candidate is the longest valid candidate for the current parser expectation and override environment. The lexical environment has already rejected equal-spelling symbols imported from different modules. Same-import overload candidates with the same spelling remain representable, with kind and arity metadata, for later semantic resolution; they do not change the final token spelling chosen by the lexer.
 
 Parser expectation may rule out otherwise valid candidates. For example, a grammar position expecting a binder identifier may prefer an identifier interpretation, while an expression position may admit symbol interpretations.
 
@@ -293,7 +293,7 @@ Parser expectation may rule out otherwise valid candidates. For example, a gramm
 
 The lexer must not load full IR for imported `.miz` files.
 
-Imports provide a lightweight module interface summary containing exported lexical symbols and enough provenance for diagnostics:
+Imports provide a lightweight module interface summary containing exported lexical symbols, symbol kind and arity shape, and enough provenance for diagnostics:
 
 ```rust
 pub struct ModuleLexicalSummary {

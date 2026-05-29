@@ -104,7 +104,8 @@ pub use import_prescan::{
 pub use lexical_environment::{
     ActiveLexicalEnvironment, ExportRank, ExportedSymbolShape, LexicalEnvironmentError,
     LexicalEnvironmentFingerprint, LexicalSummaryFingerprint, ModuleId, ModuleLexicalSummary,
-    ResolvedImport, SymbolId, UserSymbolCandidate, UserSymbolIndex, build_lexical_environment,
+    ResolvedImport, SymbolId, UserSymbolArity, UserSymbolCandidate, UserSymbolIndex,
+    UserSymbolKind, UserSymbolKindSet, build_lexical_environment,
 };
 pub use raw_lexer::{
     LexError, RawToken, RawTokenKind, RawTokenStream, is_identifier, is_identifier_continue,
@@ -139,11 +140,11 @@ mod tests {
         ScopeLexView, ScopeSkeletonDiagnosticCode, SourceLineIndex, SourceLoadError,
         SourceLoadingMapSegment, SourceLocation, SourceLocationRange,
         SourcePreprocessDiagnosticCode, SourcePreprocessMapSegment, SourceSpan, SymbolId, Token,
-        TokenKind, UserSymbolCandidate, build_lexical_environment, build_scope_skeleton,
-        disambiguate, is_identifier, is_layout, is_numeral, is_reserved_symbol, is_reserved_word,
-        is_string_literal_spelling, is_user_symbol_spelling, lex, load_source_text_from_bytes,
-        longest_reserved_symbol_prefix, module_source_name_from_path, preprocess_source_for_lexing,
-        scan_import_prelude, scan_raw,
+        TokenKind, UserSymbolArity, UserSymbolCandidate, UserSymbolKind, UserSymbolKindSet,
+        build_lexical_environment, build_scope_skeleton, disambiguate, is_identifier, is_layout,
+        is_numeral, is_reserved_symbol, is_reserved_word, is_string_literal_spelling,
+        is_user_symbol_spelling, lex, load_source_text_from_bytes, longest_reserved_symbol_prefix,
+        module_source_name_from_path, preprocess_source_for_lexing, scan_import_prelude, scan_raw,
     };
 
     fn token(kind: TokenKind, lexeme: &str, start: usize, end: usize) -> Token {
@@ -1532,6 +1533,8 @@ import pkg.mathcomp_mizar.algebra.ring;";
                 imported_module: module_id("std.algebra.ops"),
                 import_ordinal: 0,
                 export_rank: ExportRank(2),
+                kind: UserSymbolKind::Functor,
+                arity: UserSymbolArity::exact(2),
             }]
         );
     }
@@ -1709,6 +1712,150 @@ import pkg.mathcomp_mizar.algebra.ring;";
                 symbol_id("std.overloaded#plus_real")
             ]
         );
+    }
+
+    #[test]
+    fn lexical_environment_preserves_symbol_kind_and_arity_metadata() {
+        let env = build_lexical_environment(
+            &[resolved_import("std.overloaded")],
+            &[summary(
+                "std.overloaded",
+                26,
+                &[
+                    exported_with_metadata(
+                        "op",
+                        "std.overloaded#op_functor",
+                        "std.overloaded",
+                        0,
+                        UserSymbolKind::Functor,
+                        UserSymbolArity::exact(2),
+                    ),
+                    exported_with_metadata(
+                        "op",
+                        "std.overloaded#op_predicate",
+                        "std.overloaded",
+                        1,
+                        UserSymbolKind::Predicate,
+                        UserSymbolArity::range(1, 2),
+                    ),
+                    exported_with_metadata(
+                        "Vector",
+                        "std.overloaded#Vector",
+                        "std.overloaded",
+                        2,
+                        UserSymbolKind::Mode,
+                        UserSymbolArity::at_least(1),
+                    ),
+                ],
+            )],
+        )
+        .expect("same spelling overloads with metadata should build");
+
+        let candidates = env.longest_user_symbol_at("op x", 0);
+        assert_eq!(
+            candidates
+                .iter()
+                .map(|candidate| (candidate.symbol_id.clone(), candidate.kind, candidate.arity))
+                .collect::<Vec<_>>(),
+            vec![
+                (
+                    symbol_id("std.overloaded#op_functor"),
+                    UserSymbolKind::Functor,
+                    UserSymbolArity::exact(2),
+                ),
+                (
+                    symbol_id("std.overloaded#op_predicate"),
+                    UserSymbolKind::Predicate,
+                    UserSymbolArity::range(1, 2),
+                ),
+            ]
+        );
+        assert_eq!(
+            env.user_symbol("Vector")
+                .map(|candidate| (candidate.kind, candidate.arity)),
+            Some((UserSymbolKind::Mode, UserSymbolArity::at_least(1)))
+        );
+    }
+
+    #[test]
+    fn lexical_environment_fingerprint_changes_with_symbol_metadata() {
+        let imports = vec![resolved_import("metadata")];
+        let functor_env = build_lexical_environment(
+            &imports,
+            &[summary(
+                "metadata",
+                27,
+                &[exported_with_metadata(
+                    "op",
+                    "metadata#op",
+                    "metadata",
+                    0,
+                    UserSymbolKind::Functor,
+                    UserSymbolArity::exact(2),
+                )],
+            )],
+        )
+        .expect("functor metadata environment should build");
+        let predicate_env = build_lexical_environment(
+            &imports,
+            &[summary(
+                "metadata",
+                27,
+                &[exported_with_metadata(
+                    "op",
+                    "metadata#op",
+                    "metadata",
+                    0,
+                    UserSymbolKind::Predicate,
+                    UserSymbolArity::exact(2),
+                )],
+            )],
+        )
+        .expect("predicate metadata environment should build");
+        let unary_functor_env = build_lexical_environment(
+            &imports,
+            &[summary(
+                "metadata",
+                27,
+                &[exported_with_metadata(
+                    "op",
+                    "metadata#op",
+                    "metadata",
+                    0,
+                    UserSymbolKind::Functor,
+                    UserSymbolArity::exact(1),
+                )],
+            )],
+        )
+        .expect("arity metadata environment should build");
+
+        assert_ne!(functor_env.fingerprint, predicate_env.fingerprint);
+        assert_ne!(functor_env.fingerprint, unary_functor_env.fingerprint);
+    }
+
+    #[test]
+    fn lexical_environment_rejects_invalid_user_symbol_arity() {
+        let error = build_lexical_environment(
+            &[resolved_import("bad.arity")],
+            &[summary(
+                "bad.arity",
+                28,
+                &[exported_with_metadata(
+                    "op",
+                    "bad.arity#op",
+                    "bad.arity",
+                    0,
+                    UserSymbolKind::Functor,
+                    UserSymbolArity::range(3, 2),
+                )],
+            )],
+        )
+        .expect_err("invalid arity shape should fail");
+
+        assert!(matches!(
+            error,
+            LexicalEnvironmentError::InvalidUserSymbolArity { .. }
+        ));
     }
 
     #[test]
@@ -2035,6 +2182,111 @@ import pkg.mathcomp_mizar.algebra.ring;";
             ]
         );
         assert!(stream.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn disambiguator_filters_user_symbols_by_parser_kind_context() {
+        let env = build_lexical_environment(
+            &[resolved_import("std.kinds")],
+            &[summary(
+                "std.kinds",
+                75,
+                &[
+                    exported_with_metadata(
+                        "Pred",
+                        "std.kinds#Pred",
+                        "std.kinds",
+                        0,
+                        UserSymbolKind::Predicate,
+                        UserSymbolArity::exact(2),
+                    ),
+                    exported_with_metadata(
+                        "Func",
+                        "std.kinds#Func",
+                        "std.kinds",
+                        1,
+                        UserSymbolKind::Functor,
+                        UserSymbolArity::exact(1),
+                    ),
+                ],
+            )],
+        )
+        .expect("environment should build");
+        let raw = scan_raw("Pred Func").expect("source should raw scan");
+        let skeleton = build_scope_skeleton(&raw);
+        let context = ParserLexContext::general()
+            .with_user_symbol_kinds(UserSymbolKindSet::only(UserSymbolKind::Predicate));
+        let stream = disambiguate(&raw, &env, &context, &skeleton);
+
+        assert_eq!(
+            stream
+                .tokens
+                .iter()
+                .map(|token| (token.kind, token.lexeme.as_str()))
+                .collect::<Vec<_>>(),
+            vec![
+                (TokenKind::UserSymbol, "Pred"),
+                (TokenKind::Identifier, "Func"),
+            ]
+        );
+        assert!(stream.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn disambiguator_filters_same_spelling_overloads_by_parser_kind_context() {
+        let env = build_lexical_environment(
+            &[resolved_import("std.kind_overloads")],
+            &[summary(
+                "std.kind_overloads",
+                76,
+                &[
+                    exported_with_metadata(
+                        "op",
+                        "std.kind_overloads#op_functor",
+                        "std.kind_overloads",
+                        0,
+                        UserSymbolKind::Functor,
+                        UserSymbolArity::exact(1),
+                    ),
+                    exported_with_metadata(
+                        "op",
+                        "std.kind_overloads#op_predicate",
+                        "std.kind_overloads",
+                        1,
+                        UserSymbolKind::Predicate,
+                        UserSymbolArity::exact(2),
+                    ),
+                ],
+            )],
+        )
+        .expect("same-spelling overloads with distinct kinds should build");
+        let raw = scan_raw("op").expect("source should raw scan");
+        let skeleton = build_scope_skeleton(&raw);
+        let predicate_context = ParserLexContext::general()
+            .with_user_symbol_kinds(UserSymbolKindSet::only(UserSymbolKind::Predicate));
+        let mode_context = ParserLexContext::general()
+            .with_user_symbol_kinds(UserSymbolKindSet::only(UserSymbolKind::Mode));
+        let predicate_stream = disambiguate(&raw, &env, &predicate_context, &skeleton);
+        let mode_stream = disambiguate(&raw, &env, &mode_context, &skeleton);
+
+        assert_eq!(
+            predicate_stream
+                .tokens
+                .iter()
+                .map(|token| (token.kind, token.lexeme.as_str()))
+                .collect::<Vec<_>>(),
+            vec![(TokenKind::UserSymbol, "op")]
+        );
+        assert_eq!(
+            mode_stream
+                .tokens
+                .iter()
+                .map(|token| (token.kind, token.lexeme.as_str()))
+                .collect::<Vec<_>>(),
+            vec![(TokenKind::Identifier, "op")]
+        );
+        assert!(predicate_stream.diagnostics.is_empty());
+        assert!(mode_stream.diagnostics.is_empty());
     }
 
     #[test]
@@ -2754,11 +3006,31 @@ end;";
         source_module: &str,
         rank: u32,
     ) -> ExportedSymbolShape {
+        exported_with_metadata(
+            spelling,
+            symbol,
+            source_module,
+            rank,
+            UserSymbolKind::Functor,
+            UserSymbolArity::exact(2),
+        )
+    }
+
+    fn exported_with_metadata(
+        spelling: &str,
+        symbol: &str,
+        source_module: &str,
+        rank: u32,
+        kind: UserSymbolKind,
+        arity: UserSymbolArity,
+    ) -> ExportedSymbolShape {
         ExportedSymbolShape {
             spelling: spelling.to_owned(),
             symbol_id: symbol_id(symbol),
             source_module: module_id(source_module),
             export_rank: ExportRank(rank),
+            kind,
+            arity,
         }
     }
 

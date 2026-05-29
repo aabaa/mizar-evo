@@ -108,6 +108,7 @@ Examples:
 
 - identifier-required position;
 - symbol/operator-admitting expression position;
+- symbol/operator position restricted to a subset of active user-symbol kinds;
 - string-literal-required argument position;
 - namespace-path position;
 - recovery mode after a syntax error.
@@ -115,6 +116,8 @@ Examples:
 The disambiguator must not mutate parser state except by returning tokens and diagnostics.
 
 Quote characters remain part of `LexemeRun` during raw scanning. The disambiguator is responsible for recognizing string literals only when `ParserLexContext` marks the current position as string-required. Outside those positions, quotes are ordinary symbol characters and participate in user-symbol matching.
+
+`ParserLexContext` may also carry a `UserSymbolKindSet`. General, symbolic, and recovery modes admit a user-symbol spelling only when at least one active candidate for that spelling has an admitted kind. This lets parser integration ask for predicate-only, functor-only, mode-only, or other category-specific lexical views without rebuilding the active lexical environment. The final `UserSymbol` token still stores only the spelling and span; downstream phases recover the candidate list from the active lexical environment when they need kind, arity, overload, or provenance details.
 
 The implemented modes admit candidates as follows:
 
@@ -148,6 +151,7 @@ Tests should cover:
 - `ErrorRecovery` token spans matching the associated diagnostic span;
 - reserved word emission;
 - namespace-path context;
+- parser contexts that admit only a subset of active user-symbol kinds;
 - string literal only in string-required positions;
 - equal-length import tie breaking through lexical environment;
 - recovery emits stable `ErrorRecovery` tokens and diagnostics.

@@ -60,6 +60,8 @@ pub struct ExportedSymbolShape {
     pub symbol_id: SymbolId,
     pub source_module: ModuleId,
     pub export_rank: ExportRank,
+    pub kind: UserSymbolKind,
+    pub arity: UserSymbolArity,
 }
 
 pub struct UserSymbolCandidate {
@@ -69,8 +71,15 @@ pub struct UserSymbolCandidate {
     pub imported_module: ModuleId,
     pub import_ordinal: usize,
     pub export_rank: ExportRank,
+    pub kind: UserSymbolKind,
+    pub arity: UserSymbolArity,
 }
 ```
+
+`UserSymbolKind` records the parser/resolver category of a visible symbol: functor, predicate,
+mode, attribute, structure, selector, or constructor. `UserSymbolArity` records the argument-count
+shape as an exact count, bounded range, or lower-bounded range. These are parser/resolver-facing
+summaries, not full type signatures.
 
 The active environment should support:
 
@@ -79,6 +88,7 @@ The active environment should support:
 - symbols containing `.`;
 - import conflict detection for equal-spelling imported candidates;
 - stable provenance for diagnostics.
+- symbol kind and arity metadata for downstream parser and resolver phases.
 
 `ModuleLexicalSummary` is a canonical producer-side artifact. The component that creates a
 summary must normalize `exported_symbols` into deterministic order before handing it to the lexer
@@ -87,11 +97,17 @@ environment builder. The canonical order is by lexical identity and provenance, 
 1. `spelling`
 2. `source_module`
 3. `symbol_id`
-4. `export_rank`
+4. `kind`
+5. `arity`
+6. `export_rank`
 
 `build_lexical_environment` relies on that contract and does not reorder a summary internally. This
 keeps the environment fingerprint sensitive to the imported module's canonical lexical summary
 rather than to an ad hoc order chosen by the environment builder.
+
+This producer-side summary order is independent of the active-candidate order used inside
+`UserSymbolIndex`. Once summaries are imported, same-spelling candidates are sorted for lookup and
+diagnostic stability by import ordinal, export rank, kind, arity, source module, and symbol id.
 
 ## Algorithm
 
@@ -100,9 +116,9 @@ The implemented builder constructs a deterministic lookup object from already-re
 1. Index `ModuleLexicalSummary` values by `ModuleId`. Duplicate summaries are accepted only if they are byte-for-byte equivalent as Rust values; inconsistent duplicates fail construction.
 2. Seed a stable FNV-style fingerprint with a version string and the built-in reserved word and reserved symbol tables in their declared order.
 3. Walk `ResolvedImport` values in import-prelude order. For each import, require a matching lexical summary and add the import ordinal, module id, and summary fingerprint to the active-environment fingerprint.
-4. For every exported symbol shape in that summary, validate the spelling before indexing it. The spelling must be a user-symbol spelling, must not collide with a reserved word, and must not collide with a reserved special symbol except for the spec-defined `.` exception.
-5. Convert the exported shape into a `UserSymbolCandidate`, preserving both the source module that exported the symbol and the imported module through which the current file sees it.
-6. Insert the candidate into `UserSymbolIndex`. Equal spellings from different imports are rejected as `UserSymbolImportConflict`. Equal spellings from the same import remain representable as overload candidates and are stored deterministically by import ordinal, export rank, source module, and symbol id.
+4. For every exported symbol shape in that summary, validate the spelling and arity before indexing it. The spelling must be a user-symbol spelling, must not collide with a reserved word, and must not collide with a reserved special symbol except for the spec-defined `.` exception. The arity shape must not have a maximum lower than its minimum.
+5. Convert the exported shape into a `UserSymbolCandidate`, preserving both the source module that exported the symbol and the imported module through which the current file sees it, plus the symbol kind and arity metadata.
+6. Insert the candidate into `UserSymbolIndex`. Equal spellings from different imports are rejected as `UserSymbolImportConflict`. Equal spellings from the same import remain representable as overload candidates and are stored in the active-candidate order described above.
 7. Return `ActiveLexicalEnvironment` containing borrowed reserved tables, the completed user-symbol index, and the deterministic fingerprint.
 
 `UserSymbolIndex` keeps a canonical `BTreeMap<String, Vec<UserSymbolCandidate>>` for exact-spelling lookup, deterministic ordering, and conflict diagnostics. It also maintains an ASCII byte trie over the same spellings for longest-prefix lookup. `longest_user_symbol_at` walks the trie from the requested byte offset, remembers the deepest terminal node, and returns the candidates from the visible import ordinal for that spelling. Candidate discovery is therefore proportional to the scanned spelling length plus the returned candidates, while preserving the previous public lookup semantics.
@@ -112,9 +128,10 @@ Current implementation notes:
 - `ModuleId` and `SymbolId` are lightweight string newtypes in `mizar-lexer`; they do not imply module existence or semantic resolution.
 - `ModuleLexicalSummary.exported_symbols` is assumed to be canonicalized by its producer; summary construction, not environment construction, owns sorting and summary fingerprint stability.
 - `UserSymbolCandidate.source_module` preserves the defining/exporting provenance from the lexical summary, while `imported_module` records the module named by the current file's resolved import for conflict diagnostics.
+- `UserSymbolCandidate.kind` and `UserSymbolCandidate.arity` are retained on every active candidate so later parser and resolver phases can filter or distinguish same-spelling overloads without rebuilding module summaries.
 - `.` remains the spec-defined exception to the reserved-special-symbol collision rule; other exact reserved symbol spellings are rejected.
 - equal-spelling imported user symbols from different imports are rejected as environment construction conflicts.
-- fingerprints use an internal stable byte hasher rather than process-randomized hashing.
+- fingerprints use an internal stable byte hasher rather than process-randomized hashing, and include symbol kind and arity metadata.
 - the trie is an internal acceleration structure; it does not affect fingerprinting or summary canonicalization.
 
 ## Non-Goals
@@ -137,6 +154,7 @@ Errors are environment construction failures, not tokenization failures:
 - exported symbol collides illegally with a reserved word or reserved special symbol;
 - equal-spelling user symbols exported by different imports conflict;
 - invalid user-symbol spelling.
+- invalid user-symbol arity shape.
 
 Ambiguous same-spelling user symbols from the same imported module remain representable as deterministic candidates; same-spelling symbols from different imports are rejected as conflicts. Import order and summary order are not diagnosed as errors, but they are part of the deterministic input contract and are reflected in the environment fingerprint.
 
@@ -151,3 +169,5 @@ Tests should cover:
 - environment fingerprints are stable under deterministic input ordering;
 - the environment can answer longest-match queries for identifier-shaped and punctuation-shaped symbols.
 - trie-backed lookup preserves longest-match behavior with many imported symbols and overlapping spellings.
+- kind and arity metadata are preserved for same-spelling overload candidates.
+- environment fingerprints change when kind or arity metadata changes.

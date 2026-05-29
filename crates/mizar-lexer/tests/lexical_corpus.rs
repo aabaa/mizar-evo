@@ -5,8 +5,9 @@ use mizar_lexer::{
     BindingShapeKind, ExportRank, ExportedSymbolShape, ImportPrescanDiagnosticCode,
     LexDiagnosticCode, LexicalBlockKind, LexicalStatementKind, LexicalSummaryFingerprint, ModuleId,
     ModuleLexicalSummary, ParserLexContext, RawTokenKind, ResolvedImport, ScopeLexView,
-    ScopeSkeletonDiagnosticCode, SymbolId, TokenKind, build_lexical_environment,
-    build_scope_skeleton, disambiguate, lex, scan_import_prelude, scan_raw,
+    ScopeSkeletonDiagnosticCode, SymbolId, TokenKind, UserSymbolArity, UserSymbolKind,
+    build_lexical_environment, build_scope_skeleton, disambiguate, lex, scan_import_prelude,
+    scan_raw,
 };
 use mizar_test::{
     DiscoveryConfig, ExpectedOutcome, PipelinePhase, TestProfile, ValidationMode, build_test_plan,
@@ -591,6 +592,8 @@ fn exported(spelling: &str, symbol: &str, rank: u32) -> ExportedSymbolShape {
         symbol_id: SymbolId(symbol.to_owned()),
         source_module: ModuleId("fixture.symbols".to_owned()),
         export_rank: ExportRank(rank),
+        kind: UserSymbolKind::Functor,
+        arity: UserSymbolArity::exact(2),
     }
 }
 

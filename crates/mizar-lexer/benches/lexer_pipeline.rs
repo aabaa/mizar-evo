@@ -1,8 +1,9 @@
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use mizar_lexer::{
     ExportRank, ExportedSymbolShape, LexicalSummaryFingerprint, ModuleId, ModuleLexicalSummary,
-    ParserLexContext, ResolvedImport, SourceLineIndex, SymbolId, build_lexical_environment,
-    build_scope_skeleton, disambiguate, preprocess_source_for_lexing, scan_raw,
+    ParserLexContext, ResolvedImport, SourceLineIndex, SymbolId, UserSymbolArity, UserSymbolKind,
+    build_lexical_environment, build_scope_skeleton, disambiguate, preprocess_source_for_lexing,
+    scan_raw,
 };
 use std::hint::black_box;
 
@@ -128,6 +129,8 @@ fn exported(spelling: &str, symbol: &str, rank: u32) -> ExportedSymbolShape {
         symbol_id: SymbolId(symbol.to_owned()),
         source_module: ModuleId("bench.symbols".to_owned()),
         export_rank: ExportRank(rank),
+        kind: UserSymbolKind::Functor,
+        arity: UserSymbolArity::exact(2),
     }
 }
 
