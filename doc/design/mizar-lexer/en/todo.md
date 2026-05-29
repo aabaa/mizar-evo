@@ -6,10 +6,7 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-1. Revisit long-term LSP/lexer dependency layering.
-    - `mizar-lsp` currently depends directly on `mizar-lexer` for explicit `SourceSpan` bridge conversion.
-    - When frontend/diagnostic adapter crates become concrete, decide whether this bridge should move there so LSP can depend only on session-facing source coordinates.
-    - Keep the current direct dependency until the alternative owner exists; avoid adding a shared source-coordinate crate solely for this bridge.
+No ordered lexer follow-up tasks are currently open.
 
 ## Completed Tasks
 
@@ -108,6 +105,11 @@ This document records follow-up tasks identified during the lexer quality review
    - Kept `mizar-session::LineColumn` values as `u32` because they are presentation and protocol-adjacent coordinates, not raw memory indexes.
    - Added `SourceMapError::LineColumnOverflow` so `LineMap` reports unrepresentable line or Unicode scalar column values instead of saturating, wrapping, or silently narrowing from `usize`.
    - Kept LSP protocol positions as `u32` and added explicit checked narrowing for UTF-16 columns in the LSP bridge.
+
+21. Revisited long-term LSP/lexer dependency layering.
+   - Kept the direct `mizar-lsp` dependency on `mizar-lexer` for the explicit `SourceSpan` bridge conversion because no frontend or diagnostic adapter crate exists yet to own that boundary.
+   - Kept `source_range_from_lexer_span` and `lsp_range_from_lexer_span` in `mizar-lsp::range_mapper` so coordinate-space conversion remains visible at the protocol boundary.
+   - Avoided adding a shared source-coordinate crate solely for this bridge; the bridge should move only when a concrete adapter crate has a broader reason to own lexer-to-session conversion.
 
 ## Suggested Verification
 

@@ -6,10 +6,7 @@
 
 ## Ordered Task List
 
-1. long-term LSP/lexer dependency layering を再検討する。
-    - `mizar-lsp` は現在、明示的な `SourceSpan` bridge conversion のために `mizar-lexer` へ直接依存している。
-    - frontend/diagnostic adapter crates が具体化したら、この bridge をそちらへ移し、LSP が session-facing source coordinates のみに依存できるようにするか決める。
-    - 代替 owner が存在するまでは current direct dependency を保ち、この bridge だけのために shared source-coordinate crate を追加しない。
+現在 open な ordered lexer follow-up tasks はありません。
 
 ## Completed Tasks
 
@@ -108,6 +105,11 @@
    - `mizar-session::LineColumn` values は raw memory indexes ではなく presentation and protocol-adjacent coordinates なので、`u32` のままにした。
    - `SourceMapError::LineColumnOverflow` を追加し、`LineMap` は表現できない line または Unicode scalar column values に対して、saturate、wrap、silent narrowing をせず overflow error を返すようにした。
    - LSP protocol positions は `u32` のままにし、LSP bridge で UTF-16 columns の explicit checked narrowing を追加した。
+
+21. long-term LSP/lexer dependency layering を再検討した。
+   - lexer-to-session conversion boundary を所有できる frontend または diagnostic adapter crate がまだ存在しないため、明示的な `SourceSpan` bridge conversion 用の `mizar-lsp` から `mizar-lexer` への direct dependency は維持した。
+   - coordinate-space conversion が protocol boundary で見えるように、`source_range_from_lexer_span` と `lsp_range_from_lexer_span` は `mizar-lsp::range_mapper` に残した。
+   - この bridge だけのために shared source-coordinate crate は追加しない。bridge は、lexer-to-session conversion を所有する broader reason を持つ concrete adapter crate ができた段階でのみ移す。
 
 ## Suggested Verification
 

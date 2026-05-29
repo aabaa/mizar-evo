@@ -51,10 +51,14 @@ pub fn lsp_range_from_lexer_span(
     line_map: &LineMap,
     span: LexerSourceSpan,
 ) -> Result<LspRange, RangeMapError> {
+    // Keep this bridge explicit while no frontend/diagnostic adapter crate owns
+    // lexer-to-session coordinate conversion.
     lsp_range_from_source_range(line_map, source_range_from_lexer_span(span))
 }
 
 pub fn source_range_from_lexer_span(span: LexerSourceSpan) -> SourceRange {
+    // This is intentionally a field copy: lexer and session source ranges both
+    // use byte offsets into the loaded text, but remain owned by their crates.
     SourceRange {
         start: span.start,
         end: span.end,
