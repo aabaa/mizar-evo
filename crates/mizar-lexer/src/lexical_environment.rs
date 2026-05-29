@@ -53,6 +53,13 @@ pub struct ActiveLexicalEnvironment {
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct UserSymbolIndex {
     symbols_by_spelling: BTreeMap<String, Vec<UserSymbolCandidate>>,
+    trie_root: UserSymbolTrieNode,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+struct UserSymbolTrieNode {
+    children: BTreeMap<u8, UserSymbolTrieNode>,
+    candidates: Vec<UserSymbolCandidate>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -233,46 +240,28 @@ impl UserSymbolIndex {
             return Vec::new();
         };
 
-        let mut longest_len = 0;
-        let mut candidates = Vec::new();
-        for (spelling, spelling_candidates) in &self.symbols_by_spelling {
-            if !rest.starts_with(spelling) {
-                continue;
-            }
-            let spelling_len = spelling.len();
-            if spelling_len < longest_len {
-                continue;
-            }
-            if spelling_len > longest_len {
-                longest_len = spelling_len;
-                candidates.clear();
-            }
-            let visible_import = spelling_candidates
-                .last()
-                .expect("index entries are never empty")
-                .import_ordinal;
-            for candidate in spelling_candidates
-                .iter()
-                .filter(|candidate| candidate.import_ordinal == visible_import)
-            {
-                candidates.push(candidate.clone());
+        let mut node = &self.trie_root;
+        let mut longest_candidates = None;
+        for byte in rest.as_bytes() {
+            let Some(child) = node.children.get(byte) else {
+                break;
+            };
+            node = child;
+            if !node.candidates.is_empty() {
+                longest_candidates = Some(node.candidates.as_slice());
             }
         }
 
-        candidates.sort_by(|left, right| {
-            right
-                .import_ordinal
-                .cmp(&left.import_ordinal)
-                .then_with(|| left.spelling.cmp(&right.spelling))
-                .then_with(|| left.symbol_id.cmp(&right.symbol_id))
-        });
-        candidates
+        longest_candidates
+            .map(visible_user_symbol_candidates)
+            .unwrap_or_default()
     }
 
     fn insert(&mut self, candidate: UserSymbolCandidate) -> Result<(), LexicalEnvironmentError> {
+        let spelling = candidate.spelling.clone();
         let candidates = self
             .symbols_by_spelling
-            .entry(candidate.spelling.clone())
+            .entry(spelling.clone())
             .or_default();
         if let Some(previous) = candidates
             .iter()
@@ -286,14 +275,71 @@ impl UserSymbolIndex {
         }
 
         candidates.push(candidate);
-        candidates.sort_by(|left, right| {
-            left.import_ordinal
-                .cmp(&right.import_ordinal)
-                .then_with(|| left.export_rank.cmp(&right.export_rank))
-                .then_with(|| left.source_module.cmp(&right.source_module))
-                .then_with(|| left.symbol_id.cmp(&right.symbol_id))
-        });
+        sort_user_symbol_candidates(candidates);
+        self.sync_trie_terminal(&spelling);
         Ok(())
+    }
+
+    fn sync_trie_terminal(&mut self, spelling: &str) {
+        let mut node = &mut self.trie_root;
+        for byte in spelling.bytes() {
+            node = node.children.entry(byte).or_default();
+        }
+        node.candidates = self
+            .symbols_by_spelling
+            .get(spelling)
+            .expect("inserted spelling should be present")
+            .clone();
+    }
+}
+
+fn visible_user_symbol_candidates(
+    spelling_candidates: &[UserSymbolCandidate],
+) -> Vec<UserSymbolCandidate> {
+    let Some(visible_import) = spelling_candidates
+        .last()
+        .map(|candidate| candidate.import_ordinal)
+    else {
+        return Vec::new();
+    };
+    let mut candidates = spelling_candidates
+        .iter()
+        .filter(|candidate| candidate.import_ordinal == visible_import)
+        .cloned()
+        .collect::<Vec<_>>();
+
+    candidates.sort_by(|left, right| {
+        right
+            .import_ordinal
+            .cmp(&left.import_ordinal)
+            .then_with(|| left.spelling.cmp(&right.spelling))
+            .then_with(|| left.symbol_id.cmp(&right.symbol_id))
+    });
+    candidates
+}
+
+fn sort_user_symbol_candidates(candidates: &mut [UserSymbolCandidate]) {
+    candidates.sort_by(|left, right| {
+        left.import_ordinal
+            .cmp(&right.import_ordinal)
+            .then_with(|| left.export_rank.cmp(&right.export_rank))
+            .then_with(|| left.source_module.cmp(&right.source_module))
+            .then_with(|| left.symbol_id.cmp(&right.symbol_id))
+    });
+}
+
+#[cfg(test)]
+impl UserSymbolIndex {
+    pub(crate) fn trie_node_count(&self) -> usize {
+        fn count(node: &UserSymbolTrieNode) -> usize {
+            1 + node.children.values().map(count).sum::<usize>()
+        }
+
+        count(&self.trie_root)
+    }
+
+    pub(crate) fn spelling_count(&self) -> usize {
+        self.symbols_by_spelling.len()
     }
 }
 

@@ -105,7 +105,7 @@ The implemented builder constructs a deterministic lookup object from already-re
 6. Insert the candidate into `UserSymbolIndex`. Equal spellings from different imports are rejected as `UserSymbolImportConflict`. Equal spellings from the same import remain representable as overload candidates and are stored deterministically by import ordinal, export rank, source module, and symbol id.
 7. Return `ActiveLexicalEnvironment` containing borrowed reserved tables, the completed user-symbol index, and the deterministic fingerprint.
 
-Lookup uses a `BTreeMap<String, Vec<UserSymbolCandidate>>` rather than a trie. `longest_user_symbol_at` scans the map, keeps only spellings that prefix-match the source slice at the requested byte offset, retains the greatest byte length, and returns the candidates from the visible import ordinal for that spelling. The result is deterministic and sufficient for the current corpus size; a trie can replace it later without changing the public semantics.
+`UserSymbolIndex` keeps a canonical `BTreeMap<String, Vec<UserSymbolCandidate>>` for exact-spelling lookup, deterministic ordering, and conflict diagnostics. It also maintains an ASCII byte trie over the same spellings for longest-prefix lookup. `longest_user_symbol_at` walks the trie from the requested byte offset, remembers the deepest terminal node, and returns the candidates from the visible import ordinal for that spelling. Candidate discovery is therefore proportional to the scanned spelling length plus the returned candidates, while preserving the previous public lookup semantics.
 
 Current implementation notes:
 
@@ -115,6 +115,7 @@ Current implementation notes:
 - `.` remains the spec-defined exception to the reserved-special-symbol collision rule; other exact reserved symbol spellings are rejected.
 - equal-spelling imported user symbols from different imports are rejected as environment construction conflicts.
 - fingerprints use an internal stable byte hasher rather than process-randomized hashing.
+- the trie is an internal acceleration structure; it does not affect fingerprinting or summary canonicalization.
 
 ## Non-Goals
 
@@ -149,3 +150,4 @@ Tests should cover:
 - reserved collisions are rejected;
 - environment fingerprints are stable under deterministic input ordering;
 - the environment can answer longest-match queries for identifier-shaped and punctuation-shaped symbols.
+- trie-backed lookup preserves longest-match behavior with many imported symbols and overlapping spellings.

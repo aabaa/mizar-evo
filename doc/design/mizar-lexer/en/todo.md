@@ -6,13 +6,7 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-1. Replace linear active-symbol lookup with a trie-backed lexicon.
-   - The disambiguator currently searches imported/active user-symbol spellings linearly when splitting `LexemeRun` text and applying longest-match rules.
-   - Build the active lexical environment in a trie or equivalent prefix index so candidate discovery is proportional to the scanned spelling length plus matches, rather than to the total number of imported symbols.
-   - Keep reserved-symbol lookup and imported user-symbol lookup compatible with existing precedence, longest-match, parser-context, and scope-override behavior.
-   - Add regression tests for overlapping imported spellings, identifier-shaped symbols, punctuation-shaped symbols, and scope overrides, plus a benchmark or measurement that covers many imported symbols.
-
-2. Carry symbol kind and arity metadata in lexical summaries and active-symbol candidates.
+1. Carry symbol kind and arity metadata in lexical summaries and active-symbol candidates.
    - `ExportedSymbolShape` and `UserSymbolCandidate` currently store lexical spelling, symbol id, provenance, import ordinal, and export rank, but not the symbol category or arity.
    - Extend the module lexical summary format with the user-symbol kind needed by later parser/resolver phases, such as functor, mode, attribute, predicate, or related declaration categories, and with the arity or arity shape needed to distinguish overloaded spellings.
    - Preserve same-spelling overload candidates with enough metadata for downstream resolution instead of reducing them to spelling-only tokenization facts.
@@ -21,103 +15,109 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Completed Tasks
 
-1. Hardened `SourceLineIndex` offset validation.
+1. Replaced linear active-symbol lookup with a trie-backed lexicon.
+   - `UserSymbolIndex` now keeps a canonical spelling map for exact lookup and deterministic diagnostics plus an internal ASCII byte trie for longest-prefix lookup.
+   - `longest_user_symbol_at` walks the trie from the requested byte offset and returns the deepest terminal candidate set, preserving existing longest-match, parser-context, scope-override, and candidate-order behavior.
+   - Regression coverage includes overlapping spellings, identifier-shaped symbols, punctuation-shaped symbols, invalid offsets, scope overrides, and a large imported-symbol lexicon.
+   - The Criterion benchmark now includes `active_user_symbol_lexicon/disambiguate_many_imported_symbols` for disambiguation against thousands of imported symbols.
+
+2. Hardened `SourceLineIndex` offset validation.
    - `location` and `range` now reject byte offsets that are not UTF-8 character boundaries by returning `None`.
    - Unit tests cover multi-byte UTF-8 text while preserving the documented zero-based line and zero-based byte-column convention.
 
-2. Added property-style final token span tests.
+3. Added property-style final token span tests.
    - Crate-local Phase 7 unit tests now cover several `lex` and `disambiguate` seeds.
    - Every final token span is asserted to point back to the token spelling: `source[token.span.start..token.span.end] == token.lexeme`.
    - Seeds include one-to-one raw mappings, `LexemeRun` splits, string-required context, malformed string recovery, parser-context rejection, and unsupported raw-token recovery spans.
 
-3. Pinned unsupported Unicode code-region diagnostics.
+4. Pinned unsupported Unicode code-region diagnostics.
    - Crate-local raw lexer and preprocessor tests now cover NBSP, zero-width space, zero-width joiner/non-joiner, full-width punctuation, and `U+FEFF` inside code regions.
    - These cases assert stable `NonAsciiCode` preprocessor diagnostics with byte spans and stable raw-scan hard errors rather than treating the characters as layout or valid token text.
 
-4. Pinned unsupported ASCII control characters.
+5. Pinned unsupported ASCII control characters.
    - Crate-local tests now cover vertical tab and form feed in code regions.
    - These cases assert that the characters are not layout and produce stable raw-scan hard errors rather than being treated as valid token text.
 
-5. Expanded comment-removal edge tests.
+6. Expanded comment-removal edge tests.
    - Crate-local preprocessing tests now cover adjacent comments, comments at EOF, comments immediately between token-shaped text, and multi-line comments with multiple preserved newlines.
    - Inline comment removal now inserts synthetic layout when needed so lexical text preserves line structure and does not accidentally concatenate tokens.
 
-6. Decided nested multi-line comment policy.
+7. Decided nested multi-line comment policy.
    - Multi-line comments are documented as non-nesting: the first `=::` after a `::=` opener closes the comment.
    - Crate-local preprocessing tests now cover inner `::=` spellings as ordinary comment text, including trivia spans and preserved newlines.
 
-7. Added minimal documentation tests and examples.
+8. Added minimal documentation tests and examples.
    - Crate-level doctests now cover `scan_raw`, `lex`, and `disambiguate`.
    - The examples show that token spans are byte offsets into the scanner input.
    - The examples stay on small, stable parser-facing API surfaces.
 
-8. Decided public API stability policy.
+9. Decided public API stability policy.
    - Public enums are now marked `#[non_exhaustive]` so downstream crates keep wildcard match arms for categories that may grow.
    - Public data struct fields remain visible because they are parser-facing transfer objects used by corpus and early integration code.
    - Crate-level docs and the raw lexer design notes now state that `0.1` APIs remain provisional until a later stability milestone.
 
-9. Documented source-text normalization policy.
+10. Documented source-text normalization policy.
    - Crate-level docs and design notes now state that the lexer does not perform Unicode normalization.
    - Code-region identifiers, numerals, reserved spellings, and user-symbol spellings remain ASCII-only at the lexer boundary.
    - Comment and documentation text remains raw Unicode trivia unless a later documentation/source-loading layer adds warnings.
 
-10. Added fuzz coverage.
+11. Added fuzz coverage.
    - Added a `cargo-fuzz` target, `lexer_valid_utf8`, for arbitrary valid UTF-8 strings.
    - The target exercises `preprocess_source_for_lexing`, direct `scan_raw`, and `scan_raw` over preprocessed lexical text.
    - Fuzz assertions pin span validity, comment lexeme slicing, raw token lexeme slicing, and full raw-token input coverage for successful scans.
    - Seed corpus entries cover ASCII/layout/annotation text and Unicode in documentation/comment/code regions.
 
-11. Added performance benchmarking.
+12. Added performance benchmarking.
    - Added a Criterion benchmark for a large `.miz`-like source.
    - The benchmark measures `preprocess_source_for_lexing`, `scan_raw`, and `SourceLineIndex` construction separately.
    - The benchmark stays lexer-local and does not involve module resolution, parser context, or imported symbol loading.
 
-12. Decided UTF-8 BOM handling policy at the source-loading boundary.
+13. Decided UTF-8 BOM handling policy at the source-loading boundary.
    - Package-authored source loading accepts one leading UTF-8 BOM and strips it before constructing `LoadedSource.text` or calling `mizar-lexer`.
    - Direct lexer helper calls stay strict: `U+FEFF` reaching `preprocess_source_for_lexing` or `scan_raw` remains malformed lexer-boundary input.
    - Lexer spans after BOM stripping are byte offsets into post-strip loaded text; `LoadingMap` relates loaded offset `0` to original file byte offset `3` for BOM-prefixed disk files.
 
-13. Specified and tested UTF-8 file loading boundary behavior.
+14. Specified and tested UTF-8 file loading boundary behavior.
    - Added `load_source_text_from_bytes` as a crate-local executable boundary for UTF-8 validation and leading BOM stripping.
    - Invalid UTF-8 now returns `SourceLoadError::InvalidUtf8` before lexer entry and is not decoded lossily into `U+FFFD`.
    - Leading UTF-8 BOM stripping is tested with `LoadedSourceText.loading_map`; loaded offset `0` maps back to original byte offset `3`.
    - Non-leading `U+FEFF` remains in loaded text and is still rejected by lexer-boundary preprocessing/raw scanning when it appears in code.
 
-14. Specified and tested newline normalization.
+15. Specified and tested newline normalization.
    - `load_source_text_from_bytes` now normalizes CRLF pairs to LF before lexer entry.
    - `SourceLoadingMapSegment::NormalizedNewline` records each normalized LF against the original two-byte CRLF range.
    - Tests cover plain CRLF input, CRLF after leading BOM stripping, and preserving lone `\r` as malformed lexer-boundary input.
 
-15. Implemented preprocess source-map tests.
+16. Implemented preprocess source-map tests.
    - `PreprocessedLexicalSource` now carries a lightweight `SourcePreprocessMap` with original, removed-comment, and synthetic-whitespace segments.
    - Tests cover ordinary comment removal, documentation comment retention, synthetic spaces/newlines, and lexical ranges spanning removed comments.
    - Tests also pin mapping for lexer/preprocessor diagnostic byte ranges back to original source ranges.
 
-16. Returned composite anchors for zero-length preprocess-map boundaries.
+17. Returned composite anchors for zero-length preprocess-map boundaries.
    - Lexical insertion points on boundaries between original text, removed comments, and synthetic whitespace now return all adjacent source anchors.
    - Tests cover removed-comment boundaries with and without inserted synthetic layout.
 
-17. Kept user-facing column conversion outside lexer.
+18. Kept user-facing column conversion outside lexer.
    - Added a minimal `mizar-session` crate with `LineMap` tests for one-based Unicode scalar line/column conversion.
    - Added a minimal `mizar-lsp` crate with range-mapper tests for zero-based LSP UTF-16 positions.
    - `mizar-lexer` remains byte-span oriented and does not perform user-facing or LSP column conversion.
 
-18. Covered source path normalization outside lexer.
+19. Covered source path normalization outside lexer.
    - Added `mizar-session::normalize_source_path` and `NormalizedPath` for package-relative `.miz` source identities.
    - Tests cover `.`/`..`, symlink alias/escape rejection, canonical case spelling, package-root escape attempts, source-root enforcement, extension validation, ASCII identifier-shaped namespace components, and platform-specific separator normalization.
    - The lexer-local `module_source_name_from_path` remains only a boundary naming helper; filesystem-aware source identity now lives in the session source layer.
 
-19. Decided shared source-span ownership across lexer, session, and LSP crates.
+20. Decided shared source-span ownership across lexer, session, and LSP crates.
    - Kept lexer `SourceSpan` and session `SourceRange` crate-local instead of adding a common source-coordinate crate at this stage.
    - Added explicit LSP bridge conversion APIs: `source_range_from_lexer_span` and `lsp_range_from_lexer_span`.
    - Added LSP bridge tests for lexer-token spans, UTF-16 column conversion, pure field-copy conversion, and error propagation for invalid lexer spans, keeping coordinate-space conversion visible at the boundary.
 
-20. Decided line/column overflow policy for session source maps.
+21. Decided line/column overflow policy for session source maps.
    - Kept `mizar-session::LineColumn` values as `u32` because they are presentation and protocol-adjacent coordinates, not raw memory indexes.
    - Added `SourceMapError::LineColumnOverflow` so `LineMap` reports unrepresentable line or Unicode scalar column values instead of saturating, wrapping, or silently narrowing from `usize`.
    - Kept LSP protocol positions as `u32` and added explicit checked narrowing for UTF-16 columns in the LSP bridge.
 
-21. Revisited long-term LSP/lexer dependency layering.
+22. Revisited long-term LSP/lexer dependency layering.
    - Kept the direct `mizar-lsp` dependency on `mizar-lexer` for the explicit `SourceSpan` bridge conversion because no frontend or diagnostic adapter crate exists yet to own that boundary.
    - Kept `source_range_from_lexer_span` and `lsp_range_from_lexer_span` in `mizar-lsp::range_mapper` so coordinate-space conversion remains visible at the protocol boundary.
    - Avoided adding a shared source-coordinate crate solely for this bridge; the bridge should move only when a concrete adapter crate has a broader reason to own lexer-to-session conversion.

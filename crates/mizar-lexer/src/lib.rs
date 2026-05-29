@@ -1575,6 +1575,41 @@ import pkg.mathcomp_mizar.algebra.ring;";
     }
 
     #[test]
+    fn lexical_environment_trie_lookup_handles_many_symbols_and_overlaps() {
+        let mut symbols = vec![
+            exported("+", "bulk#plus", "bulk", 0),
+            exported("+*", "bulk#plus_star", "bulk", 1),
+            exported("+*+", "bulk#plus_star_plus", "bulk", 2),
+            exported("alpha", "bulk#alpha", "bulk", 3),
+            exported("alphabet", "bulk#alphabet", "bulk", 4),
+        ];
+        for index in 0..2_048 {
+            let spelling = format!("bulk_symbol_{index:04}");
+            let symbol = format!("bulk#{index:04}");
+            symbols.push(exported(&spelling, &symbol, "bulk", index + 5));
+        }
+        let env =
+            build_lexical_environment(&[resolved_import("bulk")], &[summary("bulk", 91, &symbols)])
+                .expect("large imported lexicon should build");
+
+        assert_eq!(env.user_symbols.spelling_count(), 2_053);
+        assert!(env.user_symbols.trie_node_count() > env.user_symbols.spelling_count());
+        assert_eq!(
+            env.longest_user_symbol_at("+*+x", 0)[0].symbol_id,
+            symbol_id("bulk#plus_star_plus")
+        );
+        assert_eq!(
+            env.longest_user_symbol_at("alphabet_soup", 0)[0].symbol_id,
+            symbol_id("bulk#alphabet")
+        );
+        assert_eq!(
+            env.longest_user_symbol_at("bulk_symbol_2047", 0)[0].symbol_id,
+            symbol_id("bulk#2047")
+        );
+        assert!(env.longest_user_symbol_at("not_imported", 0).is_empty());
+    }
+
+    #[test]
     fn lexical_environment_returns_empty_lookup_for_invalid_offsets() {
         let env = build_lexical_environment(
             &[resolved_import("std.unicode_fixture")],

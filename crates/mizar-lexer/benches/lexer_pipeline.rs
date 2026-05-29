@@ -1,5 +1,9 @@
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
-use mizar_lexer::{SourceLineIndex, preprocess_source_for_lexing, scan_raw};
+use mizar_lexer::{
+    ExportRank, ExportedSymbolShape, LexicalSummaryFingerprint, ModuleId, ModuleLexicalSummary,
+    ParserLexContext, ResolvedImport, SourceLineIndex, SymbolId, build_lexical_environment,
+    build_scope_skeleton, disambiguate, preprocess_source_for_lexing, scan_raw,
+};
 use std::hint::black_box;
 
 fn lexer_pipeline(c: &mut Criterion) {
@@ -36,6 +40,34 @@ fn lexer_pipeline(c: &mut Criterion) {
     group.finish();
 }
 
+fn active_user_symbol_lexicon(c: &mut Criterion) {
+    let env = many_symbol_environment(4_096);
+    let source = many_symbol_source(8_192);
+    let raw = scan_raw(&source).expect("benchmark input should raw-scan");
+    let scopes = build_scope_skeleton(&raw);
+    let context = ParserLexContext::general();
+
+    let mut group = c.benchmark_group("active_user_symbol_lexicon");
+    group.throughput(Throughput::Bytes(source.len() as u64));
+
+    group.bench_with_input(
+        BenchmarkId::new("disambiguate_many_imported_symbols", source.len()),
+        &raw,
+        |b, raw| {
+            b.iter(|| {
+                disambiguate(
+                    black_box(raw),
+                    black_box(&env),
+                    black_box(&context),
+                    black_box(&scopes),
+                )
+            });
+        },
+    );
+
+    group.finish();
+}
+
 fn large_miz_like_source(items: usize) -> String {
     let mut source = String::with_capacity(items * 192);
     source.push_str("::: benchmark source for lexer pipeline\n");
@@ -64,5 +96,50 @@ fn large_miz_like_source(items: usize) -> String {
     source
 }
 
-criterion_group!(benches, lexer_pipeline);
+fn many_symbol_environment(symbols: usize) -> mizar_lexer::ActiveLexicalEnvironment {
+    let mut exported_symbols = Vec::with_capacity(symbols + 3);
+    exported_symbols.push(exported("+", "bench#plus", 0));
+    exported_symbols.push(exported("+*", "bench#plus_star", 1));
+    exported_symbols.push(exported("+*+", "bench#plus_star_plus", 2));
+    for index in 0..symbols {
+        exported_symbols.push(exported(
+            &format!("sym{index:04}"),
+            &format!("bench#sym{index:04}"),
+            index as u32 + 3,
+        ));
+    }
+
+    build_lexical_environment(
+        &[ResolvedImport {
+            module_id: ModuleId("bench.symbols".to_owned()),
+        }],
+        &[ModuleLexicalSummary {
+            module_id: ModuleId("bench.symbols".to_owned()),
+            exported_symbols,
+            fingerprint: LexicalSummaryFingerprint(0x5eed),
+        }],
+    )
+    .expect("benchmark environment should build")
+}
+
+fn exported(spelling: &str, symbol: &str, rank: u32) -> ExportedSymbolShape {
+    ExportedSymbolShape {
+        spelling: spelling.to_owned(),
+        symbol_id: SymbolId(symbol.to_owned()),
+        source_module: ModuleId("bench.symbols".to_owned()),
+        export_rank: ExportRank(rank),
+    }
+}
+
+fn many_symbol_source(items: usize) -> String {
+    let mut source = String::with_capacity(items * 18);
+    for index in 0..items {
+        source.push_str("sym");
+        source.push_str(&format!("{:04}", index % 4_096));
+        source.push_str("+*+x ");
+    }
+    source
+}
+
+criterion_group!(benches, lexer_pipeline, active_user_symbol_lexicon);
 criterion_main!(benches);
