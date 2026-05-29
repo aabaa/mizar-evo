@@ -20,6 +20,7 @@ fn parser_facing_token_types_expose_stable_accessors() {
     assert_eq!(diagnostic.code(), LexDiagnosticCode::NoValidTokenCandidate);
     assert_eq!(diagnostic.message(), "no candidate");
     assert_eq!(diagnostic.span(), SourceSpan::new(6, 7));
+    assert_eq!(diagnostic.payload(), &LexDiagnosticPayload::None);
     assert_eq!(stream.tokens(), &[token.clone()]);
     assert_eq!(stream.diagnostics(), &[diagnostic.clone()]);
     assert_eq!(stream.into_parts(), (vec![token], vec![diagnostic]));
@@ -318,7 +319,7 @@ fn disambiguator_recognizes_strings_only_when_required() {
             .map(|diagnostic| diagnostic.code)
             .collect::<Vec<_>>(),
         vec![
-            LexDiagnosticCode::NoValidTokenCandidate,
+            LexDiagnosticCode::ParserContextRejectedCandidate,
             LexDiagnosticCode::NoValidTokenCandidate,
         ]
     );
@@ -380,4 +381,105 @@ fn disambiguator_reports_context_rejection_stably() {
         vec![LexDiagnosticCode::ParserContextRejectedCandidate]
     );
     assert_eq!(stream.tokens[0].span, stream.diagnostics[0].span);
+    assert_eq!(
+        stream.diagnostics[0].payload,
+        LexDiagnosticPayload::ParserContextRejectedCandidate {
+            mode: ParserLexMode::IdentifierRequired,
+            rejected_lexeme: ":".to_owned(),
+            candidates: vec![RejectedTokenCandidate {
+                kind: TokenKind::ReservedSymbol,
+                lexeme: ":".to_owned(),
+                span: SourceSpan { start: 0, end: 1 },
+            }],
+            recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+        }
+    );
+}
+
+#[test]
+fn disambiguator_diagnostics_carry_structured_recovery_payloads() {
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+
+    let raw = scan_raw("\"").expect("source should raw scan");
+    let skeleton = build_scope_skeleton(&raw);
+    let no_candidate = disambiguate(&raw, &env, &ParserLexContext::general(), &skeleton);
+    assert_eq!(
+        no_candidate.diagnostics[0].payload,
+        LexDiagnosticPayload::NoValidTokenCandidate {
+            rejected_lexeme: "\"".to_owned(),
+            recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+        }
+    );
+
+    let raw = scan_raw("\"bad\\n\"").expect("source should raw scan");
+    let skeleton = build_scope_skeleton(&raw);
+    let malformed = disambiguate(&raw, &env, &ParserLexContext::string_required(), &skeleton);
+    assert_eq!(
+        malformed.diagnostics[0].payload,
+        LexDiagnosticPayload::MalformedStringLiteral {
+            opening_quote: '"',
+            reason: MalformedStringLiteralReason::UnsupportedEscape { escape: 'n' },
+            recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+        }
+    );
+
+    for (source, reason) in [
+        (
+            "\"unterminated",
+            MalformedStringLiteralReason::MissingClosingQuote,
+        ),
+        ("\"dangling\\", MalformedStringLiteralReason::DanglingEscape),
+    ] {
+        let raw = scan_raw(source).expect("source should raw scan");
+        let skeleton = build_scope_skeleton(&raw);
+        let malformed = disambiguate(&raw, &env, &ParserLexContext::string_required(), &skeleton);
+
+        assert_eq!(
+            malformed.diagnostics[0].payload,
+            LexDiagnosticPayload::MalformedStringLiteral {
+                opening_quote: '"',
+                reason,
+                recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+            },
+            "{source:?}"
+        );
+    }
+
+    let raw = scan_raw("\"abc\"").expect("source should raw scan");
+    let skeleton = build_scope_skeleton(&raw);
+    let rejected = disambiguate(&raw, &env, &ParserLexContext::general(), &skeleton);
+    assert_eq!(
+        rejected.diagnostics[0].payload,
+        LexDiagnosticPayload::ParserContextRejectedCandidate {
+            mode: ParserLexMode::General,
+            rejected_lexeme: "\"".to_owned(),
+            candidates: vec![RejectedTokenCandidate {
+                kind: TokenKind::StringLiteral,
+                lexeme: "\"abc\"".to_owned(),
+                span: SourceSpan { start: 0, end: 5 },
+            }],
+            recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+        }
+    );
+}
+
+#[test]
+fn disambiguator_unsupported_raw_token_payload_identifies_raw_token() {
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+    let raw = crate::RawTokenStream::new(vec![RawToken::new(
+        RawTokenKind::Error,
+        "\u{000b}",
+        SourceSpan::new(0, 1),
+    )]);
+    let skeleton = build_scope_skeleton(&raw);
+    let stream = disambiguate(&raw, &env, &ParserLexContext::general(), &skeleton);
+
+    assert_eq!(
+        stream.diagnostics[0].payload,
+        LexDiagnosticPayload::UnsupportedRawToken {
+            raw_kind: RawTokenKind::Error,
+            raw_lexeme: "\u{000b}".to_owned(),
+            recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+        }
+    );
 }

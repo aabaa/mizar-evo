@@ -18,6 +18,13 @@ pub struct TokenStream {
     pub diagnostics: Vec<LexDiagnostic>,
 }
 
+pub struct LexDiagnostic {
+    pub code: LexDiagnosticCode,
+    pub message: String,
+    pub span: SourceSpan,
+    pub payload: LexDiagnosticPayload,
+}
+
 pub struct Token {
     pub kind: TokenKind,
     pub lexeme: String,
@@ -140,6 +147,17 @@ Disambiguation diagnostics include:
 - unsupported raw tokens such as malformed annotation markers passed through from raw scanning.
 
 Whenever possible, the disambiguator emits an `ErrorRecovery` token with the original spelling and resumes at the next recoverable byte boundary.
+
+Diagnostic codes and byte spans are stable. Human-facing `message` text remains provisional. Tooling should use `LexDiagnosticPayload` for machine-readable details:
+
+| Code | Payload |
+|---|---|
+| `NoValidTokenCandidate` | rejected lexeme plus an `EmitErrorRecoveryToken` recovery hint |
+| `ParserContextRejectedCandidate` | parser mode, rejected lexeme, rejected candidate token kinds/spellings/spans, and an `EmitErrorRecoveryToken` recovery hint |
+| `MalformedStringLiteral` | opening quote, malformed-string reason, and recovery hint |
+| `UnsupportedRawToken` | raw token kind, raw spelling, and recovery hint |
+
+Fixtures may optionally assert `diagnostic_payloads` summaries when a stable structured payload matters. They must not assert human-facing diagnostic messages.
 
 ## Tests
 

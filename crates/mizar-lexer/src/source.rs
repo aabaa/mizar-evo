@@ -142,6 +142,31 @@ pub struct SourcePreprocessDiagnostic {
     pub code: SourcePreprocessDiagnosticCode,
     pub message: String,
     pub span: SourceRange,
+    pub payload: SourcePreprocessDiagnosticPayload,
+}
+
+impl SourcePreprocessDiagnostic {
+    pub fn new(
+        code: SourcePreprocessDiagnosticCode,
+        message: impl Into<String>,
+        span: SourceRange,
+    ) -> Self {
+        Self::with_payload(code, message, span, SourcePreprocessDiagnosticPayload::None)
+    }
+
+    pub fn with_payload(
+        code: SourcePreprocessDiagnosticCode,
+        message: impl Into<String>,
+        span: SourceRange,
+        payload: SourcePreprocessDiagnosticPayload,
+    ) -> Self {
+        Self {
+            code,
+            message: message.into(),
+            span,
+            payload,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -150,6 +175,30 @@ pub enum SourcePreprocessDiagnosticCode {
     CarriageReturn,
     NonAsciiCode,
     UnterminatedMultiLineComment,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourcePreprocessDiagnosticPayload {
+    None,
+    CarriageReturn {
+        recovery: SourcePreprocessRecoveryHint,
+    },
+    NonAsciiCode {
+        character: char,
+        utf8_len: usize,
+    },
+    UnterminatedMultiLineComment {
+        opener: SourceRange,
+        recovery: SourcePreprocessRecoveryHint,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourcePreprocessRecoveryHint {
+    NormalizeCrLfBeforeLexerEntry,
+    PreserveNewlinesAndDropCommentText,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -557,14 +606,23 @@ pub fn preprocess_source_for_lexing(input: &str) -> PreprocessedLexicalSource {
             let end = match rest.find("=::") {
                 Some(relative) => cursor + relative + "=::".len(),
                 None => {
-                    diagnostics.push(SourcePreprocessDiagnostic {
-                        code: SourcePreprocessDiagnosticCode::UnterminatedMultiLineComment,
-                        message: "unterminated multi-line comment".to_owned(),
-                        span: SourceSpan {
-                            start: cursor,
-                            end: input.len(),
+                    let span = SourceSpan {
+                        start: cursor,
+                        end: input.len(),
+                    };
+                    diagnostics.push(SourcePreprocessDiagnostic::with_payload(
+                        SourcePreprocessDiagnosticCode::UnterminatedMultiLineComment,
+                        "unterminated multi-line comment",
+                        span,
+                        SourcePreprocessDiagnosticPayload::UnterminatedMultiLineComment {
+                            opener: SourceSpan {
+                                start: cursor,
+                                end: cursor + "::=".len(),
+                            },
+                            recovery:
+                                SourcePreprocessRecoveryHint::PreserveNewlinesAndDropCommentText,
                         },
-                    });
+                    ));
                     input.len()
                 }
             };
@@ -603,17 +661,24 @@ pub fn preprocess_source_for_lexing(input: &str) -> PreprocessedLexicalSource {
         let ch = rest.chars().next().expect("cursor is inside source");
         let end = cursor + ch.len_utf8();
         if ch == '\r' {
-            diagnostics.push(SourcePreprocessDiagnostic {
-                code: SourcePreprocessDiagnosticCode::CarriageReturn,
-                message: "source text must be LF-only before lexing".to_owned(),
-                span: SourceSpan { start: cursor, end },
-            });
+            diagnostics.push(SourcePreprocessDiagnostic::with_payload(
+                SourcePreprocessDiagnosticCode::CarriageReturn,
+                "source text must be LF-only before lexing",
+                SourceSpan { start: cursor, end },
+                SourcePreprocessDiagnosticPayload::CarriageReturn {
+                    recovery: SourcePreprocessRecoveryHint::NormalizeCrLfBeforeLexerEntry,
+                },
+            ));
         } else if !ch.is_ascii() {
-            diagnostics.push(SourcePreprocessDiagnostic {
-                code: SourcePreprocessDiagnosticCode::NonAsciiCode,
-                message: "code regions must be ASCII before lexing".to_owned(),
-                span: SourceSpan { start: cursor, end },
-            });
+            diagnostics.push(SourcePreprocessDiagnostic::with_payload(
+                SourcePreprocessDiagnosticCode::NonAsciiCode,
+                "code regions must be ASCII before lexing",
+                SourceSpan { start: cursor, end },
+                SourcePreprocessDiagnosticPayload::NonAsciiCode {
+                    character: ch,
+                    utf8_len: ch.len_utf8(),
+                },
+            ));
         }
         lexical_text.push(ch);
         push_original_preprocess_segment(

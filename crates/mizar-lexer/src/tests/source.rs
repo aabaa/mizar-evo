@@ -590,6 +590,13 @@ fn preprocess_map_maps_lexer_and_preprocessor_diagnostic_ranges() {
         SourceSpan { start: 19, end: 21 }
     );
     assert_eq!(
+        preprocessed.diagnostics[0].payload,
+        SourcePreprocessDiagnosticPayload::NonAsciiCode {
+            character: '\u{00a0}',
+            utf8_len: 2,
+        }
+    );
+    assert_eq!(
         preprocessed
             .preprocess_map
             .source_ranges_for_lexical(SourceSpan { start: 6, end: 8 }),
@@ -711,6 +718,12 @@ fn preprocess_source_reports_code_region_precondition_violations() {
             SourcePreprocessDiagnosticCode::NonAsciiCode,
         ]
     );
+    assert_eq!(
+        preprocessed.diagnostics[0].payload,
+        SourcePreprocessDiagnosticPayload::CarriageReturn {
+            recovery: SourcePreprocessRecoveryHint::NormalizeCrLfBeforeLexerEntry,
+        }
+    );
     assert_eq!(preprocessed.comments[0].kind, CommentKind::Documentation);
 }
 
@@ -741,6 +754,14 @@ fn preprocess_source_pins_unsupported_unicode_code_region_diagnostics() {
             "{name}"
         );
         assert_eq!(preprocessed.diagnostics[0].span, expected_span, "{name}");
+        assert_eq!(
+            preprocessed.diagnostics[0].payload,
+            SourcePreprocessDiagnosticPayload::NonAsciiCode {
+                character: ch,
+                utf8_len: ch.len_utf8(),
+            },
+            "{name}"
+        );
         assert!(
             scan_raw(&preprocessed.lexical_text).is_err(),
             "{name} must remain unsupported if it reaches raw scanning"
@@ -759,6 +780,13 @@ fn preprocess_source_reports_unterminated_multiline_comment() {
             .map(|diagnostic| diagnostic.code)
             .collect::<Vec<_>>(),
         vec![SourcePreprocessDiagnosticCode::UnterminatedMultiLineComment]
+    );
+    assert_eq!(
+        preprocessed.diagnostics[0].payload,
+        SourcePreprocessDiagnosticPayload::UnterminatedMultiLineComment {
+            opener: SourceSpan { start: 6, end: 9 },
+            recovery: SourcePreprocessRecoveryHint::PreserveNewlinesAndDropCommentText,
+        }
     );
     assert_eq!(preprocessed.comments[0].kind, CommentKind::MultiLine);
     assert_eq!(preprocessed.lexical_text, "alpha\n\n");

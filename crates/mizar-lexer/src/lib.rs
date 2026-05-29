@@ -96,8 +96,9 @@ mod source;
 mod tables;
 
 pub use disambiguator::{
-    LexDiagnostic, LexDiagnosticCode, ParserLexContext, ParserLexMode, Token, TokenKind,
-    TokenStream, disambiguate, disambiguate_reserved_shell, lex,
+    LexDiagnostic, LexDiagnosticCode, LexDiagnosticPayload, LexRecoveryHint,
+    MalformedStringLiteralReason, ParserLexContext, ParserLexMode, RejectedTokenCandidate, Token,
+    TokenKind, TokenStream, disambiguate, disambiguate_reserved_shell, lex,
 };
 pub use import_prescan::{
     ImportPrelude, ImportPrescanDiagnostic, ImportPrescanDiagnosticCode, ImportStub,
@@ -124,9 +125,10 @@ pub use source::{
     CommentKind, CommentTrivia, LoadedSourceText, ModuleNamingError, ModuleSourceName,
     PreprocessedLexicalSource, SourceLineIndex, SourceLoadError, SourceLoadingMap,
     SourceLoadingMapSegment, SourceLocation, SourceLocationRange, SourcePos,
-    SourcePreprocessDiagnostic, SourcePreprocessDiagnosticCode, SourcePreprocessMap,
-    SourcePreprocessMapSegment, SourceRange, SourceSpan, load_source_text_from_bytes,
-    module_source_name_from_path, preprocess_source_for_lexing,
+    SourcePreprocessDiagnostic, SourcePreprocessDiagnosticCode, SourcePreprocessDiagnosticPayload,
+    SourcePreprocessMap, SourcePreprocessMapSegment, SourcePreprocessRecoveryHint, SourceRange,
+    SourceSpan, load_source_text_from_bytes, module_source_name_from_path,
+    preprocess_source_for_lexing,
 };
 pub use tables::{
     RESERVED_SYMBOLS, RESERVED_WORDS, ReservedSymbolTable, ReservedWordTable, is_reserved_symbol,

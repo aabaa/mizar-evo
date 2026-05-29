@@ -63,6 +63,7 @@ pub struct Expectation {
     pub failure_category: Option<String>,
     pub rejection_reason: Option<String>,
     pub diagnostic_codes: Vec<String>,
+    pub diagnostic_payloads: Vec<String>,
     pub stable_detail_key: Option<String>,
     pub tokens: Vec<TokenExpectation>,
 }
@@ -161,6 +162,16 @@ fn expectation_from_table(
             }
         })
         .collect::<Result<Vec<_>, _>>()?;
+    let diagnostic_payloads = optional_string_array(table, "diagnostic_payloads")?
+        .into_iter()
+        .map(|diagnostic_payload| {
+            if diagnostic_payload.is_empty() {
+                Err("`diagnostic_payloads` entries must not be empty".to_owned())
+            } else {
+                Ok(diagnostic_payload)
+            }
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     let stable_detail_key = toml_lite::optional_string(table, "stable_detail_key")?;
     for (field, value) in [
         ("failure_category", failure_category.as_deref()),
@@ -218,9 +229,18 @@ fn expectation_from_table(
         failure_category,
         rejection_reason,
         diagnostic_codes,
+        diagnostic_payloads,
         stable_detail_key,
         tokens,
     })
+}
+
+fn optional_string_array(table: &TomlTable, key: &str) -> Result<Vec<String>, String> {
+    if table.contains_key(key) {
+        toml_lite::string_array(table, key)
+    } else {
+        Ok(Vec::new())
+    }
 }
 
 fn parse_token_expectations(token_tables: &[TomlTable]) -> Result<Vec<TokenExpectation>, String> {
@@ -327,6 +347,7 @@ fn validate_known_fields(table: &TomlTable) -> Result<(), String> {
         "notes",
         "expected_phase",
         "diagnostic_codes",
+        "diagnostic_payloads",
         "snapshots",
         "failure_category",
         "rejection_reason",

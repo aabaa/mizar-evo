@@ -195,6 +195,7 @@ Fields:
 | `failure_category` | yes | Stable category from failure semantics. |
 | `rejection_reason` | conditional | Required for certificate and kernel rejection; optional otherwise. |
 | `diagnostic_codes` | yes | Stable diagnostic codes in deterministic order. |
+| `diagnostic_payloads` | no | Optional stable summaries for machine-readable diagnostic payloads in deterministic order. |
 | `stable_detail_key` | yes | Stable detail identity independent of diagnostic wording. |
 
 A fail test that succeeds is a harness failure. A fail test that fails earlier
@@ -222,6 +223,10 @@ lexeme = "definition"
 
 Token expectations are optional for smoke tests but required for fixtures that
 claim token-level coverage.
+
+Lexical fixtures may also provide `diagnostic_payloads` when the test owns a
+machine-readable diagnostic payload contract. These summaries complement
+`diagnostic_codes` and avoid matching human-facing message text.
 
 ## Parse-Only Expectations
 

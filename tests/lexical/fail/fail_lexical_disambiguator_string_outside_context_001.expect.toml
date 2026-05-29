@@ -9,7 +9,11 @@ expected_phase = "lex"
 failure_category = "lexical_diagnostic"
 stable_detail_key = "fail_lexical_disambiguator_string_outside_context_001"
 diagnostic_codes = [
+  "parser_context_rejected_candidate",
   "no_valid_token_candidate",
+]
+diagnostic_payloads = [
+  "parser_context_rejected_candidate:string_literal",
   "no_valid_token_candidate",
 ]
 spec_refs = [

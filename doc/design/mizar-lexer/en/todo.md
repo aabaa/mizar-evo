@@ -6,10 +6,7 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-1. Structure lexer diagnostics for downstream tooling.
-   - Keep stable diagnostic codes and byte spans, but add structured payloads where useful for recovery, rejected parser-context candidates, unsupported raw input, malformed strings, and source-preprocessing errors.
-   - Identify which diagnostics should carry source-map anchors, related spans, or machine-readable recovery hints for frontend/LSP consumers.
-   - Ensure fixture expectations can assert the structured fields without depending on unstable human-facing message text.
+No open lexer quality-review follow-up tasks remain in this list.
 
 ## Completed Tasks
 
@@ -142,6 +139,12 @@ This document records follow-up tasks identified during the lexer quality review
    - Added constructors/accessors for the parser-facing stable surfaces: `SourceSpan`, raw/final tokens and token streams, `LexDiagnostic`, and lightweight module/symbol/fingerprint newtypes. `SourceSpan::new` rejects reversed ranges, while `SourceSpan::try_new` lets callers handle invalid external ranges without panicking.
    - Reconfirmed that externally matched public enums stay `#[non_exhaustive]`.
    - Documented the concrete next-`0.x` compatibility promise in the raw lexer design notes, including stable entry points, byte-span coordinates, diagnostic code/span stability, provisional diagnostic text, and preferred use of constructors/accessors.
+
+27. Structured lexer diagnostics for downstream tooling.
+   - Added machine-readable `LexDiagnosticPayload` values for no-candidate recovery, parser-context rejection with rejected candidate details, malformed string literals, and unsupported raw tokens.
+   - Added machine-readable `SourcePreprocessDiagnosticPayload` values for carriage returns, non-ASCII code-region characters, and unterminated multi-line comments.
+   - Kept stable diagnostic codes and byte spans while leaving human-facing message text provisional.
+   - Added optional `diagnostic_payloads` fixture expectations so corpus tests can assert structured payload summaries without matching diagnostic wording.
 
 ## Suggested Verification
 

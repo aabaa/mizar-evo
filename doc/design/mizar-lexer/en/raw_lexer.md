@@ -396,6 +396,8 @@ Raw scanning errors are for malformed source shapes at the lexical layer:
 - unsupported ASCII control characters such as vertical tab or form feed;
 - impossible annotation markers.
 
+Source preprocessing diagnostics keep stable codes and byte spans plus structured payloads. `CarriageReturn` carries a newline-normalization recovery hint, `NonAsciiCode` carries the rejected character and UTF-8 length, and `UnterminatedMultiLineComment` carries the opener span plus a comment-recovery hint.
+
 Disambiguation errors are for tokenization failures after context is considered:
 
 - no valid token candidate at a source position;

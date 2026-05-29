@@ -186,6 +186,7 @@ Fields:
 | `failure_category` | yes | Failure semantics の stable category. |
 | `rejection_reason` | conditional | Certificate and kernel rejection では必須。それ以外では optional. |
 | `diagnostic_codes` | yes | Deterministic order の stable diagnostic codes. |
+| `diagnostic_payloads` | no | Deterministic order の machine-readable diagnostic payload summaries. |
 | `stable_detail_key` | yes | Diagnostic wording から独立した stable detail identity. |
 
 Fail test が成功した場合は harness failure である。Expected より早い phase で fail した場合も、その earlier sound boundary に expectation を意図的に更新しない限り harness failure である。
@@ -209,6 +210,8 @@ lexeme = "definition"
 ```
 
 Token expectations は smoke tests では optional だが、token-level coverage を claim する fixtures では required である。
+
+Lexical fixtures は、machine-readable diagnostic payload の契約を所有する場合、`diagnostic_payloads` も指定してよい。これは `diagnostic_codes` を補足し、人間向けメッセージ文への依存を避ける。
 
 ## Parse-Only Expectations
 

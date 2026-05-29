@@ -3,11 +3,11 @@ use std::path::{Path, PathBuf};
 
 use mizar_lexer::{
     BindingShapeKind, ExportRank, ExportedSymbolShape, ImportPrescanDiagnosticCode,
-    LexDiagnosticCode, LexicalBlockKind, LexicalStatementKind, LexicalSummaryFingerprint, ModuleId,
-    ModuleLexicalSummary, ParserLexContext, RawTokenKind, ResolvedImport, ScopeLexView,
-    ScopeSkeletonDiagnosticCode, SymbolId, TokenKind, UserSymbolArity, UserSymbolKind,
-    build_lexical_environment, build_scope_skeleton, disambiguate, lex, scan_import_prelude,
-    scan_raw,
+    LexDiagnosticCode, LexDiagnosticPayload, LexicalBlockKind, LexicalStatementKind,
+    LexicalSummaryFingerprint, ModuleId, ModuleLexicalSummary, ParserLexContext, ParserLexMode,
+    RawTokenKind, ResolvedImport, ScopeLexView, ScopeSkeletonDiagnosticCode, SymbolId, TokenKind,
+    UserSymbolArity, UserSymbolKind, build_lexical_environment, build_scope_skeleton, disambiguate,
+    lex, scan_import_prelude, scan_raw,
 };
 use mizar_test::{
     DiscoveryConfig, ExpectedOutcome, PipelinePhase, TestProfile, ValidationMode, build_test_plan,
@@ -426,6 +426,24 @@ fn lexical_corpus_matches_token_expectations() {
                     "{}",
                     case.expectation_path.display()
                 );
+                if !expectation.diagnostic_payloads.is_empty() {
+                    let actual_payloads = stream
+                        .diagnostics
+                        .iter()
+                        .map(|diagnostic| lex_diagnostic_payload_name(&diagnostic.payload))
+                        .collect::<Vec<_>>();
+                    let expected_payloads = expectation
+                        .diagnostic_payloads
+                        .iter()
+                        .map(String::as_str)
+                        .collect::<Vec<_>>();
+                    assert_eq!(
+                        actual_payloads,
+                        expected_payloads,
+                        "{}",
+                        case.expectation_path.display()
+                    );
+                }
                 disambiguator_checked += 1;
             }
             other => panic!(
@@ -550,6 +568,29 @@ fn lex_diagnostic_code_name(code: LexDiagnosticCode) -> &'static str {
         LexDiagnosticCode::MalformedStringLiteral => "malformed_string_literal",
         LexDiagnosticCode::UnsupportedRawToken => "unsupported_raw_token",
         _ => panic!("unsupported lexer diagnostic code: {code:?}"),
+    }
+}
+
+fn lex_diagnostic_payload_name(payload: &LexDiagnosticPayload) -> &'static str {
+    match payload {
+        LexDiagnosticPayload::None => "none",
+        LexDiagnosticPayload::NoValidTokenCandidate { .. } => "no_valid_token_candidate",
+        LexDiagnosticPayload::ParserContextRejectedCandidate {
+            mode, candidates, ..
+        } => {
+            if *mode == ParserLexMode::General
+                && candidates
+                    .iter()
+                    .any(|candidate| candidate.kind == TokenKind::StringLiteral)
+            {
+                "parser_context_rejected_candidate:string_literal"
+            } else {
+                "parser_context_rejected_candidate"
+            }
+        }
+        LexDiagnosticPayload::MalformedStringLiteral { .. } => "malformed_string_literal",
+        LexDiagnosticPayload::UnsupportedRawToken { .. } => "unsupported_raw_token",
+        _ => panic!("unsupported lexer diagnostic payload: {payload:?}"),
     }
 }
 

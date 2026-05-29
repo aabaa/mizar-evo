@@ -556,6 +556,66 @@ span_end_col = 6
 }
 
 #[test]
+fn diagnostic_payload_expectations_parse_and_reject_empty_entries() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write("tests/lexical/fail/diagnostic_payload.src", "\"alpha\"");
+    corpus.write(
+        "tests/lexical/fail/diagnostic_payload.expect.toml",
+        r#"schema_version = 1
+id = "diagnostic_payload"
+kind = "fail"
+stage = "lexical"
+domain = "disambiguator"
+source = "diagnostic_payload.src"
+expected_outcome = "fail"
+expected_phase = "lex"
+failure_category = "lexical_diagnostic"
+stable_detail_key = "diagnostic_payload"
+diagnostic_codes = ["parser_context_rejected_candidate"]
+diagnostic_payloads = ["parser_context_rejected_candidate:string_literal"]
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_eq!(plan.error_count(), 0, "{:#?}", plan.diagnostics);
+    assert_eq!(
+        plan.cases[0].expectation.diagnostic_payloads,
+        vec!["parser_context_rejected_candidate:string_literal"]
+    );
+
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write(
+        "tests/lexical/fail/empty_diagnostic_payload.src",
+        "\"alpha\"",
+    );
+    corpus.write(
+        "tests/lexical/fail/empty_diagnostic_payload.expect.toml",
+        r#"schema_version = 1
+id = "empty_diagnostic_payload"
+kind = "fail"
+stage = "lexical"
+domain = "disambiguator"
+source = "empty_diagnostic_payload.src"
+expected_outcome = "fail"
+expected_phase = "lex"
+failure_category = "lexical_diagnostic"
+stable_detail_key = "empty_diagnostic_payload"
+diagnostic_codes = ["parser_context_rejected_candidate"]
+diagnostic_payloads = [""]
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SCHEMA");
+}
+
+#[test]
 fn token_expectations_reject_unknown_or_empty_fields() {
     let corpus = Corpus::new();
     corpus.write("tests/lexical/pass/bad_token_unknown.src", "alpha");

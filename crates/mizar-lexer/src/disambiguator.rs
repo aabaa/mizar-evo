@@ -70,14 +70,25 @@ pub struct LexDiagnostic {
     pub code: LexDiagnosticCode,
     pub message: String,
     pub span: SourceRange,
+    pub payload: LexDiagnosticPayload,
 }
 
 impl LexDiagnostic {
     pub fn new(code: LexDiagnosticCode, message: impl Into<String>, span: SourceRange) -> Self {
+        Self::with_payload(code, message, span, LexDiagnosticPayload::None)
+    }
+
+    pub fn with_payload(
+        code: LexDiagnosticCode,
+        message: impl Into<String>,
+        span: SourceRange,
+        payload: LexDiagnosticPayload,
+    ) -> Self {
         Self {
             code,
             message: message.into(),
             span,
+            payload,
         }
     }
 
@@ -92,6 +103,10 @@ impl LexDiagnostic {
     pub const fn span(&self) -> SourceRange {
         self.span
     }
+
+    pub const fn payload(&self) -> &LexDiagnosticPayload {
+        &self.payload
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -102,6 +117,53 @@ pub enum LexDiagnosticCode {
     AmbiguousUserSymbol,
     MalformedStringLiteral,
     UnsupportedRawToken,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum LexDiagnosticPayload {
+    None,
+    NoValidTokenCandidate {
+        rejected_lexeme: String,
+        recovery: LexRecoveryHint,
+    },
+    ParserContextRejectedCandidate {
+        mode: ParserLexMode,
+        rejected_lexeme: String,
+        candidates: Vec<RejectedTokenCandidate>,
+        recovery: LexRecoveryHint,
+    },
+    MalformedStringLiteral {
+        opening_quote: char,
+        reason: MalformedStringLiteralReason,
+        recovery: LexRecoveryHint,
+    },
+    UnsupportedRawToken {
+        raw_kind: RawTokenKind,
+        raw_lexeme: String,
+        recovery: LexRecoveryHint,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum LexRecoveryHint {
+    EmitErrorRecoveryToken,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RejectedTokenCandidate {
+    pub kind: TokenKind,
+    pub lexeme: String,
+    pub span: SourceRange,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum MalformedStringLiteralReason {
+    MissingClosingQuote,
+    UnsupportedEscape { escape: char },
+    DanglingEscape,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -348,11 +410,22 @@ impl<'a> Disambiguator<'a> {
                             raw_token.span,
                         );
                     } else {
+                        let candidates = vec![RejectedTokenCandidate {
+                            kind: TokenKind::ReservedSymbol,
+                            lexeme: raw_token.lexeme.clone(),
+                            span: raw_token.span,
+                        }];
                         self.push_error(
                             LexDiagnosticCode::ParserContextRejectedCandidate,
                             "parser context rejected annotation symbol",
                             raw_token.span,
                             &raw_token.lexeme,
+                            LexDiagnosticPayload::ParserContextRejectedCandidate {
+                                mode: self.parser_context.mode(),
+                                rejected_lexeme: raw_token.lexeme.clone(),
+                                candidates,
+                                recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+                            },
                         );
                     }
                 }
@@ -362,6 +435,11 @@ impl<'a> Disambiguator<'a> {
                         "raw token cannot be disambiguated",
                         raw_token.span,
                         &raw_token.lexeme,
+                        LexDiagnosticPayload::UnsupportedRawToken {
+                            raw_kind: raw_token.kind,
+                            raw_lexeme: raw_token.lexeme.clone(),
+                            recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+                        },
                     );
                 }
             }
@@ -381,6 +459,16 @@ impl<'a> Disambiguator<'a> {
                 "parser context rejected numeral",
                 raw_token.span,
                 &raw_token.lexeme,
+                LexDiagnosticPayload::ParserContextRejectedCandidate {
+                    mode: self.parser_context.mode(),
+                    rejected_lexeme: raw_token.lexeme.clone(),
+                    candidates: vec![RejectedTokenCandidate {
+                        kind: TokenKind::Numeral,
+                        lexeme: raw_token.lexeme.clone(),
+                        span: raw_token.span,
+                    }],
+                    recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+                },
             );
         }
     }
@@ -393,8 +481,8 @@ impl<'a> Disambiguator<'a> {
                 .next()
                 .is_some_and(|ch| ch == '"' || ch == '\'');
             if self.parser_context.requires_string() && starts_string {
-                match string_literal_prefix_len(&raw_token.lexeme[cursor..]) {
-                    Some(len) => {
+                match string_literal_prefix_result(&raw_token.lexeme[cursor..]) {
+                    Ok(len) => {
                         let span = SourceSpan {
                             start: raw_token.span.start + cursor,
                             end: raw_token.span.start + cursor + len,
@@ -406,7 +494,11 @@ impl<'a> Disambiguator<'a> {
                         );
                         cursor += len;
                     }
-                    None => {
+                    Err(reason) => {
+                        let opening_quote = raw_token.lexeme[cursor..]
+                            .chars()
+                            .next()
+                            .expect("starts_string checked a quote");
                         self.push_error(
                             LexDiagnosticCode::MalformedStringLiteral,
                             "malformed string literal",
@@ -415,6 +507,11 @@ impl<'a> Disambiguator<'a> {
                                 end: raw_token.span.end,
                             },
                             &raw_token.lexeme[cursor..],
+                            LexDiagnosticPayload::MalformedStringLiteral {
+                                opening_quote,
+                                reason,
+                                recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+                            },
                         );
                         break;
                     }
@@ -454,6 +551,7 @@ impl<'a> Disambiguator<'a> {
                             end: raw_token.span.start + end,
                         },
                         &raw_token.lexeme[cursor..end],
+                        self.diagnostic_payload_for_unmatched_lexeme(raw_token, cursor, end, code),
                     );
                     cursor = end;
                 }
@@ -585,10 +683,90 @@ impl<'a> Disambiguator<'a> {
         longest_reserved_symbol_prefix(&raw_token.lexeme[cursor..]).is_some()
             || identifier_prefix_len(&raw_token.lexeme[cursor..]).is_some()
             || numeral_prefix_len(&raw_token.lexeme[cursor..]).is_some()
+            || string_literal_prefix_len(&raw_token.lexeme[cursor..]).is_some()
             || !self
                 .lexical_env
                 .longest_user_symbol_at(&raw_token.lexeme, cursor)
                 .is_empty()
+    }
+
+    fn diagnostic_payload_for_unmatched_lexeme(
+        &self,
+        raw_token: &RawToken,
+        cursor: usize,
+        end: usize,
+        code: LexDiagnosticCode,
+    ) -> LexDiagnosticPayload {
+        let rejected_lexeme = raw_token.lexeme[cursor..end].to_owned();
+        if code == LexDiagnosticCode::ParserContextRejectedCandidate {
+            return LexDiagnosticPayload::ParserContextRejectedCandidate {
+                mode: self.parser_context.mode(),
+                rejected_lexeme,
+                candidates: self.rejected_candidates_at(raw_token, cursor),
+                recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+            };
+        }
+
+        LexDiagnosticPayload::NoValidTokenCandidate {
+            rejected_lexeme,
+            recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+        }
+    }
+
+    fn rejected_candidates_at(
+        &self,
+        raw_token: &RawToken,
+        cursor: usize,
+    ) -> Vec<RejectedTokenCandidate> {
+        let mut candidates = Vec::new();
+        let rest = &raw_token.lexeme[cursor..];
+        if let Some(symbol) = longest_reserved_symbol_prefix(rest) {
+            candidates.push(rejected_candidate(
+                TokenKind::ReservedSymbol,
+                symbol,
+                raw_token.span.start + cursor,
+            ));
+        }
+        if let Some(len) = identifier_prefix_len(rest) {
+            let spelling = &rest[..len];
+            let kind = if is_reserved_word(spelling) {
+                TokenKind::ReservedWord
+            } else {
+                TokenKind::Identifier
+            };
+            candidates.push(rejected_candidate(
+                kind,
+                spelling,
+                raw_token.span.start + cursor,
+            ));
+        }
+        if let Some(len) = numeral_prefix_len(rest) {
+            candidates.push(rejected_candidate(
+                TokenKind::Numeral,
+                &rest[..len],
+                raw_token.span.start + cursor,
+            ));
+        }
+        if let Some(len) = string_literal_prefix_len(rest) {
+            candidates.push(rejected_candidate(
+                TokenKind::StringLiteral,
+                &rest[..len],
+                raw_token.span.start + cursor,
+            ));
+        }
+        if let Some(symbol) = self
+            .lexical_env
+            .longest_user_symbol_at(&raw_token.lexeme, cursor)
+            .first()
+            .map(|candidate| candidate.spelling.as_str())
+        {
+            candidates.push(rejected_candidate(
+                TokenKind::UserSymbol,
+                symbol,
+                raw_token.span.start + cursor,
+            ));
+        }
+        candidates
     }
 
     fn push_token(&mut self, kind: TokenKind, lexeme: &str, span: SourceRange) {
@@ -601,10 +779,22 @@ impl<'a> Disambiguator<'a> {
         message: impl Into<String>,
         span: SourceRange,
         lexeme: &str,
+        payload: LexDiagnosticPayload,
     ) {
         self.diagnostics
-            .push(LexDiagnostic::new(code, message, span));
+            .push(LexDiagnostic::with_payload(code, message, span, payload));
         self.push_token(TokenKind::ErrorRecovery, lexeme, span);
+    }
+}
+
+fn rejected_candidate(kind: TokenKind, lexeme: &str, start: usize) -> RejectedTokenCandidate {
+    RejectedTokenCandidate {
+        kind,
+        lexeme: lexeme.to_owned(),
+        span: SourceSpan {
+            start,
+            end: start + lexeme.len(),
+        },
     }
 }
 
@@ -636,15 +826,21 @@ fn numeral_prefix_len(value: &str) -> Option<usize> {
 }
 
 fn string_literal_prefix_len(value: &str) -> Option<usize> {
-    let quote = value.chars().next()?;
+    string_literal_prefix_result(value).ok()
+}
+
+fn string_literal_prefix_result(value: &str) -> Result<usize, MalformedStringLiteralReason> {
+    let Some(quote) = value.chars().next() else {
+        return Err(MalformedStringLiteralReason::MissingClosingQuote);
+    };
     if quote != '"' && quote != '\'' {
-        return None;
+        return Err(MalformedStringLiteralReason::MissingClosingQuote);
     }
     let mut escaped = false;
     for (index, ch) in value[quote.len_utf8()..].char_indices() {
         if escaped {
             if !matches!(ch, '"' | '\'' | '\\') {
-                return None;
+                return Err(MalformedStringLiteralReason::UnsupportedEscape { escape: ch });
             }
             escaped = false;
             continue;
@@ -654,8 +850,12 @@ fn string_literal_prefix_len(value: &str) -> Option<usize> {
             continue;
         }
         if ch == quote {
-            return Some(quote.len_utf8() + index + ch.len_utf8());
+            return Ok(quote.len_utf8() + index + ch.len_utf8());
         }
     }
-    None
+    if escaped {
+        Err(MalformedStringLiteralReason::DanglingEscape)
+    } else {
+        Err(MalformedStringLiteralReason::MissingClosingQuote)
+    }
 }

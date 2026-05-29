@@ -18,6 +18,13 @@ pub struct TokenStream {
     pub diagnostics: Vec<LexDiagnostic>,
 }
 
+pub struct LexDiagnostic {
+    pub code: LexDiagnosticCode,
+    pub message: String,
+    pub span: SourceSpan,
+    pub payload: LexDiagnosticPayload,
+}
+
 pub struct Token {
     pub kind: TokenKind,
     pub lexeme: String,
@@ -140,6 +147,17 @@ SourceSpan {
 - 生スキャンから渡ってきた、不正な注釈マーカーなどの未対応の生トークン.
 
 可能な場合、曖昧性解消器は元の綴りを持つ `ErrorRecovery` トークンを出力し、次の回復可能なバイト境界から処理を再開します。
+
+診断コードとバイトスパンは安定した契約です。人間向けの `message` テキストは暫定のままです。ツールは機械可読な詳細として `LexDiagnosticPayload` を使います。
+
+| Code | Payload |
+|---|---|
+| `NoValidTokenCandidate` | 拒否された綴りと `EmitErrorRecoveryToken` の回復ヒント |
+| `ParserContextRejectedCandidate` | パーサーモード、拒否された綴り、拒否された候補のトークン種別/綴り/スパン、`EmitErrorRecoveryToken` の回復ヒント |
+| `MalformedStringLiteral` | 開き引用符、不正文字列の理由、回復ヒント |
+| `UnsupportedRawToken` | 生トークン種別、生の綴り、回復ヒント |
+
+安定した構造化ペイロードが重要な場合、フィクスチャは任意で `diagnostic_payloads` の要約を表明できます。人間向けの診断メッセージは表明してはいけません。
 
 ## Tests
 
