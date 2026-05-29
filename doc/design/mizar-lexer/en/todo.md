@@ -6,12 +6,16 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-1. Keep user-facing column conversion outside lexer.
-    - Test Unicode scalar columns in the source-map/session layer.
-    - Test LSP UTF-16 conversion in the LSP bridge, not in `mizar-lexer`.
-
-2. Cover source path normalization outside lexer.
+1. Cover source path normalization outside lexer.
     - Test `.`/`..`, symlinks, case policy, package-root escape attempts, and platform-specific separators in the source-loading/path layer.
+
+2. Decide shared source-span ownership across lexer, session, and LSP crates.
+    - Revisit whether `SourceRange` should stay crate-local with explicit conversion APIs or move to a common source-coordinate crate.
+    - Do this when lexer token spans are wired into session/LSP diagnostics so the integration pressure is real.
+
+3. Decide line/column overflow policy for session source maps.
+    - `mizar-session::LineMap` currently reports user-facing line/column values as `u32`; review whether session APIs should use `usize` or return an overflow error for extremely large files or lines.
+    - Keep LSP protocol positions `u32`, but make any narrowing from session coordinates explicit and tested.
 
 ## Completed Tasks
 
@@ -91,6 +95,11 @@ This document records follow-up tasks identified during the lexer quality review
    - Lexical insertion points on boundaries between original text, removed comments, and synthetic whitespace now return all adjacent source anchors.
    - Tests cover removed-comment boundaries with and without inserted synthetic layout.
 
+17. Kept user-facing column conversion outside lexer.
+   - Added a minimal `mizar-session` crate with `LineMap` tests for one-based Unicode scalar line/column conversion.
+   - Added a minimal `mizar-lsp` crate with range-mapper tests for zero-based LSP UTF-16 positions.
+   - `mizar-lexer` remains byte-span oriented and does not perform user-facing or LSP column conversion.
+
 ## Suggested Verification
 
 After each task, run:
@@ -113,8 +122,8 @@ This first-pass audit records common text-processing pitfalls and whether the cu
 | Replacement character `U+FFFD` | Covered for invalid bytes and rejected in code regions | Invalid UTF-8 is not decoded lossily into `U+FFFD`; `preprocess_source_for_lexing` reports valid non-ASCII code-region characters as `NonAsciiCode`; comments may contain Unicode. | Source-loading/docs may optionally warn on suspicious Unicode in comments/doc text later. |
 | LF / CRLF / CR handling | Covered at the executable boundary | `load_source_text_from_bytes` normalizes CRLF pairs to LF and records `NormalizedNewline` loading-map segments; lone `\r` remains a `CarriageReturn` preprocessing diagnostic and raw-scan error. | Session source-map tests should mirror the same CRLF-to-LF mapping policy. |
 | Missing final newline / empty file / trailing newlines | Covered at lexer level | Empty raw stream is tested; `SourceLineIndex` accepts EOF; scanner does not require final newline. | Add corpus cases only if later parser/import prelude behavior depends on final newline. |
-| Byte offset vs character column | Lexer-local policy covered | Lexer spans are byte offsets; `SourceLineIndex` uses zero-based byte columns and rejects non-UTF-8-boundary offsets. Session source map specifies user-facing Unicode scalar columns. | Source-map layer must own human-facing conversion. |
-| LSP UTF-16 columns | Delegated by design | `raw_lexer.md` and `source_map.md` keep LSP UTF-16 conversion outside lexer. | Add LSP bridge tests when available. |
+| Byte offset vs character column | Covered outside lexer | Lexer spans are byte offsets; `SourceLineIndex` uses zero-based byte columns and rejects non-UTF-8-boundary offsets. `mizar-session::source_map::LineMap` converts byte offsets to one-based Unicode scalar columns. | Keep human-facing conversion in source-map/session APIs. |
+| LSP UTF-16 columns | Covered outside lexer | `mizar-lsp::range_mapper` converts source byte ranges to zero-based LSP UTF-16 positions using the session `LineMap`; lexer tokens still store only byte spans. | Keep protocol-specific conversion in the LSP bridge. |
 | Preprocessed text vs original source spans | Covered at the executable boundary | `PreprocessedLexicalSource.preprocess_map` records original, removed-comment, and synthetic-whitespace segments so scanner lexical spans can be mapped back to loaded source ranges. Zero-length boundary mapping returns composite adjacent anchors. Session `PreprocessMap` retains richer snapshot/service ownership. | Frontend/session source-map implementation should reuse or mirror this behavior, and may attach explicit anchor roles such as before/removed/synthetic/after when richer composite mappings are introduced. |
 | Unicode in code vs comments | Lexer boundary covered for known edge cases | Preprocessor allows Unicode inside comments and reports non-ASCII in code regions; tests cover Greek comment text, NBSP, zero-width chars, BOM-in-code, and full-width punctuation. | Source-loading may optionally warn on suspicious Unicode in comments/doc text later. |
 | Unicode normalization and confusables | Not normalized by lexer | Identifier, numeral, and user-symbol helpers are ASCII-only, so non-ASCII code identifiers are rejected rather than normalized. Comments remain raw Unicode. | Document that lexer does not normalize source text; source-loading may optionally warn on suspicious Unicode in comments/doc text later. |

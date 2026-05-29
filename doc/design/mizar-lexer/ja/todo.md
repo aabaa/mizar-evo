@@ -6,12 +6,16 @@
 
 ## Ordered Task List
 
-1. user-facing column conversion は lexer 外に保つ。
-    - Unicode scalar columns は source-map/session layer で test する。
-    - LSP UTF-16 conversion は `mizar-lexer` ではなく LSP bridge で test する。
-
-2. source path normalization は lexer 外で cover する。
+1. source path normalization は lexer 外で cover する。
     - `.`/`..`、symlinks、case policy、package-root escape attempts、platform-specific separators を source-loading/path layer で test する。
+
+2. lexer、session、LSP crates 間の shared source-span ownership を決める。
+    - `SourceRange` を crate-local のまま explicit conversion APIs でつなぐか、common source-coordinate crate に移すかを再検討する。
+    - lexer token spans を session/LSP diagnostics へ接続し、実際の integration pressure が見えてから判断する。
+
+3. session source maps の line/column overflow policy を決める。
+    - `mizar-session::LineMap` は現在 user-facing line/column values を `u32` として返す。extremely large files または long lines に対して、session APIs が `usize` を使うべきか overflow error を返すべきかを review する。
+    - LSP protocol positions は `u32` のままにしつつ、session coordinates から narrow する箇所は explicit かつ tested にする。
 
 ## Completed Tasks
 
@@ -91,6 +95,11 @@
    - original text、removed comments、synthetic whitespace の境界にある lexical insertion points は、隣接する source anchors をすべて返す。
    - inserted synthetic layout がある場合とない場合の removed-comment boundaries を tests で cover した。
 
+17. user-facing column conversion を lexer 外に保つようにした。
+   - one-based Unicode scalar line/column conversion 用の `LineMap` tests を持つ minimal `mizar-session` crate を追加した。
+   - zero-based LSP UTF-16 positions 用の range-mapper tests を持つ minimal `mizar-lsp` crate を追加した。
+   - `mizar-lexer` は引き続き byte-span oriented であり、user-facing または LSP column conversion を行わない。
+
 ## Suggested Verification
 
 各 task の後に以下を実行します。
@@ -113,8 +122,8 @@ API stability、fuzz、benchmark 作業では、この TODO file の更新また
 | replacement character `U+FFFD` | invalid bytes と code region で covered | Invalid UTF-8 は lossy decode で `U+FFFD` にしない。`preprocess_source_for_lexing` は valid non-ASCII code-region characters を `NonAsciiCode` として報告する。comments は Unicode allowed。 | comments/doc text の suspicious Unicode warning は将来 source-loading/docs 側で検討する。 |
 | LF / CRLF / CR handling | executable boundary で covered | `load_source_text_from_bytes` は CRLF pairs を LF に normalize し、`NormalizedNewline` loading-map segments を記録する。lone `\r` は `CarriageReturn` preprocessing diagnostic と raw-scan error のまま。 | session source-map tests は同じ CRLF-to-LF mapping policy を mirror する。 |
 | missing final newline / empty file / trailing newlines | lexer level では covered | empty raw stream の test があり、`SourceLineIndex` は EOF を受け入れる。scanner は final newline を要求しない。 | parser/import prelude が final newline に依存する場合のみ corpus cases を追加する。 |
-| byte offset vs character column | lexer-local policy は covered | lexer spans は byte offsets。`SourceLineIndex` は zero-based byte columns を使い、non-UTF-8-boundary offsets を reject する。session source map は user-facing Unicode scalar columns を規定する。 | human-facing conversion は source-map layer が担当する。 |
-| LSP UTF-16 columns | design 上は委譲済み | `raw_lexer.md` と `source_map.md` は LSP UTF-16 conversion を lexer 外に置いている。 | LSP bridge ができた段階で tests を追加する。 |
+| byte offset vs character column | lexer 外で covered | lexer spans は byte offsets。`SourceLineIndex` は zero-based byte columns を使い、non-UTF-8-boundary offsets を reject する。`mizar-session::source_map::LineMap` は byte offsets を one-based Unicode scalar columns に変換する。 | human-facing conversion は source-map/session APIs に保つ。 |
+| LSP UTF-16 columns | lexer 外で covered | `mizar-lsp::range_mapper` は session `LineMap` を使い、source byte ranges を zero-based LSP UTF-16 positions に変換する。lexer tokens は引き続き byte spans のみを保存する。 | protocol-specific conversion は LSP bridge に保つ。 |
 | preprocessed text vs original source spans | executable boundary で covered | `PreprocessedLexicalSource.preprocess_map` は original、removed-comment、synthetic-whitespace segments を記録し、scanner lexical spans を loaded source ranges に戻せる。Zero-length boundary mapping は composite adjacent anchors を返す。Session `PreprocessMap` はより rich な snapshot/service ownership を保持する。 | frontend/session source-map implementation はこの behavior を reuse または mirror する。より rich な composite mapping を導入する段階で、before/removed/synthetic/after などの explicit anchor roles を付けてもよい。 |
 | Unicode in code vs comments | known edge cases は lexer boundary で covered | preprocessor は comments 内の Unicode を許し、code regions の non-ASCII を報告する。Greek comment text、NBSP、zero-width chars、BOM-in-code、full-width punctuation の tests がある。 | comments/doc text の suspicious Unicode warning は将来 source-loading/docs 側で検討する。 |
 | Unicode normalization and confusables | lexer は normalize しない | identifier/numeral/user-symbol helpers は ASCII-only なので、non-ASCII code identifiers は normalize せず reject される。comments は raw Unicode のまま保持される。 | lexer が source text を normalize しないことを明記する。comments/doc text の suspicious Unicode warning は将来 source-loading/docs 側で検討する。 |

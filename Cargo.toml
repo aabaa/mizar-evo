@@ -1,5 +1,10 @@
 [workspace]
-members = ["crates/mizar-lexer", "crates/mizar-test"]
+members = [
+    "crates/mizar-lexer",
+    "crates/mizar-lsp",
+    "crates/mizar-session",
+    "crates/mizar-test",
+]
 exclude = ["fuzz"]
 resolver = "3"
 
