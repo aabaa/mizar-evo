@@ -16,11 +16,6 @@ This document records follow-up tasks identified during the lexer quality review
    - Identify which diagnostics should carry source-map anchors, related spans, or machine-readable recovery hints for frontend/LSP consumers.
    - Ensure fixture expectations can assert the structured fields without depending on unstable human-facing message text.
 
-3. Reconfirm responsibility boundaries between lexer, session/source, parser, diagnostics, and LSP crates.
-   - Decide which source-loading, preprocessing-map, module-naming, import-prelude, and scope-skeleton helpers should stay in `mizar-lexer` versus move to a frontend/session/parser adapter layer.
-   - Keep lexer token spans byte-oriented and make any human-facing or protocol-facing coordinate conversion explicit at crate boundaries.
-   - Record the intended long-term dependency direction so future parser/session work does not accidentally make lexer own higher-level source or diagnostic policy.
-
 ## Completed Tasks
 
 1. Hardened `SourceLineIndex` offset validation.
@@ -141,6 +136,11 @@ This document records follow-up tasks identified during the lexer quality review
    - Replaced the large inline `src/lib.rs` unit-test module with `src/tests/mod.rs` and focused test modules for shell lexing, raw lexing, source loading/preprocessing/maps, import pre-scan, lexical environments, disambiguation, Phase 7 invariants, and scope skeletons.
    - Moved shared fixtures and assertion helpers into `src/tests/common.rs`.
    - Kept the existing corpus fixture test as the end-to-end lexical regression layer.
+
+25. Reconfirmed responsibility boundaries between lexer, session/source, parser, diagnostics, and LSP crates.
+   - Added an explicit responsibility-boundary table to the lexer design README covering source loading, preprocessing maps, raw scanning, import pre-scan, lexical environments, scope skeletons, parser lexical context, diagnostics, LSP coordinate conversion, and semantic phases.
+   - Kept source-loading helpers and module-name helpers as executable boundary contracts for tests and early integration, while assigning production file I/O, source identity, snapshots, and rich retained maps to session/source or frontend services.
+   - Recorded the intended dependency direction: session/source/frontend feed byte-oriented source text into `mizar-lexer`; parser and later semantic phases consume lexer handoff data; diagnostics/LSP adapters render and bridge coordinate spaces without making `mizar-lexer` depend on parser, resolver, session snapshot, diagnostic rendering, or protocol crates.
 
 ## Suggested Verification
 

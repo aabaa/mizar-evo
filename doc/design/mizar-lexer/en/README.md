@@ -46,3 +46,43 @@ It must not:
 - load full module IR for imported files;
 - decide that an identifier is undefined;
 - perform type checking, overload resolution, or proof-related semantics.
+
+## Responsibility Boundaries
+
+The lexer crate may keep shallow pre-parser helpers when they are required to
+construct the final lexical token stream without a full parser. These helpers
+must remain spelling-based, source-span-preserving, and deterministic. They may
+recover enough structure for the lexer handoff, but they must not become
+authoritative syntax, source, or semantic services.
+
+| Capability | Long-term owner | Current `mizar-lexer` role |
+|---|---|---|
+| File I/O, source discovery, package-root enforcement, symlink/case policy, source identity, snapshots | `mizar-session` or a frontend/source service | No file I/O. The crate-local byte-loading and module-name helpers are executable boundary contracts for tests and early integration, not filesystem ownership. |
+| UTF-8 validation, leading BOM stripping, CRLF-to-LF normalization, and original-byte loading maps | Source/session layer | `load_source_text_from_bytes` mirrors the boundary for tests and simple callers. Session/source code should own the production loading map and may reuse or mirror the same behavior. |
+| Comment stripping, documentation-comment trivia, lexical-text source maps, and lexer-boundary malformed text diagnostics | Lexer for the lexical handoff; session/source for retained source-map services | `preprocess_source_for_lexing` stays in `mizar-lexer` because raw scanning, import pre-scan, and scope skeletons consume the comment-stripped lexical text. Rich retained maps and editor snapshots stay outside lexer. |
+| Raw scanning, reserved tables, identifier/numeral/symbol spelling helpers, final token spans | `mizar-lexer` | Owned directly by `mizar-lexer`; spans remain byte offsets into the exact scanner input. |
+| Import prelude shape extraction | `mizar-lexer` for pre-parser extraction; module resolver/build planner for resolution | `scan_import_prelude` may extract raw import stubs before final disambiguation. It must not resolve modules, load summaries, check visibility, or validate import placement beyond prelude termination. |
+| Active lexical environment from resolved imports and lexical summaries | Boundary between module resolver and lexer | `build_lexical_environment` consumes already resolved imports and module lexical summaries. Producing those summaries and deciding the import graph is outside lexer. |
+| Scope skeleton needed for lexical overrides | `mizar-lexer` until the parser provides an equivalent pre-tokenization handoff | `build_scope_skeleton` may conservatively recover binding ranges needed by `ScopeLexView`. The parser/resolver owns the authoritative AST, syntax acceptance, name lookup, and semantic lifetimes. |
+| Parser lexical context | Parser | `ParserLexContext` is a parser-facing request object consumed by disambiguation. The lexer does not decide grammar progress beyond honoring the supplied context. |
+| Human-facing diagnostics, rendering, tab expansion, one-based columns, LSP UTF-16 positions | Diagnostic/frontend/LSP adapter crates | Lexer diagnostics keep stable codes and byte spans. Human/protocol coordinate conversion stays explicit outside tokens and outside core lexer state. |
+| Type checking, overload resolution, proof semantics, undefined-name diagnostics | Resolver/elaborator/kernel-facing phases | No lexer ownership. User-symbol tokens carry spelling and span; downstream phases recover candidates and choose meanings. |
+
+The intended dependency direction is:
+
+```text
+session/source/frontend
+  -> raw/preprocessed source text
+  -> mizar-lexer
+  -> raw tokens, import stubs, lexical summaries/environment handoff, final tokens
+  -> parser
+  -> resolver/elaborator/proof phases
+  -> diagnostics/LSP adapters for rendering and protocol conversion
+```
+
+Adapters may depend on both `mizar-lexer` and session/source crates to bridge
+coordinate spaces, but `mizar-lexer` should not depend on parser, resolver,
+session snapshot, diagnostic rendering, or LSP protocol crates. If a future
+frontend crate owns the complete source-to-token handoff, it may wrap or move
+the executable source-loading helpers, but the lexer must keep its token spans
+byte-oriented and its pre-parser helpers limited to lexical handoff data.
