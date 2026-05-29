@@ -6,9 +6,9 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-1. Implement preprocess source-map tests.
-   - Cover ordinary comment removal, documentation comment retention, synthetic whitespace/newline segments, and lexical ranges spanning removed comments.
-   - Ensure diagnostics from lexer/preprocessor helpers can be mapped back to original source ranges.
+1. Return composite anchors for zero-length preprocess-map boundaries.
+   - When a lexical insertion point sits on a boundary between original text, removed comments, or synthetic whitespace, return all adjacent source anchors instead of the first matching segment only.
+   - Cover boundaries around removed comments with and without inserted synthetic layout.
 
 2. Keep user-facing column conversion outside lexer.
     - Test Unicode scalar columns in the source-map/session layer.
@@ -86,6 +86,11 @@ This document records follow-up tasks identified during the lexer quality review
    - `SourceLoadingMapSegment::NormalizedNewline` records each normalized LF against the original two-byte CRLF range.
    - Tests cover plain CRLF input, CRLF after leading BOM stripping, and preserving lone `\r` as malformed lexer-boundary input.
 
+15. Implemented preprocess source-map tests.
+   - `PreprocessedLexicalSource` now carries a lightweight `SourcePreprocessMap` with original, removed-comment, and synthetic-whitespace segments.
+   - Tests cover ordinary comment removal, documentation comment retention, synthetic spaces/newlines, and lexical ranges spanning removed comments.
+   - Tests also pin mapping for lexer/preprocessor diagnostic byte ranges back to original source ranges.
+
 ## Suggested Verification
 
 After each task, run:
@@ -110,12 +115,12 @@ This first-pass audit records common text-processing pitfalls and whether the cu
 | Missing final newline / empty file / trailing newlines | Covered at lexer level | Empty raw stream is tested; `SourceLineIndex` accepts EOF; scanner does not require final newline. | Add corpus cases only if later parser/import prelude behavior depends on final newline. |
 | Byte offset vs character column | Lexer-local policy covered | Lexer spans are byte offsets; `SourceLineIndex` uses zero-based byte columns and rejects non-UTF-8-boundary offsets. Session source map specifies user-facing Unicode scalar columns. | Source-map layer must own human-facing conversion. |
 | LSP UTF-16 columns | Delegated by design | `raw_lexer.md` and `source_map.md` keep LSP UTF-16 conversion outside lexer. | Add LSP bridge tests when available. |
-| Preprocessed text vs original source spans | Designed, not implemented here | `raw_lexer.md` states lexer spans point into scanner input; `source_map.md` defines `PreprocessMap` ownership outside lexer. | Add frontend/source-map tests for comment removal and synthetic whitespace mapping. |
+| Preprocessed text vs original source spans | Covered at the executable boundary | `PreprocessedLexicalSource.preprocess_map` records original, removed-comment, and synthetic-whitespace segments so scanner lexical spans can be mapped back to loaded source ranges. Session `PreprocessMap` retains richer snapshot/service ownership. | Zero-length boundary mapping should return composite adjacent anchors rather than only the first matching segment. Frontend/session source-map implementation should reuse or mirror this behavior. |
 | Unicode in code vs comments | Lexer boundary covered for known edge cases | Preprocessor allows Unicode inside comments and reports non-ASCII in code regions; tests cover Greek comment text, NBSP, zero-width chars, BOM-in-code, and full-width punctuation. | Source-loading may optionally warn on suspicious Unicode in comments/doc text later. |
 | Unicode normalization and confusables | Not normalized by lexer | Identifier, numeral, and user-symbol helpers are ASCII-only, so non-ASCII code identifiers are rejected rather than normalized. Comments remain raw Unicode. | Document that lexer does not normalize source text; source-loading may optionally warn on suspicious Unicode in comments/doc text later. |
 | Unicode whitespace and ASCII controls | Strictly rejected outside comments | Raw layout is exactly space, tab, LF; preprocessor reports non-ASCII code chars, and raw scanner hard-errors on unsupported ASCII controls such as vertical tab and form feed. | Keep source-loading and diagnostic-renderer policy aligned with this strict lexer boundary. |
 | Tab display width | Delegated | Lexer stores byte spans only and treats tab as layout; diagnostics/source map own display columns. | Diagnostic renderer should test tab expansion policy. |
-| Comment stripping and newline preservation | Lexer boundary covered for known edge cases | Tests cover ordinary/doc/multi-line comment removal, trivia retention, newline preservation, adjacent comments, EOF comments, and synthetic layout around token boundaries. | Source-map tests should cover mapping synthetic whitespace/newline segments back to original source ranges. |
+| Comment stripping and newline preservation | Lexer boundary covered for known edge cases | Tests cover ordinary/doc/multi-line comment removal, trivia retention, newline preservation, adjacent comments, EOF comments, synthetic layout around token boundaries, and preprocess-map segments for synthetic whitespace/newlines. | Session source-map tests should mirror these cases when the retained map service exists. |
 | Nested multi-line comments | Non-nesting policy covered | Multi-line comments close at the first `=::`; inner `::=` spellings are ordinary comment text. Tests cover spans and preserved newlines. | Source-map tests should preserve the same non-nesting interpretation when mapping comment trivia. |
 | Unterminated comments | Covered | Preprocessor emits `UnterminatedMultiLineComment` and preserves line structure; unit test exists. | Ensure frontend maps the diagnostic to original source after source-map implementation. |
 | Annotation visibility | Covered at lexer boundary | Tests confirm annotation syntax remains in lexical text for parser ownership. | Parser tests should own annotation argument validation. |

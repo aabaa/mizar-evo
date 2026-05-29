@@ -133,7 +133,7 @@ When a leading UTF-8 BOM is stripped, the map records a `RemovedLeadingBom` segm
 
 Original segments map lexical ranges back to source ranges. Removed comment segments preserve ordinary and doc-comment locations even when comments are absent from lexical input. Synthetic whitespace segments represent text inserted to keep token separation after comment removal or recovery.
 
-The frontend owns construction of this map. Later phases consume it to attach diagnostics and syntax nodes to original source locations.
+The frontend owns snapshot retention and service access for this map. It may reuse or mirror the lightweight preprocess map produced by the lexer helper when constructing the retained session `PreprocessMap`. Later phases consume it to attach diagnostics and syntax nodes to original source locations.
 
 ### Generated Spans
 

@@ -11,6 +11,8 @@
 //! source-loading boundary helper used by this crate's tests. That helper also
 //! strips one leading UTF-8 BOM and normalizes CRLF newline pairs to LF while
 //! keeping a loading map back to original input byte offsets.
+//! [`preprocess_source_for_lexing`] keeps a lightweight preprocessing map so
+//! callers can relate comment-stripped lexical ranges back to the loaded source.
 //!
 //! ## Source-text normalization
 //!
@@ -118,8 +120,9 @@ pub use source::{
     CommentKind, CommentTrivia, LoadedSourceText, ModuleNamingError, ModuleSourceName,
     PreprocessedLexicalSource, SourceLineIndex, SourceLoadError, SourceLoadingMap,
     SourceLoadingMapSegment, SourceLocation, SourceLocationRange, SourcePos,
-    SourcePreprocessDiagnostic, SourcePreprocessDiagnosticCode, SourceRange, SourceSpan,
-    load_source_text_from_bytes, module_source_name_from_path, preprocess_source_for_lexing,
+    SourcePreprocessDiagnostic, SourcePreprocessDiagnosticCode, SourcePreprocessMap,
+    SourcePreprocessMapSegment, SourceRange, SourceSpan, load_source_text_from_bytes,
+    module_source_name_from_path, preprocess_source_for_lexing,
 };
 pub use tables::{
     RESERVED_SYMBOLS, RESERVED_WORDS, ReservedSymbolTable, ReservedWordTable, is_reserved_symbol,
@@ -135,9 +138,9 @@ mod tests {
         RESERVED_WORDS, RawModuleRelativePrefix, RawToken, RawTokenKind, ResolvedImport,
         ScopeLexView, ScopeSkeletonDiagnosticCode, SourceLineIndex, SourceLoadError,
         SourceLoadingMapSegment, SourceLocation, SourceLocationRange,
-        SourcePreprocessDiagnosticCode, SourceSpan, SymbolId, Token, TokenKind,
-        UserSymbolCandidate, build_lexical_environment, build_scope_skeleton, disambiguate,
-        is_identifier, is_layout, is_numeral, is_reserved_symbol, is_reserved_word,
+        SourcePreprocessDiagnosticCode, SourcePreprocessMapSegment, SourceSpan, SymbolId, Token,
+        TokenKind, UserSymbolCandidate, build_lexical_environment, build_scope_skeleton,
+        disambiguate, is_identifier, is_layout, is_numeral, is_reserved_symbol, is_reserved_word,
         is_string_literal_spelling, is_user_symbol_spelling, lex, load_source_text_from_bytes,
         longest_reserved_symbol_prefix, module_source_name_from_path, preprocess_source_for_lexing,
         scan_import_prelude, scan_raw,
@@ -781,6 +784,238 @@ mod tests {
         );
         assert!(preprocessed.diagnostics.is_empty());
         assert!(scan_raw(&preprocessed.lexical_text).is_ok());
+    }
+
+    #[test]
+    fn preprocess_map_records_removed_comments_and_synthetic_newlines() {
+        let source = "alpha:: ordinary\n::: doc\nbeta";
+        let preprocessed = preprocess_source_for_lexing(source);
+
+        assert_eq!(preprocessed.lexical_text, "alpha\n\nbeta");
+        assert_eq!(
+            preprocessed
+                .comments
+                .iter()
+                .map(|comment| comment.kind)
+                .collect::<Vec<_>>(),
+            vec![CommentKind::SingleLine, CommentKind::Documentation]
+        );
+        assert_eq!(
+            preprocessed.preprocess_map.segments,
+            vec![
+                SourcePreprocessMapSegment::Original {
+                    lexical: SourceSpan { start: 0, end: 5 },
+                    source: SourceSpan { start: 0, end: 5 },
+                },
+                SourcePreprocessMapSegment::RemovedComment {
+                    source: SourceSpan { start: 5, end: 17 },
+                    kind: CommentKind::SingleLine,
+                },
+                SourcePreprocessMapSegment::SyntheticWhitespace {
+                    lexical: SourceSpan { start: 5, end: 6 },
+                    anchor: SourceSpan { start: 16, end: 17 },
+                },
+                SourcePreprocessMapSegment::RemovedComment {
+                    source: SourceSpan { start: 17, end: 25 },
+                    kind: CommentKind::Documentation,
+                },
+                SourcePreprocessMapSegment::SyntheticWhitespace {
+                    lexical: SourceSpan { start: 6, end: 7 },
+                    anchor: SourceSpan { start: 24, end: 25 },
+                },
+                SourcePreprocessMapSegment::Original {
+                    lexical: SourceSpan { start: 7, end: 11 },
+                    source: SourceSpan { start: 25, end: 29 },
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn preprocess_map_maps_ranges_spanning_removed_comments() {
+        let source = "alpha::= hidden =::beta";
+        let preprocessed = preprocess_source_for_lexing(source);
+
+        assert_eq!(preprocessed.lexical_text, "alpha beta");
+        assert_eq!(
+            preprocessed.preprocess_map.segments,
+            vec![
+                SourcePreprocessMapSegment::Original {
+                    lexical: SourceSpan { start: 0, end: 5 },
+                    source: SourceSpan { start: 0, end: 5 },
+                },
+                SourcePreprocessMapSegment::RemovedComment {
+                    source: SourceSpan { start: 5, end: 19 },
+                    kind: CommentKind::MultiLine,
+                },
+                SourcePreprocessMapSegment::SyntheticWhitespace {
+                    lexical: SourceSpan { start: 5, end: 6 },
+                    anchor: SourceSpan { start: 5, end: 19 },
+                },
+                SourcePreprocessMapSegment::Original {
+                    lexical: SourceSpan { start: 6, end: 10 },
+                    source: SourceSpan { start: 19, end: 23 },
+                },
+            ]
+        );
+        assert_eq!(
+            preprocessed
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 0, end: 10 }),
+            Some(vec![
+                SourceSpan { start: 0, end: 5 },
+                SourceSpan { start: 5, end: 19 },
+                SourceSpan { start: 19, end: 23 },
+            ])
+        );
+        assert_eq!(
+            preprocessed
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 5, end: 6 }),
+            Some(vec![SourceSpan { start: 5, end: 19 }])
+        );
+        assert_eq!(
+            preprocessed
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 6, end: 10 }),
+            Some(vec![SourceSpan { start: 19, end: 23 }])
+        );
+
+        let whitespace_separated = preprocess_source_for_lexing("alpha ::= hidden =:: beta");
+        assert_eq!(whitespace_separated.lexical_text, "alpha  beta");
+        assert_eq!(
+            whitespace_separated
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 0, end: 11 }),
+            Some(vec![
+                SourceSpan { start: 0, end: 6 },
+                SourceSpan { start: 6, end: 20 },
+                SourceSpan { start: 20, end: 25 },
+            ])
+        );
+    }
+
+    #[test]
+    fn preprocess_map_rejects_out_of_bounds_and_reversed_lexical_ranges() {
+        let preprocessed = preprocess_source_for_lexing("alpha:: hidden\nbeta");
+
+        assert_eq!(preprocessed.lexical_text, "alpha\nbeta");
+        assert_eq!(
+            preprocessed
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 0, end: 10 }),
+            Some(vec![
+                SourceSpan { start: 0, end: 5 },
+                SourceSpan { start: 5, end: 15 },
+                SourceSpan { start: 15, end: 19 },
+            ])
+        );
+        assert_eq!(
+            preprocessed
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 0, end: 11 }),
+            None
+        );
+        assert_eq!(
+            preprocessed
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 11, end: 11 }),
+            None
+        );
+        assert_eq!(
+            preprocessed
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 4, end: 3 }),
+            None
+        );
+    }
+
+    #[test]
+    fn preprocess_map_maps_zero_length_lexical_insertion_points() {
+        let plain = preprocess_source_for_lexing("alpha\nbeta");
+
+        assert_eq!(
+            plain
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 0, end: 0 }),
+            Some(vec![SourceSpan { start: 0, end: 0 }])
+        );
+        assert_eq!(
+            plain
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 5, end: 5 }),
+            Some(vec![SourceSpan { start: 5, end: 5 }])
+        );
+        assert_eq!(
+            plain
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 10, end: 10 }),
+            Some(vec![SourceSpan { start: 10, end: 10 }])
+        );
+        assert_eq!(
+            plain
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 11, end: 11 }),
+            None
+        );
+
+        let empty = preprocess_source_for_lexing("");
+        assert_eq!(
+            empty
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 0, end: 0 }),
+            Some(vec![SourceSpan { start: 0, end: 0 }])
+        );
+        assert_eq!(
+            empty
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 1, end: 1 }),
+            None
+        );
+
+        let with_synthetic_space = preprocess_source_for_lexing("alpha::= hidden =::beta");
+        assert_eq!(
+            with_synthetic_space
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 5, end: 5 }),
+            Some(vec![SourceSpan { start: 5, end: 5 }])
+        );
+        assert_eq!(
+            with_synthetic_space
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 6, end: 6 }),
+            Some(vec![SourceSpan { start: 5, end: 19 }])
+        );
+        assert_eq!(
+            with_synthetic_space
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 10, end: 10 }),
+            Some(vec![SourceSpan { start: 23, end: 23 }])
+        );
+    }
+
+    #[test]
+    fn preprocess_map_maps_lexer_and_preprocessor_diagnostic_ranges() {
+        let source = "alpha::= hidden =::\u{00a0}";
+        let preprocessed = preprocess_source_for_lexing(source);
+
+        assert_eq!(preprocessed.lexical_text, "alpha \u{00a0}");
+        assert_eq!(preprocessed.diagnostics.len(), 1);
+        assert_eq!(
+            preprocessed.diagnostics[0].code,
+            SourcePreprocessDiagnosticCode::NonAsciiCode
+        );
+        assert_eq!(
+            preprocessed.diagnostics[0].span,
+            SourceSpan { start: 19, end: 21 }
+        );
+        assert_eq!(
+            preprocessed
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 6, end: 8 }),
+            Some(vec![SourceSpan { start: 19, end: 21 }])
+        );
+        assert!(scan_raw(&preprocessed.lexical_text).is_err());
     }
 
     #[test]

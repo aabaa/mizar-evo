@@ -65,6 +65,29 @@ pub struct PreprocessedLexicalSource {
     pub lexical_text: String,
     pub comments: Vec<CommentTrivia>,
     pub diagnostics: Vec<SourcePreprocessDiagnostic>,
+    pub preprocess_map: SourcePreprocessMap,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePreprocessMap {
+    pub segments: Vec<SourcePreprocessMapSegment>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourcePreprocessMapSegment {
+    Original {
+        lexical: SourceRange,
+        source: SourceRange,
+    },
+    RemovedComment {
+        source: SourceRange,
+        kind: CommentKind,
+    },
+    SyntheticWhitespace {
+        lexical: SourceRange,
+        anchor: SourceRange,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -204,6 +227,116 @@ impl SourceLoadingMap {
             }
             _ => None,
         })
+    }
+}
+
+impl SourcePreprocessMap {
+    pub fn source_ranges_for_lexical(&self, lexical: SourceRange) -> Option<Vec<SourceRange>> {
+        if lexical.start > lexical.end {
+            return None;
+        }
+        let source_len = self.lexical_len();
+        if lexical.end > source_len {
+            return None;
+        }
+        if lexical.start == lexical.end {
+            return self.source_insertion_point_for_lexical(lexical.start);
+        }
+
+        let mut ranges = Vec::new();
+        for (index, segment) in self.segments.iter().enumerate() {
+            match segment {
+                SourcePreprocessMapSegment::Original {
+                    lexical: segment_lexical,
+                    source,
+                } => {
+                    let Some(intersection) = intersect_ranges(lexical, *segment_lexical) else {
+                        continue;
+                    };
+                    push_mapped_source_range(
+                        &mut ranges,
+                        SourceSpan {
+                            start: source.start + (intersection.start - segment_lexical.start),
+                            end: source.start + (intersection.end - segment_lexical.start),
+                        },
+                    );
+                }
+                SourcePreprocessMapSegment::RemovedComment { source, .. } => {
+                    let Some(anchor) = self.lexical_anchor_for_removed_comment(index) else {
+                        continue;
+                    };
+                    if lexical.start < anchor && anchor < lexical.end {
+                        push_mapped_source_range(&mut ranges, *source);
+                    }
+                }
+                SourcePreprocessMapSegment::SyntheticWhitespace {
+                    lexical: segment_lexical,
+                    anchor,
+                } => {
+                    if intersect_ranges(lexical, *segment_lexical).is_some() {
+                        push_mapped_source_range(&mut ranges, *anchor);
+                    }
+                }
+            }
+        }
+
+        if ranges.is_empty() && lexical.start != lexical.end {
+            None
+        } else {
+            Some(ranges)
+        }
+    }
+
+    fn lexical_len(&self) -> SourcePos {
+        self.segments
+            .iter()
+            .filter_map(preprocess_segment_lexical_range)
+            .map(|range| range.end)
+            .max()
+            .unwrap_or(0)
+    }
+
+    fn source_insertion_point_for_lexical(&self, offset: SourcePos) -> Option<Vec<SourceRange>> {
+        for (index, segment) in self.segments.iter().enumerate() {
+            match segment {
+                SourcePreprocessMapSegment::Original { lexical, source } => {
+                    if lexical.start <= offset && offset <= lexical.end {
+                        let source_offset = source.start + (offset - lexical.start);
+                        return Some(vec![SourceSpan {
+                            start: source_offset,
+                            end: source_offset,
+                        }]);
+                    }
+                }
+                SourcePreprocessMapSegment::SyntheticWhitespace { lexical, anchor }
+                    if lexical.start <= offset && offset <= lexical.end =>
+                {
+                    return Some(vec![*anchor]);
+                }
+                SourcePreprocessMapSegment::RemovedComment { .. } => {
+                    if self.lexical_anchor_for_removed_comment(index) == Some(offset) {
+                        if let SourcePreprocessMapSegment::RemovedComment { source, .. } = segment {
+                            return Some(vec![*source]);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        (offset == 0).then_some(vec![SourceSpan { start: 0, end: 0 }])
+    }
+
+    fn lexical_anchor_for_removed_comment(&self, index: usize) -> Option<SourcePos> {
+        let previous = self.segments[..index]
+            .iter()
+            .rev()
+            .find_map(preprocess_segment_lexical_range)
+            .map(|range| range.end);
+        let next = self.segments[index + 1..]
+            .iter()
+            .find_map(preprocess_segment_lexical_range)
+            .map(|range| range.start);
+        next.or(previous)
     }
 }
 
@@ -361,18 +494,24 @@ pub fn preprocess_source_for_lexing(input: &str) -> PreprocessedLexicalSource {
     let mut lexical_text = String::with_capacity(input.len());
     let mut comments = Vec::new();
     let mut diagnostics = Vec::new();
+    let mut map_segments = Vec::new();
     let mut cursor = 0;
 
     while cursor < input.len() {
         let rest = &input[cursor..];
         if rest.starts_with(":::") {
             let end = line_comment_end(input, cursor);
+            let span = SourceSpan { start: cursor, end };
             comments.push(CommentTrivia {
                 kind: CommentKind::Documentation,
                 lexeme: input[cursor..end].to_owned(),
-                span: SourceSpan { start: cursor, end },
+                span,
             });
-            preserve_comment_replacement(input, cursor, end, &mut lexical_text);
+            map_segments.push(SourcePreprocessMapSegment::RemovedComment {
+                source: span,
+                kind: CommentKind::Documentation,
+            });
+            preserve_comment_replacement(input, cursor, end, &mut lexical_text, &mut map_segments);
             cursor = end;
             continue;
         }
@@ -392,24 +531,34 @@ pub fn preprocess_source_for_lexing(input: &str) -> PreprocessedLexicalSource {
                     input.len()
                 }
             };
+            let span = SourceSpan { start: cursor, end };
             comments.push(CommentTrivia {
                 kind: CommentKind::MultiLine,
                 lexeme: input[cursor..end].to_owned(),
-                span: SourceSpan { start: cursor, end },
+                span,
             });
-            preserve_comment_replacement(input, cursor, end, &mut lexical_text);
+            map_segments.push(SourcePreprocessMapSegment::RemovedComment {
+                source: span,
+                kind: CommentKind::MultiLine,
+            });
+            preserve_comment_replacement(input, cursor, end, &mut lexical_text, &mut map_segments);
             cursor = end;
             continue;
         }
 
         if rest.starts_with("::") {
             let end = line_comment_end(input, cursor);
+            let span = SourceSpan { start: cursor, end };
             comments.push(CommentTrivia {
                 kind: CommentKind::SingleLine,
                 lexeme: input[cursor..end].to_owned(),
-                span: SourceSpan { start: cursor, end },
+                span,
             });
-            preserve_comment_replacement(input, cursor, end, &mut lexical_text);
+            map_segments.push(SourcePreprocessMapSegment::RemovedComment {
+                source: span,
+                kind: CommentKind::SingleLine,
+            });
+            preserve_comment_replacement(input, cursor, end, &mut lexical_text, &mut map_segments);
             cursor = end;
             continue;
         }
@@ -430,6 +579,14 @@ pub fn preprocess_source_for_lexing(input: &str) -> PreprocessedLexicalSource {
             });
         }
         lexical_text.push(ch);
+        push_original_preprocess_segment(
+            &mut map_segments,
+            SourceSpan {
+                start: lexical_text.len() - ch.len_utf8(),
+                end: lexical_text.len(),
+            },
+            SourceSpan { start: cursor, end },
+        );
         cursor = end;
     }
 
@@ -437,6 +594,9 @@ pub fn preprocess_source_for_lexing(input: &str) -> PreprocessedLexicalSource {
         lexical_text,
         comments,
         diagnostics,
+        preprocess_map: SourcePreprocessMap {
+            segments: map_segments,
+        },
     }
 }
 
@@ -515,12 +675,26 @@ fn line_comment_end(input: &str, start: usize) -> usize {
         .map_or(input.len(), |relative| start + relative + '\n'.len_utf8())
 }
 
-fn preserve_comment_replacement(input: &str, start: usize, end: usize, output: &mut String) {
+fn preserve_comment_replacement(
+    input: &str,
+    start: usize,
+    end: usize,
+    output: &mut String,
+    map_segments: &mut Vec<SourcePreprocessMapSegment>,
+) {
     let comment = &input[start..end];
     let had_newline = comment.contains('\n');
-    preserve_comment_newlines(comment, output);
+    preserve_comment_newlines(comment, start, output, map_segments);
     if !had_newline && comment_removal_would_concatenate_tokens(input, end, output) {
+        let lexical_start = output.len();
         output.push(' ');
+        map_segments.push(SourcePreprocessMapSegment::SyntheticWhitespace {
+            lexical: SourceSpan {
+                start: lexical_start,
+                end: lexical_start + 1,
+            },
+            anchor: SourceSpan { start, end },
+        });
     }
 }
 
@@ -534,10 +708,73 @@ fn comment_removal_would_concatenate_tokens(input: &str, end: usize, output: &st
     !is_layout(previous) && !is_layout(next)
 }
 
-fn preserve_comment_newlines(comment: &str, output: &mut String) {
-    for ch in comment.chars() {
+fn preserve_comment_newlines(
+    comment: &str,
+    comment_start: usize,
+    output: &mut String,
+    map_segments: &mut Vec<SourcePreprocessMapSegment>,
+) {
+    for (relative, ch) in comment.char_indices() {
         if ch == '\n' {
+            let lexical_start = output.len();
             output.push('\n');
+            map_segments.push(SourcePreprocessMapSegment::SyntheticWhitespace {
+                lexical: SourceSpan {
+                    start: lexical_start,
+                    end: lexical_start + 1,
+                },
+                anchor: SourceSpan {
+                    start: comment_start + relative,
+                    end: comment_start + relative + '\n'.len_utf8(),
+                },
+            });
         }
     }
+}
+
+fn push_original_preprocess_segment(
+    segments: &mut Vec<SourcePreprocessMapSegment>,
+    lexical: SourceRange,
+    source: SourceRange,
+) {
+    if let Some(SourcePreprocessMapSegment::Original {
+        lexical: previous_lexical,
+        source: previous_source,
+    }) = segments.last_mut()
+    {
+        if previous_lexical.end == lexical.start && previous_source.end == source.start {
+            previous_lexical.end = lexical.end;
+            previous_source.end = source.end;
+            return;
+        }
+    }
+
+    segments.push(SourcePreprocessMapSegment::Original { lexical, source });
+}
+
+fn preprocess_segment_lexical_range(segment: &SourcePreprocessMapSegment) -> Option<SourceRange> {
+    match segment {
+        SourcePreprocessMapSegment::Original { lexical, .. }
+        | SourcePreprocessMapSegment::SyntheticWhitespace { lexical, .. } => Some(*lexical),
+        SourcePreprocessMapSegment::RemovedComment { .. } => None,
+    }
+}
+
+fn push_mapped_source_range(ranges: &mut Vec<SourceRange>, range: SourceRange) {
+    if ranges
+        .iter()
+        .any(|existing| existing.start <= range.start && range.end <= existing.end)
+    {
+        return;
+    }
+    ranges.retain(|existing| !(range.start <= existing.start && existing.end <= range.end));
+    if ranges.last() != Some(&range) {
+        ranges.push(range);
+    }
+}
+
+fn intersect_ranges(left: SourceRange, right: SourceRange) -> Option<SourceRange> {
+    let start = left.start.max(right.start);
+    let end = left.end.min(right.end);
+    (start < end).then_some(SourceSpan { start, end })
 }

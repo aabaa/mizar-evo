@@ -69,7 +69,7 @@ Lexing is split into two conceptual stages.
 
 The current crate separates source preparation, raw scanning, and final disambiguation even when a caller uses the convenience `lex` entry point.
 
-1. `preprocess_source_for_lexing` walks the input byte span in source order. It removes comments from lexical text, preserves newline characters from comment bodies, inserts synthetic layout when removal would concatenate adjacent token-shaped text, stores comment trivia with source spans, and reports carriage returns, non-ASCII code characters, or unterminated multi-line comments as preprocessing diagnostics. Multi-line comments are non-nesting: the first `=::` after a `::=` opener closes the comment, and any inner `::=` spelling is ordinary comment text. This helper does not read files or normalize platform-specific paths.
+1. `preprocess_source_for_lexing` walks the input byte span in source order. It removes comments from lexical text, preserves newline characters from comment bodies, inserts synthetic layout when removal would concatenate adjacent token-shaped text, stores comment trivia with source spans, records a lightweight preprocess map from lexical ranges back to loaded-source ranges, and reports carriage returns, non-ASCII code characters, or unterminated multi-line comments as preprocessing diagnostics. Multi-line comments are non-nesting: the first `=::` after a `::=` opener closes the comment, and any inner `::=` spelling is ordinary comment text. This helper does not read files or normalize platform-specific paths.
 2. `scan_raw` consumes LF-only lexical text with a `char_indices` cursor. It coalesces adjacent layout into one `Layout`, recognizes annotation markers beginning with `@`, coalesces ASCII graphic non-`@` characters into either `NumeralLike` when all characters are digits or `LexemeRun` otherwise, and rejects unsupported characters with `LexError`.
 3. `disambiguate_reserved_shell` is the context-free shell used by `lex`. It drops layout, maps `NumeralLike` to `Numeral`, maps `@[` to a reserved symbol, and classifies whole `LexemeRun` values as reserved symbols, reserved words, identifiers, or opaque `LexemeRun` values.
 4. Context-sensitive callers use `disambiguate` instead. That path keeps raw scanning deliberately coarse and lets the disambiguator split each `LexemeRun` using reserved tables, the active lexical environment, parser lexical context, and `ScopeLexView`.
@@ -83,7 +83,7 @@ The raw scanner's main invariant is span contiguity: every emitted raw token poi
 
 Callers must keep the coordinate space explicit. Raw tokens and final tokens produced from `scan_raw` and `disambiguate` point into the scanner input passed to `scan_raw`. When that input is `PreprocessedLexicalSource.lexical_text`, the spans are lexical-text offsets, not necessarily offsets into the original loaded `.miz` text. A `SourceLineIndex` must always be built from the same text that the spans address.
 
-Mapping lexical-text offsets back to original loaded-source offsets belongs to a source map or the session layer. The lexer must not silently treat spans from preprocessed text as original file coordinates.
+Mapping lexical-text offsets back to original loaded-source offsets is explicit. `PreprocessedLexicalSource.preprocess_map` provides a lightweight lexer-local map for comment stripping and synthetic layout; richer snapshot/source-map ownership remains in the session layer. The lexer must not silently treat spans from preprocessed text as original file coordinates.
 
 When source loading strips a leading BOM or normalizes CRLF newline pairs, lexer spans are measured in the normalized loaded text, not in raw file bytes. For disk sources, `LoadingMap` relates those loaded-text offsets back to original file byte offsets: offset `0` in loaded text maps to byte offset `3` in the original file when a BOM was stripped, and each normalized LF maps to the original two-byte CRLF range. The stripped BOM has no lexer `SourceSpan`.
 
@@ -156,7 +156,7 @@ The raw scanner must preserve spans, spelling, and enough structure for later lo
 
 `LexemeRun` is deliberately coarse. Reserved punctuation such as `.`, `..`, `,`, `;`, quotes, and operator characters may appear inside a run. Later modules may inspect and split a run internally, but they must preserve source spans and must not require the raw scanner to know grammar context.
 
-Comments and documentation comments are not raw tokens. `preprocess_source_for_lexing` removes them from lexical input, preserves their trivia and spans separately, keeps their newline characters in `lexical_text`, and inserts a synthetic space when removing an inline comment would otherwise concatenate adjacent token-shaped text. Multi-line comments do not nest; the first closing `=::` terminates the comment. Import pre-scan and scope skeleton construction operate on the resulting lexical text; they never receive comments as `RawTokenKind` values.
+Comments and documentation comments are not raw tokens. `preprocess_source_for_lexing` removes them from lexical input, preserves their trivia and spans separately, keeps their newline characters in `lexical_text`, inserts a synthetic space when removing an inline comment would otherwise concatenate adjacent token-shaped text, and records preprocess-map segments for original text, removed comments, and synthetic whitespace/newlines. Multi-line comments do not nest; the first closing `=::` terminates the comment. Import pre-scan and scope skeleton construction operate on the resulting lexical text; they never receive comments as `RawTokenKind` values.
 
 ### Import Pre-Scan and Active Lexical Environment
 
@@ -313,6 +313,20 @@ The current crate-local API has grown beyond the bootstrap identifier lexer:
 
 ```rust
 pub fn preprocess_source_for_lexing(input: &str) -> PreprocessedLexicalSource;
+
+pub struct PreprocessedLexicalSource {
+    pub lexical_text: String,
+    pub comments: Vec<CommentTrivia>,
+    pub diagnostics: Vec<SourcePreprocessDiagnostic>,
+    pub preprocess_map: SourcePreprocessMap,
+}
+
+pub enum SourcePreprocessMapSegment {
+    Original { lexical: SourceRange, source: SourceRange },
+    RemovedComment { source: SourceRange, kind: CommentKind },
+    SyntheticWhitespace { lexical: SourceRange, anchor: SourceRange },
+}
+
 pub fn module_source_name_from_path(
     package_name: &str,
     path: &str,

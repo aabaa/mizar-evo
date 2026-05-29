@@ -6,9 +6,9 @@
 
 ## Ordered Task List
 
-1. preprocess source-map tests を実装する。
-   - ordinary comment removal、documentation comment retention、synthetic whitespace/newline segments、removed comments をまたぐ lexical ranges を cover する。
-   - lexer/preprocessor helpers 由来の diagnostics を original source ranges に map できることを確認する。
+1. zero-length preprocess-map boundaries で composite anchors を返す。
+   - lexical insertion point が original text、removed comments、synthetic whitespace の境界にある場合、最初に match した segment だけではなく隣接する source anchors をすべて返す。
+   - inserted synthetic layout がある場合とない場合の removed comment 周辺の boundaries を cover する。
 
 2. user-facing column conversion は lexer 外に保つ。
     - Unicode scalar columns は source-map/session layer で test する。
@@ -86,6 +86,11 @@
    - `SourceLoadingMapSegment::NormalizedNewline` は normalized LF と original two-byte CRLF range の対応を記録する。
    - plain CRLF input、leading BOM stripping 後の CRLF、lone `\r` を malformed lexer-boundary input として保持する case を test した。
 
+15. preprocess source-map tests を実装した。
+   - `PreprocessedLexicalSource` は original、removed-comment、synthetic-whitespace segments を持つ lightweight `SourcePreprocessMap` を保持するようになった。
+   - ordinary comment removal、documentation comment retention、synthetic spaces/newlines、removed comments をまたぐ lexical ranges を tests で cover した。
+   - lexer/preprocessor diagnostic byte ranges を original source ranges に map できることも tests で固定した。
+
 ## Suggested Verification
 
 各 task の後に以下を実行します。
@@ -110,12 +115,12 @@ API stability、fuzz、benchmark 作業では、この TODO file の更新また
 | missing final newline / empty file / trailing newlines | lexer level では covered | empty raw stream の test があり、`SourceLineIndex` は EOF を受け入れる。scanner は final newline を要求しない。 | parser/import prelude が final newline に依存する場合のみ corpus cases を追加する。 |
 | byte offset vs character column | lexer-local policy は covered | lexer spans は byte offsets。`SourceLineIndex` は zero-based byte columns を使い、non-UTF-8-boundary offsets を reject する。session source map は user-facing Unicode scalar columns を規定する。 | human-facing conversion は source-map layer が担当する。 |
 | LSP UTF-16 columns | design 上は委譲済み | `raw_lexer.md` と `source_map.md` は LSP UTF-16 conversion を lexer 外に置いている。 | LSP bridge ができた段階で tests を追加する。 |
-| preprocessed text vs original source spans | designed, not implemented here | `raw_lexer.md` は lexer spans が scanner input を指すと明記し、`source_map.md` は `PreprocessMap` ownership を lexer 外に定義している。 | comment removal と synthetic whitespace mapping の frontend/source-map tests を追加する。 |
+| preprocessed text vs original source spans | executable boundary で covered | `PreprocessedLexicalSource.preprocess_map` は original、removed-comment、synthetic-whitespace segments を記録し、scanner lexical spans を loaded source ranges に戻せる。Session `PreprocessMap` はより rich な snapshot/service ownership を保持する。 | zero-length boundary mapping は最初に match した segment だけではなく composite adjacent anchors を返すべき。frontend/session source-map implementation はこの behavior を reuse または mirror する。 |
 | Unicode in code vs comments | known edge cases は lexer boundary で covered | preprocessor は comments 内の Unicode を許し、code regions の non-ASCII を報告する。Greek comment text、NBSP、zero-width chars、BOM-in-code、full-width punctuation の tests がある。 | comments/doc text の suspicious Unicode warning は将来 source-loading/docs 側で検討する。 |
 | Unicode normalization and confusables | lexer は normalize しない | identifier/numeral/user-symbol helpers は ASCII-only なので、non-ASCII code identifiers は normalize せず reject される。comments は raw Unicode のまま保持される。 | lexer が source text を normalize しないことを明記する。comments/doc text の suspicious Unicode warning は将来 source-loading/docs 側で検討する。 |
 | Unicode whitespace and ASCII controls | comments 外では strict reject | raw layout は space, tab, LF のみ。preprocessor は non-ASCII code chars を報告し、raw scanner は vertical tab や form feed などの unsupported ASCII controls を hard error にする。 | この strict lexer boundary と source-loading / diagnostic-renderer policy を同期し続ける。 |
 | tab display width | delegated | lexer は byte spans のみを保持し、tab は layout として扱う。diagnostics/source map が display columns を担当する。 | diagnostic renderer で tab expansion policy を test する。 |
-| comment stripping and newline preservation | known edge cases は lexer boundary で covered | ordinary/doc/multi-line comment removal、trivia retention、newline preservation、adjacent comments、EOF comments、token boundary 付近の synthetic layout の tests がある。 | source-map tests で synthetic whitespace/newline segments から original source ranges への mapping を cover する。 |
+| comment stripping and newline preservation | known edge cases は lexer boundary で covered | ordinary/doc/multi-line comment removal、trivia retention、newline preservation、adjacent comments、EOF comments、token boundary 付近の synthetic layout、synthetic whitespace/newlines の preprocess-map segments の tests がある。 | retained map service ができたら session source-map tests でも同じ cases を mirror する。 |
 | nested multi-line comments | non-nesting policy は covered | multi-line comments は最初の `=::` で閉じ、内部の `::=` spelling は通常の comment text として扱う。tests は spans と preserved newlines を cover する。 | source-map tests でも comment trivia mapping 時に同じ non-nesting interpretation を保つ。 |
 | unterminated comments | covered | preprocessor は `UnterminatedMultiLineComment` を emit し、line structure を保持する。unit test あり。 | source-map implementation 後に frontend が diagnostic を original source に map することを確認する。 |
 | annotation visibility | lexer boundary では covered | annotation syntax が parser ownership のため lexical text に残ることを tests が確認している。 | annotation argument validation は parser tests が担当する。 |

@@ -133,7 +133,7 @@ Ranges must:
 
 Original segments は lexical ranges を source ranges に戻す。Removed comment segments は comments が lexical input から消えていても ordinary and doc-comment locations を preserve する。Synthetic whitespace segments は comment removal or recovery の後に token separation を保つため inserted された text を表す。
 
-Frontend がこの map の construction を所有する。Later phases は original source locations に diagnostics and syntax nodes を attach するために consume する。
+Frontend はこの map の snapshot retention と service access を所有する。retained session `PreprocessMap` を構築するとき、lexer helper が生成する lightweight preprocess map を reuse または mirror してよい。Later phases は original source locations に diagnostics and syntax nodes を attach するために consume する。
 
 ### Generated Spans
 
