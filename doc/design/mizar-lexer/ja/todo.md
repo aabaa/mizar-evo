@@ -6,15 +6,11 @@
 
 ## Ordered Task List
 
-1. zero-length preprocess-map boundaries で composite anchors を返す。
-   - lexical insertion point が original text、removed comments、synthetic whitespace の境界にある場合、最初に match した segment だけではなく隣接する source anchors をすべて返す。
-   - inserted synthetic layout がある場合とない場合の removed comment 周辺の boundaries を cover する。
-
-2. user-facing column conversion は lexer 外に保つ。
+1. user-facing column conversion は lexer 外に保つ。
     - Unicode scalar columns は source-map/session layer で test する。
     - LSP UTF-16 conversion は `mizar-lexer` ではなく LSP bridge で test する。
 
-3. source path normalization は lexer 外で cover する。
+2. source path normalization は lexer 外で cover する。
     - `.`/`..`、symlinks、case policy、package-root escape attempts、platform-specific separators を source-loading/path layer で test する。
 
 ## Completed Tasks
@@ -91,6 +87,10 @@
    - ordinary comment removal、documentation comment retention、synthetic spaces/newlines、removed comments をまたぐ lexical ranges を tests で cover した。
    - lexer/preprocessor diagnostic byte ranges を original source ranges に map できることも tests で固定した。
 
+16. zero-length preprocess-map boundaries で composite anchors を返すようにした。
+   - original text、removed comments、synthetic whitespace の境界にある lexical insertion points は、隣接する source anchors をすべて返す。
+   - inserted synthetic layout がある場合とない場合の removed-comment boundaries を tests で cover した。
+
 ## Suggested Verification
 
 各 task の後に以下を実行します。
@@ -115,7 +115,7 @@ API stability、fuzz、benchmark 作業では、この TODO file の更新また
 | missing final newline / empty file / trailing newlines | lexer level では covered | empty raw stream の test があり、`SourceLineIndex` は EOF を受け入れる。scanner は final newline を要求しない。 | parser/import prelude が final newline に依存する場合のみ corpus cases を追加する。 |
 | byte offset vs character column | lexer-local policy は covered | lexer spans は byte offsets。`SourceLineIndex` は zero-based byte columns を使い、non-UTF-8-boundary offsets を reject する。session source map は user-facing Unicode scalar columns を規定する。 | human-facing conversion は source-map layer が担当する。 |
 | LSP UTF-16 columns | design 上は委譲済み | `raw_lexer.md` と `source_map.md` は LSP UTF-16 conversion を lexer 外に置いている。 | LSP bridge ができた段階で tests を追加する。 |
-| preprocessed text vs original source spans | executable boundary で covered | `PreprocessedLexicalSource.preprocess_map` は original、removed-comment、synthetic-whitespace segments を記録し、scanner lexical spans を loaded source ranges に戻せる。Session `PreprocessMap` はより rich な snapshot/service ownership を保持する。 | zero-length boundary mapping は最初に match した segment だけではなく composite adjacent anchors を返すべき。frontend/session source-map implementation はこの behavior を reuse または mirror する。 |
+| preprocessed text vs original source spans | executable boundary で covered | `PreprocessedLexicalSource.preprocess_map` は original、removed-comment、synthetic-whitespace segments を記録し、scanner lexical spans を loaded source ranges に戻せる。Zero-length boundary mapping は composite adjacent anchors を返す。Session `PreprocessMap` はより rich な snapshot/service ownership を保持する。 | frontend/session source-map implementation はこの behavior を reuse または mirror する。より rich な composite mapping を導入する段階で、before/removed/synthetic/after などの explicit anchor roles を付けてもよい。 |
 | Unicode in code vs comments | known edge cases は lexer boundary で covered | preprocessor は comments 内の Unicode を許し、code regions の non-ASCII を報告する。Greek comment text、NBSP、zero-width chars、BOM-in-code、full-width punctuation の tests がある。 | comments/doc text の suspicious Unicode warning は将来 source-loading/docs 側で検討する。 |
 | Unicode normalization and confusables | lexer は normalize しない | identifier/numeral/user-symbol helpers は ASCII-only なので、non-ASCII code identifiers は normalize せず reject される。comments は raw Unicode のまま保持される。 | lexer が source text を normalize しないことを明記する。comments/doc text の suspicious Unicode warning は将来 source-loading/docs 側で検討する。 |
 | Unicode whitespace and ASCII controls | comments 外では strict reject | raw layout は space, tab, LF のみ。preprocessor は non-ASCII code chars を報告し、raw scanner は vertical tab や form feed などの unsupported ASCII controls を hard error にする。 | この strict lexer boundary と source-loading / diagnostic-renderer policy を同期し続ける。 |

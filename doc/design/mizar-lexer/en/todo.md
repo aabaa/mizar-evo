@@ -6,15 +6,11 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-1. Return composite anchors for zero-length preprocess-map boundaries.
-   - When a lexical insertion point sits on a boundary between original text, removed comments, or synthetic whitespace, return all adjacent source anchors instead of the first matching segment only.
-   - Cover boundaries around removed comments with and without inserted synthetic layout.
-
-2. Keep user-facing column conversion outside lexer.
+1. Keep user-facing column conversion outside lexer.
     - Test Unicode scalar columns in the source-map/session layer.
     - Test LSP UTF-16 conversion in the LSP bridge, not in `mizar-lexer`.
 
-3. Cover source path normalization outside lexer.
+2. Cover source path normalization outside lexer.
     - Test `.`/`..`, symlinks, case policy, package-root escape attempts, and platform-specific separators in the source-loading/path layer.
 
 ## Completed Tasks
@@ -91,6 +87,10 @@ This document records follow-up tasks identified during the lexer quality review
    - Tests cover ordinary comment removal, documentation comment retention, synthetic spaces/newlines, and lexical ranges spanning removed comments.
    - Tests also pin mapping for lexer/preprocessor diagnostic byte ranges back to original source ranges.
 
+16. Returned composite anchors for zero-length preprocess-map boundaries.
+   - Lexical insertion points on boundaries between original text, removed comments, and synthetic whitespace now return all adjacent source anchors.
+   - Tests cover removed-comment boundaries with and without inserted synthetic layout.
+
 ## Suggested Verification
 
 After each task, run:
@@ -115,7 +115,7 @@ This first-pass audit records common text-processing pitfalls and whether the cu
 | Missing final newline / empty file / trailing newlines | Covered at lexer level | Empty raw stream is tested; `SourceLineIndex` accepts EOF; scanner does not require final newline. | Add corpus cases only if later parser/import prelude behavior depends on final newline. |
 | Byte offset vs character column | Lexer-local policy covered | Lexer spans are byte offsets; `SourceLineIndex` uses zero-based byte columns and rejects non-UTF-8-boundary offsets. Session source map specifies user-facing Unicode scalar columns. | Source-map layer must own human-facing conversion. |
 | LSP UTF-16 columns | Delegated by design | `raw_lexer.md` and `source_map.md` keep LSP UTF-16 conversion outside lexer. | Add LSP bridge tests when available. |
-| Preprocessed text vs original source spans | Covered at the executable boundary | `PreprocessedLexicalSource.preprocess_map` records original, removed-comment, and synthetic-whitespace segments so scanner lexical spans can be mapped back to loaded source ranges. Session `PreprocessMap` retains richer snapshot/service ownership. | Zero-length boundary mapping should return composite adjacent anchors rather than only the first matching segment. Frontend/session source-map implementation should reuse or mirror this behavior. |
+| Preprocessed text vs original source spans | Covered at the executable boundary | `PreprocessedLexicalSource.preprocess_map` records original, removed-comment, and synthetic-whitespace segments so scanner lexical spans can be mapped back to loaded source ranges. Zero-length boundary mapping returns composite adjacent anchors. Session `PreprocessMap` retains richer snapshot/service ownership. | Frontend/session source-map implementation should reuse or mirror this behavior, and may attach explicit anchor roles such as before/removed/synthetic/after when richer composite mappings are introduced. |
 | Unicode in code vs comments | Lexer boundary covered for known edge cases | Preprocessor allows Unicode inside comments and reports non-ASCII in code regions; tests cover Greek comment text, NBSP, zero-width chars, BOM-in-code, and full-width punctuation. | Source-loading may optionally warn on suspicious Unicode in comments/doc text later. |
 | Unicode normalization and confusables | Not normalized by lexer | Identifier, numeral, and user-symbol helpers are ASCII-only, so non-ASCII code identifiers are rejected rather than normalized. Comments remain raw Unicode. | Document that lexer does not normalize source text; source-loading may optionally warn on suspicious Unicode in comments/doc text later. |
 | Unicode whitespace and ASCII controls | Strictly rejected outside comments | Raw layout is exactly space, tab, LF; preprocessor reports non-ASCII code chars, and raw scanner hard-errors on unsupported ASCII controls such as vertical tab and form feed. | Keep source-loading and diagnostic-renderer policy aligned with this strict lexer boundary. |

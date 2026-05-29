@@ -978,19 +978,91 @@ mod tests {
             with_synthetic_space
                 .preprocess_map
                 .source_ranges_for_lexical(SourceSpan { start: 5, end: 5 }),
-            Some(vec![SourceSpan { start: 5, end: 5 }])
+            Some(vec![
+                SourceSpan { start: 5, end: 5 },
+                SourceSpan { start: 5, end: 19 },
+            ])
         );
         assert_eq!(
             with_synthetic_space
                 .preprocess_map
                 .source_ranges_for_lexical(SourceSpan { start: 6, end: 6 }),
-            Some(vec![SourceSpan { start: 5, end: 19 }])
+            Some(vec![
+                SourceSpan { start: 5, end: 19 },
+                SourceSpan { start: 19, end: 19 },
+            ])
         );
         assert_eq!(
             with_synthetic_space
                 .preprocess_map
                 .source_ranges_for_lexical(SourceSpan { start: 10, end: 10 }),
             Some(vec![SourceSpan { start: 23, end: 23 }])
+        );
+
+        let without_synthetic_space = preprocess_source_for_lexing("alpha ::= hidden =:: beta");
+        assert_eq!(without_synthetic_space.lexical_text, "alpha  beta");
+        assert_eq!(
+            without_synthetic_space
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 6, end: 6 }),
+            Some(vec![
+                SourceSpan { start: 6, end: 6 },
+                SourceSpan { start: 6, end: 20 },
+                SourceSpan { start: 20, end: 20 },
+            ])
+        );
+        assert_eq!(
+            without_synthetic_space
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 7, end: 7 }),
+            Some(vec![SourceSpan { start: 21, end: 21 }])
+        );
+
+        let with_synthetic_newline = preprocess_source_for_lexing("alpha:: hidden\nbeta");
+        assert_eq!(with_synthetic_newline.lexical_text, "alpha\nbeta");
+        assert_eq!(
+            with_synthetic_newline
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 5, end: 5 }),
+            Some(vec![
+                SourceSpan { start: 5, end: 5 },
+                SourceSpan { start: 5, end: 15 },
+                SourceSpan { start: 14, end: 15 },
+            ])
+        );
+        assert_eq!(
+            with_synthetic_newline
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 6, end: 6 }),
+            Some(vec![
+                SourceSpan { start: 14, end: 15 },
+                SourceSpan { start: 15, end: 15 },
+            ])
+        );
+
+        let adjacent_comments = preprocess_source_for_lexing("alpha:: first\n:: second\nomega");
+        assert_eq!(adjacent_comments.lexical_text, "alpha\n\nomega");
+        assert_eq!(
+            adjacent_comments
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 6, end: 6 }),
+            Some(vec![
+                SourceSpan { start: 13, end: 14 },
+                SourceSpan { start: 14, end: 24 },
+                SourceSpan { start: 23, end: 24 },
+            ])
+        );
+
+        let eof_comment = preprocess_source_for_lexing("alpha\n:: eof");
+        assert_eq!(eof_comment.lexical_text, "alpha\n");
+        assert_eq!(
+            eof_comment
+                .preprocess_map
+                .source_ranges_for_lexical(SourceSpan { start: 6, end: 6 }),
+            Some(vec![
+                SourceSpan { start: 6, end: 6 },
+                SourceSpan { start: 6, end: 12 },
+            ])
         );
     }
 

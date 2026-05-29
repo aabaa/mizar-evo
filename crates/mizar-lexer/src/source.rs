@@ -297,33 +297,38 @@ impl SourcePreprocessMap {
     }
 
     fn source_insertion_point_for_lexical(&self, offset: SourcePos) -> Option<Vec<SourceRange>> {
+        let mut ranges = Vec::new();
         for (index, segment) in self.segments.iter().enumerate() {
             match segment {
                 SourcePreprocessMapSegment::Original { lexical, source } => {
                     if lexical.start <= offset && offset <= lexical.end {
                         let source_offset = source.start + (offset - lexical.start);
-                        return Some(vec![SourceSpan {
-                            start: source_offset,
-                            end: source_offset,
-                        }]);
+                        push_insertion_source_anchor(
+                            &mut ranges,
+                            SourceSpan {
+                                start: source_offset,
+                                end: source_offset,
+                            },
+                        );
                     }
                 }
                 SourcePreprocessMapSegment::SyntheticWhitespace { lexical, anchor }
                     if lexical.start <= offset && offset <= lexical.end =>
                 {
-                    return Some(vec![*anchor]);
+                    push_insertion_source_anchor(&mut ranges, *anchor);
                 }
-                SourcePreprocessMapSegment::RemovedComment { .. } => {
+                SourcePreprocessMapSegment::RemovedComment { source, .. } => {
                     if self.lexical_anchor_for_removed_comment(index) == Some(offset) {
-                        if let SourcePreprocessMapSegment::RemovedComment { source, .. } = segment {
-                            return Some(vec![*source]);
-                        }
+                        push_insertion_source_anchor(&mut ranges, *source);
                     }
                 }
                 _ => {}
             }
         }
-        (offset == 0).then_some(vec![SourceSpan { start: 0, end: 0 }])
+        if ranges.is_empty() && offset == 0 {
+            push_insertion_source_anchor(&mut ranges, SourceSpan { start: 0, end: 0 });
+        }
+        (!ranges.is_empty()).then_some(ranges)
     }
 
     fn lexical_anchor_for_removed_comment(&self, index: usize) -> Option<SourcePos> {
@@ -768,6 +773,12 @@ fn push_mapped_source_range(ranges: &mut Vec<SourceRange>, range: SourceRange) {
         return;
     }
     ranges.retain(|existing| !(range.start <= existing.start && existing.end <= range.end));
+    if ranges.last() != Some(&range) {
+        ranges.push(range);
+    }
+}
+
+fn push_insertion_source_anchor(ranges: &mut Vec<SourceRange>, range: SourceRange) {
     if ranges.last() != Some(&range) {
         ranges.push(range);
     }
