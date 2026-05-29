@@ -2,75 +2,75 @@
 
 > 正本は英語です。英語版: [../en/README.md](../en/README.md)。
 
-このディレクトリには、architecture specifications を compiler modules、API、data structures、execution contracts へ落とし込む**内部 subsystem 設計文書**を置く。
+このディレクトリには、分野横断的なアーキテクチャ仕様をコンパイラのモジュール、API、データ構造、実行契約へと落とし込む**内部サブシステム設計文書**を収める。
 
 ## 目的
 
-[`doc/design/architecture/ja/`](../../architecture/ja/README.md) の architecture documents は phase boundaries と subsystem responsibilities を定義する。Internal design documents は、それらの境界をどう実装するかを説明する。ただし、1:1 の module specification までは踏み込まない。
+[`doc/design/architecture/ja/`](../../architecture/ja/README.md) のアーキテクチャ文書は、フェーズ境界とサブシステムの責務を定義する。内部設計文書は、それらの境界をどう実装するかを記述するが、モジュールと1対1で対応する仕様までは踏み込まない。
 
-Internal design documents は次のような問いに答える。
+内部設計文書は、たとえば次のような問いに答える。
 
-- pipeline phase transition はどの service が所有するか？
-- compiler subsystems 間で共有する data structures は何か？
-- どの API が synchronous、asynchronous、event-based か？
-- cache、diagnostics、cancellation、artifact commit の判断をどこで enforce するか？
-- batch、watch、LSP builds は同じ compiler driver をどう共有するか？
+- パイプラインのフェーズ遷移はどのサービスが担うのか。
+- コンパイラのサブシステム間で共有されるデータ構造は何か。
+- どの API が同期・非同期・イベント駆動のいずれなのか。
+- キャッシュ、診断、キャンセル、アーティファクトのコミットに関する判断は、どこで強制されるのか。
+- バッチビルド、ウォッチビルド、LSP ビルドは、どのように同一のコンパイラドライバを共有するのか。
 
-## Index
+## 索引
 
-Documents は implementation dependency order で番号付けする。未作成の番号付き文書は planned slot として残す。
+各文書は実装上の依存順に番号付けしている。欠番は、今後追加する予定の枠である。
 
-| Document | Pipeline Phase | Description | Status |
+| 文書 | パイプラインフェーズ | 概要 | ステータス |
 |---|---:|---|---|
-| [00.internal_overview.md](./00.internal_overview.md) | All | internal design scope、crate/service boundaries、architecture documents との関係 | Draft |
-| [01.compiler_driver_and_pipeline_scheduler.md](./01.compiler_driver_and_pipeline_scheduler.md) | 0-16 | compiler driver、task graph scheduler、phase services、cancellation、cache lookup、diagnostics、artifact commit orchestration | Draft |
-| [02.artifact_store_cache_key_and_manifest.md](./02.artifact_store_cache_key_and_manifest.md) | 15 | artifact store、cache key construction、manifest transactions、reproducible write protocol | Draft |
-| [03.diagnostics_model_and_lsp_bridge.md](./03.diagnostics_model_and_lsp_bridge.md) | All, 15 | diagnostic registry、aggregation、explanation handles、LSP snapshot bridge、editor freshness model | Draft |
-| [04.atp_portfolio_and_kernel_check_integration.md](./04.atp_portfolio_and_kernel_check_integration.md) | 13-14 | ATP portfolio execution、backend evidence selection、proof witness storage、kernel check scheduling | Draft |
-| [05.documentation_extraction.md](./05.documentation_extraction.md) | 16 | documentation extraction inputs、render model、code extraction boundary、artifact consumers | Draft |
-| [06.ir_storage_and_snapshot_handles.md](./06.ir_storage_and_snapshot_handles.md) | All | IR output storage、snapshot handles、identity rules、lifetimes、cache/publication boundaries | Draft |
-| [07.crate_module_layout.md](./07.crate_module_layout.md) | All | expected crate ownership and minimum module-level spec layout | Draft |
+| [00.internal_overview.md](./00.internal_overview.md) | 全般 | 内部設計の範囲、crate / サービス境界、アーキテクチャ文書との関係 | ドラフト |
+| [01.compiler_driver_and_pipeline_scheduler.md](./01.compiler_driver_and_pipeline_scheduler.md) | 0〜16 | コンパイラドライバ、タスクグラフスケジューラ、フェーズサービス、キャンセル、キャッシュ参照、診断、アーティファクトコミットの統括 | ドラフト |
+| [02.artifact_store_cache_key_and_manifest.md](./02.artifact_store_cache_key_and_manifest.md) | 15 | アーティファクトストア、キャッシュキーの構築、マニフェストトランザクション、再現可能な書き込みプロトコル | ドラフト |
+| [03.diagnostics_model_and_lsp_bridge.md](./03.diagnostics_model_and_lsp_bridge.md) | 全般、15 | 診断レジストリ、集約、説明ハンドル、LSP スナップショットブリッジ、エディタ鮮度モデル | ドラフト |
+| [04.atp_portfolio_and_kernel_check_integration.md](./04.atp_portfolio_and_kernel_check_integration.md) | 13〜14 | ATP ポートフォリオの実行、バックエンドエビデンスの選択、証明ウィットネスの保存、カーネル検査のスケジューリング | ドラフト |
+| [05.documentation_extraction.md](./05.documentation_extraction.md) | 16 | ドキュメント抽出の入力、レンダリングモデル、コード抽出の境界、アーティファクト消費者 | ドラフト |
+| [06.ir_storage_and_snapshot_handles.md](./06.ir_storage_and_snapshot_handles.md) | 全般 | IR 出力の保存、スナップショットハンドル、同一性規則、ライフタイム、キャッシュ／公開境界 | ドラフト |
+| [07.crate_module_layout.md](./07.crate_module_layout.md) | 全般 | 想定する crate の責務分担と、最小限のモジュール仕様レイアウト | ドラフト |
 
 ## 文書テンプレート
 
-各 internal design document は次の構成に従う。
+各内部設計文書は、次の構成に従う。
 
 ```markdown
 # 内部設計: <タイトル>
 
 ## 目的
-この文書が扱う implementation problem。
+この文書が扱う実装上の課題。
 
 ## 関連文書
-この design が詳細化する architecture and spec documents への参照。
+この設計が詳細化するアーキテクチャ文書・仕様文書への参照。
 
 ## 責務
-internal services、modules、data structures 間の具体的な ownership boundaries。
+内部サービス、モジュール、データ構造の間の具体的な責務境界。
 
 ## データモデル
-重要な internal types、identity rules、invariants。
+主要な内部型、同一性規則、不変条件。
 
 ## 制御フロー
-requests、phase outputs、diagnostics、cache records、artifacts が subsystem をどう流れるか。
+要求、フェーズ出力、診断、キャッシュレコード、アーティファクトがサブシステム内をどう流れるか。
 
 ## API 概要
-modules 間で使う traits、structs、events、service calls。
+モジュール間で用いるトレイト、構造体、イベント、サービス呼び出し。
 
 ## エラー処理
-failure、cancellation、recovery、diagnostic publication rules。
+失敗、キャンセル、回復、診断公開の規則。
 
 ## 関連モジュール
-この設計を実装する expected module-level specs and source files。
+この設計を実装する想定のモジュール仕様とソースファイル。
 
 ## 制約と前提
-performance、reproducibility、compatibility、trust-boundary constraints。
+性能、再現性、互換性、信頼境界に関する制約。
 ```
 
 ## 他の文書層との関係
 
-| Layer | Directory | Granularity | Audience |
+| 層 | ディレクトリ | 粒度 | 対象読者 |
 |---|---|---|---|
-| External Spec | `doc/spec/ja/` | Language features and user-visible behavior | Users |
-| Architecture | `doc/design/architecture/ja/` | Cross-cutting subsystem boundaries | Developers |
-| **Internal Design** | **`doc/design/internal/ja/`** | **Subsystem APIs、data structures、execution contracts** | **Compiler developers** |
-| Module Spec | `doc/design/<crate>/` | Individual files (1:1) | Developers |
+| 外部仕様 | `doc/spec/ja/` | 言語機能とユーザーから見える挙動 | 利用者 |
+| アーキテクチャ | `doc/design/architecture/ja/` | 分野横断的なサブシステム境界 | 開発者 |
+| **内部設計** | **`doc/design/internal/ja/`** | **サブシステムの API、データ構造、実行契約** | **コンパイラ開発者** |
+| モジュール仕様 | `doc/design/<crate>/` | 個々のファイル（1対1） | 開発者 |
