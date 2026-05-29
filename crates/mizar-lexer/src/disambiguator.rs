@@ -16,10 +16,53 @@ pub struct Token {
     pub span: SourceSpan,
 }
 
+impl Token {
+    pub fn new(kind: TokenKind, lexeme: impl Into<String>, span: SourceSpan) -> Self {
+        Self {
+            kind,
+            lexeme: lexeme.into(),
+            span,
+        }
+    }
+
+    pub const fn kind(&self) -> TokenKind {
+        self.kind
+    }
+
+    pub fn lexeme(&self) -> &str {
+        &self.lexeme
+    }
+
+    pub const fn span(&self) -> SourceSpan {
+        self.span
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TokenStream {
     pub tokens: Vec<Token>,
     pub diagnostics: Vec<LexDiagnostic>,
+}
+
+impl TokenStream {
+    pub fn new(tokens: Vec<Token>, diagnostics: Vec<LexDiagnostic>) -> Self {
+        Self {
+            tokens,
+            diagnostics,
+        }
+    }
+
+    pub fn tokens(&self) -> &[Token] {
+        &self.tokens
+    }
+
+    pub fn diagnostics(&self) -> &[LexDiagnostic] {
+        &self.diagnostics
+    }
+
+    pub fn into_parts(self) -> (Vec<Token>, Vec<LexDiagnostic>) {
+        (self.tokens, self.diagnostics)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -27,6 +70,28 @@ pub struct LexDiagnostic {
     pub code: LexDiagnosticCode,
     pub message: String,
     pub span: SourceRange,
+}
+
+impl LexDiagnostic {
+    pub fn new(code: LexDiagnosticCode, message: impl Into<String>, span: SourceRange) -> Self {
+        Self {
+            code,
+            message: message.into(),
+            span,
+        }
+    }
+
+    pub const fn code(&self) -> LexDiagnosticCode {
+        self.code
+    }
+
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+
+    pub const fn span(&self) -> SourceRange {
+        self.span
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -527,11 +592,7 @@ impl<'a> Disambiguator<'a> {
     }
 
     fn push_token(&mut self, kind: TokenKind, lexeme: &str, span: SourceRange) {
-        self.tokens.push(Token {
-            kind,
-            lexeme: lexeme.to_owned(),
-            span,
-        });
+        self.tokens.push(Token::new(kind, lexeme, span));
     }
 
     fn push_error(
@@ -541,11 +602,8 @@ impl<'a> Disambiguator<'a> {
         span: SourceRange,
         lexeme: &str,
     ) {
-        self.diagnostics.push(LexDiagnostic {
-            code,
-            message: message.into(),
-            span,
-        });
+        self.diagnostics
+            .push(LexDiagnostic::new(code, message, span));
         self.push_token(TokenKind::ErrorRecovery, lexeme, span);
     }
 }

@@ -1,6 +1,31 @@
 use super::common::*;
 
 #[test]
+fn parser_facing_token_types_expose_stable_accessors() {
+    let token = Token::new(
+        TokenKind::Identifier,
+        "alpha",
+        SourceSpan::new(0, "alpha".len()),
+    );
+    let diagnostic = crate::LexDiagnostic::new(
+        LexDiagnosticCode::NoValidTokenCandidate,
+        "no candidate",
+        SourceSpan::new(6, 7),
+    );
+    let stream = crate::TokenStream::new(vec![token.clone()], vec![diagnostic.clone()]);
+
+    assert_eq!(token.kind(), TokenKind::Identifier);
+    assert_eq!(token.lexeme(), "alpha");
+    assert_eq!(token.span(), SourceSpan::new(0, 5));
+    assert_eq!(diagnostic.code(), LexDiagnosticCode::NoValidTokenCandidate);
+    assert_eq!(diagnostic.message(), "no candidate");
+    assert_eq!(diagnostic.span(), SourceSpan::new(6, 7));
+    assert_eq!(stream.tokens(), &[token.clone()]);
+    assert_eq!(stream.diagnostics(), &[diagnostic.clone()]);
+    assert_eq!(stream.into_parts(), (vec![token], vec![diagnostic]));
+}
+
+#[test]
 fn disambiguator_prefers_longest_user_symbol_inside_raw_runs() {
     let env = build_lexical_environment(
         &[resolved_import("std.ops")],

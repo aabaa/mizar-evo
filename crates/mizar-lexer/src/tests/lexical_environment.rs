@@ -1,6 +1,21 @@
 use super::common::*;
 
 #[test]
+fn lexical_identity_newtypes_expose_stable_helpers() {
+    let module = ModuleId::new("std.hidden");
+    let symbol = SymbolId::new("std.hidden#plus");
+    let rank = ExportRank::new(17);
+    let summary_fingerprint = LexicalSummaryFingerprint::new(23);
+    let environment_fingerprint = crate::LexicalEnvironmentFingerprint::new(29);
+
+    assert_eq!(module.as_str(), "std.hidden");
+    assert_eq!(symbol.as_str(), "std.hidden#plus");
+    assert_eq!(rank.get(), 17);
+    assert_eq!(summary_fingerprint.get(), 23);
+    assert_eq!(environment_fingerprint.get(), 29);
+}
+
+#[test]
 fn lexical_environment_always_contains_reserved_tables() {
     let env = build_lexical_environment(&[], &[]).expect("empty imports should build");
 

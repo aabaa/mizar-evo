@@ -8,11 +8,47 @@ pub struct RawTokenStream {
     pub tokens: Vec<RawToken>,
 }
 
+impl RawTokenStream {
+    pub fn new(tokens: Vec<RawToken>) -> Self {
+        Self { tokens }
+    }
+
+    pub fn tokens(&self) -> &[RawToken] {
+        &self.tokens
+    }
+
+    pub fn into_tokens(self) -> Vec<RawToken> {
+        self.tokens
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RawToken {
     pub kind: RawTokenKind,
     pub lexeme: String,
     pub span: SourceSpan,
+}
+
+impl RawToken {
+    pub fn new(kind: RawTokenKind, lexeme: impl Into<String>, span: SourceSpan) -> Self {
+        Self {
+            kind,
+            lexeme: lexeme.into(),
+            span,
+        }
+    }
+
+    pub const fn kind(&self) -> RawTokenKind {
+        self.kind
+    }
+
+    pub fn lexeme(&self) -> &str {
+        &self.lexeme
+    }
+
+    pub const fn span(&self) -> SourceSpan {
+        self.span
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -131,11 +167,7 @@ pub fn scan_raw(input: &str) -> Result<RawTokenStream, LexError> {
     Ok(RawTokenStream { tokens })
 }
 fn raw_token(input: &str, kind: RawTokenKind, start: usize, end: usize) -> RawToken {
-    RawToken {
-        kind,
-        lexeme: input[start..end].to_owned(),
-        span: SourceSpan { start, end },
-    }
+    RawToken::new(kind, &input[start..end], SourceSpan::new(start, end))
 }
 pub fn is_layout(ch: char) -> bool {
     matches!(ch, ' ' | '\t' | '\n')

@@ -1,6 +1,18 @@
 use super::common::*;
 
 #[test]
+fn raw_token_types_expose_stable_accessors() {
+    let token = RawToken::new(RawTokenKind::LexemeRun, "alpha", SourceSpan::new(0, 5));
+    let stream = crate::RawTokenStream::new(vec![token.clone()]);
+
+    assert_eq!(token.kind(), RawTokenKind::LexemeRun);
+    assert_eq!(token.lexeme(), "alpha");
+    assert_eq!(token.span(), SourceSpan::new(0, 5));
+    assert_eq!(stream.tokens(), &[token]);
+    assert_eq!(stream.into_tokens().len(), 1);
+}
+
+#[test]
 fn helpers_recognize_layout_symbol_shapes_and_string_shells() {
     assert!(is_layout(' '));
     assert!(is_layout('\t'));

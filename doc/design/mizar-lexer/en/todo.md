@@ -6,12 +6,7 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-1. Revisit the public API stability boundary before the next parser integration milestone.
-   - Audit public transfer structs with visible fields and decide which should remain provisional, gain constructors/accessors, or move behind more stable wrapper APIs.
-   - Keep `#[non_exhaustive]` on externally matched enums unless a category is intentionally frozen.
-   - Document the concrete compatibility promise expected for the next `0.x` milestone.
-
-2. Structure lexer diagnostics for downstream tooling.
+1. Structure lexer diagnostics for downstream tooling.
    - Keep stable diagnostic codes and byte spans, but add structured payloads where useful for recovery, rejected parser-context candidates, unsupported raw input, malformed strings, and source-preprocessing errors.
    - Identify which diagnostics should carry source-map anchors, related spans, or machine-readable recovery hints for frontend/LSP consumers.
    - Ensure fixture expectations can assert the structured fields without depending on unstable human-facing message text.
@@ -141,6 +136,12 @@ This document records follow-up tasks identified during the lexer quality review
    - Added an explicit responsibility-boundary table to the lexer design README covering source loading, preprocessing maps, raw scanning, import pre-scan, lexical environments, scope skeletons, parser lexical context, diagnostics, LSP coordinate conversion, and semantic phases.
    - Kept source-loading helpers and module-name helpers as executable boundary contracts for tests and early integration, while assigning production file I/O, source identity, snapshots, and rich retained maps to session/source or frontend services.
    - Recorded the intended dependency direction: session/source/frontend feed byte-oriented source text into `mizar-lexer`; parser and later semantic phases consume lexer handoff data; diagnostics/LSP adapters render and bridge coordinate spaces without making `mizar-lexer` depend on parser, resolver, session snapshot, diagnostic rendering, or protocol crates.
+
+26. Revisited the public API stability boundary before parser integration.
+   - Audited the public lexer transfer structs and kept fields visible for the next parser-integration milestone, while documenting those fields as provisional transfer-object escape hatches rather than the preferred stable read path.
+   - Added constructors/accessors for the parser-facing stable surfaces: `SourceSpan`, raw/final tokens and token streams, `LexDiagnostic`, and lightweight module/symbol/fingerprint newtypes. `SourceSpan::new` rejects reversed ranges, while `SourceSpan::try_new` lets callers handle invalid external ranges without panicking.
+   - Reconfirmed that externally matched public enums stay `#[non_exhaustive]`.
+   - Documented the concrete next-`0.x` compatibility promise in the raw lexer design notes, including stable entry points, byte-span coordinates, diagnostic code/span stability, provisional diagnostic text, and preferred use of constructors/accessors.
 
 ## Suggested Verification
 

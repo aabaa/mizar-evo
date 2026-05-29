@@ -16,6 +16,17 @@ The current implementation exposes both the low-level raw scanner and higher-lev
 
 Public enums are marked `#[non_exhaustive]`. Downstream crates must include wildcard arms when matching token kinds, raw token kinds, diagnostic codes, parser modes, import pre-scan categories, scope-skeleton categories, source-preprocessing categories, and lexical-environment errors. This keeps the crate free to add categories as the parser-facing API matures.
 
+For the next parser-integration `0.x` milestone, downstream crates may rely on the following compatibility boundary:
+
+| Surface | Compatibility promise for the next parser milestone |
+|---|---|
+| Entry points | `load_source_text_from_bytes`, `preprocess_source_for_lexing`, `scan_raw`, `scan_import_prelude`, `build_lexical_environment`, `build_scope_skeleton`, `lex`, and `disambiguate` remain the executable lexer handoff path. |
+| Coordinates | `SourceSpan` remains a half-open byte range in the exact text passed to the producing stage. `SourceSpan::new`, `try_new`, `len`, `is_empty`, `is_valid`, and `contains` are the preferred stable helpers for downstream code that does not need field construction. `SourceSpan::new` rejects reversed ranges; defensive boundary APIs still reject invalid spans that external callers construct through visible fields. |
+| Token access | `RawToken`, `RawTokenStream`, `Token`, `TokenStream`, and `LexDiagnostic` keep parser-facing fields visible for now, but callers should prefer their constructors and accessor methods where possible. `TokenStream::into_parts` should be used when taking ownership so recoverable diagnostics are not dropped accidentally. This leaves room to add cached metadata or wrappers later without changing the read-only parser path. |
+| IDs and fingerprints | `ModuleId`, `SymbolId`, `ExportRank`, `LexicalSummaryFingerprint`, and `LexicalEnvironmentFingerprint` remain lightweight newtypes. Prefer `new`, `as_str`, or `get` over tuple-field access in new integration code. The exact fingerprint algorithm may still change between `0.x` releases when the lexical summary shape changes. |
+| Diagnostics | Diagnostic codes and byte spans are compatibility-facing. Human-readable `message` text is provisional and should not be snapshot-tested by downstream tools unless a fixture explicitly owns that wording. |
+| Visible transfer fields | Existing visible fields are retained during this milestone to keep parser and corpus integration simple. They are not a promise that every field will remain constructible forever; fields that need stronger stability should first gain a constructor or accessor. |
+
 Until a later explicit stability milestone, `0.1` minor releases may still make breaking changes to public fields, constructors, and helper functions when that is needed to keep the lexer boundary coherent.
 
 ## Source Preconditions

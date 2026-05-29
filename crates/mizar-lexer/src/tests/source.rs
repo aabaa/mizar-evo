@@ -1,6 +1,31 @@
 use super::common::*;
 
 #[test]
+fn source_span_exposes_stable_boundary_helpers() {
+    let span = SourceSpan::new(3, 8);
+
+    assert_eq!(span.start, 3);
+    assert_eq!(span.end, 8);
+    assert_eq!(SourceSpan::try_new(3, 8), Some(span));
+    assert_eq!(span.len(), 5);
+    assert!(!span.is_empty());
+    assert!(span.is_valid());
+    assert!(!span.contains(2));
+    assert!(span.contains(3));
+    assert!(span.contains(7));
+    assert!(!span.contains(8));
+
+    let empty = SourceSpan::new(4, 4);
+    assert_eq!(empty.len(), 0);
+    assert!(empty.is_empty());
+    assert!(empty.is_valid());
+
+    assert_eq!(SourceSpan::try_new(5, 4), None);
+    let reversed = SourceSpan { start: 5, end: 4 };
+    assert!(!reversed.is_valid());
+}
+
+#[test]
 fn source_line_index_maps_byte_spans_to_zero_based_locations() {
     let source = "alpha\nβeta\n";
     let index = SourceLineIndex::new(source);

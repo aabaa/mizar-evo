@@ -34,7 +34,10 @@
 //! Public data structs intentionally keep their fields visible for now because
 //! they are parser-facing transfer objects used by tests, corpus metadata, and
 //! early integration code. Those fields should still be treated as provisional
-//! while the crate remains below `1.0`.
+//! while the crate remains below `1.0`. New parser integration code should
+//! prefer constructors and accessors on token streams, tokens, diagnostics,
+//! spans, IDs, ranks, and fingerprints where they exist; visible fields remain
+//! available as transfer-object escape hatches during the `0.x` line.
 //!
 //! ```
 //! use mizar_lexer::{scan_raw, RawTokenKind};

@@ -14,6 +14,38 @@ pub struct SourceSpan {
 pub type SourcePos = usize;
 pub type SourceRange = SourceSpan;
 
+impl SourceSpan {
+    pub const fn new(start: SourcePos, end: SourcePos) -> Self {
+        assert!(start <= end);
+        Self { start, end }
+    }
+
+    pub const fn try_new(start: SourcePos, end: SourcePos) -> Option<Self> {
+        if start <= end {
+            Some(Self { start, end })
+        } else {
+            None
+        }
+    }
+
+    pub const fn len(self) -> usize {
+        assert!(self.start <= self.end);
+        self.end - self.start
+    }
+
+    pub const fn is_empty(self) -> bool {
+        self.start == self.end
+    }
+
+    pub const fn is_valid(self) -> bool {
+        self.start <= self.end
+    }
+
+    pub const fn contains(self, offset: SourcePos) -> bool {
+        self.start <= offset && offset < self.end
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceLineIndex {
     line_starts: Vec<usize>,
