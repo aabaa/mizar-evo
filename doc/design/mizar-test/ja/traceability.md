@@ -118,7 +118,7 @@ Harness は次を validate する。
 4. Every listed test sidecar points back to the requirement id.
 5. Every sidecar `spec_refs` entry exists in the manifest.
 6. Stage names match the staged model.
-7. Validation mode が coverage completeness を要求する場合、required coverage shapes are satisfied.
+7. Required coverage shapes are satisfied when the validation mode requires coverage completeness.
 8. Deferred required items include a `deferred_reason`.
 9. Obsolete items are not referenced by active tests.
 10. Manifest records are sorted deterministically by `id`.

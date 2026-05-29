@@ -74,7 +74,7 @@ reports は次を区別する。
 - wrong rejection reason
 - diagnostic order mismatch
 - snapshot mismatch
-- repeated runs across nondeterminism
+- nondeterminism across repeated runs
 - harness infrastructure error
 
 ## Tests

@@ -252,7 +252,7 @@ subject = "X"
 expected = "set"
 ```
 
-These tests は、expectation が missing prerequisite を明示的に target しない限り、built-ins と lower stages で admitted された symbols だけを使う。
+これらの tests は、expectation が missing prerequisite を明示的に target しない限り、built-ins と lower stages で admitted された symbols だけを使う。
 
 ## Formula, Statement, And Proof Expectations
 

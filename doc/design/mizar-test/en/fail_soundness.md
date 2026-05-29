@@ -6,7 +6,7 @@
 
 This module defines fail and soundness regression contracts.
 
-The priority is to reject what must not pass. A soundness failure is more severe than accepting fewer valid programs.
+The priority is to reject what must not pass. A soundness failure is more serious than failing to accept some valid programs.
 
 ## Required Soundness Cases
 

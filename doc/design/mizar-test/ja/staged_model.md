@@ -12,7 +12,7 @@
 
 Test addition order は specification chapter order だけではなく、compiler pipeline dependencies によって決める。
 
-`doc/spec/` は最終的に何を cover すべきかを所有する。Pipeline は、ある test を追加しても earlier unresolved feature を誤って test しない時期を所有する。
+`doc/spec/` は最終的に何を cover すべきかを所有する。Pipeline は、earlier unresolved feature を誤って test することなく、ある test をいつ追加できるかを所有する。
 
 ```text
 Primary ordering:  pipeline maturity / dependency layer

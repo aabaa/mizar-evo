@@ -6,7 +6,7 @@
 
 この module は Mizar Evo tests の filesystem layout と metadata contract を定義する。
 
-layout は large `.miz` corpora、fail-heavy regression testing、deterministic snapshots、expected outcomes の明確な ownership に最適化する。
+layout は large `.miz` corpora、fail-heavy regression testing、deterministic snapshots、expected outcomes の明確な ownership に向けて最適化されている。
 
 ## Public API
 

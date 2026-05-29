@@ -109,7 +109,7 @@ errors: 0
 warnings: 0
 ```
 
-Output は filesystems 間で stable でなければならない。First implementation では human-readable output で十分だが、later JSON reporter のため internal result は structured でなければならない。
+Output は filesystems 間で stable でなければならない。First implementation では human-readable output で十分だが、後から JSON reporter を追加できるよう internal result は structured でなければならない。
 
 ## Discovery Rules
 
