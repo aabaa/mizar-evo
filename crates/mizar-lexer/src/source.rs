@@ -300,27 +300,27 @@ impl SourcePreprocessMap {
         let mut ranges = Vec::new();
         for (index, segment) in self.segments.iter().enumerate() {
             match segment {
-                SourcePreprocessMapSegment::Original { lexical, source } => {
-                    if lexical.start <= offset && offset <= lexical.end {
-                        let source_offset = source.start + (offset - lexical.start);
-                        push_insertion_source_anchor(
-                            &mut ranges,
-                            SourceSpan {
-                                start: source_offset,
-                                end: source_offset,
-                            },
-                        );
-                    }
+                SourcePreprocessMapSegment::Original { lexical, source }
+                    if lexical.start <= offset && offset <= lexical.end =>
+                {
+                    let source_offset = source.start + (offset - lexical.start);
+                    push_insertion_source_anchor(
+                        &mut ranges,
+                        SourceSpan {
+                            start: source_offset,
+                            end: source_offset,
+                        },
+                    );
                 }
                 SourcePreprocessMapSegment::SyntheticWhitespace { lexical, anchor }
                     if lexical.start <= offset && offset <= lexical.end =>
                 {
                     push_insertion_source_anchor(&mut ranges, *anchor);
                 }
-                SourcePreprocessMapSegment::RemovedComment { source, .. } => {
-                    if self.lexical_anchor_for_removed_comment(index) == Some(offset) {
-                        push_insertion_source_anchor(&mut ranges, *source);
-                    }
+                SourcePreprocessMapSegment::RemovedComment { source, .. }
+                    if self.lexical_anchor_for_removed_comment(index) == Some(offset) =>
+                {
+                    push_insertion_source_anchor(&mut ranges, *source);
                 }
                 _ => {}
             }
@@ -746,12 +746,12 @@ fn push_original_preprocess_segment(
         lexical: previous_lexical,
         source: previous_source,
     }) = segments.last_mut()
+        && previous_lexical.end == lexical.start
+        && previous_source.end == source.start
     {
-        if previous_lexical.end == lexical.start && previous_source.end == source.start {
-            previous_lexical.end = lexical.end;
-            previous_source.end = source.end;
-            return;
-        }
+        previous_lexical.end = lexical.end;
+        previous_source.end = source.end;
+        return;
     }
 
     segments.push(SourcePreprocessMapSegment::Original { lexical, source });
