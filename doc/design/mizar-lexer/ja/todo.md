@@ -6,14 +6,11 @@
 
 ## Ordered Task List
 
-1. source path normalization は lexer 外で cover する。
-    - `.`/`..`、symlinks、case policy、package-root escape attempts、platform-specific separators を source-loading/path layer で test する。
-
-2. lexer、session、LSP crates 間の shared source-span ownership を決める。
+1. lexer、session、LSP crates 間の shared source-span ownership を決める。
     - `SourceRange` を crate-local のまま explicit conversion APIs でつなぐか、common source-coordinate crate に移すかを再検討する。
     - lexer token spans を session/LSP diagnostics へ接続し、実際の integration pressure が見えてから判断する。
 
-3. session source maps の line/column overflow policy を決める。
+2. session source maps の line/column overflow policy を決める。
     - `mizar-session::LineMap` は現在 user-facing line/column values を `u32` として返す。extremely large files または long lines に対して、session APIs が `usize` を使うべきか overflow error を返すべきかを review する。
     - LSP protocol positions は `u32` のままにしつつ、session coordinates から narrow する箇所は explicit かつ tested にする。
 
@@ -99,6 +96,11 @@
    - one-based Unicode scalar line/column conversion 用の `LineMap` tests を持つ minimal `mizar-session` crate を追加した。
    - zero-based LSP UTF-16 positions 用の range-mapper tests を持つ minimal `mizar-lsp` crate を追加した。
    - `mizar-lexer` は引き続き byte-span oriented であり、user-facing または LSP column conversion を行わない。
+
+18. source path normalization を lexer 外で cover した。
+   - package-relative `.miz` source identities 用に `mizar-session::normalize_source_path` と `NormalizedPath` を追加した。
+   - Tests は `.`/`..`、symlink alias/escape rejection、canonical case spelling、package-root escape attempts、source-root enforcement、extension validation、ASCII identifier-shaped namespace components、platform-specific separator normalization を cover する。
+   - lexer-local な `module_source_name_from_path` は boundary naming helper のままにし、filesystem-aware source identity は session source layer に置いた。
 
 ## Suggested Verification
 

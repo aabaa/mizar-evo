@@ -6,14 +6,11 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-1. Cover source path normalization outside lexer.
-    - Test `.`/`..`, symlinks, case policy, package-root escape attempts, and platform-specific separators in the source-loading/path layer.
-
-2. Decide shared source-span ownership across lexer, session, and LSP crates.
+1. Decide shared source-span ownership across lexer, session, and LSP crates.
     - Revisit whether `SourceRange` should stay crate-local with explicit conversion APIs or move to a common source-coordinate crate.
     - Do this when lexer token spans are wired into session/LSP diagnostics so the integration pressure is real.
 
-3. Decide line/column overflow policy for session source maps.
+2. Decide line/column overflow policy for session source maps.
     - `mizar-session::LineMap` currently reports user-facing line/column values as `u32`; review whether session APIs should use `usize` or return an overflow error for extremely large files or lines.
     - Keep LSP protocol positions `u32`, but make any narrowing from session coordinates explicit and tested.
 
@@ -99,6 +96,11 @@ This document records follow-up tasks identified during the lexer quality review
    - Added a minimal `mizar-session` crate with `LineMap` tests for one-based Unicode scalar line/column conversion.
    - Added a minimal `mizar-lsp` crate with range-mapper tests for zero-based LSP UTF-16 positions.
    - `mizar-lexer` remains byte-span oriented and does not perform user-facing or LSP column conversion.
+
+18. Covered source path normalization outside lexer.
+   - Added `mizar-session::normalize_source_path` and `NormalizedPath` for package-relative `.miz` source identities.
+   - Tests cover `.`/`..`, symlink alias/escape rejection, canonical case spelling, package-root escape attempts, source-root enforcement, extension validation, ASCII identifier-shaped namespace components, and platform-specific separator normalization.
+   - The lexer-local `module_source_name_from_path` remains only a boundary naming helper; filesystem-aware source identity now lives in the session source layer.
 
 ## Suggested Verification
 
