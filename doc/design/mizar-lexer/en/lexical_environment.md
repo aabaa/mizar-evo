@@ -121,7 +121,7 @@ The implemented builder constructs a deterministic lookup object from already-re
 6. Insert the candidate into `UserSymbolIndex`. Equal spellings from different imports are rejected as `UserSymbolImportConflict`. Equal spellings from the same import remain representable as overload candidates and are stored in the active-candidate order described above.
 7. Return `ActiveLexicalEnvironment` containing borrowed reserved tables, the completed user-symbol index, and the deterministic fingerprint.
 
-`UserSymbolIndex` keeps a canonical `BTreeMap<String, Vec<UserSymbolCandidate>>` for exact-spelling lookup, deterministic ordering, and conflict diagnostics. It also maintains an ASCII byte trie over the same spellings for longest-prefix lookup. `longest_user_symbol_at` walks the trie from the requested byte offset, remembers the deepest terminal node, and returns the candidates from the visible import ordinal for that spelling. Candidate discovery is therefore proportional to the scanned spelling length plus the returned candidates, while preserving the previous public lookup semantics.
+`UserSymbolIndex` keeps a canonical `BTreeMap<String, Vec<UserSymbolCandidate>>` for exact-spelling lookup, deterministic ordering, and conflict diagnostics. It also maintains an ASCII byte trie over the same spellings for longest-prefix lookup. `longest_user_symbol_at` walks the trie from the requested byte offset, remembers the deepest terminal node, and returns the candidates from the visible import ordinal for that spelling. Candidate discovery is therefore proportional to the scanned spelling length plus the number of returned candidates, while preserving the previous public lookup semantics.
 
 Current implementation notes:
 

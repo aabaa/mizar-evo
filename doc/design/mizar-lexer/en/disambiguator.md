@@ -56,7 +56,7 @@ The implemented `disambiguate` algorithm processes raw tokens in order and emits
 
 The selected candidate is the longest valid candidate after parser expectation and scope override rules are applied.
 
-Candidate priority breaks equal-length ties after length has been considered. Namespace-path `.` as a reserved symbol has the highest priority, scoped identifier override of an identifier-shaped user symbol comes next, then active user symbols, reserved symbols, reserved words, identifiers, and numerals. If no admitted candidate exists but at least one raw candidate shape was present, the diagnostic is `ParserContextRejectedCandidate`; otherwise it is `NoValidTokenCandidate`.
+Candidate priority breaks ties between candidates of equal length. Namespace-path `.` as a reserved symbol has the highest priority, scoped identifier override of an identifier-shaped user symbol comes next, then active user symbols, reserved symbols, reserved words, identifiers, and numerals. If no admitted candidate exists but at least one raw candidate shape was present, the diagnostic is `ParserContextRejectedCandidate`; otherwise it is `NoValidTokenCandidate`.
 
 The current implementation has an `AmbiguousUserSymbol` diagnostic code reserved for future cases, but equal-spelling same-import overloads remain a deterministic candidate set in the lexical environment and are intentionally left for later resolution phases.
 

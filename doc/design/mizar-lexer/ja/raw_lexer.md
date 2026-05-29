@@ -4,94 +4,94 @@
 
 ## Purpose
 
-この module は、Mizar Evo における lexer の責務境界を定義します。
+このモジュールは、Mizar Evo における字句解析器(lexer)の責務境界を定義します。
 
-Mizar の字句分類は文脈に依存します。import された module は user-defined symbol を増やし、user symbol は identifier と同じ形を取り得ます。さらに、局所的な identifier binding が symbol 解釈を override することもあります。そのため lexer は、すべての `Identifier` / `UserSymbol` 分類を context-free な 1 pass で確定する設計にしてはいけません。
+Mizar の字句分類(lexical classification)は文脈に依存します。インポートされたモジュールはユーザー定義シンボルを増やし、ユーザーシンボルは識別子と同じ形を取り得ます。さらに、局所的な識別子束縛がシンボル解釈を上書き(override)することもあります。そのため字句解析器は、すべての `Identifier` / `UserSymbol` の分類を、文脈自由(context-free)な単一パスで恒久的に確定する設計にしてはいけません。
 
-現在の実装は、低レベルの raw scanner と、より高レベルな disambiguation entry point の両方を公開しています。この文書では、便利関数 `lex(&str)` の shell を完全な context-sensitive lexer と誤解しないよう、各層の責務境界を明確にします。
+現在の実装は、低レベルの生スキャナー(raw scanner)と、より高レベルな曖昧性解消(disambiguation)のエントリポイントの両方を公開しています。この文書では、利便用関数 `lex(&str)` のシェルを完全な文脈依存の字句解析器と誤解しないよう、各層の責務境界を明確にします。
 
 ## Public API Stability
 
-`mizar-lexer` は現在 `0.1` crate です。public data structures は parser-facing transfer objects として扱い、初期段階の parser、corpus、integration code が直接 inspect / construct できるよう fields を visible のままにします。
+`mizar-lexer` は現在 `0.1` クレートです。公開データ構造はパーサー向けの転送オブジェクトとして扱い、初期段階のパーサー・コーパス・統合コードが直接調べたり構築したりできるよう、フィールドを可視のままにします。
 
-public enums には `#[non_exhaustive]` を付けます。downstream crates は token kinds、raw token kinds、diagnostic codes、parser modes、import pre-scan categories、scope-skeleton categories、source-preprocessing categories、lexical-environment errors を match するとき wildcard arm を含める必要があります。これにより parser-facing API が成熟するまで category を追加できる余地を保ちます。
+公開列挙型(enum)には `#[non_exhaustive]` を付けます。下流のクレートは、トークン種別、生トークン種別、診断コード、パーサーモード、インポート事前スキャンのカテゴリ、スコープスケルトンのカテゴリ、ソース前処理のカテゴリ、字句環境のエラーを照合するとき、ワイルドカードのアーム(arm)を含める必要があります。これにより、パーサー向け API が成熟するまでカテゴリを追加できる余地を保ちます。
 
-明示的な stability milestone を後で設けるまでは、`0.1` minor releases でも lexer boundary の一貫性を保つために public fields、constructors、helper functions に breaking changes を加える可能性があります。
+明示的な安定化マイルストーンを後で設けるまでは、`0.1` のマイナーリリースでも、字句解析器の境界の一貫性を保つために、公開フィールド・コンストラクタ・ヘルパー関数へ破壊的変更を加える可能性があります。
 
 ## Source Preconditions
 
-`mizar-lexer` に渡される入力は raw file bytes ではありません。
+`mizar-lexer` に渡される入力は、生のファイルバイト列ではありません。
 
-この crate の外側にある source-loading layer は、以下を担当します。
+このクレートの外側にあるソース読み込み層は、以下を担当します。
 
-- file read;
-- UTF-8 validation;
-- package-authored source text の先頭 UTF-8 BOM を lexer entry 前に受け入れて取り除くこと;
-- scanner entry point に渡す前の platform newline から LF-only text への正規化;
-- 必要に応じた original file offsets への source map;
-- package 内で source file をどのように見つけるかの決定。
+- ファイルの読み込み;
+- UTF-8 の検証;
+- パッケージが用意したソーステキストの先頭 UTF-8 BOM を、字句解析器に入る前に受け入れて取り除くこと;
+- スキャナーのエントリポイントに渡す前の、プラットフォーム改行から LF のみのテキストへの正規化;
+- 必要に応じた、元のファイルオフセットへのソースマップの保持;
+- パッケージ内でソースファイルをどのように見つけるかの決定。
 
-一方、`mizar-lexer` は lexical boundary 用の source preprocessing helpers を提供します。
+一方、`mizar-lexer` は字句の境界向けのソース前処理ヘルパーを提供します。
 
-- tests や early integration code が executable な source-loading boundary を必要とする場合、crate-local `load_source_text_from_bytes` helper で UTF-8 source bytes を validate する;
-- その helper で先頭 UTF-8 BOM を一つ strip し、post-strip loaded-text offsets から original byte offsets への最小限の loading map を記録する;
-- その helper で lexer entry 前に CRLF newline pairs を LF に normalize し、original byte ranges への normalized-newline map segments を記録する;
-- ordinary comment、documentation comment、multi-line comment を lexical input から取り除く;
-- comment trivia を source span とともに保持する;
-- コメント内の newline だけを残し、行構造を崩さないようにする;
-- comment removal が隣接する token-shaped text を連結してしまう場合は synthetic layout を挿入する;
-- carriage return、code region 内の non-ASCII text、閉じていない multi-line comment を preprocessing diagnostic として報告する;
-- 必要に応じて package-rooted `.miz` source name を検証する。
+- テストや初期統合コードが実行可能なソース読み込みの境界を必要とする場合、クレートローカルの `load_source_text_from_bytes` ヘルパーで UTF-8 のソースバイト列を検証する;
+- そのヘルパーで先頭 UTF-8 BOM を 1 つ取り除き、取り除いた後の読み込み済みテキストのオフセットから元のバイトオフセットへの最小限の読み込みマップを記録する;
+- そのヘルパーで、字句解析器に入る前に CRLF の改行対を LF に正規化し、元のバイト範囲への正規化改行マップのセグメントを記録する;
+- 通常コメント・ドキュメンテーションコメント・複数行コメントを字句入力から取り除く;
+- コメントのトリビア(trivia)をソーススパンとともに保持する;
+- コメント内の改行だけを残し、行構造を崩さないようにする;
+- コメント除去によって隣接するトークンの形をしたテキストが連結してしまう場合は、合成のレイアウト(空白)を挿入する;
+- キャリッジリターン、コード領域内の非 ASCII テキスト、閉じていない複数行コメントを、前処理の診断として報告する;
+- 必要に応じて、パッケージを起点とする `.miz` ソース名を検証する。
 
-`mizar-lexer` は layout が以下のみであると仮定できます:
+`mizar-lexer` は、レイアウトが以下のみであると仮定できます。
 
 ```text
 space, tab, newline
 ```
 
-Carriage return はこの layer では layout ではありません。Source loading は scanner entry 前に CRLF pairs を LF に normalize します。lone `\r` が lexer に届いた場合、それは source-loading 側の不備、platform newline ではない malformed input、または意図的な malformed test fixture です。
+キャリッジリターンは、この層ではレイアウトではありません。ソース読み込みは、スキャナーに入る前に CRLF 対を LF に正規化します。単独の `\r` が字句解析器に届いた場合、それはソース読み込み側の不備、プラットフォーム改行ではない不正な入力、または意図的に不正にしたテストフィクスチャのいずれかです。
 
-先頭 UTF-8 BOM も lexer feature ではなく source-loading の責務です。Disk input は byte sequence `EF BB BF` を含んでよく、package-authored open-buffer text は対応する先頭 `U+FEFF` を含んでよいです。source loader は、`LoadedSource.text` を構築する前、または lexer entry point を呼ぶ前に、その先頭 signature だけを取り除きます。`preprocess_source_for_lexing` または `scan_raw` に届いた `U+FEFF` は、先頭以外のものを含めて malformed lexer-boundary input のままであり、この layer で silently discard してはいけません。
+先頭 UTF-8 BOM も、字句解析器の機能ではなくソース読み込みの責務です。ディスク入力はバイト列 `EF BB BF` を含んでよく、パッケージが用意した開きバッファのテキストは、対応する先頭の `U+FEFF` を含んでよいです。ソースローダーは、`LoadedSource.text` を構築する前、または字句解析器のエントリポイントを呼ぶ前に、その先頭の符号(signature)だけを取り除きます。`preprocess_source_for_lexing` または `scan_raw` に届いた `U+FEFF` は、先頭以外のものを含めて、字句境界における不正な入力のままであり、この層で黙って捨ててはいけません。
 
 ## Source-Text Normalization Policy
 
-`mizar-lexer` は Unicode normalization を行いません。code text に対して canonical normalization や compatibility normalization を適用してから lexical spelling rules を判定することはありません。
+`mizar-lexer` は Unicode 正規化を行いません。字句の綴り規則を判定する前に、コードテキストへ正準正規化や互換正規化を適用することはありません。
 
-この layer では、code-region identifiers、numerals、reserved words、reserved symbols、user-symbol spellings は ASCII-only です。code region に届いた non-ASCII text は lexer boundary における malformed input です。preprocessing は `NonAsciiCode` として報告し、direct raw scanning は unsupported characters を reject します。ASCII spelling へ変換して受け入れることはありません。
+この層では、コード領域の識別子・数字・予約語・予約記号・ユーザーシンボルの綴りは ASCII のみです。コード領域に届いた非 ASCII テキストは、字句境界における不正な入力です。前処理はそれを `NonAsciiCode` として報告し、直接の生スキャンは未対応の文字を拒否します。ASCII の綴りへ変換して受け入れることはありません。
 
-comments と documentation comments は別扱いです。その text は source span 付きの raw Unicode trivia として保持されます。ただし、上記の comment-stripping rules に従い、newline structure は `lexical_text` に残します。lexer は comment/documentation text 内の Unicode を normalize せず、warning も reject も行いません。将来の documentation、source-loading、diagnostic policy は、lexer tokenization を変更せずに suspicious Unicode、confusables、normalization-sensitive text への warning を追加できます。
+コメントとドキュメンテーションコメントは別扱いです。そのテキストは、ソーススパン付きの生の Unicode トリビアとして保持されます。ただし、上記のコメント除去規則に従い、改行の構造は `lexical_text` に残します。字句解析器は、コメント/ドキュメンテーションテキスト内の Unicode を正規化せず、警告も拒否もしません。将来のドキュメンテーション・ソース読み込み・診断の方針は、字句解析器のトークン化を変更せずに、紛らわしい Unicode・誤認しやすい文字(confusables)・正規化に敏感なテキストへの警告を追加できます。
 
 ## Core Design
 
-Lexing は概念的に 2 段階に分けます。
+字句解析は、概念的に 2 段階に分けます。
 
 ## 実装上のアルゴリズムの流れ
 
-現在の crate は、便利関数 `lex` を使う場合でも、source preparation、raw scanning、final disambiguation を分けて扱います。
+現在のクレートは、利便用関数 `lex` を使う場合でも、ソースの準備・生スキャン・最終曖昧性解消を分けて扱います。
 
-1. `preprocess_source_for_lexing` は入力を先頭から順に走査します。コメントは lexical text から取り除きますが、コメント内の改行は残して行位置が崩れないようにし、削除によって隣接する token-shaped text が連結してしまう場合は synthetic layout を挿入します。コメント本体は source span 付きの trivia として保持し、lexical ranges から loaded-source ranges へ戻す lightweight preprocess map も記録します。`\r`、code region 内の non-ASCII 文字、閉じていない multi-line comment は preprocessing diagnostics として報告します。multi-line comment は nest しません。`::=` opener の後に最初に現れる `=::` が comment を閉じ、内部の `::=` spelling は通常の comment text として扱います。この helper はファイル読み込みや OS ごとの改行正規化は担当しません。
-2. `scan_raw` は LF-only の lexical text を `char_indices` cursor で読みます。連続する layout は 1 個の `Layout` にまとめ、`@` から始まる annotation marker を認識し、`@` 以外の ASCII graphic characters は連続した run としてまとめます。その run がすべて digit なら `NumeralLike`、そうでなければ `LexemeRun` です。対応していない文字は `LexError` になります。
-3. `disambiguate_reserved_shell` は `lex` が使う context-free な薄い shell です。layout を捨て、`NumeralLike` を `Numeral` にし、`@[` を reserved symbol にします。`LexemeRun` 全体については、reserved symbol、reserved word、identifier、または不透明な `LexemeRun` として分類します。
-4. import、parser context、scope override が分類に影響する場合は `disambiguate` を使います。この経路では raw scanning はあえて coarse に保ち、`LexemeRun` の内部分割は disambiguator が reserved tables、active lexical environment、parser lexical context、`ScopeLexView` を見て行います。
-5. `module_source_name_from_path` は scanner ではなく source boundary helper です。package name を検証し、`.miz` file が `src` root 配下にあること、source root が package name と一致すること、path separator の違いを吸収できること、namespace components がすべて identifier-shaped であることを確認します。
+1. `preprocess_source_for_lexing` は入力を先頭から順に走査します。コメントは字句テキストから取り除きますが、コメント内の改行は残して行位置が崩れないようにし、除去によって隣接するトークンの形をしたテキストが連結してしまう場合は合成レイアウトを挿入します。コメント本体はソーススパン付きのトリビアとして保持し、字句範囲から読み込み済みソース範囲へ戻す軽量な前処理マップも記録します。`\r`、コード領域内の非 ASCII 文字、閉じていない複数行コメントは前処理の診断として報告します。複数行コメントは入れ子になりません。`::=` の開始記号の後に最初に現れる `=::` がコメントを閉じ、内部の `::=` の綴りは通常のコメントテキストとして扱います。このヘルパーは、ファイルの読み込みや OS ごとの改行正規化は担当しません。
+2. `scan_raw` は、LF のみの字句テキストを `char_indices` カーソルで読みます。連続するレイアウトを 1 個の `Layout` にまとめ、`@` から始まる注釈マーカー(annotation marker)を認識し、`@` 以外の ASCII 図形文字を連続したランとしてまとめます。そのランがすべて数字なら `NumeralLike`、そうでなければ `LexemeRun` です。対応していない文字は `LexError` になります。
+3. `disambiguate_reserved_shell` は、`lex` が使う文脈自由な薄いシェルです。レイアウトを捨て、`NumeralLike` を `Numeral` にし、`@[` を予約記号にします。`LexemeRun` 全体については、予約記号・予約語・識別子、または不透明な `LexemeRun` として分類します。
+4. インポート・パーサーコンテキスト・スコープによる上書きが分類に影響する場合は `disambiguate` を使います。この経路では生スキャンをあえて粗いままに保ち、`LexemeRun` の内部分割は、曖昧性解消器が予約テーブル・アクティブ字句環境・パーサーの字句コンテキスト・`ScopeLexView` を見て行います。
+5. `module_source_name_from_path` は、スキャナーではなくソース境界のヘルパーです。パッケージ名を検証し、`.miz` ファイルが `src` ルート配下にあること、ソースルートがパッケージ名と一致すること、パス区切りの違いを吸収できること、名前空間の構成要素がすべて識別子の形であることを確認します。
 
-Raw scanner の重要な不変条件は span contiguity です。出力された raw token は必ず元入力の正確な byte slice を指し、raw token の lexeme を連結すると scanner input が復元できます。
+生スキャナーの重要な不変条件は、スパンの連続性です。出力された生トークンは必ず元入力の正確なバイト列を指し、生トークンの字句単位(lexeme)を連結するとスキャナーの入力が復元できます。
 
 ### Source Coordinates
 
-`SourceSpan` は `mizar-lexer` 内部の canonical coordinate type です。これは token または diagnostic を生成した正確な text に対する byte offset を保持し、半開区間 `[start, end)` を表します。
+`SourceSpan` は、`mizar-lexer` 内部の正準的な座標型です。これは、トークンまたは診断を生成した正確なテキストに対するバイトオフセットを保持し、半開区間 `[start, end)` を表します。
 
-caller は coordinate space を明示的に扱わなければなりません。`scan_raw` と `disambiguate` から生成される raw token と final token は、`scan_raw` に渡された scanner input を指します。その input が `PreprocessedLexicalSource.lexical_text` の場合、span は lexical-text offset であり、元の loaded `.miz` text への offset とは限りません。`SourceLineIndex` は、必ず span が指している text と同じ text から構築します。
+呼び出し側は、座標空間を明示的に扱わなければなりません。`scan_raw` と `disambiguate` から生成される生トークンと最終トークンは、`scan_raw` に渡されたスキャナー入力を指します。その入力が `PreprocessedLexicalSource.lexical_text` の場合、スパンは字句テキストのオフセットであり、元の読み込み済み `.miz` テキストへのオフセットとは限りません。`SourceLineIndex` は、必ずスパンが指しているテキストと同じテキストから構築します。
 
-lexical-text offset から original loaded-source offset への mapping は明示的に扱います。`PreprocessedLexicalSource.preprocess_map` は comment stripping と synthetic layout のための lightweight な lexer-local map を提供し、より rich な snapshot/source-map ownership は session layer に残ります。lexer は preprocessed text 上の span を original file coordinate として暗黙に扱ってはいけません。
+字句テキストのオフセットから元の読み込み済みソースのオフセットへの対応付けは、明示的に扱います。`PreprocessedLexicalSource.preprocess_map` は、コメント除去と合成レイアウトのための軽量で字句解析器ローカルなマップを提供し、よりリッチなスナップショット/ソースマップの所有はセッション層に残ります。字句解析器は、前処理済みテキスト上のスパンを元のファイル座標として暗黙に扱ってはいけません。
 
-source loading が先頭 BOM を取り除く、または CRLF newline pairs を normalize した場合、lexer span は raw file bytes ではなく normalized loaded text への byte offset として測られます。Disk source では、`LoadingMap` がそれらの loaded-text offsets を original file byte offsets へ関連付けます。BOM が取り除かれている場合、loaded text の offset `0` は original file の byte offset `3` に対応します。normalized LF は original の two-byte CRLF range に対応します。取り除かれた BOM は lexer `SourceSpan` を持ちません。
+ソース読み込みが先頭 BOM を取り除いたり CRLF の改行対を正規化したりした場合、字句解析器のスパンは生のファイルバイト列ではなく、正規化済みの読み込みテキストへのバイトオフセットとして測られます。ディスクソースでは、`LoadingMap` がそれらの読み込みテキストのオフセットを元のファイルのバイトオフセットへ関連付けます。BOM が取り除かれている場合、読み込みテキストのオフセット `0` は元のファイルのバイトオフセット `3` に対応します。正規化された LF は、元の 2 バイトの CRLF 範囲に対応します。取り除かれた BOM は、字句解析器の `SourceSpan` を持ちません。
 
-Crate-local `load_source_text_from_bytes` helper は、この contract の UTF-8、leading-BOM、CRLF-to-LF 部分を実装します。Invalid UTF-8 は `SourceLoadError::InvalidUtf8` として reject し、bytes を lossy decode して `U+FFFD` にすることはありません。先頭 BOM を strip した場合、`LoadedSourceText.loading_map` は `RemovedLeadingBom { original: [0, 3) }` と、loaded offsets を original byte offsets に map する後続 segments を返します。CRLF を normalize した場合は、single LF byte の loaded range と two-byte CRLF spelling の original range を持つ `NormalizedNewline` segments を記録します。Lone `\r` はこの helper では normalize せず、malformed lexer-boundary input のままです。Full file I/O、path normalization、hashes、rich session `LineMap` ownership は引き続き `mizar-lexer` の外側にあります。
+クレートローカルの `load_source_text_from_bytes` ヘルパーは、この規約のうち UTF-8・先頭 BOM・CRLF→LF の部分を実装します。不正な UTF-8 は `SourceLoadError::InvalidUtf8` として拒否し、バイト列を非可逆にデコードして `U+FFFD` にすることはありません。先頭 BOM を取り除いた場合、`LoadedSourceText.loading_map` は `RemovedLeadingBom { original: [0, 3) }` と、読み込みオフセットを元のバイトオフセットに対応付ける後続セグメントを返します。CRLF を正規化した場合は、単一の LF バイトの読み込み範囲と、2 バイトの CRLF の綴りの元範囲を持つ `NormalizedNewline` セグメントを記録します。単独の `\r` はこのヘルパーでは正規化せず、字句境界における不正な入力のままです。完全なファイル I/O、パス正規化、ハッシュ、リッチなセッションの `LineMap` の所有は、引き続き `mizar-lexer` の外側にあります。
 
-lexer は raw token や final token のすべてに line/column number を保存してはいけません。Line/column は diagnostics、debug output、snapshots、LSP bridge が human-readable coordinate を必要とする時に、source text から計算する derived view です。これにより location data の重複を避け、token value の中で複数の coordinate system が混ざることを防ぎます。
+字句解析器は、生トークンや最終トークンのすべてに行/列番号を保存してはいけません。行/列は、診断・デバッグ出力・スナップショット・LSP ブリッジが人間に読める座標を必要とするときに、ソーステキストから計算する導出ビューです。これにより位置データの重複を避け、トークンの値の中で複数の座標系が混ざることを防ぎます。
 
-`mizar-lexer` は lexer-local に使える lightweight line-index helper を提供します。
+`mizar-lexer` は、字句解析器ローカルに使える軽量な行インデックスのヘルパーを提供します。
 
 ```rust
 pub struct SourceLineIndex {
@@ -117,15 +117,15 @@ impl SourceLineIndex {
 }
 ```
 
-内部規約は zero-based line と zero-based byte column です。`location` と `range` は、要求された offset または span が indexed source text の外側を指す場合、または UTF-8 character boundary ではない場合に `None` を返します。人間向け diagnostics では formatting 時に one-based display number へ変換できます。LSP-specific な UTF-16 position は token に保存せず、同じ byte offset から LSP bridge または dedicated adapter が計算します。
+内部規約は、0 始まりの行と 0 始まりのバイト列です。`location` と `range` は、要求されたオフセットまたはスパンがインデックス化されたソーステキストの外側を指す場合、または UTF-8 文字境界ではない場合に `None` を返します。人間向けの診断では、整形時に 1 始まりの表示番号へ変換できます。LSP 固有の UTF-16 位置はトークンに保存せず、同じバイトオフセットから LSP ブリッジまたは専用アダプターが計算します。
 
-この helper は source-loading abstraction ではありません。Session layer は open buffers、snapshots、source maps、LSP integration のために `LoadedSource` 上でより rich な `LineMap` を保持できます。`mizar-lexer` が持つのは、`&str` から lexer diagnostics and tests を読みやすくするために必要な coordinate conversion だけです。
+このヘルパーは、ソース読み込みの抽象ではありません。セッション層は、開きバッファ・スナップショット・ソースマップ・LSP 統合のために、`LoadedSource` 上でよりリッチな `LineMap` を保持できます。`mizar-lexer` が持つのは、`&str` から字句解析器の診断とテストを読みやすくするために必要な座標変換だけです。
 
 ### Stage 1: Raw Scan
 
-Raw scanner は LF-only source text を読み、source span を保持する raw unit を生成します。
+生スキャナーは LF のみのソーステキストを読み、ソーススパンを保持する生の単位を生成します。
 
-Raw unit は final language token ではありません。特に `LexemeRun` は graphic character の連続であり、後で 1 個以上の final token に変換されます。
+生の単位は最終的な言語トークンではありません。特に `LexemeRun` は図形文字の連続であり、後で 1 個以上の最終トークンに変換されます。
 
 ```rust
 #[non_exhaustive]
@@ -138,9 +138,9 @@ pub enum RawTokenKind {
 }
 ```
 
-`scan_raw` は現在、unsupported raw input に対して `RawTokenKind::Error` を emit するのではなく、`LexError` を返します。`Error` variant は、malformed raw unit を後段の disambiguation まで運びたい caller や将来の recovery path のために残しています。
+`scan_raw` は現在、未対応の生入力に対して `RawTokenKind::Error` を出力するのではなく、`LexError` を返します。`Error` バリアントは、不正な生の単位を後段の曖昧性解消まで運びたい呼び出し側や、将来の回復経路のために残しています。
 
-`LexemeRun` は中心的な raw unit です。identifier-shaped spelling と punctuation-shaped spelling の両方を含みます。
+`LexemeRun` は中心的な生の単位です。識別子の形をした綴りと、記号の形をした綴りの両方を含みます。
 
 ```text
 alpha
@@ -152,17 +152,17 @@ foo'
 x*+y
 ```
 
-Raw scanner は span、spelling、後段の longest-match disambiguation に必要な構造を保持しなければなりません。active user symbol の認識を不可能にするような早すぎる分割は避けます。
+生スキャナーは、スパン・綴り・後段の最長一致による曖昧性解消に必要な構造を保持しなければなりません。アクティブなユーザーシンボルの認識を不可能にするような、早すぎる分割は避けます。
 
-`LexemeRun` は意図的に粗い単位です。reserved punctuation である `.`, `..`, `,`, `;`、quote、operator character は run 内に現れ得ます。後続 module は必要に応じて run の内部を調べて分割してよいですが、source span を保持し、raw scanner に grammar context を要求してはいけません。
+`LexemeRun` は意図的に粗い単位です。予約句読点である `.`, `..`, `,`, `;`、引用符、演算子文字は、ラン内に現れ得ます。後続のモジュールは必要に応じてランの内部を調べて分割してよいですが、ソーススパンを保持し、生スキャナーに文法の文脈を要求してはいけません。
 
-Comment と documentation comment は raw token ではありません。`preprocess_source_for_lexing` はそれらを lexical input から取り除き、trivia と source span を別に保持し、`lexical_text` には newline を残します。また、inline comment の削除によって隣接する token-shaped text が連結してしまう場合は synthetic space を挿入し、original text、removed comments、synthetic whitespace/newlines の preprocess-map segments を記録します。multi-line comment は nest せず、最初の closing `=::` が comment を終了します。Import pre-scan と scope skeleton construction はその lexical text に対して動作するため、comment を `RawTokenKind` として受け取ることはありません。
+コメントとドキュメンテーションコメントは生トークンではありません。`preprocess_source_for_lexing` はそれらを字句入力から取り除き、トリビアとソーススパンを別に保持し、`lexical_text` には改行を残します。また、インラインコメントの除去によって隣接するトークンの形をしたテキストが連結してしまう場合は合成の空白を挿入し、元テキスト・除去コメント・合成空白/改行の前処理マップのセグメントを記録します。複数行コメントは入れ子にならず、最初の閉じ記号 `=::` がコメントを終了します。インポート事前スキャンとスコープスケルトンの構築は、その結果の字句テキストに対して動作するため、コメントを `RawTokenKind` の値として受け取ることはありません。
 
 ### Import Pre-Scan and Active Lexical Environment
 
-Raw scanner は imports を解釈せず、module system も知りません。raw units を生成するだけです。
+生スキャナーはインポートを解釈せず、モジュールシステムも知りません。生の単位を生成するだけです。
 
-Active user symbols は、別の import pre-scan と environment-building path により組み立てられます:
+アクティブなユーザーシンボルは、別のインポート事前スキャンと環境構築の経路によって組み立てられます。
 
 ```text
 LF-only source text
@@ -176,21 +176,21 @@ LF-only source text
        ActiveLexicalEnvironment
 ```
 
-Import pre-scan は restricted syntax mode で raw lexer output を読みます。`.`、`..`、`,`、`;` などの import syntax のために、`LexemeRun` spans の内部を inspect and split してよいです。module path spellings と source spans を抽出するために必要な top-level import structure だけを認識します。package/module existence、visibility、re-export legality、imported symbol identity を resolve してはいけません。
+インポート事前スキャンは、制限付きの構文モードで生の字句解析器の出力を読みます。`.`、`..`、`,`、`;` などのインポート構文のために、`LexemeRun` のスパンの内部を調べて分割してよいです。モジュールパスの綴りとソーススパンを抽出するために必要な、トップレベルのインポート構造だけを認識します。パッケージ/モジュールの存在、可視性、再エクスポートの合法性、インポートシンボルの同一性を解決してはいけません。
 
-Active lexical environment は disambiguator が consume する input です。built-in reserved tables と imported module lexical summaries 由来の exported user-symbol shapes を含み、後続 parser / resolver filtering 用の lightweight な kind と arity metadata も保持します。その構築は raw scanning の外側にあります。
+アクティブ字句環境は、曖昧性解消器が消費する入力です。組み込みの予約テーブルと、インポートしたモジュールの字句サマリー由来のエクスポートされたユーザーシンボルの形状を含み、後続のパーサー/リゾルバでの絞り込み用に、軽量な種別とアリティのメタデータも保持します。その構築は生スキャンの外側にあります。
 
 ### Stage 2: Disambiguation
 
-Disambiguator は raw unit を final token に変換します。入力として以下を使います。
+曖昧性解消器は、生の単位を最終トークンに変換します。入力として以下を使います。
 
-- reserved words;
-- reserved special symbols;
-- imported module interface summary 由来の active user symbols;
-- current grammar position の parser expectation;
-- symbol/identifier override rules が必要とする read-only scope view.
+- 予約語;
+- 予約特殊記号;
+- インポートしたモジュールのインターフェースサマリー由来の、アクティブなユーザーシンボル;
+- 現在の文法位置におけるパーサーの期待;
+- シンボル/識別子の上書き規則が必要とする、読み取り専用のスコープビュー.
 
-Longest-match は `LexemeRun` の内部で disambiguator が処理します。1 つの raw run は複数の final tokens になり得ます。
+最長一致は、`LexemeRun` の内部で曖昧性解消器が処理します。1 つの生ランは複数の最終トークンになり得ます。
 
 例:
 
@@ -199,29 +199,29 @@ raw:   LexemeRun("x*+y")
 final: Identifier("x"), UserSymbol("*+"), Identifier("y")
 ```
 
-full spelling を覆う active user symbol があり、scoped identifier rule による override がなければ、同じ raw run は以下にもなり得ます。
+綴り全体を覆うアクティブなユーザーシンボルがあり、スコープ付き識別子規則による上書きがなければ、同じ生ランは以下にもなり得ます。
 
 ```text
 raw:   LexemeRun("x*+y")
 final: UserSymbol("x*+y")
 ```
 
-Disambiguator は scope information を参照しますが、それを構築しません。scope view は full parsing の前に dedicated scope-skeleton pre-scan によって生成されます。
+曖昧性解消器はスコープ情報を参照しますが、それを構築しません。スコープビューは、本格的なパースの前に、専用のスコープスケルトン事前スキャンによって生成されます。
 
 ## Scope Skeleton Pre-Scan
 
-Parser construction は token disambiguation に依存します。一方で token disambiguation は、scoped identifier binding が active user symbol を override するかを知る必要があります。この parser/lexer cycle を避けるため、Mizar Evo は dedicated scope-skeleton pre-scan を使います。
+パーサーの構築はトークンの曖昧性解消に依存します。一方で、トークンの曖昧性解消は、スコープ付き識別子束縛がアクティブなユーザーシンボルを上書きするかを知る必要があります。このパーサー/字句解析器の循環を避けるため、Mizar Evo は専用のスコープスケルトン事前スキャンを使います。
 
-Scope skeleton pre-scan は raw lexer output を読み、lexical binding range を近似するために必要な reserved-keyword-shaped structure だけを認識します。`SurfaceAst` は生成せず、semantic name resolution も行わず、identifier が定義済みかどうかも決めません。
+スコープスケルトン事前スキャンは、生の字句解析器の出力を読み、字句上の束縛範囲を近似するために必要な、予約キーワードの形をした構造だけを認識します。`SurfaceAst` は生成せず、意味論的な名前解決も行わず、識別子が定義済みかどうかも判定しません。
 
-認識対象は、たとえば以下です。
+認識の対象は、たとえば以下です。
 
-- `definition`, `proof`, `now`, `end` のような lexical scope に影響する block delimiters;
-- `let`, `for`, `reserve`, `given` のような binder-introducing reserved words and forms;
-- reserved syntax から shape を recover できる comma-separated binding lists;
-- full expression parsing なしに binding range を近似できる local names.
+- `definition`, `proof`, `now`, `end` のような、字句スコープに影響するブロック区切り;
+- `let`, `for`, `reserve`, `given` のような、束縛子を導入する予約語と形式;
+- 予約構文から形状を復元できる、カンマ区切りの束縛リスト;
+- 式の全体をパースせずに束縛範囲を近似できる局所名.
 
-結果は lexical override questions だけに答える scope skeleton です:
+結果は、字句上の上書きの問いにだけ答えるスコープスケルトンです。
 
 ```rust
 pub struct ScopeSkeleton {
@@ -239,9 +239,9 @@ pub struct ScopedBindingShape {
 }
 ```
 
-Skeleton は malformed source や unsupported source では binding を under-approximate してよいです。ただし deterministic で source span を保持しなければなりません。program を semantic に accept/reject してはいけません。
+スケルトンは、不正なソースや未対応のソースでは束縛を過小近似してよいです。ただし、決定的であり、ソーススパンを保持しなければなりません。プログラムを意味論的に受理/拒否してはいけません。
 
-Disambiguator は narrow projection だけを受け取ります。
+曖昧性解消器は、狭い射影だけを受け取ります。
 
 ```rust
 pub trait ScopeLexView {
@@ -249,51 +249,51 @@ pub trait ScopeLexView {
 }
 ```
 
-`ScopeLexView` は scope skeleton と、必要な場合は resolver-provided module-scope data から実装されます。lexer に full resolver state、type information、overload candidate、proof semantics を公開してはいけません。
+`ScopeLexView` は、スコープスケルトンと、必要な場合はリゾルバが提供するモジュールスコープのデータから実装されます。字句解析器に、完全なリゾルバの状態・型情報・オーバーロード候補・証明の意味論を公開してはいけません。
 
 ## Symbol and Identifier Boundary
 
-`Identifier` は identifier-shaped source text の final token class です。これはその name が定義済みであることを意味しません。
+`Identifier` は、識別子の形をしたソーステキストに対する最終トークンの種別です。これは、その名前が定義済みであることを意味しません。
 
-Undefined-name diagnostics は name resolution の責務であり、raw lexing の責務ではありません。
+未定義名の診断は名前解決の責務であり、生の字句解析の責務ではありません。
 
-ただし、identifier-shaped user symbols と identifiers の final classification には scope information が必要になる場合があります。言語仕様として scoped identifier binding が active symbol を override する場合、disambiguator は `UserSymbol` に確定する前に scoped binding environment を参照しなければなりません。
+ただし、識別子の形をしたユーザーシンボルと識別子の最終分類には、スコープ情報が必要になる場合があります。言語仕様として、スコープ付き識別子束縛がアクティブなシンボルを上書きする場合、曖昧性解消器は `UserSymbol` に確定する前に、スコープ付き束縛環境を参照しなければなりません。
 
-責務の境界は以下の通りです。
+責務の境界は以下のとおりです。
 
 | Question | Owner |
 |---|---|
-| この spelling は identifier syntax に合うか | raw lexer helper |
-| この spelling は active imported user symbol か | lexical environment |
-| この位置で scoped identifier binding が symbol を override できるか | scope skeleton / `ScopeLexView` |
-| override を考慮した後、どの candidate を選ぶか | disambiguator |
-| 結果として得られた identifier が定義済みで、この grammar construct で合法か | name resolution / later semantic phases |
-| symbol または identifier がどの overload を指すか | overload/type checking |
+| この綴りは識別子構文に合うか | raw lexer helper |
+| この綴りはアクティブなインポート済みユーザーシンボルか | lexical environment |
+| この位置でスコープ付き識別子束縛が記号を上書きできるか | scope skeleton / `ScopeLexView` |
+| 上書きを考慮した後、どの候補を選ぶか | disambiguator |
+| 得られた識別子が定義済みで、この文法構文で合法か | name resolution / later semantic phases |
+| 記号または識別子がどのオーバーロードを指すか | overload/type checking |
 
-Raw lexer はこれらを 1 つの判断に潰してはいけません。
+生の字句解析器は、これらを 1 つの判断に潰してはいけません。
 
 ## Longest-Match Rules
 
-Longest-match は early raw token splitting ではなく disambiguator が適用します。
+最長一致は、早い段階の生トークン分割ではなく、曖昧性解消器が適用します。
 
-`LexemeRun` 内の各位置で、disambiguator は以下の candidates を検討します。
+`LexemeRun` 内の各位置で、曖昧性解消器は以下の候補を検討します。
 
-1. active user symbols
-2. reserved compound symbols
-3. reserved words
-4. identifier syntax
-5. digit から始まる場合の numeral syntax
-6. fallback error recovery
+1. アクティブなユーザーシンボル
+2. 予約複合記号
+3. 予約語
+4. 識別子構文
+5. 数字から始まる場合の数字構文
+6. フォールバックのエラー回復
 
-選択される candidate は、現在の parser expectation と override environment の下で有効な最長 candidate です。異なる import から来た同一 spelling の symbol は lexical environment の構築時点で拒否されます。同じ import 内の同一 spelling overload は kind と arity metadata 付きで後続の semantic resolution 用に保持されますが、lexer が選ぶ token spelling は変わりません。
+選択される候補は、現在のパーサーの期待と上書き環境の下で有効な、最長の候補です。異なるインポートから来た同綴りのシンボルは、字句環境の構築時点ですでに拒否されています。同じインポート内の同綴りオーバーロードは、種別とアリティのメタデータ付きで、後続の意味論的な解決のために保持されますが、字句解析器が選ぶトークンの綴りは変わりません。
 
-Parser expectation は、単体では valid な candidate を排除できます。たとえば binder identifier を期待する grammar position では identifier interpretation を優先し、expression position では symbol interpretation を許可できます。
+パーサーの期待は、単体では有効な候補を排除できます。たとえば、束縛子の識別子を期待する文法位置では識別子としての解釈を優先し、式の位置では記号としての解釈を許可できます。
 
 ## Imported Symbol Data
 
-Lexer は imported `.miz` files の full IR を読み込んではいけません。
+字句解析器は、インポートした `.miz` ファイルの完全な IR を読み込んではいけません。
 
-Imports は exported lexical symbols、symbol kind / arity shape、diagnostics 用 provenance を含む lightweight module interface summary を提供します:
+インポートは、エクスポートされた字句シンボル、シンボルの種別とアリティの形状、診断用の十分な由来を含む、軽量なモジュールインターフェースサマリーを提供します。
 
 ```rust
 pub struct ModuleLexicalSummary {
@@ -303,13 +303,13 @@ pub struct ModuleLexicalSummary {
 }
 ```
 
-Active lexical environment は、これらの summary と built-in reserved table から構築します。
+アクティブ字句環境は、これらのサマリーと組み込みの予約テーブルから構築します。
 
-Full module IR は syntax、resolution、verification、artifact data が必要な later phase だけが読み込みます。
+完全なモジュール IR は、構文・解決・検証・成果物のデータを必要とする後続フェーズだけが読み込みます。
 
 ## Current Public API
 
-現在の crate-local API は、bootstrap 用の identifier lexer より広くなっています。
+現在のクレートローカル API は、ブートストラップ用の識別子字句解析器より広くなっています。
 
 ```rust
 pub fn preprocess_source_for_lexing(input: &str) -> PreprocessedLexicalSource;
@@ -355,13 +355,13 @@ pub enum TokenKind {
 }
 ```
 
-`lex` は raw scanning と reserved-shell disambiguation を組み合わせた convenience wrapper です。この context-free classification でも source location を落としてはいけないため、span 付き final token を返します。context-sensitive な分類が必要な場合は、[disambiguator.md](./disambiguator.md) に記載する `disambiguate` API を使います。
+`lex` は、生スキャンと予約シェルの曖昧性解消を組み合わせた利便用ラッパーです。この文脈自由な分類でもソース位置を落としてはいけないため、スパン付きの最終トークンを返します。文脈依存の分類が必要な場合は、[disambiguator.md](./disambiguator.md) に記載する `disambiguate` API を使います。
 
-低レベルの spelling rule は helper predicate に集約されています。layout は space、tab、LF のみです。identifier は ASCII alphabetic または `_` で始まり、継続文字には digit と `'` も使えます。numeral は ASCII digit run です。user-symbol spelling は空でない ASCII graphic run で、`@` を含みません。string literal spelling は同じ quote で閉じる必要があり、escape できるのは `"`, `'`, `\` だけです。
+低レベルの綴り規則は、ヘルパー述語に集約されています。レイアウトは空白・タブ・LF のみです。識別子は ASCII の英字または `_` で始まり、継続文字には数字と `'` も使えます。数字は ASCII の数字のランです。ユーザーシンボルの綴りは空でない ASCII 図形文字のランで、`@` を含みません。文字列リテラルの綴りは同じ引用符で閉じる必要があり、エスケープできるのは `"`, `'`, `\` だけです。
 
 ## Context-Sensitive API
 
-明示的な raw scanning / disambiguation API は現在の実装に存在します。
+明示的な生スキャン/曖昧性解消の API は、現在の実装に存在します。
 
 ```rust
 pub fn scan_raw(input: &str) -> Result<RawTokenStream, LexError>;
@@ -374,40 +374,40 @@ pub fn disambiguate(
 ) -> TokenStream;
 ```
 
-`ScopeLexView` は disambiguator の外側で生成される narrow read-only view です。source position に scoped identifier binding が存在し active symbol を override するか、という lexical disambiguation に必要な質問だけに答えます。lexer に full resolver や type checker を公開してはいけません。
+`ScopeLexView` は、曖昧性解消器の外側で生成される、狭い読み取り専用ビューです。あるソース位置にスコープ付き識別子束縛が存在しアクティブなシンボルを上書きするか、という字句の曖昧性解消に必要な問いにだけ答えます。字句解析器に、完全なリゾルバや型検査器を公開してはいけません。
 
 ## Error Handling
 
-Raw scanning error は lexical layer に届いた malformed source shape を表します。
+生スキャンのエラーは、字句層に届いた不正なソース形状を表します。
 
-- source loading 後に残った non-LF carriage returns;
-- source loading が reject しなかった unsupported non-ASCII code characters;
-- vertical tab や form feed などの unsupported ASCII control characters;
-- impossible annotation markers.
+- ソース読み込み後に残った、LF でないキャリッジリターン;
+- ソース読み込みが拒否しなかった、未対応の非 ASCII コード文字;
+- 垂直タブやフォームフィードなどの、未対応の ASCII 制御文字;
+- あり得ない注釈マーカー.
 
-Disambiguation error は parser context などを考慮した後の tokenization failure を表します。
+曖昧性解消のエラーは、パーサーコンテキストなどを考慮した後のトークン化の失敗を表します。
 
-- source position に valid token candidate がない;
-- grammar context が raw run 内のすべての candidates を禁止している.
+- あるソース位置に有効なトークン候補がない;
+- 文法の文脈が、生ラン内のすべての候補を禁止している.
 
-未定義の identifier は lexing error ではありません。
+未定義の識別子は字句解析のエラーではありません。
 
-Final token span は lexer boundary の一部です。1 対 1 の対応では `RawToken` span をコピーし、`LexemeRun` が複数の final token に分割される場合は raw span の内側を subdivide します。下流の parser、diagnostic、LSP、formatter、incremental-analysis layer は、raw token を再参照しなくてもすべての final token の位置を特定できなければなりません。
+最終トークンのスパンは、字句解析器の境界の一部です。1 対 1 の対応では `RawToken` のスパンをコピーし、`LexemeRun` が複数の最終トークンに分割される場合は、生スパンの内部を細分します。下流のパーサー・診断・LSP・整形器・差分解析の各層は、生トークンを再参照しなくても、すべての最終トークンの位置を特定できなければなりません。
 
-Line/column values は final token span から `SourceLineIndex` または session layer の `LineMap` を通じて derive します。`Token` には保存しません。
+行/列の値は、最終トークンのスパンから `SourceLineIndex` またはセッション層の `LineMap` を通じて導出します。`Token` には保存しません。
 
 ## Tests
 
-crate tests と corpus tests は以下を確認します。
+クレートのテストとコーパスのテストは、以下を確認します。
 
-- identifier、numeral、layout、annotation marker、reserved word、reserved symbol tables;
-- source preprocessing diagnostics と module source naming boundary;
-- unsupported Unicode code-region characters と unsupported ASCII control characters が layout や token text ではなく diagnostics または stable raw-scan hard errors として扱われること;
-- `scan_raw` が早すぎる分割をせず `LexemeRun` spans を保持すること;
-- full parsing 前に reserved-keyword-shaped binding structure から scope skeleton を build できること;
-- longest-match が最長の active user symbol を選ぶこと;
-- identifier-shaped user symbol が lexical environment と scope override rule に従って disambiguate されること;
-- full IR を読み込まなくても imported symbol summary だけで lexical disambiguation に足りること;
-- unresolved identifier は token として残り、name resolution diagnostics は後続 phase に委ねられること;
-- `cargo-fuzz` coverage により、arbitrary valid UTF-8 input に対する `preprocess_source_for_lexing`、direct `scan_raw`、preprocessed lexical text 上の `scan_raw` を exercise すること;
-- Phase 7 regression tests により raw/final span coverage、deterministic raw scanning、retokenization、import conflict、recovery spans、composite disambiguation behavior が保たれること。
+- 識別子・数字・レイアウト・注釈マーカー・予約語・予約記号のテーブル;
+- ソース前処理の診断と、モジュールソース名の境界;
+- 未対応の Unicode コード領域文字と未対応の ASCII 制御文字が、レイアウトやトークンテキストではなく、診断または安定した生スキャンの致命的エラーとして扱われること;
+- `scan_raw` が早すぎる分割をせず `LexemeRun` のスパンを保持すること;
+- 本格的なパースの前に、予約キーワードの形をした束縛構造からスコープスケルトンを構築できること;
+- 最長一致が最長のアクティブなユーザーシンボルを選ぶこと;
+- 識別子の形をしたユーザーシンボルが、字句環境とスコープ上書き規則に従って曖昧性解消されること;
+- 完全な IR を読み込まなくても、インポートシンボルのサマリーだけで字句の曖昧性解消に足りること;
+- 未解決の識別子はトークンとして残り、名前解決の診断は後続フェーズに委ねられること;
+- `cargo-fuzz` のカバレッジにより、任意の有効な UTF-8 入力に対する `preprocess_source_for_lexing`、直接の `scan_raw`、前処理済み字句テキスト上の `scan_raw` を試験すること;
+- フェーズ 7 のリグレッションテストにより、生/最終スパンのカバレッジ、決定的な生スキャン、再トークン化、インポート衝突、回復スパン、複合的な曖昧性解消の動作が保たれること。

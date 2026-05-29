@@ -49,7 +49,7 @@ The source-loading layer outside this crate owns:
 space, tab, newline
 ```
 
-Carriage return is not layout at this layer. Source loading normalizes CRLF pairs to LF before scanner entry; a lone `\r` reaching the lexer is either a source-loading bug, non-platform-newline malformed input, or an intentionally malformed test fixture.
+Carriage return is not layout at this layer. Source loading normalizes CRLF pairs to LF before scanner entry; a lone `\r` reaching the lexer is either a source-loading bug, malformed input that is not a platform newline, or an intentionally malformed test fixture.
 
 A leading UTF-8 BOM is also a source-loading concern, not a lexer feature. Disk input may contain the byte sequence `EF BB BF`, and package-authored open-buffer text may contain the corresponding leading `U+FEFF`; the source loader strips exactly that leading signature before constructing `LoadedSource.text` or calling lexer entry points. Any `U+FEFF` that reaches `preprocess_source_for_lexing` or `scan_raw`, including a non-leading one, remains malformed lexer-boundary input and must not be silently discarded here.
 

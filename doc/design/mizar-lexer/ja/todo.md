@@ -2,183 +2,183 @@
 
 > Canonical language: English. English canonical version: [../en/todo.md](../en/todo.md).
 
-この文書は、final-token source span 追加後の lexer quality review で見つかった follow-up tasks を記録します。
+この文書は、最終トークンへのソーススパン追加後の、字句解析器(lexer)の品質レビューで見つかったフォローアップタスクを記録します。
 
 ## Ordered Task List
 
-1. crate-local lexer tests を concern ごとに分割する。
-   - `src/lib.rs` の大きな unit-test block を、raw lexing、preprocessing/source maps、import pre-scan、scope skeletons、lexical environments、disambiguation などの focused module test files または integration tests に移す。
-   - 既存の corpus fixture test は end-to-end lexical regression layer として維持する。
-   - 現在の coverage を保ったまま、subsystem ごとの failure review をしやすくする。
+1. クレートローカルの字句解析器テストを関心事ごとに分割する。
+   - `src/lib.rs` の大きなユニットテストのブロックを、生の字句解析、前処理/ソースマップ、インポート事前スキャン、スコープスケルトン、字句環境、曖昧性解消などの、焦点を絞ったモジュールテストファイルまたは統合テストへ移す。
+   - 既存のコーパスフィクスチャのテストは、エンドツーエンドの字句リグレッション層として維持する。
+   - 現在のカバレッジを保ったまま、サブシステムごとに失敗をレビューしやすくする。
 
-2. 次の parser integration milestone の前に public API stability boundary を再確認する。
-   - visible fields を持つ public transfer structs を audit し、どれを provisional のままにするか、constructors/accessors を追加するか、より stable な wrapper APIs の背後へ移すかを決める。
-   - 外部 crate が match する enums には、category を意図的に freeze する場合を除き `#[non_exhaustive]` を維持する。
-   - 次の `0.x` milestone で期待する concrete compatibility promise を文書化する。
+2. 次のパーサー統合マイルストーンの前に、公開 API の安定性境界を再確認する。
+   - フィールドが可視な公開転送構造体を棚卸しし、どれを暫定のままにするか、コンストラクタ/アクセサを追加するか、より安定したラッパー API の背後へ移すかを決める。
+   - カテゴリを意図的に凍結する場合を除き、外部から照合される列挙型には `#[non_exhaustive]` を維持する。
+   - 次の `0.x` マイルストーンで期待する、具体的な互換性の約束を文書化する。
 
-3. downstream tooling 向けに lexer diagnostics を構造化する。
-   - stable diagnostic codes と byte spans は維持しつつ、recovery、rejected parser-context candidates、unsupported raw input、malformed strings、source-preprocessing errors などに有用な structured payloads を追加する。
-   - frontend/LSP consumers 向けに、どの diagnostics が source-map anchors、related spans、machine-readable recovery hints を持つべきかを整理する。
-   - fixture expectations は unstable な human-facing message text に依存せず、structured fields を assert できるようにする。
+3. 下流のツール向けに、字句解析器の診断を構造化する。
+   - 安定した診断コードとバイトスパンは維持しつつ、回復・拒否されたパーサーコンテキスト候補・未対応の生入力・不正な文字列・ソース前処理エラーなどに有用な構造化ペイロードを追加する。
+   - フロントエンド/LSP の利用側向けに、どの診断がソースマップのアンカー・関連スパン・機械可読な回復ヒントを持つべきかを整理する。
+   - フィクスチャの期待値が、不安定な人間向けメッセージ文に依存せず、構造化フィールドを表明できるようにする。
 
-4. lexer、session/source、parser、diagnostics、LSP crates 間の responsibility boundaries を再確認する。
-   - source-loading、preprocessing-map、module-naming、import-prelude、scope-skeleton helpers のうち、どれを `mizar-lexer` に残し、どれを frontend/session/parser adapter layer へ移すべきかを決める。
-   - lexer token spans は byte-oriented のままにし、human-facing または protocol-facing coordinate conversion は crate boundaries で明示する。
-   - 将来の parser/session work によって lexer が higher-level source policy や diagnostic policy を偶発的に所有しないよう、意図する long-term dependency direction を記録する。
+4. 字句解析器・セッション/ソース・パーサー・診断・LSP の各クレート間の責務境界を再確認する。
+   - ソース読み込み・前処理マップ・モジュール命名・インポートプレリュード・スコープスケルトンの各ヘルパーのうち、どれを `mizar-lexer` に残し、どれをフロントエンド/セッション/パーサーのアダプター層へ移すべきかを決める。
+   - 字句解析器のトークンスパンはバイト指向のままにし、人間向けまたはプロトコル向けの座標変換はクレート境界で明示する。
+   - 将来のパーサー/セッション作業によって、字句解析器がより高レベルなソース方針や診断方針を偶発的に所有しないよう、意図する長期的な依存方向を記録する。
 
 ## Completed Tasks
 
-1. `SourceLineIndex` の offset validation を強化した。
-   - `location` と `range` は UTF-8 character boundary ではない byte offset に対して `None` を返す。
-   - documented convention の zero-based line と zero-based byte column を保ったまま、multi-byte UTF-8 text の unit test を追加した。
+1. `SourceLineIndex` のオフセット検証を強化した。
+   - `location` と `range` は、UTF-8 文字境界ではないバイトオフセットに対して `None` を返すようにした。
+   - 文書化された規約である 0 始まりの行と 0 始まりのバイト列を保ったまま、マルチバイト UTF-8 テキストのユニットテストを追加した。
 
-2. final token span の property-style tests を追加した。
-   - crate-local Phase 7 unit tests で複数の `lex` / `disambiguate` seed を cover するようにした。
-   - すべての final token について `source[token.span.start..token.span.end] == token.lexeme` を確認する。
-   - one-to-one raw mapping、`LexemeRun` split、string-required context、malformed string recovery、parser-context rejection、unsupported raw-token recovery spans を seed に含めた。
+2. 最終トークンのスパンのプロパティ形式のテストを追加した。
+   - クレートローカルのフェーズ 7 ユニットテストで、複数の `lex` / `disambiguate` のシードをカバーするようにした。
+   - すべての最終トークンについて `source[token.span.start..token.span.end] == token.lexeme` を確認する。
+   - 1 対 1 の生対応、`LexemeRun` の分割、文字列必須コンテキスト、不正な文字列からの回復、パーサーコンテキストによる拒否、未対応の生トークンからの回復スパンをシードに含めた。
 
-3. unsupported Unicode code-region diagnostics を固定した。
-   - crate-local raw lexer / preprocessor tests で NBSP、zero-width space、zero-width joiner/non-joiner、full-width punctuation、code region 内の `U+FEFF` を cover するようにした。
-   - これらが layout や valid token text として扱われず、byte span 付きの stable な `NonAsciiCode` preprocessor diagnostics および stable な raw-scan hard errors になることを確認する。
+3. 未対応の Unicode コード領域の診断を固定した。
+   - クレートローカルの生字句解析器/前処理器のテストで、NBSP、ゼロ幅スペース、ゼロ幅接合子/非接合子、全角の句読点、コード領域内の `U+FEFF` をカバーするようにした。
+   - これらがレイアウトや有効なトークンテキストとして扱われず、バイトスパン付きの安定した `NonAsciiCode` 前処理診断と、安定した生スキャンの致命的エラーになることを確認する。
 
-4. unsupported ASCII control characters を固定した。
-   - crate-local tests で code region 内の vertical tab と form feed を cover するようにした。
-   - これらが layout ではなく、valid token text として扱われずに stable な raw-scan hard errors になることを確認する。
+4. 未対応の ASCII 制御文字を固定した。
+   - クレートローカルのテストで、コード領域内の垂直タブとフォームフィードをカバーするようにした。
+   - これらがレイアウトではなく、有効なトークンテキストとして扱われずに、安定した生スキャンの致命的エラーになることを確認する。
 
-5. comment-removal edge tests を拡充した。
-   - crate-local preprocessing tests で adjacent comments、EOF comments、token-shaped text の間にある comments、複数の preserved newlines を含む multi-line comments を cover するようにした。
-   - inline comment removal では、lexical text が line structure を保ち token を accidental に concat しないよう、必要に応じて synthetic layout を挿入する。
+5. コメント除去のエッジケースのテストを拡充した。
+   - クレートローカルの前処理テストで、隣接するコメント、EOF のコメント、トークンの形をしたテキストの間にあるコメント、複数の改行を保持する複数行コメントをカバーするようにした。
+   - インラインコメントの除去では、字句テキストが行構造を保ち、トークンを偶発的に連結しないよう、必要に応じて合成レイアウトを挿入する。
 
-6. nested multi-line comment policy を決定した。
-   - multi-line comments は non-nesting と文書化した。`::=` opener の後に最初に現れる `=::` が comment を閉じる。
-   - crate-local preprocessing tests で内部の `::=` spelling を通常の comment text として扱うことを、trivia spans と preserved newlines を含めて cover するようにした。
+6. 入れ子の複数行コメントの方針を決定した。
+   - 複数行コメントは入れ子にならないと文書化した。`::=` の開始記号の後に最初に現れる `=::` がコメントを閉じる。
+   - クレートローカルの前処理テストで、内部の `::=` の綴りを通常のコメントテキストとして扱うことを、トリビアのスパンと保持される改行を含めてカバーするようにした。
 
-7. 最小限の documentation tests / examples を追加した。
-   - crate-level doctests で `scan_raw`, `lex`, `disambiguate` を cover するようにした。
-   - examples で token span が scanner input への byte offset であることを示した。
-   - parser-facing API の小さく安定した surface に留めた。
+7. 最小限のドキュメンテーションテストと例を追加した。
+   - クレートレベルのドキュメントテストで `scan_raw`, `lex`, `disambiguate` をカバーするようにした。
+   - 例では、トークンスパンがスキャナー入力へのバイトオフセットであることを示した。
+   - 例は、小さく安定したパーサー向け API の範囲に留めた。
 
-8. public API stability policy を決定した。
-   - public enums に `#[non_exhaustive]` を付け、今後増える可能性のある categories に対して downstream crates が wildcard match arms を保つようにした。
-   - public data struct fields は corpus と初期 integration code が使う parser-facing transfer objects なので visible のままにした。
-   - crate-level docs と raw lexer design notes に、`0.1` APIs は後続の stability milestone までは provisional であることを明記した。
+8. 公開 API の安定性方針を決定した。
+   - 公開列挙型に `#[non_exhaustive]` を付け、今後増える可能性のあるカテゴリに対して、下流のクレートがワイルドカードの照合アームを保つようにした。
+   - 公開データ構造体のフィールドは、コーパスと初期統合コードが使うパーサー向けの転送オブジェクトなので、可視のままにした。
+   - クレートレベルのドキュメントと生字句解析器の設計ノートに、`0.1` の API は後続の安定化マイルストーンまでは暫定であることを明記した。
 
-9. source-text normalization policy を文書化した。
-   - crate-level docs と design notes に、lexer は Unicode normalization を行わないことを明記した。
-   - code-region identifiers、numerals、reserved spellings、user-symbol spellings は lexer boundary で ASCII-only のままにした。
-   - comments と documentation text は、後続の documentation/source-loading layer が warning を追加しない限り raw Unicode trivia として保持する方針を明記した。
+9. ソーステキストの正規化方針を文書化した。
+   - クレートレベルのドキュメントと設計ノートに、字句解析器は Unicode 正規化を行わないことを明記した。
+   - コード領域の識別子・数字・予約綴り・ユーザーシンボルの綴りは、字句境界で ASCII のみのままにした。
+   - コメントとドキュメンテーションテキストは、後続のドキュメンテーション/ソース読み込み層が警告を追加しない限り、生の Unicode トリビアとして保持する方針を明記した。
 
-10. fuzz coverage を追加した。
-   - arbitrary valid UTF-8 strings 用の `cargo-fuzz` target `lexer_valid_utf8` を追加した。
-   - target は `preprocess_source_for_lexing`、direct `scan_raw`、preprocessed lexical text に対する `scan_raw` を exercise する。
-   - fuzz assertion で span validity、comment lexeme slicing、raw token lexeme slicing、成功した raw scan の full input coverage を固定した。
-   - seed corpus entry は ASCII/layout/annotation text と documentation/comment/code region 内 Unicode を cover する。
+10. ファズカバレッジを追加した。
+   - 任意の有効な UTF-8 文字列向けの `cargo-fuzz` ターゲット `lexer_valid_utf8` を追加した。
+   - このターゲットは `preprocess_source_for_lexing`、直接の `scan_raw`、前処理済み字句テキストに対する `scan_raw` を試験する。
+   - ファズの表明で、スパンの妥当性、コメント字句単位の切り出し、生トークン字句単位の切り出し、成功した生スキャンの入力全体のカバレッジを固定した。
+   - シードコーパスの項目は、ASCII/レイアウト/注釈のテキストと、ドキュメンテーション/コメント/コード領域内の Unicode をカバーする。
 
-11. performance benchmarking を追加した。
-   - large `.miz`-like source 用の Criterion benchmark を追加した。
-   - benchmark は `preprocess_source_for_lexing`、`scan_raw`、`SourceLineIndex` construction を分けて測定する。
-   - module resolution、parser context、imported symbol loading を含めず、lexer-local に保つ。
+11. 性能ベンチマークを追加した。
+   - 大きな `.miz` 風のソース向けの Criterion ベンチマークを追加した。
+   - ベンチマークは `preprocess_source_for_lexing`、`scan_raw`、`SourceLineIndex` の構築を分けて測定する。
+   - モジュール解決・パーサーコンテキスト・インポートシンボルの読み込みを含めず、字句解析器ローカルに保つ。
 
-12. source-loading boundary における UTF-8 BOM handling policy を決定した。
-   - Package-authored source loading は先頭 UTF-8 BOM を一つ受け入れ、`LoadedSource.text` を構築する前、または `mizar-lexer` を呼ぶ前に strip する。
-   - Direct lexer helper calls は strict のままにする。`preprocess_source_for_lexing` や `scan_raw` に届いた `U+FEFF` は malformed lexer-boundary input のままである。
-   - BOM stripping 後の lexer span は post-strip loaded text への byte offset であり、BOM-prefixed disk file では `LoadingMap` が loaded offset `0` を original file byte offset `3` へ対応付ける。
+12. ソース読み込みの境界における UTF-8 BOM の扱いの方針を決定した。
+   - パッケージが用意したソースの読み込みは、先頭 UTF-8 BOM を 1 つ受け入れ、`LoadedSource.text` を構築する前、または `mizar-lexer` を呼ぶ前に取り除く。
+   - 字句解析器のヘルパーを直接呼ぶ経路は厳密なままにする。`preprocess_source_for_lexing` や `scan_raw` に届いた `U+FEFF` は、字句境界における不正な入力のままである。
+   - BOM 除去後の字句解析器のスパンは、除去後の読み込みテキストへのバイトオフセットであり、BOM が先頭にあるディスクファイルでは `LoadingMap` が読み込みオフセット `0` を元のファイルのバイトオフセット `3` へ対応付ける。
 
-13. UTF-8 file loading boundary behavior を仕様化して test した。
-   - UTF-8 validation と leading BOM stripping の executable boundary として crate-local `load_source_text_from_bytes` を追加した。
-   - Invalid UTF-8 は lexer entry 前に `SourceLoadError::InvalidUtf8` を返し、lossy decode で `U+FFFD` にしない。
-   - 先頭 UTF-8 BOM stripping は `LoadedSourceText.loading_map` で test し、loaded offset `0` が original byte offset `3` に map されることを確認した。
-   - Non-leading `U+FEFF` は loaded text に残り、code に現れた場合は lexer-boundary preprocessing/raw scanning で reject されるままにした。
+13. UTF-8 ファイル読み込みの境界動作を仕様化してテストした。
+   - UTF-8 検証と先頭 BOM 除去の実行可能な境界として、クレートローカルの `load_source_text_from_bytes` を追加した。
+   - 不正な UTF-8 は字句解析器に入る前に `SourceLoadError::InvalidUtf8` を返し、非可逆デコードで `U+FFFD` にしないようにした。
+   - 先頭 UTF-8 BOM の除去を `LoadedSourceText.loading_map` でテストし、読み込みオフセット `0` が元のバイトオフセット `3` に対応付けられることを確認した。
+   - 先頭以外の `U+FEFF` は読み込みテキストに残り、コードに現れた場合は字句境界の前処理/生スキャンで拒否されるままにした。
 
-14. newline normalization を仕様化して test した。
-   - `load_source_text_from_bytes` は lexer entry 前に CRLF pairs を LF に normalize する。
-   - `SourceLoadingMapSegment::NormalizedNewline` は normalized LF と original two-byte CRLF range の対応を記録する。
-   - plain CRLF input、leading BOM stripping 後の CRLF、lone `\r` を malformed lexer-boundary input として保持する case を test した。
+14. 改行の正規化を仕様化してテストした。
+   - `load_source_text_from_bytes` は、字句解析器に入る前に CRLF 対を LF に正規化する。
+   - `SourceLoadingMapSegment::NormalizedNewline` は、正規化された LF と元の 2 バイトの CRLF 範囲の対応を記録する。
+   - 単純な CRLF 入力、先頭 BOM 除去後の CRLF、単独の `\r` を字句境界の不正な入力として保持するケースをテストした。
 
-15. preprocess source-map tests を実装した。
-   - `PreprocessedLexicalSource` は original、removed-comment、synthetic-whitespace segments を持つ lightweight `SourcePreprocessMap` を保持するようになった。
-   - ordinary comment removal、documentation comment retention、synthetic spaces/newlines、removed comments をまたぐ lexical ranges を tests で cover した。
-   - lexer/preprocessor diagnostic byte ranges を original source ranges に map できることも tests で固定した。
+15. 前処理のソースマップのテストを実装した。
+   - `PreprocessedLexicalSource` は、元テキスト・除去コメント・合成空白のセグメントを持つ軽量な `SourcePreprocessMap` を保持するようになった。
+   - 通常コメントの除去、ドキュメンテーションコメントの保持、合成空白/改行、除去コメントをまたぐ字句範囲をテストでカバーした。
+   - 字句解析器/前処理器の診断のバイト範囲を元のソース範囲に対応付けられることも、テストで固定した。
 
-16. zero-length preprocess-map boundaries で composite anchors を返すようにした。
-   - original text、removed comments、synthetic whitespace の境界にある lexical insertion points は、隣接する source anchors をすべて返す。
-   - inserted synthetic layout がある場合とない場合の removed-comment boundaries を tests で cover した。
+16. 長さ 0 の前処理マップ境界で複合アンカーを返すようにした。
+   - 元テキスト・除去コメント・合成空白の境界にある字句の挿入点は、隣接するソースアンカーをすべて返す。
+   - 合成レイアウトが挿入される場合とされない場合の、除去コメント境界をテストでカバーした。
 
-17. user-facing column conversion を lexer 外に保つようにした。
-   - one-based Unicode scalar line/column conversion 用の `LineMap` tests を持つ minimal `mizar-session` crate を追加した。
-   - zero-based LSP UTF-16 positions 用の range-mapper tests を持つ minimal `mizar-lsp` crate を追加した。
-   - `mizar-lexer` は引き続き byte-span oriented であり、user-facing または LSP column conversion を行わない。
+17. ユーザー向けの列変換を字句解析器の外に保つようにした。
+   - 1 始まりの Unicode スカラーの行/列変換用の `LineMap` テストを持つ、最小限の `mizar-session` クレートを追加した。
+   - 0 始まりの LSP UTF-16 位置用の範囲マッパーのテストを持つ、最小限の `mizar-lsp` クレートを追加した。
+   - `mizar-lexer` は引き続きバイトスパン指向であり、ユーザー向けまたは LSP の列変換を行わない。
 
-18. source path normalization を lexer 外で cover した。
-   - package-relative `.miz` source identities 用に `mizar-session::normalize_source_path` と `NormalizedPath` を追加した。
-   - Tests は `.`/`..`、symlink alias/escape rejection、canonical case spelling、package-root escape attempts、source-root enforcement、extension validation、ASCII identifier-shaped namespace components、platform-specific separator normalization を cover する。
-   - lexer-local な `module_source_name_from_path` は boundary naming helper のままにし、filesystem-aware source identity は session source layer に置いた。
+18. ソースパスの正規化を字句解析器の外でカバーした。
+   - パッケージ相対の `.miz` ソース同一性のために、`mizar-session::normalize_source_path` と `NormalizedPath` を追加した。
+   - テストは、`.`/`..`、シンボリックリンクの別名/脱出の拒否、正準的な大文字小文字の綴り、パッケージルートからの脱出の試み、ソースルートの強制、拡張子の検証、ASCII 識別子の形をした名前空間構成要素、プラットフォーム固有の区切り正規化をカバーする。
+   - 字句解析器ローカルの `module_source_name_from_path` は境界の命名ヘルパーのままにし、ファイルシステムを意識したソース同一性はセッションのソース層に置いた。
 
-19. lexer、session、LSP crates 間の shared source-span ownership を決定した。
-   - この段階では common source-coordinate crate を追加せず、lexer `SourceSpan` と session `SourceRange` は crate-local のままにした。
-   - 明示的な LSP bridge conversion API として `source_range_from_lexer_span` と `lsp_range_from_lexer_span` を追加した。
-   - lexer-token spans、UTF-16 column conversion、pure field-copy conversion、invalid lexer spans の error propagation 用の LSP bridge tests を追加し、coordinate-space conversion が boundary で見えるようにした。
+19. 字句解析器・セッション・LSP の各クレート間で共有するソーススパンの所有を決定した。
+   - この段階では共通のソース座標クレートを追加せず、字句解析器の `SourceSpan` とセッションの `SourceRange` はクレートローカルのままにした。
+   - 明示的な LSP ブリッジ変換 API として、`source_range_from_lexer_span` と `lsp_range_from_lexer_span` を追加した。
+   - 字句解析器トークンのスパン、UTF-16 の列変換、純粋なフィールドコピー変換、無効な字句解析器スパンのエラー伝播のための LSP ブリッジテストを追加し、座標空間の変換が境界で見えるようにした。
 
-20. session source maps の line/column overflow policy を決定した。
-   - `mizar-session::LineColumn` values は raw memory indexes ではなく presentation and protocol-adjacent coordinates なので、`u32` のままにした。
-   - `SourceMapError::LineColumnOverflow` を追加し、`LineMap` は表現できない line または Unicode scalar column values に対して、saturate、wrap、silent narrowing をせず overflow error を返すようにした。
-   - LSP protocol positions は `u32` のままにし、LSP bridge で UTF-16 columns の explicit checked narrowing を追加した。
+20. セッションのソースマップの行/列オーバーフロー方針を決定した。
+   - `mizar-session::LineColumn` の値は、生のメモリインデックスではなく、表示およびプロトコルに隣接する座標なので、`u32` のままにした。
+   - `SourceMapError::LineColumnOverflow` を追加し、`LineMap` が表現できない行または Unicode スカラーの列の値に対して、飽和・巻き戻し・暗黙の縮小をせず、オーバーフローエラーを返すようにした。
+   - LSP プロトコルの位置は `u32` のままにし、LSP ブリッジで UTF-16 の列の明示的な検査付き縮小を追加した。
 
-21. long-term LSP/lexer dependency layering を再検討した。
-   - lexer-to-session conversion boundary を所有できる frontend または diagnostic adapter crate がまだ存在しないため、明示的な `SourceSpan` bridge conversion 用の `mizar-lsp` から `mizar-lexer` への direct dependency は維持した。
-   - coordinate-space conversion が protocol boundary で見えるように、`source_range_from_lexer_span` と `lsp_range_from_lexer_span` は `mizar-lsp::range_mapper` に残した。
-   - この bridge だけのために shared source-coordinate crate は追加しない。bridge は、lexer-to-session conversion を所有する broader reason を持つ concrete adapter crate ができた段階でのみ移す。
+21. 長期的な LSP/字句解析器の依存階層を再検討した。
+   - 字句解析器からセッションへの変換境界を所有できるフロントエンドや診断アダプターのクレートがまだ存在しないため、明示的な `SourceSpan` ブリッジ変換のための `mizar-lsp` から `mizar-lexer` への直接依存は維持した。
+   - 座標空間の変換がプロトコル境界で見えるよう、`source_range_from_lexer_span` と `lsp_range_from_lexer_span` は `mizar-lsp::range_mapper` に残した。
+   - このブリッジだけのために共有のソース座標クレートは追加しない。ブリッジは、字句解析器からセッションへの変換を所有するより広い理由を持つ具体的なアダプタークレートができた段階でのみ移す。
 
-22. active symbol lookup の線形探索を trie-backed lexicon に置き換えた。
-   - `UserSymbolIndex` は exact lookup と deterministic diagnostics 用の canonical spelling map と、longest-prefix lookup 用の内部 ASCII byte trie を持つようになった。
-   - `longest_user_symbol_at` は指定 byte offset から trie を歩いて最深の terminal candidate set を返し、既存の longest-match、parser-context、scope-override、candidate-order behavior を保つ。
-   - regression coverage は overlapping spellings、identifier-shaped symbols、punctuation-shaped symbols、invalid offsets、scope overrides、多数の imported symbols を含む lexicon を cover する。
-   - Criterion benchmark に `active_user_symbol_lexicon/disambiguate_many_imported_symbols` を追加し、数千の imported symbols に対する disambiguation を測定する。
+22. アクティブシンボル探索の線形探索を、トライに基づく字句目録に置き換えた。
+   - `UserSymbolIndex` は、完全一致の探索と決定的な診断のための正準的な綴りマップと、最長接頭辞探索のための内部 ASCII バイトトライを持つようになった。
+   - `longest_user_symbol_at` は、指定されたバイトオフセットからトライを辿って最も深い終端候補集合を返し、既存の最長一致・パーサーコンテキスト・スコープ上書き・候補順序の動作を保つ。
+   - リグレッションカバレッジは、綴りの重なり、識別子の形をしたシンボル、記号の形をしたシンボル、無効なオフセット、スコープ上書き、多数のインポートシンボルを含む字句目録をカバーする。
+   - Criterion ベンチマークに `active_user_symbol_lexicon/disambiguate_many_imported_symbols` を追加し、数千のインポートシンボルに対する曖昧性解消を測定する。
 
-23. lexical summaries と active-symbol candidates に symbol kind と arity metadata を保持した。
+23. 字句サマリーとアクティブシンボル候補に、シンボルの種別とアリティのメタデータを保持した。
    - `ExportedSymbolShape` と `UserSymbolCandidate` は `UserSymbolKind` と `UserSymbolArity` を保持するようになった。
-   - Same-spelling overload candidates は downstream parser / resolver phases 用に kind と arity metadata を保持する。
-   - `ParserLexContext` は active lexical environment を再構築せず、`UserSymbolKindSet` で admitted active user symbols を制限できる。
-   - Final `UserSymbol` tokens は引き続き spelling と span だけを保持する。downstream phases は active lexical environment から candidate metadata を復元する。
-   - Environment fingerprints は symbol kind と arity metadata を含み、tests は same-spelling metadata preservation、kind-filtered parser contexts、invalid arity shapes、metadata-sensitive fingerprints を cover する。
+   - 同綴りのオーバーロード候補は、下流のパーサー/リゾルバフェーズのために、種別とアリティのメタデータを保持する。
+   - `ParserLexContext` は、アクティブ字句環境を再構築せずに、`UserSymbolKindSet` で許可するアクティブなユーザーシンボルを制限できる。
+   - 最終 `UserSymbol` トークンは引き続き綴りとスパンだけを保持する。下流フェーズは、アクティブ字句環境から候補のメタデータを復元する。
+   - 環境のフィンガープリントはシンボルの種別とアリティのメタデータを含み、テストは同綴りのメタデータの保持、種別で絞り込んだパーサーコンテキスト、不正なアリティ形状、メタデータに敏感なフィンガープリントをカバーする。
 
 ## Suggested Verification
 
-各 task の後に以下を実行します。
+各タスクの後に、以下を実行します。
 
 ```text
 cargo test -p mizar-lexer
 cargo test -p mizar-test
 ```
 
-API stability、fuzz、benchmark 作業では、この TODO file の更新または完了項目の削除も行ってください。
+API の安定性・ファズ・ベンチマークの作業では、この TODO ファイルの更新、または完了項目の削除も行ってください。
 
 ## Text-Processing Audit Notes
 
-この first-pass audit は、text-processing で一般的に問題になりやすい点について、現在の lexer crate が解決しているか、別 layer に委譲しているか、policy/test が残っているかを記録する。これは review note であり、単独の implementation plan ではない。
+この第 1 段階の監査は、テキスト処理で一般的に問題になりやすい点について、現在の字句解析器クレートが解決しているか、別の層に委譲しているか、方針/テストが残っているかを記録します。これはレビューノートであり、それ単独の実装計画ではありません。
 
-| Topic | Current status | Owner / evidence | Follow-up |
+| 項目 | 現状 | 担当 / 根拠 | フォローアップ |
 |---|---|---|---|
-| UTF-8 validation | executable boundary で covered | `load_source_text_from_bytes` は source bytes を validate し、lexer entry 前に `SourceLoadError::InvalidUtf8` を返す。scanner APIs は引き続き `&str` を受け取る。 | frontend/session source loader ができた段階で、この behavior を reuse または mirror する。 |
-| UTF-8 BOM | UTF-8 boundary では covered | `load_source_text_from_bytes` は先頭 UTF-8 BOM を一つ strip し、loading map を記録する。lexer helpers は、届いた `U+FEFF` を malformed/non-ASCII として扱い続ける。`raw_lexer.md`、`mizar-session/source.md`、`mizar-session/source_map.md` を参照。 | richer source-map tests は source-loading/session layer に残る。 |
-| replacement character `U+FFFD` | invalid bytes と code region で covered | Invalid UTF-8 は lossy decode で `U+FFFD` にしない。`preprocess_source_for_lexing` は valid non-ASCII code-region characters を `NonAsciiCode` として報告する。comments は Unicode allowed。 | comments/doc text の suspicious Unicode warning は将来 source-loading/docs 側で検討する。 |
-| LF / CRLF / CR handling | executable boundary で covered | `load_source_text_from_bytes` は CRLF pairs を LF に normalize し、`NormalizedNewline` loading-map segments を記録する。lone `\r` は `CarriageReturn` preprocessing diagnostic と raw-scan error のまま。 | session source-map tests は同じ CRLF-to-LF mapping policy を mirror する。 |
-| missing final newline / empty file / trailing newlines | lexer level では covered | empty raw stream の test があり、`SourceLineIndex` は EOF を受け入れる。scanner は final newline を要求しない。 | parser/import prelude が final newline に依存する場合のみ corpus cases を追加する。 |
-| byte offset vs character column | lexer 外で covered | lexer spans は byte offsets。`SourceLineIndex` は zero-based byte columns を使い、non-UTF-8-boundary offsets を reject する。`mizar-session::source_map::LineMap` は byte offsets を one-based Unicode scalar columns に変換する。 | human-facing conversion は source-map/session APIs に保つ。 |
-| LSP UTF-16 columns | lexer 外で covered | `mizar-lsp::range_mapper` は session `LineMap` を使い、source byte ranges を zero-based LSP UTF-16 positions に変換する。lexer tokens は引き続き byte spans のみを保存する。 | protocol-specific conversion は LSP bridge に保つ。 |
-| preprocessed text vs original source spans | executable boundary で covered | `PreprocessedLexicalSource.preprocess_map` は original、removed-comment、synthetic-whitespace segments を記録し、scanner lexical spans を loaded source ranges に戻せる。Zero-length boundary mapping は composite adjacent anchors を返す。Session `PreprocessMap` はより rich な snapshot/service ownership を保持する。 | frontend/session source-map implementation はこの behavior を reuse または mirror する。より rich な composite mapping を導入する段階で、before/removed/synthetic/after などの explicit anchor roles を付けてもよい。 |
-| Unicode in code vs comments | known edge cases は lexer boundary で covered | preprocessor は comments 内の Unicode を許し、code regions の non-ASCII を報告する。Greek comment text、NBSP、zero-width chars、BOM-in-code、full-width punctuation の tests がある。 | comments/doc text の suspicious Unicode warning は将来 source-loading/docs 側で検討する。 |
-| Unicode normalization and confusables | lexer は normalize しない | identifier/numeral/user-symbol helpers は ASCII-only なので、non-ASCII code identifiers は normalize せず reject される。comments は raw Unicode のまま保持される。 | lexer が source text を normalize しないことを明記する。comments/doc text の suspicious Unicode warning は将来 source-loading/docs 側で検討する。 |
-| Unicode whitespace and ASCII controls | comments 外では strict reject | raw layout は space, tab, LF のみ。preprocessor は non-ASCII code chars を報告し、raw scanner は vertical tab や form feed などの unsupported ASCII controls を hard error にする。 | この strict lexer boundary と source-loading / diagnostic-renderer policy を同期し続ける。 |
-| tab display width | delegated | lexer は byte spans のみを保持し、tab は layout として扱う。diagnostics/source map が display columns を担当する。 | diagnostic renderer で tab expansion policy を test する。 |
-| comment stripping and newline preservation | known edge cases は lexer boundary で covered | ordinary/doc/multi-line comment removal、trivia retention、newline preservation、adjacent comments、EOF comments、token boundary 付近の synthetic layout、synthetic whitespace/newlines の preprocess-map segments の tests がある。 | retained map service ができたら session source-map tests でも同じ cases を mirror する。 |
-| nested multi-line comments | non-nesting policy は covered | multi-line comments は最初の `=::` で閉じ、内部の `::=` spelling は通常の comment text として扱う。tests は spans と preserved newlines を cover する。 | source-map tests でも comment trivia mapping 時に同じ non-nesting interpretation を保つ。 |
-| unterminated comments | covered | preprocessor は `UnterminatedMultiLineComment` を emit し、line structure を保持する。unit test あり。 | source-map implementation 後に frontend が diagnostic を original source に map することを確認する。 |
-| annotation visibility | lexer boundary では covered | annotation syntax が parser ownership のため lexical text に残ることを tests が確認している。 | annotation argument validation は parser tests が担当する。 |
-| string literal escapes and recovery | partially covered | helper と disambiguator tests は supported escapes、invalid escapes、malformed strings、context-required string positions を cover している。 | property/fuzz tests に string-required context と malformed recovery spans を含める。 |
-| quote characters as user symbols | partially covered | design は strings を contextual と定め、disambiguator tests は string-required context と string outside context を cover している。 | grammar integration が変わるときに parser-context API tests を広げる。 |
-| raw/final token span integrity | crate-local seeds で covered | tests は raw span contiguity、final token span preservation、`lex` と `disambiguate` を横断する property-style final token span checks を cover する。 | 後で fuzz coverage により広げる。 |
-| error-recovery token spans | crate-local seeds で covered | disambiguator recovery diagnostics/tokens は final-token span invariant seeds に含まれている。 | 後で fuzz coverage により広げる。 |
-| huge files / long lines / memory | large `.miz`-like input は benchmark covered | `lexer_pipeline` が preprocessing、raw scanning、`SourceLineIndex` construction を分けて測定する。 | 今後の profiling で line-length sensitivity が見えた場合は specialized long-line benchmarks を追加する。 |
-| panic safety under arbitrary text | lexer の valid UTF-8 entry points は covered | `lexer_valid_utf8` cargo-fuzz target が `preprocess_source_for_lexing`、direct `scan_raw`、preprocessed lexical text 上の `scan_raw` を exercise する。 | fuzz failure が見つかった場合は minimize して committed corpus に昇格する。 |
-| file/path text normalization | lexing 外で partially covered | `module_source_name_from_path` は separators を normalize し、identifier-shaped components を validate する。 | symlink、case、`.`/`..`、platform path edge cases は source-loading/path layer が担当する。 |
+| UTF-8 検証 | 実行可能な境界でカバー済み | `load_source_text_from_bytes` がソースバイト列を検証し、字句解析器に入る前に `SourceLoadError::InvalidUtf8` を返す。スキャナー API は引き続き `&str` を受け取る。 | フロントエンド/セッションのソースローダーができた段階で、この動作を再利用または踏襲する。 |
+| UTF-8 BOM | UTF-8 の境界ではカバー済み | `load_source_text_from_bytes` が先頭 UTF-8 BOM を 1 つ取り除き、読み込みマップを記録する。字句解析器のヘルパーは、届いた `U+FEFF` を不正/非 ASCII として扱い続ける。`raw_lexer.md`、`mizar-session/source.md`、`mizar-session/source_map.md` を参照。 | よりリッチなソースマップのテストは、ソース読み込み/セッション層に残る。 |
+| 置換文字 `U+FFFD` | 不正なバイト列でカバー済み、コード領域では拒否 | 不正な UTF-8 は非可逆デコードで `U+FFFD` にしない。`preprocess_source_for_lexing` は有効な非 ASCII のコード領域文字を `NonAsciiCode` として報告する。コメントは Unicode を許可。 | コメント/ドキュメンテーションテキスト内の紛らわしい Unicode への警告は、将来ソース読み込み/ドキュメント側で検討する。 |
+| LF / CRLF / CR の扱い | 実行可能な境界でカバー済み | `load_source_text_from_bytes` が CRLF 対を LF に正規化し、`NormalizedNewline` の読み込みマップセグメントを記録する。単独の `\r` は `CarriageReturn` 前処理診断と生スキャンエラーのまま。 | セッションのソースマップのテストでも、同じ CRLF→LF の対応付け方針を踏襲する。 |
+| 末尾改行の欠落 / 空ファイル / 末尾の連続改行 | 字句解析器のレベルでカバー済み | 空の生ストリームのテストがあり、`SourceLineIndex` は EOF を受け入れる。スキャナーは末尾改行を要求しない。 | 後のパーサー/インポートプレリュードの動作が末尾改行に依存する場合のみ、コーパスのケースを追加する。 |
+| バイトオフセット対文字列 | 字句解析器の外でカバー済み | 字句解析器のスパンはバイトオフセット。`SourceLineIndex` は 0 始まりのバイト列を使い、UTF-8 文字境界でないオフセットを拒否する。`mizar-session::source_map::LineMap` はバイトオフセットを 1 始まりの Unicode スカラー列に変換する。 | 人間向けの変換はソースマップ/セッション API に保つ。 |
+| LSP の UTF-16 列 | 字句解析器の外でカバー済み | `mizar-lsp::range_mapper` はセッションの `LineMap` を使い、ソースのバイト範囲を 0 始まりの LSP UTF-16 位置に変換する。字句解析器のトークンは引き続きバイトスパンのみを保存する。 | プロトコル固有の変換は LSP ブリッジに保つ。 |
+| 前処理済みテキスト対元ソースのスパン | 実行可能な境界でカバー済み | `PreprocessedLexicalSource.preprocess_map` は元テキスト・除去コメント・合成空白のセグメントを記録し、スキャナーの字句スパンを読み込み済みソース範囲に戻せる。長さ 0 の境界の対応付けは複合の隣接アンカーを返す。セッションの `PreprocessMap` はよりリッチなスナップショット/サービスの所有を保持する。 | フロントエンド/セッションのソースマップ実装は、この動作を再利用または踏襲し、よりリッチな複合対応付けを導入する段階で、前/除去/合成/後などの明示的なアンカー役割を付けてもよい。 |
+| コード対コメントの Unicode | 既知のエッジケースは字句境界でカバー済み | 前処理器はコメント内の Unicode を許し、コード領域の非 ASCII を報告する。ギリシャ文字のコメントテキスト、NBSP、ゼロ幅文字、コード内 BOM、全角の句読点のテストがある。 | コメント/ドキュメンテーションテキスト内の紛らわしい Unicode への警告は、将来ソース読み込み/ドキュメント側で検討する。 |
+| Unicode 正規化と誤認しやすい文字 | 字句解析器は正規化しない | 識別子/数字/ユーザーシンボルのヘルパーは ASCII のみなので、非 ASCII のコード識別子は正規化せず拒否される。コメントは生の Unicode のまま。 | 字句解析器がソーステキストを正規化しないことを明記する。コメント/ドキュメンテーションテキスト内の紛らわしい Unicode への警告は、将来ソース読み込み/ドキュメント側で検討する。 |
+| Unicode 空白と ASCII 制御 | コメント外では厳密に拒否 | 生のレイアウトは空白・タブ・LF のみ。前処理器は非 ASCII のコード文字を報告し、生スキャナーは垂直タブやフォームフィードなどの未対応 ASCII 制御を致命的エラーにする。 | この厳密な字句境界と、ソース読み込み/診断レンダラーの方針を同期し続ける。 |
+| タブの表示幅 | 委譲 | 字句解析器はバイトスパンのみを保持し、タブをレイアウトとして扱う。診断/ソースマップが表示列を担当する。 | 診断レンダラーでタブ展開の方針をテストする。 |
+| コメント除去と改行保持 | 既知のエッジケースは字句境界でカバー済み | 通常/ドキュメント/複数行コメントの除去、トリビアの保持、改行の保持、隣接コメント、EOF のコメント、トークン境界付近の合成レイアウト、合成空白/改行の前処理マップセグメントのテストがある。 | 保持マップのサービスができたら、セッションのソースマップのテストでも同じケースを踏襲する。 |
+| 入れ子の複数行コメント | 入れ子なしの方針でカバー済み | 複数行コメントは最初の `=::` で閉じ、内部の `::=` の綴りは通常のコメントテキストとして扱う。テストはスパンと保持される改行をカバーする。 | ソースマップのテストでも、コメントトリビアの対応付け時に同じ入れ子なしの解釈を保つ。 |
+| 閉じていないコメント | カバー済み | 前処理器は `UnterminatedMultiLineComment` を出力し、行構造を保持する。ユニットテストあり。 | ソースマップ実装の後、フロントエンドが診断を元ソースに対応付けることを確認する。 |
+| 注釈の可視性 | 字句境界ではカバー済み | 注釈構文がパーサーの所有のため字句テキストに残ることを、テストが確認している。 | 注釈の引数検証はパーサーのテストが担当する。 |
+| 文字列リテラルのエスケープと回復 | 一部カバー済み | ヘルパーと曖昧性解消器のテストは、対応するエスケープ、無効なエスケープ、不正な文字列、文脈が要求する文字列位置をカバーしている。 | プロパティ/ファズのテストに、文字列必須コンテキストと不正からの回復スパンを含める。 |
+| ユーザーシンボルとしての引用符 | 一部カバー済み | 設計は文字列を文脈依存と定め、曖昧性解消器のテストは文字列必須コンテキストと文脈外の文字列をカバーしている。 | 文法統合が変わるときに、パーサーコンテキスト API のテストを広げる。 |
+| 生/最終トークンのスパン整合性 | クレートローカルのシードでカバー済み | テストは、生スパンの連続性、最終トークンスパンの保持、`lex` と `disambiguate` を横断するプロパティ形式の最終トークンスパン検査をカバーする。 | 後でファズカバレッジにより広げる。 |
+| エラー回復トークンのスパン | クレートローカルのシードでカバー済み | 曖昧性解消器の回復診断/トークンは、最終トークンスパン不変条件のシードに含まれている。 | 後でファズカバレッジにより広げる。 |
+| 巨大ファイル / 長い行 / メモリ | 大きな `.miz` 風の入力はベンチマークでカバー済み | `lexer_pipeline` が前処理・生スキャン・`SourceLineIndex` の構築を分けて測定する。 | 今後のプロファイリングで行長の影響が見えた場合は、専用の長い行のベンチマークを追加する。 |
+| 任意テキストに対するパニック安全性 | 字句解析器の有効な UTF-8 エントリポイントはカバー済み | `lexer_valid_utf8` の cargo-fuzz ターゲットが `preprocess_source_for_lexing`、直接の `scan_raw`、前処理済み字句テキスト上の `scan_raw` を試験する。 | ファズで失敗が見つかった場合は最小化し、コミット済みコーパスに昇格する。 |
+| ファイル/パスのテキスト正規化 | 字句解析の外で一部カバー済み | `module_source_name_from_path` が区切りを正規化し、識別子の形をした構成要素を検証する。 | シンボリックリンク・大文字小文字・`.`/`..`・プラットフォームパスのエッジケースは、ソース読み込み/パス層が担当する。 |

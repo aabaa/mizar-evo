@@ -4,13 +4,13 @@
 
 ## Purpose
 
-この module は、token disambiguation が参照する file-scoped active lexical environment を構築します。
+このモジュールは、トークンの曖昧性解消(disambiguation)が参照する、ファイル単位のアクティブ字句環境(active lexical environment)を構築します。
 
-Environment は built-in reserved table と、import prelude で指定された module の exported lexical symbol summary を結合します。import は top-of-file prelude に限定されるため、この environment は source file body 全体で安定します。
+この環境は、組み込みの予約テーブルと、インポートプレリュード(import prelude)で指定されたモジュールがエクスポートする字句シンボルのサマリーとを結合します。インポートはファイル先頭のプレリュードに限定されるため、この環境はソースファイル本体の全体で安定しています。
 
 ## Public API
 
-Implemented API:
+実装済み API:
 
 ```rust
 pub type ReservedWordTable = &'static [&'static str];
@@ -39,7 +39,7 @@ pub fn build_lexical_environment(
 ) -> Result<ActiveLexicalEnvironment, LexicalEnvironmentError>;
 ```
 
-この module は、longest-match disambiguation 用の lookup helper を公開します。
+このモジュールは、最長一致(longest-match)の曖昧性解消で使う探索ヘルパーを公開します。
 
 ```rust
 impl ActiveLexicalEnvironment {
@@ -52,7 +52,7 @@ impl ActiveLexicalEnvironment {
 
 ## Data Model
 
-`ExportedSymbolShape` は full semantic IR ではなく、lexical shape だけを保持します。
+`ExportedSymbolShape` は、完全な意味論的 IR ではなく、字句上の形状(shape)だけを保持します。
 
 ```rust
 pub struct ExportedSymbolShape {
@@ -76,18 +76,18 @@ pub struct UserSymbolCandidate {
 }
 ```
 
-`UserSymbolKind` は visible symbol の parser/resolver category を記録します。category は functor、predicate、mode、attribute、structure、selector、constructor です。`UserSymbolArity` は argument count shape を exact count、bounded range、lower-bounded range として記録します。これらは parser/resolver-facing summary であり、full type signature ではありません。
+`UserSymbolKind` は、可視なシンボルのパーサー/リゾルバ上のカテゴリを記録します。カテゴリは、関手(functor)、述語(predicate)、モード(mode)、属性(attribute)、構造(structure)、セレクタ(selector)、構成子(constructor)です。`UserSymbolArity` は引数の個数の形状を、正確な個数・上下限のある範囲・下限のみの範囲として記録します。これらはパーサー/リゾルバ向けのサマリーであり、完全な型シグネチャではありません。
 
-Active environment は以下を扱います。
+アクティブ環境は以下を扱います。
 
-- identifier-shaped symbols;
-- punctuation-shaped symbols;
-- symbols containing `.`;
-- import conflict detection for equal-spelling imported candidates;
-- diagnostics 用の安定した provenance.
-- downstream parser / resolver phases 用の symbol kind と arity metadata.
+- 識別子の形をしたシンボル;
+- 記号の形をしたシンボル;
+- `.` を含むシンボル;
+- 同綴りでインポートされた候補に対する、インポート衝突(conflict)の検出;
+- 診断のための安定した由来(provenance);
+- 下流のパーサー/リゾルバフェーズのための、シンボル種別とアリティのメタデータ.
 
-`ModuleLexicalSummary` は producer 側で canonicalize された artifact です。summary を作る component は、lexer environment builder に渡す前に `exported_symbols` を deterministic order に正規化しておく必要があります。canonical order は、少なくとも以下の lexical identity と provenance に基づきます。
+`ModuleLexicalSummary` は、生成側で正規化された生成物です。サマリーを作る構成要素は、字句環境ビルダーに渡す前に `exported_symbols` を決定的な順序に正規化しておく必要があります。正準順序は、少なくとも以下の字句上の同一性と由来に基づきます。
 
 1. `spelling`
 2. `source_module`
@@ -96,69 +96,69 @@ Active environment は以下を扱います。
 5. `arity`
 6. `export_rank`
 
-`build_lexical_environment` はこの contract を前提にしており、summary 内部を並べ替えません。これにより environment fingerprint は、environment builder がその場で選んだ順序ではなく、imported module の canonical lexical summary に反応します。
+`build_lexical_environment` はこの規約を前提にしており、サマリーの内部を並べ替えません。これにより環境のフィンガープリント(fingerprint)は、環境ビルダーがその場で選んだ順序ではなく、インポート元モジュールの正準的な字句サマリーに反応するようになります。
 
-この producer-side summary order は、`UserSymbolIndex` 内部で使う active-candidate order とは独立しています。summary が import された後、same-spelling candidates は lookup と diagnostics の安定性のため、import ordinal、export rank、kind、arity、source module、symbol id の順で sort されます。
+この生成側のサマリー順序は、`UserSymbolIndex` の内部で使うアクティブ候補の順序とは独立しています。サマリーがインポートされた後、同綴りの候補は、探索と診断の安定性のため、インポート序数(import ordinal)、エクスポート順位(export rank)、種別、アリティ、ソースモジュール、シンボル ID の順で整列されます。
 
 ## Algorithm
 
-現在の実装は、すでに resolve 済みの import から deterministic lookup object を構築します。
+現在の実装は、すでに解決済みのインポートから、決定的な探索オブジェクトを構築します。
 
-1. `ModuleLexicalSummary` を `ModuleId` で index します。同じ module id の summary が複数渡された場合、Rust value として完全に同一なら受け入れます。内容が異なる duplicate summary は construction error です。
-2. stable FNV-style fingerprint に version string と built-in reserved word / reserved symbol tables を宣言順で書き込みます。
-3. `ResolvedImport` を import-prelude order で走査します。各 import について対応する lexical summary を必須とし、import ordinal、module id、summary fingerprint を active environment fingerprint に加えます。
-4. summary 内の exported symbol shape は、index する前に spelling と arity を検証します。spelling は user-symbol spelling でなければならず、reserved word と衝突してはいけません。reserved special symbol との完全一致も原則として禁止しますが、仕様上の例外である `.` だけは許可します。arity shape は maximum が minimum より小さくてはいけません。
-5. exported shape を `UserSymbolCandidate` に変換します。このとき、symbol を定義・export した `source_module` と、現在の file が import した `imported_module` の両方に加えて、symbol kind と arity metadata を保持します。前者は provenance、後者は conflict diagnostics に効きます。
-6. candidate を `UserSymbolIndex` に挿入します。異なる import から同じ spelling が来た場合は `UserSymbolImportConflict` として拒否します。同じ import 内の同じ spelling は overload candidate として保持でき、上記の active-candidate order で安定化します。
-7. borrowed reserved tables、完成した user-symbol index、deterministic fingerprint を持つ `ActiveLexicalEnvironment` を返します。
+1. `ModuleLexicalSummary` を `ModuleId` でインデックス化します。同じモジュール ID のサマリーが複数渡された場合、Rust の値として完全に同一なら受け入れます。内容が異なる重複サマリーは構築エラーです。
+2. 安定した FNV 方式のフィンガープリントに、バージョン文字列と、組み込みの予約語テーブル・予約記号テーブルを宣言順で書き込みます。
+3. `ResolvedImport` をインポートプレリュード順で走査します。各インポートについて、対応する字句サマリーを必須とし、インポート序数・モジュール ID・サマリーのフィンガープリントをアクティブ環境のフィンガープリントに加えます。
+4. サマリー内のエクスポートシンボルの形状は、インデックス化する前に綴りとアリティを検証します。綴りはユーザーシンボルの綴りでなければならず、予約語と衝突してはいけません。予約特殊記号との完全一致も原則として禁止しますが、仕様上の例外である `.` だけは許可します。アリティの形状は、最大値が最小値より小さくてはいけません。
+5. エクスポートされた形状を `UserSymbolCandidate` に変換します。このとき、シンボルを定義・エクスポートした `source_module` と、現在のファイルがインポートした `imported_module` の両方に加えて、シンボル種別とアリティのメタデータを保持します。前者は由来に、後者はインポート衝突の診断に効きます。
+6. 候補を `UserSymbolIndex` に挿入します。異なるインポートから同じ綴りが来た場合は `UserSymbolImportConflict` として拒否します。同じインポート内の同じ綴りはオーバーロード(overload)候補として保持でき、上記のアクティブ候補順序で安定化します。
+7. 借用した予約テーブル、完成したユーザーシンボルインデックス、決定的なフィンガープリントを持つ `ActiveLexicalEnvironment` を返します。
 
-`UserSymbolIndex` は exact-spelling lookup、deterministic ordering、conflict diagnostics のために canonical な `BTreeMap<String, Vec<UserSymbolCandidate>>` を保持します。加えて同じ spelling 群を ASCII byte trie として保持し、longest-prefix lookup を高速化します。`longest_user_symbol_at` は指定 byte offset から trie を歩き、最も深い terminal node を記録し、その spelling の visible import ordinal に属する candidate を返します。candidate discovery は imported symbol 全体数ではなく、scan した spelling 長と返却 candidate 数に比例します。public lookup semantics は従来と同じです。
+`UserSymbolIndex` は、綴りの完全一致での探索・決定的な整列・衝突の診断のために、正準的な `BTreeMap<String, Vec<UserSymbolCandidate>>` を保持します。加えて、同じ綴りの集合を ASCII バイトトライ(trie)としても保持し、最長接頭辞(longest-prefix)探索を高速化します。`longest_user_symbol_at` は指定されたバイトオフセットからトライを辿り、最も深い終端ノードを記録し、その綴りの可視なインポート序数に属する候補を返します。したがって候補の探索は、インポートされたシンボルの総数ではなく、走査した綴りの長さと返却する候補数に比例します。公開された探索のセマンティクスは従来と同じです。
 
 実装上の補足:
 
-- `ModuleId` と `SymbolId` は `mizar-lexer` 内の lightweight string newtype です。それ自体は module の存在や semantic resolution を意味しません。
-- `ModuleLexicalSummary.exported_symbols` は producer 側で canonicalize 済みであることを前提にします。sorting と summary fingerprint の安定性は summary construction 側の責務であり、environment construction 側の責務ではありません。
-- `UserSymbolCandidate.source_module` は lexical summary 由来の defining/exporting provenance を保持し、`imported_module` は conflict diagnostics のために current file の resolved import で指定された module を記録する。
-- `UserSymbolCandidate.kind` と `UserSymbolCandidate.arity` は active candidate ごとに保持します。これにより後続 parser / resolver phases は module summary を作り直さずに same-spelling overload を filter / distinguish できます。
-- `.` は reserved-special-symbol collision rule に対する仕様上の例外です。それ以外の reserved symbol spelling との完全一致は拒否します。
-- 異なる import から来た equal-spelling user symbol は environment construction conflict として拒否します。
-- fingerprint には process-randomized hashing ではなく、内部の stable byte hasher を使い、symbol kind と arity metadata も含めます。
-- trie は内部の acceleration structure であり、fingerprinting や summary canonicalization には影響しません。
+- `ModuleId` と `SymbolId` は `mizar-lexer` 内の軽量な文字列ニュータイプ(newtype)です。それ自体はモジュールの存在や意味論的な解決を意味しません。
+- `ModuleLexicalSummary.exported_symbols` は、生成側で正規化済みであることを前提とします。整列とサマリーのフィンガープリントの安定性はサマリー生成側の責務であり、環境構築側の責務ではありません。
+- `UserSymbolCandidate.source_module` は、字句サマリー由来の定義/エクスポートの由来を保持します。`imported_module` は、インポート衝突の診断のために、現在のファイルの解決済みインポートで指定されたモジュールを記録します。
+- `UserSymbolCandidate.kind` と `UserSymbolCandidate.arity` は、アクティブ候補ごとに保持します。これにより後続のパーサー/リゾルバフェーズは、モジュールサマリーを作り直さずに、同綴りのオーバーロードを絞り込んだり区別したりできます。
+- `.` は、予約特殊記号の衝突規則に対する仕様上の例外です。それ以外の予約記号綴りとの完全一致は拒否します。
+- 異なるインポートから来た同綴りのユーザーシンボルは、環境構築上の衝突として拒否します。
+- フィンガープリントは、プロセスごとに乱数化されるハッシュではなく内部の安定したバイトハッシャーを使い、シンボル種別とアリティのメタデータも含めます。
+- トライは内部の高速化構造であり、フィンガープリントの計算やサマリーの正規化には影響しません。
 
 ## Non-Goals
 
-この module は以下を行いません。
+このモジュールは以下を行いません。
 
-- source text を parse する;
-- import syntax を resolve する;
-- full module IR を load する;
-- local scope overrides を decide する;
-- symbol use が type-correct か decide する;
-- overload winner を choose する.
+- ソーステキストをパースする;
+- インポート構文を解決する;
+- 完全なモジュール IR を読み込む;
+- 局所スコープの上書き(override)を判定する;
+- シンボルの使用が型として正しいかを判定する;
+- オーバーロードの勝者を選ぶ.
 
 ## Error Handling
 
-Error は environment construction failure であり、tokenization failure ではありません。
+ここでのエラーは環境構築の失敗であり、トークン化の失敗ではありません。
 
-- missing module lexical summary for a resolved import;
-- inconsistent duplicate summary for the same module id;
-- exported symbol collides illegally with a reserved word or reserved special symbol;
-- different imports が export する equal-spelling user symbols は conflict する;
-- invalid user-symbol spelling.
-- invalid user-symbol arity shape.
+- 解決済みインポートに対応するモジュール字句サマリーがない;
+- 同じモジュール ID に対して内容の異なる重複サマリーがある;
+- エクスポートシンボルが、予約語または予約特殊記号と不正に衝突する;
+- 異なるインポートがエクスポートする同綴りのユーザーシンボルが衝突する;
+- ユーザーシンボルの綴りが不正;
+- ユーザーシンボルのアリティ形状が不正。
 
-同じ imported module 内の same-spelling user symbol は deterministic candidate として表現できます。一方、異なる import から来た same-spelling symbol は conflict として拒否します。Import order と summary order は error として診断しませんが、deterministic input contract の一部であり、environment fingerprint に反映されます。
+同じインポート元モジュール内の同綴りユーザーシンボルは、決定的な候補として表現できます。一方、異なるインポートから来た同綴りシンボルは衝突として拒否します。インポート順序とサマリー順序はエラーとして診断しませんが、決定的な入力規約の一部であり、環境のフィンガープリントに反映されます。
 
 ## Tests
 
 テストでは以下を確認します。
 
-- reserved table が常に存在すること;
-- imported symbol が可視になること;
-- 異なる import から来た equal-spelling user symbol が deterministic に拒否されること;
-- reserved collision が拒否されること;
-- deterministic input order の下で environment fingerprint が安定すること;
-- identifier-shaped / punctuation-shaped symbol に対する longest-match query に答えられること。
-- 多数の imported symbols と overlapping spelling があっても trie-backed lookup が longest-match behavior を保つこと。
-- same-spelling overload candidates の kind / arity metadata が保持されること。
-- kind または arity metadata が変わると environment fingerprint が変わること。
+- 予約テーブルが常に存在すること;
+- インポートしたシンボルが可視になること;
+- 異なるインポートから来た同綴りユーザーシンボルが決定的に拒否されること;
+- 予約語との衝突が拒否されること;
+- 決定的な入力順序の下で環境のフィンガープリントが安定すること;
+- 識別子の形・記号の形をしたシンボルに対する最長一致クエリに答えられること;
+- 多数のインポートシンボルと綴りの重なりがあっても、トライに基づく探索が最長一致の動作を保つこと;
+- 同綴りのオーバーロード候補について、種別/アリティのメタデータが保持されること;
+- 種別またはアリティのメタデータが変わると、環境のフィンガープリントが変わること。
