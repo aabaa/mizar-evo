@@ -6,7 +6,18 @@
 
 ## Ordered Task List
 
-現在 open な ordered lexer follow-up tasks はありません。
+1. active symbol lookup の線形探索を trie-backed lexicon に置き換える。
+   - disambiguator は現在、`LexemeRun` text を split し longest-match rules を適用するとき、imported/active user-symbol spellings を線形探索している。
+   - active lexical environment を trie または同等の prefix index として構築し、candidate discovery が imported symbols 全体数ではなく、scan した spelling 長と match 数に比例するようにする。
+   - reserved-symbol lookup と imported user-symbol lookup は、既存の precedence、longest-match、parser-context、scope-override behavior と互換に保つ。
+   - overlapping imported spellings、identifier-shaped symbols、punctuation-shaped symbols、scope overrides の regression tests と、多数の imported symbols を含む benchmark または measurement を追加する。
+
+2. lexical summaries と active-symbol candidates に symbol kind と arity metadata を保持する。
+   - 現在の `ExportedSymbolShape` と `UserSymbolCandidate` は lexical spelling、symbol id、provenance、import ordinal、export rank を保持するが、symbol category や arity は保持していない。
+   - module lexical summary format を拡張し、後続の parser/resolver phases が必要とする user-symbol kind、たとえば functor、mode、attribute、predicate、その他 declaration categories と、overloaded spelling を区別するための arity または arity shape を含める。
+   - same-spelling overload candidates は spelling-only の tokenization fact に縮約せず、downstream resolution に必要な metadata 付きで保持する。
+   - final `UserSymbol` tokens が spelling だけを保持するべきか、後続 parser / semantic phases 用の stable candidate handle/list も保持するべきかを決定する。
+   - kind や arity が異なる same-spelling symbols、特定の symbol kind だけを許す parser contexts、kind/arity metadata の変更で deterministic fingerprint が変わることを確認する tests を追加する。
 
 ## Completed Tasks
 

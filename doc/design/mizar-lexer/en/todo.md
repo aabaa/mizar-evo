@@ -6,7 +6,18 @@ This document records follow-up tasks identified during the lexer quality review
 
 ## Ordered Task List
 
-No ordered lexer follow-up tasks are currently open.
+1. Replace linear active-symbol lookup with a trie-backed lexicon.
+   - The disambiguator currently searches imported/active user-symbol spellings linearly when splitting `LexemeRun` text and applying longest-match rules.
+   - Build the active lexical environment in a trie or equivalent prefix index so candidate discovery is proportional to the scanned spelling length plus matches, rather than to the total number of imported symbols.
+   - Keep reserved-symbol lookup and imported user-symbol lookup compatible with existing precedence, longest-match, parser-context, and scope-override behavior.
+   - Add regression tests for overlapping imported spellings, identifier-shaped symbols, punctuation-shaped symbols, and scope overrides, plus a benchmark or measurement that covers many imported symbols.
+
+2. Carry symbol kind and arity metadata in lexical summaries and active-symbol candidates.
+   - `ExportedSymbolShape` and `UserSymbolCandidate` currently store lexical spelling, symbol id, provenance, import ordinal, and export rank, but not the symbol category or arity.
+   - Extend the module lexical summary format with the user-symbol kind needed by later parser/resolver phases, such as functor, mode, attribute, predicate, or related declaration categories, and with the arity or arity shape needed to distinguish overloaded spellings.
+   - Preserve same-spelling overload candidates with enough metadata for downstream resolution instead of reducing them to spelling-only tokenization facts.
+   - Decide whether final `UserSymbol` tokens should keep only the spelling or also carry a stable candidate handle/list for later parser and semantic phases.
+   - Add tests for same-spelling symbols with different kinds or arities, parser contexts that admit only a subset of symbol kinds, and deterministic fingerprint changes when kind/arity metadata changes.
 
 ## Completed Tasks
 
