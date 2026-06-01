@@ -12,9 +12,22 @@ It lets frontend, diagnostics, LSP, documentation, extraction, artifacts, and IR
 
 ```rust
 pub struct LineMap {
-    pub source_id: SourceId,
-    pub line_starts: Vec<ByteOffset>,
-    pub text_hash: Hash,
+    /* private fields */
+}
+
+impl LineMap {
+    pub fn new(source_id: SourceId, text: &str) -> Self;
+    pub fn with_source(source_id: SourceId, text: &str) -> Self;
+    pub fn source_id(&self) -> SourceId;
+    pub fn text_hash(&self) -> Hash;
+    pub fn line_starts(&self) -> &[ByteOffset];
+    pub fn line_column_for_source(
+        &self,
+        source_id: SourceId,
+        offset: ByteOffset,
+    ) -> Result<LineColumn, SourceMapError>;
+    pub fn line_column_range(&self, range: SourceRange) -> Result<LineColumnRange, SourceMapError>;
+    pub fn validate_range(&self, range: SourceRange) -> Result<(), SourceMapError>;
 }
 
 pub struct SourceRange {
@@ -26,6 +39,11 @@ pub struct SourceRange {
 pub struct LineColumn {
     pub line: u32,
     pub column: u32,
+}
+
+pub struct LineColumnRange {
+    pub start: LineColumn,
+    pub end: LineColumn,
 }
 
 pub struct LoadingMap {
@@ -106,9 +124,9 @@ This module is consumed by frontend phases, `mizar-ir` side tables, `mizar-diagn
 
 ### Line Map
 
-`LineMap` records line starts for the exact source text represented by a `SourceVersion`.
+`LineMap` records source identity, text hash, and line starts for the exact source text represented by a `SourceVersion`.
 
-It is immutable after construction. Consumers must validate that the `source_id` belongs to the snapshot they are reporting against before converting offsets to user-facing line/column values.
+It is immutable after construction. The stored source id, text hash, and line starts are observable through accessors, not by mutable field access. Consumers must validate that the `source_id` belongs to the snapshot they are reporting against before converting offsets to user-facing line/column values.
 
 If disk source loading stripped a leading UTF-8 BOM, byte offset `0` in the `LineMap` is the first byte after that BOM in the original file. Raw-file byte positions are recovered through `LoadingMap`, not by changing `SourceRange` or lexer span coordinates.
 

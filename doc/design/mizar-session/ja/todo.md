@@ -52,7 +52,7 @@
 
 ### モジュール: source_map (`src/source_map.rs`)
 
-4. **`SourceRange` と `LineMap` へ `SourceId` を統合。** [ ]
+4. **`SourceRange` と `LineMap` へ `SourceId` を統合。** [x]
    - `SourceRange` に `source_id: SourceId` を、`LineMap` に `source_id` + `text_hash: Hash` を追加する。
    - バイトオフセットの意味は維持し、`with_source(source_id, text)` コンストラクタを追加して既存の `new` 経路を維持/調整する。
    - 変換前に、範囲/オフセットが期待するソースに属することを検証する。

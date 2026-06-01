@@ -52,7 +52,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
 
 ### Module: source_map (`src/source_map.rs`)
 
-4. **Integrate `SourceId` into `SourceRange` and `LineMap`.** [ ]
+4. **Integrate `SourceId` into `SourceRange` and `LineMap`.** [x]
    - Add `source_id: SourceId` to `SourceRange`; add `source_id` + `text_hash: Hash` to `LineMap`.
    - Keep byte-offset semantics; add a `with_source(source_id, text)` constructor and keep/adjust the existing `new` path.
    - Validate that a range/offset belongs to the expected source before conversion.

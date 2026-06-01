@@ -12,9 +12,22 @@
 
 ```rust
 pub struct LineMap {
-    pub source_id: SourceId,
-    pub line_starts: Vec<ByteOffset>,
-    pub text_hash: Hash,
+    /* private fields */
+}
+
+impl LineMap {
+    pub fn new(source_id: SourceId, text: &str) -> Self;
+    pub fn with_source(source_id: SourceId, text: &str) -> Self;
+    pub fn source_id(&self) -> SourceId;
+    pub fn text_hash(&self) -> Hash;
+    pub fn line_starts(&self) -> &[ByteOffset];
+    pub fn line_column_for_source(
+        &self,
+        source_id: SourceId,
+        offset: ByteOffset,
+    ) -> Result<LineColumn, SourceMapError>;
+    pub fn line_column_range(&self, range: SourceRange) -> Result<LineColumnRange, SourceMapError>;
+    pub fn validate_range(&self, range: SourceRange) -> Result<(), SourceMapError>;
 }
 
 pub struct SourceRange {
@@ -26,6 +39,11 @@ pub struct SourceRange {
 pub struct LineColumn {
     pub line: u32,
     pub column: u32,
+}
+
+pub struct LineColumnRange {
+    pub start: LineColumn,
+    pub end: LineColumn,
 }
 
 pub struct LoadingMap {
@@ -106,9 +124,9 @@ pub trait SourceMapService {
 
 ### Line Map
 
-`LineMap` は、`SourceVersion` が表すソーステキストそのものについて、各行の開始位置を記録します。
+`LineMap` は、`SourceVersion` が表すソーステキストそのものについて、ソース同一性・テキストハッシュ・各行の開始位置を記録します。
 
-構築後は不変です。利用側は、オフセットを利用者向けの行・列値に変換する前に、`source_id` が報告対象のスナップショットに属することを検証しなければなりません。
+構築後は不変です。保持されたソース ID・テキストハッシュ・行開始位置は、可変なフィールドアクセスではなく accessor を通して参照します。利用側は、オフセットを利用者向けの行・列値に変換する前に、`source_id` が報告対象のスナップショットに属することを検証しなければなりません。
 
 ディスクのソース読み込みが先頭の UTF-8 BOM を除去した場合、`LineMap` のバイトオフセット `0` は、元ファイルにおけるその BOM の直後の最初のバイトに当たります。生ファイルのバイト位置は、`SourceRange` や字句解析器のスパン座標を変更するのではなく、`LoadingMap` を通して復元します。
 
