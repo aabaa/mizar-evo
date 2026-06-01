@@ -37,6 +37,18 @@ pub enum SourceOrigin {
     Generated { generator: GeneratedSourceKind },
 }
 
+// snapshot／共有リース層が所有し、`retention` が再エクスポートする。
+pub enum RetentionReason {
+    ActiveBuild,
+    CurrentWatchBaseline,
+    PublishedLspSnapshot,
+    OpenBufferOverlay,
+    DiagnosticIndex,
+    ExplanationRequest,
+    PhaseOutputReference,
+    PendingWrite,
+}
+
 pub struct SnapshotLease {
     pub snapshot: BuildSnapshotId,
     pub reason: RetentionReason,

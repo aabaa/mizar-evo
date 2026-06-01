@@ -37,6 +37,18 @@ pub enum SourceOrigin {
     Generated { generator: GeneratedSourceKind },
 }
 
+// Owned by the snapshot/shared lease layer; re-exported by `retention`.
+pub enum RetentionReason {
+    ActiveBuild,
+    CurrentWatchBaseline,
+    PublishedLspSnapshot,
+    OpenBufferOverlay,
+    DiagnosticIndex,
+    ExplanationRequest,
+    PhaseOutputReference,
+    PendingWrite,
+}
+
 pub struct SnapshotLease {
     pub snapshot: BuildSnapshotId,
     pub reason: RetentionReason,
