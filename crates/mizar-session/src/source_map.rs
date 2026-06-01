@@ -362,6 +362,20 @@ mod tests {
             super::one_based_u32(u32::MAX as usize, u32::MAX as usize),
             Err(SourceMapError::LineColumnOverflow)
         );
+        assert_eq!(
+            super::one_based_u32(usize::MAX, usize::MAX),
+            Err(SourceMapError::LineColumnOverflow)
+        );
+    }
+
+    #[test]
+    fn line_map_narrowing_uses_checked_conversion_even_when_limit_is_larger() {
+        let unrepresentable_u32_coordinate = u32::MAX as usize;
+
+        assert_eq!(
+            super::one_based_u32(unrepresentable_u32_coordinate, usize::MAX),
+            Err(SourceMapError::LineColumnOverflow)
+        );
     }
 
     #[test]

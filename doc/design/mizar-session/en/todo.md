@@ -62,7 +62,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
    - Depends on: 1. Spec: [source_map.md](./source_map.md) "Line Map", "Source Range".
    - Note: this is additive for the lexer — lexer keeps its own `SourceSpan`; the bridge stays in `mizar-lsp`. Confirm the span-bridging decision but do not block on a lexer change.
 
-5. **Line/column overflow policy.** [ ]
+5. **Line/column overflow policy.** [x]
    - Keep `LineColumn` values `u32`; add `SourceMapError::LineColumnOverflow`.
    - Report overflow instead of saturating/wrapping/narrowing from `usize`.
    - Tests: unrepresentable line/column reports overflow; normal multi-byte conversion still returns one-based Unicode scalar columns.

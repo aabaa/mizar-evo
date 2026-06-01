@@ -20,11 +20,11 @@ impl LineMap {
     pub fn with_source(source_id: SourceId, text: &str) -> Self;
     pub fn source_id(&self) -> SourceId;
     pub fn text_hash(&self) -> Hash;
-    pub fn line_starts(&self) -> &[ByteOffset];
+    pub fn line_starts(&self) -> &[usize];
     pub fn line_column_for_source(
         &self,
         source_id: SourceId,
-        offset: ByteOffset,
+        offset: usize,
     ) -> Result<LineColumn, SourceMapError>;
     pub fn line_column_range(&self, range: SourceRange) -> Result<LineColumnRange, SourceMapError>;
     pub fn validate_range(&self, range: SourceRange) -> Result<(), SourceMapError>;
@@ -32,8 +32,8 @@ impl LineMap {
 
 pub struct SourceRange {
     pub source_id: SourceId,
-    pub start: ByteOffset,
-    pub end: ByteOffset,
+    pub start: usize,
+    pub end: usize,
 }
 
 pub struct LineColumn {
@@ -96,7 +96,7 @@ pub enum PreprocessSegment {
 
 pub enum SourceAnchor {
     Range(SourceRange),
-    Point { source_id: SourceId, offset: ByteOffset },
+    Point { source_id: SourceId, offset: usize },
     Generated { origin: GeneratedSpanOrigin },
 }
 

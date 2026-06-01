@@ -62,7 +62,7 @@
    - 依存: 1。仕様: [source_map.md](../en/source_map.md) "Line Map", "Source Range"。
    - 注: これは lexer に対して加法的（lexer は自前の `SourceSpan` を維持、ブリッジは `mizar-lsp` に残る）。span 橋渡しの方針は確認するが、lexer 変更を待たずに進めてよい。
 
-5. **行/列のオーバーフロー方針。** [ ]
+5. **行/列のオーバーフロー方針。** [x]
    - `LineColumn` の値は `u32` のままにし、`SourceMapError::LineColumnOverflow` を追加する。
    - `usize` からの飽和/巻き戻し/縮小ではなく、オーバーフローを報告する。
    - テスト: 表現不能な行/列はオーバーフローを報告、通常のマルチバイト変換は引き続き 1 始まりの Unicode スカラー列を返す。
