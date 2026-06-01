@@ -25,6 +25,7 @@ It does not own task scheduling, IR storage, artifact publication, or diagnostic
 | [snapshot.md](./snapshot.md) | `crates/mizar-session/src/snapshot.rs` | `BuildSnapshot`, `SourceVersion`, snapshot identity, retention, and freshness contracts | Draft |
 | [source_map.md](./source_map.md) | `crates/mizar-session/src/source_map.rs` | `LineMap`, source ranges, preprocessing maps, generated spans, and coordinate conversion | Draft |
 | [retention.md](./retention.md) | `crates/mizar-session/src/retention.rs` | Snapshot leases, LSP/watch retention, and garbage-collection policy | Draft |
+| [todo.md](./todo.md) | `crates/mizar-session` | Module implementation order, status, and remaining work | Living |
 
 ## Crate Boundary
 

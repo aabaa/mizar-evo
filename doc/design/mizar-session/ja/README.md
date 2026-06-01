@@ -25,6 +25,7 @@
 | [snapshot.md](./snapshot.md) | `crates/mizar-session/src/snapshot.rs` | `BuildSnapshot`、`SourceVersion`、スナップショットの同一性、保持、鮮度の契約 | Draft |
 | [source_map.md](./source_map.md) | `crates/mizar-session/src/source_map.rs` | `LineMap`、ソース範囲、前処理マップ、生成スパン、座標変換 | Draft |
 | [retention.md](./retention.md) | `crates/mizar-session/src/retention.rs` | スナップショットリース、LSP／watch の保持、ガベージコレクション方針 | Draft |
+| [todo.md](./todo.md) | `crates/mizar-session` | モジュールの実装順序、ステータス、残作業 | Living |
 
 ## Crate Boundary
 

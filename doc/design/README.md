@@ -1,5 +1,7 @@
 # Internal Design Specifications
 
+> Implementation order across crates: [todo.md](./todo.md).
+
 This directory contains internal implementation specifications organized at two levels:
 
 ## 1. Architecture Specifications (`architecture/`)
