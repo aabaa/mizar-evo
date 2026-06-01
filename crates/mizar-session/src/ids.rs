@@ -124,10 +124,12 @@
 use std::error::Error;
 use std::fmt;
 use std::str::FromStr;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 #[allow(dead_code)]
 const BUILD_SNAPSHOT_HASH_DOMAIN: &[u8] = b"mizar-session/build-snapshot-id/v1";
 const BUILD_SNAPSHOT_SERIALIZED_PREFIX: &str = "mizar-session-build-snapshot-v1:";
+const FIRST_ALLOCATOR_ID: u64 = 1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, std::hash::Hash)]
 pub(crate) struct OpaqueId(u64);
@@ -161,6 +163,74 @@ pub enum IdError {
     UnknownSnapshotRegistry,
     AllocatorOverflow,
     NonPersistableSerialization,
+}
+
+pub trait SessionIdAllocator {
+    fn next_session_id(&self) -> Result<BuildSessionId, IdError>;
+    fn next_request_id(&self) -> Result<BuildRequestId, IdError>;
+    fn next_source_id(&self, snapshot: BuildSnapshotId) -> Result<SourceId, IdError>;
+    fn next_source_map_id(&self, snapshot: BuildSnapshotId) -> Result<SourceMapId, IdError>;
+    fn next_lease_id(&self, snapshot: BuildSnapshotId) -> Result<SnapshotLeaseId, IdError>;
+}
+
+#[derive(Debug)]
+pub struct InMemorySessionIdAllocator {
+    next_session_id: AtomicU64,
+    next_request_id: AtomicU64,
+    next_source_id: AtomicU64,
+    next_source_map_id: AtomicU64,
+    next_lease_id: AtomicU64,
+}
+
+impl InMemorySessionIdAllocator {
+    pub const fn new() -> Self {
+        Self {
+            next_session_id: AtomicU64::new(FIRST_ALLOCATOR_ID),
+            next_request_id: AtomicU64::new(FIRST_ALLOCATOR_ID),
+            next_source_id: AtomicU64::new(FIRST_ALLOCATOR_ID),
+            next_source_map_id: AtomicU64::new(FIRST_ALLOCATOR_ID),
+            next_lease_id: AtomicU64::new(FIRST_ALLOCATOR_ID),
+        }
+    }
+
+    #[cfg(test)]
+    fn with_next_allocator_id_for_test(next_id: u64) -> Self {
+        Self {
+            next_session_id: AtomicU64::new(next_id),
+            next_request_id: AtomicU64::new(next_id),
+            next_source_id: AtomicU64::new(next_id),
+            next_source_map_id: AtomicU64::new(next_id),
+            next_lease_id: AtomicU64::new(next_id),
+        }
+    }
+}
+
+impl Default for InMemorySessionIdAllocator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SessionIdAllocator for InMemorySessionIdAllocator {
+    fn next_session_id(&self) -> Result<BuildSessionId, IdError> {
+        allocate_opaque_id(&self.next_session_id).map(BuildSessionId)
+    }
+
+    fn next_request_id(&self) -> Result<BuildRequestId, IdError> {
+        allocate_opaque_id(&self.next_request_id).map(BuildRequestId)
+    }
+
+    fn next_source_id(&self, _snapshot: BuildSnapshotId) -> Result<SourceId, IdError> {
+        allocate_opaque_id(&self.next_source_id).map(SourceId)
+    }
+
+    fn next_source_map_id(&self, _snapshot: BuildSnapshotId) -> Result<SourceMapId, IdError> {
+        allocate_opaque_id(&self.next_source_map_id).map(SourceMapId)
+    }
+
+    fn next_lease_id(&self, _snapshot: BuildSnapshotId) -> Result<SnapshotLeaseId, IdError> {
+        allocate_opaque_id(&self.next_lease_id).map(SnapshotLeaseId)
+    }
 }
 
 impl Hash {
@@ -281,6 +351,15 @@ fn reject_non_persistable_id() -> Result<String, IdError> {
     Err(IdError::NonPersistableSerialization)
 }
 
+fn allocate_opaque_id(counter: &AtomicU64) -> Result<OpaqueId, IdError> {
+    counter
+        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
+            current.checked_add(1)
+        })
+        .map(OpaqueId)
+        .map_err(|_| IdError::AllocatorOverflow)
+}
+
 fn push_lower_hex(output: &mut String, bytes: &[u8]) {
     const HEX: &[u8; 16] = b"0123456789abcdef";
 
@@ -346,15 +425,17 @@ impl Error for IdError {}
 #[cfg(test)]
 mod tests {
     use super::{
-        BuildRequestId, BuildSessionId, BuildSnapshotId, Hash, IdError, OpaqueId, SnapshotLeaseId,
-        SourceId, SourceMapId, build_snapshot_id_from_parts,
-        build_snapshot_id_from_sorted_canonical_bytes,
+        BuildRequestId, BuildSessionId, BuildSnapshotId, Hash, IdError, InMemorySessionIdAllocator,
+        OpaqueId, SessionIdAllocator, SnapshotLeaseId, SourceId, SourceMapId,
+        build_snapshot_id_from_parts, build_snapshot_id_from_sorted_canonical_bytes,
     };
     use std::collections::HashSet;
     use std::error::Error;
     use std::fmt::Debug;
     use std::hash::Hash as HashTrait;
     use std::str::FromStr;
+    use std::sync::Arc;
+    use std::thread;
 
     #[test]
     fn allocator_issued_ids_compare_equal_only_within_their_domain() {
@@ -549,6 +630,226 @@ mod tests {
     }
 
     #[test]
+    fn in_memory_allocator_issues_unique_ids_within_one_registry() {
+        let allocator = InMemorySessionIdAllocator::new();
+        let snapshot = sample_snapshot_id(1);
+        let other_snapshot = sample_snapshot_id(2);
+
+        let mut session_ids = HashSet::new();
+        let mut request_ids = HashSet::new();
+        let mut source_ids = HashSet::new();
+        let mut source_map_ids = HashSet::new();
+        let mut lease_ids = HashSet::new();
+
+        for _ in 0..8 {
+            assert!(session_ids.insert(allocator.next_session_id().unwrap()));
+            assert!(request_ids.insert(allocator.next_request_id().unwrap()));
+            assert!(source_ids.insert(allocator.next_source_id(snapshot).unwrap()));
+            assert!(source_map_ids.insert(allocator.next_source_map_id(snapshot).unwrap()));
+            assert!(lease_ids.insert(allocator.next_lease_id(snapshot).unwrap()));
+        }
+
+        assert!(source_ids.insert(allocator.next_source_id(other_snapshot).unwrap()));
+        assert!(source_map_ids.insert(allocator.next_source_map_id(other_snapshot).unwrap()));
+        assert!(lease_ids.insert(allocator.next_lease_id(other_snapshot).unwrap()));
+    }
+
+    #[test]
+    fn in_memory_allocator_issues_unique_ids_across_threads() {
+        const THREADS: usize = 8;
+        const IDS_PER_THREAD: usize = 64;
+
+        let allocator = Arc::new(InMemorySessionIdAllocator::new());
+        let snapshot = sample_snapshot_id(3);
+        let mut handles = Vec::new();
+
+        for _ in 0..THREADS {
+            let allocator = Arc::clone(&allocator);
+            handles.push(thread::spawn(move || {
+                let mut session_ids = Vec::new();
+                let mut request_ids = Vec::new();
+                let mut source_ids = Vec::new();
+                let mut source_map_ids = Vec::new();
+                let mut lease_ids = Vec::new();
+
+                for _ in 0..IDS_PER_THREAD {
+                    session_ids.push(allocator.next_session_id().unwrap());
+                    request_ids.push(allocator.next_request_id().unwrap());
+                    source_ids.push(allocator.next_source_id(snapshot).unwrap());
+                    source_map_ids.push(allocator.next_source_map_id(snapshot).unwrap());
+                    lease_ids.push(allocator.next_lease_id(snapshot).unwrap());
+                }
+
+                (
+                    session_ids,
+                    request_ids,
+                    source_ids,
+                    source_map_ids,
+                    lease_ids,
+                )
+            }));
+        }
+
+        let mut session_ids = HashSet::new();
+        let mut request_ids = HashSet::new();
+        let mut source_ids = HashSet::new();
+        let mut source_map_ids = HashSet::new();
+        let mut lease_ids = HashSet::new();
+
+        for handle in handles {
+            let (
+                thread_session_ids,
+                thread_request_ids,
+                thread_source_ids,
+                thread_source_map_ids,
+                thread_lease_ids,
+            ) = handle.join().unwrap();
+
+            assert_all_unique(&mut session_ids, thread_session_ids);
+            assert_all_unique(&mut request_ids, thread_request_ids);
+            assert_all_unique(&mut source_ids, thread_source_ids);
+            assert_all_unique(&mut source_map_ids, thread_source_map_ids);
+            assert_all_unique(&mut lease_ids, thread_lease_ids);
+        }
+
+        assert_eq!(session_ids.len(), THREADS * IDS_PER_THREAD);
+        assert_eq!(request_ids.len(), THREADS * IDS_PER_THREAD);
+        assert_eq!(source_ids.len(), THREADS * IDS_PER_THREAD);
+        assert_eq!(source_map_ids.len(), THREADS * IDS_PER_THREAD);
+        assert_eq!(lease_ids.len(), THREADS * IDS_PER_THREAD);
+    }
+
+    #[test]
+    fn snapshot_scoped_allocator_methods_require_a_snapshot_id() {
+        fn allocate_snapshot_scoped_ids(
+            allocator: &dyn SessionIdAllocator,
+            snapshot: BuildSnapshotId,
+        ) -> Result<(SourceId, SourceMapId, SnapshotLeaseId), IdError> {
+            Ok((
+                allocator.next_source_id(snapshot)?,
+                allocator.next_source_map_id(snapshot)?,
+                allocator.next_lease_id(snapshot)?,
+            ))
+        }
+
+        let allocator = InMemorySessionIdAllocator::new();
+        let first = allocate_snapshot_scoped_ids(&allocator, sample_snapshot_id(4)).unwrap();
+        let second = allocate_snapshot_scoped_ids(&allocator, sample_snapshot_id(5)).unwrap();
+
+        assert_ne!(first.0, second.0);
+        assert_ne!(first.1, second.1);
+        assert_ne!(first.2, second.2);
+    }
+
+    #[test]
+    fn allocator_overflow_surfaces_id_error_for_each_id_kind() {
+        let allocator = InMemorySessionIdAllocator::with_next_allocator_id_for_test(u64::MAX);
+        let snapshot = sample_snapshot_id(5);
+
+        assert_eq!(allocator.next_session_id(), Err(IdError::AllocatorOverflow));
+        assert_eq!(allocator.next_request_id(), Err(IdError::AllocatorOverflow));
+        assert_eq!(
+            allocator.next_source_id(snapshot),
+            Err(IdError::AllocatorOverflow)
+        );
+        assert_eq!(
+            allocator.next_source_map_id(snapshot),
+            Err(IdError::AllocatorOverflow)
+        );
+        assert_eq!(
+            allocator.next_lease_id(snapshot),
+            Err(IdError::AllocatorOverflow)
+        );
+    }
+
+    #[test]
+    fn allocator_overflow_does_not_wrap_after_the_last_representable_counter_for_each_id_kind() {
+        let allocator = InMemorySessionIdAllocator::with_next_allocator_id_for_test(u64::MAX - 1);
+        let snapshot = sample_snapshot_id(6);
+
+        assert_eq!(
+            allocator.next_session_id(),
+            Ok(BuildSessionId(OpaqueId(u64::MAX - 1)))
+        );
+        assert_eq!(allocator.next_session_id(), Err(IdError::AllocatorOverflow));
+
+        assert_eq!(
+            allocator.next_request_id(),
+            Ok(BuildRequestId(OpaqueId(u64::MAX - 1)))
+        );
+        assert_eq!(allocator.next_request_id(), Err(IdError::AllocatorOverflow));
+
+        assert_eq!(
+            allocator.next_source_id(snapshot),
+            Ok(SourceId(OpaqueId(u64::MAX - 1)))
+        );
+        assert_eq!(
+            allocator.next_source_id(snapshot),
+            Err(IdError::AllocatorOverflow)
+        );
+
+        assert_eq!(
+            allocator.next_source_map_id(snapshot),
+            Ok(SourceMapId(OpaqueId(u64::MAX - 1)))
+        );
+        assert_eq!(
+            allocator.next_source_map_id(snapshot),
+            Err(IdError::AllocatorOverflow)
+        );
+
+        assert_eq!(
+            allocator.next_lease_id(snapshot),
+            Ok(SnapshotLeaseId(OpaqueId(u64::MAX - 1)))
+        );
+        assert_eq!(
+            allocator.next_lease_id(snapshot),
+            Err(IdError::AllocatorOverflow)
+        );
+    }
+
+    #[test]
+    fn allocator_issued_ids_still_reject_published_schema_serialization() {
+        let allocator = InMemorySessionIdAllocator::new();
+        let snapshot = sample_snapshot_id(7);
+
+        assert_eq!(
+            allocator
+                .next_session_id()
+                .unwrap()
+                .to_published_schema_string(),
+            Err(IdError::NonPersistableSerialization)
+        );
+        assert_eq!(
+            allocator
+                .next_request_id()
+                .unwrap()
+                .to_published_schema_string(),
+            Err(IdError::NonPersistableSerialization)
+        );
+        assert_eq!(
+            allocator
+                .next_source_id(snapshot)
+                .unwrap()
+                .to_published_schema_string(),
+            Err(IdError::NonPersistableSerialization)
+        );
+        assert_eq!(
+            allocator
+                .next_source_map_id(snapshot)
+                .unwrap()
+                .to_published_schema_string(),
+            Err(IdError::NonPersistableSerialization)
+        );
+        assert_eq!(
+            allocator
+                .next_lease_id(snapshot)
+                .unwrap()
+                .to_published_schema_string(),
+            Err(IdError::NonPersistableSerialization)
+        );
+    }
+
+    #[test]
     fn id_error_has_the_specified_basic_variants() {
         let cases = [
             (
@@ -603,6 +904,19 @@ mod tests {
         T: Clone,
     {
         id.clone()
+    }
+
+    fn assert_all_unique<T>(ids: &mut HashSet<T>, new_ids: impl IntoIterator<Item = T>)
+    where
+        T: Copy + Eq + HashTrait + Debug,
+    {
+        for id in new_ids {
+            assert!(ids.insert(id), "duplicate id issued: {id:?}");
+        }
+    }
+
+    fn sample_snapshot_id(seed: u8) -> BuildSnapshotId {
+        BuildSnapshotId(Hash::from_bytes([seed; Hash::BYTE_LEN]))
     }
 
     fn assert_error_trait(error: IdError) {

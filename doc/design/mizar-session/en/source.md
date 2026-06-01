@@ -39,13 +39,19 @@ pub struct LoadedSource {
 }
 
 pub trait SourceLoader {
-    fn load(&self, input: SourceInput, ids: &dyn SessionIdAllocator) -> Result<LoadedSource, SourceLoadError>;
+    fn load(
+        &self,
+        snapshot: BuildSnapshotId,
+        input: SourceInput,
+        ids: &dyn SessionIdAllocator,
+    ) -> Result<LoadedSource, SourceLoadError>;
     fn normalize_path(&self, package_root: &Path, path: &Path) -> Result<NormalizedPath, SourceLoadError>;
     fn hash_text(&self, text: &str) -> Hash;
 }
 ```
 
 `LoadedSource` is an immutable source-text handle. Snapshot creation consumes loaded sources and records their `SourceVersion` summaries.
+`load` takes the target `BuildSnapshotId` so it can request a snapshot-scoped `SourceId` from `SessionIdAllocator`.
 
 ## Dependencies
 
@@ -135,8 +141,10 @@ Generated sources require a generator kind and, when available, an anchor to ori
 - stale LSP document version;
 - open-buffer URI that cannot be mapped to a package source;
 - generated source without required generator metadata.
+- source id allocation failure from `SessionIdAllocator`.
 
 User-facing read and encoding failures are emitted as frontend/build diagnostics. Internal callers still receive structured errors so snapshot creation can decide whether the build request is fatal or recoverable.
+Allocator failures carry the underlying `IdError`; in particular, allocator overflow is not silently converted into a source identity.
 
 ## Tests
 

@@ -19,11 +19,17 @@ pub struct SourceMapId(OpaqueId);
 pub struct SnapshotLeaseId(OpaqueId);
 
 pub trait SessionIdAllocator {
-    fn next_session_id(&self) -> BuildSessionId;
-    fn next_request_id(&self) -> BuildRequestId;
-    fn next_source_id(&self, snapshot: BuildSnapshotId) -> SourceId;
-    fn next_source_map_id(&self, snapshot: BuildSnapshotId) -> SourceMapId;
-    fn next_lease_id(&self, snapshot: BuildSnapshotId) -> SnapshotLeaseId;
+    fn next_session_id(&self) -> Result<BuildSessionId, IdError>;
+    fn next_request_id(&self) -> Result<BuildRequestId, IdError>;
+    fn next_source_id(&self, snapshot: BuildSnapshotId) -> Result<SourceId, IdError>;
+    fn next_source_map_id(&self, snapshot: BuildSnapshotId) -> Result<SourceMapId, IdError>;
+    fn next_lease_id(&self, snapshot: BuildSnapshotId) -> Result<SnapshotLeaseId, IdError>;
+}
+
+pub struct InMemorySessionIdAllocator { /* private fields */ }
+
+impl InMemorySessionIdAllocator {
+    pub const fn new() -> Self;
 }
 ```
 
@@ -87,6 +93,8 @@ ID は意味的な順序を定義しません。
 ### Allocator-Issued Id Construction
 
 アロケータが発行する ID は、所有元のレジストリ内で一意でなければなりません。呼び出し側が値から意味を推測できない限り、単調増加カウンタ、ランダムなノンス、アリーナ索引のいずれであってもかまいません。
+
+アロケータの各メソッドは、新しい一意 ID を発行できない場合に `IdError::AllocatorOverflow` を返します。source/source-map/lease ID のメソッドは `BuildSnapshotId` を受け取り、スナップショットスコープの発行境界が API 上で見えるようにします。
 
 ## Error Handling
 

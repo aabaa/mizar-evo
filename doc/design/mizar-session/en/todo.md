@@ -12,7 +12,7 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| ids | [ids.md](./ids.md) | `src/ids.rs` | [ ] |
+| ids | [ids.md](./ids.md) | `src/ids.rs` | [x] |
 | source_map | [source_map.md](./source_map.md) | `src/source_map.rs` | [~] |
 | snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs` | [ ] |
 | source | [source.md](./source.md) | `src/source.rs` | [~] |
@@ -45,7 +45,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
    - Tests: round-trip hex encode/decode; domain-separator change changes the id; published-schema serialization rejects non-persistable ids.
    - Spec: [ids.md](./ids.md) "Serialization", "Content-Derived Id Construction".
 
-3. **Session id allocator.** [ ]
+3. **Session id allocator.** [x]
    - Define the `SessionIdAllocator` trait and a concrete in-memory allocator (monotonic counters or arena indexes) for session/request/source/source-map/lease ids.
    - Tests: ids are unique within one registry; allocator overflow surfaces `IdError`.
    - Spec: [ids.md](./ids.md) "Allocator-Issued Id Construction".
@@ -117,8 +117,8 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
 ### Module: source (`src/source.rs`)
 
 13. **Loaded-source types and loader surface.** [ ]
-    - Define `SourceInput`, `SourceOriginInput` (the source-loading input variants carrying `path` / `uri,version,text` / generator text+anchor), `LoadedSource`, and the `SourceLoader` trait; reuse snapshot's `SourceOrigin` (task 9) for `LoadedSource.origin` instead of redefining it; implement `hash_text` and `normalize_path` (reuse existing `normalize_source_path`).
-    - Define `SourceLoadError` with its spec variants: source path outside package root, unsupported file extension, invalid UTF-8, unreadable source file, duplicate module path, stale LSP document version, open-buffer URI that cannot be mapped to a package source, generated source without required generator metadata.
+    - Define `SourceInput`, `SourceOriginInput` (the source-loading input variants carrying `path` / `uri,version,text` / generator text+anchor), `LoadedSource`, and the `SourceLoader` trait; `load` takes the target `BuildSnapshotId` before `SourceInput` so it can request a snapshot-scoped `SourceId`; reuse snapshot's `SourceOrigin` (task 9) for `LoadedSource.origin` instead of redefining it; implement `hash_text` and `normalize_path` (reuse existing `normalize_source_path`).
+    - Define `SourceLoadError` with its spec variants: source path outside package root, unsupported file extension, invalid UTF-8, unreadable source file, duplicate module path, stale LSP document version, open-buffer URI that cannot be mapped to a package source, generated source without required generator metadata, source id allocation failure from `SessionIdAllocator`.
     - Tests: `source_hash` excludes absolute paths/document versions; identical text in different origins shares the hash.
     - Depends on: 1, 4, 6, 9. Spec: [source.md](./source.md) "Public API", "Loaded Source".
 

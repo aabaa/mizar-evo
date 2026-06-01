@@ -39,13 +39,19 @@ pub struct LoadedSource {
 }
 
 pub trait SourceLoader {
-    fn load(&self, input: SourceInput, ids: &dyn SessionIdAllocator) -> Result<LoadedSource, SourceLoadError>;
+    fn load(
+        &self,
+        snapshot: BuildSnapshotId,
+        input: SourceInput,
+        ids: &dyn SessionIdAllocator,
+    ) -> Result<LoadedSource, SourceLoadError>;
     fn normalize_path(&self, package_root: &Path, path: &Path) -> Result<NormalizedPath, SourceLoadError>;
     fn hash_text(&self, text: &str) -> Hash;
 }
 ```
 
 `LoadedSource` は不変のソーステキストハンドルです。スナップショット生成は読み込み済みソースを消費し、その `SourceVersion` の要約を記録します。
+`load` は対象の `BuildSnapshotId` を受け取り、`SessionIdAllocator` からスナップショットスコープの `SourceId` を発行できるようにします。
 
 ## Dependencies
 
@@ -135,8 +141,10 @@ pub trait SourceLoader {
 - 失効した LSP ドキュメントバージョン
 - パッケージソースへ対応付けられないオープンバッファ URI
 - 必須の生成器メタデータを欠く生成ソース
+- `SessionIdAllocator` による source id 発行失敗
 
 利用者向けの読み取り失敗・エンコード失敗は、フロントエンドやビルドの診断として発行されます。内部の呼び出し側は構造化エラーも受け取るため、スナップショット生成はビルドリクエストが致命的か回復可能かを判断できます。
+アロケータ失敗は元の `IdError` を保持します。特に、アロケータのオーバーフローは暗黙にソース同一性へ変換されません。
 
 ## Tests
 

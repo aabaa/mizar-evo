@@ -12,7 +12,7 @@
 
 | モジュール | 仕様 | ソース | ステータス |
 |---|---|---|---|
-| ids | [ids.md](../en/ids.md) | `src/ids.rs` | [ ] |
+| ids | [ids.md](../en/ids.md) | `src/ids.rs` | [x] |
 | source_map | [source_map.md](../en/source_map.md) | `src/source_map.rs` | [~] |
 | snapshot | [snapshot.md](../en/snapshot.md) | `src/snapshot.rs` | [ ] |
 | source | [source.md](../en/source.md) | `src/source.rs` | [~] |
@@ -45,7 +45,7 @@
    - テスト: 16 進エンコード/デコードのラウンドトリップ、ドメインセパレータ変更で id が変わる、公開スキーマのシリアライズが永続化不可 id を拒否する。
    - 仕様: [ids.md](../en/ids.md) "Serialization", "Content-Derived Id Construction"。
 
-3. **セッション id アロケータ。** [ ]
+3. **セッション id アロケータ。** [x]
    - `SessionIdAllocator` trait と、session/request/source/source-map/lease の各 id 向けの具体的なインメモリアロケータ（単調増加カウンタまたはアリーナインデックス）を定義する。
    - テスト: 1 つのレジストリ内で id が一意であること、アロケータのオーバーフローが `IdError` になること。
    - 仕様: [ids.md](../en/ids.md) "Allocator-Issued Id Construction"。
@@ -117,8 +117,8 @@
 ### モジュール: source (`src/source.rs`)
 
 13. **ロード済みソース型とローダー面。** [ ]
-    - `SourceInput`, `SourceOriginInput`（`path` / `uri,version,text` / 生成器 text+anchor を持つソース読み込み入力の variant）, `LoadedSource` と `SourceLoader` trait を定義し、`LoadedSource.origin` には snapshot の `SourceOrigin`（タスク 9）を再定義せず再利用する。`hash_text` と `normalize_path`（既存の `normalize_source_path` を再利用）を実装する。
-    - `SourceLoadError` を spec の変種付きで定義する: パッケージルート外のソースパス、未対応のファイル拡張子、不正な UTF-8、読み取り不能なソースファイル、duplicate module path、古い LSP ドキュメントバージョン、パッケージソースに対応付けられないオープンバッファ URI、必須の生成器メタデータが無い生成ソース。
+    - `SourceInput`, `SourceOriginInput`（`path` / `uri,version,text` / 生成器 text+anchor を持つソース読み込み入力の variant）, `LoadedSource` と `SourceLoader` trait を定義する。`load` は `SourceInput` の前に対象の `BuildSnapshotId` を受け取り、スナップショットスコープの `SourceId` を発行できるようにする。`LoadedSource.origin` には snapshot の `SourceOrigin`（タスク 9）を再定義せず再利用する。`hash_text` と `normalize_path`（既存の `normalize_source_path` を再利用）を実装する。
+    - `SourceLoadError` を spec の変種付きで定義する: パッケージルート外のソースパス、未対応のファイル拡張子、不正な UTF-8、読み取り不能なソースファイル、duplicate module path、古い LSP ドキュメントバージョン、パッケージソースに対応付けられないオープンバッファ URI、必須の生成器メタデータが無い生成ソース、`SessionIdAllocator` による source id 発行失敗。
     - テスト: `source_hash` は絶対パス/ドキュメントバージョンを含まない、別 origin の同一テキストはハッシュを共有する。
     - 依存: 1, 4, 6, 9。仕様: [source.md](../en/source.md) "Public API", "Loaded Source"。
 

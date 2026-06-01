@@ -19,11 +19,17 @@ pub struct SourceMapId(OpaqueId);
 pub struct SnapshotLeaseId(OpaqueId);
 
 pub trait SessionIdAllocator {
-    fn next_session_id(&self) -> BuildSessionId;
-    fn next_request_id(&self) -> BuildRequestId;
-    fn next_source_id(&self, snapshot: BuildSnapshotId) -> SourceId;
-    fn next_source_map_id(&self, snapshot: BuildSnapshotId) -> SourceMapId;
-    fn next_lease_id(&self, snapshot: BuildSnapshotId) -> SnapshotLeaseId;
+    fn next_session_id(&self) -> Result<BuildSessionId, IdError>;
+    fn next_request_id(&self) -> Result<BuildRequestId, IdError>;
+    fn next_source_id(&self, snapshot: BuildSnapshotId) -> Result<SourceId, IdError>;
+    fn next_source_map_id(&self, snapshot: BuildSnapshotId) -> Result<SourceMapId, IdError>;
+    fn next_lease_id(&self, snapshot: BuildSnapshotId) -> Result<SnapshotLeaseId, IdError>;
+}
+
+pub struct InMemorySessionIdAllocator { /* private fields */ }
+
+impl InMemorySessionIdAllocator {
+    pub const fn new() -> Self;
 }
 ```
 
@@ -87,6 +93,8 @@ Allocator-issued ids may be serialized only in local debug dumps, logs, and deve
 ### Allocator-Issued Id Construction
 
 Allocator-issued ids must be unique within the owning registry. They may be monotonic counters, random nonces, or arena indexes, as long as callers cannot infer semantics from the value.
+
+Allocator methods return `IdError::AllocatorOverflow` if the allocator cannot issue another unique id. Source, source-map, and lease id methods take a `BuildSnapshotId` so the snapshot-scoped allocation boundary is visible at the API.
 
 ## Error Handling
 
