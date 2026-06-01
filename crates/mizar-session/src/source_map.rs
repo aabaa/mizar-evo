@@ -1,8 +1,14 @@
-use crate::{Hash, SourceId};
+use crate::{Hash, NormalizedPath, SourceId};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SourceRange {
     pub source_id: SourceId,
+    pub start: usize,
+    pub end: usize,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TextRange {
     pub start: usize,
     pub end: usize,
 }
@@ -17,6 +23,59 @@ pub struct LineColumn {
 pub struct LineColumnRange {
     pub start: LineColumn,
     pub end: LineColumn,
+}
+
+pub type DocumentUri = String;
+pub type LspDocumentVersion = i64;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LoadingMap {
+    pub source_id: SourceId,
+    pub loaded_text_hash: Hash,
+    pub loaded_text_len: usize,
+    pub origin: LoadingOrigin,
+    pub segments: Vec<LoadingMapSegment>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum LoadingOrigin {
+    DiskBytes {
+        normalized_path: NormalizedPath,
+    },
+    OpenBufferText {
+        uri: DocumentUri,
+        version: LspDocumentVersion,
+    },
+    Generated,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum LoadingMapSegment {
+    Original {
+        loaded: TextRange,
+        original: TextRange,
+    },
+    RemovedLeadingBom {
+        original: TextRange,
+    },
+    NormalizedNewline {
+        loaded: TextRange,
+        original: TextRange,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LoadedToOriginalRange {
+    pub original: TextRange,
+    pub kind: LoadedToOriginalRangeKind,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LoadedToOriginalRangeKind {
+    Exact,
+    Degraded,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -44,6 +103,15 @@ pub enum SourceMapError {
         offset: usize,
     },
     LineColumnOverflow,
+    RangeOutsideLoadedText {
+        source_id: SourceId,
+        range: TextRange,
+        loaded_len: usize,
+    },
+    MissingLoadingMapSegment {
+        source_id: SourceId,
+        range: TextRange,
+    },
 }
 
 const MAX_LINE_COLUMN: usize = u32::MAX as usize;
@@ -179,6 +247,277 @@ impl LineMap {
     }
 }
 
+impl TextRange {
+    pub const fn new(start: usize, end: usize) -> Self {
+        assert!(start <= end);
+        Self { start, end }
+    }
+
+    pub const fn try_new(start: usize, end: usize) -> Option<Self> {
+        if start <= end {
+            Some(Self { start, end })
+        } else {
+            None
+        }
+    }
+
+    pub const fn len(self) -> usize {
+        assert!(self.start <= self.end);
+        self.end - self.start
+    }
+
+    pub const fn is_empty(self) -> bool {
+        self.start == self.end
+    }
+}
+
+impl LoadingMap {
+    pub fn new(
+        source_id: SourceId,
+        loaded_text: &str,
+        origin: LoadingOrigin,
+        segments: Vec<LoadingMapSegment>,
+    ) -> Self {
+        Self {
+            source_id,
+            loaded_text_hash: hash_source_text(loaded_text),
+            loaded_text_len: loaded_text.len(),
+            origin,
+            segments,
+        }
+    }
+
+    pub fn identity(source_id: SourceId, loaded_text: &str, origin: LoadingOrigin) -> Self {
+        Self::new(
+            source_id,
+            loaded_text,
+            origin,
+            vec![LoadingMapSegment::Original {
+                loaded: TextRange {
+                    start: 0,
+                    end: loaded_text.len(),
+                },
+                original: TextRange {
+                    start: 0,
+                    end: loaded_text.len(),
+                },
+            }],
+        )
+    }
+
+    pub fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    pub fn loaded_text_hash(&self) -> Hash {
+        self.loaded_text_hash
+    }
+
+    pub fn loaded_len(&self) -> usize {
+        self.loaded_text_len
+    }
+
+    pub fn original_offset_for_loaded(
+        &self,
+        source_id: SourceId,
+        offset: usize,
+    ) -> Result<usize, SourceMapError> {
+        self.validate_source_id(source_id)?;
+        let loaded_len = self.loaded_len();
+        if offset > loaded_len {
+            return Err(SourceMapError::RangeOutsideLoadedText {
+                source_id,
+                range: TextRange {
+                    start: offset,
+                    end: offset,
+                },
+                loaded_len,
+            });
+        }
+        if self.segments.is_empty() && loaded_len == 0 && offset == 0 {
+            return Ok(0);
+        }
+
+        self.original_offset_for_loaded_unchecked(offset).ok_or(
+            SourceMapError::MissingLoadingMapSegment {
+                source_id,
+                range: TextRange {
+                    start: offset,
+                    end: offset,
+                },
+            },
+        )
+    }
+
+    pub fn original_range_for_loaded(
+        &self,
+        source_id: SourceId,
+        loaded: TextRange,
+    ) -> Result<LoadedToOriginalRange, SourceMapError> {
+        self.validate_source_id(source_id)?;
+        if loaded.start > loaded.end {
+            return Err(SourceMapError::ReversedRange);
+        }
+        let loaded_len = self.loaded_len();
+        if loaded.end > loaded_len {
+            return Err(SourceMapError::RangeOutsideLoadedText {
+                source_id,
+                range: loaded,
+                loaded_len,
+            });
+        }
+        if loaded.is_empty() {
+            let offset = self.original_offset_for_loaded(source_id, loaded.start)?;
+            return Ok(LoadedToOriginalRange {
+                original: TextRange {
+                    start: offset,
+                    end: offset,
+                },
+                kind: LoadedToOriginalRangeKind::Exact,
+            });
+        }
+
+        let mut cursor = loaded.start;
+        let mut original_start = None;
+        let mut original_end = None;
+        let mut kind = LoadedToOriginalRangeKind::Exact;
+
+        while cursor < loaded.end {
+            let Some((segment_loaded, segment_original, segment_kind)) =
+                self.segment_covering_loaded_offset(cursor)
+            else {
+                return Err(SourceMapError::MissingLoadingMapSegment {
+                    source_id,
+                    range: TextRange {
+                        start: cursor,
+                        end: cursor,
+                    },
+                });
+            };
+
+            let covered_end = segment_loaded.end.min(loaded.end);
+            let mapped = map_loaded_subrange_to_original(
+                segment_loaded,
+                segment_original,
+                TextRange {
+                    start: cursor,
+                    end: covered_end,
+                },
+                segment_kind,
+            );
+            original_start.get_or_insert(mapped.start);
+            original_end = Some(mapped.end);
+            if segment_kind == LoadedToOriginalRangeKind::Degraded {
+                kind = LoadedToOriginalRangeKind::Degraded;
+            }
+            cursor = covered_end;
+        }
+
+        Ok(LoadedToOriginalRange {
+            original: TextRange {
+                start: original_start.expect("non-empty range covers at least one segment"),
+                end: original_end.expect("non-empty range covers at least one segment"),
+            },
+            kind,
+        })
+    }
+
+    fn validate_source_id(&self, source_id: SourceId) -> Result<(), SourceMapError> {
+        if source_id != self.source_id {
+            return Err(SourceMapError::UnknownSourceId { source_id });
+        }
+        Ok(())
+    }
+
+    fn segment_covering_loaded_offset(
+        &self,
+        offset: usize,
+    ) -> Option<(TextRange, TextRange, LoadedToOriginalRangeKind)> {
+        self.segments.iter().find_map(|segment| match segment {
+            LoadingMapSegment::Original { loaded, original }
+                if loaded.start <= offset && offset < loaded.end =>
+            {
+                Some((*loaded, *original, LoadedToOriginalRangeKind::Exact))
+            }
+            LoadingMapSegment::NormalizedNewline { loaded, original }
+                if loaded.start <= offset && offset < loaded.end =>
+            {
+                Some((*loaded, *original, LoadedToOriginalRangeKind::Degraded))
+            }
+            _ => None,
+        })
+    }
+
+    fn original_offset_for_loaded_unchecked(&self, offset: usize) -> Option<usize> {
+        self.segments
+            .iter()
+            .find_map(|segment| segment.original_offset_for_loaded_inside(offset))
+            .or_else(|| {
+                if offset == self.loaded_text_len {
+                    self.segments
+                        .iter()
+                        .find_map(|segment| segment.original_offset_for_loaded_end(offset))
+                } else {
+                    None
+                }
+            })
+    }
+}
+
+impl LoadingMapSegment {
+    fn original_offset_for_loaded_inside(&self, offset: usize) -> Option<usize> {
+        match self {
+            Self::Original { loaded, original }
+                if loaded.start <= offset && offset < loaded.end =>
+            {
+                Some(original.start + (offset - loaded.start))
+            }
+            Self::NormalizedNewline { loaded, original }
+                if loaded.start <= offset && offset < loaded.end =>
+            {
+                Some(original.start)
+            }
+            _ => None,
+        }
+    }
+
+    fn original_offset_for_loaded_end(&self, offset: usize) -> Option<usize> {
+        match self {
+            Self::Original { loaded, original } if offset == loaded.end => Some(original.end),
+            Self::NormalizedNewline { loaded, original } if offset == loaded.end => {
+                Some(original.end)
+            }
+            _ => None,
+        }
+    }
+}
+
+fn map_loaded_subrange_to_original(
+    loaded: TextRange,
+    original: TextRange,
+    subrange: TextRange,
+    kind: LoadedToOriginalRangeKind,
+) -> TextRange {
+    match kind {
+        LoadedToOriginalRangeKind::Exact => TextRange {
+            start: original.start + (subrange.start - loaded.start),
+            end: original.start + (subrange.end - loaded.start),
+        },
+        LoadedToOriginalRangeKind::Degraded => TextRange {
+            start: if subrange.start == loaded.start {
+                original.start
+            } else {
+                original.end
+            },
+            end: if subrange.end == loaded.start {
+                original.start
+            } else {
+                original.end
+            },
+        },
+    }
+}
+
 fn hash_source_text(source: &str) -> Hash {
     let mut hasher = blake3::Hasher::new();
     hasher.update(SOURCE_TEXT_HASH_DOMAIN);
@@ -199,7 +538,10 @@ fn one_based_u32(zero_based: usize, max_coordinate: usize) -> Result<u32, Source
 
 #[cfg(test)]
 mod tests {
-    use super::{LineColumn, LineColumnRange, LineMap, SourceMapError, SourceRange};
+    use super::{
+        LineColumn, LineColumnRange, LineMap, LoadedToOriginalRange, LoadedToOriginalRangeKind,
+        LoadingMap, LoadingMapSegment, LoadingOrigin, SourceMapError, SourceRange, TextRange,
+    };
     use crate::{BuildSnapshotId, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceId};
 
     #[test]
@@ -509,8 +851,347 @@ mod tests {
         );
     }
 
+    #[test]
+    fn loading_map_identity_maps_loaded_offsets_and_ranges_without_offset_changes() {
+        let source_id = source_id(1);
+        let map = LoadingMap::identity(source_id, "alpha\nβ", open_buffer_origin());
+
+        assert_eq!(map.source_id(), source_id);
+        assert_eq!(map.loaded_len(), "alpha\nβ".len());
+        assert_eq!(map.loaded_text_len, "alpha\nβ".len());
+        assert_eq!(map.loaded_text_hash(), super::hash_source_text("alpha\nβ"));
+        assert_eq!(map.original_offset_for_loaded(source_id, 0), Ok(0));
+        assert_eq!(
+            map.original_offset_for_loaded(source_id, "alpha\n".len()),
+            Ok("alpha\n".len())
+        );
+        assert_eq!(
+            map.original_range_for_loaded(
+                source_id,
+                TextRange {
+                    start: "alpha".len(),
+                    end: "alpha\nβ".len(),
+                },
+            ),
+            Ok(LoadedToOriginalRange {
+                original: TextRange {
+                    start: "alpha".len(),
+                    end: "alpha\nβ".len(),
+                },
+                kind: LoadedToOriginalRangeKind::Exact,
+            })
+        );
+    }
+
+    #[test]
+    fn loading_map_maps_loaded_zero_after_removed_leading_bom_to_original_byte_three() {
+        let source_id = source_id(1);
+        let map = LoadingMap::new(
+            source_id,
+            "alpha",
+            open_buffer_origin(),
+            vec![
+                LoadingMapSegment::RemovedLeadingBom {
+                    original: TextRange { start: 0, end: 3 },
+                },
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 0, end: 5 },
+                    original: TextRange { start: 3, end: 8 },
+                },
+            ],
+        );
+
+        assert_eq!(map.original_offset_for_loaded(source_id, 0), Ok(3));
+        assert_eq!(map.original_offset_for_loaded(source_id, 5), Ok(8));
+        assert_eq!(
+            map.original_range_for_loaded(source_id, TextRange { start: 0, end: 5 }),
+            Ok(LoadedToOriginalRange {
+                original: TextRange { start: 3, end: 8 },
+                kind: LoadedToOriginalRangeKind::Exact,
+            })
+        );
+    }
+
+    #[test]
+    fn loading_map_represents_crlf_to_lf_normalized_segments() {
+        let source_id = source_id(1);
+        let map = crlf_loading_map(source_id);
+
+        assert_eq!(
+            map.segments,
+            vec![
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 0, end: 5 },
+                    original: TextRange { start: 0, end: 5 },
+                },
+                LoadingMapSegment::NormalizedNewline {
+                    loaded: TextRange { start: 5, end: 6 },
+                    original: TextRange { start: 5, end: 7 },
+                },
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 6, end: 10 },
+                    original: TextRange { start: 7, end: 11 },
+                },
+            ]
+        );
+        assert_eq!(map.original_offset_for_loaded(source_id, 5), Ok(5));
+        assert_eq!(map.original_offset_for_loaded(source_id, 6), Ok(7));
+        assert_eq!(
+            map.original_range_for_loaded(source_id, TextRange { start: 5, end: 6 }),
+            Ok(LoadedToOriginalRange {
+                original: TextRange { start: 5, end: 7 },
+                kind: LoadedToOriginalRangeKind::Degraded,
+            })
+        );
+    }
+
+    #[test]
+    fn loading_map_degrades_range_mapping_across_normalized_newline_segments() {
+        let source_id = source_id(1);
+        let map = crlf_loading_map(source_id);
+
+        assert_eq!(
+            map.original_range_for_loaded(source_id, TextRange { start: 4, end: 7 }),
+            Ok(LoadedToOriginalRange {
+                original: TextRange { start: 4, end: 8 },
+                kind: LoadedToOriginalRangeKind::Degraded,
+            })
+        );
+    }
+
+    #[test]
+    fn loading_map_combines_leading_bom_base_with_crlf_normalized_segments() {
+        let source_id = source_id(1);
+        let map = LoadingMap::new(
+            source_id,
+            "alpha\nbeta",
+            open_buffer_origin(),
+            vec![
+                LoadingMapSegment::RemovedLeadingBom {
+                    original: TextRange { start: 0, end: 3 },
+                },
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 0, end: 5 },
+                    original: TextRange { start: 3, end: 8 },
+                },
+                LoadingMapSegment::NormalizedNewline {
+                    loaded: TextRange { start: 5, end: 6 },
+                    original: TextRange { start: 8, end: 10 },
+                },
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 6, end: 10 },
+                    original: TextRange { start: 10, end: 14 },
+                },
+            ],
+        );
+
+        assert_eq!(map.original_offset_for_loaded(source_id, 0), Ok(3));
+        assert_eq!(map.original_offset_for_loaded(source_id, 5), Ok(8));
+        assert_eq!(map.original_offset_for_loaded(source_id, 6), Ok(10));
+        assert_eq!(
+            map.original_range_for_loaded(source_id, TextRange { start: 4, end: 7 }),
+            Ok(LoadedToOriginalRange {
+                original: TextRange { start: 7, end: 11 },
+                kind: LoadedToOriginalRangeKind::Degraded,
+            })
+        );
+    }
+
+    #[test]
+    fn loading_map_rejects_source_id_mismatch_and_outside_ranges() {
+        let primary_source_id = source_id(1);
+        let other_source_id = source_id(2);
+        let map = crlf_loading_map(primary_source_id);
+
+        assert_eq!(
+            map.original_offset_for_loaded(other_source_id, 0),
+            Err(SourceMapError::UnknownSourceId {
+                source_id: other_source_id,
+            })
+        );
+        assert_eq!(
+            map.original_range_for_loaded(primary_source_id, TextRange { start: 9, end: 12 }),
+            Err(SourceMapError::RangeOutsideLoadedText {
+                source_id: primary_source_id,
+                range: TextRange { start: 9, end: 12 },
+                loaded_len: 10,
+            })
+        );
+        assert_eq!(
+            map.original_offset_for_loaded(primary_source_id, 11),
+            Err(SourceMapError::RangeOutsideLoadedText {
+                source_id: primary_source_id,
+                range: TextRange { start: 11, end: 11 },
+                loaded_len: 10,
+            })
+        );
+        assert_eq!(
+            map.original_range_for_loaded(primary_source_id, TextRange { start: 3, end: 2 }),
+            Err(SourceMapError::ReversedRange)
+        );
+    }
+
+    #[test]
+    fn loading_map_rejects_ranges_outside_loaded_text_even_when_segments_are_longer() {
+        let source_id = source_id(1);
+        let map = LoadingMap::new(
+            source_id,
+            "abc",
+            open_buffer_origin(),
+            vec![LoadingMapSegment::Original {
+                loaded: TextRange { start: 0, end: 10 },
+                original: TextRange { start: 0, end: 10 },
+            }],
+        );
+
+        assert_eq!(map.loaded_len(), 3);
+        assert_eq!(
+            map.original_offset_for_loaded(source_id, 4),
+            Err(SourceMapError::RangeOutsideLoadedText {
+                source_id,
+                range: TextRange { start: 4, end: 4 },
+                loaded_len: 3,
+            })
+        );
+        assert_eq!(
+            map.original_range_for_loaded(source_id, TextRange { start: 0, end: 4 }),
+            Err(SourceMapError::RangeOutsideLoadedText {
+                source_id,
+                range: TextRange { start: 0, end: 4 },
+                loaded_len: 3,
+            })
+        );
+    }
+
+    #[test]
+    fn loading_map_reports_missing_segment_for_gaps_inside_loaded_text() {
+        let source_id = source_id(1);
+        let map = LoadingMap::new(
+            source_id,
+            "abcd",
+            open_buffer_origin(),
+            vec![
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 0, end: 1 },
+                    original: TextRange { start: 0, end: 1 },
+                },
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 3, end: 4 },
+                    original: TextRange { start: 3, end: 4 },
+                },
+            ],
+        );
+
+        assert_eq!(
+            map.original_range_for_loaded(source_id, TextRange { start: 0, end: 4 }),
+            Err(SourceMapError::MissingLoadingMapSegment {
+                source_id,
+                range: TextRange { start: 1, end: 1 },
+            })
+        );
+        assert_eq!(
+            map.original_offset_for_loaded(source_id, 1),
+            Err(SourceMapError::MissingLoadingMapSegment {
+                source_id,
+                range: TextRange { start: 1, end: 1 },
+            })
+        );
+        assert_eq!(
+            map.original_range_for_loaded(source_id, TextRange { start: 1, end: 1 }),
+            Err(SourceMapError::MissingLoadingMapSegment {
+                source_id,
+                range: TextRange { start: 1, end: 1 },
+            })
+        );
+    }
+
+    #[test]
+    fn loading_map_accepts_empty_identity_point_but_rejects_non_empty_empty_segments() {
+        let empty_source_id = source_id(1);
+        let empty = LoadingMap::new(empty_source_id, "", open_buffer_origin(), Vec::new());
+
+        assert_eq!(empty.original_offset_for_loaded(empty_source_id, 0), Ok(0));
+        assert_eq!(
+            empty.original_range_for_loaded(empty_source_id, TextRange { start: 0, end: 0 }),
+            Ok(LoadedToOriginalRange {
+                original: TextRange { start: 0, end: 0 },
+                kind: LoadedToOriginalRangeKind::Exact,
+            })
+        );
+
+        let non_empty_source_id = source_id(2);
+        let non_empty =
+            LoadingMap::new(non_empty_source_id, "abc", open_buffer_origin(), Vec::new());
+
+        assert_eq!(
+            non_empty.original_offset_for_loaded(non_empty_source_id, 0),
+            Err(SourceMapError::MissingLoadingMapSegment {
+                source_id: non_empty_source_id,
+                range: TextRange { start: 0, end: 0 },
+            })
+        );
+    }
+
+    #[test]
+    fn loading_map_maps_only_real_eof_through_segment_endpoints() {
+        let source_id = source_id(1);
+        let map = LoadingMap::new(
+            source_id,
+            "abcd",
+            open_buffer_origin(),
+            vec![
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 0, end: 1 },
+                    original: TextRange { start: 0, end: 1 },
+                },
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 3, end: 4 },
+                    original: TextRange { start: 30, end: 31 },
+                },
+            ],
+        );
+
+        assert_eq!(map.original_offset_for_loaded(source_id, 4), Ok(31));
+        assert_eq!(
+            map.original_range_for_loaded(source_id, TextRange { start: 4, end: 4 }),
+            Ok(LoadedToOriginalRange {
+                original: TextRange { start: 31, end: 31 },
+                kind: LoadedToOriginalRangeKind::Exact,
+            })
+        );
+    }
+
     fn line_map(source: &str) -> LineMap {
         LineMap::with_source(source_id(1), source)
+    }
+
+    fn crlf_loading_map(source_id: SourceId) -> LoadingMap {
+        LoadingMap::new(
+            source_id,
+            "alpha\nbeta",
+            open_buffer_origin(),
+            vec![
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 0, end: 5 },
+                    original: TextRange { start: 0, end: 5 },
+                },
+                LoadingMapSegment::NormalizedNewline {
+                    loaded: TextRange { start: 5, end: 6 },
+                    original: TextRange { start: 5, end: 7 },
+                },
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 6, end: 10 },
+                    original: TextRange { start: 7, end: 11 },
+                },
+            ],
+        )
+    }
+
+    fn open_buffer_origin() -> LoadingOrigin {
+        LoadingOrigin::OpenBufferText {
+            uri: "file:///pkg/src/test.miz".to_owned(),
+            version: 1,
+        }
     }
 
     fn source_id(seed: u8) -> SourceId {

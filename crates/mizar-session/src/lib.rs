@@ -7,4 +7,8 @@ pub use ids::{
     SessionIdAllocator, SnapshotLeaseId, SourceId, SourceMapId,
 };
 pub use source::{NormalizedPath, SourcePathError, normalize_source_path};
-pub use source_map::{LineColumn, LineColumnRange, LineMap, SourceMapError, SourceRange};
+pub use source_map::{
+    DocumentUri, LineColumn, LineColumnRange, LineMap, LoadedToOriginalRange,
+    LoadedToOriginalRangeKind, LoadingMap, LoadingMapSegment, LoadingOrigin, LspDocumentVersion,
+    SourceMapError, SourceRange, TextRange,
+};

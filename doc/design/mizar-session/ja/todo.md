@@ -68,7 +68,7 @@
    - テスト: 表現不能な行/列はオーバーフローを報告、通常のマルチバイト変換は引き続き 1 始まりの Unicode スカラー列を返す。
    - 依存: 4。仕様: [source_map.md](../en/source_map.md) "Public API"（`LineColumn` の注記）。
 
-6. **ローディングマップ。** [ ]
+6. **ローディングマップ。** [x]
    - `TextRange`（読み込み/字句テキストへのバイト範囲。source-id でスコープされる `SourceRange` とは区別する）を導入する。
    - `LoadingMap`, `LoadingOrigin`, `LoadingMapSegment`（`Original` / `RemovedLeadingBom` / `NormalizedNewline`）を追加する。
    - 読み込みテキスト → 元テキストの対応付けを実装する。オフセットを変える変換が無い場合は恒等とする。

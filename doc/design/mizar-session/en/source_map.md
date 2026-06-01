@@ -36,6 +36,11 @@ pub struct SourceRange {
     pub end: usize,
 }
 
+pub struct TextRange {
+    pub start: usize,
+    pub end: usize,
+}
+
 pub struct LineColumn {
     pub line: u32,
     pub column: u32,
@@ -49,14 +54,38 @@ pub struct LineColumnRange {
 pub struct LoadingMap {
     pub source_id: SourceId,
     pub loaded_text_hash: Hash,
+    pub loaded_text_len: usize,
     pub origin: LoadingOrigin,
     pub segments: Vec<LoadingMapSegment>,
+}
+
+impl LoadingMap {
+    pub fn new(
+        source_id: SourceId,
+        loaded_text: &str,
+        origin: LoadingOrigin,
+        segments: Vec<LoadingMapSegment>,
+    ) -> Self;
+    pub fn identity(source_id: SourceId, loaded_text: &str, origin: LoadingOrigin) -> Self;
+    pub fn source_id(&self) -> SourceId;
+    pub fn loaded_text_hash(&self) -> Hash;
+    pub fn loaded_len(&self) -> usize;
+    pub fn original_offset_for_loaded(
+        &self,
+        source_id: SourceId,
+        offset: usize,
+    ) -> Result<usize, SourceMapError>;
+    pub fn original_range_for_loaded(
+        &self,
+        source_id: SourceId,
+        loaded: TextRange,
+    ) -> Result<LoadedToOriginalRange, SourceMapError>;
 }
 
 pub enum LoadingOrigin {
     DiskBytes { normalized_path: NormalizedPath },
     OpenBufferText { uri: DocumentUri, version: LspDocumentVersion },
-    Generated { anchor: Option<SourceAnchor> },
+    Generated,
 }
 
 pub enum LoadingMapSegment {
@@ -71,6 +100,16 @@ pub enum LoadingMapSegment {
         loaded: TextRange,
         original: TextRange,
     },
+}
+
+pub struct LoadedToOriginalRange {
+    pub original: TextRange,
+    pub kind: LoadedToOriginalRangeKind,
+}
+
+pub enum LoadedToOriginalRangeKind {
+    Exact,
+    Degraded,
 }
 
 pub struct PreprocessMap {
@@ -143,9 +182,11 @@ Ranges must:
 
 ### Loading Map
 
-`LoadingMap` relates normalized `LoadedSource.text` to the source-loading input before BOM stripping or newline normalization. For disk sources, `original` ranges are byte offsets into the original file bytes after UTF-8 validation. For open buffers, `original` ranges are byte offsets into the editor-provided UTF-8 text; the LSP bridge then converts those byte offsets to protocol UTF-16 positions. Generated sources use anchors when no original text range exists.
+`LoadingMap` relates normalized `LoadedSource.text` to the source-loading input before BOM stripping or newline normalization. For disk sources, `original` ranges are byte offsets into the original file bytes after UTF-8 validation. For open buffers, `original` ranges are byte offsets into the editor-provided UTF-8 text; the LSP bridge then converts those byte offsets to protocol UTF-16 positions. Generated sources can carry their generated origin here; anchoring generated text to source locations is introduced with the later anchor support.
 
-When a leading UTF-8 BOM is stripped, the map records a `RemovedLeadingBom` segment for original byte range `[0, 3)` and the first `Original` loaded segment starts at loaded offset `0` and original byte offset `3`. Source loading may omit `LoadingMap` only when the loaded text is offset-identical to the source-loading input.
+When a leading UTF-8 BOM is stripped, the map records a `RemovedLeadingBom` segment for original byte range `[0, 3)` and the first `Original` loaded segment starts at loaded offset `0` and original byte offset `3`. Source loading may omit `LoadingMap` only when the loaded text is offset-identical to the source-loading input. When a map is retained for offset-identical text, `LoadingMap::identity` represents the relation with one `Original` segment.
+
+`LoadingMap::new` records caller-supplied segments without full structural validation. Source loaders that construct these maps are responsible for preserving the segment invariants: loaded ranges are ordered and non-overlapping; `Original` segments have equal loaded/original byte lengths; `NormalizedNewline` segments represent CRLF-to-LF normalization, normally loaded length 1 and original length 2; `RemovedLeadingBom` represents only the leading UTF-8 BOM original range `[0, 3)`; and every mapped loaded byte range is covered by a segment. Tasks 14-15 should add construction helpers or loader-side checks for these invariants when full source loading is implemented.
 
 ### Preprocess Map
 
@@ -181,7 +222,7 @@ LSP conversion must apply the protocol's UTF-16 position rules in the `mizar-lsp
 
 1. Use the `LoadingMap` for the `SourceId` when one exists.
 2. If there is no `LoadingMap`, treat loaded-text offsets as identity offsets into the source-loading input.
-3. If a loaded range crosses removed or normalized segments, return a composite mapping with primary loaded text and secondary original anchors.
+3. If a loaded range crosses a normalized segment, return a degraded `LoadedToOriginalRange` over the enclosing original byte range. The later `SourceMapService` composite return type may attach secondary anchors when preprocess maps and generated spans are available.
 4. For open buffers, return editor-text byte offsets; the LSP bridge performs the final UTF-16 conversion.
 
 ### Lexical-to-Source Mapping
@@ -205,6 +246,7 @@ Source maps are retained with the owning snapshot while any snapshot lease, diag
 - range outside source text;
 - offset not aligned to a UTF-8 boundary;
 - line or column coordinate not representable as `u32`;
+- loaded range outside loaded text;
 - lexical range outside preprocessed text;
 - missing loading map segment;
 - missing preprocess segment;

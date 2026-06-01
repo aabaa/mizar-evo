@@ -68,7 +68,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
    - Tests: unrepresentable line/column reports overflow; normal multi-byte conversion still returns one-based Unicode scalar columns.
    - Depends on: 4. Spec: [source_map.md](./source_map.md) "Public API" (`LineColumn` note).
 
-6. **Loading map.** [ ]
+6. **Loading map.** [x]
    - Introduce `TextRange` (a byte range into loaded or lexical text, kept distinct from `SourceRange` which is source-id-scoped).
    - Add `LoadingMap`, `LoadingOrigin`, `LoadingMapSegment` (`Original` / `RemovedLeadingBom` / `NormalizedNewline`).
    - Implement loaded-text → original mapping, including identity when no transform changed offsets.
