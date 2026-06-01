@@ -37,16 +37,12 @@ pub enum RetainOwner {
     ArtifactWriter,
 }
 
-pub enum RetentionReason {
-    ActiveBuild,
-    CurrentWatchBaseline,
-    PublishedLspSnapshot,
-    OpenBufferOverlay,
-    DiagnosticIndex,
-    ExplanationRequest,
-    PhaseOutputReference,
-    PendingWrite,
-}
+// `RetentionReason` は snapshot／共有リース層が所有し（snapshot.md 参照）、ここでは
+// 再エクスポートする。`SnapshotLease.reason` が本モジュールの実装より前に必要とするため。
+// variant:
+//   ActiveBuild, CurrentWatchBaseline, PublishedLspSnapshot, OpenBufferOverlay,
+//   DiagnosticIndex, ExplanationRequest, PhaseOutputReference, PendingWrite
+pub use crate::snapshot::RetentionReason;
 
 pub trait SnapshotRetention {
     fn retain_snapshot(&self, input: RetainSnapshotInput) -> Result<RetainGuard, RetentionError>;

@@ -57,7 +57,7 @@ The concrete registry may keep snapshots in memory and persist only source/cache
 
 - Internal: `source_map` for source coordinate tables attached to `SourceVersion`
 - External: path normalization, hashing, package metadata, LSP document-version types
-- Shared: `SnapshotLease.reason` uses the `RetentionReason` enum owned by the `retention` module
+- Shared: `SnapshotLease.reason` uses the `RetentionReason` enum defined in this snapshot/shared lease layer and re-exported by the `retention` module
 
 This module is consumed by `mizar-build`, `mizar-ir`, `mizar-cache`, `mizar-artifact`, `mizar-diagnostics`, and `mizar-lsp`.
 

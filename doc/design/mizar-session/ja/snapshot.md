@@ -57,7 +57,7 @@ pub trait SnapshotRegistry {
 
 - Internal: `SourceVersion` に付随するソース座標テーブルのための `source_map`
 - External: パス正規化、ハッシュ計算、パッケージメタデータ、LSP のドキュメントバージョン型
-- Shared: `SnapshotLease.reason` は `retention` モジュールが所有する `RetentionReason` を用いる
+- Shared: `SnapshotLease.reason` は本 snapshot／共有リース層で定義する `RetentionReason` を用いる（`retention` モジュールが再エクスポートする）
 
 このモジュールは、`mizar-build`、`mizar-ir`、`mizar-cache`、`mizar-artifact`、`mizar-diagnostics`、`mizar-lsp` から消費されます。
 
