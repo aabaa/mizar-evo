@@ -30,7 +30,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
 
 ### Module: ids (`src/ids.rs`)
 
-1. **Opaque id primitives and id newtypes.** [ ]
+1. **Opaque id primitives and id newtypes.** [x]
    - Add `pub mod ids;` to `lib.rs`; re-export the public id types.
    - Define the internal `OpaqueId` primitive and a `Hash` newtype used by content ids.
    - Define `BuildSessionId`, `BuildRequestId`, `BuildSnapshotId(Hash)`, `SourceId`, `SourceMapId`, `SnapshotLeaseId` with `Debug`/`Clone`/`Copy`/`Eq`/`Hash` as appropriate.
