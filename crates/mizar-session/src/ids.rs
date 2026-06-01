@@ -587,7 +587,7 @@ mod tests {
         T: Copy + Clone + Debug + Eq + HashTrait,
     {
         let copied = id;
-        let cloned = id.clone();
+        let cloned = clone_id(&id);
 
         assert_eq!(copied, id);
         assert_eq!(cloned, id);
@@ -596,6 +596,13 @@ mod tests {
         let mut ids = HashSet::new();
         ids.insert(id);
         assert!(ids.contains(&copied));
+    }
+
+    fn clone_id<T>(id: &T) -> T
+    where
+        T: Clone,
+    {
+        id.clone()
     }
 
     fn assert_error_trait(error: IdError) {
