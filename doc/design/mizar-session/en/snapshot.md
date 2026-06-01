@@ -43,7 +43,7 @@ pub struct SnapshotLease {
 }
 
 pub trait SnapshotRegistry {
-    fn create_snapshot(&self, input: SnapshotInput) -> Result<BuildSnapshot, SnapshotError>;
+    fn create_snapshot(&self, input: SnapshotInput) -> Result<(BuildSnapshot, SnapshotLease), SnapshotError>;
     fn get(&self, id: BuildSnapshotId) -> Option<BuildSnapshotRef>;
     fn acquire_lease(&self, id: BuildSnapshotId, reason: RetentionReason) -> Result<SnapshotLease, SnapshotError>;
     fn release_lease(&self, lease: SnapshotLease);
@@ -57,6 +57,7 @@ The concrete registry may keep snapshots in memory and persist only source/cache
 
 - Internal: `source_map` for source coordinate tables attached to `SourceVersion`
 - External: path normalization, hashing, package metadata, LSP document-version types
+- Shared: `SnapshotLease.reason` uses the `RetentionReason` enum owned by the `retention` module
 
 This module is consumed by `mizar-build`, `mizar-ir`, `mizar-cache`, `mizar-artifact`, `mizar-diagnostics`, and `mizar-lsp`.
 

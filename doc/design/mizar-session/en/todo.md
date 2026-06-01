@@ -104,22 +104,23 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
 
 11. **Snapshot registry, creation, and freshness.** [ ]
     - Define `SnapshotRegistry` with `create_snapshot`, `get`, and `is_current_for_request`.
-    - Follow the spec: `create_snapshot` normalizes paths, builds `SourceVersion` records, hashes the id, inserts the snapshot, and returns it together with an active-build `SnapshotLease`. Introduce the minimal `SnapshotLease` handle type here; its full accounting lands in task 12. (This resolves the lease-at-creation question in favor of the spec: the registry returns the active-build lease rather than relying on the caller to acquire one.)
+    - Follow the spec: `create_snapshot` normalizes paths, builds `SourceVersion` records, hashes the id, inserts the snapshot, and returns it together with an active-build `SnapshotLease`. The spec signature is updated to `Result<(BuildSnapshot, SnapshotLease), SnapshotError>`. (This resolves the lease-at-creation question in favor of the spec: the registry returns the active-build lease rather than relying on the caller to acquire one.)
+    - Introduce here the minimal `SnapshotLease` handle and the dependency-free `RetentionReason` enum that it carries (shared with the `retention` module; the active-build lease uses `RetentionReason::ActiveBuild`). Full lease accounting lands in task 12; retention (task 16) reuses this `RetentionReason` rather than redefining it.
     - Tests: created snapshot is retrievable and returns an active-build lease; stale id is rejected by freshness; older snapshot is not reported as current; duplicate module path is rejected; path normalization prevents duplicate source identities; missing dependency artifact is rejected; unsupported lockfile/toolchain metadata is rejected; stale open-buffer version is rejected.
     - Depends on: 3, 10. Spec: [snapshot.md](./snapshot.md) "Snapshot Creation", "Freshness Check", "Error Handling".
 
 12. **Snapshot lease accounting.** [ ]
-    - Complete `SnapshotLease` with `acquire_lease`/`release_lease` on the registry, tracking lease counts and reasons; still no collection policy (that is retention, task 16-17).
+    - Complete `SnapshotLease` with `acquire_lease`/`release_lease` on the registry, tracking lease counts per `RetentionReason` (from task 11); still no collection policy (that is retention, task 16-17).
     - Tests: acquire/release adjusts counts; releasing the active-build lease from task 11 is accounted; unknown snapshot id and lease release mismatch surface `SnapshotError`.
     - Depends on: 11. Spec: [snapshot.md](./snapshot.md) "Snapshot Lease".
 
 ### Module: source (`src/source.rs`)
 
 13. **Loaded-source types and loader surface.** [ ]
-    - Define `SourceInput`, `SourceOriginInput`, `SourceOrigin`, `LoadedSource`, and the `SourceLoader` trait; implement `hash_text` and `normalize_path` (reuse existing `normalize_source_path`).
+    - Define `SourceInput`, `SourceOriginInput` (the source-loading input variants carrying `path` / `uri,version,text` / generator text+anchor), `LoadedSource`, and the `SourceLoader` trait; reuse snapshot's `SourceOrigin` (task 9) for `LoadedSource.origin` instead of redefining it; implement `hash_text` and `normalize_path` (reuse existing `normalize_source_path`).
     - Define `SourceLoadError` with its spec variants: source path outside package root, unsupported file extension, invalid UTF-8, unreadable source file, duplicate module path, stale LSP document version, open-buffer URI that cannot be mapped to a package source, generated source without required generator metadata.
     - Tests: `source_hash` excludes absolute paths/document versions; identical text in different origins shares the hash.
-    - Depends on: 1, 4, 6. Spec: [source.md](./source.md) "Public API", "Loaded Source".
+    - Depends on: 1, 4, 6, 9. Spec: [source.md](./source.md) "Public API", "Loaded Source".
 
 14. **Disk source loading.** [ ]
     - Implement disk loading: path normalization + package-root enforcement, read bytes, UTF-8 validation (no lossy `U+FFFD`), leading-BOM strip, CRLF→LF normalization, `source_hash`, `LineMap`, and `LoadingMap` emission.
@@ -135,7 +136,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
 ### Module: retention (`src/retention.rs`)
 
 16. **Retention manager and leases.** [ ]
-    - Add `pub mod retention;`. Define `RetentionManager`, `RetainSnapshotInput`, `RetainGuard`, `RetainOwner`, `RetentionReason`, and `retain_snapshot`/`release` with reference counting.
+    - Add `pub mod retention;`. Define `RetentionManager`, `RetainSnapshotInput`, `RetainGuard`, `RetainOwner`, and `retain_snapshot`/`release` with reference counting; reuse `RetentionReason` (defined in task 11) rather than redefining it.
     - Define `RetentionError` with its spec variants: unknown snapshot id, unknown or already-released lease id, lease snapshot mismatch, invalid owner/reason combination, attempt to mark a missing snapshot as current, collection blocked by inconsistent retention state.
     - Retaining a stale snapshot is allowed for diagnostic / explanation / LSP stale-display / IR-output reasons, but must not make the snapshot current.
     - Tests: active lease prevents collection eligibility; duplicate release is reported without underflow; an invalid owner/reason combination is rejected; a stale-snapshot retain succeeds without marking it current.

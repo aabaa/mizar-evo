@@ -104,22 +104,23 @@
 
 11. **スナップショットレジストリ、作成、鮮度。** [ ]
     - `SnapshotRegistry` に `create_snapshot`、`get`、`is_current_for_request` を定義する。
-    - spec に従う: `create_snapshot` はパスを正規化し、`SourceVersion` レコードを構築し、id をハッシュし、スナップショットを挿入して、active-build `SnapshotLease` とともに返す。最小の `SnapshotLease` ハンドル型はここで導入し、その完全な計上はタスク 12 で行う。（これは「作成時に lease を返すか / 呼び出し側が acquire するか」の論点を spec 寄りに解消する: レジストリが active-build lease を返す。）
+    - spec に従う: `create_snapshot` はパスを正規化し、`SourceVersion` レコードを構築し、id をハッシュし、スナップショットを挿入して、active-build `SnapshotLease` とともに返す。spec のシグネチャは `Result<(BuildSnapshot, SnapshotLease), SnapshotError>` に更新する。（これは「作成時に lease を返すか / 呼び出し側が acquire するか」の論点を spec 寄りに解消する: レジストリが active-build lease を返す。）
+    - ここで、最小の `SnapshotLease` ハンドルと、それが持つ依存無しの `RetentionReason` 列挙を導入する（`retention` モジュールと共有。active-build lease は `RetentionReason::ActiveBuild` を使う）。完全なリース計上はタスク 12 で行い、retention（タスク 16）はこの `RetentionReason` を再定義せず再利用する。
     - テスト: 作成したスナップショットが取得可能で active-build lease を返す、古い id は鮮度チェックで拒否、古いスナップショットは current として報告されない、duplicate module path は拒否、パス正規化が重複ソース同一性を防ぐ、欠落した依存アーティファクトは拒否、未対応の lockfile/ツールチェインメタデータは拒否、古いオープンバッファバージョンは拒否。
     - 依存: 3, 10。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Creation", "Freshness Check", "Error Handling"。
 
 12. **スナップショットリースの計上。** [ ]
-    - レジストリの `SnapshotLease` を `acquire_lease`/`release_lease` で完成させ、リース数と理由を追跡する。回収ポリシーはまだ持たない（それは retention、タスク 16-17）。
+    - レジストリの `SnapshotLease` を `acquire_lease`/`release_lease` で完成させ、`RetentionReason`（タスク 11 由来）ごとにリース数を追跡する。回収ポリシーはまだ持たない（それは retention、タスク 16-17）。
     - テスト: acquire/release で数が増減する、タスク 11 の active-build lease の解放が計上される、未知のスナップショット id とリースリリースの不一致が `SnapshotError` になる。
     - 依存: 11。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Lease"。
 
 ### モジュール: source (`src/source.rs`)
 
 13. **ロード済みソース型とローダー面。** [ ]
-    - `SourceInput`, `SourceOriginInput`, `SourceOrigin`, `LoadedSource` と `SourceLoader` trait を定義し、`hash_text` と `normalize_path`（既存の `normalize_source_path` を再利用）を実装する。
+    - `SourceInput`, `SourceOriginInput`（`path` / `uri,version,text` / 生成器 text+anchor を持つソース読み込み入力の variant）, `LoadedSource` と `SourceLoader` trait を定義し、`LoadedSource.origin` には snapshot の `SourceOrigin`（タスク 9）を再定義せず再利用する。`hash_text` と `normalize_path`（既存の `normalize_source_path` を再利用）を実装する。
     - `SourceLoadError` を spec の変種付きで定義する: パッケージルート外のソースパス、未対応のファイル拡張子、不正な UTF-8、読み取り不能なソースファイル、duplicate module path、古い LSP ドキュメントバージョン、パッケージソースに対応付けられないオープンバッファ URI、必須の生成器メタデータが無い生成ソース。
     - テスト: `source_hash` は絶対パス/ドキュメントバージョンを含まない、別 origin の同一テキストはハッシュを共有する。
-    - 依存: 1, 4, 6。仕様: [source.md](../en/source.md) "Public API", "Loaded Source"。
+    - 依存: 1, 4, 6, 9。仕様: [source.md](../en/source.md) "Public API", "Loaded Source"。
 
 14. **ディスクソースの読み込み。** [ ]
     - ディスク読み込みを実装する: パス正規化 + パッケージルート強制、バイト読み込み、UTF-8 検証（非可逆 `U+FFFD` なし）、先頭 BOM 除去、CRLF→LF 正規化、`source_hash`、`LineMap`、`LoadingMap` の生成。
@@ -135,7 +136,7 @@
 ### モジュール: retention (`src/retention.rs`)
 
 16. **保持マネージャとリース。** [ ]
-    - `pub mod retention;` を追加する。`RetentionManager`, `RetainSnapshotInput`, `RetainGuard`, `RetainOwner`, `RetentionReason` と、参照カウント付きの `retain_snapshot`/`release` を定義する。
+    - `pub mod retention;` を追加する。`RetentionManager`, `RetainSnapshotInput`, `RetainGuard`, `RetainOwner` と、参照カウント付きの `retain_snapshot`/`release` を定義する。`RetentionReason`（タスク 11 で定義）は再定義せず再利用する。
     - `RetentionError` を spec の変種付きで定義する: 未知のスナップショット id、未知/解放済みのリース id、リースとスナップショットの不一致、不正な owner/reason の組み合わせ、欠落スナップショットを current にしようとする、回収が不整合な保持状態でブロックされる。
     - 古いスナップショットの retain は、診断 / 説明 / LSP の古い表示 / IR 出力の理由では許可するが、スナップショットを current にしてはならない。
     - テスト: アクティブなリースが回収対象化を防ぐ、二重リリースはアンダーフローせず報告される、不正な owner/reason の組み合わせは拒否、古いスナップショットの retain は current にせず成功する。

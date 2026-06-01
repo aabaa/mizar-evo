@@ -43,7 +43,7 @@ pub struct SnapshotLease {
 }
 
 pub trait SnapshotRegistry {
-    fn create_snapshot(&self, input: SnapshotInput) -> Result<BuildSnapshot, SnapshotError>;
+    fn create_snapshot(&self, input: SnapshotInput) -> Result<(BuildSnapshot, SnapshotLease), SnapshotError>;
     fn get(&self, id: BuildSnapshotId) -> Option<BuildSnapshotRef>;
     fn acquire_lease(&self, id: BuildSnapshotId, reason: RetentionReason) -> Result<SnapshotLease, SnapshotError>;
     fn release_lease(&self, lease: SnapshotLease);
@@ -57,6 +57,7 @@ pub trait SnapshotRegistry {
 
 - Internal: `SourceVersion` に付随するソース座標テーブルのための `source_map`
 - External: パス正規化、ハッシュ計算、パッケージメタデータ、LSP のドキュメントバージョン型
+- Shared: `SnapshotLease.reason` は `retention` モジュールが所有する `RetentionReason` を用いる
 
 このモジュールは、`mizar-build`、`mizar-ir`、`mizar-cache`、`mizar-artifact`、`mizar-diagnostics`、`mizar-lsp` から消費されます。
 
