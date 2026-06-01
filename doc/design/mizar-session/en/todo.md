@@ -56,8 +56,9 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
    - Add `source_id: SourceId` to `SourceRange`; add `source_id` + `text_hash: Hash` to `LineMap`.
    - Keep byte-offset semantics; add a `with_source(source_id, text)` constructor and keep/adjust the existing `new` path.
    - Validate that a range/offset belongs to the expected source before conversion.
+   - Extend `SourceMapError` toward the full spec variant set, adding each variant as its feature lands: unknown source id, range outside source text, offset not on a UTF-8 boundary, line/column overflow (task 5), lexical range outside preprocessed text (task 7), missing loading-map segment (task 6), missing preprocess segment (task 7), generated span without an origin reason (task 8).
    - Cross-crate impact: update `mizar-lsp::range_mapper` call sites and tests to pass a `SourceId`.
-   - Tests: existing line/column tests updated; cross-source range is rejected.
+   - Tests: existing line/column tests updated; cross-source range is rejected; unknown source id is rejected.
    - Depends on: 1. Spec: [source_map.md](./source_map.md) "Line Map", "Source Range".
    - Note: this is additive for the lexer — lexer keeps its own `SourceSpan`; the bridge stays in `mizar-lsp`. Confirm the span-bridging decision but do not block on a lexer change.
 
@@ -68,6 +69,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
    - Depends on: 4. Spec: [source_map.md](./source_map.md) "Public API" (`LineColumn` note).
 
 6. **Loading map.** [ ]
+   - Introduce `TextRange` (a byte range into loaded or lexical text, kept distinct from `SourceRange` which is source-id-scoped).
    - Add `LoadingMap`, `LoadingOrigin`, `LoadingMapSegment` (`Original` / `RemovedLeadingBom` / `NormalizedNewline`).
    - Implement loaded-text → original mapping, including identity when no transform changed offsets.
    - Tests: leading BOM maps loaded `0` → original byte `3`; CRLF→LF segments; composite mapping across a normalized segment.
@@ -80,15 +82,17 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
    - Depends on: 6. Spec: [source_map.md](./source_map.md) "Preprocess Map", "Lexical-to-Source Mapping".
 
 8. **`SourceMapService` and generated spans.** [ ]
+   - Define `MappedSourceRange` (a primary `SourceRange` plus secondary anchors) as the composite return type for loaded/lexical mapping.
    - Define the `SourceMapService` trait (`line_column`, `original_range_for_loaded`, `source_range_for_lexical`, `attach_generated_span`, `validate_range`) and a concrete implementation over the retained maps.
    - Add generated-span origins (`GeneratedSpanOrigin`) with a required reason.
-   - Tests: each trait method on representative inputs; generated span without an origin is rejected.
+   - Tests: each trait method on representative inputs; composite mapping returns primary plus secondary anchors; generated span without an origin is rejected.
    - Depends on: 5, 7. Spec: [source_map.md](./source_map.md) "Public API", "Generated Spans".
 
 ### Module: snapshot (`src/snapshot.rs`)
 
 9. **Source-version record.** [ ]
    - Add `pub mod snapshot;`. Define `SourceVersion` and `SourceOrigin` (`Disk` / `OpenBuffer{version}` / `Generated{generator}`).
+   - Define `SnapshotError` with its spec variants (added as later tasks need them): invalid or non-normalizable source path, duplicate module path, missing dependency artifact, unsupported lockfile or toolchain metadata, stale open-buffer version, unknown snapshot id, lease release mismatch.
    - Provide the canonical sort key (package id, module path, normalized path, source hash).
    - Tests: deterministic ordering by canonical key independent of insertion order.
    - Depends on: 1, 4. Spec: [snapshot.md](./snapshot.md) "Source Version".
@@ -98,44 +102,50 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: identical canonical inputs ⇒ identical id; source/dependency/config change ⇒ different id; session-local ids absent from the hash.
     - Depends on: 2, 9. Spec: [snapshot.md](./snapshot.md) "Snapshot Identity".
 
-11. **Snapshot registry and freshness.** [ ]
+11. **Snapshot registry, creation, and freshness.** [ ]
     - Define `SnapshotRegistry` with `create_snapshot`, `get`, and `is_current_for_request`.
-    - Tests: created snapshot is retrievable; stale id is rejected by freshness; older snapshot is not reported as current.
-    - Depends on: 3, 10. Spec: [snapshot.md](./snapshot.md) "Snapshot Creation", "Freshness Check".
+    - Follow the spec: `create_snapshot` normalizes paths, builds `SourceVersion` records, hashes the id, inserts the snapshot, and returns it together with an active-build `SnapshotLease`. Introduce the minimal `SnapshotLease` handle type here; its full accounting lands in task 12. (This resolves the lease-at-creation question in favor of the spec: the registry returns the active-build lease rather than relying on the caller to acquire one.)
+    - Tests: created snapshot is retrievable and returns an active-build lease; stale id is rejected by freshness; older snapshot is not reported as current; duplicate module path is rejected; path normalization prevents duplicate source identities; missing dependency artifact is rejected; unsupported lockfile/toolchain metadata is rejected; stale open-buffer version is rejected.
+    - Depends on: 3, 10. Spec: [snapshot.md](./snapshot.md) "Snapshot Creation", "Freshness Check", "Error Handling".
 
-12. **Snapshot leases (basic).** [ ]
-    - Add `SnapshotLease` + `acquire_lease`/`release_lease` on the registry, tracking lease counts; no collection policy yet.
-    - Tests: acquire/release adjusts counts; release mismatch surfaces `SnapshotError`.
+12. **Snapshot lease accounting.** [ ]
+    - Complete `SnapshotLease` with `acquire_lease`/`release_lease` on the registry, tracking lease counts and reasons; still no collection policy (that is retention, task 16-17).
+    - Tests: acquire/release adjusts counts; releasing the active-build lease from task 11 is accounted; unknown snapshot id and lease release mismatch surface `SnapshotError`.
     - Depends on: 11. Spec: [snapshot.md](./snapshot.md) "Snapshot Lease".
 
 ### Module: source (`src/source.rs`)
 
 13. **Loaded-source types and loader surface.** [ ]
     - Define `SourceInput`, `SourceOriginInput`, `SourceOrigin`, `LoadedSource`, and the `SourceLoader` trait; implement `hash_text` and `normalize_path` (reuse existing `normalize_source_path`).
+    - Define `SourceLoadError` with its spec variants: source path outside package root, unsupported file extension, invalid UTF-8, unreadable source file, duplicate module path, stale LSP document version, open-buffer URI that cannot be mapped to a package source, generated source without required generator metadata.
     - Tests: `source_hash` excludes absolute paths/document versions; identical text in different origins shares the hash.
     - Depends on: 1, 4, 6. Spec: [source.md](./source.md) "Public API", "Loaded Source".
 
 14. **Disk source loading.** [ ]
     - Implement disk loading: path normalization + package-root enforcement, read bytes, UTF-8 validation (no lossy `U+FFFD`), leading-BOM strip, CRLF→LF normalization, `source_hash`, `LineMap`, and `LoadingMap` emission.
-    - Tests: invalid UTF-8 rejected before line-map; leading BOM → loading map `0`↔`3`; CRLF handling; path outside root rejected.
+    - Only the leading UTF-8 BOM is an encoding signature; a non-leading `U+FEFF` stays in loaded text. Only CRLF pairs normalize to LF; a lone `\r` is preserved (not treated as a platform newline).
+    - Tests: invalid UTF-8 rejected before line-map; unsupported extension rejected; leading BOM → loading map `0`↔`3`; non-leading `U+FEFF` preserved in loaded text; CRLF normalized while lone `\r` is preserved; path outside root rejected.
     - Depends on: 13. Spec: [source.md](./source.md) "Disk Source Loading".
 
 15. **Open-buffer and generated loading.** [ ]
     - Implement open-buffer loading (LSP document-version validation, URI→package path, BOM strip, CRLF normalize, loading map back to editor offsets) and generated-source loading (generator metadata + anchor).
-    - Tests: open-buffer overrides disk only for the matching version; stale version rejected; generated source without metadata rejected.
+    - Tests: open-buffer overrides disk only for the matching version; stale version rejected; the open-buffer loading map relates loaded-text offsets back to editor-provided text byte offsets (before LSP UTF-16 conversion); unmappable open-buffer URI rejected; generated source without metadata rejected.
     - Depends on: 14. Spec: [source.md](./source.md) "Open-Buffer Source Loading", "Generated Source Loading".
 
 ### Module: retention (`src/retention.rs`)
 
 16. **Retention manager and leases.** [ ]
     - Add `pub mod retention;`. Define `RetentionManager`, `RetainSnapshotInput`, `RetainGuard`, `RetainOwner`, `RetentionReason`, and `retain_snapshot`/`release` with reference counting.
-    - Tests: active lease prevents collection eligibility; duplicate release is reported without underflow.
-    - Depends on: 12. Spec: [retention.md](./retention.md) "Retain", "Release".
+    - Define `RetentionError` with its spec variants: unknown snapshot id, unknown or already-released lease id, lease snapshot mismatch, invalid owner/reason combination, attempt to mark a missing snapshot as current, collection blocked by inconsistent retention state.
+    - Retaining a stale snapshot is allowed for diagnostic / explanation / LSP stale-display / IR-output reasons, but must not make the snapshot current.
+    - Tests: active lease prevents collection eligibility; duplicate release is reported without underflow; an invalid owner/reason combination is rejected; a stale-snapshot retain succeeds without marking it current.
+    - Depends on: 12. Spec: [retention.md](./retention.md) "Retain", "Release", "Error Handling".
 
 17. **Current marks and collection.** [ ]
     - Add `mark_current`/`unmark_current`, `collect`, and `CollectionSummary`; implement the collection policy (no lease, no current mark, no retained map/explanation, IR phase-output lease released).
-    - Tests: current mark prevents collection without other leases; releasing the final lease collects; a phase-output lease blocks collection until released; collection does not delete artifacts/cache.
-    - Depends on: 16. Spec: [retention.md](./retention.md) "Collection", "Current Marks".
+    - `CollectionSummary` reports counts for snapshots scanned/collected, sources and maps released, snapshots skipped for current marks, snapshots skipped for live leases, and stale/mismatched-lease diagnostics.
+    - Tests: current mark prevents collection without other leases; releasing the final lease collects; a phase-output lease blocks collection until released; marking a missing snapshot as current surfaces `RetentionError`; `CollectionSummary` reports skipped-for-current and skipped-for-lease counters and stale-lease diagnostics; collection does not delete artifacts/cache.
+    - Depends on: 16. Spec: [retention.md](./retention.md) "Collection", "Current Marks", "Collection Summary".
 
 ## Cross-Cutting Follow-ups
 
