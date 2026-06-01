@@ -53,6 +53,9 @@ Current module specification roots:
 - [`mizar-session/`](./mizar-session/README.md) - source identity, build snapshots, source maps, and snapshot retention
 - [`mizar-test/`](./mizar-test/README.md) - test corpus layout, `.miz` corpus strategy, fail/soundness tests, snapshots, and harness behavior
 - [`mizar-lexer/`](./mizar-lexer/README.md) - raw lexical scanning, lexeme runs, and context-sensitive token disambiguation boundaries
+- [`mizar-syntax/`](./mizar-syntax/README.md) - source-shaped syntax nodes, trivia, and recovery markers
+- [`mizar-parser/`](./mizar-parser/README.md) - grammar implementation, Pratt parsing, and syntax recovery
+- [`mizar-frontend/`](./mizar-frontend/README.md) - source loading and phase 1-3 orchestration across lexer and parser services
 
 ### Module Specification Template
 
