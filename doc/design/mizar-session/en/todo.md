@@ -38,7 +38,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
    - Tests: equality, copy/clone, that ids are opaque (no semantic ordering exposed).
    - Spec: [ids.md](./ids.md) "Public API", "Identifier Scope".
 
-2. **Content-derived id encoding.** [ ]
+2. **Content-derived id encoding.** [x]
    - Implement canonical lowercase-hex serialization/deserialization for `BuildSnapshotId` with a domain separator; reject malformed/ wrong-domain input via `IdError`.
    - Provide an internal hashing helper (domain separator + schema/toolchain identity hooks + sorted-collection requirement) that the snapshot module will feed (actual snapshot hashing is task 10).
    - Reject serializing allocator-issued ids into a published schema.

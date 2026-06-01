@@ -66,6 +66,10 @@ Allocator-issued ids may be ordered only for in-memory maps and debug output.
 ### Serialization
 
 Content-derived ids may be serialized through canonical lowercase hex encoding.
+`BuildSnapshotId` uses the published-schema form
+`mizar-session-build-snapshot-v1:<64 lowercase hex digits>`. The prefix is the
+serialized id domain; deserialization must reject any other domain and any
+non-canonical hex spelling.
 
 Allocator-issued ids may be serialized only in local debug dumps, logs, and development artifacts that are explicitly marked non-portable. Published artifacts and cache keys must use canonical source, dependency, toolchain, and configuration hashes instead.
 

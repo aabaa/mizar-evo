@@ -8,3 +8,6 @@ repository.workspace = true
 [lib]
 name = "mizar_session"
 path = "src/lib.rs"
+
+[dependencies]
+blake3 = "1.8.5"

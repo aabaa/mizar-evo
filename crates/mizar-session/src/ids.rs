@@ -123,6 +123,11 @@
 
 use std::error::Error;
 use std::fmt;
+use std::str::FromStr;
+
+#[allow(dead_code)]
+const BUILD_SNAPSHOT_HASH_DOMAIN: &[u8] = b"mizar-session/build-snapshot-id/v1";
+const BUILD_SNAPSHOT_SERIALIZED_PREFIX: &str = "mizar-session-build-snapshot-v1:";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, std::hash::Hash)]
 pub(crate) struct OpaqueId(u64);
@@ -170,6 +175,156 @@ impl Hash {
     }
 }
 
+impl BuildSnapshotId {
+    pub const SERIALIZED_LEN: usize = BUILD_SNAPSHOT_SERIALIZED_PREFIX.len() + Hash::BYTE_LEN * 2;
+
+    pub fn to_published_schema_string(self) -> Result<String, IdError> {
+        let mut encoded = String::with_capacity(Self::SERIALIZED_LEN);
+        encoded.push_str(BUILD_SNAPSHOT_SERIALIZED_PREFIX);
+        push_lower_hex(&mut encoded, self.0.as_bytes());
+        Ok(encoded)
+    }
+
+    pub fn from_published_schema_str(serialized: &str) -> Result<Self, IdError> {
+        let Some(hex) = serialized.strip_prefix(BUILD_SNAPSHOT_SERIALIZED_PREFIX) else {
+            return if has_serialized_id_shape(serialized) {
+                Err(IdError::WrongIdDomain)
+            } else {
+                Err(IdError::MalformedSerializedId)
+            };
+        };
+
+        decode_lower_hex_hash(hex).map(Self)
+    }
+}
+
+impl FromStr for BuildSnapshotId {
+    type Err = IdError;
+
+    fn from_str(serialized: &str) -> Result<Self, Self::Err> {
+        Self::from_published_schema_str(serialized)
+    }
+}
+
+impl BuildSessionId {
+    pub fn to_published_schema_string(self) -> Result<String, IdError> {
+        reject_non_persistable_id()
+    }
+}
+
+impl BuildRequestId {
+    pub fn to_published_schema_string(self) -> Result<String, IdError> {
+        reject_non_persistable_id()
+    }
+}
+
+impl SourceId {
+    pub fn to_published_schema_string(self) -> Result<String, IdError> {
+        reject_non_persistable_id()
+    }
+}
+
+impl SourceMapId {
+    pub fn to_published_schema_string(self) -> Result<String, IdError> {
+        reject_non_persistable_id()
+    }
+}
+
+impl SnapshotLeaseId {
+    pub fn to_published_schema_string(self) -> Result<String, IdError> {
+        reject_non_persistable_id()
+    }
+}
+
+#[allow(dead_code)]
+pub(crate) fn build_snapshot_id_from_sorted_canonical_bytes(
+    schema_identity: &[u8],
+    toolchain_identity: &[u8],
+    sorted_canonical_snapshot_bytes: &[u8],
+) -> BuildSnapshotId {
+    build_snapshot_id_from_parts(
+        BUILD_SNAPSHOT_HASH_DOMAIN,
+        schema_identity,
+        toolchain_identity,
+        sorted_canonical_snapshot_bytes,
+    )
+}
+
+#[allow(dead_code)]
+fn build_snapshot_id_from_parts(
+    domain_separator: &[u8],
+    schema_identity: &[u8],
+    toolchain_identity: &[u8],
+    sorted_canonical_snapshot_bytes: &[u8],
+) -> BuildSnapshotId {
+    let mut hasher = blake3::Hasher::new();
+    update_hash_part(&mut hasher, b"domain", domain_separator);
+    update_hash_part(&mut hasher, b"schema", schema_identity);
+    update_hash_part(&mut hasher, b"toolchain", toolchain_identity);
+    update_hash_part(
+        &mut hasher,
+        b"sorted-canonical-snapshot",
+        sorted_canonical_snapshot_bytes,
+    );
+    BuildSnapshotId(Hash::from_bytes(*hasher.finalize().as_bytes()))
+}
+
+#[allow(dead_code)]
+fn update_hash_part(hasher: &mut blake3::Hasher, label: &[u8], bytes: &[u8]) {
+    hasher.update(&(label.len() as u64).to_le_bytes());
+    hasher.update(label);
+    hasher.update(&(bytes.len() as u64).to_le_bytes());
+    hasher.update(bytes);
+}
+
+fn reject_non_persistable_id() -> Result<String, IdError> {
+    Err(IdError::NonPersistableSerialization)
+}
+
+fn push_lower_hex(output: &mut String, bytes: &[u8]) {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+
+    for byte in bytes {
+        output.push(HEX[(byte >> 4) as usize] as char);
+        output.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+}
+
+fn decode_lower_hex_hash(hex: &str) -> Result<Hash, IdError> {
+    if hex.len() != Hash::BYTE_LEN * 2 {
+        return Err(IdError::MalformedSerializedId);
+    }
+
+    let mut bytes = [0; Hash::BYTE_LEN];
+    for (index, pair) in hex.as_bytes().chunks_exact(2).enumerate() {
+        let high = decode_lower_hex_nibble(pair[0])?;
+        let low = decode_lower_hex_nibble(pair[1])?;
+        bytes[index] = (high << 4) | low;
+    }
+
+    Ok(Hash::from_bytes(bytes))
+}
+
+fn decode_lower_hex_nibble(byte: u8) -> Result<u8, IdError> {
+    match byte {
+        b'0'..=b'9' => Ok(byte - b'0'),
+        b'a'..=b'f' => Ok(byte - b'a' + 10),
+        _ => Err(IdError::MalformedSerializedId),
+    }
+}
+
+fn has_serialized_id_shape(serialized: &str) -> bool {
+    let Some((domain, hex)) = serialized.split_once(':') else {
+        return false;
+    };
+
+    !domain.is_empty()
+        && hex.len() == Hash::BYTE_LEN * 2
+        && hex
+            .bytes()
+            .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
+}
+
 impl fmt::Display for IdError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -192,12 +347,14 @@ impl Error for IdError {}
 mod tests {
     use super::{
         BuildRequestId, BuildSessionId, BuildSnapshotId, Hash, IdError, OpaqueId, SnapshotLeaseId,
-        SourceId, SourceMapId,
+        SourceId, SourceMapId, build_snapshot_id_from_parts,
+        build_snapshot_id_from_sorted_canonical_bytes,
     };
     use std::collections::HashSet;
     use std::error::Error;
     use std::fmt::Debug;
     use std::hash::Hash as HashTrait;
+    use std::str::FromStr;
 
     #[test]
     fn allocator_issued_ids_compare_equal_only_within_their_domain() {
@@ -251,6 +408,144 @@ mod tests {
         assert_eq!(hash.as_bytes(), &bytes);
         assert_eq!(hash, Hash::from_bytes(bytes));
         assert!(format!("{hash:?}").starts_with("Hash("));
+    }
+
+    #[test]
+    fn build_snapshot_id_serializes_as_domain_prefixed_lowercase_hex() {
+        let mut bytes = [0; Hash::BYTE_LEN];
+        bytes[0] = 0x01;
+        bytes[1] = 0x23;
+        bytes[30] = 0xab;
+        bytes[31] = 0xcd;
+        let id = BuildSnapshotId(Hash::from_bytes(bytes));
+
+        let serialized = id.to_published_schema_string().unwrap();
+
+        assert_eq!(
+            serialized,
+            "mizar-session-build-snapshot-v1:012300000000000000000000000000000000000000000000000000000000abcd"
+        );
+        assert_eq!(serialized.len(), BuildSnapshotId::SERIALIZED_LEN);
+        assert_eq!(
+            BuildSnapshotId::from_published_schema_str(&serialized),
+            Ok(id)
+        );
+        assert_eq!(BuildSnapshotId::from_str(&serialized), Ok(id));
+    }
+
+    #[test]
+    fn build_snapshot_id_rejects_non_canonical_or_malformed_hex() {
+        let uppercase = "mizar-session-build-snapshot-v1:ABCD000000000000000000000000000000000000000000000000000000000000";
+        let short = "mizar-session-build-snapshot-v1:abcd";
+        let empty = "mizar-session-build-snapshot-v1:";
+        let long = "mizar-session-build-snapshot-v1:012300000000000000000000000000000000000000000000000000000000abcd00";
+        let invalid = "mizar-session-build-snapshot-v1:012g000000000000000000000000000000000000000000000000000000000000";
+        let missing_domain = "012300000000000000000000000000000000000000000000000000000000abcd";
+
+        assert_eq!(
+            BuildSnapshotId::from_published_schema_str(uppercase),
+            Err(IdError::MalformedSerializedId)
+        );
+        assert_eq!(
+            BuildSnapshotId::from_published_schema_str(short),
+            Err(IdError::MalformedSerializedId)
+        );
+        assert_eq!(
+            BuildSnapshotId::from_published_schema_str(empty),
+            Err(IdError::MalformedSerializedId)
+        );
+        assert_eq!(
+            BuildSnapshotId::from_published_schema_str(long),
+            Err(IdError::MalformedSerializedId)
+        );
+        assert_eq!(
+            BuildSnapshotId::from_published_schema_str(invalid),
+            Err(IdError::MalformedSerializedId)
+        );
+        assert_eq!(
+            BuildSnapshotId::from_published_schema_str(missing_domain),
+            Err(IdError::MalformedSerializedId)
+        );
+    }
+
+    #[test]
+    fn build_snapshot_id_rejects_well_formed_ids_from_the_wrong_domain() {
+        let wrong_domain = "mizar-session-source-v1:012300000000000000000000000000000000000000000000000000000000abcd";
+        let wrong_domain_with_malformed_hash = "mizar-session-source-v1:abcd";
+
+        assert_eq!(
+            BuildSnapshotId::from_published_schema_str(wrong_domain),
+            Err(IdError::WrongIdDomain)
+        );
+        assert_eq!(
+            BuildSnapshotId::from_published_schema_str(wrong_domain_with_malformed_hash),
+            Err(IdError::MalformedSerializedId)
+        );
+    }
+
+    #[test]
+    fn build_snapshot_hash_includes_domain_schema_and_toolchain_parts() {
+        let id = build_snapshot_id_from_sorted_canonical_bytes(
+            b"snapshot-schema-v1",
+            b"toolchain-a",
+            b"already sorted canonical bytes",
+        );
+        let same = build_snapshot_id_from_sorted_canonical_bytes(
+            b"snapshot-schema-v1",
+            b"toolchain-a",
+            b"already sorted canonical bytes",
+        );
+        let changed_domain = build_snapshot_id_from_parts(
+            b"mizar-session/build-snapshot-id/v2",
+            b"snapshot-schema-v1",
+            b"toolchain-a",
+            b"already sorted canonical bytes",
+        );
+        let changed_schema = build_snapshot_id_from_sorted_canonical_bytes(
+            b"snapshot-schema-v2",
+            b"toolchain-a",
+            b"already sorted canonical bytes",
+        );
+        let changed_toolchain = build_snapshot_id_from_sorted_canonical_bytes(
+            b"snapshot-schema-v1",
+            b"toolchain-b",
+            b"already sorted canonical bytes",
+        );
+        let changed_canonical_bytes = build_snapshot_id_from_sorted_canonical_bytes(
+            b"snapshot-schema-v1",
+            b"toolchain-a",
+            b"different sorted canonical bytes",
+        );
+
+        assert_eq!(id, same);
+        assert_ne!(id, changed_domain);
+        assert_ne!(id, changed_schema);
+        assert_ne!(id, changed_toolchain);
+        assert_ne!(id, changed_canonical_bytes);
+    }
+
+    #[test]
+    fn allocator_issued_ids_reject_published_schema_serialization() {
+        assert_eq!(
+            BuildSessionId(OpaqueId(1)).to_published_schema_string(),
+            Err(IdError::NonPersistableSerialization)
+        );
+        assert_eq!(
+            BuildRequestId(OpaqueId(2)).to_published_schema_string(),
+            Err(IdError::NonPersistableSerialization)
+        );
+        assert_eq!(
+            SourceId(OpaqueId(3)).to_published_schema_string(),
+            Err(IdError::NonPersistableSerialization)
+        );
+        assert_eq!(
+            SourceMapId(OpaqueId(4)).to_published_schema_string(),
+            Err(IdError::NonPersistableSerialization)
+        );
+        assert_eq!(
+            SnapshotLeaseId(OpaqueId(5)).to_published_schema_string(),
+            Err(IdError::NonPersistableSerialization)
+        );
     }
 
     #[test]

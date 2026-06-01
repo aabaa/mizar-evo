@@ -30,7 +30,7 @@
 
 ### モジュール: ids (`src/ids.rs`)
 
-1. **不透明な id プリミティブと id newtype。** [ ]
+1. **不透明な id プリミティブと id newtype。** [x]
    - `lib.rs` に `pub mod ids;` を追加し、公開 id 型を再エクスポートする。
    - 内部の `OpaqueId` プリミティブと、内容由来 id が使う `Hash` newtype を定義する。
    - `BuildSessionId`, `BuildRequestId`, `BuildSnapshotId(Hash)`, `SourceId`, `SourceMapId`, `SnapshotLeaseId` を、適切に `Debug`/`Clone`/`Copy`/`Eq`/`Hash` 付きで定義する。
@@ -38,7 +38,7 @@
    - テスト: 等価性、copy/clone、id が不透明（意味的な順序を公開しない）こと。
    - 仕様: [ids.md](../en/ids.md) "Public API", "Identifier Scope"。
 
-2. **内容由来 id のエンコード。** [ ]
+2. **内容由来 id のエンコード。** [x]
    - `BuildSnapshotId` の正準的な小文字 16 進シリアライズ/デシリアライズをドメインセパレータ付きで実装し、不正形式/ドメイン不一致は `IdError` で拒否する。
    - 内部ハッシュヘルパー（ドメインセパレータ + スキーマ/ツールチェイン識別子のフック + 非順序コレクションのソート要件）を用意する。snapshot モジュールがこれに入力する（実際のスナップショットのハッシュ化はタスク 10）。
    - アロケータ発行の id を公開スキーマへシリアライズすることを拒否する。
