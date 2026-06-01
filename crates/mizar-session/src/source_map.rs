@@ -38,6 +38,14 @@ pub struct LoadingMap {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PreprocessMap {
+    pub source_id: SourceId,
+    pub lexical_text_hash: Hash,
+    pub lexical_text_len: usize,
+    pub segments: Vec<PreprocessSegment>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum LoadingOrigin {
     DiskBytes {
@@ -67,6 +75,39 @@ pub enum LoadingMapSegment {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum PreprocessSegment {
+    Original {
+        lexical: TextRange,
+        source: SourceRange,
+    },
+    RemovedComment {
+        source: SourceRange,
+        kind: CommentKind,
+    },
+    SyntheticWhitespace {
+        lexical: TextRange,
+        anchor: SourceAnchor,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum CommentKind {
+    SingleLine,
+    MultiLine,
+    Documentation,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceAnchor {
+    Range(SourceRange),
+    Point { source_id: SourceId, offset: usize },
+    Generated,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LoadedToOriginalRange {
     pub original: TextRange,
     pub kind: LoadedToOriginalRangeKind,
@@ -75,6 +116,20 @@ pub struct LoadedToOriginalRange {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LoadedToOriginalRangeKind {
     Exact,
+    Degraded,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LexicalSourceMapping {
+    pub primary: Option<SourceRange>,
+    pub anchors: Vec<SourceAnchor>,
+    pub kind: LexicalSourceMappingKind,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LexicalSourceMappingKind {
+    Exact,
+    Composite,
     Degraded,
 }
 
@@ -109,6 +164,15 @@ pub enum SourceMapError {
         loaded_len: usize,
     },
     MissingLoadingMapSegment {
+        source_id: SourceId,
+        range: TextRange,
+    },
+    RangeOutsideLexicalText {
+        source_id: SourceId,
+        range: TextRange,
+        lexical_len: usize,
+    },
+    MissingPreprocessSegment {
         source_id: SourceId,
         range: TextRange,
     },
@@ -492,6 +556,337 @@ impl LoadingMapSegment {
     }
 }
 
+impl PreprocessMap {
+    pub fn new(source_id: SourceId, lexical_text: &str, segments: Vec<PreprocessSegment>) -> Self {
+        Self {
+            source_id,
+            lexical_text_hash: hash_source_text(lexical_text),
+            lexical_text_len: lexical_text.len(),
+            segments,
+        }
+    }
+
+    pub fn identity(source_id: SourceId, lexical_text: &str) -> Self {
+        Self::new(
+            source_id,
+            lexical_text,
+            vec![PreprocessSegment::Original {
+                lexical: TextRange {
+                    start: 0,
+                    end: lexical_text.len(),
+                },
+                source: SourceRange {
+                    source_id,
+                    start: 0,
+                    end: lexical_text.len(),
+                },
+            }],
+        )
+    }
+
+    pub fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    pub fn lexical_text_hash(&self) -> Hash {
+        self.lexical_text_hash
+    }
+
+    pub fn lexical_len(&self) -> usize {
+        self.lexical_text_len
+    }
+
+    pub fn source_anchors_for_lexical_offset(
+        &self,
+        source_id: SourceId,
+        offset: usize,
+    ) -> Result<Vec<SourceAnchor>, SourceMapError> {
+        self.validate_source_id(source_id)?;
+        let lexical_len = self.lexical_len();
+        if offset > lexical_len {
+            return Err(SourceMapError::RangeOutsideLexicalText {
+                source_id,
+                range: TextRange {
+                    start: offset,
+                    end: offset,
+                },
+                lexical_len,
+            });
+        }
+        if self.segments.is_empty() && lexical_len == 0 && offset == 0 {
+            return Ok(vec![SourceAnchor::Point {
+                source_id,
+                offset: 0,
+            }]);
+        }
+
+        let mut anchors = Vec::new();
+        for (index, segment) in self.segments.iter().enumerate() {
+            match segment {
+                PreprocessSegment::Original { lexical, source }
+                    if lexical.start <= offset && offset <= lexical.end =>
+                {
+                    self.validate_source_range(*source)?;
+                    let source_offset = source.start + (offset - lexical.start);
+                    push_source_anchor(
+                        &mut anchors,
+                        SourceAnchor::Point {
+                            source_id,
+                            offset: source_offset,
+                        },
+                    );
+                }
+                PreprocessSegment::RemovedComment { source, .. }
+                    if self.lexical_anchor_for_removed_comment(index) == Some(offset) =>
+                {
+                    self.validate_source_range(*source)?;
+                    push_source_anchor(&mut anchors, SourceAnchor::Range(*source));
+                }
+                PreprocessSegment::SyntheticWhitespace { lexical, anchor }
+                    if lexical.start <= offset && offset <= lexical.end =>
+                {
+                    self.validate_anchor(*anchor)?;
+                    push_source_anchor(&mut anchors, *anchor);
+                }
+                _ => {}
+            }
+        }
+
+        if anchors.is_empty() {
+            return Err(SourceMapError::MissingPreprocessSegment {
+                source_id,
+                range: TextRange {
+                    start: offset,
+                    end: offset,
+                },
+            });
+        }
+
+        Ok(anchors)
+    }
+
+    pub fn source_range_for_lexical(
+        &self,
+        source_id: SourceId,
+        lexical: TextRange,
+    ) -> Result<LexicalSourceMapping, SourceMapError> {
+        self.validate_source_id(source_id)?;
+        if lexical.start > lexical.end {
+            return Err(SourceMapError::ReversedRange);
+        }
+        let lexical_len = self.lexical_len();
+        if lexical.end > lexical_len {
+            return Err(SourceMapError::RangeOutsideLexicalText {
+                source_id,
+                range: lexical,
+                lexical_len,
+            });
+        }
+        if lexical.is_empty() {
+            let anchors = self.source_anchors_for_lexical_offset(source_id, lexical.start)?;
+            let is_synthetic_only_anchor =
+                anchors.len() == 1 && self.synthetic_segment_touching_offset(lexical.start);
+            let has_generated_anchor = anchors
+                .iter()
+                .any(|anchor| matches!(anchor, SourceAnchor::Generated));
+            return Ok(LexicalSourceMapping {
+                primary: if is_synthetic_only_anchor || has_generated_anchor {
+                    None
+                } else {
+                    primary_range_from_anchors(&anchors)
+                },
+                kind: if is_synthetic_only_anchor || has_generated_anchor {
+                    LexicalSourceMappingKind::Degraded
+                } else if anchors.len() == 1 {
+                    LexicalSourceMappingKind::Exact
+                } else {
+                    LexicalSourceMappingKind::Composite
+                },
+                anchors,
+            });
+        }
+
+        let mut cursor = lexical.start;
+        let mut anchors = Vec::new();
+        let mut primary_components = Vec::new();
+        let mut saw_synthetic = false;
+
+        while cursor < lexical.end {
+            self.push_removed_comments_at_lexical_anchor(
+                cursor,
+                lexical,
+                &mut anchors,
+                &mut primary_components,
+            )?;
+
+            let Some((segment_lexical, segment_kind)) =
+                self.lexical_segment_covering_offset(cursor)?
+            else {
+                return Err(SourceMapError::MissingPreprocessSegment {
+                    source_id,
+                    range: TextRange {
+                        start: cursor,
+                        end: cursor,
+                    },
+                });
+            };
+
+            let covered_end = segment_lexical.end.min(lexical.end);
+            match segment_kind {
+                PreprocessSegmentKind::Original { source } => {
+                    let mapped = SourceRange {
+                        source_id,
+                        start: source.start + (cursor - segment_lexical.start),
+                        end: source.start + (covered_end - segment_lexical.start),
+                    };
+                    push_source_range(&mut primary_components, mapped);
+                    push_source_anchor(&mut anchors, SourceAnchor::Range(mapped));
+                }
+                PreprocessSegmentKind::SyntheticWhitespace { anchor } => {
+                    saw_synthetic = true;
+                    push_source_anchor(&mut anchors, anchor);
+                }
+            }
+            cursor = covered_end;
+        }
+
+        if anchors.is_empty() {
+            return Err(SourceMapError::MissingPreprocessSegment {
+                source_id,
+                range: lexical,
+            });
+        }
+
+        let primary = enclosing_source_range(&primary_components);
+        let kind = if saw_synthetic || primary.is_none() {
+            LexicalSourceMappingKind::Degraded
+        } else if primary_components.len() == 1 && anchors.len() == 1 {
+            LexicalSourceMappingKind::Exact
+        } else {
+            LexicalSourceMappingKind::Composite
+        };
+
+        Ok(LexicalSourceMapping {
+            primary,
+            anchors,
+            kind,
+        })
+    }
+
+    fn validate_source_id(&self, source_id: SourceId) -> Result<(), SourceMapError> {
+        if source_id != self.source_id {
+            return Err(SourceMapError::UnknownSourceId { source_id });
+        }
+        Ok(())
+    }
+
+    fn validate_source_range(&self, range: SourceRange) -> Result<(), SourceMapError> {
+        self.validate_source_id(range.source_id)
+    }
+
+    fn validate_anchor(&self, anchor: SourceAnchor) -> Result<(), SourceMapError> {
+        match anchor {
+            SourceAnchor::Range(range) => self.validate_source_range(range),
+            SourceAnchor::Point { source_id, .. } => self.validate_source_id(source_id),
+            SourceAnchor::Generated => Ok(()),
+        }
+    }
+
+    fn lexical_segment_covering_offset(
+        &self,
+        offset: usize,
+    ) -> Result<Option<(TextRange, PreprocessSegmentKind)>, SourceMapError> {
+        for segment in &self.segments {
+            match segment {
+                PreprocessSegment::Original { lexical, source }
+                    if lexical.start <= offset && offset < lexical.end =>
+                {
+                    self.validate_source_range(*source)?;
+                    return Ok(Some((
+                        *lexical,
+                        PreprocessSegmentKind::Original { source: *source },
+                    )));
+                }
+                PreprocessSegment::SyntheticWhitespace { lexical, anchor }
+                    if lexical.start <= offset && offset < lexical.end =>
+                {
+                    self.validate_anchor(*anchor)?;
+                    return Ok(Some((
+                        *lexical,
+                        PreprocessSegmentKind::SyntheticWhitespace { anchor: *anchor },
+                    )));
+                }
+                _ => {}
+            }
+        }
+        Ok(None)
+    }
+
+    fn push_removed_comments_at_lexical_anchor(
+        &self,
+        offset: usize,
+        lexical: TextRange,
+        anchors: &mut Vec<SourceAnchor>,
+        primary_components: &mut Vec<SourceRange>,
+    ) -> Result<(), SourceMapError> {
+        if !(lexical.start < offset && offset < lexical.end) {
+            return Ok(());
+        }
+
+        for (index, segment) in self.segments.iter().enumerate() {
+            let PreprocessSegment::RemovedComment { source, .. } = segment else {
+                continue;
+            };
+            if self.lexical_anchor_for_removed_comment(index) == Some(offset) {
+                self.validate_source_range(*source)?;
+                push_source_range(primary_components, *source);
+                push_source_anchor(anchors, SourceAnchor::Range(*source));
+            }
+        }
+        Ok(())
+    }
+
+    fn lexical_anchor_for_removed_comment(&self, index: usize) -> Option<usize> {
+        let previous = self.segments[..index]
+            .iter()
+            .rev()
+            .find_map(PreprocessSegment::lexical_range)
+            .map(|range| range.end);
+        let next = self.segments[index + 1..]
+            .iter()
+            .find_map(PreprocessSegment::lexical_range)
+            .map(|range| range.start);
+        next.or(previous)
+    }
+
+    fn synthetic_segment_touching_offset(&self, offset: usize) -> bool {
+        self.segments.iter().any(|segment| {
+            matches!(
+                segment,
+                PreprocessSegment::SyntheticWhitespace { lexical, .. }
+                    if lexical.start <= offset && offset <= lexical.end
+            )
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PreprocessSegmentKind {
+    Original { source: SourceRange },
+    SyntheticWhitespace { anchor: SourceAnchor },
+}
+
+impl PreprocessSegment {
+    fn lexical_range(&self) -> Option<TextRange> {
+        match self {
+            Self::Original { lexical, .. } | Self::SyntheticWhitespace { lexical, .. } => {
+                Some(*lexical)
+            }
+            Self::RemovedComment { .. } => None,
+        }
+    }
+}
+
 fn map_loaded_subrange_to_original(
     loaded: TextRange,
     original: TextRange,
@@ -518,6 +913,47 @@ fn map_loaded_subrange_to_original(
     }
 }
 
+fn push_source_range(ranges: &mut Vec<SourceRange>, range: SourceRange) {
+    if ranges.last() != Some(&range) {
+        ranges.push(range);
+    }
+}
+
+fn push_source_anchor(anchors: &mut Vec<SourceAnchor>, anchor: SourceAnchor) {
+    if anchors.last() != Some(&anchor) {
+        anchors.push(anchor);
+    }
+}
+
+fn primary_range_from_anchors(anchors: &[SourceAnchor]) -> Option<SourceRange> {
+    match anchors {
+        [SourceAnchor::Range(range)] => Some(*range),
+        [SourceAnchor::Point { source_id, offset }] => Some(SourceRange {
+            source_id: *source_id,
+            start: *offset,
+            end: *offset,
+        }),
+        _ => None,
+    }
+}
+
+fn enclosing_source_range(ranges: &[SourceRange]) -> Option<SourceRange> {
+    let first = ranges.first()?;
+    Some(SourceRange {
+        source_id: first.source_id,
+        start: ranges
+            .iter()
+            .map(|range| range.start)
+            .min()
+            .unwrap_or(first.start),
+        end: ranges
+            .iter()
+            .map(|range| range.end)
+            .max()
+            .unwrap_or(first.end),
+    })
+}
+
 fn hash_source_text(source: &str) -> Hash {
     let mut hasher = blake3::Hasher::new();
     hasher.update(SOURCE_TEXT_HASH_DOMAIN);
@@ -539,8 +975,10 @@ fn one_based_u32(zero_based: usize, max_coordinate: usize) -> Result<u32, Source
 #[cfg(test)]
 mod tests {
     use super::{
-        LineColumn, LineColumnRange, LineMap, LoadedToOriginalRange, LoadedToOriginalRangeKind,
-        LoadingMap, LoadingMapSegment, LoadingOrigin, SourceMapError, SourceRange, TextRange,
+        CommentKind, LexicalSourceMapping, LexicalSourceMappingKind, LineColumn, LineColumnRange,
+        LineMap, LoadedToOriginalRange, LoadedToOriginalRangeKind, LoadingMap, LoadingMapSegment,
+        LoadingOrigin, PreprocessMap, PreprocessSegment, SourceAnchor, SourceMapError, SourceRange,
+        TextRange,
     };
     use crate::{BuildSnapshotId, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceId};
 
@@ -1161,6 +1599,558 @@ mod tests {
         );
     }
 
+    #[test]
+    fn preprocess_map_identity_maps_original_lexical_range_to_source_range() {
+        let source_id = source_id(1);
+        let map = PreprocessMap::identity(source_id, "alpha beta");
+
+        assert_eq!(map.source_id(), source_id);
+        assert_eq!(map.lexical_len(), "alpha beta".len());
+        assert_eq!(
+            map.lexical_text_hash(),
+            super::hash_source_text("alpha beta")
+        );
+        assert_eq!(
+            map.source_range_for_lexical(source_id, TextRange { start: 0, end: 5 }),
+            Ok(LexicalSourceMapping {
+                primary: Some(SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 5,
+                }),
+                anchors: vec![SourceAnchor::Range(SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 5,
+                })],
+                kind: LexicalSourceMappingKind::Exact,
+            })
+        );
+    }
+
+    #[test]
+    fn preprocess_map_returns_removed_comment_anchors_at_lexical_boundaries() {
+        let source_id = source_id(1);
+        let map = comment_synthetic_preprocess_map(source_id);
+
+        assert_eq!(
+            map.source_anchors_for_lexical_offset(source_id, 5),
+            Ok(vec![
+                SourceAnchor::Point {
+                    source_id,
+                    offset: 5,
+                },
+                SourceAnchor::Range(SourceRange {
+                    source_id,
+                    start: 5,
+                    end: 19,
+                }),
+            ])
+        );
+        assert_eq!(
+            map.source_anchors_for_lexical_offset(source_id, 6),
+            Ok(vec![
+                SourceAnchor::Range(SourceRange {
+                    source_id,
+                    start: 5,
+                    end: 19,
+                }),
+                SourceAnchor::Point {
+                    source_id,
+                    offset: 19,
+                },
+            ])
+        );
+    }
+
+    #[test]
+    fn preprocess_map_represents_ranges_spanning_removed_comments_as_composite_mapping() {
+        let source_id = source_id(1);
+        let map = comment_no_synthetic_preprocess_map(source_id);
+
+        assert_eq!(
+            map.source_range_for_lexical(source_id, TextRange { start: 0, end: 11 }),
+            Ok(LexicalSourceMapping {
+                primary: Some(SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 25,
+                }),
+                anchors: vec![
+                    SourceAnchor::Range(SourceRange {
+                        source_id,
+                        start: 0,
+                        end: 6,
+                    }),
+                    SourceAnchor::Range(SourceRange {
+                        source_id,
+                        start: 6,
+                        end: 20,
+                    }),
+                    SourceAnchor::Range(SourceRange {
+                        source_id,
+                        start: 20,
+                        end: 25,
+                    }),
+                ],
+                kind: LexicalSourceMappingKind::Composite,
+            })
+        );
+    }
+
+    #[test]
+    fn preprocess_map_degrades_ranges_that_include_synthetic_whitespace() {
+        let source_id = source_id(1);
+        let map = comment_synthetic_preprocess_map(source_id);
+
+        assert_eq!(
+            map.source_range_for_lexical(source_id, TextRange { start: 0, end: 10 }),
+            Ok(LexicalSourceMapping {
+                primary: Some(SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 23,
+                }),
+                anchors: vec![
+                    SourceAnchor::Range(SourceRange {
+                        source_id,
+                        start: 0,
+                        end: 5,
+                    }),
+                    SourceAnchor::Range(SourceRange {
+                        source_id,
+                        start: 5,
+                        end: 19,
+                    }),
+                    SourceAnchor::Range(SourceRange {
+                        source_id,
+                        start: 19,
+                        end: 23,
+                    }),
+                ],
+                kind: LexicalSourceMappingKind::Degraded,
+            })
+        );
+    }
+
+    #[test]
+    fn preprocess_map_does_not_promote_synthetic_whitespace_to_primary_user_range() {
+        let source_id = source_id(1);
+        let map = comment_synthetic_preprocess_map(source_id);
+
+        assert_eq!(
+            map.source_range_for_lexical(source_id, TextRange { start: 5, end: 6 }),
+            Ok(LexicalSourceMapping {
+                primary: None,
+                anchors: vec![SourceAnchor::Range(SourceRange {
+                    source_id,
+                    start: 5,
+                    end: 19,
+                })],
+                kind: LexicalSourceMappingKind::Degraded,
+            })
+        );
+
+        let synthetic_only = PreprocessMap::new(
+            source_id,
+            " ",
+            vec![PreprocessSegment::SyntheticWhitespace {
+                lexical: TextRange { start: 0, end: 1 },
+                anchor: SourceAnchor::Range(SourceRange {
+                    source_id,
+                    start: 5,
+                    end: 19,
+                }),
+            }],
+        );
+
+        assert_eq!(
+            synthetic_only.source_range_for_lexical(source_id, TextRange { start: 0, end: 0 }),
+            Ok(LexicalSourceMapping {
+                primary: None,
+                anchors: vec![SourceAnchor::Range(SourceRange {
+                    source_id,
+                    start: 5,
+                    end: 19,
+                })],
+                kind: LexicalSourceMappingKind::Degraded,
+            })
+        );
+    }
+
+    #[test]
+    fn preprocess_map_can_return_generated_source_anchors() {
+        let source_id = source_id(1);
+        let map = PreprocessMap::new(
+            source_id,
+            " ",
+            vec![PreprocessSegment::SyntheticWhitespace {
+                lexical: TextRange { start: 0, end: 1 },
+                anchor: SourceAnchor::Generated,
+            }],
+        );
+
+        assert_eq!(
+            map.source_range_for_lexical(source_id, TextRange { start: 0, end: 0 }),
+            Ok(LexicalSourceMapping {
+                primary: None,
+                anchors: vec![SourceAnchor::Generated],
+                kind: LexicalSourceMappingKind::Degraded,
+            })
+        );
+    }
+
+    #[test]
+    fn preprocess_map_returns_adjacent_anchors_for_zero_length_boundaries() {
+        let source_id = source_id(1);
+        let map = PreprocessMap::new(
+            source_id,
+            "alphabeta",
+            vec![
+                PreprocessSegment::Original {
+                    lexical: TextRange { start: 0, end: 5 },
+                    source: SourceRange {
+                        source_id,
+                        start: 0,
+                        end: 5,
+                    },
+                },
+                PreprocessSegment::Original {
+                    lexical: TextRange { start: 5, end: 9 },
+                    source: SourceRange {
+                        source_id,
+                        start: 20,
+                        end: 24,
+                    },
+                },
+            ],
+        );
+
+        assert_eq!(
+            map.source_anchors_for_lexical_offset(source_id, 5),
+            Ok(vec![
+                SourceAnchor::Point {
+                    source_id,
+                    offset: 5,
+                },
+                SourceAnchor::Point {
+                    source_id,
+                    offset: 20,
+                },
+            ])
+        );
+        assert_eq!(
+            map.source_range_for_lexical(source_id, TextRange { start: 5, end: 5 }),
+            Ok(LexicalSourceMapping {
+                primary: None,
+                anchors: vec![
+                    SourceAnchor::Point {
+                        source_id,
+                        offset: 5,
+                    },
+                    SourceAnchor::Point {
+                        source_id,
+                        offset: 20,
+                    },
+                ],
+                kind: LexicalSourceMappingKind::Composite,
+            })
+        );
+    }
+
+    #[test]
+    fn preprocess_map_rejects_source_mismatch_outside_ranges_and_missing_segments() {
+        let primary_source_id = source_id(1);
+        let other_source_id = source_id(2);
+        let map = comment_synthetic_preprocess_map(primary_source_id);
+
+        assert_eq!(
+            map.source_range_for_lexical(other_source_id, TextRange { start: 0, end: 1 }),
+            Err(SourceMapError::UnknownSourceId {
+                source_id: other_source_id,
+            })
+        );
+        assert_eq!(
+            map.source_range_for_lexical(primary_source_id, TextRange { start: 0, end: 11 }),
+            Err(SourceMapError::RangeOutsideLexicalText {
+                source_id: primary_source_id,
+                range: TextRange { start: 0, end: 11 },
+                lexical_len: 10,
+            })
+        );
+        assert_eq!(
+            map.source_anchors_for_lexical_offset(primary_source_id, 11),
+            Err(SourceMapError::RangeOutsideLexicalText {
+                source_id: primary_source_id,
+                range: TextRange { start: 11, end: 11 },
+                lexical_len: 10,
+            })
+        );
+        assert_eq!(
+            map.source_range_for_lexical(primary_source_id, TextRange { start: 4, end: 3 }),
+            Err(SourceMapError::ReversedRange)
+        );
+
+        let gap = PreprocessMap::new(
+            primary_source_id,
+            "abcd",
+            vec![
+                PreprocessSegment::Original {
+                    lexical: TextRange { start: 0, end: 1 },
+                    source: SourceRange {
+                        source_id: primary_source_id,
+                        start: 0,
+                        end: 1,
+                    },
+                },
+                PreprocessSegment::Original {
+                    lexical: TextRange { start: 3, end: 4 },
+                    source: SourceRange {
+                        source_id: primary_source_id,
+                        start: 3,
+                        end: 4,
+                    },
+                },
+            ],
+        );
+
+        assert_eq!(
+            gap.source_range_for_lexical(primary_source_id, TextRange { start: 0, end: 4 }),
+            Err(SourceMapError::MissingPreprocessSegment {
+                source_id: primary_source_id,
+                range: TextRange { start: 1, end: 1 },
+            })
+        );
+        assert_eq!(
+            gap.source_anchors_for_lexical_offset(primary_source_id, 2),
+            Err(SourceMapError::MissingPreprocessSegment {
+                source_id: primary_source_id,
+                range: TextRange { start: 2, end: 2 },
+            })
+        );
+    }
+
+    #[test]
+    fn preprocess_map_maps_subranges_inside_non_identity_original_segments() {
+        let source_id = source_id(1);
+        let map = PreprocessMap::new(
+            source_id,
+            "abcdef",
+            vec![PreprocessSegment::Original {
+                lexical: TextRange { start: 2, end: 6 },
+                source: SourceRange {
+                    source_id,
+                    start: 20,
+                    end: 24,
+                },
+            }],
+        );
+
+        assert_eq!(
+            map.source_range_for_lexical(source_id, TextRange { start: 3, end: 5 }),
+            Ok(LexicalSourceMapping {
+                primary: Some(SourceRange {
+                    source_id,
+                    start: 21,
+                    end: 23,
+                }),
+                anchors: vec![SourceAnchor::Range(SourceRange {
+                    source_id,
+                    start: 21,
+                    end: 23,
+                })],
+                kind: LexicalSourceMappingKind::Exact,
+            })
+        );
+        assert_eq!(
+            map.source_anchors_for_lexical_offset(source_id, 4),
+            Ok(vec![SourceAnchor::Point {
+                source_id,
+                offset: 22,
+            }])
+        );
+    }
+
+    #[test]
+    fn preprocess_map_rejects_mismatched_source_ids_inside_segments() {
+        let primary_source_id = source_id(1);
+        let other_source_id = source_id(2);
+        let map = PreprocessMap::new(
+            primary_source_id,
+            "abc",
+            vec![PreprocessSegment::Original {
+                lexical: TextRange { start: 0, end: 3 },
+                source: SourceRange {
+                    source_id: other_source_id,
+                    start: 0,
+                    end: 3,
+                },
+            }],
+        );
+
+        assert_eq!(
+            map.source_range_for_lexical(primary_source_id, TextRange { start: 0, end: 1 }),
+            Err(SourceMapError::UnknownSourceId {
+                source_id: other_source_id,
+            })
+        );
+
+        let removed_comment = PreprocessMap::new(
+            primary_source_id,
+            "ab",
+            vec![
+                PreprocessSegment::Original {
+                    lexical: TextRange { start: 0, end: 1 },
+                    source: SourceRange {
+                        source_id: primary_source_id,
+                        start: 0,
+                        end: 1,
+                    },
+                },
+                PreprocessSegment::RemovedComment {
+                    source: SourceRange {
+                        source_id: other_source_id,
+                        start: 1,
+                        end: 5,
+                    },
+                    kind: CommentKind::SingleLine,
+                },
+                PreprocessSegment::Original {
+                    lexical: TextRange { start: 1, end: 2 },
+                    source: SourceRange {
+                        source_id: primary_source_id,
+                        start: 5,
+                        end: 6,
+                    },
+                },
+            ],
+        );
+
+        assert_eq!(
+            removed_comment.source_anchors_for_lexical_offset(primary_source_id, 1),
+            Err(SourceMapError::UnknownSourceId {
+                source_id: other_source_id,
+            })
+        );
+        assert_eq!(
+            removed_comment
+                .source_range_for_lexical(primary_source_id, TextRange { start: 0, end: 2 },),
+            Err(SourceMapError::UnknownSourceId {
+                source_id: other_source_id,
+            })
+        );
+
+        let synthetic_range_anchor = PreprocessMap::new(
+            primary_source_id,
+            " ",
+            vec![PreprocessSegment::SyntheticWhitespace {
+                lexical: TextRange { start: 0, end: 1 },
+                anchor: SourceAnchor::Range(SourceRange {
+                    source_id: other_source_id,
+                    start: 1,
+                    end: 5,
+                }),
+            }],
+        );
+
+        assert_eq!(
+            synthetic_range_anchor
+                .source_range_for_lexical(primary_source_id, TextRange { start: 0, end: 1 },),
+            Err(SourceMapError::UnknownSourceId {
+                source_id: other_source_id,
+            })
+        );
+
+        let synthetic_point_anchor = PreprocessMap::new(
+            primary_source_id,
+            " ",
+            vec![PreprocessSegment::SyntheticWhitespace {
+                lexical: TextRange { start: 0, end: 1 },
+                anchor: SourceAnchor::Point {
+                    source_id: other_source_id,
+                    offset: 1,
+                },
+            }],
+        );
+
+        assert_eq!(
+            synthetic_point_anchor.source_anchors_for_lexical_offset(primary_source_id, 0),
+            Err(SourceMapError::UnknownSourceId {
+                source_id: other_source_id,
+            })
+        );
+    }
+
+    #[test]
+    fn preprocess_map_degrades_non_empty_generated_anchors_without_primary_range() {
+        let source_id = source_id(1);
+        let map = PreprocessMap::new(
+            source_id,
+            " ",
+            vec![PreprocessSegment::SyntheticWhitespace {
+                lexical: TextRange { start: 0, end: 1 },
+                anchor: SourceAnchor::Generated,
+            }],
+        );
+
+        assert_eq!(
+            map.source_range_for_lexical(source_id, TextRange { start: 0, end: 1 }),
+            Ok(LexicalSourceMapping {
+                primary: None,
+                anchors: vec![SourceAnchor::Generated],
+                kind: LexicalSourceMappingKind::Degraded,
+            })
+        );
+    }
+
+    #[test]
+    fn preprocess_map_handles_empty_maps_like_loading_map_empty_identity() {
+        let empty_source_id = source_id(1);
+        let empty = PreprocessMap::new(empty_source_id, "", Vec::new());
+
+        assert_eq!(
+            empty.source_anchors_for_lexical_offset(empty_source_id, 0),
+            Ok(vec![SourceAnchor::Point {
+                source_id: empty_source_id,
+                offset: 0,
+            }])
+        );
+        assert_eq!(
+            empty.source_range_for_lexical(empty_source_id, TextRange { start: 0, end: 0 }),
+            Ok(LexicalSourceMapping {
+                primary: Some(SourceRange {
+                    source_id: empty_source_id,
+                    start: 0,
+                    end: 0,
+                }),
+                anchors: vec![SourceAnchor::Point {
+                    source_id: empty_source_id,
+                    offset: 0,
+                }],
+                kind: LexicalSourceMappingKind::Exact,
+            })
+        );
+
+        let non_empty_source_id = source_id(2);
+        let non_empty = PreprocessMap::new(non_empty_source_id, "abc", Vec::new());
+
+        assert_eq!(
+            non_empty
+                .source_range_for_lexical(non_empty_source_id, TextRange { start: 0, end: 1 },),
+            Err(SourceMapError::MissingPreprocessSegment {
+                source_id: non_empty_source_id,
+                range: TextRange { start: 0, end: 0 },
+            })
+        );
+        assert_eq!(
+            non_empty.source_anchors_for_lexical_offset(non_empty_source_id, 0),
+            Err(SourceMapError::MissingPreprocessSegment {
+                source_id: non_empty_source_id,
+                range: TextRange { start: 0, end: 0 },
+            })
+        );
+    }
+
     fn line_map(source: &str) -> LineMap {
         LineMap::with_source(source_id(1), source)
     }
@@ -1192,6 +2182,80 @@ mod tests {
             uri: "file:///pkg/src/test.miz".to_owned(),
             version: 1,
         }
+    }
+
+    fn comment_synthetic_preprocess_map(source_id: SourceId) -> PreprocessMap {
+        PreprocessMap::new(
+            source_id,
+            "alpha beta",
+            vec![
+                PreprocessSegment::Original {
+                    lexical: TextRange { start: 0, end: 5 },
+                    source: SourceRange {
+                        source_id,
+                        start: 0,
+                        end: 5,
+                    },
+                },
+                PreprocessSegment::RemovedComment {
+                    source: SourceRange {
+                        source_id,
+                        start: 5,
+                        end: 19,
+                    },
+                    kind: CommentKind::MultiLine,
+                },
+                PreprocessSegment::SyntheticWhitespace {
+                    lexical: TextRange { start: 5, end: 6 },
+                    anchor: SourceAnchor::Range(SourceRange {
+                        source_id,
+                        start: 5,
+                        end: 19,
+                    }),
+                },
+                PreprocessSegment::Original {
+                    lexical: TextRange { start: 6, end: 10 },
+                    source: SourceRange {
+                        source_id,
+                        start: 19,
+                        end: 23,
+                    },
+                },
+            ],
+        )
+    }
+
+    fn comment_no_synthetic_preprocess_map(source_id: SourceId) -> PreprocessMap {
+        PreprocessMap::new(
+            source_id,
+            "alpha  beta",
+            vec![
+                PreprocessSegment::Original {
+                    lexical: TextRange { start: 0, end: 6 },
+                    source: SourceRange {
+                        source_id,
+                        start: 0,
+                        end: 6,
+                    },
+                },
+                PreprocessSegment::RemovedComment {
+                    source: SourceRange {
+                        source_id,
+                        start: 6,
+                        end: 20,
+                    },
+                    kind: CommentKind::MultiLine,
+                },
+                PreprocessSegment::Original {
+                    lexical: TextRange { start: 6, end: 11 },
+                    source: SourceRange {
+                        source_id,
+                        start: 20,
+                        end: 25,
+                    },
+                },
+            ],
+        )
     }
 
     fn source_id(seed: u8) -> SourceId {

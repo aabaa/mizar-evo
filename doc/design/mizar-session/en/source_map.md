@@ -115,7 +115,30 @@ pub enum LoadedToOriginalRangeKind {
 pub struct PreprocessMap {
     pub source_id: SourceId,
     pub lexical_text_hash: Hash,
+    pub lexical_text_len: usize,
     pub segments: Vec<PreprocessSegment>,
+}
+
+impl PreprocessMap {
+    pub fn new(
+        source_id: SourceId,
+        lexical_text: &str,
+        segments: Vec<PreprocessSegment>,
+    ) -> Self;
+    pub fn identity(source_id: SourceId, lexical_text: &str) -> Self;
+    pub fn source_id(&self) -> SourceId;
+    pub fn lexical_text_hash(&self) -> Hash;
+    pub fn lexical_len(&self) -> usize;
+    pub fn source_anchors_for_lexical_offset(
+        &self,
+        source_id: SourceId,
+        offset: usize,
+    ) -> Result<Vec<SourceAnchor>, SourceMapError>;
+    pub fn source_range_for_lexical(
+        &self,
+        source_id: SourceId,
+        lexical: TextRange,
+    ) -> Result<LexicalSourceMapping, SourceMapError>;
 }
 
 pub enum PreprocessSegment {
@@ -136,7 +159,25 @@ pub enum PreprocessSegment {
 pub enum SourceAnchor {
     Range(SourceRange),
     Point { source_id: SourceId, offset: usize },
-    Generated { origin: GeneratedSpanOrigin },
+    Generated,
+}
+
+pub enum CommentKind {
+    SingleLine,
+    MultiLine,
+    Documentation,
+}
+
+pub struct LexicalSourceMapping {
+    pub primary: Option<SourceRange>,
+    pub anchors: Vec<SourceAnchor>,
+    pub kind: LexicalSourceMappingKind,
+}
+
+pub enum LexicalSourceMappingKind {
+    Exact,
+    Composite,
+    Degraded,
 }
 
 pub trait SourceMapService {
@@ -193,6 +234,8 @@ When a leading UTF-8 BOM is stripped, the map records a `RemovedLeadingBom` segm
 `PreprocessMap` relates the lexical text consumed by the lexer to the original source.
 
 Original segments map lexical ranges back to source ranges. Removed comment segments preserve ordinary and doc-comment locations even when comments are absent from lexical input. Synthetic whitespace segments represent text inserted to keep token separation after comment removal or recovery.
+
+`PreprocessMap::new` records caller-supplied segments without full structural validation, mirroring the loading-map policy. Mapping APIs still validate the requested `SourceId`, lexical bounds, and any segment or anchor source ids they touch. `LexicalSourceMapping` is the task-7 mapping result: `primary` is the best user source range when one exists, `anchors` preserve adjacent, comment, or generated anchors, and `kind` distinguishes exact, composite, and degraded mappings. Detailed generated-span origins and the retained `SourceMapService` composite type are introduced by task 8.
 
 The frontend owns snapshot retention and service access for this map. It may reuse or mirror the lightweight preprocess map produced by the lexer helper when constructing the retained session `PreprocessMap`. Later phases consume it to attach diagnostics and syntax nodes to original source locations.
 

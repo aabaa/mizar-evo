@@ -75,7 +75,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
    - Tests: leading BOM maps loaded `0` → original byte `3`; CRLF→LF segments; composite mapping across a normalized segment.
    - Depends on: 4. Spec: [source_map.md](./source_map.md) "Loading Map", "Loaded-to-Original Mapping".
 
-7. **Preprocess map and anchors.** [ ]
+7. **Preprocess map and anchors.** [x]
    - Add `PreprocessMap`, `PreprocessSegment` (`Original` / `RemovedComment` / `SyntheticWhitespace`) and `SourceAnchor`.
    - Implement lexical → source mapping, returning composite adjacent anchors at zero-length boundaries.
    - Tests: removed comments map to preserved ranges; lexical range spanning a removed comment yields a composite mapping; synthetic whitespace is not a primary user range.

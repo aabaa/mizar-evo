@@ -75,7 +75,7 @@
    - テスト: 先頭 BOM で読み込み `0` → 元バイト `3`、CRLF→LF セグメント、正規化セグメントをまたぐ複合対応付け。
    - 依存: 4。仕様: [source_map.md](../en/source_map.md) "Loading Map", "Loaded-to-Original Mapping"。
 
-7. **前処理マップとアンカー。** [ ]
+7. **前処理マップとアンカー。** [x]
    - `PreprocessMap`, `PreprocessSegment`（`Original` / `RemovedComment` / `SyntheticWhitespace`）と `SourceAnchor` を追加する。
    - 字句 → ソースの対応付けを実装し、長さ 0 の境界では隣接する複合アンカーを返す。
    - テスト: 除去コメントが保持範囲に対応付く、除去コメントをまたぐ字句範囲が複合対応付けになる、合成空白が主たるユーザー範囲にならない。

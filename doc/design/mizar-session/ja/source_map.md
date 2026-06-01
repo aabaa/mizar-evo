@@ -115,7 +115,30 @@ pub enum LoadedToOriginalRangeKind {
 pub struct PreprocessMap {
     pub source_id: SourceId,
     pub lexical_text_hash: Hash,
+    pub lexical_text_len: usize,
     pub segments: Vec<PreprocessSegment>,
+}
+
+impl PreprocessMap {
+    pub fn new(
+        source_id: SourceId,
+        lexical_text: &str,
+        segments: Vec<PreprocessSegment>,
+    ) -> Self;
+    pub fn identity(source_id: SourceId, lexical_text: &str) -> Self;
+    pub fn source_id(&self) -> SourceId;
+    pub fn lexical_text_hash(&self) -> Hash;
+    pub fn lexical_len(&self) -> usize;
+    pub fn source_anchors_for_lexical_offset(
+        &self,
+        source_id: SourceId,
+        offset: usize,
+    ) -> Result<Vec<SourceAnchor>, SourceMapError>;
+    pub fn source_range_for_lexical(
+        &self,
+        source_id: SourceId,
+        lexical: TextRange,
+    ) -> Result<LexicalSourceMapping, SourceMapError>;
 }
 
 pub enum PreprocessSegment {
@@ -136,7 +159,25 @@ pub enum PreprocessSegment {
 pub enum SourceAnchor {
     Range(SourceRange),
     Point { source_id: SourceId, offset: usize },
-    Generated { origin: GeneratedSpanOrigin },
+    Generated,
+}
+
+pub enum CommentKind {
+    SingleLine,
+    MultiLine,
+    Documentation,
+}
+
+pub struct LexicalSourceMapping {
+    pub primary: Option<SourceRange>,
+    pub anchors: Vec<SourceAnchor>,
+    pub kind: LexicalSourceMappingKind,
+}
+
+pub enum LexicalSourceMappingKind {
+    Exact,
+    Composite,
+    Degraded,
 }
 
 pub trait SourceMapService {
@@ -193,6 +234,8 @@ pub trait SourceMapService {
 `PreprocessMap` は、字句解析器が消費する字句テキストを元ソースと関連付けます。
 
 `Original` セグメントは字句範囲をソース範囲へ戻します。`RemovedComment` セグメントは、コメントが字句入力から消えていても、通常コメントとドキュメントコメントの位置を保ちます。`SyntheticWhitespace` セグメントは、コメント除去やリカバリの後にトークンの分離を保つために挿入されたテキストを表します。
+
+`PreprocessMap::new` は loading map の方針と同様に、呼び出し側が渡したセグメントを完全な構造検証なしで記録します。ただし対応付け API は、要求された `SourceId`、字句範囲の境界、触れたセグメントまたはアンカーの source id を検証します。`LexicalSourceMapping` は task 7 の対応付け結果であり、`primary` は存在する場合の最善のユーザーソース範囲、`anchors` は隣接・コメント・生成アンカー、`kind` は exact / composite / degraded の区別を保持します。詳細な生成スパン起点と保持済み `SourceMapService` の複合型は task 8 で導入します。
 
 この対応付けについては、フロントエンドがスナップショット保持とサービスアクセスを所有します。保持されるセッションの `PreprocessMap` を構築する際、字句解析器のヘルパーが生成する軽量な前処理マップを再利用またはミラーしてよいものとします。後続のフェーズは、診断や構文ノードを元のソース位置に結び付けるためにこれを消費します。
 
