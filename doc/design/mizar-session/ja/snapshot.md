@@ -30,15 +30,6 @@ pub struct SnapshotInput {
     pub verifier_config_hash: Hash,
 }
 
-impl BuildSnapshot {
-    pub fn from_input(input: SnapshotInput) -> Self;
-}
-
-impl SnapshotInput {
-    pub fn build_snapshot(self) -> BuildSnapshot;
-    pub fn build_snapshot_id(&self) -> BuildSnapshotId;
-}
-
 pub struct WorkspaceRoot(String);
 pub struct DependencyArtifactRef {
     pub artifact: String,
@@ -140,7 +131,7 @@ impl<A: SessionIdAllocator> SnapshotRegistry<A> {
     pub fn is_current_for_request(&self, id: BuildSnapshotId, request: BuildRequestId) -> bool;
 }
 
-// snapshot／共有リース層が所有し、`retention` が再エクスポートする。
+// snapshot／共有リース層が所有し、将来の `retention` モジュールが再利用する。
 pub enum RetentionReason {
     ActiveBuild,
     CurrentWatchBaseline,
@@ -159,13 +150,21 @@ pub struct SnapshotLease {
 }
 ```
 
+`SnapshotRegistry::create_snapshot` は、registry snapshot の public な検証済み
+構築経路です。入力から snapshot / id を直接作る helper は、`mizar-session` の
+テストと内部 registry コードだけが使う crate-private な unchecked identity utility
+です。これらは creation invariant を検証せず、snapshot を registry に挿入しません。
+`BuildSnapshot` のフィールドは public なので、downstream code はコピーやテスト用の
+detached snapshot record を組み立てられます。ただし、取得・current 判定・lease の対象に
+なる registry snapshot は、`create_snapshot` が返した snapshot だけです。
+
 具象レジストリは、スナップショットをメモリに保持し、ソース／キャッシュ向けのフィンガープリントだけを永続化してよいものとします。公開される識別子は不透明であり、パス、タイムスタンプ、メモリアドレス、タスクローカルなカウンタをエンコードしてはなりません。
 
 ## Dependencies
 
 - Internal: `SourceVersion` に付随するソース座標テーブルのための `source_map`
 - External: パス正規化、ハッシュ計算、パッケージメタデータ、LSP のドキュメントバージョン型
-- Shared: `SnapshotLease.reason` は本 snapshot／共有リース層で定義する `RetentionReason` を用いる（`retention` モジュールが再エクスポートする）
+- Shared: `SnapshotLease.reason` は本 snapshot／共有リース層で定義する `RetentionReason` を用いる。将来の `retention` モジュールはこれを再定義せず再利用する。
 
 このモジュールは、`mizar-build`、`mizar-ir`、`mizar-cache`、`mizar-artifact`、`mizar-diagnostics`、`mizar-lsp` から消費されます。
 
@@ -207,7 +206,7 @@ overlay 詳細が内容同一性に影響しないようにします。
 
 ### Snapshot Lease
 
-`SnapshotLease` は、外部の利用側がまだスナップショットを参照している可能性がある間、そのスナップショットが回収されるのを防ぎます。
+`SnapshotLease` は、将来の retention collection が、外部の利用側がまだスナップショットを参照している可能性がある間、そのスナップショットを生存させるために使う snapshot 層のハンドルです。
 レジストリは `RetentionReason` ごとに live lease 数を追跡します。
 `create_snapshot` が返す active-build lease も、`acquire_lease` で取得した
 lease と同じ方法で計上されます。
@@ -223,7 +222,9 @@ lease と同じ方法で計上されます。
 - `mizar-ir` におけるフェーズ出力の保持
 - 保留中のキャッシュまたはアーティファクトのライタ
 
-リースはスナップショットのメタデータとソースマップを保持します。ただし、それ自体ですべての IR 出力を保持するわけではありません。フェーズ出力の保持は `mizar-ir` が所有し、スナップショットへのリースを別途保持してよいものとします。
+リースは現時点ではレジストリの計上上でスナップショットメタデータを保持します。
+retention モジュールが入った後は、同じ lease 状態がソースマップの保持も制御します。
+ただし、それ自体ですべての IR 出力を保持するわけではありません。フェーズ出力の保持は `mizar-ir` が所有し、スナップショットへのリースを別途保持してよいものとします。
 
 ## Algorithm / Logic
 
@@ -244,16 +245,17 @@ lease と同じ方法で計上されます。
 
 下流の crate は、ハンドルを消費する前に `BuildSnapshotId` を比較すべきです。ID が異なる場合、利用側はそのハンドルを失効として拒否するか、担当するキャッシュ層でキャッシュ互換性の検証を呼び出さなければなりません。
 
-### Retention and Collection
+### Future Retention and Collection
 
-レジストリは、次の条件を満たすスナップショットを回収してよいものとします。
+現在の snapshot registry は lease と current request state を追跡しますが、collection は実装しません。
+将来の retention モジュールは、次の条件を満たすスナップショットを回収してよいものとします。
 
 - それを参照するリースがない
 - それを指名する現行のリクエスト世代がない
 - それを指す、保持中のソースマップや診断の説明がない
 - `mizar-ir` がそのスナップショットのフェーズ出力参照を解放済みである
 
-回収は、インメモリのソーステキストとマップを取り除きます。ただし、別の層が安定したアーティファクトやキャッシュのデータとして明示的に保存したものは対象外です。
+回収は、インメモリのソーステキストとマップを取り除く予定です。ただし、別の層が安定したアーティファクトやキャッシュのデータとして明示的に保存したものは対象外です。
 
 ## Error Handling
 
@@ -281,10 +283,10 @@ lease と同じ方法で計上されます。
 - 依存アーティファクトのハッシュの変更はスナップショット ID を変える
 - 検証器構成の変更はスナップショット ID を変える
 - パス正規化は、重複するソース同一性を防ぐ
-- オープンバッファバージョンは、対象とする LSP リクエストに限ってディスクバージョンに優先する
+- 構造的に不正なオープンバッファバージョンは拒否される。expected-vs-actual の staleness と disk/open-buffer の override 挙動は source-loading タスクが扱う
 - 失効した `BuildSnapshotId` は鮮度チェックで拒否される
-- リースは、すべての利用側が解放するまでスナップショットを生かし続ける
-- 回収されたスナップショットは `get` で取得できない
+- リースは reason ごとに計上され、未知または不一致の lease release は報告される
+- 直接の unchecked helper は public には利用できず、public field で作った `BuildSnapshot` record は `create_snapshot` が登録するまで detached である
 
 ## Constraints and Assumptions
 

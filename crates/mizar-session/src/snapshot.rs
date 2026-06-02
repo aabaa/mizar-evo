@@ -3,7 +3,7 @@
 //! ```compile_fail
 //! use mizar_session::SourceVersion;
 //!
-//! fn requires_source_version_id_order(_versions: &mut [SourceVersion]) {
+//! fn requires_source_version_id_order(versions: &mut [SourceVersion]) {
 //!     versions.sort_by_key(|version| version.source_id);
 //! }
 //! ```
@@ -13,6 +13,77 @@
 //!
 //! fn requires_semantic_order<T: Ord>() {}
 //! requires_semantic_order::<BuildSnapshotId>();
+//! ```
+//!
+//! Snapshot construction is validated through `SnapshotRegistry::create_snapshot`.
+//! The unchecked identity helpers used by this crate are not public API.
+//! A `BuildSnapshot` assembled with public fields is only a detached data record;
+//! it is not retained, current, or retrievable from a registry unless
+//! `SnapshotRegistry::create_snapshot` produced it.
+//!
+//! ```
+//! use mizar_session::{
+//!     BuildSnapshot, BuildSnapshotId, Hash, SnapshotRegistry, ToolchainInfo, WorkspaceRoot,
+//! };
+//!
+//! let snapshot = BuildSnapshot {
+//!     id: BuildSnapshotId::from_published_schema_str(
+//!         "mizar-session-build-snapshot-v1:\
+//!          0000000000000000000000000000000000000000000000000000000000000000",
+//!     )
+//!     .unwrap(),
+//!     workspace_root: WorkspaceRoot::new("detached"),
+//!     source_versions: Vec::new(),
+//!     dependency_artifacts: Vec::new(),
+//!     lockfile_hash: Hash::from_bytes([0; Hash::BYTE_LEN]),
+//!     toolchain: ToolchainInfo::new(""),
+//!     verifier_config_hash: Hash::from_bytes([0; Hash::BYTE_LEN]),
+//! };
+//!
+//! let registry = SnapshotRegistry::new();
+//! assert_eq!(registry.get(snapshot.id), None);
+//! ```
+//!
+//! ```compile_fail
+//! use mizar_session::{BuildSnapshot, SnapshotInput};
+//!
+//! let input: SnapshotInput = unimplemented!();
+//! let _snapshot = BuildSnapshot::from_input(input);
+//! ```
+//!
+//! ```compile_fail
+//! use mizar_session::SnapshotInput;
+//!
+//! let input: SnapshotInput = unimplemented!();
+//! let _id = input.build_snapshot_id();
+//! ```
+//!
+//! ```compile_fail
+//! use mizar_session::SnapshotInput;
+//!
+//! let input: SnapshotInput = unimplemented!();
+//! let _snapshot = input.build_snapshot();
+//! ```
+//!
+//! ```compile_fail
+//! use mizar_session::{BuildSnapshot, SnapshotInput};
+//!
+//! let input: SnapshotInput = unimplemented!();
+//! let _snapshot = BuildSnapshot::from_input_unchecked(input);
+//! ```
+//!
+//! ```compile_fail
+//! use mizar_session::SnapshotInput;
+//!
+//! let input: SnapshotInput = unimplemented!();
+//! let _id = input.build_snapshot_id_unchecked();
+//! ```
+//!
+//! ```compile_fail
+//! use mizar_session::SnapshotInput;
+//!
+//! let input: SnapshotInput = unimplemented!();
+//! let _snapshot = input.build_snapshot_unchecked();
 //! ```
 //!
 use crate::{
@@ -180,7 +251,11 @@ pub struct SourceVersionCanonicalKey<'a> {
 }
 
 impl BuildSnapshot {
-    pub fn from_input(input: SnapshotInput) -> Self {
+    /// Builds a snapshot identity without creation validation or registry insertion.
+    ///
+    /// This is crate-private so public callers cannot accidentally bypass
+    /// `SnapshotRegistry::create_snapshot`.
+    pub(crate) fn from_input_unchecked(input: SnapshotInput) -> Self {
         let id = build_snapshot_id(&input);
         let mut source_versions = input.source_versions;
         let mut dependency_artifacts = input.dependency_artifacts;
@@ -200,12 +275,15 @@ impl BuildSnapshot {
     }
 }
 
+#[cfg(test)]
 impl SnapshotInput {
-    pub fn build_snapshot(self) -> BuildSnapshot {
-        BuildSnapshot::from_input(self)
+    /// Builds a snapshot without validation; for crate-local identity tests only.
+    pub(crate) fn build_snapshot_unchecked(self) -> BuildSnapshot {
+        BuildSnapshot::from_input_unchecked(self)
     }
 
-    pub fn build_snapshot_id(&self) -> BuildSnapshotId {
+    /// Computes identity bytes without validating creation invariants.
+    pub(crate) fn build_snapshot_id_unchecked(&self) -> BuildSnapshotId {
         build_snapshot_id(self)
     }
 }
@@ -239,7 +317,7 @@ impl<A: SessionIdAllocator> SnapshotRegistry<A> {
     ) -> Result<(BuildSnapshot, SnapshotLease), SnapshotError> {
         validate_snapshot_input(&input)?;
 
-        let snapshot = BuildSnapshot::from_input(input);
+        let snapshot = BuildSnapshot::from_input_unchecked(input);
         let lease = SnapshotLease {
             lease_id: self
                 .allocator
@@ -835,10 +913,13 @@ mod tests {
         let input = snapshot_input();
         let same = snapshot_input();
 
-        assert_eq!(input.build_snapshot_id(), same.build_snapshot_id());
         assert_eq!(
-            BuildSnapshot::from_input(input).id,
-            same.build_snapshot_id()
+            input.build_snapshot_id_unchecked(),
+            same.build_snapshot_id_unchecked()
+        );
+        assert_eq!(
+            BuildSnapshot::from_input_unchecked(input).id,
+            same.build_snapshot_id_unchecked()
         );
     }
 
@@ -858,24 +939,24 @@ mod tests {
         changed_edition.source_versions[0].edition = Edition::new("2027");
 
         assert_ne!(
-            input.build_snapshot_id(),
-            changed_package_id.build_snapshot_id()
+            input.build_snapshot_id_unchecked(),
+            changed_package_id.build_snapshot_id_unchecked()
         );
         assert_ne!(
-            input.build_snapshot_id(),
-            changed_module_path.build_snapshot_id()
+            input.build_snapshot_id_unchecked(),
+            changed_module_path.build_snapshot_id_unchecked()
         );
         assert_ne!(
-            input.build_snapshot_id(),
-            changed_normalized_path.build_snapshot_id()
+            input.build_snapshot_id_unchecked(),
+            changed_normalized_path.build_snapshot_id_unchecked()
         );
         assert_ne!(
-            input.build_snapshot_id(),
-            changed_source_hash.build_snapshot_id()
+            input.build_snapshot_id_unchecked(),
+            changed_source_hash.build_snapshot_id_unchecked()
         );
         assert_ne!(
-            input.build_snapshot_id(),
-            changed_edition.build_snapshot_id()
+            input.build_snapshot_id_unchecked(),
+            changed_edition.build_snapshot_id_unchecked()
         );
     }
 
@@ -889,12 +970,12 @@ mod tests {
             "kernel/different.vo".to_owned();
 
         assert_ne!(
-            input.build_snapshot_id(),
-            changed_dependency_hash.build_snapshot_id()
+            input.build_snapshot_id_unchecked(),
+            changed_dependency_hash.build_snapshot_id_unchecked()
         );
         assert_ne!(
-            input.build_snapshot_id(),
-            changed_dependency_identity.build_snapshot_id()
+            input.build_snapshot_id_unchecked(),
+            changed_dependency_identity.build_snapshot_id_unchecked()
         );
     }
 
@@ -909,16 +990,16 @@ mod tests {
         changed_verifier_config.verifier_config_hash = hash(77);
 
         assert_ne!(
-            input.build_snapshot_id(),
-            changed_lockfile.build_snapshot_id()
+            input.build_snapshot_id_unchecked(),
+            changed_lockfile.build_snapshot_id_unchecked()
         );
         assert_ne!(
-            input.build_snapshot_id(),
-            changed_toolchain.build_snapshot_id()
+            input.build_snapshot_id_unchecked(),
+            changed_toolchain.build_snapshot_id_unchecked()
         );
         assert_ne!(
-            input.build_snapshot_id(),
-            changed_verifier_config.build_snapshot_id()
+            input.build_snapshot_id_unchecked(),
+            changed_verifier_config.build_snapshot_id_unchecked()
         );
     }
 
@@ -929,8 +1010,8 @@ mod tests {
         changed_workspace.workspace_root = WorkspaceRoot::new("other-workspace");
 
         assert_ne!(
-            input.build_snapshot_id(),
-            changed_workspace.build_snapshot_id()
+            input.build_snapshot_id_unchecked(),
+            changed_workspace.build_snapshot_id_unchecked()
         );
     }
 
@@ -941,9 +1022,12 @@ mod tests {
         reordered.source_versions.reverse();
         reordered.dependency_artifacts.reverse();
 
-        assert_eq!(input.build_snapshot_id(), reordered.build_snapshot_id());
+        assert_eq!(
+            input.build_snapshot_id_unchecked(),
+            reordered.build_snapshot_id_unchecked()
+        );
 
-        let snapshot = reordered.build_snapshot();
+        let snapshot = reordered.build_snapshot_unchecked();
         assert_eq!(
             canonical_summary(&snapshot.source_versions),
             vec![
@@ -985,11 +1069,11 @@ mod tests {
         let reverse_path_order = snapshot_input_with_sources(vec![alpha_path, beta_path]);
 
         assert_eq!(
-            path_order.build_snapshot_id(),
-            reverse_path_order.build_snapshot_id()
+            path_order.build_snapshot_id_unchecked(),
+            reverse_path_order.build_snapshot_id_unchecked()
         );
         assert_eq!(
-            canonical_summary(&path_order.build_snapshot().source_versions),
+            canonical_summary(&path_order.build_snapshot_unchecked().source_versions),
             vec![
                 ("mml", "same.module", "src/alpha.miz", 8),
                 ("mml", "same.module", "src/beta.miz", 1),
@@ -1016,11 +1100,11 @@ mod tests {
         let reverse_hash_order = snapshot_input_with_sources(vec![lower_hash, higher_hash]);
 
         assert_eq!(
-            hash_order.build_snapshot_id(),
-            reverse_hash_order.build_snapshot_id()
+            hash_order.build_snapshot_id_unchecked(),
+            reverse_hash_order.build_snapshot_id_unchecked()
         );
         assert_eq!(
-            canonical_summary(&hash_order.build_snapshot().source_versions),
+            canonical_summary(&hash_order.build_snapshot_unchecked().source_versions),
             vec![
                 ("mml", "same.module", "src/same.miz", 2),
                 ("mml", "same.module", "src/same.miz", 9),
@@ -1043,9 +1127,12 @@ mod tests {
             .rev()
             .collect::<Vec<_>>();
 
-        assert_eq!(input.build_snapshot_id(), reverse_order.build_snapshot_id());
         assert_eq!(
-            dependency_summary(&input.build_snapshot().dependency_artifacts),
+            input.build_snapshot_id_unchecked(),
+            reverse_order.build_snapshot_id_unchecked()
+        );
+        assert_eq!(
+            dependency_summary(&input.build_snapshot_unchecked().dependency_artifacts),
             vec![("kernel/same.vo", 2), ("kernel/same.vo", 9)]
         );
     }
@@ -1082,7 +1169,10 @@ mod tests {
             first.source_versions[0].origin,
             second.source_versions[0].origin
         );
-        assert_eq!(first.build_snapshot_id(), second.build_snapshot_id());
+        assert_eq!(
+            first.build_snapshot_id_unchecked(),
+            second.build_snapshot_id_unchecked()
+        );
     }
 
     #[test]
@@ -1120,8 +1210,8 @@ mod tests {
         let reverse_order = snapshot_input_with_sources(vec![new_edition, old_edition]);
 
         assert_eq!(
-            insertion_order.build_snapshot_id(),
-            reverse_order.build_snapshot_id()
+            insertion_order.build_snapshot_id_unchecked(),
+            reverse_order.build_snapshot_id_unchecked()
         );
     }
 
@@ -1155,8 +1245,8 @@ mod tests {
         let reverse_order = snapshot_input_with_sources(vec![open_buffer, disk]);
 
         assert_eq!(
-            insertion_order.build_snapshot_id(),
-            reverse_order.build_snapshot_id()
+            insertion_order.build_snapshot_id_unchecked(),
+            reverse_order.build_snapshot_id_unchecked()
         );
     }
 
@@ -1396,7 +1486,7 @@ mod tests {
         let registry = SnapshotRegistry::new();
         let request = request_id();
         let input = snapshot_input();
-        let expected_snapshot_id = input.build_snapshot_id();
+        let expected_snapshot_id = input.build_snapshot_id_unchecked();
 
         let (snapshot, lease) = registry.create_snapshot(request, input).unwrap();
 
@@ -1923,7 +2013,7 @@ mod tests {
                 SourceOrigin::Disk,
             ),
         ]);
-        let rejected_id = rejected_input.build_snapshot_id();
+        let rejected_id = rejected_input.build_snapshot_id_unchecked();
         let lease_allocations_before = registry.allocator.lease_allocations.load(Ordering::Relaxed);
 
         let error = registry
@@ -1941,11 +2031,59 @@ mod tests {
     }
 
     #[test]
+    fn unchecked_identity_helpers_do_not_create_registry_snapshots() {
+        let registry = SnapshotRegistry::new();
+        let request = request_id();
+        let mut input = snapshot_input();
+        input.toolchain = ToolchainInfo::new(" ");
+
+        let unchecked_id = input.build_snapshot_id_unchecked();
+        let unchecked_snapshot = input.clone().build_snapshot_unchecked();
+        let error = registry.create_snapshot(request, input).unwrap_err();
+
+        assert_eq!(unchecked_snapshot.id, unchecked_id);
+        assert!(matches!(
+            error,
+            SnapshotError::UnsupportedToolchainMetadata { metadata } if metadata == " "
+        ));
+        assert_eq!(registry.get(unchecked_id), None);
+        assert!(!registry.is_current_for_request(unchecked_id, request));
+        assert_eq!(registry.total_lease_count_for_test(unchecked_id), 0);
+    }
+
+    #[test]
+    fn public_struct_literal_snapshot_is_only_a_detached_record() {
+        let registry = SnapshotRegistry::new();
+        let request = request_id();
+        let snapshot = BuildSnapshot {
+            id: snapshot_id(204),
+            workspace_root: WorkspaceRoot::new("detached"),
+            source_versions: Vec::new(),
+            dependency_artifacts: Vec::new(),
+            lockfile_hash: zero_hash(),
+            toolchain: ToolchainInfo::new(" "),
+            verifier_config_hash: zero_hash(),
+        };
+
+        let error = registry
+            .acquire_lease(snapshot.id, RetentionReason::DiagnosticIndex)
+            .unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::UnknownSnapshotId { snapshot_id } if snapshot_id == snapshot.id
+        ));
+        assert_eq!(registry.get(snapshot.id), None);
+        assert!(!registry.is_current_for_request(snapshot.id, request));
+        assert_eq!(registry.total_lease_count_for_test(snapshot.id), 0);
+    }
+
+    #[test]
     fn lease_id_allocation_failure_does_not_insert_snapshot_or_mark_current() {
         let registry = SnapshotRegistry::with_allocator(LeaseFailingAllocator::new());
         let request = request_id();
         let input = snapshot_input();
-        let snapshot_id = input.build_snapshot_id();
+        let snapshot_id = input.build_snapshot_id_unchecked();
 
         let error = registry.create_snapshot(request, input).unwrap_err();
 

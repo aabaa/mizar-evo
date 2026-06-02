@@ -116,7 +116,7 @@
     - テスト: acquire/release で数が増減する、タスク 11 の active-build lease の解放が計上される、未知のスナップショット id とリースリリースの不一致が `SnapshotError` になる。
     - 依存: 11。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Lease"。
 
-13. **スナップショット構築 API の堅牢化。** [ ]
+13. **スナップショット構築 API の堅牢化。** [x]
     - 直接の unchecked constructor（`BuildSnapshot::from_input`, `SnapshotInput::build_snapshot`, `SnapshotInput::build_snapshot_id`）を public のまま残すか、crate-private にするか、identity-only の unchecked helper として rename/document するかを決める。
     - registry snapshot の検証済み public 作成経路として `SnapshotRegistry::create_snapshot` を維持する。
     - identity テストや tooling のために直接構築を残す場合は、downstream crate が誤って creation validation を迂回しないよう unchecked semantics を明示する。

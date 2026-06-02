@@ -30,15 +30,6 @@ pub struct SnapshotInput {
     pub verifier_config_hash: Hash,
 }
 
-impl BuildSnapshot {
-    pub fn from_input(input: SnapshotInput) -> Self;
-}
-
-impl SnapshotInput {
-    pub fn build_snapshot(self) -> BuildSnapshot;
-    pub fn build_snapshot_id(&self) -> BuildSnapshotId;
-}
-
 pub struct WorkspaceRoot(String);
 pub struct DependencyArtifactRef {
     pub artifact: String,
@@ -140,7 +131,7 @@ impl<A: SessionIdAllocator> SnapshotRegistry<A> {
     pub fn is_current_for_request(&self, id: BuildSnapshotId, request: BuildRequestId) -> bool;
 }
 
-// Owned by the snapshot/shared lease layer; re-exported by `retention`.
+// Owned by the snapshot/shared lease layer; reused by the future `retention` module.
 pub enum RetentionReason {
     ActiveBuild,
     CurrentWatchBaseline,
@@ -159,13 +150,22 @@ pub struct SnapshotLease {
 }
 ```
 
+`SnapshotRegistry::create_snapshot` is the public validated construction path for
+registry snapshots. Direct input-to-snapshot and input-to-id helpers are
+crate-private unchecked identity utilities used by `mizar-session` tests and
+internal registry code; they do not validate creation invariants and do not
+insert a snapshot into the registry. Because `BuildSnapshot` fields are public,
+downstream code may assemble detached snapshot records for copying or tests, but
+only snapshots returned by `create_snapshot` are registry snapshots that can be
+retrieved, reported current, or leased.
+
 The concrete registry may keep snapshots in memory and persist only source/cache-facing fingerprints. Public identifiers are opaque and must not encode paths, timestamps, memory addresses, or task-local counters.
 
 ## Dependencies
 
 - Internal: `source_map` for source coordinate tables attached to `SourceVersion`
 - External: path normalization, hashing, package metadata, LSP document-version types
-- Shared: `SnapshotLease.reason` uses the `RetentionReason` enum defined in this snapshot/shared lease layer and re-exported by the `retention` module
+- Shared: `SnapshotLease.reason` uses the `RetentionReason` enum defined in this snapshot/shared lease layer. The future `retention` module reuses this enum rather than redefining it.
 
 This module is consumed by `mizar-build`, `mizar-ir`, `mizar-cache`, `mizar-artifact`, `mizar-diagnostics`, and `mizar-lsp`.
 
@@ -207,7 +207,8 @@ It records:
 
 ### Snapshot Lease
 
-`SnapshotLease` prevents a snapshot from being collected while an external consumer may still reference it.
+`SnapshotLease` is the snapshot-layer handle that future retention collection
+uses to keep a snapshot alive while an external consumer may still reference it.
 The registry tracks live lease counts per `RetentionReason`; the active-build
 lease returned by `create_snapshot` is counted the same way as leases acquired
 with `acquire_lease`.
@@ -223,7 +224,10 @@ Lease reasons include:
 - phase-output retention in `mizar-ir`;
 - pending cache or artifact writer.
 
-Leases retain snapshot metadata and source maps. They do not by themselves retain all IR outputs; `mizar-ir` owns phase-output retention and may hold its own lease back to the snapshot.
+Leases currently retain snapshot metadata in the registry accounting. Once the
+retention module lands, the same lease state also controls source-map retention.
+They do not by themselves retain all IR outputs; `mizar-ir` owns phase-output
+retention and may hold its own lease back to the snapshot.
 
 ## Algorithm / Logic
 
@@ -244,16 +248,19 @@ A snapshot is current for a request only when it is the most recent snapshot acc
 
 Downstream crates should compare `BuildSnapshotId` before consuming handles. If the ids differ, the consumer must either reject the handle as stale or invoke cache compatibility validation in the responsible cache layer.
 
-### Retention and Collection
+### Future Retention and Collection
 
-The registry may collect a snapshot when:
+The current snapshot registry tracks leases and current request state, but it
+does not implement collection. The future retention module may collect a
+snapshot when:
 
 - no lease references it;
 - no current request generation names it;
 - no retained source map or diagnostic explanation points to it;
 - `mizar-ir` has released phase-output references for that snapshot.
 
-Collection removes in-memory source text and maps unless another layer explicitly stores stable artifact or cache data.
+Collection will remove in-memory source text and maps unless another layer
+explicitly stores stable artifact or cache data.
 
 ## Error Handling
 
@@ -281,10 +288,10 @@ Key scenarios:
 - dependency artifact hash changes change the snapshot id;
 - verifier configuration changes change the snapshot id;
 - path normalization prevents duplicate source identities;
-- open-buffer versions supersede disk versions only for the targeted LSP request;
+- structurally invalid open-buffer versions are rejected; source-loading tasks handle expected-vs-actual staleness and disk/open-buffer override behavior;
 - stale `BuildSnapshotId` values are rejected by freshness checks;
-- leases keep snapshots alive until all consumers release them;
-- collected snapshots cannot be retrieved by `get`.
+- leases are accounted by reason and release reports unknown or mismatched leases;
+- direct unchecked helpers are unavailable publicly, and public-field `BuildSnapshot` records are detached until `create_snapshot` registers them.
 
 ## Constraints and Assumptions
 

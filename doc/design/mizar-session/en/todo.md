@@ -116,7 +116,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: acquire/release adjusts counts; releasing the active-build lease from task 11 is accounted; unknown snapshot id and lease release mismatch surface `SnapshotError`.
     - Depends on: 11. Spec: [snapshot.md](./snapshot.md) "Snapshot Lease".
 
-13. **Snapshot construction API hardening.** [ ]
+13. **Snapshot construction API hardening.** [x]
     - Decide whether direct unchecked constructors (`BuildSnapshot::from_input`, `SnapshotInput::build_snapshot`, and `SnapshotInput::build_snapshot_id`) should remain public, become crate-private, or be renamed/documented as identity-only unchecked helpers.
     - Keep `SnapshotRegistry::create_snapshot` as the validated public creation path for registry snapshots.
     - If direct construction remains useful for identity tests or tooling, make the unchecked semantics explicit so downstream crates do not bypass creation validation by accident.
