@@ -1,4 +1,5 @@
 use crate::{Hash, NormalizedPath, SourceId};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SourceRange {
@@ -74,7 +75,7 @@ pub enum LoadingMapSegment {
     },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum PreprocessSegment {
     Original {
@@ -99,12 +100,25 @@ pub enum CommentKind {
     Documentation,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum SourceAnchor {
     Range(SourceRange),
     Point { source_id: SourceId, offset: usize },
-    Generated,
+    Generated(GeneratedSpanOrigin),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GeneratedSpanOrigin {
+    anchor: GeneratedSpanAnchor,
+    reason: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum GeneratedSpanAnchor {
+    Range(SourceRange),
+    Point { source_id: SourceId, offset: usize },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -128,6 +142,21 @@ pub struct LexicalSourceMapping {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LexicalSourceMappingKind {
+    Exact,
+    Composite,
+    Degraded,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MappedSourceRange {
+    pub primary: SourceRange,
+    pub secondary: Vec<SourceAnchor>,
+    pub original_input: Option<TextRange>,
+    pub kind: MappedSourceRangeKind,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MappedSourceRangeKind {
     Exact,
     Composite,
     Degraded,
@@ -176,6 +205,7 @@ pub enum SourceMapError {
         source_id: SourceId,
         range: TextRange,
     },
+    GeneratedSpanWithoutOriginReason,
 }
 
 const MAX_LINE_COLUMN: usize = u32::MAX as usize;
@@ -332,6 +362,47 @@ impl TextRange {
 
     pub const fn is_empty(self) -> bool {
         self.start == self.end
+    }
+}
+
+impl GeneratedSpanOrigin {
+    pub fn new(
+        anchor: GeneratedSpanAnchor,
+        reason: impl Into<String>,
+    ) -> Result<Self, SourceMapError> {
+        let reason = reason.into();
+        if reason.trim().is_empty() {
+            return Err(SourceMapError::GeneratedSpanWithoutOriginReason);
+        }
+        Ok(Self { anchor, reason })
+    }
+
+    pub fn anchor(&self) -> GeneratedSpanAnchor {
+        self.anchor
+    }
+
+    pub fn reason(&self) -> &str {
+        &self.reason
+    }
+}
+
+impl GeneratedSpanAnchor {
+    fn source_id(self) -> SourceId {
+        match self {
+            Self::Range(range) => range.source_id,
+            Self::Point { source_id, .. } => source_id,
+        }
+    }
+
+    fn to_source_range(self) -> SourceRange {
+        match self {
+            Self::Range(range) => range,
+            Self::Point { source_id, offset } => SourceRange {
+                source_id,
+                start: offset,
+                end: offset,
+            },
+        }
     }
 }
 
@@ -645,8 +716,8 @@ impl PreprocessMap {
                 PreprocessSegment::SyntheticWhitespace { lexical, anchor }
                     if lexical.start <= offset && offset <= lexical.end =>
                 {
-                    self.validate_anchor(*anchor)?;
-                    push_source_anchor(&mut anchors, *anchor);
+                    self.validate_anchor(anchor)?;
+                    push_source_anchor(&mut anchors, anchor.clone());
                 }
                 _ => {}
             }
@@ -688,7 +759,7 @@ impl PreprocessMap {
                 anchors.len() == 1 && self.synthetic_segment_touching_offset(lexical.start);
             let has_generated_anchor = anchors
                 .iter()
-                .any(|anchor| matches!(anchor, SourceAnchor::Generated));
+                .any(|anchor| matches!(anchor, SourceAnchor::Generated(_)));
             return Ok(LexicalSourceMapping {
                 primary: if is_synthetic_only_anchor || has_generated_anchor {
                     None
@@ -784,11 +855,11 @@ impl PreprocessMap {
         self.validate_source_id(range.source_id)
     }
 
-    fn validate_anchor(&self, anchor: SourceAnchor) -> Result<(), SourceMapError> {
+    fn validate_anchor(&self, anchor: &SourceAnchor) -> Result<(), SourceMapError> {
         match anchor {
-            SourceAnchor::Range(range) => self.validate_source_range(range),
-            SourceAnchor::Point { source_id, .. } => self.validate_source_id(source_id),
-            SourceAnchor::Generated => Ok(()),
+            SourceAnchor::Range(range) => self.validate_source_range(*range),
+            SourceAnchor::Point { source_id, .. } => self.validate_source_id(*source_id),
+            SourceAnchor::Generated(origin) => self.validate_source_id(origin.anchor().source_id()),
         }
     }
 
@@ -810,10 +881,12 @@ impl PreprocessMap {
                 PreprocessSegment::SyntheticWhitespace { lexical, anchor }
                     if lexical.start <= offset && offset < lexical.end =>
                 {
-                    self.validate_anchor(*anchor)?;
+                    self.validate_anchor(anchor)?;
                     return Ok(Some((
                         *lexical,
-                        PreprocessSegmentKind::SyntheticWhitespace { anchor: *anchor },
+                        PreprocessSegmentKind::SyntheticWhitespace {
+                            anchor: anchor.clone(),
+                        },
                     )));
                 }
                 _ => {}
@@ -870,7 +943,7 @@ impl PreprocessMap {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum PreprocessSegmentKind {
     Original { source: SourceRange },
     SyntheticWhitespace { anchor: SourceAnchor },
@@ -884,6 +957,218 @@ impl PreprocessSegment {
             }
             Self::RemovedComment { .. } => None,
         }
+    }
+}
+
+pub trait SourceMapService {
+    fn line_column(&self, range: SourceRange) -> Result<(LineColumn, LineColumn), SourceMapError>;
+    fn original_range_for_loaded(
+        &self,
+        source_id: SourceId,
+        loaded: TextRange,
+    ) -> Result<MappedSourceRange, SourceMapError>;
+    fn source_range_for_lexical(
+        &self,
+        source_id: SourceId,
+        lexical: TextRange,
+    ) -> Result<MappedSourceRange, SourceMapError>;
+    fn attach_generated_span(
+        &self,
+        origin: GeneratedSpanOrigin,
+    ) -> Result<SourceAnchor, SourceMapError>;
+    fn validate_range(&self, range: SourceRange) -> Result<(), SourceMapError>;
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct RetainedSourceMapService {
+    line_maps: HashMap<SourceId, LineMap>,
+    loading_maps: HashMap<SourceId, LoadingMap>,
+    preprocess_maps: HashMap<SourceId, PreprocessMap>,
+}
+
+impl RetainedSourceMapService {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn insert_line_map(&mut self, line_map: LineMap) {
+        self.line_maps.insert(line_map.source_id(), line_map);
+    }
+
+    pub fn insert_loading_map(&mut self, loading_map: LoadingMap) {
+        self.loading_maps
+            .insert(loading_map.source_id(), loading_map);
+    }
+
+    pub fn insert_preprocess_map(&mut self, preprocess_map: PreprocessMap) {
+        self.preprocess_maps
+            .insert(preprocess_map.source_id(), preprocess_map);
+    }
+
+    pub fn with_line_map(mut self, line_map: LineMap) -> Self {
+        self.insert_line_map(line_map);
+        self
+    }
+
+    pub fn with_loading_map(mut self, loading_map: LoadingMap) -> Self {
+        self.insert_loading_map(loading_map);
+        self
+    }
+
+    pub fn with_preprocess_map(mut self, preprocess_map: PreprocessMap) -> Self {
+        self.insert_preprocess_map(preprocess_map);
+        self
+    }
+
+    fn line_map(&self, source_id: SourceId) -> Result<&LineMap, SourceMapError> {
+        self.line_maps
+            .get(&source_id)
+            .ok_or(SourceMapError::UnknownSourceId { source_id })
+    }
+
+    fn loading_map(
+        &self,
+        source_id: SourceId,
+        range: TextRange,
+    ) -> Result<&LoadingMap, SourceMapError> {
+        self.loading_maps
+            .get(&source_id)
+            .ok_or(SourceMapError::MissingLoadingMapSegment { source_id, range })
+    }
+
+    fn preprocess_map(
+        &self,
+        source_id: SourceId,
+        range: TextRange,
+    ) -> Result<&PreprocessMap, SourceMapError> {
+        self.preprocess_maps
+            .get(&source_id)
+            .ok_or(SourceMapError::MissingPreprocessSegment { source_id, range })
+    }
+
+    fn validate_anchor(&self, anchor: &SourceAnchor) -> Result<(), SourceMapError> {
+        match anchor {
+            SourceAnchor::Range(range) => self.validate_range(*range),
+            SourceAnchor::Point { source_id, offset } => self.validate_range(SourceRange {
+                source_id: *source_id,
+                start: *offset,
+                end: *offset,
+            }),
+            SourceAnchor::Generated(origin) => self.validate_generated_origin(origin),
+        }
+    }
+
+    fn validate_generated_origin(
+        &self,
+        origin: &GeneratedSpanOrigin,
+    ) -> Result<(), SourceMapError> {
+        if origin.reason().trim().is_empty() {
+            return Err(SourceMapError::GeneratedSpanWithoutOriginReason);
+        }
+        match origin.anchor() {
+            GeneratedSpanAnchor::Range(range) => self.validate_range(range),
+            GeneratedSpanAnchor::Point { source_id, offset } => self.validate_range(SourceRange {
+                source_id,
+                start: offset,
+                end: offset,
+            }),
+        }
+    }
+
+    fn mapped_source_range_from_anchors(
+        &self,
+        anchors: &[SourceAnchor],
+    ) -> Result<Option<SourceRange>, SourceMapError> {
+        for anchor in anchors {
+            self.validate_anchor(anchor)?;
+            if let Some(range) = source_range_from_anchor(anchor) {
+                return Ok(Some(range));
+            }
+        }
+        Ok(None)
+    }
+}
+
+impl SourceMapService for RetainedSourceMapService {
+    fn line_column(&self, range: SourceRange) -> Result<(LineColumn, LineColumn), SourceMapError> {
+        let converted = self.line_map(range.source_id)?.line_column_range(range)?;
+        Ok((converted.start, converted.end))
+    }
+
+    fn original_range_for_loaded(
+        &self,
+        source_id: SourceId,
+        loaded: TextRange,
+    ) -> Result<MappedSourceRange, SourceMapError> {
+        self.line_map(source_id)?;
+        let mapped = self
+            .loading_map(source_id, loaded)?
+            .original_range_for_loaded(source_id, loaded)?;
+        let primary = SourceRange {
+            source_id,
+            start: loaded.start,
+            end: loaded.end,
+        };
+        self.validate_range(primary)?;
+        Ok(MappedSourceRange {
+            primary,
+            secondary: Vec::new(),
+            original_input: Some(mapped.original),
+            kind: match mapped.kind {
+                LoadedToOriginalRangeKind::Exact => MappedSourceRangeKind::Exact,
+                LoadedToOriginalRangeKind::Degraded => MappedSourceRangeKind::Degraded,
+            },
+        })
+    }
+
+    fn source_range_for_lexical(
+        &self,
+        source_id: SourceId,
+        lexical: TextRange,
+    ) -> Result<MappedSourceRange, SourceMapError> {
+        self.line_map(source_id)?;
+        let mapping = self
+            .preprocess_map(source_id, lexical)?
+            .source_range_for_lexical(source_id, lexical)?;
+        let primary = mapping
+            .primary
+            .or(self.mapped_source_range_from_anchors(&mapping.anchors)?)
+            .ok_or(SourceMapError::MissingPreprocessSegment {
+                source_id,
+                range: lexical,
+            })?;
+        self.validate_range(primary)?;
+        let mut secondary = Vec::new();
+        for anchor in mapping.anchors {
+            self.validate_anchor(&anchor)?;
+            if matches!(anchor, SourceAnchor::Generated(_))
+                || source_range_from_anchor(&anchor) != Some(primary)
+            {
+                push_source_anchor(&mut secondary, anchor);
+            }
+        }
+        Ok(MappedSourceRange {
+            primary,
+            secondary,
+            original_input: None,
+            kind: match mapping.kind {
+                LexicalSourceMappingKind::Exact => MappedSourceRangeKind::Exact,
+                LexicalSourceMappingKind::Composite => MappedSourceRangeKind::Composite,
+                LexicalSourceMappingKind::Degraded => MappedSourceRangeKind::Degraded,
+            },
+        })
+    }
+
+    fn attach_generated_span(
+        &self,
+        origin: GeneratedSpanOrigin,
+    ) -> Result<SourceAnchor, SourceMapError> {
+        self.validate_generated_origin(&origin)?;
+        Ok(SourceAnchor::Generated(origin))
+    }
+
+    fn validate_range(&self, range: SourceRange) -> Result<(), SourceMapError> {
+        self.line_map(range.source_id)?.validate_range(range)
     }
 }
 
@@ -937,6 +1222,18 @@ fn primary_range_from_anchors(anchors: &[SourceAnchor]) -> Option<SourceRange> {
     }
 }
 
+fn source_range_from_anchor(anchor: &SourceAnchor) -> Option<SourceRange> {
+    match anchor {
+        SourceAnchor::Range(range) => Some(*range),
+        SourceAnchor::Point { source_id, offset } => Some(SourceRange {
+            source_id: *source_id,
+            start: *offset,
+            end: *offset,
+        }),
+        SourceAnchor::Generated(origin) => Some(origin.anchor().to_source_range()),
+    }
+}
+
 fn enclosing_source_range(ranges: &[SourceRange]) -> Option<SourceRange> {
     let first = ranges.first()?;
     Some(SourceRange {
@@ -975,10 +1272,11 @@ fn one_based_u32(zero_based: usize, max_coordinate: usize) -> Result<u32, Source
 #[cfg(test)]
 mod tests {
     use super::{
-        CommentKind, LexicalSourceMapping, LexicalSourceMappingKind, LineColumn, LineColumnRange,
-        LineMap, LoadedToOriginalRange, LoadedToOriginalRangeKind, LoadingMap, LoadingMapSegment,
-        LoadingOrigin, PreprocessMap, PreprocessSegment, SourceAnchor, SourceMapError, SourceRange,
-        TextRange,
+        CommentKind, GeneratedSpanAnchor, GeneratedSpanOrigin, LexicalSourceMapping,
+        LexicalSourceMappingKind, LineColumn, LineColumnRange, LineMap, LoadedToOriginalRange,
+        LoadedToOriginalRangeKind, LoadingMap, LoadingMapSegment, LoadingOrigin, MappedSourceRange,
+        MappedSourceRangeKind, PreprocessMap, PreprocessSegment, RetainedSourceMapService,
+        SourceAnchor, SourceMapError, SourceMapService, SourceRange, TextRange,
     };
     use crate::{BuildSnapshotId, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceId};
 
@@ -1786,7 +2084,7 @@ mod tests {
             " ",
             vec![PreprocessSegment::SyntheticWhitespace {
                 lexical: TextRange { start: 0, end: 1 },
-                anchor: SourceAnchor::Generated,
+                anchor: generated_anchor(source_id, 0, 1, "synthetic whitespace"),
             }],
         );
 
@@ -1794,7 +2092,7 @@ mod tests {
             map.source_range_for_lexical(source_id, TextRange { start: 0, end: 0 }),
             Ok(LexicalSourceMapping {
                 primary: None,
-                anchors: vec![SourceAnchor::Generated],
+                anchors: vec![generated_anchor(source_id, 0, 1, "synthetic whitespace")],
                 kind: LexicalSourceMappingKind::Degraded,
             })
         );
@@ -2089,7 +2387,7 @@ mod tests {
             " ",
             vec![PreprocessSegment::SyntheticWhitespace {
                 lexical: TextRange { start: 0, end: 1 },
-                anchor: SourceAnchor::Generated,
+                anchor: generated_anchor(source_id, 0, 1, "synthetic whitespace"),
             }],
         );
 
@@ -2097,7 +2395,7 @@ mod tests {
             map.source_range_for_lexical(source_id, TextRange { start: 0, end: 1 }),
             Ok(LexicalSourceMapping {
                 primary: None,
-                anchors: vec![SourceAnchor::Generated],
+                anchors: vec![generated_anchor(source_id, 0, 1, "synthetic whitespace")],
                 kind: LexicalSourceMappingKind::Degraded,
             })
         );
@@ -2151,8 +2449,541 @@ mod tests {
         );
     }
 
+    #[test]
+    fn source_map_service_line_column_converts_ranges_through_line_map() {
+        let source_id = source_id(1);
+        let service =
+            RetainedSourceMapService::new().with_line_map(LineMap::with_source(source_id, "aβ\nz"));
+
+        assert_eq!(
+            service.line_column(SourceRange {
+                source_id,
+                start: "a".len(),
+                end: "aβ\n".len(),
+            }),
+            Ok((
+                LineColumn { line: 1, column: 2 },
+                LineColumn { line: 2, column: 1 },
+            ))
+        );
+    }
+
+    #[test]
+    fn source_map_service_maps_loaded_exact_and_degraded_ranges() {
+        let source_id = source_id(1);
+        let service = RetainedSourceMapService::new()
+            .with_line_map(LineMap::with_source(source_id, "alpha\nbeta"))
+            .with_loading_map(crlf_loading_map(source_id));
+
+        assert_eq!(
+            service.original_range_for_loaded(source_id, TextRange { start: 0, end: 5 }),
+            Ok(MappedSourceRange {
+                primary: SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 5,
+                },
+                secondary: Vec::new(),
+                original_input: Some(TextRange { start: 0, end: 5 }),
+                kind: MappedSourceRangeKind::Exact,
+            })
+        );
+        assert_eq!(
+            service.original_range_for_loaded(source_id, TextRange { start: 4, end: 7 }),
+            Ok(MappedSourceRange {
+                primary: SourceRange {
+                    source_id,
+                    start: 4,
+                    end: 7,
+                },
+                secondary: Vec::new(),
+                original_input: Some(TextRange { start: 4, end: 8 }),
+                kind: MappedSourceRangeKind::Degraded,
+            })
+        );
+    }
+
+    #[test]
+    fn source_map_service_keeps_loaded_primary_range_separate_from_original_input_bytes() {
+        let source_id = source_id(1);
+        let service = RetainedSourceMapService::new()
+            .with_line_map(LineMap::with_source(source_id, "alpha"))
+            .with_loading_map(LoadingMap::new(
+                source_id,
+                "alpha",
+                open_buffer_origin(),
+                vec![
+                    LoadingMapSegment::RemovedLeadingBom {
+                        original: TextRange { start: 0, end: 3 },
+                    },
+                    LoadingMapSegment::Original {
+                        loaded: TextRange { start: 0, end: 5 },
+                        original: TextRange { start: 3, end: 8 },
+                    },
+                ],
+            ));
+
+        let mapped = service
+            .original_range_for_loaded(source_id, TextRange { start: 0, end: 5 })
+            .unwrap();
+
+        assert_eq!(
+            mapped,
+            MappedSourceRange {
+                primary: SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 5,
+                },
+                secondary: Vec::new(),
+                original_input: Some(TextRange { start: 3, end: 8 }),
+                kind: MappedSourceRangeKind::Exact,
+            }
+        );
+        assert_eq!(service.validate_range(mapped.primary), Ok(()));
+    }
+
+    #[test]
+    fn source_map_service_maps_lexical_original_composite_and_synthetic_ranges() {
+        let source_id = source_id(1);
+        let source_text = "abcdefghijklmnopqrstuvwxyz";
+        let exact_service = RetainedSourceMapService::new()
+            .with_line_map(LineMap::with_source(source_id, source_text))
+            .with_preprocess_map(PreprocessMap::identity(source_id, "alpha beta"));
+        let composite_service = RetainedSourceMapService::new()
+            .with_line_map(LineMap::with_source(source_id, source_text))
+            .with_preprocess_map(comment_no_synthetic_preprocess_map(source_id));
+        let synthetic_service = RetainedSourceMapService::new()
+            .with_line_map(LineMap::with_source(source_id, source_text))
+            .with_preprocess_map(comment_synthetic_preprocess_map(source_id));
+
+        assert_eq!(
+            exact_service.source_range_for_lexical(source_id, TextRange { start: 0, end: 5 }),
+            Ok(MappedSourceRange {
+                primary: SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 5,
+                },
+                secondary: Vec::new(),
+                original_input: None,
+                kind: MappedSourceRangeKind::Exact,
+            })
+        );
+        assert_eq!(
+            composite_service.source_range_for_lexical(source_id, TextRange { start: 0, end: 11 }),
+            Ok(MappedSourceRange {
+                primary: SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 25,
+                },
+                secondary: vec![
+                    SourceAnchor::Range(SourceRange {
+                        source_id,
+                        start: 0,
+                        end: 6,
+                    }),
+                    SourceAnchor::Range(SourceRange {
+                        source_id,
+                        start: 6,
+                        end: 20,
+                    }),
+                    SourceAnchor::Range(SourceRange {
+                        source_id,
+                        start: 20,
+                        end: 25,
+                    }),
+                ],
+                original_input: None,
+                kind: MappedSourceRangeKind::Composite,
+            })
+        );
+        assert_eq!(
+            synthetic_service.source_range_for_lexical(source_id, TextRange { start: 5, end: 6 }),
+            Ok(MappedSourceRange {
+                primary: SourceRange {
+                    source_id,
+                    start: 5,
+                    end: 19,
+                },
+                secondary: Vec::new(),
+                original_input: None,
+                kind: MappedSourceRangeKind::Degraded,
+            })
+        );
+    }
+
+    #[test]
+    fn source_map_service_preserves_generated_origin_reason_as_secondary_anchor() {
+        let source_id = source_id(1);
+        let origin = GeneratedSpanOrigin::new(
+            GeneratedSpanAnchor::Range(SourceRange {
+                source_id,
+                start: 1,
+                end: 2,
+            }),
+            "synthetic recovery whitespace",
+        )
+        .unwrap();
+        let service = RetainedSourceMapService::new()
+            .with_line_map(LineMap::with_source(source_id, "abc"))
+            .with_preprocess_map(PreprocessMap::new(
+                source_id,
+                " ",
+                vec![PreprocessSegment::SyntheticWhitespace {
+                    lexical: TextRange { start: 0, end: 1 },
+                    anchor: SourceAnchor::Generated(origin.clone()),
+                }],
+            ));
+
+        assert_eq!(
+            service.source_range_for_lexical(source_id, TextRange { start: 0, end: 1 }),
+            Ok(MappedSourceRange {
+                primary: SourceRange {
+                    source_id,
+                    start: 1,
+                    end: 2,
+                },
+                secondary: vec![SourceAnchor::Generated(origin)],
+                original_input: None,
+                kind: MappedSourceRangeKind::Degraded,
+            })
+        );
+    }
+
+    #[test]
+    fn source_map_service_maps_generated_point_origin_to_zero_length_primary_range() {
+        let source_id = source_id(1);
+        let origin = GeneratedSpanOrigin::new(
+            GeneratedSpanAnchor::Point {
+                source_id,
+                offset: 2,
+            },
+            "implicit insertion point",
+        )
+        .unwrap();
+        let service = RetainedSourceMapService::new()
+            .with_line_map(LineMap::with_source(source_id, "abc"))
+            .with_preprocess_map(PreprocessMap::new(
+                source_id,
+                " ",
+                vec![PreprocessSegment::SyntheticWhitespace {
+                    lexical: TextRange { start: 0, end: 1 },
+                    anchor: SourceAnchor::Generated(origin.clone()),
+                }],
+            ));
+
+        assert_eq!(
+            service.source_range_for_lexical(source_id, TextRange { start: 0, end: 1 }),
+            Ok(MappedSourceRange {
+                primary: SourceRange {
+                    source_id,
+                    start: 2,
+                    end: 2,
+                },
+                secondary: vec![SourceAnchor::Generated(origin)],
+                original_input: None,
+                kind: MappedSourceRangeKind::Degraded,
+            })
+        );
+    }
+
+    #[test]
+    fn source_map_service_attach_generated_span_preserves_origin_reason() {
+        let source_id = source_id(1);
+        let service =
+            RetainedSourceMapService::new().with_line_map(LineMap::with_source(source_id, "abc"));
+        let origin = GeneratedSpanOrigin::new(
+            GeneratedSpanAnchor::Range(SourceRange {
+                source_id,
+                start: 1,
+                end: 2,
+            }),
+            "implicit obligation",
+        )
+        .unwrap();
+
+        assert_eq!(
+            service.attach_generated_span(origin.clone()),
+            Ok(SourceAnchor::Generated(origin))
+        );
+
+        let point_origin = GeneratedSpanOrigin::new(
+            GeneratedSpanAnchor::Point {
+                source_id,
+                offset: 0,
+            },
+            "implicit insertion point",
+        )
+        .unwrap();
+        assert_eq!(
+            service.attach_generated_span(point_origin.clone()),
+            Ok(SourceAnchor::Generated(point_origin))
+        );
+    }
+
+    #[test]
+    fn generated_span_origin_requires_reason() {
+        let source_id = source_id(1);
+
+        assert_eq!(
+            GeneratedSpanOrigin::new(
+                GeneratedSpanAnchor::Point {
+                    source_id,
+                    offset: 0,
+                },
+                "",
+            ),
+            Err(SourceMapError::GeneratedSpanWithoutOriginReason)
+        );
+        assert_eq!(
+            GeneratedSpanOrigin::new(
+                GeneratedSpanAnchor::Range(SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 0,
+                }),
+                " \t\n",
+            ),
+            Err(SourceMapError::GeneratedSpanWithoutOriginReason)
+        );
+    }
+
+    #[test]
+    fn source_map_service_attach_generated_span_rejects_invalid_origin() {
+        let primary_source_id = source_id(1);
+        let unknown_source_id = source_id(2);
+        let service = RetainedSourceMapService::new()
+            .with_line_map(LineMap::with_source(primary_source_id, "abc"));
+        let unknown_origin = GeneratedSpanOrigin::new(
+            GeneratedSpanAnchor::Range(SourceRange {
+                source_id: unknown_source_id,
+                start: 0,
+                end: 0,
+            }),
+            "implicit obligation",
+        )
+        .unwrap();
+        let malformed_reason = GeneratedSpanOrigin {
+            anchor: GeneratedSpanAnchor::Point {
+                source_id: primary_source_id,
+                offset: 0,
+            },
+            reason: " ".to_owned(),
+        };
+
+        assert_eq!(
+            service.attach_generated_span(unknown_origin),
+            Err(SourceMapError::UnknownSourceId {
+                source_id: unknown_source_id,
+            })
+        );
+        assert_eq!(
+            service.attach_generated_span(malformed_reason),
+            Err(SourceMapError::GeneratedSpanWithoutOriginReason)
+        );
+    }
+
+    #[test]
+    fn source_map_service_reports_unknown_missing_maps_and_invalid_ranges() {
+        let primary_source_id = source_id(1);
+        let unknown_source_id = source_id(2);
+        let service = RetainedSourceMapService::new()
+            .with_line_map(LineMap::with_source(primary_source_id, "aβ"));
+
+        assert_eq!(
+            service.validate_range(SourceRange {
+                source_id: unknown_source_id,
+                start: 0,
+                end: 0,
+            }),
+            Err(SourceMapError::UnknownSourceId {
+                source_id: unknown_source_id,
+            })
+        );
+        assert_eq!(
+            service.original_range_for_loaded(primary_source_id, TextRange { start: 0, end: 1 }),
+            Err(SourceMapError::MissingLoadingMapSegment {
+                source_id: primary_source_id,
+                range: TextRange { start: 0, end: 1 },
+            })
+        );
+        assert_eq!(
+            service.source_range_for_lexical(primary_source_id, TextRange { start: 0, end: 1 }),
+            Err(SourceMapError::MissingPreprocessSegment {
+                source_id: primary_source_id,
+                range: TextRange { start: 0, end: 1 },
+            })
+        );
+        assert_eq!(
+            service.validate_range(SourceRange {
+                source_id: primary_source_id,
+                start: 2,
+                end: 2,
+            }),
+            Err(SourceMapError::OffsetNotUtf8Boundary {
+                source_id: primary_source_id,
+                offset: 2,
+            })
+        );
+    }
+
+    #[test]
+    fn source_map_service_forwards_line_column_errors() {
+        let primary_source_id = source_id(1);
+        let unknown_source_id = source_id(2);
+        let service = RetainedSourceMapService::new()
+            .with_line_map(LineMap::with_source(primary_source_id, "abc"));
+
+        assert_eq!(
+            service.line_column(SourceRange {
+                source_id: unknown_source_id,
+                start: 0,
+                end: 0,
+            }),
+            Err(SourceMapError::UnknownSourceId {
+                source_id: unknown_source_id,
+            })
+        );
+        assert_eq!(
+            service.line_column(SourceRange {
+                source_id: primary_source_id,
+                start: 2,
+                end: 4,
+            }),
+            Err(SourceMapError::RangeOutsideSourceText {
+                range: SourceRange {
+                    source_id: primary_source_id,
+                    start: 2,
+                    end: 4,
+                },
+                source_len: 3,
+            })
+        );
+    }
+
+    #[test]
+    fn source_map_service_forwards_loading_map_errors() {
+        let source_id = source_id(1);
+        let service = RetainedSourceMapService::new()
+            .with_line_map(LineMap::with_source(source_id, "alpha\nbeta"))
+            .with_loading_map(crlf_loading_map(source_id));
+        let gap_service = RetainedSourceMapService::new()
+            .with_line_map(LineMap::with_source(source_id, "abcd"))
+            .with_loading_map(LoadingMap::new(
+                source_id,
+                "abcd",
+                open_buffer_origin(),
+                vec![
+                    LoadingMapSegment::Original {
+                        loaded: TextRange { start: 0, end: 1 },
+                        original: TextRange { start: 0, end: 1 },
+                    },
+                    LoadingMapSegment::Original {
+                        loaded: TextRange { start: 3, end: 4 },
+                        original: TextRange { start: 3, end: 4 },
+                    },
+                ],
+            ));
+
+        assert_eq!(
+            service.original_range_for_loaded(source_id, TextRange { start: 3, end: 2 }),
+            Err(SourceMapError::ReversedRange)
+        );
+        assert_eq!(
+            service.original_range_for_loaded(source_id, TextRange { start: 9, end: 12 }),
+            Err(SourceMapError::RangeOutsideLoadedText {
+                source_id,
+                range: TextRange { start: 9, end: 12 },
+                loaded_len: 10,
+            })
+        );
+        assert_eq!(
+            gap_service.original_range_for_loaded(source_id, TextRange { start: 0, end: 4 }),
+            Err(SourceMapError::MissingLoadingMapSegment {
+                source_id,
+                range: TextRange { start: 1, end: 1 },
+            })
+        );
+    }
+
+    #[test]
+    fn source_map_service_forwards_preprocess_map_errors() {
+        let source_id = source_id(1);
+        let service = RetainedSourceMapService::new()
+            .with_line_map(LineMap::with_source(
+                source_id,
+                "abcdefghijklmnopqrstuvwxyz",
+            ))
+            .with_preprocess_map(comment_synthetic_preprocess_map(source_id));
+        let gap_service = RetainedSourceMapService::new()
+            .with_line_map(LineMap::with_source(source_id, "abcd"))
+            .with_preprocess_map(PreprocessMap::new(
+                source_id,
+                "abcd",
+                vec![
+                    PreprocessSegment::Original {
+                        lexical: TextRange { start: 0, end: 1 },
+                        source: SourceRange {
+                            source_id,
+                            start: 0,
+                            end: 1,
+                        },
+                    },
+                    PreprocessSegment::Original {
+                        lexical: TextRange { start: 3, end: 4 },
+                        source: SourceRange {
+                            source_id,
+                            start: 3,
+                            end: 4,
+                        },
+                    },
+                ],
+            ));
+
+        assert_eq!(
+            service.source_range_for_lexical(source_id, TextRange { start: 4, end: 3 }),
+            Err(SourceMapError::ReversedRange)
+        );
+        assert_eq!(
+            service.source_range_for_lexical(source_id, TextRange { start: 0, end: 11 }),
+            Err(SourceMapError::RangeOutsideLexicalText {
+                source_id,
+                range: TextRange { start: 0, end: 11 },
+                lexical_len: 10,
+            })
+        );
+        assert_eq!(
+            gap_service.source_range_for_lexical(source_id, TextRange { start: 0, end: 4 }),
+            Err(SourceMapError::MissingPreprocessSegment {
+                source_id,
+                range: TextRange { start: 1, end: 1 },
+            })
+        );
+    }
+
     fn line_map(source: &str) -> LineMap {
         LineMap::with_source(source_id(1), source)
+    }
+
+    fn generated_anchor(
+        source_id: SourceId,
+        start: usize,
+        end: usize,
+        reason: &str,
+    ) -> SourceAnchor {
+        SourceAnchor::Generated(
+            GeneratedSpanOrigin::new(
+                GeneratedSpanAnchor::Range(SourceRange {
+                    source_id,
+                    start,
+                    end,
+                }),
+                reason,
+            )
+            .expect("test generated spans have reasons"),
+        )
     }
 
     fn crlf_loading_map(source_id: SourceId) -> LoadingMap {

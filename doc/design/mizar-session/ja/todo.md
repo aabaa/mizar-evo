@@ -81,8 +81,8 @@
    - テスト: 除去コメントが保持範囲に対応付く、除去コメントをまたぐ字句範囲が複合対応付けになる、合成空白が主たるユーザー範囲にならない。
    - 依存: 6。仕様: [source_map.md](../en/source_map.md) "Preprocess Map", "Lexical-to-Source Mapping"。
 
-8. **`SourceMapService` と生成スパン。** [ ]
-   - `MappedSourceRange`（主たる `SourceRange` + 二次アンカー群）を、読み込み/字句の対応付けの複合返り値型として定義する。
+8. **`SourceMapService` と生成スパン。** [x]
+   - `MappedSourceRange`（主たる `SourceRange` + 二次アンカー群 + loaded-to-original の `original_input` バイト範囲）を、読み込み/字句の対応付けの複合返り値型として定義する。
    - `SourceMapService` trait（`line_column`, `original_range_for_loaded`, `source_range_for_lexical`, `attach_generated_span`, `validate_range`）と、保持されたマップ上の具体実装を定義する。
    - 理由必須の生成スパン起点（`GeneratedSpanOrigin`）を追加する。
    - テスト: 代表入力に対する各 trait メソッド、複合対応付けは主アンカー + 二次アンカーを返す、起点の無い生成スパンは拒否される。
@@ -160,6 +160,7 @@
 ```text
 cargo test -p mizar-session
 cargo test -p mizar-test
+cargo clippy -p mizar-session --all-targets -- -D warnings
 ```
 
 タスク 4 は `LineMap` / `SourceRange` の面を変えるので、以下も実行する:

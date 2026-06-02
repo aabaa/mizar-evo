@@ -159,7 +159,22 @@ pub enum PreprocessSegment {
 pub enum SourceAnchor {
     Range(SourceRange),
     Point { source_id: SourceId, offset: usize },
-    Generated,
+    Generated(GeneratedSpanOrigin),
+}
+
+pub struct GeneratedSpanOrigin {
+    /* private fields */
+}
+
+impl GeneratedSpanOrigin {
+    pub fn new(anchor: GeneratedSpanAnchor, reason: impl Into<String>) -> Result<Self, SourceMapError>;
+    pub fn anchor(&self) -> GeneratedSpanAnchor;
+    pub fn reason(&self) -> &str;
+}
+
+pub enum GeneratedSpanAnchor {
+    Range(SourceRange),
+    Point { source_id: SourceId, offset: usize },
 }
 
 pub enum CommentKind {
@@ -180,12 +195,39 @@ pub enum LexicalSourceMappingKind {
     Degraded,
 }
 
+pub struct MappedSourceRange {
+    pub primary: SourceRange,
+    pub secondary: Vec<SourceAnchor>,
+    pub original_input: Option<TextRange>,
+    pub kind: MappedSourceRangeKind,
+}
+
+pub enum MappedSourceRangeKind {
+    Exact,
+    Composite,
+    Degraded,
+}
+
 pub trait SourceMapService {
     fn line_column(&self, range: SourceRange) -> Result<(LineColumn, LineColumn), SourceMapError>;
     fn original_range_for_loaded(&self, source_id: SourceId, loaded: TextRange) -> Result<MappedSourceRange, SourceMapError>;
     fn source_range_for_lexical(&self, source_id: SourceId, lexical: TextRange) -> Result<MappedSourceRange, SourceMapError>;
-    fn attach_generated_span(&self, origin: GeneratedSpanOrigin) -> SourceAnchor;
+    fn attach_generated_span(&self, origin: GeneratedSpanOrigin) -> Result<SourceAnchor, SourceMapError>;
     fn validate_range(&self, range: SourceRange) -> Result<(), SourceMapError>;
+}
+
+pub struct RetainedSourceMapService {
+    /* private fields */
+}
+
+impl RetainedSourceMapService {
+    pub fn new() -> Self;
+    pub fn insert_line_map(&mut self, line_map: LineMap);
+    pub fn insert_loading_map(&mut self, loading_map: LoadingMap);
+    pub fn insert_preprocess_map(&mut self, preprocess_map: PreprocessMap);
+    pub fn with_line_map(self, line_map: LineMap) -> Self;
+    pub fn with_loading_map(self, loading_map: LoadingMap) -> Self;
+    pub fn with_preprocess_map(self, preprocess_map: PreprocessMap) -> Self;
 }
 ```
 
@@ -223,9 +265,9 @@ Ranges must:
 
 ### Loading Map
 
-`LoadingMap` relates normalized `LoadedSource.text` to the source-loading input before BOM stripping or newline normalization. For disk sources, `original` ranges are byte offsets into the original file bytes after UTF-8 validation. For open buffers, `original` ranges are byte offsets into the editor-provided UTF-8 text; the LSP bridge then converts those byte offsets to protocol UTF-16 positions. Generated sources can carry their generated origin here; anchoring generated text to source locations is introduced with the later anchor support.
+`LoadingMap` relates normalized `LoadedSource.text` to the source-loading input before BOM stripping or newline normalization. For disk sources, `original` ranges are byte offsets into the original file bytes after UTF-8 validation. For open buffers, `original` ranges are byte offsets into the editor-provided UTF-8 text; the LSP bridge then converts those byte offsets to protocol UTF-16 positions. Generated source locations are represented through `SourceAnchor::Generated` and `GeneratedSpanOrigin`, which preserve the best available source anchor and reason.
 
-When a leading UTF-8 BOM is stripped, the map records a `RemovedLeadingBom` segment for original byte range `[0, 3)` and the first `Original` loaded segment starts at loaded offset `0` and original byte offset `3`. Source loading may omit `LoadingMap` only when the loaded text is offset-identical to the source-loading input. When a map is retained for offset-identical text, `LoadingMap::identity` represents the relation with one `Original` segment.
+When a leading UTF-8 BOM is stripped, the map records a `RemovedLeadingBom` segment for original byte range `[0, 3)` and the first `Original` loaded segment starts at loaded offset `0` and original byte offset `3`. Source loading may omit `LoadingMap` only when the loaded text is offset-identical to the source-loading input. The retained `SourceMapService` requires a retained map for loaded-to-original conversion; when callers want service-level conversion for offset-identical text, `LoadingMap::identity` represents the relation with one `Original` segment.
 
 `LoadingMap::new` records caller-supplied segments without full structural validation. Source loaders that construct these maps are responsible for preserving the segment invariants: loaded ranges are ordered and non-overlapping; `Original` segments have equal loaded/original byte lengths; `NormalizedNewline` segments represent CRLF-to-LF normalization, normally loaded length 1 and original length 2; `RemovedLeadingBom` represents only the leading UTF-8 BOM original range `[0, 3)`; and every mapped loaded byte range is covered by a segment. Tasks 14-15 should add construction helpers or loader-side checks for these invariants when full source loading is implemented.
 
@@ -235,7 +277,7 @@ When a leading UTF-8 BOM is stripped, the map records a `RemovedLeadingBom` segm
 
 Original segments map lexical ranges back to source ranges. Removed comment segments preserve ordinary and doc-comment locations even when comments are absent from lexical input. Synthetic whitespace segments represent text inserted to keep token separation after comment removal or recovery.
 
-`PreprocessMap::new` records caller-supplied segments without full structural validation, mirroring the loading-map policy. Mapping APIs still validate the requested `SourceId`, lexical bounds, and any segment or anchor source ids they touch. `LexicalSourceMapping` is the task-7 mapping result: `primary` is the best user source range when one exists, `anchors` preserve adjacent, comment, or generated anchors, and `kind` distinguishes exact, composite, and degraded mappings. Detailed generated-span origins and the retained `SourceMapService` composite type are introduced by task 8.
+`PreprocessMap::new` records caller-supplied segments without full structural validation, mirroring the loading-map policy. Mapping APIs still validate the requested `SourceId`, lexical bounds, and any segment or anchor source ids they touch. `LexicalSourceMapping` is the lower-level mapping result: `primary` is the best user source range when one exists, `anchors` preserve adjacent, comment, or generated anchors, and `kind` distinguishes exact, composite, and degraded mappings. `SourceMapService` converts retained loaded and lexical maps into `MappedSourceRange`, preserving the same exact/composite/degraded distinction while separating the primary range from secondary anchors. For loaded-to-original mapping, `primary` stays a validated range in loaded source text and `original_input` carries the corresponding source-loading input byte range.
 
 The frontend owns snapshot retention and service access for this map. It may reuse or mirror the lightweight preprocess map produced by the lexer helper when constructing the retained session `PreprocessMap`. Later phases consume it to attach diagnostics and syntax nodes to original source locations.
 
@@ -248,7 +290,7 @@ Generated spans are used when a compiler-created item has no exact source range,
 - generated proof replay steps;
 - documentation or extraction records derived from multiple inputs.
 
-Generated spans must include an origin that points to the best available source anchor and a reason. Diagnostics may display generated spans as secondary information, but primary diagnostics should prefer original source ranges when available.
+Generated spans must include an origin that points to the best available source anchor and a non-empty reason. `GeneratedSpanOrigin::new` and `SourceMapService::attach_generated_span` reject generated spans without that reason. Diagnostics may display generated spans as secondary information, but primary diagnostics should prefer original source ranges when available.
 
 ## Algorithm / Logic
 
@@ -263,9 +305,9 @@ LSP conversion must apply the protocol's UTF-16 position rules in the `mizar-lsp
 
 ### Loaded-to-Original Mapping
 
-1. Use the `LoadingMap` for the `SourceId` when one exists.
-2. If there is no `LoadingMap`, treat loaded-text offsets as identity offsets into the source-loading input.
-3. If a loaded range crosses a normalized segment, return a degraded `LoadedToOriginalRange` over the enclosing original byte range. The later `SourceMapService` composite return type may attach secondary anchors when preprocess maps and generated spans are available.
+1. Use the retained `LoadingMap` for the `SourceId`.
+2. If the retained service has no `LoadingMap` for that `SourceId`, return `SourceMapError::MissingLoadingMapSegment`. Callers that need identity conversion should retain a `LoadingMap::identity`.
+3. If a loaded range crosses a normalized segment, return a degraded `LoadedToOriginalRange` over the enclosing original byte range. The retained `SourceMapService` exposes this as a degraded `MappedSourceRange` whose `primary` remains the loaded source range and whose `original_input` records the original input byte range.
 4. For open buffers, return editor-text byte offsets; the LSP bridge performs the final UTF-16 conversion.
 
 ### Lexical-to-Source Mapping

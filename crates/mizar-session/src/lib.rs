@@ -8,8 +8,10 @@ pub use ids::{
 };
 pub use source::{NormalizedPath, SourcePathError, normalize_source_path};
 pub use source_map::{
-    CommentKind, DocumentUri, LexicalSourceMapping, LexicalSourceMappingKind, LineColumn,
-    LineColumnRange, LineMap, LoadedToOriginalRange, LoadedToOriginalRangeKind, LoadingMap,
-    LoadingMapSegment, LoadingOrigin, LspDocumentVersion, PreprocessMap, PreprocessSegment,
-    SourceAnchor, SourceMapError, SourceRange, TextRange,
+    CommentKind, DocumentUri, GeneratedSpanAnchor, GeneratedSpanOrigin, LexicalSourceMapping,
+    LexicalSourceMappingKind, LineColumn, LineColumnRange, LineMap, LoadedToOriginalRange,
+    LoadedToOriginalRangeKind, LoadingMap, LoadingMapSegment, LoadingOrigin, LspDocumentVersion,
+    MappedSourceRange, MappedSourceRangeKind, PreprocessMap, PreprocessSegment,
+    RetainedSourceMapService, SourceAnchor, SourceMapError, SourceMapService, SourceRange,
+    TextRange,
 };

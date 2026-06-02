@@ -81,8 +81,8 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
    - Tests: removed comments map to preserved ranges; lexical range spanning a removed comment yields a composite mapping; synthetic whitespace is not a primary user range.
    - Depends on: 6. Spec: [source_map.md](./source_map.md) "Preprocess Map", "Lexical-to-Source Mapping".
 
-8. **`SourceMapService` and generated spans.** [ ]
-   - Define `MappedSourceRange` (a primary `SourceRange` plus secondary anchors) as the composite return type for loaded/lexical mapping.
+8. **`SourceMapService` and generated spans.** [x]
+   - Define `MappedSourceRange` (a primary `SourceRange`, secondary anchors, and loaded-to-original `original_input` bytes) as the composite return type for loaded/lexical mapping.
    - Define the `SourceMapService` trait (`line_column`, `original_range_for_loaded`, `source_range_for_lexical`, `attach_generated_span`, `validate_range`) and a concrete implementation over the retained maps.
    - Add generated-span origins (`GeneratedSpanOrigin`) with a required reason.
    - Tests: each trait method on representative inputs; composite mapping returns primary plus secondary anchors; generated span without an origin is rejected.
@@ -160,6 +160,7 @@ After each task, run:
 ```text
 cargo test -p mizar-session
 cargo test -p mizar-test
+cargo clippy -p mizar-session --all-targets -- -D warnings
 ```
 
 Task 4 changes the `LineMap` / `SourceRange` surface, so also run:
