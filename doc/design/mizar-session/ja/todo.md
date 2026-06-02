@@ -158,12 +158,52 @@
     - テスト: current マークは他のリースが無くても回収を防ぐ、最後のリース解放で回収される、フェーズ出力リースは解放まで回収を阻む、欠落スナップショットを current にしようとすると `RetentionError` になる、`CollectionSummary` が current/リースでのスキップ数と古いリース診断を報告する、回収はアーティファクト/キャッシュを削除しない。
     - 依存: 17。仕様: [retention.md](../en/retention.md) "Collection", "Current Marks", "Collection Summary"。
 
-## 横断的フォローアップ
+### 横断フォローアップ前のモジュール全体メンテナンス
 
-- [ ] 実装中に API が変わった場合は `ja/` のモジュール仕様を同期する。
-- [ ] クレート全体の決定性プロパティテスト: 同一の正準入力 ⇒ 同一の `BuildSnapshotId` と同一のソース範囲変換が、スケジューリング順に依らず得られる。
-- [ ] スナップショットリース計上の堅牢化: `SnapshotRegistry::acquire_lease` の lease id 割り当てを、`create_snapshot` と同様に registry mutex の外へ出すべきかを決める。重い allocator やカスタム allocator の影響範囲を小さくするため。
-- [ ] スナップショットリース計上の堅牢化: `SessionIdAllocator` は一意な lease id を発行する前提だが、registry state 側にも duplicate lease id の防御チェックまたは debug assertion を追加するかを決める。
+19. **実装リファクタリングパス。** [ ]
+    - 最初の実装パスが完了した状態で、`ids`、`source_map`、`snapshot`、`source`、`retention` をレビューする。
+    - 明確なバグまたは仕様不一致が見つからない限り、公開 API と挙動は安定させる。
+    - 大きな書き換えよりも、小さな局所抽出、共有テスト fixture、命名整理を優先する。
+    - 仕様との対応関係を見えにくくしない範囲で、タスク実装中に生じた重複を取り除く。
+    - テスト: 挙動保持のリファクタに必要な assertion だけ更新し、既存モジュールテストを緑に保つ。
+    - 依存: 18。仕様: mizar-session の全モジュール仕様。
+
+20. **ソースと仕様の対応関係監査。** [ ]
+    - `ids.md`、`source_map.md`、`snapshot.md`、`source.md`、`retention.md` の public API、error variant、タスク要件から、実装ソースとテストへの軽量な traceability を確認する。
+    - 未実装、古い仕様記述、未規定の挙動、テスト不足があれば、広い変更を監査に混ぜず follow-up task として記録する。
+    - まず英語の正典仕様を確認し、その後、日本語 companion が同じ API と挙動上の約束を持っているか確認する。
+    - テスト: 監査で小さく安全なギャップが見つかった場合を除き、product test の追加は想定しない。編集があれば標準 verification command を実行する。
+    - 依存: 19。仕様: mizar-session の全モジュール仕様と本 TODO。
+
+## 横断的フォローアップタスク
+
+21. **英日ドキュメント同期監査。** [ ]
+    - `doc/design/mizar-session/en/` の英語正典文書と、`doc/design/mizar-session/ja/` の日本語 companion をすべて比較する。
+    - タスク 1-20 で導入された API 一覧、タスク状態、用語、リンクを同期する。
+    - 日本語 companion を同じ変更で完全同期できない場合は、そのギャップを明示し、英語正典の該当 section へリンクする。
+    - テスト: documentation-only。リポジトリに既定の formatting/link check コマンドがあれば実行する。
+    - 依存: 20。仕様: リポジトリの documentation policy。
+
+22. **決定性プロパティテスト。** [ ]
+    - 同一の正準入力から、挿入順や scheduling-like な構築順に依らず同一の `BuildSnapshotId` が得られることを、crate-level の決定性テストで補強する。
+    - 等価な保持済み line/loading/preprocess map に対する source-range 変換の決定性を確認する。
+    - 実装詳細ではなく、決定的な public behavior に焦点を絞る。
+    - テスト: property/regression test を追加し、`cargo test -p mizar-session` を実行する。
+    - 依存: 20。仕様: [ids.md](../en/ids.md)、[snapshot.md](../en/snapshot.md)、[source_map.md](../en/source_map.md)。
+
+23. **スナップショットリース割り当て mutex の堅牢化。** [ ]
+    - `SnapshotRegistry::acquire_lease` の lease id 割り当てを、`create_snapshot` と同様に registry mutex の外へ出すべきかを決める。
+    - 変更する場合は、既存の lease count 挙動を維持し、allocator failure が registry state を変更しないようにする。
+    - 変更しない場合は、その理由を [snapshot.md](../en/snapshot.md) または本 TODO に記録する。
+    - テスト: allocator failure が count を変えないこと、繰り返し lease acquisition が一意で reason ごとに計上されること。
+    - 依存: 20。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Lease"。
+
+24. **スナップショットリース duplicate-id 防御。** [ ]
+    - `SessionIdAllocator` は一意な lease id を発行する前提だが、`SnapshotRegistry` state 側にも defensive duplicate-lease-id check または debug assertion を追加するかを決める。
+    - 実装する場合は、duplicate allocation を内部的な allocation/registry error として表し、lease count や current snapshot state を壊さない。
+    - debug assertion のみにする場合は、allocator contract に対してそれで十分な理由を文書化する。
+    - テスト: 挙動が debug assertion の外から観測可能な場合は、custom allocator による duplicate id scenario を追加する。
+    - 依存: 23。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Lease"、[ids.md](../en/ids.md) "Allocator-Issued Id Construction"。
 
 ## Suggested Verification
 

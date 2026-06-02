@@ -158,12 +158,52 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: current mark prevents collection without other leases; releasing the final lease collects; a phase-output lease blocks collection until released; marking a missing snapshot as current surfaces `RetentionError`; `CollectionSummary` reports skipped-for-current and skipped-for-lease counters and stale-lease diagnostics; collection does not delete artifacts/cache.
     - Depends on: 17. Spec: [retention.md](./retention.md) "Collection", "Current Marks", "Collection Summary".
 
-## Cross-Cutting Follow-ups
+### Module-wide maintenance before cross-cutting follow-ups
 
-- [ ] Keep `ja/` module specs in sync if any API changes during implementation.
-- [ ] Determinism property tests across the crate: identical canonical inputs ⇒ identical `BuildSnapshotId` and identical source-range conversions, independent of scheduling order.
-- [ ] Snapshot lease accounting hardening: decide whether `SnapshotRegistry::acquire_lease` should allocate lease ids outside the registry mutex, matching `create_snapshot` and reducing the blast radius of heavy or custom allocators.
-- [ ] Snapshot lease accounting hardening: decide whether to add a defensive duplicate-lease-id check or debug assertion in the registry state, even though `SessionIdAllocator` is expected to issue unique lease ids.
+19. **Implementation refactoring pass.** [ ]
+    - Review `ids`, `source_map`, `snapshot`, `source`, and `retention` now that the first implementation pass is complete.
+    - Keep public APIs and behavior stable unless the refactor exposes a clear bug or spec mismatch.
+    - Prefer small local extractions, shared test fixtures, and naming cleanup over broad rewrites.
+    - Remove task-era duplication only when it simplifies the code without obscuring the spec mapping.
+    - Tests: update only where behavior-preserving refactors need better assertions; keep existing module tests green.
+    - Depends on: 18. Spec: all mizar-session module specs.
+
+20. **Source/spec correspondence audit.** [ ]
+    - Build a lightweight traceability check from each public API, error variant, and task requirement in `ids.md`, `source_map.md`, `snapshot.md`, `source.md`, and `retention.md` to the implementing source/tests.
+    - Record any missing implementation, stale spec text, underspecified behavior, or missing tests as follow-up tasks rather than mixing broad changes into the audit.
+    - Check the English canonical specs first, then verify that Japanese companion specs carry the same API and behavioral commitments.
+    - Tests: no new product tests expected unless the audit finds a small, safe gap; run the standard verification commands after any edits.
+    - Depends on: 19. Spec: all mizar-session module specs and this TODO.
+
+## Cross-Cutting Follow-up Tasks
+
+21. **Bilingual documentation synchronization audit.** [ ]
+    - Compare every English canonical document under `doc/design/mizar-session/en/` with its Japanese companion under `doc/design/mizar-session/ja/`.
+    - Synchronize API lists, task statuses, terminology, and links introduced during tasks 1-20.
+    - If a Japanese companion cannot be fully synchronized in the same change, mark the gap explicitly and link back to the canonical English section.
+    - Tests: documentation-only; run formatting or link checks if the repository has an established command.
+    - Depends on: 20. Spec: repository documentation policy.
+
+22. **Determinism property tests.** [ ]
+    - Add crate-level determinism coverage for identical canonical inputs producing identical `BuildSnapshotId` values independent of insertion order or scheduling-like construction order.
+    - Add source-range conversion determinism checks for equivalent retained line/loading/preprocess maps.
+    - Keep the tests focused on deterministic public behavior rather than implementation details.
+    - Tests: add the property/regression tests and run `cargo test -p mizar-session`.
+    - Depends on: 20. Spec: [ids.md](./ids.md), [snapshot.md](./snapshot.md), [source_map.md](./source_map.md).
+
+23. **Snapshot lease allocation mutex hardening.** [ ]
+    - Decide whether `SnapshotRegistry::acquire_lease` should allocate lease ids outside the registry mutex, matching `create_snapshot`.
+    - If changed, preserve existing lease-count behavior and make allocator failure leave registry state untouched.
+    - If not changed, document the rationale in [snapshot.md](./snapshot.md) or this TODO.
+    - Tests: allocator failure does not change counts; repeated lease acquisition remains unique and counted by reason.
+    - Depends on: 20. Spec: [snapshot.md](./snapshot.md) "Snapshot Lease".
+
+24. **Snapshot lease duplicate-id defense.** [ ]
+    - Decide whether to add a defensive duplicate-lease-id check or debug assertion in `SnapshotRegistry` state, even though `SessionIdAllocator` is expected to issue unique lease ids.
+    - If implemented, surface duplicate allocation as an internal allocation/registry error without corrupting lease counts or current snapshot state.
+    - If only a debug assertion is kept, document why that is sufficient for the allocator contract.
+    - Tests: custom allocator duplicate id scenario if the behavior is observable outside debug assertions.
+    - Depends on: 23. Spec: [snapshot.md](./snapshot.md) "Snapshot Lease", [ids.md](./ids.md) "Allocator-Issued Id Construction".
 
 ## Suggested Verification
 
