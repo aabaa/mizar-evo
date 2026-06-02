@@ -38,7 +38,8 @@ pub enum SourceOriginInput {
     },
     OpenBuffer {
         uri: DocumentUri,
-        version: LspDocumentVersion,
+        expected_version: LspDocumentVersion,
+        actual_version: LspDocumentVersion,
         text: Arc<str>,
     },
     Generated {
@@ -60,6 +61,7 @@ pub struct LoadedSource {
     pub origin: SourceOrigin,
     pub line_map: LineMap,
     pub loading_map: Option<LoadingMap>,
+    pub generated_anchor: Option<SourceAnchor>,
 }
 
 pub trait SourceLoader {
@@ -185,6 +187,16 @@ impl DiskSourceLoader {
 
     pub fn package_root(&self) -> &Path {
         &self.package_root
+    }
+
+    fn normalize_open_buffer_uri(
+        &self,
+        uri: &DocumentUri,
+    ) -> Result<NormalizedPath, SourceLoadError> {
+        let path = file_path_from_document_uri(uri)
+            .ok_or_else(|| SourceLoadError::UnmappedOpenBufferUri { uri: uri.clone() })?;
+        normalize_source_path(&self.package_root, &path)
+            .map_err(|_| SourceLoadError::UnmappedOpenBufferUri { uri: uri.clone() })
     }
 }
 
@@ -370,60 +382,129 @@ impl SourceLoader for DiskSourceLoader {
         input: SourceInput,
         ids: &dyn SessionIdAllocator,
     ) -> Result<LoadedSource, SourceLoadError> {
-        let SourceInput {
-            package_id,
-            module_path,
-            normalized_path: _,
-            edition,
-            origin,
-        } = input;
+        match input.origin {
+            SourceOriginInput::Disk { path } => {
+                let normalized_path = self.normalize_path(&self.package_root, &path)?;
+                let read_path = self.package_root.join(normalized_path.as_str());
+                let bytes = fs::read(&read_path).map_err(|error| {
+                    SourceLoadError::UnreadableSourceFile {
+                        path: read_path.clone(),
+                        kind: error.kind(),
+                    }
+                })?;
+                let loaded_text = normalize_disk_source_bytes(&read_path, &bytes)?;
+                let source_hash = self.hash_text(&loaded_text.text);
+                let source_id = allocate_source_id(snapshot, ids)?;
+                let line_map = LineMap::new(source_id, &loaded_text.text);
+                let loading_map = loaded_text.loading_segments.map(|segments| {
+                    LoadingMap::new(
+                        source_id,
+                        &loaded_text.text,
+                        LoadingOrigin::DiskBytes {
+                            normalized_path: normalized_path.clone(),
+                        },
+                        segments,
+                    )
+                });
+                let text = Arc::from(loaded_text.text);
 
-        let SourceOriginInput::Disk { path } = origin else {
-            let origin = match origin {
-                SourceOriginInput::Disk { .. } => SourceOriginKind::Disk,
-                SourceOriginInput::OpenBuffer { .. } => SourceOriginKind::OpenBuffer,
-                SourceOriginInput::Generated { .. } => SourceOriginKind::Generated,
-            };
-            return Err(SourceLoadError::UnsupportedSourceOrigin { origin });
-        };
+                Ok(LoadedSource {
+                    source_id,
+                    package_id: input.package_id,
+                    module_path: input.module_path,
+                    normalized_path,
+                    text,
+                    source_hash,
+                    edition: input.edition,
+                    origin: SourceOrigin::Disk,
+                    line_map,
+                    loading_map,
+                    generated_anchor: None,
+                })
+            }
+            SourceOriginInput::OpenBuffer {
+                uri,
+                expected_version,
+                actual_version,
+                text,
+            } => {
+                if expected_version < 0 {
+                    return Err(SourceLoadError::StaleLspDocumentVersion {
+                        expected: 0,
+                        actual: expected_version,
+                    });
+                }
+                if actual_version != expected_version {
+                    return Err(SourceLoadError::StaleLspDocumentVersion {
+                        expected: expected_version,
+                        actual: actual_version,
+                    });
+                }
 
-        let normalized_path = self.normalize_path(&self.package_root, &path)?;
-        let read_path = self.package_root.join(normalized_path.as_str());
-        let bytes =
-            fs::read(&read_path).map_err(|error| SourceLoadError::UnreadableSourceFile {
-                path: read_path.clone(),
-                kind: error.kind(),
-            })?;
-        let loaded_text = normalize_disk_source_bytes(&read_path, &bytes)?;
-        let source_hash = self.hash_text(&loaded_text.text);
-        let source_id = ids
-            .next_source_id(snapshot)
-            .map_err(|error| SourceLoadError::SourceIdAllocation { error })?;
-        let line_map = LineMap::new(source_id, &loaded_text.text);
-        let loading_map = loaded_text.loading_segments.map(|segments| {
-            LoadingMap::new(
-                source_id,
-                &loaded_text.text,
-                LoadingOrigin::DiskBytes {
-                    normalized_path: normalized_path.clone(),
-                },
-                segments,
-            )
-        });
-        let text = Arc::from(loaded_text.text);
+                let normalized_path = self.normalize_open_buffer_uri(&uri)?;
+                let loaded_text = normalize_source_text(&text);
+                let source_hash = self.hash_text(&loaded_text.text);
+                let source_id = allocate_source_id(snapshot, ids)?;
+                let line_map = LineMap::new(source_id, &loaded_text.text);
+                let loading_map = loaded_text.loading_segments.map(|segments| {
+                    LoadingMap::new(
+                        source_id,
+                        &loaded_text.text,
+                        LoadingOrigin::OpenBufferText {
+                            uri: uri.clone(),
+                            version: actual_version,
+                        },
+                        segments,
+                    )
+                });
+                let text = Arc::from(loaded_text.text);
 
-        Ok(LoadedSource {
-            source_id,
-            package_id,
-            module_path,
-            normalized_path,
-            text,
-            source_hash,
-            edition,
-            origin: SourceOrigin::Disk,
-            line_map,
-            loading_map,
-        })
+                Ok(LoadedSource {
+                    source_id,
+                    package_id: input.package_id,
+                    module_path: input.module_path,
+                    normalized_path,
+                    text,
+                    source_hash,
+                    edition: input.edition,
+                    origin: SourceOrigin::OpenBuffer {
+                        version: actual_version,
+                    },
+                    line_map,
+                    loading_map,
+                    generated_anchor: None,
+                })
+            }
+            SourceOriginInput::Generated {
+                generator,
+                text,
+                anchor,
+            } => {
+                if generator.as_str().trim().is_empty() {
+                    return Err(SourceLoadError::GeneratedSourceWithoutMetadata {
+                        module_path: input.module_path,
+                    });
+                }
+
+                let source_hash = self.hash_text(&text);
+                let source_id = allocate_source_id(snapshot, ids)?;
+                let line_map = LineMap::new(source_id, &text);
+
+                Ok(LoadedSource {
+                    source_id,
+                    package_id: input.package_id,
+                    module_path: input.module_path,
+                    normalized_path: input.normalized_path,
+                    text,
+                    source_hash,
+                    edition: input.edition,
+                    origin: SourceOrigin::Generated { generator },
+                    line_map,
+                    loading_map: None,
+                    generated_anchor: anchor,
+                })
+            }
+        }
     }
 }
 
@@ -498,7 +579,7 @@ pub fn normalize_source_path(
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct NormalizedDiskText {
+struct NormalizedLoadedText {
     text: String,
     loading_segments: Option<Vec<LoadingMapSegment>>,
 }
@@ -506,10 +587,14 @@ struct NormalizedDiskText {
 fn normalize_disk_source_bytes(
     path: &Path,
     bytes: &[u8],
-) -> Result<NormalizedDiskText, SourceLoadError> {
+) -> Result<NormalizedLoadedText, SourceLoadError> {
     let text = std::str::from_utf8(bytes).map_err(|_| SourceLoadError::InvalidUtf8 {
         path: Some(path.to_owned()),
     })?;
+    Ok(normalize_source_text(text))
+}
+
+fn normalize_source_text(text: &str) -> NormalizedLoadedText {
     let (source_text, original_base, mut segments) =
         if let Some(stripped) = text.strip_prefix(UTF8_BOM) {
             (
@@ -528,10 +613,10 @@ fn normalize_disk_source_bytes(
 
     if !source_text.contains("\r\n") {
         if segments.is_empty() {
-            return Ok(NormalizedDiskText {
+            return NormalizedLoadedText {
                 text: text.to_owned(),
                 loading_segments: None,
-            });
+            };
         }
         segments.push(LoadingMapSegment::Original {
             loaded: TextRange {
@@ -543,17 +628,17 @@ fn normalize_disk_source_bytes(
                 end: original_base + source_text.len(),
             },
         });
-        return Ok(NormalizedDiskText {
+        return NormalizedLoadedText {
             text: source_text.to_owned(),
             loading_segments: Some(segments),
-        });
+        };
     }
 
     let normalized = normalize_crlf_to_lf(source_text, original_base, &mut segments);
-    Ok(NormalizedDiskText {
+    NormalizedLoadedText {
         text: normalized,
         loading_segments: Some(segments),
-    })
+    }
 }
 
 fn normalize_crlf_to_lf(
@@ -616,6 +701,87 @@ fn normalize_crlf_to_lf(
     }
 
     normalized
+}
+
+fn allocate_source_id(
+    snapshot: BuildSnapshotId,
+    ids: &dyn SessionIdAllocator,
+) -> Result<SourceId, SourceLoadError> {
+    ids.next_source_id(snapshot)
+        .map_err(|error| SourceLoadError::SourceIdAllocation { error })
+}
+
+fn file_path_from_document_uri(uri: &str) -> Option<PathBuf> {
+    let rest = uri.strip_prefix("file://")?;
+    let (authority, path) = if rest.starts_with('/') {
+        ("", rest)
+    } else {
+        let slash = rest.find('/')?;
+        rest.split_at(slash)
+    };
+    if authority.contains(['?', '#']) || path.contains(['?', '#']) {
+        return None;
+    }
+    platform_file_path_from_uri_parts(authority, &percent_decode_uri_path(path)?)
+}
+
+#[cfg(windows)]
+fn platform_file_path_from_uri_parts(authority: &str, path: &str) -> Option<PathBuf> {
+    if authority.is_empty() || authority.eq_ignore_ascii_case("localhost") {
+        return Some(PathBuf::from(windows_drive_path_from_uri_path(path)?));
+    }
+
+    let path = path.strip_prefix('/')?;
+    if path.is_empty() {
+        return None;
+    }
+    let mut unc_path = String::from(r"\\");
+    unc_path.push_str(authority);
+    unc_path.push('\\');
+    unc_path.push_str(&path.replace('/', "\\"));
+    Some(PathBuf::from(unc_path))
+}
+
+#[cfg(windows)]
+fn windows_drive_path_from_uri_path(path: &str) -> Option<String> {
+    let path = path.strip_prefix('/')?;
+    let bytes = path.as_bytes();
+    if bytes.len() < 2 || bytes[1] != b':' || !bytes[0].is_ascii_alphabetic() {
+        return None;
+    }
+    Some(path.replace('/', "\\"))
+}
+
+#[cfg(not(windows))]
+fn platform_file_path_from_uri_parts(authority: &str, path: &str) -> Option<PathBuf> {
+    if !authority.is_empty() && !authority.eq_ignore_ascii_case("localhost") {
+        return None;
+    }
+    Some(PathBuf::from(path))
+}
+
+fn percent_decode_uri_path(path: &str) -> Option<String> {
+    let mut decoded = Vec::with_capacity(path.len());
+    let mut bytes = path.bytes();
+    while let Some(byte) = bytes.next() {
+        if byte == b'%' {
+            let high = bytes.next()?;
+            let low = bytes.next()?;
+            decoded.push(hex_value(high)? << 4 | hex_value(low)?);
+        } else {
+            decoded.push(byte);
+        }
+    }
+    String::from_utf8(decoded).ok()
+}
+
+fn hex_value(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
+        _ => None,
+    }
 }
 
 impl SourceLoadError {
@@ -766,14 +932,14 @@ fn is_identifier_continue(ch: char) -> bool {
 mod tests {
     use super::{
         DiskSourceLoader, LoadedSource, NormalizedPath, SourceInput, SourceLoadError, SourceLoader,
-        SourceOriginInput, SourceOriginKind, SourcePathError, hash_text, normalize_path,
-        normalize_source_path, reject_non_canonical_alias,
+        SourceOriginInput, SourceOriginKind, SourcePathError, file_path_from_document_uri,
+        hash_text, normalize_path, normalize_source_path, reject_non_canonical_alias,
     };
     use crate::{
         BuildRequestId, BuildSessionId, BuildSnapshotId, Edition, GeneratedSourceKind, IdError,
         InMemorySessionIdAllocator, LineMap, LoadingMapSegment, LoadingOrigin, ModulePath,
-        PackageId, SessionIdAllocator, SnapshotLeaseId, SourceId, SourceMapId, SourceOrigin,
-        TextRange,
+        PackageId, SessionIdAllocator, SnapshotLeaseId, SourceAnchor, SourceId, SourceMapId,
+        SourceOrigin, SourceRange, TextRange,
     };
     use std::fs;
     use std::io;
@@ -812,7 +978,8 @@ mod tests {
                 snapshot,
                 source_input(SourceOriginInput::OpenBuffer {
                     uri: "file:///absolute/package/src/basic.miz".to_owned(),
-                    version: 1,
+                    expected_version: 1,
+                    actual_version: 1,
                     text: Arc::from(text),
                 }),
                 &ids,
@@ -823,7 +990,8 @@ mod tests {
                 snapshot,
                 source_input(SourceOriginInput::OpenBuffer {
                     uri: "file:///absolute/package/src/basic.miz".to_owned(),
-                    version: 2,
+                    expected_version: 2,
+                    actual_version: 2,
                     text: Arc::from(text),
                 }),
                 &ids,
@@ -857,7 +1025,8 @@ mod tests {
                 snapshot,
                 source_input(SourceOriginInput::OpenBuffer {
                     uri: "file:///absolute/package/src/basic.miz".to_owned(),
-                    version: 4,
+                    expected_version: 4,
+                    actual_version: 4,
                     text: Arc::from(text),
                 }),
                 &ids,
@@ -895,7 +1064,8 @@ mod tests {
         let loader = TextOnlyLoader::default();
         let input = source_input(SourceOriginInput::OpenBuffer {
             uri: "file:///package/src/basic.miz".to_owned(),
-            version: 7,
+            expected_version: 7,
+            actual_version: 7,
             text: Arc::from("environ\nbegin\n"),
         });
 
@@ -1255,29 +1425,327 @@ mod tests {
         ));
     }
 
+    #[cfg(not(windows))]
     #[test]
-    fn disk_source_loader_does_not_preimplement_non_disk_origins() {
-        let package = PackageFixture::new();
-        let loader = DiskSourceLoader::new(package.root());
+    fn document_uri_parser_maps_posix_local_file_uris_and_rejects_remote_authority() {
+        assert_eq!(
+            file_path_from_document_uri("file:///tmp/pkg/src/basic%20case.miz"),
+            Some(PathBuf::from("/tmp/pkg/src/basic case.miz"))
+        );
+        assert_eq!(
+            file_path_from_document_uri("file://localhost/tmp/pkg/src/basic.miz"),
+            Some(PathBuf::from("/tmp/pkg/src/basic.miz"))
+        );
+        assert_eq!(
+            file_path_from_document_uri("file://server/share/pkg/src/basic.miz"),
+            None
+        );
+    }
 
-        let error = loader
+    #[cfg(windows)]
+    #[test]
+    fn document_uri_parser_maps_windows_drive_and_unc_file_uris() {
+        assert_eq!(
+            file_path_from_document_uri("file:///C:/pkg/src/basic%20case.miz"),
+            Some(PathBuf::from(r"C:\pkg\src\basic case.miz"))
+        );
+        assert_eq!(
+            file_path_from_document_uri("file://localhost/C:/pkg/src/basic.miz"),
+            Some(PathBuf::from(r"C:\pkg\src\basic.miz"))
+        );
+        assert_eq!(
+            file_path_from_document_uri("file://server/share/pkg/src/basic.miz"),
+            Some(PathBuf::from(r"\\server\share\pkg\src\basic.miz"))
+        );
+    }
+
+    #[test]
+    fn open_buffer_loader_overrides_disk_when_document_version_matches() {
+        let package = PackageFixture::new();
+        package.write("src/groups/basic.miz", "disk\n");
+        let loader = DiskSourceLoader::new(package.root());
+        let uri = package.file_uri("src/groups/basic.miz");
+
+        let loaded = loader
             .load(
                 snapshot_id(29),
                 source_input(SourceOriginInput::OpenBuffer {
-                    uri: "file:///package/src/basic.miz".to_owned(),
-                    version: 1,
-                    text: Arc::from("environ\n"),
+                    uri: uri.clone(),
+                    expected_version: 5,
+                    actual_version: 5,
+                    text: Arc::from("\u{feff}alpha\r\nbeta\rgamma"),
                 }),
                 &InMemorySessionIdAllocator::new(),
             )
-            .expect_err("disk-only loader should reject open buffers");
+            .unwrap();
+
+        assert_eq!(loaded.text.as_ref(), "alpha\nbeta\rgamma");
+        assert_eq!(loaded.normalized_path, path("src/groups/basic.miz"));
+        assert_eq!(loaded.source_hash, hash_text("alpha\nbeta\rgamma"));
+        assert_ne!(loaded.source_hash, hash_text("disk\n"));
+        assert_eq!(loaded.line_map.line_starts(), &[0, 6]);
+        assert!(matches!(
+            loaded.origin,
+            SourceOrigin::OpenBuffer { version: 5 }
+        ));
+        assert_eq!(loaded.generated_anchor, None);
+        let loading_map = loaded
+            .loading_map
+            .as_ref()
+            .expect("open-buffer BOM/CRLF normalization should emit a loading map");
+        assert_eq!(
+            loading_map.origin,
+            LoadingOrigin::OpenBufferText { uri, version: 5 }
+        );
+        assert_eq!(
+            loading_map.segments,
+            vec![
+                LoadingMapSegment::RemovedLeadingBom {
+                    original: TextRange { start: 0, end: 3 },
+                },
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 0, end: 5 },
+                    original: TextRange { start: 3, end: 8 },
+                },
+                LoadingMapSegment::NormalizedNewline {
+                    loaded: TextRange { start: 5, end: 6 },
+                    original: TextRange { start: 8, end: 10 },
+                },
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 6, end: 16 },
+                    original: TextRange { start: 10, end: 20 },
+                },
+            ]
+        );
+        assert_eq!(
+            loading_map.original_offset_for_loaded(loaded.source_id, 0),
+            Ok(3)
+        );
+        assert_eq!(
+            loading_map.original_offset_for_loaded(loaded.source_id, 5),
+            Ok(8)
+        );
+        assert_eq!(
+            loading_map.original_offset_for_loaded(loaded.source_id, 6),
+            Ok(10)
+        );
+    }
+
+    #[test]
+    fn open_buffer_loader_rejects_stale_document_version_before_source_id_allocation() {
+        let package = PackageFixture::new();
+        package.write("src/groups/basic.miz", "disk\n");
+        let loader = DiskSourceLoader::new(package.root());
+        let allocator = RecordingAllocator::new();
+
+        let error = loader
+            .load(
+                snapshot_id(30),
+                source_input(SourceOriginInput::OpenBuffer {
+                    uri: package.file_uri("src/groups/basic.miz"),
+                    expected_version: 8,
+                    actual_version: 7,
+                    text: Arc::from("open\n"),
+                }),
+                &allocator,
+            )
+            .expect_err("stale open buffer should be rejected");
 
         assert!(matches!(
             error,
-            SourceLoadError::UnsupportedSourceOrigin {
-                origin: SourceOriginKind::OpenBuffer
+            SourceLoadError::StaleLspDocumentVersion {
+                expected: 8,
+                actual: 7
             }
         ));
+        assert!(allocator.source_snapshots().is_empty());
+
+        let disk = loader
+            .load(
+                snapshot_id(30),
+                disk_source_input("src/groups/basic.miz"),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .unwrap();
+        assert_eq!(disk.text.as_ref(), "disk\n");
+    }
+
+    #[test]
+    fn open_buffer_loader_rejects_negative_expected_version_before_source_id_allocation() {
+        let package = PackageFixture::new();
+        package.write("src/groups/basic.miz", "disk\n");
+        let loader = DiskSourceLoader::new(package.root());
+        let allocator = RecordingAllocator::new();
+
+        let error = loader
+            .load(
+                snapshot_id(31),
+                source_input(SourceOriginInput::OpenBuffer {
+                    uri: package.file_uri("src/groups/basic.miz"),
+                    expected_version: -1,
+                    actual_version: -1,
+                    text: Arc::from("open\n"),
+                }),
+                &allocator,
+            )
+            .expect_err("negative open-buffer version should be rejected");
+
+        assert!(matches!(
+            error,
+            SourceLoadError::StaleLspDocumentVersion {
+                expected: 0,
+                actual: -1
+            }
+        ));
+        assert!(allocator.source_snapshots().is_empty());
+    }
+
+    #[test]
+    fn open_buffer_loader_rejects_unmappable_uri_before_source_id_allocation() {
+        let package = PackageFixture::new();
+        let loader = DiskSourceLoader::new(package.root());
+        let allocator = RecordingAllocator::new();
+
+        let error = loader
+            .load(
+                snapshot_id(31),
+                source_input(SourceOriginInput::OpenBuffer {
+                    uri: "untitled:basic".to_owned(),
+                    expected_version: 1,
+                    actual_version: 1,
+                    text: Arc::from("open\n"),
+                }),
+                &allocator,
+            )
+            .expect_err("unmappable open-buffer URI should be rejected");
+
+        assert!(matches!(
+            error,
+            SourceLoadError::UnmappedOpenBufferUri { uri } if uri == "untitled:basic"
+        ));
+        assert!(allocator.source_snapshots().is_empty());
+    }
+
+    #[test]
+    fn open_buffer_loader_rejects_file_uris_that_do_not_map_to_package_sources() {
+        let package = PackageFixture::new();
+        package.write("other/basic.miz", "outside src\n");
+        package.write("src/groups/basic.txt", "not miz\n");
+        package.write_outside("outside.miz", "outside package\n");
+        let loader = DiskSourceLoader::new(package.root());
+        let allocator = RecordingAllocator::new();
+        let outside_uri = format!("file://{}", package.outside_path("outside.miz").display());
+
+        for uri in [
+            package.file_uri("other/basic.miz"),
+            package.file_uri("src/groups/basic.txt"),
+            outside_uri,
+        ] {
+            let error = loader
+                .load(
+                    snapshot_id(32),
+                    source_input(SourceOriginInput::OpenBuffer {
+                        uri: uri.clone(),
+                        expected_version: 1,
+                        actual_version: 1,
+                        text: Arc::from("open\n"),
+                    }),
+                    &allocator,
+                )
+                .expect_err("file URI outside package sources should be rejected");
+
+            assert!(matches!(
+                error,
+                SourceLoadError::UnmappedOpenBufferUri { uri: error_uri } if error_uri == uri
+            ));
+        }
+        assert!(allocator.source_snapshots().is_empty());
+    }
+
+    #[test]
+    fn generated_source_loader_preserves_generator_metadata_and_anchor() {
+        let package = PackageFixture::new();
+        let loader = DiskSourceLoader::new(package.root());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshot = snapshot_id(33);
+        let anchor_source = ids.next_source_id(snapshot).unwrap();
+        let anchor = SourceAnchor::Range(SourceRange {
+            source_id: anchor_source,
+            start: 2,
+            end: 9,
+        });
+
+        let loaded = loader
+            .load(
+                snapshot,
+                source_input(SourceOriginInput::Generated {
+                    generator: GeneratedSourceKind::new("macro-expansion"),
+                    text: Arc::from("generated\r\ntext"),
+                    anchor: Some(anchor.clone()),
+                }),
+                &ids,
+            )
+            .unwrap();
+
+        assert_eq!(loaded.text.as_ref(), "generated\r\ntext");
+        assert_eq!(loaded.source_hash, hash_text("generated\r\ntext"));
+        assert_eq!(loaded.loading_map, None);
+        assert_eq!(loaded.generated_anchor, Some(anchor));
+        assert!(matches!(
+            loaded.origin,
+            SourceOrigin::Generated { ref generator } if generator.as_str() == "macro-expansion"
+        ));
+    }
+
+    #[test]
+    fn generated_source_loader_accepts_missing_anchor_with_generator_metadata() {
+        let package = PackageFixture::new();
+        let loader = DiskSourceLoader::new(package.root());
+
+        let loaded = loader
+            .load(
+                snapshot_id(34),
+                source_input(SourceOriginInput::Generated {
+                    generator: GeneratedSourceKind::new("doc-extract"),
+                    text: Arc::from("generated\n"),
+                    anchor: None,
+                }),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .unwrap();
+
+        assert_eq!(loaded.text.as_ref(), "generated\n");
+        assert_eq!(loaded.generated_anchor, None);
+        assert!(matches!(
+            loaded.origin,
+            SourceOrigin::Generated { ref generator } if generator.as_str() == "doc-extract"
+        ));
+    }
+
+    #[test]
+    fn generated_source_loader_rejects_blank_generator_metadata_before_source_id_allocation() {
+        let package = PackageFixture::new();
+        let loader = DiskSourceLoader::new(package.root());
+        let allocator = RecordingAllocator::new();
+
+        let error = loader
+            .load(
+                snapshot_id(35),
+                source_input(SourceOriginInput::Generated {
+                    generator: GeneratedSourceKind::new("  "),
+                    text: Arc::from("generated\n"),
+                    anchor: None,
+                }),
+                &allocator,
+            )
+            .expect_err("generated source without metadata should be rejected");
+
+        assert!(matches!(
+            error,
+            SourceLoadError::GeneratedSourceWithoutMetadata { module_path }
+                if module_path.as_str() == "groups.basic"
+        ));
+        assert!(allocator.source_snapshots().is_empty());
     }
 
     #[test]
@@ -1578,6 +2046,7 @@ mod tests {
             origin,
             line_map: LineMap::new(source_id, text),
             loading_map: None,
+            generated_anchor: None,
         }
     }
 
@@ -1619,7 +2088,7 @@ mod tests {
                 edition,
                 origin,
             } = input;
-            let (text, origin) = match origin {
+            let (text, origin, generated_anchor) = match origin {
                 SourceOriginInput::Disk { path } => (
                     self.disk_text.clone().ok_or({
                         SourceLoadError::UnreadableSourceFile {
@@ -1628,13 +2097,24 @@ mod tests {
                         }
                     })?,
                     SourceOrigin::Disk,
+                    None,
                 ),
-                SourceOriginInput::OpenBuffer { version, text, .. } => {
-                    (text, SourceOrigin::OpenBuffer { version })
-                }
+                SourceOriginInput::OpenBuffer {
+                    actual_version,
+                    text,
+                    ..
+                } => (
+                    text,
+                    SourceOrigin::OpenBuffer {
+                        version: actual_version,
+                    },
+                    None,
+                ),
                 SourceOriginInput::Generated {
-                    generator, text, ..
-                } => (text, SourceOrigin::Generated { generator }),
+                    generator,
+                    text,
+                    anchor,
+                } => (text, SourceOrigin::Generated { generator }, anchor),
             };
             let source_hash = self.hash_text(&text);
             let line_map = LineMap::new(source_id, &text);
@@ -1650,6 +2130,7 @@ mod tests {
                 origin,
                 line_map,
                 loading_map: None,
+                generated_anchor,
             })
         }
     }
@@ -1726,6 +2207,10 @@ mod tests {
 
         fn root(&self) -> &Path {
             &self.root
+        }
+
+        fn file_uri(&self, relative: &str) -> String {
+            format!("file://{}", self.root.join(relative).display())
         }
 
         fn write(&self, relative: &str, content: &str) {

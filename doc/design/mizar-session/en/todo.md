@@ -137,7 +137,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: invalid UTF-8 rejected before line-map; unsupported extension rejected; leading BOM → loading map `0`↔`3`; non-leading `U+FEFF` preserved in loaded text; CRLF normalized while lone `\r` is preserved; path outside root rejected.
     - Depends on: 14. Spec: [source.md](./source.md) "Disk Source Loading".
 
-16. **Open-buffer and generated loading.** [ ]
+16. **Open-buffer and generated loading.** [x]
     - Implement open-buffer loading (LSP document-version validation, URI→package path, BOM strip, CRLF normalize, loading map back to editor offsets) and generated-source loading (generator metadata + anchor).
     - Tests: open-buffer overrides disk only for the matching version; stale version rejected; the open-buffer loading map relates loaded-text offsets back to editor-provided text byte offsets (before LSP UTF-16 conversion); unmappable open-buffer URI rejected; generated source without metadata rejected.
     - Depends on: 15. Spec: [source.md](./source.md) "Open-Buffer Source Loading", "Generated Source Loading".

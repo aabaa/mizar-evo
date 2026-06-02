@@ -28,7 +28,12 @@ impl DiskSourceLoader {
 
 pub enum SourceOriginInput {
     Disk { path: PathBuf },
-    OpenBuffer { uri: DocumentUri, version: LspDocumentVersion, text: Arc<str> },
+    OpenBuffer {
+        uri: DocumentUri,
+        expected_version: LspDocumentVersion,
+        actual_version: LspDocumentVersion,
+        text: Arc<str>,
+    },
     Generated { generator: GeneratedSourceKind, text: Arc<str>, anchor: Option<SourceAnchor> },
 }
 
@@ -43,6 +48,7 @@ pub struct LoadedSource {
     pub origin: SourceOrigin,
     pub line_map: LineMap,
     pub loading_map: Option<LoadingMap>,
+    pub generated_anchor: Option<SourceAnchor>,
 }
 
 pub trait SourceLoader {
@@ -97,7 +103,7 @@ pub enum SourceOriginKind {
 `load` は対象の `BuildSnapshotId` を受け取り、`SessionIdAllocator` からスナップショットスコープの `SourceId` を発行できるようにします。
 `LoadedSource.origin` は snapshot モジュールの `SourceOrigin` を使います。source モジュールは、読み込み済みレコード用の origin enum を重複定義しません。
 `SourceLoader` の補助メソッドは、公開 helper の `normalize_path` と `hash_text` に委譲します。`normalize_path` は `normalize_source_path` を再利用し、`hash_text` は正規化済みテキスト内容だけをハッシュ化します。
-`DiskSourceLoader` は、タスク 15 のパッケージルート上のディスクファイル向け具象ローダーです。`SourceOriginInput::Disk` に対して `SourceLoader` を実装します。オープンバッファと生成ソースの読み込みはタスク 16 の作業として残し、この disk-only loader では unsupported origin として拒否します。
+`DiskSourceLoader` は、パスと URI の正規化に用いるパッケージルートを所有します。ディスクファイル、`file://` ドキュメント URI から対応付けられるオープンバッファオーバーレイ、生成ソースフラグメントに対して `SourceLoader` を実装します。
 
 ## Dependencies
 
@@ -127,7 +133,7 @@ pub enum SourceOriginKind {
 
 `source_hash` は、UTF-8 検証と、先頭 BOM の除去や改行の正規化といったソース読み込みの正規化を経た後の `LoadedSource.text` から計算されます。オープンバッファの場合は、ディスク上のファイルではなく、正規化されたエディタ提供テキストが対象です。パッケージ化や診断のためにバイト単位で正確な来歴が必要な場合は、`source_hash` を再定義せず、来歴メタデータまたは別個の生コンテンツハッシュを用います。
 
-`loading_map` は、`LoadedSource.text` が作られる前にソース読み込みがオフセットを変更した場合に存在します。これは正規化された読み込み済みテキストの範囲をソース読み込みの入力へ対応付けるもので、ディスクソースでは元ファイルのバイトオフセット、オープンバッファではエディタ提供テキストのバイトオフセットを指します。生成入力は `SourceOriginInput` 上に任意の `SourceAnchor` を持ちますが、タスク 14 の `LoadedSource` surface はそのアンカーを `loading_map` 経由では公開しません。ソース読み込みの変換がオフセットを変えなかった場合、この対応付けは恒等であり、省略してよいものとします。
+`loading_map` は、`LoadedSource.text` が作られる前にソース読み込みがオフセットを変更した場合に存在します。これは正規化された読み込み済みテキストの範囲をソース読み込みの入力へ対応付けるもので、ディスクソースでは元ファイルのバイトオフセット、オープンバッファではエディタ提供テキストのバイトオフセットを指します。生成入力は `SourceOriginInput` 上に任意の `SourceAnchor` を持ちます。`LoadedSource.generated_anchor` はそのアンカーを保持し、`loading_map` はソース読み込みのバイトオフセット変換だけを表します。ソース読み込みの変換がオフセットを変えなかった場合、この対応付けは恒等であり、省略してよいものとします。
 
 ### Source Origin
 
@@ -160,20 +166,20 @@ pub enum SourceOriginKind {
 
 ### Open-Buffer Source Loading
 
-1. LSP ブリッジが提供したドキュメントバージョンを検証する。
+1. リクエストが期待する LSP ドキュメントバージョンと、LSP ブリッジが提供した実際のエディタバッファバージョンを比較し、失効した version や構造的に不正な version を `SourceId` 発行前に拒否する。
 2. ドキュメント URI をパッケージのソースパスへ正規化する。
 3. そのリクエストでは、エディタ提供テキストを正本として用いる。
 4. BOM 付きディスクファイルのエディタ表示がディスクのソース読み込みと一致するように、パッケージが記述したオープンバッファテキストから先頭の `U+FEFF` を 1 つ除去する。
 5. 各 CRLF を 1 つの LF に置き換えて、ソース読み込みの改行を正規化する。単独の `\r` は、フロントエンドや字句解析器の診断が一貫して拒否できるよう保持する。
 6. 除去または改行の正規化がオフセットを変更した場合、正規化済み読み込みテキストのオフセットからエディタ提供テキストのバイトオフセットへの `LoadingMap` を記録する。
 7. `LoadedSource.text` からソースハッシュと `LineMap` を計算する。
-8. 由来を `OpenBuffer` として記録する。
+8. 検証済みの実際のドキュメントバージョン付きで、由来を `OpenBuffer` として記録する。
 
 オープンバッファのテキストは、最後に検証されたアーティファクトより新しいことがあります。利用側は、アーティファクトのデータを暗黙のうちに最新として扱うのではなく、鮮度メタデータを引き回さなければなりません。LSP の診断と編集は、エディタドキュメントに対してプロトコルの UTF-16 位置規則を適用する前に、`LoadedSource.text` のオフセットを `loading_map` を通して変換しなければなりません。
 
 ### Generated Source Loading
 
-生成ソースには、生成器の種別と、可能な場合は元ソースへのアンカーが必要です。生成ソースのテキストは診断・ドキュメント・抽出に用いてよいものの、パッケージが記述した `.miz` ソースと取り違えてはなりません。
+生成ソースには、空でない生成器の種別と、可能な場合は元ソースへのアンカーが必要です。読み込みは生成器メタデータを `LoadedSource.origin` に保持し、任意のアンカーを `LoadedSource.generated_anchor` に保持します。生成ソースのテキストは診断・ドキュメント・抽出に用いてよいものの、パッケージが記述した `.miz` ソースと取り違えてはなりません。
 
 ## Error Handling
 
@@ -184,7 +190,7 @@ pub enum SourceOriginKind {
 - 不正な UTF-8
 - 読み取れないソースファイル
 - ビルドプランが与えた重複するモジュールパス
-- 失効した LSP ドキュメントバージョン
+- 失効した、または構造的に不正な LSP ドキュメントバージョン
 - パッケージソースへ対応付けられないオープンバッファ URI
 - 必須の生成器メタデータを欠く生成ソース
 - `SessionIdAllocator` による source id 発行失敗
@@ -199,14 +205,14 @@ pub enum SourceOriginKind {
 主なシナリオ:
 
 - 同一テキストのディスクソースとオープンバッファソースは、同じソースハッシュを生成するが由来は異なる
-- オープンバッファソースは、一致するドキュメントバージョンに限ってディスクテキストを上書きする
+- オープンバッファソースは、期待 version と実際のドキュメントバージョンが一致する場合に限ってディスクテキストを上書きする
 - 不正な UTF-8 は行マップ構築の前に拒否され、損失のあるデコードで置換文字に変換されない
 - 先頭の UTF-8 BOM は受理され、行マップ構築の前に除去される
 - 先頭以外の `U+FEFF` は、ソース読み込みで除去されない
 - オープンバッファの BOM 除去と改行正規化は、エディタ提供テキストのオフセットへ戻す loading map を保つ
 - パス正規化は、パッケージルートの外側にあるパスを拒否する
 - CRLF と LF の扱いが `LineMap` の期待と一致する
-- 生成ソース入力は、生成器メタデータと任意のアンカーを持ち、読み込み済み生成ソースは `SourceOrigin` に生成器メタデータを保つ
+- 生成ソース入力は、空でない生成器メタデータと任意のアンカーを持ち、読み込み済み生成ソースは `SourceOrigin` に生成器メタデータを、`LoadedSource.generated_anchor` に任意のアンカーを保つ
 - ソースハッシュは、絶対パスやドキュメントバージョンを含まない
 
 ## Constraints and Assumptions

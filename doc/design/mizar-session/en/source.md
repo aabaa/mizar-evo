@@ -28,7 +28,12 @@ impl DiskSourceLoader {
 
 pub enum SourceOriginInput {
     Disk { path: PathBuf },
-    OpenBuffer { uri: DocumentUri, version: LspDocumentVersion, text: Arc<str> },
+    OpenBuffer {
+        uri: DocumentUri,
+        expected_version: LspDocumentVersion,
+        actual_version: LspDocumentVersion,
+        text: Arc<str>,
+    },
     Generated { generator: GeneratedSourceKind, text: Arc<str>, anchor: Option<SourceAnchor> },
 }
 
@@ -43,6 +48,7 @@ pub struct LoadedSource {
     pub origin: SourceOrigin,
     pub line_map: LineMap,
     pub loading_map: Option<LoadingMap>,
+    pub generated_anchor: Option<SourceAnchor>,
 }
 
 pub trait SourceLoader {
@@ -97,7 +103,7 @@ pub enum SourceOriginKind {
 `load` takes the target `BuildSnapshotId` so it can request a snapshot-scoped `SourceId` from `SessionIdAllocator`.
 `LoadedSource.origin` uses the snapshot module's `SourceOrigin`; the source module does not define a duplicate origin enum for loaded records.
 `SourceLoader` helper methods delegate to the public `normalize_path` and `hash_text` helpers. `normalize_path` reuses `normalize_source_path`, while `hash_text` hashes only the normalized text content.
-`DiskSourceLoader` is the task-15 concrete loader for package-root disk files. It implements `SourceLoader` for `SourceOriginInput::Disk`; open-buffer and generated loading remain task-16 work and are rejected as unsupported origins by this disk-only loader.
+`DiskSourceLoader` owns the package root used for path and URI normalization. It implements `SourceLoader` for disk files, open-buffer overlays mapped from `file://` document URIs, and generated source fragments.
 
 ## Dependencies
 
@@ -127,7 +133,7 @@ Local diagnostics may keep an absolute display path separately. Published artifa
 
 `source_hash` is computed from `LoadedSource.text`, after UTF-8 validation and source-loading normalization such as leading BOM stripping and newline normalization. For open buffers, it is the normalized editor-provided text, not the on-disk file. Byte-exact provenance, if needed for packaging or diagnostics, must use origin metadata or a separate raw-content hash rather than redefining `source_hash`.
 
-`loading_map` is present when source loading changed offsets before `LoadedSource.text` was created. It maps normalized loaded-text ranges back to the source-loading input: original file byte offsets for disk sources or editor-provided text byte offsets for open buffers. Generated inputs carry an optional `SourceAnchor` on `SourceOriginInput`; the task-14 `LoadedSource` surface does not expose that anchor through `loading_map`. When no source-loading transform changed offsets, the mapping is identity and may be omitted.
+`loading_map` is present when source loading changed offsets before `LoadedSource.text` was created. It maps normalized loaded-text ranges back to the source-loading input: original file byte offsets for disk sources or editor-provided text byte offsets for open buffers. Generated inputs carry an optional `SourceAnchor` on `SourceOriginInput`; `LoadedSource.generated_anchor` preserves that anchor, while `loading_map` remains only for source-loading byte-offset transforms. When no source-loading transform changed offsets, the mapping is identity and may be omitted.
 
 ### Source Origin
 
@@ -160,20 +166,20 @@ Code-region ASCII validation belongs to preprocessing. This module only validate
 
 ### Open-Buffer Source Loading
 
-1. Validate the document version supplied by the LSP bridge.
+1. Compare the request's expected LSP document version with the actual editor-buffer version supplied by the LSP bridge, and reject stale or structurally invalid versions before allocating a `SourceId`.
 2. Normalize the document URI to a package source path.
 3. Use the editor-provided text as authoritative for the request.
 4. Strip one leading `U+FEFF` from package-authored open-buffer text so editor views of a BOM-prefixed disk file match disk source loading.
 5. Normalize source-loading newlines by replacing each CRLF pair with one LF. Lone `\r` is preserved so frontend/lexer diagnostics can reject it consistently.
 6. If stripping or newline normalization changed offsets, record a `LoadingMap` from normalized loaded-text offsets back to editor-provided text byte offsets.
 7. Compute source hash and `LineMap` from `LoadedSource.text`.
-8. Mark the origin as `OpenBuffer`.
+8. Mark the origin as `OpenBuffer` with the validated actual document version.
 
 Open-buffer text may be newer than the last verified artifact. Consumers must carry freshness metadata rather than silently treating artifact data as current. LSP diagnostics and edits must convert from `LoadedSource.text` offsets through `loading_map` before applying protocol UTF-16 position rules against the editor document.
 
 ### Generated Source Loading
 
-Generated sources require a generator kind and, when available, an anchor to original source. Generated source text may be used for diagnostics, documentation, or extraction, but it must not be mistaken for package-authored `.miz` source.
+Generated sources require a non-empty generator kind and, when available, an anchor to original source. Loading preserves the generator metadata in `LoadedSource.origin` and preserves the optional anchor in `LoadedSource.generated_anchor`. Generated source text may be used for diagnostics, documentation, or extraction, but it must not be mistaken for package-authored `.miz` source.
 
 ## Error Handling
 
@@ -184,7 +190,7 @@ Generated sources require a generator kind and, when available, an anchor to ori
 - invalid UTF-8;
 - unreadable source file;
 - duplicate module path supplied by the build plan;
-- stale LSP document version;
+- stale or structurally invalid LSP document version;
 - open-buffer URI that cannot be mapped to a package source;
 - generated source without required generator metadata.
 - source id allocation failure from `SessionIdAllocator`.
@@ -199,14 +205,14 @@ Allocator failures carry the underlying `IdError`; in particular, allocator over
 Key scenarios:
 
 - disk and open-buffer sources with identical text produce the same source hash but different origins;
-- open-buffer source overrides disk text only for the matching document version;
+- open-buffer source overrides disk text only when the expected and actual document versions match;
 - invalid UTF-8 is rejected before line-map construction and is not turned into replacement characters by lossy decoding;
 - a leading UTF-8 BOM is accepted and stripped before line-map construction;
 - non-leading `U+FEFF` is not stripped by source loading;
 - open-buffer BOM stripping and newline normalization preserve a loading map back to editor-provided text offsets;
 - path normalization rejects paths outside the package root;
 - CRLF and LF handling matches `LineMap` expectations;
-- generated-source inputs carry generator metadata and optional anchors, and loaded generated sources preserve generator metadata in `SourceOrigin`;
+- generated-source inputs carry non-empty generator metadata and optional anchors, and loaded generated sources preserve generator metadata in `SourceOrigin` plus the optional anchor in `LoadedSource.generated_anchor`;
 - source hashes do not include absolute paths or document versions.
 
 ## Constraints and Assumptions
