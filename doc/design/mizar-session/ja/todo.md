@@ -111,7 +111,7 @@
     - テスト: 作成したスナップショットが取得可能で active-build lease を返す、古い id は鮮度チェックで拒否、古いスナップショットは current として報告されない、duplicate module path は拒否、パス正規化済みの重複ソース同一性は source-version canonical key で拒否、欠落した依存アーティファクト/コンテンツフィンガープリントは拒否、未対応の lockfile/ツールチェインメタデータは拒否、構造的に不正な open-buffer version は拒否。expected-vs-actual の真の open-buffer staleness は、リクエストメタデータを持つ source-loading タスクで検証する。
     - 依存: 3, 10。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Creation", "Freshness Check", "Error Handling"。
 
-12. **スナップショットリースの計上。** [ ]
+12. **スナップショットリースの計上。** [x]
     - レジストリの `SnapshotLease` を `acquire_lease`/`release_lease` で完成させ、`RetentionReason`（タスク 11 由来）ごとにリース数を追跡する。回収ポリシーはまだ持たない（それは retention、タスク 17-18）。
     - テスト: acquire/release で数が増減する、タスク 11 の active-build lease の解放が計上される、未知のスナップショット id とリースリリースの不一致が `SnapshotError` になる。
     - 依存: 11。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Lease"。
@@ -161,6 +161,8 @@
 
 - [ ] 実装中に API が変わった場合は `ja/` のモジュール仕様を同期する。
 - [ ] クレート全体の決定性プロパティテスト: 同一の正準入力 ⇒ 同一の `BuildSnapshotId` と同一のソース範囲変換が、スケジューリング順に依らず得られる。
+- [ ] スナップショットリース計上の堅牢化: `SnapshotRegistry::acquire_lease` の lease id 割り当てを、`create_snapshot` と同様に registry mutex の外へ出すべきかを決める。重い allocator やカスタム allocator の影響範囲を小さくするため。
+- [ ] スナップショットリース計上の堅牢化: `SessionIdAllocator` は一意な lease id を発行する前提だが、registry state 側にも duplicate lease id の防御チェックまたは debug assertion を追加するかを決める。
 
 ## Suggested Verification
 

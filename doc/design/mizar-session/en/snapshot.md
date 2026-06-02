@@ -126,6 +126,16 @@ impl<A: SessionIdAllocator> SnapshotRegistry<A> {
         request: BuildRequestId,
         input: SnapshotInput,
     ) -> Result<(BuildSnapshot, SnapshotLease), SnapshotError>;
+    pub fn acquire_lease(
+        &self,
+        snapshot: BuildSnapshotId,
+        reason: RetentionReason,
+    ) -> Result<SnapshotLease, SnapshotError>;
+    pub fn release_lease(
+        &self,
+        snapshot: BuildSnapshotId,
+        lease_id: SnapshotLeaseId,
+    ) -> Result<(), SnapshotError>;
     pub fn get(&self, id: BuildSnapshotId) -> Option<BuildSnapshot>;
     pub fn is_current_for_request(&self, id: BuildSnapshotId, request: BuildRequestId) -> bool;
 }
@@ -198,6 +208,9 @@ It records:
 ### Snapshot Lease
 
 `SnapshotLease` prevents a snapshot from being collected while an external consumer may still reference it.
+The registry tracks live lease counts per `RetentionReason`; the active-build
+lease returned by `create_snapshot` is counted the same way as leases acquired
+with `acquire_lease`.
 
 Lease reasons include:
 
@@ -253,7 +266,8 @@ Collection removes in-memory source text and maps unless another layer explicitl
 - unsupported lockfile or toolchain metadata;
 - stale open-buffer version. During task 11 this is limited to structurally invalid version values in already-loaded snapshot input; expected-vs-actual stale checks are performed by source loading;
 - unknown snapshot id;
-- lease release mismatch.
+- lease release mismatch;
+- unknown snapshot lease id, including an already-released lease id;
 - lease id allocation failure.
 
 Source readability and UTF-8 validation diagnostics are produced by the frontend source-loading flow. This module records the resulting source version only after source loading has produced a valid source identity.

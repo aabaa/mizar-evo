@@ -111,7 +111,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: created snapshot is retrievable and returns an active-build lease; stale id is rejected by freshness; older snapshot is not reported as current; duplicate module path is rejected; path-normalized duplicate source identities are rejected through the source-version canonical key; missing dependency artifact/content fingerprint is rejected; unsupported lockfile/toolchain metadata is rejected; structurally invalid open-buffer versions are rejected. True expected-vs-actual open-buffer staleness is checked by the source-loading task that has request metadata.
     - Depends on: 3, 10. Spec: [snapshot.md](./snapshot.md) "Snapshot Creation", "Freshness Check", "Error Handling".
 
-12. **Snapshot lease accounting.** [ ]
+12. **Snapshot lease accounting.** [x]
     - Complete `SnapshotLease` with `acquire_lease`/`release_lease` on the registry, tracking lease counts per `RetentionReason` (from task 11); still no collection policy (that is retention, task 17-18).
     - Tests: acquire/release adjusts counts; releasing the active-build lease from task 11 is accounted; unknown snapshot id and lease release mismatch surface `SnapshotError`.
     - Depends on: 11. Spec: [snapshot.md](./snapshot.md) "Snapshot Lease".
@@ -161,6 +161,8 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
 
 - [ ] Keep `ja/` module specs in sync if any API changes during implementation.
 - [ ] Determinism property tests across the crate: identical canonical inputs ⇒ identical `BuildSnapshotId` and identical source-range conversions, independent of scheduling order.
+- [ ] Snapshot lease accounting hardening: decide whether `SnapshotRegistry::acquire_lease` should allocate lease ids outside the registry mutex, matching `create_snapshot` and reducing the blast radius of heavy or custom allocators.
+- [ ] Snapshot lease accounting hardening: decide whether to add a defensive duplicate-lease-id check or debug assertion in the registry state, even though `SessionIdAllocator` is expected to issue unique lease ids.
 
 ## Suggested Verification
 

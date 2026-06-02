@@ -15,17 +15,6 @@
 //! requires_semantic_order::<BuildSnapshotId>();
 //! ```
 //!
-//! ```compile_fail
-//! use mizar_session::{BuildSnapshotId, RetentionReason, SnapshotRegistry};
-//!
-//! fn task_12_lease_accounting_is_not_available(
-//!     registry: &SnapshotRegistry,
-//!     snapshot: BuildSnapshotId,
-//! ) {
-//!     let _ = registry.acquire_lease(snapshot, RetentionReason::DiagnosticIndex);
-//! }
-//! ```
-
 use crate::{
     BuildRequestId, BuildSnapshotId, Hash, IdError, InMemorySessionIdAllocator, LspDocumentVersion,
     NormalizedPath, SessionIdAllocator, SnapshotLeaseId, SourceId, SourcePathError,
@@ -70,6 +59,8 @@ pub struct SnapshotRegistry<A = InMemorySessionIdAllocator> {
 struct SnapshotRegistryState {
     snapshots: HashMap<BuildSnapshotId, BuildSnapshot>,
     current_by_request: HashMap<BuildRequestId, BuildSnapshotId>,
+    leases: HashMap<SnapshotLeaseId, SnapshotLease>,
+    lease_counts: HashMap<BuildSnapshotId, HashMap<RetentionReason, usize>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -172,6 +163,9 @@ pub enum SnapshotError {
         expected_snapshot: BuildSnapshotId,
         actual_snapshot: BuildSnapshotId,
     },
+    UnknownSnapshotLease {
+        lease_id: SnapshotLeaseId,
+    },
     LeaseIdAllocation {
         error: IdError,
     },
@@ -258,8 +252,62 @@ impl<A: SessionIdAllocator> SnapshotRegistry<A> {
         let mut state = self.state.lock().expect("snapshot registry mutex poisoned");
         state.snapshots.insert(snapshot.id, snapshot.clone());
         state.current_by_request.insert(request, snapshot.id);
+        state.record_lease(lease.clone());
 
         Ok((snapshot, lease))
+    }
+
+    pub fn acquire_lease(
+        &self,
+        snapshot: BuildSnapshotId,
+        reason: RetentionReason,
+    ) -> Result<SnapshotLease, SnapshotError> {
+        let mut state = self.state.lock().expect("snapshot registry mutex poisoned");
+        if !state.snapshots.contains_key(&snapshot) {
+            return Err(SnapshotError::UnknownSnapshotId {
+                snapshot_id: snapshot,
+            });
+        }
+
+        let lease = SnapshotLease {
+            lease_id: self
+                .allocator
+                .next_lease_id(snapshot)
+                .map_err(|error| SnapshotError::LeaseIdAllocation { error })?,
+            snapshot,
+            reason,
+        };
+        state.record_lease(lease.clone());
+        Ok(lease)
+    }
+
+    pub fn release_lease(
+        &self,
+        snapshot: BuildSnapshotId,
+        lease_id: SnapshotLeaseId,
+    ) -> Result<(), SnapshotError> {
+        let mut state = self.state.lock().expect("snapshot registry mutex poisoned");
+        if !state.snapshots.contains_key(&snapshot) {
+            return Err(SnapshotError::UnknownSnapshotId {
+                snapshot_id: snapshot,
+            });
+        }
+
+        let Some(lease) = state.leases.get(&lease_id).cloned() else {
+            return Err(SnapshotError::UnknownSnapshotLease { lease_id });
+        };
+
+        if lease.snapshot != snapshot {
+            return Err(SnapshotError::LeaseReleaseMismatch {
+                lease_id,
+                expected_snapshot: snapshot,
+                actual_snapshot: lease.snapshot,
+            });
+        }
+
+        state.leases.remove(&lease_id);
+        state.decrement_lease_count(lease.snapshot, lease.reason);
+        Ok(())
     }
 
     pub fn get(&self, id: BuildSnapshotId) -> Option<BuildSnapshot> {
@@ -278,6 +326,59 @@ impl<A: SessionIdAllocator> SnapshotRegistry<A> {
             .current_by_request
             .get(&request)
             .is_some_and(|current| *current == id)
+    }
+}
+
+impl SnapshotRegistryState {
+    fn record_lease(&mut self, lease: SnapshotLease) {
+        *self
+            .lease_counts
+            .entry(lease.snapshot)
+            .or_default()
+            .entry(lease.reason)
+            .or_default() += 1;
+        self.leases.insert(lease.lease_id, lease);
+    }
+
+    fn decrement_lease_count(&mut self, snapshot: BuildSnapshotId, reason: RetentionReason) {
+        let Some(counts_by_reason) = self.lease_counts.get_mut(&snapshot) else {
+            return;
+        };
+        let Some(count) = counts_by_reason.get_mut(&reason) else {
+            return;
+        };
+
+        *count -= 1;
+        if *count == 0 {
+            counts_by_reason.remove(&reason);
+        }
+        if counts_by_reason.is_empty() {
+            self.lease_counts.remove(&snapshot);
+        }
+    }
+}
+
+#[cfg(test)]
+impl<A> SnapshotRegistry<A> {
+    fn lease_count_for_test(&self, snapshot: BuildSnapshotId, reason: RetentionReason) -> usize {
+        self.state
+            .lock()
+            .expect("snapshot registry mutex poisoned")
+            .lease_counts
+            .get(&snapshot)
+            .and_then(|counts_by_reason| counts_by_reason.get(&reason))
+            .copied()
+            .unwrap_or_default()
+    }
+
+    fn total_lease_count_for_test(&self, snapshot: BuildSnapshotId) -> usize {
+        self.state
+            .lock()
+            .expect("snapshot registry mutex poisoned")
+            .lease_counts
+            .get(&snapshot)
+            .map(|counts_by_reason| counts_by_reason.values().sum())
+            .unwrap_or_default()
     }
 }
 
@@ -691,6 +792,9 @@ impl fmt::Display for SnapshotError {
                     f,
                     "lease `{lease_id:?}` belongs to `{actual_snapshot:?}`, not `{expected_snapshot:?}`"
                 )
+            }
+            Self::UnknownSnapshotLease { lease_id } => {
+                write!(f, "unknown snapshot lease `{lease_id:?}`")
             }
             Self::LeaseIdAllocation { error } => {
                 write!(f, "could not allocate snapshot lease id: {error}")
@@ -1301,6 +1405,10 @@ mod tests {
         assert_eq!(lease.snapshot, snapshot.id);
         assert_eq!(lease.reason, RetentionReason::ActiveBuild);
         assert!(registry.is_current_for_request(snapshot.id, request));
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild),
+            1
+        );
     }
 
     #[test]
@@ -1319,6 +1427,376 @@ mod tests {
         assert_eq!(first_lease.reason, RetentionReason::ActiveBuild);
         assert_eq!(second_lease.reason, RetentionReason::ActiveBuild);
         assert_ne!(first_lease.lease_id, second_lease.lease_id);
+        assert_eq!(
+            registry.lease_count_for_test(first_snapshot.id, RetentionReason::ActiveBuild),
+            2
+        );
+    }
+
+    #[test]
+    fn acquire_lease_increments_count_for_reason() {
+        let registry = SnapshotRegistry::new();
+        let (snapshot, _) = registry
+            .create_snapshot(request_id(), snapshot_input())
+            .unwrap();
+
+        let lease = registry
+            .acquire_lease(snapshot.id, RetentionReason::DiagnosticIndex)
+            .unwrap();
+
+        assert_eq!(lease.snapshot, snapshot.id);
+        assert_eq!(lease.reason, RetentionReason::DiagnosticIndex);
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild),
+            1
+        );
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::DiagnosticIndex),
+            1
+        );
+    }
+
+    #[test]
+    fn acquire_lease_tracks_each_retention_reason_independently() {
+        let registry = SnapshotRegistry::new();
+        let (snapshot, _) = registry
+            .create_snapshot(request_id(), snapshot_input())
+            .unwrap();
+
+        let leases = all_retention_reasons()
+            .into_iter()
+            .map(|reason| registry.acquire_lease(snapshot.id, reason).unwrap())
+            .collect::<Vec<_>>();
+
+        for reason in all_retention_reasons() {
+            let expected_count = if reason == RetentionReason::ActiveBuild {
+                2
+            } else {
+                1
+            };
+            assert_eq!(
+                registry.lease_count_for_test(snapshot.id, reason),
+                expected_count,
+                "lease count for {reason:?}"
+            );
+        }
+        assert_eq!(
+            registry.total_lease_count_for_test(snapshot.id),
+            all_retention_reasons().len() + 1
+        );
+
+        for lease in leases {
+            registry.release_lease(snapshot.id, lease.lease_id).unwrap();
+        }
+
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild),
+            1
+        );
+        for reason in all_retention_reasons()
+            .into_iter()
+            .filter(|reason| *reason != RetentionReason::ActiveBuild)
+        {
+            assert_eq!(
+                registry.lease_count_for_test(snapshot.id, reason),
+                0,
+                "lease count after release for {reason:?}"
+            );
+        }
+        assert_eq!(registry.total_lease_count_for_test(snapshot.id), 1);
+    }
+
+    #[test]
+    fn release_lease_decrements_count_for_reason() {
+        let registry = SnapshotRegistry::new();
+        let (snapshot, _) = registry
+            .create_snapshot(request_id(), snapshot_input())
+            .unwrap();
+        let first = registry
+            .acquire_lease(snapshot.id, RetentionReason::DiagnosticIndex)
+            .unwrap();
+        let second = registry
+            .acquire_lease(snapshot.id, RetentionReason::DiagnosticIndex)
+            .unwrap();
+
+        registry.release_lease(snapshot.id, first.lease_id).unwrap();
+
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::DiagnosticIndex),
+            1
+        );
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild),
+            1
+        );
+
+        registry
+            .release_lease(snapshot.id, second.lease_id)
+            .unwrap();
+
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::DiagnosticIndex),
+            0
+        );
+    }
+
+    #[test]
+    fn release_lease_only_decrements_the_released_reason() {
+        let registry = SnapshotRegistry::new();
+        let (snapshot, _) = registry
+            .create_snapshot(request_id(), snapshot_input())
+            .unwrap();
+        let diagnostic = registry
+            .acquire_lease(snapshot.id, RetentionReason::DiagnosticIndex)
+            .unwrap();
+        let explanation = registry
+            .acquire_lease(snapshot.id, RetentionReason::ExplanationRequest)
+            .unwrap();
+
+        registry
+            .release_lease(snapshot.id, diagnostic.lease_id)
+            .unwrap();
+
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::DiagnosticIndex),
+            0
+        );
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ExplanationRequest),
+            1
+        );
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild),
+            1
+        );
+        assert_eq!(registry.total_lease_count_for_test(snapshot.id), 2);
+
+        registry
+            .release_lease(snapshot.id, explanation.lease_id)
+            .unwrap();
+
+        assert_eq!(registry.total_lease_count_for_test(snapshot.id), 1);
+    }
+
+    #[test]
+    fn release_active_build_lease_from_create_snapshot_is_accounted() {
+        let registry = SnapshotRegistry::new();
+        let (snapshot, active_build) = registry
+            .create_snapshot(request_id(), snapshot_input())
+            .unwrap();
+
+        registry
+            .release_lease(snapshot.id, active_build.lease_id)
+            .unwrap();
+
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild),
+            0
+        );
+        assert_eq!(registry.get(snapshot.id), Some(snapshot));
+    }
+
+    #[test]
+    fn acquire_lease_for_unknown_snapshot_returns_unknown_snapshot_id() {
+        let registry = SnapshotRegistry::new();
+        let unknown = snapshot_id(201);
+
+        let error = registry
+            .acquire_lease(unknown, RetentionReason::ExplanationRequest)
+            .unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::UnknownSnapshotId { snapshot_id } if snapshot_id == unknown
+        ));
+    }
+
+    #[test]
+    fn acquire_lease_for_unknown_snapshot_does_not_allocate_lease_id() {
+        let registry = SnapshotRegistry::with_allocator(CountingLeaseAllocator::new());
+        let unknown = snapshot_id(203);
+
+        let error = registry
+            .acquire_lease(unknown, RetentionReason::PendingWrite)
+            .unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::UnknownSnapshotId { snapshot_id } if snapshot_id == unknown
+        ));
+        assert_eq!(
+            registry.allocator.lease_allocations.load(Ordering::Relaxed),
+            0
+        );
+    }
+
+    #[test]
+    fn release_lease_for_wrong_snapshot_returns_mismatch_without_changing_counts() {
+        let registry = SnapshotRegistry::new();
+        let (first_snapshot, first_lease) = registry
+            .create_snapshot(request_id(), snapshot_input())
+            .unwrap();
+        let mut second_input = snapshot_input();
+        second_input.source_versions[0].source_hash = hash(222);
+        let (second_snapshot, _) = registry
+            .create_snapshot(request_id(), second_input)
+            .unwrap();
+
+        let error = registry
+            .release_lease(second_snapshot.id, first_lease.lease_id)
+            .unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::LeaseReleaseMismatch {
+                lease_id,
+                expected_snapshot,
+                actual_snapshot,
+            } if lease_id == first_lease.lease_id
+                && expected_snapshot == second_snapshot.id
+                && actual_snapshot == first_snapshot.id
+        ));
+        assert_eq!(
+            registry.lease_count_for_test(first_snapshot.id, RetentionReason::ActiveBuild),
+            1
+        );
+        assert_eq!(
+            registry.lease_count_for_test(second_snapshot.id, RetentionReason::ActiveBuild),
+            1
+        );
+
+        registry
+            .release_lease(first_snapshot.id, first_lease.lease_id)
+            .unwrap();
+
+        assert_eq!(
+            registry.lease_count_for_test(first_snapshot.id, RetentionReason::ActiveBuild),
+            0
+        );
+        assert_eq!(
+            registry.lease_count_for_test(second_snapshot.id, RetentionReason::ActiveBuild),
+            1
+        );
+    }
+
+    #[test]
+    fn release_lease_for_unknown_snapshot_returns_unknown_snapshot_id() {
+        let registry = SnapshotRegistry::new();
+        let (snapshot, lease) = registry
+            .create_snapshot(request_id(), snapshot_input())
+            .unwrap();
+        let unknown = snapshot_id(202);
+
+        let error = registry.release_lease(unknown, lease.lease_id).unwrap_err();
+
+        assert_ne!(snapshot.id, unknown);
+        assert!(matches!(
+            error,
+            SnapshotError::UnknownSnapshotId { snapshot_id } if snapshot_id == unknown
+        ));
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild),
+            1
+        );
+
+        registry.release_lease(snapshot.id, lease.lease_id).unwrap();
+
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild),
+            0
+        );
+    }
+
+    #[test]
+    fn double_release_returns_unknown_snapshot_lease_without_underflow() {
+        let registry = SnapshotRegistry::new();
+        let (snapshot, lease) = registry
+            .create_snapshot(request_id(), snapshot_input())
+            .unwrap();
+
+        registry.release_lease(snapshot.id, lease.lease_id).unwrap();
+        let error = registry
+            .release_lease(snapshot.id, lease.lease_id)
+            .unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::UnknownSnapshotLease { lease_id } if lease_id == lease.lease_id
+        ));
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild),
+            0
+        );
+    }
+
+    #[test]
+    fn unknown_lease_id_returns_unknown_snapshot_lease() {
+        let registry = SnapshotRegistry::new();
+        let (snapshot, _) = registry
+            .create_snapshot(request_id(), snapshot_input())
+            .unwrap();
+        let ids = InMemorySessionIdAllocator::new();
+        let _known_shape_but_not_this_lease = ids.next_lease_id(snapshot.id).unwrap();
+        let unknown_lease = ids.next_lease_id(snapshot.id).unwrap();
+
+        let error = registry
+            .release_lease(snapshot.id, unknown_lease)
+            .unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::UnknownSnapshotLease { lease_id } if lease_id == unknown_lease
+        ));
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild),
+            1
+        );
+    }
+
+    #[test]
+    fn release_lease_after_final_reason_count_removes_the_snapshot_total() {
+        let registry = SnapshotRegistry::new();
+        let (snapshot, active_build) = registry
+            .create_snapshot(request_id(), snapshot_input())
+            .unwrap();
+
+        registry
+            .release_lease(snapshot.id, active_build.lease_id)
+            .unwrap();
+
+        assert_eq!(registry.total_lease_count_for_test(snapshot.id), 0);
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild),
+            0
+        );
+        assert_eq!(registry.get(snapshot.id), Some(snapshot));
+    }
+
+    #[test]
+    fn acquire_lease_id_allocation_failure_does_not_change_counts() {
+        let registry = SnapshotRegistry::with_allocator(LeaseAllocatorFailsAfter::new(1));
+        let (snapshot, _) = registry
+            .create_snapshot(request_id(), snapshot_input())
+            .unwrap();
+
+        let error = registry
+            .acquire_lease(snapshot.id, RetentionReason::PublishedLspSnapshot)
+            .unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::LeaseIdAllocation {
+                error: IdError::AllocatorOverflow
+            }
+        ));
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild),
+            1
+        );
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::PublishedLspSnapshot),
+            0
+        );
     }
 
     #[test]
@@ -1386,6 +1864,41 @@ mod tests {
     }
 
     #[test]
+    fn stale_but_registered_snapshot_can_still_acquire_lease_without_becoming_current() {
+        let registry = SnapshotRegistry::new();
+        let request = request_id();
+        let (older, _) = registry.create_snapshot(request, snapshot_input()).unwrap();
+        let mut newer_input = snapshot_input();
+        newer_input.source_versions[0].source_hash = hash(100);
+        let (newer, _) = registry.create_snapshot(request, newer_input).unwrap();
+
+        let lease = registry
+            .acquire_lease(older.id, RetentionReason::PhaseOutputReference)
+            .unwrap();
+
+        assert_eq!(lease.snapshot, older.id);
+        assert!(!registry.is_current_for_request(older.id, request));
+        assert!(registry.is_current_for_request(newer.id, request));
+        assert_eq!(
+            registry.lease_count_for_test(older.id, RetentionReason::PhaseOutputReference),
+            1
+        );
+        assert_eq!(
+            registry.lease_count_for_test(newer.id, RetentionReason::PhaseOutputReference),
+            0
+        );
+
+        registry.release_lease(older.id, lease.lease_id).unwrap();
+
+        assert!(!registry.is_current_for_request(older.id, request));
+        assert!(registry.is_current_for_request(newer.id, request));
+        assert_eq!(
+            registry.lease_count_for_test(older.id, RetentionReason::PhaseOutputReference),
+            0
+        );
+    }
+
+    #[test]
     fn rejected_snapshot_does_not_allocate_lease_insert_snapshot_or_replace_current() {
         let registry = SnapshotRegistry::with_allocator(CountingLeaseAllocator::new());
         let request = request_id();
@@ -1444,6 +1957,7 @@ mod tests {
         ));
         assert_eq!(registry.get(snapshot_id), None);
         assert!(!registry.is_current_for_request(snapshot_id, request));
+        assert_eq!(registry.total_lease_count_for_test(snapshot_id), 0);
     }
 
     #[test]
@@ -1655,6 +2169,7 @@ mod tests {
             expected_snapshot: expected,
             actual_snapshot: actual,
         };
+        let unknown_snapshot_lease = SnapshotError::UnknownSnapshotLease { lease_id };
         let duplicate_source_version_identity = SnapshotError::DuplicateSourceVersionIdentity {
             package_id: PackageId::new("mml"),
             module_path: ModulePath::new("groups.basic"),
@@ -1710,6 +2225,12 @@ mod tests {
             } if actual_lease_id == lease_id
                 && expected_snapshot == expected
                 && actual_snapshot == actual
+        ));
+        assert!(matches!(
+            unknown_snapshot_lease,
+            SnapshotError::UnknownSnapshotLease {
+                lease_id: actual_lease_id,
+            } if actual_lease_id == lease_id
         ));
         assert!(matches!(
             duplicate_source_version_identity,
@@ -1854,6 +2375,50 @@ mod tests {
         }
     }
 
+    #[derive(Debug)]
+    struct LeaseAllocatorFailsAfter {
+        inner: InMemorySessionIdAllocator,
+        successful_lease_allocations_remaining: AtomicUsize,
+    }
+
+    impl LeaseAllocatorFailsAfter {
+        fn new(successful_lease_allocations: usize) -> Self {
+            Self {
+                inner: InMemorySessionIdAllocator::new(),
+                successful_lease_allocations_remaining: AtomicUsize::new(
+                    successful_lease_allocations,
+                ),
+            }
+        }
+    }
+
+    impl SessionIdAllocator for LeaseAllocatorFailsAfter {
+        fn next_session_id(&self) -> Result<BuildSessionId, IdError> {
+            self.inner.next_session_id()
+        }
+
+        fn next_request_id(&self) -> Result<BuildRequestId, IdError> {
+            self.inner.next_request_id()
+        }
+
+        fn next_source_id(&self, snapshot: BuildSnapshotId) -> Result<SourceId, IdError> {
+            self.inner.next_source_id(snapshot)
+        }
+
+        fn next_source_map_id(&self, snapshot: BuildSnapshotId) -> Result<SourceMapId, IdError> {
+            self.inner.next_source_map_id(snapshot)
+        }
+
+        fn next_lease_id(&self, snapshot: BuildSnapshotId) -> Result<SnapshotLeaseId, IdError> {
+            self.successful_lease_allocations_remaining
+                .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |remaining| {
+                    remaining.checked_sub(1)
+                })
+                .map_err(|_| IdError::AllocatorOverflow)?;
+            self.inner.next_lease_id(snapshot)
+        }
+    }
+
     fn source_version(
         source_id: crate::SourceId,
         package_id: &str,
@@ -1954,6 +2519,19 @@ mod tests {
                 )
             })
             .collect()
+    }
+
+    fn all_retention_reasons() -> [RetentionReason; 8] {
+        [
+            RetentionReason::ActiveBuild,
+            RetentionReason::CurrentWatchBaseline,
+            RetentionReason::PublishedLspSnapshot,
+            RetentionReason::OpenBufferOverlay,
+            RetentionReason::DiagnosticIndex,
+            RetentionReason::ExplanationRequest,
+            RetentionReason::PhaseOutputReference,
+            RetentionReason::PendingWrite,
+        ]
     }
 
     fn hash(first_byte: u8) -> Hash {

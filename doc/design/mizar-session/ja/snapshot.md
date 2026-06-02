@@ -126,6 +126,16 @@ impl<A: SessionIdAllocator> SnapshotRegistry<A> {
         request: BuildRequestId,
         input: SnapshotInput,
     ) -> Result<(BuildSnapshot, SnapshotLease), SnapshotError>;
+    pub fn acquire_lease(
+        &self,
+        snapshot: BuildSnapshotId,
+        reason: RetentionReason,
+    ) -> Result<SnapshotLease, SnapshotError>;
+    pub fn release_lease(
+        &self,
+        snapshot: BuildSnapshotId,
+        lease_id: SnapshotLeaseId,
+    ) -> Result<(), SnapshotError>;
     pub fn get(&self, id: BuildSnapshotId) -> Option<BuildSnapshot>;
     pub fn is_current_for_request(&self, id: BuildSnapshotId, request: BuildRequestId) -> bool;
 }
@@ -198,6 +208,9 @@ overlay 詳細が内容同一性に影響しないようにします。
 ### Snapshot Lease
 
 `SnapshotLease` は、外部の利用側がまだスナップショットを参照している可能性がある間、そのスナップショットが回収されるのを防ぎます。
+レジストリは `RetentionReason` ごとに live lease 数を追跡します。
+`create_snapshot` が返す active-build lease も、`acquire_lease` で取得した
+lease と同じ方法で計上されます。
 
 リースの理由には次があります。
 
@@ -254,6 +267,7 @@ overlay 詳細が内容同一性に影響しないようにします。
 - 失効したオープンバッファバージョン。タスク 11 では、読み込み済み snapshot input 内の構造的に不正な version 値の拒否に限定し、expected-vs-actual の stale チェックは source loading が行う
 - 未知のスナップショット ID
 - リース解放の不一致
+- 未知のスナップショットリース ID（解放済み lease ID を含む）
 - リース ID の割り当て失敗
 
 ソースの可読性と UTF-8 検証の診断は、フロントエンドのソース読み込みフローが生成します。このモジュールは、ソース読み込みが有効なソース同一性を生成した後でのみ、結果のソースバージョンを記録します。
