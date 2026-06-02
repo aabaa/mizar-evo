@@ -37,6 +37,15 @@ pub enum SourceOrigin {
     Generated { generator: GeneratedSourceKind },
 }
 
+impl SourceVersion {
+    pub fn canonical_sort_key(&self) -> SourceVersionCanonicalKey<'_>;
+}
+
+// 不透明な比較キー: package id、module path、normalized path、source hash。
+pub struct SourceVersionCanonicalKey<'a> { /* private fields */ }
+
+pub fn sort_source_versions_canonical(source_versions: &mut [SourceVersion]);
+
 // snapshot／共有リース層が所有し、`retention` が再エクスポートする。
 pub enum RetentionReason {
     ActiveBuild,

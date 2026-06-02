@@ -14,7 +14,7 @@
 |---|---|---|---|
 | ids | [ids.md](../en/ids.md) | `src/ids.rs` | [x] |
 | source_map | [source_map.md](../en/source_map.md) | `src/source_map.rs` | [~] |
-| snapshot | [snapshot.md](../en/snapshot.md) | `src/snapshot.rs` | [ ] |
+| snapshot | [snapshot.md](../en/snapshot.md) | `src/snapshot.rs` | [~] |
 | source | [source.md](../en/source.md) | `src/source.rs` | [~] |
 | retention | [retention.md](../en/retention.md) | `src/retention.rs` | [ ] |
 
@@ -90,7 +90,7 @@
 
 ### モジュール: snapshot (`src/snapshot.rs`)
 
-9. **ソースバージョンのレコード。** [ ]
+9. **ソースバージョンのレコード。** [x]
    - `pub mod snapshot;` を追加する。`SourceVersion` と `SourceOrigin`（`Disk` / `OpenBuffer{version}` / `Generated{generator}`）を定義する。
    - `SnapshotError` を spec の変種付きで定義する（後続タスクが必要とする時に追加）: 不正/非正規化のソースパス、duplicate module path、欠落した依存アーティファクト、未対応の lockfile/ツールチェインメタデータ、古いオープンバッファバージョン、未知のスナップショット id、リースリリースの不一致。
    - 正準ソートキー（package id、module path、normalized path、source hash）を用意する。
@@ -99,6 +99,7 @@
 
 10. **ビルドスナップショットの同一性。** [ ]
     - `BuildSnapshot` と `SnapshotInput` を定義し、正準入力（ソート済みのソース/依存サマリー、lockfile ハッシュ、ツールチェイン、検証器構成ハッシュ）から内容由来の `BuildSnapshotId` を計算する。セッションローカル id/タイムスタンプは除外する。
+    - タスク 9 からの申し送り: 正準キー（package id、module path、normalized path、source hash）で等価に比較される source-version エントリが、スナップショットハッシュを挿入順依存にしてはならない。そのような重複がハッシュ化に到達し得る場合は決定的にエンコードする。望ましくは、タスク 11 の検証で重複する source-version identity をハッシュ化前に拒否する。
     - テスト: 同一の正準入力 ⇒ 同一 id、ソース/依存/構成の変更 ⇒ 異なる id、セッションローカル id はハッシュに含まれない。
     - 依存: 2, 9。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Identity"。
 
@@ -106,6 +107,7 @@
     - `SnapshotRegistry` に `create_snapshot`、`get`、`is_current_for_request` を定義する。
     - spec に従う: `create_snapshot` はパスを正規化し、`SourceVersion` レコードを構築し、id をハッシュし、スナップショットを挿入して、active-build `SnapshotLease` とともに返す。spec のシグネチャは `Result<(BuildSnapshot, SnapshotLease), SnapshotError>` に更新する。（これは「作成時に lease を返すか / 呼び出し側が acquire するか」の論点を spec 寄りに解消する: レジストリが active-build lease を返す。）
     - ここで、最小の `SnapshotLease` ハンドルと、それが持つ依存無しの `RetentionReason` 列挙を導入する（`retention` モジュールと共有。active-build lease は `RetentionReason::ActiveBuild` を使う）。完全なリース計上はタスク 12 で行い、retention（タスク 16）はこの `RetentionReason` を再定義せず再利用する。
+    - タスク 9/10 からの申し送り: 正準キーが等しい重複 source-version identity はスナップショットハッシュ化前に拒否し、作成処理が挿入順に敏感な重複レコードを受理しないようにする。
     - テスト: 作成したスナップショットが取得可能で active-build lease を返す、古い id は鮮度チェックで拒否、古いスナップショットは current として報告されない、duplicate module path は拒否、パス正規化が重複ソース同一性を防ぐ、欠落した依存アーティファクトは拒否、未対応の lockfile/ツールチェインメタデータは拒否、古いオープンバッファバージョンは拒否。
     - 依存: 3, 10。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Creation", "Freshness Check", "Error Handling"。
 

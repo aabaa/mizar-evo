@@ -14,7 +14,7 @@
 |---|---|---|---|
 | ids | [ids.md](./ids.md) | `src/ids.rs` | [x] |
 | source_map | [source_map.md](./source_map.md) | `src/source_map.rs` | [~] |
-| snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs` | [ ] |
+| snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs` | [~] |
 | source | [source.md](./source.md) | `src/source.rs` | [~] |
 | retention | [retention.md](./retention.md) | `src/retention.rs` | [ ] |
 
@@ -90,7 +90,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
 
 ### Module: snapshot (`src/snapshot.rs`)
 
-9. **Source-version record.** [ ]
+9. **Source-version record.** [x]
    - Add `pub mod snapshot;`. Define `SourceVersion` and `SourceOrigin` (`Disk` / `OpenBuffer{version}` / `Generated{generator}`).
    - Define `SnapshotError` with its spec variants (added as later tasks need them): invalid or non-normalizable source path, duplicate module path, missing dependency artifact, unsupported lockfile or toolchain metadata, stale open-buffer version, unknown snapshot id, lease release mismatch.
    - Provide the canonical sort key (package id, module path, normalized path, source hash).
@@ -99,6 +99,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
 
 10. **Build snapshot identity.** [ ]
     - Define `BuildSnapshot` and `SnapshotInput`; compute content-derived `BuildSnapshotId` from canonical input (sorted source/dependency summaries, lockfile hash, toolchain, verifier-config hash), excluding session-local ids/timestamps.
+    - Handoff from task 9: source-version entries that compare equal by the canonical key (package id, module path, normalized path, source hash) must not make snapshot hashing insertion-order dependent. If such duplicates can reach hashing, encode them deterministically; preferably have task 11 validation reject duplicate source-version identities before hashing.
     - Tests: identical canonical inputs ⇒ identical id; source/dependency/config change ⇒ different id; session-local ids absent from the hash.
     - Depends on: 2, 9. Spec: [snapshot.md](./snapshot.md) "Snapshot Identity".
 
@@ -106,6 +107,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Define `SnapshotRegistry` with `create_snapshot`, `get`, and `is_current_for_request`.
     - Follow the spec: `create_snapshot` normalizes paths, builds `SourceVersion` records, hashes the id, inserts the snapshot, and returns it together with an active-build `SnapshotLease`. The spec signature is updated to `Result<(BuildSnapshot, SnapshotLease), SnapshotError>`. (This resolves the lease-at-creation question in favor of the spec: the registry returns the active-build lease rather than relying on the caller to acquire one.)
     - Introduce here the minimal `SnapshotLease` handle and the dependency-free `RetentionReason` enum that it carries (shared with the `retention` module; the active-build lease uses `RetentionReason::ActiveBuild`). Full lease accounting lands in task 12; retention (task 16) reuses this `RetentionReason` rather than redefining it.
+    - Handoff from task 9/10: reject duplicate source-version identities whose canonical keys are equal before snapshot hashing, so creation cannot accept insertion-order-sensitive duplicate records.
     - Tests: created snapshot is retrievable and returns an active-build lease; stale id is rejected by freshness; older snapshot is not reported as current; duplicate module path is rejected; path normalization prevents duplicate source identities; missing dependency artifact is rejected; unsupported lockfile/toolchain metadata is rejected; stale open-buffer version is rejected.
     - Depends on: 3, 10. Spec: [snapshot.md](./snapshot.md) "Snapshot Creation", "Freshness Check", "Error Handling".
 

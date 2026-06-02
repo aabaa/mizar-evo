@@ -37,6 +37,15 @@ pub enum SourceOrigin {
     Generated { generator: GeneratedSourceKind },
 }
 
+impl SourceVersion {
+    pub fn canonical_sort_key(&self) -> SourceVersionCanonicalKey<'_>;
+}
+
+// Opaque comparison key: package id, module path, normalized path, source hash.
+pub struct SourceVersionCanonicalKey<'a> { /* private fields */ }
+
+pub fn sort_source_versions_canonical(source_versions: &mut [SourceVersion]);
+
 // Owned by the snapshot/shared lease layer; re-exported by `retention`.
 pub enum RetentionReason {
     ActiveBuild,
