@@ -103,52 +103,59 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: identical canonical inputs ⇒ identical id; source/dependency/config change ⇒ different id; session-local ids absent from the hash.
     - Depends on: 2, 9. Spec: [snapshot.md](./snapshot.md) "Snapshot Identity".
 
-11. **Snapshot registry, creation, and freshness.** [ ]
+11. **Snapshot registry, creation, and freshness.** [x]
     - Define `SnapshotRegistry` with `create_snapshot`, `get`, and `is_current_for_request`.
-    - Follow the spec: `create_snapshot` normalizes paths, builds `SourceVersion` records, hashes the id, inserts the snapshot, and returns it together with an active-build `SnapshotLease`. The spec signature is updated to `Result<(BuildSnapshot, SnapshotLease), SnapshotError>`. (This resolves the lease-at-creation question in favor of the spec: the registry returns the active-build lease rather than relying on the caller to acquire one.)
-    - Introduce here the minimal `SnapshotLease` handle and the dependency-free `RetentionReason` enum that it carries (shared with the `retention` module; the active-build lease uses `RetentionReason::ActiveBuild`). Full lease accounting lands in task 12; retention (task 16) reuses this `RetentionReason` rather than redefining it.
+    - Follow the task-11 boundary: `create_snapshot` accepts already-loaded `SourceVersion` records from the source-loading layer, validates the creation input, hashes the id, inserts the snapshot, and returns it together with an active-build `SnapshotLease`. The spec signature is updated to `Result<(BuildSnapshot, SnapshotLease), SnapshotError>`. (This resolves the lease-at-creation question in favor of the spec: the registry returns the active-build lease rather than relying on the caller to acquire one.)
+    - Introduce here the minimal `SnapshotLease` handle and the dependency-free `RetentionReason` enum that it carries (shared with the `retention` module; the active-build lease uses `RetentionReason::ActiveBuild`). Full lease accounting lands in task 12; retention (task 17) reuses this `RetentionReason` rather than redefining it.
     - Handoff from task 9/10: reject duplicate source-version identities whose canonical keys are equal before snapshot hashing, so creation cannot accept insertion-order-sensitive duplicate records.
-    - Tests: created snapshot is retrievable and returns an active-build lease; stale id is rejected by freshness; older snapshot is not reported as current; duplicate module path is rejected; path normalization prevents duplicate source identities; missing dependency artifact is rejected; unsupported lockfile/toolchain metadata is rejected; stale open-buffer version is rejected.
+    - Tests: created snapshot is retrievable and returns an active-build lease; stale id is rejected by freshness; older snapshot is not reported as current; duplicate module path is rejected; path-normalized duplicate source identities are rejected through the source-version canonical key; missing dependency artifact/content fingerprint is rejected; unsupported lockfile/toolchain metadata is rejected; structurally invalid open-buffer versions are rejected. True expected-vs-actual open-buffer staleness is checked by the source-loading task that has request metadata.
     - Depends on: 3, 10. Spec: [snapshot.md](./snapshot.md) "Snapshot Creation", "Freshness Check", "Error Handling".
 
 12. **Snapshot lease accounting.** [ ]
-    - Complete `SnapshotLease` with `acquire_lease`/`release_lease` on the registry, tracking lease counts per `RetentionReason` (from task 11); still no collection policy (that is retention, task 16-17).
+    - Complete `SnapshotLease` with `acquire_lease`/`release_lease` on the registry, tracking lease counts per `RetentionReason` (from task 11); still no collection policy (that is retention, task 17-18).
     - Tests: acquire/release adjusts counts; releasing the active-build lease from task 11 is accounted; unknown snapshot id and lease release mismatch surface `SnapshotError`.
     - Depends on: 11. Spec: [snapshot.md](./snapshot.md) "Snapshot Lease".
 
+13. **Snapshot construction API hardening.** [ ]
+    - Decide whether direct unchecked constructors (`BuildSnapshot::from_input`, `SnapshotInput::build_snapshot`, and `SnapshotInput::build_snapshot_id`) should remain public, become crate-private, or be renamed/documented as identity-only unchecked helpers.
+    - Keep `SnapshotRegistry::create_snapshot` as the validated public creation path for registry snapshots.
+    - If direct construction remains useful for identity tests or tooling, make the unchecked semantics explicit so downstream crates do not bypass creation validation by accident.
+    - Tests: invalid `SnapshotInput` cannot produce a published/registry snapshot through the validated API; direct unchecked construction is either unavailable publicly or explicitly documented and tested as identity-only.
+    - Depends on: 12. Spec: [snapshot.md](./snapshot.md) "Snapshot Creation", "Error Handling".
+
 ### Module: source (`src/source.rs`)
 
-13. **Loaded-source types and loader surface.** [ ]
+14. **Loaded-source types and loader surface.** [ ]
     - Define `SourceInput`, `SourceOriginInput` (the source-loading input variants carrying `path` / `uri,version,text` / generator text+anchor), `LoadedSource`, and the `SourceLoader` trait; `load` takes the target `BuildSnapshotId` before `SourceInput` so it can request a snapshot-scoped `SourceId`; reuse snapshot's `SourceOrigin` (task 9) for `LoadedSource.origin` instead of redefining it; implement `hash_text` and `normalize_path` (reuse existing `normalize_source_path`).
     - Define `SourceLoadError` with its spec variants: source path outside package root, unsupported file extension, invalid UTF-8, unreadable source file, duplicate module path, stale LSP document version, open-buffer URI that cannot be mapped to a package source, generated source without required generator metadata, source id allocation failure from `SessionIdAllocator`.
     - Tests: `source_hash` excludes absolute paths/document versions; identical text in different origins shares the hash.
     - Depends on: 1, 4, 6, 9. Spec: [source.md](./source.md) "Public API", "Loaded Source".
 
-14. **Disk source loading.** [ ]
+15. **Disk source loading.** [ ]
     - Implement disk loading: path normalization + package-root enforcement, read bytes, UTF-8 validation (no lossy `U+FFFD`), leading-BOM strip, CRLF→LF normalization, `source_hash`, `LineMap`, and `LoadingMap` emission.
     - Only the leading UTF-8 BOM is an encoding signature; a non-leading `U+FEFF` stays in loaded text. Only CRLF pairs normalize to LF; a lone `\r` is preserved (not treated as a platform newline).
     - Tests: invalid UTF-8 rejected before line-map; unsupported extension rejected; leading BOM → loading map `0`↔`3`; non-leading `U+FEFF` preserved in loaded text; CRLF normalized while lone `\r` is preserved; path outside root rejected.
-    - Depends on: 13. Spec: [source.md](./source.md) "Disk Source Loading".
+    - Depends on: 14. Spec: [source.md](./source.md) "Disk Source Loading".
 
-15. **Open-buffer and generated loading.** [ ]
+16. **Open-buffer and generated loading.** [ ]
     - Implement open-buffer loading (LSP document-version validation, URI→package path, BOM strip, CRLF normalize, loading map back to editor offsets) and generated-source loading (generator metadata + anchor).
     - Tests: open-buffer overrides disk only for the matching version; stale version rejected; the open-buffer loading map relates loaded-text offsets back to editor-provided text byte offsets (before LSP UTF-16 conversion); unmappable open-buffer URI rejected; generated source without metadata rejected.
-    - Depends on: 14. Spec: [source.md](./source.md) "Open-Buffer Source Loading", "Generated Source Loading".
+    - Depends on: 15. Spec: [source.md](./source.md) "Open-Buffer Source Loading", "Generated Source Loading".
 
 ### Module: retention (`src/retention.rs`)
 
-16. **Retention manager and leases.** [ ]
+17. **Retention manager and leases.** [ ]
     - Add `pub mod retention;`. Define `RetentionManager`, `RetainSnapshotInput`, `RetainGuard`, `RetainOwner`, and `retain_snapshot`/`release` with reference counting; reuse `RetentionReason` (defined in task 11) rather than redefining it.
     - Define `RetentionError` with its spec variants: unknown snapshot id, unknown or already-released lease id, lease snapshot mismatch, invalid owner/reason combination, attempt to mark a missing snapshot as current, collection blocked by inconsistent retention state.
     - Retaining a stale snapshot is allowed for diagnostic / explanation / LSP stale-display / IR-output reasons, but must not make the snapshot current.
     - Tests: active lease prevents collection eligibility; duplicate release is reported without underflow; an invalid owner/reason combination is rejected; a stale-snapshot retain succeeds without marking it current.
-    - Depends on: 12. Spec: [retention.md](./retention.md) "Retain", "Release", "Error Handling".
+    - Depends on: 13. Spec: [retention.md](./retention.md) "Retain", "Release", "Error Handling".
 
-17. **Current marks and collection.** [ ]
+18. **Current marks and collection.** [ ]
     - Add `mark_current`/`unmark_current`, `collect`, and `CollectionSummary`; implement the collection policy (no lease, no current mark, no retained map/explanation, IR phase-output lease released).
     - `CollectionSummary` reports counts for snapshots scanned/collected, sources and maps released, snapshots skipped for current marks, snapshots skipped for live leases, and stale/mismatched-lease diagnostics.
     - Tests: current mark prevents collection without other leases; releasing the final lease collects; a phase-output lease blocks collection until released; marking a missing snapshot as current surfaces `RetentionError`; `CollectionSummary` reports skipped-for-current and skipped-for-lease counters and stale-lease diagnostics; collection does not delete artifacts/cache.
-    - Depends on: 16. Spec: [retention.md](./retention.md) "Collection", "Current Marks", "Collection Summary".
+    - Depends on: 17. Spec: [retention.md](./retention.md) "Collection", "Current Marks", "Collection Summary".
 
 ## Cross-Cutting Follow-ups
 

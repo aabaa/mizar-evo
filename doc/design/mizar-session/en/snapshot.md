@@ -110,6 +110,26 @@ pub struct SourceVersionCanonicalKey<'a> { /* private fields */ }
 
 pub fn sort_source_versions_canonical(source_versions: &mut [SourceVersion]);
 
+pub struct SnapshotRegistry<A = InMemorySessionIdAllocator> { /* private fields */ }
+
+impl SnapshotRegistry<InMemorySessionIdAllocator> {
+    pub fn new() -> Self;
+}
+
+impl<A> SnapshotRegistry<A> {
+    pub fn with_allocator(allocator: A) -> Self;
+}
+
+impl<A: SessionIdAllocator> SnapshotRegistry<A> {
+    pub fn create_snapshot(
+        &self,
+        request: BuildRequestId,
+        input: SnapshotInput,
+    ) -> Result<(BuildSnapshot, SnapshotLease), SnapshotError>;
+    pub fn get(&self, id: BuildSnapshotId) -> Option<BuildSnapshot>;
+    pub fn is_current_for_request(&self, id: BuildSnapshotId, request: BuildRequestId) -> bool;
+}
+
 // Owned by the snapshot/shared lease layer; re-exported by `retention`.
 pub enum RetentionReason {
     ActiveBuild,
@@ -123,16 +143,9 @@ pub enum RetentionReason {
 }
 
 pub struct SnapshotLease {
+    pub lease_id: SnapshotLeaseId,
     pub snapshot: BuildSnapshotId,
     pub reason: RetentionReason,
-}
-
-pub trait SnapshotRegistry {
-    fn create_snapshot(&self, input: SnapshotInput) -> Result<(BuildSnapshot, SnapshotLease), SnapshotError>;
-    fn get(&self, id: BuildSnapshotId) -> Option<BuildSnapshotRef>;
-    fn acquire_lease(&self, id: BuildSnapshotId, reason: RetentionReason) -> Result<SnapshotLease, SnapshotError>;
-    fn release_lease(&self, lease: SnapshotLease);
-    fn is_current_for_request(&self, id: BuildSnapshotId, request: BuildRequestId) -> bool;
 }
 ```
 
@@ -152,7 +165,7 @@ This module is consumed by `mizar-build`, `mizar-ir`, `mizar-cache`, `mizar-arti
 
 `BuildSnapshotId` is derived from canonical snapshot input:
 
-- workspace root identity after normalization;
+- workspace root identity, provided in normalized form by the caller/source-loading layer;
 - sorted source-version summaries;
 - dependency artifact identity and content hashes;
 - lockfile hash;
@@ -191,6 +204,7 @@ Lease reasons include:
 - active build request;
 - watch baseline;
 - published LSP snapshot;
+- open-buffer overlay;
 - diagnostic index;
 - explanation request;
 - phase-output retention in `mizar-ir`;
@@ -202,12 +216,14 @@ Leases retain snapshot metadata and source maps. They do not by themselves retai
 
 ### Snapshot Creation
 
-1. Normalize workspace, package, and source paths.
-2. Build `SourceVersion` records from disk files, open buffers, and generated sources selected by the request.
+1. Accept already-loaded `SourceVersion` records from the source-loading layer.
+2. Validate source identities, dependency artifact references, lockfile metadata, toolchain metadata, and structurally valid open-buffer versions.
 3. Sort source and dependency summaries by canonical keys.
 4. Hash canonical snapshot input into `BuildSnapshotId`.
 5. Insert the immutable snapshot into the registry.
 6. Return the snapshot and an active-build lease to the caller.
+
+Disk, open-buffer, and generated-source loading are implemented by later source-loading tasks. This registry records and validates the resulting snapshot input; it does not read source text from disk or editor buffers. Expected-vs-actual open-buffer staleness is checked by the source-loading layer, which owns request document-version metadata.
 
 ### Freshness Check
 
@@ -232,11 +248,13 @@ Collection removes in-memory source text and maps unless another layer explicitl
 
 - invalid or non-normalizable source path;
 - duplicate module path in one package snapshot;
-- missing dependency artifact referenced by the build plan;
+- duplicate source-version identity before snapshot hashing;
+- missing dependency artifact or content fingerprint referenced by the build plan;
 - unsupported lockfile or toolchain metadata;
-- stale open-buffer version;
+- stale open-buffer version. During task 11 this is limited to structurally invalid version values in already-loaded snapshot input; expected-vs-actual stale checks are performed by source loading;
 - unknown snapshot id;
 - lease release mismatch.
+- lease id allocation failure.
 
 Source readability and UTF-8 validation diagnostics are produced by the frontend source-loading flow. This module records the resulting source version only after source loading has produced a valid source identity.
 

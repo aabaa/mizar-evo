@@ -110,6 +110,26 @@ pub struct SourceVersionCanonicalKey<'a> { /* private fields */ }
 
 pub fn sort_source_versions_canonical(source_versions: &mut [SourceVersion]);
 
+pub struct SnapshotRegistry<A = InMemorySessionIdAllocator> { /* private fields */ }
+
+impl SnapshotRegistry<InMemorySessionIdAllocator> {
+    pub fn new() -> Self;
+}
+
+impl<A> SnapshotRegistry<A> {
+    pub fn with_allocator(allocator: A) -> Self;
+}
+
+impl<A: SessionIdAllocator> SnapshotRegistry<A> {
+    pub fn create_snapshot(
+        &self,
+        request: BuildRequestId,
+        input: SnapshotInput,
+    ) -> Result<(BuildSnapshot, SnapshotLease), SnapshotError>;
+    pub fn get(&self, id: BuildSnapshotId) -> Option<BuildSnapshot>;
+    pub fn is_current_for_request(&self, id: BuildSnapshotId, request: BuildRequestId) -> bool;
+}
+
 // snapshot／共有リース層が所有し、`retention` が再エクスポートする。
 pub enum RetentionReason {
     ActiveBuild,
@@ -123,16 +143,9 @@ pub enum RetentionReason {
 }
 
 pub struct SnapshotLease {
+    pub lease_id: SnapshotLeaseId,
     pub snapshot: BuildSnapshotId,
     pub reason: RetentionReason,
-}
-
-pub trait SnapshotRegistry {
-    fn create_snapshot(&self, input: SnapshotInput) -> Result<(BuildSnapshot, SnapshotLease), SnapshotError>;
-    fn get(&self, id: BuildSnapshotId) -> Option<BuildSnapshotRef>;
-    fn acquire_lease(&self, id: BuildSnapshotId, reason: RetentionReason) -> Result<SnapshotLease, SnapshotError>;
-    fn release_lease(&self, lease: SnapshotLease);
-    fn is_current_for_request(&self, id: BuildSnapshotId, request: BuildRequestId) -> bool;
 }
 ```
 
@@ -152,7 +165,7 @@ pub trait SnapshotRegistry {
 
 `BuildSnapshotId` は、正準的なスナップショット入力から導出されます。
 
-- 正規化後のワークスペースルートの同一性
+- 呼び出し側または source-loading 層が正規化済みの形で渡すワークスペースルートの同一性
 - ソートされたソースバージョンの要約
 - 依存アーティファクトの同一性とコンテンツハッシュ
 - ロックファイルのハッシュ
@@ -191,6 +204,7 @@ overlay 詳細が内容同一性に影響しないようにします。
 - 実行中のビルドリクエスト
 - watch のベースライン
 - 公開された LSP スナップショット
+- オープンバッファのオーバーレイ
 - 診断インデックス
 - 説明リクエスト
 - `mizar-ir` におけるフェーズ出力の保持
@@ -202,12 +216,14 @@ overlay 詳細が内容同一性に影響しないようにします。
 
 ### Snapshot Creation
 
-1. ワークスペース・パッケージ・ソースの各パスを正規化する。
-2. リクエストが選択したディスクファイル・オープンバッファ・生成ソースから `SourceVersion` レコードを作る。
+1. source-loading 層から、読み込み済みの `SourceVersion` レコードを受け取る。
+2. ソース同一性、依存アーティファクト参照、ロックファイルメタデータ、ツールチェインメタデータ、構造的に有効なオープンバッファバージョンを検証する。
 3. ソースと依存の要約を正準キーでソートする。
 4. 正準的なスナップショット入力をハッシュして `BuildSnapshotId` を作る。
 5. 不変のスナップショットをレジストリに挿入する。
 6. スナップショットと、実行中ビルドのリースを呼び出し側に返す。
+
+ディスク、オープンバッファ、生成ソースの読み込みは後続の source-loading タスクで実装する。このレジストリは、その結果として得られた snapshot input を記録・検証するだけで、ディスクやエディタバッファからソーステキストを読み込まない。expected-vs-actual の open-buffer staleness は、リクエストのドキュメントバージョンメタデータを所有する source-loading 層で検証する。
 
 ### Freshness Check
 
@@ -232,11 +248,13 @@ overlay 詳細が内容同一性に影響しないようにします。
 
 - 不正、または正規化できないソースパス
 - 1 つのパッケージスナップショット内の重複するモジュールパス
-- ビルドプランが参照する、欠落した依存アーティファクト
+- スナップショットハッシュ化前に見つかった重複する source-version identity
+- ビルドプランが参照する、欠落した依存アーティファクトまたはコンテンツフィンガープリント
 - 未対応のロックファイルまたはツールチェインのメタデータ
-- 失効したオープンバッファバージョン
+- 失効したオープンバッファバージョン。タスク 11 では、読み込み済み snapshot input 内の構造的に不正な version 値の拒否に限定し、expected-vs-actual の stale チェックは source loading が行う
 - 未知のスナップショット ID
 - リース解放の不一致
+- リース ID の割り当て失敗
 
 ソースの可読性と UTF-8 検証の診断は、フロントエンドのソース読み込みフローが生成します。このモジュールは、ソース読み込みが有効なソース同一性を生成した後でのみ、結果のソースバージョンを記録します。
 

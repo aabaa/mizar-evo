@@ -9,8 +9,9 @@ pub use ids::{
 };
 pub use snapshot::{
     BuildSnapshot, DependencyArtifactRef, Edition, GeneratedSourceKind, ModulePath, PackageId,
-    SnapshotError, SnapshotInput, SourceOrigin, SourceVersion, SourceVersionCanonicalKey,
-    ToolchainInfo, WorkspaceRoot, sort_source_versions_canonical,
+    RetentionReason, SnapshotError, SnapshotInput, SnapshotLease, SnapshotRegistry, SourceOrigin,
+    SourceVersion, SourceVersionCanonicalKey, ToolchainInfo, WorkspaceRoot,
+    sort_source_versions_canonical,
 };
 pub use source::{NormalizedPath, SourcePathError, normalize_source_path};
 pub use source_map::{

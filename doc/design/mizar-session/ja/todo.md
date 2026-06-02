@@ -103,52 +103,59 @@
     - テスト: 同一の正準入力 ⇒ 同一 id、ソース/依存/構成の変更 ⇒ 異なる id、セッションローカル id はハッシュに含まれない。
     - 依存: 2, 9。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Identity"。
 
-11. **スナップショットレジストリ、作成、鮮度。** [ ]
+11. **スナップショットレジストリ、作成、鮮度。** [x]
     - `SnapshotRegistry` に `create_snapshot`、`get`、`is_current_for_request` を定義する。
-    - spec に従う: `create_snapshot` はパスを正規化し、`SourceVersion` レコードを構築し、id をハッシュし、スナップショットを挿入して、active-build `SnapshotLease` とともに返す。spec のシグネチャは `Result<(BuildSnapshot, SnapshotLease), SnapshotError>` に更新する。（これは「作成時に lease を返すか / 呼び出し側が acquire するか」の論点を spec 寄りに解消する: レジストリが active-build lease を返す。）
-    - ここで、最小の `SnapshotLease` ハンドルと、それが持つ依存無しの `RetentionReason` 列挙を導入する（`retention` モジュールと共有。active-build lease は `RetentionReason::ActiveBuild` を使う）。完全なリース計上はタスク 12 で行い、retention（タスク 16）はこの `RetentionReason` を再定義せず再利用する。
+    - タスク 11 の境界に従う: `create_snapshot` は source-loading 層から読み込み済みの `SourceVersion` レコードを受け取り、作成入力を検証し、id をハッシュし、スナップショットを挿入して、active-build `SnapshotLease` とともに返す。spec のシグネチャは `Result<(BuildSnapshot, SnapshotLease), SnapshotError>` に更新する。（これは「作成時に lease を返すか / 呼び出し側が acquire するか」の論点を spec 寄りに解消する: レジストリが active-build lease を返す。）
+    - ここで、最小の `SnapshotLease` ハンドルと、それが持つ依存無しの `RetentionReason` 列挙を導入する（`retention` モジュールと共有。active-build lease は `RetentionReason::ActiveBuild` を使う）。完全なリース計上はタスク 12 で行い、retention（タスク 17）はこの `RetentionReason` を再定義せず再利用する。
     - タスク 9/10 からの申し送り: 正準キーが等しい重複 source-version identity はスナップショットハッシュ化前に拒否し、作成処理が挿入順に敏感な重複レコードを受理しないようにする。
-    - テスト: 作成したスナップショットが取得可能で active-build lease を返す、古い id は鮮度チェックで拒否、古いスナップショットは current として報告されない、duplicate module path は拒否、パス正規化が重複ソース同一性を防ぐ、欠落した依存アーティファクトは拒否、未対応の lockfile/ツールチェインメタデータは拒否、古いオープンバッファバージョンは拒否。
+    - テスト: 作成したスナップショットが取得可能で active-build lease を返す、古い id は鮮度チェックで拒否、古いスナップショットは current として報告されない、duplicate module path は拒否、パス正規化済みの重複ソース同一性は source-version canonical key で拒否、欠落した依存アーティファクト/コンテンツフィンガープリントは拒否、未対応の lockfile/ツールチェインメタデータは拒否、構造的に不正な open-buffer version は拒否。expected-vs-actual の真の open-buffer staleness は、リクエストメタデータを持つ source-loading タスクで検証する。
     - 依存: 3, 10。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Creation", "Freshness Check", "Error Handling"。
 
 12. **スナップショットリースの計上。** [ ]
-    - レジストリの `SnapshotLease` を `acquire_lease`/`release_lease` で完成させ、`RetentionReason`（タスク 11 由来）ごとにリース数を追跡する。回収ポリシーはまだ持たない（それは retention、タスク 16-17）。
+    - レジストリの `SnapshotLease` を `acquire_lease`/`release_lease` で完成させ、`RetentionReason`（タスク 11 由来）ごとにリース数を追跡する。回収ポリシーはまだ持たない（それは retention、タスク 17-18）。
     - テスト: acquire/release で数が増減する、タスク 11 の active-build lease の解放が計上される、未知のスナップショット id とリースリリースの不一致が `SnapshotError` になる。
     - 依存: 11。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Lease"。
 
+13. **スナップショット構築 API の堅牢化。** [ ]
+    - 直接の unchecked constructor（`BuildSnapshot::from_input`, `SnapshotInput::build_snapshot`, `SnapshotInput::build_snapshot_id`）を public のまま残すか、crate-private にするか、identity-only の unchecked helper として rename/document するかを決める。
+    - registry snapshot の検証済み public 作成経路として `SnapshotRegistry::create_snapshot` を維持する。
+    - identity テストや tooling のために直接構築を残す場合は、downstream crate が誤って creation validation を迂回しないよう unchecked semantics を明示する。
+    - テスト: invalid `SnapshotInput` は検証済み API から published/registry snapshot を作れない。直接 unchecked construction は public に使えないか、identity-only として明示的に document/test されている。
+    - 依存: 12。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Creation", "Error Handling"。
+
 ### モジュール: source (`src/source.rs`)
 
-13. **ロード済みソース型とローダー面。** [ ]
+14. **ロード済みソース型とローダー面。** [ ]
     - `SourceInput`, `SourceOriginInput`（`path` / `uri,version,text` / 生成器 text+anchor を持つソース読み込み入力の variant）, `LoadedSource` と `SourceLoader` trait を定義する。`load` は `SourceInput` の前に対象の `BuildSnapshotId` を受け取り、スナップショットスコープの `SourceId` を発行できるようにする。`LoadedSource.origin` には snapshot の `SourceOrigin`（タスク 9）を再定義せず再利用する。`hash_text` と `normalize_path`（既存の `normalize_source_path` を再利用）を実装する。
     - `SourceLoadError` を spec の変種付きで定義する: パッケージルート外のソースパス、未対応のファイル拡張子、不正な UTF-8、読み取り不能なソースファイル、duplicate module path、古い LSP ドキュメントバージョン、パッケージソースに対応付けられないオープンバッファ URI、必須の生成器メタデータが無い生成ソース、`SessionIdAllocator` による source id 発行失敗。
     - テスト: `source_hash` は絶対パス/ドキュメントバージョンを含まない、別 origin の同一テキストはハッシュを共有する。
     - 依存: 1, 4, 6, 9。仕様: [source.md](../en/source.md) "Public API", "Loaded Source"。
 
-14. **ディスクソースの読み込み。** [ ]
+15. **ディスクソースの読み込み。** [ ]
     - ディスク読み込みを実装する: パス正規化 + パッケージルート強制、バイト読み込み、UTF-8 検証（非可逆 `U+FFFD` なし）、先頭 BOM 除去、CRLF→LF 正規化、`source_hash`、`LineMap`、`LoadingMap` の生成。
     - 先頭 UTF-8 BOM のみエンコーディング signature として扱い、非先頭の `U+FEFF` は読み込みテキストに残す。CRLF 対のみ LF に正規化し、単独の `\r` は保持する（プラットフォーム改行として扱わない）。
     - テスト: 不正な UTF-8 は line-map 前に拒否、未対応拡張子は拒否、先頭 BOM → ローディングマップ `0`↔`3`、非先頭 `U+FEFF` は読み込みテキストに保持、CRLF は正規化しつつ単独 `\r` は保持、ルート外パスの拒否。
-    - 依存: 13。仕様: [source.md](../en/source.md) "Disk Source Loading"。
+    - 依存: 14。仕様: [source.md](../en/source.md) "Disk Source Loading"。
 
-15. **オープンバッファと生成ソースの読み込み。** [ ]
+16. **オープンバッファと生成ソースの読み込み。** [ ]
     - オープンバッファ読み込み（LSP ドキュメントバージョン検証、URI→パッケージパス、BOM 除去、CRLF 正規化、エディタオフセットへ戻すローディングマップ）と、生成ソース読み込み（生成器メタデータ + アンカー）を実装する。
     - テスト: オープンバッファは一致するバージョンでのみディスクを上書き、古いバージョンは拒否、オープンバッファのローディングマップは読み込みテキストオフセットを（LSP UTF-16 変換の前に）エディタ提供テキストのバイトオフセットへ戻す、対応付け不能なオープンバッファ URI は拒否、メタデータの無い生成ソースは拒否。
-    - 依存: 14。仕様: [source.md](../en/source.md) "Open-Buffer Source Loading", "Generated Source Loading"。
+    - 依存: 15。仕様: [source.md](../en/source.md) "Open-Buffer Source Loading", "Generated Source Loading"。
 
 ### モジュール: retention (`src/retention.rs`)
 
-16. **保持マネージャとリース。** [ ]
+17. **保持マネージャとリース。** [ ]
     - `pub mod retention;` を追加する。`RetentionManager`, `RetainSnapshotInput`, `RetainGuard`, `RetainOwner` と、参照カウント付きの `retain_snapshot`/`release` を定義する。`RetentionReason`（タスク 11 で定義）は再定義せず再利用する。
     - `RetentionError` を spec の変種付きで定義する: 未知のスナップショット id、未知/解放済みのリース id、リースとスナップショットの不一致、不正な owner/reason の組み合わせ、欠落スナップショットを current にしようとする、回収が不整合な保持状態でブロックされる。
     - 古いスナップショットの retain は、診断 / 説明 / LSP の古い表示 / IR 出力の理由では許可するが、スナップショットを current にしてはならない。
     - テスト: アクティブなリースが回収対象化を防ぐ、二重リリースはアンダーフローせず報告される、不正な owner/reason の組み合わせは拒否、古いスナップショットの retain は current にせず成功する。
-    - 依存: 12。仕様: [retention.md](../en/retention.md) "Retain", "Release", "Error Handling"。
+    - 依存: 13。仕様: [retention.md](../en/retention.md) "Retain", "Release", "Error Handling"。
 
-17. **current マークと回収。** [ ]
+18. **current マークと回収。** [ ]
     - `mark_current`/`unmark_current`、`collect`、`CollectionSummary` を追加し、回収ポリシー（リース無し・current マーク無し・保持マップ/説明無し・IR フェーズ出力リース解放済み）を実装する。
     - `CollectionSummary` は、スキャン/回収したスナップショット数、解放したソースとマップ、current マークでスキップしたスナップショット、ライブリースでスキップしたスナップショット、古い/不一致リースの診断を報告する。
     - テスト: current マークは他のリースが無くても回収を防ぐ、最後のリース解放で回収される、フェーズ出力リースは解放まで回収を阻む、欠落スナップショットを current にしようとすると `RetentionError` になる、`CollectionSummary` が current/リースでのスキップ数と古いリース診断を報告する、回収はアーティファクト/キャッシュを削除しない。
-    - 依存: 16。仕様: [retention.md](../en/retention.md) "Collection", "Current Marks", "Collection Summary"。
+    - 依存: 17。仕様: [retention.md](../en/retention.md) "Collection", "Current Marks", "Collection Summary"。
 
 ## 横断的フォローアップ
 

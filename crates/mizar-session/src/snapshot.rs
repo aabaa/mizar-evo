@@ -14,14 +14,28 @@
 //! fn requires_semantic_order<T: Ord>() {}
 //! requires_semantic_order::<BuildSnapshotId>();
 //! ```
+//!
+//! ```compile_fail
+//! use mizar_session::{BuildSnapshotId, RetentionReason, SnapshotRegistry};
+//!
+//! fn task_12_lease_accounting_is_not_available(
+//!     registry: &SnapshotRegistry,
+//!     snapshot: BuildSnapshotId,
+//! ) {
+//!     let _ = registry.acquire_lease(snapshot, RetentionReason::DiagnosticIndex);
+//! }
+//! ```
 
 use crate::{
-    BuildSnapshotId, Hash, LspDocumentVersion, NormalizedPath, SnapshotLeaseId, SourceId,
-    SourcePathError, ids::build_snapshot_id_from_sorted_canonical_bytes,
+    BuildRequestId, BuildSnapshotId, Hash, IdError, InMemorySessionIdAllocator, LspDocumentVersion,
+    NormalizedPath, SessionIdAllocator, SnapshotLeaseId, SourceId, SourcePathError,
+    ids::build_snapshot_id_from_sorted_canonical_bytes,
 };
 use std::cmp::Ordering;
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::fmt;
+use std::sync::Mutex;
 
 const SNAPSHOT_CANONICAL_SCHEMA_ID: &[u8] = b"mizar-session/snapshot-canonical-input/v1";
 
@@ -44,6 +58,38 @@ pub struct SnapshotInput {
     pub lockfile_hash: Hash,
     pub toolchain: ToolchainInfo,
     pub verifier_config_hash: Hash,
+}
+
+#[derive(Debug)]
+pub struct SnapshotRegistry<A = InMemorySessionIdAllocator> {
+    allocator: A,
+    state: Mutex<SnapshotRegistryState>,
+}
+
+#[derive(Debug, Default)]
+struct SnapshotRegistryState {
+    snapshots: HashMap<BuildSnapshotId, BuildSnapshot>,
+    current_by_request: HashMap<BuildRequestId, BuildSnapshotId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SnapshotLease {
+    pub lease_id: SnapshotLeaseId,
+    pub snapshot: BuildSnapshotId,
+    pub reason: RetentionReason,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum RetentionReason {
+    ActiveBuild,
+    CurrentWatchBaseline,
+    PublishedLspSnapshot,
+    OpenBufferOverlay,
+    DiagnosticIndex,
+    ExplanationRequest,
+    PhaseOutputReference,
+    PendingWrite,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -99,6 +145,12 @@ pub enum SnapshotError {
         package_id: PackageId,
         module_path: ModulePath,
     },
+    DuplicateSourceVersionIdentity {
+        package_id: PackageId,
+        module_path: ModulePath,
+        normalized_path: NormalizedPath,
+        source_hash: Hash,
+    },
     MissingDependencyArtifact {
         artifact: String,
     },
@@ -120,9 +172,12 @@ pub enum SnapshotError {
         expected_snapshot: BuildSnapshotId,
         actual_snapshot: BuildSnapshotId,
     },
+    LeaseIdAllocation {
+        error: IdError,
+    },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, std::hash::Hash)]
 pub struct SourceVersionCanonicalKey<'a> {
     package_id: &'a str,
     module_path: &'a str,
@@ -158,6 +213,71 @@ impl SnapshotInput {
 
     pub fn build_snapshot_id(&self) -> BuildSnapshotId {
         build_snapshot_id(self)
+    }
+}
+
+impl SnapshotRegistry<InMemorySessionIdAllocator> {
+    pub fn new() -> Self {
+        Self::with_allocator(InMemorySessionIdAllocator::new())
+    }
+}
+
+impl Default for SnapshotRegistry<InMemorySessionIdAllocator> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<A> SnapshotRegistry<A> {
+    pub fn with_allocator(allocator: A) -> Self {
+        Self {
+            allocator,
+            state: Mutex::new(SnapshotRegistryState::default()),
+        }
+    }
+}
+
+impl<A: SessionIdAllocator> SnapshotRegistry<A> {
+    pub fn create_snapshot(
+        &self,
+        request: BuildRequestId,
+        input: SnapshotInput,
+    ) -> Result<(BuildSnapshot, SnapshotLease), SnapshotError> {
+        validate_snapshot_input(&input)?;
+
+        let snapshot = BuildSnapshot::from_input(input);
+        let lease = SnapshotLease {
+            lease_id: self
+                .allocator
+                .next_lease_id(snapshot.id)
+                .map_err(|error| SnapshotError::LeaseIdAllocation { error })?,
+            snapshot: snapshot.id,
+            reason: RetentionReason::ActiveBuild,
+        };
+
+        let mut state = self.state.lock().expect("snapshot registry mutex poisoned");
+        state.snapshots.insert(snapshot.id, snapshot.clone());
+        state.current_by_request.insert(request, snapshot.id);
+
+        Ok((snapshot, lease))
+    }
+
+    pub fn get(&self, id: BuildSnapshotId) -> Option<BuildSnapshot> {
+        self.state
+            .lock()
+            .expect("snapshot registry mutex poisoned")
+            .snapshots
+            .get(&id)
+            .cloned()
+    }
+
+    pub fn is_current_for_request(&self, id: BuildSnapshotId, request: BuildRequestId) -> bool {
+        self.state
+            .lock()
+            .expect("snapshot registry mutex poisoned")
+            .current_by_request
+            .get(&request)
+            .is_some_and(|current| *current == id)
     }
 }
 
@@ -244,6 +364,101 @@ impl SourceVersion {
 pub fn sort_source_versions_canonical(source_versions: &mut [SourceVersion]) {
     source_versions
         .sort_by(|left, right| left.canonical_sort_key().cmp(&right.canonical_sort_key()));
+}
+
+fn validate_snapshot_input(input: &SnapshotInput) -> Result<(), SnapshotError> {
+    reject_duplicate_source_version_identities(&input.source_versions)?;
+    reject_duplicate_module_paths(&input.source_versions)?;
+    reject_missing_dependency_artifacts(&input.dependency_artifacts)?;
+    reject_unsupported_lockfile_metadata(input.lockfile_hash)?;
+    reject_unsupported_toolchain_metadata(&input.toolchain)?;
+    reject_invalid_open_buffer_versions(&input.source_versions)?;
+    Ok(())
+}
+
+fn reject_duplicate_source_version_identities(
+    source_versions: &[SourceVersion],
+) -> Result<(), SnapshotError> {
+    let mut seen = HashSet::new();
+    for version in source_versions {
+        if !seen.insert(version.canonical_sort_key()) {
+            return Err(SnapshotError::DuplicateSourceVersionIdentity {
+                package_id: version.package_id.clone(),
+                module_path: version.module_path.clone(),
+                normalized_path: version.normalized_path.clone(),
+                source_hash: version.source_hash,
+            });
+        }
+    }
+    Ok(())
+}
+
+fn reject_duplicate_module_paths(source_versions: &[SourceVersion]) -> Result<(), SnapshotError> {
+    let mut seen = HashSet::new();
+    for version in source_versions {
+        let key = (version.package_id.as_str(), version.module_path.as_str());
+        if !seen.insert(key) {
+            return Err(SnapshotError::DuplicateModulePath {
+                package_id: version.package_id.clone(),
+                module_path: version.module_path.clone(),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn reject_missing_dependency_artifacts(
+    dependency_artifacts: &[DependencyArtifactRef],
+) -> Result<(), SnapshotError> {
+    for artifact in dependency_artifacts {
+        if artifact.artifact.trim().is_empty()
+            || artifact
+                .content_hash
+                .as_bytes()
+                .iter()
+                .all(|byte| *byte == 0)
+        {
+            return Err(SnapshotError::MissingDependencyArtifact {
+                artifact: artifact.artifact.clone(),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn reject_unsupported_lockfile_metadata(lockfile_hash: Hash) -> Result<(), SnapshotError> {
+    if lockfile_hash.as_bytes().iter().all(|byte| *byte == 0) {
+        return Err(SnapshotError::UnsupportedLockfileMetadata {
+            metadata: "missing-lockfile-hash".to_owned(),
+        });
+    }
+    Ok(())
+}
+
+fn reject_unsupported_toolchain_metadata(toolchain: &ToolchainInfo) -> Result<(), SnapshotError> {
+    if toolchain.identity().trim().is_empty() {
+        return Err(SnapshotError::UnsupportedToolchainMetadata {
+            metadata: toolchain.identity().to_owned(),
+        });
+    }
+    Ok(())
+}
+
+fn reject_invalid_open_buffer_versions(
+    source_versions: &[SourceVersion],
+) -> Result<(), SnapshotError> {
+    for version in source_versions {
+        // Task 11 only has loaded snapshot input; expected-version comparison lives in source loading.
+        if let SourceOrigin::OpenBuffer { version: actual } = &version.origin
+            && *actual < 0
+        {
+            return Err(SnapshotError::StaleOpenBufferVersion {
+                expected: 0,
+                actual: *actual,
+            });
+        }
+    }
+    Ok(())
 }
 
 fn build_snapshot_id(input: &SnapshotInput) -> BuildSnapshotId {
@@ -438,6 +653,17 @@ impl fmt::Display for SnapshotError {
                     "duplicate module path `{module_path}` in package `{package_id}`"
                 )
             }
+            Self::DuplicateSourceVersionIdentity {
+                package_id,
+                module_path,
+                normalized_path,
+                ..
+            } => {
+                write!(
+                    f,
+                    "duplicate source version identity for `{module_path}` in package `{package_id}` at `{normalized_path}`"
+                )
+            }
             Self::MissingDependencyArtifact { artifact } => {
                 write!(f, "missing dependency artifact `{artifact}`")
             }
@@ -466,6 +692,9 @@ impl fmt::Display for SnapshotError {
                     "lease `{lease_id:?}` belongs to `{actual_snapshot:?}`, not `{expected_snapshot:?}`"
                 )
             }
+            Self::LeaseIdAllocation { error } => {
+                write!(f, "could not allocate snapshot lease id: {error}")
+            }
         }
     }
 }
@@ -474,6 +703,7 @@ impl Error for SnapshotError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::InvalidSourcePath { error } => Some(error),
+            Self::LeaseIdAllocation { error } => Some(error),
             _ => None,
         }
     }
@@ -483,11 +713,12 @@ impl Error for SnapshotError {
 mod tests {
     use super::{
         BuildSnapshot, DependencyArtifactRef, Edition, GeneratedSourceKind, ModulePath, PackageId,
-        SnapshotError, SnapshotInput, SourceOrigin, SourceVersion, ToolchainInfo, WorkspaceRoot,
-        sort_source_versions_canonical,
+        RetentionReason, SnapshotError, SnapshotInput, SnapshotRegistry, SourceOrigin,
+        SourceVersion, ToolchainInfo, WorkspaceRoot, sort_source_versions_canonical,
     };
     use crate::{
-        BuildSnapshotId, Hash, InMemorySessionIdAllocator, NormalizedPath, SessionIdAllocator,
+        BuildRequestId, BuildSessionId, BuildSnapshotId, Hash, IdError, InMemorySessionIdAllocator,
+        NormalizedPath, SessionIdAllocator, SnapshotLeaseId, SourceId, SourceMapId,
         SourcePathError, normalize_source_path,
     };
     use std::path::Path;
@@ -1057,6 +1288,335 @@ mod tests {
     }
 
     #[test]
+    fn created_snapshot_is_retrievable_and_returns_active_build_lease() {
+        let registry = SnapshotRegistry::new();
+        let request = request_id();
+        let input = snapshot_input();
+        let expected_snapshot_id = input.build_snapshot_id();
+
+        let (snapshot, lease) = registry.create_snapshot(request, input).unwrap();
+
+        assert_eq!(snapshot.id, expected_snapshot_id);
+        assert_eq!(registry.get(snapshot.id), Some(snapshot.clone()));
+        assert_eq!(lease.snapshot, snapshot.id);
+        assert_eq!(lease.reason, RetentionReason::ActiveBuild);
+        assert!(registry.is_current_for_request(snapshot.id, request));
+    }
+
+    #[test]
+    fn repeated_snapshot_creation_returns_distinct_active_build_leases() {
+        let registry = SnapshotRegistry::new();
+        let request = request_id();
+
+        let (first_snapshot, first_lease) =
+            registry.create_snapshot(request, snapshot_input()).unwrap();
+        let (second_snapshot, second_lease) =
+            registry.create_snapshot(request, snapshot_input()).unwrap();
+
+        assert_eq!(first_snapshot.id, second_snapshot.id);
+        assert_eq!(first_lease.snapshot, first_snapshot.id);
+        assert_eq!(second_lease.snapshot, second_snapshot.id);
+        assert_eq!(first_lease.reason, RetentionReason::ActiveBuild);
+        assert_eq!(second_lease.reason, RetentionReason::ActiveBuild);
+        assert_ne!(first_lease.lease_id, second_lease.lease_id);
+    }
+
+    #[test]
+    fn retrieved_snapshot_clone_cannot_mutate_registry_snapshot() {
+        let registry = SnapshotRegistry::new();
+        let request = request_id();
+        let (snapshot, _) = registry.create_snapshot(request, snapshot_input()).unwrap();
+
+        let mut retrieved = registry.get(snapshot.id).unwrap();
+        retrieved.source_versions.clear();
+        retrieved.dependency_artifacts.clear();
+
+        assert_eq!(registry.get(snapshot.id), Some(snapshot));
+    }
+
+    #[test]
+    fn stale_snapshot_id_is_not_current_for_request() {
+        let registry = SnapshotRegistry::new();
+        let request = request_id();
+        let (snapshot, _) = registry.create_snapshot(request, snapshot_input()).unwrap();
+        let stale = snapshot_id(200);
+
+        assert_ne!(snapshot.id, stale);
+        assert!(!registry.is_current_for_request(stale, request));
+    }
+
+    #[test]
+    fn current_snapshot_is_tracked_independently_per_request_generation() {
+        let registry = SnapshotRegistry::new();
+        let ids = InMemorySessionIdAllocator::new();
+        let first_request = ids.next_request_id().unwrap();
+        let second_request = ids.next_request_id().unwrap();
+        let (first_snapshot, _) = registry
+            .create_snapshot(first_request, snapshot_input())
+            .unwrap();
+        let mut second_input = snapshot_input();
+        second_input.source_versions[0].source_hash = hash(98);
+
+        let (second_snapshot, _) = registry
+            .create_snapshot(second_request, second_input)
+            .unwrap();
+
+        assert_ne!(first_request, second_request);
+        assert_ne!(first_snapshot.id, second_snapshot.id);
+        assert!(registry.is_current_for_request(first_snapshot.id, first_request));
+        assert!(!registry.is_current_for_request(first_snapshot.id, second_request));
+        assert!(registry.is_current_for_request(second_snapshot.id, second_request));
+        assert!(!registry.is_current_for_request(second_snapshot.id, first_request));
+    }
+
+    #[test]
+    fn older_snapshot_is_not_current_after_new_snapshot_for_same_request() {
+        let registry = SnapshotRegistry::new();
+        let request = request_id();
+        let (older, _) = registry.create_snapshot(request, snapshot_input()).unwrap();
+        let mut newer_input = snapshot_input();
+        newer_input.source_versions[0].source_hash = hash(99);
+
+        let (newer, _) = registry.create_snapshot(request, newer_input).unwrap();
+
+        assert_ne!(older.id, newer.id);
+        assert!(!registry.is_current_for_request(older.id, request));
+        assert!(registry.is_current_for_request(newer.id, request));
+        assert_eq!(registry.get(older.id), Some(older));
+    }
+
+    #[test]
+    fn rejected_snapshot_does_not_allocate_lease_insert_snapshot_or_replace_current() {
+        let registry = SnapshotRegistry::with_allocator(CountingLeaseAllocator::new());
+        let request = request_id();
+        let (accepted, _) = registry.create_snapshot(request, snapshot_input()).unwrap();
+        let snapshot_id = snapshot_id(16);
+        let ids = InMemorySessionIdAllocator::new();
+        let rejected_input = snapshot_input_with_sources(vec![
+            source_version(
+                ids.next_source_id(snapshot_id).unwrap(),
+                "mml",
+                "same.module",
+                "src/alpha.miz",
+                hash(1),
+                SourceOrigin::Disk,
+            ),
+            source_version(
+                ids.next_source_id(snapshot_id).unwrap(),
+                "mml",
+                "same.module",
+                "src/beta.miz",
+                hash(2),
+                SourceOrigin::Disk,
+            ),
+        ]);
+        let rejected_id = rejected_input.build_snapshot_id();
+        let lease_allocations_before = registry.allocator.lease_allocations.load(Ordering::Relaxed);
+
+        let error = registry
+            .create_snapshot(request, rejected_input)
+            .unwrap_err();
+
+        assert!(matches!(error, SnapshotError::DuplicateModulePath { .. }));
+        assert_eq!(
+            registry.allocator.lease_allocations.load(Ordering::Relaxed),
+            lease_allocations_before
+        );
+        assert_eq!(registry.get(rejected_id), None);
+        assert!(registry.is_current_for_request(accepted.id, request));
+        assert!(!registry.is_current_for_request(rejected_id, request));
+    }
+
+    #[test]
+    fn lease_id_allocation_failure_does_not_insert_snapshot_or_mark_current() {
+        let registry = SnapshotRegistry::with_allocator(LeaseFailingAllocator::new());
+        let request = request_id();
+        let input = snapshot_input();
+        let snapshot_id = input.build_snapshot_id();
+
+        let error = registry.create_snapshot(request, input).unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::LeaseIdAllocation {
+                error: IdError::AllocatorOverflow
+            }
+        ));
+        assert_eq!(registry.get(snapshot_id), None);
+        assert!(!registry.is_current_for_request(snapshot_id, request));
+    }
+
+    #[test]
+    fn duplicate_module_path_is_rejected_before_snapshot_hashing() {
+        let registry = SnapshotRegistry::new();
+        let snapshot_id = snapshot_id(14);
+        let ids = InMemorySessionIdAllocator::new();
+        let duplicate_module = snapshot_input_with_sources(vec![
+            source_version(
+                ids.next_source_id(snapshot_id).unwrap(),
+                "mml",
+                "same.module",
+                "src/alpha.miz",
+                hash(1),
+                SourceOrigin::Disk,
+            ),
+            source_version(
+                ids.next_source_id(snapshot_id).unwrap(),
+                "mml",
+                "same.module",
+                "src/beta.miz",
+                hash(2),
+                SourceOrigin::Disk,
+            ),
+        ]);
+
+        let error = registry
+            .create_snapshot(request_id(), duplicate_module)
+            .unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::DuplicateModulePath {
+                package_id,
+                module_path,
+            } if package_id.as_str() == "mml" && module_path.as_str() == "same.module"
+        ));
+    }
+
+    #[test]
+    fn duplicate_source_version_identity_is_rejected_before_snapshot_hashing() {
+        let registry = SnapshotRegistry::new();
+        let snapshot_id = snapshot_id(15);
+        let ids = InMemorySessionIdAllocator::new();
+        let duplicate_identity = snapshot_input_with_sources(vec![
+            source_version(
+                ids.next_source_id(snapshot_id).unwrap(),
+                "mml",
+                "same.module",
+                "src/same.miz",
+                hash(7),
+                SourceOrigin::Disk,
+            ),
+            source_version(
+                ids.next_source_id(snapshot_id).unwrap(),
+                "mml",
+                "same.module",
+                "src/same.miz",
+                hash(7),
+                SourceOrigin::OpenBuffer { version: 12 },
+            ),
+        ]);
+
+        let error = registry
+            .create_snapshot(request_id(), duplicate_identity)
+            .unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::DuplicateSourceVersionIdentity {
+                package_id,
+                module_path,
+                normalized_path,
+                source_hash,
+            } if package_id.as_str() == "mml"
+                && module_path.as_str() == "same.module"
+                && normalized_path.as_str() == "src/same.miz"
+                && source_hash == hash(7)
+        ));
+    }
+
+    #[test]
+    fn missing_dependency_artifact_is_rejected_by_creation_validation() {
+        let registry = SnapshotRegistry::new();
+        let mut input = snapshot_input();
+        input.dependency_artifacts[0].artifact = "   ".to_owned();
+
+        let error = registry.create_snapshot(request_id(), input).unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::MissingDependencyArtifact { artifact } if artifact == "   "
+        ));
+    }
+
+    #[test]
+    fn dependency_artifact_with_missing_content_hash_is_rejected_by_creation_validation() {
+        let registry = SnapshotRegistry::new();
+        let mut input = snapshot_input();
+        input.dependency_artifacts[0].content_hash = zero_hash();
+
+        let error = registry.create_snapshot(request_id(), input).unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::MissingDependencyArtifact { artifact }
+                if artifact == "kernel/order.vo"
+        ));
+    }
+
+    #[test]
+    fn unsupported_lockfile_metadata_is_rejected_by_creation_validation() {
+        let registry = SnapshotRegistry::new();
+        let mut input = snapshot_input();
+        input.lockfile_hash = zero_hash();
+
+        let error = registry.create_snapshot(request_id(), input).unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::UnsupportedLockfileMetadata { metadata }
+                if metadata == "missing-lockfile-hash"
+        ));
+    }
+
+    #[test]
+    fn unsupported_toolchain_metadata_is_rejected_by_creation_validation() {
+        let registry = SnapshotRegistry::new();
+        let mut input = snapshot_input();
+        input.toolchain = ToolchainInfo::new(" ");
+
+        let error = registry.create_snapshot(request_id(), input).unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::UnsupportedToolchainMetadata { metadata } if metadata == " "
+        ));
+    }
+
+    #[test]
+    fn non_negative_open_buffer_version_is_accepted_by_creation_validation() {
+        let registry = SnapshotRegistry::new();
+        let mut input = snapshot_input();
+        input.source_versions[0].origin = SourceOrigin::OpenBuffer { version: 0 };
+
+        let (snapshot, _) = registry.create_snapshot(request_id(), input).unwrap();
+
+        assert!(matches!(
+            snapshot.source_versions.iter().find(|version| {
+                matches!(version.origin, SourceOrigin::OpenBuffer { version: 0 })
+            }),
+            Some(_)
+        ));
+    }
+
+    #[test]
+    fn negative_open_buffer_version_is_rejected_by_creation_validation() {
+        let registry = SnapshotRegistry::new();
+        let mut input = snapshot_input();
+        input.source_versions[0].origin = SourceOrigin::OpenBuffer { version: -1 };
+
+        let error = registry.create_snapshot(request_id(), input).unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::StaleOpenBufferVersion {
+                expected: 0,
+                actual: -1
+            }
+        ));
+    }
+
+    #[test]
     fn snapshot_error_basic_variants_exist() {
         let source_path_error = SourcePathError::UnsupportedExtension {
             path: Path::new("src/basic.txt").to_owned(),
@@ -1095,6 +1655,15 @@ mod tests {
             lease_id,
             expected_snapshot: expected,
             actual_snapshot: actual,
+        };
+        let duplicate_source_version_identity = SnapshotError::DuplicateSourceVersionIdentity {
+            package_id: PackageId::new("mml"),
+            module_path: ModulePath::new("groups.basic"),
+            normalized_path: normalized_path("src/groups/basic.miz"),
+            source_hash: hash(42),
+        };
+        let lease_id_allocation = SnapshotError::LeaseIdAllocation {
+            error: crate::IdError::AllocatorOverflow,
         };
 
         assert!(matches!(
@@ -1142,6 +1711,24 @@ mod tests {
             } if actual_lease_id == lease_id
                 && expected_snapshot == expected
                 && actual_snapshot == actual
+        ));
+        assert!(matches!(
+            duplicate_source_version_identity,
+            SnapshotError::DuplicateSourceVersionIdentity {
+                package_id,
+                module_path,
+                normalized_path,
+                source_hash,
+            } if package_id.as_str() == "mml"
+                && module_path.as_str() == "groups.basic"
+                && normalized_path.as_str() == "src/groups/basic.miz"
+                && source_hash == hash(42)
+        ));
+        assert!(matches!(
+            lease_id_allocation,
+            SnapshotError::LeaseIdAllocation {
+                error: crate::IdError::AllocatorOverflow,
+            }
         ));
     }
 
@@ -1193,6 +1780,79 @@ mod tests {
 
         assert_eq!(versions[0].source_id, high_allocated_source);
         assert_eq!(versions[0].module_path.as_str(), "alpha");
+    }
+
+    #[derive(Debug)]
+    struct CountingLeaseAllocator {
+        inner: InMemorySessionIdAllocator,
+        lease_allocations: AtomicUsize,
+    }
+
+    impl CountingLeaseAllocator {
+        fn new() -> Self {
+            Self {
+                inner: InMemorySessionIdAllocator::new(),
+                lease_allocations: AtomicUsize::new(0),
+            }
+        }
+    }
+
+    impl SessionIdAllocator for CountingLeaseAllocator {
+        fn next_session_id(&self) -> Result<BuildSessionId, IdError> {
+            self.inner.next_session_id()
+        }
+
+        fn next_request_id(&self) -> Result<BuildRequestId, IdError> {
+            self.inner.next_request_id()
+        }
+
+        fn next_source_id(&self, snapshot: BuildSnapshotId) -> Result<SourceId, IdError> {
+            self.inner.next_source_id(snapshot)
+        }
+
+        fn next_source_map_id(&self, snapshot: BuildSnapshotId) -> Result<SourceMapId, IdError> {
+            self.inner.next_source_map_id(snapshot)
+        }
+
+        fn next_lease_id(&self, snapshot: BuildSnapshotId) -> Result<SnapshotLeaseId, IdError> {
+            self.lease_allocations.fetch_add(1, Ordering::Relaxed);
+            self.inner.next_lease_id(snapshot)
+        }
+    }
+
+    #[derive(Debug)]
+    struct LeaseFailingAllocator {
+        inner: InMemorySessionIdAllocator,
+    }
+
+    impl LeaseFailingAllocator {
+        fn new() -> Self {
+            Self {
+                inner: InMemorySessionIdAllocator::new(),
+            }
+        }
+    }
+
+    impl SessionIdAllocator for LeaseFailingAllocator {
+        fn next_session_id(&self) -> Result<BuildSessionId, IdError> {
+            self.inner.next_session_id()
+        }
+
+        fn next_request_id(&self) -> Result<BuildRequestId, IdError> {
+            self.inner.next_request_id()
+        }
+
+        fn next_source_id(&self, snapshot: BuildSnapshotId) -> Result<SourceId, IdError> {
+            self.inner.next_source_id(snapshot)
+        }
+
+        fn next_source_map_id(&self, snapshot: BuildSnapshotId) -> Result<SourceMapId, IdError> {
+            self.inner.next_source_map_id(snapshot)
+        }
+
+        fn next_lease_id(&self, _snapshot: BuildSnapshotId) -> Result<SnapshotLeaseId, IdError> {
+            Err(IdError::AllocatorOverflow)
+        }
     }
 
     fn source_version(
@@ -1301,6 +1961,14 @@ mod tests {
         let mut bytes = [0; Hash::BYTE_LEN];
         bytes[0] = first_byte;
         Hash::from_bytes(bytes)
+    }
+
+    fn zero_hash() -> Hash {
+        Hash::from_bytes([0; Hash::BYTE_LEN])
+    }
+
+    fn request_id() -> crate::BuildRequestId {
+        InMemorySessionIdAllocator::new().next_request_id().unwrap()
     }
 
     fn snapshot_id(first_byte: u8) -> BuildSnapshotId {
