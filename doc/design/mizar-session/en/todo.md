@@ -160,7 +160,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
 
 ### Module-wide maintenance before cross-cutting follow-ups
 
-19. **Implementation refactoring pass.** [ ]
+19. **Implementation refactoring pass.** [x]
     - Review `ids`, `source_map`, `snapshot`, `source`, and `retention` now that the first implementation pass is complete.
     - Keep public APIs and behavior stable unless the refactor exposes a clear bug or spec mismatch.
     - Prefer small local extractions, shared test fixtures, and naming cleanup over broad rewrites.

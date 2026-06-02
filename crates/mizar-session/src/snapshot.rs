@@ -318,14 +318,7 @@ impl<A: SessionIdAllocator> SnapshotRegistry<A> {
         validate_snapshot_input(&input)?;
 
         let snapshot = BuildSnapshot::from_input_unchecked(input);
-        let lease = SnapshotLease {
-            lease_id: self
-                .allocator
-                .next_lease_id(snapshot.id)
-                .map_err(|error| SnapshotError::LeaseIdAllocation { error })?,
-            snapshot: snapshot.id,
-            reason: RetentionReason::ActiveBuild,
-        };
+        let lease = self.allocate_lease(snapshot.id, RetentionReason::ActiveBuild)?;
 
         let mut state = self.state.lock().expect("snapshot registry mutex poisoned");
         state.snapshots.insert(snapshot.id, snapshot.clone());
@@ -347,14 +340,7 @@ impl<A: SessionIdAllocator> SnapshotRegistry<A> {
             });
         }
 
-        let lease = SnapshotLease {
-            lease_id: self
-                .allocator
-                .next_lease_id(snapshot)
-                .map_err(|error| SnapshotError::LeaseIdAllocation { error })?,
-            snapshot,
-            reason,
-        };
+        let lease = self.allocate_lease(snapshot, reason)?;
         state.record_lease(lease.clone());
         Ok(lease)
     }
@@ -404,6 +390,21 @@ impl<A: SessionIdAllocator> SnapshotRegistry<A> {
             .current_by_request
             .get(&request)
             .is_some_and(|current| *current == id)
+    }
+
+    fn allocate_lease(
+        &self,
+        snapshot: BuildSnapshotId,
+        reason: RetentionReason,
+    ) -> Result<SnapshotLease, SnapshotError> {
+        Ok(SnapshotLease {
+            lease_id: self
+                .allocator
+                .next_lease_id(snapshot)
+                .map_err(|error| SnapshotError::LeaseIdAllocation { error })?,
+            snapshot,
+            reason,
+        })
     }
 }
 
@@ -590,13 +591,7 @@ fn reject_missing_dependency_artifacts(
     dependency_artifacts: &[DependencyArtifactRef],
 ) -> Result<(), SnapshotError> {
     for artifact in dependency_artifacts {
-        if artifact.artifact.trim().is_empty()
-            || artifact
-                .content_hash
-                .as_bytes()
-                .iter()
-                .all(|byte| *byte == 0)
-        {
+        if artifact.artifact.trim().is_empty() || hash_is_zero(artifact.content_hash) {
             return Err(SnapshotError::MissingDependencyArtifact {
                 artifact: artifact.artifact.clone(),
             });
@@ -606,7 +601,7 @@ fn reject_missing_dependency_artifacts(
 }
 
 fn reject_unsupported_lockfile_metadata(lockfile_hash: Hash) -> Result<(), SnapshotError> {
-    if lockfile_hash.as_bytes().iter().all(|byte| *byte == 0) {
+    if hash_is_zero(lockfile_hash) {
         return Err(SnapshotError::UnsupportedLockfileMetadata {
             metadata: "missing-lockfile-hash".to_owned(),
         });
@@ -638,6 +633,10 @@ fn reject_invalid_open_buffer_versions(
         }
     }
     Ok(())
+}
+
+fn hash_is_zero(hash: Hash) -> bool {
+    hash.as_bytes().iter().all(|byte| *byte == 0)
 }
 
 fn build_snapshot_id(input: &SnapshotInput) -> BuildSnapshotId {
@@ -722,20 +721,8 @@ fn sort_dependency_artifacts_canonical(dependency_artifacts: &mut [DependencyArt
 }
 
 fn compare_source_version_identity(left: &SourceVersion, right: &SourceVersion) -> Ordering {
-    left.package_id
-        .as_str()
-        .cmp(right.package_id.as_str())
-        .then_with(|| left.module_path.as_str().cmp(right.module_path.as_str()))
-        .then_with(|| {
-            left.normalized_path
-                .as_str()
-                .cmp(right.normalized_path.as_str())
-        })
-        .then_with(|| {
-            left.source_hash
-                .as_bytes()
-                .cmp(right.source_hash.as_bytes())
-        })
+    left.canonical_sort_key()
+        .cmp(&right.canonical_sort_key())
         .then_with(|| left.edition.as_str().cmp(right.edition.as_str()))
 }
 

@@ -274,11 +274,7 @@ impl LineMap {
             Ok(line) => line,
             Err(0) => {
                 return Err(SourceMapError::RangeOutsideSourceText {
-                    range: SourceRange {
-                        source_id: self.source_id,
-                        start: offset,
-                        end: offset,
-                    },
+                    range: source_point(self.source_id, offset),
                     source_len: self.text.len(),
                 });
             }
@@ -326,11 +322,7 @@ impl LineMap {
     fn validate_offset(&self, source_id: SourceId, offset: usize) -> Result<(), SourceMapError> {
         if offset > self.text.len() {
             return Err(SourceMapError::RangeOutsideSourceText {
-                range: SourceRange {
-                    source_id,
-                    start: offset,
-                    end: offset,
-                },
+                range: source_point(source_id, offset),
                 source_len: self.text.len(),
             });
         }
@@ -462,10 +454,7 @@ impl LoadingMap {
         if offset > loaded_len {
             return Err(SourceMapError::RangeOutsideLoadedText {
                 source_id,
-                range: TextRange {
-                    start: offset,
-                    end: offset,
-                },
+                range: text_point(offset),
                 loaded_len,
             });
         }
@@ -476,10 +465,7 @@ impl LoadingMap {
         self.original_offset_for_loaded_unchecked(offset).ok_or(
             SourceMapError::MissingLoadingMapSegment {
                 source_id,
-                range: TextRange {
-                    start: offset,
-                    end: offset,
-                },
+                range: text_point(offset),
             },
         )
     }
@@ -523,10 +509,7 @@ impl LoadingMap {
             else {
                 return Err(SourceMapError::MissingLoadingMapSegment {
                     source_id,
-                    range: TextRange {
-                        start: cursor,
-                        end: cursor,
-                    },
+                    range: text_point(cursor),
                 });
             };
 
@@ -677,10 +660,7 @@ impl PreprocessMap {
         if offset > lexical_len {
             return Err(SourceMapError::RangeOutsideLexicalText {
                 source_id,
-                range: TextRange {
-                    start: offset,
-                    end: offset,
-                },
+                range: text_point(offset),
                 lexical_len,
             });
         }
@@ -726,10 +706,7 @@ impl PreprocessMap {
         if anchors.is_empty() {
             return Err(SourceMapError::MissingPreprocessSegment {
                 source_id,
-                range: TextRange {
-                    start: offset,
-                    end: offset,
-                },
+                range: text_point(offset),
             });
         }
 
@@ -795,10 +772,7 @@ impl PreprocessMap {
             else {
                 return Err(SourceMapError::MissingPreprocessSegment {
                     source_id,
-                    range: TextRange {
-                        start: cursor,
-                        end: cursor,
-                    },
+                    range: text_point(cursor),
                 });
             };
 
@@ -1049,11 +1023,9 @@ impl RetainedSourceMapService {
     fn validate_anchor(&self, anchor: &SourceAnchor) -> Result<(), SourceMapError> {
         match anchor {
             SourceAnchor::Range(range) => self.validate_range(*range),
-            SourceAnchor::Point { source_id, offset } => self.validate_range(SourceRange {
-                source_id: *source_id,
-                start: *offset,
-                end: *offset,
-            }),
+            SourceAnchor::Point { source_id, offset } => {
+                self.validate_range(source_point(*source_id, *offset))
+            }
             SourceAnchor::Generated(origin) => self.validate_generated_origin(origin),
         }
     }
@@ -1067,11 +1039,9 @@ impl RetainedSourceMapService {
         }
         match origin.anchor() {
             GeneratedSpanAnchor::Range(range) => self.validate_range(range),
-            GeneratedSpanAnchor::Point { source_id, offset } => self.validate_range(SourceRange {
-                source_id,
-                start: offset,
-                end: offset,
-            }),
+            GeneratedSpanAnchor::Point { source_id, offset } => {
+                self.validate_range(source_point(source_id, offset))
+            }
         }
     }
 
@@ -1207,6 +1177,21 @@ fn push_source_range(ranges: &mut Vec<SourceRange>, range: SourceRange) {
 fn push_source_anchor(anchors: &mut Vec<SourceAnchor>, anchor: SourceAnchor) {
     if anchors.last() != Some(&anchor) {
         anchors.push(anchor);
+    }
+}
+
+fn source_point(source_id: SourceId, offset: usize) -> SourceRange {
+    SourceRange {
+        source_id,
+        start: offset,
+        end: offset,
+    }
+}
+
+fn text_point(offset: usize) -> TextRange {
+    TextRange {
+        start: offset,
+        end: offset,
     }
 }
 

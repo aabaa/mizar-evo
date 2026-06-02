@@ -260,7 +260,7 @@ impl<A: SessionIdAllocator> RetentionManager<A> {
             });
         }
 
-        state.decrement_count(&lease, guard.lease_id)?;
+        state.decrement_count(&lease)?;
         state.leases.remove(&guard.lease_id);
         state.released_leases.insert(guard.lease_id);
         Ok(())
@@ -305,10 +305,7 @@ impl RetentionState {
             owner: input.owner,
             reason: input.reason,
         };
-        let count_key = RetentionCountKey {
-            owner: lease.owner.clone(),
-            reason: lease.reason,
-        };
+        let count_key = RetentionCountKey::from_lease(&lease);
         *self
             .counts
             .entry(lease.snapshot)
@@ -430,23 +427,16 @@ impl RetentionState {
         summary
     }
 
-    fn decrement_count(
-        &mut self,
-        lease: &RetainedLease,
-        lease_id: SnapshotLeaseId,
-    ) -> Result<(), RetentionError> {
-        let count_key = RetentionCountKey {
-            owner: lease.owner.clone(),
-            reason: lease.reason,
-        };
+    fn decrement_count(&mut self, lease: &RetainedLease) -> Result<(), RetentionError> {
+        let count_key = RetentionCountKey::from_lease(lease);
         let Some(counts_by_key) = self.counts.get_mut(&lease.snapshot) else {
-            return Err(inconsistent_release_error(lease.snapshot, lease_id));
+            return Err(inconsistent_release_error(lease.snapshot));
         };
         let Some(count) = counts_by_key.get_mut(&count_key) else {
-            return Err(inconsistent_release_error(lease.snapshot, lease_id));
+            return Err(inconsistent_release_error(lease.snapshot));
         };
         let Some(decremented) = count.checked_sub(1) else {
-            return Err(inconsistent_release_error(lease.snapshot, lease_id));
+            return Err(inconsistent_release_error(lease.snapshot));
         };
 
         *count = decremented;
@@ -457,6 +447,15 @@ impl RetentionState {
             self.counts.remove(&lease.snapshot);
         }
         Ok(())
+    }
+}
+
+impl RetentionCountKey {
+    fn from_lease(lease: &RetainedLease) -> Self {
+        Self {
+            owner: lease.owner.clone(),
+            reason: lease.reason,
+        }
     }
 }
 
@@ -517,10 +516,7 @@ fn retention_state_error(snapshot_id: BuildSnapshotId, error: IdError) -> Retent
     }
 }
 
-fn inconsistent_release_error(
-    snapshot_id: BuildSnapshotId,
-    _lease_id: SnapshotLeaseId,
-) -> RetentionError {
+fn inconsistent_release_error(snapshot_id: BuildSnapshotId) -> RetentionError {
     RetentionError::CollectionBlockedByInconsistentRetentionState {
         snapshot_id,
         detail: "live lease count missing during release",

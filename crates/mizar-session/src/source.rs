@@ -382,7 +382,21 @@ impl SourceLoader for DiskSourceLoader {
         input: SourceInput,
         ids: &dyn SessionIdAllocator,
     ) -> Result<LoadedSource, SourceLoadError> {
-        match input.origin {
+        let SourceInput {
+            package_id,
+            module_path,
+            normalized_path,
+            edition,
+            origin,
+        } = input;
+        let common = LoadedSourceCommon {
+            package_id,
+            module_path,
+            normalized_path,
+            edition,
+        };
+
+        match origin {
             SourceOriginInput::Disk { path } => {
                 let normalized_path = self.normalize_path(&self.package_root, &path)?;
                 let read_path = self.package_root.join(normalized_path.as_str());
@@ -393,34 +407,18 @@ impl SourceLoader for DiskSourceLoader {
                     }
                 })?;
                 let loaded_text = normalize_disk_source_bytes(&read_path, &bytes)?;
-                let source_hash = self.hash_text(&loaded_text.text);
-                let source_id = allocate_source_id(snapshot, ids)?;
-                let line_map = LineMap::new(source_id, &loaded_text.text);
-                let loading_map = loaded_text.loading_segments.map(|segments| {
-                    LoadingMap::new(
-                        source_id,
-                        &loaded_text.text,
-                        LoadingOrigin::DiskBytes {
-                            normalized_path: normalized_path.clone(),
-                        },
-                        segments,
-                    )
-                });
-                let text = Arc::from(loaded_text.text);
-
-                Ok(LoadedSource {
-                    source_id,
-                    package_id: input.package_id,
-                    module_path: input.module_path,
-                    normalized_path,
-                    text,
-                    source_hash,
-                    edition: input.edition,
-                    origin: SourceOrigin::Disk,
-                    line_map,
-                    loading_map,
-                    generated_anchor: None,
-                })
+                let loading_origin = LoadingOrigin::DiskBytes {
+                    normalized_path: normalized_path.clone(),
+                };
+                assemble_loaded_source(
+                    snapshot,
+                    ids,
+                    common.with_normalized_path(normalized_path),
+                    loaded_text,
+                    SourceOrigin::Disk,
+                    Some(loading_origin),
+                    None,
+                )
             }
             SourceOriginInput::OpenBuffer {
                 uri,
@@ -443,37 +441,20 @@ impl SourceLoader for DiskSourceLoader {
 
                 let normalized_path = self.normalize_open_buffer_uri(&uri)?;
                 let loaded_text = normalize_source_text(&text);
-                let source_hash = self.hash_text(&loaded_text.text);
-                let source_id = allocate_source_id(snapshot, ids)?;
-                let line_map = LineMap::new(source_id, &loaded_text.text);
-                let loading_map = loaded_text.loading_segments.map(|segments| {
-                    LoadingMap::new(
-                        source_id,
-                        &loaded_text.text,
-                        LoadingOrigin::OpenBufferText {
-                            uri: uri.clone(),
-                            version: actual_version,
-                        },
-                        segments,
-                    )
-                });
-                let text = Arc::from(loaded_text.text);
-
-                Ok(LoadedSource {
-                    source_id,
-                    package_id: input.package_id,
-                    module_path: input.module_path,
-                    normalized_path,
-                    text,
-                    source_hash,
-                    edition: input.edition,
-                    origin: SourceOrigin::OpenBuffer {
+                assemble_loaded_source(
+                    snapshot,
+                    ids,
+                    common.with_normalized_path(normalized_path),
+                    loaded_text,
+                    SourceOrigin::OpenBuffer {
                         version: actual_version,
                     },
-                    line_map,
-                    loading_map,
-                    generated_anchor: None,
-                })
+                    Some(LoadingOrigin::OpenBufferText {
+                        uri,
+                        version: actual_version,
+                    }),
+                    None,
+                )
             }
             SourceOriginInput::Generated {
                 generator,
@@ -482,27 +463,19 @@ impl SourceLoader for DiskSourceLoader {
             } => {
                 if generator.as_str().trim().is_empty() {
                     return Err(SourceLoadError::GeneratedSourceWithoutMetadata {
-                        module_path: input.module_path,
+                        module_path: common.module_path.clone(),
                     });
                 }
 
-                let source_hash = self.hash_text(&text);
-                let source_id = allocate_source_id(snapshot, ids)?;
-                let line_map = LineMap::new(source_id, &text);
-
-                Ok(LoadedSource {
-                    source_id,
-                    package_id: input.package_id,
-                    module_path: input.module_path,
-                    normalized_path: input.normalized_path,
+                assemble_loaded_source_from_text(
+                    snapshot,
+                    ids,
+                    common,
                     text,
-                    source_hash,
-                    edition: input.edition,
-                    origin: SourceOrigin::Generated { generator },
-                    line_map,
-                    loading_map: None,
-                    generated_anchor: anchor,
-                })
+                    SourceOrigin::Generated { generator },
+                    None,
+                    anchor,
+                )
             }
         }
     }
@@ -582,6 +555,75 @@ pub fn normalize_source_path(
 struct NormalizedLoadedText {
     text: String,
     loading_segments: Option<Vec<LoadingMapSegment>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct LoadedSourceCommon {
+    package_id: PackageId,
+    module_path: ModulePath,
+    normalized_path: NormalizedPath,
+    edition: Edition,
+}
+
+impl LoadedSourceCommon {
+    fn with_normalized_path(mut self, normalized_path: NormalizedPath) -> Self {
+        self.normalized_path = normalized_path;
+        self
+    }
+}
+
+fn assemble_loaded_source(
+    snapshot: BuildSnapshotId,
+    ids: &dyn SessionIdAllocator,
+    common: LoadedSourceCommon,
+    loaded_text: NormalizedLoadedText,
+    origin: SourceOrigin,
+    loading_origin: Option<LoadingOrigin>,
+    generated_anchor: Option<SourceAnchor>,
+) -> Result<LoadedSource, SourceLoadError> {
+    let NormalizedLoadedText {
+        text,
+        loading_segments,
+    } = loaded_text;
+    assemble_loaded_source_from_text(
+        snapshot,
+        ids,
+        common,
+        Arc::from(text),
+        origin,
+        loading_origin.zip(loading_segments),
+        generated_anchor,
+    )
+}
+
+fn assemble_loaded_source_from_text(
+    snapshot: BuildSnapshotId,
+    ids: &dyn SessionIdAllocator,
+    common: LoadedSourceCommon,
+    text: Arc<str>,
+    origin: SourceOrigin,
+    loading_map_input: Option<(LoadingOrigin, Vec<LoadingMapSegment>)>,
+    generated_anchor: Option<SourceAnchor>,
+) -> Result<LoadedSource, SourceLoadError> {
+    let source_hash = hash_text(&text);
+    let source_id = allocate_source_id(snapshot, ids)?;
+    let line_map = LineMap::new(source_id, &text);
+    let loading_map = loading_map_input
+        .map(|(origin, segments)| LoadingMap::new(source_id, &text, origin, segments));
+
+    Ok(LoadedSource {
+        source_id,
+        package_id: common.package_id,
+        module_path: common.module_path,
+        normalized_path: common.normalized_path,
+        text,
+        source_hash,
+        edition: common.edition,
+        origin,
+        line_map,
+        loading_map,
+        generated_anchor,
+    })
 }
 
 fn normalize_disk_source_bytes(
