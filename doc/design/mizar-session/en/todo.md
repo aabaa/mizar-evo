@@ -131,7 +131,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: `source_hash` excludes absolute paths/document versions; identical text in different origins shares the hash.
     - Depends on: 1, 4, 6, 9. Spec: [source.md](./source.md) "Public API", "Loaded Source".
 
-15. **Disk source loading.** [ ]
+15. **Disk source loading.** [x]
     - Implement disk loading: path normalization + package-root enforcement, read bytes, UTF-8 validation (no lossy `U+FFFD`), leading-BOM strip, CRLF→LF normalization, `source_hash`, `LineMap`, and `LoadingMap` emission.
     - Only the leading UTF-8 BOM is an encoding signature; a non-leading `U+FEFF` stays in loaded text. Only CRLF pairs normalize to LF; a lone `\r` is preserved (not treated as a platform newline).
     - Tests: invalid UTF-8 rejected before line-map; unsupported extension rejected; leading BOM → loading map `0`↔`3`; non-leading `U+FEFF` preserved in loaded text; CRLF normalized while lone `\r` is preserved; path outside root rejected.

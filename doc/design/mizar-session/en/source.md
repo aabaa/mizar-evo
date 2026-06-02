@@ -19,6 +19,13 @@ pub struct SourceInput {
     pub origin: SourceOriginInput,
 }
 
+pub struct DiskSourceLoader { /* package root */ }
+
+impl DiskSourceLoader {
+    pub fn new(package_root: impl Into<PathBuf>) -> Self;
+    pub fn package_root(&self) -> &Path;
+}
+
 pub enum SourceOriginInput {
     Disk { path: PathBuf },
     OpenBuffer { uri: DocumentUri, version: LspDocumentVersion, text: Arc<str> },
@@ -75,7 +82,14 @@ pub enum SourceLoadError {
     UnmappedOpenBufferUri { uri: DocumentUri },
     GeneratedSourceWithoutMetadata { module_path: ModulePath },
     SourceIdAllocation { error: IdError },
+    UnsupportedSourceOrigin { origin: SourceOriginKind },
     InvalidSourcePath { error: SourcePathError },
+}
+
+pub enum SourceOriginKind {
+    Disk,
+    OpenBuffer,
+    Generated,
 }
 ```
 
@@ -83,6 +97,7 @@ pub enum SourceLoadError {
 `load` takes the target `BuildSnapshotId` so it can request a snapshot-scoped `SourceId` from `SessionIdAllocator`.
 `LoadedSource.origin` uses the snapshot module's `SourceOrigin`; the source module does not define a duplicate origin enum for loaded records.
 `SourceLoader` helper methods delegate to the public `normalize_path` and `hash_text` helpers. `normalize_path` reuses `normalize_source_path`, while `hash_text` hashes only the normalized text content.
+`DiskSourceLoader` is the task-15 concrete loader for package-root disk files. It implements `SourceLoader` for `SourceOriginInput::Disk`; open-buffer and generated loading remain task-16 work and are rejected as unsupported origins by this disk-only loader.
 
 ## Dependencies
 
@@ -128,8 +143,8 @@ Open-buffer sources can override disk sources only for the targeted LSP request 
 
 ### Disk Source Loading
 
-1. Normalize the path relative to the package source root.
-2. Reject paths outside the package source tree.
+1. Normalize the path relative to the package root.
+2. Reject paths outside the package root or outside its required `src/` source tree.
 3. Read bytes from disk.
 4. Validate UTF-8. Invalid bytes are rejected before line-map construction and must not be decoded lossily into `U+FFFD`.
 5. If the validated text starts with a UTF-8 BOM signature, strip that leading `U+FEFF`.
@@ -173,6 +188,7 @@ Generated sources require a generator kind and, when available, an anchor to ori
 - open-buffer URI that cannot be mapped to a package source;
 - generated source without required generator metadata.
 - source id allocation failure from `SessionIdAllocator`.
+- unsupported source origin for a concrete loader that intentionally implements only part of the `SourceOriginInput` surface.
 - other normalization-specific path errors from `normalize_source_path` that do not fit the explicit path categories.
 
 User-facing read and encoding failures are emitted as frontend/build diagnostics. Internal callers still receive structured errors so snapshot creation can decide whether the build request is fatal or recoverable.

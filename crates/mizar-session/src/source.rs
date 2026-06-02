@@ -1,7 +1,8 @@
 use crate::ids::{BuildSnapshotId, Hash, IdError, SessionIdAllocator, SourceId};
 use crate::snapshot::{Edition, GeneratedSourceKind, ModulePath, PackageId, SourceOrigin};
 use crate::source_map::{
-    DocumentUri, LineMap, LoadingMap, LspDocumentVersion, SourceAnchor, hash_source_text,
+    DocumentUri, LineMap, LoadingMap, LoadingMapSegment, LoadingOrigin, LspDocumentVersion,
+    SourceAnchor, TextRange, hash_source_text,
 };
 use std::error::Error;
 use std::fmt;
@@ -10,8 +11,15 @@ use std::io;
 use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
 
+const UTF8_BOM: &str = "\u{feff}";
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NormalizedPath(String);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DiskSourceLoader {
+    package_root: PathBuf,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceInput {
@@ -146,14 +154,37 @@ pub enum SourceLoadError {
     SourceIdAllocation {
         error: IdError,
     },
+    UnsupportedSourceOrigin {
+        origin: SourceOriginKind,
+    },
     InvalidSourcePath {
         error: SourcePathError,
     },
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceOriginKind {
+    Disk,
+    OpenBuffer,
+    Generated,
+}
+
 impl NormalizedPath {
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+}
+
+impl DiskSourceLoader {
+    pub fn new(package_root: impl Into<PathBuf>) -> Self {
+        Self {
+            package_root: package_root.into(),
+        }
+    }
+
+    pub fn package_root(&self) -> &Path {
+        &self.package_root
     }
 }
 
@@ -221,6 +252,12 @@ impl fmt::Display for SourceLoadError {
             Self::SourceIdAllocation { error } => {
                 write!(f, "could not allocate source id: {error}")
             }
+            Self::UnsupportedSourceOrigin { origin } => {
+                write!(
+                    f,
+                    "source origin `{origin}` is not supported by this loader"
+                )
+            }
             Self::InvalidSourcePath { error } => {
                 write!(f, "invalid or non-normalizable source path: {error}")
             }
@@ -234,6 +271,16 @@ impl Error for SourceLoadError {
             Self::SourceIdAllocation { error } => Some(error),
             Self::InvalidSourcePath { error } => Some(error),
             _ => None,
+        }
+    }
+}
+
+impl fmt::Display for SourceOriginKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Disk => f.write_str("disk"),
+            Self::OpenBuffer => f.write_str("open-buffer"),
+            Self::Generated => f.write_str("generated"),
         }
     }
 }
@@ -316,6 +363,70 @@ pub fn hash_text(text: &str) -> Hash {
     hash_source_text(text)
 }
 
+impl SourceLoader for DiskSourceLoader {
+    fn load(
+        &self,
+        snapshot: BuildSnapshotId,
+        input: SourceInput,
+        ids: &dyn SessionIdAllocator,
+    ) -> Result<LoadedSource, SourceLoadError> {
+        let SourceInput {
+            package_id,
+            module_path,
+            normalized_path: _,
+            edition,
+            origin,
+        } = input;
+
+        let SourceOriginInput::Disk { path } = origin else {
+            let origin = match origin {
+                SourceOriginInput::Disk { .. } => SourceOriginKind::Disk,
+                SourceOriginInput::OpenBuffer { .. } => SourceOriginKind::OpenBuffer,
+                SourceOriginInput::Generated { .. } => SourceOriginKind::Generated,
+            };
+            return Err(SourceLoadError::UnsupportedSourceOrigin { origin });
+        };
+
+        let normalized_path = self.normalize_path(&self.package_root, &path)?;
+        let read_path = self.package_root.join(normalized_path.as_str());
+        let bytes =
+            fs::read(&read_path).map_err(|error| SourceLoadError::UnreadableSourceFile {
+                path: read_path.clone(),
+                kind: error.kind(),
+            })?;
+        let loaded_text = normalize_disk_source_bytes(&read_path, &bytes)?;
+        let source_hash = self.hash_text(&loaded_text.text);
+        let source_id = ids
+            .next_source_id(snapshot)
+            .map_err(|error| SourceLoadError::SourceIdAllocation { error })?;
+        let line_map = LineMap::new(source_id, &loaded_text.text);
+        let loading_map = loaded_text.loading_segments.map(|segments| {
+            LoadingMap::new(
+                source_id,
+                &loaded_text.text,
+                LoadingOrigin::DiskBytes {
+                    normalized_path: normalized_path.clone(),
+                },
+                segments,
+            )
+        });
+        let text = Arc::from(loaded_text.text);
+
+        Ok(LoadedSource {
+            source_id,
+            package_id,
+            module_path,
+            normalized_path,
+            text,
+            source_hash,
+            edition,
+            origin: SourceOrigin::Disk,
+            line_map,
+            loading_map,
+        })
+    }
+}
+
 pub fn normalize_source_path(
     package_root: &Path,
     path: &Path,
@@ -384,6 +495,127 @@ pub fn normalize_source_path(
 
     let normalized = package_relative_to_utf8(package_relative)?;
     Ok(NormalizedPath(normalized))
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct NormalizedDiskText {
+    text: String,
+    loading_segments: Option<Vec<LoadingMapSegment>>,
+}
+
+fn normalize_disk_source_bytes(
+    path: &Path,
+    bytes: &[u8],
+) -> Result<NormalizedDiskText, SourceLoadError> {
+    let text = std::str::from_utf8(bytes).map_err(|_| SourceLoadError::InvalidUtf8 {
+        path: Some(path.to_owned()),
+    })?;
+    let (source_text, original_base, mut segments) =
+        if let Some(stripped) = text.strip_prefix(UTF8_BOM) {
+            (
+                stripped,
+                UTF8_BOM.len(),
+                vec![LoadingMapSegment::RemovedLeadingBom {
+                    original: TextRange {
+                        start: 0,
+                        end: UTF8_BOM.len(),
+                    },
+                }],
+            )
+        } else {
+            (text, 0, Vec::new())
+        };
+
+    if !source_text.contains("\r\n") {
+        if segments.is_empty() {
+            return Ok(NormalizedDiskText {
+                text: text.to_owned(),
+                loading_segments: None,
+            });
+        }
+        segments.push(LoadingMapSegment::Original {
+            loaded: TextRange {
+                start: 0,
+                end: source_text.len(),
+            },
+            original: TextRange {
+                start: original_base,
+                end: original_base + source_text.len(),
+            },
+        });
+        return Ok(NormalizedDiskText {
+            text: source_text.to_owned(),
+            loading_segments: Some(segments),
+        });
+    }
+
+    let normalized = normalize_crlf_to_lf(source_text, original_base, &mut segments);
+    Ok(NormalizedDiskText {
+        text: normalized,
+        loading_segments: Some(segments),
+    })
+}
+
+fn normalize_crlf_to_lf(
+    source_text: &str,
+    original_base: usize,
+    segments: &mut Vec<LoadingMapSegment>,
+) -> String {
+    let mut normalized = String::with_capacity(source_text.len());
+    let mut cursor = 0;
+    let mut next_crlf = source_text.find("\r\n");
+
+    while let Some(crlf_start) = next_crlf {
+        let loaded_start = normalized.len();
+        normalized.push_str(&source_text[cursor..crlf_start]);
+        if cursor < crlf_start {
+            segments.push(LoadingMapSegment::Original {
+                loaded: TextRange {
+                    start: loaded_start,
+                    end: normalized.len(),
+                },
+                original: TextRange {
+                    start: original_base + cursor,
+                    end: original_base + crlf_start,
+                },
+            });
+        }
+
+        let loaded_start = normalized.len();
+        normalized.push('\n');
+        segments.push(LoadingMapSegment::NormalizedNewline {
+            loaded: TextRange {
+                start: loaded_start,
+                end: loaded_start + 1,
+            },
+            original: TextRange {
+                start: original_base + crlf_start,
+                end: original_base + crlf_start + 2,
+            },
+        });
+
+        cursor = crlf_start + 2;
+        next_crlf = source_text[cursor..]
+            .find("\r\n")
+            .map(|relative| cursor + relative);
+    }
+
+    let loaded_start = normalized.len();
+    normalized.push_str(&source_text[cursor..]);
+    if cursor < source_text.len() {
+        segments.push(LoadingMapSegment::Original {
+            loaded: TextRange {
+                start: loaded_start,
+                end: normalized.len(),
+            },
+            original: TextRange {
+                start: original_base + cursor,
+                end: original_base + source_text.len(),
+            },
+        });
+    }
+
+    normalized
 }
 
 impl SourceLoadError {
@@ -533,14 +765,15 @@ fn is_identifier_continue(ch: char) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{
-        LoadedSource, NormalizedPath, SourceInput, SourceLoadError, SourceLoader,
-        SourceOriginInput, SourcePathError, hash_text, normalize_path, normalize_source_path,
-        reject_non_canonical_alias,
+        DiskSourceLoader, LoadedSource, NormalizedPath, SourceInput, SourceLoadError, SourceLoader,
+        SourceOriginInput, SourceOriginKind, SourcePathError, hash_text, normalize_path,
+        normalize_source_path, reject_non_canonical_alias,
     };
     use crate::{
         BuildRequestId, BuildSessionId, BuildSnapshotId, Edition, GeneratedSourceKind, IdError,
-        InMemorySessionIdAllocator, LineMap, ModulePath, PackageId, SessionIdAllocator,
-        SnapshotLeaseId, SourceId, SourceMapId, SourceOrigin,
+        InMemorySessionIdAllocator, LineMap, LoadingMapSegment, LoadingOrigin, ModulePath,
+        PackageId, SessionIdAllocator, SnapshotLeaseId, SourceId, SourceMapId, SourceOrigin,
+        TextRange,
     };
     use std::fs;
     use std::io;
@@ -718,6 +951,336 @@ mod tests {
     }
 
     #[test]
+    fn disk_source_loader_reads_disk_text_and_builds_loaded_source_metadata() {
+        let package = PackageFixture::new();
+        package.write("src/groups/basic.miz", "environ\nbegin\n");
+        let loader = DiskSourceLoader::new(package.root());
+        let ids = InMemorySessionIdAllocator::new();
+
+        let loaded = loader
+            .load(
+                snapshot_id(20),
+                disk_source_input("src/groups/basic.miz"),
+                &ids,
+            )
+            .unwrap();
+
+        assert_eq!(loaded.text.as_ref(), "environ\nbegin\n");
+        assert_eq!(loaded.normalized_path, path("src/groups/basic.miz"));
+        assert_eq!(loaded.source_hash, hash_text("environ\nbegin\n"));
+        assert_eq!(loaded.line_map.source(), "environ\nbegin\n");
+        assert_eq!(loaded.line_map.line_starts(), &[0, 8, 14]);
+        assert_eq!(loaded.line_map.text_hash(), loaded.source_hash);
+        assert!(matches!(loaded.origin, SourceOrigin::Disk));
+        assert!(loaded.loading_map.is_none());
+    }
+
+    #[test]
+    fn disk_source_loader_rejects_invalid_utf8_before_source_id_allocation() {
+        let package = PackageFixture::new();
+        package.write_bytes("src/groups/invalid.miz", &[0xff]);
+        let loader = DiskSourceLoader::new(package.root());
+        let allocator = RecordingAllocator::new();
+
+        let error = loader
+            .load(
+                snapshot_id(21),
+                disk_source_input("src/groups/invalid.miz"),
+                &allocator,
+            )
+            .expect_err("invalid UTF-8 should be rejected");
+
+        assert!(matches!(
+            error,
+            SourceLoadError::InvalidUtf8 { path: Some(path) }
+                if path.ends_with("src/groups/invalid.miz")
+        ));
+        assert!(allocator.source_snapshots().is_empty());
+    }
+
+    #[test]
+    fn disk_source_loader_rejects_unsupported_extension_before_decoding() {
+        let package = PackageFixture::new();
+        package.write_bytes("src/groups/basic.txt", &[0xff]);
+        let loader = DiskSourceLoader::new(package.root());
+
+        let error = loader
+            .load(
+                snapshot_id(22),
+                disk_source_input("src/groups/basic.txt"),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .expect_err("non-miz extension should be rejected");
+
+        assert!(matches!(
+            error,
+            SourceLoadError::UnsupportedFileExtension { path }
+                if path.ends_with("src/groups/basic.txt")
+        ));
+    }
+
+    #[test]
+    fn disk_source_loader_strips_leading_bom_and_maps_loaded_zero_to_original_three() {
+        let package = PackageFixture::new();
+        package.write_bytes("src/groups/bom.miz", b"\xef\xbb\xbfalpha");
+        let loader = DiskSourceLoader::new(package.root());
+        let loaded = loader
+            .load(
+                snapshot_id(23),
+                disk_source_input("src/groups/bom.miz"),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .unwrap();
+
+        assert_eq!(loaded.text.as_ref(), "alpha");
+        assert_eq!(loaded.source_hash, hash_text("alpha"));
+        assert_ne!(loaded.source_hash, hash_text("\u{feff}alpha"));
+        let loading_map = loaded
+            .loading_map
+            .as_ref()
+            .expect("leading BOM should emit a loading map");
+        assert_eq!(
+            loading_map.origin,
+            LoadingOrigin::DiskBytes {
+                normalized_path: path("src/groups/bom.miz")
+            }
+        );
+        assert_eq!(
+            loading_map.segments,
+            vec![
+                LoadingMapSegment::RemovedLeadingBom {
+                    original: TextRange { start: 0, end: 3 },
+                },
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 0, end: 5 },
+                    original: TextRange { start: 3, end: 8 },
+                },
+            ]
+        );
+        assert_eq!(
+            loading_map.original_offset_for_loaded(loaded.source_id, 0),
+            Ok(3)
+        );
+    }
+
+    #[test]
+    fn disk_source_loader_maps_file_that_contains_only_bom_to_original_eof() {
+        let package = PackageFixture::new();
+        package.write_bytes("src/groups/bom_only.miz", b"\xef\xbb\xbf");
+        let loader = DiskSourceLoader::new(package.root());
+
+        let loaded = loader
+            .load(
+                snapshot_id(24),
+                disk_source_input("src/groups/bom_only.miz"),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .unwrap();
+
+        assert_eq!(loaded.text.as_ref(), "");
+        assert_eq!(loaded.source_hash, hash_text(""));
+        let loading_map = loaded
+            .loading_map
+            .as_ref()
+            .expect("leading BOM should emit a loading map");
+        assert_eq!(
+            loading_map.segments,
+            vec![
+                LoadingMapSegment::RemovedLeadingBom {
+                    original: TextRange { start: 0, end: 3 },
+                },
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 0, end: 0 },
+                    original: TextRange { start: 3, end: 3 },
+                },
+            ]
+        );
+        assert_eq!(
+            loading_map.original_offset_for_loaded(loaded.source_id, 0),
+            Ok(3)
+        );
+    }
+
+    #[test]
+    fn disk_source_loader_preserves_non_leading_bom() {
+        let package = PackageFixture::new();
+        package.write("src/groups/non_leading_bom.miz", "alpha\u{feff}beta");
+        let loader = DiskSourceLoader::new(package.root());
+
+        let loaded = loader
+            .load(
+                snapshot_id(24),
+                disk_source_input("src/groups/non_leading_bom.miz"),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .unwrap();
+
+        assert_eq!(loaded.text.as_ref(), "alpha\u{feff}beta");
+        assert!(loaded.loading_map.is_none());
+    }
+
+    #[test]
+    fn disk_source_loader_normalizes_crlf_but_preserves_lone_cr() {
+        let package = PackageFixture::new();
+        package.write("src/groups/newlines.miz", "alpha\r\nbeta\rgamma\r\n");
+        let loader = DiskSourceLoader::new(package.root());
+
+        let loaded = loader
+            .load(
+                snapshot_id(25),
+                disk_source_input("src/groups/newlines.miz"),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .unwrap();
+
+        assert_eq!(loaded.text.as_ref(), "alpha\nbeta\rgamma\n");
+        assert_eq!(loaded.source_hash, hash_text("alpha\nbeta\rgamma\n"));
+        assert_ne!(loaded.source_hash, hash_text("alpha\r\nbeta\rgamma\r\n"));
+        assert_eq!(loaded.line_map.line_starts(), &[0, 6, 17]);
+        assert_eq!(
+            loaded.loading_map.as_ref().map(|map| &map.segments),
+            Some(&vec![
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 0, end: 5 },
+                    original: TextRange { start: 0, end: 5 },
+                },
+                LoadingMapSegment::NormalizedNewline {
+                    loaded: TextRange { start: 5, end: 6 },
+                    original: TextRange { start: 5, end: 7 },
+                },
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 6, end: 16 },
+                    original: TextRange { start: 7, end: 17 },
+                },
+                LoadingMapSegment::NormalizedNewline {
+                    loaded: TextRange { start: 16, end: 17 },
+                    original: TextRange { start: 17, end: 19 },
+                },
+            ])
+        );
+    }
+
+    #[test]
+    fn disk_source_loader_combines_leading_bom_and_crlf_loading_map_offsets() {
+        let package = PackageFixture::new();
+        package.write_bytes("src/groups/bom_crlf.miz", b"\xef\xbb\xbfalpha\r\nbeta");
+        let loader = DiskSourceLoader::new(package.root());
+
+        let loaded = loader
+            .load(
+                snapshot_id(26),
+                disk_source_input("src/groups/bom_crlf.miz"),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .unwrap();
+
+        assert_eq!(loaded.text.as_ref(), "alpha\nbeta");
+        assert_eq!(loaded.source_hash, hash_text("alpha\nbeta"));
+        assert_ne!(loaded.source_hash, hash_text("\u{feff}alpha\r\nbeta"));
+        let loading_map = loaded
+            .loading_map
+            .as_ref()
+            .expect("combined normalization should emit a loading map");
+        assert_eq!(
+            loading_map.segments,
+            vec![
+                LoadingMapSegment::RemovedLeadingBom {
+                    original: TextRange { start: 0, end: 3 },
+                },
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 0, end: 5 },
+                    original: TextRange { start: 3, end: 8 },
+                },
+                LoadingMapSegment::NormalizedNewline {
+                    loaded: TextRange { start: 5, end: 6 },
+                    original: TextRange { start: 8, end: 10 },
+                },
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 6, end: 10 },
+                    original: TextRange { start: 10, end: 14 },
+                },
+            ]
+        );
+        assert_eq!(
+            loading_map.original_offset_for_loaded(loaded.source_id, 0),
+            Ok(3)
+        );
+        assert_eq!(
+            loading_map.original_offset_for_loaded(loaded.source_id, 5),
+            Ok(8)
+        );
+        assert_eq!(
+            loading_map.original_offset_for_loaded(loaded.source_id, 6),
+            Ok(10)
+        );
+    }
+
+    #[test]
+    fn disk_source_loader_reads_through_normalized_dot_component_path() {
+        let package = PackageFixture::new();
+        package.write("src/groups/dotted.miz", "environ\n");
+        let loader = DiskSourceLoader::new(package.root());
+
+        let loaded = loader
+            .load(
+                snapshot_id(27),
+                disk_source_input("src/./groups/../groups/dotted.miz"),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .unwrap();
+
+        assert_eq!(loaded.normalized_path, path("src/groups/dotted.miz"));
+        assert_eq!(loaded.text.as_ref(), "environ\n");
+    }
+
+    #[test]
+    fn disk_source_loader_rejects_paths_outside_package_root() {
+        let package = PackageFixture::new();
+        package.write_outside("outside.miz", "environ\n");
+        let loader = DiskSourceLoader::new(package.root());
+
+        let error = loader
+            .load(
+                snapshot_id(28),
+                source_input(SourceOriginInput::Disk {
+                    path: package.outside_path("outside.miz"),
+                }),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .expect_err("outside package path should be rejected");
+
+        assert!(matches!(
+            error,
+            SourceLoadError::SourcePathOutsidePackageRoot { .. }
+        ));
+    }
+
+    #[test]
+    fn disk_source_loader_does_not_preimplement_non_disk_origins() {
+        let package = PackageFixture::new();
+        let loader = DiskSourceLoader::new(package.root());
+
+        let error = loader
+            .load(
+                snapshot_id(29),
+                source_input(SourceOriginInput::OpenBuffer {
+                    uri: "file:///package/src/basic.miz".to_owned(),
+                    version: 1,
+                    text: Arc::from("environ\n"),
+                }),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .expect_err("disk-only loader should reject open buffers");
+
+        assert!(matches!(
+            error,
+            SourceLoadError::UnsupportedSourceOrigin {
+                origin: SourceOriginKind::OpenBuffer
+            }
+        ));
+    }
+
+    #[test]
     fn source_load_error_variants_and_error_sources_are_available() {
         let allocation = SourceLoadError::SourceIdAllocation {
             error: IdError::AllocatorOverflow,
@@ -745,6 +1308,9 @@ mod tests {
         let unreadable = SourceLoadError::UnreadableSourceFile {
             path: PathBuf::from("src/missing.miz"),
             kind: io::ErrorKind::NotFound,
+        };
+        let unsupported_origin = SourceLoadError::UnsupportedSourceOrigin {
+            origin: SourceOriginKind::Generated,
         };
 
         assert!(std::error::Error::source(&allocation).is_some());
@@ -781,6 +1347,12 @@ mod tests {
             SourceLoadError::UnreadableSourceFile {
                 kind: io::ErrorKind::NotFound,
                 ..
+            }
+        ));
+        assert!(matches!(
+            unsupported_origin,
+            SourceLoadError::UnsupportedSourceOrigin {
+                origin: SourceOriginKind::Generated
             }
         ));
     }
@@ -986,6 +1558,14 @@ mod tests {
         }
     }
 
+    fn disk_source_input(relative_path: &str) -> SourceInput {
+        let mut input = source_input(SourceOriginInput::Disk {
+            path: PathBuf::from(relative_path),
+        });
+        input.normalized_path = path(relative_path);
+        input
+    }
+
     fn loaded_source(source_id: SourceId, origin: SourceOrigin, text: &str) -> LoadedSource {
         LoadedSource {
             source_id,
@@ -1151,6 +1731,14 @@ mod tests {
         fn write(&self, relative: &str, content: &str) {
             let path = self.root.join(relative);
             self.write_path(&path, content);
+        }
+
+        fn write_bytes(&self, relative: &str, content: &[u8]) {
+            let path = self.root.join(relative);
+            if let Some(parent) = path.parent() {
+                fs::create_dir_all(parent).expect("parent directory should be created");
+            }
+            fs::write(path, content).expect("fixture bytes should be written");
         }
 
         fn write_outside(&self, relative: &str, content: &str) {

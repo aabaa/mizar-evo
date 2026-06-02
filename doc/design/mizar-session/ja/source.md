@@ -19,6 +19,13 @@ pub struct SourceInput {
     pub origin: SourceOriginInput,
 }
 
+pub struct DiskSourceLoader { /* package root */ }
+
+impl DiskSourceLoader {
+    pub fn new(package_root: impl Into<PathBuf>) -> Self;
+    pub fn package_root(&self) -> &Path;
+}
+
 pub enum SourceOriginInput {
     Disk { path: PathBuf },
     OpenBuffer { uri: DocumentUri, version: LspDocumentVersion, text: Arc<str> },
@@ -75,7 +82,14 @@ pub enum SourceLoadError {
     UnmappedOpenBufferUri { uri: DocumentUri },
     GeneratedSourceWithoutMetadata { module_path: ModulePath },
     SourceIdAllocation { error: IdError },
+    UnsupportedSourceOrigin { origin: SourceOriginKind },
     InvalidSourcePath { error: SourcePathError },
+}
+
+pub enum SourceOriginKind {
+    Disk,
+    OpenBuffer,
+    Generated,
 }
 ```
 
@@ -83,6 +97,7 @@ pub enum SourceLoadError {
 `load` は対象の `BuildSnapshotId` を受け取り、`SessionIdAllocator` からスナップショットスコープの `SourceId` を発行できるようにします。
 `LoadedSource.origin` は snapshot モジュールの `SourceOrigin` を使います。source モジュールは、読み込み済みレコード用の origin enum を重複定義しません。
 `SourceLoader` の補助メソッドは、公開 helper の `normalize_path` と `hash_text` に委譲します。`normalize_path` は `normalize_source_path` を再利用し、`hash_text` は正規化済みテキスト内容だけをハッシュ化します。
+`DiskSourceLoader` は、タスク 15 のパッケージルート上のディスクファイル向け具象ローダーです。`SourceOriginInput::Disk` に対して `SourceLoader` を実装します。オープンバッファと生成ソースの読み込みはタスク 16 の作業として残し、この disk-only loader では unsupported origin として拒否します。
 
 ## Dependencies
 
@@ -128,8 +143,8 @@ pub enum SourceLoadError {
 
 ### Disk Source Loading
 
-1. パッケージのソースルートからの相対パスへ正規化する。
-2. パッケージのソースツリーの外側にあるパスを拒否する。
+1. パッケージルートからの相対パスへ正規化する。
+2. パッケージルートの外側、または必須の `src/` ソースツリーの外側にあるパスを拒否する。
 3. ディスクからバイト列を読み込む。
 4. UTF-8 を検証する。不正なバイトは行マップ構築の前に拒否し、損失のあるデコードで `U+FFFD` に置き換えてはならない。
 5. 検証済みテキストが UTF-8 BOM シグネチャで始まる場合、先頭の `U+FEFF` を除去する。
@@ -173,6 +188,7 @@ pub enum SourceLoadError {
 - パッケージソースへ対応付けられないオープンバッファ URI
 - 必須の生成器メタデータを欠く生成ソース
 - `SessionIdAllocator` による source id 発行失敗
+- `SourceOriginInput` surface の一部だけを意図的に実装する具象 loader に対する未対応 source origin
 - 明示的なパスカテゴリに収まらない `normalize_source_path` 由来のその他の正規化エラー
 
 利用者向けの読み取り失敗・エンコード失敗は、フロントエンドやビルドの診断として発行されます。内部の呼び出し側は構造化エラーも受け取るため、スナップショット生成はビルドリクエストが致命的か回復可能かを判断できます。
