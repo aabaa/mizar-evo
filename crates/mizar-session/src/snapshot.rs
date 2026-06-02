@@ -1591,12 +1591,11 @@ mod tests {
 
         let (snapshot, _) = registry.create_snapshot(request_id(), input).unwrap();
 
-        assert!(matches!(
-            snapshot.source_versions.iter().find(|version| {
+        assert!(
+            snapshot.source_versions.iter().any(|version| {
                 matches!(version.origin, SourceOrigin::OpenBuffer { version: 0 })
-            }),
-            Some(_)
-        ));
+            })
+        );
     }
 
     #[test]
