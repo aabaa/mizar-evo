@@ -20,9 +20,11 @@ pub struct RetentionManager<A = InMemorySessionIdAllocator> {
 #[derive(Debug, Default)]
 struct RetentionState {
     snapshots: HashSet<BuildSnapshotId>,
+    current_marks: HashSet<BuildSnapshotId>,
     leases: HashMap<SnapshotLeaseId, RetainedLease>,
     released_leases: HashSet<SnapshotLeaseId>,
     counts: HashMap<BuildSnapshotId, HashMap<RetentionCountKey, usize>>,
+    resources: HashMap<BuildSnapshotId, RetainedSnapshotResources>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -36,6 +38,41 @@ pub struct RetainSnapshotInput {
 pub struct RetainGuard {
     pub lease_id: SnapshotLeaseId,
     pub snapshot: BuildSnapshotId,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct CollectionSummary {
+    pub scanned: usize,
+    pub collected: usize,
+    pub released_sources: usize,
+    pub released_maps: usize,
+    pub skipped_current: usize,
+    pub skipped_live_leases: usize,
+    pub lease_diagnostics: Vec<RetentionLeaseDiagnostic>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum RetentionLeaseDiagnostic {
+    StaleLiveLease {
+        lease_id: SnapshotLeaseId,
+        snapshot: BuildSnapshotId,
+    },
+    StaleLeaseCount {
+        snapshot: BuildSnapshotId,
+        live_count: usize,
+    },
+    MismatchedLeaseCount {
+        snapshot: BuildSnapshotId,
+        expected_live_count: usize,
+        actual_live_count: usize,
+    },
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct RetainedSnapshotResources {
+    pub sources: usize,
+    pub maps: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -117,6 +154,38 @@ impl<A> RetentionManager<A> {
             .expect("retention manager mutex poisoned")
             .snapshots
             .insert(snapshot)
+    }
+
+    pub fn record_retained_resources(
+        &self,
+        snapshot: BuildSnapshotId,
+        resources: RetainedSnapshotResources,
+    ) -> Result<(), RetentionError> {
+        let mut state = self.state.lock().expect("retention manager mutex poisoned");
+        state.validate_snapshot_exists(snapshot)?;
+        state.resources.insert(snapshot, resources);
+        Ok(())
+    }
+
+    pub fn mark_current(&self, snapshot: BuildSnapshotId) -> Result<bool, RetentionError> {
+        let mut state = self.state.lock().expect("retention manager mutex poisoned");
+        if !state.snapshots.contains(&snapshot) {
+            return Err(RetentionError::AttemptToMarkMissingSnapshotCurrent {
+                snapshot_id: snapshot,
+            });
+        }
+        Ok(state.current_marks.insert(snapshot))
+    }
+
+    pub fn unmark_current(&self, snapshot: BuildSnapshotId) -> Result<bool, RetentionError> {
+        let mut state = self.state.lock().expect("retention manager mutex poisoned");
+        state.validate_snapshot_exists(snapshot)?;
+        Ok(state.current_marks.remove(&snapshot))
+    }
+
+    pub fn collect(&self) -> CollectionSummary {
+        let mut state = self.state.lock().expect("retention manager mutex poisoned");
+        state.collect()
     }
 }
 
@@ -248,6 +317,117 @@ impl RetentionState {
             .or_default() += 1;
         self.leases.insert(lease_id, lease);
         Ok(())
+    }
+
+    fn collect(&mut self) -> CollectionSummary {
+        let actual_live_counts = self.actual_live_counts();
+        let count_live_counts = self.count_live_counts();
+        let mut summary = self.collection_diagnostics(&actual_live_counts, &count_live_counts);
+        let snapshots = self.snapshots.iter().copied().collect::<Vec<_>>();
+
+        for snapshot in snapshots {
+            summary.scanned += 1;
+
+            if self.current_marks.contains(&snapshot) {
+                summary.skipped_current += 1;
+                continue;
+            }
+
+            let actual_live_count = actual_live_counts
+                .get(&snapshot)
+                .copied()
+                .unwrap_or_default();
+            let count_live_count = count_live_counts
+                .get(&snapshot)
+                .copied()
+                .unwrap_or_default();
+            if actual_live_count > 0 || count_live_count > 0 {
+                summary.skipped_live_leases += 1;
+                continue;
+            }
+
+            if let Some(resources) = self.resources.remove(&snapshot) {
+                summary.released_sources += resources.sources;
+                summary.released_maps += resources.maps;
+            }
+            self.counts.remove(&snapshot);
+            self.snapshots.remove(&snapshot);
+            summary.collected += 1;
+        }
+
+        summary
+    }
+
+    fn actual_live_counts(&self) -> HashMap<BuildSnapshotId, usize> {
+        let mut counts = HashMap::new();
+        for lease in self.leases.values() {
+            *counts.entry(lease.snapshot).or_default() += 1;
+        }
+        counts
+    }
+
+    fn count_live_counts(&self) -> HashMap<BuildSnapshotId, usize> {
+        self.counts
+            .iter()
+            .map(|(snapshot, counts_by_key)| (*snapshot, counts_by_key.values().sum()))
+            .collect()
+    }
+
+    fn collection_diagnostics(
+        &self,
+        actual_live_counts: &HashMap<BuildSnapshotId, usize>,
+        count_live_counts: &HashMap<BuildSnapshotId, usize>,
+    ) -> CollectionSummary {
+        let mut summary = CollectionSummary::default();
+
+        for (lease_id, lease) in &self.leases {
+            if !self.snapshots.contains(&lease.snapshot) {
+                summary
+                    .lease_diagnostics
+                    .push(RetentionLeaseDiagnostic::StaleLiveLease {
+                        lease_id: *lease_id,
+                        snapshot: lease.snapshot,
+                    });
+            }
+        }
+
+        for (snapshot, live_count) in count_live_counts {
+            if !self.snapshots.contains(snapshot) {
+                summary
+                    .lease_diagnostics
+                    .push(RetentionLeaseDiagnostic::StaleLeaseCount {
+                        snapshot: *snapshot,
+                        live_count: *live_count,
+                    });
+            }
+        }
+
+        let snapshots_with_lease_state = actual_live_counts
+            .keys()
+            .chain(count_live_counts.keys())
+            .copied()
+            .collect::<HashSet<_>>();
+        for snapshot in snapshots_with_lease_state {
+            let actual_live_count = actual_live_counts
+                .get(&snapshot)
+                .copied()
+                .unwrap_or_default();
+            let count_live_count = count_live_counts
+                .get(&snapshot)
+                .copied()
+                .unwrap_or_default();
+            if self.snapshots.contains(&snapshot) && actual_live_count != count_live_count {
+                summary
+                    .lease_diagnostics
+                    .push(RetentionLeaseDiagnostic::MismatchedLeaseCount {
+                        snapshot,
+                        expected_live_count: count_live_count,
+                        actual_live_count,
+                    });
+            }
+        }
+
+        summary
     }
 
     fn decrement_count(
@@ -433,13 +613,61 @@ impl<A> RetentionManager<A> {
     ) -> Result<bool, RetentionError> {
         let state = self.state.lock().expect("retention manager mutex poisoned");
         state.validate_snapshot_exists(snapshot)?;
-        Ok(state.counts.get(&snapshot).is_none_or(HashMap::is_empty))
+        let has_live_lease_count = state.counts.get(&snapshot).is_some_and(|counts_by_key| {
+            !counts_by_key.is_empty() && counts_by_key.values().any(|count| *count > 0)
+        });
+        let has_live_lease = state
+            .leases
+            .values()
+            .any(|lease| lease.snapshot == snapshot);
+        Ok(!state.current_marks.contains(&snapshot) && !has_live_lease_count && !has_live_lease)
+    }
+
+    fn insert_stale_count_for_test(&self, snapshot: BuildSnapshotId, count: usize) {
+        let mut state = self.state.lock().expect("retention manager mutex poisoned");
+        state.counts.insert(
+            snapshot,
+            HashMap::from([(
+                RetentionCountKey {
+                    owner: RetainOwner::Diagnostics,
+                    reason: RetentionReason::DiagnosticIndex,
+                },
+                count,
+            )]),
+        );
+    }
+
+    fn insert_stale_live_lease_for_test(
+        &self,
+        lease_id: SnapshotLeaseId,
+        snapshot: BuildSnapshotId,
+    ) {
+        let mut state = self.state.lock().expect("retention manager mutex poisoned");
+        state.leases.insert(
+            lease_id,
+            RetainedLease {
+                snapshot,
+                owner: RetainOwner::Diagnostics,
+                reason: RetentionReason::DiagnosticIndex,
+            },
+        );
+    }
+
+    fn remove_counts_for_test(&self, snapshot: BuildSnapshotId) {
+        self.state
+            .lock()
+            .expect("retention manager mutex poisoned")
+            .counts
+            .remove(&snapshot);
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{RetainGuard, RetainOwner, RetainSnapshotInput, RetentionError, RetentionManager};
+    use super::{
+        RetainGuard, RetainOwner, RetainSnapshotInput, RetainedSnapshotResources, RetentionError,
+        RetentionLeaseDiagnostic, RetentionManager,
+    };
     use crate::{
         BuildRequestId, BuildSessionId, BuildSnapshotId, DependencyArtifactRef, Edition, Hash,
         IdError, InMemorySessionIdAllocator, ModulePath, NormalizedPath, PackageId,
@@ -499,6 +727,247 @@ mod tests {
 
         assert!(manager.is_collection_eligible_for_test(snapshot).unwrap());
         assert_eq!(manager.live_lease_count_for_test(snapshot), 0);
+    }
+
+    #[test]
+    fn current_mark_prevents_collection_without_other_leases() {
+        let manager = RetentionManager::new();
+        let snapshot = snapshot_id(32);
+        manager.register_snapshot(snapshot);
+        manager
+            .record_retained_resources(
+                snapshot,
+                RetainedSnapshotResources {
+                    sources: 2,
+                    maps: 3,
+                },
+            )
+            .unwrap();
+
+        assert!(!manager.unmark_current(snapshot).unwrap());
+        assert!(manager.mark_current(snapshot).unwrap());
+        assert!(!manager.mark_current(snapshot).unwrap());
+        assert!(!manager.is_collection_eligible_for_test(snapshot).unwrap());
+
+        let summary = manager.collect();
+
+        assert_eq!(summary.scanned, 1);
+        assert_eq!(summary.collected, 0);
+        assert_eq!(summary.released_sources, 0);
+        assert_eq!(summary.released_maps, 0);
+        assert_eq!(summary.skipped_current, 1);
+        assert_eq!(summary.skipped_live_leases, 0);
+        assert!(summary.lease_diagnostics.is_empty());
+
+        assert!(manager.unmark_current(snapshot).unwrap());
+        assert!(manager.is_collection_eligible_for_test(snapshot).unwrap());
+
+        let summary = manager.collect();
+
+        assert_eq!(summary.scanned, 1);
+        assert_eq!(summary.collected, 1);
+        assert_eq!(summary.released_sources, 2);
+        assert_eq!(summary.released_maps, 3);
+        assert_eq!(summary.skipped_current, 0);
+        assert_eq!(summary.skipped_live_leases, 0);
+    }
+
+    #[test]
+    fn releasing_final_lease_allows_collection() {
+        let manager = RetentionManager::new();
+        let snapshot = snapshot_id(33);
+        manager.register_snapshot(snapshot);
+        manager
+            .record_retained_resources(
+                snapshot,
+                RetainedSnapshotResources {
+                    sources: 1,
+                    maps: 2,
+                },
+            )
+            .unwrap();
+        let guard = manager
+            .retain_snapshot(retain_input(
+                snapshot,
+                RetainOwner::Diagnostics,
+                RetentionReason::DiagnosticIndex,
+            ))
+            .unwrap();
+
+        let summary = manager.collect();
+
+        assert_eq!(summary.scanned, 1);
+        assert_eq!(summary.collected, 0);
+        assert_eq!(summary.skipped_live_leases, 1);
+
+        manager.release(guard).unwrap();
+
+        let summary = manager.collect();
+
+        assert_eq!(summary.scanned, 1);
+        assert_eq!(summary.collected, 1);
+        assert_eq!(summary.released_sources, 1);
+        assert_eq!(summary.released_maps, 2);
+        assert!(matches!(
+            manager
+                .retain_snapshot(retain_input(
+                    snapshot,
+                    RetainOwner::Diagnostics,
+                    RetentionReason::DiagnosticIndex,
+                ))
+                .unwrap_err(),
+            RetentionError::UnknownSnapshotId { snapshot_id } if snapshot_id == snapshot
+        ));
+    }
+
+    #[test]
+    fn phase_output_reference_lease_blocks_collection_until_released() {
+        let manager = RetentionManager::new();
+        let snapshot = snapshot_id(34);
+        manager.register_snapshot(snapshot);
+        let guard = manager
+            .retain_snapshot(retain_input(
+                snapshot,
+                RetainOwner::IrStorage,
+                RetentionReason::PhaseOutputReference,
+            ))
+            .unwrap();
+
+        let summary = manager.collect();
+
+        assert_eq!(summary.scanned, 1);
+        assert_eq!(summary.collected, 0);
+        assert_eq!(summary.skipped_live_leases, 1);
+
+        manager.release(guard).unwrap();
+
+        let summary = manager.collect();
+
+        assert_eq!(summary.scanned, 1);
+        assert_eq!(summary.collected, 1);
+    }
+
+    #[test]
+    fn marking_missing_snapshot_current_returns_retention_error() {
+        let manager = RetentionManager::new();
+        let missing = snapshot_id(35);
+
+        let error = manager.mark_current(missing).unwrap_err();
+
+        assert!(matches!(
+            error,
+            RetentionError::AttemptToMarkMissingSnapshotCurrent { snapshot_id }
+                if snapshot_id == missing
+        ));
+    }
+
+    #[test]
+    fn collection_summary_reports_skips_and_lease_diagnostics() {
+        let manager = RetentionManager::new();
+        let current = snapshot_id(36);
+        let live = snapshot_id(37);
+        let mismatched = snapshot_id(38);
+        let stale = snapshot_id(39);
+        let stale_live = snapshot_id(45);
+        manager.register_snapshot(current);
+        manager.register_snapshot(live);
+        manager.register_snapshot(mismatched);
+        manager.mark_current(current).unwrap();
+        let _live_guard = manager
+            .retain_snapshot(retain_input(
+                live,
+                RetainOwner::Diagnostics,
+                RetentionReason::DiagnosticIndex,
+            ))
+            .unwrap();
+        let _mismatched_guard = manager
+            .retain_snapshot(retain_input(
+                mismatched,
+                RetainOwner::Explanation,
+                RetentionReason::ExplanationRequest,
+            ))
+            .unwrap();
+        manager.remove_counts_for_test(mismatched);
+        manager.insert_stale_count_for_test(stale, 1);
+        let lease_allocator = InMemorySessionIdAllocator::new();
+        let stale_live_lease = (0..10)
+            .map(|_| lease_allocator.next_lease_id(stale_live).unwrap())
+            .last()
+            .unwrap();
+        manager.insert_stale_live_lease_for_test(stale_live_lease, stale_live);
+
+        let summary = manager.collect();
+
+        assert_eq!(summary.scanned, 3);
+        assert_eq!(summary.collected, 0);
+        assert_eq!(summary.skipped_current, 1);
+        assert_eq!(summary.skipped_live_leases, 2);
+        assert!(summary.lease_diagnostics.iter().any(|diagnostic| matches!(
+            diagnostic,
+            RetentionLeaseDiagnostic::StaleLeaseCount {
+                snapshot,
+                live_count: 1,
+            } if *snapshot == stale
+        )));
+        assert!(summary.lease_diagnostics.iter().any(|diagnostic| matches!(
+            diagnostic,
+            RetentionLeaseDiagnostic::StaleLiveLease { lease_id, snapshot }
+                if *lease_id == stale_live_lease && *snapshot == stale_live
+        )));
+        assert!(summary.lease_diagnostics.iter().any(|diagnostic| matches!(
+            diagnostic,
+            RetentionLeaseDiagnostic::MismatchedLeaseCount {
+                snapshot,
+                expected_live_count: 0,
+                actual_live_count: 1,
+            } if *snapshot == mismatched
+        )));
+    }
+
+    #[test]
+    fn cache_and_artifact_leases_do_not_become_collection_outputs() {
+        let manager = RetentionManager::new();
+        let snapshot = snapshot_id(44);
+        manager.register_snapshot(snapshot);
+        manager
+            .record_retained_resources(
+                snapshot,
+                RetainedSnapshotResources {
+                    sources: 4,
+                    maps: 5,
+                },
+            )
+            .unwrap();
+        let cache = manager
+            .retain_snapshot(retain_input(
+                snapshot,
+                RetainOwner::CacheWriter,
+                RetentionReason::PendingWrite,
+            ))
+            .unwrap();
+        let artifact = manager
+            .retain_snapshot(retain_input(
+                snapshot,
+                RetainOwner::ArtifactWriter,
+                RetentionReason::PendingWrite,
+            ))
+            .unwrap();
+
+        let summary = manager.collect();
+
+        assert_eq!(summary.collected, 0);
+        assert_eq!(summary.skipped_live_leases, 1);
+        assert_eq!(summary.released_sources, 0);
+        assert_eq!(summary.released_maps, 0);
+
+        manager.release(cache).unwrap();
+        manager.release(artifact).unwrap();
+
+        let summary = manager.collect();
+
+        assert_eq!(summary.collected, 1);
+        assert_eq!(summary.released_sources, 4);
+        assert_eq!(summary.released_maps, 5);
     }
 
     #[test]

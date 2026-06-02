@@ -9,7 +9,8 @@ pub use ids::{
     SessionIdAllocator, SnapshotLeaseId, SourceId, SourceMapId,
 };
 pub use retention::{
-    RetainGuard, RetainOwner, RetainSnapshotInput, RetentionError, RetentionManager,
+    CollectionSummary, RetainGuard, RetainOwner, RetainSnapshotInput, RetainedSnapshotResources,
+    RetentionError, RetentionLeaseDiagnostic, RetentionManager,
 };
 pub use snapshot::{
     BuildSnapshot, DependencyArtifactRef, Edition, GeneratedSourceKind, ModulePath, PackageId,

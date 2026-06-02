@@ -152,8 +152,8 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: active lease prevents collection eligibility; duplicate release is reported without underflow; an invalid owner/reason combination is rejected; a stale-snapshot retain succeeds without marking it current.
     - Depends on: 13. Spec: [retention.md](./retention.md) "Retain", "Release", "Error Handling".
 
-18. **Current marks and collection.** [ ]
-    - Add `mark_current`/`unmark_current`, `collect`, and `CollectionSummary`; implement the collection policy (no lease, no current mark, no retained map/explanation, IR phase-output lease released).
+18. **Current marks and collection.** [x]
+    - Add `mark_current`/`unmark_current`, `record_retained_resources`, `collect`, and `CollectionSummary`; implement the collection policy (no lease, no current mark, no retained map/explanation/LSP/IR lease).
     - `CollectionSummary` reports counts for snapshots scanned/collected, sources and maps released, snapshots skipped for current marks, snapshots skipped for live leases, and stale/mismatched-lease diagnostics.
     - Tests: current mark prevents collection without other leases; releasing the final lease collects; a phase-output lease blocks collection until released; marking a missing snapshot as current surfaces `RetentionError`; `CollectionSummary` reports skipped-for-current and skipped-for-lease counters and stale-lease diagnostics; collection does not delete artifacts/cache.
     - Depends on: 17. Spec: [retention.md](./retention.md) "Collection", "Current Marks", "Collection Summary".

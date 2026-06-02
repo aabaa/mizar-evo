@@ -24,6 +24,37 @@ pub struct RetainGuard {
     pub snapshot: BuildSnapshotId,
 }
 
+pub struct CollectionSummary {
+    pub scanned: usize,
+    pub collected: usize,
+    pub released_sources: usize,
+    pub released_maps: usize,
+    pub skipped_current: usize,
+    pub skipped_live_leases: usize,
+    pub lease_diagnostics: Vec<RetentionLeaseDiagnostic>,
+}
+
+pub enum RetentionLeaseDiagnostic {
+    StaleLiveLease {
+        lease_id: SnapshotLeaseId,
+        snapshot: BuildSnapshotId,
+    },
+    StaleLeaseCount {
+        snapshot: BuildSnapshotId,
+        live_count: usize,
+    },
+    MismatchedLeaseCount {
+        snapshot: BuildSnapshotId,
+        expected_live_count: usize,
+        actual_live_count: usize,
+    },
+}
+
+pub struct RetainedSnapshotResources {
+    pub sources: usize,
+    pub maps: usize,
+}
+
 pub enum RetainOwner {
     Build(BuildRequestId),
     Watch,
@@ -49,6 +80,14 @@ impl RetentionManager<InMemorySessionIdAllocator> {
 impl<A> RetentionManager<A> {
     pub fn with_allocator(allocator: A) -> Self;
     pub fn register_snapshot(&self, snapshot: BuildSnapshotId) -> bool;
+    pub fn record_retained_resources(
+        &self,
+        snapshot: BuildSnapshotId,
+        resources: RetainedSnapshotResources,
+    ) -> Result<(), RetentionError>;
+    pub fn mark_current(&self, snapshot: BuildSnapshotId) -> Result<bool, RetentionError>;
+    pub fn unmark_current(&self, snapshot: BuildSnapshotId) -> Result<bool, RetentionError>;
+    pub fn collect(&self) -> CollectionSummary;
 }
 
 impl<A: SessionIdAllocator> RetentionManager<A> {
@@ -62,8 +101,15 @@ impl<A: SessionIdAllocator> RetentionManager<A> {
 `register_snapshot` は、他の層で生成されたスナップショットを retention manager が知るために記録します。
 これはスナップショットを current にはしません。`retain_existing_lease` は、`SnapshotRegistry::create_snapshot` が返す active-build lease など、snapshot registry がすでに割り当てた `SnapshotLease` を、別の lease id を割り当てずに retention の台帳へ接続します。`RetainGuard` の解放は、呼び出し側から見ると冪等であるべきですが、重複した解放の試行は `RetentionError` として報告され、参照カウントをアンダーフローさせません。
 
-`mark_current`、`unmark_current`、`collect`、`CollectionSummary` はタスク 18 の作業です。
-タスク 17 の `RetentionError` には、その作業で必要になる missing-current と inconsistent-retention-state の variant を先に予約しておきます。
+タスク 18 では current mark と回収を追加します。`mark_current` と
+`unmark_current` は mark 集合が変化したかを返します。存在しないスナップショットを
+current にしようとした場合は
+`RetentionError::AttemptToMarkMissingSnapshotCurrent` を返します。`collect` は
+retention manager のインメモリ状態だけを走査して `CollectionSummary` を返し、公開
+アーティファクトやキャッシュレコードは削除しません。
+`record_retained_resources` は、スナップショットが所有するインメモリの source/map
+footprint を記録します。この footprint はスナップショット自体が回収されるときに解放されます。
+診断・説明・LSP・IR などがそれらのリソースを外部参照している場合は、引き続き生存中リースで表します。
 
 ## Dependencies
 
@@ -87,6 +133,8 @@ impl<A: SessionIdAllocator> RetentionManager<A> {
 - 任意で、デバッグ用の生成／解放トレース
 
 このレコードはセッションローカルな保持状態を追跡します。公開アーティファクトにはシリアライズされません。
+保持中 source/map のリソース数は回収会計のメタデータであり、独立した外部 keep-alive ではありません。
+それらのリソースをまだ必要とする利用側は、適切な `RetentionReason` のリースを保持します。
 
 ### Current Marks
 
@@ -94,8 +142,9 @@ impl<A: SessionIdAllocator> RetentionManager<A> {
 
 新しいスナップショットが現行になった後でも、古いスナップショットは、失効した診断や説明リクエストのためにリースを保持してよいものとします。
 
-タスク 17 の retain/release は current mark を作成・更新しません。
+retain/release は current mark を作成・更新しません。
 `DiagnosticIndex`、`ExplanationRequest`、`PublishedLspSnapshot`、`PhaseOutputReference` のために古いスナップショットを保持しても、その利用側のために生存させるだけで current にはしません。
+current mark は、生存中のリースとは独立に解除できます。
 
 ### Collection Summary
 
@@ -135,7 +184,7 @@ impl<A: SessionIdAllocator> RetentionManager<A> {
 1. リース ID とスナップショット ID を検証する。
 2. 所有者／理由のカウントを減らす。
 3. リースを解放済みとして記録する。
-4. リースが残っていなければ、タスク 17 の retention record は将来の回収可否を妨げない状態になる。current mark と回収ポリシーはタスク 18 で追加する。
+4. リースが残っていなければ、retention record は生存中リースによってはブロックされず、current mark が残っていなければ回収できます。
 
 解放は、別のスレッドが生存中のガードを通してまだ読み取れるデータを、同期的に削除してはなりません。
 
@@ -145,10 +194,13 @@ impl<A: SessionIdAllocator> RetentionManager<A> {
 
 - それを参照する生存中のリースがない
 - それを参照する現行マークがない
-- それに対して登録されたソースマップ・診断の説明・LSP 公開がない
-- 下流の `mizar-ir` が、それに対するフェーズ出力の保持リースをすべて解放済みである
+- source-map・診断説明・LSP 公開・IR phase-output 参照のリースが生存していない
 
 回収は、インメモリのソーステキスト・ソースマップ・スナップショットメタデータを破棄します。公開アーティファクトやキャッシュレコードは削除しません。
+
+`PhaseOutputReference` は `IrStorage` が所有する通常の生存中リースとして表されるため、解放されるまで回収をブロックします。
+cache writer と artifact writer の `PendingWrite` リースも生存中はブロックしますが、回収そのものは artifact/cache の削除出力を持ちません。
+失効した live lease、または live lease map と参照カウント台帳の不一致は `CollectionSummary` に記録され、影響する登録済みスナップショットの回収判断は保守的になります。
 
 ## Error Handling
 

@@ -152,8 +152,8 @@
     - テスト: アクティブなリースが回収対象化を防ぐ、二重リリースはアンダーフローせず報告される、不正な owner/reason の組み合わせは拒否、古いスナップショットの retain は current にせず成功する。
     - 依存: 13。仕様: [retention.md](../en/retention.md) "Retain", "Release", "Error Handling"。
 
-18. **current マークと回収。** [ ]
-    - `mark_current`/`unmark_current`、`collect`、`CollectionSummary` を追加し、回収ポリシー（リース無し・current マーク無し・保持マップ/説明無し・IR フェーズ出力リース解放済み）を実装する。
+18. **current マークと回収。** [x]
+    - `mark_current`/`unmark_current`、`record_retained_resources`、`collect`、`CollectionSummary` を追加し、回収ポリシー（リース無し・current マーク無し・保持マップ/説明/LSP/IR のリース無し）を実装する。
     - `CollectionSummary` は、スキャン/回収したスナップショット数、解放したソースとマップ、current マークでスキップしたスナップショット、ライブリースでスキップしたスナップショット、古い/不一致リースの診断を報告する。
     - テスト: current マークは他のリースが無くても回収を防ぐ、最後のリース解放で回収される、フェーズ出力リースは解放まで回収を阻む、欠落スナップショットを current にしようとすると `RetentionError` になる、`CollectionSummary` が current/リースでのスキップ数と古いリース診断を報告する、回収はアーティファクト/キャッシュを削除しない。
     - 依存: 17。仕様: [retention.md](../en/retention.md) "Collection", "Current Marks", "Collection Summary"。
