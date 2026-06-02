@@ -1,0 +1,120 @@
+# Codex Agent Workflow
+
+This repository uses Codex as a task orchestrator. For implementation tasks, follow the workflow below unless the user gives a more specific instruction.
+
+## User Invocation
+
+When the user says something like the following, treat it as a request to run the full workflow in this file:
+
+```text
+<task description>
+
+Codex agent を使い、AGENTS.md のワークフローに従って、完了まで進めてください。
+```
+
+This wording is an explicit request to use sub-agents for the review and delegation phases where they are available and useful.
+
+If the task is ambiguous enough that implementation would be risky, ask one concise clarifying question. Otherwise, make reasonable assumptions and proceed.
+
+## Full Task Workflow
+
+For each task, complete these phases in order:
+
+1. Implement the requested task.
+2. Review whether tests are sufficient compared with the relevant specification.
+3. If the test review finds gaps, expand tests carefully and repeat the test review until there are no findings.
+4. Review the full implementation for bugs, regressions, design mismatches, and missing edge cases.
+5. If the implementation review finds issues, fix them and repeat the implementation review until there are no findings.
+6. Review whether source code and documentation still agree.
+7. If the documentation review finds issues, fix them and repeat the documentation review until there are no findings.
+8. Run the relevant verification commands.
+9. Prepare a commit message and commit the completed change when the user requested committing or when the task explicitly includes the full workflow through commit, unless the user asks not to commit.
+10. Prepare a handoff prompt for the next task so it can be started in a separate chat.
+
+## Agent Delegation
+
+Use sub-agents when the current Codex session has access to agent delegation and the user has requested this workflow. Keep the parent agent responsible for orchestration, integration, final verification, and the final user response.
+
+Recommended delegation pattern:
+
+- Use a worker agent for bounded implementation subtasks only when write scopes can be kept clear.
+- Use a review-only sub-agent prompt for the test sufficiency review.
+- Use a review-only sub-agent prompt for the full implementation review.
+- Use a review-only sub-agent prompt for the source/documentation consistency review.
+
+When delegating, give each agent a concrete, self-contained task. If an agent edits files, assign a clear ownership area and tell it not to revert unrelated edits or changes made by other agents.
+
+Do not delegate the immediate critical-path task if the parent agent needs that result before it can make progress. In that case, do the work locally and use agents for sidecar review or independent checks.
+
+## Review Standards
+
+Review-only sub-agents must use a code-review stance:
+
+- Lead with findings.
+- Order findings by severity.
+- Include file and line references where applicable.
+- Focus on bugs, behavioral regressions, specification mismatches, missing tests, and documentation drift.
+- If there are no findings, say so clearly.
+- Mention residual risk or unrun tests briefly.
+
+The parent agent should treat reviewer findings as actionable until resolved. After fixes, repeat the relevant review phase. Stop repeating only when the reviewer reports no findings or when a remaining issue is explicitly accepted by the user.
+
+## Test And Verification Expectations
+
+Prefer the repository's existing commands and patterns. For this Rust workspace, the default verification command is:
+
+```sh
+cargo test
+```
+
+Check formatting before finalizing Rust changes:
+
+```sh
+cargo fmt --check
+```
+
+Also run Clippy before finalizing Rust changes because CI commonly reports Clippy findings:
+
+```sh
+cargo clippy --all-targets --all-features -- -D warnings
+```
+
+Run narrower tests first when they are clearly sufficient for the active change, then run broader verification before finalizing if the change has meaningful cross-module risk.
+
+If a command cannot be run, explain why in the final response and describe the remaining risk.
+
+## Documentation Expectations
+
+Follow the repository documentation policy:
+
+- English documentation is canonical.
+- When updating bilingual documentation, keep the English canonical document and Japanese companion document synchronized in the same change.
+- For language specifications, update matching files under `doc/spec/en/` and `doc/spec/ja/`.
+- For architecture specifications, update matching files under `doc/design/architecture/en/` and `doc/design/architecture/ja/`.
+- Keep file names aligned across language directories whenever possible.
+- If an English document changes but the Japanese companion cannot be updated in the same change, explicitly note the reason and mark the Japanese document as needing synchronization.
+- When adding a new English documentation file in a bilingual area, add the corresponding Japanese companion or a clearly marked Japanese placeholder that links to the canonical English file.
+
+## Commit Expectations
+
+Before committing, inspect the worktree and make sure only task-related changes are included. Do not revert unrelated user changes.
+
+Use a concise Conventional Commits-style subject, for example:
+
+```text
+feat: add lexer token coverage report
+fix: correct parser recovery for nested blocks
+docs: sync parser design notes
+```
+
+When the change is broad enough to need context, include a short commit body explaining the main changes.
+
+## Final Response
+
+When the task is complete, report:
+
+- What changed.
+- Which reviews were run and whether they ended with no findings.
+- Which verification commands passed or could not be run.
+- The commit hash if a commit was created.
+- The next-task handoff prompt.
