@@ -11,9 +11,7 @@ It keeps source text, source maps, and snapshot metadata alive while batch, watc
 ## Public API
 
 ```rust
-pub struct RetentionManager {
-    // implementation-owned registry
-}
+pub struct RetentionManager<A = InMemorySessionIdAllocator> { /* private fields */ }
 
 pub struct RetainSnapshotInput {
     pub snapshot: BuildSnapshotId,
@@ -44,16 +42,36 @@ pub enum RetainOwner {
 //   DiagnosticIndex, ExplanationRequest, PhaseOutputReference, PendingWrite
 pub use crate::snapshot::RetentionReason;
 
-pub trait SnapshotRetention {
-    fn retain_snapshot(&self, input: RetainSnapshotInput) -> Result<RetainGuard, RetentionError>;
-    fn release(&self, guard: RetainGuard);
-    fn mark_current(&self, request: BuildRequestId, snapshot: BuildSnapshotId) -> Result<(), RetentionError>;
-    fn unmark_current(&self, request: BuildRequestId, snapshot: BuildSnapshotId);
-    fn collect(&self) -> CollectionSummary;
+impl RetentionManager<InMemorySessionIdAllocator> {
+    pub fn new() -> Self;
+}
+
+impl<A> RetentionManager<A> {
+    pub fn with_allocator(allocator: A) -> Self;
+    pub fn register_snapshot(&self, snapshot: BuildSnapshotId) -> bool;
+}
+
+impl<A: SessionIdAllocator> RetentionManager<A> {
+    pub fn retain_snapshot(&self, input: RetainSnapshotInput) -> Result<RetainGuard, RetentionError>;
+    pub fn retain_existing_lease(&self, lease: SnapshotLease, owner: RetainOwner) -> Result<RetainGuard, RetentionError>;
+    pub fn release(&self, guard: RetainGuard) -> Result<(), RetentionError>;
 }
 ```
 
-`RetainGuard` release should be idempotent from the caller's perspective, but duplicate release attempts are recorded for developer diagnostics.
+Task 17 implements registration of known snapshots plus lease retain/release
+accounting. `register_snapshot` records that a snapshot produced elsewhere is
+known to the retention manager; it does not mark the snapshot current.
+`retain_existing_lease` bridges a `SnapshotLease` that was already allocated by
+the snapshot registry, such as the active-build lease returned by
+`SnapshotRegistry::create_snapshot`, into the retention ledger without
+allocating another lease id.
+`RetainGuard` release should be idempotent from the caller's perspective, but
+duplicate release attempts are reported with `RetentionError` and do not
+underflow reference counts.
+
+`mark_current`, `unmark_current`, `collect`, and `CollectionSummary` are task 18
+work. The task 17 error enum already reserves the missing-current and
+inconsistent-retention-state variants required by that work.
 
 ## Dependencies
 
@@ -84,6 +102,11 @@ A current mark means a build request generation may report the snapshot as curre
 
 Old snapshots may retain leases for stale diagnostics or explanation requests after a newer snapshot becomes current.
 
+Task 17 retain/release never creates or updates current marks. Retaining an old
+snapshot for `DiagnosticIndex`, `ExplanationRequest`, `PublishedLspSnapshot`, or
+`PhaseOutputReference` keeps the snapshot alive for that consumer without making
+it current.
+
 ### Collection Summary
 
 `CollectionSummary` reports:
@@ -101,10 +124,20 @@ It is intended for logging and tests, not for build semantics.
 
 ### Retain
 
+For `retain_snapshot`:
+
 1. Validate that the snapshot exists.
-2. Allocate a `SnapshotLeaseId`.
+2. Allocate a `SnapshotLeaseId`, skipping ids already known to the retention
+   manager.
 3. Increment the owner/reason count.
 4. Return a `RetainGuard`.
+
+For `retain_existing_lease`:
+
+1. Validate that the snapshot exists.
+2. Validate the provided `SnapshotLease` owner/reason pairing.
+3. Record the existing lease id without allocating a duplicate id.
+4. Increment the owner/reason count and return a `RetainGuard`.
 
 Retaining a stale snapshot is allowed when the reason is diagnostic, explanation, LSP stale-artifact display, or IR output retention. It must not make the snapshot current.
 
@@ -113,7 +146,9 @@ Retaining a stale snapshot is allowed when the reason is diagnostic, explanation
 1. Validate the lease id and snapshot id.
 2. Decrement the owner/reason count.
 3. Mark the lease as released.
-4. If no lease and no current mark remains, make the snapshot eligible for collection.
+4. If no lease remains, the task-17 retention record is no longer blocking
+   future collection eligibility. Current-mark and collection policy is added by
+   task 18.
 
 Release must not synchronously delete data that another thread could still read through an active guard.
 
@@ -138,6 +173,16 @@ Collection drops in-memory source text, source maps, and snapshot metadata. It d
 - invalid owner/reason combination;
 - attempt to mark a missing snapshot as current;
 - collection blocked by inconsistent retention state.
+
+Valid owner/reason pairs are:
+
+- `Build(_)` with `ActiveBuild`;
+- `Watch` with `CurrentWatchBaseline`;
+- `Lsp(_)` with `PublishedLspSnapshot` or `OpenBufferOverlay`;
+- `Diagnostics` with `DiagnosticIndex`;
+- `Explanation` with `ExplanationRequest`;
+- `IrStorage` with `PhaseOutputReference`;
+- `CacheWriter` or `ArtifactWriter` with `PendingWrite`.
 
 Invalid retention state is a compiler internal error. User-facing builds should continue using the previous coherent snapshot when possible.
 

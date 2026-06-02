@@ -1,4 +1,5 @@
 pub mod ids;
+pub mod retention;
 pub mod snapshot;
 pub mod source;
 pub mod source_map;
@@ -6,6 +7,9 @@ pub mod source_map;
 pub use ids::{
     BuildRequestId, BuildSessionId, BuildSnapshotId, Hash, IdError, InMemorySessionIdAllocator,
     SessionIdAllocator, SnapshotLeaseId, SourceId, SourceMapId,
+};
+pub use retention::{
+    RetainGuard, RetainOwner, RetainSnapshotInput, RetentionError, RetentionManager,
 };
 pub use snapshot::{
     BuildSnapshot, DependencyArtifactRef, Edition, GeneratedSourceKind, ModulePath, PackageId,

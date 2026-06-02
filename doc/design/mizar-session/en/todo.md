@@ -16,7 +16,7 @@
 | source_map | [source_map.md](./source_map.md) | `src/source_map.rs` | [~] |
 | snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs` | [~] |
 | source | [source.md](./source.md) | `src/source.rs` | [~] |
-| retention | [retention.md](./retention.md) | `src/retention.rs` | [ ] |
+| retention | [retention.md](./retention.md) | `src/retention.rs` | [~] |
 
 The crate is the leaf identity/coordinate layer, so it is built bottom-up by
 internal dependency: `ids` → `source_map` → `snapshot` → `source` → `retention`.
@@ -144,8 +144,9 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
 
 ### Module: retention (`src/retention.rs`)
 
-17. **Retention manager and leases.** [ ]
+17. **Retention manager and leases.** [x]
     - Add `pub mod retention;`. Define `RetentionManager`, `RetainSnapshotInput`, `RetainGuard`, `RetainOwner`, and `retain_snapshot`/`release` with reference counting; reuse `RetentionReason` (defined in task 11) rather than redefining it.
+    - Bridge existing `SnapshotLease` handles from the snapshot registry into retention accounting with `retain_existing_lease`, so the active-build lease returned by `create_snapshot` can block retention collection eligibility without allocating a duplicate lease id.
     - Define `RetentionError` with its spec variants: unknown snapshot id, unknown or already-released lease id, lease snapshot mismatch, invalid owner/reason combination, attempt to mark a missing snapshot as current, collection blocked by inconsistent retention state.
     - Retaining a stale snapshot is allowed for diagnostic / explanation / LSP stale-display / IR-output reasons, but must not make the snapshot current.
     - Tests: active lease prevents collection eligibility; duplicate release is reported without underflow; an invalid owner/reason combination is rejected; a stale-snapshot retain succeeds without marking it current.

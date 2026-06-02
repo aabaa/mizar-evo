@@ -16,7 +16,7 @@
 | source_map | [source_map.md](../en/source_map.md) | `src/source_map.rs` | [~] |
 | snapshot | [snapshot.md](../en/snapshot.md) | `src/snapshot.rs` | [~] |
 | source | [source.md](../en/source.md) | `src/source.rs` | [~] |
-| retention | [retention.md](../en/retention.md) | `src/retention.rs` | [ ] |
+| retention | [retention.md](../en/retention.md) | `src/retention.rs` | [~] |
 
 本クレートは識別子・座標を提供する最下層（leaf）なので、内部依存に沿って
 ボトムアップで構築する: `ids` → `source_map` → `snapshot` → `source` → `retention`。
@@ -144,8 +144,9 @@
 
 ### モジュール: retention (`src/retention.rs`)
 
-17. **保持マネージャとリース。** [ ]
+17. **保持マネージャとリース。** [x]
     - `pub mod retention;` を追加する。`RetentionManager`, `RetainSnapshotInput`, `RetainGuard`, `RetainOwner` と、参照カウント付きの `retain_snapshot`/`release` を定義する。`RetentionReason`（タスク 11 で定義）は再定義せず再利用する。
+    - snapshot registry の既存 `SnapshotLease` を `retain_existing_lease` で retention accounting へ接続し、`create_snapshot` が返す active-build lease が、重複した lease id を割り当てずに retention の回収可否をブロックできるようにする。
     - `RetentionError` を spec の変種付きで定義する: 未知のスナップショット id、未知/解放済みのリース id、リースとスナップショットの不一致、不正な owner/reason の組み合わせ、欠落スナップショットを current にしようとする、回収が不整合な保持状態でブロックされる。
     - 古いスナップショットの retain は、診断 / 説明 / LSP の古い表示 / IR 出力の理由では許可するが、スナップショットを current にしてはならない。
     - テスト: アクティブなリースが回収対象化を防ぐ、二重リリースはアンダーフローせず報告される、不正な owner/reason の組み合わせは拒否、古いスナップショットの retain は current にせず成功する。
