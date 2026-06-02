@@ -48,10 +48,41 @@ pub trait SourceLoader {
     fn normalize_path(&self, package_root: &Path, path: &Path) -> Result<NormalizedPath, SourceLoadError>;
     fn hash_text(&self, text: &str) -> Hash;
 }
+
+pub fn normalize_path(package_root: &Path, path: &Path) -> Result<NormalizedPath, SourceLoadError>;
+pub fn hash_text(text: &str) -> Hash;
+pub fn normalize_source_path(package_root: &Path, path: &Path) -> Result<NormalizedPath, SourcePathError>;
+
+pub enum SourcePathError {
+    UnsupportedPathEncoding { path: PathBuf },
+    PackageRootUnavailable { path: PathBuf, kind: io::ErrorKind },
+    SourcePathUnavailable { path: PathBuf, kind: io::ErrorKind },
+    OutsidePackageRoot { package_root: PathBuf, path: PathBuf },
+    NonCanonicalPathAlias { requested: PathBuf, canonical: PathBuf },
+    NonCanonicalPathSpelling { requested: PathBuf, canonical: PathBuf },
+    InvalidNamespaceComponent { component: String },
+    MissingSourceRoot { path: PathBuf },
+    UnsupportedExtension { path: PathBuf },
+}
+
+pub enum SourceLoadError {
+    SourcePathOutsidePackageRoot { package_root: PathBuf, path: PathBuf },
+    UnsupportedFileExtension { path: PathBuf },
+    InvalidUtf8 { path: Option<PathBuf> },
+    UnreadableSourceFile { path: PathBuf, kind: io::ErrorKind },
+    DuplicateModulePath { package_id: PackageId, module_path: ModulePath },
+    StaleLspDocumentVersion { expected: LspDocumentVersion, actual: LspDocumentVersion },
+    UnmappedOpenBufferUri { uri: DocumentUri },
+    GeneratedSourceWithoutMetadata { module_path: ModulePath },
+    SourceIdAllocation { error: IdError },
+    InvalidSourcePath { error: SourcePathError },
+}
 ```
 
 `LoadedSource` は不変のソーステキストハンドルです。スナップショット生成は読み込み済みソースを消費し、その `SourceVersion` の要約を記録します。
 `load` は対象の `BuildSnapshotId` を受け取り、`SessionIdAllocator` からスナップショットスコープの `SourceId` を発行できるようにします。
+`LoadedSource.origin` は snapshot モジュールの `SourceOrigin` を使います。source モジュールは、読み込み済みレコード用の origin enum を重複定義しません。
+`SourceLoader` の補助メソッドは、公開 helper の `normalize_path` と `hash_text` に委譲します。`normalize_path` は `normalize_source_path` を再利用し、`hash_text` は正規化済みテキスト内容だけをハッシュ化します。
 
 ## Dependencies
 
@@ -81,7 +112,7 @@ pub trait SourceLoader {
 
 `source_hash` は、UTF-8 検証と、先頭 BOM の除去や改行の正規化といったソース読み込みの正規化を経た後の `LoadedSource.text` から計算されます。オープンバッファの場合は、ディスク上のファイルではなく、正規化されたエディタ提供テキストが対象です。パッケージ化や診断のためにバイト単位で正確な来歴が必要な場合は、`source_hash` を再定義せず、来歴メタデータまたは別個の生コンテンツハッシュを用います。
 
-`loading_map` は、`LoadedSource.text` が作られる前にソース読み込みがオフセットを変更した場合に存在します。これは正規化された読み込み済みテキストの範囲をソース読み込みの入力へ対応付けるもので、ディスクソースでは元ファイルのバイトオフセット、オープンバッファではエディタ提供テキストのバイトオフセット、生成入力では生成ソースのアンカーを指します。ソース読み込みの変換がオフセットを変えなかった場合、この対応付けは恒等であり、省略してよいものとします。
+`loading_map` は、`LoadedSource.text` が作られる前にソース読み込みがオフセットを変更した場合に存在します。これは正規化された読み込み済みテキストの範囲をソース読み込みの入力へ対応付けるもので、ディスクソースでは元ファイルのバイトオフセット、オープンバッファではエディタ提供テキストのバイトオフセットを指します。生成入力は `SourceOriginInput` 上に任意の `SourceAnchor` を持ちますが、タスク 14 の `LoadedSource` surface はそのアンカーを `loading_map` 経由では公開しません。ソース読み込みの変換がオフセットを変えなかった場合、この対応付けは恒等であり、省略してよいものとします。
 
 ### Source Origin
 
@@ -142,6 +173,7 @@ pub trait SourceLoader {
 - パッケージソースへ対応付けられないオープンバッファ URI
 - 必須の生成器メタデータを欠く生成ソース
 - `SessionIdAllocator` による source id 発行失敗
+- 明示的なパスカテゴリに収まらない `normalize_source_path` 由来のその他の正規化エラー
 
 利用者向けの読み取り失敗・エンコード失敗は、フロントエンドやビルドの診断として発行されます。内部の呼び出し側は構造化エラーも受け取るため、スナップショット生成はビルドリクエストが致命的か回復可能かを判断できます。
 アロケータ失敗は元の `IdError` を保持します。特に、アロケータのオーバーフローは暗黙にソース同一性へ変換されません。
@@ -158,7 +190,7 @@ pub trait SourceLoader {
 - オープンバッファの BOM 除去と改行正規化は、エディタ提供テキストのオフセットへ戻す loading map を保つ
 - パス正規化は、パッケージルートの外側にあるパスを拒否する
 - CRLF と LF の扱いが `LineMap` の期待と一致する
-- 生成ソースは、生成器メタデータとアンカーを保つ
+- 生成ソース入力は、生成器メタデータと任意のアンカーを持ち、読み込み済み生成ソースは `SourceOrigin` に生成器メタデータを保つ
 - ソースハッシュは、絶対パスやドキュメントバージョンを含まない
 
 ## Constraints and Assumptions

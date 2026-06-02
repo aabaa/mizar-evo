@@ -1251,7 +1251,7 @@ fn enclosing_source_range(ranges: &[SourceRange]) -> Option<SourceRange> {
     })
 }
 
-fn hash_source_text(source: &str) -> Hash {
+pub(crate) fn hash_source_text(source: &str) -> Hash {
     let mut hasher = blake3::Hasher::new();
     hasher.update(SOURCE_TEXT_HASH_DOMAIN);
     hasher.update(&(source.len() as u64).to_le_bytes());

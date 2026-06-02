@@ -13,7 +13,10 @@ pub use snapshot::{
     SourceVersion, SourceVersionCanonicalKey, ToolchainInfo, WorkspaceRoot,
     sort_source_versions_canonical,
 };
-pub use source::{NormalizedPath, SourcePathError, normalize_source_path};
+pub use source::{
+    LoadedSource, NormalizedPath, SourceInput, SourceLoadError, SourceLoader, SourceOriginInput,
+    SourcePathError, hash_text, normalize_path, normalize_source_path,
+};
 pub use source_map::{
     CommentKind, DocumentUri, GeneratedSpanAnchor, GeneratedSpanOrigin, LexicalSourceMapping,
     LexicalSourceMappingKind, LineColumn, LineColumnRange, LineMap, LoadedToOriginalRange,

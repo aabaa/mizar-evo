@@ -48,10 +48,41 @@ pub trait SourceLoader {
     fn normalize_path(&self, package_root: &Path, path: &Path) -> Result<NormalizedPath, SourceLoadError>;
     fn hash_text(&self, text: &str) -> Hash;
 }
+
+pub fn normalize_path(package_root: &Path, path: &Path) -> Result<NormalizedPath, SourceLoadError>;
+pub fn hash_text(text: &str) -> Hash;
+pub fn normalize_source_path(package_root: &Path, path: &Path) -> Result<NormalizedPath, SourcePathError>;
+
+pub enum SourcePathError {
+    UnsupportedPathEncoding { path: PathBuf },
+    PackageRootUnavailable { path: PathBuf, kind: io::ErrorKind },
+    SourcePathUnavailable { path: PathBuf, kind: io::ErrorKind },
+    OutsidePackageRoot { package_root: PathBuf, path: PathBuf },
+    NonCanonicalPathAlias { requested: PathBuf, canonical: PathBuf },
+    NonCanonicalPathSpelling { requested: PathBuf, canonical: PathBuf },
+    InvalidNamespaceComponent { component: String },
+    MissingSourceRoot { path: PathBuf },
+    UnsupportedExtension { path: PathBuf },
+}
+
+pub enum SourceLoadError {
+    SourcePathOutsidePackageRoot { package_root: PathBuf, path: PathBuf },
+    UnsupportedFileExtension { path: PathBuf },
+    InvalidUtf8 { path: Option<PathBuf> },
+    UnreadableSourceFile { path: PathBuf, kind: io::ErrorKind },
+    DuplicateModulePath { package_id: PackageId, module_path: ModulePath },
+    StaleLspDocumentVersion { expected: LspDocumentVersion, actual: LspDocumentVersion },
+    UnmappedOpenBufferUri { uri: DocumentUri },
+    GeneratedSourceWithoutMetadata { module_path: ModulePath },
+    SourceIdAllocation { error: IdError },
+    InvalidSourcePath { error: SourcePathError },
+}
 ```
 
 `LoadedSource` is an immutable source-text handle. Snapshot creation consumes loaded sources and records their `SourceVersion` summaries.
 `load` takes the target `BuildSnapshotId` so it can request a snapshot-scoped `SourceId` from `SessionIdAllocator`.
+`LoadedSource.origin` uses the snapshot module's `SourceOrigin`; the source module does not define a duplicate origin enum for loaded records.
+`SourceLoader` helper methods delegate to the public `normalize_path` and `hash_text` helpers. `normalize_path` reuses `normalize_source_path`, while `hash_text` hashes only the normalized text content.
 
 ## Dependencies
 
@@ -81,7 +112,7 @@ Local diagnostics may keep an absolute display path separately. Published artifa
 
 `source_hash` is computed from `LoadedSource.text`, after UTF-8 validation and source-loading normalization such as leading BOM stripping and newline normalization. For open buffers, it is the normalized editor-provided text, not the on-disk file. Byte-exact provenance, if needed for packaging or diagnostics, must use origin metadata or a separate raw-content hash rather than redefining `source_hash`.
 
-`loading_map` is present when source loading changed offsets before `LoadedSource.text` was created. It maps normalized loaded-text ranges back to the source-loading input: original file byte offsets for disk sources, editor-provided text byte offsets for open buffers, or a generated-source anchor for generated inputs. When no source-loading transform changed offsets, the mapping is identity and may be omitted.
+`loading_map` is present when source loading changed offsets before `LoadedSource.text` was created. It maps normalized loaded-text ranges back to the source-loading input: original file byte offsets for disk sources or editor-provided text byte offsets for open buffers. Generated inputs carry an optional `SourceAnchor` on `SourceOriginInput`; the task-14 `LoadedSource` surface does not expose that anchor through `loading_map`. When no source-loading transform changed offsets, the mapping is identity and may be omitted.
 
 ### Source Origin
 
@@ -142,6 +173,7 @@ Generated sources require a generator kind and, when available, an anchor to ori
 - open-buffer URI that cannot be mapped to a package source;
 - generated source without required generator metadata.
 - source id allocation failure from `SessionIdAllocator`.
+- other normalization-specific path errors from `normalize_source_path` that do not fit the explicit path categories.
 
 User-facing read and encoding failures are emitted as frontend/build diagnostics. Internal callers still receive structured errors so snapshot creation can decide whether the build request is fatal or recoverable.
 Allocator failures carry the underlying `IdError`; in particular, allocator overflow is not silently converted into a source identity.
@@ -158,7 +190,7 @@ Key scenarios:
 - open-buffer BOM stripping and newline normalization preserve a loading map back to editor-provided text offsets;
 - path normalization rejects paths outside the package root;
 - CRLF and LF handling matches `LineMap` expectations;
-- generated sources preserve generator metadata and anchors;
+- generated-source inputs carry generator metadata and optional anchors, and loaded generated sources preserve generator metadata in `SourceOrigin`;
 - source hashes do not include absolute paths or document versions.
 
 ## Constraints and Assumptions
