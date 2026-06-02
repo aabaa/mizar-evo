@@ -8,8 +8,9 @@ pub use ids::{
     SessionIdAllocator, SnapshotLeaseId, SourceId, SourceMapId,
 };
 pub use snapshot::{
-    Edition, GeneratedSourceKind, ModulePath, PackageId, SnapshotError, SourceOrigin,
-    SourceVersion, SourceVersionCanonicalKey, sort_source_versions_canonical,
+    BuildSnapshot, DependencyArtifactRef, Edition, GeneratedSourceKind, ModulePath, PackageId,
+    SnapshotError, SnapshotInput, SourceOrigin, SourceVersion, SourceVersionCanonicalKey,
+    ToolchainInfo, WorkspaceRoot, sort_source_versions_canonical,
 };
 pub use source::{NormalizedPath, SourcePathError, normalize_source_path};
 pub use source_map::{

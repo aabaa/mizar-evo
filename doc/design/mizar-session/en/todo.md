@@ -97,7 +97,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
    - Tests: deterministic ordering by canonical key independent of insertion order.
    - Depends on: 1, 4. Spec: [snapshot.md](./snapshot.md) "Source Version".
 
-10. **Build snapshot identity.** [ ]
+10. **Build snapshot identity.** [x]
     - Define `BuildSnapshot` and `SnapshotInput`; compute content-derived `BuildSnapshotId` from canonical input (sorted source/dependency summaries, lockfile hash, toolchain, verifier-config hash), excluding session-local ids/timestamps.
     - Handoff from task 9: source-version entries that compare equal by the canonical key (package id, module path, normalized path, source hash) must not make snapshot hashing insertion-order dependent. If such duplicates can reach hashing, encode them deterministically; preferably have task 11 validation reject duplicate source-version identities before hashing.
     - Tests: identical canonical inputs ⇒ identical id; source/dependency/config change ⇒ different id; session-local ids absent from the hash.

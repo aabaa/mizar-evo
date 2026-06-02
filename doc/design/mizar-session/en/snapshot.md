@@ -21,6 +21,70 @@ pub struct BuildSnapshot {
     pub verifier_config_hash: Hash,
 }
 
+pub struct SnapshotInput {
+    pub workspace_root: WorkspaceRoot,
+    pub source_versions: Vec<SourceVersion>,
+    pub dependency_artifacts: Vec<DependencyArtifactRef>,
+    pub lockfile_hash: Hash,
+    pub toolchain: ToolchainInfo,
+    pub verifier_config_hash: Hash,
+}
+
+impl BuildSnapshot {
+    pub fn from_input(input: SnapshotInput) -> Self;
+}
+
+impl SnapshotInput {
+    pub fn build_snapshot(self) -> BuildSnapshot;
+    pub fn build_snapshot_id(&self) -> BuildSnapshotId;
+}
+
+pub struct WorkspaceRoot(String);
+pub struct DependencyArtifactRef {
+    pub artifact: String,
+    pub content_hash: Hash,
+}
+pub struct ToolchainInfo(String);
+
+impl WorkspaceRoot {
+    pub fn new(value: impl Into<String>) -> Self;
+    pub fn as_str(&self) -> &str;
+}
+
+impl DependencyArtifactRef {
+    pub fn new(artifact: impl Into<String>, content_hash: Hash) -> Self;
+}
+
+impl ToolchainInfo {
+    pub fn new(identity: impl Into<String>) -> Self;
+    pub fn identity(&self) -> &str;
+}
+
+pub struct PackageId(String);
+pub struct ModulePath(String);
+pub struct Edition(String);
+pub struct GeneratedSourceKind(String);
+
+impl PackageId {
+    pub fn new(value: impl Into<String>) -> Self;
+    pub fn as_str(&self) -> &str;
+}
+
+impl ModulePath {
+    pub fn new(value: impl Into<String>) -> Self;
+    pub fn as_str(&self) -> &str;
+}
+
+impl Edition {
+    pub fn new(value: impl Into<String>) -> Self;
+    pub fn as_str(&self) -> &str;
+}
+
+impl GeneratedSourceKind {
+    pub fn new(value: impl Into<String>) -> Self;
+    pub fn as_str(&self) -> &str;
+}
+
 pub struct SourceVersion {
     pub source_id: SourceId,
     pub package_id: PackageId,
@@ -96,6 +160,10 @@ This module is consumed by `mizar-build`, `mizar-ir`, `mizar-cache`, `mizar-arti
 - verifier configuration hash.
 
 It is not derived from build-session ids, scheduler task ids, wall-clock time, memory addresses, or retention leases.
+The source-version summary used for hashing includes package id, module path,
+normalized path, source content hash, and edition. It excludes `SourceId` and
+source origin metadata so allocator-issued ids and LSP/session-local overlay
+details do not affect the content identity.
 
 Two snapshots with identical source text but different dependency artifacts, lockfile state, toolchain identity, or verifier configuration must receive different `BuildSnapshotId` values.
 

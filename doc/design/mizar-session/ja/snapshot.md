@@ -21,6 +21,70 @@ pub struct BuildSnapshot {
     pub verifier_config_hash: Hash,
 }
 
+pub struct SnapshotInput {
+    pub workspace_root: WorkspaceRoot,
+    pub source_versions: Vec<SourceVersion>,
+    pub dependency_artifacts: Vec<DependencyArtifactRef>,
+    pub lockfile_hash: Hash,
+    pub toolchain: ToolchainInfo,
+    pub verifier_config_hash: Hash,
+}
+
+impl BuildSnapshot {
+    pub fn from_input(input: SnapshotInput) -> Self;
+}
+
+impl SnapshotInput {
+    pub fn build_snapshot(self) -> BuildSnapshot;
+    pub fn build_snapshot_id(&self) -> BuildSnapshotId;
+}
+
+pub struct WorkspaceRoot(String);
+pub struct DependencyArtifactRef {
+    pub artifact: String,
+    pub content_hash: Hash,
+}
+pub struct ToolchainInfo(String);
+
+impl WorkspaceRoot {
+    pub fn new(value: impl Into<String>) -> Self;
+    pub fn as_str(&self) -> &str;
+}
+
+impl DependencyArtifactRef {
+    pub fn new(artifact: impl Into<String>, content_hash: Hash) -> Self;
+}
+
+impl ToolchainInfo {
+    pub fn new(identity: impl Into<String>) -> Self;
+    pub fn identity(&self) -> &str;
+}
+
+pub struct PackageId(String);
+pub struct ModulePath(String);
+pub struct Edition(String);
+pub struct GeneratedSourceKind(String);
+
+impl PackageId {
+    pub fn new(value: impl Into<String>) -> Self;
+    pub fn as_str(&self) -> &str;
+}
+
+impl ModulePath {
+    pub fn new(value: impl Into<String>) -> Self;
+    pub fn as_str(&self) -> &str;
+}
+
+impl Edition {
+    pub fn new(value: impl Into<String>) -> Self;
+    pub fn as_str(&self) -> &str;
+}
+
+impl GeneratedSourceKind {
+    pub fn new(value: impl Into<String>) -> Self;
+    pub fn as_str(&self) -> &str;
+}
+
 pub struct SourceVersion {
     pub source_id: SourceId,
     pub package_id: PackageId,
@@ -96,6 +160,10 @@ pub trait SnapshotRegistry {
 - 検証器構成のハッシュ
 
 ビルドセッション ID、スケジューラのタスク ID、実時刻、メモリアドレス、保持リースからは導出しません。
+ハッシュ化に用いるソースバージョン要約には、package id、module path、
+normalized path、ソースのコンテンツハッシュ、edition を含めます。`SourceId`
+と source origin メタデータは除外し、アロケータ発行 id や LSP／セッションローカルな
+overlay 詳細が内容同一性に影響しないようにします。
 
 ソーステキストが同一でも、依存アーティファクト、ロックファイルの状態、ツールチェインの同一性、検証器構成のいずれかが異なる 2 つのスナップショットは、異なる `BuildSnapshotId` を受け取らなければなりません。
 

@@ -7,14 +7,47 @@
 //!     versions.sort_by_key(|version| version.source_id);
 //! }
 //! ```
+//!
+//! ```compile_fail
+//! use mizar_session::BuildSnapshotId;
+//!
+//! fn requires_semantic_order<T: Ord>() {}
+//! requires_semantic_order::<BuildSnapshotId>();
+//! ```
 
 use crate::{
     BuildSnapshotId, Hash, LspDocumentVersion, NormalizedPath, SnapshotLeaseId, SourceId,
-    SourcePathError,
+    SourcePathError, ids::build_snapshot_id_from_sorted_canonical_bytes,
 };
 use std::cmp::Ordering;
 use std::error::Error;
 use std::fmt;
+
+const SNAPSHOT_CANONICAL_SCHEMA_ID: &[u8] = b"mizar-session/snapshot-canonical-input/v1";
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BuildSnapshot {
+    pub id: BuildSnapshotId,
+    pub workspace_root: WorkspaceRoot,
+    pub source_versions: Vec<SourceVersion>,
+    pub dependency_artifacts: Vec<DependencyArtifactRef>,
+    pub lockfile_hash: Hash,
+    pub toolchain: ToolchainInfo,
+    pub verifier_config_hash: Hash,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SnapshotInput {
+    pub workspace_root: WorkspaceRoot,
+    pub source_versions: Vec<SourceVersion>,
+    pub dependency_artifacts: Vec<DependencyArtifactRef>,
+    pub lockfile_hash: Hash,
+    pub toolchain: ToolchainInfo,
+    pub verifier_config_hash: Hash,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct WorkspaceRoot(String);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PackageId(String);
@@ -27,6 +60,15 @@ pub struct Edition(String);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GeneratedSourceKind(String);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DependencyArtifactRef {
+    pub artifact: String,
+    pub content_hash: Hash,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ToolchainInfo(String);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceVersion {
@@ -88,6 +130,47 @@ pub struct SourceVersionCanonicalKey<'a> {
     source_hash: &'a [u8; Hash::BYTE_LEN],
 }
 
+impl BuildSnapshot {
+    pub fn from_input(input: SnapshotInput) -> Self {
+        let id = build_snapshot_id(&input);
+        let mut source_versions = input.source_versions;
+        let mut dependency_artifacts = input.dependency_artifacts;
+
+        sort_source_versions_for_snapshot_identity(&mut source_versions);
+        sort_dependency_artifacts_canonical(&mut dependency_artifacts);
+
+        Self {
+            id,
+            workspace_root: input.workspace_root,
+            source_versions,
+            dependency_artifacts,
+            lockfile_hash: input.lockfile_hash,
+            toolchain: input.toolchain,
+            verifier_config_hash: input.verifier_config_hash,
+        }
+    }
+}
+
+impl SnapshotInput {
+    pub fn build_snapshot(self) -> BuildSnapshot {
+        BuildSnapshot::from_input(self)
+    }
+
+    pub fn build_snapshot_id(&self) -> BuildSnapshotId {
+        build_snapshot_id(self)
+    }
+}
+
+impl WorkspaceRoot {
+    pub fn new(value: impl Into<String>) -> Self {
+        Self(value.into())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
 impl PackageId {
     pub fn new(value: impl Into<String>) -> Self {
         Self(value.into())
@@ -128,6 +211,25 @@ impl GeneratedSourceKind {
     }
 }
 
+impl DependencyArtifactRef {
+    pub fn new(artifact: impl Into<String>, content_hash: Hash) -> Self {
+        Self {
+            artifact: artifact.into(),
+            content_hash,
+        }
+    }
+}
+
+impl ToolchainInfo {
+    pub fn new(identity: impl Into<String>) -> Self {
+        Self(identity.into())
+    }
+
+    pub fn identity(&self) -> &str {
+        &self.0
+    }
+}
+
 impl SourceVersion {
     pub fn canonical_sort_key(&self) -> SourceVersionCanonicalKey<'_> {
         SourceVersionCanonicalKey {
@@ -142,6 +244,131 @@ impl SourceVersion {
 pub fn sort_source_versions_canonical(source_versions: &mut [SourceVersion]) {
     source_versions
         .sort_by(|left, right| left.canonical_sort_key().cmp(&right.canonical_sort_key()));
+}
+
+fn build_snapshot_id(input: &SnapshotInput) -> BuildSnapshotId {
+    let canonical_bytes = encode_snapshot_input_canonical(input);
+    build_snapshot_id_from_sorted_canonical_bytes(
+        SNAPSHOT_CANONICAL_SCHEMA_ID,
+        input.toolchain.identity().as_bytes(),
+        &canonical_bytes,
+    )
+}
+
+fn encode_snapshot_input_canonical(input: &SnapshotInput) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    write_part(
+        &mut bytes,
+        b"workspace-root",
+        input.workspace_root.as_str().as_bytes(),
+    );
+    write_hash_part(&mut bytes, b"lockfile-hash", input.lockfile_hash);
+    write_part(
+        &mut bytes,
+        b"toolchain-identity",
+        input.toolchain.identity().as_bytes(),
+    );
+    write_hash_part(
+        &mut bytes,
+        b"verifier-config-hash",
+        input.verifier_config_hash,
+    );
+    write_source_version_summaries(&mut bytes, &input.source_versions);
+    write_dependency_summaries(&mut bytes, &input.dependency_artifacts);
+    bytes
+}
+
+fn write_source_version_summaries(bytes: &mut Vec<u8>, source_versions: &[SourceVersion]) {
+    let mut summaries = source_versions.iter().collect::<Vec<_>>();
+    summaries.sort_by(|left, right| compare_source_version_identity(left, right));
+
+    write_collection_header(bytes, b"source-version-summaries", summaries.len());
+    for version in summaries {
+        write_part(
+            bytes,
+            b"source/package-id",
+            version.package_id.as_str().as_bytes(),
+        );
+        write_part(
+            bytes,
+            b"source/module-path",
+            version.module_path.as_str().as_bytes(),
+        );
+        write_part(
+            bytes,
+            b"source/normalized-path",
+            version.normalized_path.as_str().as_bytes(),
+        );
+        write_hash_part(bytes, b"source/source-hash", version.source_hash);
+        write_part(
+            bytes,
+            b"source/edition",
+            version.edition.as_str().as_bytes(),
+        );
+    }
+}
+
+fn write_dependency_summaries(bytes: &mut Vec<u8>, dependency_artifacts: &[DependencyArtifactRef]) {
+    let mut summaries = dependency_artifacts.iter().collect::<Vec<_>>();
+    summaries.sort_by(|left, right| compare_dependency_artifact_identity(left, right));
+
+    write_collection_header(bytes, b"dependency-artifact-summaries", summaries.len());
+    for artifact in summaries {
+        write_part(bytes, b"dependency/artifact", artifact.artifact.as_bytes());
+        write_hash_part(bytes, b"dependency/content-hash", artifact.content_hash);
+    }
+}
+
+fn sort_source_versions_for_snapshot_identity(source_versions: &mut [SourceVersion]) {
+    source_versions.sort_by(compare_source_version_identity);
+}
+
+fn sort_dependency_artifacts_canonical(dependency_artifacts: &mut [DependencyArtifactRef]) {
+    dependency_artifacts.sort_by(compare_dependency_artifact_identity);
+}
+
+fn compare_source_version_identity(left: &SourceVersion, right: &SourceVersion) -> Ordering {
+    left.package_id
+        .as_str()
+        .cmp(right.package_id.as_str())
+        .then_with(|| left.module_path.as_str().cmp(right.module_path.as_str()))
+        .then_with(|| {
+            left.normalized_path
+                .as_str()
+                .cmp(right.normalized_path.as_str())
+        })
+        .then_with(|| {
+            left.source_hash
+                .as_bytes()
+                .cmp(right.source_hash.as_bytes())
+        })
+        .then_with(|| left.edition.as_str().cmp(right.edition.as_str()))
+}
+
+fn compare_dependency_artifact_identity(
+    left: &DependencyArtifactRef,
+    right: &DependencyArtifactRef,
+) -> Ordering {
+    left.artifact.cmp(&right.artifact).then_with(|| {
+        left.content_hash
+            .as_bytes()
+            .cmp(right.content_hash.as_bytes())
+    })
+}
+
+fn write_collection_header(bytes: &mut Vec<u8>, label: &[u8], len: usize) {
+    write_part(bytes, label, &(len as u64).to_le_bytes());
+}
+
+fn write_hash_part(bytes: &mut Vec<u8>, label: &[u8], hash: Hash) {
+    write_part(bytes, label, hash.as_bytes());
+}
+
+fn write_part(bytes: &mut Vec<u8>, label: &[u8], value: &[u8]) {
+    bytes.extend_from_slice(&(label.len() as u64).to_le_bytes());
+    bytes.extend_from_slice(label);
+    bytes.extend_from_slice(&(value.len() as u64).to_le_bytes());
+    bytes.extend_from_slice(value);
 }
 
 impl Ord for SourceVersionCanonicalKey<'_> {
@@ -166,6 +393,12 @@ impl fmt::Display for PackageId {
     }
 }
 
+impl fmt::Display for WorkspaceRoot {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
 impl fmt::Display for ModulePath {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)
@@ -179,6 +412,12 @@ impl fmt::Display for Edition {
 }
 
 impl fmt::Display for GeneratedSourceKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl fmt::Display for ToolchainInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)
     }
@@ -243,8 +482,9 @@ impl Error for SnapshotError {
 #[cfg(test)]
 mod tests {
     use super::{
-        Edition, GeneratedSourceKind, ModulePath, PackageId, SnapshotError, SourceOrigin,
-        SourceVersion, sort_source_versions_canonical,
+        BuildSnapshot, DependencyArtifactRef, Edition, GeneratedSourceKind, ModulePath, PackageId,
+        SnapshotError, SnapshotInput, SourceOrigin, SourceVersion, ToolchainInfo, WorkspaceRoot,
+        sort_source_versions_canonical,
     };
     use crate::{
         BuildSnapshotId, Hash, InMemorySessionIdAllocator, NormalizedPath, SessionIdAllocator,
@@ -254,6 +494,336 @@ mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     static NEXT_FIXTURE_ID: AtomicUsize = AtomicUsize::new(0);
+
+    #[test]
+    fn identical_canonical_snapshot_inputs_produce_identical_ids() {
+        let input = snapshot_input();
+        let same = snapshot_input();
+
+        assert_eq!(input.build_snapshot_id(), same.build_snapshot_id());
+        assert_eq!(
+            BuildSnapshot::from_input(input).id,
+            same.build_snapshot_id()
+        );
+    }
+
+    #[test]
+    fn source_summary_changes_change_snapshot_id() {
+        let input = snapshot_input();
+        let mut changed_package_id = snapshot_input();
+        changed_package_id.source_versions[0].package_id = PackageId::new("archive");
+        let mut changed_module_path = snapshot_input();
+        changed_module_path.source_versions[0].module_path = ModulePath::new("different.module");
+        let mut changed_normalized_path = snapshot_input();
+        changed_normalized_path.source_versions[0].normalized_path =
+            normalized_path("src/different.miz");
+        let mut changed_source_hash = snapshot_input();
+        changed_source_hash.source_versions[0].source_hash = hash(44);
+        let mut changed_edition = snapshot_input();
+        changed_edition.source_versions[0].edition = Edition::new("2027");
+
+        assert_ne!(
+            input.build_snapshot_id(),
+            changed_package_id.build_snapshot_id()
+        );
+        assert_ne!(
+            input.build_snapshot_id(),
+            changed_module_path.build_snapshot_id()
+        );
+        assert_ne!(
+            input.build_snapshot_id(),
+            changed_normalized_path.build_snapshot_id()
+        );
+        assert_ne!(
+            input.build_snapshot_id(),
+            changed_source_hash.build_snapshot_id()
+        );
+        assert_ne!(
+            input.build_snapshot_id(),
+            changed_edition.build_snapshot_id()
+        );
+    }
+
+    #[test]
+    fn dependency_artifact_changes_change_snapshot_id() {
+        let input = snapshot_input();
+        let mut changed_dependency_hash = snapshot_input();
+        changed_dependency_hash.dependency_artifacts[0].content_hash = hash(55);
+        let mut changed_dependency_identity = snapshot_input();
+        changed_dependency_identity.dependency_artifacts[0].artifact =
+            "kernel/different.vo".to_owned();
+
+        assert_ne!(
+            input.build_snapshot_id(),
+            changed_dependency_hash.build_snapshot_id()
+        );
+        assert_ne!(
+            input.build_snapshot_id(),
+            changed_dependency_identity.build_snapshot_id()
+        );
+    }
+
+    #[test]
+    fn lockfile_toolchain_and_verifier_config_changes_change_snapshot_id() {
+        let input = snapshot_input();
+        let mut changed_lockfile = snapshot_input();
+        changed_lockfile.lockfile_hash = hash(66);
+        let mut changed_toolchain = snapshot_input();
+        changed_toolchain.toolchain = ToolchainInfo::new("mizar-2026.2");
+        let mut changed_verifier_config = snapshot_input();
+        changed_verifier_config.verifier_config_hash = hash(77);
+
+        assert_ne!(
+            input.build_snapshot_id(),
+            changed_lockfile.build_snapshot_id()
+        );
+        assert_ne!(
+            input.build_snapshot_id(),
+            changed_toolchain.build_snapshot_id()
+        );
+        assert_ne!(
+            input.build_snapshot_id(),
+            changed_verifier_config.build_snapshot_id()
+        );
+    }
+
+    #[test]
+    fn workspace_root_change_changes_snapshot_id() {
+        let input = snapshot_input();
+        let mut changed_workspace = snapshot_input();
+        changed_workspace.workspace_root = WorkspaceRoot::new("other-workspace");
+
+        assert_ne!(
+            input.build_snapshot_id(),
+            changed_workspace.build_snapshot_id()
+        );
+    }
+
+    #[test]
+    fn source_and_dependency_insertion_order_do_not_change_snapshot_id() {
+        let input = snapshot_input();
+        let mut reordered = snapshot_input();
+        reordered.source_versions.reverse();
+        reordered.dependency_artifacts.reverse();
+
+        assert_eq!(input.build_snapshot_id(), reordered.build_snapshot_id());
+
+        let snapshot = reordered.build_snapshot();
+        assert_eq!(
+            canonical_summary(&snapshot.source_versions),
+            vec![
+                ("mml", "alpha", "src/alpha.miz", 1),
+                ("mml", "beta", "src/beta.miz", 2),
+            ]
+        );
+        assert_eq!(
+            snapshot
+                .dependency_artifacts
+                .iter()
+                .map(|artifact| artifact.artifact.as_str())
+                .collect::<Vec<_>>(),
+            vec!["kernel/base.vo", "kernel/order.vo"]
+        );
+    }
+
+    #[test]
+    fn source_identity_tie_breakers_do_not_make_hashing_insertion_order_dependent() {
+        let snapshot_id = snapshot_id(13);
+        let ids = InMemorySessionIdAllocator::new();
+        let alpha_path = source_version(
+            ids.next_source_id(snapshot_id).unwrap(),
+            "mml",
+            "same.module",
+            "src/alpha.miz",
+            hash(8),
+            SourceOrigin::Disk,
+        );
+        let beta_path = source_version(
+            ids.next_source_id(snapshot_id).unwrap(),
+            "mml",
+            "same.module",
+            "src/beta.miz",
+            hash(1),
+            SourceOrigin::Disk,
+        );
+        let path_order = snapshot_input_with_sources(vec![beta_path.clone(), alpha_path.clone()]);
+        let reverse_path_order = snapshot_input_with_sources(vec![alpha_path, beta_path]);
+
+        assert_eq!(
+            path_order.build_snapshot_id(),
+            reverse_path_order.build_snapshot_id()
+        );
+        assert_eq!(
+            canonical_summary(&path_order.build_snapshot().source_versions),
+            vec![
+                ("mml", "same.module", "src/alpha.miz", 8),
+                ("mml", "same.module", "src/beta.miz", 1),
+            ]
+        );
+
+        let lower_hash = source_version(
+            ids.next_source_id(snapshot_id).unwrap(),
+            "mml",
+            "same.module",
+            "src/same.miz",
+            hash(2),
+            SourceOrigin::Disk,
+        );
+        let higher_hash = source_version(
+            ids.next_source_id(snapshot_id).unwrap(),
+            "mml",
+            "same.module",
+            "src/same.miz",
+            hash(9),
+            SourceOrigin::Disk,
+        );
+        let hash_order = snapshot_input_with_sources(vec![higher_hash.clone(), lower_hash.clone()]);
+        let reverse_hash_order = snapshot_input_with_sources(vec![lower_hash, higher_hash]);
+
+        assert_eq!(
+            hash_order.build_snapshot_id(),
+            reverse_hash_order.build_snapshot_id()
+        );
+        assert_eq!(
+            canonical_summary(&hash_order.build_snapshot().source_versions),
+            vec![
+                ("mml", "same.module", "src/same.miz", 2),
+                ("mml", "same.module", "src/same.miz", 9),
+            ]
+        );
+    }
+
+    #[test]
+    fn dependency_content_hash_tie_breaker_does_not_make_hashing_insertion_order_dependent() {
+        let mut input = snapshot_input();
+        input.dependency_artifacts = vec![
+            DependencyArtifactRef::new("kernel/same.vo", hash(9)),
+            DependencyArtifactRef::new("kernel/same.vo", hash(2)),
+        ];
+        let mut reverse_order = snapshot_input();
+        reverse_order.dependency_artifacts = input
+            .dependency_artifacts
+            .iter()
+            .cloned()
+            .rev()
+            .collect::<Vec<_>>();
+
+        assert_eq!(input.build_snapshot_id(), reverse_order.build_snapshot_id());
+        assert_eq!(
+            dependency_summary(&input.build_snapshot().dependency_artifacts),
+            vec![("kernel/same.vo", 2), ("kernel/same.vo", 9)]
+        );
+    }
+
+    #[test]
+    fn session_local_source_ids_and_origins_are_absent_from_snapshot_hash() {
+        let snapshot_id = snapshot_id(10);
+        let ids = InMemorySessionIdAllocator::new();
+        let first_source = ids.next_source_id(snapshot_id).unwrap();
+        let second_source = ids.next_source_id(snapshot_id).unwrap();
+        let mut first = snapshot_input_with_sources(vec![source_version(
+            first_source,
+            "mml",
+            "alpha",
+            "src/alpha.miz",
+            hash(1),
+            SourceOrigin::Disk,
+        )]);
+        let second = snapshot_input_with_sources(vec![source_version(
+            second_source,
+            "mml",
+            "alpha",
+            "src/alpha.miz",
+            hash(1),
+            SourceOrigin::OpenBuffer { version: 99 },
+        )]);
+        first.workspace_root = WorkspaceRoot::new("workspace");
+
+        assert_ne!(
+            first.source_versions[0].source_id,
+            second.source_versions[0].source_id
+        );
+        assert_ne!(
+            first.source_versions[0].origin,
+            second.source_versions[0].origin
+        );
+        assert_eq!(first.build_snapshot_id(), second.build_snapshot_id());
+    }
+
+    #[test]
+    fn equal_source_canonical_keys_do_not_make_hashing_insertion_order_dependent() {
+        let snapshot_id = snapshot_id(11);
+        let ids = InMemorySessionIdAllocator::new();
+        let old_edition = source_version_with_edition(
+            ids.next_source_id(snapshot_id).unwrap(),
+            "mml",
+            "same.module",
+            "src/same.miz",
+            hash(9),
+            Edition::new("2025"),
+            SourceOrigin::Disk,
+        );
+        let new_edition = source_version_with_edition(
+            ids.next_source_id(snapshot_id).unwrap(),
+            "mml",
+            "same.module",
+            "src/same.miz",
+            hash(9),
+            Edition::new("2026"),
+            SourceOrigin::Generated {
+                generator: GeneratedSourceKind::new("different-origin"),
+            },
+        );
+
+        assert_eq!(
+            old_edition.canonical_sort_key(),
+            new_edition.canonical_sort_key()
+        );
+
+        let insertion_order =
+            snapshot_input_with_sources(vec![old_edition.clone(), new_edition.clone()]);
+        let reverse_order = snapshot_input_with_sources(vec![new_edition, old_edition]);
+
+        assert_eq!(
+            insertion_order.build_snapshot_id(),
+            reverse_order.build_snapshot_id()
+        );
+    }
+
+    #[test]
+    fn equal_source_identity_summaries_do_not_make_hashing_insertion_order_dependent() {
+        let snapshot_id = snapshot_id(12);
+        let ids = InMemorySessionIdAllocator::new();
+        let disk = source_version(
+            ids.next_source_id(snapshot_id).unwrap(),
+            "mml",
+            "same.module",
+            "src/same.miz",
+            hash(9),
+            SourceOrigin::Disk,
+        );
+        let open_buffer = source_version(
+            ids.next_source_id(snapshot_id).unwrap(),
+            "mml",
+            "same.module",
+            "src/same.miz",
+            hash(9),
+            SourceOrigin::OpenBuffer { version: 99 },
+        );
+
+        assert_eq!(disk.canonical_sort_key(), open_buffer.canonical_sort_key());
+        assert_eq!(disk.edition, open_buffer.edition);
+        assert_ne!(disk.source_id, open_buffer.source_id);
+        assert_ne!(disk.origin, open_buffer.origin);
+
+        let insertion_order = snapshot_input_with_sources(vec![disk.clone(), open_buffer.clone()]);
+        let reverse_order = snapshot_input_with_sources(vec![open_buffer, disk]);
+
+        assert_eq!(
+            insertion_order.build_snapshot_id(),
+            reverse_order.build_snapshot_id()
+        );
+    }
 
     #[test]
     fn source_versions_sort_deterministically_by_canonical_key() {
@@ -664,6 +1234,43 @@ mod tests {
         }
     }
 
+    fn snapshot_input() -> SnapshotInput {
+        let snapshot_id = snapshot_id(9);
+        let ids = InMemorySessionIdAllocator::new();
+        snapshot_input_with_sources(vec![
+            source_version(
+                ids.next_source_id(snapshot_id).unwrap(),
+                "mml",
+                "beta",
+                "src/beta.miz",
+                hash(2),
+                SourceOrigin::Disk,
+            ),
+            source_version(
+                ids.next_source_id(snapshot_id).unwrap(),
+                "mml",
+                "alpha",
+                "src/alpha.miz",
+                hash(1),
+                SourceOrigin::OpenBuffer { version: 12 },
+            ),
+        ])
+    }
+
+    fn snapshot_input_with_sources(source_versions: Vec<SourceVersion>) -> SnapshotInput {
+        SnapshotInput {
+            workspace_root: WorkspaceRoot::new("workspace"),
+            source_versions,
+            dependency_artifacts: vec![
+                DependencyArtifactRef::new("kernel/order.vo", hash(4)),
+                DependencyArtifactRef::new("kernel/base.vo", hash(3)),
+            ],
+            lockfile_hash: hash(5),
+            toolchain: ToolchainInfo::new("mizar-2026.1"),
+            verifier_config_hash: hash(6),
+        }
+    }
+
     fn canonical_summary(versions: &[SourceVersion]) -> Vec<(&str, &str, &str, u8)> {
         versions
             .iter()
@@ -673,6 +1280,18 @@ mod tests {
                     version.module_path.as_str(),
                     version.normalized_path.as_str(),
                     version.source_hash.as_bytes()[0],
+                )
+            })
+            .collect()
+    }
+
+    fn dependency_summary(artifacts: &[DependencyArtifactRef]) -> Vec<(&str, u8)> {
+        artifacts
+            .iter()
+            .map(|artifact| {
+                (
+                    artifact.artifact.as_str(),
+                    artifact.content_hash.as_bytes()[0],
                 )
             })
             .collect()
