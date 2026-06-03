@@ -12,11 +12,11 @@
 
 | モジュール | 仕様 | ソース | ステータス |
 |---|---|---|---|
-| ids | [ids.md](../en/ids.md) | `src/ids.rs` | [x] |
-| source_map | [source_map.md](../en/source_map.md) | `src/source_map.rs` | [~] |
-| snapshot | [snapshot.md](../en/snapshot.md) | `src/snapshot.rs` | [~] |
-| source | [source.md](../en/source.md) | `src/source.rs` | [~] |
-| retention | [retention.md](../en/retention.md) | `src/retention.rs` | [~] |
+| ids | [ids.md](./ids.md) | `src/ids.rs` | [x] |
+| source_map | [source_map.md](./source_map.md) | `src/source_map.rs` | [x] |
+| snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs` | [x] |
+| source | [source.md](./source.md) | `src/source.rs` | [x] |
+| retention | [retention.md](./retention.md) | `src/retention.rs` | [x] |
 
 本クレートは識別子・座標を提供する最下層（leaf）なので、内部依存に沿って
 ボトムアップで構築する: `ids` → `source_map` → `snapshot` → `source` → `retention`。
@@ -36,19 +36,19 @@
    - `BuildSessionId`, `BuildRequestId`, `BuildSnapshotId(Hash)`, `SourceId`, `SourceMapId`, `SnapshotLeaseId` を、適切に `Debug`/`Clone`/`Copy`/`Eq`/`Hash` 付きで定義する。
    - `IdError` 列挙（不正形式 / ドメイン不一致 / 未知レジストリ / オーバーフロー / 永続化不可のシリアライズ）を追加する。
    - テスト: 等価性、copy/clone、id が不透明（意味的な順序を公開しない）こと。
-   - 仕様: [ids.md](../en/ids.md) "Public API", "Identifier Scope"。
+   - 仕様: [ids.md](./ids.md) "Public API", "Identifier Scope"。
 
 2. **内容由来 id のエンコード。** [x]
    - `BuildSnapshotId` の正準的な小文字 16 進シリアライズ/デシリアライズをドメインセパレータ付きで実装し、不正形式/ドメイン不一致は `IdError` で拒否する。
    - 内部ハッシュヘルパー（ドメインセパレータ + スキーマ/ツールチェイン識別子のフック + 非順序コレクションのソート要件）を用意する。snapshot モジュールがこれに入力する（実際のスナップショットのハッシュ化はタスク 10）。
    - アロケータ発行の id を公開スキーマへシリアライズすることを拒否する。
    - テスト: 16 進エンコード/デコードのラウンドトリップ、ドメインセパレータ変更で id が変わる、公開スキーマのシリアライズが永続化不可 id を拒否する。
-   - 仕様: [ids.md](../en/ids.md) "Serialization", "Content-Derived Id Construction"。
+   - 仕様: [ids.md](./ids.md) "Serialization", "Content-Derived Id Construction"。
 
 3. **セッション id アロケータ。** [x]
    - `SessionIdAllocator` trait と、session/request/source/source-map/lease の各 id 向けの具体的なインメモリアロケータ（単調増加カウンタまたはアリーナインデックス）を定義する。
    - テスト: 1 つのレジストリ内で id が一意であること、アロケータのオーバーフローが `IdError` になること。
-   - 仕様: [ids.md](../en/ids.md) "Allocator-Issued Id Construction"。
+   - 仕様: [ids.md](./ids.md) "Allocator-Issued Id Construction"。
 
 ### モジュール: source_map (`src/source_map.rs`)
 
@@ -59,34 +59,34 @@
    - `SourceMapError` を spec の全変種へ向けて拡張する（各機能の実装時に変種を追加）: unknown source id、range outside source text、UTF-8 境界でないオフセット、行/列オーバーフロー（タスク 5）、前処理済みテキスト外の字句範囲（タスク 7）、欠落したローディングマップセグメント（タスク 6）、欠落した前処理セグメント（タスク 7）、起点の無い生成スパン（タスク 8）。
    - クレート横断の影響: `mizar-lsp::range_mapper` の呼び出し箇所とテストを `SourceId` を渡すよう更新する。
    - テスト: 既存の行/列テストを更新、クロスソースの範囲は拒否される、unknown source id は拒否される。
-   - 依存: 1。仕様: [source_map.md](../en/source_map.md) "Line Map", "Source Range"。
+   - 依存: 1。仕様: [source_map.md](./source_map.md) "Line Map", "Source Range"。
    - 注: これは lexer に対して加法的（lexer は自前の `SourceSpan` を維持、ブリッジは `mizar-lsp` に残る）。span 橋渡しの方針は確認するが、lexer 変更を待たずに進めてよい。
 
 5. **行/列のオーバーフロー方針。** [x]
    - `LineColumn` の値は `u32` のままにし、`SourceMapError::LineColumnOverflow` を追加する。
    - `usize` からの飽和/巻き戻し/縮小ではなく、オーバーフローを報告する。
    - テスト: 表現不能な行/列はオーバーフローを報告、通常のマルチバイト変換は引き続き 1 始まりの Unicode スカラー列を返す。
-   - 依存: 4。仕様: [source_map.md](../en/source_map.md) "Public API"（`LineColumn` の注記）。
+   - 依存: 4。仕様: [source_map.md](./source_map.md) "Public API"（`LineColumn` の注記）。
 
 6. **ローディングマップ。** [x]
    - `TextRange`（読み込み/字句テキストへのバイト範囲。source-id でスコープされる `SourceRange` とは区別する）を導入する。
    - `LoadingMap`, `LoadingOrigin`, `LoadingMapSegment`（`Original` / `RemovedLeadingBom` / `NormalizedNewline`）を追加する。
    - 読み込みテキスト → 元テキストの対応付けを実装する。オフセットを変える変換が無い場合は恒等とする。
    - テスト: 先頭 BOM で読み込み `0` → 元バイト `3`、CRLF→LF セグメント、正規化セグメントをまたぐ複合対応付け。
-   - 依存: 4。仕様: [source_map.md](../en/source_map.md) "Loading Map", "Loaded-to-Original Mapping"。
+   - 依存: 4。仕様: [source_map.md](./source_map.md) "Loading Map", "Loaded-to-Original Mapping"。
 
 7. **前処理マップとアンカー。** [x]
    - `PreprocessMap`, `PreprocessSegment`（`Original` / `RemovedComment` / `SyntheticWhitespace`）と `SourceAnchor` を追加する。
    - 字句 → ソースの対応付けを実装し、長さ 0 の境界では隣接する複合アンカーを返す。
    - テスト: 除去コメントが保持範囲に対応付く、除去コメントをまたぐ字句範囲が複合対応付けになる、合成空白が主たるユーザー範囲にならない。
-   - 依存: 6。仕様: [source_map.md](../en/source_map.md) "Preprocess Map", "Lexical-to-Source Mapping"。
+   - 依存: 6。仕様: [source_map.md](./source_map.md) "Preprocess Map", "Lexical-to-Source Mapping"。
 
 8. **`SourceMapService` と生成スパン。** [x]
    - `MappedSourceRange`（主たる `SourceRange` + 二次アンカー群 + loaded-to-original の `original_input` バイト範囲）を、読み込み/字句の対応付けの複合返り値型として定義する。
    - `SourceMapService` trait（`line_column`, `original_range_for_loaded`, `source_range_for_lexical`, `attach_generated_span`, `validate_range`）と、保持されたマップ上の具体実装を定義する。
    - 理由必須の生成スパン起点（`GeneratedSpanOrigin`）を追加する。
    - テスト: 代表入力に対する各 trait メソッド、複合対応付けは主アンカー + 二次アンカーを返す、起点の無い生成スパンは拒否される。
-   - 依存: 5, 7。仕様: [source_map.md](../en/source_map.md) "Public API", "Generated Spans"。
+   - 依存: 5, 7。仕様: [source_map.md](./source_map.md) "Public API", "Generated Spans"。
 
 ### モジュール: snapshot (`src/snapshot.rs`)
 
@@ -95,13 +95,13 @@
    - `SnapshotError` を spec の変種付きで定義する（後続タスクが必要とする時に追加）: 不正/非正規化のソースパス、duplicate module path、欠落した依存アーティファクト、未対応の lockfile/ツールチェインメタデータ、古いオープンバッファバージョン、未知のスナップショット id、リースリリースの不一致。
    - 正準ソートキー（package id、module path、normalized path、source hash）を用意する。
    - テスト: 挿入順に依らず正準キーで決定的に順序付く。
-   - 依存: 1, 4。仕様: [snapshot.md](../en/snapshot.md) "Source Version"。
+   - 依存: 1, 4。仕様: [snapshot.md](./snapshot.md) "Source Version"。
 
 10. **ビルドスナップショットの同一性。** [x]
     - `BuildSnapshot` と `SnapshotInput` を定義し、正準入力（ソート済みのソース/依存サマリー、lockfile ハッシュ、ツールチェイン、検証器構成ハッシュ）から内容由来の `BuildSnapshotId` を計算する。セッションローカル id/タイムスタンプは除外する。
     - タスク 9 からの申し送り: 正準キー（package id、module path、normalized path、source hash）で等価に比較される source-version エントリが、スナップショットハッシュを挿入順依存にしてはならない。そのような重複がハッシュ化に到達し得る場合は決定的にエンコードする。望ましくは、タスク 11 の検証で重複する source-version identity をハッシュ化前に拒否する。
     - テスト: 同一の正準入力 ⇒ 同一 id、ソース/依存/構成の変更 ⇒ 異なる id、セッションローカル id はハッシュに含まれない。
-    - 依存: 2, 9。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Identity"。
+    - 依存: 2, 9。仕様: [snapshot.md](./snapshot.md) "Snapshot Identity"。
 
 11. **スナップショットレジストリ、作成、鮮度。** [x]
     - `SnapshotRegistry` に `create_snapshot`、`get`、`is_current_for_request` を定義する。
@@ -109,19 +109,19 @@
     - ここで、最小の `SnapshotLease` ハンドルと、それが持つ依存無しの `RetentionReason` 列挙を導入する（`retention` モジュールと共有。active-build lease は `RetentionReason::ActiveBuild` を使う）。完全なリース計上はタスク 12 で行い、retention（タスク 17）はこの `RetentionReason` を再定義せず再利用する。
     - タスク 9/10 からの申し送り: 正準キーが等しい重複 source-version identity はスナップショットハッシュ化前に拒否し、作成処理が挿入順に敏感な重複レコードを受理しないようにする。
     - テスト: 作成したスナップショットが取得可能で active-build lease を返す、古い id は鮮度チェックで拒否、古いスナップショットは current として報告されない、duplicate module path は拒否、パス正規化済みの重複ソース同一性は source-version canonical key で拒否、欠落した依存アーティファクト/コンテンツフィンガープリントは拒否、未対応の lockfile/ツールチェインメタデータは拒否、構造的に不正な open-buffer version は拒否。expected-vs-actual の真の open-buffer staleness は、リクエストメタデータを持つ source-loading タスクで検証する。
-    - 依存: 3, 10。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Creation", "Freshness Check", "Error Handling"。
+    - 依存: 3, 10。仕様: [snapshot.md](./snapshot.md) "Snapshot Creation", "Freshness Check", "Error Handling"。
 
 12. **スナップショットリースの計上。** [x]
     - レジストリの `SnapshotLease` を `acquire_lease`/`release_lease` で完成させ、`RetentionReason`（タスク 11 由来）ごとにリース数を追跡する。回収ポリシーはまだ持たない（それは retention、タスク 17-18）。
     - テスト: acquire/release で数が増減する、タスク 11 の active-build lease の解放が計上される、未知のスナップショット id とリースリリースの不一致が `SnapshotError` になる。
-    - 依存: 11。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Lease"。
+    - 依存: 11。仕様: [snapshot.md](./snapshot.md) "Snapshot Lease"。
 
 13. **スナップショット構築 API の堅牢化。** [x]
     - 直接の unchecked constructor（`BuildSnapshot::from_input`, `SnapshotInput::build_snapshot`, `SnapshotInput::build_snapshot_id`）を public のまま残すか、crate-private にするか、identity-only の unchecked helper として rename/document するかを決める。
     - registry snapshot の検証済み public 作成経路として `SnapshotRegistry::create_snapshot` を維持する。
     - identity テストや tooling のために直接構築を残す場合は、downstream crate が誤って creation validation を迂回しないよう unchecked semantics を明示する。
     - テスト: invalid `SnapshotInput` は検証済み API から published/registry snapshot を作れない。直接 unchecked construction は public に使えないか、identity-only として明示的に document/test されている。
-    - 依存: 12。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Creation", "Error Handling"。
+    - 依存: 12。仕様: [snapshot.md](./snapshot.md) "Snapshot Creation", "Error Handling"。
 
 ### モジュール: source (`src/source.rs`)
 
@@ -129,18 +129,18 @@
     - `SourceInput`, `SourceOriginInput`（`path` / `uri,version,text` / 生成器 text+anchor を持つソース読み込み入力の variant）, `LoadedSource` と `SourceLoader` trait を定義する。`load` は `SourceInput` の前に対象の `BuildSnapshotId` を受け取り、スナップショットスコープの `SourceId` を発行できるようにする。`LoadedSource.origin` には snapshot の `SourceOrigin`（タスク 9）を再定義せず再利用する。`hash_text` と `normalize_path`（既存の `normalize_source_path` を再利用）を実装する。
     - `SourceLoadError` を spec の変種付きで定義する: パッケージルート外のソースパス、未対応のファイル拡張子、不正な UTF-8、読み取り不能なソースファイル、duplicate module path、古い LSP ドキュメントバージョン、パッケージソースに対応付けられないオープンバッファ URI、必須の生成器メタデータが無い生成ソース、`SessionIdAllocator` による source id 発行失敗。
     - テスト: `source_hash` は絶対パス/ドキュメントバージョンを含まない、別 origin の同一テキストはハッシュを共有する。
-    - 依存: 1, 4, 6, 9。仕様: [source.md](../en/source.md) "Public API", "Loaded Source"。
+    - 依存: 1, 4, 6, 9。仕様: [source.md](./source.md) "Public API", "Loaded Source"。
 
 15. **ディスクソースの読み込み。** [x]
     - ディスク読み込みを実装する: パス正規化 + パッケージルート強制、バイト読み込み、UTF-8 検証（非可逆 `U+FFFD` なし）、先頭 BOM 除去、CRLF→LF 正規化、`source_hash`、`LineMap`、`LoadingMap` の生成。
     - 先頭 UTF-8 BOM のみエンコーディング signature として扱い、非先頭の `U+FEFF` は読み込みテキストに残す。CRLF 対のみ LF に正規化し、単独の `\r` は保持する（プラットフォーム改行として扱わない）。
     - テスト: 不正な UTF-8 は line-map 前に拒否、未対応拡張子は拒否、先頭 BOM → ローディングマップ `0`↔`3`、非先頭 `U+FEFF` は読み込みテキストに保持、CRLF は正規化しつつ単独 `\r` は保持、ルート外パスの拒否。
-    - 依存: 14。仕様: [source.md](../en/source.md) "Disk Source Loading"。
+    - 依存: 14。仕様: [source.md](./source.md) "Disk Source Loading"。
 
 16. **オープンバッファと生成ソースの読み込み。** [x]
     - オープンバッファ読み込み（LSP ドキュメントバージョン検証、URI→パッケージパス、BOM 除去、CRLF 正規化、エディタオフセットへ戻すローディングマップ）と、生成ソース読み込み（生成器メタデータ + アンカー）を実装する。
     - テスト: オープンバッファは一致するバージョンでのみディスクを上書き、古いバージョンは拒否、オープンバッファのローディングマップは読み込みテキストオフセットを（LSP UTF-16 変換の前に）エディタ提供テキストのバイトオフセットへ戻す、対応付け不能なオープンバッファ URI は拒否、メタデータの無い生成ソースは拒否。
-    - 依存: 15。仕様: [source.md](../en/source.md) "Open-Buffer Source Loading", "Generated Source Loading"。
+    - 依存: 15。仕様: [source.md](./source.md) "Open-Buffer Source Loading", "Generated Source Loading"。
 
 ### モジュール: retention (`src/retention.rs`)
 
@@ -150,13 +150,13 @@
     - `RetentionError` を spec の変種付きで定義する: 未知のスナップショット id、未知/解放済みのリース id、リースとスナップショットの不一致、不正な owner/reason の組み合わせ、欠落スナップショットを current にしようとする、回収が不整合な保持状態でブロックされる。
     - 古いスナップショットの retain は、診断 / 説明 / LSP の古い表示 / IR 出力の理由では許可するが、スナップショットを current にしてはならない。
     - テスト: アクティブなリースが回収対象化を防ぐ、二重リリースはアンダーフローせず報告される、不正な owner/reason の組み合わせは拒否、古いスナップショットの retain は current にせず成功する。
-    - 依存: 13。仕様: [retention.md](../en/retention.md) "Retain", "Release", "Error Handling"。
+    - 依存: 13。仕様: [retention.md](./retention.md) "Retain", "Release", "Error Handling"。
 
 18. **current マークと回収。** [x]
     - `mark_current`/`unmark_current`、`record_retained_resources`、`collect`、`CollectionSummary` を追加し、回収ポリシー（リース無し・current マーク無し・保持マップ/説明/LSP/IR のリース無し）を実装する。
     - `CollectionSummary` は、スキャン/回収したスナップショット数、解放したソースとマップ、current マークでスキップしたスナップショット、ライブリースでスキップしたスナップショット、古い/不一致リースの診断を報告する。
     - テスト: current マークは他のリースが無くても回収を防ぐ、最後のリース解放で回収される、フェーズ出力リースは解放まで回収を阻む、欠落スナップショットを current にしようとすると `RetentionError` になる、`CollectionSummary` が current/リースでのスキップ数と古いリース診断を報告する、回収はアーティファクト/キャッシュを削除しない。
-    - 依存: 17。仕様: [retention.md](../en/retention.md) "Collection", "Current Marks", "Collection Summary"。
+    - 依存: 17。仕様: [retention.md](./retention.md) "Collection", "Current Marks", "Collection Summary"。
 
 ### 横断フォローアップ前のモジュール全体メンテナンス
 
@@ -179,19 +179,23 @@
 
 ## 横断的フォローアップタスク
 
-21. **英日ドキュメント同期監査。** [ ]
+21. **英日ドキュメント同期監査。** [x]
     - `doc/design/mizar-session/en/` の英語正典文書と、`doc/design/mizar-session/ja/` の日本語 companion をすべて比較する。
     - タスク 1-20 で導入された API 一覧、タスク状態、用語、リンクを同期する。
     - 日本語 companion を同じ変更で完全同期できない場合は、そのギャップを明示し、英語正典の該当 section へリンクする。
     - テスト: documentation-only。リポジトリに既定の formatting/link check コマンドがあれば実行する。
     - 依存: 20。仕様: リポジトリの documentation policy。
+    - 監査結果: 英語正典文書と日本語 companion は、モジュールステータス、
+      public API/error list、タスクステータス、タスク 1-20 で導入された用語、
+      companion 内のローカルリンクについて同期済み。未同期の日本語 companion
+      gap は残っていない。
 
 22. **決定性プロパティテスト。** [x]
     - 同一の正準入力から、挿入順や scheduling-like な構築順に依らず同一の `BuildSnapshotId` が得られることを、crate-level の決定性テストで補強する。
     - 等価な保持済み line/loading/preprocess map に対する source-range 変換の決定性を確認する。
     - 実装詳細ではなく、決定的な public behavior に焦点を絞る。
     - テスト: property/regression test を追加し、`cargo test -p mizar-session` を実行する。
-    - 依存: 20。仕様: [ids.md](../en/ids.md)、[snapshot.md](../en/snapshot.md)、[source_map.md](../en/source_map.md)。
+    - 依存: 20。仕様: [ids.md](./ids.md)、[snapshot.md](./snapshot.md)、[source_map.md](./source_map.md)。
     - 結果: `crates/mizar-session/tests/determinism.rs` に public integration
       coverage を追加し、registry で作成された `BuildSnapshotId` が
       source/dependency の挿入順、scheduling-like な source-id 割り当て順、
@@ -200,10 +204,10 @@
 23. **スナップショットリース割り当て mutex の堅牢化。** [x]
     - `SnapshotRegistry::acquire_lease` の lease id 割り当てを、`create_snapshot` と同様に registry mutex の外へ出すべきかを決める。
     - 変更する場合は、既存の lease count 挙動を維持し、allocator failure が registry state を変更しないようにする。
-    - 変更しない場合は、その理由を [snapshot.md](../en/snapshot.md) または本 TODO に記録する。
+    - 変更しない場合は、その理由を [snapshot.md](./snapshot.md) または本 TODO に記録する。
     - 決定: `acquire_lease` は allocation 前に未知スナップショットを拒否し、既知スナップショットでは registry mutex の外で lease id を割り当て、duplicate-id defense はここでは追加せず mutex の下で lease を記録する。
     - テスト: allocator failure が registry state を変えないこと、繰り返し lease acquisition が一意で reason ごとに計上されること。
-    - 依存: 20。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Lease"。
+    - 依存: 20。仕様: [snapshot.md](./snapshot.md) "Snapshot Lease"。
 
 24. **スナップショットリース duplicate-id 防御。** [x]
     - `SessionIdAllocator` は一意な lease id を発行する前提だが、`SnapshotRegistry` state 側にも defensive duplicate-lease-id check または debug assertion を追加するかを決める。
@@ -212,7 +216,7 @@
     - テスト: 挙動が debug assertion の外から観測可能な場合は、custom allocator による duplicate id scenario を追加する。
     - 判断: `SessionIdAllocator` は public trait であり、release build の registry でも custom allocator が live lease map を上書きしながら count を増やせてはならないため、`SnapshotRegistryState` に観測可能な duplicate live lease id check を追加する。Duplicate allocation は、snapshot record、current mark、live lease、lease count を変更する前に `SnapshotError::DuplicateLeaseIdAllocation` として報告する。
     - テスト: `acquire_lease` と `create_snapshot` で返された duplicate id が、lease count、live lease、snapshot record、current request state を変更しないこと。
-    - 依存: 23。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Lease"、[ids.md](../en/ids.md) "Allocator-Issued Id Construction"。
+    - 依存: 23。仕様: [snapshot.md](./snapshot.md) "Snapshot Lease"、[ids.md](./ids.md) "Allocator-Issued Id Construction"。
 
 25. **public API block とソースマップ error surface の仕様同期。** [x]
     - 現在の public API block に載っていない実装済みの公開 helper / alias を、
@@ -226,7 +230,7 @@
     - API 判断で明示的に狭める場合を除き、既存の validation 挙動は安定させる。
     - テスト: 現状の surface を文書化するだけなら documentation-only。公開面を
       変更する場合は unit test または compile-fail coverage を調整する。
-    - 依存: 20。仕様: [ids.md](../en/ids.md), [source.md](../en/source.md), [source_map.md](../en/source_map.md)。
+    - 依存: 20。仕様: [ids.md](./ids.md), [source.md](./source.md), [source_map.md](./source_map.md)。
     - 判断: 既存の helper と alias は public のまま維持し、意図した API として文書化する。
       validation 挙動は狭めない。`Hash` の byte helper は、単体の公開シリアライズ形式ではなく、
       低レベルの正準バイト accessor として残す。`LineMap::source`、`TextRange` helper、
@@ -246,7 +250,7 @@
       snapshot hashing の前に拒否し、決定的な hashing を保つ。
     - テスト: 選んだ境界に対して、空の package/module/edition 値と duplicate
       module path を中心に focused case を追加する。
-    - 依存: 20。仕様: [source.md](../en/source.md), [snapshot.md](../en/snapshot.md)。
+    - 依存: 20。仕様: [source.md](./source.md), [snapshot.md](./snapshot.md)。
     - 判断: `WorkspaceRoot`、`PackageId`、`ModulePath`、`Edition`、
       `GeneratedSourceKind` の constructor は失敗しない string wrapper のまま維持する。
       上流の build planning は、正規化済み workspace root、package id、edition、
@@ -281,7 +285,7 @@
     - 生成入力も disk/open-buffer と同様に正規化するなら、実装、source-map
       expectation、source-hash test を同時に更新する。
     - テスト: 選んだ挙動に対して、生成ソースの BOM/CRLF focused case を追加または更新する。
-    - 依存: 20。仕様: [source.md](../en/source.md), [source_map.md](../en/source_map.md)。
+    - 依存: 20。仕様: [source.md](./source.md), [source_map.md](./source_map.md)。
     - 判断: 生成ソース読み込みは byte-for-byte 保持のままにする。生成入力はすでに
       valid UTF-8 の `Arc<str>` として API に入り、ローダーは受理したテキストを
       そのまま保持する。先頭 `U+FEFF` はエンコードシグネチャとして扱わず、
@@ -315,7 +319,7 @@
       retain/release/allocation 経路で使われることを明確にする。
     - テスト: 新たに観測可能にする経路に必要な case だけを追加する。variant を
       reserved/internal として維持する場合は documentation-only。
-    - 依存: 20。仕様: [ids.md](../en/ids.md), [snapshot.md](../en/snapshot.md), [source.md](../en/source.md), [retention.md](../en/retention.md)。
+    - 依存: 20。仕様: [ids.md](./ids.md), [snapshot.md](./snapshot.md), [source.md](./source.md), [retention.md](./retention.md)。
     - 決定: 新しい public observable path は追加しない。`IdError::UnknownSnapshotRegistry` は
       registry-aware な custom allocator のために予約し、
       `InMemorySessionIdAllocator` は emit しない。

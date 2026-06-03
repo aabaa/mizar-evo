@@ -13,10 +13,10 @@
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | ids | [ids.md](./ids.md) | `src/ids.rs` | [x] |
-| source_map | [source_map.md](./source_map.md) | `src/source_map.rs` | [~] |
-| snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs` | [~] |
-| source | [source.md](./source.md) | `src/source.rs` | [~] |
-| retention | [retention.md](./retention.md) | `src/retention.rs` | [~] |
+| source_map | [source_map.md](./source_map.md) | `src/source_map.rs` | [x] |
+| snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs` | [x] |
+| source | [source.md](./source.md) | `src/source.rs` | [x] |
+| retention | [retention.md](./retention.md) | `src/retention.rs` | [x] |
 
 The crate is the leaf identity/coordinate layer, so it is built bottom-up by
 internal dependency: `ids` → `source_map` → `snapshot` → `source` → `retention`.
@@ -179,12 +179,16 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
 
 ## Cross-Cutting Follow-up Tasks
 
-21. **Bilingual documentation synchronization audit.** [ ]
+21. **Bilingual documentation synchronization audit.** [x]
     - Compare every English canonical document under `doc/design/mizar-session/en/` with its Japanese companion under `doc/design/mizar-session/ja/`.
     - Synchronize API lists, task statuses, terminology, and links introduced during tasks 1-20.
     - If a Japanese companion cannot be fully synchronized in the same change, mark the gap explicitly and link back to the canonical English section.
     - Tests: documentation-only; run formatting or link checks if the repository has an established command.
     - Depends on: 20. Spec: repository documentation policy.
+    - Audit result: English canonical documents and Japanese companions are
+      synchronized for module statuses, public API/error lists, task statuses,
+      terminology introduced by tasks 1-20, and companion-local links. No
+      unsynchronized Japanese companion gap remains.
 
 22. **Determinism property tests.** [x]
     - Add crate-level determinism coverage for identical canonical inputs producing identical `BuildSnapshotId` values independent of insertion order or scheduling-like construction order.

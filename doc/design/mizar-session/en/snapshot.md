@@ -86,6 +86,7 @@ pub struct SourceVersion {
     pub origin: SourceOrigin,
 }
 
+#[non_exhaustive]
 pub enum SourceOrigin {
     Disk,
     OpenBuffer { version: LspDocumentVersion },
@@ -105,6 +106,10 @@ pub struct SnapshotRegistry<A = InMemorySessionIdAllocator> { /* private fields 
 
 impl SnapshotRegistry<InMemorySessionIdAllocator> {
     pub fn new() -> Self;
+}
+
+impl Default for SnapshotRegistry<InMemorySessionIdAllocator> {
+    fn default() -> Self;
 }
 
 impl<A> SnapshotRegistry<A> {
@@ -131,7 +136,8 @@ impl<A: SessionIdAllocator> SnapshotRegistry<A> {
     pub fn is_current_for_request(&self, id: BuildSnapshotId, request: BuildRequestId) -> bool;
 }
 
-// Owned by the snapshot/shared lease layer; reused by the future `retention` module.
+// Owned by the snapshot/shared lease layer; re-exported by the `retention` module.
+#[non_exhaustive]
 pub enum RetentionReason {
     ActiveBuild,
     CurrentWatchBaseline,
@@ -197,9 +203,10 @@ The concrete registry may keep snapshots in memory and persist only source/cache
 
 ## Dependencies
 
-- Internal: `source_map` for source coordinate tables attached to `SourceVersion`
+- Internal: `source_map` for coordinate tables keyed by `SourceId` and consumed
+  alongside `SourceVersion` identity
 - External: path normalization, hashing, package metadata, LSP document-version types
-- Shared: `SnapshotLease.reason` uses the `RetentionReason` enum defined in this snapshot/shared lease layer. The future `retention` module reuses this enum rather than redefining it.
+- Shared: `SnapshotLease.reason` uses the `RetentionReason` enum defined in this snapshot/shared lease layer. The `retention` module re-exports and reuses this enum rather than redefining it.
 
 This module is consumed by `mizar-build`, `mizar-ir`, `mizar-cache`, `mizar-artifact`, `mizar-diagnostics`, and `mizar-lsp`.
 
@@ -254,7 +261,7 @@ and module-namespace specs are aligned.
 
 ### Snapshot Lease
 
-`SnapshotLease` is the snapshot-layer handle that future retention collection
+`SnapshotLease` is the snapshot-layer handle that retention collection
 uses to keep a snapshot alive while an external consumer may still reference it.
 The registry tracks live lease counts per `RetentionReason`; the active-build
 lease returned by `create_snapshot` is counted the same way as leases acquired
@@ -281,8 +288,9 @@ Lease reasons include:
 - phase-output retention in `mizar-ir`;
 - pending cache or artifact writer.
 
-Leases currently retain snapshot metadata in the registry accounting. Once the
-retention module lands, the same lease state also controls source-map retention.
+Leases currently retain snapshot metadata in the registry accounting. The
+retention module bridges the same lease state into source and source-map
+retention.
 They do not by themselves retain all IR outputs; `mizar-ir` owns phase-output
 retention and may hold its own lease back to the snapshot.
 
@@ -297,7 +305,11 @@ retention and may hold its own lease back to the snapshot.
 5. Insert the immutable snapshot into the registry.
 6. Return the snapshot and an active-build lease to the caller.
 
-Disk, open-buffer, and generated-source loading are implemented by later source-loading tasks. This registry records and validates the resulting snapshot input; it does not read source text from disk or editor buffers. Expected-vs-actual open-buffer staleness is checked by the source-loading layer, which owns request document-version metadata.
+Disk, open-buffer, and generated-source loading are implemented by the source
+module. This registry records and validates the resulting snapshot input; it
+does not read source text from disk or editor buffers. Expected-vs-actual
+open-buffer staleness is checked by the source-loading layer, which owns
+request document-version metadata.
 Generated-source loading rejects missing generator metadata before allocating a
 `SourceId`; snapshot creation repeats that validation for direct `SourceVersion`
 inputs so unchecked construction cannot feed blank generated-source metadata into
@@ -310,19 +322,18 @@ A snapshot is current for a request only when it is the most recent snapshot acc
 
 Downstream crates should compare `BuildSnapshotId` before consuming handles. If the ids differ, the consumer must either reject the handle as stale or invoke cache compatibility validation in the responsible cache layer.
 
-### Future Retention and Collection
+### Retention and Collection
 
 The current snapshot registry tracks leases and current request state, but it
-does not implement collection. The future retention module may collect a
-snapshot when:
+does not implement collection. The retention module may collect a snapshot when:
 
-- no lease references it;
-- no current request generation names it;
-- no retained source map or diagnostic explanation points to it;
-- `mizar-ir` has released phase-output references for that snapshot.
+- no live lease references it, including diagnostic, LSP, IR, cache, or
+  artifact-writer leases;
+- no retention current mark names it;
 
-Collection will remove in-memory source text and maps unless another layer
-explicitly stores stable artifact or cache data.
+Collection removes in-memory source text and map resources recorded as retention
+accounting metadata unless another layer explicitly stores stable artifact or
+cache data.
 
 ## Error Handling
 

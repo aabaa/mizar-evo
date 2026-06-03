@@ -34,6 +34,7 @@ pub struct CollectionSummary {
     pub lease_diagnostics: Vec<RetentionLeaseDiagnostic>,
 }
 
+#[non_exhaustive]
 pub enum RetentionLeaseDiagnostic {
     StaleLiveLease {
         lease_id: SnapshotLeaseId,
@@ -55,6 +56,7 @@ pub struct RetainedSnapshotResources {
     pub maps: usize,
 }
 
+#[non_exhaustive]
 pub enum RetainOwner {
     Build(BuildRequestId),
     Watch,
@@ -73,8 +75,32 @@ pub enum RetainOwner {
 //   DiagnosticIndex, ExplanationRequest, PhaseOutputReference, PendingWrite
 pub use crate::snapshot::RetentionReason;
 
+#[non_exhaustive]
+pub enum RetentionError {
+    UnknownSnapshotId { snapshot_id: BuildSnapshotId },
+    UnknownOrReleasedLeaseId { lease_id: SnapshotLeaseId },
+    LeaseSnapshotMismatch {
+        lease_id: SnapshotLeaseId,
+        expected_snapshot: BuildSnapshotId,
+        actual_snapshot: BuildSnapshotId,
+    },
+    InvalidOwnerReasonCombination {
+        owner: RetainOwner,
+        reason: RetentionReason,
+    },
+    AttemptToMarkMissingSnapshotCurrent { snapshot_id: BuildSnapshotId },
+    CollectionBlockedByInconsistentRetentionState {
+        snapshot_id: BuildSnapshotId,
+        detail: &'static str,
+    },
+}
+
 impl RetentionManager<InMemorySessionIdAllocator> {
     pub fn new() -> Self;
+}
+
+impl Default for RetentionManager<InMemorySessionIdAllocator> {
+    fn default() -> Self;
 }
 
 impl<A> RetentionManager<A> {
@@ -133,7 +159,7 @@ Each retained snapshot has a record containing:
 
 - snapshot id;
 - reference counts by owner and reason;
-- current request generations naming it;
+- snapshot-level current marks naming it;
 - retained loaded sources;
 - retained line maps and preprocessing maps;
 - collection eligibility metadata;
@@ -146,7 +172,11 @@ lease with the appropriate `RetentionReason`.
 
 ### Current Marks
 
-A current mark means a build request generation may report the snapshot as current. It is separate from a lease: a current mark prevents collection and controls freshness, while a lease only prevents collection.
+A current mark means the retention manager must keep the snapshot as a current
+in-memory baseline for collection. It is separate from a lease: a current mark
+prevents collection, while a lease only prevents collection for a specific
+consumer. Current marks do not encode request generations or decide freshness;
+request-scoped currentness remains in `SnapshotRegistry::is_current_for_request`.
 
 Old snapshots may retain leases for stale diagnostics or explanation requests after a newer snapshot becomes current.
 
