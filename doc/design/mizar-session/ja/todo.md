@@ -366,7 +366,7 @@
       新しい `allow` 例外は不要だった。すでに接続済みの snapshot ID derivation
       helper に付いていた古い `allow(dead_code)` 属性は、代わりに削除した。
 
-30. **肥大化したモジュールファイルの分割。** [ ]
+30. **肥大化したモジュールファイルの分割。** [x]
     - 最大級のソースファイル（`snapshot.rs`、`source_map.rs`、`source.rs` は
       テストを含めて各おおよそ 2.3k〜3.4k 行）を、`lib.rs` から再エクスポートされる
       public API 面やモジュール仕様の "Public API" block を変えずに、凝集した
@@ -379,6 +379,11 @@
     - テスト: 挙動保持。全モジュールテストと doctest を緑に保ち、標準の
       verification コマンドを再実行する。
     - 依存: 19, 20。仕様: mizar-session の全モジュール仕様。
+    - 決定: `snapshot`、`source_map`、`source` の大きな `#[cfg(test)]`
+      ブロックを、`src/snapshot/tests.rs`、`src/source_map/tests.rs`、
+      `src/source/tests.rs` の private な兄弟テストモジュールへ分割した。
+      public module path と `lib.rs` の再エクスポートは変えず、実装ファイルを
+      production code 中心に保つ。
 
 ## Suggested Verification
 

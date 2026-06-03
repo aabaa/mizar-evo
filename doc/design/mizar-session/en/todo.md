@@ -380,7 +380,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
       exceptions were needed; stale `allow(dead_code)` attributes on the
       already-wired snapshot ID derivation helpers were removed instead.
 
-30. **Oversized module file split.** [ ]
+30. **Oversized module file split.** [x]
     - Reduce the largest source files (`snapshot.rs`, `source_map.rs`, and
       `source.rs` are each roughly 2.3k-3.4k lines including tests) by extracting
       cohesive submodules, without changing the public API surface re-exported
@@ -394,6 +394,11 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: behavior-preserving; keep all module and doctests green and re-run the
       standard verification commands.
     - Depends on: 19, 20. Spec: all mizar-session module specs.
+    - Decision: split the large `#[cfg(test)]` blocks for `snapshot`, `source_map`,
+      and `source` into private sibling test modules at
+      `src/snapshot/tests.rs`, `src/source_map/tests.rs`, and `src/source/tests.rs`.
+      This keeps the public module paths and `lib.rs` re-exports unchanged while
+      making the implementation files focused on production code.
 
 ## Suggested Verification
 
