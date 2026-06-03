@@ -115,6 +115,14 @@ pub enum SourceOriginKind {
 `SourceLoader` helper methods delegate to the public `normalize_path` and `hash_text` helpers. `normalize_path` reuses `normalize_source_path`, while `hash_text` hashes only the normalized text content.
 `DiskSourceLoader` owns the package root used for path and URI normalization. It implements `SourceLoader` for disk files, open-buffer overlays mapped from `file://` document URIs, and generated source fragments.
 `NormalizedPath::as_str` is intentionally public so snapshot identity, diagnostics, and downstream metadata can read the canonical path spelling without exposing a mutable path representation. `DocumentUri` and `LspDocumentVersion` are the crate-level public aliases defined with the source-map coordinate types and used here for open-buffer source loading.
+`PackageId`, `ModulePath`, and `Edition` values are supplied by upstream package
+planning and module resolution. Single-source loading preserves those identity
+values unchanged while validating source paths, text, open-buffer freshness, and
+generated-source metadata. The future source-loading aggregator may reject
+duplicate module paths across a build plan with
+`SourceLoadError::DuplicateModulePath`, but a single `SourceLoader::load` call
+does not have enough context to emit that error. `SnapshotRegistry::create_snapshot`
+remains the final pre-hash validation boundary for registry snapshots.
 
 ## Dependencies
 
@@ -135,6 +143,7 @@ It must not contain:
 - symlink-expanded host-specific paths unless explicitly marked local-only;
 - platform-specific separator differences;
 - non-canonical case variants for package-managed source paths.
+- namespace components that are not language identifiers, including reserved words.
 
 Local diagnostics may keep an absolute display path separately. Published artifacts use normalized paths.
 
@@ -190,7 +199,7 @@ Open-buffer text may be newer than the last verified artifact. Consumers must ca
 
 ### Generated Source Loading
 
-Generated sources require a non-empty generator kind and, when available, an anchor to original source. Loading preserves the generator metadata in `LoadedSource.origin` and preserves the optional anchor in `LoadedSource.generated_anchor`. Generated source text may be used for diagnostics, documentation, or extraction, but it must not be mistaken for package-authored `.miz` source.
+Generated sources require a non-empty generator kind and, when available, an anchor to original source. Loading rejects blank generator metadata before allocating a `SourceId`, preserves accepted generator metadata in `LoadedSource.origin`, and preserves the optional anchor in `LoadedSource.generated_anchor`. Generated source text may be used for diagnostics, documentation, or extraction, but it must not be mistaken for package-authored `.miz` source.
 
 ## Error Handling
 
@@ -200,7 +209,7 @@ Generated sources require a non-empty generator kind and, when available, an anc
 - unsupported file extension;
 - invalid UTF-8;
 - unreadable source file;
-- duplicate module path supplied by the build plan;
+- duplicate module path supplied by a future source-loading aggregator over a build plan; single-source `DiskSourceLoader::load` does not emit this variant;
 - stale or structurally invalid LSP document version;
 - open-buffer URI that cannot be mapped to a package source;
 - generated source without required generator metadata.

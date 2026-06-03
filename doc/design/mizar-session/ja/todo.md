@@ -228,7 +228,7 @@
       `SourceMapError::ReversedRange` を含める。
     - テスト方針: Rust の public surface と validation 挙動は維持したため documentation-only。
 
-26. **source / snapshot のソース同一性 validation 境界。** [ ]
+26. **source / snapshot のソース同一性 validation 境界。** [x]
     - 空または不正な `WorkspaceRoot`、`PackageId`、`ModulePath`、`Edition`、
       生成ソース metadata を、constructor、source loading、snapshot creation、
       上流の build-plan 層のどこで拒否するかを決める。
@@ -240,6 +240,31 @@
     - テスト: 選んだ境界に対して、空の package/module/edition 値と duplicate
       module path を中心に focused case を追加する。
     - 依存: 20。仕様: [source.md](../en/source.md), [snapshot.md](../en/snapshot.md)。
+    - 判断: `WorkspaceRoot`、`PackageId`、`ModulePath`、`Edition`、
+      `GeneratedSourceKind` の constructor は失敗しない string wrapper のまま維持する。
+      上流の build planning は、正規化済み workspace root、package id、edition、
+      canonical module discovery を所有する。source loading は、読み込み済み入力に対する
+      source path、text、open-buffer freshness、generated-source metadata validation を所有する。
+      `SnapshotRegistry::create_snapshot` は最後の pre-hash registry boundary として、
+      空の workspace root、空または whitespace を含む package id、不正な module path
+      component（予約語を含む）、空の edition、direct な `SourceVersion` 入力内の空の
+      generated-source metadata、重複する source-version identity、重複する module path を、
+      hash 化、lease 割り当て、registry 挿入より前に拒否する。空でない package-id spelling は、
+      package-name specs が揃うまで上流の build-plan の責務に残す。
+    - 判断: `SourceLoadError::DuplicateModulePath` は、build plan 全体を見る将来の
+      source-loading aggregator のために予約しておく。単一の `SourceLoader::load`
+      呼び出しはこれを emit せず、snapshot creation が必須の whole-snapshot duplicate
+      module path check を保持する。
+    - テスト方針: focused snapshot unit test で、空の workspace root、package id、
+      module path、edition、direct generated-source metadata、既存の duplicate module
+      path/source identity の pre-hash check を cover する。source test は
+      source-id allocation 前の generated-source metadata rejection を維持し、
+      reserved-word namespace component を拒否する。
+    - Follow-up: `doc/spec/en/23.package_management_and_build_system.md`
+      (`[a-z][a-z0-9-]*`) と `doc/spec/en/12.modules_and_namespaces.md` (`snake_case`)
+      の English canonical package-name spelling conflict を解決し、その後 Japanese
+      companion を同期する。`doc/spec/ja/23.package_management_and_build_system.md` の
+      package-name table row の malformed text も合わせて直す。
 
 27. **生成ソースの正規化方針。** [ ]
     - 生成ソーステキストを UTF-8 検証後に byte-for-byte で保持するのか、先頭

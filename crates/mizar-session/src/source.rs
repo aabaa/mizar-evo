@@ -1,3 +1,4 @@
+use crate::identity::is_language_identifier;
 use crate::ids::{BuildSnapshotId, Hash, IdError, SessionIdAllocator, SourceId};
 use crate::snapshot::{Edition, GeneratedSourceKind, ModulePath, PackageId, SourceOrigin};
 use crate::source_map::{
@@ -943,8 +944,13 @@ fn normal_utf8_components(path: &Path) -> Result<Vec<String>, SourcePathError> {
 
 fn validate_namespace_components(path: &Path) -> Result<(), SourcePathError> {
     let components = normal_utf8_components(path)?;
-    for component in components.iter().skip(1) {
-        let namespace_component = component.strip_suffix(".miz").unwrap_or(component);
+    let namespace_count = components.len();
+    for (index, component) in components.iter().enumerate().skip(1) {
+        let namespace_component = if index + 1 == namespace_count {
+            component.strip_suffix(".miz").unwrap_or(component)
+        } else {
+            component.as_str()
+        };
         if !is_identifier_shaped(namespace_component) {
             return Err(SourcePathError::InvalidNamespaceComponent {
                 component: namespace_component.to_owned(),
@@ -955,19 +961,7 @@ fn validate_namespace_components(path: &Path) -> Result<(), SourcePathError> {
 }
 
 fn is_identifier_shaped(value: &str) -> bool {
-    let mut chars = value.chars();
-    let Some(first) = chars.next() else {
-        return false;
-    };
-    is_identifier_start(first) && chars.all(is_identifier_continue)
-}
-
-fn is_identifier_start(ch: char) -> bool {
-    ch.is_ascii_alphabetic() || ch == '_'
-}
-
-fn is_identifier_continue(ch: char) -> bool {
-    ch.is_ascii_alphanumeric() || ch == '_' || ch == '\''
+    is_language_identifier(value)
 }
 
 #[cfg(test)]
@@ -1956,15 +1950,43 @@ mod tests {
 
     #[test]
     fn source_path_normalization_rejects_invalid_namespace_components() {
-        let package = PackageFixture::new();
-        package.write("src/bad-name.miz", "");
+        for source_path in [
+            "src/bad-name.miz",
+            "src/groups/bad-name/basic.miz",
+            "src/foo.miz/basic.miz",
+        ] {
+            let package = PackageFixture::new();
+            package.write(source_path, "");
 
-        let normalized = normalize_source_path(package.root(), Path::new("src/bad-name.miz"));
+            let normalized = normalize_source_path(package.root(), Path::new(source_path));
 
-        assert!(matches!(
-            normalized,
-            Err(SourcePathError::InvalidNamespaceComponent { .. })
-        ));
+            assert!(
+                matches!(
+                    normalized,
+                    Err(SourcePathError::InvalidNamespaceComponent { .. })
+                ),
+                "{source_path:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn source_path_normalization_rejects_reserved_namespace_components() {
+        for source_path in ["src/theorem.miz", "src/groups/theorem/basic.miz"] {
+            let package = PackageFixture::new();
+            package.write(source_path, "");
+
+            let normalized = normalize_source_path(package.root(), Path::new(source_path));
+
+            assert!(
+                matches!(
+                    normalized,
+                    Err(SourcePathError::InvalidNamespaceComponent { component })
+                        if component == "theorem"
+                ),
+                "{source_path:?}"
+            );
+        }
     }
 
     #[test]

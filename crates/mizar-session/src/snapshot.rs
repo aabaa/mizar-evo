@@ -89,7 +89,7 @@
 use crate::{
     BuildRequestId, BuildSnapshotId, Hash, IdError, InMemorySessionIdAllocator, LspDocumentVersion,
     NormalizedPath, SessionIdAllocator, SnapshotLeaseId, SourceId, SourcePathError,
-    ids::build_snapshot_id_from_sorted_canonical_bytes,
+    identity::is_language_identifier, ids::build_snapshot_id_from_sorted_canonical_bytes,
 };
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
@@ -200,6 +200,21 @@ pub enum SourceOrigin {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum SnapshotError {
+    InvalidWorkspaceRoot {
+        workspace_root: WorkspaceRoot,
+    },
+    InvalidPackageId {
+        package_id: PackageId,
+    },
+    InvalidModulePath {
+        package_id: PackageId,
+        module_path: ModulePath,
+    },
+    InvalidEdition {
+        package_id: PackageId,
+        module_path: ModulePath,
+        edition: Edition,
+    },
     InvalidSourcePath {
         error: SourcePathError,
     },
@@ -225,6 +240,9 @@ pub enum SnapshotError {
     StaleOpenBufferVersion {
         expected: LspDocumentVersion,
         actual: LspDocumentVersion,
+    },
+    GeneratedSourceWithoutMetadata {
+        module_path: ModulePath,
     },
     UnknownSnapshotId {
         snapshot_id: BuildSnapshotId,
@@ -547,12 +565,56 @@ pub fn sort_source_versions_canonical(source_versions: &mut [SourceVersion]) {
 }
 
 fn validate_snapshot_input(input: &SnapshotInput) -> Result<(), SnapshotError> {
+    reject_invalid_workspace_root(&input.workspace_root)?;
+    reject_invalid_source_identity_values(&input.source_versions)?;
     reject_duplicate_source_version_identities(&input.source_versions)?;
     reject_duplicate_module_paths(&input.source_versions)?;
     reject_missing_dependency_artifacts(&input.dependency_artifacts)?;
     reject_unsupported_lockfile_metadata(input.lockfile_hash)?;
     reject_unsupported_toolchain_metadata(&input.toolchain)?;
     reject_invalid_open_buffer_versions(&input.source_versions)?;
+    Ok(())
+}
+
+fn reject_invalid_workspace_root(workspace_root: &WorkspaceRoot) -> Result<(), SnapshotError> {
+    if workspace_root.as_str().trim().is_empty() {
+        return Err(SnapshotError::InvalidWorkspaceRoot {
+            workspace_root: workspace_root.clone(),
+        });
+    }
+    Ok(())
+}
+
+fn reject_invalid_source_identity_values(
+    source_versions: &[SourceVersion],
+) -> Result<(), SnapshotError> {
+    for version in source_versions {
+        if !is_valid_package_id(version.package_id.as_str()) {
+            return Err(SnapshotError::InvalidPackageId {
+                package_id: version.package_id.clone(),
+            });
+        }
+        if !is_valid_module_path(version.module_path.as_str()) {
+            return Err(SnapshotError::InvalidModulePath {
+                package_id: version.package_id.clone(),
+                module_path: version.module_path.clone(),
+            });
+        }
+        if version.edition.as_str().trim().is_empty() {
+            return Err(SnapshotError::InvalidEdition {
+                package_id: version.package_id.clone(),
+                module_path: version.module_path.clone(),
+                edition: version.edition.clone(),
+            });
+        }
+        if let SourceOrigin::Generated { generator } = &version.origin
+            && generator.as_str().trim().is_empty()
+        {
+            return Err(SnapshotError::GeneratedSourceWithoutMetadata {
+                module_path: version.module_path.clone(),
+            });
+        }
+    }
     Ok(())
 }
 
@@ -637,6 +699,14 @@ fn reject_invalid_open_buffer_versions(
 
 fn hash_is_zero(hash: Hash) -> bool {
     hash.as_bytes().iter().all(|byte| *byte == 0)
+}
+
+fn is_valid_package_id(value: &str) -> bool {
+    !value.trim().is_empty() && !value.chars().any(char::is_whitespace)
+}
+
+fn is_valid_module_path(value: &str) -> bool {
+    !value.is_empty() && value.split('.').all(is_language_identifier)
 }
 
 fn build_snapshot_id(input: &SnapshotInput) -> BuildSnapshotId {
@@ -807,6 +877,31 @@ impl fmt::Display for ToolchainInfo {
 impl fmt::Display for SnapshotError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::InvalidWorkspaceRoot { workspace_root } => {
+                write!(f, "invalid workspace root `{workspace_root}`")
+            }
+            Self::InvalidPackageId { package_id } => {
+                write!(f, "invalid package id `{package_id}`")
+            }
+            Self::InvalidModulePath {
+                package_id,
+                module_path,
+            } => {
+                write!(
+                    f,
+                    "invalid module path `{module_path}` in package `{package_id}`"
+                )
+            }
+            Self::InvalidEdition {
+                package_id,
+                module_path,
+                edition,
+            } => {
+                write!(
+                    f,
+                    "invalid edition `{edition}` for `{module_path}` in package `{package_id}`"
+                )
+            }
             Self::InvalidSourcePath { error } => {
                 write!(f, "invalid or non-normalizable source path: {error}")
             }
@@ -843,6 +938,12 @@ impl fmt::Display for SnapshotError {
                 write!(
                     f,
                     "stale open-buffer version `{actual}`, expected `{expected}`"
+                )
+            }
+            Self::GeneratedSourceWithoutMetadata { module_path } => {
+                write!(
+                    f,
+                    "generated source for module `{module_path}` is missing required generator metadata"
                 )
             }
             Self::UnknownSnapshotId { snapshot_id } => {
@@ -2223,6 +2324,138 @@ mod tests {
     }
 
     #[test]
+    fn invalid_workspace_root_is_rejected_before_snapshot_registration() {
+        let registry = SnapshotRegistry::with_allocator(CountingLeaseAllocator::new());
+        let request = request_id();
+        let mut input = snapshot_input();
+        input.workspace_root = WorkspaceRoot::new(" ");
+
+        let error = registry.create_snapshot(request, input).unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::InvalidWorkspaceRoot { workspace_root }
+                if workspace_root.as_str() == " "
+        ));
+        assert_eq!(
+            registry.allocator.lease_allocations.load(Ordering::Relaxed),
+            0
+        );
+    }
+
+    #[test]
+    fn blank_package_id_is_rejected_before_snapshot_registration() {
+        for invalid_package_id in [" ", "mml core"] {
+            let registry = SnapshotRegistry::with_allocator(CountingLeaseAllocator::new());
+            let request = request_id();
+            let mut input = snapshot_input();
+            input.source_versions[0].package_id = PackageId::new(invalid_package_id);
+
+            let error = registry.create_snapshot(request, input).unwrap_err();
+
+            assert!(
+                matches!(
+                    error,
+                    SnapshotError::InvalidPackageId { package_id }
+                        if package_id.as_str() == invalid_package_id
+                ),
+                "{invalid_package_id:?}"
+            );
+            assert_eq!(
+                registry.allocator.lease_allocations.load(Ordering::Relaxed),
+                0,
+                "{invalid_package_id:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn invalid_module_paths_are_rejected_before_duplicate_module_validation() {
+        for invalid_module_path in [
+            "",
+            "groups..basic",
+            "bad-name",
+            "groups.bad-name.basic",
+            "1bad",
+            "groups.1bad.basic",
+            "theorem",
+            "groups.theorem.basic",
+        ] {
+            let registry = SnapshotRegistry::with_allocator(CountingLeaseAllocator::new());
+            let request = request_id();
+            let mut input = snapshot_input();
+            input.source_versions[0].module_path = ModulePath::new(invalid_module_path);
+            input.source_versions[1].module_path = ModulePath::new(invalid_module_path);
+
+            let error = registry.create_snapshot(request, input).unwrap_err();
+
+            assert!(
+                matches!(
+                    error,
+                    SnapshotError::InvalidModulePath {
+                        package_id,
+                        module_path,
+                    } if package_id.as_str() == "mml"
+                        && module_path.as_str() == invalid_module_path
+                ),
+                "{invalid_module_path:?}"
+            );
+            assert_eq!(
+                registry.allocator.lease_allocations.load(Ordering::Relaxed),
+                0,
+                "{invalid_module_path:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn blank_edition_is_rejected_before_snapshot_registration() {
+        let registry = SnapshotRegistry::with_allocator(CountingLeaseAllocator::new());
+        let request = request_id();
+        let mut input = snapshot_input();
+        input.source_versions[0].edition = Edition::new(" ");
+
+        let error = registry.create_snapshot(request, input).unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::InvalidEdition {
+                package_id,
+                module_path,
+                edition,
+            } if package_id.as_str() == "mml"
+                && module_path.as_str() == "beta"
+                && edition.as_str() == " "
+        ));
+        assert_eq!(
+            registry.allocator.lease_allocations.load(Ordering::Relaxed),
+            0
+        );
+    }
+
+    #[test]
+    fn generated_source_without_metadata_is_rejected_by_snapshot_creation() {
+        let registry = SnapshotRegistry::with_allocator(CountingLeaseAllocator::new());
+        let request = request_id();
+        let mut input = snapshot_input();
+        input.source_versions[0].origin = SourceOrigin::Generated {
+            generator: GeneratedSourceKind::new(" "),
+        };
+
+        let error = registry.create_snapshot(request, input).unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::GeneratedSourceWithoutMetadata { module_path }
+                if module_path.as_str() == "beta"
+        ));
+        assert_eq!(
+            registry.allocator.lease_allocations.load(Ordering::Relaxed),
+            0
+        );
+    }
+
+    #[test]
     fn non_negative_open_buffer_version_is_accepted_by_creation_validation() {
         let registry = SnapshotRegistry::new();
         let mut input = snapshot_input();
@@ -2269,6 +2502,21 @@ mod tests {
         let invalid_source_path = SnapshotError::InvalidSourcePath {
             error: source_path_error,
         };
+        let invalid_workspace_root = SnapshotError::InvalidWorkspaceRoot {
+            workspace_root: WorkspaceRoot::new(" "),
+        };
+        let invalid_package_id = SnapshotError::InvalidPackageId {
+            package_id: PackageId::new(""),
+        };
+        let invalid_module_path = SnapshotError::InvalidModulePath {
+            package_id: PackageId::new("mml"),
+            module_path: ModulePath::new(""),
+        };
+        let invalid_edition = SnapshotError::InvalidEdition {
+            package_id: PackageId::new("mml"),
+            module_path: ModulePath::new("groups.basic"),
+            edition: Edition::new(" "),
+        };
         let duplicate_module_path = SnapshotError::DuplicateModulePath {
             package_id: PackageId::new("mml"),
             module_path: ModulePath::new("groups.basic"),
@@ -2285,6 +2533,9 @@ mod tests {
         let stale_open_buffer_version = SnapshotError::StaleOpenBufferVersion {
             expected: 12,
             actual: 11,
+        };
+        let generated_source_without_metadata = SnapshotError::GeneratedSourceWithoutMetadata {
+            module_path: ModulePath::new("generated.basic"),
         };
         let unknown_snapshot_id = SnapshotError::UnknownSnapshotId {
             snapshot_id: unknown,
@@ -2312,6 +2563,32 @@ mod tests {
             }
         ));
         assert!(matches!(
+            invalid_workspace_root,
+            SnapshotError::InvalidWorkspaceRoot { workspace_root }
+                if workspace_root.as_str() == " "
+        ));
+        assert!(matches!(
+            invalid_package_id,
+            SnapshotError::InvalidPackageId { package_id } if package_id.as_str().is_empty()
+        ));
+        assert!(matches!(
+            invalid_module_path,
+            SnapshotError::InvalidModulePath {
+                package_id,
+                module_path,
+            } if package_id.as_str() == "mml" && module_path.as_str().is_empty()
+        ));
+        assert!(matches!(
+            invalid_edition,
+            SnapshotError::InvalidEdition {
+                package_id,
+                module_path,
+                edition,
+            } if package_id.as_str() == "mml"
+                && module_path.as_str() == "groups.basic"
+                && edition.as_str() == " "
+        ));
+        assert!(matches!(
             duplicate_module_path,
             SnapshotError::DuplicateModulePath {
                 package_id,
@@ -2336,6 +2613,11 @@ mod tests {
                 expected: 12,
                 actual: 11
             }
+        ));
+        assert!(matches!(
+            generated_source_without_metadata,
+            SnapshotError::GeneratedSourceWithoutMetadata { module_path }
+                if module_path.as_str() == "generated.basic"
         ));
         assert!(matches!(
             unknown_snapshot_id,

@@ -148,6 +148,35 @@ pub struct SnapshotLease {
     pub snapshot: BuildSnapshotId,
     pub reason: RetentionReason,
 }
+
+#[non_exhaustive]
+pub enum SnapshotError {
+    InvalidWorkspaceRoot { workspace_root: WorkspaceRoot },
+    InvalidPackageId { package_id: PackageId },
+    InvalidModulePath { package_id: PackageId, module_path: ModulePath },
+    InvalidEdition { package_id: PackageId, module_path: ModulePath, edition: Edition },
+    InvalidSourcePath { error: SourcePathError },
+    DuplicateModulePath { package_id: PackageId, module_path: ModulePath },
+    DuplicateSourceVersionIdentity {
+        package_id: PackageId,
+        module_path: ModulePath,
+        normalized_path: NormalizedPath,
+        source_hash: Hash,
+    },
+    MissingDependencyArtifact { artifact: String },
+    UnsupportedLockfileMetadata { metadata: String },
+    UnsupportedToolchainMetadata { metadata: String },
+    StaleOpenBufferVersion { expected: LspDocumentVersion, actual: LspDocumentVersion },
+    GeneratedSourceWithoutMetadata { module_path: ModulePath },
+    UnknownSnapshotId { snapshot_id: BuildSnapshotId },
+    LeaseReleaseMismatch {
+        lease_id: SnapshotLeaseId,
+        expected_snapshot: BuildSnapshotId,
+        actual_snapshot: BuildSnapshotId,
+    },
+    UnknownSnapshotLease { lease_id: SnapshotLeaseId },
+    LeaseIdAllocation { error: IdError },
+}
 ```
 
 `SnapshotRegistry::create_snapshot` is the public validated construction path for
@@ -205,6 +234,19 @@ It records:
 
 `SourceId` is scoped to a snapshot. Published artifacts must project stable source identity through module path, normalized path, and source hash rather than exposing `SourceId` as a compatibility promise.
 
+`WorkspaceRoot`, `PackageId`, `ModulePath`, `Edition`, and `GeneratedSourceKind`
+constructors remain infallible boundary wrappers. The upstream build-plan and
+source-loading layers should provide normalized, semantically valid values, while
+`SnapshotRegistry::create_snapshot` is the final pre-hash guard for registry
+snapshots. It rejects a blank `WorkspaceRoot`, blank or whitespace-containing
+`PackageId`, empty or language-identifier-invalid `ModulePath` components
+(including reserved words), blank `Edition` values, blank generated-source
+metadata in manually assembled `SourceVersion` records, duplicate source-version
+identities, and duplicate module paths before allocating a lease, registering the
+snapshot, or hashing accepted input. The exact nonblank package-name spelling
+rule is deferred to the upstream build-plan layer until the package-management
+and module-namespace specs are aligned.
+
 ### Snapshot Lease
 
 `SnapshotLease` is the snapshot-layer handle that future retention collection
@@ -241,6 +283,11 @@ retention and may hold its own lease back to the snapshot.
 6. Return the snapshot and an active-build lease to the caller.
 
 Disk, open-buffer, and generated-source loading are implemented by later source-loading tasks. This registry records and validates the resulting snapshot input; it does not read source text from disk or editor buffers. Expected-vs-actual open-buffer staleness is checked by the source-loading layer, which owns request document-version metadata.
+Generated-source loading rejects missing generator metadata before allocating a
+`SourceId`; snapshot creation repeats that validation for direct `SourceVersion`
+inputs so unchecked construction cannot feed blank generated-source metadata into
+snapshot identity. Duplicate module paths are always rechecked here as the final
+whole-snapshot validation boundary before hashing.
 
 ### Freshness Check
 
@@ -266,12 +313,15 @@ explicitly stores stable artifact or cache data.
 
 `SnapshotError` includes:
 
+- blank workspace root identity;
+- blank or whitespace-containing package id, invalid module path, or blank edition identity;
 - invalid or non-normalizable source path;
 - duplicate module path in one package snapshot;
 - duplicate source-version identity before snapshot hashing;
 - missing dependency artifact or content fingerprint referenced by the build plan;
 - unsupported lockfile or toolchain metadata;
 - stale open-buffer version. During task 11 this is limited to structurally invalid version values in already-loaded snapshot input; expected-vs-actual stale checks are performed by source loading;
+- generated source without required generator metadata in direct snapshot input;
 - unknown snapshot id;
 - lease release mismatch;
 - unknown snapshot lease id, including an already-released lease id;
@@ -288,6 +338,7 @@ Key scenarios:
 - dependency artifact hash changes change the snapshot id;
 - verifier configuration changes change the snapshot id;
 - path normalization prevents duplicate source identities;
+- blank workspace roots, blank or whitespace-containing package ids, blank module/edition identities, identifier-invalid or reserved-word module-path components, and generated sources without generator metadata are rejected before snapshot hashing or lease allocation;
 - structurally invalid open-buffer versions are rejected; source-loading tasks handle expected-vs-actual staleness and disk/open-buffer override behavior;
 - stale `BuildSnapshotId` values are rejected by freshness checks;
 - leases are accounted by reason and release reports unknown or mismatched leases;

@@ -148,6 +148,35 @@ pub struct SnapshotLease {
     pub snapshot: BuildSnapshotId,
     pub reason: RetentionReason,
 }
+
+#[non_exhaustive]
+pub enum SnapshotError {
+    InvalidWorkspaceRoot { workspace_root: WorkspaceRoot },
+    InvalidPackageId { package_id: PackageId },
+    InvalidModulePath { package_id: PackageId, module_path: ModulePath },
+    InvalidEdition { package_id: PackageId, module_path: ModulePath, edition: Edition },
+    InvalidSourcePath { error: SourcePathError },
+    DuplicateModulePath { package_id: PackageId, module_path: ModulePath },
+    DuplicateSourceVersionIdentity {
+        package_id: PackageId,
+        module_path: ModulePath,
+        normalized_path: NormalizedPath,
+        source_hash: Hash,
+    },
+    MissingDependencyArtifact { artifact: String },
+    UnsupportedLockfileMetadata { metadata: String },
+    UnsupportedToolchainMetadata { metadata: String },
+    StaleOpenBufferVersion { expected: LspDocumentVersion, actual: LspDocumentVersion },
+    GeneratedSourceWithoutMetadata { module_path: ModulePath },
+    UnknownSnapshotId { snapshot_id: BuildSnapshotId },
+    LeaseReleaseMismatch {
+        lease_id: SnapshotLeaseId,
+        expected_snapshot: BuildSnapshotId,
+        actual_snapshot: BuildSnapshotId,
+    },
+    UnknownSnapshotLease { lease_id: SnapshotLeaseId },
+    LeaseIdAllocation { error: IdError },
+}
 ```
 
 `SnapshotRegistry::create_snapshot` は、registry snapshot の public な検証済み
@@ -204,6 +233,18 @@ overlay 詳細が内容同一性に影響しないようにします。
 
 `SourceId` はスナップショットにスコープされます。公開アーティファクトは、`SourceId` を互換性の保証として露出させるのではなく、モジュールパス・正規化パス・ソースハッシュを通して安定したソース同一性を射影しなければなりません。
 
+`WorkspaceRoot`、`PackageId`、`ModulePath`、`Edition`、`GeneratedSourceKind`
+の constructor は、失敗しない boundary wrapper のままにします。上流の
+build-plan と source-loading 層は、正規化済みで意味的に有効な値を渡すべきです。
+一方で `SnapshotRegistry::create_snapshot` は、registry snapshot の最後の
+pre-hash guard です。空の `WorkspaceRoot`、空または whitespace を含む `PackageId`、
+空または language identifier として不正な `ModulePath` component（予約語を含む）、
+空の `Edition`、手動構築された `SourceVersion` record 内の空の generated-source
+metadata、重複する source-version identity、重複する module path を、lease 割り当て、
+snapshot 登録、受理された入力の hash 化より前に拒否します。空でない package-name の
+正確な spelling rule は、package-management と module-namespace の仕様が揃うまで、
+上流の build-plan 層へ委ねます。
+
 ### Snapshot Lease
 
 `SnapshotLease` は、将来の retention collection が、外部の利用側がまだスナップショットを参照している可能性がある間、そのスナップショットを生存させるために使う snapshot 層のハンドルです。
@@ -238,6 +279,10 @@ retention モジュールが入った後は、同じ lease 状態がソースマ
 6. スナップショットと、実行中ビルドのリースを呼び出し側に返す。
 
 ディスク、オープンバッファ、生成ソースの読み込みは後続の source-loading タスクで実装する。このレジストリは、その結果として得られた snapshot input を記録・検証するだけで、ディスクやエディタバッファからソーステキストを読み込まない。expected-vs-actual の open-buffer staleness は、リクエストのドキュメントバージョンメタデータを所有する source-loading 層で検証する。
+生成ソースの読み込みは、`SourceId` を割り当てる前に欠落した generator metadata を拒否します。
+snapshot creation は、direct な `SourceVersion` 入力に対しても同じ検証を繰り返し、
+unchecked construction が空の generated-source metadata を snapshot identity に流し込まないようにします。
+duplicate module path は、hash 化前の最終的な whole-snapshot validation boundary として、常にここで再検査します。
 
 ### Freshness Check
 
@@ -261,12 +306,15 @@ retention モジュールが入った後は、同じ lease 状態がソースマ
 
 `SnapshotError` には次が含まれます。
 
+- 空のワークスペースルート同一性
+- 空または whitespace を含む package id、不正な module path、または空の edition 同一性
 - 不正、または正規化できないソースパス
 - 1 つのパッケージスナップショット内の重複するモジュールパス
 - スナップショットハッシュ化前に見つかった重複する source-version identity
 - ビルドプランが参照する、欠落した依存アーティファクトまたはコンテンツフィンガープリント
 - 未対応のロックファイルまたはツールチェインのメタデータ
 - 失効したオープンバッファバージョン。タスク 11 では、読み込み済み snapshot input 内の構造的に不正な version 値の拒否に限定し、expected-vs-actual の stale チェックは source loading が行う
+- direct snapshot input 内で必須の generator metadata を欠く生成ソース
 - 未知のスナップショット ID
 - リース解放の不一致
 - 未知のスナップショットリース ID（解放済み lease ID を含む）
@@ -283,6 +331,7 @@ retention モジュールが入った後は、同じ lease 状態がソースマ
 - 依存アーティファクトのハッシュの変更はスナップショット ID を変える
 - 検証器構成の変更はスナップショット ID を変える
 - パス正規化は、重複するソース同一性を防ぐ
+- 空のワークスペースルート、空または whitespace を含む package id、空の module/edition 同一性、identifier として不正または予約語である module-path component、generator metadata を欠く生成ソースは、snapshot hash 化または lease 割り当てより前に拒否される
 - 構造的に不正なオープンバッファバージョンは拒否される。expected-vs-actual の staleness と disk/open-buffer の override 挙動は source-loading タスクが扱う
 - 失効した `BuildSnapshotId` は鮮度チェックで拒否される
 - リースは reason ごとに計上され、未知または不一致の lease release は報告される

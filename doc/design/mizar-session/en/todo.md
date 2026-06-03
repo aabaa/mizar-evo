@@ -232,7 +232,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Test policy: documentation-only because the public Rust surface and
       validation behavior were preserved.
 
-26. **Source and snapshot source-identity validation boundary.** [ ]
+26. **Source and snapshot source-identity validation boundary.** [x]
     - Decide where blank or otherwise invalid `WorkspaceRoot`, `PackageId`,
       `ModulePath`, `Edition`, and generated-source metadata are rejected:
       constructors, source loading, snapshot creation, or an upstream build-plan
@@ -246,6 +246,33 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
       package/module/edition values and duplicate module paths at the layer that
       owns them.
     - Depends on: 20. Spec: [source.md](./source.md), [snapshot.md](./snapshot.md).
+    - Decision: constructors for `WorkspaceRoot`, `PackageId`, `ModulePath`,
+      `Edition`, and `GeneratedSourceKind` stay infallible string wrappers.
+      Upstream build planning owns normalized workspace roots, package ids,
+      editions, and canonical module discovery; source loading owns source-path,
+      text, open-buffer freshness, and generated-source metadata validation for
+      loaded inputs; `SnapshotRegistry::create_snapshot` is the final pre-hash
+      registry boundary and rejects blank workspace roots, blank or
+      whitespace-containing package ids, invalid module path components
+      (including reserved words), blank editions, blank generated-source metadata
+      in direct `SourceVersion` input, duplicate source-version identities, and
+      duplicate module paths before hashing, lease allocation, or registry
+      insertion. Nonblank package-id spelling stays an upstream build-plan
+      concern until the package-name specs are aligned.
+    - Decision: `SourceLoadError::DuplicateModulePath` remains reserved for a
+      future source-loading aggregator over a build plan. A single
+      `SourceLoader::load` call does not emit it, and snapshot creation keeps the
+      required whole-snapshot duplicate module path check.
+    - Test policy: focused snapshot unit tests cover blank workspace root,
+      package id, module path, edition, direct generated-source metadata, and the
+      existing duplicate module path/source identity pre-hash checks; source tests
+      keep the generated-source metadata rejection before source-id allocation
+      and reject reserved-word namespace components.
+    - Follow-up: resolve the English canonical package-name spelling conflict
+      between `doc/spec/en/23.package_management_and_build_system.md`
+      (`[a-z][a-z0-9-]*`) and `doc/spec/en/12.modules_and_namespaces.md`
+      (`snake_case`), then sync the Japanese companions, including the malformed
+      Japanese package-name table row in `doc/spec/ja/23.package_management_and_build_system.md`.
 
 27. **Generated-source normalization policy.** [ ]
     - Decide and document whether generated source text is preserved byte-for-byte

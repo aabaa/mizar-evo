@@ -1,3 +1,4 @@
+mod identity;
 pub mod ids;
 pub mod retention;
 pub mod snapshot;

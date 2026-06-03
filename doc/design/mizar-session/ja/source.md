@@ -115,6 +115,14 @@ pub enum SourceOriginKind {
 `SourceLoader` の補助メソッドは、公開 helper の `normalize_path` と `hash_text` に委譲します。`normalize_path` は `normalize_source_path` を再利用し、`hash_text` は正規化済みテキスト内容だけをハッシュ化します。
 `DiskSourceLoader` は、パスと URI の正規化に用いるパッケージルートを所有します。ディスクファイル、`file://` ドキュメント URI から対応付けられるオープンバッファオーバーレイ、生成ソースフラグメントに対して `SourceLoader` を実装します。
 `NormalizedPath::as_str` は、スナップショット同一性、診断、下流メタデータが可変なパス表現を露出せずに正準パス表記を読めるよう、意図的に public です。`DocumentUri` と `LspDocumentVersion` は、source-map 座標型とともに定義される crate-level の public alias であり、ここではオープンバッファのソース読み込みに用います。
+`PackageId`、`ModulePath`、`Edition` の値は、上流の package planning と
+module resolution から渡されます。単一ソースの読み込みは、ソースパス、テキスト、
+open-buffer freshness、generated-source metadata を検証しつつ、それらの identity
+値を変更せず保持します。将来の source-loading aggregator は、build plan 全体を見て
+重複する module path を `SourceLoadError::DuplicateModulePath` として拒否できますが、
+単一の `SourceLoader::load` 呼び出しにはその error を emit するだけの文脈がありません。
+`SnapshotRegistry::create_snapshot` は、registry snapshot の最後の pre-hash validation
+boundary のままです。
 
 ## Dependencies
 
@@ -135,6 +143,7 @@ pub enum SourceOriginKind {
 - local-only と明示されない、シンボリックリンクを展開したホスト固有のパス
 - プラットフォーム固有の区切り子の差異
 - パッケージ管理下のソースパスに対する、正準でない大文字小文字の変種
+- 予約語を含む、language identifier ではない namespace component
 
 ローカル診断は、表示用の絶対パスを別に保持してよいものとします。公開アーティファクトは正規化パスを用います。
 
@@ -190,7 +199,7 @@ pub enum SourceOriginKind {
 
 ### Generated Source Loading
 
-生成ソースには、空でない生成器の種別と、可能な場合は元ソースへのアンカーが必要です。読み込みは生成器メタデータを `LoadedSource.origin` に保持し、任意のアンカーを `LoadedSource.generated_anchor` に保持します。生成ソースのテキストは診断・ドキュメント・抽出に用いてよいものの、パッケージが記述した `.miz` ソースと取り違えてはなりません。
+生成ソースには、空でない生成器の種別と、可能な場合は元ソースへのアンカーが必要です。読み込みは空の生成器メタデータを `SourceId` 割り当て前に拒否し、受理した生成器メタデータを `LoadedSource.origin` に保持し、任意のアンカーを `LoadedSource.generated_anchor` に保持します。生成ソースのテキストは診断・ドキュメント・抽出に用いてよいものの、パッケージが記述した `.miz` ソースと取り違えてはなりません。
 
 ## Error Handling
 
@@ -200,7 +209,7 @@ pub enum SourceOriginKind {
 - 未対応のファイル拡張子
 - 不正な UTF-8
 - 読み取れないソースファイル
-- ビルドプランが与えた重複するモジュールパス
+- 将来の source-loading aggregator が build plan 全体から見つける重複するモジュールパス。単一ソースの `DiskSourceLoader::load` はこの variant を emit しない
 - 失効した、または構造的に不正な LSP ドキュメントバージョン
 - パッケージソースへ対応付けられないオープンバッファ URI
 - 必須の生成器メタデータを欠く生成ソース
