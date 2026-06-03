@@ -328,6 +328,17 @@ explicitly stores stable artifact or cache data.
 - lease id allocation failure.
 
 Source readability and UTF-8 validation diagnostics are produced by the frontend source-loading flow. This module records the resulting source version only after source loading has produced a valid source identity.
+`SnapshotError::InvalidSourcePath` is reserved for snapshot construction paths
+that accept or revalidate raw source path descriptors. The current public
+`SnapshotRegistry::create_snapshot` API consumes already-normalized
+`SourceVersion` records, and public callers cannot construct a malformed
+`NormalizedPath` value. Therefore the default registry has no current public
+observable path that emits this variant. It remains in the public
+non-exhaustive enum so future direct snapshot-construction or registry
+revalidation flows can report `SourcePathError` without adding a breaking error
+variant. Source-loading path failures that are observable today are reported by
+the `source` module, usually through `SourceLoadError::InvalidSourcePath` or one
+of its more specific path categories.
 
 ## Tests
 

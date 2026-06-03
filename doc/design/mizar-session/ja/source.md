@@ -223,6 +223,12 @@ boundary のままです。
 
 利用者向けの読み取り失敗・エンコード失敗は、フロントエンドやビルドの診断として発行されます。内部の呼び出し側は構造化エラーも受け取るため、スナップショット生成はビルドリクエストが致命的か回復可能かを判断できます。
 アロケータ失敗は元の `IdError` を保持します。特に、アロケータのオーバーフローは暗黙にソース同一性へ変換されません。
+予約済みに見える source-loading variant の traceability は次のとおりです。
+
+| Variant | 現在の分類 | public observable path |
+|---|---|---|
+| `SourceLoadError::InvalidSourcePath` | public な source-loading path normalization surface | `DiskSourceLoader::load`、`SourceLoader::normalize_path`、public helper の `normalize_path` は、non-canonical alias、non-canonical spelling、不正な namespace component などの `normalize_source_path` failure をこの variant に写します。 |
+| `SourceLoadError::UnsupportedSourceOrigin` | custom-loader 専用 | 既定の `DiskSourceLoader` は現在の `SourceOriginInput` variant（`Disk`、`OpenBuffer`、`Generated`）をすべて support し、この variant を emit しません。`SourceLoader` が public trait であり、下流の具象 loader が origin surface の一部だけを意図的に実装できるよう public に残します。 |
 
 ## Tests
 

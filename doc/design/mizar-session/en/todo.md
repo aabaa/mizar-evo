@@ -305,7 +305,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
       loaded-to-original conversion for generated text, but the default loader
       does not create one.
 
-28. **Reserved and diagnostic-only error variant traceability.** [ ]
+28. **Reserved and diagnostic-only error variant traceability.** [x]
     - Classify public error variants that are currently reserved, custom-loader
       only, or diagnostic-summary-only, including
       `IdError::UnknownSnapshotRegistry`,
@@ -322,6 +322,20 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: add only the cases needed to make newly observable paths explicit;
       documentation-only if the variants are kept as reserved/internal.
     - Depends on: 20. Spec: [ids.md](./ids.md), [snapshot.md](./snapshot.md), [source.md](./source.md), [retention.md](./retention.md).
+    - Decision: no new public observable paths were added. `IdError::UnknownSnapshotRegistry`
+      remains reserved for registry-aware custom allocators and is not emitted
+      by `InMemorySessionIdAllocator`. `SnapshotError::InvalidSourcePath`
+      remains reserved/internal for future snapshot construction or
+      revalidation paths because public `create_snapshot` consumes
+      already-normalized `SourceVersion` records.
+      `SourceLoadError::UnsupportedSourceOrigin` is custom-loader-only because
+      `DiskSourceLoader` supports every current `SourceOriginInput` variant.
+      Retention collection-time stale/mismatched lease state is
+      diagnostic-summary-only via `CollectionSummary::lease_diagnostics`, while
+      `RetentionError::CollectionBlockedByInconsistentRetentionState` is kept
+      for retain/release/allocation inconsistencies. Existing allocation-side
+      tests already covered that error surface; a focused release-time missing
+      live-lease-count test was added for the documented release path.
 
 ## Suggested Verification
 

@@ -160,6 +160,17 @@ Allocator methods return `IdError::AllocatorOverflow` if the allocator cannot is
 - attempt to serialize a non-persistable id into a published schema.
 
 Using a well-formed id in the wrong snapshot is a stale-handle error reported by `snapshot` or `retention`, not by this module.
+`IdError::UnknownSnapshotRegistry` is reserved for registry-aware allocator
+implementations. The in-memory allocator shipped by this crate does not emit it:
+it accepts the `BuildSnapshotId` parameter only to preserve the snapshot-scoped
+allocation boundary. The variant remains public because `SessionIdAllocator` is
+a public trait and future or downstream allocators may validate that
+snapshot-scoped source, source-map, or lease ids are being allocated for a
+registry they know. When such an allocator is used through another public API,
+the caller observes it either directly from the allocator call or through the
+owning error surface, such as `SourceLoadError::SourceIdAllocation` or
+`SnapshotError::LeaseIdAllocation`; retention treats allocator failures as an
+internal inconsistent-retention-state error.
 
 ## Tests
 

@@ -294,7 +294,7 @@
       custom caller が恒等 map を作る場合に引き続き利用できるが、既定のローダーは
       それを作らない。
 
-28. **予約済み / 診断専用 error variant の traceability。** [ ]
+28. **予約済み / 診断専用 error variant の traceability。** [x]
     - 現時点で予約済み、custom-loader 専用、または diagnostic-summary 専用である
       public error variant を分類する。対象には `IdError::UnknownSnapshotRegistry`、
       `SnapshotError::InvalidSourcePath`、
@@ -309,6 +309,19 @@
     - テスト: 新たに観測可能にする経路に必要な case だけを追加する。variant を
       reserved/internal として維持する場合は documentation-only。
     - 依存: 20。仕様: [ids.md](../en/ids.md), [snapshot.md](../en/snapshot.md), [source.md](../en/source.md), [retention.md](../en/retention.md)。
+    - 決定: 新しい public observable path は追加しない。`IdError::UnknownSnapshotRegistry` は
+      registry-aware な custom allocator のために予約し、
+      `InMemorySessionIdAllocator` は emit しない。
+      `SnapshotError::InvalidSourcePath` は、public な `create_snapshot` がすでに正規化済みの
+      `SourceVersion` record を消費するため、将来の snapshot construction または
+      revalidation 経路向けの reserved/internal variant として残す。
+      `SourceLoadError::UnsupportedSourceOrigin` は、`DiskSourceLoader` が現在のすべての
+      `SourceOriginInput` variant を support するため custom-loader 専用とする。
+      retention の collection 時の stale/mismatched lease state は
+      `CollectionSummary::lease_diagnostics` を通る diagnostic-summary-only surface とし、
+      `RetentionError::CollectionBlockedByInconsistentRetentionState` は
+      retain/release/allocation の不整合に使う。allocation 側の既存テストはこの error surface を
+      すでに cover しており、文書化した release 経路について focused な missing live-lease-count test を追加した。
 
 ## Suggested Verification
 

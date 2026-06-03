@@ -160,6 +160,14 @@ ID は意味的な順序を定義しません。
 - 永続化できない ID を公開スキーマへシリアライズしようとした
 
 整形式の ID を誤ったスナップショットで用いることは失効ハンドルエラーであり、このモジュールではなく `snapshot` または `retention` が報告します。
+`IdError::UnknownSnapshotRegistry` は、レジストリを認識する allocator 実装のために予約されています。
+この crate が提供するインメモリ allocator はこの variant を emit しません。
+`BuildSnapshotId` 引数は、スナップショットスコープの割り当て境界を API 上に保つために受け取ります。
+この variant は、`SessionIdAllocator` が public trait であり、将来または下流の allocator が
+source/source-map/lease id のスナップショットスコープ割り当てについて、既知のレジストリに対するものかを検証できるよう public に残します。
+そのような allocator を別の public API から使う場合、呼び出し側は allocator 呼び出しから直接、または
+`SourceLoadError::SourceIdAllocation` や `SnapshotError::LeaseIdAllocation` のような所有元の error surface を通して観測します。
+retention は allocator failure を内部的な inconsistent-retention-state error として扱います。
 
 ## Tests
 

@@ -167,6 +167,10 @@ it current. A current mark can be removed independently of any live lease.
 - stale or mismatched lease diagnostics.
 
 It is intended for logging and tests, not for build semantics.
+Collection-time stale live leases, stale count ledger entries, and mismatches
+between the live lease map and the count ledger are diagnostic-summary-only
+surfaces. They are reported through `CollectionSummary::lease_diagnostics` and
+do not make `collect` return `RetentionError`.
 
 ## Algorithm / Logic
 
@@ -216,6 +220,10 @@ cache and artifact writers also block while live, but collection itself has no
 artifact/cache deletion output. Stale live leases or mismatches between the live
 lease map and reference-count ledger are recorded in `CollectionSummary` and
 make collection conservative for affected registered snapshots.
+The collector therefore keeps the inconsistent collection-time state observable
+as diagnostics while still returning a summary of the scan. It does not use
+`RetentionError::CollectionBlockedByInconsistentRetentionState` for these
+collection-time diagnostics.
 
 ## Error Handling
 
@@ -239,6 +247,13 @@ Valid owner/reason pairs are:
 - `CacheWriter` or `ArtifactWriter` with `PendingWrite`.
 
 Invalid retention state is a compiler internal error. User-facing builds should continue using the previous coherent snapshot when possible.
+`RetentionError::CollectionBlockedByInconsistentRetentionState` is public and
+observable only on retain/release/allocation paths: duplicate lease-id
+allocation, lease-id allocation failure, or a release whose live-lease count
+ledger is already inconsistent. Collection-time stale or mismatched lease state
+uses `CollectionSummary::lease_diagnostics` instead. This keeps the `collect`
+API non-failing and preserves a separate error surface for operations that would
+otherwise mutate an already-incoherent retention ledger.
 
 ## Tests
 
@@ -251,6 +266,10 @@ Key scenarios:
 - `mizar-ir` phase-output lease blocks snapshot collection until released;
 - duplicate release is reported but does not underflow counts;
 - collection does not delete artifacts or cache records.
+- collection-time stale or mismatched lease state is reported in
+  `CollectionSummary::lease_diagnostics`, while retain/release/allocation
+  inconsistencies return
+  `RetentionError::CollectionBlockedByInconsistentRetentionState`.
 
 ## Constraints and Assumptions
 

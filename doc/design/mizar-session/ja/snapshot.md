@@ -321,6 +321,14 @@ duplicate module path は、hash 化前の最終的な whole-snapshot validation
 - リース ID の割り当て失敗
 
 ソースの可読性と UTF-8 検証の診断は、フロントエンドのソース読み込みフローが生成します。このモジュールは、ソース読み込みが有効なソース同一性を生成した後でのみ、結果のソースバージョンを記録します。
+`SnapshotError::InvalidSourcePath` は、生の source path descriptor を受け取る、または再検証する snapshot construction 経路のために予約されています。
+現在の public な `SnapshotRegistry::create_snapshot` API は、すでに正規化済みの
+`SourceVersion` record を消費し、public caller は不正な `NormalizedPath` 値を構築できません。
+そのため、既定の registry にはこの variant を emit する現時点の public observable path はありません。
+将来の direct snapshot construction や registry revalidation flow が、破壊的な error variant 追加なしに
+`SourcePathError` を報告できるよう、public non-exhaustive enum に残します。
+現在観測可能な source-loading path failure は `source` モジュールが報告し、通常は
+`SourceLoadError::InvalidSourcePath` またはより具体的な path category を通ります。
 
 ## Tests
 

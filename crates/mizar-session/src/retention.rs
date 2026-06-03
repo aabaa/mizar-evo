@@ -1215,6 +1215,31 @@ mod tests {
     }
 
     #[test]
+    fn release_with_missing_live_lease_count_reports_inconsistent_retention_state() {
+        let manager = RetentionManager::new();
+        let snapshot = snapshot_id(46);
+        manager.register_snapshot(snapshot);
+        let guard = manager
+            .retain_snapshot(retain_input(
+                snapshot,
+                RetainOwner::Diagnostics,
+                RetentionReason::DiagnosticIndex,
+            ))
+            .unwrap();
+        manager.remove_counts_for_test(snapshot);
+
+        let error = manager.release(guard).unwrap_err();
+
+        assert!(matches!(
+            error,
+            RetentionError::CollectionBlockedByInconsistentRetentionState {
+                snapshot_id,
+                detail: "live lease count missing during release",
+            } if snapshot_id == snapshot
+        ));
+    }
+
+    #[test]
     fn retention_error_reserved_variants_are_available_for_task_18() {
         let snapshot = snapshot_id(42);
 

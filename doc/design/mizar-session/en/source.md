@@ -223,6 +223,12 @@ Generated source text may be used for diagnostics, documentation, or extraction,
 
 User-facing read and encoding failures are emitted as frontend/build diagnostics. Internal callers still receive structured errors so snapshot creation can decide whether the build request is fatal or recoverable.
 Allocator failures carry the underlying `IdError`; in particular, allocator overflow is not silently converted into a source identity.
+Traceability for the reserved-looking source-loading variants is:
+
+| Variant | Current classification | Public observable path |
+|---|---|---|
+| `SourceLoadError::InvalidSourcePath` | public source-loading path normalization surface | `DiskSourceLoader::load`, `SourceLoader::normalize_path`, and the public `normalize_path` helper map `normalize_source_path` failures such as non-canonical aliases, non-canonical spelling, or invalid namespace components into this variant. |
+| `SourceLoadError::UnsupportedSourceOrigin` | custom-loader-only | The default `DiskSourceLoader` supports all current `SourceOriginInput` variants (`Disk`, `OpenBuffer`, and `Generated`) and does not emit this variant. It remains public because `SourceLoader` is a public trait and downstream concrete loaders may intentionally implement only part of the origin surface. |
 
 ## Tests
 
