@@ -255,6 +255,11 @@ pub enum SnapshotError {
     UnknownSnapshotLease {
         lease_id: SnapshotLeaseId,
     },
+    DuplicateLeaseIdAllocation {
+        lease_id: SnapshotLeaseId,
+        existing_snapshot: BuildSnapshotId,
+        allocated_snapshot: BuildSnapshotId,
+    },
     LeaseIdAllocation {
         error: IdError,
     },
@@ -339,9 +344,9 @@ impl<A: SessionIdAllocator> SnapshotRegistry<A> {
         let lease = self.allocate_lease(snapshot.id, RetentionReason::ActiveBuild)?;
 
         let mut state = self.state.lock().expect("snapshot registry mutex poisoned");
+        state.record_lease(lease.clone())?;
         state.snapshots.insert(snapshot.id, snapshot.clone());
         state.current_by_request.insert(request, snapshot.id);
-        state.record_lease(lease.clone());
 
         Ok((snapshot, lease))
     }
@@ -362,7 +367,7 @@ impl<A: SessionIdAllocator> SnapshotRegistry<A> {
 
         let lease = self.allocate_lease(snapshot, reason)?;
         let mut state = self.state.lock().expect("snapshot registry mutex poisoned");
-        state.record_lease(lease.clone());
+        state.record_lease(lease.clone())?;
         Ok(lease)
     }
 
@@ -430,7 +435,15 @@ impl<A: SessionIdAllocator> SnapshotRegistry<A> {
 }
 
 impl SnapshotRegistryState {
-    fn record_lease(&mut self, lease: SnapshotLease) {
+    fn record_lease(&mut self, lease: SnapshotLease) -> Result<(), SnapshotError> {
+        if let Some(existing) = self.leases.get(&lease.lease_id) {
+            return Err(SnapshotError::DuplicateLeaseIdAllocation {
+                lease_id: lease.lease_id,
+                existing_snapshot: existing.snapshot,
+                allocated_snapshot: lease.snapshot,
+            });
+        }
+
         *self
             .lease_counts
             .entry(lease.snapshot)
@@ -438,6 +451,7 @@ impl SnapshotRegistryState {
             .entry(lease.reason)
             .or_default() += 1;
         self.leases.insert(lease.lease_id, lease);
+        Ok(())
     }
 
     fn decrement_lease_count(&mut self, snapshot: BuildSnapshotId, reason: RetentionReason) {
@@ -974,6 +988,16 @@ impl fmt::Display for SnapshotError {
             }
             Self::UnknownSnapshotLease { lease_id } => {
                 write!(f, "unknown snapshot lease `{lease_id:?}`")
+            }
+            Self::DuplicateLeaseIdAllocation {
+                lease_id,
+                existing_snapshot,
+                allocated_snapshot,
+            } => {
+                write!(
+                    f,
+                    "duplicate snapshot lease id `{lease_id:?}` allocated for `{allocated_snapshot:?}`; already belongs to `{existing_snapshot:?}`"
+                )
             }
             Self::LeaseIdAllocation { error } => {
                 write!(f, "could not allocate snapshot lease id: {error}")
@@ -2073,6 +2097,111 @@ mod tests {
     }
 
     #[test]
+    fn duplicate_acquire_lease_id_does_not_change_registry_state() {
+        let duplicate_lease_id = InMemorySessionIdAllocator::new()
+            .next_lease_id(snapshot_id(205))
+            .unwrap();
+        let registry =
+            SnapshotRegistry::with_allocator(DuplicateLeaseAllocator::new(duplicate_lease_id));
+        let request = request_id();
+        let (snapshot, active_build) = registry.create_snapshot(request, snapshot_input()).unwrap();
+        let snapshot_before = registry.get(snapshot.id);
+        let current_before = registry.is_current_for_request(snapshot.id, request);
+        let active_build_count_before =
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild);
+        let diagnostic_count_before =
+            registry.lease_count_for_test(snapshot.id, RetentionReason::DiagnosticIndex);
+        let total_count_before = registry.total_lease_count_for_test(snapshot.id);
+        let live_lease_count_before = registry.live_lease_count_for_test(snapshot.id);
+
+        let error = registry
+            .acquire_lease(snapshot.id, RetentionReason::DiagnosticIndex)
+            .unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotError::DuplicateLeaseIdAllocation {
+                lease_id,
+                existing_snapshot,
+                allocated_snapshot,
+            } if lease_id == active_build.lease_id
+                && existing_snapshot == snapshot.id
+                && allocated_snapshot == snapshot.id
+        ));
+        assert_eq!(registry.get(snapshot.id), snapshot_before);
+        assert_eq!(
+            registry.is_current_for_request(snapshot.id, request),
+            current_before
+        );
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild),
+            active_build_count_before
+        );
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::DiagnosticIndex),
+            diagnostic_count_before
+        );
+        assert_eq!(
+            registry.total_lease_count_for_test(snapshot.id),
+            total_count_before
+        );
+        assert_eq!(
+            registry.live_lease_count_for_test(snapshot.id),
+            live_lease_count_before
+        );
+    }
+
+    #[test]
+    fn duplicate_create_snapshot_lease_id_does_not_insert_snapshot_or_replace_current() {
+        let duplicate_lease_id = InMemorySessionIdAllocator::new()
+            .next_lease_id(snapshot_id(206))
+            .unwrap();
+        let registry =
+            SnapshotRegistry::with_allocator(DuplicateLeaseAllocator::new(duplicate_lease_id));
+        let request = request_id();
+        let (accepted, active_build) = registry.create_snapshot(request, snapshot_input()).unwrap();
+        let mut rejected_input = snapshot_input();
+        rejected_input.source_versions[0].source_hash = hash(224);
+        let rejected_id = rejected_input.build_snapshot_id_unchecked();
+        let active_build_count_before =
+            registry.lease_count_for_test(accepted.id, RetentionReason::ActiveBuild);
+        let rejected_count_before = registry.total_lease_count_for_test(rejected_id);
+        let live_lease_count_before = registry.live_lease_count_for_test(accepted.id);
+
+        let error = registry
+            .create_snapshot(request, rejected_input)
+            .unwrap_err();
+
+        assert_ne!(accepted.id, rejected_id);
+        assert!(matches!(
+            error,
+            SnapshotError::DuplicateLeaseIdAllocation {
+                lease_id,
+                existing_snapshot,
+                allocated_snapshot,
+            } if lease_id == active_build.lease_id
+                && existing_snapshot == accepted.id
+                && allocated_snapshot == rejected_id
+        ));
+        assert_eq!(registry.get(accepted.id), Some(accepted.clone()));
+        assert_eq!(registry.get(rejected_id), None);
+        assert!(registry.is_current_for_request(accepted.id, request));
+        assert!(!registry.is_current_for_request(rejected_id, request));
+        assert_eq!(
+            registry.lease_count_for_test(accepted.id, RetentionReason::ActiveBuild),
+            active_build_count_before
+        );
+        assert_eq!(
+            registry.total_lease_count_for_test(rejected_id),
+            rejected_count_before
+        );
+        assert_eq!(
+            registry.live_lease_count_for_test(accepted.id),
+            live_lease_count_before
+        );
+    }
+
+    #[test]
     fn retrieved_snapshot_clone_cannot_mutate_registry_snapshot() {
         let registry = SnapshotRegistry::new();
         let request = request_id();
@@ -2641,6 +2770,11 @@ mod tests {
             actual_snapshot: actual,
         };
         let unknown_snapshot_lease = SnapshotError::UnknownSnapshotLease { lease_id };
+        let duplicate_lease_id_allocation = SnapshotError::DuplicateLeaseIdAllocation {
+            lease_id,
+            existing_snapshot: expected,
+            allocated_snapshot: actual,
+        };
         let duplicate_source_version_identity = SnapshotError::DuplicateSourceVersionIdentity {
             package_id: PackageId::new("mml"),
             module_path: ModulePath::new("groups.basic"),
@@ -2733,6 +2867,16 @@ mod tests {
             SnapshotError::UnknownSnapshotLease {
                 lease_id: actual_lease_id,
             } if actual_lease_id == lease_id
+        ));
+        assert!(matches!(
+            duplicate_lease_id_allocation,
+            SnapshotError::DuplicateLeaseIdAllocation {
+                lease_id: actual_lease_id,
+                existing_snapshot,
+                allocated_snapshot,
+            } if actual_lease_id == lease_id
+                && existing_snapshot == expected
+                && allocated_snapshot == actual
         ));
         assert!(matches!(
             duplicate_source_version_identity,
@@ -2907,6 +3051,43 @@ mod tests {
         fn next_lease_id(&self, snapshot: BuildSnapshotId) -> Result<SnapshotLeaseId, IdError> {
             self.record_registry_mutex_available();
             self.inner.next_lease_id(snapshot)
+        }
+    }
+
+    #[derive(Debug)]
+    struct DuplicateLeaseAllocator {
+        inner: InMemorySessionIdAllocator,
+        lease_id: SnapshotLeaseId,
+    }
+
+    impl DuplicateLeaseAllocator {
+        fn new(lease_id: SnapshotLeaseId) -> Self {
+            Self {
+                inner: InMemorySessionIdAllocator::new(),
+                lease_id,
+            }
+        }
+    }
+
+    impl SessionIdAllocator for DuplicateLeaseAllocator {
+        fn next_session_id(&self) -> Result<BuildSessionId, IdError> {
+            self.inner.next_session_id()
+        }
+
+        fn next_request_id(&self) -> Result<BuildRequestId, IdError> {
+            self.inner.next_request_id()
+        }
+
+        fn next_source_id(&self, snapshot: BuildSnapshotId) -> Result<SourceId, IdError> {
+            self.inner.next_source_id(snapshot)
+        }
+
+        fn next_source_map_id(&self, snapshot: BuildSnapshotId) -> Result<SourceMapId, IdError> {
+            self.inner.next_source_map_id(snapshot)
+        }
+
+        fn next_lease_id(&self, _snapshot: BuildSnapshotId) -> Result<SnapshotLeaseId, IdError> {
+            Ok(self.lease_id)
         }
     }
 

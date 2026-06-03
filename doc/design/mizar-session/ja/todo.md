@@ -201,11 +201,13 @@
     - テスト: allocator failure が registry state を変えないこと、繰り返し lease acquisition が一意で reason ごとに計上されること。
     - 依存: 20。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Lease"。
 
-24. **スナップショットリース duplicate-id 防御。** [ ]
+24. **スナップショットリース duplicate-id 防御。** [x]
     - `SessionIdAllocator` は一意な lease id を発行する前提だが、`SnapshotRegistry` state 側にも defensive duplicate-lease-id check または debug assertion を追加するかを決める。
     - 実装する場合は、duplicate allocation を内部的な allocation/registry error として表し、lease count や current snapshot state を壊さない。
     - debug assertion のみにする場合は、allocator contract に対してそれで十分な理由を文書化する。
     - テスト: 挙動が debug assertion の外から観測可能な場合は、custom allocator による duplicate id scenario を追加する。
+    - 判断: `SessionIdAllocator` は public trait であり、release build の registry でも custom allocator が live lease map を上書きしながら count を増やせてはならないため、`SnapshotRegistryState` に観測可能な duplicate live lease id check を追加する。Duplicate allocation は、snapshot record、current mark、live lease、lease count を変更する前に `SnapshotError::DuplicateLeaseIdAllocation` として報告する。
+    - テスト: `acquire_lease` と `create_snapshot` で返された duplicate id が、lease count、live lease、snapshot record、current request state を変更しないこと。
     - 依存: 23。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Lease"、[ids.md](../en/ids.md) "Allocator-Issued Id Construction"。
 
 25. **public API block とソースマップ error surface の仕様同期。** [x]

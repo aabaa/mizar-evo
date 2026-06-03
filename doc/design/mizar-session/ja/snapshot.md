@@ -175,6 +175,11 @@ pub enum SnapshotError {
         actual_snapshot: BuildSnapshotId,
     },
     UnknownSnapshotLease { lease_id: SnapshotLeaseId },
+    DuplicateLeaseIdAllocation {
+        lease_id: SnapshotLeaseId,
+        existing_snapshot: BuildSnapshotId,
+        allocated_snapshot: BuildSnapshotId,
+    },
     LeaseIdAllocation { error: IdError },
 }
 ```
@@ -256,6 +261,10 @@ lease と同じ方法で計上されます。
 既知のスナップショットに対しては、registry mutex の外で lease id を割り当て、
 その結果の lease を mutex の下で記録します。lease-id 割り当てが失敗した場合、
 snapshot record、current mark、live lease、lease count は変更されません。
+`SessionIdAllocator` は一意な allocator id を発行する必要がありますが、
+registry は防御的に、live lease id の重複を state 変更前に拒否します。
+duplicate lease-id allocation は内部的な registry/allocation error として報告され、
+snapshot record、current mark、live lease、lease count は変更されません。
 
 リースの理由には次があります。
 
@@ -323,6 +332,7 @@ duplicate module path は、hash 化前の最終的な whole-snapshot validation
 - 未知のスナップショット ID
 - リース解放の不一致
 - 未知のスナップショットリース ID（解放済み lease ID を含む）
+- custom または registry-aware allocator により割り当てられた重複 lease ID
 - リース ID の割り当て失敗
 
 ソースの可読性と UTF-8 検証の診断は、フロントエンドのソース読み込みフローが生成します。このモジュールは、ソース読み込みが有効なソース同一性を生成した後でのみ、結果のソースバージョンを記録します。
@@ -348,7 +358,8 @@ duplicate module path は、hash 化前の最終的な whole-snapshot validation
 - 構造的に不正なオープンバッファバージョンは拒否される。expected-vs-actual の staleness と disk/open-buffer の override 挙動は source-loading タスクが扱う
 - 失効した `BuildSnapshotId` は鮮度チェックで拒否される
 - リースは reason ごとに計上され、繰り返し取得した lease id は一意になり、
-  allocator failure は registry state を変更せず、未知または不一致の lease release は報告される
+  allocator failure と duplicate lease-id allocation は registry state を変更せず、
+  未知または不一致の lease release は報告される
 - 直接の unchecked helper は public には利用できず、public field で作った `BuildSnapshot` record は `create_snapshot` が登録するまで detached である
 
 ## Constraints and Assumptions

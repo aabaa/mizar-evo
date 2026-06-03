@@ -175,6 +175,11 @@ pub enum SnapshotError {
         actual_snapshot: BuildSnapshotId,
     },
     UnknownSnapshotLease { lease_id: SnapshotLeaseId },
+    DuplicateLeaseIdAllocation {
+        lease_id: SnapshotLeaseId,
+        existing_snapshot: BuildSnapshotId,
+        allocated_snapshot: BuildSnapshotId,
+    },
     LeaseIdAllocation { error: IdError },
 }
 ```
@@ -259,6 +264,11 @@ with `acquire_lease`.
 known snapshot, it allocates the lease id outside the registry mutex and records
 the resulting lease under the mutex. If lease-id allocation fails, snapshot
 records, current marks, live leases, and lease counts remain unchanged.
+Although `SessionIdAllocator` is required to issue unique allocator ids, the
+registry defensively rejects a duplicate live lease id before mutating its state.
+Duplicate lease-id allocation is reported as an internal registry/allocation
+error, and snapshot records, current marks, live leases, and lease counts remain
+unchanged.
 
 Lease reasons include:
 
@@ -330,6 +340,7 @@ explicitly stores stable artifact or cache data.
 - unknown snapshot id;
 - lease release mismatch;
 - unknown snapshot lease id, including an already-released lease id;
+- duplicate lease id allocated by a custom or registry-aware allocator;
 - lease id allocation failure.
 
 Source readability and UTF-8 validation diagnostics are produced by the frontend source-loading flow. This module records the resulting source version only after source loading has produced a valid source identity.
@@ -358,8 +369,8 @@ Key scenarios:
 - structurally invalid open-buffer versions are rejected; source-loading tasks handle expected-vs-actual staleness and disk/open-buffer override behavior;
 - stale `BuildSnapshotId` values are rejected by freshness checks;
 - leases are accounted by reason, repeated acquisition produces unique lease ids,
-  allocator failure leaves registry state unchanged, and release reports unknown
-  or mismatched leases;
+  allocator failure and duplicate lease-id allocation leave registry state
+  unchanged, and release reports unknown or mismatched leases;
 - direct unchecked helpers are unavailable publicly, and public-field `BuildSnapshot` records are detached until `create_snapshot` registers them.
 
 ## Constraints and Assumptions

@@ -201,11 +201,13 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: allocator failure does not change registry state; repeated lease acquisition remains unique and counted by reason.
     - Depends on: 20. Spec: [snapshot.md](./snapshot.md) "Snapshot Lease".
 
-24. **Snapshot lease duplicate-id defense.** [ ]
+24. **Snapshot lease duplicate-id defense.** [x]
     - Decide whether to add a defensive duplicate-lease-id check or debug assertion in `SnapshotRegistry` state, even though `SessionIdAllocator` is expected to issue unique lease ids.
     - If implemented, surface duplicate allocation as an internal allocation/registry error without corrupting lease counts or current snapshot state.
     - If only a debug assertion is kept, document why that is sufficient for the allocator contract.
     - Tests: custom allocator duplicate id scenario if the behavior is observable outside debug assertions.
+    - Decision: add an observable defensive duplicate-live-lease-id check in `SnapshotRegistryState`, because `SessionIdAllocator` is a public trait and a release-build registry must not let a custom allocator overwrite the live lease map while incrementing counts. Duplicate allocation is reported as `SnapshotError::DuplicateLeaseIdAllocation` before snapshot records, current marks, live leases, or lease counts are mutated.
+    - Tests: duplicate ids returned during `acquire_lease` and `create_snapshot` leave lease counts, live leases, snapshot records, and current request state unchanged.
     - Depends on: 23. Spec: [snapshot.md](./snapshot.md) "Snapshot Lease", [ids.md](./ids.md) "Allocator-Issued Id Construction".
 
 25. **Public API blocks and source-map error-surface spec sync.** [x]
