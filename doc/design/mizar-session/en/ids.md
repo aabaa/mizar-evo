@@ -11,6 +11,14 @@ The identifiers let source, snapshot, diagnostic, LSP, cache, and IR-facing crat
 ## Public API
 
 ```rust
+pub struct Hash([u8; Self::BYTE_LEN]);
+
+impl Hash {
+    pub const BYTE_LEN: usize;
+    pub const fn from_bytes(bytes: [u8; Self::BYTE_LEN]) -> Self;
+    pub const fn as_bytes(&self) -> &[u8; Self::BYTE_LEN];
+}
+
 pub struct BuildSessionId(OpaqueId);
 pub struct BuildRequestId(OpaqueId);
 pub struct BuildSnapshotId(Hash);
@@ -31,9 +39,54 @@ pub struct InMemorySessionIdAllocator { /* private fields */ }
 impl InMemorySessionIdAllocator {
     pub const fn new() -> Self;
 }
+
+impl Default for InMemorySessionIdAllocator {
+    fn default() -> Self;
+}
+
+impl BuildSnapshotId {
+    pub const SERIALIZED_LEN: usize;
+    pub fn to_published_schema_string(self) -> Result<String, IdError>;
+    pub fn from_published_schema_str(serialized: &str) -> Result<Self, IdError>;
+}
+
+impl FromStr for BuildSnapshotId {
+    type Err = IdError;
+    fn from_str(serialized: &str) -> Result<Self, Self::Err>;
+}
+
+impl BuildSessionId {
+    pub fn to_published_schema_string(self) -> Result<String, IdError>;
+}
+
+impl BuildRequestId {
+    pub fn to_published_schema_string(self) -> Result<String, IdError>;
+}
+
+impl SourceId {
+    pub fn to_published_schema_string(self) -> Result<String, IdError>;
+}
+
+impl SourceMapId {
+    pub fn to_published_schema_string(self) -> Result<String, IdError>;
+}
+
+impl SnapshotLeaseId {
+    pub fn to_published_schema_string(self) -> Result<String, IdError>;
+}
+
+#[non_exhaustive]
+pub enum IdError {
+    MalformedSerializedId,
+    WrongIdDomain,
+    UnknownSnapshotRegistry,
+    AllocatorOverflow,
+    NonPersistableSerialization,
+}
 ```
 
 `BuildSnapshotId` is a content-derived fingerprint. Other ids are opaque registry identities whose values are meaningful only through the registry that issued them.
+`Hash` is a fixed-width digest wrapper used by content-derived ids, source hashes, and artifact fingerprints. `Hash::from_bytes` and `Hash::as_bytes` are intentionally public low-level helpers for callers that already own canonical hash bytes or need to feed stable bytes into another canonical encoding. They do not define a published serialization format by themselves; published schemas must use an owning id or artifact format such as `BuildSnapshotId::to_published_schema_string`.
 
 ## Dependencies
 

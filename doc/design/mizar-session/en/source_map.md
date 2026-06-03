@@ -11,6 +11,9 @@ It lets frontend, diagnostics, LSP, documentation, extraction, artifacts, and IR
 ## Public API
 
 ```rust
+pub type DocumentUri = String;
+pub type LspDocumentVersion = i64;
+
 pub struct LineMap {
     /* private fields */
 }
@@ -18,6 +21,7 @@ pub struct LineMap {
 impl LineMap {
     pub fn new(source_id: SourceId, text: &str) -> Self;
     pub fn with_source(source_id: SourceId, text: &str) -> Self;
+    pub fn source(&self) -> &str;
     pub fn source_id(&self) -> SourceId;
     pub fn text_hash(&self) -> Hash;
     pub fn line_starts(&self) -> &[usize];
@@ -41,6 +45,13 @@ pub struct TextRange {
     pub end: usize,
 }
 
+impl TextRange {
+    pub const fn new(start: usize, end: usize) -> Self;
+    pub const fn try_new(start: usize, end: usize) -> Option<Self>;
+    pub const fn len(self) -> usize;
+    pub const fn is_empty(self) -> bool;
+}
+
 pub struct LineColumn {
     pub line: u32,
     pub column: u32,
@@ -49,6 +60,20 @@ pub struct LineColumn {
 pub struct LineColumnRange {
     pub start: LineColumn,
     pub end: LineColumn,
+}
+
+#[non_exhaustive]
+pub enum SourceMapError {
+    UnknownSourceId { source_id: SourceId },
+    ReversedRange,
+    RangeOutsideSourceText { range: SourceRange, source_len: usize },
+    OffsetNotUtf8Boundary { source_id: SourceId, offset: usize },
+    LineColumnOverflow,
+    RangeOutsideLoadedText { source_id: SourceId, range: TextRange, loaded_len: usize },
+    MissingLoadingMapSegment { source_id: SourceId, range: TextRange },
+    RangeOutsideLexicalText { source_id: SourceId, range: TextRange, lexical_len: usize },
+    MissingPreprocessSegment { source_id: SourceId, range: TextRange },
+    GeneratedSpanWithoutOriginReason,
 }
 
 pub struct LoadingMap {
@@ -82,12 +107,14 @@ impl LoadingMap {
     ) -> Result<LoadedToOriginalRange, SourceMapError>;
 }
 
+#[non_exhaustive]
 pub enum LoadingOrigin {
     DiskBytes { normalized_path: NormalizedPath },
     OpenBufferText { uri: DocumentUri, version: LspDocumentVersion },
     Generated,
 }
 
+#[non_exhaustive]
 pub enum LoadingMapSegment {
     Original {
         loaded: TextRange,
@@ -141,6 +168,7 @@ impl PreprocessMap {
     ) -> Result<LexicalSourceMapping, SourceMapError>;
 }
 
+#[non_exhaustive]
 pub enum PreprocessSegment {
     Original {
         lexical: TextRange,
@@ -156,6 +184,7 @@ pub enum PreprocessSegment {
     },
 }
 
+#[non_exhaustive]
 pub enum SourceAnchor {
     Range(SourceRange),
     Point { source_id: SourceId, offset: usize },
@@ -172,11 +201,13 @@ impl GeneratedSpanOrigin {
     pub fn reason(&self) -> &str;
 }
 
+#[non_exhaustive]
 pub enum GeneratedSpanAnchor {
     Range(SourceRange),
     Point { source_id: SourceId, offset: usize },
 }
 
+#[non_exhaustive]
 pub enum CommentKind {
     SingleLine,
     MultiLine,
@@ -233,6 +264,8 @@ impl RetainedSourceMapService {
 
 Offsets are byte offsets into validated UTF-8 `LoadedSource.text` after source-loading normalization. User-facing columns use the Unicode scalar column rule defined by the frontend architecture and must be converted through `LineMap` rather than computed by consumers ad hoc.
 
+`DocumentUri` and `LspDocumentVersion` are intentionally public aliases at this layer because source loading, snapshot origins, retention owners, and LSP range mapping need a shared boundary type without depending on an LSP crate. `TextRange` convenience helpers are public so callers can construct loaded-text and lexical-text ranges explicitly: `TextRange::new` asserts `start <= end`, `TextRange::try_new` returns `None` for reversed bounds, and `len`/`is_empty` assume the range invariant.
+
 `LineColumn` intentionally uses `u32` rather than `usize`. These values are presentation and protocol-adjacent coordinates, not raw memory indexes, and keeping them bounded matches diagnostics, artifact metadata, and LSP adapters. If a loaded source has more than `u32::MAX` user-facing lines or a line with more than `u32::MAX` Unicode scalar columns, `LineMap` returns `SourceMapError::LineColumnOverflow` instead of saturating, wrapping, or silently narrowing. LSP positions remain `u32`; the `mizar-lsp` bridge performs its own explicit checked narrowing for UTF-16 columns.
 
 ## Dependencies
@@ -248,13 +281,13 @@ This module is consumed by frontend phases, `mizar-ir` side tables, `mizar-diagn
 
 `LineMap` records source identity, text hash, and line starts for the exact source text represented by a `SourceVersion`.
 
-It is immutable after construction. The stored source id, text hash, and line starts are observable through accessors, not by mutable field access. Consumers must validate that the `source_id` belongs to the snapshot they are reporting against before converting offsets to user-facing line/column values.
+It is immutable after construction. The stored source id, text hash, source text, and line starts are observable through accessors, not by mutable field access. `LineMap::source` exposes the retained loaded text for consumers that need the exact normalized text behind the line map; it is not raw file or editor text when source loading changed offsets. Consumers must validate that the `source_id` belongs to the snapshot they are reporting against before converting offsets to user-facing line/column values.
 
 If disk source loading stripped a leading UTF-8 BOM, byte offset `0` in the `LineMap` is the first byte after that BOM in the original file. Raw-file byte positions are recovered through `LoadingMap`, not by changing `SourceRange` or lexer span coordinates.
 
 ### Source Range
 
-`SourceRange` is half-open: `start <= offset < end`.
+`SourceRange` and `TextRange` are half-open: `start <= offset < end`.
 
 Ranges must:
 
@@ -262,6 +295,8 @@ Ranges must:
 - use byte offsets aligned to UTF-8 scalar boundaries;
 - remain inside the source text length;
 - preserve zero-length ranges only for insertion points and synthesized anchors.
+
+Reversed ranges are always invalid. APIs that receive an explicitly constructed reversed `SourceRange` or `TextRange` return `SourceMapError::ReversedRange`; callers can use `TextRange::try_new` when constructing a range from unchecked bounds.
 
 ### Loading Map
 
@@ -328,6 +363,7 @@ Source maps are retained with the owning snapshot while any snapshot lease, diag
 `SourceMapError` includes:
 
 - unknown source id;
+- reversed range bounds;
 - range outside source text;
 - offset not aligned to a UTF-8 boundary;
 - line or column coordinate not representable as `u32`;

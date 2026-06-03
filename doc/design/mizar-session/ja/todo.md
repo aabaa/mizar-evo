@@ -207,7 +207,7 @@
     - テスト: 挙動が debug assertion の外から観測可能な場合は、custom allocator による duplicate id scenario を追加する。
     - 依存: 23。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Lease"、[ids.md](../en/ids.md) "Allocator-Issued Id Construction"。
 
-25. **public API block とソースマップ error surface の仕様同期。** [ ]
+25. **public API block とソースマップ error surface の仕様同期。** [x]
     - 現在の public API block に載っていない実装済みの公開 helper / alias を、
       意図した public API として残すか、公開範囲を狭めるかを決める。少なくとも
       `Hash::{from_bytes, as_bytes}`、`LineMap::source`、
@@ -220,6 +220,13 @@
     - テスト: 現状の surface を文書化するだけなら documentation-only。公開面を
       変更する場合は unit test または compile-fail coverage を調整する。
     - 依存: 20。仕様: [ids.md](../en/ids.md), [source.md](../en/source.md), [source_map.md](../en/source_map.md)。
+    - 判断: 既存の helper と alias は public のまま維持し、意図した API として文書化する。
+      validation 挙動は狭めない。`Hash` の byte helper は、単体の公開シリアライズ形式ではなく、
+      低レベルの正準バイト accessor として残す。`LineMap::source`、`TextRange` helper、
+      `DocumentUri`、`LspDocumentVersion`、`NormalizedPath::as_str` は public のまま残す。
+      手動構築された逆順の `SourceRange` / `TextRange` に対する public error surface として、
+      `SourceMapError::ReversedRange` を含める。
+    - テスト方針: Rust の public surface と validation 挙動は維持したため documentation-only。
 
 26. **source / snapshot のソース同一性 validation 境界。** [ ]
     - 空または不正な `WorkspaceRoot`、`PackageId`、`ModulePath`、`Edition`、

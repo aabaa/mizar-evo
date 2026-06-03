@@ -11,6 +11,12 @@ It owns normalized source paths, validated source text handles, source hashes, a
 ## Public API
 
 ```rust
+pub struct NormalizedPath(String);
+
+impl NormalizedPath {
+    pub fn as_str(&self) -> &str;
+}
+
 pub struct SourceInput {
     pub package_id: PackageId,
     pub module_path: ModulePath,
@@ -26,6 +32,7 @@ impl DiskSourceLoader {
     pub fn package_root(&self) -> &Path;
 }
 
+#[non_exhaustive]
 pub enum SourceOriginInput {
     Disk { path: PathBuf },
     OpenBuffer {
@@ -66,6 +73,7 @@ pub fn normalize_path(package_root: &Path, path: &Path) -> Result<NormalizedPath
 pub fn hash_text(text: &str) -> Hash;
 pub fn normalize_source_path(package_root: &Path, path: &Path) -> Result<NormalizedPath, SourcePathError>;
 
+#[non_exhaustive]
 pub enum SourcePathError {
     UnsupportedPathEncoding { path: PathBuf },
     PackageRootUnavailable { path: PathBuf, kind: io::ErrorKind },
@@ -78,6 +86,7 @@ pub enum SourcePathError {
     UnsupportedExtension { path: PathBuf },
 }
 
+#[non_exhaustive]
 pub enum SourceLoadError {
     SourcePathOutsidePackageRoot { package_root: PathBuf, path: PathBuf },
     UnsupportedFileExtension { path: PathBuf },
@@ -92,6 +101,7 @@ pub enum SourceLoadError {
     InvalidSourcePath { error: SourcePathError },
 }
 
+#[non_exhaustive]
 pub enum SourceOriginKind {
     Disk,
     OpenBuffer,
@@ -104,6 +114,7 @@ pub enum SourceOriginKind {
 `LoadedSource.origin` uses the snapshot module's `SourceOrigin`; the source module does not define a duplicate origin enum for loaded records.
 `SourceLoader` helper methods delegate to the public `normalize_path` and `hash_text` helpers. `normalize_path` reuses `normalize_source_path`, while `hash_text` hashes only the normalized text content.
 `DiskSourceLoader` owns the package root used for path and URI normalization. It implements `SourceLoader` for disk files, open-buffer overlays mapped from `file://` document URIs, and generated source fragments.
+`NormalizedPath::as_str` is intentionally public so snapshot identity, diagnostics, and downstream metadata can read the canonical path spelling without exposing a mutable path representation. `DocumentUri` and `LspDocumentVersion` are the crate-level public aliases defined with the source-map coordinate types and used here for open-buffer source loading.
 
 ## Dependencies
 

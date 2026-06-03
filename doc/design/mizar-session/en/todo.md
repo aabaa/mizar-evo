@@ -207,7 +207,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: custom allocator duplicate id scenario if the behavior is observable outside debug assertions.
     - Depends on: 23. Spec: [snapshot.md](./snapshot.md) "Snapshot Lease", [ids.md](./ids.md) "Allocator-Issued Id Construction".
 
-25. **Public API blocks and source-map error-surface spec sync.** [ ]
+25. **Public API blocks and source-map error-surface spec sync.** [x]
     - Decide whether implemented public helpers and aliases that are absent from
       the current public API blocks are intentional public API or should be
       narrowed. Audit at least `Hash::{from_bytes, as_bytes}`,
@@ -221,6 +221,16 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: documentation-only if the surface is documented as-is; otherwise
       adjust unit or compile-fail coverage for the changed public surface.
     - Depends on: 20. Spec: [ids.md](./ids.md), [source.md](./source.md), [source_map.md](./source_map.md).
+    - Decision: keep the existing helpers and aliases public and document them as
+      intentional API. No validation behavior was narrowed. `Hash` byte helpers
+      remain low-level canonical-byte accessors rather than a standalone
+      published serialization format; `LineMap::source`, `TextRange` helpers,
+      `DocumentUri`, `LspDocumentVersion`, and `NormalizedPath::as_str` remain
+      public. `SourceMapError::ReversedRange` is part of the public error
+      surface for manually constructed reversed `SourceRange`/`TextRange`
+      values.
+    - Test policy: documentation-only because the public Rust surface and
+      validation behavior were preserved.
 
 26. **Source and snapshot source-identity validation boundary.** [ ]
     - Decide where blank or otherwise invalid `WorkspaceRoot`, `PackageId`,

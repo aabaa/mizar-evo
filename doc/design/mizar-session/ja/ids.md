@@ -11,6 +11,14 @@
 ## Public API
 
 ```rust
+pub struct Hash([u8; Self::BYTE_LEN]);
+
+impl Hash {
+    pub const BYTE_LEN: usize;
+    pub const fn from_bytes(bytes: [u8; Self::BYTE_LEN]) -> Self;
+    pub const fn as_bytes(&self) -> &[u8; Self::BYTE_LEN];
+}
+
 pub struct BuildSessionId(OpaqueId);
 pub struct BuildRequestId(OpaqueId);
 pub struct BuildSnapshotId(Hash);
@@ -31,9 +39,54 @@ pub struct InMemorySessionIdAllocator { /* private fields */ }
 impl InMemorySessionIdAllocator {
     pub const fn new() -> Self;
 }
+
+impl Default for InMemorySessionIdAllocator {
+    fn default() -> Self;
+}
+
+impl BuildSnapshotId {
+    pub const SERIALIZED_LEN: usize;
+    pub fn to_published_schema_string(self) -> Result<String, IdError>;
+    pub fn from_published_schema_str(serialized: &str) -> Result<Self, IdError>;
+}
+
+impl FromStr for BuildSnapshotId {
+    type Err = IdError;
+    fn from_str(serialized: &str) -> Result<Self, Self::Err>;
+}
+
+impl BuildSessionId {
+    pub fn to_published_schema_string(self) -> Result<String, IdError>;
+}
+
+impl BuildRequestId {
+    pub fn to_published_schema_string(self) -> Result<String, IdError>;
+}
+
+impl SourceId {
+    pub fn to_published_schema_string(self) -> Result<String, IdError>;
+}
+
+impl SourceMapId {
+    pub fn to_published_schema_string(self) -> Result<String, IdError>;
+}
+
+impl SnapshotLeaseId {
+    pub fn to_published_schema_string(self) -> Result<String, IdError>;
+}
+
+#[non_exhaustive]
+pub enum IdError {
+    MalformedSerializedId,
+    WrongIdDomain,
+    UnknownSnapshotRegistry,
+    AllocatorOverflow,
+    NonPersistableSerialization,
+}
 ```
 
 `BuildSnapshotId` は内容から導出されるフィンガープリントです。その他の ID は不透明なレジストリ上の同一性であり、その値は発行元のレジストリを通してのみ意味を持ちます。
+`Hash` は、内容由来 ID、ソースハッシュ、アーティファクトフィンガープリントが用いる固定長 digest wrapper です。`Hash::from_bytes` と `Hash::as_bytes` は、呼び出し側がすでに正準ハッシュバイトを所有している場合、または別の正準エンコードへ安定したバイト列を渡す必要がある場合の低レベル helper として意図的に public です。これら自体は公開シリアライズ形式を定義しません。公開スキーマは `BuildSnapshotId::to_published_schema_string` のように、所有元の ID またはアーティファクト形式を用いなければなりません。
 
 ## Dependencies
 

@@ -11,6 +11,12 @@
 ## Public API
 
 ```rust
+pub struct NormalizedPath(String);
+
+impl NormalizedPath {
+    pub fn as_str(&self) -> &str;
+}
+
 pub struct SourceInput {
     pub package_id: PackageId,
     pub module_path: ModulePath,
@@ -26,6 +32,7 @@ impl DiskSourceLoader {
     pub fn package_root(&self) -> &Path;
 }
 
+#[non_exhaustive]
 pub enum SourceOriginInput {
     Disk { path: PathBuf },
     OpenBuffer {
@@ -66,6 +73,7 @@ pub fn normalize_path(package_root: &Path, path: &Path) -> Result<NormalizedPath
 pub fn hash_text(text: &str) -> Hash;
 pub fn normalize_source_path(package_root: &Path, path: &Path) -> Result<NormalizedPath, SourcePathError>;
 
+#[non_exhaustive]
 pub enum SourcePathError {
     UnsupportedPathEncoding { path: PathBuf },
     PackageRootUnavailable { path: PathBuf, kind: io::ErrorKind },
@@ -78,6 +86,7 @@ pub enum SourcePathError {
     UnsupportedExtension { path: PathBuf },
 }
 
+#[non_exhaustive]
 pub enum SourceLoadError {
     SourcePathOutsidePackageRoot { package_root: PathBuf, path: PathBuf },
     UnsupportedFileExtension { path: PathBuf },
@@ -92,6 +101,7 @@ pub enum SourceLoadError {
     InvalidSourcePath { error: SourcePathError },
 }
 
+#[non_exhaustive]
 pub enum SourceOriginKind {
     Disk,
     OpenBuffer,
@@ -104,6 +114,7 @@ pub enum SourceOriginKind {
 `LoadedSource.origin` は snapshot モジュールの `SourceOrigin` を使います。source モジュールは、読み込み済みレコード用の origin enum を重複定義しません。
 `SourceLoader` の補助メソッドは、公開 helper の `normalize_path` と `hash_text` に委譲します。`normalize_path` は `normalize_source_path` を再利用し、`hash_text` は正規化済みテキスト内容だけをハッシュ化します。
 `DiskSourceLoader` は、パスと URI の正規化に用いるパッケージルートを所有します。ディスクファイル、`file://` ドキュメント URI から対応付けられるオープンバッファオーバーレイ、生成ソースフラグメントに対して `SourceLoader` を実装します。
+`NormalizedPath::as_str` は、スナップショット同一性、診断、下流メタデータが可変なパス表現を露出せずに正準パス表記を読めるよう、意図的に public です。`DocumentUri` と `LspDocumentVersion` は、source-map 座標型とともに定義される crate-level の public alias であり、ここではオープンバッファのソース読み込みに用います。
 
 ## Dependencies
 
