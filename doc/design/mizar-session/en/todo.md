@@ -168,12 +168,14 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: update only where behavior-preserving refactors need better assertions; keep existing module tests green.
     - Depends on: 18. Spec: all mizar-session module specs.
 
-20. **Source/spec correspondence audit.** [ ]
+20. **Source/spec correspondence audit.** [x]
     - Build a lightweight traceability check from each public API, error variant, and task requirement in `ids.md`, `source_map.md`, `snapshot.md`, `source.md`, and `retention.md` to the implementing source/tests.
     - Record any missing implementation, stale spec text, underspecified behavior, or missing tests as follow-up tasks rather than mixing broad changes into the audit.
     - Check the English canonical specs first, then verify that Japanese companion specs carry the same API and behavioral commitments.
     - Tests: no new product tests expected unless the audit finds a small, safe gap; run the standard verification commands after any edits.
     - Depends on: 19. Spec: all mizar-session module specs and this TODO.
+    - Audit result: implementation and unit-test coverage are broadly traceable for
+      tasks 1-19; remaining gaps were recorded as follow-up tasks 25-28.
 
 ## Cross-Cutting Follow-up Tasks
 
@@ -204,6 +206,68 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - If only a debug assertion is kept, document why that is sufficient for the allocator contract.
     - Tests: custom allocator duplicate id scenario if the behavior is observable outside debug assertions.
     - Depends on: 23. Spec: [snapshot.md](./snapshot.md) "Snapshot Lease", [ids.md](./ids.md) "Allocator-Issued Id Construction".
+
+25. **Public API blocks and source-map error-surface spec sync.** [ ]
+    - Decide whether implemented public helpers and aliases that are absent from
+      the current public API blocks are intentional public API or should be
+      narrowed. Audit at least `Hash::{from_bytes, as_bytes}`,
+      `LineMap::source`, `TextRange::{new, try_new, len, is_empty}`,
+      `DocumentUri`, `LspDocumentVersion`, and `NormalizedPath::as_str`.
+    - Synchronize the English and Japanese public API blocks and error lists with
+      the decision, including the implemented `SourceMapError::ReversedRange`
+      variant when reversed ranges remain a public error.
+    - Keep the existing validation behavior stable unless the API decision
+      explicitly narrows it.
+    - Tests: documentation-only if the surface is documented as-is; otherwise
+      adjust unit or compile-fail coverage for the changed public surface.
+    - Depends on: 20. Spec: [ids.md](./ids.md), [source.md](./source.md), [source_map.md](./source_map.md).
+
+26. **Source and snapshot source-identity validation boundary.** [ ]
+    - Decide where blank or otherwise invalid `WorkspaceRoot`, `PackageId`,
+      `ModulePath`, `Edition`, and generated-source metadata are rejected:
+      constructors, source loading, snapshot creation, or an upstream build-plan
+      layer.
+    - Clarify whether `SourceLoadError::DuplicateModulePath` is emitted by a
+      future source-loading aggregator or whether duplicate module paths are
+      solely a `SnapshotRegistry::create_snapshot` validation responsibility.
+    - If source or snapshot validation is strengthened, preserve deterministic
+      snapshot hashing by rejecting invalid source identities before hashing.
+    - Tests: add focused cases for the chosen boundary, especially blank
+      package/module/edition values and duplicate module paths at the layer that
+      owns them.
+    - Depends on: 20. Spec: [source.md](./source.md), [snapshot.md](./snapshot.md).
+
+27. **Generated-source normalization policy.** [ ]
+    - Decide and document whether generated source text is preserved byte-for-byte
+      after UTF-8 validation, or whether source-loading normalization such as
+      leading-BOM stripping and CRLF-to-LF conversion applies to generated input.
+    - The current implementation preserves generated text exactly and emits no
+      `LoadingMap`; if that remains the policy, make it explicit in the English
+      and Japanese `source.md` generated-source sections.
+    - If generated input should instead be normalized like disk/open-buffer text,
+      update implementation, source-map expectations, and source-hash tests
+      together.
+    - Tests: add or update a focused generated-source BOM/CRLF case for the chosen
+      behavior.
+    - Depends on: 20. Spec: [source.md](./source.md), [source_map.md](./source_map.md).
+
+28. **Reserved and diagnostic-only error variant traceability.** [ ]
+    - Classify public error variants that are currently reserved, custom-loader
+      only, or diagnostic-summary-only, including
+      `IdError::UnknownSnapshotRegistry`,
+      `SnapshotError::InvalidSourcePath`,
+      `SourceLoadError::UnsupportedSourceOrigin`, and the retention inconsistent
+      state surfaces.
+    - For each variant, either add a public observable path with focused tests or
+      document that it is reserved/internal and why it remains in the public
+      non-exhaustive enum.
+    - Clarify in `retention.md` that collection-time stale/mismatched lease state
+      is reported through `CollectionSummary::lease_diagnostics`, while
+      `RetentionError::CollectionBlockedByInconsistentRetentionState` is used by
+      retain/release/allocation paths.
+    - Tests: add only the cases needed to make newly observable paths explicit;
+      documentation-only if the variants are kept as reserved/internal.
+    - Depends on: 20. Spec: [ids.md](./ids.md), [snapshot.md](./snapshot.md), [source.md](./source.md), [retention.md](./retention.md).
 
 ## Suggested Verification
 

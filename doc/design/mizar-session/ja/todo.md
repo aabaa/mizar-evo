@@ -168,12 +168,14 @@
     - テスト: 挙動保持のリファクタに必要な assertion だけ更新し、既存モジュールテストを緑に保つ。
     - 依存: 18。仕様: mizar-session の全モジュール仕様。
 
-20. **ソースと仕様の対応関係監査。** [ ]
+20. **ソースと仕様の対応関係監査。** [x]
     - `ids.md`、`source_map.md`、`snapshot.md`、`source.md`、`retention.md` の public API、error variant、タスク要件から、実装ソースとテストへの軽量な traceability を確認する。
     - 未実装、古い仕様記述、未規定の挙動、テスト不足があれば、広い変更を監査に混ぜず follow-up task として記録する。
     - まず英語の正典仕様を確認し、その後、日本語 companion が同じ API と挙動上の約束を持っているか確認する。
     - テスト: 監査で小さく安全なギャップが見つかった場合を除き、product test の追加は想定しない。編集があれば標準 verification command を実行する。
     - 依存: 19。仕様: mizar-session の全モジュール仕様と本 TODO。
+    - 監査結果: タスク 1-19 の実装とユニットテスト coverage は概ね
+      trace 可能。残る差分は follow-up task 25-28 として記録した。
 
 ## 横断的フォローアップタスク
 
@@ -204,6 +206,59 @@
     - debug assertion のみにする場合は、allocator contract に対してそれで十分な理由を文書化する。
     - テスト: 挙動が debug assertion の外から観測可能な場合は、custom allocator による duplicate id scenario を追加する。
     - 依存: 23。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Lease"、[ids.md](../en/ids.md) "Allocator-Issued Id Construction"。
+
+25. **public API block とソースマップ error surface の仕様同期。** [ ]
+    - 現在の public API block に載っていない実装済みの公開 helper / alias を、
+      意図した public API として残すか、公開範囲を狭めるかを決める。少なくとも
+      `Hash::{from_bytes, as_bytes}`、`LineMap::source`、
+      `TextRange::{new, try_new, len, is_empty}`、`DocumentUri`、
+      `LspDocumentVersion`、`NormalizedPath::as_str` を監査する。
+    - その判断に合わせて、英語版と日本語版の public API block とエラー一覧を同期する。
+      逆順範囲が public error のままなら、実装済みの
+      `SourceMapError::ReversedRange` variant も含める。
+    - API 判断で明示的に狭める場合を除き、既存の validation 挙動は安定させる。
+    - テスト: 現状の surface を文書化するだけなら documentation-only。公開面を
+      変更する場合は unit test または compile-fail coverage を調整する。
+    - 依存: 20。仕様: [ids.md](../en/ids.md), [source.md](../en/source.md), [source_map.md](../en/source_map.md)。
+
+26. **source / snapshot のソース同一性 validation 境界。** [ ]
+    - 空または不正な `WorkspaceRoot`、`PackageId`、`ModulePath`、`Edition`、
+      生成ソース metadata を、constructor、source loading、snapshot creation、
+      上流の build-plan 層のどこで拒否するかを決める。
+    - `SourceLoadError::DuplicateModulePath` を将来の source-loading aggregator が
+      emit するのか、duplicate module path は
+      `SnapshotRegistry::create_snapshot` の validation 責務だけなのかを明確にする。
+    - source または snapshot validation を強化する場合は、不正なソース同一性を
+      snapshot hashing の前に拒否し、決定的な hashing を保つ。
+    - テスト: 選んだ境界に対して、空の package/module/edition 値と duplicate
+      module path を中心に focused case を追加する。
+    - 依存: 20。仕様: [source.md](../en/source.md), [snapshot.md](../en/snapshot.md)。
+
+27. **生成ソースの正規化方針。** [ ]
+    - 生成ソーステキストを UTF-8 検証後に byte-for-byte で保持するのか、先頭
+      BOM 除去や CRLF→LF 変換のような source-loading 正規化を生成入力にも適用するのかを決めて文書化する。
+    - 現在の実装は生成テキストをそのまま保持し、`LoadingMap` を emit しない。
+      この方針を維持するなら、英語版と日本語版の `source.md` の生成ソース節で明示する。
+    - 生成入力も disk/open-buffer と同様に正規化するなら、実装、source-map
+      expectation、source-hash test を同時に更新する。
+    - テスト: 選んだ挙動に対して、生成ソースの BOM/CRLF focused case を追加または更新する。
+    - 依存: 20。仕様: [source.md](../en/source.md), [source_map.md](../en/source_map.md)。
+
+28. **予約済み / 診断専用 error variant の traceability。** [ ]
+    - 現時点で予約済み、custom-loader 専用、または diagnostic-summary 専用である
+      public error variant を分類する。対象には `IdError::UnknownSnapshotRegistry`、
+      `SnapshotError::InvalidSourcePath`、
+      `SourceLoadError::UnsupportedSourceOrigin`、retention の inconsistent state
+      surface を含める。
+    - 各 variant について、public に観測可能な経路と focused test を追加するか、
+      public な non-exhaustive enum に残す理由を reserved/internal として文書化する。
+    - `retention.md` では、collection 時の stale/mismatched lease state は
+      `CollectionSummary::lease_diagnostics` で報告され、
+      `RetentionError::CollectionBlockedByInconsistentRetentionState` は
+      retain/release/allocation 経路で使われることを明確にする。
+    - テスト: 新たに観測可能にする経路に必要な case だけを追加する。variant を
+      reserved/internal として維持する場合は documentation-only。
+    - 依存: 20。仕様: [ids.md](../en/ids.md), [snapshot.md](../en/snapshot.md), [source.md](../en/source.md), [retention.md](../en/retention.md)。
 
 ## Suggested Verification
 
