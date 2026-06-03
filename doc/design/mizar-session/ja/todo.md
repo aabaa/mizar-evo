@@ -193,11 +193,12 @@
     - テスト: property/regression test を追加し、`cargo test -p mizar-session` を実行する。
     - 依存: 20。仕様: [ids.md](../en/ids.md)、[snapshot.md](../en/snapshot.md)、[source_map.md](../en/source_map.md)。
 
-23. **スナップショットリース割り当て mutex の堅牢化。** [ ]
+23. **スナップショットリース割り当て mutex の堅牢化。** [x]
     - `SnapshotRegistry::acquire_lease` の lease id 割り当てを、`create_snapshot` と同様に registry mutex の外へ出すべきかを決める。
     - 変更する場合は、既存の lease count 挙動を維持し、allocator failure が registry state を変更しないようにする。
     - 変更しない場合は、その理由を [snapshot.md](../en/snapshot.md) または本 TODO に記録する。
-    - テスト: allocator failure が count を変えないこと、繰り返し lease acquisition が一意で reason ごとに計上されること。
+    - 決定: `acquire_lease` は allocation 前に未知スナップショットを拒否し、既知スナップショットでは registry mutex の外で lease id を割り当て、duplicate-id defense はここでは追加せず mutex の下で lease を記録する。
+    - テスト: allocator failure が registry state を変えないこと、繰り返し lease acquisition が一意で reason ごとに計上されること。
     - 依存: 20。仕様: [snapshot.md](../en/snapshot.md) "Snapshot Lease"。
 
 24. **スナップショットリース duplicate-id 防御。** [ ]

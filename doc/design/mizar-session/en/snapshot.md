@@ -255,6 +255,11 @@ The registry tracks live lease counts per `RetentionReason`; the active-build
 lease returned by `create_snapshot` is counted the same way as leases acquired
 with `acquire_lease`.
 
+`acquire_lease` rejects unknown snapshots before requesting a lease id. For a
+known snapshot, it allocates the lease id outside the registry mutex and records
+the resulting lease under the mutex. If lease-id allocation fails, snapshot
+records, current marks, live leases, and lease counts remain unchanged.
+
 Lease reasons include:
 
 - active build request;
@@ -352,7 +357,9 @@ Key scenarios:
 - blank workspace roots, blank or whitespace-containing package ids, blank module/edition identities, identifier-invalid or reserved-word module-path components, and generated sources without generator metadata are rejected before snapshot hashing or lease allocation;
 - structurally invalid open-buffer versions are rejected; source-loading tasks handle expected-vs-actual staleness and disk/open-buffer override behavior;
 - stale `BuildSnapshotId` values are rejected by freshness checks;
-- leases are accounted by reason and release reports unknown or mismatched leases;
+- leases are accounted by reason, repeated acquisition produces unique lease ids,
+  allocator failure leaves registry state unchanged, and release reports unknown
+  or mismatched leases;
 - direct unchecked helpers are unavailable publicly, and public-field `BuildSnapshot` records are detached until `create_snapshot` registers them.
 
 ## Constraints and Assumptions

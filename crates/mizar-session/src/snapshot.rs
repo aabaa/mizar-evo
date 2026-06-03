@@ -351,14 +351,17 @@ impl<A: SessionIdAllocator> SnapshotRegistry<A> {
         snapshot: BuildSnapshotId,
         reason: RetentionReason,
     ) -> Result<SnapshotLease, SnapshotError> {
-        let mut state = self.state.lock().expect("snapshot registry mutex poisoned");
-        if !state.snapshots.contains_key(&snapshot) {
-            return Err(SnapshotError::UnknownSnapshotId {
-                snapshot_id: snapshot,
-            });
+        {
+            let state = self.state.lock().expect("snapshot registry mutex poisoned");
+            if !state.snapshots.contains_key(&snapshot) {
+                return Err(SnapshotError::UnknownSnapshotId {
+                    snapshot_id: snapshot,
+                });
+            }
         }
 
         let lease = self.allocate_lease(snapshot, reason)?;
+        let mut state = self.state.lock().expect("snapshot registry mutex poisoned");
         state.record_lease(lease.clone());
         Ok(lease)
     }
@@ -476,6 +479,16 @@ impl<A> SnapshotRegistry<A> {
             .get(&snapshot)
             .map(|counts_by_reason| counts_by_reason.values().sum())
             .unwrap_or_default()
+    }
+
+    fn live_lease_count_for_test(&self, snapshot: BuildSnapshotId) -> usize {
+        self.state
+            .lock()
+            .expect("snapshot registry mutex poisoned")
+            .leases
+            .values()
+            .filter(|lease| lease.snapshot == snapshot)
+            .count()
     }
 }
 
@@ -983,8 +996,8 @@ impl Error for SnapshotError {
 mod tests {
     use super::{
         BuildSnapshot, DependencyArtifactRef, Edition, GeneratedSourceKind, ModulePath, PackageId,
-        RetentionReason, SnapshotError, SnapshotInput, SnapshotRegistry, SourceOrigin,
-        SourceVersion, ToolchainInfo, WorkspaceRoot, sort_source_versions_canonical,
+        RetentionReason, SnapshotError, SnapshotInput, SnapshotRegistry, SnapshotRegistryState,
+        SourceOrigin, SourceVersion, ToolchainInfo, WorkspaceRoot, sort_source_versions_canonical,
     };
     use crate::{
         BuildRequestId, BuildSessionId, BuildSnapshotId, Hash, IdError, InMemorySessionIdAllocator,
@@ -992,7 +1005,7 @@ mod tests {
         SourcePathError, normalize_source_path,
     };
     use std::path::Path;
-    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::atomic::{AtomicPtr, AtomicUsize, Ordering};
 
     static NEXT_FIXTURE_ID: AtomicUsize = AtomicUsize::new(0);
 
@@ -1719,6 +1732,68 @@ mod tests {
     }
 
     #[test]
+    fn repeated_acquire_lease_returns_unique_ids_and_counts_by_reason() {
+        let registry = SnapshotRegistry::new();
+        let (snapshot, _) = registry
+            .create_snapshot(request_id(), snapshot_input())
+            .unwrap();
+
+        let first = registry
+            .acquire_lease(snapshot.id, RetentionReason::DiagnosticIndex)
+            .unwrap();
+        let second = registry
+            .acquire_lease(snapshot.id, RetentionReason::DiagnosticIndex)
+            .unwrap();
+        let explanation = registry
+            .acquire_lease(snapshot.id, RetentionReason::ExplanationRequest)
+            .unwrap();
+
+        assert_ne!(first.lease_id, second.lease_id);
+        assert_ne!(first.lease_id, explanation.lease_id);
+        assert_ne!(second.lease_id, explanation.lease_id);
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::DiagnosticIndex),
+            2
+        );
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ExplanationRequest),
+            1
+        );
+        assert_eq!(
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild),
+            1
+        );
+        assert_eq!(registry.total_lease_count_for_test(snapshot.id), 4);
+    }
+
+    #[test]
+    fn acquire_lease_allocates_lease_id_without_holding_registry_mutex() {
+        let registry = SnapshotRegistry::with_allocator(RegistryMutexProbeAllocator::new());
+        registry.allocator.bind_state(&registry.state);
+        let (snapshot, _) = registry
+            .create_snapshot(request_id(), snapshot_input())
+            .unwrap();
+        registry
+            .allocator
+            .registry_mutex_available_checks
+            .store(0, Ordering::Relaxed);
+
+        let lease = registry
+            .acquire_lease(snapshot.id, RetentionReason::DiagnosticIndex)
+            .unwrap();
+
+        assert_eq!(lease.snapshot, snapshot.id);
+        assert_eq!(lease.reason, RetentionReason::DiagnosticIndex);
+        assert_eq!(
+            registry
+                .allocator
+                .registry_mutex_available_checks
+                .load(Ordering::Relaxed),
+            1
+        );
+    }
+
+    #[test]
     fn release_lease_only_decrements_the_released_reason() {
         let registry = SnapshotRegistry::new();
         let (snapshot, _) = registry
@@ -1951,11 +2026,18 @@ mod tests {
     }
 
     #[test]
-    fn acquire_lease_id_allocation_failure_does_not_change_counts() {
+    fn acquire_lease_id_allocation_failure_does_not_change_registry_state() {
         let registry = SnapshotRegistry::with_allocator(LeaseAllocatorFailsAfter::new(1));
-        let (snapshot, _) = registry
-            .create_snapshot(request_id(), snapshot_input())
-            .unwrap();
+        let request = request_id();
+        let (snapshot, _) = registry.create_snapshot(request, snapshot_input()).unwrap();
+        let snapshot_before = registry.get(snapshot.id);
+        let current_before = registry.is_current_for_request(snapshot.id, request);
+        let active_build_count_before =
+            registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild);
+        let published_count_before =
+            registry.lease_count_for_test(snapshot.id, RetentionReason::PublishedLspSnapshot);
+        let total_count_before = registry.total_lease_count_for_test(snapshot.id);
+        let live_lease_count_before = registry.live_lease_count_for_test(snapshot.id);
 
         let error = registry
             .acquire_lease(snapshot.id, RetentionReason::PublishedLspSnapshot)
@@ -1967,13 +2049,26 @@ mod tests {
                 error: IdError::AllocatorOverflow
             }
         ));
+        assert_eq!(registry.get(snapshot.id), snapshot_before);
+        assert_eq!(
+            registry.is_current_for_request(snapshot.id, request),
+            current_before
+        );
         assert_eq!(
             registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild),
-            1
+            active_build_count_before
         );
         assert_eq!(
             registry.lease_count_for_test(snapshot.id, RetentionReason::PublishedLspSnapshot),
-            0
+            published_count_before
+        );
+        assert_eq!(
+            registry.total_lease_count_for_test(snapshot.id),
+            total_count_before
+        );
+        assert_eq!(
+            registry.live_lease_count_for_test(snapshot.id),
+            live_lease_count_before
         );
     }
 
@@ -2743,6 +2838,74 @@ mod tests {
 
         fn next_lease_id(&self, snapshot: BuildSnapshotId) -> Result<SnapshotLeaseId, IdError> {
             self.lease_allocations.fetch_add(1, Ordering::Relaxed);
+            self.inner.next_lease_id(snapshot)
+        }
+    }
+
+    #[derive(Debug)]
+    struct RegistryMutexProbeAllocator {
+        inner: InMemorySessionIdAllocator,
+        state: AtomicPtr<std::sync::Mutex<SnapshotRegistryState>>,
+        registry_mutex_available_checks: AtomicUsize,
+    }
+
+    impl RegistryMutexProbeAllocator {
+        fn new() -> Self {
+            Self {
+                inner: InMemorySessionIdAllocator::new(),
+                state: AtomicPtr::new(std::ptr::null_mut()),
+                registry_mutex_available_checks: AtomicUsize::new(0),
+            }
+        }
+
+        fn bind_state(&self, state: &std::sync::Mutex<SnapshotRegistryState>) {
+            self.state
+                .store(std::ptr::from_ref(state).cast_mut(), Ordering::Relaxed);
+        }
+
+        fn record_registry_mutex_available(&self) {
+            let state = self.state.load(Ordering::Relaxed);
+            assert!(
+                !state.is_null(),
+                "registry mutex probe allocator was not bound to registry state"
+            );
+            // SAFETY: `bind_state` stores a pointer to this test's registry state,
+            // and the registry outlives every allocator call in the test.
+            let state = unsafe { &*state };
+            match state.try_lock() {
+                Ok(_guard) => {
+                    self.registry_mutex_available_checks
+                        .fetch_add(1, Ordering::Relaxed);
+                }
+                Err(std::sync::TryLockError::WouldBlock) => {
+                    panic!("registry mutex was held during lease id allocation");
+                }
+                Err(std::sync::TryLockError::Poisoned(_)) => {
+                    panic!("snapshot registry mutex poisoned");
+                }
+            }
+        }
+    }
+
+    impl SessionIdAllocator for RegistryMutexProbeAllocator {
+        fn next_session_id(&self) -> Result<BuildSessionId, IdError> {
+            self.inner.next_session_id()
+        }
+
+        fn next_request_id(&self) -> Result<BuildRequestId, IdError> {
+            self.inner.next_request_id()
+        }
+
+        fn next_source_id(&self, snapshot: BuildSnapshotId) -> Result<SourceId, IdError> {
+            self.inner.next_source_id(snapshot)
+        }
+
+        fn next_source_map_id(&self, snapshot: BuildSnapshotId) -> Result<SourceMapId, IdError> {
+            self.inner.next_source_map_id(snapshot)
+        }
+
+        fn next_lease_id(&self, snapshot: BuildSnapshotId) -> Result<SnapshotLeaseId, IdError> {
+            self.record_registry_mutex_available();
             self.inner.next_lease_id(snapshot)
         }
     }

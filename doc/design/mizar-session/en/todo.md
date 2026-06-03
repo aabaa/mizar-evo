@@ -193,11 +193,12 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: add the property/regression tests and run `cargo test -p mizar-session`.
     - Depends on: 20. Spec: [ids.md](./ids.md), [snapshot.md](./snapshot.md), [source_map.md](./source_map.md).
 
-23. **Snapshot lease allocation mutex hardening.** [ ]
+23. **Snapshot lease allocation mutex hardening.** [x]
     - Decide whether `SnapshotRegistry::acquire_lease` should allocate lease ids outside the registry mutex, matching `create_snapshot`.
     - If changed, preserve existing lease-count behavior and make allocator failure leave registry state untouched.
     - If not changed, document the rationale in [snapshot.md](./snapshot.md) or this TODO.
-    - Tests: allocator failure does not change counts; repeated lease acquisition remains unique and counted by reason.
+    - Decision: `acquire_lease` now rejects unknown snapshots before allocation, allocates lease ids outside the registry mutex for known snapshots, and records the lease under the mutex without adding duplicate-id defense here.
+    - Tests: allocator failure does not change registry state; repeated lease acquisition remains unique and counted by reason.
     - Depends on: 20. Spec: [snapshot.md](./snapshot.md) "Snapshot Lease".
 
 24. **Snapshot lease duplicate-id defense.** [ ]
