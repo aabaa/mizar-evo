@@ -1734,6 +1734,37 @@ mod tests {
     }
 
     #[test]
+    fn generated_source_loader_preserves_bom_and_crlf_without_loading_map() {
+        let package = PackageFixture::new();
+        let loader = DiskSourceLoader::new(package.root());
+        let text = "\u{feff}generated\r\ntext";
+
+        let loaded = loader
+            .load(
+                snapshot_id(34),
+                source_input(SourceOriginInput::Generated {
+                    generator: GeneratedSourceKind::new("macro-expansion"),
+                    text: Arc::from(text),
+                    anchor: None,
+                }),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .unwrap();
+
+        assert_eq!(loaded.text.as_ref(), text);
+        assert_eq!(loaded.source_hash, hash_text(text));
+        assert_ne!(loaded.source_hash, hash_text("generated\ntext"));
+        assert_eq!(loaded.line_map.source(), text);
+        assert_eq!(loaded.line_map.text_hash(), loaded.source_hash);
+        assert_eq!(
+            loaded.line_map.line_starts(),
+            &[0, "\u{feff}generated\r\n".len()]
+        );
+        assert_eq!(loaded.loading_map, None);
+        assert_eq!(loaded.generated_anchor, None);
+    }
+
+    #[test]
     fn generated_source_loader_accepts_missing_anchor_with_generator_metadata() {
         let package = PackageFixture::new();
         let loader = DiskSourceLoader::new(package.root());

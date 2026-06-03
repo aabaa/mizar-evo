@@ -274,7 +274,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
       (`snake_case`), then sync the Japanese companions, including the malformed
       Japanese package-name table row in `doc/spec/ja/23.package_management_and_build_system.md`.
 
-27. **Generated-source normalization policy.** [ ]
+27. **Generated-source normalization policy.** [x]
     - Decide and document whether generated source text is preserved byte-for-byte
       after UTF-8 validation, or whether source-loading normalization such as
       leading-BOM stripping and CRLF-to-LF conversion applies to generated input.
@@ -287,6 +287,23 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: add or update a focused generated-source BOM/CRLF case for the chosen
       behavior.
     - Depends on: 20. Spec: [source.md](./source.md), [source_map.md](./source_map.md).
+    - Decision: keep generated-source loading byte-for-byte. Generated input
+      enters the API as already-valid UTF-8 `Arc<str>`, and the loader preserves
+      accepted text exactly: a leading `U+FEFF` is not treated as an encoding
+      signature, CRLF pairs are not converted to LF, and lone `\r` is unchanged.
+      `source_hash` and `LineMap` are computed over that exact generated text.
+      Generated loading emits no `LoadingMap`; generated locations are recovered
+      through `LoadedSource.generated_anchor`, `SourceAnchor::Generated`, and
+      `GeneratedSpanOrigin`. Generators that need package-authored text
+      normalization must normalize their own output before constructing
+      `SourceOriginInput::Generated`.
+    - Test policy: `source.rs` includes a focused generated-source leading
+      `U+FEFF` plus CRLF case that preserves the text byte-for-byte, hashes the
+      exact text rather than the normalized spelling, and emits no `LoadingMap`.
+    - Follow-up: none for this policy. `LoadingOrigin::Generated` remains usable
+      for custom identity maps when a caller needs retained service-level
+      loaded-to-original conversion for generated text, but the default loader
+      does not create one.
 
 28. **Reserved and diagnostic-only error variant traceability.** [ ]
     - Classify public error variants that are currently reserved, custom-loader

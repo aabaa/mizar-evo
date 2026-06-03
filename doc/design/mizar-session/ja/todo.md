@@ -266,7 +266,7 @@
       companion を同期する。`doc/spec/ja/23.package_management_and_build_system.md` の
       package-name table row の malformed text も合わせて直す。
 
-27. **生成ソースの正規化方針。** [ ]
+27. **生成ソースの正規化方針。** [x]
     - 生成ソーステキストを UTF-8 検証後に byte-for-byte で保持するのか、先頭
       BOM 除去や CRLF→LF 変換のような source-loading 正規化を生成入力にも適用するのかを決めて文書化する。
     - 現在の実装は生成テキストをそのまま保持し、`LoadingMap` を emit しない。
@@ -275,6 +275,24 @@
       expectation、source-hash test を同時に更新する。
     - テスト: 選んだ挙動に対して、生成ソースの BOM/CRLF focused case を追加または更新する。
     - 依存: 20。仕様: [source.md](../en/source.md), [source_map.md](../en/source_map.md)。
+    - 判断: 生成ソース読み込みは byte-for-byte 保持のままにする。生成入力はすでに
+      valid UTF-8 の `Arc<str>` として API に入り、ローダーは受理したテキストを
+      そのまま保持する。先頭 `U+FEFF` はエンコードシグネチャとして扱わず、
+      CRLF ペアは LF に変換せず、単独の `\r` も変更しない。`source_hash` と
+      `LineMap` は、その正確な生成テキストに対して計算する。生成読み込みは
+      `LoadingMap` を emit しない。生成ソースの位置は
+      `LoadedSource.generated_anchor`、`SourceAnchor::Generated`、
+      `GeneratedSpanOrigin` を通して復元する。パッケージ記述テキストと同じ
+      正規化が必要な生成器は、`SourceOriginInput::Generated` を構築する前に
+      自分の出力を正規化しなければならない。
+    - テスト方針: `source.rs` に、先頭 `U+FEFF` と CRLF を含む生成ソースを
+      focused case として追加し、テキストが byte-for-byte で保持されること、
+      正規化後の綴りではなく正確なテキストとして hash 化されること、
+      `LoadingMap` を emit しないことを確認する。
+    - Follow-up: この方針についてはなし。`LoadingOrigin::Generated` は、
+      生成テキストに対して service レベルの loaded-to-original 変換を保持したい
+      custom caller が恒等 map を作る場合に引き続き利用できるが、既定のローダーは
+      それを作らない。
 
 28. **予約済み / 診断専用 error variant の traceability。** [ ]
     - 現時点で予約済み、custom-loader 専用、または diagnostic-summary 専用である

@@ -262,7 +262,7 @@ impl RetainedSourceMapService {
 }
 ```
 
-オフセットは、ソース読み込みの正規化後の検証済み UTF-8 `LoadedSource.text` へのバイトオフセットです。利用者向けの列は、フロントエンドアーキテクチャが定義する Unicode スカラー列の規則を用いるため、利用側が場当たり的に計算するのではなく、`LineMap` を通して変換しなければなりません。
+オフセットは、検証済み UTF-8 `LoadedSource.text` へのバイトオフセットです。ディスク入力とオープンバッファ入力では、これはソース読み込みの正規化後のテキストです。生成入力では、生成読み込みが先頭 `U+FEFF` を除去せず CRLF ペアも正規化しないため、受理した生成テキストそのものです。利用者向けの列は、フロントエンドアーキテクチャが定義する Unicode スカラー列の規則を用いるため、利用側が場当たり的に計算するのではなく、`LineMap` を通して変換しなければなりません。
 
 `DocumentUri` と `LspDocumentVersion` は、source loading、snapshot origin、retention owner、LSP range mapping が LSP crate に依存せず境界型を共有できるよう、この層の public alias として意図的に公開します。`TextRange` の convenience helper は、呼び出し側が読み込み済みテキスト範囲や字句テキスト範囲を明示的に構築できるよう public です。`TextRange::new` は `start <= end` を assert し、`TextRange::try_new` は逆順の境界に対して `None` を返し、`len` / `is_empty` は範囲の不変条件を前提にします。
 
@@ -283,7 +283,7 @@ impl RetainedSourceMapService {
 
 構築後は不変です。保持されたソース ID・テキストハッシュ・ソーステキスト・行開始位置は、可変なフィールドアクセスではなく accessor を通して参照します。`LineMap::source` は、行マップが保持する正確な正規化済み読み込みテキストを必要とする利用側へ公開します。ソース読み込みがオフセットを変更した場合、これは生ファイルまたはエディタテキストではありません。利用側は、オフセットを利用者向けの行・列値に変換する前に、`source_id` が報告対象のスナップショットに属することを検証しなければなりません。
 
-ディスクのソース読み込みが先頭の UTF-8 BOM を除去した場合、`LineMap` のバイトオフセット `0` は、元ファイルにおけるその BOM の直後の最初のバイトに当たります。生ファイルのバイト位置は、`SourceRange` や字句解析器のスパン座標を変更するのではなく、`LoadingMap` を通して復元します。
+ディスクのソース読み込みが先頭の UTF-8 BOM を除去した場合、`LineMap` のバイトオフセット `0` は、元ファイルにおけるその BOM の直後の最初のバイトに当たります。生ファイルのバイト位置は、`SourceRange` や字句解析器のスパン座標を変更するのではなく、`LoadingMap` を通して復元します。生成ソースでは、生成器が渡したテキストが `U+FEFF` で始まる場合でも、バイトオフセット `0` はその生成テキストの最初のバイトです。生成器が CRLF を渡した場合、CRLF は 2 バイトのままです。
 
 ### Source Range
 
@@ -300,9 +300,9 @@ impl RetainedSourceMapService {
 
 ### Loading Map
 
-`LoadingMap` は、正規化された `LoadedSource.text` を、BOM 除去や改行正規化の前のソース読み込み入力と関連付けます。ディスクソースでは、`original` の範囲は UTF-8 検証後の元ファイルバイトへのバイトオフセットです。オープンバッファでは、`original` の範囲はエディタ提供 UTF-8 テキストへのバイトオフセットであり、その後 `mizar-lsp` ブリッジがプロトコルの UTF-16 位置へ変換します。生成ソースの位置は `SourceAnchor::Generated` と `GeneratedSpanOrigin` で表され、利用可能な最善のソースアンカーと理由を保持します。
+`LoadingMap` は、正規化された `LoadedSource.text` を、BOM 除去や改行正規化の前のソース読み込み入力と関連付けます。ディスクソースでは、`original` の範囲は UTF-8 検証後の元ファイルバイトへのバイトオフセットです。オープンバッファでは、`original` の範囲はエディタ提供 UTF-8 テキストへのバイトオフセットであり、その後 `mizar-lsp` ブリッジがプロトコルの UTF-16 位置へ変換します。既定の生成ソースローダーは生成テキストを byte-for-byte で保持し、`LoadingMap` を emit しません。生成ソースの位置は、任意の `LoadedSource.generated_anchor`、`SourceAnchor::Generated`、`GeneratedSpanOrigin` で表され、利用可能な最善のソースアンカーと理由を保持します。
 
-先頭の UTF-8 BOM が除去された場合、この対応付けは元バイト範囲 `[0, 3)` に対する `RemovedLeadingBom` セグメントを記録し、最初の `Original` 読み込みセグメントは読み込みオフセット `0`・元バイトオフセット `3` から始まります。ソース読み込みが `LoadingMap` を省略してよいのは、読み込み済みテキストがソース読み込み入力とオフセットの上で同一である場合に限ります。保持された `SourceMapService` は loaded-to-original 変換のために保持済みマップを要求します。オフセット上同一のテキストに対して service レベルの変換が必要な場合、`LoadingMap::identity` が 1 つの `Original` セグメントでその関係を表します。
+先頭の UTF-8 BOM が除去された場合、この対応付けは元バイト範囲 `[0, 3)` に対する `RemovedLeadingBom` セグメントを記録し、最初の `Original` 読み込みセグメントは読み込みオフセット `0`・元バイトオフセット `3` から始まります。ソース読み込みが `LoadingMap` を省略してよいのは、読み込み済みテキストがソース読み込み入力とオフセットの上で同一である場合に限ります。生成読み込みは BOM や CRLF の変換を行わないため、この恒等ケースに当たります。保持された `SourceMapService` は loaded-to-original 変換のために保持済みマップを要求します。custom な生成ソースフローを含め、オフセット上同一のテキストに対して service レベルの変換が必要な場合、`LoadingMap::identity` が 1 つの `Original` セグメントでその関係を表します。
 
 `LoadingMap::new` は、呼び出し側が渡したセグメントを完全な構造検証なしで記録します。これらのマップを構築するソースローダーは、セグメントの不変条件を保たなければなりません。読み込み範囲は昇順かつ非重複であること、`Original` セグメントでは読み込み/元バイト長が等しいこと、`NormalizedNewline` セグメントは CRLF→LF 正規化を表し通常は読み込み長 1・元長 2 であること、`RemovedLeadingBom` は先頭 UTF-8 BOM の元範囲 `[0, 3)` のみを表すこと、対応付ける読み込みバイト範囲がセグメントで覆われていることです。ディスクとオープンバッファのソース読み込みは、元ファイルバイトまたはエディタ提供テキストに対する BOM/CRLF の loading map を出力するときに、これらの不変条件を保ちます。
 

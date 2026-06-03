@@ -149,11 +149,11 @@ Local diagnostics may keep an absolute display path separately. Published artifa
 
 ### Loaded Source
 
-`LoadedSource` contains validated UTF-8 text after source-loading normalization and a `LineMap` for that exact text. It is immutable after construction and may be retained by snapshot leases, LSP snapshots, diagnostic indexes, or source-map handles.
+`LoadedSource` contains validated UTF-8 text and a `LineMap` for that exact text. Disk and open-buffer inputs store the text after source-loading normalization. Generated inputs store the accepted generated text byte-for-byte, with no source-loading BOM or newline normalization. It is immutable after construction and may be retained by snapshot leases, LSP snapshots, diagnostic indexes, or source-map handles.
 
-`source_hash` is computed from `LoadedSource.text`, after UTF-8 validation and source-loading normalization such as leading BOM stripping and newline normalization. For open buffers, it is the normalized editor-provided text, not the on-disk file. Byte-exact provenance, if needed for packaging or diagnostics, must use origin metadata or a separate raw-content hash rather than redefining `source_hash`.
+`source_hash` is computed from `LoadedSource.text`. For disk and open-buffer inputs, that means after UTF-8 validation and source-loading normalization such as leading BOM stripping and newline normalization. For open buffers, it is the normalized editor-provided text, not the on-disk file. For generated inputs, it is the hash of the exact generated text accepted from the generator. Byte-exact provenance, if needed for packaging or diagnostics, must use origin metadata or a separate raw-content hash rather than redefining `source_hash`.
 
-`loading_map` is present when source loading changed offsets before `LoadedSource.text` was created. It maps normalized loaded-text ranges back to the source-loading input: original file byte offsets for disk sources or editor-provided text byte offsets for open buffers. Generated inputs carry an optional `SourceAnchor` on `SourceOriginInput`; `LoadedSource.generated_anchor` preserves that anchor, while `loading_map` remains only for source-loading byte-offset transforms. When no source-loading transform changed offsets, the mapping is identity and may be omitted.
+`loading_map` is present when source loading changed offsets before `LoadedSource.text` was created. It maps normalized loaded-text ranges back to the source-loading input: original file byte offsets for disk sources or editor-provided text byte offsets for open buffers. Generated inputs carry an optional `SourceAnchor` on `SourceOriginInput`; `LoadedSource.generated_anchor` preserves that anchor. Generated loading performs no byte-offset transforms and emits no `LoadingMap`; generated locations are recovered from the optional anchor and generated-span metadata instead. When no source-loading transform changed offsets, the mapping is identity and may be omitted.
 
 ### Source Origin
 
@@ -199,7 +199,11 @@ Open-buffer text may be newer than the last verified artifact. Consumers must ca
 
 ### Generated Source Loading
 
-Generated sources require a non-empty generator kind and, when available, an anchor to original source. Loading rejects blank generator metadata before allocating a `SourceId`, preserves accepted generator metadata in `LoadedSource.origin`, and preserves the optional anchor in `LoadedSource.generated_anchor`. Generated source text may be used for diagnostics, documentation, or extraction, but it must not be mistaken for package-authored `.miz` source.
+Generated sources require a non-empty generator kind and, when available, an anchor to original source. Loading rejects blank generator metadata before allocating a `SourceId`, preserves accepted generator metadata in `LoadedSource.origin`, and preserves the optional anchor in `LoadedSource.generated_anchor`.
+
+Generated source text is already UTF-8 because it enters the API as `Arc<str>`. The source loader preserves that text byte-for-byte as `LoadedSource.text`: a leading `U+FEFF` is not treated as an encoding signature, CRLF pairs are not converted to LF, and lone `\r` remains unchanged. The `source_hash` and `LineMap` are computed over this exact generated text, and `loading_map` is `None` because generated loading performs no source-loading offset transform. A generator that wants package-authored source normalization must normalize its own output before constructing `SourceOriginInput::Generated`, while still recording generator metadata and any source anchor.
+
+Generated source text may be used for diagnostics, documentation, or extraction, but it must not be mistaken for package-authored `.miz` source.
 
 ## Error Handling
 
@@ -233,6 +237,7 @@ Key scenarios:
 - path normalization rejects paths outside the package root;
 - CRLF and LF handling matches `LineMap` expectations;
 - generated-source inputs carry non-empty generator metadata and optional anchors, and loaded generated sources preserve generator metadata in `SourceOrigin` plus the optional anchor in `LoadedSource.generated_anchor`;
+- generated-source text with a leading `U+FEFF` and CRLF is preserved byte-for-byte, hashes as that exact text, and emits no `LoadingMap`;
 - source hashes do not include absolute paths or document versions.
 
 ## Constraints and Assumptions
