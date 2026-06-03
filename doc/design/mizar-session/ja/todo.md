@@ -334,6 +334,40 @@
       retain/release/allocation の不整合に使う。allocation 側の既存テストはこの error surface を
       すでに cover しており、文書化した release 経路について focused な missing live-lease-count test を追加した。
 
+29. **lint 強制の恒久化。** [ ]
+    - [Suggested Verification](#suggested-verification) の clippy/rustc lint gate を、
+      各コントリビューターの手動実行に頼るのではなく、ツリー内で恒久的に強制する。
+      ワークスペースには現在 `[workspace.lints]` テーブルも crate レベルの lint
+      属性も無い。
+    - ワークスペースの `[workspace.lints]` テーブル（rustc + clippy グループ）と、
+      `crates/mizar-session/Cargo.toml` の `lints.workspace = true` を優先する。
+      これにより素の `cargo build`/`cargo test` でも単体の clippy コマンドと同じ
+      denial が出るようにする。代わりに crate ローカルの
+      `#![deny(...)]`/`#![warn(...)]` 方針を選ぶ場合は、その理由を文書化する。
+    - 基準とする severity を決める（少なくとも `warnings` と `clippy::all` を deny。
+      `clippy::pedantic` の選択的有効化も検討）。意図的な `allow` 例外は、その
+      `allow` のそばに理由を添えて記録する。
+    - 既存の public API と挙動は変更しない。本タスクは lint 設定の追加と、
+      クリーンな gate に到達するために必要な機械的修正のみを行う。
+    - テスト: gate を有効にした状態で
+      `cargo clippy -p mizar-session --all-targets -- -D warnings` が通り、
+      `cargo test -p mizar-session` が緑のままであること。
+    - 依存: 20。仕様: 本 TODO "Suggested Verification"。
+
+30. **肥大化したモジュールファイルの分割。** [ ]
+    - 最大級のソースファイル（`snapshot.rs`、`source_map.rs`、`source.rs` は
+      テストを含めて各おおよそ 2.3k〜3.4k 行）を、`lib.rs` から再エクスポートされる
+      public API 面やモジュール仕様の "Public API" block を変えずに、凝集した
+      サブモジュールへ抽出して縮小する。
+    - 大きな `#[cfg(test)]` ブロックを兄弟のテストモジュールや `tests/` 形式の
+      ファイルへ移し、明確に独立した関心事（例: snapshot identity / lease accounting /
+      registry）を同じ public module path 配下の子モジュールへ分離することを優先する。
+    - `mod` の可視性と再エクスポートは安定させ、下流クレートと仕様の "Public API"
+      block から見て変化が無いようにする。
+    - テスト: 挙動保持。全モジュールテストと doctest を緑に保ち、標準の
+      verification コマンドを再実行する。
+    - 依存: 19, 20。仕様: mizar-session の全モジュール仕様。
+
 ## Suggested Verification
 
 各タスクの後に、以下を実行する:

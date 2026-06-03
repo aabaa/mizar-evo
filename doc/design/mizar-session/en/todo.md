@@ -349,6 +349,40 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
       tests already covered that error surface; a focused release-time missing
       live-lease-count test was added for the documented release path.
 
+29. **Durable lint enforcement.** [ ]
+    - Make the clippy/rustc lint gate from [Suggested Verification](#suggested-verification)
+      durable in-tree instead of relying on each contributor running it by hand;
+      the workspace currently has no `[workspace.lints]` table and no crate-level
+      lint attributes.
+    - Prefer a workspace `[workspace.lints]` table (rustc + clippy groups) with
+      `lints.workspace = true` in `crates/mizar-session/Cargo.toml`, so plain
+      `cargo build`/`cargo test` surface the same denials as the standalone clippy
+      command. If a crate-local `#![deny(...)]`/`#![warn(...)]` policy is chosen
+      instead, document why.
+    - Decide the baseline severity (at least deny `warnings` and `clippy::all`;
+      consider enabling `clippy::pedantic` selectively) and record any intentional
+      `allow` exceptions with a rationale next to the `allow`.
+    - Keep the existing public API and behavior unchanged; this task only adds
+      lint configuration plus any mechanical fixes needed to reach a clean gate.
+    - Tests: `cargo clippy -p mizar-session --all-targets -- -D warnings` passes
+      with the gate active and `cargo test -p mizar-session` stays green.
+    - Depends on: 20. Spec: this TODO "Suggested Verification".
+
+30. **Oversized module file split.** [ ]
+    - Reduce the largest source files (`snapshot.rs`, `source_map.rs`, and
+      `source.rs` are each roughly 2.3k-3.4k lines including tests) by extracting
+      cohesive submodules, without changing the public API surface re-exported
+      from `lib.rs` or the "Public API" blocks in the module specs.
+    - Prefer moving large `#[cfg(test)]` blocks into sibling test modules or
+      `tests/`-style files, and separating clearly independent concerns (for
+      example snapshot identity vs. lease accounting vs. registry) into child
+      modules under the same public module path.
+    - Keep `mod` privacy and re-exports stable so downstream crates and the spec
+      "Public API" blocks observe no change.
+    - Tests: behavior-preserving; keep all module and doctests green and re-run the
+      standard verification commands.
+    - Depends on: 19, 20. Spec: all mizar-session module specs.
+
 ## Suggested Verification
 
 After each task, run:
