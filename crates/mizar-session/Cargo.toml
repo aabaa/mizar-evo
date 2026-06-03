@@ -9,5 +9,8 @@ repository.workspace = true
 name = "mizar_session"
 path = "src/lib.rs"
 
+[lints]
+workspace = true
+
 [dependencies]
 blake3 = "1.8.5"

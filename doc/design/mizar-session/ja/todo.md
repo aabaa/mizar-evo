@@ -334,7 +334,7 @@
       retain/release/allocation の不整合に使う。allocation 側の既存テストはこの error surface を
       すでに cover しており、文書化した release 経路について focused な missing live-lease-count test を追加した。
 
-29. **lint 強制の恒久化。** [ ]
+29. **lint 強制の恒久化。** [x]
     - [Suggested Verification](#suggested-verification) の clippy/rustc lint gate を、
       各コントリビューターの手動実行に頼るのではなく、ツリー内で恒久的に強制する。
       ワークスペースには現在 `[workspace.lints]` テーブルも crate レベルの lint
@@ -353,6 +353,18 @@
       `cargo clippy -p mizar-session --all-targets -- -D warnings` が通り、
       `cargo test -p mizar-session` が緑のままであること。
     - 依存: 20。仕様: 本 TODO "Suggested Verification"。
+    - 決定: rustc `warnings` と `clippy::all` を deny する workspace
+      `[workspace.lints]` baseline を追加し、`crates/mizar-session/Cargo.toml`
+      で `lints.workspace = true` によって opt-in する。
+      `mizar-lexer`、`mizar-lsp`、`mizar-test` は opt-in せず、本タスクの
+      enforcement 範囲を `mizar-session` 外へ広げない。今後の crate は manifest の
+      opt-in を追加するだけで同じ policy を採用できる。
+    - 決定: `clippy::pedantic` は baseline に含めない。
+      `-W clippy::pedantic -D warnings` の試行では、`similar_names`、
+      `# Errors`/`# Panics` の不足、`must_use_candidate` など API doc/style
+      中心の広範な churn が発生し、本タスクの lint gate 範囲を超えるため。
+      新しい `allow` 例外は不要だった。すでに接続済みの snapshot ID derivation
+      helper に付いていた古い `allow(dead_code)` 属性は、代わりに削除した。
 
 30. **肥大化したモジュールファイルの分割。** [ ]
     - 最大級のソースファイル（`snapshot.rs`、`source_map.rs`、`source.rs` は

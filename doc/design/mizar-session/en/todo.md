@@ -349,7 +349,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
       tests already covered that error surface; a focused release-time missing
       live-lease-count test was added for the documented release path.
 
-29. **Durable lint enforcement.** [ ]
+29. **Durable lint enforcement.** [x]
     - Make the clippy/rustc lint gate from [Suggested Verification](#suggested-verification)
       durable in-tree instead of relying on each contributor running it by hand;
       the workspace currently has no `[workspace.lints]` table and no crate-level
@@ -367,6 +367,18 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: `cargo clippy -p mizar-session --all-targets -- -D warnings` passes
       with the gate active and `cargo test -p mizar-session` stays green.
     - Depends on: 20. Spec: this TODO "Suggested Verification".
+    - Decision: added a workspace `[workspace.lints]` baseline that denies rustc
+      `warnings` and `clippy::all`, with `crates/mizar-session/Cargo.toml`
+      opting in via `lints.workspace = true`. `mizar-lexer`, `mizar-lsp`, and
+      `mizar-test` were not opted in so this task does not broaden enforcement
+      beyond `mizar-session`; future crates can adopt the same policy by adding
+      the manifest opt-in.
+    - Decision: `clippy::pedantic` is not part of the baseline. A trial run with
+      `-W clippy::pedantic -D warnings` produced broad API-doc/style churn
+      (`similar_names`, missing `# Errors`/`# Panics`, `must_use_candidate`, and
+      related findings) outside this task's lint-gate scope. No new `allow`
+      exceptions were needed; stale `allow(dead_code)` attributes on the
+      already-wired snapshot ID derivation helpers were removed instead.
 
 30. **Oversized module file split.** [ ]
     - Reduce the largest source files (`snapshot.rs`, `source_map.rs`, and

@@ -126,7 +126,6 @@ use std::fmt;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-#[allow(dead_code)]
 const BUILD_SNAPSHOT_HASH_DOMAIN: &[u8] = b"mizar-session/build-snapshot-id/v1";
 const BUILD_SNAPSHOT_SERIALIZED_PREFIX: &str = "mizar-session-build-snapshot-v1:";
 const FIRST_ALLOCATOR_ID: u64 = 1;
@@ -306,7 +305,6 @@ impl SnapshotLeaseId {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn build_snapshot_id_from_sorted_canonical_bytes(
     schema_identity: &[u8],
     toolchain_identity: &[u8],
@@ -320,7 +318,6 @@ pub(crate) fn build_snapshot_id_from_sorted_canonical_bytes(
     )
 }
 
-#[allow(dead_code)]
 fn build_snapshot_id_from_parts(
     domain_separator: &[u8],
     schema_identity: &[u8],
@@ -339,7 +336,6 @@ fn build_snapshot_id_from_parts(
     BuildSnapshotId(Hash::from_bytes(*hasher.finalize().as_bytes()))
 }
 
-#[allow(dead_code)]
 fn update_hash_part(hasher: &mut blake3::Hasher, label: &[u8], bytes: &[u8]) {
     hasher.update(&(label.len() as u64).to_le_bytes());
     hasher.update(label);

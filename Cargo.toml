@@ -12,3 +12,11 @@ resolver = "3"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/hanabishi/mizar-evo"
+
+[workspace.lints.rust]
+warnings = "deny"
+
+[workspace.lints.clippy]
+all = "deny"
+# Keep pedantic out of the shared baseline for now: enabling it on mizar-session
+# raises broad API-doc/style churn that is outside durable clippy::all enforcement.
