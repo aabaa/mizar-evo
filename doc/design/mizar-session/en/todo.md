@@ -186,12 +186,17 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
     - Tests: documentation-only; run formatting or link checks if the repository has an established command.
     - Depends on: 20. Spec: repository documentation policy.
 
-22. **Determinism property tests.** [ ]
+22. **Determinism property tests.** [x]
     - Add crate-level determinism coverage for identical canonical inputs producing identical `BuildSnapshotId` values independent of insertion order or scheduling-like construction order.
     - Add source-range conversion determinism checks for equivalent retained line/loading/preprocess maps.
     - Keep the tests focused on deterministic public behavior rather than implementation details.
     - Tests: add the property/regression tests and run `cargo test -p mizar-session`.
     - Depends on: 20. Spec: [ids.md](./ids.md), [snapshot.md](./snapshot.md), [source_map.md](./source_map.md).
+    - Result: added public integration coverage in
+      `crates/mizar-session/tests/determinism.rs` for registry-created
+      `BuildSnapshotId` equality across source/dependency insertion
+      permutations, scheduling-like source-id allocation orders, and equivalent
+      retained source-map conversion orders.
 
 23. **Snapshot lease allocation mutex hardening.** [x]
     - Decide whether `SnapshotRegistry::acquire_lease` should allocate lease ids outside the registry mutex, matching `create_snapshot`.

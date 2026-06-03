@@ -186,12 +186,16 @@
     - テスト: documentation-only。リポジトリに既定の formatting/link check コマンドがあれば実行する。
     - 依存: 20。仕様: リポジトリの documentation policy。
 
-22. **決定性プロパティテスト。** [ ]
+22. **決定性プロパティテスト。** [x]
     - 同一の正準入力から、挿入順や scheduling-like な構築順に依らず同一の `BuildSnapshotId` が得られることを、crate-level の決定性テストで補強する。
     - 等価な保持済み line/loading/preprocess map に対する source-range 変換の決定性を確認する。
     - 実装詳細ではなく、決定的な public behavior に焦点を絞る。
     - テスト: property/regression test を追加し、`cargo test -p mizar-session` を実行する。
     - 依存: 20。仕様: [ids.md](../en/ids.md)、[snapshot.md](../en/snapshot.md)、[source_map.md](../en/source_map.md)。
+    - 結果: `crates/mizar-session/tests/determinism.rs` に public integration
+      coverage を追加し、registry で作成された `BuildSnapshotId` が
+      source/dependency の挿入順、scheduling-like な source-id 割り当て順、
+      等価な保持済み source-map の変換順に依存しないことを確認する。
 
 23. **スナップショットリース割り当て mutex の堅牢化。** [x]
     - `SnapshotRegistry::acquire_lease` の lease id 割り当てを、`create_snapshot` と同様に registry mutex の外へ出すべきかを決める。
