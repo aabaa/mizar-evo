@@ -1,15 +1,169 @@
-# mizar-frontend: Orchestration
+# Module: orchestration
+
+> Canonical language: English. Japanese companion: [../ja/orchestration.md](../ja/orchestration.md).
 
 Status: planned.
 
 ## Purpose
 
-This module defines the phase 1-3 coordinator that produces `FrontendOutput`.
+This module implements the phase 1-3 coordinator (source_and_frontend pipeline Steps 1-5) that produces `FrontendOutput`.
+It wires `source` → `preprocess` → `lexical_env` → `lexing` → `parsing`, merges
+diagnostics from every phase into one deterministically ordered list, and exposes
+the combined frontend output.
 
-## Responsibilities
+It is the only module that owns the end-to-end pipeline. It does not own source
+identity, comment stripping, lexical environment assembly, longest-match,
+grammar, or AST node definitions; those belong to `mizar-session`, `mizar-lexer`,
+`mizar-syntax`, and `mizar-parser`. It does not perform semantic name resolution
+or type checking.
 
-- coordinate source loading, lexer preprocessing helpers, import pre-scan, active lexical environment construction, token disambiguation, and parser invocation;
-- call `mizar-parser` to produce `mizar-syntax::SurfaceAst`;
-- merge lexical and syntax diagnostics in deterministic order;
-- expose `FrontendOutput` without owning AST node definitions or grammar logic.
+See
+[architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md)
+"Frontend Pipeline", "Error Recovery", "Diagnostics", and "FrontendOutput".
 
+## Public API
+
+```rust
+pub struct FrontendOutput {
+    pub source: SourceUnit,
+    pub preprocessed: PreprocessedSource,
+    pub tokens: TokenStream,
+    pub ast: Option<SurfaceAst>,
+    pub diagnostics: Vec<FrontendDiagnostic>,
+}
+
+pub struct Frontend<L, P, S>
+where
+    L: SourceUnitLoader,
+    P: LexicalSummaryProvider,
+    S: SourceMapService,
+{ /* loader, lexical-summary provider, source-map service */ }
+
+impl<L, P, S> Frontend<L, P, S> {
+    pub fn new(loader: L, provider: P, service: Arc<S>) -> Self;
+
+    pub fn run(
+        &self,
+        request: SourceUnitRequest,
+        parser_inputs: ParserInputs,
+        ids: &dyn SessionIdAllocator,
+    ) -> Result<FrontendOutput, FrontendError>;
+}
+
+pub struct FrontendDiagnostic {
+    pub code: DiagnosticCode,
+    pub class: DiagnosticClass,
+    pub primary: SourceRange,
+    pub secondary: Vec<SourceRange>,
+    pub recovery_note: Option<String>,
+}
+
+pub enum DiagnosticClass {
+    LexicalPrecondition,
+    CommentStructure,
+    Tokenization,
+    Syntax,
+    AnnotationSyntax,
+}
+```
+
+`FrontendOutput` matches the architecture interface. `FrontendDiagnostic` is the
+unified diagnostic that all phase-specific diagnostics
+(`SourcePreprocessDiagnostic`, `ImportPrescanDiagnostic`,
+`LexicalEnvironmentDiagnostic`, `LexDiagnostic`, `SyntaxDiagnostic`) are mapped
+into, so consumers see one ordered list keyed by `SourceRange`.
+
+`ast = None` means parsing could not recover enough structure for later phases;
+the lexical, preprocessing, and syntax diagnostics are still returned.
+
+## Dependencies
+
+- Internal: `source`, `preprocess`, `lexical_env`, `lexing`, `parsing`,
+  `span_bridge` (constructed once and threaded through the phases).
+- External: `mizar-session` (`SourceId`, `SourceRange`, `SourceMapService`,
+  `SessionIdAllocator`, `BuildSnapshotId`), `mizar-lexer`, `mizar-syntax`,
+  `mizar-parser` through the per-phase modules.
+
+This module is the public entry point of the crate; it is consumed by the
+compiler driver, LSP, the formatter, and tests.
+
+## Data Structures
+
+### Frontend Output
+
+`FrontendOutput` bundles each phase artifact plus the merged diagnostics. It is
+the unit later phases (module/name resolution) consume: they read `ast` and
+`tokens`, and they read `source`/`preprocessed` for spans, comments, and import
+stubs. Each artifact carries its own cache key per
+[architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md)
+"Incrementality", so a comment-only edit can reuse semantic outputs while a
+dependency export change invalidates tokenization.
+
+### Diagnostic Merge Order
+
+Diagnostics merge by phase precedence and then by primary `SourceRange` start,
+so the order is stable across runs and independent of internal scheduling:
+
+1. lexical precondition (Steps 1-2);
+2. comment structure (Step 2);
+3. tokenization (Step 4);
+4. syntax and annotation syntax (Step 5).
+
+Within a class, order by primary span start, then by diagnostic code. A recovery
+note is attached when a later diagnostic may be affected by an earlier recovery.
+
+## Algorithm / Logic
+
+### Run the frontend for one source
+
+1. Construct the `SpanBridge` over the `SourceMapService`.
+2. Load the `SourceUnit` (`source`); on a load error, return a `FrontendError`
+   carrying the file-level diagnostic and stop.
+3. Preprocess (`preprocess`): produce `PreprocessedSource` and Step-2
+   diagnostics.
+4. Build the `ActiveLexicalEnvironment` (`lexical_env`) from the import stubs.
+5. Tokenize (`lexing`) into a `TokenStream`.
+6. Parse (`parsing`) into an optional `SurfaceAst`.
+7. Map every phase diagnostic into `FrontendDiagnostic`, merge in the
+   deterministic order above, and assemble `FrontendOutput`.
+
+Phases 2-5 do not abort on recoverable problems: they record diagnostics and
+carry recovered artifacts forward, so one run can report lexical, tokenization,
+and syntax diagnostics together.
+
+## Error Handling
+
+`FrontendError` is reserved for failures that prevent producing any
+`FrontendOutput` — primarily source-load failures from Step 1 (unreadable file,
+invalid UTF-8, path outside root) and internal `SpanBridgeError` invariant
+violations. Recoverable lexical, comment, tokenization, and syntax problems are
+not `FrontendError`s; they are `FrontendDiagnostic`s inside a returned
+`FrontendOutput`. Frontend diagnostics never claim semantic facts such as
+"undefined symbol" or "ambiguous overload"; those belong to later phases.
+
+## Tests
+
+Key scenarios:
+
+- a well-formed source runs all phases and returns `FrontendOutput` with
+  `ast = Some` and no diagnostics;
+- a source with a lexical-precondition error, a tokenization error, and a syntax
+  error reports all three in the deterministic merge order;
+- a parse failure returns `ast = None` while preserving preprocessing and
+  tokenization diagnostics;
+- a Step 1 load failure returns `FrontendError` with the file-level diagnostic
+  and no `FrontendOutput`;
+- diagnostic order is identical across repeated runs regardless of internal
+  scheduling;
+- the merged diagnostics carry valid `SourceRange`s resolved through the span
+  bridge.
+
+## Constraints and Assumptions
+
+- This module owns orchestration only; phase logic stays in the per-phase modules
+  and the upstream crates.
+- The frontend produces syntax, not semantics.
+- Diagnostic merge order is deterministic and span-keyed.
+- `FrontendError` is for unrecoverable failures; recoverable problems are
+  diagnostics inside `FrontendOutput`.
+- Frontend artifacts are internal compiler data, not stable public build outputs.
