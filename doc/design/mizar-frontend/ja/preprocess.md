@@ -8,7 +8,7 @@
 
 このモジュールはフロントエンドパイプラインの Step 2（前処理）を実装し、字句環境構築と字句解析が消費する `PreprocessedSource` を生成する。
 
-`SourceUnit` に対して `mizar-lexer` のソース前処理ヘルパーを統制する。すなわちコード領域の ASCII 検証、コメントとドキュメントコメントの分離、字句テキスト内の注釈保持、浅いトップレベルインポート事前走査である。統制と `mizar-session` `SourceRange` への span 橋渡しを所有するが、コメント除去やインポート走査のアルゴリズムは所有しない（それらは `mizar-lexer` にある）。また、トークン化・構文解析・インポート解決も行わない。
+`SourceUnit` に対して `mizar-lexer` のソース前処理ヘルパーを統制する。すなわちコード領域の ASCII 検証、コメントとドキュメントコメントの分離、字句テキスト内の注釈構文保持、浅いトップレベルインポート事前走査である。統制と `mizar-session` `SourceRange` への span 橋渡しを所有するが、コメント除去やインポート走査のアルゴリズムは所有しない（それらは `mizar-lexer` にある）。また、トークン化・構文解析・インポート解決も行わない。
 
 [architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md) の「Step 2: Preprocess Source」「Comments and Doc Comments Are Source Metadata」「Import Pre-Scan Is Shallow」「Annotations Are Parser-Owned Syntax」を参照。
 
@@ -41,7 +41,7 @@ pub struct DocComment {
 
 pub struct LexicalSourceMap { /* lexical-text offsets -> SourceRange */ }
 
-pub fn preprocess(source: &SourceUnit, bridge: &SpanBridge) -> PreprocessedSource;
+pub fn preprocess(source: &SourceUnit, bridge: &mut SpanBridge) -> PreprocessedSource;
 ```
 
 `PreprocessedSource` はアーキテクチャのインターフェースを反映する。`diagnostics` を追加し、Step 2 の字句前提・コメント構造診断が出力とともに運ばれ、統制層で決定的な順序で後から統合されるようにする。
@@ -50,7 +50,7 @@ pub fn preprocess(source: &SourceUnit, bridge: &SpanBridge) -> PreprocessedSourc
 
 ## 依存関係
 
-- 内部: `source`（`SourceUnit` を提供）、`span_bridge`（字句解析器の前処理マップオフセットを `mizar-session` `SourceRange` へ変換）、`lexical_env` と `lexing`（`PreprocessedSource` を消費）。
+- 内部: `source`（`SourceUnit` を提供）、`span_bridge`（ソースの preprocess map を登録し、字句解析器の前処理マップオフセットを `mizar-session` `SourceRange` へ変換）、`lexical_env` と `lexing`（`PreprocessedSource` を消費）。
 - 外部: `mizar-lexer`（`preprocess_source_for_lexing`、`PreprocessedLexicalSource`、`SourcePreprocessMap`、`CommentTrivia`、`SourcePreprocessDiagnostic`、`scan_import_prelude`、`ImportPrelude`、`ImportStub`、`ImportPrescanDiagnostic`、`scan_raw`）、`mizar-session`（`SourceId`、`SourceRange`）。
 
 ## データ構造
@@ -65,17 +65,18 @@ pub fn preprocess(source: &SourceUnit, bridge: &SpanBridge) -> PreprocessedSourc
 
 ### インポートスタブ
 
-`ImportStub`（`mizar-lexer` から再エクスポート）はトップレベルのインポート前置きを走査した浅い結果である。インポート種別、生のドット区切りモジュールパス、ソーススパンを持つ。解決済みインポートではなく、アクティブ字句環境を要求し、語彙読み込みが失敗したときに良い診断を出すのに十分なだけである。パッケージ／モジュールの存在、可視性、エクスポート検査はモジュール解決へ先送りする。
+`ImportStub`（`mizar-lexer` から再エクスポート）はトップレベルのインポート前置きを走査した浅い結果である。生のドット区切りモジュールパス、任意の alias、分岐インポートを含む正確なソース被覆セグメント、全体 span を持つ。解決済みインポートではなく、アクティブ字句環境を要求し、語彙読み込みが失敗したときに良い診断を出すのに十分なだけである。パッケージ／モジュールの存在、可視性、エクスポート検査、再エクスポート意味論はモジュール解決へ先送りする。
 
 ## アルゴリズム / ロジック
 
 ### SourceUnit の前処理
 
-1. `SourceUnit.source_text` に対して `mizar_lexer::preprocess_source_for_lexing` を呼び、コード領域の ASCII 検証（コメント／注釈内の Unicode は許可）、通常コメントの除去、ドキュメントコメントの保持、字句テキスト内の注釈保持を行い、`SourcePreprocessMap` を生成する。
-2. 保持された各コメント・ドキュメントコメント・前処理診断のスパンを、字句／ソースオフセットから `span_bridge` を通じて `mizar-session` `SourceRange` へ変換する。
-3. 字句テキストを生スキャン（`scan_raw`）し、`scan_import_prelude` を実行して `ImportStub` とインポート事前走査診断を抽出し、それらのスパンを `SourceRange` へ変換する。
-4. コメント構造・ASCII 前提・インポート事前走査の診断を `diagnostics` に集約し、ソース順を保つ。
-5. 前処理マップと line／loading マップから `LexicalSourceMap` を組み立て、`PreprocessedSource` を返す。
+1. `SourceUnit.source_text` に対して `mizar_lexer::preprocess_source_for_lexing` を呼び、コード領域の ASCII 検証（コメント内の Unicode は許可し、文字列リテラル内 Unicode の受理は parser-assisted lexing contract に委ねる）、通常コメントの除去、ドキュメントコメントの保持、字句テキスト内の注釈構文保持を行い、`SourcePreprocessMap` を生成する。
+2. 字句解析器の `SourcePreprocessMap` を session `PreprocessMap` へ変換し、`SourceId` に対して mutable `SpanBridge` へ登録する。
+3. 保持された各コメント・ドキュメントコメント・前処理診断のスパンを、字句／ソースオフセットから `span_bridge` を通じて `mizar-session` `SourceRange` へ変換する。
+4. 字句テキストを生スキャン（`scan_raw`）し、`scan_import_prelude` を実行して `ImportStub` とインポート事前走査診断を抽出し、それらのスパンを `SourceRange` へ変換する。
+5. コメント構造・ASCII 前提・インポート事前走査の診断を `diagnostics` に集約し、ソース順を保つ。
+6. 前処理マップと line／loading マップから `LexicalSourceMap` を組み立て、`PreprocessedSource` を返す。
 
 インポート事前走査は生の字句解析器出力を消費する。生スキャン自体はインポートを解釈しない。ここでは語彙読み込みを妨げる不正なインポート構文のみを報告する。
 
@@ -97,7 +98,7 @@ Step 2 の診断はハードエラーとして送出せず、`PreprocessedSource
 - ドキュメントコメントは生本文とソース範囲とともに保持され、字句テキストには渡されない。
 - 注釈構文（`@latex(...)`、`@[...]`）は `lexical_text` に残る。
 - 除去されたコメントをまたぐ字句範囲は合成マッピングを生む。
-- トップレベル `import` 形式は正しい種別・生パス・スパンを持つ `ImportStub` を生み、不正なインポートは中断せず `ImportPrescanDiagnostic` を生む。
+- トップレベル `import` 形式は生パス・任意の alias・ソースセグメント・span を持つ `ImportStub` を生み、不正なインポートは中断せず `ImportPrescanDiagnostic` を生む。
 - コード領域の非 ASCII 文字は字句前提診断として報告され、前処理は回復済み字句テキストを返す。
 - 未終端ブロックコメントは報告され回復される。
 
@@ -105,6 +106,6 @@ Step 2 の診断はハードエラーとして送出せず、`PreprocessedSource
 
 - このモジュールはトークン化・構文解析・インポート解決を行わない。
 - コメント除去・ASCII 検証・インポート事前走査のアルゴリズムは `mizar-lexer` に属する。このモジュールはそれらを統制し、span 橋渡しを所有する。
-- 注釈はパーサー所有のため字句テキストに残る。前処理は注釈を別個のメタデータチャネルに集約しない。
+- 注釈構文はパーサー所有のため字句テキストに残る。前処理は注釈を別個のメタデータチャネルに集約しない。注釈文字列引数内の Unicode は、parser-assisted lexing contract が ASCII 前提診断より前に文字列必須 span を識別できるようになってから受理する。それまでは、コメント外の非 ASCII は字句前提診断のままである。
 - 合成空白は第一のユーザー向けソース範囲にならない。
 - `PreprocessedSource` はインクリメンタル再利用のため `source_hash` とフロントエンドバージョンでキー付けされる。

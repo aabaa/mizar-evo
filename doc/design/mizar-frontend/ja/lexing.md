@@ -30,7 +30,7 @@ pub struct Token {
 pub struct TokenizeRequest<'a> {
     pub preprocessed: &'a PreprocessedSource,
     pub environment: &'a ActiveLexicalEnvironment,
-    pub parser_context: Option<&'a ParserLexContext>,
+    pub parser_context: ParserLexContext,
 }
 
 pub fn tokenize(request: TokenizeRequest<'_>, bridge: &SpanBridge) -> TokenStream;
@@ -38,7 +38,7 @@ pub fn tokenize(request: TokenizeRequest<'_>, bridge: &SpanBridge) -> TokenStrea
 
 `TokenKind`、`ParserLexContext`、`ParserLexMode`、`LexDiagnostic` は `mizar-lexer` から再エクスポートされる。フロントエンドの `Token` は、`span` が字句テキストのバイトスパンではなく session `SourceRange` である点のみが字句解析器の内部トークンと異なる。`tokenize` は各字句解析器スパンを `span_bridge` を通じて変換する。
 
-`parser_context` は曖昧性解消器が必要とする狭い文法由来の信号（文字列必須位置と記号種フィルタ）を、任意のパーサー状態を晒さずに運ぶ。`None` のとき字句解析は既定モードで実行され、パーサー統合パスは Step 5 の途中で文脈を逐次供給する。
+`parser_context` は曖昧性解消器が必要とする狭い文法由来の信号を、任意のパーサー状態を晒さずに運ぶ。現在の `mizar-lexer` API は uniform context であり、注釈／演算子宣言引数のような位置別の文字列必須 span はまだ表現しない。source → tokens の基盤では `ParserLexContext::general()` を使い、位置別の `StringLiteral` 認識は parser-assisted lexing contract の確定後に追加する。
 
 ## 依存関係
 
@@ -51,7 +51,7 @@ pub fn tokenize(request: TokenizeRequest<'_>, bridge: &SpanBridge) -> TokenStrea
 
 ### トークンストリーム
 
-`TokenStream` は 1 ファイルの完全かつソース忠実なトークン列である。各 `Token` は元のつづり（`text`）と session `SourceRange` を保持する。`TokenKind` には分割されなかった生単位の `LexemeRun`、`UserSymbol`、`ReservedWord`、`ReservedSymbol`、`Identifier`、`Numeral`、`StringLiteral`、`ErrorRecovery` が含まれる。`StringLiteral` は `parser_context` を通じて知らされる文法定義の文字列必須位置にのみ現れる。
+`TokenStream` は 1 ファイルの完全かつソース忠実なトークン列である。各 `Token` は元のつづり（`text`）と session `SourceRange` を保持する。`TokenKind` には分割されなかった生単位の `LexemeRun`、`UserSymbol`、`ReservedWord`、`ReservedSymbol`、`Identifier`、`Numeral`、`StringLiteral`、`ErrorRecovery` が含まれる。現在の uniform context API では、明示的な `StringRequired` 実行のときだけ `StringLiteral` が現れる。文法上の位置に基づく string-required registry は parser-assisted lexing contract の範囲である。
 
 ### スコープ字句ビュー
 
@@ -64,8 +64,8 @@ pub fn tokenize(request: TokenizeRequest<'_>, bridge: &SpanBridge) -> TokenStrea
 1. 字句テキストを生スキャン（`scan_raw`）し、スパンを保持した `LexemeRun` にする。
 2. 生トークンから `ScopeSkeleton` / `ScopeLexView` を構築し、スコープ付き識別子の上書きに用いる。
 3. `disambiguate`（またはパーサー統合の `lex`）を実行し、次の順序で最長一致する。アクティブユーザー記号、予約特殊記号、予約語、識別子／数値規則、そして言語が要求する場合のパーサー期待／スコープ上書き。
-4. `StringLiteral` トークンは `parser_context` が示す文字列必須位置でのみ認識する。それ以外では引用符は通常の記号文字のままである。
-5. 結果の各字句解析器スパンを `span_bridge` を通じて `source_id` でスコープされた `SourceRange` へ変換する。
+4. `StringLiteral` トークンは現在の parser lexing context が文字列を要求するときだけ認識する。それ以外では引用符は通常の記号文字のままである。注釈／演算子位置の string-required 判定は real parser contract まで延期する。
+5. 結果の各字句解析器スパンを `span_bridge.lexical_span` を通じて、`source_id` でスコープされた第一 `SourceRange` へ変換し、隣接アンカーは診断用に保持する。
 6. 字句解析器の診断を集め、`TokenStream` を返す。
 
 複合予約トークン（`.{`、`.*`、`.=`、`...`）は字句解析器が認識する。`.` のセレクタ／名前空間の役割はパーサーと解決器に委ねる。字句解析器は定義済み性・適用可能性・オーバーロード選択を決して判断しない。
@@ -78,16 +78,15 @@ pub fn tokenize(request: TokenizeRequest<'_>, bridge: &SpanBridge) -> TokenStrea
 - スキャンは空白・予約区切り・行境界で再開する。
 - `LexDiagnostic`（未知／不正トークン、不正な数値、文字列必須位置での不正な文字列リテラル）は、回復可能なトークンを落とさずに集める。
 
-`tokenize` は常に `TokenStream` を返す。字句失敗は中断ではなく回復トークンと診断へ縮退するので、パーサーは引き続き回復を試みられる。
+`tokenize` は常に `TokenStream` を返す。`scan_raw` がハードエラーを返す入力でも、frontend wrapper は回復トークンと診断へ適合させるので、パーサーは引き続き回復を試みられる。
 
 ## テスト
 
 主要シナリオ:
 
 - 識別子とつづりを共有するユーザー記号が、アクティブ字句環境に対する最長一致で分類される。
-- インポート順のタイブレークが、同じ長さの一致に対して期待されるユーザー記号を選ぶ。
 - 複合予約トークン（`.{`、`.*`、`.=`、`...`）が単一トークンとして字句解析される。
-- 引用符が文字列必須位置の外ではユーザー記号文字として、注釈／演算子宣言引数位置では `StringLiteral` として字句解析される。
+- 引用符が general context ではユーザー記号文字として字句解析され、bounded uniform `StringRequired` context では `StringLiteral` を生む。注釈／演算子宣言引数位置の StringLiteral テストは parser-assisted lexing contract まで延期する。
 - 不正なトークンが正しい `SourceRange` を持つ `ErrorRecovery` を送出し、スキャンが再開する。
 - 送出された各トークンの `span` が `source_id` に対する妥当な `SourceRange` であり、ソースマップを通じて元のつづりを再現する。
 
@@ -95,6 +94,6 @@ pub fn tokenize(request: TokenizeRequest<'_>, bridge: &SpanBridge) -> TokenStrea
 
 - このモジュールは字句解析器を統制する。最長一致・スコープスケルトン・曖昧性解消規則は所有しない。
 - 字句解析器は複合予約トークンとアクティブユーザー記号を認識するが、意味的なセレクタ／名前空間の役割は認識しない。
-- `StringLiteral` トークンは文法定義の文字列必須位置でのみ送出される。
+- `StringLiteral` トークンは parser lexing context が文字列を要求するときだけ送出される。正確な文法位置認識は parser-assisted lexing contract で確定する。
 - `TokenStream` キャッシュキーは前処理済みハッシュとアクティブ字句環境 fingerprint である。
 - すべてのトークンスパンは `span_bridge` を通じて生成された session `SourceRange` 値である。

@@ -59,7 +59,7 @@ pub struct ActiveLexicalEnvironmentResult {
 
 ### アクティブ字句環境
 
-`ActiveLexicalEnvironment`（`mizar-lexer` 所有）は予約語・予約記号テーブル、インポートされたモジュールがエクスポートするユーザー定義記号名の `UserSymbolIndex`、および `LexicalEnvironmentFingerprint` を保持する。同じ長さのユーザー記号一致を決定的にタイブレークできるようインポート順を記録し、診断のために記号の出所を記録する。字句解析器ローカルであり、完全なモジュール IR や意味的適用可能性ではなく字句的な形と出所を捕捉する。
+`ActiveLexicalEnvironment`（`mizar-lexer` 所有）は予約語・予約記号テーブル、インポートされたモジュールがエクスポートするユーザー定義記号名の `UserSymbolIndex`、および `LexicalEnvironmentFingerprint` を保持する。インポート順は決定的 fingerprint と provenance のために記録し、診断のために記号の出所を記録する。同綴りのインポート済みユーザー記号衝突はフロントエンドの import-order tie-break で解決せず、provider または `mizar-lexer` が字句環境の衝突として報告する。字句解析器ローカルであり、完全なモジュール IR や意味的適用可能性ではなく字句的な形と出所を捕捉する。
 
 ### Fingerprint とキャッシュキー
 
@@ -85,7 +85,7 @@ pub struct ActiveLexicalEnvironmentResult {
 主要シナリオ:
 
 - インポートスタブとモジュール字句サマリが、正しい出所とインポート序数を持つ候補からなる `UserSymbolIndex` を生む。
-- インポート順が同じ長さのユーザー記号のタイブレークを決定的に定める。
+- 異なるモジュールからインポートされた同綴りユーザー記号は決定的な字句環境衝突を生み、異なる綴りで重なり合う記号は字句解析器の最長一致選択で引き続き利用できる。
 - 未解決インポートは診断とともにより小さな環境へ縮退し、残りの記号は読み込まれる。
 - `LexicalEnvironmentFingerprint` は依存字句サマリが変わると変化し、ローカルファイルのコメントのみが変わるときは安定である。
 - 予約語と予約記号はインポートに関係なく常に存在する。

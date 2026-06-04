@@ -14,8 +14,8 @@ the combined frontend output.
 It is the only module that owns the end-to-end pipeline. It does not own source
 identity, comment stripping, lexical environment assembly, longest-match,
 grammar, or AST node definitions; those belong to `mizar-session`, `mizar-lexer`,
-`mizar-syntax`, and `mizar-parser`. It does not perform semantic name resolution
-or type checking.
+and, once available, the real `mizar-syntax` / `mizar-parser` seam. It does not
+perform semantic name resolution or type checking.
 
 See
 [architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md)
@@ -24,30 +24,34 @@ See
 ## Public API
 
 ```rust
-pub struct FrontendOutput {
+pub struct FrontendOutput<A> {
     pub source: SourceUnit,
     pub preprocessed: PreprocessedSource,
     pub tokens: TokenStream,
-    pub ast: Option<SurfaceAst>,
+    pub ast: Option<A>,
     pub diagnostics: Vec<FrontendDiagnostic>,
 }
 
-pub struct Frontend<L, P, S>
+pub struct Frontend<L, P, PS>
 where
     L: SourceUnitLoader,
     P: LexicalSummaryProvider,
-    S: SourceMapService,
-{ /* loader, lexical-summary provider, source-map service */ }
+    PS: ParserSeam,
+{ /* loader, lexical-summary provider, parser seam */ }
 
-impl<L, P, S> Frontend<L, P, S> {
-    pub fn new(loader: L, provider: P, service: Arc<S>) -> Self;
+impl<L, P, PS> Frontend<L, P, PS>
+where
+    L: SourceUnitLoader,
+    P: LexicalSummaryProvider,
+    PS: ParserSeam,
+{
+    pub fn new(loader: L, provider: P, parser: PS) -> Self;
 
     pub fn run(
         &self,
         request: SourceUnitRequest,
-        parser_inputs: ParserInputs,
         ids: &dyn SessionIdAllocator,
-    ) -> Result<FrontendOutput, FrontendError>;
+    ) -> Result<FrontendOutput<PS::Ast>, FrontendError>;
 }
 
 pub struct FrontendDiagnostic {
@@ -67,7 +71,9 @@ pub enum DiagnosticClass {
 }
 ```
 
-`FrontendOutput` matches the architecture interface. `FrontendDiagnostic` is the
+`FrontendOutput<A>` matches the architecture interface while keeping the parser
+AST type abstract. With `StubParserSeam`, `ast` is always `None`; with the real
+parser seam, `A` is `mizar_syntax::SurfaceAst`. `FrontendDiagnostic` is the
 unified diagnostic that all phase-specific diagnostics
 (`SourcePreprocessDiagnostic`, `ImportPrescanDiagnostic`,
 `LexicalEnvironmentDiagnostic`, `LexDiagnostic`, `SyntaxDiagnostic`) are mapped
@@ -80,9 +86,10 @@ the lexical, preprocessing, and syntax diagnostics are still returned.
 
 - Internal: `source`, `preprocess`, `lexical_env`, `lexing`, `parsing`,
   `span_bridge` (constructed once and threaded through the phases).
-- External: `mizar-session` (`SourceId`, `SourceRange`, `SourceMapService`,
-  `SessionIdAllocator`, `BuildSnapshotId`), `mizar-lexer`, `mizar-syntax`,
-  `mizar-parser` through the per-phase modules.
+- External: `mizar-session` (`SourceId`, `SourceRange`,
+  `SessionIdAllocator`, `BuildSnapshotId`), `mizar-lexer`. The real parser seam
+  additionally depends on `mizar-syntax` and `mizar-parser` once those crates
+  exist.
 
 This module is the public entry point of the crate; it is consumed by the
 compiler driver, LSP, the formatter, and tests.
@@ -116,15 +123,20 @@ note is attached when a later diagnostic may be affected by an earlier recovery.
 
 ### Run the frontend for one source
 
-1. Construct the `SpanBridge` over the `SourceMapService`.
+1. Construct a fresh mutable `SpanBridge` with its owned retained source-map
+   service.
 2. Load the `SourceUnit` (`source`); on a load error, return a `FrontendError`
    carrying the file-level diagnostic and stop.
-3. Preprocess (`preprocess`): produce `PreprocessedSource` and Step-2
-   diagnostics.
+3. Register the loaded source maps on the bridge, then preprocess
+   (`preprocess`): register the preprocess map, produce `PreprocessedSource`,
+   and collect Step-2 diagnostics.
 4. Build the `ActiveLexicalEnvironment` (`lexical_env`) from the import stubs.
-5. Tokenize (`lexing`) into a `TokenStream`.
-6. Parse (`parsing`) into an optional `SurfaceAst`.
-7. Map every phase diagnostic into `FrontendDiagnostic`, merge in the
+5. Derive `ParserInputs` from the active lexical environment and source edition.
+6. Tokenize (`lexing`) into a `TokenStream` using the current parser lexing
+   context or the stub/general context when the real parser contract is not yet
+   available.
+7. Parse (`parsing`) through the configured `ParserSeam` into an optional AST.
+8. Map every phase diagnostic into `FrontendDiagnostic`, merge in the
    deterministic order above, and assemble `FrontendOutput`.
 
 Phases 2-5 do not abort on recoverable problems: they record diagnostics and
@@ -138,17 +150,22 @@ and syntax diagnostics together.
 invalid UTF-8, path outside root) and internal `SpanBridgeError` invariant
 violations. Recoverable lexical, comment, tokenization, and syntax problems are
 not `FrontendError`s; they are `FrontendDiagnostic`s inside a returned
-`FrontendOutput`. Frontend diagnostics never claim semantic facts such as
+`FrontendOutput`. The stub parser seam produces no syntax diagnostics and
+returns `ast = None`; syntax diagnostics are expected only when the real parser
+seam is configured. Frontend diagnostics never claim semantic facts such as
 "undefined symbol" or "ambiguous overload"; those belong to later phases.
 
 ## Tests
 
 Key scenarios:
 
-- a well-formed source runs all phases and returns `FrontendOutput` with
-  `ast = Some` and no diagnostics;
-- a source with a lexical-precondition error, a tokenization error, and a syntax
-  error reports all three in the deterministic merge order;
+- with `StubParserSeam`, a well-formed source runs source → tokens and returns
+  `FrontendOutput` with `ast = None` and no parser diagnostics;
+- with the real parser seam, a well-formed source runs all phases and returns
+  `FrontendOutput` with `ast = Some` and no diagnostics;
+- with the real parser seam, a source with a lexical-precondition error, a
+  tokenization error, and a syntax error reports all three in the deterministic
+  merge order;
 - a parse failure returns `ast = None` while preserving preprocessing and
   tokenization diagnostics;
 - a Step 1 load failure returns `FrontendError` with the file-level diagnostic

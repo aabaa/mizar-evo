@@ -4,7 +4,7 @@ Canonical language: English. Japanese companion: [ja/README.md](./ja/README.md).
 
 This directory contains implementation-facing design notes for the `mizar-frontend` crate.
 
-`mizar-frontend` owns phase 1-3 orchestration (the `02.source_and_frontend.md` pipeline Steps 1-5): source loading, source maps, preprocessing coordination, active lexical environment construction, lexer invocation, parser invocation, and combined frontend output. It should not own `SurfaceAst` node definitions or parser grammar logic.
+`mizar-frontend` owns phase 1-3 orchestration (the `02.source_and_frontend.md` pipeline Steps 1-5): source loading, source maps, preprocessing coordination, active lexical environment construction, lexer invocation, parser-seam invocation, and combined frontend output. It should not own `SurfaceAst` node definitions or parser grammar logic, and it can use a stub parser seam until `mizar-syntax` / `mizar-parser` exist.
 
 The full module index, crate boundary, and implementation roadmap live in [en/README.md](./en/README.md) and [en/todo.md](./en/todo.md) (Japanese companions under [ja/](./ja/)).
 
@@ -15,7 +15,6 @@ The full module index, crate boundary, and implementation roadmap live in [en/RE
 - [en/preprocess.md](./en/preprocess.md) - Step 2: `PreprocessedSource`, comments/doc comments, annotations, and shallow import pre-scan
 - [en/lexical_env.md](./en/lexical_env.md) - Step 3: active lexical environment construction
 - [en/lexing.md](./en/lexing.md) - Step 4: `TokenStream` via raw scan, scope skeleton, and disambiguation
-- [en/parsing.md](./en/parsing.md) - Step 5: `SurfaceAst` via `mizar-parser` invocation
+- [en/parsing.md](./en/parsing.md) - Step 5: parser-seam invocation and later `SurfaceAst` handoff
 - [en/orchestration.md](./en/orchestration.md) - end-to-end frontend coordination, diagnostic merge, and `FrontendOutput`
 - [en/todo.md](./en/todo.md) - module implementation order, status, and remaining work
-

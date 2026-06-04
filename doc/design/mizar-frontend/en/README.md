@@ -4,14 +4,15 @@
 
 `mizar-frontend` owns phase 1-3 orchestration (the source_and_frontend pipeline Steps 1-5): source loading, source maps,
 preprocessing coordination, active lexical environment construction, lexer
-invocation, parser invocation, and the combined frontend output.
+invocation, parser-seam invocation, and the combined frontend output.
 
 It does not own source identity, source hashes, or snapshots (`mizar-session`);
 raw scanning, comment stripping, lexical environment assembly, or token
-disambiguation rules (`mizar-lexer`); `SurfaceAst` node definitions
-(`mizar-syntax`); or grammar, Pratt precedence, and recovery (`mizar-parser`).
-Those crates provide the primitives that the frontend coordinates into a
-`FrontendOutput`.
+disambiguation rules (`mizar-lexer`); or, once the real parser seam is enabled,
+`SurfaceAst` node definitions (`mizar-syntax`) and grammar, Pratt precedence,
+and recovery (`mizar-parser`). Those crates provide the primitives that the
+frontend coordinates into a `FrontendOutput`; until parser/syntax exist, the
+frontend uses a stub parser seam and returns `ast = None`.
 
 ## Context
 
@@ -31,7 +32,7 @@ Those crates provide the primitives that the frontend coordinates into a
 | [preprocess.md](./preprocess.md) | `crates/mizar-frontend/src/preprocess.rs` | Step 2: `PreprocessedSource`, comment/doc-comment separation, annotation preservation, and shallow import pre-scan coordination | Draft |
 | [lexical_env.md](./lexical_env.md) | `crates/mizar-frontend/src/lexical_env.rs` | Step 3: active lexical environment construction from import stubs and dependency lexical summaries | Draft |
 | [lexing.md](./lexing.md) | `crates/mizar-frontend/src/lexing.rs` | Step 4: `TokenStream` via raw scan, scope skeleton, and context-sensitive disambiguation | Draft |
-| [parsing.md](./parsing.md) | `crates/mizar-frontend/src/parsing.rs` | Step 5: `SurfaceAst` via `mizar-parser` invocation and parser-input assembly | Draft |
+| [parsing.md](./parsing.md) | `crates/mizar-frontend/src/parsing.rs` | Step 5: parser-seam invocation, parser-input assembly, and later `SurfaceAst` handoff | Draft |
 | [span_bridge.md](./span_bridge.md) | `crates/mizar-frontend/src/span_bridge.rs` | Lexer byte span → `mizar-session` `SourceRange` coordinate bridge | Draft |
 | [orchestration.md](./orchestration.md) | `crates/mizar-frontend/src/orchestration.rs` | End-to-end phase 1-3 coordination (pipeline Steps 1-5), diagnostic merge, and `FrontendOutput` | Draft |
 | [todo.md](./todo.md) | `crates/mizar-frontend` | Module implementation order, status, and remaining work | Living |
@@ -48,7 +49,8 @@ Those crates provide the primitives that the frontend coordinates into a
   lexical summaries;
 - context-sensitive tokenization producing a `TokenStream` with session
   `SourceRange` spans;
-- parser invocation producing an optional `SurfaceAst`;
+- parser-seam invocation producing an optional AST (`ast = None` under the stub
+  seam, `SurfaceAst` under the real seam);
 - the lexer-span → session-`SourceRange` coordinate bridge;
 - deterministic diagnostic merging into a single `FrontendOutput`.
 

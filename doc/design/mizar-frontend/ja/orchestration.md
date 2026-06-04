@@ -8,37 +8,41 @@
 
 このモジュールは `FrontendOutput` を生成するフェーズ 1-3 の coordinator（source_and_frontend パイプラインの Step 1-5）を実装する。`source` → `preprocess` → `lexical_env` → `lexing` → `parsing` を配線し、すべてのフェーズの診断を決定的に順序付けられた単一のリストへ統合し、統合されたフロントエンド出力を公開する。
 
-エンドツーエンドのパイプラインを所有する唯一のモジュールである。ソース同一性、コメント除去、字句環境組み立て、最長一致、文法、AST ノード定義は所有しない。それらは `mizar-session`、`mizar-lexer`、`mizar-syntax`、`mizar-parser` に属する。意味的な名前解決や型検査は行わない。
+エンドツーエンドのパイプラインを所有する唯一のモジュールである。ソース同一性、コメント除去、字句環境組み立て、最長一致、文法、AST ノード定義は所有しない。それらは `mizar-session`、`mizar-lexer`、そして実 parser seam が利用可能になった後の `mizar-syntax` / `mizar-parser` に属する。意味的な名前解決や型検査は行わない。
 
 [architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md) の「Frontend Pipeline」「Error Recovery」「Diagnostics」「FrontendOutput」を参照。
 
 ## 公開 API
 
 ```rust
-pub struct FrontendOutput {
+pub struct FrontendOutput<A> {
     pub source: SourceUnit,
     pub preprocessed: PreprocessedSource,
     pub tokens: TokenStream,
-    pub ast: Option<SurfaceAst>,
+    pub ast: Option<A>,
     pub diagnostics: Vec<FrontendDiagnostic>,
 }
 
-pub struct Frontend<L, P, S>
+pub struct Frontend<L, P, PS>
 where
     L: SourceUnitLoader,
     P: LexicalSummaryProvider,
-    S: SourceMapService,
-{ /* loader, lexical-summary provider, source-map service */ }
+    PS: ParserSeam,
+{ /* loader, lexical-summary provider, parser seam */ }
 
-impl<L, P, S> Frontend<L, P, S> {
-    pub fn new(loader: L, provider: P, service: Arc<S>) -> Self;
+impl<L, P, PS> Frontend<L, P, PS>
+where
+    L: SourceUnitLoader,
+    P: LexicalSummaryProvider,
+    PS: ParserSeam,
+{
+    pub fn new(loader: L, provider: P, parser: PS) -> Self;
 
     pub fn run(
         &self,
         request: SourceUnitRequest,
-        parser_inputs: ParserInputs,
         ids: &dyn SessionIdAllocator,
-    ) -> Result<FrontendOutput, FrontendError>;
+    ) -> Result<FrontendOutput<PS::Ast>, FrontendError>;
 }
 
 pub struct FrontendDiagnostic {
@@ -58,14 +62,14 @@ pub enum DiagnosticClass {
 }
 ```
 
-`FrontendOutput` はアーキテクチャのインターフェースと一致する。`FrontendDiagnostic` は、すべてのフェーズ固有診断（`SourcePreprocessDiagnostic`、`ImportPrescanDiagnostic`、`LexicalEnvironmentDiagnostic`、`LexDiagnostic`、`SyntaxDiagnostic`）が変換される統一診断であり、消費者は `SourceRange` でキー付けされた単一の順序付きリストを見る。
+`FrontendOutput<A>` は AST 型を抽象化したままアーキテクチャのインターフェースと一致する。`StubParserSeam` では `ast` は常に `None` であり、実 parser seam では `A` は `mizar_syntax::SurfaceAst` である。`FrontendDiagnostic` は、すべてのフェーズ固有診断（`SourcePreprocessDiagnostic`、`ImportPrescanDiagnostic`、`LexicalEnvironmentDiagnostic`、`LexDiagnostic`、`SyntaxDiagnostic`）が変換される統一診断であり、消費者は `SourceRange` でキー付けされた単一の順序付きリストを見る。
 
-`ast = None` は、構文解析が以降のフェーズに十分な構造を回復できなかったことを意味する。字句・前処理・構文の診断は依然として返される。
+`ast = None` は、実 parser seam では構文解析が以降のフェーズに十分な構造を回復できなかったことを意味する。stub parser seam では期待される placeholder 結果である。字句・前処理・構文の診断は依然として返される。
 
 ## 依存関係
 
 - 内部: `source`、`preprocess`、`lexical_env`、`lexing`、`parsing`、`span_bridge`（一度構築され各フェーズへ通される）。
-- 外部: 各フェーズモジュールを通じて `mizar-session`（`SourceId`、`SourceRange`、`SourceMapService`、`SessionIdAllocator`、`BuildSnapshotId`）、`mizar-lexer`、`mizar-syntax`、`mizar-parser`。
+- 外部: 各フェーズモジュールを通じて `mizar-session`（`SourceId`、`SourceRange`、`SessionIdAllocator`、`BuildSnapshotId`）、`mizar-lexer`。実 parser seam は、それらの crate が存在してから追加で `mizar-syntax` と `mizar-parser` に依存する。
 
 このモジュールは crate の公開エントリポイントである。コンパイラドライバ、LSP、フォーマッター、テストが消費する。
 
@@ -90,26 +94,28 @@ pub enum DiagnosticClass {
 
 ### 単一ソースに対するフロントエンドの実行
 
-1. `SourceMapService` 上に `SpanBridge` を構築する。
+1. 自身の retained source-map service を所有する fresh な mutable `SpanBridge` を構築する。
 2. `SourceUnit` を読み込む（`source`）。読み込みエラー時はファイルレベルの診断を運ぶ `FrontendError` を返して停止する。
-3. 前処理する（`preprocess`）。`PreprocessedSource` と Step 2 の診断を生成する。
+3. 読み込み済み source map を bridge に登録し、前処理する（`preprocess`）。preprocess map を登録し、`PreprocessedSource` と Step 2 の診断を生成する。
 4. インポートスタブから `ActiveLexicalEnvironment` を構築する（`lexical_env`）。
-5. トークン化する（`lexing`）。`TokenStream` を生成する。
-6. 構文解析する（`parsing`）。省略可能な `SurfaceAst` を生成する。
-7. 各フェーズの診断を `FrontendDiagnostic` へ変換し、上記の決定的順序で統合し、`FrontendOutput` を組み立てる。
+5. アクティブ字句環境と source edition から `ParserInputs` を導出する。
+6. 現在の parser lexing context、または実 parser contract がまだない場合は stub/general context でトークン化する（`lexing`）。`TokenStream` を生成する。
+7. 設定済みの `ParserSeam` を通じて構文解析する（`parsing`）。省略可能な AST を生成する。
+8. 各フェーズの診断を `FrontendDiagnostic` へ変換し、上記の決定的順序で統合し、`FrontendOutput` を組み立てる。
 
 Step 2-5 は回復可能な問題で中断しない。診断を記録して回復済み成果物を前へ運ぶので、1 回の実行で字句・トークン化・構文の診断をまとめて報告できる。
 
 ## エラー処理
 
-`FrontendError` は、いかなる `FrontendOutput` も生成できない失敗のために予約される。主に Step 1 のソース読み込み失敗（読み取り不能ファイル、不正 UTF-8、ルート外パス）と内部 `SpanBridgeError` 不変条件違反である。回復可能な字句・コメント・トークン化・構文の問題は `FrontendError` ではなく、返された `FrontendOutput` 内の `FrontendDiagnostic` である。フロントエンド診断は「未定義記号」や「曖昧なオーバーロード」のような意味的事実を決して主張しない。それらは後のフェーズに属する。
+`FrontendError` は、いかなる `FrontendOutput` も生成できない失敗のために予約される。主に Step 1 のソース読み込み失敗（読み取り不能ファイル、不正 UTF-8、ルート外パス）と内部 `SpanBridgeError` 不変条件違反である。回復可能な字句・コメント・トークン化・構文の問題は `FrontendError` ではなく、返された `FrontendOutput` 内の `FrontendDiagnostic` である。stub parser seam は構文診断を生成せず `ast = None` を返す。構文診断は実 parser seam が設定されているときだけ期待する。フロントエンド診断は「未定義記号」や「曖昧なオーバーロード」のような意味的事実を決して主張しない。それらは後のフェーズに属する。
 
 ## テスト
 
 主要シナリオ:
 
-- 整形式のソースが全フェーズを実行し、`ast = Some` で診断なしの `FrontendOutput` を返す。
-- 字句前提エラー・トークン化エラー・構文エラーを持つソースが、決定的統合順序で 3 つすべてを報告する。
+- `StubParserSeam` では、整形式のソースが source → tokens を実行し、`ast = None` かつ parser 診断なしの `FrontendOutput` を返す。
+- 実 parser seam では、整形式のソースが全フェーズを実行し、`ast = Some` で診断なしの `FrontendOutput` を返す。
+- 実 parser seam では、字句前提エラー・トークン化エラー・構文エラーを持つソースが、決定的統合順序で 3 つすべてを報告する。
 - 構文解析の失敗が、前処理とトークン化の診断を保持しつつ `ast = None` を返す。
 - Step 1 の読み込み失敗が、ファイルレベルの診断を伴う `FrontendError` を返し、`FrontendOutput` を返さない。
 - 診断順序が、内部スケジューリングに関係なく繰り返し実行で同一である。

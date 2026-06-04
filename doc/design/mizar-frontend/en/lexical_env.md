@@ -81,8 +81,10 @@ incremental cache.
 `ActiveLexicalEnvironment` (owned by `mizar-lexer`) holds the reserved-word and
 reserved-symbol tables, a `UserSymbolIndex` of user-defined symbolic names
 exported by imported modules, and a `LexicalEnvironmentFingerprint`. It records
-import order so equal-length user-symbol matches can be tie-broken
-deterministically, and it records symbol provenance for diagnostics. It is
+import order for deterministic fingerprints and provenance, and it records
+symbol provenance for diagnostics. Equal-spelling imported user-symbol conflicts
+are not resolved by import-order tie-breaking in the frontend; the provider or
+`mizar-lexer` reports them as lexical-environment conflicts. It is
 lexer-local: it captures lexical shape and provenance, not full module IR or
 semantic applicability.
 
@@ -127,7 +129,9 @@ Key scenarios:
 
 - import stubs plus module lexical summaries produce a `UserSymbolIndex` whose
   candidates carry the correct provenance and import ordinal;
-- import order determines equal-length user-symbol tie-breaking deterministically;
+- equal-spelling user symbols imported from different modules produce a
+  deterministic lexical-environment conflict, while overlapping symbols with
+  different spellings are still available for lexer longest-match selection;
 - an unresolved import degrades to a smaller environment with a diagnostic, and
   the remaining symbols still load;
 - the `LexicalEnvironmentFingerprint` changes when a dependency lexical summary

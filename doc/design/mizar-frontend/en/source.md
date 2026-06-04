@@ -29,12 +29,15 @@ pub struct SourceUnit {
     pub source_id: SourceId,
     pub package_id: PackageId,
     pub module_path: ModulePath,
+    pub normalized_path: NormalizedPath,
+    pub edition: Edition,
     pub file_path: PathBuf,
     pub source_text: Arc<str>,
     pub source_hash: Hash,
     pub line_map: LineMap,
     pub loading_map: Option<LoadingMap>,
     pub origin: SourceOrigin,
+    pub generated_anchor: Option<SourceAnchor>,
 }
 
 pub struct SourceUnitRequest {
@@ -59,11 +62,16 @@ impl<L: SourceLoader> FrontendSourceLoader<L> {
 impl<L: SourceLoader> SourceUnitLoader for FrontendSourceLoader<L> { /* ... */ }
 
 pub fn source_unit_from_loaded(loaded: LoadedSource, file_path: PathBuf) -> SourceUnit;
+
+pub fn register_source_unit(
+    bridge: &mut SpanBridge,
+    source: &SourceUnit,
+) -> Result<(), SpanBridgeError>;
 ```
 
-`SourceUnit` mirrors the architecture interface and adds `origin` so later
-phases (preprocessing diagnostics, LSP overlays) can distinguish disk,
-open-buffer, and generated text without re-reading session records.
+`SourceUnit` mirrors the architecture interface and adds the session identity
+metadata later frontend phases need without re-reading session records:
+`normalized_path`, `edition`, `origin`, and `generated_anchor`.
 
 `FrontendSourceLoader` wraps any `mizar_session::SourceLoader` (for example
 `DiskSourceLoader`). It forwards the request to the session loader, then calls
@@ -71,13 +79,19 @@ open-buffer, and generated text without re-reading session records.
 `SourceUnit`. The frontend does not define its own path normalization, hashing,
 or BOM/newline rules; those remain in `mizar-session`.
 
+`register_source_unit` records the source's `LineMap` and optional `LoadingMap`
+with the mutable `SpanBridge`. Loading itself stays independent of bridge
+registration so tests and callers can project a `LoadedSource` without also
+mutating source-map state.
+
 ## Dependencies
 
 - Internal: `span_bridge` (registers the `LineMap` / `LoadingMap` for later
   coordinate conversion), `preprocess` (consumes `SourceUnit`).
 - External: `mizar-session` (`SourceLoader`, `LoadedSource`, `SourceInput`,
-  `SourceId`, `LineMap`, `LoadingMap`, `SourceOrigin`, `SessionIdAllocator`,
-  `BuildSnapshotId`), filesystem and package metadata via the session loader.
+  `SourceId`, `LineMap`, `LoadingMap`, `SourceOrigin`, `SourceAnchor`,
+  `NormalizedPath`, `Edition`, `SessionIdAllocator`, `BuildSnapshotId`),
+  filesystem and package metadata via the session loader.
 
 This module is consumed by the orchestration coordinator and by LSP/document
 consumers that need a `SourceUnit` for a single file.
@@ -86,12 +100,13 @@ consumers that need a `SourceUnit` for a single file.
 
 ### SourceUnit
 
-`SourceUnit` is an immutable, source-faithful loaded record for one `.miz`
-file. `source_text` is the validated, source-loading-normalized text exactly as
-`mizar-session` produced it. `source_hash`, `line_map`, and `loading_map` are
-the session values, copied without recomputation. `file_path` is a local
-display path for diagnostics; published identity uses the normalized path
-carried inside the session records, not `file_path`.
+`SourceUnit` is an immutable, source-faithful loaded record for one `.miz` file
+or generated source fragment. `source_text` is the validated,
+source-loading-normalized text exactly as `mizar-session` produced it.
+`source_hash`, `line_map`, `loading_map`, `normalized_path`, `edition`,
+`origin`, and `generated_anchor` are the session values, copied without
+recomputation. `file_path` is a local display path for diagnostics; published
+identity uses `normalized_path`, not `file_path`.
 
 `SourceUnit` is the cache-key anchor for Step 1 in
 [architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md)
@@ -103,8 +118,10 @@ captured by the session `SourceVersion`.
 `loading_map` is `Some` only when source loading changed offsets (leading-BOM
 strip or CRLF→LF normalization for disk/open-buffer text). It is `None` for
 identity loads and for generated text. The frontend never edits the map; it
-forwards the session map so `span_bridge` can translate loaded-text offsets back
-to original input offsets for diagnostics and LSP positions.
+forwards the session map so `span_bridge` can expose source-loading input byte
+offsets through `MappedSourceRange.original_input` when diagnostics or LSP
+adapters need that optional view. `SourceRange` values themselves remain
+loaded-text coordinates.
 
 ## Algorithm / Logic
 
@@ -117,10 +134,10 @@ to original input offsets for diagnostics and LSP positions.
    leading-BOM stripping, CRLF→LF normalization, source hashing, `LineMap`
    construction, and `LoadingMap` emission.
 3. Project the returned `LoadedSource` into a `SourceUnit`, preserving
-   `source_id`, `package_id`, `module_path`, text, hash, line map, loading map,
-   and origin unchanged.
-4. Record the loaded `LineMap` / `LoadingMap` with the `span_bridge` registry
-   under the `SourceId` so later phases can convert spans.
+   `source_id`, `package_id`, `module_path`, normalized path, edition, text,
+   hash, line map, loading map, origin, and generated anchor unchanged.
+4. Record the loaded `LineMap` / `LoadingMap` with the mutable `span_bridge`
+   registry under the `SourceId` so later phases can convert spans.
 5. Return the `SourceUnit`.
 
 The frontend performs no encoding work of its own here. Code-region ASCII
@@ -145,12 +162,15 @@ and stops the pipeline for that file before preprocessing.
 Key scenarios:
 
 - a disk `LoadedSource` projects to a `SourceUnit` with identical
-  `source_id`, `source_hash`, `line_map`, and `loading_map` (no recomputation);
+  `source_id`, `normalized_path`, `edition`, `source_hash`, `line_map`, and
+  `loading_map` (no recomputation);
 - a BOM-stripped / CRLF-normalized disk source carries a `Some(loading_map)`
   into the `SourceUnit`;
 - an identity load (no offset change) carries `loading_map = None`;
 - an open-buffer `SourceUnit` records `SourceOrigin::OpenBuffer` and the
   validated document version;
+- a generated `SourceUnit` preserves `SourceOrigin::Generated` and
+  `generated_anchor`;
 - a session `SourceLoadError` (invalid UTF-8, path outside root) is propagated
   without being reclassified.
 
@@ -160,6 +180,9 @@ Key scenarios:
   `mizar-session` and only reshapes the result.
 - `source_hash`, `line_map`, and `loading_map` are never recomputed by the
   frontend.
+- `normalized_path` and `edition` are retained from `LoadedSource` because
+  parser inputs, lexical-environment requests, cache keys, and diagnostics need
+  them later.
 - `file_path` is local diagnostic metadata, excluded from published identity.
 - A `SourceUnit` is immutable after construction and may be retained by snapshot
   leases, LSP views, or downstream phase outputs.

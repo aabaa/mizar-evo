@@ -40,7 +40,7 @@ pub struct Token {
 pub struct TokenizeRequest<'a> {
     pub preprocessed: &'a PreprocessedSource,
     pub environment: &'a ActiveLexicalEnvironment,
-    pub parser_context: Option<&'a ParserLexContext>,
+    pub parser_context: ParserLexContext,
 }
 
 pub fn tokenize(request: TokenizeRequest<'_>, bridge: &SpanBridge) -> TokenStream;
@@ -51,10 +51,13 @@ re-exported from `mizar-lexer`. The frontend's `Token` differs from the lexer's
 internal token only in that `span` is a session `SourceRange` rather than a
 lexical-text byte span: `tokenize` maps each lexer span through `span_bridge`.
 
-`parser_context` carries the narrow grammar-derived signals the disambiguator
-needs — string-required positions and symbol-kind filters — without exposing
-arbitrary parser state. When `None`, lexing runs in the default mode and the
-parser-integrated path supplies context incrementally during Step 5.
+`parser_context` is the current `mizar-lexer` uniform context object for one
+disambiguation run. The source-to-token foundation uses
+`ParserLexContext::general()` unless a caller intentionally asks for another
+uniform mode in a bounded test. Position-sensitive string-required lexing for
+annotation/operator-declaration arguments is not available from the current
+lexer API; it is gated by the parser-assisted lexing contract finalized in the
+parsing integration tasks.
 
 ## Dependencies
 
@@ -72,12 +75,15 @@ orchestration merge.
 
 ### Token Stream
 
-`TokenStream` is the complete, source-faithful token sequence for one file. Each
-`Token` preserves its original spelling (`text`) and a session `SourceRange`.
+`TokenStream` is the source-faithful token sequence for one file under the
+parser lexing context used for the run. Each `Token` preserves its original
+spelling (`text`) and a session `SourceRange`.
 `TokenKind` includes `LexemeRun` for raw units that were not split,
 `UserSymbol`, `ReservedWord`, `ReservedSymbol`, `Identifier`, `Numeral`,
-`StringLiteral`, and `ErrorRecovery`. `StringLiteral` appears only at
-grammar-defined string-required positions signalled through `parser_context`.
+`StringLiteral`, and `ErrorRecovery`. With the current uniform context API,
+`StringLiteral` appears only in an explicit `StringRequired` run. A
+file-wide token stream with strings only at grammar-defined positions requires
+the parser-assisted lexing contract described in `parsing.md` and the TODO.
 
 ### Scope Lex View
 
@@ -98,11 +104,13 @@ shape only — never resolved bindings.
    against, in order: active user symbols, reserved special symbols, reserved
    words, identifier/numeral rules, and parser expectation / scoped override
    where the language requires it.
-4. Recognize `StringLiteral` tokens only at the string-required positions
-   indicated by `parser_context`; outside those positions, quote characters stay
-   ordinary symbol characters.
-5. Map each resulting lexer span through `span_bridge` to a `SourceRange` scoped
-   by `source_id`.
+4. Recognize `StringLiteral` tokens only when the current parser lexing context
+   is `StringRequired`; outside that context, quote characters stay ordinary
+   symbol characters. Position-sensitive context for only selected byte spans is
+   deferred until the parser-assisted lexing contract lands.
+5. Map each resulting lexer span through `span_bridge.lexical_span`; store the
+   returned mapping's primary `SourceRange` on the token and preserve secondary
+   anchors for diagnostics.
 6. Collect lexer diagnostics and return the `TokenStream`.
 
 Compound reserved tokens (`.{`, `.*`, `.=`, `...`) are recognized by the lexer;
@@ -130,12 +138,9 @@ Key scenarios:
 
 - a user symbol that shares spelling with an identifier is classified by
   longest-match against the active lexical environment;
-- import-order tie-breaking selects the expected user symbol for equal-length
-  matches;
 - compound reserved tokens (`.{`, `.*`, `.=`, `...`) lex as single tokens;
-- a quote character lexes as a user-symbol character outside string-required
-  positions and as a `StringLiteral` at an annotation/operator-declaration
-  argument position;
+- a quote character lexes as a user-symbol character in general context, and a
+  bounded `StringRequired` run produces a `StringLiteral`;
 - a malformed token emits `ErrorRecovery` with the correct `SourceRange` and
   scanning resumes;
 - every emitted token's `span` is a valid `SourceRange` for `source_id`,
@@ -147,8 +152,9 @@ Key scenarios:
   skeleton, or disambiguation rules.
 - The lexer recognizes compound reserved tokens and active user symbols but not
   semantic selector/namespace roles.
-- `StringLiteral` tokens are emitted only at grammar-defined string-required
-  positions.
+- `StringLiteral` tokens are emitted only when the parser lexing context requires
+  strings. Grammar-position-specific string recognition is a parser integration
+  task, not part of the source-to-token foundation.
 - The `TokenStream` cache key is the preprocessed hash plus the active lexical
   environment fingerprint.
 - All token spans are session `SourceRange` values produced through `span_bridge`.

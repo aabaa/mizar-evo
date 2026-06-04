@@ -11,7 +11,7 @@ the `PreprocessedSource` consumed by lexical-environment construction and lexing
 
 It coordinates the `mizar-lexer` source-preprocessing helpers over a
 `SourceUnit`: code-region ASCII validation, comment and doc-comment separation,
-annotation preservation in lexical text, and the shallow top-level import
+annotation syntax preservation in lexical text, and the shallow top-level import
 pre-scan. It owns the orchestration and the span bridging back to
 `mizar-session` `SourceRange`; it does not own the comment-stripping or
 import-scan algorithms (those live in `mizar-lexer`), and it does not tokenize,
@@ -51,7 +51,7 @@ pub struct DocComment {
 
 pub struct LexicalSourceMap { /* lexical-text offsets -> SourceRange */ }
 
-pub fn preprocess(source: &SourceUnit, bridge: &SpanBridge) -> PreprocessedSource;
+pub fn preprocess(source: &SourceUnit, bridge: &mut SpanBridge) -> PreprocessedSource;
 ```
 
 `PreprocessedSource` mirrors the architecture interface. `diagnostics` is added
@@ -65,9 +65,10 @@ rather than aborting, so the lexer can still run and report further problems.
 
 ## Dependencies
 
-- Internal: `source` (provides `SourceUnit`), `span_bridge` (converts lexer
-  preprocess-map offsets to `mizar-session` `SourceRange`), `lexical_env` and
-  `lexing` (consume `PreprocessedSource`).
+- Internal: `source` (provides `SourceUnit`), `span_bridge` (registers the
+  source's preprocess map and converts lexer preprocess-map offsets to
+  `mizar-session` `SourceRange`), `lexical_env` and `lexing` (consume
+  `PreprocessedSource`).
 - External: `mizar-lexer` (`preprocess_source_for_lexing`,
   `PreprocessedLexicalSource`, `SourcePreprocessMap`, `CommentTrivia`,
   `SourcePreprocessDiagnostic`, `scan_import_prelude`, `ImportPrelude`,
@@ -96,28 +97,32 @@ values already mapped to source coordinates.
 ### Import Stubs
 
 `ImportStub` (re-exported from `mizar-lexer`) is the shallow result of scanning
-the top-level import prelude: import kind, raw dotted module path, and source
-span. It is not a resolved import — it is only enough to request an active
-lexical environment and to produce good diagnostics if lexicon loading fails.
-Package/module existence, visibility, and export checks are deferred to module
-resolution.
+the top-level import prelude: raw dotted module path, optional alias, exact
+source coverage (including split source segments for branch imports), and
+overall source span. It is not a resolved import — it is only enough to request
+an active lexical environment and to produce good diagnostics if lexicon loading
+fails. Package/module existence, visibility, export checks, and re-export
+semantics are deferred to module resolution.
 
 ## Algorithm / Logic
 
 ### Preprocess a SourceUnit
 
 1. Call `mizar_lexer::preprocess_source_for_lexing` over `SourceUnit.source_text`
-   to validate code-region ASCII (allowing Unicode in comments/annotations),
+   to validate code-region ASCII (allowing Unicode in comments, and leaving
+   string-literal Unicode acceptance to the parser-assisted lexing contract),
    strip ordinary comments, retain doc comments, preserve annotation syntax in
    lexical text, and produce a `SourcePreprocessMap`.
-2. Map every retained comment, doc comment, and preprocess diagnostic span from
+2. Convert the lexer `SourcePreprocessMap` to the session `PreprocessMap` and
+   register it on the mutable `SpanBridge` for the `SourceId`.
+3. Map every retained comment, doc comment, and preprocess diagnostic span from
    lexical/source offsets to `mizar-session` `SourceRange` through `span_bridge`.
-3. Raw-scan the lexical text (`scan_raw`) and run `scan_import_prelude` to
+4. Raw-scan the lexical text (`scan_raw`) and run `scan_import_prelude` to
    extract `ImportStub`s and import-prescan diagnostics; map their spans to
    `SourceRange`.
-4. Collect comment-structure, ASCII-precondition, and import-prescan diagnostics
+5. Collect comment-structure, ASCII-precondition, and import-prescan diagnostics
    into `diagnostics`, preserving source order.
-5. Assemble `LexicalSourceMap` from the preprocess map plus the line/loading maps
+6. Assemble `LexicalSourceMap` from the preprocess map plus the line/loading maps
    and return `PreprocessedSource`.
 
 The import pre-scan consumes raw lexer output; raw scanning itself does not
@@ -150,8 +155,9 @@ Key scenarios:
   into lexical text;
 - annotation syntax (`@latex(...)`, `@[...]`) stays in `lexical_text`;
 - a removed comment yields a composite mapping for a lexical range that spans it;
-- top-level `import` forms produce `ImportStub`s with correct kind, raw path, and
-  span; a malformed import yields an `ImportPrescanDiagnostic` without aborting;
+- top-level `import` forms produce `ImportStub`s with correct raw path, optional
+  alias, source segments, and span; a malformed import yields an
+  `ImportPrescanDiagnostic` without aborting;
 - a non-ASCII character in a code region is reported as a lexical-precondition
   diagnostic while preprocessing still returns recovered lexical text;
 - an unterminated block comment is reported and recovered.
@@ -161,8 +167,12 @@ Key scenarios:
 - This module does not tokenize, parse, or resolve imports.
 - Comment-stripping, ASCII validation, and import-prescan algorithms belong to
   `mizar-lexer`; this module orchestrates them and owns span bridging.
-- Annotations remain in lexical text for parser ownership; preprocessing does
-  not collect annotations into a separate metadata channel.
+- Annotation syntax remains in lexical text for parser ownership; preprocessing
+  does not collect annotations into a separate metadata channel. Unicode inside
+  annotation string arguments is accepted only once the parser-assisted lexing
+  contract can identify string-required spans before ASCII precondition
+  reporting; until then, non-ASCII outside comments remains a lexical
+  precondition diagnostic.
 - Synthetic whitespace is never a primary user-facing source range.
 - `PreprocessedSource` is keyed by `source_hash` plus frontend version for
   incremental reuse.

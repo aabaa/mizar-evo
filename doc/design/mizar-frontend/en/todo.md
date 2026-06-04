@@ -30,14 +30,15 @@ Dependency order: `span_bridge` → `source` → `preprocess` → `lexical_env` 
 
 ## Crate Prerequisites
 
-`mizar-frontend` depends on `mizar-syntax` (`SurfaceAst`) and `mizar-parser`
-(grammar entry point), which are not yet implemented (top-level
-[../../todo.md](../../todo.md) lists both as not started). Tasks 1-7 below can be
-implemented against `mizar-session` and `mizar-lexer` alone. The parsing phase
-(tasks 11-12) and the full orchestration parse step (task 14) require at least a
-minimal `mizar-parser` entry point and `mizar-syntax::SurfaceAst`; until those
-land, stub the parser seam behind the `parsing` module trait and return
-`ast = None` so the source → tokens pipeline can be exercised end to end.
+The frontend foundation depends on `mizar-session` and `mizar-lexer`. It should
+not add hard dependencies on `mizar-syntax` or `mizar-parser` until the real
+parser-seam tasks land, because those crates are not yet implemented (top-level
+[../../todo.md](../../todo.md) lists both as not started). Tasks 1-10 and the
+stubbed coordinator portions of tasks 13-14 can be implemented against
+`mizar-session` and `mizar-lexer` alone. The real parser invocation and
+syntax-AST assertions in tasks 11-12, and any real-parser assertions in tasks
+13-14, are gated on a minimal `mizar-parser` entry point and
+`mizar-syntax::SurfaceAst`.
 
 ## Open Decisions To Resolve First
 
@@ -48,16 +49,20 @@ These gate the public API and are tracked at the top level in
   keeps its byte-offset spans and `span_bridge` (task 1) maps them onto
   `mizar-session` `SourceRange`. Confirm this against the `mizar-session`
   `source_map` integration before freezing the bridge API.
-- **Parser-assisted lexing contract.** Specify the narrow `ParserLexContext` /
-  `ParserInputs` request object (string-required positions and symbol-kind
-  filters) before wiring tasks 10-12, so the lexer never receives arbitrary
+- **Parser-assisted lexing contract.** The current lexer exposes a uniform
+  `ParserLexContext`, not position-sensitive string-required spans. Position-
+  sensitive string literal recognition, Unicode inside annotation string
+  arguments, and parser-driven symbol-kind filters remain gated on a narrow
+  `ParserLexContext` / `ParserInputs` contract that never exposes arbitrary
   parser state.
 
 ## Ordered Task List
 
-Each task is sized to be implemented, tested, and committed on its own. Tasks are
-in dependency order; a later task assumes the earlier ones are merged. Every task
-should keep `cargo test -p mizar-frontend` green (see
+Each task is sized to be implemented, tested, and committed on its own. The
+listed dependency lines are authoritative: when `mizar-parser` / `mizar-syntax`
+are unavailable, skip the gated real-parser tasks and continue with the stubbed
+source → tokens coordinator tasks that do not depend on them. Every task should
+keep `cargo test -p mizar-frontend` green (see
 [Suggested Verification](#suggested-verification)).
 
 ### Crate scaffolding
@@ -68,18 +73,20 @@ should keep `cargo test -p mizar-frontend` green (see
      `[workspace.lints]` table via `lints.workspace = true` (matching
      `mizar-session`).
    - Add `pub mod span_bridge;` and define `SpanBridge`, `LexerByteSpan`, and
-     `SpanBridgeError`; implement `register_source` / `register_preprocess_map`
-     and the `loaded_span` / `lexical_span` conversions over the
-     `mizar-session` `SourceMapService`.
+     `SpanBridgeError`; let `SpanBridge` own a retained session source-map
+     service, implement fallible `register_source` / `register_preprocess_map`,
+     and provide `loaded_span`, `loaded_mapping`, and `lexical_span`
+     conversions over the retained `mizar-session` maps.
    - Derive the session-side `LoadingMap` / `PreprocessMap` from the lexer
      `SourceLoadingMap` / `SourcePreprocessMap` (or reuse the session
      `LoadingMap` attached to the `SourceUnit`) so there is one canonical map per
      `SourceId`.
-   - Tests: loaded-text span over BOM-stripped text maps to original offsets;
-     lexical span maps through preprocess + loading maps; a span crossing a
-     removed comment yields primary plus secondary anchors; non-UTF-8-boundary
-     and out-of-range spans are rejected; conflicting map registration is
-     reported.
+   - Tests: `loaded_span` over BOM-stripped text stays in loaded-text
+     coordinates, while `loaded_mapping` reports original input offsets through
+     `MappedSourceRange.original_input`; lexical span maps through preprocess +
+     loading maps; a span crossing a removed comment yields primary plus
+     secondary anchors; non-UTF-8-boundary and out-of-range spans are rejected;
+     conflicting map registration is reported.
    - Spec: [span_bridge.md](./span_bridge.md) "Public API", "Algorithm / Logic".
 
 ### Module: source (`src/source.rs`)
@@ -88,13 +95,15 @@ should keep `cargo test -p mizar-frontend` green (see
    - Add `pub mod source;`. Define `SourceUnit`, `SourceUnitRequest`, the
      `SourceUnitLoader` trait, and `FrontendSourceLoader<L: SourceLoader>`;
      implement `source_unit_from_loaded` projecting a `mizar_session::LoadedSource`
-     into a `SourceUnit` without recomputing hash, line map, or loading map.
-   - Register the loaded `LineMap` / `LoadingMap` with the `SpanBridge` under the
-     `SourceId`.
+     into a `SourceUnit` without recomputing hash, line map, loading map,
+     normalized path, edition, origin, or generated anchor.
+   - Provide a helper that registers the loaded `LineMap` / `LoadingMap` with a
+     mutable `SpanBridge` under the `SourceId`.
    - Tests: disk `LoadedSource` projects with identical id/hash/line-map/loading-map;
      BOM/CRLF-normalized source carries `Some(loading_map)`; identity load carries
-     `None`; open-buffer origin and version preserved; a session `SourceLoadError`
-     is propagated unchanged.
+     `None`; normalized path and edition are preserved; open-buffer origin and
+     version are preserved; generated sources preserve `generated_anchor`; a
+     session `SourceLoadError` is propagated unchanged.
    - Depends on: 1. Spec: [source.md](./source.md) "Public API",
      "Algorithm / Logic".
 
@@ -118,9 +127,10 @@ should keep `cargo test -p mizar-frontend` green (see
    - Raw-scan lexical text (`scan_raw`) and run `mizar_lexer::scan_import_prelude`;
      populate `import_stubs` with mapped `SourceRange`s and collect
      `ImportPrescanDiagnostic`s into `diagnostics`.
-   - Tests: top-level `import` forms produce `ImportStub`s with correct kind, raw
-     path, and span; a malformed import yields an import-prescan diagnostic without
-     aborting; import order is preserved for later tie-breaking.
+   - Tests: top-level `import` forms produce `ImportStub`s with raw path, optional
+     alias, source segments, and span; a malformed import yields an import-prescan
+     diagnostic without aborting; import order is preserved for provenance and
+     deterministic fingerprints.
    - Depends on: 3. Spec: [preprocess.md](./preprocess.md) "Import Stubs",
      "Error Handling".
 
@@ -140,10 +150,12 @@ should keep `cargo test -p mizar-frontend` green (see
    - Implement `build_active_lexical_environment` calling
      `mizar_lexer::build_lexical_environment`; merge provider diagnostics; compute
      and surface the `LexicalEnvironmentFingerprint`.
-   - Tests: import-order tie-breaking selects the expected equal-length user
-     symbol; an unresolved import degrades to a smaller environment with a
-     diagnostic while remaining symbols load; the fingerprint changes when a
-     dependency summary changes and is stable for comment-only local edits.
+   - Tests: equal-spelling user symbols imported from different modules produce a
+     deterministic lexical-environment conflict or provider diagnostic according
+     to the lexer/spec contract; an unresolved import degrades to a smaller
+     environment with a diagnostic while remaining symbols load; the fingerprint
+     changes when a dependency summary changes and is stable for comment-only
+     local edits.
    - Depends on: 5. Spec: [lexical_env.md](./lexical_env.md) "Algorithm / Logic",
      "Error Handling".
 
@@ -161,19 +173,23 @@ should keep `cargo test -p mizar-frontend` green (see
 
 8. **Context-sensitive disambiguation to `TokenStream`.** [ ]
    - Run `disambiguate` (or parser-integrated `lex`) with the active lexical
-     environment, scope view, and optional `ParserLexContext`; map every lexer
+     environment, scope view, and the current `ParserLexContext` (general/stub
+     context until the parser-assisted contract is finalized); map every lexer
      span through the `SpanBridge` to a session `SourceRange`.
    - Tests: a user symbol sharing spelling with an identifier is classified by
      longest-match; compound reserved tokens (`.{`, `.*`, `.=`, `...`) lex as
-     single tokens; a quote lexes as a symbol char outside string-required
-     positions and as `StringLiteral` at an annotation/operator-declaration
-     argument; every emitted token span resolves to a valid `SourceRange`.
+     single tokens; a quote lexes as a symbol char under the general context; a
+     bounded uniform `StringRequired` context produces a `StringLiteral`; every
+     emitted token span resolves to a valid primary `SourceRange` while secondary
+     anchors are preserved for diagnostics. Position-specific annotation/operator
+     string-literal tests are deferred to the parser-assisted lexing contract.
    - Depends on: 7. Spec: [lexing.md](./lexing.md) "Token Stream",
      "Algorithm / Logic".
 
 9. **Lexer recovery passthrough.** [ ]
    - Preserve `TokenKind::ErrorRecovery` spans and `LexDiagnostic`s end to end;
-     ensure `tokenize` always returns a `TokenStream`.
+     adapt raw-scan hard errors into recovery tokens/diagnostics so the frontend
+     `tokenize` wrapper always returns a `TokenStream`.
    - Tests: a malformed token emits `ErrorRecovery` with the correct `SourceRange`
      and scanning resumes; an invalid numeral and a malformed string literal in a
      string-required position are reported without dropping recoverable tokens.
@@ -183,14 +199,15 @@ should keep `cargo test -p mizar-frontend` green (see
 
 10. **Parser-input assembly and parser seam.** [ ]
     - Add `pub mod parsing;`. Define `ParseRequest`, `ParserInputs`, `ParseOutput`,
-      and the parser-seam trait; derive `ParserInputs` (edition, operator fixity,
-      string-required positions) from the active lexical environment.
+      `ParserSeam`, and `StubParserSeam`; derive `ParserInputs` after the active
+      lexical environment is built, using the source edition plus only the data
+      currently exposed by lexical summaries.
     - Until `mizar-parser` exists, implement the seam against a stub that returns
       `ast = None` plus an empty diagnostic list, so the source → tokens pipeline
       is exercisable.
-    - Tests: `ParserInputs` carries operator fixity and string-required positions
-      derived from the environment and no resolver state; the stub seam returns
-      `ast = None`.
+    - Tests: `ParserInputs` carries the edition, uses an empty operator-fixity
+      table when summaries do not expose fixity, carries no resolver state, and
+      the stub seam returns `ast = None`.
     - Depends on: 8. Spec: [parsing.md](./parsing.md) "Parser Inputs",
       "Public API".
 
@@ -201,8 +218,9 @@ should keep `cargo test -p mizar-frontend` green (see
       [../../todo.md](../../todo.md)). Gate behind their availability.
     - Tests: a well-formed token stream parses to a `SurfaceAst` with preserved
       source order and ranges; operator fixity drives correct Pratt precedence for
-      a user infix operator; a `StringLiteral` at an annotation argument parses to
-      an annotation node.
+      a user infix operator once summaries expose fixity; a `StringLiteral` at an
+      annotation argument parses to an annotation node, using either a synthetic
+      parser test token stream or the finalized parser-assisted lexing contract.
     - Depends on: 10, plus `mizar-parser`/`mizar-syntax`. Spec:
       [parsing.md](./parsing.md) "Algorithm / Logic".
 
@@ -223,11 +241,12 @@ should keep `cargo test -p mizar-frontend` green (see
       `source` → `preprocess` → `lexical_env` → `lexing` → `parsing` and merge all
       phase diagnostics into the deterministic order in
       [orchestration.md](./orchestration.md) "Diagnostic Merge Order".
-    - Tests: a well-formed source returns `ast = Some` with no diagnostics; a
-      source with lexical-precondition, tokenization, and syntax errors reports all
-      three in the deterministic order; merge order is identical across repeated
-      runs.
-    - Depends on: 9, 12. Spec: [orchestration.md](./orchestration.md)
+    - Tests: with `StubParserSeam`, a well-formed source returns source,
+      preprocessing output, tokens, `ast = None`, and no parser diagnostics; merge
+      order is identical across repeated runs. With the real parser seam, add the
+      `ast = Some` and syntax-diagnostic ordering assertions.
+    - Depends on: 9, 10. Real-parser assertions depend on 12. Spec:
+      [orchestration.md](./orchestration.md)
       "Algorithm / Logic", "Diagnostic Merge Order".
 
 14. **Unrecoverable-failure handling and end-to-end output.** [ ]
@@ -235,8 +254,8 @@ should keep `cargo test -p mizar-frontend` green (see
       invariant violations; keep recoverable problems as diagnostics inside
       `FrontendOutput`.
     - Tests: a Step 1 load failure returns `FrontendError` with the file-level
-      diagnostic and no output; a parse failure returns `ast = None` while
-      preserving earlier diagnostics; merged diagnostics carry valid `SourceRange`s.
+      diagnostic and no output; a parser seam that returns `ast = None` preserves
+      earlier diagnostics; merged diagnostics carry valid `SourceRange`s.
     - Depends on: 13. Spec: [orchestration.md](./orchestration.md) "Error
       Handling".
 
@@ -287,13 +306,16 @@ should keep `cargo test -p mizar-frontend` green (see
     - Depends on: 16. Spec: architecture incrementality table.
 
 20. **Parser-assisted lexing contract finalization.** [ ]
-    - Once `mizar-parser` exists, finalize whether disambiguation runs in one pass
-      with a precomputed `ParserLexContext` or interleaves with parsing through the
-      narrow context object, and document the chosen integration in
+    - Finalize whether disambiguation runs in one pass with a precomputed
+      position-sensitive `ParserLexContext` or interleaves with parsing through
+      the narrow context object, and document the chosen integration in
       [lexing.md](./lexing.md) and [parsing.md](./parsing.md).
-    - Keep the lexer free of arbitrary parser state under either choice.
-    - Depends on: 11. Spec: top-level [../../todo.md](../../todo.md) "Open
-      Decisions", [lexing.md](./lexing.md), [parsing.md](./parsing.md).
+    - Keep the lexer free of arbitrary parser state under either choice. This
+      task blocks position-specific `StringLiteral` tests and Unicode acceptance
+      inside annotation string arguments.
+    - Depends on: 10; real-parser validation also depends on 11. Spec: top-level
+      [../../todo.md](../../todo.md) "Open Decisions", [lexing.md](./lexing.md),
+      [parsing.md](./parsing.md).
 
 21. **Durable lint enforcement.** [ ]
     - Confirm `crates/mizar-frontend/Cargo.toml` opts into the workspace
@@ -324,8 +346,8 @@ Check off the task here once its tests pass.
 ## Notes
 
 - `mizar-frontend` is an orchestration crate: it coordinates `mizar-session`,
-  `mizar-lexer`, `mizar-syntax`, and `mizar-parser` but owns none of their core
-  algorithms or data definitions.
+  `mizar-lexer`, and, once the real parser seam is enabled, `mizar-syntax` /
+  `mizar-parser`, but owns none of their core algorithms or data definitions.
 - Keep `mizar-lexer` decoupled from `mizar-session`; the lexer-span → session
   `SourceRange` bridge lives only in `span_bridge`.
 - The frontend produces syntax, not semantics; no name resolution, type checking,
