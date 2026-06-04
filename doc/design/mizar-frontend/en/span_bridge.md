@@ -2,7 +2,7 @@
 
 > Canonical language: English. Japanese companion: [../ja/span_bridge.md](../ja/span_bridge.md).
 
-Status: planned.
+Status: implemented for task 1.
 
 ## Purpose
 
@@ -39,7 +39,8 @@ impl SpanBridge {
     pub fn register_preprocess_map(
         &mut self,
         source_id: SourceId,
-        preprocess_map: PreprocessMap,
+        lexical_text: &str,
+        preprocess_map: SourcePreprocessMap,
     ) -> Result<(), SpanBridgeError>;
 
     pub fn loaded_span(
@@ -71,14 +72,16 @@ pub enum SpanBridgeError {
     PreprocessMapNotRegistered { source_id: SourceId },
     ConflictingSourceRegistration { source_id: SourceId },
     ConflictingPreprocessMapRegistration { source_id: SourceId },
+    UnsupportedLexerPreprocessMap { source_id: SourceId },
     SourceMap { source: SourceMapError },
 }
 ```
 
-`SourceRange`, `MappedSourceRange`, `LineMap`, `LoadingMap`, `PreprocessMap`,
-`SourceMapError`, `RetainedSourceMapService`, and `SourceMapService` are owned by
-`mizar-session`; `span_bridge` adapts
-`mizar-lexer` byte spans onto them. `loaded_span` maps a span in loaded text
+`SourceRange`, `MappedSourceRange`, `LineMap`, `LoadingMap`, session
+`PreprocessMap`, `SourceMapError`, `RetainedSourceMapService`, and
+`SourceMapService` are owned by `mizar-session`; `SourcePreprocessMap` is owned
+by `mizar-lexer`. `span_bridge` adapts `mizar-lexer` byte spans and preprocess
+maps onto the session coordinates. `loaded_span` maps a span in loaded text
 (Step 1 coordinates) into a validated loaded-text `SourceRange`. It does not
 rewrite the `SourceRange` into raw file/editor byte offsets. Callers that need
 source-loading input byte offsets use `loaded_mapping`. When a `LoadingMap` is
@@ -102,8 +105,8 @@ secondary anchors rather than treating that primary as exact user-authored text.
 - External: `mizar-session` (`RetainedSourceMapService`, `SourceMapService`,
   `SourceRange`, `MappedSourceRange`, `LineMap`, `LoadingMap`,
   `PreprocessMap`, `SourceMapError`, `SourceId`),
-  `mizar-lexer` (byte-offset span types from `mizar_lexer::source`, converted at
-  this boundary only).
+  `mizar-lexer` (`SourcePreprocessMap` and byte-offset span types from
+  `mizar_lexer::source`, converted at this boundary only).
 
 ## Data Structures
 
@@ -185,8 +188,8 @@ reports through `SpanBridgeError::SourceMap` — unknown source id, range outsid
 source/lexical text, offset not on a UTF-8 boundary, missing loading-map segment
 when `loaded_mapping` is asked to compose a registered but incomplete loading
 map, missing preprocess-map segment, line/column overflow — plus frontend-local
-"source not registered", "preprocess map not registered", and "conflicting map
-registration" cases.
+"source not registered", "preprocess map not registered", "conflicting map
+registration", and "unsupported lexer preprocess map variant" cases.
 A bridge failure is an internal invariant violation (a span that does not belong
 to its declared source), not a user diagnostic; orchestration treats it as a bug
 surface rather than a recoverable lexical/syntax diagnostic.

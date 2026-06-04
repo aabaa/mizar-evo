@@ -12,7 +12,7 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| span_bridge | [span_bridge.md](./span_bridge.md) | `src/span_bridge.rs` | [ ] |
+| span_bridge | [span_bridge.md](./span_bridge.md) | `src/span_bridge.rs` | [x] |
 | source | [source.md](./source.md) | `src/source.rs` | [ ] |
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [ ] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [ ] |
@@ -66,7 +66,7 @@ keep `cargo test -p mizar-frontend` green (see
 
 ### Crate scaffolding
 
-1. **Crate skeleton and coordinate bridge.** [ ]
+1. **Crate skeleton and coordinate bridge.** [x]
    - Add the `mizar-frontend` crate to the workspace with dependencies on
      `mizar-session` and `mizar-lexer`; opt in to the workspace
      `[workspace.lints]` table via `lints.workspace = true` (matching

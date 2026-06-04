@@ -12,7 +12,7 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| span_bridge | [span_bridge.md](./span_bridge.md) | `src/span_bridge.rs` | [ ] |
+| span_bridge | [span_bridge.md](./span_bridge.md) | `src/span_bridge.rs` | [x] |
 | source | [source.md](./source.md) | `src/source.rs` | [ ] |
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [ ] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [ ] |
@@ -41,7 +41,7 @@ frontend の基盤は `mizar-session` と `mizar-lexer` に依存する。`mizar
 
 ### crate の足場
 
-1. **crate 骨格と座標橋渡し。** [ ]
+1. **crate 骨格と座標橋渡し。** [x]
    - `mizar-frontend` crate をワークスペースに追加し、`mizar-session` と `mizar-lexer` に依存させる。ワークスペースの `[workspace.lints]` テーブルに `lints.workspace = true` でオプトインする（`mizar-session` と同様）。
    - `pub mod span_bridge;` を追加し、`SpanBridge`、`LexerByteSpan`、`SpanBridgeError` を定義する。`SpanBridge` は retained session source-map service を所有し、fallible な `register_source` / `register_preprocess_map`、および retained `mizar-session` map 上の `loaded_span`、`loaded_mapping`、`lexical_span` 変換を提供する。
    - `SpanBridgeError` は frontend-local な登録不変条件（`SourceNotRegistered`、`PreprocessMapNotRegistered`、source / preprocess 登録衝突）と、wrapped `mizar-session::SourceMapError` を区別する。
