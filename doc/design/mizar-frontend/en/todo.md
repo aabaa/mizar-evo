@@ -14,7 +14,7 @@
 |---|---|---|---|
 | span_bridge | [span_bridge.md](./span_bridge.md) | `src/span_bridge.rs` | [x] |
 | source | [source.md](./source.md) | `src/source.rs` | [x] |
-| preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [~] |
+| preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [ ] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [ ] |
 | parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [ ] |
@@ -141,7 +141,7 @@ keep `cargo test -p mizar-frontend` green (see
    - Depends on: 2. Spec: [preprocess.md](./preprocess.md) "Comments and Doc
      Comments", "Algorithm / Logic".
 
-4. **Shallow import pre-scan integration.** [ ]
+4. **Shallow import pre-scan integration.** [x]
    - Raw-scan lexical text (`scan_raw`) and run `mizar_lexer::scan_import_prelude`;
      populate `import_stubs` with mapped `SourceRange`s and collect
      `ImportPrescanDiagnostic`s into `diagnostics`.
@@ -151,11 +151,12 @@ keep `cargo test -p mizar-frontend` green (see
      imports from partial raw text. Do not assume `mizar_lexer::LexError` carries a
      span until the recoverable raw-scanner contract exists.
    - Tests: top-level `import` forms produce `ImportStub`s with raw path, optional
-     alias, `path.relative`, `path.source_segments`, and span; `./` and `../`
-     relative prefixes remain distinguishable; a malformed import yields an
-     import-prescan diagnostic without aborting; raw-scan failure during import
-     pre-scan yields a coarse diagnostic and empty `import_stubs`; import order is
-     preserved for provenance and deterministic fingerprints.
+     alias, `path.relative`, `path.source_segments`, and span; `.` and `..`
+     relative prefixes remain distinguishable as current and parent imports; a
+     malformed import yields an import-prescan diagnostic without aborting;
+     raw-scan failure during import pre-scan yields a coarse diagnostic and empty
+     `import_stubs`; import order is preserved for provenance and deterministic
+     fingerprints.
    - Depends on: 3. Spec: [preprocess.md](./preprocess.md) "Import Stubs",
      "Error Handling".
 

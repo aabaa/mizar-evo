@@ -2,13 +2,13 @@
 
 > 正本は英語です。英語版: [../en/preprocess.md](../en/preprocess.md)。
 
-状態: 部分実装済み。タスク 3 のコメント／ドキュメントコメント前処理は実装済みで、タスク 4 のインポート事前走査統合は計画中。
+状態: フロントエンドパイプライン Step 2 の前処理として実装済み。コメント／ドキュメントコメント前処理と浅いインポート事前走査統合が配線されている。
 
 ## 目的
 
 このモジュールはフロントエンドパイプラインの Step 2（前処理）を実装し、字句環境構築と字句解析が利用する `PreprocessedSource` を生成する。
 
-`SourceUnit` に対して `mizar-lexer` のソース前処理ヘルパーを統制する。すなわち、コード領域の ASCII 検証、コメントとドキュメントコメントの分離、字句テキスト内の注釈構文保持である。タスク 4 では、同じモジュールに浅いトップレベルインポート事前走査を追加する。統制と、`mizar-session` の `SourceRange` へのスパン橋渡しを所有するが、コメント除去やインポート走査のアルゴリズムは所有しない（それらは `mizar-lexer` にある）。また、トークン化・構文解析・インポート解決も行わない。
+`SourceUnit` に対して `mizar-lexer` のソース前処理ヘルパーを統制する。すなわち、コード領域の ASCII 検証、コメントとドキュメントコメントの分離、字句テキスト内の注釈構文保持、浅いトップレベルインポート事前走査である。統制と、`mizar-session` の `SourceRange` へのスパン橋渡しを所有するが、コメント除去やインポート走査のアルゴリズムは所有しない（それらは `mizar-lexer` にある）。また、トークン化・構文解析・インポート解決も行わない。
 
 [architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md) の「Step 2: Preprocess Source」「Comments and Doc Comments Are Source Metadata」「Import Pre-Scan Is Shallow」「Annotations Are Parser-Owned Syntax」を参照。
 
@@ -87,7 +87,7 @@ pub fn preprocess(
 
 `PreprocessedSource` は、アーキテクチャのインターフェースを反映する。`diagnostics` を追加し、Step 2 の字句前提・コメント構造の診断が出力とともに運ばれて、統制層で決定的な順序で後から統合されるようにする。
 
-ユーザー入力に由来する回復可能な問題に対して、`preprocess` は `Ok(PreprocessedSource)` を返す。コメント構造と ASCII 領域のエラーは、中断せず、回復済みの字句テキストとともに診断として記録するので、字句解析器が引き続き実行され、さらなる問題を報告できる。タスク 4 では、インポート事前走査の診断も同じチャネルに追加する。`Err(SpanBridgeError)` は、写像不能なスパンや衝突するマップ登録のような、内部の座標橋渡し不変条件の失敗に限る。
+ユーザー入力に由来する回復可能な問題に対して、`preprocess` は `Ok(PreprocessedSource)` を返す。コメント構造と ASCII 領域のエラーは、中断せず、回復済みの字句テキストとともに診断として記録するので、字句解析器が引き続き実行され、さらなる問題を報告できる。インポート事前走査の診断も同じチャネルを使う。`Err(SpanBridgeError)` は、写像不能なスパンや衝突するマップ登録のような、内部の座標橋渡し不変条件の失敗に限る。
 
 ## 依存関係
 
@@ -106,10 +106,10 @@ pub fn preprocess(
 
 ### インポートスタブ
 
-`ImportStub` は、`mizar-lexer` のインポート事前走査スタブを、フロントエンドが写像した対応物である。字句解析器の `RawModulePath` / `RawModuleAlias` の形を写すが、すべてのスパンはすでに session の `SourceRange` へ変換されている。生のドット区切りモジュールパス、相対 prefix（`./` と `../` の区別）、分岐インポートの分割ソース被覆は、`path.spelling`、`path.relative`、`path.components`、`path.source_segments` に含まれる。これらは解決済みインポートではなく、アクティブ字句環境を要求し、語彙読み込みが失敗したときに良い診断を出すのに十分なだけの情報を持つ。パッケージ／モジュールの存在、可視性、エクスポート検査、再エクスポート意味論は、モジュール解決へ先送りする。公開形はタスク 3 で存在するが、タスク 4 が生インポート事前走査を配線するまでは、`preprocess` は `import_stubs` を空のまま返す。
+`ImportStub` は、`mizar-lexer` のインポート事前走査スタブを、フロントエンドが写像した対応物である。字句解析器の `RawModulePath` / `RawModuleAlias` の形を写すが、すべてのスパンはすでに session の `SourceRange` へ変換されている。生のドット区切りモジュールパス、相対 prefix（current の `.` と parent の `..` の区別）、分岐インポートの分割ソース被覆は、`path.spelling`、`path.relative`、`path.components`、`path.source_segments` に含まれる。これらは解決済みインポートではなく、アクティブ字句環境を要求し、語彙読み込みが失敗したときに良い診断を出すのに十分なだけの情報を持つ。パッケージ／モジュールの存在、可視性、エクスポート検査、再エクスポート意味論は、モジュール解決へ先送りする。`preprocess` は、厳密な生スキャンが成功した場合、浅い生インポート事前走査から `import_stubs` を満たす。
 
 `PreprocessDiagnostic` は、`SourcePreprocessDiagnostic`、`ImportPrescanDiagnostic`、およびフロントエンドローカルな生インポート事前走査の失敗を、フロントエンド側で写像した診断形式である。生の字句解析器診断構造体は入力として消費し、即座に変換する。公開診断は写像済みの session 範囲を持ち、preprocess マッピングが複合または縮退の場合は副次の `SourceAnchor` も保持する。
-タスク 3 では `SourcePrecondition` 診断だけを送出し、インポート関連の変種はタスク 4 のために予約する。
+`SourcePrecondition`、`ImportPrescan`、`RawImportScan` 診断は、それぞれ対応する回復可能な入力問題が見つかったとき、このモジュールから送出される。
 
 ## アルゴリズム / ロジック
 
@@ -118,27 +118,20 @@ pub fn preprocess(
 1. `SourceUnit.source_text` に対して `mizar_lexer::preprocess_source_for_lexing` を呼び、コード領域の ASCII 検証（コメント内の Unicode は許可し、文字列リテラル内の Unicode 受理はパーサー支援字句解析の契約に委ねる）、通常コメントの除去、ドキュメントコメントの保持、字句テキスト内の注釈構文保持を行い、`SourcePreprocessMap` を生成する。
 2. 字句解析器の `SourcePreprocessMap` を session の `PreprocessMap` へ変換し、`SourceId` に対して可変な `SpanBridge` へ登録する。
 3. 保持された各コメント・ドキュメントコメント・前処理診断のスパンを、字句／ソースオフセットから `span_bridge` を通じて `mizar-session` の `SourceRange` へ変換する。
-4. タスク 3 の実装では、`import_stubs` を空のままにし、インポート事前走査診断を送出しない。
-5. 最終的な字句テキストとフロントエンドの前処理バージョンから `lexical_hash` を計算する。
-6. 保持した字句解析器 preprocess map と登録済みの bridge 状態から `LexicalSourceMap` を組み立て、`PreprocessedSource` を返す。
+4. 字句テキストを生スキャン（`scan_raw`）する。成功した場合は `scan_import_prelude` を実行して `ImportStub` とインポート事前走査診断を抽出し、それらのスパンを `SourceRange` へ変換する。
+5. 生スキャンが失敗した場合は、字句テキスト全体（字句テキストが空ならソース先頭のゼロ長範囲）を覆うフロントエンドローカルなインポート事前走査診断を記録し、`import_stubs` を空のまま続行する。部分的な生ストリームから import を推測しない。現在の `mizar_lexer::LexError` はスパンや部分トークンのペイロードを持たないため、生スキャン失敗位置の精密化は、将来の回復可能な生スキャナー契約に委ねる。
+6. コメント構造・ASCII 前提の診断の後に、インポート事前走査の診断を `diagnostics` に集約し、各フェーズ内のソース順を保つ。
+7. 最終的な字句テキストとフロントエンドの前処理バージョンから `lexical_hash` を計算する。
+8. 保持した字句解析器 preprocess map と登録済みの bridge 状態から `LexicalSourceMap` を組み立て、`PreprocessedSource` を返す。
 
-タスク 4 では、次の計画済み手順を追加する。
-
-1. 字句テキストを生スキャン（`scan_raw`）する。成功した場合は `scan_import_prelude` を実行して `ImportStub` とインポート事前走査診断を抽出し、それらのスパンを `SourceRange` へ変換する。
-2. 生スキャンが失敗した場合は、字句テキスト全体（字句テキストが空ならソース先頭のゼロ長範囲）を覆うフロントエンドローカルなインポート事前走査診断を記録し、`import_stubs` を空のまま続行する。部分的な生ストリームから import を推測しない。現在の `mizar_lexer::LexError` はスパンや部分トークンのペイロードを持たないため、生スキャン失敗位置の精密化は、将来の回復可能な生スキャナー契約に委ねる。
-3. タスク 3 のコメント構造・ASCII 前提の診断の後に、インポート事前走査の診断を `diagnostics` に集約し、ソース順を保つ。
-
-計画中のインポート事前走査は、生の字句解析器出力を消費する。生スキャン自体はインポートを解釈しない。`scan_raw` は厳密なので、前処理が回復済み字句テキストを返していても、生スキャンには失敗しうる。その失敗は、Step 2 の浅いインポート抽出だけを無効化する。Step 4 のトークン化は独立に回復適合を行い、トークンレベルの診断を報告する。
+インポート事前走査は、生の字句解析器出力を消費する。生スキャン自体はインポートを解釈しない。`scan_raw` は厳密なので、前処理が回復済み字句テキストを返していても、生スキャンには失敗しうる。その失敗は、Step 2 の浅いインポート抽出だけを無効化する。Step 4 のトークン化は独立に回復適合を行い、トークンレベルの診断を報告する。
 
 ## エラー処理
 
-Step 2 の診断は、致命的エラーとして送出せず、`PreprocessedSource.diagnostics` に運ぶ。タスク 3 では、次を記録する。
+Step 2 の診断は、致命的エラーとして送出せず、`PreprocessedSource.diagnostics` に運ぶ。このモジュールは次を記録する。
 
 - コード領域の非 ASCII 文字や、その他の字句前提（`SourcePreprocessDiagnostic`）。
 - 未終端ブロックコメントや、その他のコメント構造の問題。
-
-タスク 4 では、次を追加する。
-
 - アクティブ字句環境の構築を妨げるインポート事前走査の失敗（`ImportPrescanDiagnostic`）。
 - インポート事前走査中の生スキャン失敗。前処理が回復済み字句テキストを返し続けられるよう、粗い字句テキスト被覆を持つフロントエンドローカルな `PreprocessDiagnostic` 変種として表す。
 
@@ -156,12 +149,9 @@ Step 2 の診断は、致命的エラーとして送出せず、`PreprocessedSou
 - コメントのみの編集で `lexical_text` が変わらない場合、`lexical_hash` は安定する。
 - コード領域の非 ASCII 文字は字句前提診断として報告され、前処理は回復済み字句テキストを返す。
 - 未終端ブロックコメントは報告され、回復される。
-- 複数の前処理診断は、ソース順、メッセージ、第一範囲、副次アンカーを保持する。
-
-タスク 4 の計画済みシナリオ:
-
-- トップレベルの `import` 形式は、生パス・任意の alias・`path.relative`・`path.source_segments`・スパンを持つ `ImportStub` を生み、`./` と `../` の相対 prefix を区別して保持する。不正なインポートは、中断せず `ImportPrescanDiagnostic` を生む。
+- トップレベルの `import` 形式は、生パス・任意の alias・`path.relative`・`path.source_segments`・スパンを持つ `ImportStub` を生み、`.` と `..` の相対 prefix を current／parent インポートとして区別して保持する。不正なインポートは、中断せず `ImportPrescanDiagnostic` を生む。
 - インポート事前走査中の厳密な生スキャン失敗は、診断と空の `import_stubs` を生み、前処理を中断しない。
+- 複数の前処理診断は、フェーズ順、メッセージ、第一範囲、副次アンカーを保持する。
 
 ## 制約と前提
 

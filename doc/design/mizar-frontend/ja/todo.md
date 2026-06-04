@@ -14,7 +14,7 @@
 |---|---|---|---|
 | span_bridge | [span_bridge.md](./span_bridge.md) | `src/span_bridge.rs` | [x] |
 | source | [source.md](./source.md) | `src/source.rs` | [x] |
-| preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [~] |
+| preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [ ] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [ ] |
 | parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [ ] |
@@ -66,10 +66,10 @@
    - テスト: 通常コメントが字句テキストからは除去されるが、正しい範囲を持つ `Comment` として保持される。ドキュメントコメントが生本文と範囲とともに保持される。注釈構文が字句テキストに残る。除去されたコメントをまたぐ字句範囲が合成マッピングを生む。合成空白はアンカーに支えられた縮退マッピングとしてのみ表現される。コメントのみの編集で字句テキストが変わらなければ `lexical_hash` が安定する。コード領域の非 ASCII 文字と未終端ブロックコメントが報告・回復される。
    - 依存: 2。仕様: [preprocess.md](./preprocess.md)「Comments and Doc Comments」「Algorithm / Logic」。
 
-4. **浅いインポート事前走査の統合。** [ ]
+4. **浅いインポート事前走査の統合。** [x]
    - 字句テキストを生スキャン（`scan_raw`）し、`mizar_lexer::scan_import_prelude` を実行する。変換済みの `SourceRange` を持つ `import_stubs` を満たし、`ImportPrescanDiagnostic` を `diagnostics` に集める。
    - 厳密な生スキャンが失敗した場合は、字句テキスト全体（空ならソース先頭のゼロ長範囲）を覆うフロントエンドローカルなインポート事前走査診断を記録し、`import_stubs` を空にして、部分的な生テキストから import を推測せずに続行する。回復可能な生スキャナーの契約が用意されるまでは、`mizar_lexer::LexError` がスパンを持つと仮定しない。
-   - テスト: トップレベルの `import` 形式が、生パス・任意の alias・`path.relative`・`path.source_segments`・スパンを持つ `ImportStub` を生む。`./` と `../` の相対 prefix が区別されたまま保持される。不正なインポートが中断せずにインポート事前走査診断を生む。インポート事前走査中の生スキャン失敗が、粗い診断と空の `import_stubs` を生む。出所と決定的なフィンガープリントのために、インポート順が保持される。
+   - テスト: トップレベルの `import` 形式が、生パス・任意の alias・`path.relative`・`path.source_segments`・スパンを持つ `ImportStub` を生む。`.` と `..` の相対 prefix が current／parent インポートとして区別されたまま保持される。不正なインポートが中断せずにインポート事前走査診断を生む。インポート事前走査中の生スキャン失敗が、粗い診断と空の `import_stubs` を生む。出所と決定的なフィンガープリントのために、インポート順が保持される。
    - 依存: 3。仕様: [preprocess.md](./preprocess.md)「Import Stubs」「Error Handling」。
 
 ### モジュール: lexical_env (`src/lexical_env.rs`)

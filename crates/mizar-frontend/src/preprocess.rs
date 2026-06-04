@@ -1,8 +1,11 @@
 use crate::source::SourceUnit;
 use crate::span_bridge::{LexerByteSpan, SpanBridge, SpanBridgeError};
 use mizar_lexer::{
-    CommentKind as LexerCommentKind, SourcePreprocessMap, SourceSpan as LexerSourceSpan,
-    preprocess_source_for_lexing,
+    CommentKind as LexerCommentKind, ImportPrescanDiagnostic as LexerImportPrescanDiagnostic,
+    ImportStub as LexerImportStub, RawModuleAlias as LexerRawModuleAlias,
+    RawModulePath as LexerRawModulePath, RawModuleRelativePrefix as LexerRawModuleRelativePrefix,
+    SourcePreprocessMap, SourceSpan as LexerSourceSpan, preprocess_source_for_lexing,
+    scan_import_prelude, scan_raw,
 };
 pub use mizar_lexer::{ImportPrescanDiagnosticCode, SourcePreprocessDiagnosticCode};
 pub use mizar_session::CommentKind;
@@ -151,7 +154,7 @@ pub fn preprocess(
         }
     }
 
-    let diagnostics = preprocessed
+    let mut diagnostics = preprocessed
         .diagnostics
         .into_iter()
         .map(|diagnostic| {
@@ -165,6 +168,9 @@ pub fn preprocess(
             })
         })
         .collect::<Result<Vec<_>, SpanBridgeError>>()?;
+    let (import_stubs, mut import_diagnostics) =
+        scan_imports(source.source_id, &lexical_text, bridge)?;
+    diagnostics.append(&mut import_diagnostics);
 
     let lexical_hash = lexical_hash(&lexical_text);
     Ok(PreprocessedSource {
@@ -173,7 +179,7 @@ pub fn preprocess(
         lexical_hash,
         comments,
         doc_comments,
-        import_stubs: Vec::new(),
+        import_stubs,
         source_map,
         diagnostics,
     })
@@ -203,6 +209,150 @@ fn doc_comment_body(lexeme: &str) -> &str {
     lexeme.strip_prefix(":::").unwrap_or(lexeme)
 }
 
+fn scan_imports(
+    source_id: SourceId,
+    lexical_text: &LexicalText,
+    bridge: &SpanBridge,
+) -> Result<(Vec<ImportStub>, Vec<PreprocessDiagnostic>), SpanBridgeError> {
+    let raw = match scan_raw(lexical_text.as_str()) {
+        Ok(raw) => raw,
+        Err(error) => {
+            return Ok((
+                Vec::new(),
+                vec![raw_import_scan_diagnostic(
+                    source_id,
+                    lexical_text,
+                    bridge,
+                    error.to_string(),
+                )?],
+            ));
+        }
+    };
+    let prelude = scan_import_prelude(&raw);
+    let import_stubs = prelude
+        .imports
+        .into_iter()
+        .map(|import| import_stub(source_id, bridge, import))
+        .collect::<Result<Vec<_>, SpanBridgeError>>()?;
+    let diagnostics = prelude
+        .diagnostics
+        .into_iter()
+        .map(|diagnostic| import_prescan_diagnostic(source_id, bridge, diagnostic))
+        .collect::<Result<Vec<_>, SpanBridgeError>>()?;
+    Ok((import_stubs, diagnostics))
+}
+
+fn import_stub(
+    source_id: SourceId,
+    bridge: &SpanBridge,
+    import: LexerImportStub,
+) -> Result<ImportStub, SpanBridgeError> {
+    Ok(ImportStub {
+        path: import_stub_path(source_id, bridge, import.path)?,
+        alias: import
+            .alias
+            .map(|alias| import_stub_alias(source_id, bridge, alias))
+            .transpose()?,
+        span: lexical_source_range(source_id, bridge, import.span)?,
+    })
+}
+
+fn import_stub_path(
+    source_id: SourceId,
+    bridge: &SpanBridge,
+    path: LexerRawModulePath,
+) -> Result<ImportStubPath, SpanBridgeError> {
+    Ok(ImportStubPath {
+        spelling: Arc::<str>::from(path.spelling),
+        relative: path.relative.map(import_relative_prefix),
+        components: path
+            .components
+            .into_iter()
+            .map(|component| Arc::<str>::from(component.spelling))
+            .collect(),
+        source_segments: path
+            .source_segments
+            .into_iter()
+            .map(|segment| lexical_source_range(source_id, bridge, segment))
+            .collect::<Result<Vec<_>, SpanBridgeError>>()?,
+        span: lexical_source_range(source_id, bridge, path.span)?,
+    })
+}
+
+fn import_relative_prefix(prefix: LexerRawModuleRelativePrefix) -> ImportStubRelativePrefix {
+    match prefix {
+        LexerRawModuleRelativePrefix::Current => ImportStubRelativePrefix::Current,
+        LexerRawModuleRelativePrefix::Parent => ImportStubRelativePrefix::Parent,
+        _ => unreachable!("mizar-lexer returned an unknown relative import prefix"),
+    }
+}
+
+fn import_stub_alias(
+    source_id: SourceId,
+    bridge: &SpanBridge,
+    alias: LexerRawModuleAlias,
+) -> Result<ImportStubAlias, SpanBridgeError> {
+    Ok(ImportStubAlias {
+        spelling: Arc::<str>::from(alias.spelling),
+        span: lexical_source_range(source_id, bridge, alias.span)?,
+    })
+}
+
+fn import_prescan_diagnostic(
+    source_id: SourceId,
+    bridge: &SpanBridge,
+    diagnostic: LexerImportPrescanDiagnostic,
+) -> Result<PreprocessDiagnostic, SpanBridgeError> {
+    let mapping = lexical_mapping(source_id, bridge, diagnostic.span)?;
+    Ok(PreprocessDiagnostic {
+        kind: PreprocessDiagnosticKind::ImportPrescan(diagnostic.code),
+        message: Arc::<str>::from(diagnostic.message),
+        primary: mapping.primary,
+        secondary: mapping.secondary,
+    })
+}
+
+fn raw_import_scan_diagnostic(
+    source_id: SourceId,
+    lexical_text: &LexicalText,
+    bridge: &SpanBridge,
+    error: String,
+) -> Result<PreprocessDiagnostic, SpanBridgeError> {
+    let mapping = if lexical_text.as_str().is_empty() {
+        bridge.loaded_mapping(source_id, LexerByteSpan { start: 0, end: 0 })?
+    } else {
+        bridge.lexical_span(
+            source_id,
+            LexerByteSpan {
+                start: 0,
+                end: lexical_text.text.len(),
+            },
+        )?
+    };
+    Ok(PreprocessDiagnostic {
+        kind: PreprocessDiagnosticKind::RawImportScan,
+        message: Arc::<str>::from(format!("raw import pre-scan failed: {error}")),
+        primary: mapping.primary,
+        secondary: mapping.secondary,
+    })
+}
+
+fn lexical_source_range(
+    source_id: SourceId,
+    bridge: &SpanBridge,
+    span: LexerSourceSpan,
+) -> Result<SourceRange, SpanBridgeError> {
+    Ok(lexical_mapping(source_id, bridge, span)?.primary)
+}
+
+fn lexical_mapping(
+    source_id: SourceId,
+    bridge: &SpanBridge,
+    span: LexerSourceSpan,
+) -> Result<MappedSourceRange, SpanBridgeError> {
+    bridge.lexical_span(source_id, lexer_byte_span(span))
+}
+
 fn lexer_byte_span(span: LexerSourceSpan) -> LexerByteSpan {
     LexerByteSpan {
         start: span.start,
@@ -213,8 +363,8 @@ fn lexer_byte_span(span: LexerSourceSpan) -> LexerByteSpan {
 #[cfg(test)]
 mod tests {
     use super::{
-        CommentKind, PreprocessDiagnosticKind, SourcePreprocessDiagnosticCode, lexical_hash,
-        preprocess,
+        CommentKind, ImportPrescanDiagnosticCode, ImportStubRelativePrefix,
+        PreprocessDiagnosticKind, SourcePreprocessDiagnosticCode, lexical_hash, preprocess,
     };
     use crate::source::{SourceUnit, register_source_unit};
     use crate::span_bridge::{LexerByteSpan, SpanBridge};
@@ -297,6 +447,276 @@ mod tests {
     }
 
     #[test]
+    fn import_prelude_is_prescanned_into_ordered_mapped_stubs() {
+        let text = "\
+import std.algebra.group, .utils as U, ..common;
+import algebra.linear.{eigen_value, jordan};
+definition
+end;";
+        let (source, mut bridge) = registered_source_unit(text);
+
+        let preprocessed = preprocess(&source, &mut bridge).unwrap();
+
+        assert_eq!(
+            preprocessed
+                .import_stubs
+                .iter()
+                .map(|stub| stub.path.spelling.as_ref())
+                .collect::<Vec<_>>(),
+            vec![
+                "std.algebra.group",
+                ".utils",
+                "..common",
+                "algebra.linear.eigen_value",
+                "algebra.linear.jordan",
+            ]
+        );
+        assert_eq!(
+            preprocessed.import_stubs[1]
+                .alias
+                .as_ref()
+                .unwrap()
+                .spelling
+                .as_ref(),
+            "U"
+        );
+        assert_eq!(
+            preprocessed.import_stubs[1].path.relative,
+            Some(ImportStubRelativePrefix::Current)
+        );
+        assert_eq!(
+            preprocessed.import_stubs[2].path.relative,
+            Some(ImportStubRelativePrefix::Parent)
+        );
+        assert_eq!(
+            preprocessed.import_stubs[3].path.components,
+            ["algebra", "linear", "eigen_value"]
+                .into_iter()
+                .map(Arc::<str>::from)
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            preprocessed.import_stubs[1].path.span,
+            source_range_of(source.source_id, text, ".utils")
+        );
+        assert_eq!(
+            preprocessed.import_stubs[1].alias.as_ref().unwrap().span,
+            source_range_of(source.source_id, text, "U")
+        );
+        assert_eq!(
+            preprocessed.import_stubs[1].span,
+            source_range_of(source.source_id, text, ".utils as U")
+        );
+        assert_eq!(
+            preprocessed.import_stubs[3].path.source_segments,
+            vec![
+                source_range_of(source.source_id, text, "algebra.linear"),
+                source_range_of(source.source_id, text, "eigen_value"),
+            ]
+        );
+        assert_eq!(
+            preprocessed.import_stubs[4].path.source_segments,
+            vec![
+                source_range_of(source.source_id, text, "algebra.linear"),
+                source_range_of(source.source_id, text, "jordan"),
+            ]
+        );
+        assert!(preprocessed.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn import_stub_spans_map_through_removed_doc_comment_prefix() {
+        let text = "\
+::: module imports
+import algebra.linear.{eigen_value, jordan}, .utils as U;
+definition
+end;";
+        let (source, mut bridge) = registered_source_unit(text);
+
+        let preprocessed = preprocess(&source, &mut bridge).unwrap();
+
+        assert_eq!(
+            preprocessed.lexical_text.as_str(),
+            "\nimport algebra.linear.{eigen_value, jordan}, .utils as U;\ndefinition\nend;"
+        );
+        assert_eq!(preprocessed.import_stubs.len(), 3);
+        assert_eq!(
+            preprocessed
+                .import_stubs
+                .iter()
+                .map(|stub| stub.path.spelling.as_ref())
+                .collect::<Vec<_>>(),
+            vec![
+                "algebra.linear.eigen_value",
+                "algebra.linear.jordan",
+                ".utils",
+            ]
+        );
+        assert_eq!(
+            preprocessed.import_stubs[0].path.span,
+            SourceRange {
+                source_id: source.source_id,
+                start: text.find("algebra.linear").unwrap(),
+                end: text.find("eigen_value").unwrap() + "eigen_value".len(),
+            }
+        );
+        assert_eq!(
+            preprocessed.import_stubs[0].path.source_segments,
+            vec![
+                source_range_of(source.source_id, text, "algebra.linear"),
+                source_range_of(source.source_id, text, "eigen_value"),
+            ]
+        );
+        assert_eq!(
+            preprocessed.import_stubs[1].path.source_segments,
+            vec![
+                source_range_of(source.source_id, text, "algebra.linear"),
+                source_range_of(source.source_id, text, "jordan"),
+            ]
+        );
+        assert_eq!(
+            preprocessed.import_stubs[2].path.span,
+            source_range_of(source.source_id, text, ".utils")
+        );
+        assert_eq!(
+            preprocessed.import_stubs[2].alias.as_ref().unwrap().span,
+            source_range_of(source.source_id, text, "U")
+        );
+        assert_eq!(
+            preprocessed.import_stubs[2].span,
+            source_range_of(source.source_id, text, ".utils as U")
+        );
+        assert!(preprocessed.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn malformed_imports_emit_prescan_diagnostics_without_aborting() {
+        let (source, mut bridge) =
+            registered_source_unit("import std., pkg.math as ;\ndefinition\nend;");
+
+        let preprocessed = preprocess(&source, &mut bridge).unwrap();
+
+        assert_eq!(
+            preprocessed
+                .import_stubs
+                .iter()
+                .map(|stub| stub.path.spelling.as_ref())
+                .collect::<Vec<_>>(),
+            vec!["std.", "pkg.math"]
+        );
+        assert_eq!(
+            preprocessed
+                .diagnostics
+                .iter()
+                .map(|diagnostic| diagnostic.kind)
+                .collect::<Vec<_>>(),
+            vec![
+                PreprocessDiagnosticKind::ImportPrescan(
+                    ImportPrescanDiagnosticCode::EmptyModulePathComponent
+                ),
+                PreprocessDiagnosticKind::ImportPrescan(ImportPrescanDiagnosticCode::MissingAlias),
+            ]
+        );
+        assert_eq!(
+            preprocessed.diagnostics[0].primary,
+            SourceRange {
+                source_id: source.source_id,
+                start: "import std.".len(),
+                end: "import std.".len(),
+            }
+        );
+        assert_eq!(
+            preprocessed.diagnostics[1].primary,
+            source_range_of(source.source_id, source.source_text.as_ref(), ";")
+        );
+    }
+
+    #[test]
+    fn import_prescan_diagnostics_follow_preprocess_diagnostics_and_map_through_comments() {
+        let text = "\
+::: module imports
+import std., pkg.math as ;
+::=
+open block";
+        let (source, mut bridge) = registered_source_unit(text);
+
+        let preprocessed = preprocess(&source, &mut bridge).unwrap();
+
+        assert_eq!(
+            preprocessed
+                .diagnostics
+                .iter()
+                .map(|diagnostic| diagnostic.kind)
+                .collect::<Vec<_>>(),
+            vec![
+                PreprocessDiagnosticKind::SourcePrecondition(
+                    SourcePreprocessDiagnosticCode::UnterminatedMultiLineComment
+                ),
+                PreprocessDiagnosticKind::ImportPrescan(
+                    ImportPrescanDiagnosticCode::EmptyModulePathComponent
+                ),
+                PreprocessDiagnosticKind::ImportPrescan(ImportPrescanDiagnosticCode::MissingAlias),
+            ]
+        );
+        assert_eq!(
+            preprocessed.diagnostics[0].primary,
+            SourceRange {
+                source_id: source.source_id,
+                start: text.find("::=").unwrap(),
+                end: text.len(),
+            }
+        );
+        assert_eq!(
+            preprocessed.diagnostics[1].primary,
+            SourceRange {
+                source_id: source.source_id,
+                start: text.find("import std.").unwrap() + "import std.".len(),
+                end: text.find("import std.").unwrap() + "import std.".len(),
+            }
+        );
+        assert_eq!(
+            preprocessed.diagnostics[2].primary,
+            source_range_of(source.source_id, text, ";")
+        );
+        assert_eq!(
+            preprocessed
+                .import_stubs
+                .iter()
+                .map(|stub| stub.path.spelling.as_ref())
+                .collect::<Vec<_>>(),
+            vec!["std.", "pkg.math"]
+        );
+    }
+
+    #[test]
+    fn raw_import_scan_failure_is_coarse_and_leaves_import_stubs_empty() {
+        let (source, mut bridge) = registered_source_unit("@-");
+
+        let preprocessed = preprocess(&source, &mut bridge).unwrap();
+
+        assert!(preprocessed.import_stubs.is_empty());
+        assert_eq!(preprocessed.diagnostics.len(), 1);
+        assert_eq!(
+            preprocessed.diagnostics[0].kind,
+            PreprocessDiagnosticKind::RawImportScan
+        );
+        assert!(
+            preprocessed.diagnostics[0]
+                .message
+                .starts_with("raw import pre-scan failed:")
+        );
+        assert_eq!(
+            preprocessed.diagnostics[0].primary,
+            SourceRange {
+                source_id: source.source_id,
+                start: 0,
+                end: 2,
+            }
+        );
+        assert!(preprocessed.diagnostics[0].secondary.is_empty());
+    }
+
+    #[test]
     fn lexical_range_crossing_removed_comment_yields_composite_mapping() {
         let (source, mut bridge) = registered_source_unit("alpha ::= hidden =:: beta");
 
@@ -353,7 +773,7 @@ mod tests {
         let preprocessed = preprocess(&source, &mut bridge).unwrap();
 
         assert_eq!(preprocessed.lexical_text.as_str(), "alpha\u{03b2}omega");
-        assert_eq!(preprocessed.diagnostics.len(), 1);
+        assert_eq!(preprocessed.diagnostics.len(), 2);
         assert_eq!(
             preprocessed.diagnostics[0].kind,
             PreprocessDiagnosticKind::SourcePrecondition(
@@ -366,6 +786,18 @@ mod tests {
                 source_id: source.source_id,
                 start: "alpha".len(),
                 end: "alpha\u{03b2}".len(),
+            }
+        );
+        assert_eq!(
+            preprocessed.diagnostics[1].kind,
+            PreprocessDiagnosticKind::RawImportScan
+        );
+        assert_eq!(
+            preprocessed.diagnostics[1].primary,
+            SourceRange {
+                source_id: source.source_id,
+                start: 0,
+                end: source.source_text.len(),
             }
         );
     }
@@ -402,7 +834,7 @@ mod tests {
 
         let preprocessed = preprocess(&source, &mut bridge).unwrap();
 
-        assert_eq!(preprocessed.diagnostics.len(), 2);
+        assert_eq!(preprocessed.diagnostics.len(), 3);
         assert_eq!(
             preprocessed
                 .diagnostics
@@ -416,6 +848,7 @@ mod tests {
                 PreprocessDiagnosticKind::SourcePrecondition(
                     SourcePreprocessDiagnosticCode::UnterminatedMultiLineComment
                 ),
+                PreprocessDiagnosticKind::RawImportScan,
             ]
         );
         assert_eq!(
@@ -427,6 +860,7 @@ mod tests {
             vec![
                 "code regions must be ASCII before lexing",
                 "unterminated multi-line comment",
+                "raw import pre-scan failed: unsupported raw lexer input at byte 5: 'β'",
             ]
         );
         assert_eq!(
@@ -446,14 +880,42 @@ mod tests {
                     start: "alpha\u{03b2}\n".len(),
                     end: source.source_text.len(),
                 },
+                SourceRange {
+                    source_id: source.source_id,
+                    start: 0,
+                    end: source.source_text.len(),
+                },
             ]
         );
         assert!(
             preprocessed
                 .diagnostics
                 .iter()
+                .take(2)
                 .all(|diagnostic| diagnostic.secondary.is_empty())
         );
+        assert!(
+            !preprocessed
+                .diagnostics
+                .iter()
+                .last()
+                .expect("raw import scan diagnostic exists")
+                .secondary
+                .is_empty()
+        );
+    }
+
+    fn source_range_of(
+        source_id: mizar_session::SourceId,
+        haystack: &str,
+        needle: &str,
+    ) -> SourceRange {
+        let start = haystack.find(needle).expect("test fixture contains needle");
+        SourceRange {
+            source_id,
+            start,
+            end: start + needle.len(),
+        }
     }
 
     fn registered_source_unit(text: &str) -> (SourceUnit, SpanBridge) {
