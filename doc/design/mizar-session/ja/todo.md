@@ -419,7 +419,7 @@
       `SourceLoadError::from_source_path_error` 分類を再利用し、未対応拡張子や不正な
       source path について disk/open-buffer が同じカテゴリを報告する。
 
-32. **`src/` ルート欠落パスエラーの忠実度。** [ ]
+32. **`src/` ルート欠落パスエラーの忠実度。** [x]
     - 問題: `SourceLoadError::from_source_path_error` が
       `SourcePathError::MissingSourceRoot` を
       `SourceLoadError::SourcePathOutsidePackageRoot` に写像するため

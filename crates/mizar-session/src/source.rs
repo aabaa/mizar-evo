@@ -200,7 +200,7 @@ impl DiskSourceLoader {
             SourcePathError::OutsidePackageRoot { .. } => {
                 SourceLoadError::UnmappedOpenBufferUri { uri: uri.clone() }
             }
-            error => SourceLoadError::from_source_path_error(&self.package_root, error),
+            error => SourceLoadError::from_source_path_error(error),
         })
     }
 }
@@ -372,8 +372,7 @@ impl fmt::Display for SourcePathError {
 impl Error for SourcePathError {}
 
 pub fn normalize_path(package_root: &Path, path: &Path) -> Result<NormalizedPath, SourceLoadError> {
-    normalize_source_path(package_root, path)
-        .map_err(|error| SourceLoadError::from_source_path_error(package_root, error))
+    normalize_source_path(package_root, path).map_err(SourceLoadError::from_source_path_error)
 }
 
 pub fn hash_text(text: &str) -> Hash {
@@ -832,15 +831,11 @@ fn hex_value(byte: u8) -> Option<u8> {
 }
 
 impl SourceLoadError {
-    fn from_source_path_error(package_root: &Path, error: SourcePathError) -> Self {
+    fn from_source_path_error(error: SourcePathError) -> Self {
         match error {
             SourcePathError::OutsidePackageRoot { package_root, path } => {
                 Self::SourcePathOutsidePackageRoot { package_root, path }
             }
-            SourcePathError::MissingSourceRoot { path } => Self::SourcePathOutsidePackageRoot {
-                package_root: package_root.to_owned(),
-                path,
-            },
             SourcePathError::UnsupportedExtension { path } => {
                 Self::UnsupportedFileExtension { path }
             }
@@ -853,9 +848,8 @@ impl SourceLoadError {
             }
             SourcePathError::NonCanonicalPathAlias { .. }
             | SourcePathError::NonCanonicalPathSpelling { .. }
-            | SourcePathError::InvalidNamespaceComponent { .. } => {
-                Self::InvalidSourcePath { error }
-            }
+            | SourcePathError::InvalidNamespaceComponent { .. }
+            | SourcePathError::MissingSourceRoot { .. } => Self::InvalidSourcePath { error },
         }
     }
 }

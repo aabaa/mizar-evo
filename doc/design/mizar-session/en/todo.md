@@ -433,7 +433,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
       classification so disk and open-buffer loading report the same categories
       for unsupported extensions and invalid source paths.
 
-32. **Missing-`src/`-root path error fidelity.** [ ]
+32. **Missing-`src/`-root path error fidelity.** [x]
     - Problem: `SourceLoadError::from_source_path_error` maps
       `SourcePathError::MissingSourceRoot` to
       `SourceLoadError::SourcePathOutsidePackageRoot` (`src/source.rs`), so a path

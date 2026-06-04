@@ -173,6 +173,7 @@ fn source_loader_normalize_path_reuses_source_path_normalization() {
     let package = PackageFixture::new();
     package.write("src/groups/basic.miz", "");
     package.write("src/groups/basic.txt", "");
+    package.write("other/basic.miz", "");
     let loader = TextOnlyLoader::default();
 
     let normalized = loader
@@ -180,12 +181,15 @@ fn source_loader_normalize_path_reuses_source_path_normalization() {
         .unwrap();
     let unsupported = normalize_path(package.root(), Path::new("src/groups/basic.txt"))
         .expect_err("non-miz source should be rejected");
+    let missing_source_root = normalize_path(package.root(), Path::new("other/basic.miz"))
+        .expect_err("package file outside src should be rejected");
 
     assert_eq!(normalized, path("src/groups/basic.miz"));
     assert!(matches!(
         unsupported,
         SourceLoadError::UnsupportedFileExtension { .. }
     ));
+    assert_missing_source_root_error(&missing_source_root, "other/basic.miz");
 }
 
 #[test]
@@ -488,9 +492,32 @@ fn disk_source_loader_rejects_paths_outside_package_root() {
         .expect_err("outside package path should be rejected");
 
     assert!(matches!(
-        error,
+        &error,
         SourceLoadError::SourcePathOutsidePackageRoot { .. }
     ));
+    assert!(
+        error.to_string().contains("must stay inside package root"),
+        "outside-root error should keep the package-root boundary message: {error}"
+    );
+}
+
+#[test]
+fn disk_source_loader_reports_missing_source_root_as_invalid_source_path() {
+    let package = PackageFixture::new();
+    package.write("other/basic.miz", "environ\n");
+    let loader = DiskSourceLoader::new(package.root());
+    let allocator = RecordingAllocator::new();
+
+    let error = loader
+        .load(
+            snapshot_id(29),
+            disk_source_input("other/basic.miz"),
+            &allocator,
+        )
+        .expect_err("package file outside src should be rejected");
+
+    assert_missing_source_root_error(&error, "other/basic.miz");
+    assert!(allocator.source_snapshots().is_empty());
 }
 
 #[cfg(not(windows))]
@@ -719,10 +746,12 @@ fn open_buffer_loader_reports_package_source_path_errors_with_disk_categories() 
         .expect_err("package file outside src should be rejected");
 
     assert!(matches!(
-        missing_source_root,
-        SourceLoadError::SourcePathOutsidePackageRoot { path, .. }
-            if path.ends_with("other/basic.miz")
+        &missing_source_root,
+        SourceLoadError::InvalidSourcePath {
+            error: SourcePathError::MissingSourceRoot { path }
+        } if path.ends_with("other/basic.miz")
     ));
+    assert_missing_source_root_error(&missing_source_root, "other/basic.miz");
 
     let unsupported_extension = loader
         .load(
@@ -1221,6 +1250,28 @@ fn disk_source_input(relative_path: &str) -> SourceInput {
     });
     input.normalized_path = path(relative_path);
     input
+}
+
+fn assert_missing_source_root_error(error: &SourceLoadError, expected_suffix: &str) {
+    assert!(
+        matches!(
+            error,
+            SourceLoadError::InvalidSourcePath {
+                error: SourcePathError::MissingSourceRoot { path }
+            } if path.ends_with(expected_suffix)
+        ),
+        "missing source root should stay observable through InvalidSourcePath: {error:?}"
+    );
+
+    let message = error.to_string();
+    assert!(
+        message.contains("must be under the package `src` root"),
+        "missing-source-root message should mention the required src root: {message}"
+    );
+    assert!(
+        !message.contains("must stay inside package root"),
+        "missing-source-root message should not look like an outside-package-root error: {message}"
+    );
 }
 
 fn loaded_source(source_id: SourceId, origin: SourceOrigin, text: &str) -> LoadedSource {

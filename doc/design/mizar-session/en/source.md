@@ -171,6 +171,10 @@ Open-buffer sources can override disk sources only for the targeted LSP request 
 
 1. Normalize the path relative to the package root.
 2. Reject paths outside the package root or outside its required `src/` source tree.
+   Paths inside the package root but outside `src/` report through
+   `SourceLoadError::InvalidSourcePath` carrying
+   `SourcePathError::MissingSourceRoot`, not through the package-root-boundary
+   category.
 3. Read bytes from disk.
 4. Validate UTF-8. Invalid bytes are rejected before line-map construction and must not be decoded lossily into `U+FFFD`.
 5. If the validated text starts with a UTF-8 BOM signature, strip that leading `U+FEFF`.
@@ -201,8 +205,9 @@ Code-region ASCII validation belongs to preprocessing. This module only validate
 Once an open-buffer URI has been mapped to a package-relative path, source-path
 validation uses the same `normalize_source_path` classification as disk loading.
 For example, a package `src/` file with a non-`.miz` extension reports
-`SourceLoadError::UnsupportedFileExtension`, and non-canonical paths or invalid
-namespace components report through `SourceLoadError::InvalidSourcePath`.
+`SourceLoadError::UnsupportedFileExtension`, and missing `src/` roots,
+non-canonical paths, or invalid namespace components report through
+`SourceLoadError::InvalidSourcePath`.
 
 Open-buffer text may be newer than the last verified artifact. Consumers must carry freshness metadata rather than silently treating artifact data as current. LSP diagnostics and edits must convert from `LoadedSource.text` offsets through `loading_map` before applying protocol UTF-16 position rules against the editor document.
 
@@ -219,6 +224,9 @@ Generated source text may be used for diagnostics, documentation, or extraction,
 `SourceLoadError` includes:
 
 - source path outside package root;
+- source path inside the package root but outside the required `src/` source
+  tree, reported through `InvalidSourcePath` carrying
+  `SourcePathError::MissingSourceRoot`;
 - unsupported file extension;
 - invalid UTF-8;
 - unreadable source file;
@@ -240,7 +248,7 @@ Traceability for the reserved-looking source-loading variants is:
 
 | Variant | Current classification | Public observable path |
 |---|---|---|
-| `SourceLoadError::InvalidSourcePath` | public source-loading path normalization surface | `DiskSourceLoader::load` for disk and mapped open-buffer sources, `SourceLoader::normalize_path`, and the public `normalize_path` helper map `normalize_source_path` failures such as non-canonical aliases, non-canonical spelling, or invalid namespace components into this variant. |
+| `SourceLoadError::InvalidSourcePath` | public source-loading path normalization surface | `DiskSourceLoader::load` for disk and mapped open-buffer sources, `SourceLoader::normalize_path`, and the public `normalize_path` helper map `normalize_source_path` failures such as missing `src/` roots, non-canonical aliases, non-canonical spelling, or invalid namespace components into this variant. |
 | `SourceLoadError::UnsupportedSourceOrigin` | custom-loader-only | The default `DiskSourceLoader` supports all current `SourceOriginInput` variants (`Disk`, `OpenBuffer`, and `Generated`) and does not emit this variant. It remains public because `SourceLoader` is a public trait and downstream concrete loaders may intentionally implement only part of the origin surface. |
 
 ## Tests
@@ -253,7 +261,7 @@ Key scenarios:
 - a leading UTF-8 BOM is accepted and stripped before line-map construction;
 - non-leading `U+FEFF` is not stripped by source loading;
 - open-buffer BOM stripping and newline normalization preserve a loading map back to editor-provided text offsets;
-- path normalization rejects paths outside the package root;
+- path normalization rejects paths outside the package root and paths inside the package root but outside `src/`;
 - CRLF and LF handling matches `LineMap` expectations;
 - generated-source inputs carry non-empty generator metadata and optional anchors, and loaded generated sources preserve generator metadata in `SourceOrigin` plus the optional anchor in `LoadedSource.generated_anchor`;
 - generated-source text with a leading `U+FEFF` and CRLF is preserved byte-for-byte, hashes as that exact text, and emits no `LoadingMap`;
