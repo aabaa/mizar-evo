@@ -34,7 +34,7 @@ pub trait LexicalSummaryProvider {
     fn resolve_imports(
         &self,
         request: &LexicalEnvironmentRequest<'_>,
-    ) -> Result<ResolvedImports, LexicalEnvironmentError>;
+    ) -> Result<ResolvedImports, FrontendLexicalEnvironmentError>;
 }
 
 pub struct ResolvedImports {
@@ -46,20 +46,27 @@ pub struct ResolvedImports {
 pub fn build_active_lexical_environment(
     request: &LexicalEnvironmentRequest<'_>,
     provider: &dyn LexicalSummaryProvider,
-) -> Result<ActiveLexicalEnvironmentResult, LexicalEnvironmentError>;
+) -> Result<ActiveLexicalEnvironmentResult, FrontendLexicalEnvironmentError>;
 
 pub struct ActiveLexicalEnvironmentResult {
     pub environment: ActiveLexicalEnvironment,
     pub fingerprint: LexicalEnvironmentFingerprint,
     pub diagnostics: Vec<LexicalEnvironmentDiagnostic>,
 }
+
+pub enum FrontendLexicalEnvironmentError {
+    ProviderUnavailable { message: String },
+    MalformedSummary { source: LexicalEnvironmentError },
+}
 ```
 
 `ResolvedImport`, `ModuleLexicalSummary`, `ActiveLexicalEnvironment`,
 `LexicalEnvironmentFingerprint`, and `LexicalEnvironmentError` are re-exported
-from `mizar-lexer`. `LexicalSummaryProvider` is the seam by which the build
-planner / resolver supplies already-resolved imports plus lexical summaries; the
-frontend never reaches into module IR to build them.
+from `mizar-lexer`. `FrontendLexicalEnvironmentError` is owned by the frontend
+and wraps provider infrastructure failures plus unrecoverable lexer structural
+errors. `LexicalSummaryProvider` is the seam by which the build planner /
+resolver supplies already-resolved imports plus lexical summaries; the frontend
+never reaches into module IR to build them.
 
 ## Dependencies
 
@@ -113,9 +120,9 @@ local file is unchanged.
    `LexicalEnvironmentFingerprint`.
 4. Convert recoverable import-level lexer errors, such as deterministic
    user-symbol import conflicts, into `LexicalEnvironmentDiagnostic`s and degrade
-   to a smaller active environment. Return hard `LexicalEnvironmentError`s only
-   for provider infrastructure failures or malformed summary data that cannot be
-   safely degraded.
+   to a smaller active environment. Return hard `FrontendLexicalEnvironmentError`s
+   only for provider infrastructure failures or malformed summary data that cannot
+   be safely degraded.
 5. Return the environment, fingerprint, and merged diagnostics.
 
 If an import cannot be resolved, the environment is still built from the imports
@@ -125,15 +132,18 @@ diagnostic, not a hard stop.
 ## Error Handling
 
 `LexicalEnvironmentError` (from `mizar-lexer`) covers structural failures such
-as conflicting summary fingerprints or malformed summary data. Provider-side
-issues — an import that resolves to no module, or a dependency whose lexical
-summary is unavailable — are carried as `LexicalEnvironmentDiagnostic`s and the
-affected imports are omitted before calling the lexer, so the pipeline degrades
-to a smaller active environment rather than failing the whole file. Recoverable
-lexer-side lexical conflicts are likewise surfaced as diagnostics with the
-conflicting imported symbol/module excluded from the active environment.
-Import legality (visibility, export rank conflicts beyond lexical shape) is
-deferred to module resolution and is never decided here.
+as conflicting summary fingerprints or malformed summary data. Provider
+infrastructure failures are not expressible with that lexer-owned enum, so the
+frontend wraps hard failures in `FrontendLexicalEnvironmentError`.
+Provider-side issues — an import that resolves to no module, or a dependency
+whose lexical summary is unavailable — are carried as
+`LexicalEnvironmentDiagnostic`s and the affected imports are omitted before
+calling the lexer, so the pipeline degrades to a smaller active environment
+rather than failing the whole file. Recoverable lexer-side lexical conflicts are
+likewise surfaced as diagnostics with the conflicting imported symbol/module
+excluded from the active environment. Import legality (visibility, export rank
+conflicts beyond lexical shape) is deferred to module resolution and is never
+decided here.
 
 ## Tests
 

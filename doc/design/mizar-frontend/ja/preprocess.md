@@ -97,7 +97,7 @@ pub fn preprocess(
 2. 字句解析器の `SourcePreprocessMap` を session `PreprocessMap` へ変換し、`SourceId` に対して mutable `SpanBridge` へ登録する。
 3. 保持された各コメント・ドキュメントコメント・前処理診断のスパンを、字句／ソースオフセットから `span_bridge` を通じて `mizar-session` `SourceRange` へ変換する。
 4. 字句テキストを生スキャン（`scan_raw`）する。成功した場合は `scan_import_prelude` を実行して `ImportStub` とインポート事前走査診断を抽出し、それらのスパンを `SourceRange` へ変換する。
-5. 生スキャンが失敗した場合は、生スキャナーのエラー span を持つ frontend-local なインポート事前走査診断を記録し、`import_stubs` を空のまま続行する。部分的な raw stream から import を推測しない。
+5. 生スキャンが失敗した場合は、字句テキスト全体（字句テキストが空ならソース先頭のゼロ長範囲）を覆う frontend-local なインポート事前走査診断を記録し、`import_stubs` を空のまま続行する。部分的な raw stream から import を推測しない。現在の `mizar_lexer::LexError` は span や部分 token payload を持たないため、raw-scan 失敗位置の精密化は将来の recoverable raw-scanner contract に委ねる。
 6. コメント構造・ASCII 前提・インポート事前走査の診断を `diagnostics` に集約し、ソース順を保つ。
 7. 前処理マップと line／loading マップから `LexicalSourceMap` を組み立て、`PreprocessedSource` を返す。
 
@@ -110,7 +110,7 @@ Step 2 の診断はハードエラーとして送出せず、`PreprocessedSource
 - コード領域の非 ASCII 文字やその他の字句前提（`SourcePreprocessDiagnostic`）。
 - 未終端ブロックコメントやその他のコメント構造の問題。
 - アクティブ字句環境構築を妨げるインポート事前走査の失敗（`ImportPrescanDiagnostic`）。
-- インポート事前走査中の raw-scan 失敗。前処理が回復済み字句テキストを返し続けられるよう、frontend-local な `PreprocessDiagnostic` variant として表す。
+- インポート事前走査中の raw-scan 失敗。前処理が回復済み字句テキストを返し続けられるよう、粗い字句テキスト被覆を持つ frontend-local な `PreprocessDiagnostic` variant として表す。
 
 語彙読み込みを妨げるほど深刻な事前走査の失敗は記録され、統制層が該当インポートの字句環境拡張をスキップしつつ、ファイルの残りをトークン化するか判断できるようにする。前処理は意味的事実を主張しない。
 

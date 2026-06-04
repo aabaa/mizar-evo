@@ -148,9 +148,12 @@ resolution.
 4. Raw-scan the lexical text (`scan_raw`). If it succeeds, run
    `scan_import_prelude` to extract `ImportStub`s and import-prescan diagnostics;
    map their spans to `SourceRange`.
-5. If the raw scan fails, record a frontend-local import-pre-scan diagnostic with
-   the raw scanner error span, leave `import_stubs` empty, and continue. Do not
-   attempt to infer imports from a partial raw stream.
+5. If the raw scan fails, record a frontend-local import-pre-scan diagnostic over
+   the whole lexical text (or the source-start zero-length range when the lexical
+   text is empty), leave `import_stubs` empty, and continue. Do not attempt to
+   infer imports from a partial raw stream. The current `mizar_lexer::LexError`
+   has no span or partial-token payload, so precise raw-scan failure locations are
+   deferred to a future recoverable raw-scanner contract.
 6. Collect comment-structure, ASCII-precondition, and import-prescan diagnostics
    into `diagnostics`, preserving source order.
 7. Assemble `LexicalSourceMap` from the preprocess map plus the line/loading maps
@@ -173,8 +176,8 @@ as a hard error:
 - import pre-scan failures that prevent active lexical environment construction
   (`ImportPrescanDiagnostic`).
 - raw-scan failures during import pre-scan, represented as a frontend-local
-  `PreprocessDiagnostic` variant so preprocessing can still return recovered
-  lexical text.
+  `PreprocessDiagnostic` variant with coarse lexical-text coverage so
+  preprocessing can still return recovered lexical text.
 
 A pre-scan failure severe enough to block lexicon loading is recorded so the
 orchestration layer can decide whether to skip lexical-environment extension for

@@ -45,14 +45,15 @@ pub struct TokenizeRequest<'a> {
 
 pub struct LexingDiagnostic {
     pub kind: LexingDiagnosticKind,
+    pub message: Arc<str>,
     pub primary: SourceRange,
     pub secondary: Vec<SourceRange>,
 }
 
 pub enum LexingDiagnosticKind {
-    RawScan(LexError),
-    ScopeSkeleton(ScopeSkeletonDiagnostic),
-    Lexer(LexDiagnostic),
+    RawScan,
+    ScopeSkeleton(ScopeSkeletonDiagnosticCode),
+    Lexer(LexDiagnosticCode),
 }
 
 pub fn tokenize(
@@ -62,11 +63,12 @@ pub fn tokenize(
 ```
 
 `TokenKind`, `ParserLexContext`, `ParserLexMode`, `LexError`,
-`ScopeSkeletonDiagnostic`, and `LexDiagnostic` are re-exported from
-`mizar-lexer` as raw payload types. The frontend's `Token` differs from the
-lexer's internal token only in that `span` is a session `SourceRange` rather than
-a lexical-text byte span. Diagnostics are also wrapped in `LexingDiagnostic` so
-their primary and secondary spans are session ranges, not lexer byte offsets.
+`ScopeSkeletonDiagnosticCode`, and `LexDiagnosticCode` are re-exported from
+`mizar-lexer`. Raw lexer diagnostic structs are consumed as inputs only: the
+frontend converts them immediately into `LexingDiagnostic` so public diagnostics
+carry session ranges and never expose raw lexer byte spans. If a future diagnostic
+payload needs nested span-bearing data, that payload must get its own
+frontend-mapped representation.
 
 `parser_context` is the current `mizar-lexer` uniform context object for one
 disambiguation run. The source-to-token foundation uses
@@ -83,8 +85,8 @@ parsing integration tasks.
   `parsing` (consumes `TokenStream`).
 - External: `mizar-lexer` (`scan_raw`, `build_scope_skeleton`, `ScopeLexView`,
   `disambiguate`, `lex`, `Token`, `TokenKind`, `ParserLexContext`,
-  `LexError`, `LexDiagnostic`, `ScopeSkeletonDiagnostic`), `mizar-session`
-  (`SourceId`, `SourceRange`).
+  `LexError`, `LexDiagnostic`, `LexDiagnosticCode`, `ScopeSkeletonDiagnostic`,
+  `ScopeSkeletonDiagnosticCode`), `mizar-session` (`SourceId`, `SourceRange`).
 
 This module is consumed by parsing and, through the diagnostics, by the
 orchestration merge.
@@ -104,9 +106,10 @@ file-wide token stream with strings only at grammar-defined positions requires
 the parser-assisted lexing contract described in `parsing.md` and the TODO.
 
 `LexingDiagnostic` is the mapped frontend diagnostic payload for Step 4. It may
-wrap a raw-scan failure, a scope-skeleton diagnostic, or a disambiguator
-`LexDiagnostic`, but it always carries session-coordinate primary/secondary
-ranges for orchestration.
+represent a raw-scan failure, a scope-skeleton diagnostic, or a disambiguator
+diagnostic, but it always carries session-coordinate primary/secondary ranges for
+orchestration. It stores the mapped code/message, not the raw lexer diagnostic
+object, because those raw objects contain lexer byte spans.
 
 ### Scope Lex View
 
@@ -121,9 +124,12 @@ shape only — never resolved bindings.
 ### Tokenize a preprocessed source
 
 1. Raw-scan the lexical text (`scan_raw`) into `LexemeRun`s with preserved spans.
-   If strict raw scanning fails, adapt the failure into `ErrorRecovery` coverage
-   and a mapped `LexingDiagnosticKind::RawScan` diagnostic, then continue from a
-   synchronization boundary.
+   If strict raw scanning fails, emit one coarse `ErrorRecovery` token and one
+   mapped `LexingDiagnosticKind::RawScan` diagnostic covering the whole lexical
+   text (or the source-start zero-length range for empty text), then skip
+   scope-skeleton construction and disambiguation for that run. The current
+   `mizar_lexer::LexError` has no span or partial-token payload, so finer recovery
+   is tracked as a follow-up contract.
 2. Build the `ScopeSkeleton` / `ScopeLexView` from the raw tokens for scoped
    identifier override, collecting and mapping `ScopeSkeletonDiagnostic`s.
 3. Run `disambiguate` (or the parser-integrated `lex`) with longest-match
@@ -156,11 +162,11 @@ Lexer recovery is preserved end to end:
   recoverable tokens.
 
 For user-recoverable lexical input problems, `tokenize` returns
-`Ok(TokenStream)`: strict raw-scan failures, scope-skeleton problems, and
-disambiguator diagnostics degrade to recovery tokens and mapped diagnostics
-rather than aborting, so the parser can still attempt recovery. It returns
-`Err(SpanBridgeError)` only when a token or diagnostic span cannot be mapped
-through the registered bridge.
+`Ok(TokenStream)`: strict raw-scan failures degrade to a coarse recovery token
+and mapped diagnostic, while scope-skeleton problems and disambiguator diagnostics
+are mapped without dropping recoverable tokens. It returns `Err(SpanBridgeError)`
+only when a token or diagnostic span cannot be mapped through the registered
+bridge.
 
 ## Tests
 
@@ -174,6 +180,8 @@ Key scenarios:
 - a malformed token emits `ErrorRecovery` with the correct `SourceRange` and
   scanning resumes;
 - a scope-skeleton diagnostic is preserved as a mapped `LexingDiagnostic`;
+- a strict raw-scan failure emits one coarse `ErrorRecovery` token and one
+  `RawScan` diagnostic because the current `LexError` has no precise span;
 - every emitted token's `span` is a valid `SourceRange` for `source_id`,
   reproducing the original spelling through the source map.
 

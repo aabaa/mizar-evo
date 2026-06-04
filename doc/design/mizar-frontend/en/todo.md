@@ -102,12 +102,15 @@ keep `cargo test -p mizar-frontend` green (see
      request/origin for disk or open-buffer sources and from the normalized path or
      generated anchor for generated sources.
    - Provide a helper that registers the loaded `LineMap` / `LoadingMap` with a
-     mutable `SpanBridge` under the `SourceId`.
+     mutable `SpanBridge` under the `SourceId`; orchestration calls this helper
+     after loading and before preprocessing, while `load_source_unit` itself does
+     not mutate bridge state.
    - Tests: disk `LoadedSource` projects with identical id/hash/line-map/loading-map;
      BOM/CRLF-normalized source carries `Some(loading_map)`; identity load carries
      `None`; normalized path and edition are preserved; open-buffer origin and
-     version are preserved; generated sources preserve `generated_anchor`; a
-     session `SourceLoadError` is propagated unchanged.
+     version are preserved; generated sources preserve `generated_anchor`;
+     `register_source_unit` records line/loading maps and reports conflicting
+     duplicate registrations; a session `SourceLoadError` is propagated unchanged.
    - Depends on: 1. Spec: [source.md](./source.md) "Public API",
      "Algorithm / Logic".
 
@@ -133,12 +136,14 @@ keep `cargo test -p mizar-frontend` green (see
      populate `import_stubs` with mapped `SourceRange`s and collect
      `ImportPrescanDiagnostic`s into `diagnostics`.
    - If the strict raw scan fails, record a frontend-local import-pre-scan
-     diagnostic, leave `import_stubs` empty, and continue without inferring imports
-     from partial raw text.
+     diagnostic over the whole lexical text (or source-start zero-length range for
+     empty text), leave `import_stubs` empty, and continue without inferring
+     imports from partial raw text. Do not assume `mizar_lexer::LexError` carries a
+     span until the recoverable raw-scanner contract exists.
    - Tests: top-level `import` forms produce `ImportStub`s with raw path, optional
      alias, `path.source_segments`, and span; a malformed import yields an
      import-prescan diagnostic without aborting; raw-scan failure during import
-     pre-scan yields a diagnostic and empty `import_stubs`; import order is
+     pre-scan yields a coarse diagnostic and empty `import_stubs`; import order is
      preserved for provenance and deterministic fingerprints.
    - Depends on: 3. Spec: [preprocess.md](./preprocess.md) "Import Stubs",
      "Error Handling".
@@ -148,8 +153,10 @@ keep `cargo test -p mizar-frontend` green (see
 5. **Lexical environment request and provider seam.** [ ]
    - Add `pub mod lexical_env;`. Define `LexicalEnvironmentRequest`,
      `LexicalSummaryProvider`, `ResolvedImports`, `ActiveLexicalEnvironmentResult`,
-     and `LexicalEnvironmentDiagnostic`; re-export the `mizar-lexer` environment
-     types.
+     `LexicalEnvironmentDiagnostic`, and `FrontendLexicalEnvironmentError`;
+     re-export the `mizar-lexer` environment types.
+   - Use `FrontendLexicalEnvironmentError`, not the lexer-owned
+     `LexicalEnvironmentError`, for provider infrastructure failures.
    - Tests: a fake provider that returns resolved imports + summaries produces a
      `UserSymbolIndex` with correct provenance and import ordinal; reserved tables
      are always present.
@@ -178,11 +185,12 @@ keep `cargo test -p mizar-frontend` green (see
 7. **Raw scan and scope skeleton wiring.** [ ]
    - Add `pub mod lexing;`. Define `TokenizeRequest`, the frontend `Token` /
      `TokenStream` (session-spanned), `LexingDiagnostic`, and
-     `LexingDiagnosticKind`; re-export `TokenKind` and raw lexer diagnostic payload
-     types such as `LexDiagnostic` / `ScopeSkeletonDiagnostic`.
+     `LexingDiagnosticKind`; re-export `TokenKind` and raw lexer diagnostic code
+     enums such as `LexDiagnosticCode` / `ScopeSkeletonDiagnosticCode`.
    - Build the `ScopeSkeleton` / `ScopeLexView` from raw tokens and prepare the
-     disambiguator inputs; map `ScopeSkeletonDiagnostic`s into
-     `LexingDiagnostic`s.
+     disambiguator inputs; map `ScopeSkeletonDiagnostic`s into `LexingDiagnostic`s
+     without storing raw span-bearing diagnostic structs in the public
+     `TokenStream`.
    - Tests: raw scan preserves `LexemeRun` spans; the scope view reflects lexical
      block/statement shape without resolved bindings.
    - Depends on: 6. Spec: [lexing.md](./lexing.md) "Scope Lex View",
@@ -193,7 +201,9 @@ keep `cargo test -p mizar-frontend` green (see
      environment, scope view, and the current `ParserLexContext` (general/stub
      context until the parser-assisted contract is finalized); map every lexer
      token and diagnostic span through the `SpanBridge` to session
-     `SourceRange`s. Return `Err(SpanBridgeError)` only for internal mapping
+     `SourceRange`s. Convert raw `LexDiagnostic`s to frontend `LexingDiagnostic`s
+     by copying code/message and mapping or stripping any nested span-bearing
+     payload data. Return `Err(SpanBridgeError)` only for internal mapping
      invariant failures.
    - Tests: a user symbol sharing spelling with an identifier is classified by
      longest-match; compound reserved tokens (`.{`, `.*`, `.=`, `...`) lex as
@@ -207,13 +217,15 @@ keep `cargo test -p mizar-frontend` green (see
 
 9. **Lexer recovery passthrough.** [ ]
    - Preserve `TokenKind::ErrorRecovery` spans and lexer diagnostics end to end as
-     mapped `LexingDiagnostic`s; adapt raw-scan hard errors into recovery
-     tokens/diagnostics so the frontend `tokenize` wrapper returns
-     `Ok(TokenStream)` for recoverable input problems.
+     mapped `LexingDiagnostic`s; adapt strict raw-scan hard errors into one coarse
+     recovery token plus one coarse `RawScan` diagnostic so the frontend
+     `tokenize` wrapper returns `Ok(TokenStream)` for recoverable input problems.
    - Tests: a malformed token emits `ErrorRecovery` with the correct `SourceRange`
      and scanning resumes; an invalid numeral and a malformed string literal in a
      string-required position are reported without dropping recoverable tokens;
-     scope-skeleton diagnostics are preserved with mapped spans.
+     scope-skeleton diagnostics are preserved with mapped spans; strict raw-scan
+     failure produces coarse recovery because current `LexError` has no span or
+     partial-token payload.
    - Depends on: 8. Spec: [lexing.md](./lexing.md) "Error Handling".
 
 ### Module: parsing (`src/parsing.rs`)
@@ -274,8 +286,8 @@ keep `cargo test -p mizar-frontend` green (see
 14. **Unrecoverable-failure handling and end-to-end output.** [ ]
     - Return `FrontendError` for Step 1 load failures, `SpanBridgeError`
       invariant violations from source registration / preprocessing / lexing, and
-      unrecoverable lexical-summary provider or malformed-summary infrastructure
-      failures; keep recoverable problems as diagnostics inside `FrontendOutput`.
+      `FrontendLexicalEnvironmentError` from lexical-environment construction;
+      keep recoverable problems as diagnostics inside `FrontendOutput`.
     - Tests: a Step 1 load failure returns `FrontendError` with the file-level
       diagnostic and no output; a parser seam that returns `ast = None` preserves
       earlier diagnostics; merged diagnostics carry valid `SourceRange`s.
@@ -324,9 +336,9 @@ keep `cargo test -p mizar-frontend` green (see
       "Incrementality" are computed and stored (this crate vs. the driver/artifact
       layer), and expose the per-artifact keys (`SourceUnit`, `PreprocessedSource`,
       `ActiveLexicalEnvironment`, `TokenStream`, `SurfaceAst`) accordingly.
-   - Verify comment-only edits can reuse semantic outputs while import / dependency
-     export edits and parser lexing context / parser-assisted lexing-plan changes
-     invalidate tokenization and downstream layers.
+    - Verify comment-only edits can reuse semantic outputs while import / dependency
+      export edits and parser lexing context / parser-assisted lexing-plan changes
+      invalidate tokenization and downstream layers.
     - Depends on: 16. Spec: architecture incrementality table.
 
 20. **Parser-assisted lexing contract finalization.** [ ]
@@ -348,6 +360,18 @@ keep `cargo test -p mizar-frontend` green (see
     - Record any intentional `allow` exceptions with a rationale next to the `allow`.
     - Tests: `cargo clippy -p mizar-frontend --all-targets -- -D warnings` passes.
     - Depends on: 16. Spec: this TODO "Suggested Verification".
+
+22. **Precise raw-scan recovery contract.** [ ]
+    - Decide whether `mizar-lexer` should expose a recoverable raw scanner that
+      returns failure spans and partial raw tokens, or whether `mizar-frontend`
+      keeps only coarse full-lexical-text recovery for strict `scan_raw` failures.
+    - If a recoverable raw scanner is added, update [preprocess.md](./preprocess.md)
+      and [lexing.md](./lexing.md) to replace the coarse diagnostics/recovery token
+      with precise failure spans and synchronization-boundary continuation.
+    - Tests: strict `scan_raw` failure remains coarse until this contract lands;
+      after it lands, import pre-scan and tokenization report the precise offending
+      span and preserve usable partial raw tokens.
+    - Depends on: 9. Spec: [preprocess.md](./preprocess.md), [lexing.md](./lexing.md).
 
 ## Suggested Verification
 

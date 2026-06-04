@@ -53,8 +53,8 @@ frontend の基盤は `mizar-session` と `mizar-lexer` に依存する。`mizar
 2. **`SourceUnit` とローダー橋渡し。** [ ]
    - `pub mod source;` を追加する。`SourceUnit`、`SourceUnitRequest`、`SourceUnitLoader` トレイト、`FrontendSourceLoader<L: SourceLoader>` を定義し、`mizar_session::LoadedSource` をハッシュ・line map・loading map・normalized path・edition・origin・generated anchor を再計算せずに `SourceUnit` へ射影する `source_unit_from_loaded` を実装する。
    - `LoadedSource` はファイルシステムパスを保持しないので、`file_path` を呼び出し側提供の診断メタデータとして扱う。ディスク／オープンバッファ source では request/origin から、生成 source では normalized path または generated anchor から導出する。
-   - 読み込んだ `LineMap` / `LoadingMap` を `SourceId` の下で mutable `SpanBridge` に登録する helper を提供する。
-   - テスト: ディスク `LoadedSource` が同一の id／hash／line-map／loading-map で射影される。BOM／CRLF 正規化ソースは `Some(loading_map)` を運ぶ。恒等読み込みは `None` を運ぶ。normalized path と edition が保持される。オープンバッファ origin とバージョンが保持される。生成ソースは `generated_anchor` を保持する。session `SourceLoadError` がそのまま伝播する。
+   - 読み込んだ `LineMap` / `LoadingMap` を `SourceId` の下で mutable `SpanBridge` に登録する helper を提供する。統制層が読み込み後・前処理前にこの helper を呼び、`load_source_unit` 自体は bridge 状態を変更しない。
+   - テスト: ディスク `LoadedSource` が同一の id／hash／line-map／loading-map で射影される。BOM／CRLF 正規化ソースは `Some(loading_map)` を運ぶ。恒等読み込みは `None` を運ぶ。normalized path と edition が保持される。オープンバッファ origin とバージョンが保持される。生成ソースは `generated_anchor` を保持する。`register_source_unit` が line/loading map を記録し、衝突する重複登録を報告する。session `SourceLoadError` がそのまま伝播する。
    - 依存: 1。仕様: [source.md](./source.md)「Public API」「Algorithm / Logic」。
 
 ### モジュール: preprocess (`src/preprocess.rs`)
@@ -67,14 +67,15 @@ frontend の基盤は `mizar-session` と `mizar-lexer` に依存する。`mizar
 
 4. **浅いインポート事前走査の統合。** [ ]
    - 字句テキストを生スキャン（`scan_raw`）し `mizar_lexer::scan_import_prelude` を実行する。変換済み `SourceRange` を持つ `import_stubs` を満たし、`ImportPrescanDiagnostic` を `diagnostics` に集める。
-   - strict raw scan が失敗した場合は frontend-local なインポート事前走査診断を記録し、`import_stubs` を空にして、部分的な raw text から import を推測せず続行する。
-   - テスト: トップレベル `import` 形式が生パス・任意の alias・`path.source_segments`・span を持つ `ImportStub` を生む。不正なインポートが中断せずインポート事前走査診断を生む。インポート事前走査中の raw-scan 失敗が診断と空の `import_stubs` を生む。provenance と決定的 fingerprint のためにインポート順が保持される。
+   - strict raw scan が失敗した場合は、字句テキスト全体（空ならソース先頭のゼロ長範囲）を覆う frontend-local なインポート事前走査診断を記録し、`import_stubs` を空にして、部分的な raw text から import を推測せず続行する。recoverable raw-scanner contract が存在するまでは、`mizar_lexer::LexError` が span を持つと仮定しない。
+   - テスト: トップレベル `import` 形式が生パス・任意の alias・`path.source_segments`・span を持つ `ImportStub` を生む。不正なインポートが中断せずインポート事前走査診断を生む。インポート事前走査中の raw-scan 失敗が粗い診断と空の `import_stubs` を生む。provenance と決定的 fingerprint のためにインポート順が保持される。
    - 依存: 3。仕様: [preprocess.md](./preprocess.md)「Import Stubs」「Error Handling」。
 
 ### モジュール: lexical_env (`src/lexical_env.rs`)
 
 5. **字句環境リクエストとプロバイダの継ぎ目。** [ ]
-   - `pub mod lexical_env;` を追加する。`LexicalEnvironmentRequest`、`LexicalSummaryProvider`、`ResolvedImports`、`ActiveLexicalEnvironmentResult`、`LexicalEnvironmentDiagnostic` を定義し、`mizar-lexer` の環境型を再エクスポートする。
+   - `pub mod lexical_env;` を追加する。`LexicalEnvironmentRequest`、`LexicalSummaryProvider`、`ResolvedImports`、`ActiveLexicalEnvironmentResult`、`LexicalEnvironmentDiagnostic`、`FrontendLexicalEnvironmentError` を定義し、`mizar-lexer` の環境型を再エクスポートする。
+   - provider infrastructure failure には、lexer 所有の `LexicalEnvironmentError` ではなく `FrontendLexicalEnvironmentError` を使う。
    - テスト: 解決済みインポート + サマリを返す偽プロバイダが、正しい出所とインポート序数を持つ `UserSymbolIndex` を生む。予約テーブルが常に存在する。
    - 依存: 4。仕様: [lexical_env.md](./lexical_env.md)「Public API」。
 
@@ -87,19 +88,19 @@ frontend の基盤は `mizar-session` と `mizar-lexer` に依存する。`mizar
 ### モジュール: lexing (`src/lexing.rs`)
 
 7. **生スキャンとスコープスケルトンの配線。** [ ]
-   - `pub mod lexing;` を追加する。`TokenizeRequest`、フロントエンドの `Token` / `TokenStream`（session スパン付き）、`LexingDiagnostic`、`LexingDiagnosticKind` を定義し、`TokenKind` と `LexDiagnostic` / `ScopeSkeletonDiagnostic` などの raw lexer diagnostic payload 型を再エクスポートする。
-   - 生トークンから `ScopeSkeleton` / `ScopeLexView` を構築し、曖昧性解消器の入力を準備する。`ScopeSkeletonDiagnostic` は `LexingDiagnostic` へ写像する。
+   - `pub mod lexing;` を追加する。`TokenizeRequest`、フロントエンドの `Token` / `TokenStream`（session スパン付き）、`LexingDiagnostic`、`LexingDiagnosticKind` を定義し、`TokenKind` と `LexDiagnosticCode` / `ScopeSkeletonDiagnosticCode` などの raw lexer diagnostic code enum を再エクスポートする。
+   - 生トークンから `ScopeSkeleton` / `ScopeLexView` を構築し、曖昧性解消器の入力を準備する。`ScopeSkeletonDiagnostic` は、raw span-bearing diagnostic struct を公開 `TokenStream` に保持せず `LexingDiagnostic` へ写像する。
    - テスト: 生スキャンが `LexemeRun` スパンを保持する。スコープビューが解決済み束縛なしで字句ブロック／文の形を反映する。
    - 依存: 6。仕様: [lexing.md](./lexing.md)「Scope Lex View」「Algorithm / Logic」。
 
 8. **文脈依存曖昧性解消による `TokenStream`。** [ ]
-   - アクティブ字句環境、スコープビュー、現在の `ParserLexContext`（parser-assisted contract が確定するまでは general/stub context）を与えて `disambiguate`（またはパーサー統合の `lex`）を実行する。各字句解析器トークンと診断のスパンを `SpanBridge` を通じて session `SourceRange` へ変換する。内部写像不変条件の失敗だけを `Err(SpanBridgeError)` として返す。
+   - アクティブ字句環境、スコープビュー、現在の `ParserLexContext`（parser-assisted contract が確定するまでは general/stub context）を与えて `disambiguate`（またはパーサー統合の `lex`）を実行する。各字句解析器トークンと診断のスパンを `SpanBridge` を通じて session `SourceRange` へ変換する。raw `LexDiagnostic` は code/message をコピーし、span を含む入れ子 payload は写像または除去して frontend `LexingDiagnostic` へ変換する。内部写像不変条件の失敗だけを `Err(SpanBridgeError)` として返す。
    - テスト: 識別子とつづりを共有するユーザー記号が最長一致で分類される。複合予約トークン（`.{`、`.*`、`.=`、`...`）が単一トークンとして字句解析される。引用符が general context では記号文字として字句解析され、bounded uniform `StringRequired` context では `StringLiteral` を生む。送出された各トークンスパンが妥当な第一 `SourceRange` へ解決され、隣接アンカーは診断用に保持される。注釈／演算子位置の文字列リテラルテストは parser-assisted lexing contract まで延期する。
    - 依存: 7。仕様: [lexing.md](./lexing.md)「Token Stream」「Algorithm / Logic」。
 
 9. **字句解析器回復のパススルー。** [ ]
-   - `TokenKind::ErrorRecovery` スパンと lexer 診断を mapped `LexingDiagnostic` としてエンドツーエンドで保持する。raw-scan のハードエラーを回復トークン／診断へ適合させ、frontend `tokenize` wrapper が回復可能入力問題に対して `Ok(TokenStream)` を返すことを保証する。
-   - テスト: 不正なトークンが正しい `SourceRange` を持つ `ErrorRecovery` を送出しスキャンが再開する。不正な数値と文字列必須位置での不正な文字列リテラルが、回復可能トークンを落とさずに報告される。スコープスケルトン診断が mapped span とともに保持される。
+   - `TokenKind::ErrorRecovery` スパンと lexer 診断を mapped `LexingDiagnostic` としてエンドツーエンドで保持する。strict raw-scan のハードエラーは粗い回復トークン 1 つと粗い `RawScan` 診断 1 つへ適合させ、frontend `tokenize` wrapper が回復可能入力問題に対して `Ok(TokenStream)` を返すことを保証する。
+   - テスト: 不正なトークンが正しい `SourceRange` を持つ `ErrorRecovery` を送出しスキャンが再開する。不正な数値と文字列必須位置での不正な文字列リテラルが、回復可能トークンを落とさずに報告される。スコープスケルトン診断が mapped span とともに保持される。strict raw-scan 失敗は、現在の `LexError` が span / partial-token payload を持たないため粗い回復を生む。
    - 依存: 8。仕様: [lexing.md](./lexing.md)「Error Handling」。
 
 ### モジュール: parsing (`src/parsing.rs`)
@@ -129,7 +130,7 @@ frontend の基盤は `mizar-session` と `mizar-lexer` に依存する。`mizar
     - 依存: 9、10。real-parser assertion は 12 に依存する。仕様: [orchestration.md](./orchestration.md)「Algorithm / Logic」「Diagnostic Merge Order」。
 
 14. **回復不能な失敗の処理とエンドツーエンド出力。** [ ]
-    - `FrontendError` を Step 1 読み込み失敗、source 登録／前処理／字句解析からの `SpanBridgeError` 不変条件違反、および回復不能な字句サマリ provider または不正 summary infrastructure 失敗に対して返す。回復可能な問題は `FrontendOutput` 内の診断として保つ。
+    - `FrontendError` を Step 1 読み込み失敗、source 登録／前処理／字句解析からの `SpanBridgeError` 不変条件違反、および字句環境構築からの `FrontendLexicalEnvironmentError` に対して返す。回復可能な問題は `FrontendOutput` 内の診断として保つ。
     - テスト: Step 1 読み込み失敗がファイルレベル診断を伴う `FrontendError` を返し出力なし。`ast = None` を返す parser seam が先行診断を保持する。統合診断が妥当な `SourceRange` を運ぶ。
     - 依存: 13。仕様: [orchestration.md](./orchestration.md)「Error Handling」。
 
@@ -172,6 +173,12 @@ frontend の基盤は `mizar-session` と `mizar-lexer` に依存する。`mizar
     - 意図的な `allow` 例外は `allow` の隣に根拠とともに記録する。
     - テスト: `cargo clippy -p mizar-frontend --all-targets -- -D warnings` が通る。
     - 依存: 16。仕様: 本 TODO「推奨検証」。
+
+22. **精密 raw-scan 回復契約。** [ ]
+    - `mizar-lexer` が失敗 span と部分 raw token を返す recoverable raw scanner を公開するか、`mizar-frontend` が strict `scan_raw` 失敗に対して粗い字句テキスト全体回復だけを維持するかを決める。
+    - recoverable raw scanner を追加する場合は、[preprocess.md](./preprocess.md) と [lexing.md](./lexing.md) を更新し、粗い診断／回復トークンを精密な失敗 span と同期境界からの継続に置き換える。
+    - テスト: この契約が入るまでは strict `scan_raw` 失敗が粗い回復のままであることを確認する。契約後は、import pre-scan と tokenization が問題箇所の正確な span を報告し、利用可能な部分 raw token を保持することを確認する。
+    - 依存: 9。仕様: [preprocess.md](./preprocess.md)、[lexing.md](./lexing.md)。
 
 ## 推奨検証
 

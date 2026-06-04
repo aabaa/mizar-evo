@@ -140,8 +140,7 @@ note is attached when a later diagnostic may be affected by an earlier recovery.
    `FrontendError`.
 4. Build the `ActiveLexicalEnvironment` (`lexical_env`) from the import stubs.
    Recoverable import/provider issues become `LexicalEnvironmentDiagnostic`s;
-   unrecoverable provider or malformed-summary infrastructure failures become
-   `FrontendError`.
+   `FrontendLexicalEnvironmentError` becomes `FrontendError`.
 5. Derive `ParserInputs` from the active lexical environment and source edition.
 6. Tokenize (`lexing`) into a `TokenStream` using the current parser lexing
    context or the stub/general context when the real parser contract is not yet
@@ -159,15 +158,16 @@ and syntax diagnostics together.
 `FrontendError` is reserved for failures that prevent producing any
 `FrontendOutput` — primarily source-load failures from Step 1 (unreadable file,
 invalid UTF-8, path outside root) and internal `SpanBridgeError` invariant
-violations. Unrecoverable lexical-summary provider failures or malformed
-dependency summary data may also be `FrontendError`s when they cannot be degraded
-to a smaller active lexical environment. Recoverable lexical precondition,
-comment, import pre-scan, lexical-environment, scope-skeleton, tokenization, and
-syntax problems are not `FrontendError`s; they are `FrontendDiagnostic`s inside a
-returned `FrontendOutput`. The stub parser seam produces no syntax diagnostics
-and returns `ast = None`; syntax diagnostics are expected only when the real
-parser seam is configured. Frontend diagnostics never claim semantic facts such
-as "undefined symbol" or "ambiguous overload"; those belong to later phases.
+violations. `FrontendLexicalEnvironmentError` from lexical-environment
+construction also becomes a `FrontendError` when the active lexical environment
+cannot be degraded safely.
+Recoverable lexical precondition, comment, import pre-scan, lexical-environment,
+scope-skeleton, tokenization, and syntax problems are not `FrontendError`s; they
+are `FrontendDiagnostic`s inside a returned `FrontendOutput`. The stub parser
+seam produces no syntax diagnostics and returns `ast = None`; syntax diagnostics
+are expected only when the real parser seam is configured. Frontend diagnostics
+never claim semantic facts such as "undefined symbol" or "ambiguous overload";
+those belong to later phases.
 
 ## Tests
 

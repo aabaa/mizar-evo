@@ -145,9 +145,11 @@ loaded-text coordinates.
 3. Project the returned `LoadedSource` into a `SourceUnit`, preserving
    `source_id`, `package_id`, `module_path`, normalized path, edition, text,
    hash, line map, loading map, origin, and generated anchor unchanged.
-4. Record the loaded `LineMap` / `LoadingMap` with the mutable `span_bridge`
-   registry under the `SourceId` so later phases can convert spans.
-5. Return the `SourceUnit`.
+4. Return the `SourceUnit`.
+
+Orchestration calls `register_source_unit` immediately after loading and before
+preprocessing to record the loaded `LineMap` / `LoadingMap` with the mutable
+`SpanBridge` registry. Source loading itself does not mutate bridge state.
 
 The frontend performs no encoding work of its own here. Code-region ASCII
 validation is deferred to preprocessing; this module only carries the
@@ -180,6 +182,8 @@ Key scenarios:
   validated document version;
 - a generated `SourceUnit` preserves `SourceOrigin::Generated` and
   `generated_anchor`;
+- `register_source_unit` records the `LineMap` / `LoadingMap` with the bridge and
+  reports `SpanBridgeError` for duplicate conflicting registrations;
 - a session `SourceLoadError` (invalid UTF-8, path outside root) is propagated
   without being reclassified.
 

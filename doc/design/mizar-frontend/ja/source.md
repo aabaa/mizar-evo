@@ -96,8 +96,9 @@ pub fn register_source_unit(
 1. 対象の `BuildSnapshotId` と `SourceInput`（パッケージ id、モジュールパス、正規化パス、エディション、origin 入力）に対する `SourceUnitRequest` を構築する。
 2. ラップした `mizar_session::SourceLoader::load` に委譲する。これがパス正規化、パッケージルート強制、バイト読み込み、UTF-8 検証、先頭 BOM 除去、CRLF→LF 正規化、ソースハッシュ計算、`LineMap` 構築、`LoadingMap` 出力を行う。
 3. 返された `LoadedSource` を `SourceUnit` へ射影し、`source_id`、`package_id`、`module_path`、`normalized_path`、`edition`、テキスト、ハッシュ、line map、loading map、origin、`generated_anchor` をそのまま保持する。
-4. `register_source_unit` で読み込んだ `LineMap` / `LoadingMap` を `SourceId` の下で mutable `span_bridge` レジストリに登録し、後のフェーズがスパンを変換できるようにする。
-5. `SourceUnit` を返す。
+4. `SourceUnit` を返す。
+
+統制層は読み込み直後、前処理より前に `register_source_unit` を呼び、読み込んだ `LineMap` / `LoadingMap` を mutable `SpanBridge` レジストリへ登録する。ソース読み込み自体は bridge 状態を変更しない。
 
 フロントエンドはここで自前のエンコーディング処理を行わない。コード領域の ASCII 検証は前処理に委ねる。このモジュールは session が検証したエンコーディングと同一性を前へ運ぶだけである。
 
@@ -116,6 +117,7 @@ pub fn register_source_unit(
 - 恒等読み込み（オフセット変更なし）は `loading_map = None` を運ぶ。
 - オープンバッファの `SourceUnit` は `SourceOrigin::OpenBuffer` と検証済みドキュメントバージョンを記録する。
 - 生成ソースの `SourceUnit` は `SourceOrigin::Generated` と `generated_anchor` を保持する。
+- `register_source_unit` は `LineMap` / `LoadingMap` を bridge へ記録し、衝突する重複登録は `SpanBridgeError` として報告する。
 - session の `SourceLoadError`（不正 UTF-8、ルート外パス）が再分類されずに伝播する。
 
 ## 制約と前提
