@@ -51,7 +51,10 @@ impl<L: SourceLoader> FrontendSourceLoader<L> {
 
 impl<L: SourceLoader> SourceUnitLoader for FrontendSourceLoader<L> { /* ... */ }
 
-pub fn source_unit_from_loaded(loaded: LoadedSource, file_path: PathBuf) -> SourceUnit;
+pub fn source_unit_from_loaded(
+    loaded: LoadedSource,
+    file_path: PathBuf,
+) -> SourceUnit;
 
 pub fn register_source_unit(
     bridge: &mut SpanBridge,
@@ -62,6 +65,10 @@ pub fn register_source_unit(
 `SourceUnit` はアーキテクチャのインターフェースを反映し、session 同一性メタデータを追加する。`normalized_path`、`edition`、`origin`、`generated_anchor` を保持することで、以降のフェーズ（前処理診断、LSP オーバーレイ、キャッシュキー）が session レコードを読み直したり再計算したりせずに、正規パス、言語エディション、ディスク・オープンバッファ・生成テキストを区別できる。
 
 `FrontendSourceLoader` は任意の `mizar_session::SourceLoader`（例えば `DiskSourceLoader`）をラップする。リクエストを session ローダーへ転送し、得られた `LoadedSource` を `source_unit_from_loaded` で `SourceUnit` へ射影する。フロントエンドは自前のパス正規化・ハッシュ・BOM／改行規則を定義しない。これらは `mizar-session` に残る。
+
+`LoadedSource` はファイルシステムパスを保持しない。呼び出し側はローカル診断メタデータとして `file_path` を渡す。ディスク／オープンバッファのローダーは、存在する場合はリクエストまたは origin URI からこれを導出し、生成ソースでは `normalized_path` または `generated_anchor` 由来の合成表示パスを使ってよい。この値は公開ソース同一性やキャッシュキーには含めない。
+
+`register_source_unit` は source の `LineMap` と任意の `LoadingMap` を mutable `SpanBridge` へ記録する。読み込み自体は bridge 登録と独立なので、テストや呼び出し側は source-map 状態を変えずに `LoadedSource` を射影できる。
 
 ## 依存関係
 

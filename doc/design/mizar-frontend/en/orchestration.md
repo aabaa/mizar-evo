@@ -65,6 +65,9 @@ pub struct FrontendDiagnostic {
 pub enum DiagnosticClass {
     LexicalPrecondition,
     CommentStructure,
+    ImportPrescan,
+    LexicalEnvironment,
+    ScopeSkeleton,
     Tokenization,
     Syntax,
     AnnotationSyntax,
@@ -76,8 +79,9 @@ AST type abstract. With `StubParserSeam`, `ast` is always `None`; with the real
 parser seam, `A` is `mizar_syntax::SurfaceAst`. `FrontendDiagnostic` is the
 unified diagnostic that all phase-specific diagnostics
 (`SourcePreprocessDiagnostic`, `ImportPrescanDiagnostic`,
-`LexicalEnvironmentDiagnostic`, `LexDiagnostic`, `SyntaxDiagnostic`) are mapped
-into, so consumers see one ordered list keyed by `SourceRange`.
+`LexicalEnvironmentDiagnostic`, `LexingDiagnostic` including raw-scan /
+scope-skeleton / lexer diagnostics, and `SyntaxDiagnostic`) are mapped into, so
+consumers see one ordered list keyed by `SourceRange`.
 
 `ast = None` means parsing could not recover enough structure for later phases;
 the lexical, preprocessing, and syntax diagnostics are still returned.
@@ -113,8 +117,11 @@ so the order is stable across runs and independent of internal scheduling:
 
 1. lexical precondition (Steps 1-2);
 2. comment structure (Step 2);
-3. tokenization (Step 4);
-4. syntax and annotation syntax (Step 5).
+3. import pre-scan (Step 2);
+4. lexical environment (Step 3);
+5. scope skeleton (Step 4 pre-disambiguation);
+6. tokenization (Step 4);
+7. syntax and annotation syntax (Step 5).
 
 Within a class, order by primary span start, then by diagnostic code. A recovery
 note is attached when a later diagnostic may be affected by an earlier recovery.
@@ -129,12 +136,16 @@ note is attached when a later diagnostic may be affected by an earlier recovery.
    carrying the file-level diagnostic and stop.
 3. Register the loaded source maps on the bridge, then preprocess
    (`preprocess`): register the preprocess map, produce `PreprocessedSource`,
-   and collect Step-2 diagnostics.
+   and collect Step-2 diagnostics. Propagate a `SpanBridgeError` as
+   `FrontendError`.
 4. Build the `ActiveLexicalEnvironment` (`lexical_env`) from the import stubs.
+   Recoverable import/provider issues become `LexicalEnvironmentDiagnostic`s;
+   unrecoverable provider or malformed-summary infrastructure failures become
+   `FrontendError`.
 5. Derive `ParserInputs` from the active lexical environment and source edition.
 6. Tokenize (`lexing`) into a `TokenStream` using the current parser lexing
    context or the stub/general context when the real parser contract is not yet
-   available.
+   available. Propagate a `SpanBridgeError` as `FrontendError`.
 7. Parse (`parsing`) through the configured `ParserSeam` into an optional AST.
 8. Map every phase diagnostic into `FrontendDiagnostic`, merge in the
    deterministic order above, and assemble `FrontendOutput`.
@@ -148,12 +159,15 @@ and syntax diagnostics together.
 `FrontendError` is reserved for failures that prevent producing any
 `FrontendOutput` — primarily source-load failures from Step 1 (unreadable file,
 invalid UTF-8, path outside root) and internal `SpanBridgeError` invariant
-violations. Recoverable lexical, comment, tokenization, and syntax problems are
-not `FrontendError`s; they are `FrontendDiagnostic`s inside a returned
-`FrontendOutput`. The stub parser seam produces no syntax diagnostics and
-returns `ast = None`; syntax diagnostics are expected only when the real parser
-seam is configured. Frontend diagnostics never claim semantic facts such as
-"undefined symbol" or "ambiguous overload"; those belong to later phases.
+violations. Unrecoverable lexical-summary provider failures or malformed
+dependency summary data may also be `FrontendError`s when they cannot be degraded
+to a smaller active lexical environment. Recoverable lexical precondition,
+comment, import pre-scan, lexical-environment, scope-skeleton, tokenization, and
+syntax problems are not `FrontendError`s; they are `FrontendDiagnostic`s inside a
+returned `FrontendOutput`. The stub parser seam produces no syntax diagnostics
+and returns `ast = None`; syntax diagnostics are expected only when the real
+parser seam is configured. Frontend diagnostics never claim semantic facts such
+as "undefined symbol" or "ambiguous overload"; those belong to later phases.
 
 ## Tests
 
@@ -163,9 +177,9 @@ Key scenarios:
   `FrontendOutput` with `ast = None` and no parser diagnostics;
 - with the real parser seam, a well-formed source runs all phases and returns
   `FrontendOutput` with `ast = Some` and no diagnostics;
-- with the real parser seam, a source with a lexical-precondition error, a
-  tokenization error, and a syntax error reports all three in the deterministic
-  merge order;
+- with the real parser seam, a source with lexical-precondition, import-pre-scan,
+  lexical-environment, scope-skeleton, tokenization, and syntax errors reports
+  them in the deterministic merge order;
 - a parse failure returns `ast = None` while preserving preprocessing and
   tokenization diagnostics;
 - a Step 1 load failure returns `FrontendError` with the file-level diagnostic
@@ -181,6 +195,6 @@ Key scenarios:
   and the upstream crates.
 - The frontend produces syntax, not semantics.
 - Diagnostic merge order is deterministic and span-keyed.
-- `FrontendError` is for unrecoverable failures; recoverable problems are
+- `FrontendError` is for unrecoverable failures; recoverable problems are mapped
   diagnostics inside `FrontendOutput`.
 - Frontend artifacts are internal compiler data, not stable public build outputs.

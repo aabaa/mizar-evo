@@ -61,7 +61,10 @@ impl<L: SourceLoader> FrontendSourceLoader<L> {
 
 impl<L: SourceLoader> SourceUnitLoader for FrontendSourceLoader<L> { /* ... */ }
 
-pub fn source_unit_from_loaded(loaded: LoadedSource, file_path: PathBuf) -> SourceUnit;
+pub fn source_unit_from_loaded(
+    loaded: LoadedSource,
+    file_path: PathBuf,
+) -> SourceUnit;
 
 pub fn register_source_unit(
     bridge: &mut SpanBridge,
@@ -78,6 +81,12 @@ metadata later frontend phases need without re-reading session records:
 `source_unit_from_loaded` to project the resulting `LoadedSource` into a
 `SourceUnit`. The frontend does not define its own path normalization, hashing,
 or BOM/newline rules; those remain in `mizar-session`.
+
+`LoadedSource` does not store a filesystem path. The caller supplies `file_path`
+as local diagnostic metadata: disk and open-buffer loaders derive it from the
+request/origin URI when one exists, while generated sources may use the
+`normalized_path` or a synthetic display path derived from `generated_anchor`.
+This value is never part of published source identity or cache keys.
 
 `register_source_unit` records the source's `LineMap` and optional `LoadingMap`
 with the mutable `SpanBridge`. Loading itself stays independent of bridge
@@ -110,8 +119,8 @@ identity uses `normalized_path`, not `file_path`.
 
 `SourceUnit` is the cache-key anchor for Step 1 in
 [architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md)
-"Incrementality": its key is file path plus source bytes, both already
-captured by the session `SourceVersion`.
+"Incrementality": its key is normalized path, source bytes, edition, and origin,
+which the session `SourceVersion` / `LoadedSource` already capture.
 
 ### Loading Map Preservation
 

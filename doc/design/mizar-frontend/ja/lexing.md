@@ -18,7 +18,7 @@
 pub struct TokenStream {
     pub source_id: SourceId,
     pub tokens: Vec<Token>,
-    pub diagnostics: Vec<LexDiagnostic>,
+    pub diagnostics: Vec<LexingDiagnostic>,
 }
 
 pub struct Token {
@@ -33,17 +33,32 @@ pub struct TokenizeRequest<'a> {
     pub parser_context: ParserLexContext,
 }
 
-pub fn tokenize(request: TokenizeRequest<'_>, bridge: &SpanBridge) -> TokenStream;
+pub struct LexingDiagnostic {
+    pub kind: LexingDiagnosticKind,
+    pub primary: SourceRange,
+    pub secondary: Vec<SourceRange>,
+}
+
+pub enum LexingDiagnosticKind {
+    RawScan(LexError),
+    ScopeSkeleton(ScopeSkeletonDiagnostic),
+    Lexer(LexDiagnostic),
+}
+
+pub fn tokenize(
+    request: TokenizeRequest<'_>,
+    bridge: &SpanBridge,
+) -> Result<TokenStream, SpanBridgeError>;
 ```
 
-`TokenKind`、`ParserLexContext`、`ParserLexMode`、`LexDiagnostic` は `mizar-lexer` から再エクスポートされる。フロントエンドの `Token` は、`span` が字句テキストのバイトスパンではなく session `SourceRange` である点のみが字句解析器の内部トークンと異なる。`tokenize` は各字句解析器スパンを `span_bridge` を通じて変換する。
+`TokenKind`、`ParserLexContext`、`ParserLexMode`、`LexError`、`ScopeSkeletonDiagnostic`、`LexDiagnostic` は raw payload 型として `mizar-lexer` から再エクスポートされる。フロントエンドの `Token` は、`span` が字句テキストのバイトスパンではなく session `SourceRange` である点のみが字句解析器の内部トークンと異なる。診断も `LexingDiagnostic` で包み、第一／副次 span を lexer byte offset ではなく session 範囲として持たせる。
 
 `parser_context` は曖昧性解消器が必要とする狭い文法由来の信号を、任意のパーサー状態を晒さずに運ぶ。現在の `mizar-lexer` API は uniform context であり、注釈／演算子宣言引数のような位置別の文字列必須 span はまだ表現しない。source → tokens の基盤では `ParserLexContext::general()` を使い、位置別の `StringLiteral` 認識は parser-assisted lexing contract の確定後に追加する。
 
 ## 依存関係
 
 - 内部: `preprocess`（字句テキストとマップ）、`lexical_env`（`ActiveLexicalEnvironment`）、`span_bridge`（字句バイト → `SourceRange`）、`parsing`（`TokenStream` を消費）。
-- 外部: `mizar-lexer`（`scan_raw`、`build_scope_skeleton`、`ScopeLexView`、`disambiguate`、`lex`、`Token`、`TokenKind`、`ParserLexContext`、`LexDiagnostic`）、`mizar-session`（`SourceId`、`SourceRange`）。
+- 外部: `mizar-lexer`（`scan_raw`、`build_scope_skeleton`、`ScopeLexView`、`disambiguate`、`lex`、`Token`、`TokenKind`、`ParserLexContext`、`LexError`、`LexDiagnostic`、`ScopeSkeletonDiagnostic`）、`mizar-session`（`SourceId`、`SourceRange`）。
 
 このモジュールは構文解析が消費し、診断を通じて統制統合も消費する。
 
@@ -53,6 +68,8 @@ pub fn tokenize(request: TokenizeRequest<'_>, bridge: &SpanBridge) -> TokenStrea
 
 `TokenStream` は 1 ファイルの完全かつソース忠実なトークン列である。各 `Token` は元のつづり（`text`）と session `SourceRange` を保持する。`TokenKind` には分割されなかった生単位の `LexemeRun`、`UserSymbol`、`ReservedWord`、`ReservedSymbol`、`Identifier`、`Numeral`、`StringLiteral`、`ErrorRecovery` が含まれる。現在の uniform context API では、明示的な `StringRequired` 実行のときだけ `StringLiteral` が現れる。文法上の位置に基づく string-required registry は parser-assisted lexing contract の範囲である。
 
+`LexingDiagnostic` は Step 4 の frontend 側 mapped diagnostic payload である。raw-scan 失敗、スコープスケルトン診断、曖昧性解消器の `LexDiagnostic` を包み得るが、統制層のために必ず session 座標の第一／副次範囲を持つ。
+
 ### スコープ字句ビュー
 
 スコープスケルトン事前走査（`build_scope_skeleton`）は、生の字句解析器出力に対する読み取り専用の `ScopeLexView` を生成し、曖昧性解消器がスコープ付き識別子の上書き規則に用いる。フロントエンドはこのビューを構築して曖昧性解消器に渡す。スコープ自体は構築せず、ビューは字句的な形のみを記録し、解決済み束縛は決して記録しない。
@@ -61,12 +78,12 @@ pub fn tokenize(request: TokenizeRequest<'_>, bridge: &SpanBridge) -> TokenStrea
 
 ### 前処理済みソースのトークン化
 
-1. 字句テキストを生スキャン（`scan_raw`）し、スパンを保持した `LexemeRun` にする。
-2. 生トークンから `ScopeSkeleton` / `ScopeLexView` を構築し、スコープ付き識別子の上書きに用いる。
+1. 字句テキストを生スキャン（`scan_raw`）し、スパンを保持した `LexemeRun` にする。strict raw scan が失敗した場合は、失敗箇所を `ErrorRecovery` の被覆と mapped `LexingDiagnosticKind::RawScan` 診断へ適合させ、同期境界から続行する。
+2. 生トークンから `ScopeSkeleton` / `ScopeLexView` を構築し、スコープ付き識別子の上書きに用いる。`ScopeSkeletonDiagnostic` は収集して写像する。
 3. `disambiguate`（またはパーサー統合の `lex`）を実行し、次の順序で最長一致する。アクティブユーザー記号、予約特殊記号、予約語、識別子／数値規則、そして言語が要求する場合のパーサー期待／スコープ上書き。
 4. `StringLiteral` トークンは現在の parser lexing context が文字列を要求するときだけ認識する。それ以外では引用符は通常の記号文字のままである。注釈／演算子位置の string-required 判定は real parser contract まで延期する。
 5. 結果の各字句解析器スパンを `span_bridge.lexical_span` を通じて、`source_id` でスコープされた第一 `SourceRange` へ変換し、隣接アンカーは診断用に保持する。
-6. 字句解析器の診断を集め、`TokenStream` を返す。
+6. raw-scan、スコープスケルトン、字句解析器の診断を `LexingDiagnostic` として集め、`TokenStream` を返す。
 
 複合予約トークン（`.{`、`.*`、`.=`、`...`）は字句解析器が認識する。`.` のセレクタ／名前空間の役割はパーサーと解決器に委ねる。字句解析器は定義済み性・適用可能性・オーバーロード選択を決して判断しない。
 
@@ -78,7 +95,7 @@ pub fn tokenize(request: TokenizeRequest<'_>, bridge: &SpanBridge) -> TokenStrea
 - スキャンは空白・予約区切り・行境界で再開する。
 - `LexDiagnostic`（未知／不正トークン、不正な数値、文字列必須位置での不正な文字列リテラル）は、回復可能なトークンを落とさずに集める。
 
-`tokenize` は常に `TokenStream` を返す。`scan_raw` がハードエラーを返す入力でも、frontend wrapper は回復トークンと診断へ適合させるので、パーサーは引き続き回復を試みられる。
+ユーザー入力由来の回復可能な字句問題に対して、`tokenize` は `Ok(TokenStream)` を返す。strict raw-scan 失敗、スコープスケルトン問題、曖昧性解消器診断は、中断せず回復トークンと mapped diagnostics へ縮退するので、パーサーは引き続き回復を試みられる。`Err(SpanBridgeError)` は、トークンまたは診断 span を登録済み bridge で写像できない場合に限る。
 
 ## テスト
 
@@ -88,6 +105,7 @@ pub fn tokenize(request: TokenizeRequest<'_>, bridge: &SpanBridge) -> TokenStrea
 - 複合予約トークン（`.{`、`.*`、`.=`、`...`）が単一トークンとして字句解析される。
 - 引用符が general context ではユーザー記号文字として字句解析され、bounded uniform `StringRequired` context では `StringLiteral` を生む。注釈／演算子宣言引数位置の StringLiteral テストは parser-assisted lexing contract まで延期する。
 - 不正なトークンが正しい `SourceRange` を持つ `ErrorRecovery` を送出し、スキャンが再開する。
+- スコープスケルトン診断が mapped `LexingDiagnostic` として保持される。
 - 送出された各トークンの `span` が `source_id` に対する妥当な `SourceRange` であり、ソースマップを通じて元のつづりを再現する。
 
 ## 制約と前提
@@ -95,5 +113,5 @@ pub fn tokenize(request: TokenizeRequest<'_>, bridge: &SpanBridge) -> TokenStrea
 - このモジュールは字句解析器を統制する。最長一致・スコープスケルトン・曖昧性解消規則は所有しない。
 - 字句解析器は複合予約トークンとアクティブユーザー記号を認識するが、意味的なセレクタ／名前空間の役割は認識しない。
 - `StringLiteral` トークンは parser lexing context が文字列を要求するときだけ送出される。正確な文法位置認識は parser-assisted lexing contract で確定する。
-- `TokenStream` キャッシュキーは前処理済みハッシュとアクティブ字句環境 fingerprint である。
+- `TokenStream` キャッシュキーは前処理済みハッシュ、アクティブ字句環境 fingerprint、およびその実行で使った `ParserLexContext` / parser-assisted lexing plan の安定したエンコードである。
 - すべてのトークンスパンは `span_bridge` を通じて生成された session `SourceRange` 値である。

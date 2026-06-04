@@ -45,13 +45,14 @@ frontend の基盤は `mizar-session` と `mizar-lexer` に依存する。`mizar
    - `mizar-frontend` crate をワークスペースに追加し、`mizar-session` と `mizar-lexer` に依存させる。ワークスペースの `[workspace.lints]` テーブルに `lints.workspace = true` でオプトインする（`mizar-session` と同様）。
    - `pub mod span_bridge;` を追加し、`SpanBridge`、`LexerByteSpan`、`SpanBridgeError` を定義する。`SpanBridge` は retained session source-map service を所有し、fallible な `register_source` / `register_preprocess_map`、および retained `mizar-session` map 上の `loaded_span`、`loaded_mapping`、`lexical_span` 変換を提供する。
    - session 側の `LoadingMap` / `PreprocessMap` を字句解析器の `SourceLoadingMap` / `SourcePreprocessMap` から導出する（または `SourceUnit` に付随する session `LoadingMap` を再利用する）ので、`SourceId` ごとに正準マップは 1 つである。
-   - テスト: BOM 除去テキスト上の `loaded_span` は読み込み済みテキスト座標のままで、`loaded_mapping` は `MappedSourceRange.original_input` を通じて元入力オフセットを報告する。字句スパンが preprocess + loading マップを通じて変換される。除去コメントをまたぐスパンが第一 + 隣接アンカーを生む。UTF-8 境界外および範囲外のスパンが拒否される。衝突するマップ登録が報告される。
+   - テスト: BOM 除去テキスト上の `loaded_span` は読み込み済みテキスト座標のままで、`loaded_mapping` は `MappedSourceRange.original_input` を通じて元入力オフセットを報告する。字句スパンが preprocess map を通じて読み込み済みソース座標へ変換される。除去コメントをまたぐスパンが第一 + 隣接アンカーを生む。UTF-8 境界外および範囲外のスパンが拒否される。衝突するマップ登録が報告される。
    - 仕様: [span_bridge.md](./span_bridge.md)「Public API」「Algorithm / Logic」。
 
 ### モジュール: source (`src/source.rs`)
 
 2. **`SourceUnit` とローダー橋渡し。** [ ]
    - `pub mod source;` を追加する。`SourceUnit`、`SourceUnitRequest`、`SourceUnitLoader` トレイト、`FrontendSourceLoader<L: SourceLoader>` を定義し、`mizar_session::LoadedSource` をハッシュ・line map・loading map・normalized path・edition・origin・generated anchor を再計算せずに `SourceUnit` へ射影する `source_unit_from_loaded` を実装する。
+   - `LoadedSource` はファイルシステムパスを保持しないので、`file_path` を呼び出し側提供の診断メタデータとして扱う。ディスク／オープンバッファ source では request/origin から、生成 source では normalized path または generated anchor から導出する。
    - 読み込んだ `LineMap` / `LoadingMap` を `SourceId` の下で mutable `SpanBridge` に登録する helper を提供する。
    - テスト: ディスク `LoadedSource` が同一の id／hash／line-map／loading-map で射影される。BOM／CRLF 正規化ソースは `Some(loading_map)` を運ぶ。恒等読み込みは `None` を運ぶ。normalized path と edition が保持される。オープンバッファ origin とバージョンが保持される。生成ソースは `generated_anchor` を保持する。session `SourceLoadError` がそのまま伝播する。
    - 依存: 1。仕様: [source.md](./source.md)「Public API」「Algorithm / Logic」。
@@ -59,14 +60,15 @@ frontend の基盤は `mizar-session` と `mizar-lexer` に依存する。`mizar
 ### モジュール: preprocess (`src/preprocess.rs`)
 
 3. **コメントとドキュメントコメントの前処理。** [ ]
-   - `pub mod preprocess;` を追加する。`PreprocessedSource`、`LexicalText`、`Comment`、`DocComment`、`LexicalSourceMap`、`PreprocessDiagnostic` を定義する。
+   - `pub mod preprocess;` を追加する。`PreprocessedSource`、`LexicalText`、`Comment`、`DocComment`、`LexicalSourceMap`、mapped `ImportStub` / `ImportStubPath` / `ImportStubAlias`、`PreprocessDiagnostic` を定義する。
    - `SourceUnit.source_text` に対して `mizar_lexer::preprocess_source_for_lexing` を駆動し、コメント／ドキュメントコメント／前処理診断のスパンを `SpanBridge` を通じて変換し、`LexicalSourceMap` を組み立てる。
    - テスト: 通常コメントが字句テキストから除去されるが正しい範囲を持つ `Comment` として保持される。ドキュメントコメントが生本文と範囲とともに保持される。注釈構文が字句テキストに残る。除去コメントをまたぐ字句範囲が合成マッピングを生む。コード領域の非 ASCII 文字と未終端ブロックコメントが報告・回復される。
    - 依存: 2。仕様: [preprocess.md](./preprocess.md)「Comments and Doc Comments」「Algorithm / Logic」。
 
 4. **浅いインポート事前走査の統合。** [ ]
    - 字句テキストを生スキャン（`scan_raw`）し `mizar_lexer::scan_import_prelude` を実行する。変換済み `SourceRange` を持つ `import_stubs` を満たし、`ImportPrescanDiagnostic` を `diagnostics` に集める。
-   - テスト: トップレベル `import` 形式が生パス・任意の alias・ソースセグメント・span を持つ `ImportStub` を生む。不正なインポートが中断せずインポート事前走査診断を生む。provenance と決定的 fingerprint のためにインポート順が保持される。
+   - strict raw scan が失敗した場合は frontend-local なインポート事前走査診断を記録し、`import_stubs` を空にして、部分的な raw text から import を推測せず続行する。
+   - テスト: トップレベル `import` 形式が生パス・任意の alias・`path.source_segments`・span を持つ `ImportStub` を生む。不正なインポートが中断せずインポート事前走査診断を生む。インポート事前走査中の raw-scan 失敗が診断と空の `import_stubs` を生む。provenance と決定的 fingerprint のためにインポート順が保持される。
    - 依存: 3。仕様: [preprocess.md](./preprocess.md)「Import Stubs」「Error Handling」。
 
 ### モジュール: lexical_env (`src/lexical_env.rs`)
@@ -78,25 +80,26 @@ frontend の基盤は `mizar-session` と `mizar-lexer` に依存する。`mizar
 
 6. **アクティブ字句環境の構築。** [ ]
    - `mizar_lexer::build_lexical_environment` を呼ぶ `build_active_lexical_environment` を実装する。プロバイダ診断を統合し、`LexicalEnvironmentFingerprint` を計算・表面化する。
-   - テスト: 異なるモジュールからインポートされた同綴りユーザー記号は、lexer/spec contract に従って決定的な字句環境衝突または provider 診断を生む。未解決インポートが診断とともにより小さな環境へ縮退し、残りの記号が読み込まれる。fingerprint が依存サマリの変更で変化し、ローカルのコメントのみの編集では安定である。
+   - lexer を呼ぶ前に、未解決 import と依存字句サマリが利用できない import を除外し、`LexicalEnvironmentDiagnostic` として表す。欠落 summary を持つ入力で lexer に環境構築を要求しない。
+   - テスト: 異なるモジュールからインポートされた同綴りユーザー記号は、lexer/spec contract に従って決定的な字句環境衝突または provider 診断を生む。未解決インポートが診断とともにより小さな環境へ縮退し、残りの記号が読み込まれる。欠落 summary が lexer 呼び出し前に除外・診断される。fingerprint が依存サマリの変更で変化し、ローカルのコメントのみの編集では安定である。
    - 依存: 5。仕様: [lexical_env.md](./lexical_env.md)「Algorithm / Logic」「Error Handling」。
 
 ### モジュール: lexing (`src/lexing.rs`)
 
 7. **生スキャンとスコープスケルトンの配線。** [ ]
-   - `pub mod lexing;` を追加する。`TokenizeRequest`、フロントエンドの `Token` / `TokenStream`（session スパン付き）を定義し、`TokenKind` / `LexDiagnostic` を再エクスポートする。
-   - 生トークンから `ScopeSkeleton` / `ScopeLexView` を構築し、曖昧性解消器の入力を準備する。
+   - `pub mod lexing;` を追加する。`TokenizeRequest`、フロントエンドの `Token` / `TokenStream`（session スパン付き）、`LexingDiagnostic`、`LexingDiagnosticKind` を定義し、`TokenKind` と `LexDiagnostic` / `ScopeSkeletonDiagnostic` などの raw lexer diagnostic payload 型を再エクスポートする。
+   - 生トークンから `ScopeSkeleton` / `ScopeLexView` を構築し、曖昧性解消器の入力を準備する。`ScopeSkeletonDiagnostic` は `LexingDiagnostic` へ写像する。
    - テスト: 生スキャンが `LexemeRun` スパンを保持する。スコープビューが解決済み束縛なしで字句ブロック／文の形を反映する。
    - 依存: 6。仕様: [lexing.md](./lexing.md)「Scope Lex View」「Algorithm / Logic」。
 
 8. **文脈依存曖昧性解消による `TokenStream`。** [ ]
-   - アクティブ字句環境、スコープビュー、現在の `ParserLexContext`（parser-assisted contract が確定するまでは general/stub context）を与えて `disambiguate`（またはパーサー統合の `lex`）を実行する。各字句解析器スパンを `SpanBridge` を通じて session `SourceRange` へ変換する。
+   - アクティブ字句環境、スコープビュー、現在の `ParserLexContext`（parser-assisted contract が確定するまでは general/stub context）を与えて `disambiguate`（またはパーサー統合の `lex`）を実行する。各字句解析器トークンと診断のスパンを `SpanBridge` を通じて session `SourceRange` へ変換する。内部写像不変条件の失敗だけを `Err(SpanBridgeError)` として返す。
    - テスト: 識別子とつづりを共有するユーザー記号が最長一致で分類される。複合予約トークン（`.{`、`.*`、`.=`、`...`）が単一トークンとして字句解析される。引用符が general context では記号文字として字句解析され、bounded uniform `StringRequired` context では `StringLiteral` を生む。送出された各トークンスパンが妥当な第一 `SourceRange` へ解決され、隣接アンカーは診断用に保持される。注釈／演算子位置の文字列リテラルテストは parser-assisted lexing contract まで延期する。
    - 依存: 7。仕様: [lexing.md](./lexing.md)「Token Stream」「Algorithm / Logic」。
 
 9. **字句解析器回復のパススルー。** [ ]
-   - `TokenKind::ErrorRecovery` スパンと `LexDiagnostic` をエンドツーエンドで保持する。raw-scan のハードエラーを回復トークン／診断へ適合させ、frontend `tokenize` wrapper が常に `TokenStream` を返すことを保証する。
-   - テスト: 不正なトークンが正しい `SourceRange` を持つ `ErrorRecovery` を送出しスキャンが再開する。不正な数値と文字列必須位置での不正な文字列リテラルが、回復可能トークンを落とさずに報告される。
+   - `TokenKind::ErrorRecovery` スパンと lexer 診断を mapped `LexingDiagnostic` としてエンドツーエンドで保持する。raw-scan のハードエラーを回復トークン／診断へ適合させ、frontend `tokenize` wrapper が回復可能入力問題に対して `Ok(TokenStream)` を返すことを保証する。
+   - テスト: 不正なトークンが正しい `SourceRange` を持つ `ErrorRecovery` を送出しスキャンが再開する。不正な数値と文字列必須位置での不正な文字列リテラルが、回復可能トークンを落とさずに報告される。スコープスケルトン診断が mapped span とともに保持される。
    - 依存: 8。仕様: [lexing.md](./lexing.md)「Error Handling」。
 
 ### モジュール: parsing (`src/parsing.rs`)
@@ -121,12 +124,12 @@ frontend の基盤は `mizar-session` と `mizar-lexer` に依存する。`mizar
 ### モジュール: orchestration (`src/orchestration.rs`)
 
 13. **フロントエンド coordinator と診断統合。** [ ]
-    - `pub mod orchestration;` を追加する。`FrontendOutput`、`Frontend`、`FrontendDiagnostic`、`DiagnosticClass`、`FrontendError` を定義する。`source` → `preprocess` → `lexical_env` → `lexing` → `parsing` を配線し、すべてのフェーズ診断を [orchestration.md](./orchestration.md)「Diagnostic Merge Order」の決定的順序へ統合する。
+    - `pub mod orchestration;` を追加する。`FrontendOutput`、`Frontend`、`FrontendDiagnostic`、`DiagnosticClass`、`FrontendError` を定義する。`source` → `preprocess` → `lexical_env` → `lexing` → `parsing` を配線し、インポート事前走査・字句環境・スコープスケルトン・トークン化診断を含むすべてのフェーズ診断を [orchestration.md](./orchestration.md)「Diagnostic Merge Order」の決定的順序へ統合する。
     - テスト: `StubParserSeam` では、整形式ソースが source、preprocessing output、tokens、`ast = None`、parser 診断なしを返す。統合順序が繰り返し実行で同一である。実 parser seam では `ast = Some` と構文診断順序の assertion を追加する。
     - 依存: 9、10。real-parser assertion は 12 に依存する。仕様: [orchestration.md](./orchestration.md)「Algorithm / Logic」「Diagnostic Merge Order」。
 
 14. **回復不能な失敗の処理とエンドツーエンド出力。** [ ]
-    - `FrontendError` を Step 1 読み込み失敗と `SpanBridgeError` 不変条件違反のみに対して返す。回復可能な問題は `FrontendOutput` 内の診断として保つ。
+    - `FrontendError` を Step 1 読み込み失敗、source 登録／前処理／字句解析からの `SpanBridgeError` 不変条件違反、および回復不能な字句サマリ provider または不正 summary infrastructure 失敗に対して返す。回復可能な問題は `FrontendOutput` 内の診断として保つ。
     - テスト: Step 1 読み込み失敗がファイルレベル診断を伴う `FrontendError` を返し出力なし。`ast = None` を返す parser seam が先行診断を保持する。統合診断が妥当な `SourceRange` を運ぶ。
     - 依存: 13。仕様: [orchestration.md](./orchestration.md)「Error Handling」。
 
@@ -156,7 +159,7 @@ frontend の基盤は `mizar-session` と `mizar-lexer` に依存する。`mizar
 
 19. **インクリメンタルキャッシュキーの配線。** [ ]
     - [architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md)「Incrementality」の層状フロントエンドキャッシュキーをどこで計算・保存するか（本 crate かドライバ／成果物層か）を決め、成果物単位のキー（`SourceUnit`、`PreprocessedSource`、`ActiveLexicalEnvironment`、`TokenStream`、`SurfaceAst`）を公開する。
-    - コメントのみの編集が意味的出力を再利用でき、インポート／依存エクスポート編集がトークン化と下流層を無効化することを検証する。
+    - コメントのみの編集が意味的出力を再利用でき、インポート／依存エクスポート編集および parser lexing context / parser-assisted lexing plan の変更がトークン化と下流層を無効化することを検証する。
     - 依存: 16。仕様: アーキテクチャのインクリメンタリティ表。
 
 20. **パーサー支援字句解析契約の確定。** [ ]

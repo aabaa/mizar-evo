@@ -28,7 +28,7 @@ See
 pub struct TokenStream {
     pub source_id: SourceId,
     pub tokens: Vec<Token>,
-    pub diagnostics: Vec<LexDiagnostic>,
+    pub diagnostics: Vec<LexingDiagnostic>,
 }
 
 pub struct Token {
@@ -43,13 +43,30 @@ pub struct TokenizeRequest<'a> {
     pub parser_context: ParserLexContext,
 }
 
-pub fn tokenize(request: TokenizeRequest<'_>, bridge: &SpanBridge) -> TokenStream;
+pub struct LexingDiagnostic {
+    pub kind: LexingDiagnosticKind,
+    pub primary: SourceRange,
+    pub secondary: Vec<SourceRange>,
+}
+
+pub enum LexingDiagnosticKind {
+    RawScan(LexError),
+    ScopeSkeleton(ScopeSkeletonDiagnostic),
+    Lexer(LexDiagnostic),
+}
+
+pub fn tokenize(
+    request: TokenizeRequest<'_>,
+    bridge: &SpanBridge,
+) -> Result<TokenStream, SpanBridgeError>;
 ```
 
-`TokenKind`, `ParserLexContext`, `ParserLexMode`, and `LexDiagnostic` are
-re-exported from `mizar-lexer`. The frontend's `Token` differs from the lexer's
-internal token only in that `span` is a session `SourceRange` rather than a
-lexical-text byte span: `tokenize` maps each lexer span through `span_bridge`.
+`TokenKind`, `ParserLexContext`, `ParserLexMode`, `LexError`,
+`ScopeSkeletonDiagnostic`, and `LexDiagnostic` are re-exported from
+`mizar-lexer` as raw payload types. The frontend's `Token` differs from the
+lexer's internal token only in that `span` is a session `SourceRange` rather than
+a lexical-text byte span. Diagnostics are also wrapped in `LexingDiagnostic` so
+their primary and secondary spans are session ranges, not lexer byte offsets.
 
 `parser_context` is the current `mizar-lexer` uniform context object for one
 disambiguation run. The source-to-token foundation uses
@@ -66,7 +83,8 @@ parsing integration tasks.
   `parsing` (consumes `TokenStream`).
 - External: `mizar-lexer` (`scan_raw`, `build_scope_skeleton`, `ScopeLexView`,
   `disambiguate`, `lex`, `Token`, `TokenKind`, `ParserLexContext`,
-  `LexDiagnostic`), `mizar-session` (`SourceId`, `SourceRange`).
+  `LexError`, `LexDiagnostic`, `ScopeSkeletonDiagnostic`), `mizar-session`
+  (`SourceId`, `SourceRange`).
 
 This module is consumed by parsing and, through the diagnostics, by the
 orchestration merge.
@@ -85,6 +103,11 @@ spelling (`text`) and a session `SourceRange`.
 file-wide token stream with strings only at grammar-defined positions requires
 the parser-assisted lexing contract described in `parsing.md` and the TODO.
 
+`LexingDiagnostic` is the mapped frontend diagnostic payload for Step 4. It may
+wrap a raw-scan failure, a scope-skeleton diagnostic, or a disambiguator
+`LexDiagnostic`, but it always carries session-coordinate primary/secondary
+ranges for orchestration.
+
 ### Scope Lex View
 
 The scope-skeleton pre-scan (`build_scope_skeleton`) produces a read-only
@@ -98,8 +121,11 @@ shape only — never resolved bindings.
 ### Tokenize a preprocessed source
 
 1. Raw-scan the lexical text (`scan_raw`) into `LexemeRun`s with preserved spans.
+   If strict raw scanning fails, adapt the failure into `ErrorRecovery` coverage
+   and a mapped `LexingDiagnosticKind::RawScan` diagnostic, then continue from a
+   synchronization boundary.
 2. Build the `ScopeSkeleton` / `ScopeLexView` from the raw tokens for scoped
-   identifier override.
+   identifier override, collecting and mapping `ScopeSkeletonDiagnostic`s.
 3. Run `disambiguate` (or the parser-integrated `lex`) with longest-match
    against, in order: active user symbols, reserved special symbols, reserved
    words, identifier/numeral rules, and parser expectation / scoped override
@@ -111,7 +137,8 @@ shape only — never resolved bindings.
 5. Map each resulting lexer span through `span_bridge.lexical_span`; store the
    returned mapping's primary `SourceRange` on the token and preserve secondary
    anchors for diagnostics.
-6. Collect lexer diagnostics and return the `TokenStream`.
+6. Collect raw-scan, scope-skeleton, and lexer diagnostics as
+   `LexingDiagnostic`s and return the `TokenStream`.
 
 Compound reserved tokens (`.{`, `.*`, `.=`, `...`) are recognized by the lexer;
 selector/namespace roles for `.` are left to the parser and resolver. The lexer
@@ -128,9 +155,12 @@ Lexer recovery is preserved end to end:
   literal in a string-required position) are collected without dropping
   recoverable tokens.
 
-`tokenize` always returns a `TokenStream`; lexical failures degrade to recovery
-tokens and diagnostics rather than aborting, so the parser can still attempt
-recovery.
+For user-recoverable lexical input problems, `tokenize` returns
+`Ok(TokenStream)`: strict raw-scan failures, scope-skeleton problems, and
+disambiguator diagnostics degrade to recovery tokens and mapped diagnostics
+rather than aborting, so the parser can still attempt recovery. It returns
+`Err(SpanBridgeError)` only when a token or diagnostic span cannot be mapped
+through the registered bridge.
 
 ## Tests
 
@@ -143,6 +173,7 @@ Key scenarios:
   bounded `StringRequired` run produces a `StringLiteral`;
 - a malformed token emits `ErrorRecovery` with the correct `SourceRange` and
   scanning resumes;
+- a scope-skeleton diagnostic is preserved as a mapped `LexingDiagnostic`;
 - every emitted token's `span` is a valid `SourceRange` for `source_id`,
   reproducing the original spelling through the source map.
 
@@ -155,6 +186,7 @@ Key scenarios:
 - `StringLiteral` tokens are emitted only when the parser lexing context requires
   strings. Grammar-position-specific string recognition is a parser integration
   task, not part of the source-to-token foundation.
-- The `TokenStream` cache key is the preprocessed hash plus the active lexical
-  environment fingerprint.
+- The `TokenStream` cache key is the preprocessed hash, the active lexical
+  environment fingerprint, and a stable encoding of the `ParserLexContext` /
+  parser-assisted lexing plan used for the run.
 - All token spans are session `SourceRange` values produced through `span_bridge`.

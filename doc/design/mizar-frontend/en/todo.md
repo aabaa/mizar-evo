@@ -83,10 +83,10 @@ keep `cargo test -p mizar-frontend` green (see
      `SourceId`.
    - Tests: `loaded_span` over BOM-stripped text stays in loaded-text
      coordinates, while `loaded_mapping` reports original input offsets through
-     `MappedSourceRange.original_input`; lexical span maps through preprocess +
-     loading maps; a span crossing a removed comment yields primary plus
-     secondary anchors; non-UTF-8-boundary and out-of-range spans are rejected;
-     conflicting map registration is reported.
+     `MappedSourceRange.original_input`; lexical span maps through the preprocess
+     map to loaded-source coordinates; a span crossing a removed comment yields
+     primary plus secondary anchors; non-UTF-8-boundary and out-of-range spans are
+     rejected; conflicting map registration is reported.
    - Spec: [span_bridge.md](./span_bridge.md) "Public API", "Algorithm / Logic".
 
 ### Module: source (`src/source.rs`)
@@ -97,6 +97,10 @@ keep `cargo test -p mizar-frontend` green (see
      implement `source_unit_from_loaded` projecting a `mizar_session::LoadedSource`
      into a `SourceUnit` without recomputing hash, line map, loading map,
      normalized path, edition, origin, or generated anchor.
+   - Treat `file_path` as caller-provided diagnostic metadata because
+     `LoadedSource` does not store a filesystem path; derive it from the
+     request/origin for disk or open-buffer sources and from the normalized path or
+     generated anchor for generated sources.
    - Provide a helper that registers the loaded `LineMap` / `LoadingMap` with a
      mutable `SpanBridge` under the `SourceId`.
    - Tests: disk `LoadedSource` projects with identical id/hash/line-map/loading-map;
@@ -111,7 +115,8 @@ keep `cargo test -p mizar-frontend` green (see
 
 3. **Comment and doc-comment preprocessing.** [ ]
    - Add `pub mod preprocess;`. Define `PreprocessedSource`, `LexicalText`,
-     `Comment`, `DocComment`, `LexicalSourceMap`, and `PreprocessDiagnostic`.
+     `Comment`, `DocComment`, `LexicalSourceMap`, mapped `ImportStub` /
+     `ImportStubPath` / `ImportStubAlias`, and `PreprocessDiagnostic`.
    - Drive `mizar_lexer::preprocess_source_for_lexing` over `SourceUnit.source_text`,
      map comment / doc-comment / preprocess-diagnostic spans through the
      `SpanBridge`, and assemble the `LexicalSourceMap`.
@@ -127,10 +132,14 @@ keep `cargo test -p mizar-frontend` green (see
    - Raw-scan lexical text (`scan_raw`) and run `mizar_lexer::scan_import_prelude`;
      populate `import_stubs` with mapped `SourceRange`s and collect
      `ImportPrescanDiagnostic`s into `diagnostics`.
+   - If the strict raw scan fails, record a frontend-local import-pre-scan
+     diagnostic, leave `import_stubs` empty, and continue without inferring imports
+     from partial raw text.
    - Tests: top-level `import` forms produce `ImportStub`s with raw path, optional
-     alias, source segments, and span; a malformed import yields an import-prescan
-     diagnostic without aborting; import order is preserved for provenance and
-     deterministic fingerprints.
+     alias, `path.source_segments`, and span; a malformed import yields an
+     import-prescan diagnostic without aborting; raw-scan failure during import
+     pre-scan yields a diagnostic and empty `import_stubs`; import order is
+     preserved for provenance and deterministic fingerprints.
    - Depends on: 3. Spec: [preprocess.md](./preprocess.md) "Import Stubs",
      "Error Handling".
 
@@ -150,10 +159,15 @@ keep `cargo test -p mizar-frontend` green (see
    - Implement `build_active_lexical_environment` calling
      `mizar_lexer::build_lexical_environment`; merge provider diagnostics; compute
      and surface the `LexicalEnvironmentFingerprint`.
+   - Omit unresolved imports and imports whose dependency lexical summary is
+     unavailable before calling the lexer; represent them as
+     `LexicalEnvironmentDiagnostic`s so the lexer is not asked to build with
+     missing summaries.
    - Tests: equal-spelling user symbols imported from different modules produce a
      deterministic lexical-environment conflict or provider diagnostic according
      to the lexer/spec contract; an unresolved import degrades to a smaller
-     environment with a diagnostic while remaining symbols load; the fingerprint
+     environment with a diagnostic while remaining symbols load; a missing
+     summary is omitted before the lexer call and diagnosed; the fingerprint
      changes when a dependency summary changes and is stable for comment-only
      local edits.
    - Depends on: 5. Spec: [lexical_env.md](./lexical_env.md) "Algorithm / Logic",
@@ -163,9 +177,12 @@ keep `cargo test -p mizar-frontend` green (see
 
 7. **Raw scan and scope skeleton wiring.** [ ]
    - Add `pub mod lexing;`. Define `TokenizeRequest`, the frontend `Token` /
-     `TokenStream` (session-spanned), and re-export `TokenKind` / `LexDiagnostic`.
+     `TokenStream` (session-spanned), `LexingDiagnostic`, and
+     `LexingDiagnosticKind`; re-export `TokenKind` and raw lexer diagnostic payload
+     types such as `LexDiagnostic` / `ScopeSkeletonDiagnostic`.
    - Build the `ScopeSkeleton` / `ScopeLexView` from raw tokens and prepare the
-     disambiguator inputs.
+     disambiguator inputs; map `ScopeSkeletonDiagnostic`s into
+     `LexingDiagnostic`s.
    - Tests: raw scan preserves `LexemeRun` spans; the scope view reflects lexical
      block/statement shape without resolved bindings.
    - Depends on: 6. Spec: [lexing.md](./lexing.md) "Scope Lex View",
@@ -175,7 +192,9 @@ keep `cargo test -p mizar-frontend` green (see
    - Run `disambiguate` (or parser-integrated `lex`) with the active lexical
      environment, scope view, and the current `ParserLexContext` (general/stub
      context until the parser-assisted contract is finalized); map every lexer
-     span through the `SpanBridge` to a session `SourceRange`.
+     token and diagnostic span through the `SpanBridge` to session
+     `SourceRange`s. Return `Err(SpanBridgeError)` only for internal mapping
+     invariant failures.
    - Tests: a user symbol sharing spelling with an identifier is classified by
      longest-match; compound reserved tokens (`.{`, `.*`, `.=`, `...`) lex as
      single tokens; a quote lexes as a symbol char under the general context; a
@@ -187,12 +206,14 @@ keep `cargo test -p mizar-frontend` green (see
      "Algorithm / Logic".
 
 9. **Lexer recovery passthrough.** [ ]
-   - Preserve `TokenKind::ErrorRecovery` spans and `LexDiagnostic`s end to end;
-     adapt raw-scan hard errors into recovery tokens/diagnostics so the frontend
-     `tokenize` wrapper always returns a `TokenStream`.
+   - Preserve `TokenKind::ErrorRecovery` spans and lexer diagnostics end to end as
+     mapped `LexingDiagnostic`s; adapt raw-scan hard errors into recovery
+     tokens/diagnostics so the frontend `tokenize` wrapper returns
+     `Ok(TokenStream)` for recoverable input problems.
    - Tests: a malformed token emits `ErrorRecovery` with the correct `SourceRange`
      and scanning resumes; an invalid numeral and a malformed string literal in a
-     string-required position are reported without dropping recoverable tokens.
+     string-required position are reported without dropping recoverable tokens;
+     scope-skeleton diagnostics are preserved with mapped spans.
    - Depends on: 8. Spec: [lexing.md](./lexing.md) "Error Handling".
 
 ### Module: parsing (`src/parsing.rs`)
@@ -239,7 +260,8 @@ keep `cargo test -p mizar-frontend` green (see
     - Add `pub mod orchestration;`. Define `FrontendOutput`, `Frontend`,
       `FrontendDiagnostic`, `DiagnosticClass`, and `FrontendError`; wire
       `source` → `preprocess` → `lexical_env` → `lexing` → `parsing` and merge all
-      phase diagnostics into the deterministic order in
+      phase diagnostics, including import-pre-scan, lexical-environment,
+      scope-skeleton, and tokenization diagnostics, into the deterministic order in
       [orchestration.md](./orchestration.md) "Diagnostic Merge Order".
     - Tests: with `StubParserSeam`, a well-formed source returns source,
       preprocessing output, tokens, `ast = None`, and no parser diagnostics; merge
@@ -250,9 +272,10 @@ keep `cargo test -p mizar-frontend` green (see
       "Algorithm / Logic", "Diagnostic Merge Order".
 
 14. **Unrecoverable-failure handling and end-to-end output.** [ ]
-    - Return `FrontendError` only for Step 1 load failures and `SpanBridgeError`
-      invariant violations; keep recoverable problems as diagnostics inside
-      `FrontendOutput`.
+    - Return `FrontendError` for Step 1 load failures, `SpanBridgeError`
+      invariant violations from source registration / preprocessing / lexing, and
+      unrecoverable lexical-summary provider or malformed-summary infrastructure
+      failures; keep recoverable problems as diagnostics inside `FrontendOutput`.
     - Tests: a Step 1 load failure returns `FrontendError` with the file-level
       diagnostic and no output; a parser seam that returns `ast = None` preserves
       earlier diagnostics; merged diagnostics carry valid `SourceRange`s.
@@ -301,8 +324,9 @@ keep `cargo test -p mizar-frontend` green (see
       "Incrementality" are computed and stored (this crate vs. the driver/artifact
       layer), and expose the per-artifact keys (`SourceUnit`, `PreprocessedSource`,
       `ActiveLexicalEnvironment`, `TokenStream`, `SurfaceAst`) accordingly.
-    - Verify comment-only edits can reuse semantic outputs while import / dependency
-      export edits invalidate tokenization and downstream layers.
+   - Verify comment-only edits can reuse semantic outputs while import / dependency
+     export edits and parser lexing context / parser-assisted lexing-plan changes
+     invalidate tokenization and downstream layers.
     - Depends on: 16. Spec: architecture incrementality table.
 
 20. **Parser-assisted lexing contract finalization.** [ ]

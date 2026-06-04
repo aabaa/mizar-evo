@@ -70,15 +70,16 @@ pub struct ActiveLexicalEnvironmentResult {
 ### アクティブ字句環境の構築
 
 1. `LexicalSummaryProvider` に `ImportStub` を `ResolvedImport` と `ModuleLexicalSummary` へ解決させ、インポート順を記録する。
-2. プロバイダ側の診断（未解決インポート、欠落した依存字句サマリ）を、意味的事実を作らずに集める。
+2. プロバイダ側の診断（未解決インポート、欠落した依存字句サマリ）を、意味的事実を作らずに集める。プロバイダは、対応する summary を持つ解決済み import だけを返す。未解決 import や summary が利用できない import は lexer 呼び出しから除外する。`mizar_lexer::build_lexical_environment` は欠落 summary を構造的エラーとして扱うためである。
 3. 予約テーブル、解決済みインポート、サマリを与えて `mizar_lexer::build_lexical_environment` を呼び、`UserSymbolIndex` と `LexicalEnvironmentFingerprint` を組み立てる。
-4. 環境、fingerprint、統合された診断を返す。
+4. 決定的なユーザーシンボル import 衝突のような回復可能な import-level lexer エラーは `LexicalEnvironmentDiagnostic` へ変換し、より小さなアクティブ環境へ縮退する。安全に縮退できない provider infrastructure 失敗や不正 summary データだけを hard `LexicalEnvironmentError` として返す。
+5. 環境、fingerprint、統合された診断を返す。
 
 インポートが解決できない場合でも、解決できたインポートから環境を構築するので、ファイルの残りをトークン化できる。失敗はハード停止ではなく診断である。
 
 ## エラー処理
 
-`LexicalEnvironmentError`（`mizar-lexer` 由来）は、衝突するサマリ fingerprint や不正なサマリデータといった構造的失敗を扱う。プロバイダ側の問題（どのモジュールにも解決しないインポート、字句サマリが利用できない依存）は `LexicalEnvironmentDiagnostic` として運び、ファイル全体を失敗させるのではなく、より小さなアクティブ環境へ縮退させる。インポートの合法性（可視性、字句的形を超えるエクスポートランク衝突）はモジュール解決へ先送りし、ここでは決して判断しない。
+`LexicalEnvironmentError`（`mizar-lexer` 由来）は、衝突するサマリ fingerprint や不正なサマリデータといった構造的失敗を扱う。プロバイダ側の問題（どのモジュールにも解決しないインポート、字句サマリが利用できない依存）は `LexicalEnvironmentDiagnostic` として運び、該当 import を lexer 呼び出し前に除外するので、ファイル全体を失敗させるのではなく、より小さなアクティブ環境へ縮退できる。回復可能な lexer 側字句衝突も同様に診断として表面化し、衝突した import 記号／モジュールをアクティブ環境から除外する。インポートの合法性（可視性、字句的形を超えるエクスポートランク衝突）はモジュール解決へ先送りし、ここでは決して判断しない。
 
 ## テスト
 

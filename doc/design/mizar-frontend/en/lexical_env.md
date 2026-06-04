@@ -103,11 +103,20 @@ local file is unchanged.
 1. Ask the `LexicalSummaryProvider` to resolve the `ImportStub`s into
    `ResolvedImport`s and `ModuleLexicalSummary` values, recording import order.
 2. Collect provider-side diagnostics (unresolved import, missing dependency
-   lexical summary) without inventing semantic facts.
+   lexical summary) without inventing semantic facts. The provider returns only
+   resolved imports that have matching summaries; unresolved imports and imports
+   with unavailable summaries are omitted from the lexer call because
+   `mizar_lexer::build_lexical_environment` treats missing summaries as structural
+   errors.
 3. Call `mizar_lexer::build_lexical_environment` with the reserved tables,
    resolved imports, and summaries to assemble the `UserSymbolIndex` and
    `LexicalEnvironmentFingerprint`.
-4. Return the environment, fingerprint, and merged diagnostics.
+4. Convert recoverable import-level lexer errors, such as deterministic
+   user-symbol import conflicts, into `LexicalEnvironmentDiagnostic`s and degrade
+   to a smaller active environment. Return hard `LexicalEnvironmentError`s only
+   for provider infrastructure failures or malformed summary data that cannot be
+   safely degraded.
+5. Return the environment, fingerprint, and merged diagnostics.
 
 If an import cannot be resolved, the environment is still built from the imports
 that did resolve, so the rest of the file can be tokenized; the failure is a
@@ -118,10 +127,13 @@ diagnostic, not a hard stop.
 `LexicalEnvironmentError` (from `mizar-lexer`) covers structural failures such
 as conflicting summary fingerprints or malformed summary data. Provider-side
 issues — an import that resolves to no module, or a dependency whose lexical
-summary is unavailable — are carried as `LexicalEnvironmentDiagnostic`s so the
-pipeline degrades to a smaller active environment rather than failing the whole
-file. Import legality (visibility, export rank conflicts beyond lexical shape)
-is deferred to module resolution and is never decided here.
+summary is unavailable — are carried as `LexicalEnvironmentDiagnostic`s and the
+affected imports are omitted before calling the lexer, so the pipeline degrades
+to a smaller active environment rather than failing the whole file. Recoverable
+lexer-side lexical conflicts are likewise surfaced as diagnostics with the
+conflicting imported symbol/module excluded from the active environment.
+Import legality (visibility, export rank conflicts beyond lexical shape) is
+deferred to module resolution and is never decided here.
 
 ## Tests
 

@@ -172,8 +172,9 @@ Key scenarios:
 - a loaded-text span over BOM-stripped text remains a valid loaded-source
   `SourceRange`, and `loaded_mapping` reports the correct original byte offsets
   through the loading map;
-- a lexical-text span maps through both preprocess and loading maps to the
-  expected original `SourceRange`;
+- a lexical-text span maps through the preprocess map to the expected
+  loaded-source `SourceRange`, and callers can obtain original input bytes
+  separately through `loaded_mapping` when a loading map exists;
 - a lexical span that crosses a removed comment yields a primary range plus
   secondary anchors;
 - an offset not on a UTF-8 boundary is rejected rather than silently truncated;
