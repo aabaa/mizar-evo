@@ -385,7 +385,7 @@
       public module path と `lib.rs` の再エクスポートは変えず、実装ファイルを
       production code 中心に保つ。
 
-31. **オープンバッファ読み込みのエラー特定性。** [ ]
+31. **オープンバッファ読み込みのエラー特定性。** [x]
     - 問題: `DiskSourceLoader::normalize_open_buffer_uri` が
       `normalize_source_path` の全失敗を
       `SourceLoadError::UnmappedOpenBufferUri` に丸めるため（`src/source.rs`）、
@@ -411,6 +411,13 @@
       デコード不能な URI は引き続き `UnmappedOpenBufferUri` で報告される。
     - 依存: 20。仕様: [source.md](./source.md) "Open-Buffer Source Loading",
       "Error Handling"。
+    - 判断: オープンバッファ URI の失敗を、URI からパッケージへの対応付け失敗と、
+      対応付け後のパス検証失敗に分ける。`UnmappedOpenBufferUri` は、
+      `file://` でない scheme、デコード不能な percent encoding、パッケージルート外の
+      file URI など、パッケージ相対パスになれない URI に限定する。URI が
+      パッケージ相対パスへ対応付けられた後は、`DiskSourceLoader` がディスク読み込み用の
+      `SourceLoadError::from_source_path_error` 分類を再利用し、未対応拡張子や不正な
+      source path について disk/open-buffer が同じカテゴリを報告する。
 
 32. **`src/` ルート欠落パスエラーの忠実度。** [ ]
     - 問題: `SourceLoadError::from_source_path_error` が

@@ -674,44 +674,10 @@ fn open_buffer_loader_rejects_unmappable_uri_before_source_id_allocation() {
     let loader = DiskSourceLoader::new(package.root());
     let allocator = RecordingAllocator::new();
 
-    let error = loader
-        .load(
-            snapshot_id(31),
-            source_input(SourceOriginInput::OpenBuffer {
-                uri: "untitled:basic".to_owned(),
-                expected_version: 1,
-                actual_version: 1,
-                text: Arc::from("open\n"),
-            }),
-            &allocator,
-        )
-        .expect_err("unmappable open-buffer URI should be rejected");
-
-    assert!(matches!(
-        error,
-        SourceLoadError::UnmappedOpenBufferUri { uri } if uri == "untitled:basic"
-    ));
-    assert!(allocator.source_snapshots().is_empty());
-}
-
-#[test]
-fn open_buffer_loader_rejects_file_uris_that_do_not_map_to_package_sources() {
-    let package = PackageFixture::new();
-    package.write("other/basic.miz", "outside src\n");
-    package.write("src/groups/basic.txt", "not miz\n");
-    package.write_outside("outside.miz", "outside package\n");
-    let loader = DiskSourceLoader::new(package.root());
-    let allocator = RecordingAllocator::new();
-    let outside_uri = format!("file://{}", package.outside_path("outside.miz").display());
-
-    for uri in [
-        package.file_uri("other/basic.miz"),
-        package.file_uri("src/groups/basic.txt"),
-        outside_uri,
-    ] {
+    for uri in ["untitled:basic".to_owned(), "file:///%FF".to_owned()] {
         let error = loader
             .load(
-                snapshot_id(32),
+                snapshot_id(31),
                 source_input(SourceOriginInput::OpenBuffer {
                     uri: uri.clone(),
                     expected_version: 1,
@@ -720,13 +686,110 @@ fn open_buffer_loader_rejects_file_uris_that_do_not_map_to_package_sources() {
                 }),
                 &allocator,
             )
-            .expect_err("file URI outside package sources should be rejected");
+            .expect_err("unmappable open-buffer URI should be rejected");
 
         assert!(matches!(
             error,
             SourceLoadError::UnmappedOpenBufferUri { uri: error_uri } if error_uri == uri
         ));
     }
+    assert!(allocator.source_snapshots().is_empty());
+}
+
+#[test]
+fn open_buffer_loader_reports_package_source_path_errors_with_disk_categories() {
+    let package = PackageFixture::new();
+    package.write("other/basic.miz", "outside src\n");
+    package.write("src/groups/basic.txt", "not miz\n");
+    package.write("src/bad-name.miz", "bad namespace\n");
+    let loader = DiskSourceLoader::new(package.root());
+    let allocator = RecordingAllocator::new();
+
+    let missing_source_root = loader
+        .load(
+            snapshot_id(32),
+            source_input(SourceOriginInput::OpenBuffer {
+                uri: package.file_uri("other/basic.miz"),
+                expected_version: 1,
+                actual_version: 1,
+                text: Arc::from("open\n"),
+            }),
+            &allocator,
+        )
+        .expect_err("package file outside src should be rejected");
+
+    assert!(matches!(
+        missing_source_root,
+        SourceLoadError::SourcePathOutsidePackageRoot { path, .. }
+            if path.ends_with("other/basic.miz")
+    ));
+
+    let unsupported_extension = loader
+        .load(
+            snapshot_id(32),
+            source_input(SourceOriginInput::OpenBuffer {
+                uri: package.file_uri("src/groups/basic.txt"),
+                expected_version: 1,
+                actual_version: 1,
+                text: Arc::from("open\n"),
+            }),
+            &allocator,
+        )
+        .expect_err("non-miz package source URI should be rejected");
+
+    assert!(matches!(
+        unsupported_extension,
+        SourceLoadError::UnsupportedFileExtension { path }
+            if path.ends_with("src/groups/basic.txt")
+    ));
+
+    let invalid_namespace = loader
+        .load(
+            snapshot_id(32),
+            source_input(SourceOriginInput::OpenBuffer {
+                uri: package.file_uri("src/bad-name.miz"),
+                expected_version: 1,
+                actual_version: 1,
+                text: Arc::from("open\n"),
+            }),
+            &allocator,
+        )
+        .expect_err("invalid namespace package source URI should be rejected");
+
+    assert!(matches!(
+        invalid_namespace,
+        SourceLoadError::InvalidSourcePath {
+            error: SourcePathError::InvalidNamespaceComponent { component }
+        } if component == "bad-name"
+    ));
+    assert!(allocator.source_snapshots().is_empty());
+}
+
+#[test]
+fn open_buffer_loader_keeps_file_uri_outside_package_root_unmapped() {
+    let package = PackageFixture::new();
+    package.write_outside("outside.miz", "outside package\n");
+    let loader = DiskSourceLoader::new(package.root());
+    let allocator = RecordingAllocator::new();
+    let outside_uri = format!("file://{}", package.outside_path("outside.miz").display());
+
+    let error = loader
+        .load(
+            snapshot_id(32),
+            source_input(SourceOriginInput::OpenBuffer {
+                uri: outside_uri.clone(),
+                expected_version: 1,
+                actual_version: 1,
+                text: Arc::from("open\n"),
+            }),
+            &allocator,
+        )
+        .expect_err("file URI outside package root should be rejected");
+
+    assert!(matches!(
+        error,
+        SourceLoadError::UnmappedOpenBufferUri { uri } if uri == outside_uri
+    ));
     assert!(allocator.source_snapshots().is_empty());
 }
 

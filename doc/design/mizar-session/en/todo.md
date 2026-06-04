@@ -400,7 +400,7 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
       This keeps the public module paths and `lib.rs` re-exports unchanged while
       making the implementation files focused on production code.
 
-31. **Open-buffer source-loading error specificity.** [ ]
+31. **Open-buffer source-loading error specificity.** [x]
     - Problem: `DiskSourceLoader::normalize_open_buffer_uri` collapses every
       `normalize_source_path` failure into `SourceLoadError::UnmappedOpenBufferUri`
       (`src/source.rs`), so an open-buffer URI that does resolve to a package
@@ -424,6 +424,14 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
       undecodable URI still reports `UnmappedOpenBufferUri`.
     - Depends on: 20. Spec: [source.md](./source.md) "Open-Buffer Source Loading",
       "Error Handling".
+    - Decision: open-buffer URI failures are split into URI-to-package mapping
+      failures and mapped path-validation failures. `UnmappedOpenBufferUri` is
+      reserved for URIs that cannot become package-relative paths, including
+      non-`file://` schemes, undecodable percent encoding, and file URIs outside
+      the package root. Once a URI maps to a package-relative path,
+      `DiskSourceLoader` reuses the disk `SourceLoadError::from_source_path_error`
+      classification so disk and open-buffer loading report the same categories
+      for unsupported extensions and invalid source paths.
 
 32. **Missing-`src/`-root path error fidelity.** [ ]
     - Problem: `SourceLoadError::from_source_path_error` maps

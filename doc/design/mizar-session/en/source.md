@@ -187,13 +187,22 @@ Code-region ASCII validation belongs to preprocessing. This module only validate
 ### Open-Buffer Source Loading
 
 1. Compare the request's expected LSP document version with the actual editor-buffer version supplied by the LSP bridge, and reject stale or structurally invalid versions before allocating a `SourceId`.
-2. Normalize the document URI to a package source path.
+2. Normalize the document URI to a package source path. A URI that cannot become
+   a package-relative path at all, such as a non-`file://` URI, an undecodable
+   percent-encoded URI, or a file URI outside the package root, reports
+   `SourceLoadError::UnmappedOpenBufferUri`.
 3. Use the editor-provided text as authoritative for the request.
 4. Strip one leading `U+FEFF` from package-authored open-buffer text so editor views of a BOM-prefixed disk file match disk source loading.
 5. Normalize source-loading newlines by replacing each CRLF pair with one LF. Lone `\r` is preserved so frontend/lexer diagnostics can reject it consistently.
 6. If stripping or newline normalization changed offsets, record a `LoadingMap` from normalized loaded-text offsets back to editor-provided text byte offsets.
 7. Compute source hash and `LineMap` from `LoadedSource.text`.
 8. Mark the origin as `OpenBuffer` with the validated actual document version.
+
+Once an open-buffer URI has been mapped to a package-relative path, source-path
+validation uses the same `normalize_source_path` classification as disk loading.
+For example, a package `src/` file with a non-`.miz` extension reports
+`SourceLoadError::UnsupportedFileExtension`, and non-canonical paths or invalid
+namespace components report through `SourceLoadError::InvalidSourcePath`.
 
 Open-buffer text may be newer than the last verified artifact. Consumers must carry freshness metadata rather than silently treating artifact data as current. LSP diagnostics and edits must convert from `LoadedSource.text` offsets through `loading_map` before applying protocol UTF-16 position rules against the editor document.
 
@@ -215,7 +224,7 @@ Generated source text may be used for diagnostics, documentation, or extraction,
 - unreadable source file;
 - duplicate module path supplied by a future source-loading aggregator over a build plan; single-source `DiskSourceLoader::load` does not emit this variant;
 - stale or structurally invalid LSP document version;
-- open-buffer URI that cannot be mapped to a package source;
+- open-buffer URI that cannot become a package-relative path;
 - generated source without required generator metadata.
 - source id allocation failure from `SessionIdAllocator`.
 - unsupported source origin for a concrete loader that intentionally implements only part of the `SourceOriginInput` surface.
@@ -223,11 +232,15 @@ Generated source text may be used for diagnostics, documentation, or extraction,
 
 User-facing read and encoding failures are emitted as frontend/build diagnostics. Internal callers still receive structured errors so snapshot creation can decide whether the build request is fatal or recoverable.
 Allocator failures carry the underlying `IdError`; in particular, allocator overflow is not silently converted into a source identity.
+Disk and open-buffer source-path validation share the same error categories after
+URI-to-path mapping succeeds; `UnmappedOpenBufferUri` is reserved for URI mapping
+failures such as non-`file://` schemes, undecodable percent encoding, or file
+URIs outside the package root.
 Traceability for the reserved-looking source-loading variants is:
 
 | Variant | Current classification | Public observable path |
 |---|---|---|
-| `SourceLoadError::InvalidSourcePath` | public source-loading path normalization surface | `DiskSourceLoader::load`, `SourceLoader::normalize_path`, and the public `normalize_path` helper map `normalize_source_path` failures such as non-canonical aliases, non-canonical spelling, or invalid namespace components into this variant. |
+| `SourceLoadError::InvalidSourcePath` | public source-loading path normalization surface | `DiskSourceLoader::load` for disk and mapped open-buffer sources, `SourceLoader::normalize_path`, and the public `normalize_path` helper map `normalize_source_path` failures such as non-canonical aliases, non-canonical spelling, or invalid namespace components into this variant. |
 | `SourceLoadError::UnsupportedSourceOrigin` | custom-loader-only | The default `DiskSourceLoader` supports all current `SourceOriginInput` variants (`Disk`, `OpenBuffer`, and `Generated`) and does not emit this variant. It remains public because `SourceLoader` is a public trait and downstream concrete loaders may intentionally implement only part of the origin surface. |
 
 ## Tests

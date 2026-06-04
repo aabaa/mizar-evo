@@ -187,13 +187,22 @@ boundary のままです。
 ### Open-Buffer Source Loading
 
 1. リクエストが期待する LSP ドキュメントバージョンと、LSP ブリッジが提供した実際のエディタバッファバージョンを比較し、失効した version や構造的に不正な version を `SourceId` 発行前に拒否する。
-2. ドキュメント URI をパッケージのソースパスへ正規化する。
+2. ドキュメント URI をパッケージのソースパスへ正規化する。`file://` ではない
+   URI、デコード不能な percent encoding を含む URI、パッケージルート外の
+   file URI など、そもそもパッケージ相対パスになれない URI は
+   `SourceLoadError::UnmappedOpenBufferUri` として報告する。
 3. そのリクエストでは、エディタ提供テキストを正本として用いる。
 4. BOM 付きディスクファイルのエディタ表示がディスクのソース読み込みと一致するように、パッケージが記述したオープンバッファテキストから先頭の `U+FEFF` を 1 つ除去する。
 5. 各 CRLF を 1 つの LF に置き換えて、ソース読み込みの改行を正規化する。単独の `\r` は、フロントエンドや字句解析器の診断が一貫して拒否できるよう保持する。
 6. 除去または改行の正規化がオフセットを変更した場合、正規化済み読み込みテキストのオフセットからエディタ提供テキストのバイトオフセットへの `LoadingMap` を記録する。
 7. `LoadedSource.text` からソースハッシュと `LineMap` を計算する。
 8. 検証済みの実際のドキュメントバージョン付きで、由来を `OpenBuffer` として記録する。
+
+オープンバッファ URI がパッケージ相対パスへ対応付けられた後のソースパス検証は、
+ディスク読み込みと同じ `normalize_source_path` の分類を使います。たとえば、
+パッケージ `src/` 配下にある `.miz` 以外のファイルは
+`SourceLoadError::UnsupportedFileExtension` として報告し、非正準パスや不正な
+namespace component は `SourceLoadError::InvalidSourcePath` を通じて報告します。
 
 オープンバッファのテキストは、最後に検証されたアーティファクトより新しいことがあります。利用側は、アーティファクトのデータを暗黙のうちに最新として扱うのではなく、鮮度メタデータを引き回さなければなりません。LSP の診断と編集は、エディタドキュメントに対してプロトコルの UTF-16 位置規則を適用する前に、`LoadedSource.text` のオフセットを `loading_map` を通して変換しなければなりません。
 
@@ -215,7 +224,7 @@ boundary のままです。
 - 読み取れないソースファイル
 - 将来の source-loading aggregator が build plan 全体から見つける重複するモジュールパス。単一ソースの `DiskSourceLoader::load` はこの variant を emit しない
 - 失効した、または構造的に不正な LSP ドキュメントバージョン
-- パッケージソースへ対応付けられないオープンバッファ URI
+- パッケージ相対パスになれないオープンバッファ URI
 - 必須の生成器メタデータを欠く生成ソース
 - `SessionIdAllocator` による source id 発行失敗
 - `SourceOriginInput` surface の一部だけを意図的に実装する具象 loader に対する未対応 source origin
@@ -223,11 +232,16 @@ boundary のままです。
 
 利用者向けの読み取り失敗・エンコード失敗は、フロントエンドやビルドの診断として発行されます。内部の呼び出し側は構造化エラーも受け取るため、スナップショット生成はビルドリクエストが致命的か回復可能かを判断できます。
 アロケータ失敗は元の `IdError` を保持します。特に、アロケータのオーバーフローは暗黙にソース同一性へ変換されません。
+URI から path への対応付けに成功した後のソースパス検証では、ディスク読み込みと
+オープンバッファ読み込みが同じ error category を共有します。
+`UnmappedOpenBufferUri` は、`file://` でない scheme、デコード不能な percent
+encoding、パッケージルート外の file URI など、URI 対応付けそのものの失敗に
+限定します。
 予約済みに見える source-loading variant の traceability は次のとおりです。
 
 | Variant | 現在の分類 | public observable path |
 |---|---|---|
-| `SourceLoadError::InvalidSourcePath` | public な source-loading path normalization surface | `DiskSourceLoader::load`、`SourceLoader::normalize_path`、public helper の `normalize_path` は、non-canonical alias、non-canonical spelling、不正な namespace component などの `normalize_source_path` failure をこの variant に写します。 |
+| `SourceLoadError::InvalidSourcePath` | public な source-loading path normalization surface | `DiskSourceLoader::load` は disk source と対応付け済み open-buffer source について、`SourceLoader::normalize_path` と public helper の `normalize_path` は public normalization surface として、non-canonical alias、non-canonical spelling、不正な namespace component などの `normalize_source_path` failure をこの variant に写します。 |
 | `SourceLoadError::UnsupportedSourceOrigin` | custom-loader 専用 | 既定の `DiskSourceLoader` は現在の `SourceOriginInput` variant（`Disk`、`OpenBuffer`、`Generated`）をすべて support し、この variant を emit しません。`SourceLoader` が public trait であり、下流の具象 loader が origin surface の一部だけを意図的に実装できるよう public に残します。 |
 
 ## Tests

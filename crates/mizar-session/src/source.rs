@@ -196,8 +196,12 @@ impl DiskSourceLoader {
     ) -> Result<NormalizedPath, SourceLoadError> {
         let path = file_path_from_document_uri(uri)
             .ok_or_else(|| SourceLoadError::UnmappedOpenBufferUri { uri: uri.clone() })?;
-        normalize_source_path(&self.package_root, &path)
-            .map_err(|_| SourceLoadError::UnmappedOpenBufferUri { uri: uri.clone() })
+        normalize_source_path(&self.package_root, &path).map_err(|error| match error {
+            SourcePathError::OutsidePackageRoot { .. } => {
+                SourceLoadError::UnmappedOpenBufferUri { uri: uri.clone() }
+            }
+            error => SourceLoadError::from_source_path_error(&self.package_root, error),
+        })
     }
 }
 
