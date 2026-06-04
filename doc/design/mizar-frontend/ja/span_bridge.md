@@ -56,14 +56,22 @@ pub struct LexerByteSpan {
     pub start: usize,
     pub end: usize,
 }
+
+pub enum SpanBridgeError {
+    SourceNotRegistered { source_id: SourceId },
+    PreprocessMapNotRegistered { source_id: SourceId },
+    ConflictingSourceRegistration { source_id: SourceId },
+    ConflictingPreprocessMapRegistration { source_id: SourceId },
+    SourceMap { source: SourceMapError },
+}
 ```
 
-`SourceRange`、`MappedSourceRange`、`LineMap`、`LoadingMap`、`PreprocessMap`、`RetainedSourceMapService`、`SourceMapService` は `mizar-session` が所有する。`span_bridge` は `mizar-lexer` のバイトスパンをそれらへ適合させる。`loaded_span` は読み込み済みテキスト（Step 1 座標）のスパンを、読み込み済みテキスト座標の検証済み `SourceRange` へ変換する。生のファイル／エディタ入力バイトが必要な呼び出し側は `loaded_mapping` を使い、`LoadingMap` が存在する場合は `MappedSourceRange.original_input` で元入力オフセットを得る。`lexical_span` はコメント除去済み字句テキスト（Step 2 以降の座標）のスパンを変換し、除去コメントをまたぐスパンに対しては第一の読み込み済み範囲に加えて隣接アンカーを含む `MappedSourceRange` を返す。
+`SourceRange`、`MappedSourceRange`、`LineMap`、`LoadingMap`、`PreprocessMap`、`SourceMapError`、`RetainedSourceMapService`、`SourceMapService` は `mizar-session` が所有する。`span_bridge` は `mizar-lexer` のバイトスパンをそれらへ適合させる。`loaded_span` は読み込み済みテキスト（Step 1 座標）のスパンを、読み込み済みテキスト座標の検証済み `SourceRange` へ変換する。生のファイル／エディタ入力バイトが必要な呼び出し側は `loaded_mapping` を使い、`LoadingMap` が存在する場合は `MappedSourceRange.original_input` で元入力オフセットを得る。`lexical_span` はコメント除去済み字句テキスト（Step 2 以降の座標）のスパンを変換し、除去コメントをまたぐスパンに対しては第一の読み込み済み範囲に加えて隣接アンカーを含む `MappedSourceRange` を返す。
 
 ## 依存関係
 
 - 内部: `source`、`preprocess`、`lexing`、`parsing` が消費する。フロントエンドで最も低レベルの統制モジュールである。
-- 外部: `mizar-session`（`RetainedSourceMapService`、`SourceMapService`、`SourceRange`、`MappedSourceRange`、`LineMap`、`LoadingMap`、`PreprocessMap`、`SourceId`）、`mizar-lexer`（`mizar_lexer::source` のバイトオフセットスパン型。この境界でのみ変換される）。
+- 外部: `mizar-session`（`RetainedSourceMapService`、`SourceMapService`、`SourceRange`、`MappedSourceRange`、`LineMap`、`LoadingMap`、`PreprocessMap`、`SourceMapError`、`SourceId`）、`mizar-lexer`（`mizar_lexer::source` のバイトオフセットスパン型。この境界でのみ変換される）。
 
 ## データ構造
 
@@ -103,7 +111,7 @@ pub struct LexerByteSpan {
 
 ## エラー処理
 
-`SpanBridgeError` は retained session `SourceMapService` が報告する失敗（未知のソース id、ソース／字句テキスト外の範囲、UTF-8 境界上にないオフセット、欠落した preprocess-map セグメント、行／列オーバーフロー）に加え、フロントエンドローカルの「ソース未登録」／「マップ登録の衝突」の場合をラップする。橋渡しの失敗は内部不変条件の違反（宣言したソースに属さないスパン）であり、ユーザー診断ではない。統制層はこれを回復可能な字句／構文診断ではなくバグの表面として扱う。
+`SpanBridgeError` は retained session `SourceMapService` が報告する失敗（未知のソース id、ソース／字句テキスト外の範囲、UTF-8 境界上にないオフセット、欠落した preprocess-map セグメント、行／列オーバーフロー）を `SpanBridgeError::SourceMap` として包み、さらにフロントエンドローカルの「ソース未登録」／「preprocess map 未登録」／「マップ登録の衝突」の場合を表す。橋渡しの失敗は内部不変条件の違反（宣言したソースに属さないスパン）であり、ユーザー診断ではない。統制層はこれを回復可能な字句／構文診断ではなくバグの表面として扱う。
 
 ## テスト
 

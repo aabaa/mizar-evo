@@ -37,7 +37,7 @@ pub struct LexingDiagnostic {
     pub kind: LexingDiagnosticKind,
     pub message: Arc<str>,
     pub primary: SourceRange,
-    pub secondary: Vec<SourceRange>,
+    pub secondary: Vec<SourceAnchor>,
 }
 
 pub enum LexingDiagnosticKind {
@@ -59,7 +59,7 @@ pub fn tokenize(
 ## 依存関係
 
 - 内部: `preprocess`（字句テキストとマップ）、`lexical_env`（`ActiveLexicalEnvironment`）、`span_bridge`（字句バイト → `SourceRange`）、`parsing`（`TokenStream` を消費）。
-- 外部: `mizar-lexer`（`scan_raw`、`build_scope_skeleton`、`ScopeLexView`、`disambiguate`、`lex`、`Token`、`TokenKind`、`ParserLexContext`、`LexError`、`LexDiagnostic`、`LexDiagnosticCode`、`ScopeSkeletonDiagnostic`、`ScopeSkeletonDiagnosticCode`）、`mizar-session`（`SourceId`、`SourceRange`）。
+- 外部: `mizar-lexer`（`scan_raw`、`build_scope_skeleton`、`ScopeLexView`、`disambiguate`、`lex`、`Token`、`TokenKind`、`ParserLexContext`、`LexError`、`LexDiagnostic`、`LexDiagnosticCode`、`ScopeSkeletonDiagnostic`、`ScopeSkeletonDiagnosticCode`）、`mizar-session`（`SourceId`、`SourceRange`、`SourceAnchor`）。
 
 このモジュールは構文解析が消費し、診断を通じて統制統合も消費する。
 
@@ -69,7 +69,7 @@ pub fn tokenize(
 
 `TokenStream` は 1 ファイルの完全かつソース忠実なトークン列である。各 `Token` は元のつづり（`text`）と session `SourceRange` を保持する。`TokenKind` には分割されなかった生単位の `LexemeRun`、`UserSymbol`、`ReservedWord`、`ReservedSymbol`、`Identifier`、`Numeral`、`StringLiteral`、`ErrorRecovery` が含まれる。現在の uniform context API では、明示的な `StringRequired` 実行のときだけ `StringLiteral` が現れる。文法上の位置に基づく string-required registry は parser-assisted lexing contract の範囲である。
 
-`LexingDiagnostic` は Step 4 の frontend 側 mapped diagnostic payload である。raw-scan 失敗、スコープスケルトン診断、曖昧性解消器診断を表し得るが、統制層のために必ず session 座標の第一／副次範囲を持つ。raw lexer diagnostic object には lexer byte span が含まれるため、`LexingDiagnostic` は写像済みの code/message を持ち、raw object 自体は保持しない。
+`LexingDiagnostic` は Step 4 の frontend 側 mapped diagnostic payload である。raw-scan 失敗、スコープスケルトン診断、曖昧性解消器診断を表し得るが、統制層のために必ず session 座標の primary range と secondary anchor を持つ。secondary は `SourceAnchor` なので、composite / degraded な preprocess mapping の point、generated、隣接コメント anchor を保持できる。raw lexer diagnostic object には lexer byte span が含まれるため、`LexingDiagnostic` は写像済みの code/message を持ち、raw object 自体は保持しない。
 
 ### スコープ字句ビュー
 
@@ -83,7 +83,7 @@ pub fn tokenize(
 2. 生トークンから `ScopeSkeleton` / `ScopeLexView` を構築し、スコープ付き識別子の上書きに用いる。`ScopeSkeletonDiagnostic` は収集して写像する。
 3. `disambiguate`（またはパーサー統合の `lex`）を実行し、次の順序で最長一致する。アクティブユーザー記号、予約特殊記号、予約語、識別子／数値規則、そして言語が要求する場合のパーサー期待／スコープ上書き。
 4. `StringLiteral` トークンは現在の parser lexing context が文字列を要求するときだけ認識する。それ以外では引用符は通常の記号文字のままである。注釈／演算子位置の string-required 判定は real parser contract まで延期する。
-5. 結果の各字句解析器スパンを `span_bridge.lexical_span` を通じて、`source_id` でスコープされた第一 `SourceRange` へ変換し、隣接アンカーは診断用に保持する。
+5. 結果の各字句解析器スパンを `span_bridge.lexical_span` を通じて、`source_id` でスコープされた第一 `SourceRange` へ変換し、副次 `SourceAnchor` は診断用に保持する。
 6. raw-scan、スコープスケルトン、字句解析器の診断を `LexingDiagnostic` として集め、`TokenStream` を返す。
 
 複合予約トークン（`.{`、`.*`、`.=`、`...`）は字句解析器が認識する。`.` のセレクタ／名前空間の役割はパーサーと解決器に委ねる。字句解析器は定義済み性・適用可能性・オーバーロード選択を決して判断しない。

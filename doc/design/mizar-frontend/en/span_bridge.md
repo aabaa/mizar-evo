@@ -65,10 +65,18 @@ pub struct LexerByteSpan {
     pub start: usize,
     pub end: usize,
 }
+
+pub enum SpanBridgeError {
+    SourceNotRegistered { source_id: SourceId },
+    PreprocessMapNotRegistered { source_id: SourceId },
+    ConflictingSourceRegistration { source_id: SourceId },
+    ConflictingPreprocessMapRegistration { source_id: SourceId },
+    SourceMap { source: SourceMapError },
+}
 ```
 
 `SourceRange`, `MappedSourceRange`, `LineMap`, `LoadingMap`, `PreprocessMap`,
-`RetainedSourceMapService`, and `SourceMapService` are owned by
+`SourceMapError`, `RetainedSourceMapService`, and `SourceMapService` are owned by
 `mizar-session`; `span_bridge` adapts
 `mizar-lexer` byte spans onto them. `loaded_span` maps a span in loaded text
 (Step 1 coordinates) into a validated loaded-text `SourceRange`. It does not
@@ -85,7 +93,7 @@ for spans that cross a removed comment or synthetic whitespace.
   the lowest-level frontend coordination module.
 - External: `mizar-session` (`RetainedSourceMapService`, `SourceMapService`,
   `SourceRange`, `MappedSourceRange`, `LineMap`, `LoadingMap`,
-  `PreprocessMap`, `SourceId`),
+  `PreprocessMap`, `SourceMapError`, `SourceId`),
   `mizar-lexer` (byte-offset span types from `mizar_lexer::source`, converted at
   this boundary only).
 
@@ -157,10 +165,10 @@ chooses whether the caller needs a plain loaded `SourceRange` or a richer
 ## Error Handling
 
 `SpanBridgeError` wraps the failures the retained session `SourceMapService`
-reports —
-unknown source id, range outside source/lexical text, offset not on a UTF-8
-boundary, missing preprocess-map segment, line/column overflow — plus
-frontend-local "source not registered" / "conflicting map registration" cases.
+reports through `SpanBridgeError::SourceMap` — unknown source id, range outside
+source/lexical text, offset not on a UTF-8 boundary, missing preprocess-map
+segment, line/column overflow — plus frontend-local "source not registered",
+"preprocess map not registered", and "conflicting map registration" cases.
 A bridge failure is an internal invariant violation (a span that does not belong
 to its declared source), not a user diagnostic; orchestration treats it as a bug
 surface rather than a recoverable lexical/syntax diagnostic.

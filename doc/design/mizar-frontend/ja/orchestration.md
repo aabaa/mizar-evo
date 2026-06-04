@@ -47,10 +47,19 @@ where
 
 pub struct FrontendDiagnostic {
     pub code: DiagnosticCode,
+    pub message: Arc<str>,
     pub class: DiagnosticClass,
     pub primary: SourceRange,
-    pub secondary: Vec<SourceRange>,
+    pub secondary: Vec<SourceAnchor>,
     pub recovery_note: Option<String>,
+}
+
+pub enum DiagnosticCode {
+    SourceLoad,
+    Preprocess(PreprocessDiagnosticKind),
+    LexicalEnvironment(LexicalEnvironmentDiagnosticCode),
+    Lexing(LexingDiagnosticKind),
+    Syntax(Arc<str>),
 }
 
 pub enum DiagnosticClass {
@@ -63,16 +72,29 @@ pub enum DiagnosticClass {
     Syntax,
     AnnotationSyntax,
 }
+
+pub enum FrontendError {
+    SourceLoad {
+        source: SourceLoadError,
+        diagnostic: FrontendDiagnostic,
+    },
+    SpanBridge {
+        source: SpanBridgeError,
+    },
+    LexicalEnvironment {
+        source: FrontendLexicalEnvironmentError,
+    },
+}
 ```
 
-`FrontendOutput<A>` は AST 型を抽象化したままアーキテクチャのインターフェースと一致する。`StubParserSeam` では `ast` は常に `None` であり、実 parser seam では `A` は `mizar_syntax::SurfaceAst` である。`FrontendDiagnostic` は、すべてのフェーズ固有診断（`SourcePreprocessDiagnostic`、`ImportPrescanDiagnostic`、`LexicalEnvironmentDiagnostic`、raw-scan／scope-skeleton／lexer 診断を含む `LexingDiagnostic`、`SyntaxDiagnostic`）が変換される統一診断であり、消費者は `SourceRange` でキー付けされた単一の順序付きリストを見る。
+`FrontendOutput<A>` は AST 型を抽象化したままアーキテクチャのインターフェースと一致する。`StubParserSeam` では `ast` は常に `None` であり、実 parser seam では `A` は `mizar_syntax::SurfaceAst` である。`FrontendDiagnostic` は、すべてのフェーズ固有診断（`SourcePreprocessDiagnostic`、`ImportPrescanDiagnostic`、`LexicalEnvironmentDiagnostic`、raw-scan／scope-skeleton／lexer 診断を含む `LexingDiagnostic`、`SyntaxDiagnostic`）が変換される統一診断であり、消費者は `SourceRange` でキー付けされた単一の順序付きリストを見る。`DiagnosticCode::Syntax` は実 parser seam が有効になった後に parser-owned syntax diagnostic code key を保持する。`StubParserSeam` では syntax 診断は送出されない。
 
 `ast = None` は、実 parser seam では構文解析が以降のフェーズに十分な構造を回復できなかったことを意味する。stub parser seam では期待される placeholder 結果である。字句・前処理・構文の診断は依然として返される。
 
 ## 依存関係
 
 - 内部: `source`、`preprocess`、`lexical_env`、`lexing`、`parsing`、`span_bridge`（一度構築され各フェーズへ通される）。
-- 外部: 各フェーズモジュールを通じて `mizar-session`（`SourceId`、`SourceRange`、`SessionIdAllocator`、`BuildSnapshotId`）、`mizar-lexer`。実 parser seam は、それらの crate が存在してから追加で `mizar-syntax` と `mizar-parser` に依存する。
+- 外部: 各フェーズモジュールを通じて `mizar-session`（`SourceId`、`SourceRange`、`SourceAnchor`、`SessionIdAllocator`、`BuildSnapshotId`）、`mizar-lexer`。実 parser seam は、それらの crate が存在してから追加で `mizar-syntax` と `mizar-parser` に依存する。
 
 このモジュールは crate の公開エントリポイントである。コンパイラドライバ、LSP、フォーマッター、テストが消費する。
 
@@ -94,7 +116,7 @@ pub enum DiagnosticClass {
 6. トークン化（Step 4）。
 7. 構文および注釈構文（Step 5）。
 
-クラス内では第一スパンの開始、次に診断コードで順序付ける。後の診断が先の回復に影響されうる場合は回復ノートを付ける。
+クラス内では第一スパンの開始、次に診断コードで順序付ける。副次 `SourceAnchor` は表示・説明用に保持するが、ソートには参加しない。後の診断が先の回復に影響されうる場合は回復ノートを付ける。
 
 ## アルゴリズム / ロジック
 

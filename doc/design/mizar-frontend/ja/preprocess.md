@@ -49,15 +49,33 @@ pub struct ImportStub {
 
 pub struct ImportStubPath {
     pub spelling: Arc<str>,
-    pub relative: bool,
+    pub relative: Option<ImportStubRelativePrefix>,
     pub components: Vec<Arc<str>>,
     pub source_segments: Vec<SourceRange>,
     pub span: SourceRange,
 }
 
+pub enum ImportStubRelativePrefix {
+    Current,
+    Parent,
+}
+
 pub struct ImportStubAlias {
     pub spelling: Arc<str>,
     pub span: SourceRange,
+}
+
+pub struct PreprocessDiagnostic {
+    pub kind: PreprocessDiagnosticKind,
+    pub message: Arc<str>,
+    pub primary: SourceRange,
+    pub secondary: Vec<SourceAnchor>,
+}
+
+pub enum PreprocessDiagnosticKind {
+    SourcePrecondition(SourcePreprocessDiagnosticCode),
+    ImportPrescan(ImportPrescanDiagnosticCode),
+    RawImportScan,
 }
 
 pub fn preprocess(
@@ -73,7 +91,7 @@ pub fn preprocess(
 ## 依存関係
 
 - 内部: `source`（`SourceUnit` を提供）、`span_bridge`（ソースの preprocess map を登録し、字句解析器の前処理マップオフセットを `mizar-session` `SourceRange` へ変換）、`lexical_env` と `lexing`（`PreprocessedSource` を消費）。
-- 外部: `mizar-lexer`（`preprocess_source_for_lexing`、`PreprocessedLexicalSource`、`SourcePreprocessMap`、`CommentTrivia`、`SourcePreprocessDiagnostic`、`scan_import_prelude`、`ImportPrelude`、`mizar_lexer::ImportStub`、`ImportPrescanDiagnostic`、`scan_raw`）、`mizar-session`（`SourceId`、`SourceRange`）。
+- 外部: `mizar-lexer`（`preprocess_source_for_lexing`、`PreprocessedLexicalSource`、`SourcePreprocessMap`、`CommentTrivia`、`SourcePreprocessDiagnostic`、`scan_import_prelude`、`ImportPrelude`、`mizar_lexer::ImportStub`、`RawModuleRelativePrefix`、`ImportPrescanDiagnostic`、`SourcePreprocessDiagnosticCode`、`ImportPrescanDiagnosticCode`、`scan_raw`）、`mizar-session`（`SourceId`、`SourceRange`、`SourceAnchor`）。
 
 ## データ構造
 
@@ -87,7 +105,9 @@ pub fn preprocess(
 
 ### インポートスタブ
 
-`ImportStub` は `mizar-lexer` のインポート事前走査 stub を frontend が写像した対応物である。lexer の `RawModulePath` / `RawModuleAlias` の形を写すが、すべての span は既に session `SourceRange` へ変換されている。生のドット区切りモジュールパスと分岐インポートの分割ソース被覆は、`path.spelling`、`path.components`、`path.source_segments` に含まれる。解決済みインポートではなく、アクティブ字句環境を要求し、語彙読み込みが失敗したときに良い診断を出すのに十分なだけである。パッケージ／モジュールの存在、可視性、エクスポート検査、再エクスポート意味論はモジュール解決へ先送りする。
+`ImportStub` は `mizar-lexer` のインポート事前走査 stub を frontend が写像した対応物である。lexer の `RawModulePath` / `RawModuleAlias` の形を写すが、すべての span は既に session `SourceRange` へ変換されている。生のドット区切りモジュールパス、相対 prefix（`./` と `../` の区別）、分岐インポートの分割ソース被覆は、`path.spelling`、`path.relative`、`path.components`、`path.source_segments` に含まれる。解決済みインポートではなく、アクティブ字句環境を要求し、語彙読み込みが失敗したときに良い診断を出すのに十分なだけである。パッケージ／モジュールの存在、可視性、エクスポート検査、再エクスポート意味論はモジュール解決へ先送りする。
+
+`PreprocessDiagnostic` は、`SourcePreprocessDiagnostic`、`ImportPrescanDiagnostic`、および frontend-local な raw import pre-scan 失敗を frontend 側で写像した診断形式である。raw lexer diagnostic struct は入力として消費し、即座に変換する。公開診断は写像済み session 範囲を持ち、preprocess mapping が composite または degraded の場合は副次 `SourceAnchor` も保持する。
 
 ## アルゴリズム / ロジック
 
@@ -122,7 +142,7 @@ Step 2 の診断はハードエラーとして送出せず、`PreprocessedSource
 - ドキュメントコメントは生本文とソース範囲とともに保持され、字句テキストには渡されない。
 - 注釈構文（`@latex(...)`、`@[...]`）は `lexical_text` に残る。
 - 除去されたコメントをまたぐ字句範囲は合成マッピングを生む。
-- トップレベル `import` 形式は生パス・任意の alias・`path.source_segments`・span を持つ `ImportStub` を生み、不正なインポートは中断せず `ImportPrescanDiagnostic` を生む。
+- トップレベル `import` 形式は生パス・任意の alias・`path.relative`・`path.source_segments`・span を持つ `ImportStub` を生み、`./` と `../` の相対 prefix を区別して保持する。不正なインポートは中断せず `ImportPrescanDiagnostic` を生む。
 - インポート事前走査中の strict raw-scan 失敗は、診断と空の `import_stubs` を生み、前処理を中断しない。
 - コード領域の非 ASCII 文字は字句前提診断として報告され、前処理は回復済み字句テキストを返す。
 - 未終端ブロックコメントは報告され回復される。

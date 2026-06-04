@@ -29,9 +29,15 @@ pub trait LexicalSummaryProvider {
 }
 
 pub struct ResolvedImports {
-    pub imports: Vec<ResolvedImport>,
+    pub imports: Vec<ResolvedImportEntry>,
     pub summaries: Vec<ModuleLexicalSummary>,
     pub diagnostics: Vec<LexicalEnvironmentDiagnostic>,
+}
+
+pub struct ResolvedImportEntry {
+    pub stub_ordinal: usize,
+    pub stub_span: SourceRange,
+    pub import: ResolvedImport,
 }
 
 pub fn build_active_lexical_environment(
@@ -49,14 +55,35 @@ pub enum FrontendLexicalEnvironmentError {
     ProviderUnavailable { message: String },
     MalformedSummary { source: LexicalEnvironmentError },
 }
+
+pub struct LexicalEnvironmentDiagnostic {
+    pub code: LexicalEnvironmentDiagnosticCode,
+    pub message: Arc<str>,
+    pub primary: SourceRange,
+    pub secondary: Vec<SourceAnchor>,
+    pub import_ordinal: Option<usize>,
+    pub module_id: Option<ModuleId>,
+}
+
+pub enum LexicalEnvironmentDiagnosticCode {
+    UnresolvedImport,
+    MissingSummary,
+    UserSymbolImportConflict,
+    InvalidUserSymbolSpelling,
+    InvalidUserSymbolArity,
+    ReservedWordCollision,
+    ReservedSymbolCollision,
+}
 ```
 
-`ResolvedImport`、`ModuleLexicalSummary`、`ActiveLexicalEnvironment`、`LexicalEnvironmentFingerprint`、`LexicalEnvironmentError` は `mizar-lexer` から再エクスポートされる。`FrontendLexicalEnvironmentError` は frontend が所有し、provider infrastructure failure と回復不能な lexer structural error を包む。`LexicalSummaryProvider` は、ビルドプランナー／解決器が解決済みインポートと字句サマリを供給するための継ぎ目である。フロントエンドはそれらを構築するためにモジュール IR へ踏み込まない。
+`ResolvedImport`、`ModuleLexicalSummary`、`ActiveLexicalEnvironment`、`LexicalEnvironmentFingerprint`、`LexicalEnvironmentError`、`ModuleId` は `mizar-lexer` から再エクスポートされる。`ResolvedImportEntry` は frontend が所有する provenance である。lexer の `ResolvedImport` を、それを生んだ `ImportStub` の source span と ordinal で包み、複数の stub が同じ module へ解決されても後続診断が正しい import へ戻れるようにする。frontend は `mizar_lexer::build_lexical_environment` へは順序付きの `ResolvedImport` 値だけを渡す。
+
+`FrontendLexicalEnvironmentError` は frontend が所有し、provider infrastructure failure と回復不能な lexer structural error を包む。`LexicalSummaryProvider` は、ビルドプランナー／解決器が解決済みインポートと字句サマリを供給するための継ぎ目である。フロントエンドはそれらを構築するためにモジュール IR へ踏み込まない。
 
 ## 依存関係
 
 - 内部: `preprocess`（`ImportStub` を提供）、`lexing`（`ActiveLexicalEnvironment` とその fingerprint を消費）。
-- 外部: `mizar-lexer`（`build_lexical_environment`、`ActiveLexicalEnvironment`、`ResolvedImport`、`ModuleLexicalSummary`、`UserSymbolIndex`、`ExportRank`、`LexicalEnvironmentFingerprint`、`LexicalEnvironmentError`）、`mizar-session`（`SourceId`、`Edition`）、`LexicalSummaryProvider` の背後にあるビルドプラン／解決器サービス。
+- 外部: `mizar-lexer`（`build_lexical_environment`、`ActiveLexicalEnvironment`、`ResolvedImport`、`ModuleLexicalSummary`、`UserSymbolIndex`、`ExportRank`、`LexicalEnvironmentFingerprint`、`LexicalEnvironmentError`、`ModuleId`）、`mizar-session`（`SourceId`、`Edition`、`SourceRange`、`SourceAnchor`）、`LexicalSummaryProvider` の背後にあるビルドプラン／解決器サービス。
 
 このモジュールは字句解析が消費し、fingerprint を通じてインクリメンタルキャッシュも消費する。
 
@@ -74,10 +101,10 @@ pub enum FrontendLexicalEnvironmentError {
 
 ### アクティブ字句環境の構築
 
-1. `LexicalSummaryProvider` に `ImportStub` を `ResolvedImport` と `ModuleLexicalSummary` へ解決させ、インポート順を記録する。
+1. `LexicalSummaryProvider` に `ImportStub` を `ResolvedImportEntry` と `ModuleLexicalSummary` へ解決させ、インポート順を記録し、診断用に元の stub span を保持する。
 2. プロバイダ側の診断（未解決インポート、欠落した依存字句サマリ）を、意味的事実を作らずに集める。プロバイダは、対応する summary を持つ解決済み import だけを返す。未解決 import や summary が利用できない import は lexer 呼び出しから除外する。`mizar_lexer::build_lexical_environment` は欠落 summary を構造的エラーとして扱うためである。
-3. 予約テーブル、解決済みインポート、サマリを与えて `mizar_lexer::build_lexical_environment` を呼び、`UserSymbolIndex` と `LexicalEnvironmentFingerprint` を組み立てる。
-4. 決定的なユーザーシンボル import 衝突のような回復可能な import-level lexer エラーは `LexicalEnvironmentDiagnostic` へ変換し、より小さなアクティブ環境へ縮退する。安全に縮退できない provider infrastructure 失敗や不正 summary データだけを hard `FrontendLexicalEnvironmentError` として返す。
+3. `ResolvedImportEntry` wrapper から順序付き lexer `ResolvedImport` list を取り出し、予約テーブル、解決済みインポート、サマリを与えて `mizar_lexer::build_lexical_environment` を呼び、`UserSymbolIndex` と `LexicalEnvironmentFingerprint` を組み立てる。
+4. 決定的なユーザーシンボル import 衝突のような回復可能な import-level lexer エラーは `LexicalEnvironmentDiagnostic` へ変換し、より小さなアクティブ環境へ縮退する。影響を受けた import の primary / secondary span は `ResolvedImportEntry` の provenance から選ぶ。安全に縮退できない provider infrastructure 失敗や不正 summary データだけを hard `FrontendLexicalEnvironmentError` として返す。
 5. 環境、fingerprint、統合された診断を返す。
 
 インポートが解決できない場合でも、解決できたインポートから環境を構築するので、ファイルの残りをトークン化できる。失敗はハード停止ではなく診断である。
@@ -91,6 +118,7 @@ pub enum FrontendLexicalEnvironmentError {
 主要シナリオ:
 
 - インポートスタブとモジュール字句サマリが、正しい出所とインポート序数を持つ候補からなる `UserSymbolIndex` を生む。
+- 未解決 import、欠落 summary、user-symbol import conflict の診断が、複数 stub が同じ module へ解決される場合でも元の `ImportStub` span を指す。
 - 異なるモジュールからインポートされた同綴りユーザー記号は決定的な字句環境衝突を生み、異なる綴りで重なり合う記号は字句解析器の最長一致選択で引き続き利用できる。
 - 未解決インポートは診断とともにより小さな環境へ縮退し、残りの記号は読み込まれる。
 - `LexicalEnvironmentFingerprint` は依存字句サマリが変わると変化し、ローカルファイルのコメントのみが変わるときは安定である。

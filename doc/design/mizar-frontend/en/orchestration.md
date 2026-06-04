@@ -56,10 +56,19 @@ where
 
 pub struct FrontendDiagnostic {
     pub code: DiagnosticCode,
+    pub message: Arc<str>,
     pub class: DiagnosticClass,
     pub primary: SourceRange,
-    pub secondary: Vec<SourceRange>,
+    pub secondary: Vec<SourceAnchor>,
     pub recovery_note: Option<String>,
+}
+
+pub enum DiagnosticCode {
+    SourceLoad,
+    Preprocess(PreprocessDiagnosticKind),
+    LexicalEnvironment(LexicalEnvironmentDiagnosticCode),
+    Lexing(LexingDiagnosticKind),
+    Syntax(Arc<str>),
 }
 
 pub enum DiagnosticClass {
@@ -72,6 +81,19 @@ pub enum DiagnosticClass {
     Syntax,
     AnnotationSyntax,
 }
+
+pub enum FrontendError {
+    SourceLoad {
+        source: SourceLoadError,
+        diagnostic: FrontendDiagnostic,
+    },
+    SpanBridge {
+        source: SpanBridgeError,
+    },
+    LexicalEnvironment {
+        source: FrontendLexicalEnvironmentError,
+    },
+}
 ```
 
 `FrontendOutput<A>` matches the architecture interface while keeping the parser
@@ -82,6 +104,9 @@ unified diagnostic that all phase-specific diagnostics
 `LexicalEnvironmentDiagnostic`, `LexingDiagnostic` including raw-scan /
 scope-skeleton / lexer diagnostics, and `SyntaxDiagnostic`) are mapped into, so
 consumers see one ordered list keyed by `SourceRange`.
+`DiagnosticCode::Syntax` stores the parser-owned syntax diagnostic code key once
+the real parser seam is enabled; with `StubParserSeam` no syntax diagnostics are
+emitted.
 
 `ast = None` means parsing could not recover enough structure for later phases;
 the lexical, preprocessing, and syntax diagnostics are still returned.
@@ -90,7 +115,7 @@ the lexical, preprocessing, and syntax diagnostics are still returned.
 
 - Internal: `source`, `preprocess`, `lexical_env`, `lexing`, `parsing`,
   `span_bridge` (constructed once and threaded through the phases).
-- External: `mizar-session` (`SourceId`, `SourceRange`,
+- External: `mizar-session` (`SourceId`, `SourceRange`, `SourceAnchor`,
   `SessionIdAllocator`, `BuildSnapshotId`), `mizar-lexer`. The real parser seam
   additionally depends on `mizar-syntax` and `mizar-parser` once those crates
   exist.
@@ -123,8 +148,10 @@ so the order is stable across runs and independent of internal scheduling:
 6. tokenization (Step 4);
 7. syntax and annotation syntax (Step 5).
 
-Within a class, order by primary span start, then by diagnostic code. A recovery
-note is attached when a later diagnostic may be affected by an earlier recovery.
+Within a class, order by primary span start, then by diagnostic code. Secondary
+`SourceAnchor`s are preserved for display and explanation but do not participate
+in sorting. A recovery note is attached when a later diagnostic may be affected
+by an earlier recovery.
 
 ## Algorithm / Logic
 

@@ -47,7 +47,7 @@ pub struct LexingDiagnostic {
     pub kind: LexingDiagnosticKind,
     pub message: Arc<str>,
     pub primary: SourceRange,
-    pub secondary: Vec<SourceRange>,
+    pub secondary: Vec<SourceAnchor>,
 }
 
 pub enum LexingDiagnosticKind {
@@ -86,7 +86,8 @@ parsing integration tasks.
 - External: `mizar-lexer` (`scan_raw`, `build_scope_skeleton`, `ScopeLexView`,
   `disambiguate`, `lex`, `Token`, `TokenKind`, `ParserLexContext`,
   `LexError`, `LexDiagnostic`, `LexDiagnosticCode`, `ScopeSkeletonDiagnostic`,
-  `ScopeSkeletonDiagnosticCode`), `mizar-session` (`SourceId`, `SourceRange`).
+  `ScopeSkeletonDiagnosticCode`), `mizar-session` (`SourceId`, `SourceRange`,
+  `SourceAnchor`).
 
 This module is consumed by parsing and, through the diagnostics, by the
 orchestration merge.
@@ -107,9 +108,11 @@ the parser-assisted lexing contract described in `parsing.md` and the TODO.
 
 `LexingDiagnostic` is the mapped frontend diagnostic payload for Step 4. It may
 represent a raw-scan failure, a scope-skeleton diagnostic, or a disambiguator
-diagnostic, but it always carries session-coordinate primary/secondary ranges for
-orchestration. It stores the mapped code/message, not the raw lexer diagnostic
-object, because those raw objects contain lexer byte spans.
+diagnostic, but it always carries a session-coordinate primary range and
+secondary anchors for orchestration. Its secondary entries are `SourceAnchor`s so
+composite or degraded preprocess mappings can preserve point, generated, and
+adjacent comment anchors. It stores the mapped code/message, not the raw lexer
+diagnostic object, because those raw objects contain lexer byte spans.
 
 ### Scope Lex View
 
@@ -142,7 +145,7 @@ shape only — never resolved bindings.
    deferred until the parser-assisted lexing contract lands.
 5. Map each resulting lexer span through `span_bridge.lexical_span`; store the
    returned mapping's primary `SourceRange` on the token and preserve secondary
-   anchors for diagnostics.
+   `SourceAnchor`s for diagnostics.
 6. Collect raw-scan, scope-skeleton, and lexer diagnostics as
    `LexingDiagnostic`s and return the `TokenStream`.
 

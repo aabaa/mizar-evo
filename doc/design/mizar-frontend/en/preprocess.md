@@ -59,15 +59,33 @@ pub struct ImportStub {
 
 pub struct ImportStubPath {
     pub spelling: Arc<str>,
-    pub relative: bool,
+    pub relative: Option<ImportStubRelativePrefix>,
     pub components: Vec<Arc<str>>,
     pub source_segments: Vec<SourceRange>,
     pub span: SourceRange,
 }
 
+pub enum ImportStubRelativePrefix {
+    Current,
+    Parent,
+}
+
 pub struct ImportStubAlias {
     pub spelling: Arc<str>,
     pub span: SourceRange,
+}
+
+pub struct PreprocessDiagnostic {
+    pub kind: PreprocessDiagnosticKind,
+    pub message: Arc<str>,
+    pub primary: SourceRange,
+    pub secondary: Vec<SourceAnchor>,
+}
+
+pub enum PreprocessDiagnosticKind {
+    SourcePrecondition(SourcePreprocessDiagnosticCode),
+    ImportPrescan(ImportPrescanDiagnosticCode),
+    RawImportScan,
 }
 
 pub fn preprocess(
@@ -97,9 +115,11 @@ conflicting map registration.
 - External: `mizar-lexer` (`preprocess_source_for_lexing`,
   `PreprocessedLexicalSource`, `SourcePreprocessMap`, `CommentTrivia`,
   `SourcePreprocessDiagnostic`, `scan_import_prelude`, `ImportPrelude`,
-  `mizar_lexer::ImportStub`, `ImportPrescanDiagnostic`, `scan_raw`),
+  `mizar_lexer::ImportStub`, `RawModuleRelativePrefix`,
+  `ImportPrescanDiagnostic`, `SourcePreprocessDiagnosticCode`,
+  `ImportPrescanDiagnosticCode`, `scan_raw`),
   `mizar-session`
-  (`SourceId`, `SourceRange`).
+  (`SourceId`, `SourceRange`, `SourceAnchor`).
 
 ## Data Structures
 
@@ -125,12 +145,18 @@ values already mapped to source coordinates.
 `ImportStub` is the mapped frontend counterpart of the `mizar-lexer`
 import-pre-scan stub. It mirrors the lexer `RawModulePath` / `RawModuleAlias`
 shape, but every span has already been converted to a session `SourceRange`.
-The raw dotted module path and split source coverage for branch imports live on
-`path.spelling`, `path.components`, and `path.source_segments`. It is not a
-resolved import — it is only enough to request an active lexical environment and
-to produce good diagnostics if lexicon loading fails. Package/module existence,
-visibility, export checks, and re-export semantics are deferred to module
-resolution.
+The raw dotted module path, relative prefix (`./` vs `../`), and split source
+coverage for branch imports live on `path.spelling`, `path.relative`,
+`path.components`, and `path.source_segments`. It is not a resolved import — it
+is only enough to request an active lexical environment and to produce good
+diagnostics if lexicon loading fails. Package/module existence, visibility,
+export checks, and re-export semantics are deferred to module resolution.
+
+`PreprocessDiagnostic` is the frontend-mapped diagnostic form for
+`SourcePreprocessDiagnostic`, `ImportPrescanDiagnostic`, and frontend-local raw
+import pre-scan failures. Raw lexer diagnostic structs are consumed as inputs and
+converted immediately; public diagnostics keep mapped session ranges plus
+secondary `SourceAnchor`s when a preprocess mapping is composite or degraded.
 
 ## Algorithm / Logic
 
@@ -195,7 +221,8 @@ Key scenarios:
 - annotation syntax (`@latex(...)`, `@[...]`) stays in `lexical_text`;
 - a removed comment yields a composite mapping for a lexical range that spans it;
 - top-level `import` forms produce `ImportStub`s with correct raw path, optional
-  alias, `path.source_segments`, and span; a malformed import yields an
+  alias, `path.relative`, `path.source_segments`, and span; `./` and `../`
+  relative prefixes remain distinguishable; a malformed import yields an
   `ImportPrescanDiagnostic` without aborting;
 - a strict raw-scan failure during import pre-scan yields a diagnostic and empty
   `import_stubs` without aborting preprocessing;

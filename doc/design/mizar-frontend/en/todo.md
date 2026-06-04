@@ -77,6 +77,9 @@ keep `cargo test -p mizar-frontend` green (see
      service, implement fallible `register_source` / `register_preprocess_map`,
      and provide `loaded_span`, `loaded_mapping`, and `lexical_span`
      conversions over the retained `mizar-session` maps.
+   - Make `SpanBridgeError` distinguish frontend-local registration invariants
+     (`SourceNotRegistered`, `PreprocessMapNotRegistered`, conflicting source /
+     preprocess registrations) from wrapped `mizar-session::SourceMapError`.
    - Derive the session-side `LoadingMap` / `PreprocessMap` from the lexer
      `SourceLoadingMap` / `SourcePreprocessMap` (or reuse the session
      `LoadingMap` attached to the `SourceUnit`) so there is one canonical map per
@@ -119,7 +122,9 @@ keep `cargo test -p mizar-frontend` green (see
 3. **Comment and doc-comment preprocessing.** [ ]
    - Add `pub mod preprocess;`. Define `PreprocessedSource`, `LexicalText`,
      `Comment`, `DocComment`, `LexicalSourceMap`, mapped `ImportStub` /
-     `ImportStubPath` / `ImportStubAlias`, and `PreprocessDiagnostic`.
+     `ImportStubPath` / `ImportStubRelativePrefix` / `ImportStubAlias`, and
+     `PreprocessDiagnostic` with code/message, primary `SourceRange`, and
+     secondary `SourceAnchor`s.
    - Drive `mizar_lexer::preprocess_source_for_lexing` over `SourceUnit.source_text`,
      map comment / doc-comment / preprocess-diagnostic spans through the
      `SpanBridge`, and assemble the `LexicalSourceMap`.
@@ -141,7 +146,8 @@ keep `cargo test -p mizar-frontend` green (see
      imports from partial raw text. Do not assume `mizar_lexer::LexError` carries a
      span until the recoverable raw-scanner contract exists.
    - Tests: top-level `import` forms produce `ImportStub`s with raw path, optional
-     alias, `path.source_segments`, and span; a malformed import yields an
+     alias, `path.relative`, `path.source_segments`, and span; `./` and `../`
+     relative prefixes remain distinguishable; a malformed import yields an
      import-prescan diagnostic without aborting; raw-scan failure during import
      pre-scan yields a coarse diagnostic and empty `import_stubs`; import order is
      preserved for provenance and deterministic fingerprints.
@@ -152,14 +158,19 @@ keep `cargo test -p mizar-frontend` green (see
 
 5. **Lexical environment request and provider seam.** [ ]
    - Add `pub mod lexical_env;`. Define `LexicalEnvironmentRequest`,
-     `LexicalSummaryProvider`, `ResolvedImports`, `ActiveLexicalEnvironmentResult`,
-     `LexicalEnvironmentDiagnostic`, and `FrontendLexicalEnvironmentError`;
+     `LexicalSummaryProvider`, `ResolvedImports`, `ResolvedImportEntry`,
+     `ActiveLexicalEnvironmentResult`, `LexicalEnvironmentDiagnostic`,
+     `LexicalEnvironmentDiagnosticCode`, and `FrontendLexicalEnvironmentError`;
      re-export the `mizar-lexer` environment types.
+   - Preserve each resolved import's originating `ImportStub` ordinal and span in
+     `ResolvedImportEntry`; pass only the ordered lexer `ResolvedImport`s to
+     `mizar_lexer::build_lexical_environment`.
    - Use `FrontendLexicalEnvironmentError`, not the lexer-owned
      `LexicalEnvironmentError`, for provider infrastructure failures.
    - Tests: a fake provider that returns resolved imports + summaries produces a
-     `UserSymbolIndex` with correct provenance and import ordinal; reserved tables
-     are always present.
+     `UserSymbolIndex` with correct provenance and import ordinal; duplicate
+     stubs resolving to the same module still produce diagnostics at the correct
+     originating import span; reserved tables are always present.
    - Depends on: 4. Spec: [lexical_env.md](./lexical_env.md) "Public API".
 
 6. **Active lexical environment construction.** [ ]
@@ -203,8 +214,9 @@ keep `cargo test -p mizar-frontend` green (see
      token and diagnostic span through the `SpanBridge` to session
      `SourceRange`s. Convert raw `LexDiagnostic`s to frontend `LexingDiagnostic`s
      by copying code/message and mapping or stripping any nested span-bearing
-     payload data. Return `Err(SpanBridgeError)` only for internal mapping
-     invariant failures.
+     payload data; preserve secondary `SourceAnchor`s from composite/degraded
+     mappings. Return `Err(SpanBridgeError)` only for internal mapping invariant
+     failures.
    - Tests: a user symbol sharing spelling with an identifier is classified by
      longest-match; compound reserved tokens (`.{`, `.*`, `.=`, `...`) lex as
      single tokens; a quote lexes as a symbol char under the general context; a
@@ -270,11 +282,16 @@ keep `cargo test -p mizar-frontend` green (see
 
 13. **Frontend coordinator and diagnostic merge.** [ ]
     - Add `pub mod orchestration;`. Define `FrontendOutput`, `Frontend`,
-      `FrontendDiagnostic`, `DiagnosticClass`, and `FrontendError`; wire
+      `FrontendDiagnostic`, `DiagnosticCode`, `DiagnosticClass`, and
+      `FrontendError`; wire
       `source` → `preprocess` → `lexical_env` → `lexing` → `parsing` and merge all
       phase diagnostics, including import-pre-scan, lexical-environment,
       scope-skeleton, and tokenization diagnostics, into the deterministic order in
       [orchestration.md](./orchestration.md) "Diagnostic Merge Order".
+    - `FrontendDiagnostic` carries code, message, class, primary `SourceRange`,
+      secondary `SourceAnchor`s, and optional recovery note; `FrontendError`
+      distinguishes source-load, span-bridge, and lexical-environment hard
+      failures.
     - Tests: with `StubParserSeam`, a well-formed source returns source,
       preprocessing output, tokens, `ast = None`, and no parser diagnostics; merge
       order is identical across repeated runs. With the real parser seam, add the

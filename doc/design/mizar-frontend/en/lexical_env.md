@@ -38,9 +38,15 @@ pub trait LexicalSummaryProvider {
 }
 
 pub struct ResolvedImports {
-    pub imports: Vec<ResolvedImport>,
+    pub imports: Vec<ResolvedImportEntry>,
     pub summaries: Vec<ModuleLexicalSummary>,
     pub diagnostics: Vec<LexicalEnvironmentDiagnostic>,
+}
+
+pub struct ResolvedImportEntry {
+    pub stub_ordinal: usize,
+    pub stub_span: SourceRange,
+    pub import: ResolvedImport,
 }
 
 pub fn build_active_lexical_environment(
@@ -58,15 +64,41 @@ pub enum FrontendLexicalEnvironmentError {
     ProviderUnavailable { message: String },
     MalformedSummary { source: LexicalEnvironmentError },
 }
+
+pub struct LexicalEnvironmentDiagnostic {
+    pub code: LexicalEnvironmentDiagnosticCode,
+    pub message: Arc<str>,
+    pub primary: SourceRange,
+    pub secondary: Vec<SourceAnchor>,
+    pub import_ordinal: Option<usize>,
+    pub module_id: Option<ModuleId>,
+}
+
+pub enum LexicalEnvironmentDiagnosticCode {
+    UnresolvedImport,
+    MissingSummary,
+    UserSymbolImportConflict,
+    InvalidUserSymbolSpelling,
+    InvalidUserSymbolArity,
+    ReservedWordCollision,
+    ReservedSymbolCollision,
+}
 ```
 
 `ResolvedImport`, `ModuleLexicalSummary`, `ActiveLexicalEnvironment`,
-`LexicalEnvironmentFingerprint`, and `LexicalEnvironmentError` are re-exported
-from `mizar-lexer`. `FrontendLexicalEnvironmentError` is owned by the frontend
-and wraps provider infrastructure failures plus unrecoverable lexer structural
-errors. `LexicalSummaryProvider` is the seam by which the build planner /
-resolver supplies already-resolved imports plus lexical summaries; the frontend
-never reaches into module IR to build them.
+`LexicalEnvironmentFingerprint`, `LexicalEnvironmentError`, and `ModuleId` are
+re-exported from `mizar-lexer`. `ResolvedImportEntry` is frontend-owned
+provenance: it wraps the lexer `ResolvedImport` with the source span and ordinal
+of the `ImportStub` that produced it, so later diagnostics can point back to the
+right import even when several stubs resolve to the same module. The frontend
+passes only the ordered `ResolvedImport` values to
+`mizar_lexer::build_lexical_environment`.
+
+`FrontendLexicalEnvironmentError` is owned by the frontend and wraps provider
+infrastructure failures plus unrecoverable lexer structural errors.
+`LexicalSummaryProvider` is the seam by which the build planner / resolver
+supplies already-resolved imports plus lexical summaries; the frontend never
+reaches into module IR to build them.
 
 ## Dependencies
 
@@ -75,8 +107,9 @@ never reaches into module IR to build them.
 - External: `mizar-lexer` (`build_lexical_environment`,
   `ActiveLexicalEnvironment`, `ResolvedImport`, `ModuleLexicalSummary`,
   `UserSymbolIndex`, `ExportRank`, `LexicalEnvironmentFingerprint`,
-  `LexicalEnvironmentError`), `mizar-session` (`SourceId`, `Edition`), and the
-  build-plan / resolver service behind `LexicalSummaryProvider`.
+  `LexicalEnvironmentError`, `ModuleId`), `mizar-session` (`SourceId`, `Edition`,
+  `SourceRange`, `SourceAnchor`), and the build-plan / resolver service behind
+  `LexicalSummaryProvider`.
 
 This module is consumed by lexing and, through the fingerprint, by the
 incremental cache.
@@ -108,21 +141,24 @@ local file is unchanged.
 ### Build the active lexical environment
 
 1. Ask the `LexicalSummaryProvider` to resolve the `ImportStub`s into
-   `ResolvedImport`s and `ModuleLexicalSummary` values, recording import order.
+   `ResolvedImportEntry`s and `ModuleLexicalSummary` values, recording import
+   order and preserving the originating stub span for diagnostics.
 2. Collect provider-side diagnostics (unresolved import, missing dependency
    lexical summary) without inventing semantic facts. The provider returns only
    resolved imports that have matching summaries; unresolved imports and imports
    with unavailable summaries are omitted from the lexer call because
    `mizar_lexer::build_lexical_environment` treats missing summaries as structural
    errors.
-3. Call `mizar_lexer::build_lexical_environment` with the reserved tables,
-   resolved imports, and summaries to assemble the `UserSymbolIndex` and
-   `LexicalEnvironmentFingerprint`.
+3. Strip the `ResolvedImportEntry` wrappers to the ordered lexer
+   `ResolvedImport` list, then call `mizar_lexer::build_lexical_environment` with
+   the reserved tables, resolved imports, and summaries to assemble the
+   `UserSymbolIndex` and `LexicalEnvironmentFingerprint`.
 4. Convert recoverable import-level lexer errors, such as deterministic
    user-symbol import conflicts, into `LexicalEnvironmentDiagnostic`s and degrade
-   to a smaller active environment. Return hard `FrontendLexicalEnvironmentError`s
-   only for provider infrastructure failures or malformed summary data that cannot
-   be safely degraded.
+   to a smaller active environment. Use the `ResolvedImportEntry` provenance to
+   select primary/secondary spans for the affected imports. Return hard
+   `FrontendLexicalEnvironmentError`s only for provider infrastructure failures or
+   malformed summary data that cannot be safely degraded.
 5. Return the environment, fingerprint, and merged diagnostics.
 
 If an import cannot be resolved, the environment is still built from the imports
@@ -151,6 +187,9 @@ Key scenarios:
 
 - import stubs plus module lexical summaries produce a `UserSymbolIndex` whose
   candidates carry the correct provenance and import ordinal;
+- diagnostics for unresolved imports, missing summaries, and user-symbol import
+  conflicts point at the originating `ImportStub` span even when multiple stubs
+  resolve to the same module;
 - equal-spelling user symbols imported from different modules produce a
   deterministic lexical-environment conflict, while overlapping symbols with
   different spellings are still available for lexer longest-match selection;
