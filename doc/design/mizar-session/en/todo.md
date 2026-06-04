@@ -400,6 +400,56 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
       This keeps the public module paths and `lib.rs` re-exports unchanged while
       making the implementation files focused on production code.
 
+31. **Open-buffer source-loading error specificity.** [ ]
+    - Problem: `DiskSourceLoader::normalize_open_buffer_uri` collapses every
+      `normalize_source_path` failure into `SourceLoadError::UnmappedOpenBufferUri`
+      (`src/source.rs`), so an open-buffer URI that does resolve to a package
+      location but fails a later path check (unsupported extension, non-canonical
+      alias/spelling, invalid namespace component) is reported as an unmappable
+      URI instead of the specific category disk loading uses.
+    - Decide whether open-buffer loading should distinguish "URI cannot be mapped
+      to any package source at all" (non-`file://` scheme, undecodable percent
+      encoding, path outside the package root) from path errors that disk loading
+      already reports specifically through `SourceLoadError::from_source_path_error`
+      (`UnsupportedFileExtension`, `InvalidSourcePath`).
+    - If reclassified, reuse the existing disk mapping so disk and open-buffer
+      origins share consistent error categories, and keep `UnmappedOpenBufferUri`
+      only for URIs that cannot become a package-relative path.
+    - Keep the existing validation behavior (still reject the same inputs); only
+      the reported error variant changes.
+    - Synchronize the English and Japanese `source.md` "Open-Buffer Source
+      Loading" and "Error Handling" sections with the decision.
+    - Tests: an open-buffer URI under the package `src/` root with a non-`.miz`
+      extension reports the unsupported-extension category; a non-`file://` or
+      undecodable URI still reports `UnmappedOpenBufferUri`.
+    - Depends on: 20. Spec: [source.md](./source.md) "Open-Buffer Source Loading",
+      "Error Handling".
+
+32. **Missing-`src/`-root path error fidelity.** [ ]
+    - Problem: `SourceLoadError::from_source_path_error` maps
+      `SourcePathError::MissingSourceRoot` to
+      `SourceLoadError::SourcePathOutsidePackageRoot` (`src/source.rs`), so a path
+      that is inside the package root but not under the required `src/` source
+      tree is reported as "outside package root", which misstates the condition.
+    - Decide whether to surface the missing-`src/`-root case distinctly: either
+      add a dedicated `SourceLoadError` variant (for example
+      `SourcePathOutsideSourceRoot`) or carry `SourcePathError::MissingSourceRoot`
+      through `SourceLoadError::InvalidSourcePath` so the message reflects the
+      actual condition rather than reusing the package-root-boundary variant.
+    - This touches the public non-exhaustive `SourceLoadError` enum and the
+      `source.md` error list, which currently folds the `src/` requirement into
+      "source path outside package root"; update the list and wording to match the
+      decision.
+    - Preserve the existing rejection behavior; only the error identity and
+      message change.
+    - Synchronize the English and Japanese `source.md` "Disk Source Loading"
+      (step 2) and "Error Handling" sections with the decision.
+    - Tests: a path inside the package root but outside `src/` reports the
+      missing-source-root condition distinctly from a path that is genuinely
+      outside the package root.
+    - Depends on: 20. Spec: [source.md](./source.md) "Disk Source Loading",
+      "Error Handling".
+
 ## Suggested Verification
 
 After each task, run:

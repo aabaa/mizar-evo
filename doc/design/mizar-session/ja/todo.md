@@ -385,6 +385,55 @@
       public module path と `lib.rs` の再エクスポートは変えず、実装ファイルを
       production code 中心に保つ。
 
+31. **オープンバッファ読み込みのエラー特定性。** [ ]
+    - 問題: `DiskSourceLoader::normalize_open_buffer_uri` が
+      `normalize_source_path` の全失敗を
+      `SourceLoadError::UnmappedOpenBufferUri` に丸めるため（`src/source.rs`）、
+      パッケージ位置には解決できるが後段のパスチェック（未対応拡張子、
+      非正準の alias/spelling、不正な namespace component）で失敗した
+      オープンバッファ URI が、ディスク読み込みが使う具体的なカテゴリではなく
+      「対応付け不能な URI」として報告される。
+    - オープンバッファ読み込みが「URI がそもそもどのパッケージソースにも
+      対応付けられない」（`file://` でない scheme、デコード不能な percent
+      encoding、パッケージルート外）ケースと、ディスク読み込みが
+      `SourceLoadError::from_source_path_error` を通じてすでに具体的に報告している
+      パスエラー（`UnsupportedFileExtension`、`InvalidSourcePath`）を区別すべきかを
+      決める。
+    - 再分類する場合は既存のディスク用マッピングを再利用し、ディスクと
+      オープンバッファの origin で一貫したエラーカテゴリを共有する。
+      `UnmappedOpenBufferUri` は、パッケージ相対パスになり得ない URI のみに残す。
+    - 既存の validation 挙動（同じ入力を引き続き拒否する）は維持し、報告される
+      error variant のみ変える。
+    - その判断に合わせて、英語版と日本語版の `source.md`「Open-Buffer Source
+      Loading」「Error Handling」節を同期する。
+    - テスト: パッケージ `src/` 配下で `.miz` 以外の拡張子を持つオープンバッファ
+      URI は unsupported-extension カテゴリで報告される。`file://` でない、または
+      デコード不能な URI は引き続き `UnmappedOpenBufferUri` で報告される。
+    - 依存: 20。仕様: [source.md](./source.md) "Open-Buffer Source Loading",
+      "Error Handling"。
+
+32. **`src/` ルート欠落パスエラーの忠実度。** [ ]
+    - 問題: `SourceLoadError::from_source_path_error` が
+      `SourcePathError::MissingSourceRoot` を
+      `SourceLoadError::SourcePathOutsidePackageRoot` に写像するため
+      （`src/source.rs`）、パッケージルート内だが必須の `src/` ソースツリー配下に
+      無いパスが「パッケージルート外」として報告され、実態と食い違う。
+    - `src/` ルート欠落ケースを区別して表面化するかを決める: 専用の
+      `SourceLoadError` variant（例: `SourcePathOutsideSourceRoot`）を追加するか、
+      `SourcePathError::MissingSourceRoot` を `SourceLoadError::InvalidSourcePath`
+      経由で運び、パッケージルート境界の variant を流用せずに実際の条件を
+      メッセージへ反映する。
+    - これは public な non-exhaustive `SourceLoadError` 列挙と、現在 `src/` 要件を
+      「source path outside package root」に束ねている `source.md` のエラー一覧に
+      影響する。判断に合わせて一覧と文言を更新する。
+    - 既存の拒否挙動は維持し、error の identity とメッセージのみ変える。
+    - その判断に合わせて、英語版と日本語版の `source.md`「Disk Source Loading」
+      （ステップ 2）「Error Handling」節を同期する。
+    - テスト: パッケージルート内だが `src/` 外のパスが、本当にパッケージルート外の
+      パスとは区別して missing-source-root 条件として報告される。
+    - 依存: 20。仕様: [source.md](./source.md) "Disk Source Loading",
+      "Error Handling"。
+
 ## Suggested Verification
 
 各タスクの後に、以下を実行する:

@@ -3,7 +3,9 @@
     "allow": [
       "Bash(git checkout:*)",
       "Bash(git mv:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(cargo test *)",
+      "Bash(cargo clippy *)"
     ]
   }
 }
