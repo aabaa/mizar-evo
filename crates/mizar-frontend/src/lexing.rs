@@ -2,14 +2,17 @@ use crate::lexical_env::ActiveLexicalEnvironment;
 use crate::preprocess::PreprocessedSource;
 use crate::span_bridge::{LexerByteSpan, SpanBridge, SpanBridgeError};
 use mizar_lexer::{
-    RawToken, RawTokenKind, ScopeSkeleton, ScopeSkeletonDiagnostic, SourceSpan as LexerSourceSpan,
-    build_scope_skeleton, scan_raw,
+    LexDiagnostic as LexerDiagnostic, LexDiagnosticPayload as LexerDiagnosticPayload, RawToken,
+    RawTokenStream, RejectedTokenCandidate as LexerRejectedTokenCandidate, ScopeSkeleton,
+    ScopeSkeletonDiagnostic, SourceSpan as LexerSourceSpan, Token as LexerToken,
+    TokenStream as LexerTokenStream, build_scope_skeleton, disambiguate, scan_raw,
 };
 use mizar_session::{MappedSourceRange, SourceAnchor, SourceId, SourceRange};
 use std::sync::Arc;
 
 pub use mizar_lexer::{
-    BindingShapeKind, LexDiagnosticCode, LexicalBlockKind, LexicalStatementKind, ParserLexContext,
+    BindingShapeKind, LexDiagnosticCode, LexRecoveryHint, LexicalBlockKind, LexicalStatementKind,
+    MalformedStringLiteralReason, ParserLexContext, ParserLexMode, RawTokenKind,
     ScopeSkeletonDiagnosticCode, TokenKind,
 };
 
@@ -145,6 +148,35 @@ pub enum LexingDiagnosticKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LexingDiagnosticPayload {
     None,
+    NoValidTokenCandidate {
+        rejected_lexeme: InternedText,
+        recovery: LexRecoveryHint,
+    },
+    ParserContextRejectedCandidate {
+        mode: ParserLexMode,
+        rejected_lexeme: InternedText,
+        candidates: Vec<LexingRejectedTokenCandidate>,
+        recovery: LexRecoveryHint,
+    },
+    MalformedStringLiteral {
+        opening_quote: char,
+        reason: MalformedStringLiteralReason,
+        recovery: LexRecoveryHint,
+    },
+    UnsupportedRawToken {
+        raw_kind: RawTokenKind,
+        raw_lexeme: InternedText,
+        recovery: LexRecoveryHint,
+    },
+    UnsupportedLexerPayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LexingRejectedTokenCandidate {
+    pub kind: TokenKind,
+    pub text: InternedText,
+    pub span: SourceRange,
+    pub secondary: Vec<SourceAnchor>,
 }
 
 pub fn tokenize(
@@ -168,18 +200,26 @@ pub fn tokenize(
         }
     };
 
-    let scope_skeleton = build_scope_skeleton(&raw);
-    let tokens = raw
+    let (lexer_stream, scope_skeleton) =
+        disambiguate_with_contextual_scope(&raw, request.environment, &request.parser_context);
+    let tokens = lexer_stream
         .tokens()
         .iter()
-        .filter_map(|raw_token| raw_token_frontend_token(source_id, bridge, raw_token).transpose())
+        .map(|token| lexer_token(source_id, bridge, token))
         .collect::<Result<Vec<_>, SpanBridgeError>>()?;
     let scope_view = scope_view(source_id, bridge, &scope_skeleton)?;
-    let diagnostics = scope_skeleton
+    let mut diagnostics = scope_skeleton
         .diagnostics
         .iter()
         .map(|diagnostic| scope_skeleton_diagnostic(source_id, bridge, diagnostic))
         .collect::<Result<Vec<_>, SpanBridgeError>>()?;
+    diagnostics.extend(
+        lexer_stream
+            .diagnostics()
+            .iter()
+            .map(|diagnostic| lexer_diagnostic(source_id, bridge, diagnostic))
+            .collect::<Result<Vec<_>, SpanBridgeError>>()?,
+    );
 
     Ok(TokenStream {
         source_id,
@@ -190,31 +230,58 @@ pub fn tokenize(
     })
 }
 
-fn raw_token_frontend_token(
-    source_id: SourceId,
-    bridge: &SpanBridge,
-    raw_token: &RawToken,
-) -> Result<Option<Token>, SpanBridgeError> {
-    let Some(kind) = raw_token_frontend_kind(raw_token.kind) else {
-        return Ok(None);
-    };
-    let mapping = lexical_mapping(source_id, bridge, raw_token.span)?;
-    Ok(Some(Token {
-        kind,
-        text: Arc::<str>::from(raw_token.lexeme.as_str()),
-        span: mapping.primary,
-    }))
+fn disambiguate_with_contextual_scope(
+    raw: &RawTokenStream,
+    environment: &ActiveLexicalEnvironment,
+    parser_context: &ParserLexContext,
+) -> (LexerTokenStream, ScopeSkeleton) {
+    let raw_scope_skeleton = build_scope_skeleton(raw);
+    let first_stream = disambiguate(raw, environment, parser_context, &raw_scope_skeleton);
+    let contextual_scope_skeleton =
+        build_scope_skeleton(&scope_raw_stream_from_tokens(first_stream.tokens()));
+    let final_stream = disambiguate(raw, environment, parser_context, &contextual_scope_skeleton);
+    let final_scope_skeleton =
+        build_scope_skeleton(&scope_raw_stream_from_tokens(final_stream.tokens()));
+    (final_stream, final_scope_skeleton)
 }
 
-fn raw_token_frontend_kind(raw_kind: RawTokenKind) -> Option<TokenKind> {
-    match raw_kind {
-        RawTokenKind::Layout => None,
-        RawTokenKind::Error => Some(TokenKind::ErrorRecovery),
-        RawTokenKind::LexemeRun | RawTokenKind::NumeralLike | RawTokenKind::AnnotationMarker => {
-            Some(TokenKind::LexemeRun)
+fn scope_raw_stream_from_tokens(tokens: &[LexerToken]) -> RawTokenStream {
+    RawTokenStream::new(
+        tokens
+            .iter()
+            .map(|token| RawToken::new(scope_raw_kind(token), token.lexeme.clone(), token.span))
+            .collect(),
+    )
+}
+
+fn scope_raw_kind(token: &LexerToken) -> RawTokenKind {
+    match token.kind {
+        TokenKind::Identifier | TokenKind::ReservedWord | TokenKind::ReservedSymbol => {
+            RawTokenKind::LexemeRun
         }
-        _ => Some(TokenKind::LexemeRun),
+        TokenKind::UserSymbol if mizar_lexer::is_identifier(&token.lexeme) => {
+            RawTokenKind::LexemeRun
+        }
+        TokenKind::LexemeRun => RawTokenKind::LexemeRun,
+        TokenKind::Numeral => RawTokenKind::NumeralLike,
+        TokenKind::StringLiteral | TokenKind::UserSymbol | TokenKind::ErrorRecovery => {
+            RawTokenKind::Error
+        }
+        _ => RawTokenKind::Error,
     }
+}
+
+fn lexer_token(
+    source_id: SourceId,
+    bridge: &SpanBridge,
+    token: &LexerToken,
+) -> Result<Token, SpanBridgeError> {
+    let mapping = lexical_mapping(source_id, bridge, token.span)?;
+    Ok(Token {
+        kind: token.kind,
+        text: Arc::<str>::from(token.lexeme.as_str()),
+        span: mapping.primary,
+    })
 }
 
 fn scope_view(
@@ -290,6 +357,85 @@ fn scope_skeleton_diagnostic(
     })
 }
 
+fn lexer_diagnostic(
+    source_id: SourceId,
+    bridge: &SpanBridge,
+    diagnostic: &LexerDiagnostic,
+) -> Result<LexingDiagnostic, SpanBridgeError> {
+    let mapping = lexical_mapping(source_id, bridge, diagnostic.span)?;
+    Ok(LexingDiagnostic {
+        kind: LexingDiagnosticKind::Lexer(diagnostic.code),
+        message: Arc::<str>::from(diagnostic.message.as_str()),
+        primary: mapping.primary,
+        secondary: mapping.secondary,
+        payload: lexer_diagnostic_payload(source_id, bridge, &diagnostic.payload)?,
+    })
+}
+
+fn lexer_diagnostic_payload(
+    source_id: SourceId,
+    bridge: &SpanBridge,
+    payload: &LexerDiagnosticPayload,
+) -> Result<LexingDiagnosticPayload, SpanBridgeError> {
+    Ok(match payload {
+        LexerDiagnosticPayload::None => LexingDiagnosticPayload::None,
+        LexerDiagnosticPayload::NoValidTokenCandidate {
+            rejected_lexeme,
+            recovery,
+        } => LexingDiagnosticPayload::NoValidTokenCandidate {
+            rejected_lexeme: Arc::<str>::from(rejected_lexeme.as_str()),
+            recovery: *recovery,
+        },
+        LexerDiagnosticPayload::ParserContextRejectedCandidate {
+            mode,
+            rejected_lexeme,
+            candidates,
+            recovery,
+        } => LexingDiagnosticPayload::ParserContextRejectedCandidate {
+            mode: *mode,
+            rejected_lexeme: Arc::<str>::from(rejected_lexeme.as_str()),
+            candidates: candidates
+                .iter()
+                .map(|candidate| lexer_rejected_candidate(source_id, bridge, candidate))
+                .collect::<Result<Vec<_>, SpanBridgeError>>()?,
+            recovery: *recovery,
+        },
+        LexerDiagnosticPayload::MalformedStringLiteral {
+            opening_quote,
+            reason,
+            recovery,
+        } => LexingDiagnosticPayload::MalformedStringLiteral {
+            opening_quote: *opening_quote,
+            reason: *reason,
+            recovery: *recovery,
+        },
+        LexerDiagnosticPayload::UnsupportedRawToken {
+            raw_kind,
+            raw_lexeme,
+            recovery,
+        } => LexingDiagnosticPayload::UnsupportedRawToken {
+            raw_kind: *raw_kind,
+            raw_lexeme: Arc::<str>::from(raw_lexeme.as_str()),
+            recovery: *recovery,
+        },
+        _ => LexingDiagnosticPayload::UnsupportedLexerPayload,
+    })
+}
+
+fn lexer_rejected_candidate(
+    source_id: SourceId,
+    bridge: &SpanBridge,
+    candidate: &LexerRejectedTokenCandidate,
+) -> Result<LexingRejectedTokenCandidate, SpanBridgeError> {
+    let mapping = lexical_mapping(source_id, bridge, candidate.span)?;
+    Ok(LexingRejectedTokenCandidate {
+        kind: candidate.kind,
+        text: Arc::<str>::from(candidate.lexeme.as_str()),
+        span: mapping.primary,
+        secondary: mapping.secondary,
+    })
+}
+
 fn raw_scan_recovery(
     source_id: SourceId,
     lexical_text: &str,
@@ -357,16 +503,18 @@ fn lexer_byte_span(span: LexerSourceSpan) -> LexerByteSpan {
 #[cfg(test)]
 mod tests {
     use super::{
-        BindingShapeKind, LexicalBlockKind, LexicalStatementKind, LexingDiagnosticKind,
-        LexingDiagnosticPayload, ParserLexContext, ScopeBlock, ScopeFrame,
-        ScopeSkeletonDiagnosticCode, ScopeStatement, TokenKind, TokenizeRequest, tokenize,
+        BindingShapeKind, LexDiagnosticCode, LexRecoveryHint, LexicalBlockKind,
+        LexicalStatementKind, LexingDiagnosticKind, LexingDiagnosticPayload,
+        LexingRejectedTokenCandidate, MalformedStringLiteralReason, ParserLexContext,
+        ParserLexMode, ScopeBlock, ScopeFrame, ScopeSkeletonDiagnosticCode, ScopeStatement,
+        TokenKind, TokenizeRequest, tokenize,
     };
     use crate::preprocess::preprocess;
     use crate::source::{SourceUnit, register_source_unit};
     use crate::span_bridge::SpanBridge;
     use mizar_session::{
         BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, LineMap, ModulePath, PackageId,
-        SessionIdAllocator, SourceOrigin, SourceRange, hash_text, normalize_path,
+        SessionIdAllocator, SourceAnchor, SourceOrigin, SourceRange, hash_text, normalize_path,
     };
     use std::fs;
     use std::path::{Path, PathBuf};
@@ -376,8 +524,8 @@ mod tests {
     static NEXT_FIXTURE_ID: AtomicUsize = AtomicUsize::new(0);
 
     #[test]
-    fn raw_scan_preserves_lexeme_run_spans() {
-        let text = "alpha \t\n+ beta";
+    fn disambiguation_preserves_final_token_spans() {
+        let text = "alpha \t\n:= beta";
         let (source, preprocessed, bridge) = preprocessed_source(text);
         let environment = empty_environment();
 
@@ -395,7 +543,7 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec![
                 (
-                    TokenKind::LexemeRun,
+                    TokenKind::Identifier,
                     "alpha",
                     SourceRange {
                         source_id: source.source_id,
@@ -404,21 +552,21 @@ mod tests {
                     },
                 ),
                 (
-                    TokenKind::LexemeRun,
-                    "+",
+                    TokenKind::ReservedSymbol,
+                    ":=",
                     SourceRange {
                         source_id: source.source_id,
                         start: 8,
-                        end: 9,
+                        end: 10,
                     },
                 ),
                 (
-                    TokenKind::LexemeRun,
+                    TokenKind::Identifier,
                     "beta",
                     SourceRange {
                         source_id: source.source_id,
-                        start: 10,
-                        end: 14,
+                        start: 11,
+                        end: 15,
                     },
                 ),
             ]
@@ -447,7 +595,7 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec![
                 (
-                    TokenKind::LexemeRun,
+                    TokenKind::Identifier,
                     "alpha",
                     SourceRange {
                         source_id: source.source_id,
@@ -456,7 +604,7 @@ mod tests {
                     },
                 ),
                 (
-                    TokenKind::LexemeRun,
+                    TokenKind::Identifier,
                     "beta",
                     SourceRange {
                         source_id: source.source_id,
@@ -467,6 +615,357 @@ mod tests {
             ]
         );
         assert!(stream.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn disambiguation_prefers_longest_user_symbol_inside_raw_runs() {
+        let text = "x+*+y";
+        let (source, preprocessed, bridge) = preprocessed_source(text);
+        let environment = environment_with_imported_symbols(&["+", "+*", "+*+"]);
+
+        let stream = tokenize(
+            TokenizeRequest::new(&preprocessed, &environment, ParserLexContext::general()),
+            &bridge,
+        )
+        .unwrap();
+
+        assert_eq!(
+            token_kinds_texts_and_spans(&stream),
+            vec![
+                (TokenKind::Identifier, "x", range(source.source_id, 0, 1)),
+                (TokenKind::UserSymbol, "+*+", range(source.source_id, 1, 4)),
+                (TokenKind::Identifier, "y", range(source.source_id, 4, 5)),
+            ]
+        );
+        assert!(stream.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn disambiguation_uses_scope_view_for_identifier_shaped_symbol_overrides() {
+        let text = "succ\ndefinition\nlet succ be set;\nsucc;\nend;";
+        let (source, preprocessed, bridge) = preprocessed_source(text);
+        let environment = environment_with_imported_symbol("succ");
+
+        let stream = tokenize(
+            TokenizeRequest::new(&preprocessed, &environment, ParserLexContext::general()),
+            &bridge,
+        )
+        .unwrap();
+
+        assert_eq!(
+            stream
+                .tokens
+                .iter()
+                .map(|token| (token.kind, token.text.as_ref()))
+                .collect::<Vec<_>>(),
+            vec![
+                (TokenKind::UserSymbol, "succ"),
+                (TokenKind::ReservedWord, "definition"),
+                (TokenKind::ReservedWord, "let"),
+                (TokenKind::UserSymbol, "succ"),
+                (TokenKind::ReservedWord, "be"),
+                (TokenKind::ReservedWord, "set"),
+                (TokenKind::ReservedSymbol, ";"),
+                (TokenKind::Identifier, "succ"),
+                (TokenKind::ReservedSymbol, ";"),
+                (TokenKind::ReservedWord, "end"),
+                (TokenKind::ReservedSymbol, ";"),
+            ]
+        );
+        assert_eq!(
+            stream.tokens[7].span,
+            range(
+                source.source_id,
+                nth_index(text, "succ;\nend", 0),
+                nth_index(text, "succ;\nend", 0) + "succ".len()
+            )
+        );
+        assert!(stream.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn disambiguation_emits_compound_reserved_symbols_as_single_tokens() {
+        let text = ".{.*.=...";
+        let (source, preprocessed, bridge) = preprocessed_source(text);
+        let environment = empty_environment();
+
+        let stream = tokenize(
+            TokenizeRequest::new(&preprocessed, &environment, ParserLexContext::general()),
+            &bridge,
+        )
+        .unwrap();
+
+        assert_eq!(
+            token_kinds_texts_and_spans(&stream),
+            vec![
+                (
+                    TokenKind::ReservedSymbol,
+                    ".{",
+                    range(source.source_id, 0, 2)
+                ),
+                (
+                    TokenKind::ReservedSymbol,
+                    ".*",
+                    range(source.source_id, 2, 4)
+                ),
+                (
+                    TokenKind::ReservedSymbol,
+                    ".=",
+                    range(source.source_id, 4, 6)
+                ),
+                (
+                    TokenKind::ReservedSymbol,
+                    "...",
+                    range(source.source_id, 6, 9)
+                ),
+            ]
+        );
+        assert!(stream.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn parser_context_controls_string_literal_disambiguation_and_payload_mapping() {
+        let text = "\"alpha\"";
+        let (source, preprocessed, bridge) = preprocessed_source(text);
+        let environment = empty_environment();
+
+        let string_stream = tokenize(
+            TokenizeRequest::new(
+                &preprocessed,
+                &environment,
+                ParserLexContext::string_required(),
+            ),
+            &bridge,
+        )
+        .unwrap();
+        let general_stream = tokenize(
+            TokenizeRequest::new(&preprocessed, &environment, ParserLexContext::general()),
+            &bridge,
+        )
+        .unwrap();
+
+        assert_eq!(
+            token_kinds_texts_and_spans(&string_stream),
+            vec![(
+                TokenKind::StringLiteral,
+                "\"alpha\"",
+                range(source.source_id, 0, 7)
+            )]
+        );
+        assert!(string_stream.diagnostics.is_empty());
+        assert_eq!(
+            general_stream
+                .tokens
+                .iter()
+                .map(|token| (token.kind, token.text.as_ref(), token.span))
+                .collect::<Vec<_>>(),
+            vec![
+                (
+                    TokenKind::ErrorRecovery,
+                    "\"",
+                    range(source.source_id, 0, 1),
+                ),
+                (
+                    TokenKind::Identifier,
+                    "alpha",
+                    range(source.source_id, 1, 6),
+                ),
+                (
+                    TokenKind::ErrorRecovery,
+                    "\"",
+                    range(source.source_id, 6, 7),
+                ),
+            ]
+        );
+        assert_eq!(general_stream.diagnostics.len(), 2);
+        assert_eq!(
+            general_stream.diagnostics[0].kind,
+            LexingDiagnosticKind::Lexer(LexDiagnosticCode::ParserContextRejectedCandidate)
+        );
+        assert_eq!(
+            general_stream.diagnostics[0].payload,
+            LexingDiagnosticPayload::ParserContextRejectedCandidate {
+                mode: ParserLexMode::General,
+                rejected_lexeme: Arc::from("\""),
+                candidates: vec![LexingRejectedTokenCandidate {
+                    kind: TokenKind::StringLiteral,
+                    text: Arc::from("\"alpha\""),
+                    span: range(source.source_id, 0, 7),
+                    secondary: Vec::new(),
+                }],
+                recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+            }
+        );
+        assert_eq!(
+            general_stream.diagnostics[1].kind,
+            LexingDiagnosticKind::Lexer(LexDiagnosticCode::NoValidTokenCandidate)
+        );
+        assert_eq!(
+            general_stream.diagnostics[1].payload,
+            LexingDiagnosticPayload::NoValidTokenCandidate {
+                rejected_lexeme: Arc::from("\""),
+                recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+            }
+        );
+    }
+
+    #[test]
+    fn quote_delimited_active_user_symbol_is_admitted_in_general_context() {
+        let text = "\"end\"";
+        let (source, preprocessed, bridge) = preprocessed_source(text);
+        let environment = environment_with_imported_symbol("\"end\"");
+
+        let stream = tokenize(
+            TokenizeRequest::new(&preprocessed, &environment, ParserLexContext::general()),
+            &bridge,
+        )
+        .unwrap();
+
+        assert_eq!(
+            token_kinds_texts_and_spans(&stream),
+            vec![(
+                TokenKind::UserSymbol,
+                "\"end\"",
+                range(source.source_id, 0, 5)
+            )]
+        );
+        assert_eq!(stream.scope_view.blocks, Vec::new());
+        assert!(stream.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn string_required_scope_words_do_not_emit_scope_diagnostics() {
+        let text = "\"end\"";
+        let (source, preprocessed, bridge) = preprocessed_source(text);
+        let environment = empty_environment();
+
+        let stream = tokenize(
+            TokenizeRequest::new(
+                &preprocessed,
+                &environment,
+                ParserLexContext::string_required(),
+            ),
+            &bridge,
+        )
+        .unwrap();
+
+        assert_eq!(
+            token_kinds_texts_and_spans(&stream),
+            vec![(
+                TokenKind::StringLiteral,
+                "\"end\"",
+                range(source.source_id, 0, 5)
+            )]
+        );
+        assert_eq!(stream.scope_view.blocks, Vec::new());
+        assert!(stream.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn malformed_string_literal_payload_is_preserved_with_session_span() {
+        let text = "\"bad\\n\"";
+        let (source, preprocessed, bridge) = preprocessed_source(text);
+        let environment = empty_environment();
+
+        let stream = tokenize(
+            TokenizeRequest::new(
+                &preprocessed,
+                &environment,
+                ParserLexContext::string_required(),
+            ),
+            &bridge,
+        )
+        .unwrap();
+
+        assert_eq!(
+            token_kinds_texts_and_spans(&stream),
+            vec![(
+                TokenKind::ErrorRecovery,
+                "\"bad\\n\"",
+                range(source.source_id, 0, 7)
+            )]
+        );
+        assert_eq!(stream.diagnostics.len(), 1);
+        assert_eq!(
+            stream.diagnostics[0].kind,
+            LexingDiagnosticKind::Lexer(LexDiagnosticCode::MalformedStringLiteral)
+        );
+        assert_eq!(
+            stream.diagnostics[0].message.as_ref(),
+            "malformed string literal"
+        );
+        assert_eq!(stream.diagnostics[0].primary, range(source.source_id, 0, 7));
+        assert_eq!(
+            stream.diagnostics[0].payload,
+            LexingDiagnosticPayload::MalformedStringLiteral {
+                opening_quote: '"',
+                reason: MalformedStringLiteralReason::UnsupportedEscape { escape: 'n' },
+                recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+            }
+        );
+    }
+
+    #[test]
+    fn lexer_diagnostic_mapping_preserves_secondary_anchors_for_payload_candidates() {
+        let text = "alpha::=hidden=::beta";
+        let (source, preprocessed, bridge) = preprocessed_source(text);
+        let lexical_span = mizar_lexer::SourceSpan {
+            start: 0,
+            end: preprocessed.lexical_text.as_str().len(),
+        };
+        let diagnostic = mizar_lexer::LexDiagnostic::with_payload(
+            LexDiagnosticCode::ParserContextRejectedCandidate,
+            "parser context rejected synthetic fixture candidate",
+            lexical_span,
+            mizar_lexer::LexDiagnosticPayload::ParserContextRejectedCandidate {
+                mode: ParserLexMode::General,
+                rejected_lexeme: preprocessed.lexical_text.as_str().to_owned(),
+                candidates: vec![mizar_lexer::RejectedTokenCandidate {
+                    kind: TokenKind::Identifier,
+                    lexeme: preprocessed.lexical_text.as_str().to_owned(),
+                    span: lexical_span,
+                }],
+                recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+            },
+        );
+
+        let mapped = super::lexer_diagnostic(source.source_id, &bridge, &diagnostic).unwrap();
+
+        assert_eq!(
+            mapped.message.as_ref(),
+            "parser context rejected synthetic fixture candidate"
+        );
+        assert_eq!(mapped.primary, range(source.source_id, 0, text.len()),);
+        assert_eq!(
+            mapped.secondary,
+            vec![
+                SourceAnchor::Range(range(source.source_id, 0, "alpha".len())),
+                SourceAnchor::Range(range(
+                    source.source_id,
+                    nth_index(text, "::=hidden=::", 0),
+                    nth_index(text, "beta", 0)
+                )),
+                SourceAnchor::Range(range(
+                    source.source_id,
+                    nth_index(text, "beta", 0),
+                    text.len()
+                )),
+            ]
+        );
+        assert_eq!(
+            mapped.payload,
+            LexingDiagnosticPayload::ParserContextRejectedCandidate {
+                mode: ParserLexMode::General,
+                rejected_lexeme: Arc::from(preprocessed.lexical_text.as_str()),
+                candidates: vec![LexingRejectedTokenCandidate {
+                    kind: TokenKind::Identifier,
+                    text: Arc::from(preprocessed.lexical_text.as_str()),
+                    span: range(source.source_id, 0, text.len()),
+                    secondary: mapped.secondary.clone(),
+                }],
+                recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+            }
+        );
     }
 
     #[test]
@@ -660,6 +1159,50 @@ x;";
         assert_eq!(stream.diagnostics[0].payload, LexingDiagnosticPayload::None);
     }
 
+    #[test]
+    fn raw_scan_failure_preserves_secondary_anchors_from_preprocess_mapping() {
+        let text = "@-::=hidden=::beta";
+        let (source, preprocessed, bridge) = preprocessed_source(text);
+        let environment = empty_environment();
+
+        assert_eq!(preprocessed.lexical_text.as_str(), "@- beta");
+
+        let stream = tokenize(
+            TokenizeRequest::new(&preprocessed, &environment, ParserLexContext::general()),
+            &bridge,
+        )
+        .unwrap();
+
+        assert_eq!(stream.tokens.len(), 1);
+        assert_eq!(stream.tokens[0].kind, TokenKind::ErrorRecovery);
+        assert_eq!(
+            stream.tokens[0].span,
+            range(source.source_id, 0, text.len())
+        );
+        assert_eq!(stream.diagnostics.len(), 1);
+        assert_eq!(stream.diagnostics[0].kind, LexingDiagnosticKind::RawScan);
+        assert_eq!(
+            stream.diagnostics[0].primary,
+            range(source.source_id, 0, text.len())
+        );
+        assert_eq!(
+            stream.diagnostics[0].secondary,
+            vec![
+                SourceAnchor::Range(range(source.source_id, 0, 2)),
+                SourceAnchor::Range(range(
+                    source.source_id,
+                    nth_index(text, "::=hidden=::", 0),
+                    nth_index(text, "beta", 0)
+                )),
+                SourceAnchor::Range(range(
+                    source.source_id,
+                    nth_index(text, "beta", 0),
+                    text.len()
+                )),
+            ]
+        );
+    }
+
     fn preprocessed_source(
         text: &str,
     ) -> (
@@ -679,6 +1222,12 @@ x;";
     }
 
     fn environment_with_imported_symbol(spelling: &str) -> mizar_lexer::ActiveLexicalEnvironment {
+        environment_with_imported_symbols(&[spelling])
+    }
+
+    fn environment_with_imported_symbols(
+        spellings: &[&str],
+    ) -> mizar_lexer::ActiveLexicalEnvironment {
         let module = mizar_lexer::ModuleId::new("imported.env");
         mizar_lexer::build_lexical_environment(
             &[mizar_lexer::ResolvedImport {
@@ -686,18 +1235,34 @@ x;";
             }],
             &[mizar_lexer::ModuleLexicalSummary {
                 module_id: module.clone(),
-                exported_symbols: vec![mizar_lexer::ExportedSymbolShape {
-                    spelling: spelling.to_owned(),
-                    symbol_id: mizar_lexer::SymbolId::new("imported.env#symbol"),
-                    source_module: module,
-                    export_rank: mizar_lexer::ExportRank::new(0),
-                    kind: mizar_lexer::UserSymbolKind::Functor,
-                    arity: mizar_lexer::UserSymbolArity::exact(2),
-                }],
+                exported_symbols: spellings
+                    .iter()
+                    .enumerate()
+                    .map(|(rank, spelling)| mizar_lexer::ExportedSymbolShape {
+                        spelling: (*spelling).to_owned(),
+                        symbol_id: mizar_lexer::SymbolId::new(format!(
+                            "imported.env#symbol.{rank}"
+                        )),
+                        source_module: module.clone(),
+                        export_rank: mizar_lexer::ExportRank::new(rank as u32),
+                        kind: mizar_lexer::UserSymbolKind::Functor,
+                        arity: mizar_lexer::UserSymbolArity::exact(2),
+                    })
+                    .collect(),
                 fingerprint: mizar_lexer::LexicalSummaryFingerprint::new(11),
             }],
         )
         .unwrap()
+    }
+
+    fn token_kinds_texts_and_spans(
+        stream: &super::TokenStream,
+    ) -> Vec<(TokenKind, &str, SourceRange)> {
+        stream
+            .tokens
+            .iter()
+            .map(|token| (token.kind, token.text.as_ref(), token.span))
+            .collect()
     }
 
     fn range(source_id: mizar_session::SourceId, start: usize, end: usize) -> SourceRange {

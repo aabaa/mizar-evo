@@ -2,17 +2,16 @@
 
 > Canonical language: English. Japanese companion: [../ja/lexing.md](../ja/lexing.md).
 
-Status: in progress (task 7 raw-scan / scope-skeleton skeleton complete; task
-8 disambiguation and task 9 recovery passthrough pending).
+Status: in progress (task 7 raw-scan / scope-skeleton wiring and task 8
+context-sensitive disambiguation complete; task 9 recovery passthrough pending).
 
 ## Purpose
 
 This module implements the frontend pipeline Step 4 (lexing / disambiguation).
-The task-7 implementation drives the `mizar-lexer` raw scanner and
-scope-skeleton pre-scan to turn a `PreprocessedSource` into a session-spanned
-raw `TokenStream` skeleton. Tasks 8 and 9 extend the same entry point with
-context-sensitive disambiguation, final parser-facing token kinds, and
-recoverable lexer diagnostic payload mapping.
+The task-7/8 implementation drives the `mizar-lexer` raw scanner,
+scope-skeleton pre-scan, and disambiguator to turn a `PreprocessedSource` into
+a session-spanned parser-facing `TokenStream`. Task 9 extends the same entry
+point with the remaining recovery passthrough coverage.
 
 It owns the wiring and the span bridging; it does not own the longest-match
 rules, the scope-skeleton construction, or the parser-lex context semantics
@@ -38,8 +37,8 @@ pub struct TokenStream {
 
 pub struct Token {
     pub kind: TokenKind,
-    pub span: SourceRange,
     pub text: InternedText,
+    pub span: SourceRange,
 }
 
 pub type InternedText = Arc<str>;
@@ -50,9 +49,17 @@ pub struct TokenizeRequest<'a> {
     pub parser_context: ParserLexContext,
 }
 
+impl<'a> TokenizeRequest<'a> {
+    pub fn new(
+        preprocessed: &'a PreprocessedSource,
+        environment: &'a ActiveLexicalEnvironment,
+        parser_context: ParserLexContext,
+    ) -> Self;
+}
+
 pub struct LexingDiagnostic {
     pub kind: LexingDiagnosticKind,
-    pub message: Arc<str>,
+    pub message: InternedText,
     pub primary: SourceRange,
     pub secondary: Vec<SourceAnchor>,
     pub payload: LexingDiagnosticPayload,
@@ -66,6 +73,34 @@ pub enum LexingDiagnosticKind {
 
 pub enum LexingDiagnosticPayload {
     None,
+    NoValidTokenCandidate {
+        rejected_lexeme: InternedText,
+        recovery: LexRecoveryHint,
+    },
+    ParserContextRejectedCandidate {
+        mode: ParserLexMode,
+        rejected_lexeme: InternedText,
+        candidates: Vec<LexingRejectedTokenCandidate>,
+        recovery: LexRecoveryHint,
+    },
+    MalformedStringLiteral {
+        opening_quote: char,
+        reason: MalformedStringLiteralReason,
+        recovery: LexRecoveryHint,
+    },
+    UnsupportedRawToken {
+        raw_kind: RawTokenKind,
+        raw_lexeme: InternedText,
+        recovery: LexRecoveryHint,
+    },
+    UnsupportedLexerPayload,
+}
+
+pub struct LexingRejectedTokenCandidate {
+    pub kind: TokenKind,
+    pub text: InternedText,
+    pub span: SourceRange,
+    pub secondary: Vec<SourceAnchor>,
 }
 
 pub struct ScopeView {
@@ -73,6 +108,18 @@ pub struct ScopeView {
     pub frames: Vec<ScopeFrame>,
     pub blocks: Vec<ScopeBlock>,
     pub statements: Vec<ScopeStatement>,
+}
+
+impl TokenStream {
+    pub fn tokens(&self) -> &[Token];
+    pub fn diagnostics(&self) -> &[LexingDiagnostic];
+    pub fn scope_view(&self) -> &ScopeView;
+    pub fn into_parts(self) -> (Vec<Token>, ScopeView, Vec<LexingDiagnostic>);
+}
+
+impl ScopeView {
+    pub fn empty(source_id: SourceId) -> Self;
+    pub fn binding_overrides_symbol(&self, spelling: &str, position: usize) -> bool;
 }
 
 pub struct ScopeFrame {
@@ -102,32 +149,37 @@ pub fn tokenize(
 ) -> Result<TokenStream, SpanBridgeError>;
 ```
 
-`TokenKind`, `ParserLexContext`, `BindingShapeKind`, `LexicalBlockKind`,
-`LexicalStatementKind`, `ScopeSkeletonDiagnosticCode`, and `LexDiagnosticCode`
-are re-exported from `mizar-lexer`. `InternedText` is a frontend-local
-`Arc<str>` spelling handle for the first implementation; no global interner is
-required, and lexer `String` lexemes are converted with `Arc::<str>::from`. Raw
-lexer diagnostic structs are consumed as inputs only: the frontend converts them
-immediately into `LexingDiagnostic` so public diagnostics carry session ranges
-and never expose raw lexer byte spans. Structured lexer payload variants and
-mapped rejected candidates are added by tasks 8 and 9.
+`TokenKind`, `ParserLexContext`, `ParserLexMode`, `LexRecoveryHint`,
+`MalformedStringLiteralReason`, `RawTokenKind`, `BindingShapeKind`,
+`LexicalBlockKind`, `LexicalStatementKind`, `ScopeSkeletonDiagnosticCode`, and
+`LexDiagnosticCode` are re-exported from `mizar-lexer`. `InternedText` is a
+frontend-local `Arc<str>` spelling handle for the first implementation; no
+global interner is required, and lexer `String` lexemes are converted with
+`Arc::<str>::from`. Raw lexer diagnostic structs are consumed as inputs only:
+the frontend converts them immediately into `LexingDiagnostic` so public
+diagnostics carry session ranges and never expose raw lexer byte spans.
+Structured lexer payload variants carry copied non-span data, and rejected
+candidates are represented as frontend-owned `LexingRejectedTokenCandidate`
+values with mapped session spans and secondary anchors. Future lexer payload
+variants that this frontend has not learned to map are represented explicitly as
+`UnsupportedLexerPayload`, not silently collapsed to `None`.
 
-`parser_context` is carried now so task 8 can run the same request through the
-disambiguator without changing the frontend boundary. The task-7 skeleton records
-it but does not yet use it to classify tokens. `environment` is likewise part of
-the request boundary for task 8; task 7 proves that imported symbols are not
-mixed into the lexical `ScopeView`.
+`parser_context` is carried into `mizar_lexer::disambiguate` so the same
+frontend request can produce general, namespace-path, string-required, or
+recovery-mode token streams. `environment` provides the active user-symbol
+index. Imported symbols participate in token classification but are not mixed
+into the public lexical `ScopeView`.
 
 ## Dependencies
 
 - Internal: `preprocess` (lexical text + map), `lexical_env`
   (`ActiveLexicalEnvironment`), `span_bridge` (lexical-byte → `SourceRange`),
   `parsing` (consumes `TokenStream`).
-- External: `mizar-lexer` (`scan_raw`, `build_scope_skeleton`, `TokenKind`,
-  `ParserLexContext`, `LexDiagnosticCode`, `ScopeSkeletonDiagnostic`,
-  `ScopeSkeletonDiagnosticCode`, scope block / statement / binding shape enums),
-  `mizar-session` (`SourceId`, `SourceRange`, `SourceAnchor`). Tasks 8 and 9
-  add `disambiguate`, `LexDiagnostic`, and structured lexer payload mapping.
+- External: `mizar-lexer` (`scan_raw`, `build_scope_skeleton`, `disambiguate`,
+  `TokenKind`, `ParserLexContext`, `LexDiagnostic`, `LexDiagnosticCode`,
+  structured lexer payload enums, `ScopeSkeletonDiagnostic`,
+  `ScopeSkeletonDiagnosticCode`, and scope block / statement / binding shape enums),
+  `mizar-session` (`SourceId`, `SourceRange`, `SourceAnchor`).
 
 This module is consumed by parsing and, through the diagnostics, by the
 orchestration merge.
@@ -137,32 +189,31 @@ orchestration merge.
 ### Token Stream
 
 `TokenStream` is the source-faithful token sequence for one file under the
-parser lexing context used for the run. In the task-7 skeleton, non-layout raw
-tokens are surfaced as session-spanned `TokenKind::LexemeRun` values, and strict
-raw-scan failure emits one coarse `TokenKind::ErrorRecovery`. Task 8 replaces
-those raw runs with final parser-facing `UserSymbol`, `ReservedWord`,
-`ReservedSymbol`, `Identifier`, `Numeral`, and `StringLiteral` classifications.
-Each `Token` preserves its original spelling (`text`) and a session
-`SourceRange`.
+parser lexing context used for the run. Successful tokenization surfaces final
+parser-facing `UserSymbol`, `ReservedWord`, `ReservedSymbol`, `Identifier`,
+`Numeral`, and `StringLiteral` classifications. Strict raw-scan failure emits
+one coarse `TokenKind::ErrorRecovery`. Each `Token` preserves its original
+spelling (`text`) and a session `SourceRange`.
 
-`LexingDiagnostic` is the mapped frontend diagnostic payload for Step 4. In task
-7 it represents raw-scan failures and scope-skeleton diagnostics. Tasks 8 and 9
-add disambiguator diagnostics and structured payload variants. It always carries
-a session-coordinate primary range and secondary anchors for orchestration. Its
-secondary entries are `SourceAnchor`s so composite or degraded preprocess
-mappings can preserve point, generated, and adjacent comment anchors. It stores
-the mapped code/message, not the raw lexer diagnostic object, because those raw
-objects contain lexer byte spans.
+`LexingDiagnostic` is the mapped frontend diagnostic payload for Step 4. It
+represents raw-scan failures, scope-skeleton diagnostics, and lexer
+disambiguator diagnostics. It always carries a session-coordinate primary range
+and secondary anchors for orchestration. Its secondary entries are
+`SourceAnchor`s so composite or degraded preprocess mappings can preserve point,
+generated, and adjacent comment anchors. It stores the mapped code/message and
+frontend-owned structured payloads, not the raw lexer diagnostic object, because
+those raw objects contain lexer byte spans.
 
 ### Scope Lex View
 
 The scope-skeleton pre-scan (`build_scope_skeleton`) produces a read-only
-`ScopeLexView` over raw lexer output, used by the disambiguator for scoped
-identifier override rules. The frontend maps that skeleton into a public
-session-spanned `ScopeView` for downstream inspection and diagnostics; it does
-not build scopes itself, and the view records lexical shape only — never
-resolved bindings. Task 8 runs the disambiguator against the raw scope view
-inside the same lexing pass.
+`ScopeLexView`, used by the disambiguator for scoped identifier override rules.
+The frontend first builds a raw skeleton for an initial disambiguation pass, then
+rebuilds a contextual skeleton from the final token shapes so strings and
+non-identifier user symbols are inert for public scope diagnostics. The frontend
+maps that contextual skeleton into a public session-spanned `ScopeView` for
+downstream inspection and diagnostics; it does not build scopes itself, and the
+view records lexical shape only — never resolved bindings.
 
 ## Algorithm / Logic
 
@@ -175,22 +226,26 @@ inside the same lexing pass.
    scope-skeleton construction and disambiguation for that run. The current
    `mizar_lexer::LexError` has no span or partial-token payload, so finer recovery
    is tracked as a follow-up contract.
-2. Build the `ScopeSkeleton` / `ScopeLexView` from the raw tokens for scoped
-   identifier override, collecting and mapping `ScopeSkeletonDiagnostic`s.
-3. Map non-layout raw units through `span_bridge.lexical_span` into
-   session-spanned `TokenKind::LexemeRun` skeleton tokens and map the
-   scope-skeleton frames, blocks, statements, and binding shapes into a public
-   `ScopeView`.
-4. Task 8 runs `disambiguate` (or the parser-integrated `lex`) with longest-match
-   against, in order: active user symbols, reserved special symbols, reserved
-   words, identifier/numeral rules, and parser expectation / scoped override
-   where the language requires it.
-5. Task 8 also recognizes `StringLiteral` tokens only when the current parser
-   lexing context is `StringRequired`; position-sensitive context for only
-   selected byte spans is deferred until the parser-assisted lexing contract
-   lands.
-6. Tasks 8 and 9 collect lexer diagnostics as `LexingDiagnostic`s, copy non-span
-   payload data, and map nested candidate spans into mapped payload structures.
+2. Build an initial `ScopeSkeleton` / `ScopeLexView` from the raw tokens and run
+   `disambiguate` once with the raw token stream, active lexical environment,
+   and current `ParserLexContext`.
+3. Rebuild the scope skeleton from the first final token shapes, treating
+   `StringLiteral`, `ErrorRecovery`, numerals, and non-identifier user symbols as
+   scope-inert. Run `disambiguate` again with that contextual skeleton so scoped
+   identifier overrides are available without treating string contents or
+   user-symbol spellings as scope syntax. Build the public scope skeleton from
+   the final token shapes.
+4. The disambiguator applies longest match against, in order: active user
+   symbols, reserved special symbols, reserved words, identifier/numeral rules,
+   and parser expectation / scoped override where the language requires it.
+5. Map every final lexer token through `span_bridge.lexical_span` into a
+   session-spanned frontend `Token`. Map the scope-skeleton frames, blocks,
+   statements, and binding shapes into the public `ScopeView`.
+6. Recognize `StringLiteral` tokens only when the current parser lexing context
+   is `StringRequired`; position-sensitive context for only selected byte spans
+   is deferred until the parser-assisted lexing contract lands.
+7. Collect lexer diagnostics as `LexingDiagnostic`s, copy non-span payload data,
+   and map nested rejected-candidate spans into frontend payload structures.
 
 Compound reserved tokens (`.{`, `.*`, `.=`, `...`) are recognized by the lexer;
 selector/namespace roles for `.` are left to the parser and resolver. The lexer
@@ -198,35 +253,45 @@ never decides definedness, applicability, or overload selection.
 
 ## Error Handling
 
-The task-7 skeleton preserves recoverable raw-scan and scope-skeleton problems:
+The lexing wrapper preserves recoverable raw-scan, scope-skeleton, and current
+disambiguator problems:
 
 - strict raw-scan hard failure emits one coarse `TokenKind::ErrorRecovery` with
   the best available source range plus a `RawScan` diagnostic;
 - `ScopeSkeletonDiagnostic`s are mapped into frontend diagnostics without
-  storing raw span-bearing diagnostic structs in `TokenStream`.
+  storing raw span-bearing diagnostic structs in `TokenStream`;
+- current `LexDiagnostic`s are mapped into `LexingDiagnosticKind::Lexer` with
+  frontend-owned payloads and mapped nested rejected-candidate spans.
 
 For user-recoverable lexical input problems, `tokenize` returns
 `Ok(TokenStream)`: strict raw-scan failures degrade to a coarse recovery token
-and mapped diagnostic, while scope-skeleton problems are mapped without dropping
-recoverable raw tokens. It returns `Err(SpanBridgeError)` only when a token,
-scope shape, or diagnostic span cannot be mapped through the registered bridge.
-Disambiguator recovery passthrough, including malformed tokens, invalid numerals,
-and malformed string literals, is task 9.
+and mapped diagnostic, while scope-skeleton and disambiguator problems are
+mapped without dropping recoverable tokens. It returns `Err(SpanBridgeError)`
+only when a token, scope shape, or diagnostic span cannot be mapped through the
+registered bridge. Task 9 keeps the same boundary and adds the remaining
+recovery passthrough coverage and follow-up cases.
 
 ## Tests
 
-Task-7 scenarios:
+Implemented task-7/8 scenarios:
 
-- raw scan preserves `LexemeRun` spans, including spans mapped through
-  preprocess mappings such as removed comments;
+- raw scan and disambiguation preserve final token spans, including spans mapped
+  through preprocess mappings such as removed comments;
 - the public `ScopeView` reflects lexical block / statement shape and local
   binding shapes without resolved or imported bindings;
 - scope-skeleton diagnostics are preserved as mapped `LexingDiagnostic`s;
 - every emitted token's `span` is a valid `SourceRange` for `source_id`.
+- active user symbols and scoped identifier overrides affect final token
+  classification;
+- compound reserved tokens remain single final tokens;
+- uniform `StringRequired` context emits `StringLiteral`, while general context
+  reports mapped lexer diagnostics for rejected string candidates;
+- lexer diagnostic payloads preserve non-span data and mapped nested candidate
+  spans.
 
-Task-8/9 scenarios add user-symbol longest match, compound reserved tokens,
-`StringRequired` runs, recoverable malformed tokens, invalid numerals, malformed
-string literals, and structured lexer payload mapping.
+Task-9 scenarios add the remaining recovery passthrough coverage for malformed
+tokens, future invalid-numeral diagnostics, unsupported raw-token cases, and
+scope diagnostics after disambiguation.
 
 ## Constraints and Assumptions
 

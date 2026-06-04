@@ -230,12 +230,14 @@ keep `cargo test -p mizar-frontend` green (see
    - Depends on: 6. Spec: [lexing.md](./lexing.md) "Scope Lex View",
      "Algorithm / Logic".
 
-8. **Context-sensitive disambiguation to `TokenStream`.** [ ]
+8. **Context-sensitive disambiguation to `TokenStream`.** [x]
    - Run `disambiguate` (or parser-integrated `lex`) with the active lexical
-     environment, scope view, and the current `ParserLexContext` (general/stub
-     context until the parser-assisted contract is finalized); map every lexer
-     token and diagnostic span through the `SpanBridge` to session
-     `SourceRange`s. Convert raw `LexDiagnostic`s to frontend `LexingDiagnostic`s
+     environment, an initial raw `ScopeSkeleton` / `ScopeLexView`, a contextual
+     scope skeleton rebuilt from final token shapes, and the current
+     `ParserLexContext` (general/stub context until the parser-assisted contract
+     is finalized); map every lexer token and diagnostic span through the
+     `SpanBridge` to session `SourceRange`s. Convert raw `LexDiagnostic`s to
+     frontend `LexingDiagnostic`s
      by copying code/message and preserving structured payloads in mapped form;
      map nested rejected-candidate spans to session ranges and preserve secondary
      `SourceAnchor`s from composite/degraded mappings. Return
@@ -243,11 +245,13 @@ keep `cargo test -p mizar-frontend` green (see
      failures.
    - Tests: a user symbol sharing spelling with an identifier is classified by
      longest-match; compound reserved tokens (`.{`, `.*`, `.=`, `...`) lex as
-     single tokens; a quote lexes as a symbol char under the general context; a
-     bounded uniform `StringRequired` context produces a `StringLiteral`; every
-     emitted token span resolves to a valid primary `SourceRange` while secondary
-     anchors are preserved for diagnostics; lexer payloads with rejected token
-     candidates preserve non-span payload data and mapped nested spans.
+     single tokens; quote-delimited spelling is rejected with mapped lexer
+     diagnostics under the general context unless supplied by the active lexicon,
+     while a bounded uniform `StringRequired` context produces a `StringLiteral`;
+     every emitted token span resolves to a valid primary `SourceRange` while
+     secondary anchors are preserved for diagnostics; lexer payloads with
+     rejected token candidates preserve non-span payload data and mapped nested
+     spans.
      Position-specific annotation/operator string-literal tests are deferred to
      the parser-assisted lexing contract.
    - Depends on: 7. Spec: [lexing.md](./lexing.md) "Token Stream",
@@ -259,10 +263,10 @@ keep `cargo test -p mizar-frontend` green (see
      diagnostics so the frontend `tokenize` wrapper returns `Ok(TokenStream)` for
      recoverable input problems.
    - Tests: a malformed token emits `ErrorRecovery` with the correct `SourceRange`
-     and scanning resumes; an invalid numeral and a malformed string literal in a
-     string-required position are reported without dropping recoverable tokens;
-     scope-skeleton diagnostics remain preserved with mapped spans after
-     disambiguation.
+     and scanning resumes; invalid-numeral diagnostics, when the lexer exposes
+     them, and unsupported raw-token cases are reported without dropping
+     recoverable tokens; scope-skeleton diagnostics remain preserved with mapped
+     spans after disambiguation.
    - Depends on: 8. Spec: [lexing.md](./lexing.md) "Error Handling".
 
 ### Module: parsing (`src/parsing.rs`)
