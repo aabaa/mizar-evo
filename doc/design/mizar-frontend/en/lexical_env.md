@@ -2,7 +2,7 @@
 
 > Canonical language: English. Japanese companion: [../ja/lexical_env.md](../ja/lexical_env.md).
 
-Status: planned.
+Status: partially implemented; task 5 provider seam is implemented, task 6 active-environment recovery remains planned.
 
 ## Purpose
 
@@ -85,9 +85,12 @@ pub enum LexicalEnvironmentDiagnosticCode {
 }
 ```
 
-`ResolvedImport`, `ModuleLexicalSummary`, `ActiveLexicalEnvironment`,
-`LexicalEnvironmentFingerprint`, `LexicalEnvironmentError`, and `ModuleId` are
-re-exported from `mizar-lexer`. `ResolvedImportEntry` is frontend-owned
+`ActiveLexicalEnvironment`, `ExportRank`, `ExportedSymbolShape`,
+`LexicalEnvironmentError`, `LexicalEnvironmentFingerprint`,
+`LexicalSummaryFingerprint`, `ModuleId`, `ModuleLexicalSummary`,
+`ResolvedImport`, `SymbolId`, `UserSymbolArity`, `UserSymbolCandidate`,
+`UserSymbolIndex`, `UserSymbolKind`, and `UserSymbolKindSet` are re-exported
+from `mizar-lexer`. `ResolvedImportEntry` is frontend-owned
 provenance: it wraps the lexer `ResolvedImport` with the source span and ordinal
 of the `ImportStub` that produced it, so later diagnostics can point back to the
 right import even when several stubs resolve to the same module. The frontend
@@ -103,11 +106,12 @@ available in provider diagnostics and provenance tables, but they are not passed
 as duplicate active imports to the lexer.
 
 `FrontendLexicalEnvironmentError` is owned by the frontend and wraps provider
-infrastructure failures plus unrecoverable lexer structural errors. The only
-lexer-side error the frontend currently degrades is
-`LexicalEnvironmentError::UserSymbolImportConflict`; all other lexer
-`LexicalEnvironmentError` variants are treated as malformed summary/provider
-contracts and become `FrontendLexicalEnvironmentError::MalformedSummary`.
+infrastructure failures plus unrecoverable lexer structural errors. In the task
+5 provider-seam implementation, lexer-side structural errors are still surfaced
+as `FrontendLexicalEnvironmentError::MalformedSummary`. Task 6 will add the
+planned degradation for `LexicalEnvironmentError::UserSymbolImportConflict`;
+all other lexer `LexicalEnvironmentError` variants will remain malformed
+summary/provider contracts.
 `LexicalSummaryProvider` is the seam by which the build planner / resolver
 supplies already-resolved imports plus lexical summaries; the frontend never
 reaches into module IR to build them.
@@ -166,7 +170,7 @@ local file is unchanged.
    Strip those canonical wrappers to the ordered lexer `ResolvedImport` list, then
    call `mizar_lexer::build_lexical_environment` with the resolved imports and
    summaries to assemble the `UserSymbolIndex` and `LexicalEnvironmentFingerprint`.
-4. If the lexer returns `UserSymbolImportConflict { spelling, earlier_import,
+4. Planned for task 6: if the lexer returns `UserSymbolImportConflict { spelling, earlier_import,
    later_import }`, convert it into a `LexicalEnvironmentDiagnostic`, using the
    canonical `ResolvedImportEntry` for `later_import` as the primary span and the
    canonical entry for `earlier_import` as a secondary anchor when available.
@@ -198,15 +202,17 @@ Provider-side issues — an import that resolves to no module, or a dependency
 whose lexical summary is unavailable — are carried as
 `LexicalEnvironmentDiagnostic`s and the affected imports are omitted before
 calling the lexer, so the pipeline degrades to a smaller active environment
-rather than failing the whole file. The recoverable lexer-side case is limited to
-`UserSymbolImportConflict`: the frontend diagnoses the later conflicting import,
-adds the earlier import as secondary context when known, removes the later import,
-and retries environment construction. Invalid exported symbol spelling, invalid
-arity, reserved-word/symbol collisions, inconsistent duplicate summaries, and
-unexpected missing summaries are hard malformed-summary failures because the
-frontend cannot safely infer which subset of a malformed dependency summary is
-usable. Import legality (visibility, export rank conflicts beyond lexical shape)
-is deferred to module resolution and is never decided here.
+rather than failing the whole file. Task 6 narrows the recoverable lexer-side
+case to `UserSymbolImportConflict`: the frontend will diagnose the later
+conflicting import, add the earlier import as secondary context when known,
+remove the later import, and retry environment construction. Until task 6 lands,
+lexer-side structural errors are surfaced as `MalformedSummary`. Invalid
+exported symbol spelling, invalid arity, reserved-word/symbol collisions,
+inconsistent duplicate summaries, and unexpected missing summaries are hard
+malformed-summary failures because the frontend cannot safely infer which subset
+of a malformed dependency summary is usable. Import legality (visibility, export
+rank conflicts beyond lexical shape) is deferred to module resolution and is
+never decided here.
 
 ## Tests
 

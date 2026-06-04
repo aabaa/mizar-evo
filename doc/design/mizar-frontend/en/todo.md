@@ -15,7 +15,7 @@
 | span_bridge | [span_bridge.md](./span_bridge.md) | `src/span_bridge.rs` | [x] |
 | source | [source.md](./source.md) | `src/source.rs` | [x] |
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
-| lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [ ] |
+| lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [~] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [ ] |
 | parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [ ] |
 | orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [ ] |
@@ -162,7 +162,7 @@ keep `cargo test -p mizar-frontend` green (see
 
 ### Module: lexical_env (`src/lexical_env.rs`)
 
-5. **Lexical environment request and provider seam.** [ ]
+5. **Lexical environment request and provider seam.** [x]
    - Add `pub mod lexical_env;`. Define `LexicalEnvironmentRequest`,
      `LexicalSummaryProvider`, `ResolvedImports`, `ResolvedImportEntry`,
      `ActiveLexicalEnvironmentResult`, `LexicalEnvironmentDiagnostic`,
@@ -186,9 +186,10 @@ keep `cargo test -p mizar-frontend` green (see
    - Depends on: 4. Spec: [lexical_env.md](./lexical_env.md) "Public API".
 
 6. **Active lexical environment construction.** [ ]
-   - Implement `build_active_lexical_environment` calling
-     `mizar_lexer::build_lexical_environment`; merge provider diagnostics; compute
-     and surface the `LexicalEnvironmentFingerprint`.
+   - Extend the task-5 `build_active_lexical_environment` entry point with the
+     remaining recovery behavior while preserving its call to
+     `mizar_lexer::build_lexical_environment`, provider diagnostic merge, and
+     surfaced `LexicalEnvironmentFingerprint`.
    - Omit unresolved imports and imports whose dependency lexical summary is
      unavailable before calling the lexer; represent them as
      `LexicalEnvironmentDiagnostic`s so the lexer is not asked to build with

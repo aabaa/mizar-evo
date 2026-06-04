@@ -15,7 +15,7 @@
 | span_bridge | [span_bridge.md](./span_bridge.md) | `src/span_bridge.rs` | [x] |
 | source | [source.md](./source.md) | `src/source.rs` | [x] |
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
-| lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [ ] |
+| lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [~] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [ ] |
 | parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [ ] |
 | orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [ ] |
@@ -74,7 +74,7 @@
 
 ### モジュール: lexical_env (`src/lexical_env.rs`)
 
-5. **字句環境リクエストとプロバイダの継ぎ目。** [ ]
+5. **字句環境リクエストとプロバイダの継ぎ目。** [x]
    - `pub mod lexical_env;` を追加する。`LexicalEnvironmentRequest`、`LexicalSummaryProvider`、`ResolvedImports`、`ResolvedImportEntry`、`ActiveLexicalEnvironmentResult`、`LexicalEnvironmentDiagnostic`、`LexicalEnvironmentDiagnosticCode`、`FrontendLexicalEnvironmentError` を定義し、`mizar-lexer` の環境型を再エクスポートする。
    - 各解決済みインポートについて、元の `ImportStub` の序数とスパンを `ResolvedImportEntry` に保持する。`mizar_lexer::build_lexical_environment` へは、順序付きの字句解析器 `ResolvedImport` だけを渡す。
    - 字句解析器を呼び出す前に、解決済みインポートを `ModuleId` で正規化し、インポート順で最初の stub を有効な出所エントリとして保持する。重複 stub の出所はプロバイダ診断のために保持するが、現在の字句解析器には重複した module id を渡さない。字句解析器の衝突エラーは module を識別するものの、フロントエンドのインポート序数までは識別しないためである。
@@ -83,7 +83,7 @@
    - 依存: 4。仕様: [lexical_env.md](./lexical_env.md)「Public API」。
 
 6. **アクティブ字句環境の構築。** [ ]
-   - `mizar_lexer::build_lexical_environment` を呼ぶ `build_active_lexical_environment` を実装する。プロバイダ診断を統合し、`LexicalEnvironmentFingerprint` を計算して表面化する。
+   - タスク 5 の `build_active_lexical_environment` エントリポイントを、残りの回復処理で拡張する。`mizar_lexer::build_lexical_environment` の呼び出し、プロバイダ診断の統合、表面化済みの `LexicalEnvironmentFingerprint` は維持する。
    - 字句解析器を呼ぶ前に、未解決のインポートと、依存する字句サマリが利用できないインポートを除外し、`LexicalEnvironmentDiagnostic` として表す。サマリが欠落した入力で字句解析器に環境構築を要求しない。
    - `LexicalEnvironmentError::UserSymbolImportConflict` は、有界で決定的な再試行で扱う。正準の `ResolvedImportEntry` の出所を使って後側の衝突インポートを診断し、分かる場合は前側のインポートを副次コンテキストに加え、後側の衝突 module を除いて、元の正準インポートごとに高々 1 回だけ再試行する。それ以外の字句解析器 `LexicalEnvironmentError` は `FrontendLexicalEnvironmentError::MalformedSummary` として扱う。
    - テスト: 異なるモジュールからインポートされた同綴りのユーザー記号は、決定的な字句環境衝突診断を生み、後側の衝突 module を落として再試行する。同じ module の重複インポートは偽の衝突を作らない。未解決のインポートは、診断とともに、より小さな環境へ縮退し、残りの記号が読み込まれる。欠落したサマリは、字句解析器の呼び出し前に除外・診断される。衝突以外の字句解析器環境エラーは `MalformedSummary` になる。フィンガープリントは依存サマリの変更で変化し、ローカルのコメントのみの編集では安定である。
