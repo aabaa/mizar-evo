@@ -28,6 +28,7 @@ See
 pub struct PreprocessedSource {
     pub source_id: SourceId,
     pub lexical_text: LexicalText,
+    pub lexical_hash: Hash,
     pub comments: Vec<Comment>,
     pub doc_comments: Vec<DocComment>,
     pub import_stubs: Vec<ImportStub>,
@@ -130,7 +131,11 @@ scan. `LexicalSourceMap` wraps the lexer's `SourcePreprocessMap` together with
 the `SourceUnit` `LineMap` / `LoadingMap`, so that any lexical-text byte offset
 can be mapped through `span_bridge` to a primary `SourceRange` (and, across a
 removed comment, to composite adjacent anchors). Synthetic whitespace inserted
-where comments were removed is never reported as a primary user range.
+where comments were removed has no exact user-authored range; if a session
+`MappedSourceRange` needs a primary, it is a degraded anchor fallback and must not
+be treated as exact source text. `lexical_hash` is computed from the lexical text
+plus the frontend preprocessing-version domain and is the downstream token/AST
+reuse key when comment-only edits leave lexical text unchanged.
 
 ### Comments and Doc Comments
 
@@ -182,7 +187,9 @@ secondary `SourceAnchor`s when a preprocess mapping is composite or degraded.
    deferred to a future recoverable raw-scanner contract.
 6. Collect comment-structure, ASCII-precondition, and import-prescan diagnostics
    into `diagnostics`, preserving source order.
-7. Assemble `LexicalSourceMap` from the preprocess map plus the line/loading maps
+7. Compute `lexical_hash` from the final lexical text and frontend preprocessing
+   version.
+8. Assemble `LexicalSourceMap` from the preprocess map plus the line/loading maps
    and return `PreprocessedSource`.
 
 The import pre-scan consumes raw lexer output; raw scanning itself does not
@@ -220,6 +227,10 @@ Key scenarios:
   into lexical text;
 - annotation syntax (`@latex(...)`, `@[...]`) stays in `lexical_text`;
 - a removed comment yields a composite mapping for a lexical range that spans it;
+- synthetic whitespace is exposed only through degraded anchor-backed mappings,
+  not exact user-authored ranges;
+- `lexical_hash` stays stable when comment-only edits leave `lexical_text`
+  unchanged;
 - top-level `import` forms produce `ImportStub`s with correct raw path, optional
   alias, `path.relative`, `path.source_segments`, and span; `./` and `../`
   relative prefixes remain distinguishable; a malformed import yields an
@@ -241,6 +252,9 @@ Key scenarios:
   contract can identify string-required spans before ASCII precondition
   reporting; until then, non-ASCII outside comments remains a lexical
   precondition diagnostic.
-- Synthetic whitespace is never a primary user-facing source range.
-- `PreprocessedSource` is keyed by `source_hash` plus frontend version for
-  incremental reuse.
+- Synthetic whitespace is never an exact primary user-facing source range;
+  degraded anchor fallbacks are allowed only to satisfy the session
+  `MappedSourceRange` shape.
+- `PreprocessedSource` production is keyed by `source_hash` plus frontend version.
+  Downstream tokenization and syntax reuse use `lexical_hash` so comment-only
+  edits can preserve later artifacts when the lexical text is unchanged.

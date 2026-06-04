@@ -167,14 +167,18 @@ internal scheduling:
 6. tokenization (Step 4);
 7. syntax and annotation syntax (Step 5).
 
-Within a class, order range-backed diagnostics by primary span start, then by
-diagnostic code. Source-load diagnostics do not participate in the returned
-`FrontendOutput` merge because a source-load failure returns `FrontendError`
-before any phase artifact exists. If a caller displays several source-load
-failures from a batch, order them by the stable source-load location key and then
-by diagnostic code. Secondary `SourceAnchor`s are preserved for display and
-explanation but do not participate in sorting. A recovery note is attached when a
-later diagnostic may be affected by an earlier recovery.
+Within a class, order range-backed diagnostics by a total stable key:
+`source_id`, primary span start, primary span end, diagnostic-code stable key
+(including the syntax code string), message, secondary-anchor stable keys,
+recovery-note text, and finally the phase-local emission ordinal assigned while
+collecting diagnostics from that deterministic phase output. Source-load
+diagnostics do not participate in the returned `FrontendOutput` merge because a
+source-load failure returns `FrontendError` before any phase artifact exists. If a
+caller displays several source-load failures from a batch, order them by the
+stable source-load location key and then by diagnostic code. Secondary
+`SourceAnchor`s are preserved for display and explanation and are part of the
+tie-breaker key, but not the primary ordering criterion. A recovery note is
+attached when a later diagnostic may be affected by an earlier recovery.
 
 ## Algorithm / Logic
 
@@ -241,6 +245,8 @@ Key scenarios:
   and no `FrontendOutput`;
 - diagnostic order is identical across repeated runs regardless of internal
   scheduling;
+- same-class diagnostics with the same start and code still sort deterministically
+  by the complete stable tie-breaker key;
 - the merged diagnostics carry valid `SourceRange`s resolved through the span
   bridge when they are range-backed, while source-load failures carry non-range
   `SourceLoadLocation`s.

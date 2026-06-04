@@ -6,7 +6,7 @@
 
 ## 目的
 
-このモジュールは `mizar-lexer` のバイトスパンと `mizar-session` `SourceRange` 値の間の座標橋渡しを所有する。[../../todo.md](../../todo.md) の「Lexer span bridging」に記録されたトップレベルのオープン決定をフロントエンドが解決する唯一の場所である。すなわち `mizar-lexer` は分離を保ち、自前のバイトオフセット `SourceSpan` を保持する一方、フロントエンドがそれらのスパンを session のソース座標へ変換する。
+このモジュールは `mizar-lexer` のバイトスパンと `mizar-session` `SourceRange` 値の間の座標橋渡しを所有する。[../../todo.md](../../todo.md) の「Resolved And Open Decisions」に記録されたトップレベルの解決済み決定を実装する唯一の場所である。すなわち `mizar-lexer` は分離を保ち、自前のバイトオフセット `SourceSpan` を保持する一方、フロントエンドがそれらのスパンを session のソース座標へ変換する。
 
 後続の各モジュール（前処理、字句解析、構文解析）は字句解析器相対のバイトスパンを生成する。このモジュールはそれらを source-id でスコープされた `SourceRange` / `MappedSourceRange` 値へ変換し、フロントエンド実行で登録されたマップを保持する session source-map service を所有する。I/O、トークン化、構文解析、意味的作業は行わない。
 
@@ -66,7 +66,7 @@ pub enum SpanBridgeError {
 }
 ```
 
-`SourceRange`、`MappedSourceRange`、`LineMap`、`LoadingMap`、`PreprocessMap`、`SourceMapError`、`RetainedSourceMapService`、`SourceMapService` は `mizar-session` が所有する。`span_bridge` は `mizar-lexer` のバイトスパンをそれらへ適合させる。`loaded_span` は読み込み済みテキスト（Step 1 座標）のスパンを、読み込み済みテキスト座標の検証済み `SourceRange` へ変換する。生のファイル／エディタ入力バイトが必要な呼び出し側は `loaded_mapping` を使う。`LoadingMap` が登録されている場合、`loaded_mapping` は retained session `SourceMapService` に loaded-to-original 変換を委譲し、`original_input` を埋める。ソース読み込みがオフセット同一で `LoadingMap` を出さなかった場合、`loaded_mapping` は登録済み `LineMap` で読み込み済み範囲を検証し、`original_input = None` の exact `MappedSourceRange` を返す。`LoadingMap::identity` は合成・保持しない。`lexical_span` はコメント除去済み字句テキスト（Step 2 以降の座標）のスパンを変換し、除去コメントをまたぐスパンに対しては第一の読み込み済み範囲に加えて隣接アンカーを含む `MappedSourceRange` を返す。
+`SourceRange`、`MappedSourceRange`、`LineMap`、`LoadingMap`、`PreprocessMap`、`SourceMapError`、`RetainedSourceMapService`、`SourceMapService` は `mizar-session` が所有する。`span_bridge` は `mizar-lexer` のバイトスパンをそれらへ適合させる。`loaded_span` は読み込み済みテキスト（Step 1 座標）のスパンを、読み込み済みテキスト座標の検証済み `SourceRange` へ変換する。生のファイル／エディタ入力バイトが必要な呼び出し側は `loaded_mapping` を使う。`LoadingMap` が登録されている場合、`loaded_mapping` は retained session `SourceMapService` に loaded-to-original 変換を委譲し、`original_input` を埋める。ソース読み込みがオフセット同一で `LoadingMap` を出さなかった場合、`loaded_mapping` は登録済み `LineMap` で読み込み済み範囲を検証し、`original_input = None` の exact `MappedSourceRange` を返す。`LoadingMap::identity` は合成・保持しない。`lexical_span` はコメント除去済み字句テキスト（Step 2 以降の座標）のスパンを session `MappedSourceRange` へ変換する。スパンが exact な読み込み済みソーステキストを持つ場合、`primary` はその読み込み済みソース範囲である。合成空白だけからなる場合は、session service が最良の anchor を degraded な `primary` へ昇格する。呼び出し側はその primary を exact なユーザー記述テキストとして扱わず、`MappedSourceRange.kind` と secondary anchor を確認しなければならない。
 
 ## 依存関係
 
@@ -85,7 +85,7 @@ pub enum SpanBridgeError {
 | loaded → original | 読み込み済みテキストのバイトオフセット | 元の入力のバイトオフセット | `LoadingMap` |
 | offset → line/column | 読み込み済みテキストのバイトオフセット | 1 始まりの Unicode 列 | `LineMap` |
 
-`loaded_span` は登録済み line map に対してバイト範囲を検証し、読み込み済みテキスト座標の `SourceRange` を返す。`loaded_mapping` はさらに登録済み `LoadingMap` があれば合成し、第一範囲は読み込み済み座標のまま、`original_input` にソース読み込み入力のバイト範囲を含む `MappedSourceRange` を返す。`LoadingMap` が登録されていない場合、`loaded_mapping` は session service の loaded-to-original API を呼ばず、検証済み読み込み済み範囲を `original_input = None` で返す。その API は恒等変換であっても retained `LoadingMap` を必要とするためである。`lexical_span` は preprocess map を適用し、ゼロ長境界（例えば内部が除去コメントであった字句範囲）で隣接アンカーの合成を返す。橋渡しは session 側の `PreprocessMap` を字句解析器の `SourcePreprocessMap` から導出し、`SourceUnit` に付随する任意の session `LoadingMap` を再利用する。`SourceId` ごとに正準マップは正確に 1 つであり、frontend bridge は identity source-loading map を materialize しない。
+`loaded_span` は登録済み line map に対してバイト範囲を検証し、読み込み済みテキスト座標の `SourceRange` を返す。`loaded_mapping` はさらに登録済み `LoadingMap` があれば合成し、第一範囲は読み込み済み座標のまま、`original_input` にソース読み込み入力のバイト範囲を含む `MappedSourceRange` を返す。`LoadingMap` が登録されていない場合、`loaded_mapping` は session service の loaded-to-original API を呼ばず、検証済み読み込み済み範囲を `original_input = None` で返す。その API は恒等変換であっても retained `LoadingMap` を必要とするためである。`lexical_span` は preprocess map を適用し、ゼロ長境界（例えば内部が除去コメントであった字句範囲）で隣接アンカーの合成を返し、synthetic-only span に対しては degraded な anchor-backed mapping を返す。橋渡しは session 側の `PreprocessMap` を字句解析器の `SourcePreprocessMap` から導出し、`SourceUnit` に付随する任意の session `LoadingMap` を再利用する。`SourceId` ごとに正準マップは正確に 1 つであり、frontend bridge は identity source-loading map を materialize しない。
 
 ### レジストリ
 
@@ -104,7 +104,7 @@ pub enum SpanBridgeError {
 ### 字句テキストのスパン変換（Step 2 以降のトークンと診断）
 
 1. `span` が `source_id` の字句テキスト内にあることを検証する。
-2. 字句オフセットを `PreprocessMap` を通じて読み込み済みオフセットへ変換し、スパンが除去コメントをまたぐ場合は第一に加えて隣接アンカーを生成する。
+2. 字句オフセットを `PreprocessMap` を通じて読み込み済みオフセットへ変換し、スパンが除去コメントをまたぐ場合は第一に加えて隣接アンカーを生成する。合成空白のように exact なユーザー記述範囲を持たない場合は degraded な anchor-backed primary になる。
 3. retained session `SourceMapService` を用いて `MappedSourceRange` を返す。第一の `SourceRange` と隣接アンカーは読み込み済みソース座標である。元入力バイトは、loading map が存在するときに必要な消費者が `loaded_mapping` から得る任意ビューである。
 
 すべての変換は算術を `mizar-session` に委譲する。このモジュールは正しいマップ層と正しい `SourceId` を選ぶだけである。
@@ -121,6 +121,7 @@ pub enum SpanBridgeError {
 - `LoadingMap` を持たない identity loaded source は、`LoadingMap::identity` を保持せず、`original_input = None` の exact `MappedSourceRange` を返す。
 - 字句テキストスパンが preprocess map を通じて期待される読み込み済み `SourceRange` へ変換され、必要に応じて loading map から元入力バイトを参照できる。
 - 除去コメントをまたぐ字句スパンが、第一の範囲に加えて隣接アンカーを生む。
+- synthetic-only の字句スパンは、exact なユーザー記述範囲ではなく degraded な anchor fallback primary を持つ `MappedSourceRange` を返す。
 - UTF-8 境界上にないオフセットが、暗黙の切り詰めではなく拒否される。
 - 登録済みテキスト長の外のスパンが session エラーで拒否される。
 - 同じ `SourceId` に異なるマップを 2 つ登録すると、衝突する登録として報告される。

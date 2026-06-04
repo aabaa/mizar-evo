@@ -18,6 +18,7 @@
 pub struct PreprocessedSource {
     pub source_id: SourceId,
     pub lexical_text: LexicalText,
+    pub lexical_hash: Hash,
     pub comments: Vec<Comment>,
     pub doc_comments: Vec<DocComment>,
     pub import_stubs: Vec<ImportStub>,
@@ -97,7 +98,7 @@ pub fn preprocess(
 
 ### 字句テキストとソースマップ
 
-`LexicalText` は字句解析器がスキャンする、コメント除去済み・注釈保持のテキストである。`LexicalSourceMap` は字句解析器の `SourcePreprocessMap` を `SourceUnit` の `LineMap` / `LoadingMap` とともにラップし、任意の字句テキストのバイトオフセットを `span_bridge` を通じて第一の `SourceRange`（および除去されたコメントをまたぐ場合は隣接アンカーの合成）へ変換できるようにする。コメントが除去された位置に挿入された合成空白は、第一のユーザー範囲としては報告されない。
+`LexicalText` は字句解析器がスキャンする、コメント除去済み・注釈保持のテキストである。`LexicalSourceMap` は字句解析器の `SourcePreprocessMap` を `SourceUnit` の `LineMap` / `LoadingMap` とともにラップし、任意の字句テキストのバイトオフセットを `span_bridge` を通じて第一の `SourceRange`（および除去されたコメントをまたぐ場合は隣接アンカーの合成）へ変換できるようにする。コメントが除去された位置に挿入された合成空白は exact なユーザー記述範囲を持たない。session `MappedSourceRange` が primary を必要とする場合、その primary は degraded な anchor fallback であり exact なソーステキストとして扱ってはならない。`lexical_hash` は字句テキストと frontend preprocessing-version domain から計算され、コメントのみの編集で字句テキストが変わらない場合に下流の token / AST 再利用キーになる。
 
 ### コメントとドキュメントコメント
 
@@ -119,7 +120,8 @@ pub fn preprocess(
 4. 字句テキストを生スキャン（`scan_raw`）する。成功した場合は `scan_import_prelude` を実行して `ImportStub` とインポート事前走査診断を抽出し、それらのスパンを `SourceRange` へ変換する。
 5. 生スキャンが失敗した場合は、字句テキスト全体（字句テキストが空ならソース先頭のゼロ長範囲）を覆う frontend-local なインポート事前走査診断を記録し、`import_stubs` を空のまま続行する。部分的な raw stream から import を推測しない。現在の `mizar_lexer::LexError` は span や部分 token payload を持たないため、raw-scan 失敗位置の精密化は将来の recoverable raw-scanner contract に委ねる。
 6. コメント構造・ASCII 前提・インポート事前走査の診断を `diagnostics` に集約し、ソース順を保つ。
-7. 前処理マップと line／loading マップから `LexicalSourceMap` を組み立て、`PreprocessedSource` を返す。
+7. 最終的な字句テキストと frontend preprocessing version から `lexical_hash` を計算する。
+8. 前処理マップと line／loading マップから `LexicalSourceMap` を組み立て、`PreprocessedSource` を返す。
 
 インポート事前走査は生の字句解析器出力を消費する。生スキャン自体はインポートを解釈しない。`scan_raw` は strict なので、前処理が回復済み字句テキストを返していても生スキャンに失敗し得る。その失敗は Step 2 の浅い import 抽出だけを無効化する。Step 4 の tokenization は独立に回復適合を行い、トークンレベル診断を報告する。
 
@@ -142,6 +144,8 @@ Step 2 の診断はハードエラーとして送出せず、`PreprocessedSource
 - ドキュメントコメントは生本文とソース範囲とともに保持され、字句テキストには渡されない。
 - 注釈構文（`@latex(...)`、`@[...]`）は `lexical_text` に残る。
 - 除去されたコメントをまたぐ字句範囲は合成マッピングを生む。
+- 合成空白は exact なユーザー記述範囲ではなく、degraded な anchor-backed mapping としてだけ表面化する。
+- コメントのみの編集で `lexical_text` が変わらない場合、`lexical_hash` は安定する。
 - トップレベル `import` 形式は生パス・任意の alias・`path.relative`・`path.source_segments`・span を持つ `ImportStub` を生み、`./` と `../` の相対 prefix を区別して保持する。不正なインポートは中断せず `ImportPrescanDiagnostic` を生む。
 - インポート事前走査中の strict raw-scan 失敗は、診断と空の `import_stubs` を生み、前処理を中断しない。
 - コード領域の非 ASCII 文字は字句前提診断として報告され、前処理は回復済み字句テキストを返す。
@@ -152,5 +156,5 @@ Step 2 の診断はハードエラーとして送出せず、`PreprocessedSource
 - このモジュールはトークン化・構文解析・インポート解決を行わない。
 - コメント除去・ASCII 検証・インポート事前走査のアルゴリズムは `mizar-lexer` に属する。このモジュールはそれらを統制し、span 橋渡しを所有する。
 - 注釈構文はパーサー所有のため字句テキストに残る。前処理は注釈を別個のメタデータチャネルに集約しない。注釈文字列引数内の Unicode は、parser-assisted lexing contract が ASCII 前提診断より前に文字列必須 span を識別できるようになってから受理する。それまでは、コメント外の非 ASCII は字句前提診断のままである。
-- 合成空白は第一のユーザー向けソース範囲にならない。
-- `PreprocessedSource` はインクリメンタル再利用のため `source_hash` とフロントエンドバージョンでキー付けされる。
+- 合成空白は exact な第一のユーザー向けソース範囲にならない。degraded な anchor fallback は session `MappedSourceRange` の形を満たすためだけに許可される。
+- `PreprocessedSource` の生成は `source_hash` とフロントエンドバージョンでキー付けされる。下流のトークン化と構文再利用は `lexical_hash` を使うので、字句テキストが変わらないコメントのみの編集で後続成果物を保持できる。

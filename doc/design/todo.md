@@ -68,11 +68,11 @@ See the affected-modules lists in
 [00.pipeline_overview.md](./architecture/en/00.pipeline_overview.md) and
 [01.ir_layers.md](./architecture/en/01.ir_layers.md).
 
-## Open Decisions
+## Resolved And Open Decisions
 
-- **Lexer span bridging.** Confirm that `mizar-lexer` stays decoupled and the frontend
-  maps lexer spans onto `mizar-session::SourceRange`, vs. the lexer adopting session
-  types directly. This gates `SourceId` integration in `mizar-session/source_map`.
+- **Lexer span bridging: resolved.** `mizar-lexer` stays decoupled and the
+  frontend maps lexer byte spans onto `mizar-session::SourceRange` through
+  `mizar-frontend::span_bridge`; the lexer does not adopt session types.
 - **Parser-assisted lexing contract.** The current lexer context is uniform.
   Specify the narrow request object by which `mizar-parser` communicates
   grammar-required string literal positions and symbol-kind filters to

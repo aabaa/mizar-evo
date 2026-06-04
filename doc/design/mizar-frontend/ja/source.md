@@ -81,9 +81,9 @@ pub fn register_source_unit(
 
 ### SourceUnit
 
-`SourceUnit` は 1 つの `.miz` ファイルに対する不変かつソース忠実な読み込み済みレコードである。`source_text` は `mizar-session` が生成した検証済み・ソース読み込み正規化済みテキストそのものである。`source_hash`、`line_map`、`loading_map`、`normalized_path`、`edition`、`origin`、`generated_anchor` は session の値であり、再計算せずにコピーする。`file_path` は診断用のローカル表示パスであり、公開される同一性は `normalized_path` を用いる。
+`SourceUnit` は 1 つの `.miz` ファイルまたは生成ソース断片に対する不変かつソース忠実な読み込み済みレコードである。`source_text` は `mizar-session` が生成した検証済み・ソース読み込み正規化済みテキストそのものである。`source_hash`、`line_map`、`loading_map`、`normalized_path`、`edition`、`origin`、`generated_anchor` は session の値であり、再計算せずにコピーする。`file_path` は診断用のローカル表示パスであり、公開される同一性は `normalized_path` を用いる。
 
-`SourceUnit` は [architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md) の「Incrementality」における Step 1 のキャッシュキーの基点であり、そのキーは正規パス、ソースバイト、エディション、origin で、session の `SourceVersion` と `LoadedSource` が既に捕捉している。
+`SourceUnit` は [architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md) の「Incrementality」における Step 1 の読み込み済み content anchor である。content identity は package/module identity、normalized path、`source_hash`、edition で、対応する session source-version summary と一致する。`origin` と open-buffer version は freshness / diagnostic metadata として保持するが、公開 source-version content identity には含めない。
 
 ### Loading Map の保持
 

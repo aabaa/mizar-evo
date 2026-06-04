@@ -8,10 +8,10 @@ Status: planned.
 
 This module owns the coordinate bridge between `mizar-lexer` byte spans and
 `mizar-session` `SourceRange` values. It is the single place where the frontend
-resolves the top-level open decision recorded in
-[../../todo.md](../../todo.md) "Lexer span bridging": `mizar-lexer` stays
-decoupled and keeps its own byte-offset `SourceSpan`, while the frontend maps
-those spans onto session source coordinates.
+implements the resolved top-level decision recorded in
+[../../todo.md](../../todo.md) "Resolved And Open Decisions": `mizar-lexer`
+stays decoupled and keeps its own byte-offset `SourceSpan`, while the frontend
+maps those spans onto session source coordinates.
 
 Every later module (preprocessing, lexing, parsing) produces lexer-relative byte
 spans; this module converts them into source-id-scoped `SourceRange` /
@@ -89,9 +89,11 @@ the source-loading input, `loaded_mapping` validates the loaded range through th
 registered `LineMap` and returns an exact `MappedSourceRange` with
 `original_input = None`; it does not synthesize or retain a
 `LoadingMap::identity`. `lexical_span` maps a span in comment-stripped lexical
-text (Step 2+ coordinates) and returns a `MappedSourceRange` with the primary
-loaded-source range plus secondary anchors for spans that cross a removed comment
-or synthetic whitespace.
+text (Step 2+ coordinates) and returns a session `MappedSourceRange`. When the
+span has exact loaded-source text, `primary` is that loaded-source range. When the
+span consists only of synthetic whitespace, the session service promotes the best
+anchor to a degraded `primary`; callers must inspect `MappedSourceRange.kind` and
+secondary anchors rather than treating that primary as exact user-authored text.
 
 ## Dependencies
 
@@ -124,7 +126,8 @@ contains the source-loading input bytes. If no `LoadingMap` was registered,
 instead of calling the session service's loaded-to-original API, because that API
 requires a retained `LoadingMap` even for identity conversion. `lexical_span`
 applies the preprocess map, returning composite adjacent anchors at zero-length
-boundaries (for example a lexical range whose interior was a removed comment).
+boundaries (for example a lexical range whose interior was a removed comment) and
+degraded anchor-backed mappings for synthetic-only spans.
 The bridge derives the session-side `PreprocessMap` from the lexer's
 `SourcePreprocessMap` and reuses the optional session `LoadingMap` attached to
 the `SourceUnit`; there is exactly one canonical map per `SourceId`, and identity
@@ -163,7 +166,8 @@ loaded-coordinate `MappedSourceRange` after line-map validation, with
 1. Validate that `span` lies within the lexical text for `source_id`.
 2. Map the lexical offsets to loaded offsets through the `PreprocessMap`,
    producing primary plus secondary anchors when the span crosses a removed
-   comment.
+   comment, or a degraded anchor-backed primary when the span has no exact
+   user-authored source range such as synthetic whitespace.
 3. Return a `MappedSourceRange` using the retained session `SourceMapService`.
    The primary `SourceRange` and secondary anchors are loaded-source
    coordinates. Source-loading input bytes remain an optional view obtained from
@@ -202,6 +206,8 @@ Key scenarios:
   separately through `loaded_mapping` when a loading map exists;
 - a lexical span that crosses a removed comment yields a primary range plus
   secondary anchors;
+- a synthetic-only lexical span returns a degraded `MappedSourceRange` whose
+  primary is an anchor fallback, not an exact user-authored range;
 - an offset not on a UTF-8 boundary is rejected rather than silently truncated;
 - a span outside the registered text length is rejected with the session error;
 - registering two different maps for the same `SourceId` is reported as a

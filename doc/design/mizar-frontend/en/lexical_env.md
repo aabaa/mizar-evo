@@ -94,6 +94,14 @@ right import even when several stubs resolve to the same module. The frontend
 passes only the ordered `ResolvedImport` values to
 `mizar_lexer::build_lexical_environment`.
 
+Before the lexer call, the frontend canonicalizes resolved imports by `ModuleId`
+in first-stub order and passes at most one `ResolvedImport` per module to the
+lexer. This keeps the current lexer conflict contract unambiguous because
+`LexicalEnvironmentError::UserSymbolImportConflict` reports module ids, not
+frontend import ordinals. Duplicate stubs that resolve to the same module remain
+available in provider diagnostics and provenance tables, but they are not passed
+as duplicate active imports to the lexer.
+
 `FrontendLexicalEnvironmentError` is owned by the frontend and wraps provider
 infrastructure failures plus unrecoverable lexer structural errors. The only
 lexer-side error the frontend currently degrades is
@@ -153,18 +161,21 @@ local file is unchanged.
    with unavailable summaries are omitted from the lexer call because
    `mizar_lexer::build_lexical_environment` treats missing summaries as structural
    errors.
-3. Strip the `ResolvedImportEntry` wrappers to the ordered lexer
-   `ResolvedImport` list, then call `mizar_lexer::build_lexical_environment` with
-   the resolved imports and summaries to assemble the `UserSymbolIndex` and
-   `LexicalEnvironmentFingerprint`.
+3. Canonicalize resolved imports by `ModuleId` in first-stub order, retaining a
+   lookup from each active `ModuleId` to its canonical `ResolvedImportEntry`.
+   Strip those canonical wrappers to the ordered lexer `ResolvedImport` list, then
+   call `mizar_lexer::build_lexical_environment` with the resolved imports and
+   summaries to assemble the `UserSymbolIndex` and `LexicalEnvironmentFingerprint`.
 4. If the lexer returns `UserSymbolImportConflict { spelling, earlier_import,
    later_import }`, convert it into a `LexicalEnvironmentDiagnostic`, using the
-   `ResolvedImportEntry` for `later_import` as the primary span and the entry for
-   `earlier_import` as a secondary anchor when available. Remove the later
-   conflicting import entry from the active import set and retry. Repeat this
-   bounded retry until the lexer succeeds or there are no imports left; each retry
-   removes at most one import, so it is deterministic and terminates in at most the
-   original import count.
+   canonical `ResolvedImportEntry` for `later_import` as the primary span and the
+   canonical entry for `earlier_import` as a secondary anchor when available.
+   Remove the later conflicting module from the active import set and retry.
+   Repeat this bounded retry until the lexer succeeds or there are no imports
+   left; each retry removes at most one module, so it is deterministic and
+   terminates in at most the original canonical import count. If either module id
+   is missing from the canonical lookup, treat that as a provider/frontend
+   invariant failure rather than guessing a span.
 5. Treat every other lexer `LexicalEnvironmentError` as an unrecoverable malformed
    summary/provider contract and return
    `FrontendLexicalEnvironmentError::MalformedSummary`. Missing summaries should
@@ -204,10 +215,12 @@ Key scenarios:
 - import stubs plus module lexical summaries produce a `UserSymbolIndex` whose
   candidates carry the correct provenance and import ordinal;
 - diagnostics for unresolved imports, missing summaries, and user-symbol import
-  conflicts point at the originating `ImportStub` span even when multiple stubs
-  resolve to the same module;
+  conflicts point at the originating canonical `ImportStub` span;
+- duplicate resolved imports of the same module are canonicalized before the lexer
+  call and do not create spurious user-symbol import conflicts;
 - user-symbol import conflicts remove the later conflicting import, retry
-  deterministically, and terminate after at most one retry per original import;
+  deterministically, and terminate after at most one retry per original canonical
+  import;
 - non-conflict lexer `LexicalEnvironmentError`s become
   `FrontendLexicalEnvironmentError::MalformedSummary` rather than silently
   dropping arbitrary summaries;

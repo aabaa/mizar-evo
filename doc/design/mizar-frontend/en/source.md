@@ -117,10 +117,12 @@ source-loading-normalized text exactly as `mizar-session` produced it.
 recomputation. `file_path` is a local display path for diagnostics; published
 identity uses `normalized_path`, not `file_path`.
 
-`SourceUnit` is the cache-key anchor for Step 1 in
+`SourceUnit` is the loaded content anchor for Step 1 in
 [architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md)
-"Incrementality": its key is normalized path, source bytes, edition, and origin,
-which the session `SourceVersion` / `LoadedSource` already capture.
+"Incrementality": its content identity is package/module identity, normalized
+path, `source_hash`, and edition, matching the session source-version summary.
+`origin` and open-buffer versions are retained as freshness and diagnostic
+metadata, but they are not part of the published source-version content identity.
 
 ### Loading Map Preservation
 

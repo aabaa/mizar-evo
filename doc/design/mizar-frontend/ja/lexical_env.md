@@ -76,7 +76,9 @@ pub enum LexicalEnvironmentDiagnosticCode {
 }
 ```
 
-`ResolvedImport`、`ModuleLexicalSummary`、`ActiveLexicalEnvironment`、`LexicalEnvironmentFingerprint`、`LexicalEnvironmentError`、`ModuleId` は `mizar-lexer` から再エクスポートされる。`ResolvedImportEntry` は frontend が所有する provenance である。lexer の `ResolvedImport` を、それを生んだ `ImportStub` の source span と ordinal で包み、複数の stub が同じ module へ解決されても後続診断が正しい import へ戻れるようにする。frontend は `mizar_lexer::build_lexical_environment` へは順序付きの `ResolvedImport` 値だけを渡す。
+`ResolvedImport`、`ModuleLexicalSummary`、`ActiveLexicalEnvironment`、`LexicalEnvironmentFingerprint`、`LexicalEnvironmentError`、`ModuleId` は `mizar-lexer` から再エクスポートされる。`ResolvedImportEntry` は frontend が所有する provenance である。lexer の `ResolvedImport` を、それを生んだ `ImportStub` の source span と ordinal で包み、後続診断が正しい import へ戻れるようにする。frontend は `mizar_lexer::build_lexical_environment` へは順序付きの `ResolvedImport` 値だけを渡す。
+
+lexer 呼び出し前に、frontend は解決済み import を `ModuleId` ごとに first-stub order で canonicalize し、module ごとに高々 1 つの `ResolvedImport` だけを lexer へ渡す。現在の lexer の `LexicalEnvironmentError::UserSymbolImportConflict` は frontend import ordinal ではなく module id を返すため、この正規化によって衝突契約を曖昧でなく保つ。同じ module へ解決された重複 stub は provider 診断と provenance table では保持できるが、duplicate active import として lexer へは渡さない。
 
 `FrontendLexicalEnvironmentError` は frontend が所有し、provider infrastructure failure と回復不能な lexer structural error を包む。frontend が現在縮退する lexer-side error は `LexicalEnvironmentError::UserSymbolImportConflict` だけである。それ以外の lexer `LexicalEnvironmentError` variant は、不正 summary / provider contract として `FrontendLexicalEnvironmentError::MalformedSummary` になる。`LexicalSummaryProvider` は、ビルドプランナー／解決器が解決済みインポートと字句サマリを供給するための継ぎ目である。フロントエンドはそれらを構築するためにモジュール IR へ踏み込まない。
 
@@ -103,8 +105,8 @@ pub enum LexicalEnvironmentDiagnosticCode {
 
 1. `LexicalSummaryProvider` に `ImportStub` を `ResolvedImportEntry` と `ModuleLexicalSummary` へ解決させ、インポート順を記録し、診断用に元の stub span を保持する。
 2. プロバイダ側の診断（未解決インポート、欠落した依存字句サマリ）を、意味的事実を作らずに集める。プロバイダは、対応する summary を持つ解決済み import だけを返す。未解決 import や summary が利用できない import は lexer 呼び出しから除外する。`mizar_lexer::build_lexical_environment` は欠落 summary を構造的エラーとして扱うためである。
-3. `ResolvedImportEntry` wrapper から順序付き lexer `ResolvedImport` list を取り出し、解決済みインポートとサマリを与えて `mizar_lexer::build_lexical_environment` を呼び、`UserSymbolIndex` と `LexicalEnvironmentFingerprint` を組み立てる。
-4. lexer が `UserSymbolImportConflict { spelling, earlier_import, later_import }` を返した場合、それを `LexicalEnvironmentDiagnostic` へ変換する。`later_import` に対応する `ResolvedImportEntry` を primary span にし、`earlier_import` に対応する entry があれば secondary anchor にする。後側の衝突 import entry を active import set から除外して再試行する。この bounded retry は lexer が成功するか import が無くなるまで繰り返す。各 retry は高々 1 つの import を除くので、決定的であり、元の import 数以内に必ず停止する。
+3. 解決済み import を `ModuleId` ごとに first-stub order で canonicalize し、各 active `ModuleId` から canonical `ResolvedImportEntry` への lookup を保持する。それらの canonical wrapper から順序付き lexer `ResolvedImport` list を取り出し、解決済みインポートとサマリを与えて `mizar_lexer::build_lexical_environment` を呼び、`UserSymbolIndex` と `LexicalEnvironmentFingerprint` を組み立てる。
+4. lexer が `UserSymbolImportConflict { spelling, earlier_import, later_import }` を返した場合、それを `LexicalEnvironmentDiagnostic` へ変換する。`later_import` に対応する canonical `ResolvedImportEntry` を primary span にし、`earlier_import` に対応する canonical entry があれば secondary anchor にする。後側の衝突 module を active import set から除外して再試行する。この bounded retry は lexer が成功するか import が無くなるまで繰り返す。各 retry は高々 1 つの module を除くので、決定的であり、元の canonical import 数以内に必ず停止する。どちらかの module id が canonical lookup に存在しない場合は、span を推測せず provider/frontend の不変条件違反として扱う。
 5. それ以外の lexer `LexicalEnvironmentError` は回復不能な不正 summary / provider contract として扱い、`FrontendLexicalEnvironmentError::MalformedSummary` を返す。欠落 summary は lexer 呼び出し前に診断・除外されているべきなので、ここで `MissingModuleSummary` が出るなら user-facing な回復可能診断ではなく provider/frontend の不変条件違反である。
 6. 環境、fingerprint、統合された診断を返す。
 
@@ -112,15 +114,16 @@ pub enum LexicalEnvironmentDiagnosticCode {
 
 ## エラー処理
 
-`LexicalEnvironmentError`（`mizar-lexer` 由来）は、衝突するサマリ fingerprint や不正なサマリデータといった構造的失敗を扱う。provider infrastructure failure は lexer 所有の enum では表現できないため、frontend は hard failure を `FrontendLexicalEnvironmentError` で包む。プロバイダ側の問題（どのモジュールにも解決しないインポート、字句サマリが利用できない依存）は `LexicalEnvironmentDiagnostic` として運び、該当 import を lexer 呼び出し前に除外するので、ファイル全体を失敗させるのではなく、より小さなアクティブ環境へ縮退できる。回復可能な lexer 側ケースは `UserSymbolImportConflict` に限定する。frontend は後側の衝突 import を診断し、分かる場合は前側 import を secondary context に追加し、後側 import を除去して環境構築を再試行する。不正な exported symbol spelling、不正 arity、reserved word / symbol collision、一貫しない重複 summary、想定外の欠落 summary は hard な malformed-summary failure である。frontend は不正な依存 summary のどの subset が利用可能かを安全に推測できないためである。インポートの合法性（可視性、字句的形を超えるエクスポートランク衝突）はモジュール解決へ先送りし、ここでは決して判断しない。
+`LexicalEnvironmentError`（`mizar-lexer` 由来）は、衝突するサマリ fingerprint や不正なサマリデータといった構造的失敗を扱う。provider infrastructure failure は lexer 所有の enum では表現できないため、frontend は hard failure を `FrontendLexicalEnvironmentError` で包む。プロバイダ側の問題（どのモジュールにも解決しないインポート、字句サマリが利用できない依存）は `LexicalEnvironmentDiagnostic` として運び、該当 import を lexer 呼び出し前に除外するので、ファイル全体を失敗させるのではなく、より小さなアクティブ環境へ縮退できる。回復可能な lexer 側ケースは `UserSymbolImportConflict` に限定する。frontend は後側の衝突 module を canonical provenance で診断し、分かる場合は前側 import を secondary context に追加し、後側 module を除去して環境構築を再試行する。不正な exported symbol spelling、不正 arity、reserved word / symbol collision、一貫しない重複 summary、想定外の欠落 summary は hard な malformed-summary failure である。frontend は不正な依存 summary のどの subset が利用可能かを安全に推測できないためである。インポートの合法性（可視性、字句的形を超えるエクスポートランク衝突）はモジュール解決へ先送りし、ここでは決して判断しない。
 
 ## テスト
 
 主要シナリオ:
 
 - インポートスタブとモジュール字句サマリが、正しい出所とインポート序数を持つ候補からなる `UserSymbolIndex` を生む。
-- 未解決 import、欠落 summary、user-symbol import conflict の診断が、複数 stub が同じ module へ解決される場合でも元の `ImportStub` span を指す。
-- user-symbol import conflict は後側の衝突 import を除去して決定的に retry し、元の import ごとに高々 1 回の retry で停止する。
+- 未解決 import、欠落 summary、user-symbol import conflict の診断が、元の canonical `ImportStub` span を指す。
+- 同じ module へ解決された重複 import は lexer 呼び出し前に canonicalize され、spurious な user-symbol import conflict を生まない。
+- user-symbol import conflict は後側の衝突 import を除去して決定的に retry し、元の canonical import ごとに高々 1 回の retry で停止する。
 - conflict 以外の lexer `LexicalEnvironmentError` は、任意の summary を黙って落とすのではなく `FrontendLexicalEnvironmentError::MalformedSummary` になる。
 - 異なるモジュールからインポートされた同綴りユーザー記号は決定的な字句環境衝突を生み、異なる綴りで重なり合う記号は字句解析器の最長一致選択で引き続き利用できる。
 - 未解決インポートは診断とともにより小さな環境へ縮退し、残りの記号は読み込まれる。

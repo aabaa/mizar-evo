@@ -36,6 +36,28 @@ pub struct ParserInputs {
     pub string_required_positions: StringRequiredContext,
 }
 
+pub struct OperatorFixityTable {
+    pub entries: Vec<OperatorFixityEntry>,
+}
+
+pub struct OperatorFixityEntry {
+    pub symbol_id: SymbolId,
+    pub spelling: Arc<str>,
+    pub precedence: u16,
+    pub associativity: OperatorAssociativity,
+}
+
+pub enum OperatorAssociativity {
+    Left,
+    Right,
+    NonAssociative,
+}
+
+pub enum StringRequiredContext {
+    None,
+    UniformForTest,
+}
+
 pub trait ParserSeam {
     type Ast;
     type Diagnostic;
@@ -59,12 +81,15 @@ is derived by the frontend from the active lexical environment and edition after
 Step 3; callers do not supply it to the top-level frontend coordinator.
 
 `operator_fixity` is populated only from data present in dependency lexical
-summaries. If the current summary shape does not yet expose fixity, the stub
-path uses an empty table and the TODO keeps real Pratt/fixity tests gated on
-`mizar-parser` / `mizar-syntax` availability. `string_required_positions` is the
-parser-facing description of grammar positions that require string tokens; the
-exact way it becomes a lexer `ParserLexContext` / lexing plan is the
-parser-assisted lexing contract.
+summaries. If the current summary shape does not yet expose fixity, the stub path
+uses `OperatorFixityTable { entries: Vec::new() }` and the TODO keeps real
+Pratt/fixity tests gated on `mizar-parser` / `mizar-syntax` availability.
+`StringRequiredContext::None` is the normal source-to-token foundation mode, and
+`UniformForTest` is only for bounded tests that intentionally run the whole lexer
+under `ParserLexContext::string_required()`. Position-specific string-required
+spans and parser-driven symbol-kind filters are not represented by this initial
+type; they are added by the parser-assisted lexing contract before real source
+inputs that require grammar-position string literals are enabled.
 
 `ast = None` means the parser could not recover enough structure for later
 phases; lexical and syntax diagnostics are still returned.
@@ -116,8 +141,11 @@ passes it through unchanged; it does not rewrite, prune, or interpret nodes.
 
 When the integration uses parser-assisted disambiguation, the parser-facing seam
 supplies string-required positions or symbol-kind filters back to Step 4 through
-a narrow request object. The lexer still must not receive arbitrary parser
-state, and the parser must not mutate lexer internals directly.
+a narrow request object. Until that contract lands, real parser integration must
+not require source-level annotation/operator string-literal tokenization; tests
+for those cases use synthetic token streams or remain gated. The lexer still must
+not receive arbitrary parser state, and the parser must not mutate lexer internals
+directly.
 
 ## Error Handling
 
@@ -136,6 +164,8 @@ Key scenarios:
 
 - the stub seam returns `ast = None` and no diagnostics without depending on
   `mizar-syntax` or `mizar-parser`;
+- `ParserInputs` uses an empty `OperatorFixityTable` and
+  `StringRequiredContext::None` for the stub source-to-token path;
 - once the real seam is available, a well-formed token stream parses to a
   `SurfaceAst` with preserved source order and `SourceRange`s;
 - once lexical summaries expose fixity, operator fixity from the active lexical
