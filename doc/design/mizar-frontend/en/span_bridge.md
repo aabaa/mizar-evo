@@ -81,11 +81,17 @@ pub enum SpanBridgeError {
 `mizar-lexer` byte spans onto them. `loaded_span` maps a span in loaded text
 (Step 1 coordinates) into a validated loaded-text `SourceRange`. It does not
 rewrite the `SourceRange` into raw file/editor byte offsets. Callers that need
-source-loading input byte offsets use `loaded_mapping`, whose `original_input`
-field is populated when a `LoadingMap` exists. `lexical_span` maps a span in
-comment-stripped lexical text (Step 2+ coordinates) and returns a
-`MappedSourceRange` with the primary loaded-source range plus secondary anchors
-for spans that cross a removed comment or synthetic whitespace.
+source-loading input byte offsets use `loaded_mapping`. When a `LoadingMap` is
+registered, `loaded_mapping` delegates loaded-to-original conversion to the
+retained session `SourceMapService` and populates `original_input`. When source
+loading emitted no `LoadingMap` because the loaded text is offset-identical to
+the source-loading input, `loaded_mapping` validates the loaded range through the
+registered `LineMap` and returns an exact `MappedSourceRange` with
+`original_input = None`; it does not synthesize or retain a
+`LoadingMap::identity`. `lexical_span` maps a span in comment-stripped lexical
+text (Step 2+ coordinates) and returns a `MappedSourceRange` with the primary
+loaded-source range plus secondary anchors for spans that cross a removed comment
+or synthetic whitespace.
 
 ## Dependencies
 
@@ -113,12 +119,16 @@ The bridge composes three `mizar-session` map layers per `SourceId`:
 returns a loaded-text `SourceRange`. `loaded_mapping` additionally composes the
 registered `LoadingMap` when present and returns a `MappedSourceRange` whose
 primary range is still in loaded-text coordinates and whose `original_input`
-contains the source-loading input bytes. `lexical_span` applies the preprocess
-map, returning composite adjacent anchors at zero-length boundaries (for example
-a lexical range whose interior was a removed comment). The bridge derives the
-session-side `PreprocessMap` from the lexer's `SourcePreprocessMap` and reuses
-the session `LoadingMap` attached to the `SourceUnit`; there is exactly one
-canonical map per `SourceId`.
+contains the source-loading input bytes. If no `LoadingMap` was registered,
+`loaded_mapping` returns the validated loaded range with `original_input = None`
+instead of calling the session service's loaded-to-original API, because that API
+requires a retained `LoadingMap` even for identity conversion. `lexical_span`
+applies the preprocess map, returning composite adjacent anchors at zero-length
+boundaries (for example a lexical range whose interior was a removed comment).
+The bridge derives the session-side `PreprocessMap` from the lexer's
+`SourcePreprocessMap` and reuses the optional session `LoadingMap` attached to
+the `SourceUnit`; there is exactly one canonical map per `SourceId`, and identity
+source-loading maps are not materialized by the frontend bridge.
 
 ### Registry
 
@@ -143,8 +153,10 @@ insert happens.
 bytes for LSP or source-loading diagnostics, `loaded_mapping` uses the retained
 `LoadingMap` and returns them in `MappedSourceRange.original_input`. If no
 loading map was emitted because source loading was offset-identical,
-`loaded_mapping` returns an exact mapping with `original_input = None` rather
-than inventing a second identity map.
+`loaded_mapping` does not call
+`SourceMapService::original_range_for_loaded`; it constructs an exact
+loaded-coordinate `MappedSourceRange` after line-map validation, with
+`original_input = None`, rather than inventing a second identity map.
 
 ### Map a lexical-text span (Step 2+ tokens and diagnostics)
 
@@ -155,7 +167,7 @@ than inventing a second identity map.
 3. Return a `MappedSourceRange` using the retained session `SourceMapService`.
    The primary `SourceRange` and secondary anchors are loaded-source
    coordinates. Source-loading input bytes remain an optional view obtained from
-   `loaded_mapping` / the loading map when consumers need them.
+   `loaded_mapping` when a loading map exists.
 
 All conversions delegate the arithmetic to `mizar-session`; this module only
 selects the right map layer, enforces per-`SourceId` registration invariants, and
@@ -166,9 +178,11 @@ chooses whether the caller needs a plain loaded `SourceRange` or a richer
 
 `SpanBridgeError` wraps the failures the retained session `SourceMapService`
 reports through `SpanBridgeError::SourceMap` — unknown source id, range outside
-source/lexical text, offset not on a UTF-8 boundary, missing preprocess-map
-segment, line/column overflow — plus frontend-local "source not registered",
-"preprocess map not registered", and "conflicting map registration" cases.
+source/lexical text, offset not on a UTF-8 boundary, missing loading-map segment
+when `loaded_mapping` is asked to compose a registered but incomplete loading
+map, missing preprocess-map segment, line/column overflow — plus frontend-local
+"source not registered", "preprocess map not registered", and "conflicting map
+registration" cases.
 A bridge failure is an internal invariant violation (a span that does not belong
 to its declared source), not a user diagnostic; orchestration treats it as a bug
 surface rather than a recoverable lexical/syntax diagnostic.
@@ -180,6 +194,9 @@ Key scenarios:
 - a loaded-text span over BOM-stripped text remains a valid loaded-source
   `SourceRange`, and `loaded_mapping` reports the correct original byte offsets
   through the loading map;
+- an identity loaded source with no `LoadingMap` returns an exact
+  `MappedSourceRange` with `original_input = None`, without retaining
+  `LoadingMap::identity`;
 - a lexical-text span maps through the preprocess map to the expected
   loaded-source `SourceRange`, and callers can obtain original input bytes
   separately through `loaded_mapping` when a loading map exists;

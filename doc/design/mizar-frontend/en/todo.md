@@ -80,16 +80,19 @@ keep `cargo test -p mizar-frontend` green (see
    - Make `SpanBridgeError` distinguish frontend-local registration invariants
      (`SourceNotRegistered`, `PreprocessMapNotRegistered`, conflicting source /
      preprocess registrations) from wrapped `mizar-session::SourceMapError`.
-   - Derive the session-side `LoadingMap` / `PreprocessMap` from the lexer
-     `SourceLoadingMap` / `SourcePreprocessMap` (or reuse the session
-     `LoadingMap` attached to the `SourceUnit`) so there is one canonical map per
-     `SourceId`.
+   - Reuse the optional session `LoadingMap` attached to the `SourceUnit` and
+     derive the session-side `PreprocessMap` from the lexer `SourcePreprocessMap`;
+     do not synthesize or retain `LoadingMap::identity` for identity loads. When
+     `loaded_mapping` sees no loading map, it returns an exact loaded-coordinate
+     mapping with `original_input = None` after line-map validation.
    - Tests: `loaded_span` over BOM-stripped text stays in loaded-text
      coordinates, while `loaded_mapping` reports original input offsets through
      `MappedSourceRange.original_input`; lexical span maps through the preprocess
-     map to loaded-source coordinates; a span crossing a removed comment yields
-     primary plus secondary anchors; non-UTF-8-boundary and out-of-range spans are
-     rejected; conflicting map registration is reported.
+     map to loaded-source coordinates; an identity load without `LoadingMap`
+     returns exact `loaded_mapping` with `original_input = None`; a span crossing
+     a removed comment yields primary plus secondary anchors; non-UTF-8-boundary
+     and out-of-range spans are rejected; conflicting map registration is
+     reported.
    - Spec: [span_bridge.md](./span_bridge.md) "Public API", "Algorithm / Logic".
 
 ### Module: source (`src/source.rs`)
@@ -181,13 +184,19 @@ keep `cargo test -p mizar-frontend` green (see
      unavailable before calling the lexer; represent them as
      `LexicalEnvironmentDiagnostic`s so the lexer is not asked to build with
      missing summaries.
+   - Handle `LexicalEnvironmentError::UserSymbolImportConflict` with a bounded
+     deterministic retry: diagnose the later conflicting import using
+     `ResolvedImportEntry` provenance, add the earlier import as secondary context
+     when known, remove the later import, and retry at most once per original
+     import. Treat every other lexer `LexicalEnvironmentError` as
+     `FrontendLexicalEnvironmentError::MalformedSummary`.
    - Tests: equal-spelling user symbols imported from different modules produce a
-     deterministic lexical-environment conflict or provider diagnostic according
-     to the lexer/spec contract; an unresolved import degrades to a smaller
-     environment with a diagnostic while remaining symbols load; a missing
-     summary is omitted before the lexer call and diagnosed; the fingerprint
-     changes when a dependency summary changes and is stable for comment-only
-     local edits.
+     deterministic lexical-environment conflict diagnostic and retry by dropping
+     the later import; an unresolved import degrades to a smaller environment with
+     a diagnostic while remaining symbols load; a missing summary is omitted
+     before the lexer call and diagnosed; non-conflict lexer environment errors
+     become `MalformedSummary`; the fingerprint changes when a dependency summary
+     changes and is stable for comment-only local edits.
    - Depends on: 5. Spec: [lexical_env.md](./lexical_env.md) "Algorithm / Logic",
      "Error Handling".
 
@@ -282,16 +291,19 @@ keep `cargo test -p mizar-frontend` green (see
 
 13. **Frontend coordinator and diagnostic merge.** [ ]
     - Add `pub mod orchestration;`. Define `FrontendOutput`, `Frontend`,
-      `FrontendDiagnostic`, `DiagnosticCode`, `DiagnosticClass`, and
-      `FrontendError`; wire
+      `FrontendDiagnostic`, `DiagnosticLocation`, `SourceLoadLocation`,
+      `DiagnosticCode`, `DiagnosticClass`, and `FrontendError`; wire
       `source` → `preprocess` → `lexical_env` → `lexing` → `parsing` and merge all
       phase diagnostics, including import-pre-scan, lexical-environment,
       scope-skeleton, and tokenization diagnostics, into the deterministic order in
       [orchestration.md](./orchestration.md) "Diagnostic Merge Order".
-    - `FrontendDiagnostic` carries code, message, class, primary `SourceRange`,
-      secondary `SourceAnchor`s, and optional recovery note; `FrontendError`
-      distinguishes source-load, span-bridge, and lexical-environment hard
-      failures.
+    - `FrontendDiagnostic` carries code, message, class, `DiagnosticLocation`,
+      secondary `SourceAnchor`s, and optional recovery note. Range-backed
+      diagnostics use `DiagnosticLocation::SourceRange`; source-load diagnostics
+      use `DiagnosticLocation::SourceLoad` with the best available path,
+      normalized path, open-buffer URI, generated anchor, or `Unknown`.
+      `FrontendError` distinguishes source-load, span-bridge, and
+      lexical-environment hard failures.
     - Tests: with `StubParserSeam`, a well-formed source returns source,
       preprocessing output, tokens, `ast = None`, and no parser diagnostics; merge
       order is identical across repeated runs. With the real parser seam, add the
@@ -305,9 +317,11 @@ keep `cargo test -p mizar-frontend` green (see
       invariant violations from source registration / preprocessing / lexing, and
       `FrontendLexicalEnvironmentError` from lexical-environment construction;
       keep recoverable problems as diagnostics inside `FrontendOutput`.
-    - Tests: a Step 1 load failure returns `FrontendError` with the file-level
-      diagnostic and no output; a parser seam that returns `ast = None` preserves
-      earlier diagnostics; merged diagnostics carry valid `SourceRange`s.
+    - Tests: a Step 1 load failure returns `FrontendError` with a file-level
+      `DiagnosticLocation::SourceLoad` diagnostic and no output; source-load
+      diagnostics do not fabricate zero-length `SourceRange`s; a parser seam that
+      returns `ast = None` preserves earlier diagnostics; range-backed merged
+      diagnostics carry valid `SourceRange`s.
     - Depends on: 13. Spec: [orchestration.md](./orchestration.md) "Error
       Handling".
 

@@ -45,8 +45,8 @@ frontend の基盤は `mizar-session` と `mizar-lexer` に依存する。`mizar
    - `mizar-frontend` crate をワークスペースに追加し、`mizar-session` と `mizar-lexer` に依存させる。ワークスペースの `[workspace.lints]` テーブルに `lints.workspace = true` でオプトインする（`mizar-session` と同様）。
    - `pub mod span_bridge;` を追加し、`SpanBridge`、`LexerByteSpan`、`SpanBridgeError` を定義する。`SpanBridge` は retained session source-map service を所有し、fallible な `register_source` / `register_preprocess_map`、および retained `mizar-session` map 上の `loaded_span`、`loaded_mapping`、`lexical_span` 変換を提供する。
    - `SpanBridgeError` は frontend-local な登録不変条件（`SourceNotRegistered`、`PreprocessMapNotRegistered`、source / preprocess 登録衝突）と、wrapped `mizar-session::SourceMapError` を区別する。
-   - session 側の `LoadingMap` / `PreprocessMap` を字句解析器の `SourceLoadingMap` / `SourcePreprocessMap` から導出する（または `SourceUnit` に付随する session `LoadingMap` を再利用する）ので、`SourceId` ごとに正準マップは 1 つである。
-   - テスト: BOM 除去テキスト上の `loaded_span` は読み込み済みテキスト座標のままで、`loaded_mapping` は `MappedSourceRange.original_input` を通じて元入力オフセットを報告する。字句スパンが preprocess map を通じて読み込み済みソース座標へ変換される。除去コメントをまたぐスパンが第一 + 隣接アンカーを生む。UTF-8 境界外および範囲外のスパンが拒否される。衝突するマップ登録が報告される。
+   - `SourceUnit` に付随する任意の session `LoadingMap` を再利用し、session 側 `PreprocessMap` を字句解析器の `SourcePreprocessMap` から導出する。identity load に対して `LoadingMap::identity` を合成・保持しない。`loaded_mapping` が loading map を見つけない場合、line map 検証後に `original_input = None` の exact な読み込み済み座標 mapping を返す。
+   - テスト: BOM 除去テキスト上の `loaded_span` は読み込み済みテキスト座標のままで、`loaded_mapping` は `MappedSourceRange.original_input` を通じて元入力オフセットを報告する。字句スパンが preprocess map を通じて読み込み済みソース座標へ変換される。`LoadingMap` を持たない identity load は `original_input = None` の exact `loaded_mapping` を返す。除去コメントをまたぐスパンが第一 + 隣接アンカーを生む。UTF-8 境界外および範囲外のスパンが拒否される。衝突するマップ登録が報告される。
    - 仕様: [span_bridge.md](./span_bridge.md)「Public API」「Algorithm / Logic」。
 
 ### モジュール: source (`src/source.rs`)
@@ -84,7 +84,8 @@ frontend の基盤は `mizar-session` と `mizar-lexer` に依存する。`mizar
 6. **アクティブ字句環境の構築。** [ ]
    - `mizar_lexer::build_lexical_environment` を呼ぶ `build_active_lexical_environment` を実装する。プロバイダ診断を統合し、`LexicalEnvironmentFingerprint` を計算・表面化する。
    - lexer を呼ぶ前に、未解決 import と依存字句サマリが利用できない import を除外し、`LexicalEnvironmentDiagnostic` として表す。欠落 summary を持つ入力で lexer に環境構築を要求しない。
-   - テスト: 異なるモジュールからインポートされた同綴りユーザー記号は、lexer/spec contract に従って決定的な字句環境衝突または provider 診断を生む。未解決インポートが診断とともにより小さな環境へ縮退し、残りの記号が読み込まれる。欠落 summary が lexer 呼び出し前に除外・診断される。fingerprint が依存サマリの変更で変化し、ローカルのコメントのみの編集では安定である。
+   - `LexicalEnvironmentError::UserSymbolImportConflict` は bounded deterministic retry で扱う。`ResolvedImportEntry` provenance を使って後側の衝突 import を診断し、分かる場合は前側 import を secondary context に追加し、後側 import を除去して元の import ごとに高々 1 回 retry する。それ以外の lexer `LexicalEnvironmentError` は `FrontendLexicalEnvironmentError::MalformedSummary` として扱う。
+   - テスト: 異なるモジュールからインポートされた同綴りユーザー記号は、決定的な字句環境衝突診断を生み、後側 import を落として retry する。未解決インポートが診断とともにより小さな環境へ縮退し、残りの記号が読み込まれる。欠落 summary が lexer 呼び出し前に除外・診断される。conflict 以外の lexer environment error は `MalformedSummary` になる。fingerprint が依存サマリの変更で変化し、ローカルのコメントのみの編集では安定である。
    - 依存: 5。仕様: [lexical_env.md](./lexical_env.md)「Algorithm / Logic」「Error Handling」。
 
 ### モジュール: lexing (`src/lexing.rs`)
@@ -127,14 +128,14 @@ frontend の基盤は `mizar-session` と `mizar-lexer` に依存する。`mizar
 ### モジュール: orchestration (`src/orchestration.rs`)
 
 13. **フロントエンド coordinator と診断統合。** [ ]
-    - `pub mod orchestration;` を追加する。`FrontendOutput`、`Frontend`、`FrontendDiagnostic`、`DiagnosticCode`、`DiagnosticClass`、`FrontendError` を定義する。`source` → `preprocess` → `lexical_env` → `lexing` → `parsing` を配線し、インポート事前走査・字句環境・スコープスケルトン・トークン化診断を含むすべてのフェーズ診断を [orchestration.md](./orchestration.md)「Diagnostic Merge Order」の決定的順序へ統合する。
-    - `FrontendDiagnostic` は code、message、class、primary `SourceRange`、secondary `SourceAnchor`、任意の recovery note を持つ。`FrontendError` は source-load、span-bridge、lexical-environment の hard failure を区別する。
+    - `pub mod orchestration;` を追加する。`FrontendOutput`、`Frontend`、`FrontendDiagnostic`、`DiagnosticLocation`、`SourceLoadLocation`、`DiagnosticCode`、`DiagnosticClass`、`FrontendError` を定義する。`source` → `preprocess` → `lexical_env` → `lexing` → `parsing` を配線し、インポート事前走査・字句環境・スコープスケルトン・トークン化診断を含むすべてのフェーズ診断を [orchestration.md](./orchestration.md)「Diagnostic Merge Order」の決定的順序へ統合する。
+    - `FrontendDiagnostic` は code、message、class、`DiagnosticLocation`、secondary `SourceAnchor`、任意の recovery note を持つ。range-backed 診断は `DiagnosticLocation::SourceRange` を使う。source-load 診断は利用可能な path、normalized path、open-buffer URI、generated anchor、または `Unknown` を持つ `DiagnosticLocation::SourceLoad` を使う。`FrontendError` は source-load、span-bridge、lexical-environment の hard failure を区別する。
     - テスト: `StubParserSeam` では、整形式ソースが source、preprocessing output、tokens、`ast = None`、parser 診断なしを返す。統合順序が繰り返し実行で同一である。実 parser seam では `ast = Some` と構文診断順序の assertion を追加する。
     - 依存: 9、10。real-parser assertion は 12 に依存する。仕様: [orchestration.md](./orchestration.md)「Algorithm / Logic」「Diagnostic Merge Order」。
 
 14. **回復不能な失敗の処理とエンドツーエンド出力。** [ ]
     - `FrontendError` を Step 1 読み込み失敗、source 登録／前処理／字句解析からの `SpanBridgeError` 不変条件違反、および字句環境構築からの `FrontendLexicalEnvironmentError` に対して返す。回復可能な問題は `FrontendOutput` 内の診断として保つ。
-    - テスト: Step 1 読み込み失敗がファイルレベル診断を伴う `FrontendError` を返し出力なし。`ast = None` を返す parser seam が先行診断を保持する。統合診断が妥当な `SourceRange` を運ぶ。
+    - テスト: Step 1 読み込み失敗が file-level `DiagnosticLocation::SourceLoad` 診断を伴う `FrontendError` を返し出力なし。source-load 診断はゼロ長 `SourceRange` を捏造しない。`ast = None` を返す parser seam が先行診断を保持する。range-backed な統合診断が妥当な `SourceRange` を運ぶ。
     - 依存: 13。仕様: [orchestration.md](./orchestration.md)「Error Handling」。
 
 ### 横断的フォローアップの前のモジュール全体の保守

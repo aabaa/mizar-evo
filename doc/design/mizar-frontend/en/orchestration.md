@@ -58,9 +58,22 @@ pub struct FrontendDiagnostic {
     pub code: DiagnosticCode,
     pub message: Arc<str>,
     pub class: DiagnosticClass,
-    pub primary: SourceRange,
+    pub location: DiagnosticLocation,
     pub secondary: Vec<SourceAnchor>,
     pub recovery_note: Option<String>,
+}
+
+pub enum DiagnosticLocation {
+    SourceRange(SourceRange),
+    SourceLoad(SourceLoadLocation),
+}
+
+pub enum SourceLoadLocation {
+    Path { path: PathBuf },
+    NormalizedPath { path: NormalizedPath },
+    OpenBuffer { uri: DocumentUri },
+    Generated { anchor: Option<SourceAnchor> },
+    Unknown,
 }
 
 pub enum DiagnosticCode {
@@ -72,6 +85,7 @@ pub enum DiagnosticCode {
 }
 
 pub enum DiagnosticClass {
+    SourceLoad,
     LexicalPrecondition,
     CommentStructure,
     ImportPrescan,
@@ -103,7 +117,11 @@ unified diagnostic that all phase-specific diagnostics
 (`SourcePreprocessDiagnostic`, `ImportPrescanDiagnostic`,
 `LexicalEnvironmentDiagnostic`, `LexingDiagnostic` including raw-scan /
 scope-skeleton / lexer diagnostics, and `SyntaxDiagnostic`) are mapped into, so
-consumers see one ordered list keyed by `SourceRange`.
+consumers see one ordered list. Range-backed diagnostics use
+`DiagnosticLocation::SourceRange`; source-load failures that occur before a
+`SourceId` / `LineMap` exists use `DiagnosticLocation::SourceLoad` with the best
+available path, normalized-path, open-buffer URI, generated anchor, or `Unknown`
+location.
 `DiagnosticCode::Syntax` stores the parser-owned syntax diagnostic code key once
 the real parser seam is enabled; with `StubParserSeam` no syntax diagnostics are
 emitted.
@@ -116,9 +134,9 @@ the lexical, preprocessing, and syntax diagnostics are still returned.
 - Internal: `source`, `preprocess`, `lexical_env`, `lexing`, `parsing`,
   `span_bridge` (constructed once and threaded through the phases).
 - External: `mizar-session` (`SourceId`, `SourceRange`, `SourceAnchor`,
-  `SessionIdAllocator`, `BuildSnapshotId`), `mizar-lexer`. The real parser seam
-  additionally depends on `mizar-syntax` and `mizar-parser` once those crates
-  exist.
+  `NormalizedPath`, `DocumentUri`, `SessionIdAllocator`, `BuildSnapshotId`),
+  `mizar-lexer`, and `std::path::PathBuf`. The real parser seam additionally
+  depends on `mizar-syntax` and `mizar-parser` once those crates exist.
 
 This module is the public entry point of the crate; it is consumed by the
 compiler driver, LSP, the formatter, and tests.
@@ -137,8 +155,9 @@ dependency export change invalidates tokenization.
 
 ### Diagnostic Merge Order
 
-Diagnostics merge by phase precedence and then by primary `SourceRange` start,
-so the order is stable across runs and independent of internal scheduling:
+Range-backed diagnostics merge by phase precedence and then by primary
+`SourceRange` start, so the order is stable across runs and independent of
+internal scheduling:
 
 1. lexical precondition (Steps 1-2);
 2. comment structure (Step 2);
@@ -148,10 +167,14 @@ so the order is stable across runs and independent of internal scheduling:
 6. tokenization (Step 4);
 7. syntax and annotation syntax (Step 5).
 
-Within a class, order by primary span start, then by diagnostic code. Secondary
-`SourceAnchor`s are preserved for display and explanation but do not participate
-in sorting. A recovery note is attached when a later diagnostic may be affected
-by an earlier recovery.
+Within a class, order range-backed diagnostics by primary span start, then by
+diagnostic code. Source-load diagnostics do not participate in the returned
+`FrontendOutput` merge because a source-load failure returns `FrontendError`
+before any phase artifact exists. If a caller displays several source-load
+failures from a batch, order them by the stable source-load location key and then
+by diagnostic code. Secondary `SourceAnchor`s are preserved for display and
+explanation but do not participate in sorting. A recovery note is attached when a
+later diagnostic may be affected by an earlier recovery.
 
 ## Algorithm / Logic
 
@@ -160,7 +183,8 @@ by an earlier recovery.
 1. Construct a fresh mutable `SpanBridge` with its owned retained source-map
    service.
 2. Load the `SourceUnit` (`source`); on a load error, return a `FrontendError`
-   carrying the file-level diagnostic and stop.
+   carrying a file-level diagnostic whose location is
+   `DiagnosticLocation::SourceLoad`, and stop.
 3. Register the loaded source maps on the bridge, then preprocess
    (`preprocess`): register the preprocess map, produce `PreprocessedSource`,
    and collect Step-2 diagnostics. Propagate a `SpanBridgeError` as
@@ -188,6 +212,10 @@ invalid UTF-8, path outside root) and internal `SpanBridgeError` invariant
 violations. `FrontendLexicalEnvironmentError` from lexical-environment
 construction also becomes a `FrontendError` when the active lexical environment
 cannot be degraded safely.
+Source-load errors are allowed to lack a `SourceRange` because most of them occur
+before `SourceId` allocation, UTF-8 validation, or `LineMap` construction. They
+must be reported with `DiagnosticLocation::SourceLoad`, never with a fabricated
+zero-length source range.
 Recoverable lexical precondition, comment, import pre-scan, lexical-environment,
 scope-skeleton, tokenization, and syntax problems are not `FrontendError`s; they
 are `FrontendDiagnostic`s inside a returned `FrontendOutput`. The stub parser
@@ -214,14 +242,18 @@ Key scenarios:
 - diagnostic order is identical across repeated runs regardless of internal
   scheduling;
 - the merged diagnostics carry valid `SourceRange`s resolved through the span
-  bridge.
+  bridge when they are range-backed, while source-load failures carry non-range
+  `SourceLoadLocation`s.
 
 ## Constraints and Assumptions
 
 - This module owns orchestration only; phase logic stays in the per-phase modules
   and the upstream crates.
 - The frontend produces syntax, not semantics.
-- Diagnostic merge order is deterministic and span-keyed.
+- Returned-output diagnostic merge order is deterministic and span-keyed for
+  range-backed diagnostics.
 - `FrontendError` is for unrecoverable failures; recoverable problems are mapped
   diagnostics inside `FrontendOutput`.
+- Source-load diagnostics must not fabricate source ranges; they use
+  `DiagnosticLocation::SourceLoad`.
 - Frontend artifacts are internal compiler data, not stable public build outputs.
