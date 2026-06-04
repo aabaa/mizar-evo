@@ -34,7 +34,7 @@ It complements [README.md](./README.md) (doc layout) and the pipeline definition
 | mizar-lexer | Raw scan + context-sensitive token disambiguation | — | [x] | [todo](./mizar-lexer/en/todo.md) |
 | mizar-syntax | `SurfaceAst`, syntax nodes, trivia, recovery markers | mizar-session | [ ] | [README](./mizar-syntax/en/README.md) |
 | mizar-parser | Grammar, Pratt parsing, syntax recovery | mizar-lexer, mizar-syntax | [ ] | [README](./mizar-parser/en/README.md) |
-| mizar-frontend | Source loading + phase 1-3 orchestration | mizar-session, mizar-lexer; real parser seam later uses mizar-syntax, mizar-parser | [ ] | [todo](./mizar-frontend/en/todo.md) |
+| mizar-frontend | Source loading + phase 1-3 orchestration | mizar-session, mizar-lexer; real parser seam later uses mizar-syntax, mizar-parser | [~] | [todo](./mizar-frontend/en/todo.md) |
 | mizar-test | Test corpus + harness | (consumers) | [~] skeleton | — |
 | mizar-lsp | Editor integration / range mapping | mizar-session, mizar-lexer | [~] skeleton | — |
 

@@ -16,7 +16,7 @@
 | source | [source.md](./source.md) | `src/source.rs` | [x] |
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
-| lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [ ] |
+| lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [~] |
 | parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [ ] |
 | orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [ ] |
 
@@ -214,7 +214,7 @@ keep `cargo test -p mizar-frontend` green (see
 
 ### Module: lexing (`src/lexing.rs`)
 
-7. **Raw scan and scope skeleton wiring.** [ ]
+7. **Raw scan and scope skeleton wiring.** [x]
    - Add `pub mod lexing;`. Define `TokenizeRequest`, `InternedText = Arc<str>`,
      the frontend `Token` /
      `TokenStream` (session-spanned), `LexingDiagnostic`, and
@@ -255,15 +255,14 @@ keep `cargo test -p mizar-frontend` green (see
 
 9. **Lexer recovery passthrough.** [ ]
    - Preserve `TokenKind::ErrorRecovery` spans and lexer diagnostics end to end as
-     mapped `LexingDiagnostic`s; adapt strict raw-scan hard errors into one coarse
-     recovery token plus one coarse `RawScan` diagnostic so the frontend
-     `tokenize` wrapper returns `Ok(TokenStream)` for recoverable input problems.
+     mapped `LexingDiagnostic`s; add recoverable disambiguator / lexer
+     diagnostics so the frontend `tokenize` wrapper returns `Ok(TokenStream)` for
+     recoverable input problems.
    - Tests: a malformed token emits `ErrorRecovery` with the correct `SourceRange`
      and scanning resumes; an invalid numeral and a malformed string literal in a
      string-required position are reported without dropping recoverable tokens;
-     scope-skeleton diagnostics are preserved with mapped spans; strict raw-scan
-     failure produces coarse recovery because current `LexError` has no span or
-     partial-token payload.
+     scope-skeleton diagnostics remain preserved with mapped spans after
+     disambiguation.
    - Depends on: 8. Spec: [lexing.md](./lexing.md) "Error Handling".
 
 ### Module: parsing (`src/parsing.rs`)

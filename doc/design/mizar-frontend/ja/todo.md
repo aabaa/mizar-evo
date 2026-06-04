@@ -16,7 +16,7 @@
 | source | [source.md](./source.md) | `src/source.rs` | [x] |
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
-| lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [ ] |
+| lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [~] |
 | parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [ ] |
 | orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [ ] |
 
@@ -91,7 +91,7 @@
 
 ### モジュール: lexing (`src/lexing.rs`)
 
-7. **生スキャンとスコープスケルトンの配線。** [ ]
+7. **生スキャンとスコープスケルトンの配線。** [x]
    - `pub mod lexing;` を追加する。`TokenizeRequest`、`InternedText = Arc<str>`、フロントエンドの `Token` / `TokenStream`（session スパン付き）、`LexingDiagnostic`、`LexingDiagnosticKind` / `LexingDiagnosticPayload` を定義し、`TokenKind` と、`LexDiagnosticCode` / `ScopeSkeletonDiagnosticCode` などの生の字句解析器診断コード enum を再エクスポートする。
    - 生トークンから `ScopeSkeleton` / `ScopeLexView` を構築し、曖昧性解消器への入力を準備する。`ScopeSkeletonDiagnostic` は、スパンを持つ生の診断構造体を公開 `TokenStream` に保持せず、`LexingDiagnostic` へ写像する。
    - テスト: 生スキャンが `LexemeRun` のスパンを保持する。スコープビューが、解決済みの束縛なしで字句ブロック／文の形を反映する。
@@ -103,8 +103,8 @@
    - 依存: 7。仕様: [lexing.md](./lexing.md)「Token Stream」「Algorithm / Logic」。
 
 9. **字句解析器の回復のパススルー。** [ ]
-   - `TokenKind::ErrorRecovery` のスパンと字句解析器診断を、写像済みの `LexingDiagnostic` としてエンドツーエンドで保持する。厳密な生スキャンの致命的エラーは、粗い回復トークン 1 つと粗い `RawScan` 診断 1 つへ適合させ、フロントエンドの `tokenize` ラッパーが、回復可能な入力問題に対して `Ok(TokenStream)` を返すことを保証する。
-   - テスト: 不正なトークンが、正しい `SourceRange` を持つ `ErrorRecovery` を送出し、スキャンが再開する。不正な数値と、文字列必須位置での不正な文字列リテラルが、回復可能トークンを落とさずに報告される。スコープスケルトン診断が写像済みスパンとともに保持される。厳密な生スキャンの失敗は、現在の `LexError` がスパンや部分トークンのペイロードを持たないため、粗い回復を生む。
+   - `TokenKind::ErrorRecovery` のスパンと字句解析器診断を、写像済みの `LexingDiagnostic` としてエンドツーエンドで保持する。回復可能な曖昧性解消器／字句解析器診断を追加し、フロントエンドの `tokenize` ラッパーが回復可能な入力問題に対して `Ok(TokenStream)` を返すことを保証する。
+   - テスト: 不正なトークンが、正しい `SourceRange` を持つ `ErrorRecovery` を送出し、スキャンが再開する。不正な数値と、文字列必須位置での不正な文字列リテラルが、回復可能トークンを落とさずに報告される。スコープスケルトン診断が、曖昧性解消後も写像済みスパンとともに保持される。
    - 依存: 8。仕様: [lexing.md](./lexing.md)「Error Handling」。
 
 ### モジュール: parsing (`src/parsing.rs`)
