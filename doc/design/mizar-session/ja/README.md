@@ -1,12 +1,12 @@
-# Module Specifications: mizar-session
+# モジュール仕様: mizar-session
 
-> Canonical language: English. English canonical version: [../en/README.md](../en/README.md).
+> 正本は英語です。英語版: [../en/README.md](../en/README.md)。
 
 `mizar-session` は、batch・watch・LSP の各ビルドが用いるソースの同一性、ビルドスナップショット、ソースバージョン、ソースマップ、スナップショット保持の契約を所有します。
 
-タスクスケジューリング、IR ストレージ、アーティファクトの公開、診断の集約は所有しません。これらの crate は `mizar-session` のハンドルを消費し、自分たちが観測しているソース・依存・構成の状態がまさに何であるかについて合意します。
+タスクスケジューリング、IR ストレージ、アーティファクトの公開、診断の集約は所有しません。これらの crate は `mizar-session` のハンドルを利用し、自分たちが観測しているソース・依存・構成の状態がまさに何であるかについて合意します。
 
-## Context
+## コンテキスト
 
 - [doc/design/architecture/ja/00.pipeline_overview.md](../../architecture/ja/00.pipeline_overview.md) — フェーズ境界とビルドスナップショット
 - [doc/design/architecture/ja/02.source_and_frontend.md](../../architecture/ja/02.source_and_frontend.md) — ソース読み込み、行マップ、前処理マップ、コメント、ソーススパン
@@ -16,9 +16,9 @@
 - [doc/design/internal/ja/03.diagnostics_model_and_lsp_bridge.md](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md) — 診断のインデックス化とオープンバッファのオーバーレイ
 - [doc/design/internal/ja/06.ir_storage_and_snapshot_handles.md](../../internal/ja/06.ir_storage_and_snapshot_handles.md) — `PhaseOutputRef<T>`、サイドテーブル、保持されるスナップショットハンドル
 
-## Index
+## 索引
 
-| Document | Maps To | Description | Status |
+| ドキュメント | 対応先 | 説明 | 状態 |
 |---|---|---|---|
 | [ids.md](./ids.md) | `crates/mizar-session/src/ids.rs` | 不透明なセッション識別子、順序付け、シリアライズ境界、互換性規則 | Draft |
 | [source.md](./source.md) | `crates/mizar-session/src/source.rs` | ソース読み込みレコード、正規化パス、ソースハッシュ、オープンバッファのソーステキスト | Draft |
@@ -27,7 +27,7 @@
 | [retention.md](./retention.md) | `crates/mizar-session/src/retention.rs` | スナップショットリース、LSP／watch の保持、ガベージコレクション方針 | Draft |
 | [todo.md](./todo.md) | `crates/mizar-session` | モジュールの実装順序、ステータス、残作業 | Living |
 
-## Crate Boundary
+## crate 境界
 
 `mizar-session` は、不変の同一性サービスと座標サービスを提供します。
 

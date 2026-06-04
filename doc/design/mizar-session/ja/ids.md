@@ -1,14 +1,14 @@
-# Module: ids
+# モジュール: ids
 
-> Canonical language: English. English canonical version: [../en/ids.md](../en/ids.md).
+> 正本は英語です。英語版: [../en/ids.md](../en/ids.md)。
 
-## Purpose
+## 目的
 
 このモジュールは、`mizar-session` が所有する不透明な識別子を定義します。
 
 これらの識別子により、ソース・スナップショット・診断・LSP・キャッシュ・IR 側の各 crate は、パス、メモリアドレス、スケジューラのカウンタ、不安定なフロントエンド内部構造を露出させることなく、同一性について合意できます。各 ID 型は、自身のスコープ、順序付けの規則、シリアライズ境界を文書化します。
 
-## Public API
+## 公開 API
 
 ```rust
 pub struct Hash([u8; Self::BYTE_LEN]);
@@ -86,20 +86,20 @@ pub enum IdError {
 ```
 
 `BuildSnapshotId` は内容から導出されるフィンガープリントです。その他の ID は不透明なレジストリ上の同一性であり、その値は発行元のレジストリを通してのみ意味を持ちます。
-`Hash` は、内容由来 ID、ソースハッシュ、アーティファクトフィンガープリントが用いる固定長 digest wrapper です。`Hash::from_bytes` と `Hash::as_bytes` は、呼び出し側がすでに正準ハッシュバイトを所有している場合、または別の正準エンコードへ安定したバイト列を渡す必要がある場合の低レベル helper として意図的に public です。これら自体は公開シリアライズ形式を定義しません。公開スキーマは `BuildSnapshotId::to_published_schema_string` のように、所有元の ID またはアーティファクト形式を用いなければなりません。
+`Hash` は、内容由来 ID、ソースハッシュ、アーティファクトフィンガープリントが用いる固定長のダイジェストラッパーです。`Hash::from_bytes` と `Hash::as_bytes` は、呼び出し側がすでに正準ハッシュバイトを所有している場合、または別の正準エンコードへ安定したバイト列を渡す必要がある場合の低レベルなヘルパーとして、意図的に公開されています。これら自体は公開シリアライズ形式を定義しません。公開スキーマは `BuildSnapshotId::to_published_schema_string` のように、所有元の ID またはアーティファクト形式を用いなければなりません。
 
-## Dependencies
+## 依存関係
 
-- Internal: なし
-- External: ハッシュ計算と安定したエンコードのユーティリティ
+- 内部: なし
+- 外部: ハッシュ計算と安定したエンコードのユーティリティ
 
-このモジュールは、他のすべての `mizar-session` モジュールと、スナップショットやソースのハンドルを保存する下流の crate から消費されます。
+このモジュールは、他のすべての `mizar-session` モジュールと、スナップショットやソースのハンドルを保存する下流の crate から利用されます。
 
-## Data Structures
+## データ構造
 
-### Identifier Scope
+### 識別子のスコープ
 
-| Identifier | Scope | Derived From | May Persist? |
+| 識別子 | スコープ | 導出元 | 永続化可否 |
 |---|---|---|---|
 | `BuildSessionId` | コンパイラドライバの 1 回の実行 | アロケータ | no |
 | `BuildRequestId` | batch/watch/LSP リクエストの 1 世代 | アロケータ | no |
@@ -110,7 +110,7 @@ pub enum IdError {
 
 永続化されるアーティファクトは、アロケータが発行した ID を互換性の保証として扱ってはなりません。スキーマが明示的に許す場合に限り、内容から導出される ID を来歴として記録してよいものとします。
 
-### Ordering
+### 順序付け
 
 ID は意味的な順序を定義しません。
 
@@ -122,7 +122,7 @@ ID は意味的な順序を定義しません。
 
 アロケータが発行した ID は、インメモリのマップとデバッグ出力に限って順序付けしてよいものとします。
 
-### Serialization
+### シリアライズ
 
 内容から導出される ID は、正準的な小文字 16 進エンコードでシリアライズしてよいものとします。
 `BuildSnapshotId` は、公開スキーマ形式として
@@ -132,9 +132,9 @@ ID は意味的な順序を定義しません。
 
 アロケータが発行した ID は、ローカルなデバッグダンプ、ログ、および可搬性がないと明示された開発用アーティファクトに限ってシリアライズしてよいものとします。公開アーティファクトとキャッシュキーは、代わりに正準的なソース・依存・ツールチェイン・構成の各ハッシュを用いなければなりません。
 
-## Algorithm / Logic
+## アルゴリズム / ロジック
 
-### Content-Derived Id Construction
+### 内容由来 ID の構築
 
 `BuildSnapshotId` は正準的なスナップショットエンコードから計算します。このエンコードは次を満たさなければなりません。
 
@@ -143,13 +143,13 @@ ID は意味的な順序を定義しません。
 3. 順序のないコレクションは、ハッシュ計算の前にソートする。
 4. セッションローカルな ID、タスク ID、メモリアドレス、タイムスタンプ、リース ID を除外する。
 
-### Allocator-Issued Id Construction
+### アロケータ発行 ID の構築
 
 アロケータが発行する ID は、所有元のレジストリ内で一意でなければなりません。呼び出し側が値から意味を推測できない限り、単調増加カウンタ、ランダムなノンス、アリーナ索引のいずれであってもかまいません。
 
 アロケータの各メソッドは、新しい一意 ID を発行できない場合に `IdError::AllocatorOverflow` を返します。source/source-map/lease ID のメソッドは `BuildSnapshotId` を受け取り、スナップショットスコープの発行境界が API 上で見えるようにします。
 
-## Error Handling
+## エラー処理
 
 `IdError` には次が含まれます。
 
@@ -159,17 +159,10 @@ ID は意味的な順序を定義しません。
 - アロケータのオーバーフロー
 - 永続化できない ID を公開スキーマへシリアライズしようとした
 
-整形式の ID を誤ったスナップショットで用いることは失効ハンドルエラーであり、このモジュールではなく `snapshot` または `retention` が報告します。
-`IdError::UnknownSnapshotRegistry` は、レジストリを認識する allocator 実装のために予約されています。
-この crate が提供するインメモリ allocator はこの variant を emit しません。
-`BuildSnapshotId` 引数は、スナップショットスコープの割り当て境界を API 上に保つために受け取ります。
-この variant は、`SessionIdAllocator` が public trait であり、将来または下流の allocator が
-source/source-map/lease id のスナップショットスコープ割り当てについて、既知のレジストリに対するものかを検証できるよう public に残します。
-そのような allocator を別の public API から使う場合、呼び出し側は allocator 呼び出しから直接、または
-`SourceLoadError::SourceIdAllocation` や `SnapshotError::LeaseIdAllocation` のような所有元の error surface を通して観測します。
-retention は allocator failure を内部的な inconsistent-retention-state error として扱います。
+整形式の ID を誤ったスナップショットで用いることは失効ハンドルのエラーであり、このモジュールではなく `snapshot` または `retention` が報告します。
+`IdError::UnknownSnapshotRegistry` は、レジストリを認識するアロケータ実装のために予約されています。この crate が提供するインメモリアロケータは、この変種を送出しません。`BuildSnapshotId` 引数は、スナップショットスコープの割り当て境界を API 上に保つために受け取ります。この変種は、`SessionIdAllocator` が公開トレイトであり、将来または下流のアロケータが、source/source-map/lease の各 ID のスナップショットスコープ割り当てについて、既知のレジストリに対するものかを検証できるよう、公開のまま残します。そのようなアロケータを別の公開 API から使う場合、呼び出し側は、アロケータ呼び出しから直接、または `SourceLoadError::SourceIdAllocation` や `SnapshotError::LeaseIdAllocation` のような所有元のエラー経路を通して観測します。retention は、アロケータの失敗を、内部的な「保持状態の不整合」エラーとして扱います。
 
-## Tests
+## テスト
 
 主なシナリオ:
 
@@ -180,7 +173,7 @@ retention は allocator failure を内部的な inconsistent-retention-state err
 - アロケータが発行する ID は 1 つのレジストリ内で一意である
 - 公開スキーマへのシリアライズは、永続化できない ID を拒否する
 
-## Constraints and Assumptions
+## 制約と前提
 
 - ID の値は、利用者向けの名前ではない。
 - `SourceId` はスナップショットスコープであり、安定したアーティファクト同一性として用いてはならない。
