@@ -2,7 +2,7 @@
 
 > 正本は英語です。英語版: [../en/lexical_env.md](../en/lexical_env.md)。
 
-状態: 一部実装済み。タスク 5 のプロバイダ seam は実装済みで、タスク 6 のアクティブ字句環境の回復処理は計画中。
+状態: タスク 6 まで実装済み。プロバイダ seam とアクティブ字句環境の回復処理は実装済みである。
 
 ## 目的
 
@@ -80,7 +80,7 @@ pub enum LexicalEnvironmentDiagnosticCode {
 
 字句解析器を呼び出す前に、フロントエンドは解決済みインポートを `ModuleId` ごとに、最初の stub の順序で正規化し、module ごとに高々 1 つの `ResolvedImport` だけを字句解析器へ渡す。現在の字句解析器の `LexicalEnvironmentError::UserSymbolImportConflict` は、フロントエンドのインポート序数ではなく module id を返すため、この正規化によって衝突契約を曖昧でなく保つ。同じ module へ解決された重複 stub は、プロバイダ診断と出所テーブルでは保持できるが、重複した有効インポートとして字句解析器へは渡さない。
 
-`FrontendLexicalEnvironmentError` は、フロントエンドが所有し、プロバイダ基盤の障害と、回復不能な字句解析器の構造的エラーを包む。タスク 5 の provider seam 実装では、字句解析器側の構造的エラーはまだ `FrontendLexicalEnvironmentError::MalformedSummary` として表面化する。`LexicalEnvironmentError::UserSymbolImportConflict` の計画済みの縮退処理はタスク 6 で追加する。それ以外の字句解析器 `LexicalEnvironmentError` 変種は、不正なサマリ／プロバイダ契約のまま扱う。`LexicalSummaryProvider` は、ビルドプランナー／解決器が、解決済みインポートと字句サマリを供給するための継ぎ目である。フロントエンドは、それらを構築するためにモジュール IR へ踏み込まない。
+`FrontendLexicalEnvironmentError` は、フロントエンドが所有し、プロバイダ基盤の障害と、回復不能な字句解析器の構造的エラーを包む。`LexicalEnvironmentError::UserSymbolImportConflict` だけが、字句解析器側の回復可能なケースである。フロントエンドはこれを診断として報告し、後側の衝突インポートを除去して再試行する。それ以外の字句解析器 `LexicalEnvironmentError` 変種は、不正なサマリ／プロバイダ契約のまま扱う。`LexicalSummaryProvider` は、ビルドプランナー／解決器が、解決済みインポートと字句サマリを供給するための継ぎ目である。フロントエンドは、それらを構築するためにモジュール IR へ踏み込まない。
 
 ## 依存関係
 
@@ -104,9 +104,9 @@ pub enum LexicalEnvironmentDiagnosticCode {
 ### アクティブ字句環境の構築
 
 1. `LexicalSummaryProvider` に `ImportStub` を `ResolvedImportEntry` と `ModuleLexicalSummary` へ解決させ、インポート順を記録し、診断用に元の stub スパンを保持する。
-2. プロバイダ側の診断（未解決インポート、欠落した依存字句サマリ）を、意味的事実を作らずに集める。プロバイダは、対応するサマリを持つ解決済みインポートだけを返す。未解決のインポートや、サマリが利用できないインポートは、字句解析器の呼び出しから除外する。`mizar_lexer::build_lexical_environment` は、欠落したサマリを構造的エラーとして扱うためである。
+2. プロバイダ側の診断を、意味的事実を作らずに集める。解決済みエントリを持たない import stub と、依存字句サマリが利用できない正準の解決済みインポートには、フロントエンド側でも除外診断を追加する。未解決のインポートや、サマリが利用できないインポートは、字句解析器の呼び出しから除外する。`mizar_lexer::build_lexical_environment` は、欠落したサマリを構造的エラーとして扱うためである。
 3. 解決済みインポートを `ModuleId` ごとに、最初の stub の順序で正規化し、各有効 `ModuleId` から正準の `ResolvedImportEntry` への参照を保持する。それらの正準ラッパーから順序付きの字句解析器 `ResolvedImport` リストを取り出し、解決済みインポートとサマリを与えて `mizar_lexer::build_lexical_environment` を呼び、`UserSymbolIndex` と `LexicalEnvironmentFingerprint` を組み立てる。
-4. タスク 6 で計画中: 字句解析器が `UserSymbolImportConflict { spelling, earlier_import, later_import }` を返した場合、それを `LexicalEnvironmentDiagnostic` へ変換する。`later_import` に対応する正準の `ResolvedImportEntry` を primary スパンにし、`earlier_import` に対応する正準エントリがあれば副次アンカーにする。後側の衝突 module を有効インポート集合から除外して再試行する。この有界な再試行は、字句解析器が成功するか、インポートが無くなるまで繰り返す。各再試行は高々 1 つの module を除くので、決定的であり、元の正準インポート数以内に必ず停止する。どちらかの module id が正準参照に存在しない場合は、スパンを推測せず、プロバイダ／フロントエンドの不変条件違反として扱う。
+4. 字句解析器が `UserSymbolImportConflict { spelling, earlier_import, later_import }` を返した場合、それを `LexicalEnvironmentDiagnostic` へ変換する。`later_import` に対応する正準の `ResolvedImportEntry` を primary スパンにし、`earlier_import` に対応する正準エントリを副次アンカーにする。後側の衝突 module を有効インポート集合から除外して再試行する。この有界な再試行は、字句解析器が成功するか、インポートが無くなるまで繰り返す。各再試行は高々 1 つの module を除くので、決定的であり、元の正準インポート数以内に必ず停止する。どちらかの module id が正準参照に存在しない場合は、スパンを推測せず、プロバイダ／フロントエンドの不変条件違反として扱う。
 5. それ以外の字句解析器 `LexicalEnvironmentError` は、回復不能な不正サマリ／プロバイダ契約として扱い、`FrontendLexicalEnvironmentError::MalformedSummary` を返す。欠落したサマリは、字句解析器の呼び出し前に診断・除外されているはずなので、ここで `MissingModuleSummary` が出るなら、それはユーザー向けの回復可能診断ではなく、プロバイダ／フロントエンドの不変条件違反である。
 6. 環境、フィンガープリント、統合された診断を返す。
 
@@ -114,7 +114,7 @@ pub enum LexicalEnvironmentDiagnosticCode {
 
 ## エラー処理
 
-`LexicalEnvironmentError`（`mizar-lexer` 由来）は、衝突するサマリフィンガープリントや不正なサマリデータといった構造的失敗を扱う。プロバイダ基盤の障害は、字句解析器が所有する enum では表現できないため、フロントエンドが回復不能な失敗を `FrontendLexicalEnvironmentError` で包む。プロバイダ側の問題（どのモジュールにも解決しないインポート、字句サマリが利用できない依存）は `LexicalEnvironmentDiagnostic` として運び、該当インポートを字句解析器の呼び出し前に除外するので、ファイル全体を失敗させるのではなく、より小さなアクティブ環境へ縮退できる。タスク 6 では、回復可能な字句解析器側のケースを `UserSymbolImportConflict` に限定する。フロントエンドは、後側の衝突 module を正準の出所で診断し、分かる場合は前側のインポートを副次コンテキストに加え、後側の module を除去して環境構築を再試行する予定である。タスク 6 までは、字句解析器側の構造的エラーは `MalformedSummary` として表面化する。不正なエクスポート記号のつづり、不正な arity、予約語／予約記号の衝突、一貫しない重複サマリ、想定外の欠落サマリは、回復不能な不正サマリ失敗である。フロントエンドは、不正な依存サマリのどの部分集合が利用可能かを安全に推測できないためである。インポートの合法性（可視性、字句的な形を超えるエクスポートランクの衝突）はモジュール解決へ先送りし、ここでは決して判断しない。
+`LexicalEnvironmentError`（`mizar-lexer` 由来）は、衝突するサマリフィンガープリントや不正なサマリデータといった構造的失敗を扱う。プロバイダ基盤の障害は、字句解析器が所有する enum では表現できないため、フロントエンドが回復不能な失敗を `FrontendLexicalEnvironmentError` で包む。プロバイダ側の問題（どのモジュールにも解決しないインポート、字句サマリが利用できない依存）は `LexicalEnvironmentDiagnostic` として運び、該当インポートを字句解析器の呼び出し前に除外するので、ファイル全体を失敗させるのではなく、より小さなアクティブ環境へ縮退できる。字句解析器側で回復可能なケースは `UserSymbolImportConflict` に限定する。フロントエンドは、後側の衝突 module を正準の出所で診断し、前側のインポートを副次コンテキストに加え、後側の module を除去して環境構築を再試行する。不正なエクスポート記号のつづり、不正な arity、予約語／予約記号の衝突、一貫しない重複サマリ、想定外の欠落サマリは、回復不能な不正サマリ失敗である。フロントエンドは、不正な依存サマリのどの部分集合が利用可能かを安全に推測できないためである。インポートの合法性（可視性、字句的な形を超えるエクスポートランクの衝突）はモジュール解決へ先送りし、ここでは決して判断しない。
 
 ## テスト
 

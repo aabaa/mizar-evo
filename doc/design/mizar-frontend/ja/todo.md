@@ -15,7 +15,7 @@
 | span_bridge | [span_bridge.md](./span_bridge.md) | `src/span_bridge.rs` | [x] |
 | source | [source.md](./source.md) | `src/source.rs` | [x] |
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
-| lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [~] |
+| lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [ ] |
 | parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [ ] |
 | orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [ ] |
@@ -82,7 +82,7 @@
    - テスト: 解決済みインポートとサマリを返す偽プロバイダが、正しい正準の出所とインポート序数を持つ `UserSymbolIndex` を生む。同じ module へ解決される複数の stub は、字句解析器の呼び出し前に重複排除され、プロバイダ診断は正しい元のインポートスパンに出る。予約テーブルが常に存在する。
    - 依存: 4。仕様: [lexical_env.md](./lexical_env.md)「Public API」。
 
-6. **アクティブ字句環境の構築。** [ ]
+6. **アクティブ字句環境の構築。** [x]
    - タスク 5 の `build_active_lexical_environment` エントリポイントを、残りの回復処理で拡張する。`mizar_lexer::build_lexical_environment` の呼び出し、プロバイダ診断の統合、表面化済みの `LexicalEnvironmentFingerprint` は維持する。
    - 字句解析器を呼ぶ前に、未解決のインポートと、依存する字句サマリが利用できないインポートを除外し、`LexicalEnvironmentDiagnostic` として表す。サマリが欠落した入力で字句解析器に環境構築を要求しない。
    - `LexicalEnvironmentError::UserSymbolImportConflict` は、有界で決定的な再試行で扱う。正準の `ResolvedImportEntry` の出所を使って後側の衝突インポートを診断し、分かる場合は前側のインポートを副次コンテキストに加え、後側の衝突 module を除いて、元の正準インポートごとに高々 1 回だけ再試行する。それ以外の字句解析器 `LexicalEnvironmentError` は `FrontendLexicalEnvironmentError::MalformedSummary` として扱う。

@@ -79,18 +79,56 @@ pub fn build_active_lexical_environment(
     provider: &dyn LexicalSummaryProvider,
 ) -> Result<ActiveLexicalEnvironmentResult, FrontendLexicalEnvironmentError> {
     let resolved = provider.resolve_imports(request)?;
-    let active_imports = canonical_resolved_imports(resolved.imports)
-        .into_iter()
-        .map(|entry| entry.import)
-        .collect::<Vec<_>>();
-    let environment = mizar_lexer::build_lexical_environment(&active_imports, &resolved.summaries)
-        .map_err(|source| FrontendLexicalEnvironmentError::MalformedSummary { source })?;
+    let ResolvedImports {
+        imports,
+        summaries,
+        mut diagnostics,
+    } = resolved;
+    diagnose_unresolved_imports(request, &imports, &mut diagnostics);
+    let active_entries = filter_imports_with_summaries(
+        canonical_resolved_imports(imports),
+        &summaries,
+        &mut diagnostics,
+    );
+    let environment =
+        build_lexical_environment_with_retries(active_entries, &summaries, &mut diagnostics)?;
 
     Ok(ActiveLexicalEnvironmentResult {
         fingerprint: environment.fingerprint,
         environment,
-        diagnostics: resolved.diagnostics,
+        diagnostics,
     })
+}
+
+fn diagnose_unresolved_imports(
+    request: &LexicalEnvironmentRequest<'_>,
+    imports: &[ResolvedImportEntry],
+    diagnostics: &mut Vec<LexicalEnvironmentDiagnostic>,
+) {
+    let resolved_stub_ordinals = imports
+        .iter()
+        .map(|entry| entry.stub_ordinal)
+        .collect::<BTreeSet<_>>();
+
+    for (stub_ordinal, stub) in request.import_stubs.iter().enumerate() {
+        if resolved_stub_ordinals.contains(&stub_ordinal) {
+            continue;
+        }
+        push_diagnostic_if_absent(
+            diagnostics,
+            LexicalEnvironmentDiagnostic {
+                code: LexicalEnvironmentDiagnosticCode::UnresolvedImport,
+                message: Arc::<str>::from(format!(
+                    "import `{}` could not be resolved; excluding it from the active lexical environment",
+                    stub.path.spelling
+                )),
+                primary: stub.span,
+                secondary: Vec::new(),
+                import_ordinal: Some(stub_ordinal),
+                module_id: None,
+            },
+        );
+    }
 }
 
 fn canonical_resolved_imports(mut imports: Vec<ResolvedImportEntry>) -> Vec<ResolvedImportEntry> {
@@ -110,6 +148,162 @@ fn canonical_resolved_imports(mut imports: Vec<ResolvedImportEntry>) -> Vec<Reso
         }
     }
     canonical
+}
+
+fn filter_imports_with_summaries(
+    imports: Vec<ResolvedImportEntry>,
+    summaries: &[ModuleLexicalSummary],
+    diagnostics: &mut Vec<LexicalEnvironmentDiagnostic>,
+) -> Vec<ResolvedImportEntry> {
+    let modules_with_summaries = summaries
+        .iter()
+        .map(|summary| summary.module_id.clone())
+        .collect::<BTreeSet<_>>();
+    let mut active_entries = Vec::new();
+
+    for entry in imports {
+        if modules_with_summaries.contains(&entry.import.module_id) {
+            active_entries.push(entry);
+            continue;
+        }
+
+        push_diagnostic_if_absent(
+            diagnostics,
+            LexicalEnvironmentDiagnostic {
+                code: LexicalEnvironmentDiagnosticCode::MissingSummary,
+                message: Arc::<str>::from(format!(
+                    "lexical summary for module `{}` is unavailable; excluding the import from the active lexical environment",
+                    entry.import.module_id.as_str()
+                )),
+                primary: entry.stub_span,
+                secondary: Vec::new(),
+                import_ordinal: Some(entry.stub_ordinal),
+                module_id: Some(entry.import.module_id),
+            },
+        );
+    }
+
+    active_entries
+}
+
+fn build_lexical_environment_with_retries(
+    mut active_entries: Vec<ResolvedImportEntry>,
+    summaries: &[ModuleLexicalSummary],
+    diagnostics: &mut Vec<LexicalEnvironmentDiagnostic>,
+) -> Result<ActiveLexicalEnvironment, FrontendLexicalEnvironmentError> {
+    let max_retries = active_entries.len();
+    let mut retries = 0;
+
+    loop {
+        let active_imports = active_entries
+            .iter()
+            .map(|entry| entry.import.clone())
+            .collect::<Vec<_>>();
+        match mizar_lexer::build_lexical_environment(&active_imports, summaries) {
+            Ok(environment) => return Ok(environment),
+            Err(LexicalEnvironmentError::UserSymbolImportConflict {
+                spelling,
+                earlier_import,
+                later_import,
+            }) => {
+                if retries >= max_retries {
+                    return Err(malformed_user_symbol_import_conflict(
+                        spelling,
+                        earlier_import,
+                        later_import,
+                    ));
+                }
+                retries += 1;
+
+                let Some(later_index) = active_entries
+                    .iter()
+                    .position(|entry| entry.import.module_id == later_import)
+                else {
+                    return Err(malformed_user_symbol_import_conflict(
+                        spelling,
+                        earlier_import,
+                        later_import,
+                    ));
+                };
+                let Some(earlier_entry) = active_entries
+                    .iter()
+                    .find(|entry| entry.import.module_id == earlier_import)
+                    .cloned()
+                else {
+                    return Err(malformed_user_symbol_import_conflict(
+                        spelling,
+                        earlier_import,
+                        later_import,
+                    ));
+                };
+                let later_entry = active_entries[later_index].clone();
+
+                push_diagnostic_if_absent(
+                    diagnostics,
+                    user_symbol_import_conflict_diagnostic(
+                        &spelling,
+                        &earlier_import,
+                        &later_import,
+                        &earlier_entry,
+                        &later_entry,
+                    ),
+                );
+                active_entries.remove(later_index);
+            }
+            Err(source) => {
+                return Err(FrontendLexicalEnvironmentError::MalformedSummary { source });
+            }
+        }
+    }
+}
+
+fn user_symbol_import_conflict_diagnostic(
+    spelling: &str,
+    earlier_import: &ModuleId,
+    later_import: &ModuleId,
+    earlier_entry: &ResolvedImportEntry,
+    later_entry: &ResolvedImportEntry,
+) -> LexicalEnvironmentDiagnostic {
+    LexicalEnvironmentDiagnostic {
+        code: LexicalEnvironmentDiagnosticCode::UserSymbolImportConflict,
+        message: Arc::<str>::from(format!(
+            "user symbol `{spelling}` imported from module `{}` conflicts with an earlier import from module `{}`; excluding the later import from the active lexical environment",
+            later_import.as_str(),
+            earlier_import.as_str()
+        )),
+        primary: later_entry.stub_span,
+        secondary: vec![SourceAnchor::Range(earlier_entry.stub_span)],
+        import_ordinal: Some(later_entry.stub_ordinal),
+        module_id: Some(later_import.clone()),
+    }
+}
+
+fn malformed_user_symbol_import_conflict(
+    spelling: String,
+    earlier_import: ModuleId,
+    later_import: ModuleId,
+) -> FrontendLexicalEnvironmentError {
+    FrontendLexicalEnvironmentError::MalformedSummary {
+        source: LexicalEnvironmentError::UserSymbolImportConflict {
+            spelling,
+            earlier_import,
+            later_import,
+        },
+    }
+}
+
+fn push_diagnostic_if_absent(
+    diagnostics: &mut Vec<LexicalEnvironmentDiagnostic>,
+    diagnostic: LexicalEnvironmentDiagnostic,
+) {
+    if diagnostics
+        .iter()
+        .any(|existing| existing.code == diagnostic.code && existing.primary == diagnostic.primary)
+    {
+        return;
+    }
+
+    diagnostics.push(diagnostic);
 }
 
 impl fmt::Display for FrontendLexicalEnvironmentError {
@@ -142,14 +336,15 @@ mod tests {
     use super::{
         ActiveLexicalEnvironmentResult, ExportRank, ExportedSymbolShape,
         FrontendLexicalEnvironmentError, LexicalEnvironmentDiagnostic,
-        LexicalEnvironmentDiagnosticCode, LexicalEnvironmentRequest, LexicalSummaryFingerprint,
-        LexicalSummaryProvider, ModuleId, ModuleLexicalSummary, ResolvedImport,
-        ResolvedImportEntry, ResolvedImports, SymbolId, UserSymbolArity, UserSymbolKind,
-        build_active_lexical_environment,
+        LexicalEnvironmentDiagnosticCode, LexicalEnvironmentError, LexicalEnvironmentRequest,
+        LexicalSummaryFingerprint, LexicalSummaryProvider, ModuleId, ModuleLexicalSummary,
+        ResolvedImport, ResolvedImportEntry, ResolvedImports, SymbolId, UserSymbolArity,
+        UserSymbolKind, build_active_lexical_environment,
     };
     use crate::preprocess::{ImportStub, ImportStubPath};
     use mizar_session::{
-        BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceRange,
+        BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, SessionIdAllocator,
+        SourceAnchor, SourceRange,
     };
     use std::sync::Arc;
 
@@ -281,6 +476,263 @@ mod tests {
         );
     }
 
+    #[test]
+    fn unresolved_imports_are_diagnosed_and_excluded_while_remaining_symbols_load() {
+        let source_id = source_id(5);
+        let stubs = vec![
+            import_stub(source_id, 0, 13, "alpha"),
+            import_stub(source_id, 15, 29, "missing"),
+            import_stub(source_id, 31, 43, "beta"),
+        ];
+        let provider = FakeProvider {
+            resolved: ResolvedImports {
+                imports: vec![
+                    resolved_entry(&stubs, 0, "alpha"),
+                    resolved_entry(&stubs, 2, "beta"),
+                ],
+                summaries: vec![
+                    summary("alpha", 11, vec![symbol("++", "alpha.plus", "alpha")]),
+                    summary("beta", 22, vec![symbol("**", "beta.times", "beta")]),
+                ],
+                diagnostics: Vec::new(),
+            },
+        };
+
+        let result = build(&stubs, source_id, &provider).unwrap();
+
+        assert_eq!(
+            result
+                .environment
+                .user_symbol("++")
+                .unwrap()
+                .imported_module,
+            ModuleId::new("alpha")
+        );
+        let times = result.environment.user_symbol("**").unwrap();
+        assert_eq!(times.imported_module, ModuleId::new("beta"));
+        assert_eq!(
+            times.import_ordinal, 1,
+            "unresolved imports are not counted in compact active import ordinals"
+        );
+        assert_eq!(result.diagnostics.len(), 1);
+        let diagnostic = &result.diagnostics[0];
+        assert_eq!(
+            diagnostic.code,
+            LexicalEnvironmentDiagnosticCode::UnresolvedImport
+        );
+        assert_eq!(diagnostic.primary, stubs[1].span);
+        assert_eq!(diagnostic.import_ordinal, Some(1));
+        assert_eq!(diagnostic.module_id, None);
+    }
+
+    #[test]
+    fn imports_without_matching_summaries_are_diagnosed_and_excluded_before_lexer_call() {
+        let source_id = source_id(6);
+        let stubs = vec![
+            import_stub(source_id, 0, 13, "alpha"),
+            import_stub(source_id, 15, 31, "no_summary"),
+            import_stub(source_id, 33, 45, "beta"),
+        ];
+        let provider = FakeProvider {
+            resolved: ResolvedImports {
+                imports: vec![
+                    resolved_entry(&stubs, 0, "alpha"),
+                    resolved_entry(&stubs, 1, "no_summary"),
+                    resolved_entry(&stubs, 2, "beta"),
+                ],
+                summaries: vec![
+                    summary("alpha", 11, vec![symbol("++", "alpha.plus", "alpha")]),
+                    summary("beta", 22, vec![symbol("**", "beta.times", "beta")]),
+                ],
+                diagnostics: Vec::new(),
+            },
+        };
+
+        let result = build(&stubs, source_id, &provider).unwrap();
+
+        let times = result.environment.user_symbol("**").unwrap();
+        assert_eq!(times.imported_module, ModuleId::new("beta"));
+        assert_eq!(
+            times.import_ordinal, 1,
+            "missing-summary imports are omitted before the lexer sees active imports"
+        );
+        assert_eq!(result.diagnostics.len(), 1);
+        let diagnostic = &result.diagnostics[0];
+        assert_eq!(
+            diagnostic.code,
+            LexicalEnvironmentDiagnosticCode::MissingSummary
+        );
+        assert_eq!(diagnostic.primary, stubs[1].span);
+        assert_eq!(diagnostic.import_ordinal, Some(1));
+        assert_eq!(diagnostic.module_id, Some(ModuleId::new("no_summary")));
+    }
+
+    #[test]
+    fn user_symbol_import_conflicts_are_diagnosed_and_retried_until_stable() {
+        let source_id = source_id(7);
+        let stubs = vec![
+            import_stub(source_id, 0, 13, "alpha"),
+            import_stub(source_id, 15, 28, "beta"),
+            import_stub(source_id, 30, 51, "beta.duplicate"),
+            import_stub(source_id, 53, 66, "gamma"),
+            import_stub(source_id, 68, 86, "unresolved"),
+        ];
+        let provider = FakeProvider {
+            resolved: ResolvedImports {
+                imports: vec![
+                    resolved_entry(&stubs, 3, "gamma"),
+                    resolved_entry(&stubs, 2, "beta"),
+                    resolved_entry(&stubs, 0, "alpha"),
+                    resolved_entry(&stubs, 1, "beta"),
+                ],
+                summaries: vec![
+                    summary("alpha", 11, vec![symbol("++", "alpha.plus", "alpha")]),
+                    summary(
+                        "beta",
+                        22,
+                        vec![
+                            symbol("++", "beta.plus", "beta"),
+                            symbol("--", "beta.minus", "beta"),
+                        ],
+                    ),
+                    summary(
+                        "gamma",
+                        33,
+                        vec![
+                            symbol("++", "gamma.plus", "gamma"),
+                            symbol("**", "gamma.times", "gamma"),
+                        ],
+                    ),
+                ],
+                diagnostics: vec![LexicalEnvironmentDiagnostic {
+                    code: LexicalEnvironmentDiagnosticCode::UnresolvedImport,
+                    message: Arc::from("provider could not resolve import"),
+                    primary: stubs[4].span,
+                    secondary: Vec::new(),
+                    import_ordinal: Some(4),
+                    module_id: None,
+                }],
+            },
+        };
+
+        let result = build(&stubs, source_id, &provider).unwrap();
+
+        let plus = result.environment.user_symbol("++").unwrap();
+        assert_eq!(plus.imported_module, ModuleId::new("alpha"));
+        assert_eq!(plus.import_ordinal, 0);
+        assert!(result.environment.user_symbol("--").is_none());
+        assert!(result.environment.user_symbol("**").is_none());
+        assert_eq!(result.diagnostics.len(), 3);
+        assert_eq!(
+            result.diagnostics[0].code,
+            LexicalEnvironmentDiagnosticCode::UnresolvedImport
+        );
+        assert_eq!(result.diagnostics[0].primary, stubs[4].span);
+        assert_eq!(
+            result.diagnostics[1].code,
+            LexicalEnvironmentDiagnosticCode::UserSymbolImportConflict
+        );
+        assert_eq!(
+            result.diagnostics[1].primary, stubs[1].span,
+            "conflict diagnostics use the first canonical stub even when provider order is shuffled"
+        );
+        assert_eq!(
+            result.diagnostics[1].secondary,
+            vec![SourceAnchor::Range(stubs[0].span)]
+        );
+        assert_eq!(result.diagnostics[1].import_ordinal, Some(1));
+        assert_eq!(result.diagnostics[1].module_id, Some(ModuleId::new("beta")));
+        assert_eq!(
+            result.diagnostics[2].code,
+            LexicalEnvironmentDiagnosticCode::UserSymbolImportConflict
+        );
+        assert_eq!(result.diagnostics[2].primary, stubs[3].span);
+        assert_eq!(
+            result.diagnostics[2].secondary,
+            vec![SourceAnchor::Range(stubs[0].span)]
+        );
+        assert_eq!(result.diagnostics[2].import_ordinal, Some(3));
+        assert_eq!(
+            result.diagnostics[2].module_id,
+            Some(ModuleId::new("gamma"))
+        );
+    }
+
+    #[test]
+    fn non_conflict_lexer_errors_become_malformed_summary() {
+        let source_id = source_id(8);
+        let stubs = vec![import_stub(source_id, 0, 13, "alpha")];
+        let provider = FakeProvider {
+            resolved: ResolvedImports {
+                imports: vec![resolved_entry(&stubs, 0, "alpha")],
+                summaries: vec![summary(
+                    "alpha",
+                    11,
+                    vec![symbol("definition", "alpha.definition", "alpha")],
+                )],
+                diagnostics: Vec::new(),
+            },
+        };
+
+        let error = build(&stubs, source_id, &provider).unwrap_err();
+
+        assert!(matches!(
+            error,
+            FrontendLexicalEnvironmentError::MalformedSummary {
+                source: LexicalEnvironmentError::ReservedWordCollision { .. }
+            }
+        ));
+    }
+
+    #[test]
+    fn fingerprint_changes_for_dependency_summary_edits_and_ignores_local_comment_only_spans() {
+        let base_source_id = source_id(9);
+        let edited_source_id = source_id(10);
+        let stubs = vec![import_stub(base_source_id, 0, 13, "alpha")];
+        let edited_stubs = vec![import_stub(edited_source_id, 50, 63, "alpha")];
+        let base_provider = FakeProvider {
+            resolved: ResolvedImports {
+                imports: vec![resolved_entry(&stubs, 0, "alpha")],
+                summaries: vec![summary(
+                    "alpha",
+                    11,
+                    vec![symbol("++", "alpha.plus", "alpha")],
+                )],
+                diagnostics: Vec::new(),
+            },
+        };
+        let edited_local_provider = FakeProvider {
+            resolved: ResolvedImports {
+                imports: vec![resolved_entry(&edited_stubs, 0, "alpha")],
+                summaries: vec![summary(
+                    "alpha",
+                    11,
+                    vec![symbol("++", "alpha.plus", "alpha")],
+                )],
+                diagnostics: Vec::new(),
+            },
+        };
+        let changed_dependency_provider = FakeProvider {
+            resolved: ResolvedImports {
+                imports: vec![resolved_entry(&stubs, 0, "alpha")],
+                summaries: vec![summary(
+                    "alpha",
+                    12,
+                    vec![symbol("++", "alpha.plus", "alpha")],
+                )],
+                diagnostics: Vec::new(),
+            },
+        };
+
+        let base = build(&stubs, base_source_id, &base_provider).unwrap();
+        let edited_local = build(&edited_stubs, edited_source_id, &edited_local_provider).unwrap();
+        let changed_dependency =
+            build(&stubs, base_source_id, &changed_dependency_provider).unwrap();
+
+        assert_eq!(base.fingerprint, edited_local.fingerprint);
+        assert_ne!(base.fingerprint, changed_dependency.fingerprint);
+    }
+
     struct FakeProvider {
         resolved: ResolvedImports,
     }
@@ -291,10 +743,6 @@ mod tests {
             request: &LexicalEnvironmentRequest<'_>,
         ) -> Result<ResolvedImports, FrontendLexicalEnvironmentError> {
             assert_eq!(request.edition, Edition::new("2026"));
-            assert_eq!(
-                request.import_stubs.len(),
-                self.resolved.imports.len().min(3)
-            );
             Ok(self.resolved.clone())
         }
     }

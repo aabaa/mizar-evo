@@ -2,7 +2,7 @@
 
 > Canonical language: English. Japanese companion: [../ja/lexical_env.md](../ja/lexical_env.md).
 
-Status: partially implemented; task 5 provider seam is implemented, task 6 active-environment recovery remains planned.
+Status: implemented through task 6; the provider seam and active-environment recovery are in place.
 
 ## Purpose
 
@@ -106,12 +106,11 @@ available in provider diagnostics and provenance tables, but they are not passed
 as duplicate active imports to the lexer.
 
 `FrontendLexicalEnvironmentError` is owned by the frontend and wraps provider
-infrastructure failures plus unrecoverable lexer structural errors. In the task
-5 provider-seam implementation, lexer-side structural errors are still surfaced
-as `FrontendLexicalEnvironmentError::MalformedSummary`. Task 6 will add the
-planned degradation for `LexicalEnvironmentError::UserSymbolImportConflict`;
-all other lexer `LexicalEnvironmentError` variants will remain malformed
-summary/provider contracts.
+infrastructure failures plus unrecoverable lexer structural errors.
+`LexicalEnvironmentError::UserSymbolImportConflict` is the only recoverable
+lexer-side case: the frontend reports it as a diagnostic, removes the later
+conflicting import, and retries. All other lexer `LexicalEnvironmentError`
+variants remain malformed summary/provider contracts.
 `LexicalSummaryProvider` is the seam by which the build planner / resolver
 supplies already-resolved imports plus lexical summaries; the frontend never
 reaches into module IR to build them.
@@ -159,23 +158,23 @@ local file is unchanged.
 1. Ask the `LexicalSummaryProvider` to resolve the `ImportStub`s into
    `ResolvedImportEntry`s and `ModuleLexicalSummary` values, recording import
    order and preserving the originating stub span for diagnostics.
-2. Collect provider-side diagnostics (unresolved import, missing dependency
-   lexical summary) without inventing semantic facts. The provider returns only
-   resolved imports that have matching summaries; unresolved imports and imports
-   with unavailable summaries are omitted from the lexer call because
-   `mizar_lexer::build_lexical_environment` treats missing summaries as structural
-   errors.
+2. Collect provider-side diagnostics without inventing semantic facts. Add
+   frontend exclusion diagnostics for import stubs that have no resolved entry
+   and for canonical resolved imports whose dependency lexical summary is
+   unavailable. Unresolved imports and imports with unavailable summaries are
+   omitted from the lexer call because `mizar_lexer::build_lexical_environment`
+   treats missing summaries as structural errors.
 3. Canonicalize resolved imports by `ModuleId` in first-stub order, retaining a
    lookup from each active `ModuleId` to its canonical `ResolvedImportEntry`.
    Strip those canonical wrappers to the ordered lexer `ResolvedImport` list, then
    call `mizar_lexer::build_lexical_environment` with the resolved imports and
    summaries to assemble the `UserSymbolIndex` and `LexicalEnvironmentFingerprint`.
-4. Planned for task 6: if the lexer returns `UserSymbolImportConflict { spelling, earlier_import,
+4. If the lexer returns `UserSymbolImportConflict { spelling, earlier_import,
    later_import }`, convert it into a `LexicalEnvironmentDiagnostic`, using the
    canonical `ResolvedImportEntry` for `later_import` as the primary span and the
-   canonical entry for `earlier_import` as a secondary anchor when available.
-   Remove the later conflicting module from the active import set and retry.
-   Repeat this bounded retry until the lexer succeeds or there are no imports
+   canonical entry for `earlier_import` as a secondary anchor. Remove the later
+   conflicting module from the active import set and retry. Repeat this bounded
+   retry until the lexer succeeds or there are no imports
    left; each retry removes at most one module, so it is deterministic and
    terminates in at most the original canonical import count. If either module id
    is missing from the canonical lookup, treat that as a provider/frontend
@@ -202,11 +201,10 @@ Provider-side issues — an import that resolves to no module, or a dependency
 whose lexical summary is unavailable — are carried as
 `LexicalEnvironmentDiagnostic`s and the affected imports are omitted before
 calling the lexer, so the pipeline degrades to a smaller active environment
-rather than failing the whole file. Task 6 narrows the recoverable lexer-side
-case to `UserSymbolImportConflict`: the frontend will diagnose the later
-conflicting import, add the earlier import as secondary context when known,
-remove the later import, and retry environment construction. Until task 6 lands,
-lexer-side structural errors are surfaced as `MalformedSummary`. Invalid
+rather than failing the whole file. Recoverable lexer-side handling is narrowed
+to `UserSymbolImportConflict`: the frontend diagnoses the later conflicting
+import, adds the earlier import as secondary context, removes the later import,
+and retries environment construction. Invalid
 exported symbol spelling, invalid arity, reserved-word/symbol collisions,
 inconsistent duplicate summaries, and unexpected missing summaries are hard
 malformed-summary failures because the frontend cannot safely infer which subset
