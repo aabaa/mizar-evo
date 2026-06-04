@@ -2,7 +2,7 @@
 
 > Canonical language: English. Japanese companion: [../ja/source.md](../ja/source.md).
 
-Status: planned.
+Status: implemented.
 
 ## Purpose
 
@@ -10,10 +10,11 @@ This module implements the frontend pipeline Step 1 (source loading) and
 produces the `SourceUnit` consumed by preprocessing and every later step.
 
 It bridges `mizar-session` source identity into a frontend-local loaded record:
-it reads source bytes, validates UTF-8, derives the module path, builds the
-`LineMap`, and preserves the `LoadingMap` from loaded-text offsets back to the
-original input. It does not preprocess comments, tokenize, parse, resolve
-imports, or assign `SourceId` / `SourceVersion` identity by itself.
+the wrapped session loader reads source bytes, validates UTF-8, derives source
+metadata, builds the `LineMap`, and emits the optional `LoadingMap` from
+loaded-text offsets back to the original input; this module preserves those
+loaded values in `SourceUnit`. It does not preprocess comments, tokenize, parse,
+resolve imports, or assign `SourceId` / `SourceVersion` identity by itself.
 
 `mizar-session` owns source identity, source hashes, and snapshot membership.
 `mizar-frontend` consumes a `mizar_session::LoadedSource` and reshapes it into
@@ -109,8 +110,9 @@ consumers that need a `SourceUnit` for a single file.
 
 ### SourceUnit
 
-`SourceUnit` is an immutable, source-faithful loaded record for one `.miz` file
-or generated source fragment. `source_text` is the validated,
+`SourceUnit` is a source-faithful loaded record for one `.miz` file or
+generated source fragment. Callers treat a constructed `SourceUnit` as immutable
+pipeline input. `source_text` is the validated,
 source-loading-normalized text exactly as `mizar-session` produced it.
 `source_hash`, `line_map`, `loading_map`, `normalized_path`, `edition`,
 `origin`, and `generated_anchor` are the session values, copied without
@@ -159,10 +161,13 @@ session-validated encoding and identity forward.
 
 ## Error Handling
 
-Loading surfaces `mizar_session::SourceLoadError` unchanged (source path outside
-package root, unsupported extension, invalid UTF-8, unreadable file, stale
-open-buffer version, unmappable open-buffer URI, generated source without
-metadata, source-id allocation failure, and the path-normalization variants).
+Loading surfaces `mizar_session::SourceLoadError` unchanged. Examples include
+source path outside package root, unsupported extension, invalid UTF-8,
+unreadable file, stale open-buffer version, unmappable open-buffer URI,
+generated source without metadata, duplicate module paths, unsupported origins,
+source-id allocation failure, and the path-normalization variants; this list is
+non-exhaustive because wrapped session loaders may return any current
+`SourceLoadError` variant.
 The frontend converts these into file-level frontend diagnostics in the
 orchestration layer; it does not invent new error categories for conditions that
 `mizar-session` already classifies.
@@ -199,5 +204,5 @@ Key scenarios:
   parser inputs, lexical-environment requests, cache keys, and diagnostics need
   them later.
 - `file_path` is local diagnostic metadata, excluded from published identity.
-- A `SourceUnit` is immutable after construction and may be retained by snapshot
-  leases, LSP views, or downstream phase outputs.
+- A `SourceUnit` is treated as immutable after construction and may be retained
+  by snapshot leases, LSP views, or downstream phase outputs.

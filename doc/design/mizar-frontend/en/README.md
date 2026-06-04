@@ -28,7 +28,7 @@ frontend uses a stub parser seam and returns `ast = None`.
 
 | Document | Maps To | Description | Status |
 |---|---|---|---|
-| [source.md](./source.md) | `crates/mizar-frontend/src/source.rs` | Step 1: `SourceUnit` loading bridging `mizar-session` source identity, line maps, and loading maps | Draft |
+| [source.md](./source.md) | `crates/mizar-frontend/src/source.rs` | Step 1: `SourceUnit` loading bridging `mizar-session` source identity, line maps, and loading maps | Implemented |
 | [preprocess.md](./preprocess.md) | `crates/mizar-frontend/src/preprocess.rs` | Step 2: `PreprocessedSource`, comment/doc-comment separation, annotation preservation, and shallow import pre-scan coordination | Draft |
 | [lexical_env.md](./lexical_env.md) | `crates/mizar-frontend/src/lexical_env.rs` | Step 3: active lexical environment construction from import stubs and dependency lexical summaries | Draft |
 | [lexing.md](./lexing.md) | `crates/mizar-frontend/src/lexing.rs` | Step 4: `TokenStream` via raw scan, scope skeleton, and context-sensitive disambiguation | Draft |

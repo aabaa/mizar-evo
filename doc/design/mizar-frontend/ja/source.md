@@ -2,13 +2,13 @@
 
 > 正本は英語です。英語版: [../en/source.md](../en/source.md)。
 
-状態: planned。
+状態: implemented。
 
 ## 目的
 
 このモジュールはフロントエンドパイプラインの Step 1（ソース読み込み）を実装し、前処理および以降のすべての Step が消費する `SourceUnit` を生成する。
 
-`mizar-session` のソース同一性をフロントエンドローカルの読み込み済みレコードへと橋渡しする。すなわちソースバイト列を読み、UTF-8 を検証し、モジュールパスを導出し、`LineMap` を構築し、読み込み済みテキストのオフセットから元の入力へ戻す `LoadingMap` を保持する。コメントの前処理、トークン化、構文解析、インポート解決は行わず、`SourceId` / `SourceVersion` の同一性を自前で割り当てることもしない。
+`mizar-session` のソース同一性をフロントエンドローカルの読み込み済みレコードへと橋渡しする。wrapped session loader がソースバイト列を読み、UTF-8 を検証し、ソースメタデータを導出し、`LineMap` を構築し、読み込み済みテキストのオフセットから元の入力へ戻す任意の `LoadingMap` を出力する。このモジュールはそれらの読み込み済み値を `SourceUnit` に保持する。コメントの前処理、トークン化、構文解析、インポート解決は行わず、`SourceId` / `SourceVersion` の同一性を自前で割り当てることもしない。
 
 `mizar-session` がソース同一性・ソースハッシュ・スナップショット所属を所有する。`mizar-frontend` は `mizar_session::LoadedSource` を消費し、[architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md) の「Step 1: Load SourceUnit」が定義する `SourceUnit` へ整形する。このモジュールは `mizar-session` が既に読み込んだテキストを再ハッシュ・再正規化しない。
 
@@ -81,13 +81,13 @@ pub fn register_source_unit(
 
 ### SourceUnit
 
-`SourceUnit` は 1 つの `.miz` ファイルまたは生成ソース断片に対する不変かつソース忠実な読み込み済みレコードである。`source_text` は `mizar-session` が生成した検証済み・ソース読み込み正規化済みテキストそのものである。`source_hash`、`line_map`、`loading_map`、`normalized_path`、`edition`、`origin`、`generated_anchor` は session の値であり、再計算せずにコピーする。`file_path` は診断用のローカル表示パスであり、公開される同一性は `normalized_path` を用いる。
+`SourceUnit` は 1 つの `.miz` ファイルまたは生成ソース断片に対するソース忠実な読み込み済みレコードである。構築済みの `SourceUnit` は不変なパイプライン入力として扱う。`source_text` は `mizar-session` が生成した検証済み・ソース読み込み正規化済みテキストそのものである。`source_hash`、`line_map`、`loading_map`、`normalized_path`、`edition`、`origin`、`generated_anchor` は session の値であり、再計算せずにコピーする。`file_path` は診断用のローカル表示パスであり、公開される同一性は `normalized_path` を用いる。
 
 `SourceUnit` は [architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md) の「Incrementality」における Step 1 の読み込み済み content anchor である。content identity は package/module identity、normalized path、`source_hash`、edition で、対応する session source-version summary と一致する。`origin` と open-buffer version は freshness / diagnostic metadata として保持するが、公開 source-version content identity には含めない。
 
 ### Loading Map の保持
 
-`loading_map` は、ソース読み込みがオフセットを変更したとき（ディスク／オープンバッファテキストの先頭 BOM 除去または CRLF→LF 正規化）にのみ `Some` となる。恒等読み込みおよび生成テキストでは `None` である。フロントエンドはマップを編集せず、session のマップを転送するので、`span_bridge` が読み込み済みテキストのオフセットを元の入力オフセットへ変換できる。
+`loading_map` は、ソース読み込みがオフセットを変更したとき（ディスク／オープンバッファテキストの先頭 BOM 除去または CRLF→LF 正規化）にのみ `Some` となる。恒等読み込みおよび生成テキストでは `None` である。フロントエンドはマップを編集せず、session のマップを転送するので、診断や LSP adapter が任意の元入力ビューを必要とするとき、`span_bridge` は `MappedSourceRange.original_input` を通じてソース読み込み入力のバイトオフセットを公開できる。`SourceRange` 値そのものは読み込み済みテキスト座標のままである。
 
 ## アルゴリズム / ロジック
 
@@ -104,7 +104,7 @@ pub fn register_source_unit(
 
 ## エラー処理
 
-読み込みは `mizar_session::SourceLoadError` をそのまま表面化する（パッケージルート外のソースパス、未対応拡張子、不正な UTF-8、読み取り不能ファイル、古いオープンバッファバージョン、マップ不能なオープンバッファ URI、メタデータ無しの生成ソース、source-id 割り当て失敗、およびパス正規化系の変種）。フロントエンドは統制層でこれらをファイルレベルの診断へ変換する。`mizar-session` が既に分類している条件に対して新しいエラーカテゴリを作らない。
+読み込みは `mizar_session::SourceLoadError` をそのまま表面化する。例として、パッケージルート外のソースパス、未対応拡張子、不正な UTF-8、読み取り不能ファイル、古いオープンバッファバージョン、マップ不能なオープンバッファ URI、メタデータ無しの生成ソース、重複 module path、未対応 origin、source-id 割り当て失敗、およびパス正規化系の変種がある。この一覧は非網羅であり、wrapped session loader は現在の任意の `SourceLoadError` variant を返しうる。フロントエンドは統制層でこれらをファイルレベルの診断へ変換する。`mizar-session` が既に分類している条件に対して新しいエラーカテゴリを作らない。
 
 読み込み失敗時は `SourceUnit` を生成しない。統制層が診断を報告し、前処理の前にそのファイルのパイプラインを停止する。
 
@@ -125,4 +125,4 @@ pub fn register_source_unit(
 - このモジュールは自前でバイトを読み込み・正規化しない。`mizar-session` に委譲し、結果を整形するだけである。
 - `source_hash`・`line_map`・`loading_map`・`normalized_path`・`edition` はフロントエンドが再計算しない。
 - `file_path` はローカル診断メタデータであり、公開同一性から除外される。
-- `SourceUnit` は構築後に不変で、スナップショットリース・LSP ビュー・下流フェーズ出力に保持されうる。
+- `SourceUnit` は構築後に不変なものとして扱われ、スナップショットリース・LSP ビュー・下流フェーズ出力に保持されうる。

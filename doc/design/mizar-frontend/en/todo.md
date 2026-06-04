@@ -13,7 +13,7 @@
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | span_bridge | [span_bridge.md](./span_bridge.md) | `src/span_bridge.rs` | [x] |
-| source | [source.md](./source.md) | `src/source.rs` | [ ] |
+| source | [source.md](./source.md) | `src/source.rs` | [x] |
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [ ] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [ ] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [ ] |
@@ -97,7 +97,7 @@ keep `cargo test -p mizar-frontend` green (see
 
 ### Module: source (`src/source.rs`)
 
-2. **`SourceUnit` and the loader bridge.** [ ]
+2. **`SourceUnit` and the loader bridge.** [x]
    - Add `pub mod source;`. Define `SourceUnit`, `SourceUnitRequest`, the
      `SourceUnitLoader` trait, and `FrontendSourceLoader<L: SourceLoader>`;
      implement `source_unit_from_loaded` projecting a `mizar_session::LoadedSource`

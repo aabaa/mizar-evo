@@ -13,7 +13,7 @@
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | span_bridge | [span_bridge.md](./span_bridge.md) | `src/span_bridge.rs` | [x] |
-| source | [source.md](./source.md) | `src/source.rs` | [ ] |
+| source | [source.md](./source.md) | `src/source.rs` | [x] |
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [ ] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [ ] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [ ] |
@@ -51,7 +51,7 @@ frontend の基盤は `mizar-session` と `mizar-lexer` に依存する。`mizar
 
 ### モジュール: source (`src/source.rs`)
 
-2. **`SourceUnit` とローダー橋渡し。** [ ]
+2. **`SourceUnit` とローダー橋渡し。** [x]
    - `pub mod source;` を追加する。`SourceUnit`、`SourceUnitRequest`、`SourceUnitLoader` トレイト、`FrontendSourceLoader<L: SourceLoader>` を定義し、`mizar_session::LoadedSource` をハッシュ・line map・loading map・normalized path・edition・origin・generated anchor を再計算せずに `SourceUnit` へ射影する `source_unit_from_loaded` を実装する。
    - `LoadedSource` はファイルシステムパスを保持しないので、`file_path` を呼び出し側提供の診断メタデータとして扱う。ディスク／オープンバッファ source では request/origin から、生成 source では normalized path または generated anchor から導出する。
    - 読み込んだ `LineMap` / `LoadingMap` を `SourceId` の下で mutable `SpanBridge` に登録する helper を提供する。統制層が読み込み後・前処理前にこの helper を呼び、`load_source_unit` 自体は bridge 状態を変更しない。

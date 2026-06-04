@@ -20,7 +20,7 @@
 
 | ドキュメント | 対応先 | 説明 | 状態 |
 |---|---|---|---|
-| [source.md](./source.md) | `crates/mizar-frontend/src/source.rs` | Step 1: `mizar-session` のソース同一性・line map・loading map を橋渡しする `SourceUnit` 読み込み | Draft |
+| [source.md](./source.md) | `crates/mizar-frontend/src/source.rs` | Step 1: `mizar-session` のソース同一性・line map・loading map を橋渡しする `SourceUnit` 読み込み | Implemented |
 | [preprocess.md](./preprocess.md) | `crates/mizar-frontend/src/preprocess.rs` | Step 2: `PreprocessedSource`、コメント／ドキュメントコメント分離、注釈構文保持、浅いインポート事前走査の統制 | Draft |
 | [lexical_env.md](./lexical_env.md) | `crates/mizar-frontend/src/lexical_env.rs` | Step 3: インポートスタブと依存字句サマリからのアクティブ字句環境構築 | Draft |
 | [lexing.md](./lexing.md) | `crates/mizar-frontend/src/lexing.rs` | Step 4: 生スキャン・スコープスケルトン・文脈依存曖昧性解消による `TokenStream` | Draft |
