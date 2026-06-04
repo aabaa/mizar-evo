@@ -14,7 +14,7 @@
 |---|---|---|---|
 | span_bridge | [span_bridge.md](./span_bridge.md) | `src/span_bridge.rs` | [x] |
 | source | [source.md](./source.md) | `src/source.rs` | [x] |
-| preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [ ] |
+| preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [~] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [ ] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [ ] |
 | parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [ ] |
@@ -60,7 +60,7 @@
 
 ### モジュール: preprocess (`src/preprocess.rs`)
 
-3. **コメントとドキュメントコメントの前処理。** [ ]
+3. **コメントとドキュメントコメントの前処理。** [x]
    - `pub mod preprocess;` を追加する。`PreprocessedSource`、`LexicalText`、`Comment`、`DocComment`、`LexicalSourceMap`、`lexical_hash`、写像済みの `ImportStub` / `ImportStubPath` / `ImportStubRelativePrefix` / `ImportStubAlias`、および code/message・第一の `SourceRange`・副次の `SourceAnchor` を持つ `PreprocessDiagnostic` を定義する。
    - `SourceUnit.source_text` に対して `mizar_lexer::preprocess_source_for_lexing` を駆動し、コメント・ドキュメントコメント・前処理診断のスパンを `SpanBridge` を通じて変換し、`LexicalSourceMap` を組み立てる。
    - テスト: 通常コメントが字句テキストからは除去されるが、正しい範囲を持つ `Comment` として保持される。ドキュメントコメントが生本文と範囲とともに保持される。注釈構文が字句テキストに残る。除去されたコメントをまたぐ字句範囲が合成マッピングを生む。合成空白はアンカーに支えられた縮退マッピングとしてのみ表現される。コメントのみの編集で字句テキストが変わらなければ `lexical_hash` が安定する。コード領域の非 ASCII 文字と未終端ブロックコメントが報告・回復される。

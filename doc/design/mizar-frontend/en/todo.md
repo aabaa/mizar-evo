@@ -14,7 +14,7 @@
 |---|---|---|---|
 | span_bridge | [span_bridge.md](./span_bridge.md) | `src/span_bridge.rs` | [x] |
 | source | [source.md](./source.md) | `src/source.rs` | [x] |
-| preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [ ] |
+| preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [~] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [ ] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [ ] |
 | parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [ ] |
@@ -122,7 +122,7 @@ keep `cargo test -p mizar-frontend` green (see
 
 ### Module: preprocess (`src/preprocess.rs`)
 
-3. **Comment and doc-comment preprocessing.** [ ]
+3. **Comment and doc-comment preprocessing.** [x]
    - Add `pub mod preprocess;`. Define `PreprocessedSource`, `LexicalText`,
      `Comment`, `DocComment`, `LexicalSourceMap`, `lexical_hash`, mapped `ImportStub` /
      `ImportStubPath` / `ImportStubRelativePrefix` / `ImportStubAlias`, and

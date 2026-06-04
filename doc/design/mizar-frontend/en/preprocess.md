@@ -2,7 +2,7 @@
 
 > Canonical language: English. Japanese companion: [../ja/preprocess.md](../ja/preprocess.md).
 
-Status: planned.
+Status: partially implemented. Task 3 comment and doc-comment preprocessing is implemented; task 4 import pre-scan integration remains planned.
 
 ## Purpose
 
@@ -11,8 +11,9 @@ the `PreprocessedSource` consumed by lexical-environment construction and lexing
 
 It coordinates the `mizar-lexer` source-preprocessing helpers over a
 `SourceUnit`: code-region ASCII validation, comment and doc-comment separation,
-annotation syntax preservation in lexical text, and the shallow top-level import
-pre-scan. It owns the orchestration and the span bridging back to
+and annotation syntax preservation in lexical text. Task 4 extends the same
+module with the shallow top-level import pre-scan. It owns the orchestration and
+the span bridging back to
 `mizar-session` `SourceRange`; it does not own the comment-stripping or
 import-scan algorithms (those live in `mizar-lexer`), and it does not tokenize,
 parse, or resolve imports.
@@ -101,11 +102,11 @@ the output and are merged later in deterministic order by the orchestration
 layer.
 
 For user-recoverable input problems, `preprocess` returns `Ok(PreprocessedSource)`:
-comment-structure, ASCII-region, and import-pre-scan errors are recorded as
-diagnostics with recovered lexical text rather than aborting, so the lexer can
-still run and report further problems. It returns `Err(SpanBridgeError)` only for
-internal coordinate-bridge invariant failures such as an unmappable span or a
-conflicting map registration.
+comment-structure and ASCII-region errors are recorded as diagnostics with
+recovered lexical text rather than aborting, so the lexer can still run and
+report further problems. Task 4 adds import-pre-scan diagnostics to the same
+channel. It returns `Err(SpanBridgeError)` only for internal coordinate-bridge
+invariant failures such as an unmappable span or a conflicting map registration.
 
 ## Dependencies
 
@@ -127,15 +128,17 @@ conflicting map registration.
 ### Lexical Text and Source Map
 
 `LexicalText` is the comment-stripped, annotation-preserving text the lexer will
-scan. `LexicalSourceMap` wraps the lexer's `SourcePreprocessMap` together with
-the `SourceUnit` `LineMap` / `LoadingMap`, so that any lexical-text byte offset
-can be mapped through `span_bridge` to a primary `SourceRange` (and, across a
-removed comment, to composite adjacent anchors). Synthetic whitespace inserted
-where comments were removed has no exact user-authored range; if a session
-`MappedSourceRange` needs a primary, it is a degraded anchor fallback and must not
-be treated as exact source text. `lexical_hash` is computed from the lexical text
-plus the frontend preprocessing-version domain and is the downstream token/AST
-reuse key when comment-only edits leave lexical text unchanged.
+scan. `LexicalSourceMap` carries the source id, lexical length, and retained
+lexer `SourcePreprocessMap`; the mutable `SpanBridge` owns the registered
+session `LineMap`, optional `LoadingMap`, and converted `PreprocessMap` used for
+actual coordinate conversion. Together they let callers map lexical-text byte
+offsets to a primary `SourceRange` (and, across a removed comment, to composite
+adjacent anchors). Synthetic whitespace inserted where comments were removed has
+no exact user-authored range; if a session `MappedSourceRange` needs a primary,
+it is a degraded anchor fallback and must not be treated as exact source text.
+`lexical_hash` is computed from the lexical text plus the frontend
+preprocessing-version domain and is the downstream token/AST reuse key when
+comment-only edits leave lexical text unchanged.
 
 ### Comments and Doc Comments
 
@@ -156,12 +159,16 @@ coverage for branch imports live on `path.spelling`, `path.relative`,
 is only enough to request an active lexical environment and to produce good
 diagnostics if lexicon loading fails. Package/module existence, visibility,
 export checks, and re-export semantics are deferred to module resolution.
+The public shapes are present in task 3, but `preprocess` leaves
+`import_stubs` empty until task 4 wires the raw import pre-scan.
 
 `PreprocessDiagnostic` is the frontend-mapped diagnostic form for
 `SourcePreprocessDiagnostic`, `ImportPrescanDiagnostic`, and frontend-local raw
 import pre-scan failures. Raw lexer diagnostic structs are consumed as inputs and
 converted immediately; public diagnostics keep mapped session ranges plus
 secondary `SourceAnchor`s when a preprocess mapping is composite or degraded.
+Task 3 emits only `SourcePrecondition` diagnostics; the import variants are
+reserved for task 4.
 
 ## Algorithm / Logic
 
@@ -176,23 +183,28 @@ secondary `SourceAnchor`s when a preprocess mapping is composite or degraded.
    register it on the mutable `SpanBridge` for the `SourceId`.
 3. Map every retained comment, doc comment, and preprocess diagnostic span from
    lexical/source offsets to `mizar-session` `SourceRange` through `span_bridge`.
-4. Raw-scan the lexical text (`scan_raw`). If it succeeds, run
+4. Leave `import_stubs` empty and emit no import-prescan diagnostics in the
+   task-3 implementation.
+5. Compute `lexical_hash` from the final lexical text and frontend preprocessing
+   version.
+6. Assemble `LexicalSourceMap` from the retained lexer preprocess map plus the
+   registered bridge state and return `PreprocessedSource`.
+
+Task 4 extends the algorithm with these planned steps:
+
+1. Raw-scan the lexical text (`scan_raw`). If it succeeds, run
    `scan_import_prelude` to extract `ImportStub`s and import-prescan diagnostics;
    map their spans to `SourceRange`.
-5. If the raw scan fails, record a frontend-local import-pre-scan diagnostic over
+2. If the raw scan fails, record a frontend-local import-pre-scan diagnostic over
    the whole lexical text (or the source-start zero-length range when the lexical
    text is empty), leave `import_stubs` empty, and continue. Do not attempt to
    infer imports from a partial raw stream. The current `mizar_lexer::LexError`
    has no span or partial-token payload, so precise raw-scan failure locations are
    deferred to a future recoverable raw-scanner contract.
-6. Collect comment-structure, ASCII-precondition, and import-prescan diagnostics
-   into `diagnostics`, preserving source order.
-7. Compute `lexical_hash` from the final lexical text and frontend preprocessing
-   version.
-8. Assemble `LexicalSourceMap` from the preprocess map plus the line/loading maps
-   and return `PreprocessedSource`.
+3. Collect import-prescan diagnostics into `diagnostics` after the task-3
+   comment-structure and ASCII-precondition diagnostics, preserving source order.
 
-The import pre-scan consumes raw lexer output; raw scanning itself does not
+The planned import pre-scan consumes raw lexer output; raw scanning itself does not
 interpret imports. Because `scan_raw` is strict, recovered lexical text from
 preprocessing can still fail raw scanning. That failure disables only the shallow
 import extraction for Step 2; Step 4 tokenization performs its own recovery
@@ -201,13 +213,16 @@ adaptation and still reports token-level diagnostics.
 ## Error Handling
 
 Step-2 diagnostics are carried in `PreprocessedSource.diagnostics`, not raised
-as a hard error:
+as a hard error. Task 3 records:
 
 - code-region non-ASCII characters and other lexical preconditions
   (`SourcePreprocessDiagnostic`);
-- unterminated block comment and other comment-structure problems;
+- unterminated block comment and other comment-structure problems.
+
+Task 4 adds:
+
 - import pre-scan failures that prevent active lexical environment construction
-  (`ImportPrescanDiagnostic`).
+  (`ImportPrescanDiagnostic`);
 - raw-scan failures during import pre-scan, represented as a frontend-local
   `PreprocessDiagnostic` variant with coarse lexical-text coverage so
   preprocessing can still return recovered lexical text.
@@ -231,15 +246,20 @@ Key scenarios:
   not exact user-authored ranges;
 - `lexical_hash` stays stable when comment-only edits leave `lexical_text`
   unchanged;
+- a non-ASCII character in a code region is reported as a lexical-precondition
+  diagnostic while preprocessing still returns recovered lexical text;
+- an unterminated block comment is reported and recovered;
+- multiple preprocess diagnostics preserve source order, messages, primary
+  ranges, and secondary anchors.
+
+Task 4 planned scenarios:
+
 - top-level `import` forms produce `ImportStub`s with correct raw path, optional
   alias, `path.relative`, `path.source_segments`, and span; `./` and `../`
   relative prefixes remain distinguishable; a malformed import yields an
   `ImportPrescanDiagnostic` without aborting;
 - a strict raw-scan failure during import pre-scan yields a diagnostic and empty
-  `import_stubs` without aborting preprocessing;
-- a non-ASCII character in a code region is reported as a lexical-precondition
-  diagnostic while preprocessing still returns recovered lexical text;
-- an unterminated block comment is reported and recovered.
+  `import_stubs` without aborting preprocessing.
 
 ## Constraints and Assumptions
 
