@@ -73,13 +73,15 @@ Examples:
 theorem Union_empty_right:
   X \/ {} = X by ...;
 
-@[label, rewrite("priority")]
+@[category("set")]
 registration
-  reduce X \/ {} to X;
+  let X be set;
+  reduce UnionEmpty: X \/ {} to X;
+  reducibility proof ... end;
 end;
 ```
 
-The labels above are illustrative. Built-in verifier behavior is defined only for labels recognized by the language or implementation. Additional labels may be registered by libraries and ignored by the built-in verifier.
+The annotations above are illustrative. Built-in verifier behavior is defined only for annotations recognized by the language or implementation. Additional annotations may be registered by libraries and ignored by the built-in verifier. Reduction priority is not controlled by annotations; automatic rule selection is defined by §17.6.4.
 
 ## E.4 Documentation Tags
 

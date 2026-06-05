@@ -73,13 +73,15 @@ annotation_arg     ::= identifier | nat_literal | string_literal ;
 theorem Union_empty_right:
   X \/ {} = X by ...;
 
-@[label, rewrite("priority")]
+@[category("set")]
 registration
-  reduce X \/ {} to X;
+  let X be set;
+  reduce UnionEmpty: X \/ {} to X;
+  reducibility proof ... end;
 end;
 ```
 
-上記のラベルは例示です。組み込み検証器の動作は、言語または実装によって認識されるラベルに対してのみ定義されます。追加のラベルはlibraryによって登録され、組み込み検証器によって無視される場合があります。
+上記のアノテーションは例示です。組み込み検証器の動作は、言語または実装によって認識されるアノテーションに対してのみ定義されます。追加のアノテーションはlibraryによって登録され、組み込み検証器によって無視される場合があります。リダクションの優先順位はアノテーションでは制御しません。自動規則選択は §17.6.4 で定義されます。
 
 ## E.4 ドキュメントタグ
 

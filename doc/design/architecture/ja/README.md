@@ -36,7 +36,7 @@
 | [14.parallel_verification_and_scheduling.md](./14.parallel_verification_and_scheduling.md) | 0, 10-15 | 検証タスクグラフ、並列スケジューリング、キャンセル、決定的な結果順序 | Draft |
 | [15.kernel_certificate_format.md](./15.kernel_certificate_format.md) | 13-14 | 最終的な証明書スキーマ、節トレースの検査、カーネルによる棄却の意味論 | Draft |
 | [16.substitution_and_binding.md](./16.substitution_and_binding.md) | 4, 6, 9, 14 | 束縛変数、α 同値、捕獲回避、束縛子の正規化 | Draft |
-| [17.cluster_trace_format.md](./17.cluster_trace_format.md) | 7, 11, 14-15 | 再生可能な cluster / registration 展開トレース | Draft |
+| [17.cluster_trace_format.md](./17.cluster_trace_format.md) | 7, 11, 14-15 | 再生可能な cluster 展開とリダクション適用のトレース | Draft |
 | [18.dependency_fingerprint.md](./18.dependency_fingerprint.md) | 0, 4-7, 11, 15 | 依存スライス、フィンガープリント、増分再ビルドのトリガ | Draft |
 | [19.failure_semantics.md](./19.failure_semantics.md) | 全体 | 安定した失敗分類、伝播、決定的なエラー順序 | Draft |
 | [20.test_strategy.md](./20.test_strategy.md) | 全体 | 失敗系・健全性のテストを優先する回帰テスト戦略 | Draft |

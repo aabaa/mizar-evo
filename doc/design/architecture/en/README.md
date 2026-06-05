@@ -36,7 +36,7 @@ Architecture documents are numbered by reading order and design dependency, not 
 | [14.parallel_verification_and_scheduling.md](./14.parallel_verification_and_scheduling.md) | 0, 10-15 | Verification task graph, parallel scheduling, cancellation, and deterministic result ordering | Draft |
 | [15.kernel_certificate_format.md](./15.kernel_certificate_format.md) | 13-14 | Final certificate schema, clause trace checking, and kernel rejection semantics | Draft |
 | [16.substitution_and_binding.md](./16.substitution_and_binding.md) | 4, 6, 9, 14 | Bound variables, alpha-equivalence, capture avoidance, and binder normalization | Draft |
-| [17.cluster_trace_format.md](./17.cluster_trace_format.md) | 7, 11, 14-15 | Replayable cluster and registration expansion traces | Draft |
+| [17.cluster_trace_format.md](./17.cluster_trace_format.md) | 7, 11, 14-15 | Replayable cluster expansion and reduction application traces | Draft |
 | [18.dependency_fingerprint.md](./18.dependency_fingerprint.md) | 0, 4-7, 11, 15 | Dependency slices, fingerprints, and incremental rebuild triggers | Draft |
 | [19.failure_semantics.md](./19.failure_semantics.md) | All | Stable failure classification, propagation, and deterministic error ordering | Draft |
 | [20.test_strategy.md](./20.test_strategy.md) | All | Regression strategy prioritizing fail and soundness tests | Draft |
