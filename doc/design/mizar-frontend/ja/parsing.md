@@ -2,7 +2,8 @@
 
 > 正本は英語です。英語版: [../en/parsing.md](../en/parsing.md)。
 
-状態: 計画中。
+状態: パーサー入力の組み立てとスタブ parser seam は実装済み。実
+`mizar-parser` seam は引き続き保留中。
 
 ## 目的
 
@@ -20,14 +21,36 @@ pub struct ParseRequest<'a> {
     pub parser_inputs: ParserInputs,
 }
 
+impl<'a> ParseRequest<'a> {
+    pub fn new(tokens: &'a TokenStream, parser_inputs: ParserInputs) -> Self;
+}
+
 pub struct ParserInputs {
     pub edition: Edition,
     pub operator_fixity: OperatorFixityTable,
     pub string_required_positions: StringRequiredContext,
 }
 
+impl ParserInputs {
+    pub fn new(
+        edition: Edition,
+        operator_fixity: OperatorFixityTable,
+        string_required_positions: StringRequiredContext,
+    ) -> Self;
+
+    pub fn from_active_environment(
+        edition: Edition,
+        environment: &ActiveLexicalEnvironment,
+    ) -> Self;
+}
+
 pub struct OperatorFixityTable {
     pub entries: Vec<OperatorFixityEntry>,
+}
+
+impl OperatorFixityTable {
+    pub fn empty() -> Self;
+    pub fn is_empty(&self) -> bool;
 }
 
 pub struct OperatorFixityEntry {
@@ -48,6 +71,10 @@ pub enum StringRequiredContext {
     UniformForTest,
 }
 
+impl StringRequiredContext {
+    pub fn parser_lex_context(self) -> ParserLexContext;
+}
+
 pub trait ParserSeam {
     type Ast;
     type Diagnostic;
@@ -58,6 +85,10 @@ pub trait ParserSeam {
 pub struct ParseOutput<A, D> {
     pub ast: Option<A>,
     pub diagnostics: Vec<D>,
+}
+
+impl<A, D> ParseOutput<A, D> {
+    pub fn new(ast: Option<A>, diagnostics: Vec<D>) -> Self;
 }
 
 pub struct StubParserSeam;

@@ -2,9 +2,7 @@
 
 > Canonical language: English. Japanese companion: [../ja/lexing.md](../ja/lexing.md).
 
-Status: in progress (task 7 raw-scan / scope-skeleton wiring, task 8
-context-sensitive disambiguation, and task 9 recovery passthrough complete;
-parser-assisted lexing follow-ups pending).
+Status: complete for tasks 7-9; parser-assisted lexing follow-ups remain gated.
 
 ## Purpose
 

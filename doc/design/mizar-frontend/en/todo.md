@@ -16,8 +16,8 @@
 | source | [source.md](./source.md) | `src/source.rs` | [x] |
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
-| lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [~] |
-| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [ ] |
+| lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [x] |
+| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] |
 | orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [ ] |
 
 `mizar-frontend` is an orchestration crate, so it is built bottom-up by phase:
@@ -271,7 +271,7 @@ keep `cargo test -p mizar-frontend` green (see
 
 ### Module: parsing (`src/parsing.rs`)
 
-10. **Parser-input assembly and parser seam.** [ ]
+10. **Parser-input assembly and parser seam.** [x]
     - Add `pub mod parsing;`. Define `ParseRequest`, `ParserInputs`,
       `OperatorFixityTable`, `OperatorFixityEntry`, `OperatorAssociativity`,
       `StringRequiredContext`, `ParseOutput`, `ParserSeam`, and `StubParserSeam`;

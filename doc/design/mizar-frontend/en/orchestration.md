@@ -126,8 +126,9 @@ location.
 the real parser seam is enabled; with `StubParserSeam` no syntax diagnostics are
 emitted.
 
-`ast = None` means parsing could not recover enough structure for later phases;
-the lexical, preprocessing, and syntax diagnostics are still returned.
+`ast = None` means the real parser seam could not recover enough structure for
+later phases. With the stub parser seam, it is the expected placeholder result.
+The lexical, preprocessing, and syntax diagnostics are still returned.
 
 ## Dependencies
 

@@ -16,8 +16,8 @@
 | source | [source.md](./source.md) | `src/source.rs` | [x] |
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
-| lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [~] |
-| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [ ] |
+| lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [x] |
+| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] |
 | orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [ ] |
 
 `mizar-frontend` は統制を担う crate なので、フェーズの順にボトムアップで構築する。まず座標の橋渡しを用意し、続いてパイプライン順に Step 1〜5、最後にエンドツーエンドのコーディネータを作る。`span_bridge` は後続の各フェーズが参照する共有プリミティブであり、`orchestration` はパイプライン全体を配線する唯一のモジュールである。
@@ -109,7 +109,7 @@
 
 ### モジュール: parsing (`src/parsing.rs`)
 
-10. **パーサー入力の組み立てとパーサーの継ぎ目。** [ ]
+10. **パーサー入力の組み立てとパーサーの継ぎ目。** [x]
     - `pub mod parsing;` を追加する。`ParseRequest`、`ParserInputs`、`OperatorFixityTable`、`OperatorFixityEntry`、`OperatorAssociativity`、`StringRequiredContext`、`ParseOutput`、`ParserSeam`、`StubParserSeam` を定義し、アクティブ字句環境の構築後に、ソースのエディションと、字句サマリが現在公開しているデータだけを使って `ParserInputs` を導出する。
     - `mizar-parser` が存在するまでは、継ぎ目を `ast = None` と空の診断リストを返すスタブとして実装し、ソース → トークンのパイプラインを実行可能にする。
     - テスト: `ParserInputs` はエディションを運び、サマリが fixity を公開していないときは空の演算子 fixity テーブルを使い、スタブの source-to-token 経路では `StringRequiredContext::None` を使い、解決器の状態を運ばない。スタブの継ぎ目が `ast = None` を返す。

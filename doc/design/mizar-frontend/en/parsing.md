@@ -2,7 +2,8 @@
 
 > Canonical language: English. Japanese companion: [../ja/parsing.md](../ja/parsing.md).
 
-Status: planned.
+Status: parser-input assembly and the stub parser seam are implemented; the
+real `mizar-parser` seam remains gated.
 
 ## Purpose
 
@@ -30,14 +31,36 @@ pub struct ParseRequest<'a> {
     pub parser_inputs: ParserInputs,
 }
 
+impl<'a> ParseRequest<'a> {
+    pub fn new(tokens: &'a TokenStream, parser_inputs: ParserInputs) -> Self;
+}
+
 pub struct ParserInputs {
     pub edition: Edition,
     pub operator_fixity: OperatorFixityTable,
     pub string_required_positions: StringRequiredContext,
 }
 
+impl ParserInputs {
+    pub fn new(
+        edition: Edition,
+        operator_fixity: OperatorFixityTable,
+        string_required_positions: StringRequiredContext,
+    ) -> Self;
+
+    pub fn from_active_environment(
+        edition: Edition,
+        environment: &ActiveLexicalEnvironment,
+    ) -> Self;
+}
+
 pub struct OperatorFixityTable {
     pub entries: Vec<OperatorFixityEntry>,
+}
+
+impl OperatorFixityTable {
+    pub fn empty() -> Self;
+    pub fn is_empty(&self) -> bool;
 }
 
 pub struct OperatorFixityEntry {
@@ -58,6 +81,10 @@ pub enum StringRequiredContext {
     UniformForTest,
 }
 
+impl StringRequiredContext {
+    pub fn parser_lex_context(self) -> ParserLexContext;
+}
+
 pub trait ParserSeam {
     type Ast;
     type Diagnostic;
@@ -68,6 +95,10 @@ pub trait ParserSeam {
 pub struct ParseOutput<A, D> {
     pub ast: Option<A>,
     pub diagnostics: Vec<D>,
+}
+
+impl<A, D> ParseOutput<A, D> {
+    pub fn new(ast: Option<A>, diagnostics: Vec<D>) -> Self;
 }
 
 pub struct StubParserSeam;
@@ -91,8 +122,9 @@ spans and parser-driven symbol-kind filters are not represented by this initial
 type; they are added by the parser-assisted lexing contract before real source
 inputs that require grammar-position string literals are enabled.
 
-`ast = None` means the parser could not recover enough structure for later
-phases; lexical and syntax diagnostics are still returned.
+`ast = None` means the real parser seam could not recover enough structure for
+later phases. With the stub parser seam, it is the expected placeholder result.
+Lexical and syntax diagnostics are still returned.
 
 ## Dependencies
 
