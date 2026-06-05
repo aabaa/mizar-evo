@@ -200,8 +200,24 @@ pub fn tokenize(
         }
     };
 
+    token_stream_from_raw(
+        source_id,
+        request.parser_context,
+        &raw,
+        request.environment,
+        bridge,
+    )
+}
+
+fn token_stream_from_raw(
+    source_id: SourceId,
+    parser_context: ParserLexContext,
+    raw: &RawTokenStream,
+    environment: &ActiveLexicalEnvironment,
+    bridge: &SpanBridge,
+) -> Result<TokenStream, SpanBridgeError> {
     let (lexer_stream, scope_skeleton) =
-        disambiguate_with_contextual_scope(&raw, request.environment, &request.parser_context);
+        disambiguate_with_contextual_scope(raw, environment, &parser_context);
     let tokens = lexer_stream
         .tokens()
         .iter()
@@ -223,7 +239,7 @@ pub fn tokenize(
 
     Ok(TokenStream {
         source_id,
-        parser_context: request.parser_context,
+        parser_context,
         tokens,
         scope_view,
         diagnostics,
@@ -506,8 +522,8 @@ mod tests {
         BindingShapeKind, LexDiagnosticCode, LexRecoveryHint, LexicalBlockKind,
         LexicalStatementKind, LexingDiagnosticKind, LexingDiagnosticPayload,
         LexingRejectedTokenCandidate, MalformedStringLiteralReason, ParserLexContext,
-        ParserLexMode, ScopeBlock, ScopeFrame, ScopeSkeletonDiagnosticCode, ScopeStatement,
-        TokenKind, TokenizeRequest, tokenize,
+        ParserLexMode, RawTokenKind, ScopeBlock, ScopeFrame, ScopeSkeletonDiagnosticCode,
+        ScopeStatement, TokenKind, TokenizeRequest, tokenize,
     };
     use crate::preprocess::preprocess;
     use crate::source::{SourceUnit, register_source_unit};
@@ -902,6 +918,192 @@ mod tests {
                 reason: MalformedStringLiteralReason::UnsupportedEscape { escape: 'n' },
                 recovery: LexRecoveryHint::EmitErrorRecoveryToken,
             }
+        );
+    }
+
+    #[test]
+    fn recoverable_malformed_lexeme_emits_error_recovery_and_resumes() {
+        let text = "alpha?beta";
+        let (source, preprocessed, bridge) = preprocessed_source(text);
+        let environment = empty_environment();
+
+        let stream = tokenize(
+            TokenizeRequest::new(&preprocessed, &environment, ParserLexContext::general()),
+            &bridge,
+        )
+        .unwrap();
+
+        assert_eq!(
+            token_kinds_texts_and_spans(&stream),
+            vec![
+                (
+                    TokenKind::Identifier,
+                    "alpha",
+                    range(source.source_id, 0, 5)
+                ),
+                (TokenKind::ErrorRecovery, "?", range(source.source_id, 5, 6)),
+                (
+                    TokenKind::Identifier,
+                    "beta",
+                    range(source.source_id, 6, 10)
+                ),
+            ]
+        );
+        assert_eq!(stream.diagnostics.len(), 1);
+        assert_eq!(
+            stream.diagnostics[0].kind,
+            LexingDiagnosticKind::Lexer(LexDiagnosticCode::NoValidTokenCandidate)
+        );
+        assert_eq!(stream.diagnostics[0].primary, range(source.source_id, 5, 6));
+        assert_eq!(
+            stream.diagnostics[0].payload,
+            LexingDiagnosticPayload::NoValidTokenCandidate {
+                rejected_lexeme: Arc::from("?"),
+                recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+            }
+        );
+    }
+
+    #[test]
+    fn unsupported_raw_token_recovery_preserves_payload_and_resumes() {
+        let text = "@latex alpha";
+        let (source, preprocessed, bridge) = preprocessed_source(text);
+        let environment = empty_environment();
+
+        let stream = tokenize(
+            TokenizeRequest::new(&preprocessed, &environment, ParserLexContext::general()),
+            &bridge,
+        )
+        .unwrap();
+
+        assert_eq!(
+            token_kinds_texts_and_spans(&stream),
+            vec![
+                (
+                    TokenKind::ErrorRecovery,
+                    "@latex",
+                    range(source.source_id, 0, 6)
+                ),
+                (
+                    TokenKind::Identifier,
+                    "alpha",
+                    range(source.source_id, 7, 12)
+                ),
+            ]
+        );
+        assert_eq!(stream.diagnostics.len(), 1);
+        assert_eq!(
+            stream.diagnostics[0].kind,
+            LexingDiagnosticKind::Lexer(LexDiagnosticCode::UnsupportedRawToken)
+        );
+        assert_eq!(stream.diagnostics[0].primary, range(source.source_id, 0, 6));
+        assert_eq!(
+            stream.diagnostics[0].payload,
+            LexingDiagnosticPayload::UnsupportedRawToken {
+                raw_kind: RawTokenKind::AnnotationMarker,
+                raw_lexeme: Arc::from("@latex"),
+                recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+            }
+        );
+    }
+
+    #[test]
+    fn parser_context_rejected_numeral_recovery_preserves_candidate_and_resumes() {
+        let text = "123 alpha";
+        let (source, preprocessed, bridge) = preprocessed_source(text);
+        let environment = empty_environment();
+
+        let stream = tokenize(
+            TokenizeRequest::new(
+                &preprocessed,
+                &environment,
+                ParserLexContext::identifier_required(),
+            ),
+            &bridge,
+        )
+        .unwrap();
+
+        assert_eq!(
+            token_kinds_texts_and_spans(&stream),
+            vec![
+                (
+                    TokenKind::ErrorRecovery,
+                    "123",
+                    range(source.source_id, 0, 3)
+                ),
+                (
+                    TokenKind::Identifier,
+                    "alpha",
+                    range(source.source_id, 4, 9)
+                ),
+            ]
+        );
+        assert_eq!(stream.diagnostics.len(), 1);
+        assert_eq!(
+            stream.diagnostics[0].kind,
+            LexingDiagnosticKind::Lexer(LexDiagnosticCode::ParserContextRejectedCandidate)
+        );
+        assert_eq!(
+            stream.diagnostics[0].payload,
+            LexingDiagnosticPayload::ParserContextRejectedCandidate {
+                mode: ParserLexMode::IdentifierRequired,
+                rejected_lexeme: Arc::from("123"),
+                candidates: vec![LexingRejectedTokenCandidate {
+                    kind: TokenKind::Numeral,
+                    text: Arc::from("123"),
+                    span: range(source.source_id, 0, 3),
+                    secondary: Vec::new(),
+                }],
+                recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+            }
+        );
+    }
+
+    #[test]
+    fn scope_diagnostics_survive_recoverable_lexer_errors_after_disambiguation() {
+        let text = "definition\n?\nalpha";
+        let (source, preprocessed, bridge) = preprocessed_source(text);
+        let environment = empty_environment();
+
+        let stream = tokenize(
+            TokenizeRequest::new(&preprocessed, &environment, ParserLexContext::general()),
+            &bridge,
+        )
+        .unwrap();
+
+        assert_eq!(
+            token_kinds_texts_and_spans(&stream),
+            vec![
+                (
+                    TokenKind::ReservedWord,
+                    "definition",
+                    range(source.source_id, 0, 10)
+                ),
+                (
+                    TokenKind::ErrorRecovery,
+                    "?",
+                    range(source.source_id, 11, 12)
+                ),
+                (
+                    TokenKind::Identifier,
+                    "alpha",
+                    range(source.source_id, 13, 18)
+                ),
+            ]
+        );
+        assert_eq!(stream.diagnostics.len(), 2);
+        assert_eq!(
+            stream.diagnostics[0].kind,
+            LexingDiagnosticKind::ScopeSkeleton(ScopeSkeletonDiagnosticCode::MissingEnd)
+        );
+        assert_eq!(stream.diagnostics[0].primary, range(source.source_id, 0, 0));
+        assert_eq!(
+            stream.diagnostics[1].kind,
+            LexingDiagnosticKind::Lexer(LexDiagnosticCode::NoValidTokenCandidate)
+        );
+        assert_eq!(
+            stream.diagnostics[1].primary,
+            range(source.source_id, 11, 12)
         );
     }
 

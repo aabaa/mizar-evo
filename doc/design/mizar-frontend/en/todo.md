@@ -257,7 +257,7 @@ keep `cargo test -p mizar-frontend` green (see
    - Depends on: 7. Spec: [lexing.md](./lexing.md) "Token Stream",
      "Algorithm / Logic".
 
-9. **Lexer recovery passthrough.** [ ]
+9. **Lexer recovery passthrough.** [x]
    - Preserve `TokenKind::ErrorRecovery` spans and lexer diagnostics end to end as
      mapped `LexingDiagnostic`s; add recoverable disambiguator / lexer
      diagnostics so the frontend `tokenize` wrapper returns `Ok(TokenStream)` for

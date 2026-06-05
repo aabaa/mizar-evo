@@ -2,16 +2,17 @@
 
 > Canonical language: English. Japanese companion: [../ja/lexing.md](../ja/lexing.md).
 
-Status: in progress (task 7 raw-scan / scope-skeleton wiring and task 8
-context-sensitive disambiguation complete; task 9 recovery passthrough pending).
+Status: in progress (task 7 raw-scan / scope-skeleton wiring, task 8
+context-sensitive disambiguation, and task 9 recovery passthrough complete;
+parser-assisted lexing follow-ups pending).
 
 ## Purpose
 
 This module implements the frontend pipeline Step 4 (lexing / disambiguation).
-The task-7/8 implementation drives the `mizar-lexer` raw scanner,
+The task-7/8/9 implementation drives the `mizar-lexer` raw scanner,
 scope-skeleton pre-scan, and disambiguator to turn a `PreprocessedSource` into
-a session-spanned parser-facing `TokenStream`. Task 9 extends the same entry
-point with the remaining recovery passthrough coverage.
+a session-spanned parser-facing `TokenStream`, preserving recoverable lexer
+diagnostics and `ErrorRecovery` tokens along the same entry point.
 
 It owns the wiring and the span bridging; it does not own the longest-match
 rules, the scope-skeleton construction, or the parser-lex context semantics
@@ -191,9 +192,11 @@ orchestration merge.
 `TokenStream` is the source-faithful token sequence for one file under the
 parser lexing context used for the run. Successful tokenization surfaces final
 parser-facing `UserSymbol`, `ReservedWord`, `ReservedSymbol`, `Identifier`,
-`Numeral`, and `StringLiteral` classifications. Strict raw-scan failure emits
-one coarse `TokenKind::ErrorRecovery`. Each `Token` preserves its original
-spelling (`text`) and a session `SourceRange`.
+`Numeral`, and `StringLiteral` classifications, with `TokenKind::ErrorRecovery`
+tokens interleaved where recoverable lexer or disambiguator diagnostics consumed
+input. Strict raw-scan failure emits one coarse
+`TokenKind::ErrorRecovery` for the whole lexical text instead. Each `Token`
+preserves its original spelling (`text`) and a session `SourceRange`.
 
 `LexingDiagnostic` is the mapped frontend diagnostic payload for Step 4. It
 represents raw-scan failures, scope-skeleton diagnostics, and lexer
@@ -273,7 +276,7 @@ recovery passthrough coverage and follow-up cases.
 
 ## Tests
 
-Implemented task-7/8 scenarios:
+Implemented task-7/8/9 scenarios:
 
 - raw scan and disambiguation preserve final token spans, including spans mapped
   through preprocess mappings such as removed comments;
@@ -288,10 +291,12 @@ Implemented task-7/8 scenarios:
   reports mapped lexer diagnostics for rejected string candidates;
 - lexer diagnostic payloads preserve non-span data and mapped nested candidate
   spans.
-
-Task-9 scenarios add the remaining recovery passthrough coverage for malformed
-tokens, future invalid-numeral diagnostics, unsupported raw-token cases, and
-scope diagnostics after disambiguation.
+- malformed lexemes and unsupported raw-token cases emit mapped
+  `ErrorRecovery` tokens without preventing later tokens from being emitted;
+- parser-context-rejected numerals preserve mapped rejected-candidate payloads
+  until a dedicated invalid-numeral lexer diagnostic exists;
+- scope diagnostics remain preserved with mapped spans after disambiguation even
+  when recoverable lexer diagnostics are also present.
 
 ## Constraints and Assumptions
 
