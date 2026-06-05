@@ -32,9 +32,9 @@ It complements [README.md](./README.md) (doc layout) and the pipeline definition
 |---|---|---|---|---|
 | mizar-session | Source identity, source maps, build snapshots, retention (foundation) | — | [x] | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | Raw scan + context-sensitive token disambiguation | — | [x] | [todo](./mizar-lexer/en/todo.md) |
-| mizar-syntax | `SurfaceAst`, syntax nodes, trivia, recovery markers | mizar-session | [ ] | [README](./mizar-syntax/en/README.md) |
-| mizar-parser | Grammar, Pratt parsing, syntax recovery | mizar-lexer, mizar-syntax | [ ] | [README](./mizar-parser/en/README.md) |
-| mizar-frontend | Source loading + phase 1-3 orchestration | mizar-session, mizar-lexer; real parser seam later uses mizar-syntax, mizar-parser | [~] | [todo](./mizar-frontend/en/todo.md) |
+| mizar-syntax | `SurfaceAst`, syntax nodes, trivia, recovery markers | mizar-session | [~] minimal task-11 surface boundary | [README](./mizar-syntax/en/README.md) |
+| mizar-parser | Grammar, Pratt parsing, syntax recovery | mizar-session, mizar-syntax | [~] minimal task-11 parser entry | [README](./mizar-parser/en/README.md) |
+| mizar-frontend | Source loading + phase 1-3 orchestration | mizar-session, mizar-lexer, mizar-syntax, mizar-parser | [~] | [todo](./mizar-frontend/en/todo.md) |
 | mizar-test | Test corpus + harness | (consumers) | [~] skeleton | — |
 | mizar-lsp | Editor integration / range mapping | mizar-session, mizar-lexer | [~] skeleton | — |
 
@@ -45,21 +45,24 @@ It is the leaf identity/coordinate layer that every downstream phase references
 (`SourceId`, `SourceRange`, `LineMap`, `BuildSnapshotId`). `mizar-lsp` already depends
 on it. Module order and remaining work: [mizar-session/en/todo.md](./mizar-session/en/todo.md).
 
-### Now: **mizar-frontend** foundation (pipeline Steps 1-4)
+### Now: **mizar-frontend** foundation (pipeline Steps 1-5)
 Source loading orchestration — the coordinate bridge, file I/O via `mizar-session`,
 preprocessing coordination, active lexical environment construction, and
-tokenization — wiring the existing `mizar-lexer` helpers to `mizar-session` source
-identity. Produces `SourceUnit` / `PreprocessedSource` / `TokenStream`. Requires
-`mizar-session` first; the parse step (Step 5) waits on `mizar-syntax` /
-`mizar-parser` and can be stubbed until then.
+tokenization, and parser-seam invocation — wiring the existing `mizar-lexer`
+helpers to `mizar-session` source identity and calling the minimal
+`mizar-parser` entry point when the real seam is configured. Produces
+`SourceUnit` / `PreprocessedSource` / `TokenStream` and, through the real seam,
+`SurfaceAst`.
 Module specs and the implementation roadmap: [mizar-frontend/en/todo.md](./mizar-frontend/en/todo.md).
 Architecture: [architecture/en/02.source_and_frontend.md](./architecture/en/02.source_and_frontend.md).
 
-### Next: **mizar-syntax (AST)** + **mizar-parser** (phase 3)
-`SurfaceAst` node definitions, then the parser consuming `TokenStream` to reach an
-end-to-end `source → tokens → SurfaceAst` pipeline. First user-visible milestone.
-Keep syntax data structures in `mizar-syntax`, grammar and recovery in `mizar-parser`,
-and the phase orchestration in `mizar-frontend`.
+### Next: harden **mizar-syntax (AST)** + **mizar-parser** (phase 3)
+The task-11 boundary now provides a minimal `SurfaceAst` and parser entry point
+for frontend seam integration. Next, expand the syntax node model, grammar
+coverage, Pratt operator metadata, and recovery behavior into the full
+`source → tokens → SurfaceAst` pipeline. Keep syntax data structures in
+`mizar-syntax`, grammar and recovery in `mizar-parser`, and phase orchestration
+in `mizar-frontend`.
 
 ### After that: semantic & proof layers (phases 4–16)
 `mizar-resolve` → `mizar-checker` → `mizar-core` → `mizar-vc` → `mizar-atp` →

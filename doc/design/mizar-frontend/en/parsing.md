@@ -2,8 +2,8 @@
 
 > Canonical language: English. Japanese companion: [../ja/parsing.md](../ja/parsing.md).
 
-Status: parser-input assembly and the stub parser seam are implemented; the
-real `mizar-parser` seam remains gated.
+Status: parser-input assembly, the stub parser seam, and a minimal real
+`mizar-parser` seam are implemented; parser recovery passthrough remains gated.
 
 ## Purpose
 
@@ -66,7 +66,7 @@ impl OperatorFixityTable {
 pub struct OperatorFixityEntry {
     pub symbol_id: SymbolId,
     pub spelling: Arc<str>,
-    pub precedence: u16,
+    pub precedence: u8,
     pub associativity: OperatorAssociativity,
 }
 
@@ -102,19 +102,22 @@ impl<A, D> ParseOutput<A, D> {
 }
 
 pub struct StubParserSeam;
+
+pub struct MizarParserSeam;
 ```
 
-`SurfaceAst` and `SyntaxDiagnostic` are owned by `mizar-syntax`; once
-`mizar-parser` exists, the real parser seam delegates to its entry point. Until
-those crates exist, `StubParserSeam` returns `ast = None` and an empty diagnostic
-list without introducing hard dependencies on non-existent crates. `ParserInputs`
-is derived by the frontend from the active lexical environment and edition after
-Step 3; callers do not supply it to the top-level frontend coordinator.
+`SurfaceAst` and `SyntaxDiagnostic` are owned by `mizar-syntax`. The real
+`MizarParserSeam` delegates to the `mizar-parser` entry point and returns those
+outputs unchanged. `StubParserSeam` remains available for source-to-token
+coordinator paths and returns `ast = None` plus an empty diagnostic list.
+`ParserInputs` is derived by the frontend from the active lexical environment
+and edition after Step 3; callers do not supply it to the top-level frontend
+coordinator.
 
 `operator_fixity` is populated only from data present in dependency lexical
-summaries. If the current summary shape does not yet expose fixity, the stub path
-uses `OperatorFixityTable { entries: Vec::new() }` and the TODO keeps real
-Pratt/fixity tests gated on `mizar-parser` / `mizar-syntax` availability.
+summaries. If the current summary shape does not yet expose fixity, the default
+source-to-token path uses `OperatorFixityTable { entries: Vec::new() }`; explicit
+synthetic parser inputs can still exercise the real Pratt/fixity seam.
 `StringRequiredContext::None` is the normal source-to-token foundation mode, and
 `UniformForTest` is only for bounded tests that intentionally run the whole lexer
 under `ParserLexContext::string_required()`. Position-specific string-required
@@ -122,18 +125,19 @@ spans and parser-driven symbol-kind filters are not represented by this initial
 type; they are added by the parser-assisted lexing contract before real source
 inputs that require grammar-position string literals are enabled.
 
-`ast = None` means the real parser seam could not recover enough structure for
-later phases. With the stub parser seam, it is the expected placeholder result.
-Lexical and syntax diagnostics are still returned.
+With the stub parser seam, `ast = None` is the expected placeholder result. The
+task-11 real parser seam returns a minimal `SurfaceAst` for recovered token
+streams; later parser recovery tasks may use `ast = None` when parsing cannot
+recover enough structure for downstream phases. Lexical and syntax diagnostics
+are still returned.
 
 ## Dependencies
 
 - Internal: `lexing` (provides `TokenStream`), `lexical_env` (provides the data
   for `ParserInputs`), `orchestration` (consumes `ParseOutput`).
-- External: `mizar-session` (`Edition`, `SourceRange` carried inside AST nodes).
-  The real parser seam additionally depends on `mizar-parser` (grammar entry
-  point, Pratt parsing, recovery, annotation/doc-comment attachment) and
-  `mizar-syntax` (`SurfaceAst`, `SyntaxDiagnostic`) once those crates exist.
+- External: `mizar-session` (`Edition`, `SourceRange` carried inside AST nodes),
+  `mizar-syntax` (`SurfaceAst`, `SyntaxDiagnostic`), and `mizar-parser`
+  (grammar entry point and minimal Pratt parsing).
 
 This module is consumed by orchestration to assemble `FrontendOutput`.
 
@@ -149,12 +153,13 @@ arbitrary scope or resolver state.
 
 ### Parser Seam and Surface AST Handoff
 
-The parser seam lets the frontend compile and test the source-to-token pipeline
-before `mizar-syntax` and `mizar-parser` land. In the real seam, `SurfaceAst`
-(from `mizar-syntax`) is source-shaped: it preserves source order and
-`SourceRange`s, attaches annotations as syntax nodes, attaches doc comments to
-nearby documentable items, and marks recovery nodes explicitly. The frontend
-passes it through unchanged; it does not rewrite, prune, or interpret nodes.
+The parser seam lets the frontend compile and test either the stubbed
+source-to-token pipeline or the real parser boundary. The task-11 real seam
+preserves source order and `SourceRange`s in `SurfaceAst` token nodes and
+supports explicit infix fixity through a small Pratt parser. Later parser tasks
+expand that same boundary with full module/item nodes, annotation attachment,
+doc-comment attachment, and recovery markers. The frontend passes parser output
+through unchanged; it does not rewrite, prune, or interpret nodes.
 
 ## Algorithm / Logic
 
@@ -163,13 +168,13 @@ passes it through unchanged; it does not rewrite, prune, or interpret nodes.
 1. Build `ParserInputs` from the active lexical environment and edition.
 2. Invoke the configured `ParserSeam` with the `TokenStream` and inputs. The
    stub seam returns `ast = None` with no syntax diagnostics.
-3. The parser parses modules, definitions, registrations, statements, terms,
-   formulas, theorems, proofs, and algorithms; uses Pratt/precedence parsing for
-   term and formula expressions; parses annotation argument lists and attaches
-   annotations; attaches doc comments to nearby documentable items; and recovers
-   at synchronization points (`;`, `end`, top-level item keywords, EOF).
-4. Return the `SurfaceAst` (or `None` when recovery failed) plus syntax
-   diagnostics.
+3. The task-11 parser preserves token nodes in source order and builds minimal
+   infix expression nodes when explicit operator fixity is supplied. Later parser
+   tasks add full module/item parsing, annotation and doc-comment attachment, and
+   recovery at synchronization points (`;`, `end`, top-level item keywords, EOF).
+4. Return the `SurfaceAst` plus syntax diagnostics. Later recovery work may also
+   return `None` when parsing cannot recover enough structure for downstream
+   phases.
 
 When the integration uses parser-assisted disambiguation, the parser-facing seam
 supplies string-required positions or symbol-kind filters back to Step 4 through
@@ -181,35 +186,36 @@ directly.
 
 ## Error Handling
 
-Syntax diagnostics come from `mizar-parser` (unexpected token, unmatched
-delimiter, missing `end`, expected string literal token missing, malformed
-annotation argument list). The frontend does not add syntax error categories. A
-parse that cannot recover a usable tree returns `ast = None` with diagnostics so
-later phases can skip or degrade gracefully. Recovery nodes inside a returned
-`SurfaceAst` are marked by the parser; the frontend preserves those markers.
-The stub seam emits no syntax diagnostics; tests that require syntax diagnostics
-are gated on the real parser seam.
+Syntax diagnostics come from `mizar-parser`; the frontend does not add syntax
+error categories. The task-11 parser can emit `UnexpectedErrorToken`,
+`DanglingOperator`, and `NonAssociativeOperatorChain` while preserving a minimal
+`SurfaceAst`. Broader diagnostics such as unexpected token, unmatched delimiter,
+missing `end`, expected string literal, and malformed annotation argument list
+remain future parser/recovery work. A real parser parse that cannot recover a
+usable tree may return `ast = None` in later tasks; task 11 currently returns a
+minimal `SurfaceAst` for recovered token streams. The stub seam still emits no
+syntax diagnostics and returns `ast = None`.
 
 ## Tests
 
 Key scenarios:
 
-- the stub seam returns `ast = None` and no diagnostics without depending on
-  `mizar-syntax` or `mizar-parser`;
+- the stub seam returns `ast = None` and no diagnostics;
 - `ParserInputs` uses an empty `OperatorFixityTable` and
   `StringRequiredContext::None` for the stub source-to-token path;
-- once the real seam is available, a well-formed token stream parses to a
-  `SurfaceAst` with preserved source order and `SourceRange`s;
-- once lexical summaries expose fixity, operator fixity from the active lexical
-  environment drives correct Pratt precedence for a user-defined infix operator;
-- a `StringLiteral` token at an annotation argument parses into an annotation
-  node; a missing string literal at a string-required position yields the
-  expected syntax diagnostic;
-- a missing `end` recovers at a synchronization point and produces an explicit
-  error node, with `ast` still `Some`;
-- an unrecoverable token stream returns `ast = None` with diagnostics;
-- doc comments are attached to the following documentable item when possible and
-  kept near their source location otherwise.
+- the real seam parses a well-formed token stream to a `SurfaceAst` with
+  preserved source order and `SourceRange`s;
+- the real seam preserves token-kind adaptation and returns parser diagnostics
+  unchanged;
+- explicit operator fixity drives Pratt precedence and associativity for
+  supported infix operators; once lexical summaries expose fixity, the active
+  lexical environment should populate those same parser inputs;
+- recovered and unknown tokens are preserved but do not become infix operators;
+- non-associative chains of the same operator are diagnosed while different
+  operators at the same precedence remain distinct;
+- annotation nodes, missing string literal diagnostics, missing-`end` recovery,
+  unrecoverable `ast = None`, and doc-comment attachment remain future
+  parser/recovery coverage.
 
 ## Constraints and Assumptions
 

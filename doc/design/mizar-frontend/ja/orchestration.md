@@ -8,7 +8,7 @@
 
 このモジュールは、`FrontendOutput` を生成するフェーズ 1〜3 のコーディネータ（source_and_frontend パイプラインの Step 1〜5）を実装する。`source` → `preprocess` → `lexical_env` → `lexing` → `parsing` を配線し、すべてのフェーズの診断を決定的に順序付けられた単一のリストへ統合し、統合されたフロントエンド出力を公開する。
 
-エンドツーエンドのパイプラインを所有する唯一のモジュールである。ソース同一性、コメント除去、字句環境の組み立て、最長一致、文法、AST ノード定義は所有しない。それらは `mizar-session`、`mizar-lexer`、そして実 parser seam が利用可能になった後の `mizar-syntax` / `mizar-parser` に属する。意味的な名前解決や型検査は行わない。
+エンドツーエンドのパイプラインを所有する唯一のモジュールである。ソース同一性、コメント除去、字句環境の組み立て、最長一致、文法、AST ノード定義は所有しない。それらは `mizar-session`、`mizar-lexer`、`mizar-syntax`、`mizar-parser` に属する。意味的な名前解決や型検査は行わない。
 
 [architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md) の「Frontend Pipeline」「Error Recovery」「Diagnostics」「FrontendOutput」を参照。
 
@@ -103,12 +103,12 @@ pub enum FrontendError {
 
 `FrontendOutput<A>` は、AST 型を抽象化したまま、アーキテクチャのインターフェースと一致する。`StubParserSeam` では `ast` は常に `None` であり、実 parser seam では `A` は `mizar_syntax::SurfaceAst` である。`FrontendDiagnostic` は、すべてのフェーズ固有診断（`SourcePreprocessDiagnostic`、`ImportPrescanDiagnostic`、`LexicalEnvironmentDiagnostic`、生スキャン／スコープスケルトン／字句解析器の診断を含む `LexingDiagnostic`、`SyntaxDiagnostic`）が変換される統一診断である。範囲付き診断は `DiagnosticLocation::SourceRange` を使い、`SourceId` / `LineMap` が存在する前に起きるソース読み込み失敗は、利用可能な path、正規化パス、オープンバッファ URI、生成アンカー、または `Unknown` を保持する `DiagnosticLocation::SourceLoad` を使う。`DiagnosticCode::Syntax` は、実 parser seam が有効になった後に、パーサー所有の構文診断コードキーを保持する。`StubParserSeam` では、構文診断は送出されない。
 
-`ast = None` は、実 parser seam では、構文解析が以降のフェーズに十分な構造を回復できなかったことを意味する。スタブの parser seam では、これは期待されるプレースホルダ結果である。字句・前処理・構文の診断は依然として返される。
+stub parser seam では、`ast = None` は期待されるプレースホルダ結果である。task 11 の実 parser seam は、回復済みトークン列に対して最小の `SurfaceAst` を返す。後続の parser recovery 作業では、構文解析が以降のフェーズに十分な構造を回復できなかった場合に `ast = None` を使うことがある。字句・前処理・構文の診断は依然として返される。
 
 ## 依存関係
 
 - 内部: `source`、`preprocess`、`lexical_env`、`lexing`、`parsing`、`span_bridge`（一度構築され、各フェーズへ渡される）。
-- 外部: 各フェーズモジュールを通じて `mizar-session`（`SourceId`、`SourceRange`、`SourceAnchor`、`NormalizedPath`、`DocumentUri`、`SessionIdAllocator`、`BuildSnapshotId`）、`mizar-lexer`、および `std::path::PathBuf`。実 parser seam は、それらの crate が用意されてから、追加で `mizar-syntax` と `mizar-parser` に依存する。
+- 外部: 各フェーズモジュールを通じて `mizar-session`（`SourceId`、`SourceRange`、`SourceAnchor`、`NormalizedPath`、`DocumentUri`、`SessionIdAllocator`、`BuildSnapshotId`）、`mizar-lexer`、`mizar-syntax`、`mizar-parser`、および `std::path::PathBuf`。
 
 このモジュールは crate の公開エントリポイントである。コンパイラドライバ、LSP、フォーマッター、テストが利用する。
 
@@ -158,7 +158,7 @@ Step 2〜5 は、回復可能な問題では中断しない。診断を記録し
 - `StubParserSeam` では、整形式のソースが source → tokens を実行し、`ast = None` かつパーサー診断なしの `FrontendOutput` を返す。
 - 実 parser seam では、整形式のソースが全フェーズを実行し、`ast = Some` で診断なしの `FrontendOutput` を返す。
 - 実 parser seam では、字句前提・インポート事前走査・字句環境・スコープスケルトン・トークン化・構文のエラーを持つソースが、決定的な統合順序ですべてを報告する。
-- 構文解析の失敗が、前処理とトークン化の診断を保持しつつ `ast = None` を返す。
+- 後続の回復不能な parser recovery が、前処理とトークン化の診断を保持しつつ `ast = None` を返す。
 - Step 1 の読み込み失敗が、ファイルレベルの診断を伴う `FrontendError` を返し、`FrontendOutput` を返さない。
 - 診断順序が、内部スケジューリングに関係なく、繰り返し実行で同一である。
 - 同じ class / start / code の診断も、完全な安定同順位決定キーで決定的に並ぶ。

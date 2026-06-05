@@ -17,7 +17,7 @@
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [x] |
-| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] |
+| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] implemented through task 11 |
 | orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [ ] |
 
 `mizar-frontend` is an orchestration crate, so it is built bottom-up by phase:
@@ -30,15 +30,12 @@ Dependency order: `span_bridge` → `source` → `preprocess` → `lexical_env` 
 
 ## Crate Prerequisites
 
-The frontend foundation depends on `mizar-session` and `mizar-lexer`. It should
-not add hard dependencies on `mizar-syntax` or `mizar-parser` until the real
-parser-seam tasks land, because those crates are not yet implemented (top-level
-[../../todo.md](../../todo.md) lists both as not started). Tasks 1-10 and the
-stubbed coordinator portions of tasks 13-14 can be implemented against
-`mizar-session` and `mizar-lexer` alone. The real parser invocation and
-syntax-AST assertions in tasks 11-12, and any real-parser assertions in tasks
-13-14, are gated on a minimal `mizar-parser` entry point and
-`mizar-syntax::SurfaceAst`.
+The frontend foundation began with `mizar-session` and `mizar-lexer` only. Task
+11 adds hard dependencies on the minimal `mizar-syntax::SurfaceAst` boundary and
+`mizar-parser` entry point needed by the real parser seam. Tasks 1-10 and the
+stubbed coordinator portions of tasks 13-14 remain valid with `StubParserSeam`;
+task 12 and the real-parser assertions in tasks 13-14 build on the task-11
+parser/syntax boundary.
 
 ## Resolved And Gated Decisions
 
@@ -58,10 +55,10 @@ These public API decisions are tracked at the top level in
 ## Ordered Task List
 
 Each task is sized to be implemented, tested, and committed on its own. The
-listed dependency lines are authoritative: when `mizar-parser` / `mizar-syntax`
-are unavailable, skip the gated real-parser tasks and continue with the stubbed
-source → tokens coordinator tasks that do not depend on them. Every task should
-keep `cargo test -p mizar-frontend` green (see
+listed dependency lines are authoritative. The early stubbed source → tokens
+coordinator tasks were allowed to proceed before `mizar-parser` / `mizar-syntax`
+existed; task 11 now provides minimal crates for the real parser seam. Every task
+should keep `cargo test -p mizar-frontend` green (see
 [Suggested Verification](#suggested-verification)).
 
 ### Crate scaffolding
@@ -288,16 +285,18 @@ keep `cargo test -p mizar-frontend` green (see
     - Depends on: 8. Spec: [parsing.md](./parsing.md) "Parser Inputs",
       "Public API".
 
-11. **`mizar-parser` invocation.** [ ]
-    - Replace the stub seam with the real `mizar-parser` entry point; return the
-      `mizar-syntax::SurfaceAst` and syntax diagnostics unchanged.
-    - Requires a minimal `mizar-parser` / `mizar-syntax` (top-level
-      [../../todo.md](../../todo.md)). Gate behind their availability.
+11. **`mizar-parser` invocation.** [x]
+    - Added minimal `mizar-syntax` and `mizar-parser` crates, plus
+      `MizarParserSeam`, which adapts the frontend `TokenStream` and
+      `ParserInputs` into the parser entry point and returns
+      `mizar_syntax::SurfaceAst` plus syntax diagnostics unchanged.
+    - `StubParserSeam` remains available for stubbed coordinator paths.
     - Tests: a well-formed token stream parses to a `SurfaceAst` with preserved
-      source order and ranges; operator fixity drives correct Pratt precedence for
-      a user infix operator once summaries expose fixity. Annotation/operator
-      string-literal tests must use synthetic parser token streams until task 20
-      finalizes parser-assisted lexing for real source text.
+      source order and ranges; explicit operator fixity drives Pratt precedence
+      for a user infix operator. Summary-derived fixity remains empty until
+      lexical summaries expose fixity. Annotation/operator string-literal tests
+      must use synthetic parser token streams until task 20 finalizes
+      parser-assisted lexing for real source text.
     - Depends on: 10, plus `mizar-parser`/`mizar-syntax`. Real source-text tests
       that require grammar-position string literals also depend on 20. Spec:
       [parsing.md](./parsing.md) "Algorithm / Logic".
@@ -455,8 +454,8 @@ Check off the task here once its tests pass.
 ## Notes
 
 - `mizar-frontend` is an orchestration crate: it coordinates `mizar-session`,
-  `mizar-lexer`, and, once the real parser seam is enabled, `mizar-syntax` /
-  `mizar-parser`, but owns none of their core algorithms or data definitions.
+  `mizar-lexer`, `mizar-syntax`, and `mizar-parser`, but owns none of their core
+  algorithms or data definitions.
 - Keep `mizar-lexer` decoupled from `mizar-session`; the lexer-span → session
   `SourceRange` bridge lives only in `span_bridge`.
 - The frontend produces syntax, not semantics; no name resolution, type checking,

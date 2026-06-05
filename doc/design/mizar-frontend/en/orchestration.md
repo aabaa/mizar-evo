@@ -14,7 +14,7 @@ the combined frontend output.
 It is the only module that owns the end-to-end pipeline. It does not own source
 identity, comment stripping, lexical environment assembly, longest-match,
 grammar, or AST node definitions; those belong to `mizar-session`, `mizar-lexer`,
-and, once available, the real `mizar-syntax` / `mizar-parser` seam. It does not
+`mizar-syntax`, and `mizar-parser`. It does not
 perform semantic name resolution or type checking.
 
 See
@@ -126,9 +126,11 @@ location.
 the real parser seam is enabled; with `StubParserSeam` no syntax diagnostics are
 emitted.
 
-`ast = None` means the real parser seam could not recover enough structure for
-later phases. With the stub parser seam, it is the expected placeholder result.
-The lexical, preprocessing, and syntax diagnostics are still returned.
+With the stub parser seam, `ast = None` is the expected placeholder result. The
+task-11 real parser seam returns a minimal `SurfaceAst` for recovered token
+streams; later parser recovery tasks may use `ast = None` when parsing cannot
+recover enough structure for downstream phases. The lexical, preprocessing, and
+syntax diagnostics are still returned.
 
 ## Dependencies
 
@@ -136,8 +138,7 @@ The lexical, preprocessing, and syntax diagnostics are still returned.
   `span_bridge` (constructed once and threaded through the phases).
 - External: `mizar-session` (`SourceId`, `SourceRange`, `SourceAnchor`,
   `NormalizedPath`, `DocumentUri`, `SessionIdAllocator`, `BuildSnapshotId`),
-  `mizar-lexer`, and `std::path::PathBuf`. The real parser seam additionally
-  depends on `mizar-syntax` and `mizar-parser` once those crates exist.
+  `mizar-lexer`, `mizar-syntax`, `mizar-parser`, and `std::path::PathBuf`.
 
 This module is the public entry point of the crate; it is consumed by the
 compiler driver, LSP, the formatter, and tests.
@@ -240,8 +241,8 @@ Key scenarios:
 - with the real parser seam, a source with lexical-precondition, import-pre-scan,
   lexical-environment, scope-skeleton, tokenization, and syntax errors reports
   them in the deterministic merge order;
-- a parse failure returns `ast = None` while preserving preprocessing and
-  tokenization diagnostics;
+- later unrecoverable parser recovery returns `ast = None` while preserving
+  preprocessing and tokenization diagnostics;
 - a Step 1 load failure returns `FrontendError` with the file-level diagnostic
   and no `FrontendOutput`;
 - diagnostic order is identical across repeated runs regardless of internal

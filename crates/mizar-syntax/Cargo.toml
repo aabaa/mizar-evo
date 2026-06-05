@@ -1,20 +1,16 @@
 [package]
-name = "mizar-frontend"
+name = "mizar-syntax"
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 
 [lib]
-name = "mizar_frontend"
+name = "mizar_syntax"
 path = "src/lib.rs"
 
 [lints]
 workspace = true
 
 [dependencies]
-blake3 = "1.8.5"
-mizar-lexer = { path = "../mizar-lexer" }
-mizar-parser = { path = "../mizar-parser" }
 mizar-session = { path = "../mizar-session" }
-mizar-syntax = { path = "../mizar-syntax" }

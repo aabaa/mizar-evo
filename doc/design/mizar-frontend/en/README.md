@@ -2,17 +2,17 @@
 
 > Canonical language: English. Japanese companion: [../ja/README.md](../ja/README.md).
 
-`mizar-frontend` owns phase 1-3 orchestration (the source_and_frontend pipeline Steps 1-5): source loading, source maps,
+`mizar-frontend` owns the phase 1-3 orchestration modules (the source_and_frontend pipeline Steps 1-5): source loading, source maps,
 preprocessing coordination, active lexical environment construction, lexer
-invocation, parser-seam invocation, and the combined frontend output.
+invocation, parser-seam invocation, and the planned combined frontend output.
 
 It does not own source identity, source hashes, or snapshots (`mizar-session`);
 raw scanning, comment stripping, lexical environment assembly, or token
-disambiguation rules (`mizar-lexer`); or, once the real parser seam is enabled,
-`SurfaceAst` node definitions (`mizar-syntax`) and grammar, Pratt precedence,
-and recovery (`mizar-parser`). Those crates provide the primitives that the
-frontend coordinates into a `FrontendOutput`; until parser/syntax exist, the
-frontend uses a stub parser seam and returns `ast = None`.
+disambiguation rules (`mizar-lexer`); or `SurfaceAst` node definitions
+(`mizar-syntax`) and grammar, Pratt precedence, and recovery (`mizar-parser`).
+Those crates provide the primitives that the frontend coordinates into a
+`FrontendOutput`. `StubParserSeam` remains available for source-to-token
+coordinator paths and returns `ast = None`.
 
 ## Context
 
@@ -31,8 +31,8 @@ frontend uses a stub parser seam and returns `ast = None`.
 | [source.md](./source.md) | `crates/mizar-frontend/src/source.rs` | Step 1: `SourceUnit` loading bridging `mizar-session` source identity, line maps, and loading maps | Implemented |
 | [preprocess.md](./preprocess.md) | `crates/mizar-frontend/src/preprocess.rs` | Step 2: `PreprocessedSource`, comment/doc-comment separation, annotation preservation, and shallow import pre-scan coordination | Implemented |
 | [lexical_env.md](./lexical_env.md) | `crates/mizar-frontend/src/lexical_env.rs` | Step 3: active lexical environment construction from import stubs and dependency lexical summaries | Implemented through task 6 |
-| [lexing.md](./lexing.md) | `crates/mizar-frontend/src/lexing.rs` | Step 4: `TokenStream` via raw scan, scope skeleton, and context-sensitive disambiguation | Draft |
-| [parsing.md](./parsing.md) | `crates/mizar-frontend/src/parsing.rs` | Step 5: parser-seam invocation, parser-input assembly, and later `SurfaceAst` handoff | Draft |
+| [lexing.md](./lexing.md) | `crates/mizar-frontend/src/lexing.rs` | Step 4: `TokenStream` via raw scan, scope skeleton, and context-sensitive disambiguation | Implemented |
+| [parsing.md](./parsing.md) | `crates/mizar-frontend/src/parsing.rs` | Step 5: parser-seam invocation, parser-input assembly, and `SurfaceAst` handoff | Implemented through task 11; recovery pending |
 | [span_bridge.md](./span_bridge.md) | `crates/mizar-frontend/src/span_bridge.rs` | Lexer byte span → `mizar-session` `SourceRange` coordinate bridge | Implemented for task 1 |
 | [orchestration.md](./orchestration.md) | `crates/mizar-frontend/src/orchestration.rs` | End-to-end phase 1-3 coordination (pipeline Steps 1-5), diagnostic merge, and `FrontendOutput` | Draft |
 | [todo.md](./todo.md) | `crates/mizar-frontend` | Module implementation order, status, and remaining work | Living |

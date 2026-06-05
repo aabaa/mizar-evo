@@ -1,6 +1,6 @@
 # mizar-parser: Pratt Parsing
 
-Status: planned.
+Status: minimal task-11 explicit infix Pratt parsing implemented; full term/formula precedence planned.
 
 ## Purpose
 
@@ -12,4 +12,3 @@ This module defines the precedence parser for term and formula expressions.
 - use the fixed formula connective table for formula-level precedence;
 - parse syntactic shape without performing overload resolution;
 - report non-associative chaining and precedence surprises with source-local diagnostics.
-

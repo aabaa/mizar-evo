@@ -17,7 +17,7 @@
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [x] |
-| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] |
+| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] task 11 まで実装済み |
 | orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [ ] |
 
 `mizar-frontend` は統制を担う crate なので、フェーズの順にボトムアップで構築する。まず座標の橋渡しを用意し、続いてパイプライン順に Step 1〜5、最後にエンドツーエンドのコーディネータを作る。`span_bridge` は後続の各フェーズが参照する共有プリミティブであり、`orchestration` はパイプライン全体を配線する唯一のモジュールである。
@@ -26,7 +26,7 @@
 
 ## crate の前提条件
 
-フロントエンドの基盤は `mizar-session` と `mizar-lexer` に依存する。`mizar-syntax` と `mizar-parser` はまだ未実装なので（トップレベルの [../../todo.md](../../todo.md) でも両者は未着手扱い）、実 parser seam を扱うタスクが導入されるまでは、これらへの必須依存を追加しない。タスク 1〜10 と、タスク 13〜14 のスタブコーディネータ部分は、`mizar-session` と `mizar-lexer` だけで実装できる。タスク 11〜12 の実 parser 呼び出しと syntax AST に対する検証、およびタスク 13〜14 の実 parser 検証は、最小限の `mizar-parser` エントリポイントと `mizar-syntax::SurfaceAst` が揃ってから着手する。
+フロントエンドの基盤は `mizar-session` と `mizar-lexer` だけで始めた。task 11 は、実 parser seam に必要な最小限の `mizar-syntax::SurfaceAst` 境界と `mizar-parser` エントリポイントへの必須依存を追加する。タスク 1〜10 と、タスク 13〜14 のスタブコーディネータ部分は、引き続き `StubParserSeam` で有効である。task 12 と、タスク 13〜14 の実 parser 検証は、task 11 の parser/syntax 境界の上に構築する。
 
 ## 解決済みおよび保留中の決定
 
@@ -37,7 +37,7 @@
 
 ## 順序付きタスク一覧
 
-各タスクは、単独で実装・テスト・コミットできる粒度になっている。依存関係は各タスクの「依存」行を正とする。`mizar-parser` / `mizar-syntax` がまだ無いときは、保留中の実 parser タスクを飛ばし、それらに依存しないスタブ版の source → tokens コーディネータタスクを先に進める。各タスクでは `cargo test -p mizar-frontend` を成功状態に保つこと（[推奨検証](#推奨検証)を参照）。
+各タスクは、単独で実装・テスト・コミットできる粒度になっている。依存関係は各タスクの「依存」行を正とする。初期のスタブ版 source → tokens コーディネータタスクは、`mizar-parser` / `mizar-syntax` がまだ無い状態で進められる前提だった。task 11 により、実 parser seam 用の最小 crate は存在する。各タスクでは `cargo test -p mizar-frontend` を成功状態に保つこと（[推奨検証](#推奨検証)を参照）。
 
 ### crate の足場
 
@@ -115,10 +115,10 @@
     - テスト: `ParserInputs` はエディションを運び、サマリが fixity を公開していないときは空の演算子 fixity テーブルを使い、スタブの source-to-token 経路では `StringRequiredContext::None` を使い、解決器の状態を運ばない。スタブの継ぎ目が `ast = None` を返す。
     - 依存: 8。仕様: [parsing.md](./parsing.md)「Parser Inputs」「Public API」。
 
-11. **`mizar-parser` の呼び出し。** [ ]
-    - スタブの継ぎ目を実際の `mizar-parser` エントリポイントに置き換える。`mizar-syntax::SurfaceAst` と構文診断をそのまま返す。
-    - 最小限の `mizar-parser` / `mizar-syntax` を必要とする（トップレベルの [../../todo.md](../../todo.md)）。それらが利用可能になってから着手する。
-    - テスト: 整形式のトークンストリームが、ソース順と範囲を保持した `SurfaceAst` へ解析される。サマリが fixity を公開したら、演算子の結合性が、ユーザー定義中置演算子に対する正しい Pratt 優先順位を駆動する。注釈／演算子の文字列リテラルテストは、タスク 20 が実ソーステキスト向けのパーサー支援字句解析を確定するまで、合成パーサートークンストリームを使う。
+11. **`mizar-parser` の呼び出し。** [x]
+    - 最小限の `mizar-syntax` / `mizar-parser` crate と `MizarParserSeam` を追加する。frontend の `TokenStream` と `ParserInputs` を parser エントリポイントへ適合し、`mizar_syntax::SurfaceAst` と構文診断をそのまま返す。
+    - `StubParserSeam` は、スタブ版 coordinator 経路のために引き続き利用可能である。
+    - テスト: 整形式のトークンストリームが、ソース順と範囲を保持した `SurfaceAst` へ解析される。明示的に与えた演算子 fixity が、ユーザー定義中置演算子に対する Pratt 優先順位を駆動する。サマリ由来の fixity は、字句サマリが fixity を公開するまで空のままである。注釈／演算子の文字列リテラルテストは、タスク 20 が実ソーステキスト向けのパーサー支援字句解析を確定するまで、合成パーサートークンストリームを使う。
     - 依存: 10、加えて `mizar-parser`/`mizar-syntax`。文法位置の文字列リテラルを必要とする実ソーステキストのテストは、20 にも依存する。仕様: [parsing.md](./parsing.md)「Algorithm / Logic」。
 
 12. **パーサーの回復のパススルー。** [ ]
@@ -205,7 +205,7 @@ cargo test -p mizar-lexer
 
 ## 注記
 
-- `mizar-frontend` は統制を担う crate である。`mizar-session`、`mizar-lexer`、および実 parser seam が有効になった後の `mizar-syntax` / `mizar-parser` を統制するが、それらの中核アルゴリズムやデータ定義は何も所有しない。
+- `mizar-frontend` は統制を担う crate である。`mizar-session`、`mizar-lexer`、`mizar-syntax`、`mizar-parser` を統制するが、それらの中核アルゴリズムやデータ定義は何も所有しない。
 - `mizar-lexer` を `mizar-session` から分離したまま保つ。字句解析器スパンから session の `SourceRange` への橋渡しは `span_bridge` にのみ存在する。
 - フロントエンドは構文を生成し、意味は生成しない。名前解決、型検査、オーバーロード選択、証明義務はここに属さない。
 - フロントエンド成果物（`SourceUnit`、`PreprocessedSource`、`TokenStream`、`SurfaceAst`、`FrontendOutput`）は内部コンパイラデータであり、安定した外部スキーマではない。

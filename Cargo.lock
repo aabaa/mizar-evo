@@ -306,7 +306,9 @@ version = "0.1.0"
 dependencies = [
  "blake3",
  "mizar-lexer",
+ "mizar-parser",
  "mizar-session",
+ "mizar-syntax",
 ]
 
 [[package]]
@@ -326,10 +328,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "mizar-parser"
+version = "0.1.0"
+dependencies = [
+ "mizar-session",
+ "mizar-syntax",
+]
+
+[[package]]
 name = "mizar-session"
 version = "0.1.0"
 dependencies = [
  "blake3",
+]
+
+[[package]]
+name = "mizar-syntax"
+version = "0.1.0"
+dependencies = [
+ "mizar-session",
 ]
 
 [[package]]
