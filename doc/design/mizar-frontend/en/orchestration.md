@@ -2,7 +2,8 @@
 
 > Canonical language: English. Japanese companion: [../ja/orchestration.md](../ja/orchestration.md).
 
-Status: planned.
+Status: implemented through task 13. Task 14 will broaden unrecoverable-failure
+coverage and end-to-end failure assertions.
 
 ## Purpose
 
@@ -44,6 +45,7 @@ where
     L: SourceUnitLoader,
     P: LexicalSummaryProvider,
     PS: ParserSeam,
+    PS::Diagnostic: FrontendParserDiagnostic,
 {
     pub fn new(loader: L, provider: P, parser: PS) -> Self;
 
@@ -98,8 +100,8 @@ pub enum DiagnosticClass {
 
 pub enum FrontendError {
     SourceLoad {
-        source: SourceLoadError,
-        diagnostic: FrontendDiagnostic,
+        source: Box<SourceLoadError>,
+        diagnostic: Box<FrontendDiagnostic>,
     },
     SpanBridge {
         source: SpanBridgeError,
@@ -107,6 +109,10 @@ pub enum FrontendError {
     LexicalEnvironment {
         source: FrontendLexicalEnvironmentError,
     },
+}
+
+pub trait FrontendParserDiagnostic {
+    fn into_frontend_diagnostic(self) -> Option<FrontendDiagnostic>;
 }
 ```
 
@@ -125,6 +131,10 @@ location.
 `DiagnosticCode::Syntax` stores the parser-owned syntax diagnostic code key once
 the real parser seam is enabled; with `StubParserSeam` no syntax diagnostics are
 emitted.
+`FrontendParserDiagnostic` is the narrow adapter that lets the coordinator map
+the configured parser seam's diagnostic type into the unified frontend
+diagnostic stream; it is implemented for `mizar_syntax::SyntaxDiagnostic` and
+for the stub seam's unit diagnostic type.
 
 With the stub parser seam, `ast = None` is the expected placeholder result. The
 real parser seam returns a minimal `SurfaceAst` for recovered token streams and

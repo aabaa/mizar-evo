@@ -2,7 +2,7 @@
 
 > 正本は英語です。英語版: [../en/README.md](../en/README.md)。
 
-`mizar-frontend` は、フェーズ 1〜3 の統制モジュール（source_and_frontend パイプラインの Step 1〜5）を所有する。すなわち、ソースの読み込み、ソースマップ、前処理の統制、アクティブ字句環境の構築、字句解析器の呼び出し、parser seam の呼び出し、そして計画中の統合されたフロントエンド出力である。
+`mizar-frontend` は、フェーズ 1〜3 の統制モジュール（source_and_frontend パイプラインの Step 1〜5）を所有する。すなわち、ソースの読み込み、ソースマップ、前処理の統制、アクティブ字句環境の構築、字句解析器の呼び出し、parser seam の呼び出し、そして統合されたフロントエンド出力である。
 
 この crate は、次を所有しない。ソース同一性・ソースハッシュ・スナップショット（`mizar-session`）、生スキャン・コメント除去・字句環境の組み立て・トークン曖昧性解消規則（`mizar-lexer`）、`SurfaceAst` ノード定義（`mizar-syntax`）や文法・Pratt 優先順位・回復（`mizar-parser`）である。これらの crate が提供するプリミティブを、フロントエンドが `FrontendOutput` へと統制する。`StubParserSeam` は source-to-token coordinator 経路のために残り、`ast = None` を返す。
 
@@ -26,7 +26,7 @@
 | [lexing.md](./lexing.md) | `crates/mizar-frontend/src/lexing.rs` | Step 4: 生スキャン・スコープスケルトン・文脈依存の曖昧性解消による `TokenStream` | Implemented |
 | [parsing.md](./parsing.md) | `crates/mizar-frontend/src/parsing.rs` | Step 5: parser seam の呼び出し、パーサー入力の組み立て、`SurfaceAst` の受け渡し | Implemented through task 12; full grammar recovery pending |
 | [span_bridge.md](./span_bridge.md) | `crates/mizar-frontend/src/span_bridge.rs` | 字句解析器のバイトスパンから `mizar-session` の `SourceRange` への座標橋渡し | Implemented for task 1 |
-| [orchestration.md](./orchestration.md) | `crates/mizar-frontend/src/orchestration.rs` | フェーズ 1〜3 のエンドツーエンド統制（Step 1〜5）、診断統合、`FrontendOutput` | Draft |
+| [orchestration.md](./orchestration.md) | `crates/mizar-frontend/src/orchestration.rs` | フェーズ 1〜3 のエンドツーエンド統制（Step 1〜5）、診断統合、`FrontendOutput` | Implemented through task 13 |
 | [todo.md](./todo.md) | `crates/mizar-frontend` | モジュール実装順序、状態、残作業 | Living |
 
 ## crate 境界

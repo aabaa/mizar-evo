@@ -18,7 +18,7 @@
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [x] |
 | parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] implemented through task 12 |
-| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [ ] |
+| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [~] implemented through task 13 |
 
 `mizar-frontend` is an orchestration crate, so it is built bottom-up by phase:
 the coordinate bridge first, then pipeline Steps 1-5 in order, then the
@@ -33,10 +33,10 @@ Dependency order: `span_bridge` → `source` → `preprocess` → `lexical_env` 
 The frontend foundation began with `mizar-session` and `mizar-lexer` only. Task
 11 adds hard dependencies on the minimal `mizar-syntax::SurfaceAst` boundary and
 `mizar-parser` entry point needed by the real parser seam. Task 12 adds the
-minimal parser recovery passthrough on that boundary. Tasks 1-10 and the stubbed
-coordinator portions of tasks 13-14 remain valid with `StubParserSeam`; the
-real-parser assertions in tasks 13-14 build on the task-12 parser/syntax
-boundary.
+minimal parser recovery passthrough on that boundary. Tasks 1-10 and the task
+13 coordinator path remain valid with `StubParserSeam`; the remaining task 14
+failure assertions and real-parser assertions build on the task-12 parser/syntax
+boundary and the task-13 coordinator.
 
 ## Resolved And Gated Decisions
 
@@ -315,7 +315,7 @@ should keep `cargo test -p mizar-frontend` green (see
 
 ### Module: orchestration (`src/orchestration.rs`)
 
-13. **Frontend coordinator and diagnostic merge.** [ ]
+13. **Frontend coordinator and diagnostic merge.** [x]
     - Add `pub mod orchestration;`. Define `FrontendOutput`, `Frontend`,
       `FrontendDiagnostic`, `DiagnosticLocation`, `SourceLoadLocation`,
       `DiagnosticCode`, `DiagnosticClass`, and `FrontendError`; wire
@@ -340,15 +340,18 @@ should keep `cargo test -p mizar-frontend` green (see
       "Algorithm / Logic", "Diagnostic Merge Order".
 
 14. **Unrecoverable-failure handling and end-to-end output.** [ ]
-    - Return `FrontendError` for Step 1 load failures, `SpanBridgeError`
-      invariant violations from source registration / preprocessing / lexing, and
+    - Broaden coverage around the already wired `FrontendError` paths for Step 1
+      load failures, `SpanBridgeError` invariant violations from source
+      registration / preprocessing / lexing, and
       `FrontendLexicalEnvironmentError` from lexical-environment construction;
       keep recoverable problems as diagnostics inside `FrontendOutput`.
-    - Tests: a Step 1 load failure returns `FrontendError` with a file-level
-      `DiagnosticLocation::SourceLoad` diagnostic and no output; source-load
-      diagnostics do not fabricate zero-length `SourceRange`s; a parser seam that
-      returns `ast = None` preserves earlier diagnostics; range-backed merged
-      diagnostics carry valid `SourceRange`s.
+    - Tests: complete assertions that Step 1 load failures return
+      `FrontendError` with a file-level `DiagnosticLocation::SourceLoad`
+      diagnostic and no output; source-load diagnostics do not fabricate
+      zero-length `SourceRange`s; a parser seam that returns `ast = None`
+      preserves earlier diagnostics; range-backed merged diagnostics carry valid
+      `SourceRange`s; span-bridge and lexical-environment hard-failure fixtures
+      return the matching `FrontendError` variants.
     - Depends on: 13. Spec: [orchestration.md](./orchestration.md) "Error
       Handling".
 

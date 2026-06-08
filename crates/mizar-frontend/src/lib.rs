@@ -1,5 +1,6 @@
 pub mod lexical_env;
 pub mod lexing;
+pub mod orchestration;
 pub mod parsing;
 pub mod preprocess;
 pub mod source;

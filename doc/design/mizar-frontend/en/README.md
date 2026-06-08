@@ -4,7 +4,7 @@
 
 `mizar-frontend` owns the phase 1-3 orchestration modules (the source_and_frontend pipeline Steps 1-5): source loading, source maps,
 preprocessing coordination, active lexical environment construction, lexer
-invocation, parser-seam invocation, and the planned combined frontend output.
+invocation, parser-seam invocation, and the combined frontend output.
 
 It does not own source identity, source hashes, or snapshots (`mizar-session`);
 raw scanning, comment stripping, lexical environment assembly, or token
@@ -34,7 +34,7 @@ coordinator paths and returns `ast = None`.
 | [lexing.md](./lexing.md) | `crates/mizar-frontend/src/lexing.rs` | Step 4: `TokenStream` via raw scan, scope skeleton, and context-sensitive disambiguation | Implemented |
 | [parsing.md](./parsing.md) | `crates/mizar-frontend/src/parsing.rs` | Step 5: parser-seam invocation, parser-input assembly, and `SurfaceAst` handoff | Implemented through task 12; full grammar recovery pending |
 | [span_bridge.md](./span_bridge.md) | `crates/mizar-frontend/src/span_bridge.rs` | Lexer byte span → `mizar-session` `SourceRange` coordinate bridge | Implemented for task 1 |
-| [orchestration.md](./orchestration.md) | `crates/mizar-frontend/src/orchestration.rs` | End-to-end phase 1-3 coordination (pipeline Steps 1-5), diagnostic merge, and `FrontendOutput` | Draft |
+| [orchestration.md](./orchestration.md) | `crates/mizar-frontend/src/orchestration.rs` | End-to-end phase 1-3 coordination (pipeline Steps 1-5), diagnostic merge, and `FrontendOutput` | Implemented through task 13 |
 | [todo.md](./todo.md) | `crates/mizar-frontend` | Module implementation order, status, and remaining work | Living |
 
 ## Crate Boundary

@@ -2,7 +2,7 @@
 
 > 正本は英語です。英語版: [../en/orchestration.md](../en/orchestration.md)。
 
-状態: 計画中。
+状態: task 13 まで実装済み。task 14 で回復不能な失敗の網羅とエンドツーエンド失敗アサーションを拡張する。
 
 ## 目的
 
@@ -35,6 +35,7 @@ where
     L: SourceUnitLoader,
     P: LexicalSummaryProvider,
     PS: ParserSeam,
+    PS::Diagnostic: FrontendParserDiagnostic,
 {
     pub fn new(loader: L, provider: P, parser: PS) -> Self;
 
@@ -89,8 +90,8 @@ pub enum DiagnosticClass {
 
 pub enum FrontendError {
     SourceLoad {
-        source: SourceLoadError,
-        diagnostic: FrontendDiagnostic,
+        source: Box<SourceLoadError>,
+        diagnostic: Box<FrontendDiagnostic>,
     },
     SpanBridge {
         source: SpanBridgeError,
@@ -99,9 +100,14 @@ pub enum FrontendError {
         source: FrontendLexicalEnvironmentError,
     },
 }
+
+pub trait FrontendParserDiagnostic {
+    fn into_frontend_diagnostic(self) -> Option<FrontendDiagnostic>;
+}
 ```
 
 `FrontendOutput<A>` は、AST 型を抽象化したまま、アーキテクチャのインターフェースと一致する。`StubParserSeam` では `ast` は常に `None` であり、実 parser seam では `A` は `mizar_syntax::SurfaceAst` である。`FrontendDiagnostic` は、すべてのフェーズ固有診断（`SourcePreprocessDiagnostic`、`ImportPrescanDiagnostic`、`LexicalEnvironmentDiagnostic`、生スキャン／スコープスケルトン／字句解析器の診断を含む `LexingDiagnostic`、`SyntaxDiagnostic`）が変換される統一診断である。範囲付き診断は `DiagnosticLocation::SourceRange` を使い、`SourceId` / `LineMap` が存在する前に起きるソース読み込み失敗は、利用可能な path、正規化パス、オープンバッファ URI、生成アンカー、または `Unknown` を保持する `DiagnosticLocation::SourceLoad` を使う。`DiagnosticCode::Syntax` は、実 parser seam が有効になった後に、パーサー所有の構文診断コードキーを保持する。`StubParserSeam` では、構文診断は送出されない。
+`FrontendParserDiagnostic` は、設定済み parser seam の診断型を統一されたフロントエンド診断ストリームへ写像するための狭いアダプタである。`mizar_syntax::SyntaxDiagnostic` と、stub seam の unit 診断型に実装される。
 
 stub parser seam では、`ast = None` は期待されるプレースホルダ結果である。実 parser seam は、回復済みトークン列に対して最小の `SurfaceAst` を返し、構文解析が以降のフェーズに十分な構造を回復できない場合は `ast = None` を返せる。字句・前処理・構文の診断は依然として返される。
 
