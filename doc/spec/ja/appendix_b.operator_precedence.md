@@ -2,15 +2,15 @@
 
 > Canonical language: English. English canonical version: [../en/appendix_b.operator_precedence.md](../en/appendix_b.operator_precedence.md).
 
-この付録では、用語の式と数式を解析するときに使用される優先順位と結合規則を要約します。規範的な定義は主要な章に残ります。シンボリック関手宣言は [第 10 章、§10.9](./10.functors.md#109-operator-precedence-and-associativity) および [第 13 章、§13.7](./13.term_expression.md#137-operator-precedence-and-associativity) で指定されます。式の優先順位は[第 14 章、§14.6](./14.formulas.md#146-precedence-and-associativity)で指定されます。
+この付録では、用語の式と数式を解析するときに使用される優先順位と結合規則を要約します。規範的な定義は主要な章に残ります。シンボリック関手宣言は [第 10 章、§10.9](./10.functors.md#109-演算子の優先順位と結合性) および [第 13 章、§13.7](./13.term_expression.md#137-演算子の優先順位と結合性) で指定されます。式の優先順位は[第 14 章、§14.6](./14.formulas.md#146-優先順位と結合性)で指定されます。
 
-* [B. 演算子優先順位](#appendix-b-operator-precedence)
-  * [B.1 優先ドメイン](#b1-precedence-domains)
-  * [B.2 用語演算子](#b2-term-operators)
-  * [B.3 原子式境界](#b3-atomic-formula-boundary)
-  * [B.4 数式演算子](#b4-formula-operators)
-  * [B.5 推奨される解析アルゴリズム](#b5-recommended-parsing-algorithm)
-  * [B.6 診断](#b6-diagnostics)
+* [B. 演算子優先順位](#付録-b-演算子の優先順位)
+  * [B.1 優先ドメイン](#b1-優先ドメイン)
+  * [B.2 用語演算子](#b2-用語演算子)
+  * [B.3 原子式境界](#b3-原子式境界)
+  * [B.4 数式演算子](#b4-数式演算子)
+  * [B.5 推奨される解析アルゴリズム](#b5-推奨される解析アルゴリズム)
+  * [B.6 診断](#b6-診断)
 
 ## B.1 優先ドメイン
 

@@ -43,6 +43,26 @@
 
 `00.pipeline_overview.md` はこのディレクトリの親文書です。他のアーキテクチャ文書は、自分がどのパイプライン段階を詳細化するのかを明記し、「関連文書」節から概要へリンクを張ってください。
 
+## 横断的な関心事
+
+### メモリモデル
+
+メモリのスケーラビリティは、特定のサブシステムの責務ではなく、横断的な設計特性です。その指針——言語仕様としては [doc/spec/ja/12.6.3](../../../spec/ja/12.modules_and_namespaces.md#1263-メモリモデル) と [doc/spec/ja/23.7.9](../../../spec/ja/23.package_management_and_build_system.md#2379-メモリ設計原則) で規範的に述べています——は次のとおりです。**インターフェイスと index は常駐させ、証明本体・トレース・AI 向けの詳細データは遅延的に読み込み、global な index を import closure ごとに複製しない。**
+
+各アーキテクチャ文書は、この特性の 1 つの側面を担います。
+
+| 側面 | 常駐集合を有界に保つ箇所 | 文書 |
+|---|---|---|
+| import される状態は最小限の射影 | `ModuleSummary` は exported な symbol/label と lexical summary を持ち、証明本体は持たない | [03.module_and_symbol_resolution.md](./03.module_and_symbol_resolution.md) |
+| cluster／登録データはフィルタしたビュー | チェッカーは import スコープの登録 summary から構築した活性化済みの `RegistrationIndex` を利用する。`cluster-db` キャッシュは closure ごとに複製せず import スコープのビューを保持する | [04.type_and_registration_resolution.md](./04.type_and_registration_resolution.md), [11.artifact_and_incremental_build.md](./11.artifact_and_incremental_build.md) |
+| トレースと witness は外部 artifact | 常駐データではなく、オンディスクのトレースと hash 参照の witness file | [11.artifact_and_incremental_build.md](./11.artifact_and_incremental_build.md), [17.cluster_trace_format.md](./17.cluster_trace_format.md) |
+| 検証条件は module 単位に保つ | module 全体の正準的な `VcIr` を discharge 前に実体化する。証明義務ごとの ATP 作業は階層的なリソース予算で有界化する | [07.vc_generation.md](./07.vc_generation.md), [14.parallel_verification_and_scheduling.md](./14.parallel_verification_and_scheduling.md) |
+| 変更分のみ再計算 | 依存フィンガープリントと逆依存コーンの再ビルド | [18.dependency_fingerprint.md](./18.dependency_fingerprint.md), [11.artifact_and_incremental_build.md](./11.artifact_and_incremental_build.md) |
+| IDE の状態は増分的に保つ | LSP は未保存バッファのスナップショットを保持し、global な状態を再構築せず index 化された artifact から応答する | [12.diagnostics_and_lsp.md](./12.diagnostics_and_lsp.md) |
+| ワーカー予算でピーク使用量を制限 | ビルド単位のメモリ上限とバックエンドごとのプロセス予算 | [14.parallel_verification_and_scheduling.md](./14.parallel_verification_and_scheduling.md) |
+
+これは定性的な常駐集合モデルであり、性能保証ではありません。具体的なメモリ予算やベンチマーク指標は、規範的仕様ではなくテスト／評価戦略（[20.test_strategy.md](./20.test_strategy.md)）に属します。
+
 ## 文書テンプレート
 
 各アーキテクチャ文書は次の構成に従います。

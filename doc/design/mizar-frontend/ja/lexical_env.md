@@ -136,3 +136,4 @@ pub enum LexicalEnvironmentDiagnosticCode {
 - 完全なインポートの合法性はモジュール解決に属する。ここでは、字句的な形と出所のみを捕捉する。
 - アクティブ字句環境はトークン境界を変えうるので、そのフィンガープリントは `TokenStream` キャッシュキーの一部である。
 - 予約テーブルは組み込みであり、インポートとは独立である。
+- アクティブ字句環境は、インポートされたモジュールの圧縮された `ModuleLexicalSummary` 射影のみを保持し、その定義や完全なモジュール IR は決して保持しない（フロントエンドはモジュール IR に踏み込まない——「目的」「アクティブ字句環境」を参照）。`LexicalSummaryProvider` は、これらのサマリを import closure 全体ではなく現在のファイルの解決済みインポートについて供給する。これは、常駐集合メモリモデルの「本体ではなくインターフェイスを保持する」規則の、フロントエンドのシームにおける表現である（spec [§12.6.3](../../../spec/ja/12.modules_and_namespaces.md#1263-メモリモデル)、[mizar-lexer の lexical_environment.md](../../mizar-lexer/ja/lexical_environment.md) も参照）。

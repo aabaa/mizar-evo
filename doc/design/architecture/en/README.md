@@ -43,6 +43,26 @@ Architecture documents are numbered by reading order and design dependency, not 
 
 `00.pipeline_overview.md` is the parent document for this directory. Other architecture documents should state which pipeline phase(s) they refine and should link back to the overview in their Context section.
 
+## Cross-Cutting Concerns
+
+### Memory Model
+
+Memory scalability is a cross-cutting design property rather than the responsibility of any single subsystem. The guiding principle — stated normatively for the language in [doc/spec/en/12.6.3](../../../spec/en/12.modules_and_namespaces.md#1263-memory-model) and [doc/spec/en/23.7.9](../../../spec/en/23.package_management_and_build_system.md#2379-memory-design-principles) — is: **keep interfaces and indexes resident; load proof bodies, traces, and detailed AI-facing data lazily, and never duplicate global indexes per import closure.**
+
+Each architecture document owns one facet of this property:
+
+| Facet | Where the resident-set stays bounded | Document |
+|---|---|---|
+| Imported state is a minimal projection | `ModuleSummary` carries exported symbols/labels and a lexical summary, not proof bodies | [03.module_and_symbol_resolution.md](./03.module_and_symbol_resolution.md) |
+| Cluster/registration data is a filtered view | The checker consumes an activated `RegistrationIndex` built from import-scoped registration summaries; the `cluster-db` cache stores import-scoped views rather than a copy per closure | [04.type_and_registration_resolution.md](./04.type_and_registration_resolution.md), [11.artifact_and_incremental_build.md](./11.artifact_and_incremental_build.md) |
+| Traces and witnesses are external artifacts | On-disk traces and hash-referenced witness files rather than resident data | [11.artifact_and_incremental_build.md](./11.artifact_and_incremental_build.md), [17.cluster_trace_format.md](./17.cluster_trace_format.md) |
+| Verification conditions stay per-module | The whole-module canonical `VcIr` is materialized before discharge; per-obligation ATP work is bounded by hierarchical resource budgets | [07.vc_generation.md](./07.vc_generation.md), [14.parallel_verification_and_scheduling.md](./14.parallel_verification_and_scheduling.md) |
+| Only changed work is recomputed | Dependency fingerprints and reverse-dependency-cone rebuilds | [18.dependency_fingerprint.md](./18.dependency_fingerprint.md), [11.artifact_and_incremental_build.md](./11.artifact_and_incremental_build.md) |
+| IDE state stays incremental | LSP keeps open-buffer snapshots and answers from indexed artifacts, not reconstructed global state | [12.diagnostics_and_lsp.md](./12.diagnostics_and_lsp.md) |
+| Worker budgets bound peak usage | Per-build memory ceiling and per-backend process budgets | [14.parallel_verification_and_scheduling.md](./14.parallel_verification_and_scheduling.md) |
+
+This is a qualitative resident-set model, not a performance guarantee: concrete memory budgets and benchmark metrics belong to the test/evaluation strategy ([20.test_strategy.md](./20.test_strategy.md)), not to the normative specifications.
+
 ## Document Template
 
 Each architecture document should follow this structure:

@@ -4,14 +4,14 @@
 
 この付録では、Mizar Evolution source fileに対する非規範的なコーディングの推奨事項を示します。これらのルールは、可読性、証明の安定性、診断、ドキュメントの品質、および長期的な保守性を向上させることを目的としています。主な仕様を超える構文や検証要件は追加されません。
 
-* [D. 推奨 coding rules](#appendix-d-recommended-coding-rules)
-  * [D.1 一般原則](#d1-general-principles)
-  * [D.2 名前、ラベル、およびモジュール](#d2-names-labels-and-modules)
-  * [D.3 タイプ、定義、および表記法](#d3-types-definitions-and-notation)
-  * [D.4 証拠と引用](#d4-proofs-and-citations)
-  * [D.5 アルゴリズムと検証](#d5-algorithms-and-verification)
-  * [D.6 注釈とドキュメント](#d6-annotations-and-documentation)
-  * [D.7 リファクタリングチェックリスト](#d7-refactoring-checklist)
+* [D. 推奨 coding rules](#付録-d-推奨されるコーディング-ルール)
+  * [D.1 一般原則](#d1-一般原則)
+  * [D.2 名前、ラベル、およびモジュール](#d2-名前ラベルおよびmodule)
+  * [D.3 タイプ、定義、および表記法](#d3-タイプ定義および表記法)
+  * [D.4 証拠と引用](#d4-証拠と引用)
+  * [D.5 アルゴリズムと検証](#d5-アルゴリズムと検証)
+  * [D.6 注釈とドキュメント](#d6-注釈とドキュメント)
+  * [D.7 リファクタリングチェックリスト](#d7-リファクタリングチェックリスト)
 
 ## D.1 一般原則
 

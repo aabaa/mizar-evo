@@ -245,3 +245,12 @@ Key scenarios:
 - The active lexical environment can change token boundaries, so its fingerprint
   is part of the `TokenStream` cache key.
 - Reserved tables are built-in and independent of imports.
+- The active lexical environment holds only compact `ModuleLexicalSummary`
+  projections of imported modules, never their definitions or full module IR (the
+  frontend never reaches into module IR — see Purpose and "Active Lexical
+  Environment"). The `LexicalSummaryProvider` supplies these summaries for the
+  current file's resolved imports rather than loading the whole import closure;
+  this is the frontend-seam form of the resident-set memory model's "hold
+  interfaces, not bodies" rule (spec
+  [§12.6.3](../../../spec/en/12.modules_and_namespaces.md#1263-memory-model); see
+  also [mizar-lexer lexical_environment.md](../../mizar-lexer/en/lexical_environment.md)).

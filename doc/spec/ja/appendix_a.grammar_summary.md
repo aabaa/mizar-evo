@@ -4,23 +4,23 @@
 
 この付録には、主要仕様全体で導入されている EBNF 生成と語彙規則が統合されています。セクション番号は、ルールが規範的に定義されている章と一致します。ここのテキストは参照の概要であり、再定義ではありません。
 
-* [A. 文法要約](#appendix-a-grammar-summary)
-  * [A.2 語彙構造](#a2-lexical-structure)
-    * [A.2.1 文字セット](#a21-character-set)
-    * [A.2.2 空白](#a22-whitespace)
-    * [A.2.3 トークンのカテゴリ](#a23-token-categories)
-    * [A.2.4 予約​​語](#a24-reserved-words)
-    * [A.2.5 特殊記号](#a25-special-symbols)
-    * [A.2.6 識別子](#a26-identifiers)
-    * [A.2.7 数値と文字列リテラル](#a27-numerals-and-string-literals)
-    * [A.2.8 ファイルとモジュールの命名](#a28-file-and-module-naming)
-    * [A.2.9 コメントと注釈](#a29-comments-and-annotations)
-    * [A.2.10 レクサー/パーサーの責任分割](#a210-lexer--parser-responsibility-split)
-  * [A.3 タイプシステム](#a3-type-system)
-    * [A.3.1 タイプカテゴリ](#a31-type-categories)
-    * [A.3.2 型式の文法](#a32-type-expression-grammar)
-    * [A.3.3 組み込み型](#a33-built-in-types)
-    * [A.3.4 サブ型の意味論](#a34-subtyping-semantics)
+* [A. 文法要約](#付録-a-文法概要)
+  * [A.2 語彙構造](#a2-語彙構造)
+    * [A.2.1 文字セット](#a21-文字セット)
+    * [A.2.2 空白](#a22-空白)
+    * [A.2.3 トークンのカテゴリ](#a23-tokenのカテゴリ)
+    * [A.2.4 予約​​語](#a24-予約語)
+    * [A.2.5 特殊記号](#a25-特殊記号)
+    * [A.2.6 識別子](#a26-識別子)
+    * [A.2.7 数値と文字列リテラル](#a27-数値と文字列リテラル)
+    * [A.2.8 ファイルとモジュールの命名](#a28-fileとmoduleの命名)
+    * [A.2.9 コメントと注釈](#a29-コメントと注釈)
+    * [A.2.10 レクサー/パーサーの責任分割](#a210-レクサーparserの責任分割)
+  * [A.3 タイプシステム](#a3-タイプシステム)
+    * [A.3.1 タイプカテゴリ](#a31-タイプカテゴリ)
+    * [A.3.2 型式の文法](#a32-型式の文法)
+    * [A.3.3 組み込み型](#a33-組み込み型)
+    * [A.3.4 サブ型の意味論](#a34-サブ型の意味論)
 
 
 ## A.2 語彙構造
@@ -177,7 +177,7 @@ escape_seq      = "\" ( '"' | "'" | "\" ) ;
 
 * fileは `.miz` で終わります。
 * 各fileは 1 つのmoduleを定義します。module名は拡張子なしのfile名と同じです。
-* namespaceは、パッケージの `src/` ルートを基準としたfileのパスから派生します。パッケージ名 (`mizar.pkg` から) はnamespaceのルートです。 `src/` の下の各中間ディレクトリは、1 つの点線コンポーネントを提供します。 [§23.3](./23.package_management_and_build_system.md#233-workspace-layout)を参照してください。
+* namespaceは、パッケージの `src/` ルートを基準としたfileのパスから派生します。パッケージ名 (`mizar.pkg` から) はnamespaceのルートです。 `src/` の下の各中間ディレクトリは、1 つの点線コンポーネントを提供します。 [§23.3](./23.package_management_and_build_system.md#233-ワークスペースのレイアウト)を参照してください。
 
 例 — パッケージ `algebra`、file `algebra/src/groups/basic.miz`:
 

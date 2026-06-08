@@ -433,6 +433,24 @@ should keep `cargo test -p mizar-frontend` green (see
       span and preserve usable partial raw tokens.
     - Depends on: 9. Spec: [preprocess.md](./preprocess.md), [lexing.md](./lexing.md).
 
+23. **Resident-set contract guard for the lexical environment.** [ ]
+    - Add coverage that locks the resident-set contract now stated in
+      [lexical_env.md](./lexical_env.md) "Constraints and Assumptions": the active
+      lexical environment holds only compact `ModuleLexicalSummary` projections of
+      imported modules, never their definitions or full module IR, and the
+      `LexicalSummaryProvider` is queried only for the current file's resolved
+      imports rather than an eagerly expanded import closure.
+    - Tests: a recording fake `LexicalSummaryProvider` receives exactly one
+      `resolve_imports` call scoped to the request's `ImportStub`s and is never
+      asked to expand to transitive imports; the resulting `ActiveLexicalEnvironment`
+      exposes only summary-derived lexical shape and provenance (e.g., symbol
+      spelling, kind, arity, symbol id, source/imported module, import ordinal,
+      export rank — all lightweight `ModuleLexicalSummary`-derived data), with no
+      API path requiring full dependency IR.
+    - Depends on: 6. Spec: [lexical_env.md](./lexical_env.md) "Constraints and
+      Assumptions"; resident-set memory model spec
+      [§12.6.3](../../../spec/en/12.modules_and_namespaces.md#1263-memory-model).
+
 ## Suggested Verification
 
 After each task, run:

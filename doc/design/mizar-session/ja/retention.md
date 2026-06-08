@@ -288,3 +288,4 @@ impl<A: SessionIdAllocator> RetentionManager<A> {
 - 古いスナップショットは、参照されている間は読み取り可能だが、置き換え後に現行として報告することはできない。
 - 回収の順序が、決定的なビルド出力に影響してはならない。
 - 保持マネージャは、watch／LSP モードにおいて、すべての過去のスナップショットを無期限に保持し続けることを避けなければならない。
+- 本モジュールは、常駐集合メモリモデル（spec [§12.6.3](../../../spec/ja/12.modules_and_namespaces.md#1263-メモリモデル)、[§23.7.9](../../../spec/ja/23.package_management_and_build_system.md#2379-メモリ設計原則)、内部 [00.internal_overview.md](../../internal/ja/00.internal_overview.md)・[06.ir_storage_and_snapshot_handles.md](../../internal/ja/06.ir_storage_and_snapshot_handles.md)）のセッション層における実装地点である。常駐集合を、active な作業がなお参照するソーステキスト・ソースマップ・スナップショットメタデータに限定し、残りを回収する。`mizar-ir` はここで `PhaseOutputReference` リースを保持するため、IR 出力の寿命はソース／スナップショットの寿命と単一の回収ポリシーの下で合成される。

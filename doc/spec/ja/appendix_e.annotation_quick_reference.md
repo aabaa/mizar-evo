@@ -2,14 +2,14 @@
 
 > Canonical language: English. English canonical version: [../en/appendix_e.annotation_quick_reference.md](../en/appendix_e.annotation_quick_reference.md).
 
-この付録は、Mizar Evolution source fileで使用される注釈フォームに関する非標準のクイック リファレンスです。標準的な構文と意味論は、[第 2 章、§2.9](./02.lexical_structure.md#29-comments-and-annotations)、[第21章](./21.source_code_annotation_and_atp.md)、[第22章](./22.error_handling_and_diagnostics.md)、および [第 24 章、§24.1](./24.documentation_generation.md#241-documentation-comments-syntax) で定義されています。
+この付録は、Mizar Evolution source fileで使用される注釈フォームに関する非標準のクイック リファレンスです。標準的な構文と意味論は、[第 2 章、§2.9](./02.lexical_structure.md#29-コメントと注釈)、[第21章](./21.source_code_annotation_and_atp.md)、[第22章](./22.error_handling_and_diagnostics.md)、および [第 24 章、§24.1](./24.documentation_generation.md#241-ドキュメントのコメント構文) で定義されています。
 
-* [E. 注釈のクイックリファレンス](#appendix-e-annotation-quick-reference)
-  * [E.1 注釈コンテキスト](#e1-annotation-contexts)
-  * [E.2 ステートメントと項目の注釈](#e2-statement-and-item-annotations)
-  * [E.3 ライブラリの注釈](#e3-library-annotations)
-  * [E.4 ドキュメントタグ](#e4-documentation-tags)
-  * [E.5 開発ガイダンス](#e5-development-guidance)
+* [E. 注釈のクイックリファレンス](#付録-e-注釈クイックリファレンス)
+  * [E.1 注釈コンテキスト](#e1-注釈コンテキスト)
+  * [E.2 ステートメントと項目の注釈](#e2-ステートメントと項目の注釈)
+  * [E.3 ライブラリの注釈](#e3-library-の注釈)
+  * [E.4 ドキュメントタグ](#e4-ドキュメントタグ)
+  * [E.5 開発ガイダンス](#e5-開発ガイダンス)
 
 ## E.1 注釈コンテキスト
 

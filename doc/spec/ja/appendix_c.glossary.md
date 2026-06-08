@@ -4,13 +4,13 @@
 
 この付録では、Mizar Evolution 仕様で繰り返される用語の短く、非規範的な定義を示します。主要な章には依然として権威があります。各エントリは、その用語が最も直接的に指定または使用されている章を指します。
 
-* [C. 用語集](#appendix-c-glossary-of-terms)
-  * [C.1 コア言語](#c1-core-language)
-  * [C.2 種類と定義](#c2-types-and-definitions)
-  * [C.3 用語、公式、および証明](#c3-terms-formulas-and-proofs)
-  * [C.4 推論と解決](#c4-inference-and-resolution)
-  * [C.5 アルゴリズムと検証](#c5-algorithms-and-verification)
-  * [C.6 パッケージ、ツール、および出力](#c6-packages-tooling-and-output)
+* [C. 用語集](#付録-c-用語集)
+  * [C.1 コア言語](#c1-コア言語)
+  * [C.2 種類と定義](#c2-種類と定義)
+  * [C.3 用語、公式、および証明](#c3-用語公式および証明)
+  * [C.4 推論と解決](#c4-推論と解決)
+  * [C.5 アルゴリズムと検証](#c5-アルゴリズムと検証)
+  * [C.6 パッケージ、ツール、および出力](#c6-パッケージtoolおよび出力)
 
 ## C.1 コア言語
 
