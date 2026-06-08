@@ -189,7 +189,8 @@ source/lexical text, offset not on a UTF-8 boundary, missing loading-map segment
 when `loaded_mapping` is asked to compose a registered but incomplete loading
 map, missing preprocess-map segment, line/column overflow — plus frontend-local
 "source not registered", "preprocess map not registered", "conflicting map
-registration", and "unsupported lexer preprocess map variant" cases.
+registration", and "unsupported lexer-owned preprocess/import metadata variant"
+cases.
 A bridge failure is an internal invariant violation (a span that does not belong
 to its declared source), not a user diagnostic; orchestration treats it as a bug
 surface rather than a recoverable lexical/syntax diagnostic.

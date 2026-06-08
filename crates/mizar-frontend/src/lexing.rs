@@ -506,14 +506,7 @@ fn lexical_mapping(
     bridge: &SpanBridge,
     span: LexerSourceSpan,
 ) -> Result<MappedSourceRange, SpanBridgeError> {
-    bridge.lexical_span(source_id, lexer_byte_span(span))
-}
-
-fn lexer_byte_span(span: LexerSourceSpan) -> LexerByteSpan {
-    LexerByteSpan {
-        start: span.start,
-        end: span.end,
-    }
+    bridge.lexical_span(source_id, LexerByteSpan::from(span))
 }
 
 #[cfg(test)]

@@ -120,13 +120,7 @@ impl SpanBridge {
         span: LexerByteSpan,
     ) -> Result<MappedSourceRange, SpanBridgeError> {
         let primary = self.loaded_span(source_id, span)?;
-        if self
-            .source_maps
-            .get(&source_id)
-            .expect("loaded_span checks source registration")
-            .loading_map
-            .is_some()
-        {
+        if self.source_registration(source_id)?.loading_map.is_some() {
             return self
                 .service
                 .original_range_for_loaded(source_id, text_range_from_source(primary))
@@ -157,10 +151,24 @@ impl SpanBridge {
     }
 
     fn require_source(&self, source_id: SourceId) -> Result<(), SpanBridgeError> {
-        if self.source_maps.contains_key(&source_id) {
-            Ok(())
-        } else {
-            Err(SpanBridgeError::SourceNotRegistered { source_id })
+        self.source_registration(source_id).map(drop)
+    }
+
+    fn source_registration(
+        &self,
+        source_id: SourceId,
+    ) -> Result<&SourceRegistration, SpanBridgeError> {
+        self.source_maps
+            .get(&source_id)
+            .ok_or(SpanBridgeError::SourceNotRegistered { source_id })
+    }
+}
+
+impl From<LexerSourceSpan> for LexerByteSpan {
+    fn from(span: LexerSourceSpan) -> Self {
+        Self {
+            start: span.start,
+            end: span.end,
         }
     }
 }
@@ -281,7 +289,7 @@ fn session_preprocess_segment(
     }
 }
 
-fn comment_kind_from_lexer(
+pub(crate) fn comment_kind_from_lexer(
     source_id: SourceId,
     kind: LexerCommentKind,
 ) -> Result<CommentKind, SpanBridgeError> {
@@ -308,11 +316,15 @@ fn source_range_from_lexer(
 }
 
 fn text_range_from_lexer(span: LexerByteSpan) -> Result<TextRange, SpanBridgeError> {
-    TextRange::try_new(span.start, span.end).ok_or_else(|| SourceMapError::ReversedRange.into())
+    text_range(span.start, span.end)
 }
 
 fn text_range_from_lexer_span(span: LexerSourceSpan) -> Result<TextRange, SpanBridgeError> {
-    TextRange::try_new(span.start, span.end).ok_or_else(|| SourceMapError::ReversedRange.into())
+    text_range(span.start, span.end)
+}
+
+fn text_range(start: usize, end: usize) -> Result<TextRange, SpanBridgeError> {
+    TextRange::try_new(start, end).ok_or_else(|| SourceMapError::ReversedRange.into())
 }
 
 fn text_range_from_source(range: SourceRange) -> TextRange {

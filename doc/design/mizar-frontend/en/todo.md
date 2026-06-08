@@ -357,7 +357,7 @@ should keep `cargo test -p mizar-frontend` green (see
 
 ### Module-wide maintenance before cross-cutting follow-ups
 
-15. **Implementation refactoring pass.** [ ]
+15. **Implementation refactoring pass.** [x]
     - Review `span_bridge`, `source`, `preprocess`, `lexical_env`, `lexing`,
       `parsing`, and `orchestration` once the first implementation pass is complete.
     - Keep public APIs and behavior stable unless the refactor exposes a clear bug

@@ -105,8 +105,9 @@ For user-recoverable input problems, `preprocess` returns `Ok(PreprocessedSource
 comment-structure and ASCII-region errors are recorded as diagnostics with
 recovered lexical text rather than aborting, so the lexer can still run and
 report further problems. Import-pre-scan diagnostics use the same channel. It
-returns `Err(SpanBridgeError)` only for internal coordinate-bridge
-invariant failures such as an unmappable span or a conflicting map registration.
+returns `Err(SpanBridgeError)` only for internal coordinate-bridge or
+frontend/lexer integration invariant failures, such as an unmappable span, a
+conflicting map registration, or an unsupported lexer-owned metadata variant.
 
 ## Dependencies
 

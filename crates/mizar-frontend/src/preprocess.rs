@@ -1,5 +1,5 @@
 use crate::source::SourceUnit;
-use crate::span_bridge::{LexerByteSpan, SpanBridge, SpanBridgeError};
+use crate::span_bridge::{LexerByteSpan, SpanBridge, SpanBridgeError, comment_kind_from_lexer};
 use mizar_lexer::{
     CommentKind as LexerCommentKind, ImportPrescanDiagnostic as LexerImportPrescanDiagnostic,
     ImportStub as LexerImportStub, RawModuleAlias as LexerRawModuleAlias,
@@ -140,7 +140,8 @@ pub fn preprocess(
     let mut comments = Vec::new();
     let mut doc_comments = Vec::new();
     for comment in preprocessed.comments {
-        let source_range = bridge.loaded_span(source.source_id, lexer_byte_span(comment.span))?;
+        let source_range =
+            bridge.loaded_span(source.source_id, LexerByteSpan::from(comment.span))?;
         if comment.kind == LexerCommentKind::Documentation {
             doc_comments.push(DocComment {
                 source_range,
@@ -148,7 +149,7 @@ pub fn preprocess(
             });
         } else {
             comments.push(Comment {
-                kind: comment_kind(source.source_id, comment.kind)?,
+                kind: comment_kind_from_lexer(source.source_id, comment.kind)?,
                 source_range,
             });
         }
@@ -159,7 +160,7 @@ pub fn preprocess(
         .into_iter()
         .map(|diagnostic| {
             let mapping =
-                bridge.loaded_mapping(source.source_id, lexer_byte_span(diagnostic.span))?;
+                bridge.loaded_mapping(source.source_id, LexerByteSpan::from(diagnostic.span))?;
             Ok(PreprocessDiagnostic {
                 kind: PreprocessDiagnosticKind::SourcePrecondition(diagnostic.code),
                 message: Arc::<str>::from(diagnostic.message),
@@ -191,18 +192,6 @@ pub fn lexical_hash(lexical_text: &LexicalText) -> Hash {
     hasher.update(&(lexical_text.text.len() as u64).to_le_bytes());
     hasher.update(lexical_text.text.as_bytes());
     Hash::from_bytes(*hasher.finalize().as_bytes())
-}
-
-fn comment_kind(
-    source_id: SourceId,
-    kind: LexerCommentKind,
-) -> Result<CommentKind, SpanBridgeError> {
-    Ok(match kind {
-        LexerCommentKind::SingleLine => CommentKind::SingleLine,
-        LexerCommentKind::MultiLine => CommentKind::MultiLine,
-        LexerCommentKind::Documentation => CommentKind::Documentation,
-        _ => return Err(SpanBridgeError::UnsupportedLexerPreprocessMap { source_id }),
-    })
 }
 
 fn doc_comment_body(lexeme: &str) -> &str {
@@ -264,7 +253,10 @@ fn import_stub_path(
 ) -> Result<ImportStubPath, SpanBridgeError> {
     Ok(ImportStubPath {
         spelling: Arc::<str>::from(path.spelling),
-        relative: path.relative.map(import_relative_prefix),
+        relative: path
+            .relative
+            .map(|prefix| import_relative_prefix(source_id, prefix))
+            .transpose()?,
         components: path
             .components
             .into_iter()
@@ -279,12 +271,15 @@ fn import_stub_path(
     })
 }
 
-fn import_relative_prefix(prefix: LexerRawModuleRelativePrefix) -> ImportStubRelativePrefix {
-    match prefix {
+fn import_relative_prefix(
+    source_id: SourceId,
+    prefix: LexerRawModuleRelativePrefix,
+) -> Result<ImportStubRelativePrefix, SpanBridgeError> {
+    Ok(match prefix {
         LexerRawModuleRelativePrefix::Current => ImportStubRelativePrefix::Current,
         LexerRawModuleRelativePrefix::Parent => ImportStubRelativePrefix::Parent,
-        _ => unreachable!("mizar-lexer returned an unknown relative import prefix"),
-    }
+        _ => return Err(SpanBridgeError::UnsupportedLexerPreprocessMap { source_id }),
+    })
 }
 
 fn import_stub_alias(
@@ -350,14 +345,7 @@ fn lexical_mapping(
     bridge: &SpanBridge,
     span: LexerSourceSpan,
 ) -> Result<MappedSourceRange, SpanBridgeError> {
-    bridge.lexical_span(source_id, lexer_byte_span(span))
-}
-
-fn lexer_byte_span(span: LexerSourceSpan) -> LexerByteSpan {
-    LexerByteSpan {
-        start: span.start,
-        end: span.end,
-    }
+    bridge.lexical_span(source_id, LexerByteSpan::from(span))
 }
 
 #[cfg(test)]
