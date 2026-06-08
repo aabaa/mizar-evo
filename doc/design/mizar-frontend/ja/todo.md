@@ -17,7 +17,7 @@
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [x] |
-| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] task 11 まで実装済み |
+| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] task 12 まで実装済み |
 | orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [ ] |
 
 `mizar-frontend` は統制を担う crate なので、フェーズの順にボトムアップで構築する。まず座標の橋渡しを用意し、続いてパイプライン順に Step 1〜5、最後にエンドツーエンドのコーディネータを作る。`span_bridge` は後続の各フェーズが参照する共有プリミティブであり、`orchestration` はパイプライン全体を配線する唯一のモジュールである。
@@ -26,7 +26,7 @@
 
 ## crate の前提条件
 
-フロントエンドの基盤は `mizar-session` と `mizar-lexer` だけで始めた。task 11 は、実 parser seam に必要な最小限の `mizar-syntax::SurfaceAst` 境界と `mizar-parser` エントリポイントへの必須依存を追加する。タスク 1〜10 と、タスク 13〜14 のスタブコーディネータ部分は、引き続き `StubParserSeam` で有効である。task 12 と、タスク 13〜14 の実 parser 検証は、task 11 の parser/syntax 境界の上に構築する。
+フロントエンドの基盤は `mizar-session` と `mizar-lexer` だけで始めた。task 11 は、実 parser seam に必要な最小限の `mizar-syntax::SurfaceAst` 境界と `mizar-parser` エントリポイントへの必須依存を追加する。task 12 は、その境界に最小限の parser recovery passthrough を追加する。タスク 1〜10 と、タスク 13〜14 のスタブコーディネータ部分は、引き続き `StubParserSeam` で有効である。タスク 13〜14 の実 parser 検証は、task 12 の parser/syntax 境界の上に構築する。
 
 ## 解決済みおよび保留中の決定
 
@@ -121,9 +121,9 @@
     - テスト: 整形式のトークンストリームが、ソース順と範囲を保持した `SurfaceAst` へ解析される。明示的に与えた演算子 fixity が、ユーザー定義中置演算子に対する Pratt 優先順位を駆動する。サマリ由来の fixity は、字句サマリが fixity を公開するまで空のままである。注釈／演算子の文字列リテラルテストは、タスク 20 が実ソーステキスト向けのパーサー支援字句解析を確定するまで、合成パーサートークンストリームを使う。
     - 依存: 10、加えて `mizar-parser`/`mizar-syntax`。文法位置の文字列リテラルを必要とする実ソーステキストのテストは、20 にも依存する。仕様: [parsing.md](./parsing.md)「Algorithm / Logic」。
 
-12. **パーサーの回復のパススルー。** [ ]
+12. **パーサーの回復のパススルー。** [x]
     - 回復不能な入力での `ast = None` と、返された `SurfaceAst` 内の明示的な回復ノードの印を保持する。構文診断を通す。
-    - テスト: `end` の欠落が同期点で回復し、`ast = Some` と明示的なエラーノードを生む。回復不能なストリームが、診断とともに `ast = None` を返す。文字列必須位置での文字列リテラルの欠落は、タスク 20 が実ソーステキスト向けのパーサー支援字句解析を確定するまで、合成トークンストリームで期待される構文診断を確認する。
+    - テスト: `end` token が存在しない場合、`end` の欠落は保守的に EOF で回復し、`ast = Some` と明示的なエラーノードを生む。回復不能な 1 トークンの `end` ストリームが、診断とともに `ast = None` を返す。文字列必須位置での文字列リテラルの欠落は、タスク 20 が実ソーステキスト向けのパーサー支援字句解析を確定するまで、合成トークンストリームで期待される構文診断を確認する。
     - 依存: 11。仕様: [parsing.md](./parsing.md)「Error Handling」。
 
 ### モジュール: orchestration (`src/orchestration.rs`)

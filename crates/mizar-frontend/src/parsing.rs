@@ -154,7 +154,10 @@ impl ParserSeam for MizarParserSeam {
                 .into_iter()
                 .map(parser_fixity)
                 .collect(),
-        );
+        )
+        .with_string_required_context(parser_string_required_context(
+            request.parser_inputs.string_required_positions,
+        ));
         let output = mizar_parser::parse(parser_request);
         ParseOutput::new(output.ast, output.diagnostics)
     }
@@ -202,6 +205,17 @@ fn parser_associativity(
     }
 }
 
+fn parser_string_required_context(
+    context: StringRequiredContext,
+) -> mizar_parser::StringRequiredContext {
+    match context {
+        StringRequiredContext::None => mizar_parser::StringRequiredContext::None,
+        StringRequiredContext::UniformForTest => {
+            mizar_parser::StringRequiredContext::UniformForTest
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
@@ -215,11 +229,12 @@ mod tests {
     };
     use crate::lexing::{ParserLexContext, ScopeView, Token, TokenKind, TokenStream};
     use mizar_session::{
-        BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceId,
-        SourceRange,
+        BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, SessionIdAllocator,
+        SourceAnchor, SourceId, SourceRange,
     };
     use mizar_syntax::{
         SurfaceNodeKind, SurfaceOperatorAssociativity, SurfaceTokenKind, SyntaxDiagnosticCode,
+        SyntaxRecoveryKind,
     };
     use std::sync::Arc;
 
@@ -429,6 +444,200 @@ mod tests {
         };
         assert_eq!(token.kind, SurfaceTokenKind::ErrorRecovery);
         assert_eq!(token.text.as_ref(), "@");
+    }
+
+    #[test]
+    fn real_parser_seam_preserves_missing_end_recovery_nodes() {
+        let source_id = source_id(9);
+        let tokens = token_stream(
+            source_id,
+            vec![
+                token(source_id, TokenKind::ReservedWord, "definition", 0, 10),
+                token(source_id, TokenKind::ReservedWord, "theorem", 11, 18),
+            ],
+        );
+        let inputs = ParserInputs::new(
+            Edition::new("2026"),
+            OperatorFixityTable::empty(),
+            StringRequiredContext::None,
+        );
+        let seam = MizarParserSeam;
+
+        let output = seam.parse(ParseRequest::new(&tokens, inputs));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        let diagnostic = &output.diagnostics[0];
+        assert_eq!(diagnostic.code, SyntaxDiagnosticCode::MissingEnd);
+        assert_eq!(
+            diagnostic.message.as_ref(),
+            "missing `end` for `definition` block"
+        );
+        assert_eq!(
+            diagnostic.primary,
+            SourceRange {
+                source_id,
+                start: 18,
+                end: 18,
+            }
+        );
+        assert_eq!(
+            diagnostic.secondary,
+            vec![SourceAnchor::Range(SourceRange {
+                source_id,
+                start: 0,
+                end: 10,
+            })]
+        );
+        assert_eq!(
+            diagnostic.recovery_note.as_deref(),
+            Some("insert `end` before this synchronization point")
+        );
+        let ast = output
+            .ast
+            .expect("real parser seam should preserve recovered AST");
+        let (recovery_index, recovery_node) = ast
+            .nodes
+            .iter()
+            .enumerate()
+            .find(|(_, node)| {
+                matches!(
+                    &node.kind,
+                    SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingEnd)
+                )
+            })
+            .expect("missing end recovery node should pass through unchanged");
+        assert!(recovery_node.recovered);
+        assert_eq!(
+            recovery_node.range,
+            SourceRange {
+                source_id,
+                start: 18,
+                end: 18,
+            }
+        );
+        assert_eq!(recovery_node.children, vec![ast.token_nodes[0]]);
+        let root = ast.root.expect("recovered AST should have a root");
+        assert!(
+            ast.node(root)
+                .unwrap()
+                .children
+                .iter()
+                .any(|child| child.index() == recovery_index),
+            "missing end recovery node should remain root-reachable"
+        );
+    }
+
+    #[test]
+    fn real_parser_seam_preserves_unrecoverable_none_ast() {
+        let source_id = source_id(10);
+        let tokens = token_stream(
+            source_id,
+            vec![token(source_id, TokenKind::ReservedWord, "end", 0, 3)],
+        );
+        let inputs = ParserInputs::new(
+            Edition::new("2026"),
+            OperatorFixityTable::empty(),
+            StringRequiredContext::None,
+        );
+        let seam = MizarParserSeam;
+
+        let output = seam.parse(ParseRequest::new(&tokens, inputs));
+
+        assert!(output.ast.is_none());
+        assert_eq!(output.diagnostics.len(), 1);
+        let diagnostic = &output.diagnostics[0];
+        assert_eq!(diagnostic.code, SyntaxDiagnosticCode::UnrecoverableInput);
+        assert_eq!(
+            diagnostic.message.as_ref(),
+            "`end` has no matching block opener"
+        );
+        assert_eq!(
+            diagnostic.primary,
+            SourceRange {
+                source_id,
+                start: 0,
+                end: 3,
+            }
+        );
+        assert_eq!(
+            diagnostic.recovery_note.as_deref(),
+            Some("remove the stray `end` or add a matching block opener before it")
+        );
+    }
+
+    #[test]
+    fn real_parser_seam_forwards_string_required_context() {
+        let source_id = source_id(11);
+        let tokens = token_stream(
+            source_id,
+            vec![token(
+                source_id,
+                TokenKind::Identifier,
+                "not_a_string",
+                0,
+                12,
+            )],
+        );
+        let inputs = ParserInputs::new(
+            Edition::new("2026"),
+            OperatorFixityTable::empty(),
+            StringRequiredContext::UniformForTest,
+        );
+        let seam = MizarParserSeam;
+
+        let output = seam.parse(ParseRequest::new(&tokens, inputs));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        let diagnostic = &output.diagnostics[0];
+        assert_eq!(diagnostic.code, SyntaxDiagnosticCode::MissingStringLiteral);
+        assert_eq!(
+            diagnostic.message.as_ref(),
+            "expected string literal at this grammar position"
+        );
+        assert_eq!(
+            diagnostic.primary,
+            SourceRange {
+                source_id,
+                start: 0,
+                end: 12,
+            }
+        );
+        assert_eq!(
+            diagnostic.recovery_note.as_deref(),
+            Some("insert a string literal before continuing")
+        );
+        let ast = output
+            .ast
+            .expect("missing string literal should recover an AST");
+        let (recovery_index, recovery_node) = ast
+            .nodes
+            .iter()
+            .enumerate()
+            .find(|(_, node)| {
+                matches!(
+                    &node.kind,
+                    SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingStringLiteral)
+                )
+            })
+            .expect("missing string recovery node should pass through unchanged");
+        assert!(recovery_node.recovered);
+        assert_eq!(
+            recovery_node.range,
+            SourceRange {
+                source_id,
+                start: 0,
+                end: 0,
+            }
+        );
+        let root = ast.root.expect("recovered AST should have a root");
+        assert!(
+            ast.node(root)
+                .unwrap()
+                .children
+                .iter()
+                .any(|child| child.index() == recovery_index),
+            "missing string recovery node should remain root-reachable"
+        );
     }
 
     #[test]

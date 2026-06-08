@@ -32,7 +32,7 @@ coordinator paths and returns `ast = None`.
 | [preprocess.md](./preprocess.md) | `crates/mizar-frontend/src/preprocess.rs` | Step 2: `PreprocessedSource`, comment/doc-comment separation, annotation preservation, and shallow import pre-scan coordination | Implemented |
 | [lexical_env.md](./lexical_env.md) | `crates/mizar-frontend/src/lexical_env.rs` | Step 3: active lexical environment construction from import stubs and dependency lexical summaries | Implemented through task 6 |
 | [lexing.md](./lexing.md) | `crates/mizar-frontend/src/lexing.rs` | Step 4: `TokenStream` via raw scan, scope skeleton, and context-sensitive disambiguation | Implemented |
-| [parsing.md](./parsing.md) | `crates/mizar-frontend/src/parsing.rs` | Step 5: parser-seam invocation, parser-input assembly, and `SurfaceAst` handoff | Implemented through task 11; recovery pending |
+| [parsing.md](./parsing.md) | `crates/mizar-frontend/src/parsing.rs` | Step 5: parser-seam invocation, parser-input assembly, and `SurfaceAst` handoff | Implemented through task 12; full grammar recovery pending |
 | [span_bridge.md](./span_bridge.md) | `crates/mizar-frontend/src/span_bridge.rs` | Lexer byte span → `mizar-session` `SourceRange` coordinate bridge | Implemented for task 1 |
 | [orchestration.md](./orchestration.md) | `crates/mizar-frontend/src/orchestration.rs` | End-to-end phase 1-3 coordination (pipeline Steps 1-5), diagnostic merge, and `FrontendOutput` | Draft |
 | [todo.md](./todo.md) | `crates/mizar-frontend` | Module implementation order, status, and remaining work | Living |
@@ -50,7 +50,8 @@ coordinator paths and returns `ast = None`.
 - context-sensitive tokenization producing a `TokenStream` with session
   `SourceRange` spans;
 - parser-seam invocation producing an optional AST (`ast = None` under the stub
-  seam, `SurfaceAst` under the real seam);
+  seam or unrecoverable real parser input, `SurfaceAst` under recoverable real
+  parser input);
 - the lexer-span → session-`SourceRange` coordinate bridge;
 - deterministic diagnostic merging into a single `FrontendOutput`.
 

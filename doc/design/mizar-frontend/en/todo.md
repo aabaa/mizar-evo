@@ -17,7 +17,7 @@
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [x] |
-| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] implemented through task 11 |
+| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] implemented through task 12 |
 | orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [ ] |
 
 `mizar-frontend` is an orchestration crate, so it is built bottom-up by phase:
@@ -32,10 +32,11 @@ Dependency order: `span_bridge` → `source` → `preprocess` → `lexical_env` 
 
 The frontend foundation began with `mizar-session` and `mizar-lexer` only. Task
 11 adds hard dependencies on the minimal `mizar-syntax::SurfaceAst` boundary and
-`mizar-parser` entry point needed by the real parser seam. Tasks 1-10 and the
-stubbed coordinator portions of tasks 13-14 remain valid with `StubParserSeam`;
-task 12 and the real-parser assertions in tasks 13-14 build on the task-11
-parser/syntax boundary.
+`mizar-parser` entry point needed by the real parser seam. Task 12 adds the
+minimal parser recovery passthrough on that boundary. Tasks 1-10 and the stubbed
+coordinator portions of tasks 13-14 remain valid with `StubParserSeam`; the
+real-parser assertions in tasks 13-14 build on the task-12 parser/syntax
+boundary.
 
 ## Resolved And Gated Decisions
 
@@ -301,14 +302,15 @@ should keep `cargo test -p mizar-frontend` green (see
       that require grammar-position string literals also depend on 20. Spec:
       [parsing.md](./parsing.md) "Algorithm / Logic".
 
-12. **Parser recovery passthrough.** [ ]
+12. **Parser recovery passthrough.** [x]
     - Preserve `ast = None` on unrecoverable input and explicit recovery-node
       markers inside a returned `SurfaceAst`; carry syntax diagnostics through.
-    - Tests: a missing `end` recovers at a synchronization point with `ast = Some`
-      and an explicit error node; an unrecoverable stream returns `ast = None` with
-      diagnostics; a missing string literal at a string-required position yields the
-      expected syntax diagnostic using a synthetic token stream until task 20
-      finalizes parser-assisted lexing for real source text.
+    - Tests: a missing `end` recovers conservatively at EOF when no `end` token is
+      present, with `ast = Some` and an explicit error node; an unrecoverable
+      one-token `end` stream returns `ast = None` with diagnostics; a missing
+      string literal at a string-required position yields the expected syntax
+      diagnostic using a synthetic token stream until task 20 finalizes
+      parser-assisted lexing for real source text.
     - Depends on: 11. Spec: [parsing.md](./parsing.md) "Error Handling".
 
 ### Module: orchestration (`src/orchestration.rs`)

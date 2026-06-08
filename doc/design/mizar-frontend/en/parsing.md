@@ -2,8 +2,9 @@
 
 > Canonical language: English. Japanese companion: [../ja/parsing.md](../ja/parsing.md).
 
-Status: parser-input assembly, the stub parser seam, and a minimal real
-`mizar-parser` seam are implemented; parser recovery passthrough remains gated.
+Status: parser-input assembly, the stub parser seam, a minimal real
+`mizar-parser` seam, and task-12 parser recovery passthrough are implemented;
+full grammar recovery remains gated.
 
 ## Purpose
 
@@ -126,10 +127,11 @@ type; they are added by the parser-assisted lexing contract before real source
 inputs that require grammar-position string literals are enabled.
 
 With the stub parser seam, `ast = None` is the expected placeholder result. The
-task-11 real parser seam returns a minimal `SurfaceAst` for recovered token
-streams; later parser recovery tasks may use `ast = None` when parsing cannot
-recover enough structure for downstream phases. Lexical and syntax diagnostics
-are still returned.
+real parser seam returns a minimal `SurfaceAst` for recovered token streams,
+including task-12 recovery nodes for missing `end` when no `end` token is present
+and for expected string literal positions. It may return `ast = None` when
+parsing cannot recover enough structure for downstream phases. Lexical and
+syntax diagnostics are still returned.
 
 ## Dependencies
 
@@ -154,12 +156,13 @@ arbitrary scope or resolver state.
 ### Parser Seam and Surface AST Handoff
 
 The parser seam lets the frontend compile and test either the stubbed
-source-to-token pipeline or the real parser boundary. The task-11 real seam
-preserves source order and `SourceRange`s in `SurfaceAst` token nodes and
-supports explicit infix fixity through a small Pratt parser. Later parser tasks
-expand that same boundary with full module/item nodes, annotation attachment,
-doc-comment attachment, and recovery markers. The frontend passes parser output
-through unchanged; it does not rewrite, prune, or interpret nodes.
+source-to-token pipeline or the real parser boundary. The real seam preserves
+source order and `SourceRange`s in `SurfaceAst` token nodes, supports explicit
+infix fixity through a small Pratt parser, and forwards task-12 recovery markers
+unchanged. Later parser tasks expand that same boundary with full module/item
+nodes, annotation attachment, doc-comment attachment, and broader recovery
+markers. The frontend passes parser output through unchanged; it does not
+rewrite, prune, or interpret nodes.
 
 ## Algorithm / Logic
 
@@ -168,13 +171,13 @@ through unchanged; it does not rewrite, prune, or interpret nodes.
 1. Build `ParserInputs` from the active lexical environment and edition.
 2. Invoke the configured `ParserSeam` with the `TokenStream` and inputs. The
    stub seam returns `ast = None` with no syntax diagnostics.
-3. The task-11 parser preserves token nodes in source order and builds minimal
-   infix expression nodes when explicit operator fixity is supplied. Later parser
-   tasks add full module/item parsing, annotation and doc-comment attachment, and
-   recovery at synchronization points (`;`, `end`, top-level item keywords, EOF).
-4. Return the `SurfaceAst` plus syntax diagnostics. Later recovery work may also
-   return `None` when parsing cannot recover enough structure for downstream
-   phases.
+3. The parser preserves token nodes in source order, builds minimal infix
+   expression nodes when explicit operator fixity is supplied, and preserves
+   task-12 recovery markers for missing `end` when no `end` token is present and
+   expected string literals. Later parser tasks add full module/item parsing,
+   annotation and doc-comment attachment, and broader synchronization coverage.
+4. Return the `SurfaceAst` plus syntax diagnostics, or `ast = None` when the
+   parser reports unrecoverable input.
 
 When the integration uses parser-assisted disambiguation, the parser-facing seam
 supplies string-required positions or symbol-kind filters back to Step 4 through
@@ -187,14 +190,14 @@ directly.
 ## Error Handling
 
 Syntax diagnostics come from `mizar-parser`; the frontend does not add syntax
-error categories. The task-11 parser can emit `UnexpectedErrorToken`,
-`DanglingOperator`, and `NonAssociativeOperatorChain` while preserving a minimal
-`SurfaceAst`. Broader diagnostics such as unexpected token, unmatched delimiter,
-missing `end`, expected string literal, and malformed annotation argument list
-remain future parser/recovery work. A real parser parse that cannot recover a
-usable tree may return `ast = None` in later tasks; task 11 currently returns a
-minimal `SurfaceAst` for recovered token streams. The stub seam still emits no
-syntax diagnostics and returns `ast = None`.
+error categories. The parser can emit `UnexpectedErrorToken`, `DanglingOperator`,
+`NonAssociativeOperatorChain`, `MissingEnd`, `MissingStringLiteral`, and
+`UnrecoverableInput`. Recoverable missing constructs are represented by explicit
+`SurfaceNodeKind::ErrorRecovery` nodes marked `recovered`; unrecoverable input
+returns diagnostics with `ast = None`. Broader diagnostics such as general
+unexpected tokens, unmatched delimiters, and malformed annotation argument lists
+remain future parser/recovery work. The stub seam still emits no syntax
+diagnostics and returns `ast = None`.
 
 ## Tests
 
@@ -213,9 +216,15 @@ Key scenarios:
 - recovered and unknown tokens are preserved but do not become infix operators;
 - non-associative chains of the same operator are diagnosed while different
   operators at the same precedence remain distinct;
-- annotation nodes, missing string literal diagnostics, missing-`end` recovery,
-  unrecoverable `ast = None`, and doc-comment attachment remain future
-  parser/recovery coverage.
+- missing `end` recovers conservatively at EOF with an explicit recovery node
+  when no `end` token is present;
+- one-token unrecoverable `end` input preserves `ast = None` plus syntax
+  diagnostics;
+- missing string literals at string-required positions are diagnosed using
+  synthetic token streams while real source-text coverage remains gated on task
+  20;
+- annotation nodes, malformed annotation recovery, and doc-comment attachment
+  remain future parser/recovery coverage.
 
 ## Constraints and Assumptions
 

@@ -32,8 +32,8 @@ It complements [README.md](./README.md) (doc layout) and the pipeline definition
 |---|---|---|---|---|
 | mizar-session | Source identity, source maps, build snapshots, retention (foundation) | — | [x] | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | Raw scan + context-sensitive token disambiguation | — | [x] | [todo](./mizar-lexer/en/todo.md) |
-| mizar-syntax | `SurfaceAst`, syntax nodes, trivia, recovery markers | mizar-session | [~] minimal task-11 surface boundary | [README](./mizar-syntax/en/README.md) |
-| mizar-parser | Grammar, Pratt parsing, syntax recovery | mizar-session, mizar-syntax | [~] minimal task-11 parser entry | [README](./mizar-parser/en/README.md) |
+| mizar-syntax | `SurfaceAst`, syntax nodes, trivia, recovery markers | mizar-session | [~] minimal task-12 surface boundary | [README](./mizar-syntax/en/README.md) |
+| mizar-parser | Grammar, Pratt parsing, syntax recovery | mizar-session, mizar-syntax | [~] minimal task-12 parser entry/recovery | [README](./mizar-parser/en/README.md) |
 | mizar-frontend | Source loading + phase 1-3 orchestration | mizar-session, mizar-lexer, mizar-syntax, mizar-parser | [~] | [todo](./mizar-frontend/en/todo.md) |
 | mizar-test | Test corpus + harness | (consumers) | [~] skeleton | — |
 | mizar-lsp | Editor integration / range mapping | mizar-session, mizar-lexer | [~] skeleton | — |
@@ -57,10 +57,10 @@ Module specs and the implementation roadmap: [mizar-frontend/en/todo.md](./mizar
 Architecture: [architecture/en/02.source_and_frontend.md](./architecture/en/02.source_and_frontend.md).
 
 ### Next: harden **mizar-syntax (AST)** + **mizar-parser** (phase 3)
-The task-11 boundary now provides a minimal `SurfaceAst` and parser entry point
-for frontend seam integration. Next, expand the syntax node model, grammar
-coverage, Pratt operator metadata, and recovery behavior into the full
-`source → tokens → SurfaceAst` pipeline. Keep syntax data structures in
+The task-12 boundary now provides a minimal `SurfaceAst`, parser entry point,
+Pratt operator metadata, and parser recovery passthrough for frontend seam
+integration. Next, expand the syntax node model, grammar coverage, and broader
+recovery behavior into the full `source → tokens → SurfaceAst` pipeline. Keep syntax data structures in
 `mizar-syntax`, grammar and recovery in `mizar-parser`, and phase orchestration
 in `mizar-frontend`.
 

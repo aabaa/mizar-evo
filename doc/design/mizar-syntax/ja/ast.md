@@ -2,7 +2,7 @@
 
 > 正本は英語です。英語版: [../en/ast.md](../en/ast.md)。
 
-状態: task 11 の最小 `SurfaceAst`、ノード、token node、構文診断は実装済み。完全な AST 範囲は計画中。
+状態: task 12 の最小 `SurfaceAst`、ノード、token node、回復ノード、構文診断は実装済み。完全な AST 範囲は計画中。
 
 ## 目的
 

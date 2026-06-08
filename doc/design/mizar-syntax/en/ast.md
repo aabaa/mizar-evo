@@ -1,6 +1,6 @@
 # mizar-syntax: Surface AST
 
-Status: minimal task-11 `SurfaceAst`, nodes, token nodes, and syntax diagnostics implemented; full AST coverage planned.
+Status: minimal task-12 `SurfaceAst`, nodes, token nodes, recovery nodes, and syntax diagnostics implemented; full AST coverage planned.
 
 ## Purpose
 

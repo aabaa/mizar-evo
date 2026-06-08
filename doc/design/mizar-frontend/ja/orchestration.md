@@ -103,7 +103,7 @@ pub enum FrontendError {
 
 `FrontendOutput<A>` は、AST 型を抽象化したまま、アーキテクチャのインターフェースと一致する。`StubParserSeam` では `ast` は常に `None` であり、実 parser seam では `A` は `mizar_syntax::SurfaceAst` である。`FrontendDiagnostic` は、すべてのフェーズ固有診断（`SourcePreprocessDiagnostic`、`ImportPrescanDiagnostic`、`LexicalEnvironmentDiagnostic`、生スキャン／スコープスケルトン／字句解析器の診断を含む `LexingDiagnostic`、`SyntaxDiagnostic`）が変換される統一診断である。範囲付き診断は `DiagnosticLocation::SourceRange` を使い、`SourceId` / `LineMap` が存在する前に起きるソース読み込み失敗は、利用可能な path、正規化パス、オープンバッファ URI、生成アンカー、または `Unknown` を保持する `DiagnosticLocation::SourceLoad` を使う。`DiagnosticCode::Syntax` は、実 parser seam が有効になった後に、パーサー所有の構文診断コードキーを保持する。`StubParserSeam` では、構文診断は送出されない。
 
-stub parser seam では、`ast = None` は期待されるプレースホルダ結果である。task 11 の実 parser seam は、回復済みトークン列に対して最小の `SurfaceAst` を返す。後続の parser recovery 作業では、構文解析が以降のフェーズに十分な構造を回復できなかった場合に `ast = None` を使うことがある。字句・前処理・構文の診断は依然として返される。
+stub parser seam では、`ast = None` は期待されるプレースホルダ結果である。実 parser seam は、回復済みトークン列に対して最小の `SurfaceAst` を返し、構文解析が以降のフェーズに十分な構造を回復できない場合は `ast = None` を返せる。字句・前処理・構文の診断は依然として返される。
 
 ## 依存関係
 

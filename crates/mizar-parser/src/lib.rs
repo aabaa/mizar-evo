@@ -1,8 +1,8 @@
-use mizar_session::{Edition, SourceId, SourceRange};
+use mizar_session::{Edition, SourceAnchor, SourceId, SourceRange};
 use mizar_syntax::{
     SurfaceAst, SurfaceInfixOperator, SurfaceNode, SurfaceNodeId, SurfaceNodeKind,
     SurfaceOperatorAssociativity, SurfaceToken, SurfaceTokenKind, SyntaxDiagnostic,
-    SyntaxDiagnosticCode,
+    SyntaxDiagnosticCode, SyntaxRecoveryKind,
 };
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -13,6 +13,7 @@ pub struct ParseRequest {
     pub edition: Edition,
     pub tokens: Vec<ParserToken>,
     pub operator_fixity: Vec<OperatorFixityEntry>,
+    pub string_required_context: StringRequiredContext,
 }
 
 impl ParseRequest {
@@ -27,7 +28,13 @@ impl ParseRequest {
             edition,
             tokens,
             operator_fixity,
+            string_required_context: StringRequiredContext::None,
         }
+    }
+
+    pub fn with_string_required_context(mut self, context: StringRequiredContext) -> Self {
+        self.string_required_context = context;
+        self
     }
 }
 
@@ -89,6 +96,13 @@ pub enum OperatorAssociativity {
     NonAssociative,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum StringRequiredContext {
+    #[default]
+    None,
+    UniformForTest,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseOutput {
     pub ast: Option<SurfaceAst>,
@@ -109,6 +123,7 @@ struct Parser {
     request: ParseRequest,
     nodes: Vec<SurfaceNode>,
     token_node_ids: Vec<SurfaceNodeId>,
+    recovery_node_ids: Vec<SurfaceNodeId>,
     diagnostics: Vec<SyntaxDiagnostic>,
     fixity: BTreeMap<Arc<str>, OperatorFixityEntry>,
 }
@@ -125,6 +140,7 @@ impl Parser {
             request,
             nodes: Vec::new(),
             token_node_ids: Vec::new(),
+            recovery_node_ids: Vec::new(),
             diagnostics: Vec::new(),
             fixity,
         }
@@ -132,6 +148,12 @@ impl Parser {
 
     fn parse(mut self) -> ParseOutput {
         self.add_token_nodes();
+        if self.recover_syntax() == RecoveryOutcome::Unrecoverable {
+            return ParseOutput {
+                ast: None,
+                diagnostics: self.diagnostics,
+            };
+        }
         let expression_root = self.parse_expression();
         let root = self.add_root(expression_root);
         ParseOutput {
@@ -168,12 +190,155 @@ impl Parser {
         }
     }
 
+    fn recover_syntax(&mut self) -> RecoveryOutcome {
+        self.recover_missing_string_literal();
+        let block_outcome = self.recover_block_ends();
+        if block_outcome == RecoveryOutcome::Unrecoverable {
+            RecoveryOutcome::Unrecoverable
+        } else {
+            RecoveryOutcome::Recovered
+        }
+    }
+
+    fn recover_missing_string_literal(&mut self) {
+        if self.request.string_required_context != StringRequiredContext::UniformForTest {
+            return;
+        }
+
+        let missing_position = self
+            .request
+            .tokens
+            .iter()
+            .position(|token| token.kind != ParserTokenKind::StringLiteral);
+        let (position, span) = missing_position.map_or_else(
+            || {
+                let offset = self.request.tokens.last().map_or(0, |token| token.span.end);
+                (
+                    None,
+                    SourceRange {
+                        source_id: self.request.source_id,
+                        start: offset,
+                        end: offset,
+                    },
+                )
+            },
+            |position| {
+                let token = &self.request.tokens[position];
+                (
+                    Some(position),
+                    SourceRange {
+                        source_id: token.span.source_id,
+                        start: token.span.start,
+                        end: token.span.start,
+                    },
+                )
+            },
+        );
+
+        if position.is_none() && !self.request.tokens.is_empty() {
+            return;
+        }
+
+        let diagnostic_primary =
+            position.map_or(span, |position| self.request.tokens[position].span);
+        self.diagnostics.push(
+            SyntaxDiagnostic::new(
+                SyntaxDiagnosticCode::MissingStringLiteral,
+                "expected string literal at this grammar position",
+                diagnostic_primary,
+            )
+            .with_recovery_note("insert a string literal before continuing"),
+        );
+        self.add_recovery_node(SyntaxRecoveryKind::MissingStringLiteral, span, Vec::new());
+    }
+
+    fn recover_block_ends(&mut self) -> RecoveryOutcome {
+        let tokens = self.request.tokens.clone();
+        if let [token] = tokens.as_slice()
+            && is_end_keyword(token)
+        {
+            self.diagnostics.push(
+                SyntaxDiagnostic::new(
+                    SyntaxDiagnosticCode::UnrecoverableInput,
+                    "`end` has no matching block opener",
+                    token.span,
+                )
+                .with_recovery_note(
+                    "remove the stray `end` or add a matching block opener before it",
+                ),
+            );
+            return RecoveryOutcome::Unrecoverable;
+        }
+
+        if tokens.iter().any(is_end_keyword) {
+            return RecoveryOutcome::Recovered;
+        }
+
+        let mut stack = tokens
+            .iter()
+            .enumerate()
+            .filter(|(_, token)| is_block_start_keyword(token))
+            .map(|(position, token)| BlockStart {
+                keyword: token.text.clone(),
+                span: token.span,
+                token_node_id: self.token_node_ids[position],
+            })
+            .collect::<Vec<_>>();
+
+        if !stack.is_empty() {
+            let offset = tokens.last().map_or(0, |token| token.span.end);
+            self.recover_missing_ends(&mut stack, offset);
+        }
+
+        RecoveryOutcome::Recovered
+    }
+
+    fn recover_missing_ends(&mut self, stack: &mut Vec<BlockStart>, insertion_offset: usize) {
+        while let Some(block) = stack.pop() {
+            let span = SourceRange {
+                source_id: self.request.source_id,
+                start: insertion_offset,
+                end: insertion_offset,
+            };
+            self.diagnostics.push(
+                SyntaxDiagnostic::new(
+                    SyntaxDiagnosticCode::MissingEnd,
+                    format!("missing `end` for `{}` block", block.keyword),
+                    span,
+                )
+                .with_secondary([SourceAnchor::Range(block.span)])
+                .with_recovery_note("insert `end` before this synchronization point"),
+            );
+            self.add_recovery_node(
+                SyntaxRecoveryKind::MissingEnd,
+                span,
+                vec![block.token_node_id],
+            );
+        }
+    }
+
+    fn add_recovery_node(
+        &mut self,
+        recovery_kind: SyntaxRecoveryKind,
+        range: SourceRange,
+        children: Vec<SurfaceNodeId>,
+    ) -> SurfaceNodeId {
+        let id = self.push_node(SurfaceNode::recovered(
+            SurfaceNodeKind::ErrorRecovery(recovery_kind),
+            range,
+            children,
+        ));
+        self.recovery_node_ids.push(id);
+        id
+    }
+
     fn add_root(&mut self, expression_root: Option<SurfaceNodeId>) -> SurfaceNodeId {
         let children = self
             .token_node_ids
             .iter()
             .copied()
             .chain(expression_root)
+            .chain(self.recovery_node_ids.iter().copied())
             .collect::<Vec<_>>();
         let range = self
             .request
@@ -224,6 +389,19 @@ impl Parser {
         }
         self.fixity.get(&token.text)
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RecoveryOutcome {
+    Recovered,
+    Unrecoverable,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct BlockStart {
+    keyword: Arc<str>,
+    span: SourceRange,
+    token_node_id: SurfaceNodeId,
 }
 
 struct ExpressionParser<'a> {
@@ -343,6 +521,29 @@ fn is_operand_token(kind: ParserTokenKind) -> bool {
     )
 }
 
+fn is_reserved_word_token(token: &ParserToken, spelling: &str) -> bool {
+    token.kind == ParserTokenKind::ReservedWord && token.text.as_ref() == spelling
+}
+
+fn is_end_keyword(token: &ParserToken) -> bool {
+    is_reserved_word_token(token, "end")
+}
+
+fn is_block_start_keyword(token: &ParserToken) -> bool {
+    token.kind == ParserTokenKind::ReservedWord
+        && matches!(
+            token.text.as_ref(),
+            "algorithm"
+                | "definition"
+                | "registration"
+                | "proof"
+                | "now"
+                | "hereby"
+                | "case"
+                | "suppose"
+        )
+}
+
 fn surface_token_kind(kind: ParserTokenKind) -> SurfaceTokenKind {
     match kind {
         ParserTokenKind::Identifier => SurfaceTokenKind::Identifier,
@@ -369,13 +570,15 @@ fn surface_associativity(associativity: OperatorAssociativity) -> SurfaceOperato
 mod tests {
     use super::{
         OperatorAssociativity, OperatorFixityEntry, ParseRequest, ParserToken, ParserTokenKind,
-        parse,
+        StringRequiredContext, parse,
     };
     use mizar_session::{
         BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceId,
         SourceRange,
     };
-    use mizar_syntax::{SurfaceNodeKind, SurfaceOperatorAssociativity, SyntaxDiagnosticCode};
+    use mizar_syntax::{
+        SurfaceNodeKind, SurfaceOperatorAssociativity, SyntaxDiagnosticCode, SyntaxRecoveryKind,
+    };
 
     #[test]
     fn well_formed_token_stream_parses_to_surface_ast_preserving_order_and_ranges() {
@@ -546,8 +749,239 @@ mod tests {
     }
 
     #[test]
-    fn non_associative_operator_chains_emit_diagnostic() {
+    fn missing_end_recovers_at_eof_with_error_node() {
         let source_id = source_id(5);
+        let tokens = vec![
+            token(
+                source_id,
+                ParserTokenKind::ReservedWord,
+                "definition",
+                0,
+                10,
+            ),
+            token(source_id, ParserTokenKind::ReservedWord, "theorem", 11, 18),
+        ];
+
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(output.diagnostics[0].code, SyntaxDiagnosticCode::MissingEnd);
+        assert_eq!(
+            output.diagnostics[0].primary,
+            SourceRange {
+                source_id,
+                start: 18,
+                end: 18,
+            }
+        );
+        assert_eq!(
+            output.diagnostics[0].secondary,
+            vec![mizar_session::SourceAnchor::Range(SourceRange {
+                source_id,
+                start: 0,
+                end: 10,
+            })]
+        );
+        let ast = output
+            .ast
+            .expect("missing end should recover a surface AST");
+        let recovery_node = ast
+            .nodes
+            .iter()
+            .enumerate()
+            .find(|node| {
+                matches!(
+                    &node.1.kind,
+                    SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingEnd)
+                )
+            })
+            .expect("missing end should create an explicit recovery node");
+        assert!(recovery_node.1.recovered);
+        assert_eq!(
+            recovery_node.1.range,
+            SourceRange {
+                source_id,
+                start: 18,
+                end: 18,
+            }
+        );
+        assert_eq!(recovery_node.1.children, vec![ast.token_nodes[0]]);
+        let root = ast.root.expect("recovered AST should have a root");
+        assert!(
+            ast.node(root)
+                .unwrap()
+                .children
+                .iter()
+                .any(|child| child.index() == recovery_node.0),
+            "recovery node should be reachable from the root"
+        );
+    }
+
+    #[test]
+    fn block_content_keywords_do_not_trigger_missing_end_recovery() {
+        let source_id = source_id(13);
+        let tokens = vec![
+            token(
+                source_id,
+                ParserTokenKind::ReservedWord,
+                "definition",
+                0,
+                10,
+            ),
+            token(source_id, ParserTokenKind::ReservedWord, "func", 11, 15),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 16, 19),
+        ];
+
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert!(output.diagnostics.is_empty());
+        assert!(
+            output.ast.is_some(),
+            "matching end should keep the minimal surface AST recoverable"
+        );
+    }
+
+    #[test]
+    fn algorithm_do_body_does_not_make_outer_end_unrecoverable() {
+        let source_id = source_id(14);
+        let tokens = vec![
+            token(
+                source_id,
+                ParserTokenKind::ReservedWord,
+                "definition",
+                0,
+                10,
+            ),
+            token(
+                source_id,
+                ParserTokenKind::ReservedWord,
+                "algorithm",
+                11,
+                20,
+            ),
+            token(source_id, ParserTokenKind::ReservedWord, "do", 21, 23),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 24, 27),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 28, 31),
+        ];
+
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert!(output.diagnostics.is_empty());
+        assert!(
+            output.ast.is_some(),
+            "nested algorithm/do ends should not make the outer end stray"
+        );
+    }
+
+    #[test]
+    fn unrecoverable_stream_returns_no_ast_with_diagnostic() {
+        let source_id = source_id(6);
+        let tokens = vec![token(source_id, ParserTokenKind::ReservedWord, "end", 0, 3)];
+
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert!(output.ast.is_none());
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::UnrecoverableInput
+        );
+        assert_eq!(
+            output.diagnostics[0].primary,
+            SourceRange {
+                source_id,
+                start: 0,
+                end: 3,
+            }
+        );
+    }
+
+    #[test]
+    fn missing_string_literal_in_string_required_context_emits_diagnostic() {
+        let source_id = source_id(7);
+        let tokens = vec![token(
+            source_id,
+            ParserTokenKind::Identifier,
+            "not_a_string",
+            0,
+            12,
+        )];
+
+        let output = parse(
+            ParseRequest::new(source_id, Edition::new("2026"), tokens, Vec::new())
+                .with_string_required_context(StringRequiredContext::UniformForTest),
+        );
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MissingStringLiteral
+        );
+        assert_eq!(
+            output.diagnostics[0].primary,
+            SourceRange {
+                source_id,
+                start: 0,
+                end: 12,
+            }
+        );
+        let ast = output
+            .ast
+            .expect("missing string literal should recover a surface AST");
+        let recovery_node = ast
+            .nodes
+            .iter()
+            .enumerate()
+            .find(|node| {
+                matches!(
+                    &node.1.kind,
+                    SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingStringLiteral)
+                )
+            })
+            .expect("missing string literal should create an explicit recovery node");
+        assert!(recovery_node.1.recovered);
+        assert_eq!(
+            recovery_node.1.range,
+            SourceRange {
+                source_id,
+                start: 0,
+                end: 0,
+            }
+        );
+        let root = ast.root.expect("recovered AST should have a root");
+        assert!(
+            ast.node(root)
+                .unwrap()
+                .children
+                .iter()
+                .any(|child| child.index() == recovery_node.0),
+            "recovery node should be reachable from the root"
+        );
+    }
+
+    #[test]
+    fn non_associative_operator_chains_emit_diagnostic() {
+        let source_id = source_id(8);
         let tokens = vec![
             token(source_id, ParserTokenKind::Identifier, "a", 0, 1),
             token(source_id, ParserTokenKind::ReservedSymbol, "=", 2, 3),
@@ -595,7 +1029,7 @@ mod tests {
 
     #[test]
     fn different_non_associative_operators_at_same_precedence_do_not_chain_diagnose() {
-        let source_id = source_id(6);
+        let source_id = source_id(9);
         let tokens = vec![
             token(source_id, ParserTokenKind::Identifier, "a", 0, 1),
             token(source_id, ParserTokenKind::ReservedSymbol, "=", 2, 3),
@@ -619,7 +1053,7 @@ mod tests {
 
     #[test]
     fn recovered_and_unknown_tokens_do_not_become_infix_operators() {
-        let source_id = source_id(7);
+        let source_id = source_id(10);
         for kind in [ParserTokenKind::ErrorRecovery, ParserTokenKind::Unknown] {
             let tokens = vec![
                 token(source_id, ParserTokenKind::Identifier, "a", 0, 1),
@@ -646,7 +1080,7 @@ mod tests {
 
     #[test]
     fn separator_and_unknown_tokens_do_not_satisfy_right_operand() {
-        let source_id = source_id(8);
+        let source_id = source_id(11);
         for kind in [
             ParserTokenKind::ReservedSymbol,
             ParserTokenKind::ReservedWord,
@@ -687,7 +1121,7 @@ mod tests {
 
     #[test]
     fn max_precedence_left_and_non_associative_operators_keep_binding_shape() {
-        let source_id = source_id(9);
+        let source_id = source_id(12);
         let tokens = vec![
             token(source_id, ParserTokenKind::Identifier, "a", 0, 1),
             token(source_id, ParserTokenKind::UserSymbol, "++", 2, 4),

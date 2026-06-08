@@ -24,7 +24,7 @@
 | [preprocess.md](./preprocess.md) | `crates/mizar-frontend/src/preprocess.rs` | Step 2: `PreprocessedSource`、コメント／ドキュメントコメントの分離、注釈構文の保持、浅いインポート事前走査の統制 | Implemented |
 | [lexical_env.md](./lexical_env.md) | `crates/mizar-frontend/src/lexical_env.rs` | Step 3: インポートスタブと依存字句サマリからのアクティブ字句環境の構築 | Implemented through task 6 |
 | [lexing.md](./lexing.md) | `crates/mizar-frontend/src/lexing.rs` | Step 4: 生スキャン・スコープスケルトン・文脈依存の曖昧性解消による `TokenStream` | Implemented |
-| [parsing.md](./parsing.md) | `crates/mizar-frontend/src/parsing.rs` | Step 5: parser seam の呼び出し、パーサー入力の組み立て、`SurfaceAst` の受け渡し | Implemented through task 11; recovery pending |
+| [parsing.md](./parsing.md) | `crates/mizar-frontend/src/parsing.rs` | Step 5: parser seam の呼び出し、パーサー入力の組み立て、`SurfaceAst` の受け渡し | Implemented through task 12; full grammar recovery pending |
 | [span_bridge.md](./span_bridge.md) | `crates/mizar-frontend/src/span_bridge.rs` | 字句解析器のバイトスパンから `mizar-session` の `SourceRange` への座標橋渡し | Implemented for task 1 |
 | [orchestration.md](./orchestration.md) | `crates/mizar-frontend/src/orchestration.rs` | フェーズ 1〜3 のエンドツーエンド統制（Step 1〜5）、診断統合、`FrontendOutput` | Draft |
 | [todo.md](./todo.md) | `crates/mizar-frontend` | モジュール実装順序、状態、残作業 | Living |
@@ -37,7 +37,7 @@
 - `PreprocessedSource` を生成する前処理の統制（コメント、ドキュメントコメント、字句テキスト内の注釈構文保持、浅いインポートスタブ）。
 - 浅いインポートと依存字句サマリからのアクティブ字句環境の構築。
 - session の `SourceRange` スパンを持つ `TokenStream` を生成する文脈依存トークン化。
-- 任意の AST を生成する parser seam の呼び出し（スタブの seam では `ast = None`、実 seam では `SurfaceAst`）。
+- 任意の AST を生成する parser seam の呼び出し（スタブの seam または実 parser の回復不能入力では `ast = None`、回復可能な実 parser 入力では `SurfaceAst`）。
 - 字句解析器スパンから session の `SourceRange` への座標橋渡し。
 - 単一の `FrontendOutput` への決定的な診断統合。
 

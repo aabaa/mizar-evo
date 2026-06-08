@@ -127,10 +127,10 @@ the real parser seam is enabled; with `StubParserSeam` no syntax diagnostics are
 emitted.
 
 With the stub parser seam, `ast = None` is the expected placeholder result. The
-task-11 real parser seam returns a minimal `SurfaceAst` for recovered token
-streams; later parser recovery tasks may use `ast = None` when parsing cannot
-recover enough structure for downstream phases. The lexical, preprocessing, and
-syntax diagnostics are still returned.
+real parser seam returns a minimal `SurfaceAst` for recovered token streams and
+may return `ast = None` when parsing cannot recover enough structure for
+downstream phases. The lexical, preprocessing, and syntax diagnostics are still
+returned.
 
 ## Dependencies
 

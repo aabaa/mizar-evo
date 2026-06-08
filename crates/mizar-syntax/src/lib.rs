@@ -145,6 +145,8 @@ pub enum SurfaceOperatorAssociativity {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SyntaxRecoveryKind {
     ErrorToken,
+    MissingEnd,
+    MissingStringLiteral,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -170,6 +172,16 @@ impl SyntaxDiagnostic {
             recovery_note: None,
         }
     }
+
+    pub fn with_secondary(mut self, secondary: impl IntoIterator<Item = SourceAnchor>) -> Self {
+        self.secondary.extend(secondary);
+        self
+    }
+
+    pub fn with_recovery_note(mut self, note: impl Into<Arc<str>>) -> Self {
+        self.recovery_note = Some(note.into());
+        self
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -177,4 +189,7 @@ pub enum SyntaxDiagnosticCode {
     UnexpectedErrorToken,
     DanglingOperator,
     NonAssociativeOperatorChain,
+    MissingEnd,
+    MissingStringLiteral,
+    UnrecoverableInput,
 }
