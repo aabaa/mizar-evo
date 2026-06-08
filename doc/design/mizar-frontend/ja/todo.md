@@ -18,7 +18,7 @@
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [x] |
 | parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] task 12 まで実装済み |
-| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [~] task 13 まで実装済み |
+| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [~] task 14 まで実装済み |
 
 `mizar-frontend` は統制を担う crate なので、フェーズの順にボトムアップで構築する。まず座標の橋渡しを用意し、続いてパイプライン順に Step 1〜5、最後にエンドツーエンドのコーディネータを作る。`span_bridge` は後続の各フェーズが参照する共有プリミティブであり、`orchestration` はパイプライン全体を配線する唯一のモジュールである。
 
@@ -26,7 +26,7 @@
 
 ## crate の前提条件
 
-フロントエンドの基盤は `mizar-session` と `mizar-lexer` だけで始めた。task 11 は、実 parser seam に必要な最小限の `mizar-syntax::SurfaceAst` 境界と `mizar-parser` エントリポイントへの必須依存を追加する。task 12 は、その境界に最小限の parser recovery passthrough を追加する。タスク 1〜10 と task 13 の coordinator 経路は、引き続き `StubParserSeam` で有効である。task 14 に残る失敗アサーションと実 parser 検証は、task 12 の parser/syntax 境界と task 13 の coordinator の上に構築する。
+フロントエンドの基盤は `mizar-session` と `mizar-lexer` だけで始めた。task 11 は、実 parser seam に必要な最小限の `mizar-syntax::SurfaceAst` 境界と `mizar-parser` エントリポイントへの必須依存を追加する。task 12 は、その境界に最小限の parser recovery passthrough を追加する。タスク 1〜10 と task 13〜14 の coordinator 経路は、引き続き `StubParserSeam` で有効である。task 14 の失敗アサーションと実 parser 検証は、task 12 の parser/syntax 境界と task 13 の coordinator の上に構築する。
 
 ## 解決済みおよび保留中の決定
 
@@ -134,7 +134,7 @@
     - テスト: `StubParserSeam` では、整形式のソースが、source、前処理出力、tokens、`ast = None`、パーサー診断なしを返す。統合順序が繰り返し実行で同一であり、同じ class / start / diagnostic code を持つ診断も決定的に並ぶ。実 parser seam では、`ast = Some` と構文診断順序の検証を追加する。
     - 依存: 9、10。実 parser の検証は 12 に依存する。仕様: [orchestration.md](./orchestration.md)「Algorithm / Logic」「Diagnostic Merge Order」。
 
-14. **回復不能な失敗の処理とエンドツーエンド出力。** [ ]
+14. **回復不能な失敗の処理とエンドツーエンド出力。** [x]
     - すでに配線済みの `FrontendError` 経路について、Step 1 の読み込み失敗、ソース登録／前処理／字句解析からの `SpanBridgeError` 不変条件違反、および字句環境構築からの `FrontendLexicalEnvironmentError` の網羅を広げる。回復可能な問題は `FrontendOutput` 内の診断として保つ。
     - テスト: Step 1 の読み込み失敗が、ファイルレベルの `DiagnosticLocation::SourceLoad` 診断を伴う `FrontendError` を返し、出力は返さないことを完成させる。ソース読み込み診断はゼロ長の `SourceRange` を捏造しない。`ast = None` を返すパーサーの継ぎ目が、先行する診断を保持する。範囲付きの統合診断が妥当な `SourceRange` を運ぶ。span-bridge と字句環境の回復不能失敗 fixture が、対応する `FrontendError` variant を返す。
     - 依存: 13。仕様: [orchestration.md](./orchestration.md)「Error Handling」。

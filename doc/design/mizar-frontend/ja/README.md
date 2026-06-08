@@ -26,7 +26,7 @@
 | [lexing.md](./lexing.md) | `crates/mizar-frontend/src/lexing.rs` | Step 4: 生スキャン・スコープスケルトン・文脈依存の曖昧性解消による `TokenStream` | Implemented |
 | [parsing.md](./parsing.md) | `crates/mizar-frontend/src/parsing.rs` | Step 5: parser seam の呼び出し、パーサー入力の組み立て、`SurfaceAst` の受け渡し | Implemented through task 12; full grammar recovery pending |
 | [span_bridge.md](./span_bridge.md) | `crates/mizar-frontend/src/span_bridge.rs` | 字句解析器のバイトスパンから `mizar-session` の `SourceRange` への座標橋渡し | Implemented for task 1 |
-| [orchestration.md](./orchestration.md) | `crates/mizar-frontend/src/orchestration.rs` | フェーズ 1〜3 のエンドツーエンド統制（Step 1〜5）、診断統合、`FrontendOutput` | Implemented through task 13 |
+| [orchestration.md](./orchestration.md) | `crates/mizar-frontend/src/orchestration.rs` | フェーズ 1〜3 のエンドツーエンド統制（Step 1〜5）、診断統合、`FrontendOutput` | Implemented through task 14 |
 | [todo.md](./todo.md) | `crates/mizar-frontend` | モジュール実装順序、状態、残作業 | Living |
 
 ## crate 境界

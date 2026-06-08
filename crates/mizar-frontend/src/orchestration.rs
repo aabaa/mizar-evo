@@ -525,13 +525,16 @@ mod tests {
         LexicalEnvironmentDiagnostic, LexicalEnvironmentDiagnosticCode, LexicalEnvironmentRequest,
         LexicalSummaryProvider, ResolvedImports,
     };
-    use crate::parsing::{MizarParserSeam, StubParserSeam};
-    use crate::source::{FrontendSourceLoader, SourceUnitRequest};
+    use crate::parsing::{MizarParserSeam, ParseOutput, ParseRequest, ParserSeam, StubParserSeam};
+    use crate::source::{FrontendSourceLoader, SourceUnit, SourceUnitLoader, SourceUnitRequest};
+    use crate::span_bridge::SpanBridgeError;
     use mizar_session::{
-        BuildSnapshotId, DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath,
-        PackageId, SessionIdAllocator, SourceAnchor, SourceId, SourceInput, SourceOriginInput,
-        SourceRange, normalize_path,
+        BuildSnapshotId, DiskSourceLoader, Edition, GeneratedSourceKind,
+        InMemorySessionIdAllocator, LineMap, ModulePath, PackageId, SessionIdAllocator,
+        SourceAnchor, SourceId, SourceInput, SourceLoadError, SourceMapError, SourceOrigin,
+        SourceOriginInput, SourceRange, hash_text, normalize_path,
     };
+    use mizar_syntax::{SyntaxDiagnostic, SyntaxDiagnosticCode};
     use std::fs;
     use std::io;
     use std::path::{Path, PathBuf};
@@ -739,10 +742,284 @@ mod tests {
             panic!("expected source-load error");
         };
         assert_eq!(diagnostic.class, DiagnosticClass::SourceLoad);
+        assert_eq!(diagnostic.code, DiagnosticCode::SourceLoad);
         assert!(matches!(
             &diagnostic.location,
             DiagnosticLocation::SourceLoad(SourceLoadLocation::Path { .. })
         ));
+    }
+
+    #[test]
+    fn source_load_error_for_open_buffer_keeps_non_range_location() {
+        let fixture = PackageFixture::new();
+        fixture.write("src/open_buffer.miz", "definition\nend;\n");
+        let frontend = frontend_for_fixture(&fixture, StubParserSeam);
+        let ids = InMemorySessionIdAllocator::new();
+        let request = fixture.open_buffer_request(
+            "src/open_buffer.miz",
+            "file:///fixture/src/open_buffer.miz",
+            2,
+            1,
+            "definition\nend;\n",
+        );
+
+        let error = frontend
+            .run(request, &ids)
+            .expect_err("stale open buffer should be a FrontendError");
+
+        let FrontendError::SourceLoad { source, diagnostic } = error else {
+            panic!("expected source-load error");
+        };
+        assert!(matches!(
+            source.as_ref(),
+            SourceLoadError::StaleLspDocumentVersion {
+                expected: 2,
+                actual: 1,
+            }
+        ));
+        assert_eq!(diagnostic.class, DiagnosticClass::SourceLoad);
+        assert!(matches!(
+            &diagnostic.location,
+            DiagnosticLocation::SourceLoad(SourceLoadLocation::OpenBuffer { uri })
+                if uri == "file:///fixture/src/open_buffer.miz"
+        ));
+        assert!(
+            !matches!(diagnostic.location, DiagnosticLocation::SourceRange(_)),
+            "source-load diagnostics must not fabricate a zero-length SourceRange"
+        );
+    }
+
+    #[test]
+    fn source_load_error_for_generated_source_keeps_anchor_location() {
+        let fixture = PackageFixture::new();
+        let anchor = SourceAnchor::Range(SourceRange {
+            source_id: source_id(),
+            start: 1,
+            end: 4,
+        });
+        let module_path = ModulePath::new("generated.failure");
+        let frontend = Frontend::new(
+            ErrorSourceLoader {
+                error: SourceLoadError::GeneratedSourceWithoutMetadata {
+                    module_path: module_path.clone(),
+                },
+            },
+            EmptyProvider,
+            StubParserSeam,
+        );
+        let ids = InMemorySessionIdAllocator::new();
+
+        let error = frontend
+            .run(
+                fixture.generated_request(
+                    "src/generated_failure.miz",
+                    module_path,
+                    "generated text",
+                    Some(anchor.clone()),
+                ),
+                &ids,
+            )
+            .expect_err("generated load failure should be a FrontendError");
+
+        let FrontendError::SourceLoad { diagnostic, .. } = error else {
+            panic!("expected source-load error");
+        };
+        assert_eq!(diagnostic.code, DiagnosticCode::SourceLoad);
+        assert_eq!(diagnostic.class, DiagnosticClass::SourceLoad);
+        assert!(matches!(
+            &diagnostic.location,
+            DiagnosticLocation::SourceLoad(SourceLoadLocation::Generated {
+                anchor: Some(returned_anchor),
+            }) if returned_anchor == &anchor
+        ));
+        assert!(
+            !matches!(diagnostic.location, DiagnosticLocation::SourceRange(_)),
+            "generated source-load diagnostics must not fabricate a SourceRange"
+        );
+    }
+
+    #[test]
+    fn span_bridge_registration_hard_failure_returns_frontend_error() {
+        let fixture = PackageFixture::new();
+        fixture.write("src/span_bridge_registration.miz", "definition\nend;\n");
+        let frontend = Frontend::new(
+            BrokenSourceLoader::new(BrokenLineMapMode::WrongSourceId),
+            EmptyProvider,
+            StubParserSeam,
+        );
+        let ids = InMemorySessionIdAllocator::new();
+
+        let error = frontend
+            .run(fixture.request("src/span_bridge_registration.miz"), &ids)
+            .expect_err("broken source registration should be a FrontendError");
+
+        let FrontendError::SpanBridge { source } = error else {
+            panic!("expected span-bridge error");
+        };
+        assert!(matches!(
+            source,
+            SpanBridgeError::SourceMap {
+                source: SourceMapError::UnknownSourceId { .. },
+            }
+        ));
+    }
+
+    #[test]
+    fn span_bridge_preprocess_hard_failure_returns_frontend_error() {
+        let fixture = PackageFixture::new();
+        fixture.write("src/span_bridge_preprocess.miz", "definition\nend;\n");
+        let frontend = Frontend::new(
+            BrokenSourceLoader::new(BrokenLineMapMode::WrongText),
+            EmptyProvider,
+            StubParserSeam,
+        );
+        let ids = InMemorySessionIdAllocator::new();
+
+        let error = frontend
+            .run(fixture.request("src/span_bridge_preprocess.miz"), &ids)
+            .expect_err("broken preprocess mapping should be a FrontendError");
+
+        let FrontendError::SpanBridge { source } = error else {
+            panic!("expected span-bridge error");
+        };
+        assert!(matches!(
+            source,
+            SpanBridgeError::SourceMap {
+                source: SourceMapError::RangeOutsideSourceText { .. },
+            }
+        ));
+    }
+
+    #[test]
+    fn span_bridge_lexing_hard_failure_returns_frontend_error() {
+        let fixture = PackageFixture::new();
+        fixture.write("src/span_bridge_lexing.miz", "a b");
+        let frontend = Frontend::new(
+            BrokenSourceLoader::new(BrokenLineMapMode::LexingTokenBoundary),
+            EmptyProvider,
+            StubParserSeam,
+        );
+        let ids = InMemorySessionIdAllocator::new();
+
+        let error = frontend
+            .run(fixture.request("src/span_bridge_lexing.miz"), &ids)
+            .expect_err("broken lexing span mapping should be a FrontendError");
+
+        let FrontendError::SpanBridge { source } = error else {
+            panic!("expected span-bridge error");
+        };
+        assert!(matches!(
+            source,
+            SpanBridgeError::SourceMap {
+                source: SourceMapError::OffsetNotUtf8Boundary { offset: 2, .. },
+            }
+        ));
+    }
+
+    #[test]
+    fn lexical_environment_hard_failure_returns_frontend_error() {
+        let fixture = PackageFixture::new();
+        fixture.write(
+            "src/lexical_environment_hard_failure.miz",
+            "definition\nend;\n",
+        );
+        let frontend =
+            frontend_for_fixture_with_provider(&fixture, FailingProvider, StubParserSeam);
+        let ids = InMemorySessionIdAllocator::new();
+
+        let error = frontend
+            .run(
+                fixture.request("src/lexical_environment_hard_failure.miz"),
+                &ids,
+            )
+            .expect_err("provider hard failure should be a FrontendError");
+
+        let FrontendError::LexicalEnvironment { source } = error else {
+            panic!("expected lexical-environment error");
+        };
+        assert_eq!(
+            source,
+            crate::lexical_env::FrontendLexicalEnvironmentError::ProviderUnavailable {
+                message: "fixture provider unavailable".to_owned(),
+            }
+        );
+    }
+
+    #[test]
+    fn none_ast_parser_seam_preserves_earlier_diagnostics() {
+        let fixture = PackageFixture::new();
+        fixture.write("src/none_ast_recovered.miz", full_merge_fixture_text());
+        let frontend =
+            frontend_for_fixture_with_provider(&fixture, DiagnosticProvider, NoneAstParserSeam);
+        let ids = InMemorySessionIdAllocator::new();
+
+        let output = frontend
+            .run(fixture.request("src/none_ast_recovered.miz"), &ids)
+            .expect("recoverable diagnostics should remain in FrontendOutput");
+
+        assert!(output.ast.is_none());
+        assert_eq!(
+            consecutive_classes(&output.diagnostics),
+            vec![
+                DiagnosticClass::ImportPrescan,
+                DiagnosticClass::LexicalEnvironment,
+                DiagnosticClass::ScopeSkeleton,
+                DiagnosticClass::Tokenization,
+                DiagnosticClass::Syntax,
+            ]
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.class == DiagnosticClass::ImportPrescan),
+            "pre-parser diagnostics should be preserved when the parser returns ast = None"
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.class == DiagnosticClass::Syntax),
+            "test seam should still contribute syntax diagnostics"
+        );
+    }
+
+    #[test]
+    fn merged_range_backed_diagnostics_have_valid_session_ranges() {
+        let fixture = PackageFixture::new();
+        fixture.write("src/range_backed.miz", full_merge_fixture_text());
+        let frontend =
+            frontend_for_fixture_with_provider(&fixture, DiagnosticProvider, MizarParserSeam);
+        let ids = InMemorySessionIdAllocator::new();
+
+        let output = frontend
+            .run(fixture.request("src/range_backed.miz"), &ids)
+            .expect("recoverable diagnostics should stay in FrontendOutput");
+
+        assert!(!output.diagnostics.is_empty());
+        assert!(
+            output.diagnostics.iter().all(|diagnostic| matches!(
+                diagnostic.location,
+                DiagnosticLocation::SourceRange(_)
+            )),
+            "returned phase diagnostics should be range-backed"
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| !diagnostic.secondary.is_empty()),
+            "fixture should exercise secondary range validation"
+        );
+        for diagnostic in &output.diagnostics {
+            let DiagnosticLocation::SourceRange(primary) = diagnostic.location else {
+                unreachable!("asserted above");
+            };
+            assert_valid_source_range(&output.source, primary);
+            for anchor in &diagnostic.secondary {
+                assert_valid_source_anchor(&output.source, anchor);
+            }
+        }
     }
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -785,6 +1062,134 @@ mod tests {
                     module_id: None,
                 }],
             })
+        }
+    }
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    struct FailingProvider;
+
+    impl LexicalSummaryProvider for FailingProvider {
+        fn resolve_imports(
+            &self,
+            _request: &LexicalEnvironmentRequest<'_>,
+        ) -> Result<ResolvedImports, crate::lexical_env::FrontendLexicalEnvironmentError> {
+            Err(
+                crate::lexical_env::FrontendLexicalEnvironmentError::ProviderUnavailable {
+                    message: "fixture provider unavailable".to_owned(),
+                },
+            )
+        }
+    }
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    struct NoneAstParserSeam;
+
+    impl ParserSeam for NoneAstParserSeam {
+        type Ast = ();
+        type Diagnostic = SyntaxDiagnostic;
+
+        fn parse(&self, request: ParseRequest<'_>) -> ParseOutput<Self::Ast, Self::Diagnostic> {
+            let primary = request
+                .tokens
+                .tokens
+                .first()
+                .map(|token| token.span)
+                .unwrap_or(SourceRange {
+                    source_id: request.tokens.source_id,
+                    start: 0,
+                    end: 0,
+                });
+            ParseOutput::new(
+                None,
+                vec![
+                    SyntaxDiagnostic::new(
+                        SyntaxDiagnosticCode::UnrecoverableInput,
+                        "fixture parser could not recover an AST",
+                        primary,
+                    )
+                    .with_recovery_note("fixture parser stopped after preserving diagnostics"),
+                ],
+            )
+        }
+    }
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    enum BrokenLineMapMode {
+        WrongSourceId,
+        WrongText,
+        LexingTokenBoundary,
+    }
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    struct BrokenSourceLoader {
+        mode: BrokenLineMapMode,
+    }
+
+    impl BrokenSourceLoader {
+        fn new(mode: BrokenLineMapMode) -> Self {
+            Self { mode }
+        }
+    }
+
+    impl SourceUnitLoader for BrokenSourceLoader {
+        fn load_source_unit(
+            &self,
+            request: SourceUnitRequest,
+            ids: &dyn SessionIdAllocator,
+        ) -> Result<SourceUnit, SourceLoadError> {
+            let source_id = ids
+                .next_source_id(request.snapshot)
+                .map_err(|error| SourceLoadError::SourceIdAllocation { error })?;
+            let text: Arc<str> = Arc::from(match self.mode {
+                BrokenLineMapMode::LexingTokenBoundary => "a b",
+                BrokenLineMapMode::WrongSourceId | BrokenLineMapMode::WrongText => {
+                    "definition\nend;\n"
+                }
+            });
+            let line_map = match self.mode {
+                BrokenLineMapMode::WrongSourceId => {
+                    let other_source_id = ids
+                        .next_source_id(request.snapshot)
+                        .map_err(|error| SourceLoadError::SourceIdAllocation { error })?;
+                    LineMap::new(other_source_id, &text)
+                }
+                BrokenLineMapMode::WrongText => LineMap::new(source_id, ""),
+                BrokenLineMapMode::LexingTokenBoundary => LineMap::new(source_id, "aβ"),
+            };
+            let file_path = match &request.input.origin {
+                SourceOriginInput::Disk { path } => path.clone(),
+                _ => PathBuf::from(request.input.normalized_path.as_str()),
+            };
+
+            Ok(SourceUnit {
+                source_id,
+                package_id: request.input.package_id,
+                module_path: request.input.module_path,
+                normalized_path: request.input.normalized_path,
+                edition: request.input.edition,
+                file_path,
+                source_text: text.clone(),
+                source_hash: hash_text(&text),
+                line_map,
+                loading_map: None,
+                origin: SourceOrigin::Disk,
+                generated_anchor: None,
+            })
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    struct ErrorSourceLoader {
+        error: SourceLoadError,
+    }
+
+    impl SourceUnitLoader for ErrorSourceLoader {
+        fn load_source_unit(
+            &self,
+            _request: SourceUnitRequest,
+            _ids: &dyn SessionIdAllocator,
+        ) -> Result<SourceUnit, SourceLoadError> {
+            Err(self.error.clone())
         }
     }
 
@@ -857,6 +1262,31 @@ mod tests {
         classes
     }
 
+    fn assert_valid_source_range(source: &SourceUnit, range: SourceRange) {
+        assert_eq!(range.source_id, source.source_id);
+        source
+            .line_map
+            .validate_range(range)
+            .expect("range-backed diagnostic should be valid in the session line map");
+        assert!(range.start <= range.end);
+        assert!(range.end <= source.source_text.len());
+        assert!(source.source_text.is_char_boundary(range.start));
+        assert!(source.source_text.is_char_boundary(range.end));
+    }
+
+    fn assert_valid_source_anchor(source: &SourceUnit, anchor: &SourceAnchor) {
+        match anchor {
+            SourceAnchor::Range(range) => assert_valid_source_range(source, *range),
+            SourceAnchor::Point { source_id, offset } => {
+                assert_eq!(*source_id, source.source_id);
+                assert!(*offset <= source.source_text.len());
+                assert!(source.source_text.is_char_boundary(*offset));
+            }
+            SourceAnchor::Generated(_) => {}
+            _ => {}
+        }
+    }
+
     fn source_id() -> SourceId {
         InMemorySessionIdAllocator::new()
             .next_source_id(snapshot_id(90))
@@ -918,6 +1348,61 @@ mod tests {
                     normalized_path,
                     edition: Edition::new("2026"),
                     origin: SourceOriginInput::Disk { path },
+                },
+            }
+        }
+
+        fn open_buffer_request(
+            &self,
+            relative: &str,
+            uri: &str,
+            expected_version: i64,
+            actual_version: i64,
+            text: &str,
+        ) -> SourceUnitRequest {
+            let path = self.path(relative);
+            let normalized_path = normalize_path(&self.root, &path).unwrap();
+            SourceUnitRequest {
+                snapshot: snapshot_id(1),
+                input: SourceInput {
+                    package_id: PackageId::new("fixture"),
+                    module_path: ModulePath::new(module_path_from_relative(relative)),
+                    normalized_path,
+                    edition: Edition::new("2026"),
+                    origin: SourceOriginInput::OpenBuffer {
+                        uri: uri.to_owned(),
+                        expected_version,
+                        actual_version,
+                        text: Arc::<str>::from(text),
+                    },
+                },
+            }
+        }
+
+        fn generated_request(
+            &self,
+            relative: &str,
+            module_path: ModulePath,
+            text: &str,
+            anchor: Option<SourceAnchor>,
+        ) -> SourceUnitRequest {
+            if !self.path(relative).exists() {
+                self.write(relative, "");
+            }
+            let path = self.path(relative);
+            let normalized_path = normalize_path(&self.root, &path).unwrap();
+            SourceUnitRequest {
+                snapshot: snapshot_id(1),
+                input: SourceInput {
+                    package_id: PackageId::new("fixture"),
+                    module_path,
+                    normalized_path,
+                    edition: Edition::new("2026"),
+                    origin: SourceOriginInput::Generated {
+                        generator: GeneratedSourceKind::new("fixture-generator"),
+                        text: Arc::<str>::from(text),
+                        anchor,
+                    },
                 },
             }
         }

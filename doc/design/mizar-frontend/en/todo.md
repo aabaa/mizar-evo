@@ -18,7 +18,7 @@
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [x] |
 | parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] implemented through task 12 |
-| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [~] implemented through task 13 |
+| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [~] implemented through task 14 |
 
 `mizar-frontend` is an orchestration crate, so it is built bottom-up by phase:
 the coordinate bridge first, then pipeline Steps 1-5 in order, then the
@@ -34,8 +34,8 @@ The frontend foundation began with `mizar-session` and `mizar-lexer` only. Task
 11 adds hard dependencies on the minimal `mizar-syntax::SurfaceAst` boundary and
 `mizar-parser` entry point needed by the real parser seam. Task 12 adds the
 minimal parser recovery passthrough on that boundary. Tasks 1-10 and the task
-13 coordinator path remain valid with `StubParserSeam`; the remaining task 14
-failure assertions and real-parser assertions build on the task-12 parser/syntax
+13-14 coordinator paths remain valid with `StubParserSeam`; task 14 failure
+assertions and real-parser assertions build on the task-12 parser/syntax
 boundary and the task-13 coordinator.
 
 ## Resolved And Gated Decisions
@@ -339,7 +339,7 @@ should keep `cargo test -p mizar-frontend` green (see
       [orchestration.md](./orchestration.md)
       "Algorithm / Logic", "Diagnostic Merge Order".
 
-14. **Unrecoverable-failure handling and end-to-end output.** [ ]
+14. **Unrecoverable-failure handling and end-to-end output.** [x]
     - Broaden coverage around the already wired `FrontendError` paths for Step 1
       load failures, `SpanBridgeError` invariant violations from source
       registration / preprocessing / lexing, and

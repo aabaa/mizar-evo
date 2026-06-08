@@ -2,8 +2,8 @@
 
 > Canonical language: English. Japanese companion: [../ja/orchestration.md](../ja/orchestration.md).
 
-Status: implemented through task 13. Task 14 will broaden unrecoverable-failure
-coverage and end-to-end failure assertions.
+Status: implemented through task 14, including unrecoverable-failure coverage
+and end-to-end failure assertions.
 
 ## Purpose
 
