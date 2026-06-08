@@ -40,6 +40,7 @@ Architecture documents are numbered by reading order and design dependency, not 
 | [18.dependency_fingerprint.md](./18.dependency_fingerprint.md) | 0, 4-7, 11, 15 | Dependency slices, fingerprints, and incremental rebuild triggers | Draft |
 | [19.failure_semantics.md](./19.failure_semantics.md) | All | Stable failure classification, propagation, and deterministic error ordering | Draft |
 | [20.test_strategy.md](./20.test_strategy.md) | All | Regression strategy prioritizing fail and soundness tests | Draft |
+| [21.ai_agent_interface.md](./21.ai_agent_interface.md) | All, 15 | AI agent operability: safe edit classes, authorization scopes, and the context/patch protocol framework | Draft |
 
 `00.pipeline_overview.md` is the parent document for this directory. Other architecture documents should state which pipeline phase(s) they refine and should link back to the overview in their Context section.
 
@@ -60,6 +61,7 @@ Each architecture document owns one facet of this property:
 | Only changed work is recomputed | Dependency fingerprints and reverse-dependency-cone rebuilds | [18.dependency_fingerprint.md](./18.dependency_fingerprint.md), [11.artifact_and_incremental_build.md](./11.artifact_and_incremental_build.md) |
 | IDE state stays incremental | LSP keeps open-buffer snapshots and answers from indexed artifacts, not reconstructed global state | [12.diagnostics_and_lsp.md](./12.diagnostics_and_lsp.md) |
 | Worker budgets bound peak usage | Per-build memory ceiling and per-backend process budgets | [14.parallel_verification_and_scheduling.md](./14.parallel_verification_and_scheduling.md) |
+| Agent-facing context stays bounded | Per-obligation context budgets and lazily loaded AI-facing data instead of whole-library dumps | [21.ai_agent_interface.md](./21.ai_agent_interface.md) |
 
 This is a qualitative resident-set model, not a performance guarantee: concrete memory budgets and benchmark metrics belong to the test/evaluation strategy ([20.test_strategy.md](./20.test_strategy.md)), not to the normative specifications.
 

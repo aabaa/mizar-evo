@@ -40,6 +40,7 @@
 | [18.dependency_fingerprint.md](./18.dependency_fingerprint.md) | 0, 4-7, 11, 15 | 依存スライス、フィンガープリント、増分再ビルドのトリガ | Draft |
 | [19.failure_semantics.md](./19.failure_semantics.md) | 全体 | 安定した失敗分類、伝播、決定的なエラー順序 | Draft |
 | [20.test_strategy.md](./20.test_strategy.md) | 全体 | 失敗系・健全性のテストを優先する回帰テスト戦略 | Draft |
+| [21.ai_agent_interface.md](./21.ai_agent_interface.md) | 全体, 15 | AI エージェント操作性: 安全編集クラス、認可スコープ、文脈／パッチプロトコルの枠組み | Draft |
 
 `00.pipeline_overview.md` はこのディレクトリの親文書です。他のアーキテクチャ文書は、自分がどのパイプライン段階を詳細化するのかを明記し、「関連文書」節から概要へリンクを張ってください。
 
@@ -60,6 +61,7 @@
 | 変更分のみ再計算 | 依存フィンガープリントと逆依存コーンの再ビルド | [18.dependency_fingerprint.md](./18.dependency_fingerprint.md), [11.artifact_and_incremental_build.md](./11.artifact_and_incremental_build.md) |
 | IDE の状態は増分的に保つ | LSP は未保存バッファのスナップショットを保持し、global な状態を再構築せず index 化された artifact から応答する | [12.diagnostics_and_lsp.md](./12.diagnostics_and_lsp.md) |
 | ワーカー予算でピーク使用量を制限 | ビルド単位のメモリ上限とバックエンドごとのプロセス予算 | [14.parallel_verification_and_scheduling.md](./14.parallel_verification_and_scheduling.md) |
+| エージェント向け文脈を有界に保つ | ライブラリ全体のダンプではなく、obligation 単位の文脈予算と遅延ロードの AI 向けデータ | [21.ai_agent_interface.md](./21.ai_agent_interface.md) |
 
 これは定性的な常駐集合モデルであり、性能保証ではありません。具体的なメモリ予算やベンチマーク指標は、規範的仕様ではなくテスト／評価戦略（[20.test_strategy.md](./20.test_strategy.md)）に属します。
 
