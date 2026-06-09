@@ -76,7 +76,7 @@ pub struct UserSymbolCandidate {
 }
 ```
 
-`UserSymbolKind` は、可視なシンボルのパーサー/リゾルバ上のカテゴリを記録します。カテゴリは、関手(functor)、述語(predicate)、モード(mode)、属性(attribute)、構造(structure)、セレクタ(selector)、構成子(constructor)です。`UserSymbolArity` は引数の個数の形状を、正確な個数・上下限のある範囲・下限のみの範囲として記録します。これらはパーサー/リゾルバ向けのサマリーであり、完全な型シグネチャではありません。
+`UserSymbolKind` は、可視なシンボルのパーサー/リゾルバ上のカテゴリを記録します。カテゴリは、functor(functor)、述語(predicate)、モード(mode)、属性(attribute)、構造(structure)、セレクタ(selector)、構成子(constructor)です。`UserSymbolArity` は引数の個数の形状を、正確な個数・上下限のある範囲・下限のみの範囲として記録します。これらはパーサー/リゾルバ向けのサマリーであり、完全な型シグネチャではありません。
 
 アクティブ環境は以下を扱います。
 
@@ -134,7 +134,7 @@ pub struct UserSymbolCandidate {
 - 完全なモジュール IR を読み込む;
 - 局所スコープの上書き(override)を判定する;
 - シンボルの使用が型として正しいかを判定する;
-- オーバーロードの勝者を選ぶ.
+- overload resolution result を選ぶ。
 
 active な環境は、インポートされたモジュールの圧縮された `ModuleLexicalSummary` 射影（シンボルの綴り・種別・arity）のみを保持し、その定義・証明本体・完全なモジュール IR は決して保持しません（上記 Non-Goals を参照）。したがってこれは、常駐集合メモリモデルの「本体ではなくインターフェイスを保持する」規則の、レキサ層における表現です（spec [§12.6.3](../../../spec/ja/12.modules_and_namespaces.md#1263-メモリモデル)、アーキテクチャ [03.module_and_symbol_resolution.md](../../architecture/ja/03.module_and_symbol_resolution.md)）。インポートされた summary は、import closure 全体を先読みするのではなく、`LexicalSummaryProvider` のシームを通じて必要時に供給されます。
 

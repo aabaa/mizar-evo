@@ -26,7 +26,7 @@ The test metadata must expect a proof failure, certificate rejection, or kernel 
 | substitution | variable capture, binder collision, malformed substitution, alpha-conversion failure |
 | certificate | malformed certificate, invalid substitution, invalid SAT proof, unresolved symbol, timeout, resource exhaustion |
 | cluster | infinite chain, cyclic registration, unintended coercion, hidden transitive expansion |
-| overload | ambiguous notation, hidden coercion, unstable resolution order |
+| overload | ambiguous notation, hidden coercion, unstable resolution order; accepted coherent same-root refinement joins must not be classified as ambiguity failures |
 | dependency | stale theorem statement fingerprint, stale cluster semantics, stale notation parse result |
 | policy | externally attested evidence rejected under `require_kernel_certificates` |
 
@@ -72,7 +72,8 @@ Key scenarios:
 - malformed certificate is classified separately from invalid SAT proof;
 - substitution capture fails with `invalid_substitution`;
 - cluster cycle fails with `cluster_loop`;
-- ambiguous overload fails without depending on candidate iteration order.
+- ambiguous ordinary overload fails without depending on candidate iteration order;
+- coherent same-root redefinitions with compatible joined facts pass rather than being misclassified as ambiguous overloads.
 
 ## Constraints and Assumptions
 

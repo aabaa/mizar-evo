@@ -55,7 +55,7 @@ Type information is part of the proof author's communication with both the verif
 | Keep operator declarations unsurprising | Use precedence values consistent with nearby mathematical notation. Declare precedence explicitly for exported symbolic functors. |
 | Use phrase notation sparingly | Phrase predicates can improve readability, but symbolic notation is often easier to scan in dense algebraic expressions. |
 
-For overloaded definitions, prefer adding a definition for the most specific common subtype when many callers would otherwise need the same `qua` disambiguation.
+For overloaded definitions, prefer adding a definition for the most specific common subtype when many callers would otherwise need the same `qua` disambiguation. Use `redefine` only when the new declaration is a true coherent refinement of an existing root; do not rely on redefinition to reconcile distinct ordinary overloads.
 
 ## D.4 Proofs and Citations
 
@@ -114,6 +114,7 @@ Before moving or publishing a module, check the following:
 | Imports | Are all imports still needed, and are ambiguous symbols qualified? |
 | Labels | Have public labels remained stable, or has the change been treated as an API change? |
 | Overloads | Do new overloads introduce ambiguity for existing callers? |
+| Redefinitions | Do new same-root redefinitions have compatible joined result facts? |
 | Clusters | Are repeated attribute proofs better expressed as registrations? |
 | Citations | Can broad or bulk citations be refined to the facts actually used? |
 | Annotations | Are development-only display annotations removed or intentionally retained? |

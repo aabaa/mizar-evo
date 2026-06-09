@@ -26,7 +26,7 @@ test metadata は invalid proof attempt を最初に検出する phase に応じ
 | substitution | variable capture、binder collision、malformed substitution、alpha-conversion failure |
 | certificate | malformed certificate、invalid substitution、invalid SAT proof、unresolved symbol、timeout、resource exhaustion |
 | cluster | infinite chain、cyclic registration、unintended coercion、hidden transitive expansion |
-| overload | ambiguous notation、hidden coercion、unstable resolution order |
+| overload | ambiguous notation、hidden coercion、unstable resolution order。accepted coherent same-root refinement join を ambiguity failure として分類してはならない |
 | dependency | stale theorem statement fingerprint、stale cluster semantics、stale notation parse result |
 | policy | `require_kernel_certificates` 下で externally attested evidence が reject されること |
 
@@ -72,7 +72,8 @@ key scenarios:
 - malformed certificate は invalid SAT proof と別分類
 - substitution capture は `invalid_substitution` で fail
 - cluster cycle は `cluster_loop` で fail
-- ambiguous overload は candidate iteration order に依存せず fail
+- ambiguous ordinary overload は candidate iteration order に依存せず fail
+- compatible joined facts を持つ coherent same-root redefinition は、ambiguous overload に誤分類されず pass
 
 ## Constraints and Assumptions
 

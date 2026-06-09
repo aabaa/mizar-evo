@@ -143,7 +143,7 @@ This module must not:
 - load full module IR;
 - decide local scope overrides;
 - decide whether a symbol use is type-correct;
-- choose overload winners.
+- choose overload resolution results.
 
 Because the active environment holds only compact `ModuleLexicalSummary` projections (symbol spelling, kind, and arity) of imported modules — never their definitions, proof bodies, or full module IR (see Non-Goals above) — it is the lexer-level expression of the resident-set memory model's "hold interfaces, not bodies" rule (spec [§12.6.3](../../../spec/en/12.modules_and_namespaces.md#1263-memory-model); architecture [03.module_and_symbol_resolution.md](../../architecture/en/03.module_and_symbol_resolution.md)). Imported summaries are supplied on demand through the `LexicalSummaryProvider` seam rather than loaded eagerly for the whole import closure.
 

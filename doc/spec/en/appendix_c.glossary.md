@@ -73,6 +73,7 @@ This appendix gives short, non-normative definitions of recurring terms in the M
 | Functorial cluster | A registration describing attributes of the result of a functor application. | Ch.17 |
 | Overload resolution | The process that selects one visible definition for an overloaded symbol based on argument types and specificity. | Ch.19 |
 | Registration | A declaration that adds information to the verifier's inference database, especially for clusters, reductions, and type propagation. | Ch.17 |
+| Refinement join | The step that, after overload resolution has chosen one original definition, combines the compatible results of the several `redefine` declarations that all sharpen it. | Ch.19, Ch.23 |
 | Specificity | The ordering used to decide whether one candidate type or overload is more precise than another. | Ch.19 |
 | Type inference | The verifier process that derives types and attributes from declarations, clusters, functor applications, and local context. | Ch.8, Ch.17, Ch.19 |
 | Widening | Viewing a term at a less specific type, either through structure inheritance or by dropping attributes justified by cluster closure. | Ch.13, Ch.19 |

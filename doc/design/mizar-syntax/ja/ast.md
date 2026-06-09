@@ -13,4 +13,4 @@
 - `SurfaceAst`、`SurfaceNode`、構文ノード ID、arena の所有関係を定義する。
 - ソース順、ソース範囲、回復ノードを保持する。
 - モジュール、項目、項、論理式、文、証明、アルゴリズム、アノテーションを表現する。
-- 解決済みシンボル ID、推論済み型、オーバーロード勝者、cluster fact、証明義務を持たない。
+- 解決済みシンボル ID、推論済み型、overload resolution result、cluster fact、証明義務を持たない。
