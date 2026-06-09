@@ -313,17 +313,7 @@ fn raw_import_scan_diagnostic(
     bridge: &SpanBridge,
     error: String,
 ) -> Result<PreprocessDiagnostic, SpanBridgeError> {
-    let mapping = if lexical_text.as_str().is_empty() {
-        bridge.loaded_mapping(source_id, LexerByteSpan { start: 0, end: 0 })?
-    } else {
-        bridge.lexical_span(
-            source_id,
-            LexerByteSpan {
-                start: 0,
-                end: lexical_text.text.len(),
-            },
-        )?
-    };
+    let mapping = bridge.whole_lexical_text_mapping(source_id, lexical_text.as_str())?;
     Ok(PreprocessDiagnostic {
         kind: PreprocessDiagnosticKind::RawImportScan,
         message: Arc::<str>::from(format!("raw import pre-scan failed: {error}")),

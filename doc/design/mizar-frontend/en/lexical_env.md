@@ -62,6 +62,7 @@ pub struct ActiveLexicalEnvironmentResult {
 
 pub enum FrontendLexicalEnvironmentError {
     ProviderUnavailable { message: String },
+    MalformedProviderProvenance { message: String },
     MalformedSummary { source: LexicalEnvironmentError },
 }
 
@@ -95,7 +96,11 @@ provenance: it wraps the lexer `ResolvedImport` with the source span and ordinal
 of the `ImportStub` that produced it, so later diagnostics can point back to the
 right import even when several stubs resolve to the same module. The frontend
 passes only the ordered `ResolvedImport` values to
-`mizar_lexer::build_lexical_environment`.
+`mizar_lexer::build_lexical_environment`. Provider-returned resolved-import and
+diagnostic provenance is validated against the request's `ImportStub` list
+before it is used; a missing stub ordinal, stale stub span, span for another
+source, or range-backed secondary anchor for another source is a malformed
+provider contract rather than a recoverable import diagnostic.
 
 Before the lexer call, the frontend canonicalizes resolved imports by `ModuleId`
 in first-stub order and passes at most one `ResolvedImport` per module to the
@@ -157,7 +162,10 @@ local file is unchanged.
 
 1. Ask the `LexicalSummaryProvider` to resolve the `ImportStub`s into
    `ResolvedImportEntry`s and `ModuleLexicalSummary` values, recording import
-   order and preserving the originating stub span for diagnostics.
+   order and preserving the originating stub span for diagnostics. Validate each
+   resolved entry's `stub_ordinal` and `stub_span`, plus provider-supplied
+   diagnostic primary/secondary provenance, against the request before using it
+   for diagnostics or canonicalization.
 2. Collect provider-side diagnostics without inventing semantic facts. Add
    frontend exclusion diagnostics for import stubs that have no resolved entry
    and for canonical resolved imports whose dependency lexical summary is
@@ -201,10 +209,13 @@ Provider-side issues — an import that resolves to no module, or a dependency
 whose lexical summary is unavailable — are carried as
 `LexicalEnvironmentDiagnostic`s and the affected imports are omitted before
 calling the lexer, so the pipeline degrades to a smaller active environment
-rather than failing the whole file. Recoverable lexer-side handling is narrowed
-to `UserSymbolImportConflict`: the frontend diagnoses the later conflicting
-import, adds the earlier import as secondary context, removes the later import,
-and retries environment construction. Invalid
+rather than failing the whole file. Provider provenance in resolved imports or
+provider diagnostics that does not match the current request is reported as
+`FrontendLexicalEnvironmentError::MalformedProviderProvenance`, because using it
+would attach diagnostics to the wrong import or source. Recoverable lexer-side
+handling is narrowed to `UserSymbolImportConflict`: the frontend diagnoses the
+later conflicting import, adds the earlier import as secondary context, removes
+the later import, and retries environment construction. Invalid
 exported symbol spelling, invalid arity, reserved-word/symbol collisions,
 inconsistent duplicate summaries, and unexpected missing summaries are hard
 malformed-summary failures because the frontend cannot safely infer which subset
@@ -220,6 +231,9 @@ Key scenarios:
   candidates carry the correct provenance and import ordinal;
 - diagnostics for unresolved imports, missing summaries, and user-symbol import
   conflicts point at the originating canonical `ImportStub` span;
+- provider-returned resolved-import or diagnostic provenance with a missing stub
+  ordinal, stale span, or foreign source is rejected as a hard provider-contract
+  failure;
 - duplicate resolved imports of the same module are canonicalized before the lexer
   call and do not create spurious user-symbol import conflicts;
 - user-symbol import conflicts remove the later conflicting import, retry

@@ -66,7 +66,7 @@ pub fn register_source_unit(
 
 `FrontendSourceLoader` は、任意の `mizar_session::SourceLoader`（たとえば `DiskSourceLoader`）をラップする。リクエストを session ローダーへ転送し、得られた `LoadedSource` を `source_unit_from_loaded` で `SourceUnit` へ射影する。フロントエンドは、自前のパス正規化・ハッシュ・BOM／改行規則を定義しない。これらは `mizar-session` に残る。
 
-`LoadedSource` はファイルシステムパスを保持しない。呼び出し側は、ローカル診断メタデータとして `file_path` を渡す。ディスク／オープンバッファのローダーは、存在する場合はリクエストまたは origin URI からこれを導出し、生成ソースでは `normalized_path` または `generated_anchor` 由来の合成表示パスを使ってよい。この値は、公開ソース同一性やキャッシュキーには含めない。
+`LoadedSource` はファイルシステムパスを保持しない。呼び出し側は、ローカル診断メタデータとして `file_path` を渡す。ディスク／オープンバッファのローダーは、存在する場合はリクエストまたは origin URI からこれを導出し、生成ソースでは `normalized_path` または `generated_anchor` 由来の合成表示パスを使ってよい。`file://` のオープンバッファ URI では、フロントエンドは表示パス用に URI パスをデコードする。URI をローカルファイルパスとしてデコードできない場合は、request の `normalized_path` にフォールバックする。この値は、公開ソース同一性やキャッシュキーには含めない。
 
 `register_source_unit` は、source の `LineMap` と任意の `LoadingMap` を可変な `SpanBridge` へ記録する。読み込み自体は bridge 登録と独立なので、テストや呼び出し側は、ソースマップの状態を変えずに `LoadedSource` を射影できる。
 
@@ -116,6 +116,7 @@ pub fn register_source_unit(
 - BOM 除去／CRLF 正規化されたディスクソースは、`Some(loading_map)` を `SourceUnit` へ運ぶ。
 - 恒等読み込み（オフセット変更なし）は、`loading_map = None` を運ぶ。
 - オープンバッファの `SourceUnit` は、`SourceOrigin::OpenBuffer` と検証済みのドキュメントバージョンを記録する。
+- オープンバッファの診断パスは、ローカル `file://` URI パスをデコードし、URI パスが利用できない場合は `normalized_path` へフォールバックする。
 - 生成ソースの `SourceUnit` は、`SourceOrigin::Generated` と `generated_anchor` を保持する。
 - `register_source_unit` は、`LineMap` / `LoadingMap` を bridge へ記録し、衝突する重複登録は `SpanBridgeError` として報告する。
 - session の `SourceLoadError`（不正 UTF-8、ルート外パス）が、再分類されずに伝播する。

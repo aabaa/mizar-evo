@@ -87,7 +87,10 @@ or BOM/newline rules; those remain in `mizar-session`.
 as local diagnostic metadata: disk and open-buffer loaders derive it from the
 request/origin URI when one exists, while generated sources may use the
 `normalized_path` or a synthetic display path derived from `generated_anchor`.
-This value is never part of published source identity or cache keys.
+For `file://` open-buffer URIs, the frontend decodes the URI path for this
+display path; if the URI cannot be decoded as a local file path, it falls back to
+the request's `normalized_path`. This value is never part of published source
+identity or cache keys.
 
 `register_source_unit` records the source's `LineMap` and optional `LoadingMap`
 with the mutable `SpanBridge`. Loading itself stays independent of bridge
@@ -187,6 +190,8 @@ Key scenarios:
 - an identity load (no offset change) carries `loading_map = None`;
 - an open-buffer `SourceUnit` records `SourceOrigin::OpenBuffer` and the
   validated document version;
+- open-buffer diagnostic paths decode local `file://` URI paths and fall back to
+  `normalized_path` when the URI path is not usable;
 - a generated `SourceUnit` preserves `SourceOrigin::Generated` and
   `generated_anchor`;
 - `register_source_unit` records the `LineMap` / `LoadingMap` with the bridge and

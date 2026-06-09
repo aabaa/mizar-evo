@@ -150,6 +150,24 @@ impl SpanBridge {
             .map_err(SpanBridgeError::from)
     }
 
+    pub(crate) fn whole_lexical_text_mapping(
+        &self,
+        source_id: SourceId,
+        lexical_text: &str,
+    ) -> Result<MappedSourceRange, SpanBridgeError> {
+        if lexical_text.is_empty() {
+            return self.loaded_mapping(source_id, LexerByteSpan { start: 0, end: 0 });
+        }
+
+        self.lexical_span(
+            source_id,
+            LexerByteSpan {
+                start: 0,
+                end: lexical_text.len(),
+            },
+        )
+    }
+
     fn require_source(&self, source_id: SourceId) -> Result<(), SpanBridgeError> {
         self.source_registration(source_id).map(drop)
     }
@@ -515,6 +533,80 @@ mod tests {
                 secondary: Vec::new(),
                 original_input: None,
                 kind: MappedSourceRangeKind::Degraded,
+            })
+        );
+    }
+
+    #[test]
+    fn whole_lexical_text_mapping_uses_loaded_start_for_empty_text() {
+        let source_id = source_id(1);
+        let preprocessed = preprocess_source_for_lexing("");
+        let mut bridge = registered_source(source_id, "");
+        bridge
+            .register_preprocess_map(
+                source_id,
+                &preprocessed.lexical_text,
+                preprocessed.preprocess_map,
+            )
+            .unwrap();
+
+        assert_eq!(
+            bridge.whole_lexical_text_mapping(source_id, &preprocessed.lexical_text),
+            Ok(MappedSourceRange {
+                primary: SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 0,
+                },
+                secondary: Vec::new(),
+                original_input: None,
+                kind: MappedSourceRangeKind::Exact,
+            })
+        );
+    }
+
+    #[test]
+    fn whole_lexical_text_mapping_uses_preprocess_map_for_non_empty_text() {
+        let source_id = source_id(1);
+        let source = "alpha ::=comment=:: beta";
+        let preprocessed = preprocess_source_for_lexing(source);
+        assert_eq!(preprocessed.lexical_text, "alpha  beta");
+        let mut bridge = registered_source(source_id, source);
+        bridge
+            .register_preprocess_map(
+                source_id,
+                &preprocessed.lexical_text,
+                preprocessed.preprocess_map,
+            )
+            .unwrap();
+
+        assert_eq!(
+            bridge.whole_lexical_text_mapping(source_id, &preprocessed.lexical_text),
+            Ok(MappedSourceRange {
+                primary: SourceRange {
+                    source_id,
+                    start: 0,
+                    end: source.len(),
+                },
+                secondary: vec![
+                    SourceAnchor::Range(SourceRange {
+                        source_id,
+                        start: 0,
+                        end: 6,
+                    }),
+                    SourceAnchor::Range(SourceRange {
+                        source_id,
+                        start: 6,
+                        end: 19,
+                    }),
+                    SourceAnchor::Range(SourceRange {
+                        source_id,
+                        start: 19,
+                        end: 24,
+                    }),
+                ],
+                original_input: None,
+                kind: MappedSourceRangeKind::Composite,
             })
         );
     }

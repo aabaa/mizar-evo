@@ -480,17 +480,7 @@ fn whole_lexical_text_mapping(
     lexical_text: &str,
     bridge: &SpanBridge,
 ) -> Result<MappedSourceRange, SpanBridgeError> {
-    if lexical_text.is_empty() {
-        bridge.loaded_mapping(source_id, LexerByteSpan { start: 0, end: 0 })
-    } else {
-        bridge.lexical_span(
-            source_id,
-            LexerByteSpan {
-                start: 0,
-                end: lexical_text.len(),
-            },
-        )
-    }
+    bridge.whole_lexical_text_mapping(source_id, lexical_text)
 }
 
 fn lexical_source_range(

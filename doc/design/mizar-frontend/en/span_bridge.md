@@ -60,6 +60,12 @@ impl SpanBridge {
         source_id: SourceId,
         span: LexerByteSpan,
     ) -> Result<MappedSourceRange, SpanBridgeError>;
+
+    pub(crate) fn whole_lexical_text_mapping(
+        &self,
+        source_id: SourceId,
+        lexical_text: &str,
+    ) -> Result<MappedSourceRange, SpanBridgeError>;
 }
 
 pub struct LexerByteSpan {
@@ -130,7 +136,11 @@ instead of calling the session service's loaded-to-original API, because that AP
 requires a retained `LoadingMap` even for identity conversion. `lexical_span`
 applies the preprocess map, returning composite adjacent anchors at zero-length
 boundaries (for example a lexical range whose interior was a removed comment) and
-degraded anchor-backed mappings for synthetic-only spans.
+degraded anchor-backed mappings for synthetic-only spans. The crate-visible
+`whole_lexical_text_mapping` helper centralizes the coarse raw-scan recovery
+policy shared by preprocessing and lexing: an empty lexical text maps to the
+loaded source-start zero-length range, while a non-empty lexical text maps
+through the preprocess map as a normal lexical span.
 The bridge derives the session-side `PreprocessMap` from the lexer's
 `SourcePreprocessMap` and reuses the optional session `LoadingMap` attached to
 the `SourceUnit`; there is exactly one canonical map per `SourceId`, and identity
@@ -210,6 +220,8 @@ Key scenarios:
   separately through `loaded_mapping` when a loading map exists;
 - a lexical span that crosses a removed comment yields a primary range plus
   secondary anchors;
+- whole-lexical-text coarse mappings use the loaded source start for empty text
+  and the preprocess map for non-empty text;
 - a synthetic-only lexical span returns a degraded `MappedSourceRange` whose
   primary is an anchor fallback, not an exact user-authored range;
 - an offset not on a UTF-8 boundary is rejected rather than silently truncated;

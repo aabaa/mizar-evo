@@ -51,6 +51,12 @@ impl SpanBridge {
         source_id: SourceId,
         span: LexerByteSpan,
     ) -> Result<MappedSourceRange, SpanBridgeError>;
+
+    pub(crate) fn whole_lexical_text_mapping(
+        &self,
+        source_id: SourceId,
+        lexical_text: &str,
+    ) -> Result<MappedSourceRange, SpanBridgeError>;
 }
 
 pub struct LexerByteSpan {
@@ -87,7 +93,7 @@ pub enum SpanBridgeError {
 | loaded → original | 読み込み済みテキストのバイトオフセット | 元の入力のバイトオフセット | `LoadingMap` |
 | offset → line/column | 読み込み済みテキストのバイトオフセット | 1 始まりの Unicode 列 | `LineMap` |
 
-`loaded_span` は、登録済みの line map に対してバイト範囲を検証し、読み込み済みテキスト座標の `SourceRange` を返す。`loaded_mapping` はさらに、登録済みの `LoadingMap` があればそれを合成し、第一範囲は読み込み済み座標のまま、`original_input` にソース読み込み入力のバイト範囲を含む `MappedSourceRange` を返す。`LoadingMap` が登録されていない場合、`loaded_mapping` は session サービスの読み込み済みから元入力への API を呼ばず、検証済みの読み込み済み範囲を `original_input = None` で返す。その API は、恒等変換であっても常駐の `LoadingMap` を必要とするためである。`lexical_span` は preprocess map を適用し、ゼロ長境界（たとえば内部が除去コメントであった字句範囲）では隣接アンカーの合成を返し、合成のみからなるスパンに対してはアンカーに支えられた縮退マッピングを返す。橋渡しは、session 側の `PreprocessMap` を字句解析器の `SourcePreprocessMap` から導出し、`SourceUnit` に付随する任意の session `LoadingMap` を再利用する。`SourceId` ごとに正準のマップはちょうど 1 つであり、フロントエンドの橋渡しは恒等のソース読み込みマップを具体化しない。
+`loaded_span` は、登録済みの line map に対してバイト範囲を検証し、読み込み済みテキスト座標の `SourceRange` を返す。`loaded_mapping` はさらに、登録済みの `LoadingMap` があればそれを合成し、第一範囲は読み込み済み座標のまま、`original_input` にソース読み込み入力のバイト範囲を含む `MappedSourceRange` を返す。`LoadingMap` が登録されていない場合、`loaded_mapping` は session サービスの読み込み済みから元入力への API を呼ばず、検証済みの読み込み済み範囲を `original_input = None` で返す。その API は、恒等変換であっても常駐の `LoadingMap` を必要とするためである。`lexical_span` は preprocess map を適用し、ゼロ長境界（たとえば内部が除去コメントであった字句範囲）では隣接アンカーの合成を返し、合成のみからなるスパンに対してはアンカーに支えられた縮退マッピングを返す。crate 可視の `whole_lexical_text_mapping` helper は、前処理と字句解析が共有する粗い raw-scan 回復ポリシーを一箇所に集約する。空の字句テキストは読み込み済みソース先頭のゼロ長範囲へ写し、非空の字句テキストは通常の字句スパンとして preprocess map 経由で写す。橋渡しは、session 側の `PreprocessMap` を字句解析器の `SourcePreprocessMap` から導出し、`SourceUnit` に付随する任意の session `LoadingMap` を再利用する。`SourceId` ごとに正準のマップはちょうど 1 つであり、フロントエンドの橋渡しは恒等のソース読み込みマップを具体化しない。
 
 ### レジストリ
 
@@ -123,6 +129,7 @@ pub enum SpanBridgeError {
 - `LoadingMap` を持たない恒等読み込みソースは、`LoadingMap::identity` を保持せず、`original_input = None` の厳密な `MappedSourceRange` を返す。
 - 字句テキストスパンが、preprocess map を通じて期待される読み込み済み `SourceRange` へ変換され、必要に応じて loading map から元入力のバイトを参照できる。
 - 除去コメントをまたぐ字句スパンが、第一の範囲に加えて隣接アンカーを生む。
+- 字句テキスト全体の粗い mapping は、空テキストでは読み込み済みソース先頭を使い、非空テキストでは preprocess map を使う。
 - 合成のみからなる字句スパンは、厳密なユーザー記述範囲ではなく、アンカーへのフォールバックで縮退した primary を持つ `MappedSourceRange` を返す。
 - UTF-8 境界上にないオフセットが、暗黙の切り詰めではなく拒否される。
 - 登録済みテキスト長の外のスパンが、session エラーで拒否される。

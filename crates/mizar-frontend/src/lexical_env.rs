@@ -50,6 +50,7 @@ pub struct ActiveLexicalEnvironmentResult {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FrontendLexicalEnvironmentError {
     ProviderUnavailable { message: String },
+    MalformedProviderProvenance { message: String },
     MalformedSummary { source: LexicalEnvironmentError },
 }
 
@@ -74,6 +75,20 @@ pub enum LexicalEnvironmentDiagnosticCode {
     ReservedSymbolCollision,
 }
 
+impl LexicalEnvironmentDiagnosticCode {
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::UnresolvedImport => "unresolved_import",
+            Self::MissingSummary => "missing_summary",
+            Self::UserSymbolImportConflict => "user_symbol_import_conflict",
+            Self::InvalidUserSymbolSpelling => "invalid_user_symbol_spelling",
+            Self::InvalidUserSymbolArity => "invalid_user_symbol_arity",
+            Self::ReservedWordCollision => "reserved_word_collision",
+            Self::ReservedSymbolCollision => "reserved_symbol_collision",
+        }
+    }
+}
+
 pub fn build_active_lexical_environment(
     request: &LexicalEnvironmentRequest<'_>,
     provider: &dyn LexicalSummaryProvider,
@@ -84,6 +99,8 @@ pub fn build_active_lexical_environment(
         summaries,
         mut diagnostics,
     } = resolved;
+    validate_resolved_import_provenance(request, &imports)?;
+    validate_provider_diagnostic_provenance(request, &diagnostics)?;
     diagnose_unresolved_imports(request, &imports, &mut diagnostics);
     let active_entries = filter_imports_with_summaries(
         canonical_resolved_imports(imports),
@@ -98,6 +115,109 @@ pub fn build_active_lexical_environment(
         environment,
         diagnostics,
     })
+}
+
+fn validate_resolved_import_provenance(
+    request: &LexicalEnvironmentRequest<'_>,
+    imports: &[ResolvedImportEntry],
+) -> Result<(), FrontendLexicalEnvironmentError> {
+    for entry in imports {
+        let Some(stub) = request.import_stubs.get(entry.stub_ordinal) else {
+            return Err(malformed_provider_provenance(format!(
+                "resolved import for module `{}` references missing import stub ordinal {}",
+                entry.import.module_id.as_str(),
+                entry.stub_ordinal
+            )));
+        };
+
+        if entry.stub_span.source_id != request.source_id {
+            return Err(malformed_provider_provenance(format!(
+                "resolved import for module `{}` references source `{:?}` but the lexical environment request is for source `{:?}`",
+                entry.import.module_id.as_str(),
+                entry.stub_span.source_id,
+                request.source_id
+            )));
+        }
+
+        if entry.stub_span != stub.span {
+            return Err(malformed_provider_provenance(format!(
+                "resolved import for module `{}` references stale span {:?} for import stub ordinal {}; expected {:?}",
+                entry.import.module_id.as_str(),
+                entry.stub_span,
+                entry.stub_ordinal,
+                stub.span
+            )));
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_provider_diagnostic_provenance(
+    request: &LexicalEnvironmentRequest<'_>,
+    diagnostics: &[LexicalEnvironmentDiagnostic],
+) -> Result<(), FrontendLexicalEnvironmentError> {
+    for diagnostic in diagnostics {
+        if diagnostic.primary.source_id != request.source_id {
+            return Err(malformed_provider_provenance(format!(
+                "provider diagnostic `{}` references source `{:?}` but the lexical environment request is for source `{:?}`",
+                diagnostic.code.as_str(),
+                diagnostic.primary.source_id,
+                request.source_id
+            )));
+        }
+
+        if let Some(stub_ordinal) = diagnostic.import_ordinal {
+            let Some(stub) = request.import_stubs.get(stub_ordinal) else {
+                return Err(malformed_provider_provenance(format!(
+                    "provider diagnostic `{}` references missing import stub ordinal {}",
+                    diagnostic.code.as_str(),
+                    stub_ordinal
+                )));
+            };
+            if diagnostic.primary != stub.span {
+                return Err(malformed_provider_provenance(format!(
+                    "provider diagnostic `{}` references stale span {:?} for import stub ordinal {}; expected {:?}",
+                    diagnostic.code.as_str(),
+                    diagnostic.primary,
+                    stub_ordinal,
+                    stub.span
+                )));
+            }
+        }
+
+        for anchor in &diagnostic.secondary {
+            validate_provider_diagnostic_anchor(request, diagnostic.code, anchor)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_provider_diagnostic_anchor(
+    request: &LexicalEnvironmentRequest<'_>,
+    code: LexicalEnvironmentDiagnosticCode,
+    anchor: &SourceAnchor,
+) -> Result<(), FrontendLexicalEnvironmentError> {
+    match anchor {
+        SourceAnchor::Range(range) if range.source_id != request.source_id => {
+            Err(malformed_provider_provenance(format!(
+                "provider diagnostic `{}` secondary range references source `{:?}` but the lexical environment request is for source `{:?}`",
+                code.as_str(),
+                range.source_id,
+                request.source_id
+            )))
+        }
+        SourceAnchor::Point { source_id, .. } if *source_id != request.source_id => {
+            Err(malformed_provider_provenance(format!(
+                "provider diagnostic `{}` secondary point references source `{:?}` but the lexical environment request is for source `{:?}`",
+                code.as_str(),
+                source_id,
+                request.source_id
+            )))
+        }
+        _ => Ok(()),
+    }
 }
 
 fn diagnose_unresolved_imports(
@@ -292,6 +412,10 @@ fn malformed_user_symbol_import_conflict(
     }
 }
 
+fn malformed_provider_provenance(message: String) -> FrontendLexicalEnvironmentError {
+    FrontendLexicalEnvironmentError::MalformedProviderProvenance { message }
+}
+
 fn push_diagnostic_if_absent(
     diagnostics: &mut Vec<LexicalEnvironmentDiagnostic>,
     diagnostic: LexicalEnvironmentDiagnostic,
@@ -312,6 +436,12 @@ impl fmt::Display for FrontendLexicalEnvironmentError {
             Self::ProviderUnavailable { message } => {
                 write!(f, "lexical-summary provider is unavailable: {message}")
             }
+            Self::MalformedProviderProvenance { message } => {
+                write!(
+                    f,
+                    "lexical-summary provider returned malformed import provenance: {message}"
+                )
+            }
             Self::MalformedSummary { source } => {
                 write!(
                     f,
@@ -326,6 +456,7 @@ impl Error for FrontendLexicalEnvironmentError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::ProviderUnavailable { .. } => None,
+            Self::MalformedProviderProvenance { .. } => None,
             Self::MalformedSummary { source } => Some(source),
         }
     }
@@ -474,6 +605,230 @@ mod tests {
                 message: "fixture provider unavailable".to_owned(),
             }
         );
+    }
+
+    #[test]
+    fn provider_import_provenance_with_missing_stub_ordinal_is_a_hard_failure() {
+        let source_id = source_id(4);
+        let stubs = vec![import_stub(source_id, 0, 13, "alpha")];
+        let provider = FakeProvider {
+            resolved: ResolvedImports {
+                imports: vec![ResolvedImportEntry {
+                    stub_ordinal: 1,
+                    stub_span: stubs[0].span,
+                    import: ResolvedImport {
+                        module_id: ModuleId::new("alpha"),
+                    },
+                }],
+                summaries: vec![summary(
+                    "alpha",
+                    11,
+                    vec![symbol("++", "alpha.plus", "alpha")],
+                )],
+                diagnostics: Vec::new(),
+            },
+        };
+
+        let error = build(&stubs, source_id, &provider).unwrap_err();
+
+        assert!(matches!(
+            error,
+            FrontendLexicalEnvironmentError::MalformedProviderProvenance { ref message }
+                if message.contains("missing import stub ordinal 1")
+        ));
+    }
+
+    #[test]
+    fn provider_import_provenance_with_stale_stub_span_is_a_hard_failure() {
+        let current_source_id = source_id(4);
+        let stubs = vec![import_stub(current_source_id, 0, 13, "alpha")];
+        let provider = FakeProvider {
+            resolved: ResolvedImports {
+                imports: vec![ResolvedImportEntry {
+                    stub_ordinal: 0,
+                    stub_span: SourceRange {
+                        source_id: current_source_id,
+                        start: 1,
+                        end: 14,
+                    },
+                    import: ResolvedImport {
+                        module_id: ModuleId::new("alpha"),
+                    },
+                }],
+                summaries: vec![summary(
+                    "alpha",
+                    11,
+                    vec![symbol("++", "alpha.plus", "alpha")],
+                )],
+                diagnostics: Vec::new(),
+            },
+        };
+
+        let error = build(&stubs, current_source_id, &provider).unwrap_err();
+
+        assert!(matches!(
+            error,
+            FrontendLexicalEnvironmentError::MalformedProviderProvenance { ref message }
+                if message.contains("references stale span")
+        ));
+    }
+
+    #[test]
+    fn provider_import_provenance_with_foreign_source_is_a_hard_failure() {
+        let (current_source_id, other_source_id) = distinct_source_ids(4);
+        let stubs = vec![import_stub(current_source_id, 0, 13, "alpha")];
+        let provider = FakeProvider {
+            resolved: ResolvedImports {
+                imports: vec![ResolvedImportEntry {
+                    stub_ordinal: 0,
+                    stub_span: SourceRange {
+                        source_id: other_source_id,
+                        start: 0,
+                        end: 13,
+                    },
+                    import: ResolvedImport {
+                        module_id: ModuleId::new("alpha"),
+                    },
+                }],
+                summaries: vec![summary(
+                    "alpha",
+                    11,
+                    vec![symbol("++", "alpha.plus", "alpha")],
+                )],
+                diagnostics: Vec::new(),
+            },
+        };
+
+        let error = build(&stubs, current_source_id, &provider).unwrap_err();
+
+        assert!(matches!(
+            error,
+            FrontendLexicalEnvironmentError::MalformedProviderProvenance { ref message }
+                if message.contains("references source")
+        ));
+    }
+
+    #[test]
+    fn provider_diagnostic_with_foreign_primary_source_is_a_hard_failure() {
+        let (current_source_id, other_source_id) = distinct_source_ids(4);
+        let provider = FakeProvider {
+            resolved: ResolvedImports {
+                imports: Vec::new(),
+                summaries: Vec::new(),
+                diagnostics: vec![LexicalEnvironmentDiagnostic {
+                    code: LexicalEnvironmentDiagnosticCode::UnresolvedImport,
+                    message: Arc::from("foreign primary"),
+                    primary: SourceRange {
+                        source_id: other_source_id,
+                        start: 0,
+                        end: 0,
+                    },
+                    secondary: Vec::new(),
+                    import_ordinal: None,
+                    module_id: None,
+                }],
+            },
+        };
+
+        let error = build(&[], current_source_id, &provider).unwrap_err();
+
+        assert!(matches!(
+            error,
+            FrontendLexicalEnvironmentError::MalformedProviderProvenance { ref message }
+                if message.contains("provider diagnostic `unresolved_import` references source")
+        ));
+    }
+
+    #[test]
+    fn provider_diagnostic_with_stale_import_span_is_a_hard_failure() {
+        let current_source_id = source_id(4);
+        let stubs = vec![import_stub(current_source_id, 0, 13, "alpha")];
+        let provider = FakeProvider {
+            resolved: ResolvedImports {
+                imports: Vec::new(),
+                summaries: Vec::new(),
+                diagnostics: vec![LexicalEnvironmentDiagnostic {
+                    code: LexicalEnvironmentDiagnosticCode::UnresolvedImport,
+                    message: Arc::from("stale primary"),
+                    primary: SourceRange {
+                        source_id: current_source_id,
+                        start: 1,
+                        end: 14,
+                    },
+                    secondary: Vec::new(),
+                    import_ordinal: Some(0),
+                    module_id: None,
+                }],
+            },
+        };
+
+        let error = build(&stubs, current_source_id, &provider).unwrap_err();
+
+        assert!(matches!(
+            error,
+            FrontendLexicalEnvironmentError::MalformedProviderProvenance { ref message }
+                if message.contains("provider diagnostic `unresolved_import` references stale span")
+        ));
+    }
+
+    #[test]
+    fn provider_diagnostic_with_missing_stub_ordinal_is_a_hard_failure() {
+        let current_source_id = source_id(4);
+        let stubs = vec![import_stub(current_source_id, 0, 13, "alpha")];
+        let provider = FakeProvider {
+            resolved: ResolvedImports {
+                imports: Vec::new(),
+                summaries: Vec::new(),
+                diagnostics: vec![LexicalEnvironmentDiagnostic {
+                    code: LexicalEnvironmentDiagnosticCode::UnresolvedImport,
+                    message: Arc::from("missing diagnostic ordinal"),
+                    primary: stubs[0].span,
+                    secondary: Vec::new(),
+                    import_ordinal: Some(1),
+                    module_id: None,
+                }],
+            },
+        };
+
+        let error = build(&stubs, current_source_id, &provider).unwrap_err();
+
+        assert!(matches!(
+            error,
+            FrontendLexicalEnvironmentError::MalformedProviderProvenance { ref message }
+                if message.contains("provider diagnostic `unresolved_import` references missing import stub ordinal 1")
+        ));
+    }
+
+    #[test]
+    fn provider_diagnostic_with_foreign_secondary_source_is_a_hard_failure() {
+        let (current_source_id, other_source_id) = distinct_source_ids(4);
+        let stubs = vec![import_stub(current_source_id, 0, 13, "alpha")];
+        let provider = FakeProvider {
+            resolved: ResolvedImports {
+                imports: Vec::new(),
+                summaries: Vec::new(),
+                diagnostics: vec![LexicalEnvironmentDiagnostic {
+                    code: LexicalEnvironmentDiagnosticCode::UserSymbolImportConflict,
+                    message: Arc::from("foreign secondary"),
+                    primary: stubs[0].span,
+                    secondary: vec![SourceAnchor::Range(SourceRange {
+                        source_id: other_source_id,
+                        start: 0,
+                        end: 13,
+                    })],
+                    import_ordinal: Some(0),
+                    module_id: Some(ModuleId::new("alpha")),
+                }],
+            },
+        };
+
+        let error = build(&stubs, current_source_id, &provider).unwrap_err();
+
+        assert!(matches!(
+            error,
+            FrontendLexicalEnvironmentError::MalformedProviderProvenance { ref message }
+                if message.contains("secondary range references source")
+        ));
     }
 
     #[test]
@@ -772,6 +1127,15 @@ mod tests {
                 edition: Edition::new("2026"),
             },
             provider,
+        )
+    }
+
+    fn distinct_source_ids(byte: u8) -> (mizar_session::SourceId, mizar_session::SourceId) {
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshot = snapshot_id(byte);
+        (
+            ids.next_source_id(snapshot).unwrap(),
+            ids.next_source_id(snapshot).unwrap(),
         )
     }
 

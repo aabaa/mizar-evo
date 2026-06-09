@@ -421,6 +421,71 @@ mod tests {
     }
 
     #[test]
+    fn frontend_loader_decodes_open_buffer_file_uri_path() {
+        let package = PackageFixture::new();
+        package.write("src/groups/basic.miz", "disk\n");
+        let snapshot = snapshot_id(4);
+        let encoded_path = package
+            .path("src/groups/space name.miz")
+            .display()
+            .to_string()
+            .replace("space name", "space%20name");
+        let uri = format!("file://{encoded_path}");
+        let input = source_input(
+            package.root(),
+            SourceOriginInput::OpenBuffer {
+                uri,
+                expected_version: 7,
+                actual_version: 7,
+                text: Arc::from("open\n"),
+            },
+        );
+        let loader = FrontendSourceLoader::new(SpyLoader {
+            expected_snapshot: snapshot,
+            expected_input: input.clone(),
+        });
+
+        let source = loader
+            .load_source_unit(
+                SourceUnitRequest { snapshot, input },
+                &InMemorySessionIdAllocator::new(),
+            )
+            .unwrap();
+
+        assert_eq!(source.file_path, package.path("src/groups/space name.miz"));
+    }
+
+    #[test]
+    fn frontend_loader_falls_back_to_normalized_path_for_invalid_open_buffer_file_uri() {
+        let package = PackageFixture::new();
+        package.write("src/groups/basic.miz", "disk\n");
+        let snapshot = snapshot_id(4);
+        let input = source_input(
+            package.root(),
+            SourceOriginInput::OpenBuffer {
+                uri: "file:///not%zzvalid.miz".to_owned(),
+                expected_version: 7,
+                actual_version: 7,
+                text: Arc::from("open\n"),
+            },
+        );
+        let expected_path = PathBuf::from(input.normalized_path.as_str());
+        let loader = FrontendSourceLoader::new(SpyLoader {
+            expected_snapshot: snapshot,
+            expected_input: input.clone(),
+        });
+
+        let source = loader
+            .load_source_unit(
+                SourceUnitRequest { snapshot, input },
+                &InMemorySessionIdAllocator::new(),
+            )
+            .unwrap();
+
+        assert_eq!(source.file_path, expected_path);
+    }
+
+    #[test]
     fn frontend_loader_preserves_generated_origin_and_anchor() {
         let package = PackageFixture::new();
         package.write("src/generated/basic.miz", "");
