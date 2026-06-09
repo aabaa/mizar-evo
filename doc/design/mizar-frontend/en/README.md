@@ -35,6 +35,7 @@ coordinator paths and returns `ast = None`.
 | [parsing.md](./parsing.md) | `crates/mizar-frontend/src/parsing.rs` | Step 5: parser-seam invocation, parser-input assembly, and `SurfaceAst` handoff | Implemented through task 12; full grammar recovery pending |
 | [span_bridge.md](./span_bridge.md) | `crates/mizar-frontend/src/span_bridge.rs` | Lexer byte span → `mizar-session` `SourceRange` coordinate bridge | Implemented for task 1 |
 | [orchestration.md](./orchestration.md) | `crates/mizar-frontend/src/orchestration.rs` | End-to-end phase 1-3 coordination (pipeline Steps 1-5), diagnostic merge, and `FrontendOutput` | Implemented through task 14 |
+| [source_spec_correspondence.md](./source_spec_correspondence.md) | `crates/mizar-frontend` specs, sources, and unit tests | Task 16 public API / error variant / task requirement correspondence audit | Implemented |
 | [todo.md](./todo.md) | `crates/mizar-frontend` | Module implementation order, status, and remaining work | Living |
 
 ## Crate Boundary

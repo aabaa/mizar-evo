@@ -55,7 +55,7 @@
    - `pub mod source;` を追加する。`SourceUnit`、`SourceUnitRequest`、`SourceUnitLoader` トレイト、`FrontendSourceLoader<L: SourceLoader>` を定義し、`mizar_session::LoadedSource` を、ハッシュ・line map・loading map・正規化パス・エディション・origin・生成アンカーを再計算せずに `SourceUnit` へ射影する `source_unit_from_loaded` を実装する。
    - `LoadedSource` はファイルシステムパスを保持しないので、`file_path` は呼び出し側が提供する診断メタデータとして扱う。ディスク／オープンバッファのソースでは request/origin から、生成ソースでは正規化パスまたは生成アンカーから導出する。
    - 読み込んだ `LineMap` / `LoadingMap` を `SourceId` の下で可変な `SpanBridge` に登録するヘルパーを提供する。統制層が、読み込み後・前処理前にこのヘルパーを呼び出す。`load_source_unit` 自体は bridge の状態を変更しない。
-   - テスト: ディスクの `LoadedSource` が同一の id／hash／line-map／loading-map で射影される。BOM／CRLF を正規化したソースは `Some(loading_map)` を運ぶ。恒等読み込みは `None` を運ぶ。正規化パスとエディションが保持される。オープンバッファの origin とバージョンが保持される。生成ソースは `generated_anchor` を保持する。`register_source_unit` が line/loading map を記録し、衝突する重複登録を報告する。session の `SourceLoadError` がそのまま伝播する。
+   - テスト: ディスクの `LoadedSource` が同一の id／hash／line-map／loading-map で射影される。BOM／CRLF を正規化したソースは `Some(loading_map)` を運ぶ。恒等読み込みは `None` を運ぶ。正規化パスとエディションが保持される。オープンバッファの origin とバージョンが保持される。オープンバッファの診断パスはローカル `file://` URI パスをデコードし、URI パスが利用できない場合は `normalized_path` へフォールバックする。生成ソースは `generated_anchor` を保持する。`register_source_unit` が line/loading map を記録し、衝突する重複登録を報告する。session の `SourceLoadError` がそのまま伝播する。
    - 依存: 1。仕様: [source.md](./source.md)「Public API」「Algorithm / Logic」。
 
 ### モジュール: preprocess (`src/preprocess.rs`)
@@ -147,10 +147,11 @@
     - テスト: すべてのモジュールテストを成功状態に保つ。
     - 依存: 14。仕様: すべての mizar-frontend モジュール仕様。
 
-16. **ソース／仕様の対応監査。** [ ]
+16. **ソース／仕様の対応監査。** [x]
     - フロントエンド仕様の各公開 API、エラー変種、タスク要件から、実装ソース／テストへの軽量なトレーサビリティ確認を構築する。
     - 欠落した実装、古くなった仕様文、欠落したテストを、監査に広範な変更を混ぜずにフォローアップタスクとして記録する。
     - 英語の正本仕様を先に確認し、次に日本語版が同じ API と挙動の約束を保っているか検証する。
+    - 結果: [source_spec_correspondence.md](./source_spec_correspondence.md) に監査を記録した。予約済みまたは現在 producer を持たない diagnostic/fallback surface の coverage 用に task 24 を追加した。
     - 依存: 15。仕様: すべての mizar-frontend モジュール仕様と本 TODO。
 
 ## 横断的フォローアップタスク
@@ -189,6 +190,19 @@
     - [lexical_env.md](./lexical_env.md)「制約と前提」で明示された常駐集合契約を固定するカバレッジを追加する。すなわち、アクティブ字句環境はインポートされたモジュールの圧縮された `ModuleLexicalSummary` 射影のみを保持し、その定義や完全なモジュール IR は決して保持しないこと、そして `LexicalSummaryProvider` が import closure を先読みで展開するのではなく現在のファイルの解決済みインポートについてのみ問い合わせられること。
     - テスト: 記録用のフェイク `LexicalSummaryProvider` が、リクエストの `ImportStub` にスコープされた `resolve_imports` 呼び出しを正確に 1 回だけ受け取り、推移的インポートへの展開を要求されないこと。得られる `ActiveLexicalEnvironment` が summary 由来の字句的形状と出所（綴り・種別・arity・symbol id・定義／インポート元モジュール・インポート序数・export rank など、いずれも軽量な `ModuleLexicalSummary` 由来データ）のみを公開し、完全な依存 IR を要求する API 経路が無いこと。
     - 依存: 6。仕様: [lexical_env.md](./lexical_env.md)「制約と前提」、常駐集合メモリモデル spec [§12.6.3](../../../spec/ja/12.modules_and_namespaces.md#1263-メモリモデル)。
+
+24. **予約済み frontend diagnostic surface の coverage。** [ ]
+    - 予約済みまたは現在 producer を持たない公開 variant を見直す:
+      `SpanBridgeError::UnsupportedLexerPreprocessMap`,
+      `LexicalEnvironmentDiagnosticCode::{InvalidUserSymbolSpelling,
+      InvalidUserSymbolArity, ReservedWordCollision, ReservedSymbolCollision}`,
+      `SourceLoadLocation::{NormalizedPath, Unknown}`、
+      `DiagnosticClass::AnnotationSyntax`、および
+      `LexingDiagnosticPayload::UnsupportedLexerPayload`。
+    - provider-owned の回復可能診断契約が明示されるまでは、lexer-owned の不正な依存 summary は `FrontendLexicalEnvironmentError::MalformedSummary` のまま扱う。
+    - 各 reserved surface について、producer がなくても公開のまま維持するか、構築可能な fixture で直接 coverage を追加するか、producer が存在するまで延期するかを決める。決定後に [source_spec_correspondence.md](./source_spec_correspondence.md) と関連 module spec を更新する。
+    - テスト: 構築可能な fallback/reserved variant の coverage を追加し、将来の lexer/session/parser 契約が残りの surface を公開したら producer-backed tests を追加する。
+    - 依存: 16。仕様: [source_spec_correspondence.md](./source_spec_correspondence.md)、[span_bridge.md](./span_bridge.md)、[lexical_env.md](./lexical_env.md)、[orchestration.md](./orchestration.md)、[lexing.md](./lexing.md)、[parsing.md](./parsing.md)。
 
 ## 推奨検証
 

@@ -112,9 +112,11 @@ should keep `cargo test -p mizar-frontend` green (see
    - Tests: disk `LoadedSource` projects with identical id/hash/line-map/loading-map;
      BOM/CRLF-normalized source carries `Some(loading_map)`; identity load carries
      `None`; normalized path and edition are preserved; open-buffer origin and
-     version are preserved; generated sources preserve `generated_anchor`;
-     `register_source_unit` records line/loading maps and reports conflicting
-     duplicate registrations; a session `SourceLoadError` is propagated unchanged.
+     version are preserved; open-buffer diagnostic paths decode local `file://`
+     URI paths and fall back to `normalized_path` when the URI path is unusable;
+     generated sources preserve `generated_anchor`; `register_source_unit` records
+     line/loading maps and reports conflicting duplicate registrations; a session
+     `SourceLoadError` is propagated unchanged.
    - Depends on: 1. Spec: [source.md](./source.md) "Public API",
      "Algorithm / Logic".
 
@@ -365,13 +367,16 @@ should keep `cargo test -p mizar-frontend` green (see
     - Tests: keep all module tests green.
     - Depends on: 14. Spec: all mizar-frontend module specs.
 
-16. **Source/spec correspondence audit.** [ ]
+16. **Source/spec correspondence audit.** [x]
     - Build a lightweight traceability check from each public API, error variant,
       and task requirement in the frontend specs to the implementing source/tests.
     - Record any missing implementation, stale spec text, or missing tests as
       follow-up tasks rather than mixing broad changes into the audit.
     - Check the English canonical specs first, then verify Japanese companions
       carry the same API and behavioral commitments.
+    - Result: [source_spec_correspondence.md](./source_spec_correspondence.md)
+      records the audit. The audit added task 24 for reserved or currently
+      unproduced diagnostic/fallback surface coverage.
     - Depends on: 15. Spec: all mizar-frontend module specs and this TODO.
 
 ## Cross-Cutting Follow-up Tasks
@@ -455,6 +460,30 @@ should keep `cargo test -p mizar-frontend` green (see
     - Depends on: 6. Spec: [lexical_env.md](./lexical_env.md) "Constraints and
       Assumptions"; resident-set memory model spec
       [§12.6.3](../../../spec/en/12.modules_and_namespaces.md#1263-memory-model).
+
+24. **Reserved frontend diagnostic surface coverage.** [ ]
+    - Review public variants that are reserved or have no current producer:
+      `SpanBridgeError::UnsupportedLexerPreprocessMap`,
+      `LexicalEnvironmentDiagnosticCode::{InvalidUserSymbolSpelling,
+      InvalidUserSymbolArity, ReservedWordCollision, ReservedSymbolCollision}`,
+      `SourceLoadLocation::{NormalizedPath, Unknown}`, and
+      `DiagnosticClass::AnnotationSyntax`, plus
+      `LexingDiagnosticPayload::UnsupportedLexerPayload`.
+    - Keep lexer-owned malformed dependency summaries as
+      `FrontendLexicalEnvironmentError::MalformedSummary` unless a provider-owned
+      recoverable diagnostic contract is explicitly specified.
+    - Decide for each reserved surface whether to keep it public without a
+      producer, add direct coverage with a constructible fixture, or defer it
+      until the producer exists. Update
+      [source_spec_correspondence.md](./source_spec_correspondence.md) and the
+      relevant module specs after the decision.
+    - Tests: add coverage for constructible fallback/reserved variants, and add
+      producer-backed tests when future lexer/session/parser contracts expose the
+      remaining surfaces.
+    - Depends on: 16. Spec: [source_spec_correspondence.md](./source_spec_correspondence.md),
+      [span_bridge.md](./span_bridge.md), [lexical_env.md](./lexical_env.md),
+      [orchestration.md](./orchestration.md), [lexing.md](./lexing.md),
+      [parsing.md](./parsing.md).
 
 ## Suggested Verification
 

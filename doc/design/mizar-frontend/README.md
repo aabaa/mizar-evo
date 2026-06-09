@@ -17,4 +17,5 @@ The full module index, crate boundary, and implementation roadmap live in [en/RE
 - [en/lexing.md](./en/lexing.md) - Step 4: `TokenStream` via raw scan, scope skeleton, and disambiguation
 - [en/parsing.md](./en/parsing.md) - Step 5: parser-seam invocation and `SurfaceAst` handoff
 - [en/orchestration.md](./en/orchestration.md) - end-to-end frontend coordination, diagnostic merge, and `FrontendOutput`
+- [en/source_spec_correspondence.md](./en/source_spec_correspondence.md) - task 16 source/spec/test correspondence audit
 - [en/todo.md](./en/todo.md) - module implementation order, status, and remaining work
