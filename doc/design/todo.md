@@ -32,8 +32,8 @@ It complements [README.md](./README.md) (doc layout) and the pipeline definition
 |---|---|---|---|---|
 | mizar-session | Source identity, source maps, build snapshots, retention (foundation) | — | [x] | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | Raw scan + context-sensitive token disambiguation | — | [x] | [todo](./mizar-lexer/en/todo.md) |
-| mizar-syntax | `SurfaceAst`, syntax nodes, trivia, recovery markers | mizar-session | [~] minimal task-12 surface boundary | [README](./mizar-syntax/en/README.md) |
-| mizar-parser | Grammar, Pratt parsing, syntax recovery | mizar-session, mizar-syntax | [~] minimal task-12 parser entry/recovery | [README](./mizar-parser/en/README.md) |
+| mizar-syntax | `SurfaceAst`, syntax nodes, trivia, recovery markers | mizar-session | [~] minimal task-12 surface boundary | [todo](./mizar-syntax/en/todo.md) |
+| mizar-parser | Grammar, Pratt parsing, syntax recovery | mizar-session, mizar-syntax | [~] minimal task-12 parser entry/recovery | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading + phase 1-3 orchestration | mizar-session, mizar-lexer, mizar-syntax, mizar-parser | [~] | [todo](./mizar-frontend/en/todo.md) |
 | mizar-test | Test corpus + harness | (consumers) | [~] skeleton | — |
 | mizar-lsp | Editor integration / range mapping | mizar-session, mizar-lexer | [~] skeleton | — |

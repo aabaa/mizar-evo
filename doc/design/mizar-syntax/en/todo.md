@@ -1,0 +1,249 @@
+# mizar-syntax TODO
+
+> Canonical language: English. Japanese companion: [../ja/todo.md](../ja/todo.md).
+
+## Status Legend
+
+- [ ] not started
+- [~] in progress
+- [x] done
+
+## Module Implementation
+
+| Module | Spec | Source | Status |
+|---|---|---|---|
+| ast | [ast.md](./ast.md) | `src/ast.rs` | [~] minimal task-12 surface currently lives in `src/lib.rs` |
+| trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [ ] |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] minimal task-12 recovery kinds currently live in `src/lib.rs` |
+
+`mizar-syntax` is a data-definition crate: it owns the `SurfaceAst` shape shared
+by `mizar-parser`, `mizar-frontend`, and future resolver/LSP/formatter
+consumers, and it owns no parsing logic and no semantics. It is built in two
+waves: first the representation foundation (arena, rendering, trivia, recovery
+vocabulary), then the node vocabulary, which grows in lockstep with
+`mizar-parser` grammar tasks.
+
+Dependency order: `ast` foundation → `trivia` / `recovery` → node vocabulary
+paired with `mizar-parser`.
+
+## Crate Prerequisites
+
+The crate depends only on `mizar-session` (for `SourceId`, `SourceRange`,
+`SourceAnchor`). The task-11/12 minimal boundary (`SurfaceAst`, `SurfaceNode`,
+recovery kinds, `SyntaxDiagnostic`) is already consumed by `mizar-parser` and
+`mizar-frontend::parsing::MizarParserSeam`; every change here must keep
+`cargo test -p mizar-parser` and `cargo test -p mizar-frontend` green in the
+same change.
+
+## Resolved And Open Decisions
+
+- **Arena representation: open, resolved by task 2.** Keep the current
+  homogeneous `SurfaceNode` arena with a `SurfaceNodeKind` enum plus typed
+  accessor/view helpers, or move to typed node structs per syntactic category.
+  The decision must be made before the vocabulary tasks multiply node kinds.
+- **Trivia ownership: open, resolved by task 4.** `mizar-frontend` already
+  extracts comments and doc comments into `PreprocessedSource`; decide whether
+  `SurfaceAst` carries attached trivia, references frontend-owned trivia by
+  range, or stores only attachment hints.
+- **Dot-role surface shape: open, owned by `mizar-parser` task 6.** The parser
+  cannot fully separate selector access from namespace separation without the
+  resolver (spec [§A.2.5](../../../spec/en/appendix_a.grammar_summary.md)); the
+  AST must represent unresolved dot chains syntactically. Tracked in
+  [../../mizar-parser/en/todo.md](../../mizar-parser/en/todo.md).
+- **Public enum forward compatibility: open, resolved by task 14.** Apply the
+  same per-enum `#[non_exhaustive]`-versus-exhaustive decision procedure that
+  `mizar-frontend` task 25 established, once the vocabulary stabilizes enough
+  to enumerate the public enums.
+
+## Ordered Task List
+
+Each task is sized to be implemented, tested, and committed on its own. Keep
+`cargo test -p mizar-syntax` green after each task (see
+[Recommended Verification](#recommended-verification)).
+
+### Representation foundation
+
+1. **Module split and lint-policy guard.** [ ]
+   - Split `src/lib.rs` into `pub mod ast;` and `pub mod recovery;`, moving the
+     task-12 types without behavior changes, and re-export everything from the
+     crate root so `mizar-parser` and `mizar-frontend` paths stay valid.
+   - Add `tests/lint_policy.rs` mirroring the `mizar-frontend` guard: workspace
+     lint opt-in, deny baseline, and rationale required next to any future
+     `allow`.
+   - Tests: existing consumers compile unchanged; lint-policy guard passes.
+   - Deps: none. Spec: [ast.md](./ast.md), [recovery.md](./recovery.md).
+
+2. **Arena representation decision and builder API.** [ ]
+   - Decide the arena representation (homogeneous kind-enum arena with typed
+     accessor views is the default candidate) and record the decision with its
+     rationale in [ast.md](./ast.md).
+   - Define node-id invariants (ids are dense indices into the arena, children
+     precede or follow parents per a documented construction order), child-role
+     conventions, and a builder API that `mizar-parser` uses to construct nodes
+     without exposing arena internals.
+   - Tests: arena invariants (every child id valid, no cycles), parent ranges
+     contain child ranges except for documented recovery cases, builder
+     round-trip.
+   - Deps: 1. Spec: [ast.md](./ast.md) "Public API".
+
+3. **Deterministic snapshot rendering.** [ ]
+   - Add a stable, human-readable text rendering of `SurfaceAst` (kind, range,
+     recovered flag, children indented) for corpus snapshot baselines required
+     by [architecture/en/20.test_strategy.md](../../architecture/en/20.test_strategy.md)
+     "Snapshot Tests".
+   - Rendering must be byte-identical across runs and platforms and free of
+     hash-map iteration order, addresses, and other nondeterminism.
+   - Tests: identical output across repeated renders; representative fixture
+     covering every current node kind; recovery nodes visibly marked.
+   - Deps: 2. Spec: [ast.md](./ast.md); snapshot layout in
+     [../../mizar-test/en/snapshot.md](../../mizar-test/en/snapshot.md).
+
+4. **Trivia model.** [ ]
+   - Add `pub mod trivia;`. Decide and record the ownership split with
+     `mizar-frontend::PreprocessedSource` (which already owns comment and
+     doc-comment extraction), then define trivia attachment: doc-comment
+     attachment targets, skipped-token ranges, and whitespace-sensitive hints
+     needed by formatter and LSP consumers.
+   - Doc-comment attachment stays syntactic; no semantic interpretation.
+   - Tests: attachment of a doc comment to the following item node; skipped
+     ranges preserved with source ranges; rendering includes trivia
+     deterministically when requested.
+   - Deps: 2, 3. Spec: [trivia.md](./trivia.md).
+
+5. **Recovery vocabulary expansion.** [ ]
+   - Extend `SyntaxRecoveryKind` beyond the task-12 minimum (`ErrorToken`,
+     `MissingEnd`, `MissingStringLiteral`) to the full vocabulary promised by
+     [recovery.md](./recovery.md): missing constructs, skipped tokens,
+     unmatched delimiters, malformed annotations.
+   - Keep the `recovered` flag contract: resolver and checker phases must be
+     able to skip or reject recovered subtrees without re-parsing.
+   - Tests: each recovery kind constructible with correct ranges; recovered
+     subtree query helpers; snapshot rendering marks each kind distinctly.
+   - Deps: 2. Spec: [recovery.md](./recovery.md).
+
+### Node vocabulary (paired with `mizar-parser` grammar tasks)
+
+Each vocabulary task lands in the same change as (or immediately before) the
+paired `mizar-parser` grammar task, adds the node kinds and child roles that
+grammar area needs, and extends snapshot rendering. Spec references are the
+normative grammar chapters under [doc/spec/en/](../../../spec/en/00.index.md).
+
+6. **Module and item nodes.** [ ] — paired with `mizar-parser` task 4.
+   - Module file shape, import/export/open items, top-level item list and item
+     kinds dispatchable by keyword.
+   - Spec: [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
+
+7. **Type expression nodes.** [ ] — paired with `mizar-parser` task 5.
+   - Attribute chains (with `non`), radix/mode type heads, `of`/`over`
+     arguments, struct-qualified attribute references.
+   - Spec: [03.type_system.md](../../../spec/en/03.type_system.md),
+     [§A.3.2](../../../spec/en/appendix_a.grammar_summary.md).
+
+8. **Term nodes.** [ ] — paired with `mizar-parser` tasks 6-7.
+   - Primary terms (identifiers, numerals, qualified symbols, parenthesized,
+     application forms), unresolved dot chains, selector access and update,
+     Fraenkel/set-builder forms, `qua`, and operator-expression nodes
+     generalizing the task-12 `InfixExpression` to prefix/postfix forms.
+   - Spec: [13.term_expression.md](../../../spec/en/13.term_expression.md),
+     [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md).
+
+9. **Formula nodes.** [ ] — paired with `mizar-parser` task 8.
+   - Connectives, quantifiers (`for`/`ex`/`st`/`holds`), atomic predicate
+     application, `is` formulas, attribute formulas.
+   - Spec: [14.formulas.md](../../../spec/en/14.formulas.md).
+
+10. **Statement nodes.** [ ] — paired with `mizar-parser` task 9.
+    - `reserve`, `let`, `assume`, `take`, `consider`, `reconsider`, `set`,
+      `given`, `thus`/`hence`, `then` chains, iterative equality `.=`,
+      `per cases`/`suppose`, `now`/`hereby`.
+    - Spec: [15.statements.md](../../../spec/en/15.statements.md).
+
+11. **Theorem, proof, and justification nodes.** [ ] — paired with
+    `mizar-parser` task 10.
+    - `theorem`/`lemma` items, labels, `proof … end` nesting, justifications
+      (`by`, `from`), citation forms including `.{ … }` and `.*`.
+    - Spec: [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md).
+
+12. **Definition, structure, and registration nodes.** [ ] — paired with
+    `mizar-parser` tasks 11-13.
+    - Definition blocks (`attr`/`mode`/`pred`/`func`, `means`/`equals`,
+      `redefine`, `synonym`/`antonym`, correctness conditions, properties),
+      `struct` definitions with fields and inheritance, registration and
+      cluster forms, `reduce`.
+    - Spec: [06.attributes.md](../../../spec/en/06.attributes.md),
+      [07.modes.md](../../../spec/en/07.modes.md),
+      [09.predicates.md](../../../spec/en/09.predicates.md),
+      [10.functors.md](../../../spec/en/10.functors.md),
+      [05.structures.md](../../../spec/en/05.structures.md),
+      [17.clusters_and_registrations.md](../../../spec/en/17.clusters_and_registrations.md).
+
+13. **Template, algorithm, and annotation nodes.** [ ] — paired with
+    `mizar-parser` tasks 14-16.
+    - Template parameters and bracket-form type arguments; algorithm blocks
+      and algorithmic statements (`while`, `if`, `match`, assignment,
+      `invariant`/`decreasing`, `assert`, `ghost`, `var`/`const`);
+      statement-level annotations, `@[...]` library annotations, and
+      string-literal annotation arguments.
+    - Spec: [18.templates.md](../../../spec/en/18.templates.md),
+      [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md),
+      [21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md).
+
+### Cross-cutting follow-ups
+
+14. **Public enum forward-compatibility policy.** [ ]
+    - For each public enum (`SurfaceNodeKind`, `SurfaceTokenKind`,
+      `SyntaxRecoveryKind`, `SyntaxDiagnosticCode`, trivia kinds), decide
+      `#[non_exhaustive]` versus deliberate exhaustiveness using the procedure
+      `mizar-frontend` task 25 established, record each decision next to the
+      enum in the owning module spec, and apply the attributes.
+    - This crate gains resolver/LSP/formatter consumers earlier than the
+      frontend did; decide before the first such consumer lands.
+    - Deps: 12 (vocabulary mostly stable). Spec: all module specs.
+
+15. **Source/spec correspondence audit.** [ ]
+    - Mirror the `mizar-frontend` task-16 audit: trace every public API and
+      promised behavior in [ast.md](./ast.md), [trivia.md](./trivia.md), and
+      [recovery.md](./recovery.md) to implementation and tests, and record
+      gaps as follow-up tasks.
+    - Deps: 13. Spec: all module specs and this TODO.
+
+16. **Bilingual documentation sync audit.** [ ]
+    - Compare each English canonical document under
+      `doc/design/mizar-syntax/en/` with its Japanese companion and synchronize
+      API lists, statuses, terminology, links, and behavior promises.
+    - Deps: 15. Spec: repository documentation policy.
+
+17. **Rustdoc summaries.** [ ] Deferred.
+    - Same workspace-level deferral as `mizar-frontend` task 26. Re-entry
+      trigger: the first long-lived consumer outside the frontend pipeline
+      (resolver or `mizar-lsp`) starts coding against `mizar-syntax`, or the
+      workspace adopts a rustdoc policy — whichever comes first.
+    - Deps: 14. Spec: repository documentation policy.
+
+## Recommended Verification
+
+Run after each task:
+
+```text
+cargo test -p mizar-syntax
+cargo clippy -p mizar-syntax --all-targets -- -D warnings
+```
+
+For tasks that move or extend the shared boundary, also run:
+
+```text
+cargo test -p mizar-parser
+cargo test -p mizar-frontend
+```
+
+Check the task off here once tests pass.
+
+## Notes
+
+- `mizar-syntax` owns syntax data shapes only: no grammar logic, no name
+  resolution, no typing, no proof semantics. Resolved symbol ids, inferred
+  types, and proof obligations never appear in `SurfaceAst`.
+- Vocabulary growth is paced by `mizar-parser` grammar tasks; do not add node
+  kinds speculatively ahead of a parser task that constructs them.
+- `SurfaceAst` is internal compiler data, not a stable external schema; the
+  snapshot rendering (task 3) is the stability surface for corpus baselines.
