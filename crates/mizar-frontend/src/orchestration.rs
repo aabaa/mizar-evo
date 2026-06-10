@@ -169,6 +169,7 @@ pub enum DiagnosticLocation {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SourceLoadLocation {
     Path { path: PathBuf },
     NormalizedPath { path: NormalizedPath },
@@ -178,6 +179,7 @@ pub enum SourceLoadLocation {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum DiagnosticCode {
     SourceLoad,
     Preprocess(PreprocessDiagnosticKind),
@@ -187,6 +189,7 @@ pub enum DiagnosticCode {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum DiagnosticClass {
     SourceLoad,
     LexicalPrecondition,
@@ -200,6 +203,7 @@ pub enum DiagnosticClass {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum FrontendError {
     SourceLoad {
         source: Box<SourceLoadError>,

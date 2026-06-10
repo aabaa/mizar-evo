@@ -61,6 +61,7 @@ pub enum DiagnosticLocation {
     SourceLoad(SourceLoadLocation),
 }
 
+#[non_exhaustive]
 pub enum SourceLoadLocation {
     Path { path: PathBuf },
     NormalizedPath { path: NormalizedPath },
@@ -69,6 +70,7 @@ pub enum SourceLoadLocation {
     Unknown,
 }
 
+#[non_exhaustive]
 pub enum DiagnosticCode {
     SourceLoad,
     Preprocess(PreprocessDiagnosticKind),
@@ -77,6 +79,7 @@ pub enum DiagnosticCode {
     Syntax(Arc<str>),
 }
 
+#[non_exhaustive]
 pub enum DiagnosticClass {
     SourceLoad,
     LexicalPrecondition,
@@ -89,6 +92,7 @@ pub enum DiagnosticClass {
     AnnotationSyntax,
 }
 
+#[non_exhaustive]
 pub enum FrontendError {
     SourceLoad {
         source: Box<SourceLoadError>,
@@ -109,6 +113,8 @@ pub trait FrontendParserDiagnostic {
 
 `FrontendOutput<A>` は、AST 型を抽象化したまま、アーキテクチャのインターフェースと一致する。`StubParserSeam` では `ast` は常に `None` であり、実 parser seam では `A` は `mizar_syntax::SurfaceAst` である。`cache_keys` は [cache_key.md](./cache_key.md) の frontend-computed content-key bundle である。driver は cache record をどう永続化し、これらの content key を snapshot / task identity とどう合成するかを決める。`FrontendDiagnostic` は、すべてのフェーズ固有診断（`SourcePreprocessDiagnostic`、`ImportPrescanDiagnostic`、`LexicalEnvironmentDiagnostic`、生スキャン／スコープスケルトン／字句解析器の診断を含む `LexingDiagnostic`、`SyntaxDiagnostic`）が変換される統一診断である。範囲付き診断は `DiagnosticLocation::SourceRange` を使い、`SourceId` / `LineMap` が存在する前に起きるソース読み込み失敗は、利用可能な path、正規化パス、オープンバッファ URI、生成アンカー、または `Unknown` を保持する `DiagnosticLocation::SourceLoad` を使う。`DiagnosticCode::Syntax` は、実 parser seam が有効になった後に、パーサー所有の構文診断コードキーを保持する。`StubParserSeam` では、構文診断は送出されない。
 `FrontendParserDiagnostic` は、設定済み parser seam の診断型を統一されたフロントエンド診断ストリームへ写像するための狭いアダプタである。`mizar_syntax::SyntaxDiagnostic` と、stub seam の unit 診断型に実装される。
+
+`SourceLoadLocation`、`DiagnosticCode`、`DiagnosticClass`、`FrontendError` は下流 crate 向けに `#[non_exhaustive]` とし、将来の source、diagnostic、回復不能 frontend surface を外部 match を壊さずに追加できるようにする。`mizar-frontend` 内部の match は引き続き exhaustive に保つ。
 
 stub parser seam では、`ast = None` は期待されるプレースホルダ結果である。実 parser seam は、回復済みトークン列に対して最小の `SurfaceAst` を返し、構文解析が以降のフェーズに十分な構造を回復できない場合は `ast = None` を返せる。字句・前処理・構文の診断は依然として返される。
 

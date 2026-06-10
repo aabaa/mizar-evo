@@ -72,6 +72,7 @@ pub enum DiagnosticLocation {
     SourceLoad(SourceLoadLocation),
 }
 
+#[non_exhaustive]
 pub enum SourceLoadLocation {
     Path { path: PathBuf },
     NormalizedPath { path: NormalizedPath },
@@ -80,6 +81,7 @@ pub enum SourceLoadLocation {
     Unknown,
 }
 
+#[non_exhaustive]
 pub enum DiagnosticCode {
     SourceLoad,
     Preprocess(PreprocessDiagnosticKind),
@@ -88,6 +90,7 @@ pub enum DiagnosticCode {
     Syntax(Arc<str>),
 }
 
+#[non_exhaustive]
 pub enum DiagnosticClass {
     SourceLoad,
     LexicalPrecondition,
@@ -100,6 +103,7 @@ pub enum DiagnosticClass {
     AnnotationSyntax,
 }
 
+#[non_exhaustive]
 pub enum FrontendError {
     SourceLoad {
         source: Box<SourceLoadError>,
@@ -140,6 +144,11 @@ emitted.
 the configured parser seam's diagnostic type into the unified frontend
 diagnostic stream; it is implemented for `mizar_syntax::SyntaxDiagnostic` and
 for the stub seam's unit diagnostic type.
+
+`SourceLoadLocation`, `DiagnosticCode`, `DiagnosticClass`, and `FrontendError`
+are `#[non_exhaustive]` for downstream crates so future source, diagnostic, and
+unrecoverable frontend surfaces can be added without breaking external matches.
+Matches inside `mizar-frontend` remain exhaustive.
 
 With the stub parser seam, `ast = None` is the expected placeholder result. The
 real parser seam returns a minimal `SurfaceAst` for recovered token streams and

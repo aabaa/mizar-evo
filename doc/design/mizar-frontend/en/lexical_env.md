@@ -75,6 +75,7 @@ pub struct LexicalEnvironmentDiagnostic {
     pub module_id: Option<ModuleId>,
 }
 
+#[non_exhaustive]
 pub enum LexicalEnvironmentDiagnosticCode {
     UnresolvedImport,
     MissingSummary,
@@ -101,6 +102,10 @@ diagnostic provenance is validated against the request's `ImportStub` list
 before it is used; a missing stub ordinal, stale stub span, span for another
 source, or range-backed secondary anchor for another source is a malformed
 provider contract rather than a recoverable import diagnostic.
+
+`LexicalEnvironmentDiagnosticCode` is `#[non_exhaustive]` for downstream crates
+so future provider-owned recoverable diagnostics can be added without breaking
+external matches. Matches inside `mizar-frontend` remain exhaustive.
 
 Before the lexer call, the frontend canonicalizes resolved imports by `ModuleId`
 in first-stub order and passes at most one `ResolvedImport` per module to the

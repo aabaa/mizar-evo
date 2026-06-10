@@ -96,12 +96,14 @@ pub struct LexingDiagnostic {
     pub payload: LexingDiagnosticPayload,
 }
 
+#[non_exhaustive]
 pub enum LexingDiagnosticKind {
     RawScan,
     ScopeSkeleton(ScopeSkeletonDiagnosticCode),
     Lexer(LexDiagnosticCode),
 }
 
+#[non_exhaustive]
 pub enum LexingDiagnosticPayload {
     None,
     NoValidTokenCandidate {
@@ -181,6 +183,8 @@ pub fn tokenize(
 ```
 
 `TokenKind`、`ParserLexContext`、`ParserLexMode`、`LexRecoveryHint`、`MalformedStringLiteralReason`、`RawTokenKind`、`BindingShapeKind`、`LexicalBlockKind`、`LexicalStatementKind`、`ScopeSkeletonDiagnosticCode`、`LexDiagnosticCode` は `mizar-lexer` から再エクスポートされる。`InternedText` は、最初の実装ではフロントエンドローカルな `Arc<str>` のつづりハンドルであり、グローバルなインターナは不要である。字句解析器の `String` lexeme は `Arc::<str>::from` で変換する。生の字句解析器診断構造体は入力としてのみ消費する。フロントエンドはそれらを即座に `LexingDiagnostic` へ変換し、公開診断は session 範囲を持ち、生の字句解析器バイトスパンを再公開しない。構造化された字句解析器ペイロード variant はスパン以外のデータをコピーし、棄却候補は session スパンと副次アンカーを持つフロントエンド所有の `LexingRejectedTokenCandidate` として表す。この frontend がまだ写像方法を知らない将来の lexer payload variant は、`None` に暗黙変換せず、明示的に `UnsupportedLexerPayload` として表す。
+
+`LexingDiagnosticKind` と `LexingDiagnosticPayload` は下流 crate 向けに `#[non_exhaustive]` とし、将来の lexer/parser-assisted recovery surface を外部 match を壊さずに追加できるようにする。`mizar-frontend` 内部の match は引き続き exhaustive に保つ。
 
 `parser_lexing_plan` は task 20 の狭いパーサー支援字句解析契約である。default の `ParserLexContext` と、それと異なる context を使う字句バイト範囲を保持する。フロントエンドは tokenization 前にこの plan を事前計算し、曖昧性解消する raw unit に対応する `ParserLexContext` だけを lexer に渡す。lexer は任意の parser state を受け取らず、parser と lexer は交錯しない。`TokenizeRequest::new` は一様 context 用の簡便 wrapper として残り、source-to-token coordinator 経路では `TokenizeRequest::with_plan` を使う。`environment` は有効なユーザー記号 index を提供する。インポート済み記号は token 分類に参加するが、公開用の字句的な `ScopeView` には混ざらない。
 planned string-required range は単一行の字句バイト範囲である。`\n` または `\r` をまたぐ plan は、保護された raw lexeme run として注入される前に拒否される。

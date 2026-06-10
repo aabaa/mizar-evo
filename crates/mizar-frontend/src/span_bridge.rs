@@ -31,6 +31,7 @@ pub struct LexerByteSpan {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SpanBridgeError {
     SourceNotRegistered { source_id: SourceId },
     PreprocessMapNotRegistered { source_id: SourceId },

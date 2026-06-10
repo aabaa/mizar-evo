@@ -108,12 +108,14 @@ pub struct LexingDiagnostic {
     pub payload: LexingDiagnosticPayload,
 }
 
+#[non_exhaustive]
 pub enum LexingDiagnosticKind {
     RawScan,
     ScopeSkeleton(ScopeSkeletonDiagnosticCode),
     Lexer(LexDiagnosticCode),
 }
 
+#[non_exhaustive]
 pub enum LexingDiagnosticPayload {
     None,
     NoValidTokenCandidate {
@@ -206,6 +208,11 @@ candidates are represented as frontend-owned `LexingRejectedTokenCandidate`
 values with mapped session spans and secondary anchors. Future lexer payload
 variants that this frontend has not learned to map are represented explicitly as
 `UnsupportedLexerPayload`, not silently collapsed to `None`.
+
+`LexingDiagnosticKind` and `LexingDiagnosticPayload` are `#[non_exhaustive]` for
+downstream crates so future lexer/parser-assisted recovery surfaces can be
+added without breaking external matches. Matches inside `mizar-frontend` remain
+exhaustive.
 
 `parser_lexing_plan` is the task-20 narrow parser-assisted lexing contract. It
 contains a default `ParserLexContext` plus lexical-byte ranges whose context

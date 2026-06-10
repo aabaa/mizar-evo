@@ -239,6 +239,7 @@ pub struct LexingDiagnostic {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum LexingDiagnosticKind {
     RawScan,
     ScopeSkeleton(ScopeSkeletonDiagnosticCode),
@@ -246,6 +247,7 @@ pub enum LexingDiagnosticKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum LexingDiagnosticPayload {
     None,
     NoValidTokenCandidate {

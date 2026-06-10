@@ -35,7 +35,7 @@
 
 - **字句解析器スパンの橋渡し: 解決済み。** この crate は分離方式を採用する。`mizar-lexer` はバイトオフセットのスパンを保持し、`span_bridge`（タスク 1）がそれらを `mizar-session` の `SourceRange` へ変換する。
 - **パーサー支援字句解析の契約: 解決済み。** フロントエンドは、字句バイト範囲上の位置別 `ParserLexingPlan` を事前計算し、狭い `ParserLexContext` 値だけを字句解析器に渡す。parser と lexer は交錯せず、lexer は任意の parser state を受け取らない。この plan は文法位置の string literal、注釈文字列引数内の Unicode、parser 駆動の user-symbol kind filter を扱う。
-- **次クレート着手前の品質基準: 解決済み。** 次のクレートの開発へ移る前に残るフロントエンド側のゲートは task 25 のみとする。公開 enum の前方互換方針の決定は、`mizar-frontend` に下流の消費者がまだ存在しない今が最も安価である。task 26〜28 は、明示的な再着手トリガーを持つ意図的な保留フォローアップであり、引き継ぎを妨げない。`parsing` と `orchestration` の `[~]` 状態は、フロントエンド側の未完了作業ではなく、将来の `mizar-parser` の文法／回復の拡大（task 28）を追跡するものなので、これも引き継ぎのゲートではない。
+- **次クレート着手前の品質基準: 解決済み。** task 25 は完了したため、次のクレートの開発へ移る前に残るフロントエンド側のゲートはない。task 26〜28 は、明示的な再着手トリガーを持つ意図的な保留フォローアップであり、引き継ぎを妨げない。`parsing` と `orchestration` の `[~]` 状態は、フロントエンド側の未完了作業ではなく、将来の `mizar-parser` の文法／回復の拡大（task 28）を追跡するものなので、これも引き継ぎのゲートではない。
 
 ## 順序付きタスク一覧
 
@@ -250,7 +250,7 @@
 
 次のクレートの開発を始める前のゲートは task 25 のみである。task 26〜28 は意図的な保留であり、それぞれ再着手のトリガーを記録することで、保留が「漏れ」ではなく「決定」であることを保証する。
 
-25. **公開 enum の前方互換方針の決定。** [ ]
+25. **公開 enum の前方互換方針の決定。** [x]
     - 仕様が将来の variant や予約 surface を約束している各公開 enum —
       `SpanBridgeError`、`LexicalEnvironmentDiagnosticCode`、
       `LexingDiagnosticKind`、`LexingDiagnosticPayload`、
@@ -259,6 +259,7 @@
     - enum ごとの決定を、所有モジュール仕様の enum の隣と [source_spec_correspondence.md](./source_spec_correspondence.md) に記録し、選んだ属性を同じ変更で適用する。
     - フロントエンドパイプラインの外でこれらの enum を消費する crate はまだ存在しないため、どちらの選択も今なら無償で適用できる。この決定の最安のタイミングである。
     - テスト: `cargo test -p mizar-frontend` と clippy ゲートを成功状態に保つ。いずれの選択でも、この crate 内部の match は exhaustive のままである。
+    - 結果: 列挙された公開 frontend enum は下流 crate 向けに `#[non_exhaustive]` とし、`mizar-frontend` 内部の match は exhaustive に保つ。enum ごとの決定は、所有モジュール仕様と [source_spec_correspondence.md](./source_spec_correspondence.md) に記録済みである。
     - 依存: 24。仕様: すべてのモジュール仕様、[source_spec_correspondence.md](./source_spec_correspondence.md)。
 
 26. **公開 API の rustdoc サマリ。** [ ] 保留。

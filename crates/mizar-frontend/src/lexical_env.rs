@@ -65,6 +65,7 @@ pub struct LexicalEnvironmentDiagnostic {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum LexicalEnvironmentDiagnosticCode {
     UnresolvedImport,
     MissingSummary,

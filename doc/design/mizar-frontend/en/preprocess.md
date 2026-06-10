@@ -84,6 +84,7 @@ pub struct PreprocessDiagnostic {
     pub secondary: Vec<SourceAnchor>,
 }
 
+#[non_exhaustive]
 pub enum PreprocessDiagnosticKind {
     SourcePrecondition(SourcePreprocessDiagnosticCode),
     ImportPrescan(ImportPrescanDiagnosticCode),
@@ -100,6 +101,10 @@ pub fn preprocess(
 so Step-2 lexical-precondition and comment-structure diagnostics travel with
 the output and are merged later in deterministic order by the orchestration
 layer.
+
+`PreprocessDiagnosticKind` is `#[non_exhaustive]` for downstream crates so
+future recoverable preprocessing surfaces can be added without breaking
+external matches. Matches inside `mizar-frontend` remain exhaustive.
 
 For user-recoverable input problems, `preprocess` returns `Ok(PreprocessedSource)`:
 comment-structure and ASCII-region errors are recorded as diagnostics with

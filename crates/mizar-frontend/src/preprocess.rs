@@ -112,6 +112,7 @@ pub struct PreprocessDiagnostic {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PreprocessDiagnosticKind {
     SourcePrecondition(SourcePreprocessDiagnosticCode),
     ImportPrescan(ImportPrescanDiagnosticCode),

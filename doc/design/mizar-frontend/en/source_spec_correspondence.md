@@ -54,6 +54,14 @@ language synchronization was completed by task 17 in
 
 ## Error And Diagnostic Variant Correspondence
 
+Task 25 marks the public frontend enums that promise future variants or
+reserved surfaces as `#[non_exhaustive]` for downstream crates:
+`SpanBridgeError`, `PreprocessDiagnosticKind`,
+`LexicalEnvironmentDiagnosticCode`, `LexingDiagnosticKind`,
+`LexingDiagnosticPayload`, `SourceLoadLocation`, `DiagnosticCode`,
+`DiagnosticClass`, and `FrontendError`. Internal `mizar-frontend` matches remain
+exhaustive.
+
 | Surface | Variants | Source/test status |
 |---|---|---|
 | `SpanBridgeError` | `SourceNotRegistered`, `PreprocessMapNotRegistered`, `ConflictingSourceRegistration`, `ConflictingPreprocessMapRegistration`, `UnsupportedLexerPreprocessMap`, `SourceMap` | Implemented in `span_bridge.rs`. Missing/conflict variants, `SourceMap` wrapping, and direct `UnsupportedLexerPreprocessMap` construction/display have tests. `UnsupportedLexerPreprocessMap` remains the defensive conversion guard for future unsupported lexer preprocess metadata; it has no current producer in `mizar-lexer`. |
@@ -95,6 +103,7 @@ language synchronization was completed by task 17 in
 | 22 | Complete | Precise raw-scan recovery is implemented with `mizar_lexer::scan_raw_recoverable`; frontend import pre-scan and tokenization map `RawScanDiagnostic` spans precisely, preserve usable partial imports/tokens, and keep whole-text fallback only for internal parser-plan defects. |
 | 23 | Complete | Resident-set contract coverage is guarded by `crates/mizar-frontend/tests/lexical_env_resident_set.rs`, which records exactly one direct-`ImportStub` provider request and checks that `ActiveLexicalEnvironment` exposes only `ModuleLexicalSummary`-derived lexical shape/provenance, not transitive dependency symbols. |
 | 24 | Complete | Reserved frontend diagnostic surfaces are covered where constructible: `UnsupportedLexerPreprocessMap`, provider-owned reserved lexical-environment diagnostic codes, reserved source-load fallback locations, `AnnotationSyntax`, and `UnsupportedLexerPayload`. Producer-backed tests remain deferred for future non-exhaustive lexer/session/parser contracts. |
+| 25 | Complete | Public frontend enums with promised future variants or reserved surfaces are `#[non_exhaustive]` for downstream crates, while internal `mizar-frontend` matches remain exhaustive. Owning module specs record the per-enum decision next to each enum. |
 
 ## Follow-up Records
 

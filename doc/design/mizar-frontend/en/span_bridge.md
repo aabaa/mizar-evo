@@ -73,6 +73,7 @@ pub struct LexerByteSpan {
     pub end: usize,
 }
 
+#[non_exhaustive]
 pub enum SpanBridgeError {
     SourceNotRegistered { source_id: SourceId },
     PreprocessMapNotRegistered { source_id: SourceId },
@@ -103,6 +104,10 @@ span has exact loaded-source text, `primary` is that loaded-source range. When t
 span consists only of synthetic whitespace, the session service promotes the best
 anchor to a degraded `primary`; callers must inspect `MappedSourceRange.kind` and
 secondary anchors rather than treating that primary as exact user-authored text.
+
+`SpanBridgeError` is `#[non_exhaustive]` for downstream crates so future
+frontend/session/lexer integration failures can be added without breaking
+external matches. Matches inside `mizar-frontend` remain exhaustive.
 
 ## Dependencies
 

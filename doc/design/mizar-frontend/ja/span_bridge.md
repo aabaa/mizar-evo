@@ -64,6 +64,7 @@ pub struct LexerByteSpan {
     pub end: usize,
 }
 
+#[non_exhaustive]
 pub enum SpanBridgeError {
     SourceNotRegistered { source_id: SourceId },
     PreprocessMapNotRegistered { source_id: SourceId },
@@ -75,6 +76,8 @@ pub enum SpanBridgeError {
 ```
 
 `SourceRange`、`MappedSourceRange`、`LineMap`、`LoadingMap`、session の `PreprocessMap`、`SourceMapError`、`RetainedSourceMapService`、`SourceMapService` は `mizar-session` が所有し、`SourcePreprocessMap` は `mizar-lexer` が所有する。`span_bridge` は、`mizar-lexer` のバイトスパンと preprocess map を session 座標へ適合させる。`loaded_span` は、読み込み済みテキスト（Step 1 座標）のスパンを、読み込み済みテキスト座標で検証済みの `SourceRange` へ変換する。生のファイル／エディタ入力バイトが必要な呼び出し側は `loaded_mapping` を使う。`LoadingMap` が登録されている場合、`loaded_mapping` は、読み込み済みから元入力への変換を session の常駐 `SourceMapService` へ委譲し、`original_input` を埋める。ソース読み込みがオフセットを変えず `LoadingMap` を出さなかった場合、`loaded_mapping` は登録済みの `LineMap` で読み込み済み範囲を検証し、`original_input = None` の厳密な `MappedSourceRange` を返す。`LoadingMap::identity` は合成・保持しない。`lexical_span` は、コメント除去済みの字句テキスト（Step 2 以降の座標）のスパンを session の `MappedSourceRange` へ変換する。スパンが厳密な読み込み済みソーステキストを持つ場合、`primary` はその読み込み済みソース範囲になる。合成空白だけからなる場合は、session サービスが最良のアンカーを縮退した `primary` へ昇格する。呼び出し側は、その primary を厳密なユーザー記述テキストとして扱わず、`MappedSourceRange.kind` と副次アンカーを確認しなければならない。
+
+`SpanBridgeError` は下流 crate 向けに `#[non_exhaustive]` とし、将来の frontend/session/lexer 統合失敗を外部 match を壊さずに追加できるようにする。`mizar-frontend` 内部の match は引き続き exhaustive に保つ。
 
 ## 依存関係
 

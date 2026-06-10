@@ -66,6 +66,7 @@ pub struct LexicalEnvironmentDiagnostic {
     pub module_id: Option<ModuleId>,
 }
 
+#[non_exhaustive]
 pub enum LexicalEnvironmentDiagnosticCode {
     UnresolvedImport,
     MissingSummary,
@@ -78,6 +79,8 @@ pub enum LexicalEnvironmentDiagnosticCode {
 ```
 
 `ActiveLexicalEnvironment`、`ExportRank`、`ExportedSymbolShape`、`LexicalEnvironmentError`、`LexicalEnvironmentFingerprint`、`LexicalSummaryFingerprint`、`ModuleId`、`ModuleLexicalSummary`、`ResolvedImport`、`SymbolId`、`UserSymbolArity`、`UserSymbolCandidate`、`UserSymbolIndex`、`UserSymbolKind`、`UserSymbolKindSet` は `mizar-lexer` から再エクスポートされる。`ResolvedImportEntry` は、フロントエンドが所有する出所情報である。字句解析器の `ResolvedImport` を、それを生んだ `ImportStub` のソーススパンと序数で包み、後続の診断が正しいインポートへ戻れるようにする。フロントエンドは `mizar_lexer::build_lexical_environment` へは、順序付きの `ResolvedImport` 値だけを渡す。プロバイダが返した解決済みインポートと診断の出所情報は、利用前に request の `ImportStub` 一覧と照合する。存在しない stub 序数、古い stub スパン、別 source のスパン、別 source を指す範囲付き secondary anchor は、回復可能なインポート診断ではなく、不正なプロバイダ契約である。
+
+`LexicalEnvironmentDiagnosticCode` は下流 crate 向けに `#[non_exhaustive]` とし、将来の provider-owned 回復可能診断を外部 match を壊さずに追加できるようにする。`mizar-frontend` 内部の match は引き続き exhaustive に保つ。
 
 字句解析器を呼び出す前に、フロントエンドは解決済みインポートを `ModuleId` ごとに、最初の stub の順序で正規化し、module ごとに高々 1 つの `ResolvedImport` だけを字句解析器へ渡す。現在の字句解析器の `LexicalEnvironmentError::UserSymbolImportConflict` は、フロントエンドのインポート序数ではなく module id を返すため、この正規化によって衝突契約を曖昧でなく保つ。同じ module へ解決された重複 stub は、プロバイダ診断と出所テーブルでは保持できるが、重複した有効インポートとして字句解析器へは渡さない。
 

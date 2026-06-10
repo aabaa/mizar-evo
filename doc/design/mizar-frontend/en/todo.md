@@ -53,14 +53,13 @@ These public API decisions are tracked at the top level in
   interleave, and the lexer never receives arbitrary parser state. The plan now
   covers grammar-position string literals, Unicode inside annotation string
   arguments, and parser-driven user-symbol kind filters.
-- **Quality bar before the next crate: resolved.** Task 25 is the only remaining
-  frontend-side gate before development moves to the next crate: deciding the
-  public-enum forward-compatibility policy is cheapest now, while
-  `mizar-frontend` has no downstream consumers. Tasks 26-28 are deliberately
-  deferred follow-ups with explicit re-entry triggers and do not block the
-  handoff. The `[~]` module statuses for `parsing` and `orchestration` track
-  future `mizar-parser` grammar/recovery growth (task 28), not missing
-  frontend-side work, so they are not a handoff gate either.
+- **Quality bar before the next crate: resolved.** Task 25 is complete, so
+  there are no remaining frontend-side gates before development moves to the
+  next crate. Tasks 26-28 are deliberately deferred follow-ups with explicit
+  re-entry triggers and do not block the handoff. The `[~]` module statuses for
+  `parsing` and `orchestration` track future `mizar-parser` grammar/recovery
+  growth (task 28), not missing frontend-side work, so they are not a handoff
+  gate either.
 
 ## Ordered Task List
 
@@ -549,7 +548,7 @@ Task 25 is the only gate before next-crate development starts. Tasks 26-28 are
 deliberately deferred; each records the re-entry trigger that reopens it so the
 deferral is a decision, not an omission.
 
-25. **Public enum forward-compatibility decision.** [ ]
+25. **Public enum forward-compatibility decision.** [x]
     - For each public frontend enum whose spec already promises future variants
       or reserved surfaces — `SpanBridgeError`,
       `LexicalEnvironmentDiagnosticCode`, `LexingDiagnosticKind`,
@@ -566,6 +565,10 @@ deferral is a decision, not an omission.
       free to apply.
     - Tests: `cargo test -p mizar-frontend` and the clippy gate stay green;
       matches inside this crate remain exhaustive either way.
+    - Result: the listed public frontend enums are `#[non_exhaustive]` for
+      downstream crates, while `mizar-frontend` keeps its internal matches
+      exhaustive. The per-enum decision is recorded in the owning module specs
+      and in [source_spec_correspondence.md](./source_spec_correspondence.md).
     - Depends on: 24. Spec: all module specs,
       [source_spec_correspondence.md](./source_spec_correspondence.md).
 

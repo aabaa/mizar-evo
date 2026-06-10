@@ -59,6 +59,38 @@ fn frontend_allow_exceptions_are_documented_inline() {
 }
 
 #[test]
+fn public_forward_compatible_enums_are_marked_non_exhaustive() {
+    let root = crate_root();
+    let expected = [
+        ("src/span_bridge.rs", "SpanBridgeError"),
+        ("src/preprocess.rs", "PreprocessDiagnosticKind"),
+        ("src/lexical_env.rs", "LexicalEnvironmentDiagnosticCode"),
+        ("src/lexing.rs", "LexingDiagnosticKind"),
+        ("src/lexing.rs", "LexingDiagnosticPayload"),
+        ("src/orchestration.rs", "SourceLoadLocation"),
+        ("src/orchestration.rs", "DiagnosticCode"),
+        ("src/orchestration.rs", "DiagnosticClass"),
+        ("src/orchestration.rs", "FrontendError"),
+    ];
+
+    let mut violations = Vec::new();
+    for (relative_path, enum_name) in expected {
+        let path = root.join(relative_path);
+        let source = read_to_string(&path);
+        if !enum_has_attribute(&source, enum_name, "non_exhaustive") {
+            violations.push(format!("{relative_path}: pub enum {enum_name}"));
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "task 25 public enum forward-compatibility policy requires \
+         #[non_exhaustive] on:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
 fn allow_detector_covers_common_attribute_shapes() {
     let samples = [
         "#[allow(dead_code)]",
@@ -319,6 +351,44 @@ fn is_allow_attribute(attribute: &str) -> bool {
         || compact.starts_with("#![allow(")
         || (compact.starts_with("#[cfg_attr(") && compact.contains(",allow("))
         || (compact.starts_with("#![cfg_attr(") && compact.contains(",allow("))
+}
+
+fn enum_has_attribute(source: &str, enum_name: &str, attribute_name: &str) -> bool {
+    let enum_declaration = format!("pub enum {enum_name}");
+    let lines = source.lines().collect::<Vec<_>>();
+
+    for (line_index, line) in lines.iter().enumerate() {
+        if line.trim_start().starts_with(&enum_declaration) {
+            return preceding_attributes(&lines, line_index)
+                .iter()
+                .any(|attribute| attribute_is(attribute, attribute_name));
+        }
+    }
+
+    false
+}
+
+fn preceding_attributes(lines: &[&str], declaration_line_index: usize) -> Vec<String> {
+    let mut attributes = Vec::new();
+    let mut line_index = declaration_line_index;
+
+    while line_index > 0 {
+        let previous_line_index = line_index - 1;
+        if !starts_attribute(lines[previous_line_index]) {
+            break;
+        }
+        let (attribute, _) = attribute_block(lines, previous_line_index);
+        attributes.push(attribute);
+        line_index = previous_line_index;
+    }
+
+    attributes
+}
+
+fn attribute_is(attribute: &str, attribute_name: &str) -> bool {
+    let compact = compact_attribute_tokens(attribute);
+
+    compact == format!("#[{attribute_name}]") || compact == format!("#![{attribute_name}]")
 }
 
 fn compact_attribute_tokens(attribute: &str) -> String {

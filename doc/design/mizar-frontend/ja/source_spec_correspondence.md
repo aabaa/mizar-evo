@@ -54,6 +54,12 @@
 
 ## エラー／診断 variant 対応
 
+task 25 では、将来 variant または予約 surface を約束する公開 frontend enum を下流 crate 向けに `#[non_exhaustive]` とする:
+`SpanBridgeError`、`PreprocessDiagnosticKind`、
+`LexicalEnvironmentDiagnosticCode`、`LexingDiagnosticKind`、
+`LexingDiagnosticPayload`、`SourceLoadLocation`、`DiagnosticCode`、
+`DiagnosticClass`、`FrontendError`。`mizar-frontend` 内部の match は引き続き exhaustive に保つ。
+
 | 対象 | variant | ソース／テスト状態 |
 |---|---|---|
 | `SpanBridgeError` | `SourceNotRegistered`, `PreprocessMapNotRegistered`, `ConflictingSourceRegistration`, `ConflictingPreprocessMapRegistration`, `UnsupportedLexerPreprocessMap`, `SourceMap` | `span_bridge.rs` に実装済み。未登録／衝突 variant、`SourceMap` wrapping、`UnsupportedLexerPreprocessMap` の直接構築／表示はテスト済み。`UnsupportedLexerPreprocessMap` は将来の未対応 lexer preprocess metadata に対する防御的 conversion guard のままであり、現在の `mizar-lexer` には producer がない。 |
@@ -95,6 +101,7 @@
 | 22 | 完了 | 精密な生スキャン回復は `mizar_lexer::scan_raw_recoverable` で実装する。frontend の import pre-scan と tokenization は `RawScanDiagnostic` のスパンを精密に写像し、利用可能な部分的 import/token を保持し、字句テキスト全体の fallback は parser plan の内部欠陥に限る。 |
 | 23 | 完了 | resident-set contract coverage は `crates/mizar-frontend/tests/lexical_env_resident_set.rs` で固定する。この test は直接 `ImportStub` に対する provider request が正確に 1 回であること、`ActiveLexicalEnvironment` が `ModuleLexicalSummary` 由来の字句的形状／出所だけを公開し、推移依存 symbol を含まないことを確認する。 |
 | 24 | 完了 | 予約済み frontend diagnostic surface は、構築可能な範囲で coverage 済み: `UnsupportedLexerPreprocessMap`、provider-owned の予約 lexical-environment diagnostic code、予約 source-load fallback location、`AnnotationSyntax`、`UnsupportedLexerPayload`。producer-backed tests は、将来の non-exhaustive lexer/session/parser contract まで延期する。 |
+| 25 | 完了 | 将来 variant または予約 surface を約束する公開 frontend enum は下流 crate 向けに `#[non_exhaustive]` とし、`mizar-frontend` 内部の match は exhaustive に保つ。所有モジュール仕様は enum の隣に enum ごとの決定を記録している。 |
 
 ## Follow-up 記録
 
