@@ -28,8 +28,8 @@ For each task, complete these phases in order:
 6. Review whether source code and documentation still agree.
 7. If the documentation review finds issues, fix them and repeat the documentation review until there are no findings.
 8. Run the relevant verification commands.
-9. Prepare a commit message and commit the completed change when the user requested committing or when the task explicitly includes the full workflow through commit, unless the user asks not to commit.
-10. Prepare a handoff prompt for the next task so it can be started in a separate chat.
+9. Prepare a handoff prompt for the next task so it can be started in a separate chat. Include a recommended reasoning setting for the next task, a short rationale, and any conditions that would justify raising or lowering that setting.
+10. Prepare a commit message. Commit the completed change only when the user explicitly requested committing or when the task explicitly includes the full workflow through commit, unless the user asks not to commit.
 
 ## Agent Delegation
 
@@ -117,4 +117,4 @@ When the task is complete, report:
 - Which reviews were run and whether they ended with no findings.
 - Which verification commands passed or could not be run.
 - The commit hash if a commit was created.
-- The next-task handoff prompt.
+- The next-task handoff prompt, including the recommended reasoning setting for that task.
