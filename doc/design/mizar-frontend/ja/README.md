@@ -8,9 +8,9 @@
 
 ## コンテキスト
 
-- [doc/design/architecture/en/00.pipeline_overview.md](../../architecture/en/00.pipeline_overview.md) - フェーズ境界とビルドスナップショット
-- [doc/design/architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md) - 正本となるフロントエンドパイプライン、インターフェース定義、回復、診断、インクリメンタリティ
-- [doc/design/architecture/en/01.ir_layers.md](../../architecture/en/01.ir_layers.md) - `SourceUnit`、`PreprocessedSource`、`TokenStream`、`SurfaceAst`
+- [doc/design/architecture/ja/00.pipeline_overview.md](../../architecture/ja/00.pipeline_overview.md) - フェーズ境界とビルドスナップショット
+- [doc/design/architecture/ja/02.source_and_frontend.md](../../architecture/ja/02.source_and_frontend.md) - フロントエンドパイプライン、インターフェース定義、回復、診断、インクリメンタリティ
+- [doc/design/architecture/ja/01.ir_layers.md](../../architecture/ja/01.ir_layers.md) - `SourceUnit`、`PreprocessedSource`、`TokenStream`、`SurfaceAst`
 - [doc/design/mizar-session/ja/README.md](../../mizar-session/ja/README.md) - ここで利用するソース同一性・ソースマップ・スナップショット
 - [doc/design/mizar-lexer/ja/README.md](../../mizar-lexer/ja/README.md) - 前処理ヘルパー、生スキャン、インポート事前走査、字句環境、スコープスケルトン、曖昧性解消器
 - [doc/design/mizar-syntax/ja/README.md](../../mizar-syntax/ja/README.md) - ここで利用する `SurfaceAst` ノード定義
@@ -28,6 +28,7 @@
 | [span_bridge.md](./span_bridge.md) | `crates/mizar-frontend/src/span_bridge.rs` | 字句解析器のバイトスパンから `mizar-session` の `SourceRange` への座標橋渡し | Implemented for task 1 |
 | [orchestration.md](./orchestration.md) | `crates/mizar-frontend/src/orchestration.rs` | フェーズ 1〜3 のエンドツーエンド統制（Step 1〜5）、診断統合、`FrontendOutput` | Implemented through task 14 |
 | [source_spec_correspondence.md](./source_spec_correspondence.md) | `crates/mizar-frontend` の仕様、ソース、ユニットテスト | task 16 の公開 API／エラー variant／タスク要件対応監査 | Implemented |
+| [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | `doc/design/mizar-frontend/en/` と `doc/design/mizar-frontend/ja/` | task 17 の二言語 API／状態／用語／リンク／挙動同期監査 | Implemented |
 | [todo.md](./todo.md) | `crates/mizar-frontend` | モジュール実装順序、状態、残作業 | Living |
 
 ## crate 境界

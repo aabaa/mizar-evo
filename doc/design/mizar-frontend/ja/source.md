@@ -10,7 +10,7 @@
 
 `mizar-session` のソース同一性を、フロントエンドローカルな読み込み済みレコードへと橋渡しする。ラップした session ローダーが、ソースのバイト列を読み、UTF-8 を検証し、ソースメタデータを導出し、`LineMap` を構築し、読み込み済みテキストのオフセットから元の入力へ戻す任意の `LoadingMap` を出力する。このモジュールは、それらの読み込み済み値を `SourceUnit` に保持する。コメントの前処理、トークン化、構文解析、インポート解決は行わず、`SourceId` / `SourceVersion` の同一性を自前で割り当てることもしない。
 
-`mizar-session` が、ソース同一性・ソースハッシュ・スナップショット所属を所有する。`mizar-frontend` は `mizar_session::LoadedSource` を利用し、[architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md) の「Step 1: Load SourceUnit」が定義する `SourceUnit` へ整形する。このモジュールは、`mizar-session` がすでに読み込んだテキストを再ハッシュ・再正規化しない。
+`mizar-session` が、ソース同一性・ソースハッシュ・スナップショット所属を所有する。`mizar-frontend` は `mizar_session::LoadedSource` を利用し、[architecture/ja/02.source_and_frontend.md](../../architecture/ja/02.source_and_frontend.md) の「ステップ 1: SourceUnit の読み込み」が定義する `SourceUnit` へ整形する。このモジュールは、`mizar-session` がすでに読み込んだテキストを再ハッシュ・再正規化しない。
 
 ## 公開 API
 
@@ -83,7 +83,7 @@ pub fn register_source_unit(
 
 `SourceUnit` は、1 つの `.miz` ファイルまたは生成ソース断片に対する、ソースに忠実な読み込み済みレコードである。構築済みの `SourceUnit` は、不変なパイプライン入力として扱う。`source_text` は、`mizar-session` が生成した、検証済みかつソース読み込み正規化済みのテキストそのものである。`source_hash`、`line_map`、`loading_map`、`normalized_path`、`edition`、`origin`、`generated_anchor` は session の値であり、再計算せずにコピーする。`file_path` は診断用のローカル表示パスであり、公開される同一性には `normalized_path` を用いる。
 
-`SourceUnit` は、[architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md) の「Incrementality」における Step 1 の読み込み済みコンテンツアンカーである。コンテンツの同一性は、パッケージ／モジュール同一性、正規化パス、`source_hash`、エディションからなり、対応する session のソースバージョンサマリと一致する。`origin` とオープンバッファのバージョンは、鮮度・診断のメタデータとして保持するが、公開ソースバージョンのコンテンツ同一性には含めない。
+`SourceUnit` は、[architecture/ja/02.source_and_frontend.md](../../architecture/ja/02.source_and_frontend.md) の「増分処理」における Step 1 の読み込み済みコンテンツアンカーである。コンテンツの同一性は、パッケージ／モジュール同一性、正規化パス、`source_hash`、エディションからなり、対応する session のソースバージョンサマリと一致する。`origin` とオープンバッファのバージョンは、鮮度・診断のメタデータとして保持するが、公開ソースバージョンのコンテンツ同一性には含めない。
 
 ### Loading Map の保持
 
@@ -125,5 +125,6 @@ pub fn register_source_unit(
 
 - このモジュールは、自前でバイトを読み込み・正規化しない。`mizar-session` に委譲し、結果を整形するだけである。
 - `source_hash`・`line_map`・`loading_map`・`normalized_path`・`edition` は、フロントエンドが再計算しない。
+- `normalized_path` と `edition` は、後続の parser inputs、lexical-environment request、cache key、診断で必要になるため、`LoadedSource` から保持する。
 - `file_path` はローカル診断メタデータであり、公開同一性からは除外される。
 - `SourceUnit` は構築後は不変なものとして扱われ、スナップショットリース・LSP ビュー・下流フェーズ出力に保持されうる。

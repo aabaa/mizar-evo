@@ -10,7 +10,7 @@
 
 配線とスパン橋渡しを所有するが、最長一致規則・スコープスケルトン構築・パーサー字句文脈の意味は所有しない（それらは `mizar-lexer` にある）。識別子が定義済みか、どのオーバーロードが適用されるかといった意味的判断は行わない。
 
-[architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md) の「Step 4: Lex」「Lexing Is Raw First, Then Contextually Disambiguated」「Dot Handling Is Split Across Lexer, Parser, and Resolver」「String Literals Are Fully Tokenized by the Lexer」を参照。
+[architecture/ja/02.source_and_frontend.md](../../architecture/ja/02.source_and_frontend.md) の「ステップ 4: 字句解析」「字句解析は生のスキャンを先に行い、その後で文脈に応じて確定する」「ドットの扱いは字句解析器・構文解析器・リゾルバに分担される」「文字列リテラルは字句解析器が完全にトークン化する」を参照。
 
 ## 公開 API
 

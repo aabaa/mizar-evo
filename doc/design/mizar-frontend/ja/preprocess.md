@@ -10,7 +10,7 @@
 
 `SourceUnit` に対して `mizar-lexer` のソース前処理ヘルパーを統制する。すなわち、コード領域の ASCII 検証、コメントとドキュメントコメントの分離、字句テキスト内の注釈構文保持、浅いトップレベルインポート事前走査である。統制と、`mizar-session` の `SourceRange` へのスパン橋渡しを所有するが、コメント除去やインポート走査のアルゴリズムは所有しない（それらは `mizar-lexer` にある）。また、トークン化・構文解析・インポート解決も行わない。
 
-[architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md) の「Step 2: Preprocess Source」「Comments and Doc Comments Are Source Metadata」「Import Pre-Scan Is Shallow」「Annotations Are Parser-Owned Syntax」を参照。
+[architecture/ja/02.source_and_frontend.md](../../architecture/ja/02.source_and_frontend.md) の「ステップ 2: ソースの前処理」「コメントとドキュメントコメントはソースのメタデータである」「インポート事前走査は浅く行う」「アノテーションは構文解析器が所有する構文である」を参照。
 
 ## 公開 API
 

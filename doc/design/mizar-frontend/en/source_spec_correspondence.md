@@ -25,9 +25,9 @@ follow-up task instead of being mixed into the audit.
 - No remaining stale English canonical spec text was found for tasks 1-16.
 - Japanese companion specs were checked for matching API names and behavior
   promises. No remaining API or behavior drift was found.
-- Broader bilingual wording/terminology review remains task 17. Other deferred
-  implementation or coverage work remains tasks 18-23. This audit added task 24
-  for reserved or currently unproduced diagnostic/fallback surface coverage.
+- Broader bilingual wording/terminology review was completed by task 17 in
+  [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md).
+  Other deferred implementation or coverage work remains tasks 18-24.
 
 ## Public API Correspondence
 
@@ -42,8 +42,9 @@ follow-up task instead of being mixed into the audit.
 | [orchestration.md](./orchestration.md) | `FrontendOutput`, `Frontend`, `Frontend::{new, run}`, `FrontendDiagnostic`, `DiagnosticLocation`, `SourceLoadLocation`, `DiagnosticCode`, `DiagnosticClass`, `FrontendError`, `FrontendParserDiagnostic`, `FrontendParserDiagnostic::into_frontend_diagnostic` | `crates/mizar-frontend/src/orchestration.rs` | Inline tests cover stub and real parser coordinator output, syntax diagnostic merge order, repeated-run determinism for current coordinator paths, same-class sorting, source-load diagnostics without fabricated ranges, open-buffer/generated load locations, span-bridge hard failures, lexical-environment hard failures, `ast = None` parser seams, and valid range-backed merged diagnostics. |
 
 The Japanese companion files under `doc/design/mizar-frontend/ja/` carry the
-same API names, variants, and behavior boundaries for every row above. Remaining
-broader language synchronization is intentionally left to task 17.
+same API names, variants, and behavior boundaries for every row above. Broader
+language synchronization was completed by task 17 in
+[bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md).
 
 ## Error And Diagnostic Variant Correspondence
 
@@ -86,7 +87,6 @@ broader language synchronization is intentionally left to task 17.
 This audit added task 24 for reserved or currently unproduced diagnostic/fallback
 surface coverage. The existing cross-cutting items also remain:
 
-- Task 17: broader bilingual documentation synchronization audit.
 - Task 18: crate-level frontend determinism property tests.
 - Task 19: incremental cache-key wiring.
 - Task 20: parser-assisted lexing contract finalization.

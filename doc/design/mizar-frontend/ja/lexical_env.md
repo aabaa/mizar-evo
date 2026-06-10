@@ -10,7 +10,7 @@
 
 前処理出力、ビルドプランナー／モジュール解決器（インポートスタブを、解決済みインポートと軽量なモジュール字句サマリへ変える）、および `mizar_lexer::build_lexical_environment` の間を統制する。完全なインポート解決は行わない。パッケージ／モジュールの存在、可視性、エクスポートの合法性はモジュール解決に属する。
 
-[architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md) の「Step 3: Build ActiveLexicalEnvironment」「Import Pre-Scan Is Shallow」を参照。
+[architecture/ja/02.source_and_frontend.md](../../architecture/ja/02.source_and_frontend.md) の「ステップ 3: ActiveLexicalEnvironment の構築」「インポート事前走査は浅く行う」を参照。
 
 ## 公開 API
 

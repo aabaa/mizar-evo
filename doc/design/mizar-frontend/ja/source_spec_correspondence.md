@@ -25,10 +25,9 @@
 - task 1-16 について、英語正本仕様に残る古い記述は見つからなかった。
 - 日本語 companion 仕様は、API 名と挙動の約束が英語正本と一致することを
   確認した。API または挙動の drift は残っていない。
-- より広い bilingual wording/terminology review は task 17 とする。他の
-  延期された実装または coverage 作業は task 18-23 に残る。この監査では、
-  予約済みまたは現在 producer を持たない diagnostic/fallback surface の coverage
-  用に task 24 を追加した。
+- より広い bilingual wording/terminology review は task 17 で完了し、
+  [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md)
+  に記録した。他の延期された実装または coverage 作業は task 18-24 に残る。
 
 ## 公開 API 対応
 
@@ -43,7 +42,9 @@
 | [orchestration.md](./orchestration.md) | `FrontendOutput`, `Frontend`, `Frontend::{new, run}`, `FrontendDiagnostic`, `DiagnosticLocation`, `SourceLoadLocation`, `DiagnosticCode`, `DiagnosticClass`, `FrontendError`, `FrontendParserDiagnostic`, `FrontendParserDiagnostic::into_frontend_diagnostic` | `crates/mizar-frontend/src/orchestration.rs` | inline tests が stub/real parser coordinator output、syntax diagnostic merge order、現在の coordinator path に対する repeated-run determinism、same-class sorting、捏造 range のない source-load diagnostic、open-buffer/generated load location、span-bridge hard failure、lexical-environment hard failure、`ast = None` parser seam、valid range-backed merged diagnostics を確認する。 |
 
 英語正本の各行に対応する日本語 companion は、同じ API 名、variant、挙動境界を
-保持している。より広い言語表現の同期は task 17 に意図的に残す。
+保持している。より広い言語表現の同期は task 17 で完了し、
+[bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md)
+に記録している。
 
 ## エラー／診断 variant 対応
 
@@ -86,7 +87,6 @@
 この監査では、予約済みまたは現在 producer を持たない diagnostic/fallback surface
 の coverage 用に task 24 を追加した。既存の cross-cutting item も残る。
 
-- Task 17: より広い bilingual documentation synchronization audit。
 - Task 18: crate-level frontend determinism property tests。
 - Task 19: incremental cache-key wiring。
 - Task 20: parser-assisted lexing contract finalization。

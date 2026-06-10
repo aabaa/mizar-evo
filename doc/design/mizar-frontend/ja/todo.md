@@ -156,8 +156,12 @@
 
 ## 横断的フォローアップタスク
 
-17. **二言語ドキュメント同期監査。** [ ]
-    - `doc/design/mizar-frontend/en/` の各英語正本ドキュメントを `doc/design/mizar-frontend/ja/` の日本語版と比較し、API 一覧、タスク状態、用語、リンクを同期する。
+17. **二言語ドキュメント同期監査。** [x]
+    - `doc/design/mizar-frontend/en/` の各英語正本ドキュメントを `doc/design/mizar-frontend/ja/` の日本語版と比較し、API 一覧、タスク状態、用語、リンク、挙動の約束を同期する。
+    - 結果: [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md)
+      に監査を記録した。英語正本ドキュメントと日本語 companion は、公開
+      API／エラー一覧、モジュールとタスク状態、用語、companion-local link、
+      挙動の約束について同期済み。未同期の日本語 companion gap は残っていない。
     - 依存: 16。仕様: リポジトリのドキュメント方針。
 
 18. **フロントエンドの決定性プロパティテスト。** [ ]
@@ -165,7 +169,7 @@
     - 依存: 16。仕様: [orchestration.md](./orchestration.md)、[lexical_env.md](./lexical_env.md)。
 
 19. **インクリメンタルキャッシュキーの配線。** [ ]
-    - [architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md)「Incrementality」の層状フロントエンドキャッシュキーを、どこで計算・保存するか（本 crate か、ドライバ／成果物層か）を決め、成果物単位のキー（`SourceUnit`、`PreprocessedSource`、`ActiveLexicalEnvironment`、`TokenStream`、`SurfaceAst`）を公開する。
+    - [architecture/ja/02.source_and_frontend.md](../../architecture/ja/02.source_and_frontend.md)「増分処理」の層状フロントエンドキャッシュキーを、どこで計算・保存するか（本 crate か、ドライバ／成果物層か）を決め、成果物単位のキー（`SourceUnit`、`PreprocessedSource`、`ActiveLexicalEnvironment`、`TokenStream`、`SurfaceAst`）を公開する。
     - コメントのみの編集が意味的出力を再利用でき、インポート／依存エクスポートの編集およびパーサー字句文脈／パーサー支援字句解析プランの変更が、トークン化と下流層を無効化することを検証する。
     - 依存: 16。仕様: アーキテクチャのインクリメンタリティ表。
 

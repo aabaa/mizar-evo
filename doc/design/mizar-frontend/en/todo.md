@@ -381,11 +381,16 @@ should keep `cargo test -p mizar-frontend` green (see
 
 ## Cross-Cutting Follow-up Tasks
 
-17. **Bilingual documentation synchronization audit.** [ ]
+17. **Bilingual documentation synchronization audit.** [x]
     - Compare every English canonical document under
       `doc/design/mizar-frontend/en/` with its Japanese companion under
       `doc/design/mizar-frontend/ja/`; synchronize API lists, task statuses,
-      terminology, and links.
+      terminology, links, and behavior commitments.
+    - Result: [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md)
+      records the audit. English canonical documents and Japanese companions are
+      synchronized for public API/error lists, module and task statuses,
+      terminology, companion-local links, and behavior commitments. No
+      unsynchronized Japanese companion gap remains.
     - Depends on: 16. Spec: repository documentation policy.
 
 18. **Frontend determinism property tests.** [ ]
