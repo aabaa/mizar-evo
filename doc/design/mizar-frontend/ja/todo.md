@@ -185,11 +185,17 @@
     - 結果: 契約は、事前計算された位置別 lexing plan を採用する。通常の source run では `ParserInputs` が `StringRequiredContext::PositionSensitive` を使い、orchestration が preprocessing 後に 1 つの `ParserLexingPlan` を導出し、`TokenizeRequest::with_plan` が tokenization に使い、`TokenStream` がその plan を保持し、token cache key がその実際の range/context 内容を hash する。preprocessing と import pre-scan は、厳密な raw scan の前に対応する recognized string-argument protection を使う。tests は Unicode/comment-marker 内容を持つ単一行 annotation string argument、line-boundary guard、範囲別 user-symbol kind filter、`MizarParserSeam` を通した実 source-to-token-to-parser handoff を確認する。
     - 依存: 10。実 parser の検証は 11 にも依存する。仕様: トップレベルの [../../todo.md](../../todo.md)「Resolved And Open Decisions」、[lexing.md](./lexing.md)、[parsing.md](./parsing.md)。
 
-21. **恒久的な lint 強制。** [ ]
+21. **恒久的な lint 強制。** [x]
     - `crates/mizar-frontend/Cargo.toml` がワークスペースの `[workspace.lints]` テーブルにオプトインし、`cargo build`/`cargo test` が、単独の clippy ゲートと同じ拒否を表面化することを確認する（`mizar-session` の方針と同様）。
     - 意図的な `allow` 例外は、`allow` の隣に根拠とともに記録する。
     - テスト: `cargo clippy -p mizar-frontend --all-targets -- -D warnings` が通る。
     - 依存: 16。仕様: 本 TODO「推奨検証」。
+    - 結果: `crates/mizar-frontend/Cargo.toml` はすでに `[lints]
+      workspace = true` で共有 lint policy にオプトインしている。
+      `tests/lint_policy.rs` は、その opt-in、workspace の
+      `warnings = "deny"` / `clippy::all = "deny"` baseline、および将来の
+      frontend `allow` 属性に隣接した理由が必要であることを固定する。
+      現在、意図的な `allow` 例外は存在しない。
 
 22. **精密な生スキャン回復契約。** [ ]
     - `mizar-lexer` が、失敗スパンと部分的な生トークンを返す回復可能な生スキャナーを公開するか、`mizar-frontend` が厳密な `scan_raw` の失敗に対して字句テキスト全体の粗い回復だけを維持するかを決める。

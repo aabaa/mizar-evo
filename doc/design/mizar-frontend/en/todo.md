@@ -440,13 +440,19 @@ should keep `cargo test -p mizar-frontend` green (see
      [../../todo.md](../../todo.md) "Resolved And Open Decisions", [lexing.md](./lexing.md),
      [parsing.md](./parsing.md).
 
-21. **Durable lint enforcement.** [ ]
+21. **Durable lint enforcement.** [x]
     - Confirm `crates/mizar-frontend/Cargo.toml` opts into the workspace
       `[workspace.lints]` table so `cargo build`/`cargo test` surface the same
       denials as the standalone clippy gate (matching the `mizar-session` policy).
     - Record any intentional `allow` exceptions with a rationale next to the `allow`.
     - Tests: `cargo clippy -p mizar-frontend --all-targets -- -D warnings` passes.
     - Depends on: 16. Spec: this TODO "Suggested Verification".
+    - Result: `crates/mizar-frontend/Cargo.toml` already opts into the shared
+      lint policy with `[lints] workspace = true`; `tests/lint_policy.rs` now
+      guards that opt-in, the workspace `warnings = "deny"` and
+      `clippy::all = "deny"` baseline, and the requirement that any future
+      frontend `allow` attribute carries an adjacent reason. No intentional
+      `allow` exceptions are currently present.
 
 22. **Precise raw-scan recovery contract.** [ ]
     - Decide whether `mizar-lexer` should expose a recoverable raw scanner that

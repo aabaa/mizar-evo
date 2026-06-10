@@ -2,11 +2,11 @@
 
 > 正本は英語です。英語版: [../en/source_spec_correspondence.md](../en/source_spec_correspondence.md)。
 
-状態: task 20 まで完了。
+状態: task 21 まで完了。
 
 ## 範囲
 
-この監査は、task 20 後の `mizar-frontend` 実装を、まず英語正本の
+この監査は、task 21 後の `mizar-frontend` 実装を、まず英語正本の
 `doc/design/mizar-frontend/en/` 仕様に照合し、その後で日本語 companion
 仕様が同じ公開 API 名、エラー／診断 variant、挙動の約束を保持している
 ことを確認する。
@@ -18,18 +18,18 @@
 
 ## 結果
 
-- task 1-20 が約束する公開 API とエラー／診断 variant について、欠落した
-  実装は見つからなかった。
+- task 1-20 が約束する公開 API とエラー／診断 variant、および task 21 の
+  lint policy guard について、欠落した実装は見つからなかった。
 - task 2 の source 要件文は、監査前に追加済みだった open-buffer `file://`
   診断パスの decode/fallback テストを明示するよう更新した。
-- task 1-20 について、英語正本仕様に残る古い記述は見つからなかった。
+- task 1-21 について、英語正本仕様に残る古い記述は見つからなかった。
 - 日本語 companion 仕様は、API 名と挙動の約束が英語正本と一致することを
   確認した。API または挙動の drift は残っていない。
 - より広い bilingual wording/terminology review は task 17 で完了し、
   [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md)
-  に記録した。task 19 の incremental cache-key wiring と task 20 の
-  parser-assisted lexing は現在完了済みである。他の延期された実装または
-  coverage 作業は task 21-24 に残る。
+  に記録した。task 19 の incremental cache-key wiring、task 20 の
+  parser-assisted lexing、task 21 の durable lint enforcement は現在完了済み
+  である。他の延期された実装または coverage 作業は task 22-24 に残る。
 
 ## 公開 API 対応
 
@@ -88,14 +88,14 @@
 | 18 | 完了 | crate-level determinism property tests が provider scheduling permutation と comment-equivalent cache-key stability を確認する。 |
 | 19 | 完了 | incremental cache-key wiring は `src/cache_key.rs` に実装され、`FrontendOutput.cache_keys` で公開され、`cache_key.md` に記録された。tests は source/preprocess/environment/token/AST invalidation boundaries を確認する。 |
 | 20 | 完了 | parser-assisted lexing は `src/lexing.rs` / `src/parsing.rs` / `src/orchestration.rs` の事前計算済み `ParserLexingPlan` を使う。tests は Unicode/comment-marker 内容を持つ annotation string argument、単一行 range guard、範囲別 user-symbol kind filter、cache-key plan invalidation、実 source-to-token-to-parser handoff を確認する。 |
+| 21 | 完了 | durable lint enforcement は `crates/mizar-frontend/tests/lint_policy.rs` で固定する。この test は frontend manifest の workspace lint opt-in、共有 rustc/clippy denial baseline、将来の frontend `allow` 属性に隣接した理由があることを確認する。 |
 
 ## Follow-up 記録
 
 この監査では、予約済みまたは現在 producer を持たない diagnostic/fallback surface
-の coverage 用に task 24 を追加した。task 18、task 19、task 20 はその後完了した。
-残る cross-cutting item は次のとおり。
+の coverage 用に task 24 を追加した。task 18、task 19、task 20、task 21 は
+その後完了した。残る cross-cutting item は次のとおり。
 
-- Task 21: durable lint enforcement。
 - Task 22: precise raw-scan recovery contract。
 - Task 23: lexical environment の resident-set contract guard。
 - Task 24: reserved frontend diagnostic surface coverage。

@@ -2,11 +2,11 @@
 
 > Canonical language: English. Japanese companion: [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md).
 
-Status: completed through task 20.
+Status: completed through task 21.
 
 ## Scope
 
-This audit checks the task-20 `mizar-frontend` implementation against the
+This audit checks the task-21 `mizar-frontend` implementation against the
 English canonical module specs under `doc/design/mizar-frontend/en/`, then checks
 that the Japanese companion specs carry the same public API names, error and
 diagnostic variants, and behavior promises.
@@ -19,17 +19,17 @@ follow-up task instead of being mixed into the audit.
 ## Result
 
 - No missing implementation was found for the public APIs and error/diagnostic
-  variants promised by tasks 1-20.
+  variants promised by tasks 1-20, or for the task-21 lint policy guard.
 - The task-2 source requirement text now names the open-buffer `file://`
   diagnostic-path decode/fallback tests that were added before this audit.
-- No remaining stale English canonical spec text was found for tasks 1-20.
+- No remaining stale English canonical spec text was found for tasks 1-21.
 - Japanese companion specs were checked for matching API names and behavior
   promises. No remaining API or behavior drift was found.
 - Broader bilingual wording/terminology review was completed by task 17 in
   [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md).
-  Task 19 incremental cache-key wiring and task 20 parser-assisted lexing are
-  now complete; other deferred implementation or coverage work remains tasks
-  21-24.
+  Task 19 incremental cache-key wiring, task 20 parser-assisted lexing, and
+  task 21 durable lint enforcement are now complete; other deferred
+  implementation or coverage work remains tasks 22-24.
 
 ## Public API Correspondence
 
@@ -88,14 +88,14 @@ language synchronization was completed by task 17 in
 | 18 | Complete | Crate-level determinism property tests cover provider scheduling permutations and comment-equivalent cache-key stability. |
 | 19 | Complete | Incremental cache-key wiring is implemented in `src/cache_key.rs`, exposed through `FrontendOutput.cache_keys`, and documented in `cache_key.md`; tests cover source/preprocess/environment/token/AST invalidation boundaries. |
 | 20 | Complete | Parser-assisted lexing uses precomputed `ParserLexingPlan`s in `src/lexing.rs` / `src/parsing.rs` / `src/orchestration.rs`; tests cover annotation string arguments with Unicode/comment-marker contents, single-line range guards, range-specific user-symbol kind filters, cache-key plan invalidation, and real source-to-token-to-parser handoff. |
+| 21 | Complete | Durable lint enforcement is guarded by `crates/mizar-frontend/tests/lint_policy.rs`, which checks the frontend manifest opt-in to workspace lints, the shared rustc/clippy denial baseline, and adjacent rationale for any future frontend `allow` attributes. |
 
 ## Follow-up Records
 
 This audit added task 24 for reserved or currently unproduced diagnostic/fallback
-surface coverage. Tasks 18, 19, and 20 have since been completed; the remaining
-cross-cutting items are:
+surface coverage. Tasks 18, 19, 20, and 21 have since been completed; the
+remaining cross-cutting items are:
 
-- Task 21: durable lint enforcement.
 - Task 22: precise raw-scan recovery contract.
 - Task 23: resident-set contract guard for the lexical environment.
 - Task 24: reserved frontend diagnostic surface coverage.
