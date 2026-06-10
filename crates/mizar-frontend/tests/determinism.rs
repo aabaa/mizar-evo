@@ -1,18 +1,23 @@
+use mizar_frontend::cache_key::{
+    ActiveLexicalEnvironmentCacheKey, FrontendCacheKeys, ParserLexingPlanCacheKey,
+    PreprocessedSourceCacheKey, SourceUnitCacheKey, SurfaceAstCacheKey, TokenStreamCacheKey,
+};
 use mizar_frontend::lexical_env::{
-    ExportRank, ExportedSymbolShape, FrontendLexicalEnvironmentError, LexicalEnvironmentDiagnostic,
+    ActiveLexicalEnvironmentResult, ExportRank, ExportedSymbolShape,
+    FrontendLexicalEnvironmentError, LexicalEnvironmentDiagnostic,
     LexicalEnvironmentDiagnosticCode, LexicalEnvironmentFingerprint, LexicalEnvironmentRequest,
     LexicalSummaryFingerprint, LexicalSummaryProvider, ModuleId, ModuleLexicalSummary,
     ResolvedImport, ResolvedImportEntry, ResolvedImports, SymbolId, UserSymbolArity,
     UserSymbolKind, build_active_lexical_environment,
 };
-use mizar_frontend::lexing::{ParserLexContext, Token, TokenKind};
+use mizar_frontend::lexing::{Token, TokenKind};
 use mizar_frontend::orchestration::{DiagnosticClass, Frontend};
-use mizar_frontend::parsing::MizarParserSeam;
+use mizar_frontend::parsing::{MizarParserSeam, ParserInputs, ParserSeam};
 use mizar_frontend::preprocess::ImportStub;
 use mizar_frontend::source::{FrontendSourceLoader, SourceUnitRequest};
 use mizar_session::{
-    BuildSnapshotId, DiskSourceLoader, Edition, Hash, InMemorySessionIdAllocator, ModulePath,
-    PackageId, SourceId, SourceInput, SourceOriginInput, SourceRange, normalize_path,
+    BuildSnapshotId, DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
+    SourceId, SourceInput, SourceOriginInput, SourceRange, normalize_path,
 };
 use std::fs;
 use std::io;
@@ -41,6 +46,20 @@ const COMMENT_EQUIVALENT_SOURCE_B: &str = "\
 import alpha, beta;
 definition
 x+*+y
+end;
+";
+
+const IMPORT_SOURCE_ALPHA_BETA: &str = "\
+import alpha, beta;
+definition
+x+*+y
+end;
+";
+
+const IMPORT_SOURCE_BETA_ONLY: &str = "\
+import beta;
+definition
+x**y
 end;
 ";
 
@@ -127,10 +146,97 @@ fn lexical_environment_fingerprint_and_cache_key_are_stable_for_equivalent_input
         "equivalent import and dependency-summary inputs should keep the lexical environment fingerprint stable"
     );
     assert_eq!(
-        token_cache_key(&first, first_fingerprint),
-        token_cache_key(&second, second_fingerprint),
+        first.cache_keys.tokens, second.cache_keys.tokens,
         "the token cache key should be stable for equivalent lexical text, environment, and parser context"
     );
+    assert_eq!(
+        first.cache_keys.ast, second.cache_keys.ast,
+        "the AST cache key should be stable when tokenization, parser version, and edition are unchanged"
+    );
+    assert_ne!(
+        first.cache_keys.preprocessed, second.cache_keys.preprocessed,
+        "comment-only edits still invalidate preprocessing because source_hash changes"
+    );
+    assert_eq!(
+        first.cache_keys.tokens.active_lexical_environment, first_fingerprint,
+        "the token key should expose the active lexical environment fingerprint"
+    );
+    assert_eq!(
+        second.cache_keys.tokens.active_lexical_environment, second_fingerprint,
+        "the token key should expose the active lexical environment fingerprint"
+    );
+    assert_eq!(
+        first.cache_keys,
+        expected_cache_keys(&first, ProviderSchedule::Reverse, DEFAULT_BETA_FINGERPRINT),
+        "FrontendOutput should expose the cache keys computed from its phase artifacts"
+    );
+    assert_eq!(
+        second.cache_keys,
+        expected_cache_keys(
+            &second,
+            ProviderSchedule::RotateLeft,
+            DEFAULT_BETA_FINGERPRINT
+        ),
+        "FrontendOutput should expose the cache keys computed from its phase artifacts"
+    );
+}
+
+#[test]
+fn dependency_export_edits_invalidate_frontend_cache_keys_end_to_end() {
+    let fixture = PackageFixture::new();
+    fixture.write("src/dependency_change.miz", IMPORT_SOURCE_ALPHA_BETA);
+
+    let baseline = run_frontend(
+        &fixture,
+        "src/dependency_change.miz",
+        ProviderSchedule::InOrder,
+    );
+    let changed_dependency = run_frontend_with_beta_fingerprint(
+        &fixture,
+        "src/dependency_change.miz",
+        ProviderSchedule::InOrder,
+        DEFAULT_BETA_FINGERPRINT + 1,
+    );
+
+    assert_eq!(
+        baseline.cache_keys.source,
+        changed_dependency.cache_keys.source
+    );
+    assert_eq!(
+        baseline.cache_keys.preprocessed,
+        changed_dependency.cache_keys.preprocessed
+    );
+    assert_ne!(
+        baseline.cache_keys.active_lexical_environment,
+        changed_dependency.cache_keys.active_lexical_environment
+    );
+    assert_ne!(
+        baseline.cache_keys.tokens,
+        changed_dependency.cache_keys.tokens
+    );
+    assert_ne!(baseline.cache_keys.ast, changed_dependency.cache_keys.ast);
+}
+
+#[test]
+fn import_edits_invalidate_frontend_cache_keys_end_to_end() {
+    let fixture = PackageFixture::new();
+    fixture.write("src/import_change.miz", IMPORT_SOURCE_ALPHA_BETA);
+    let baseline = run_frontend(&fixture, "src/import_change.miz", ProviderSchedule::InOrder);
+
+    fixture.write("src/import_change.miz", IMPORT_SOURCE_BETA_ONLY);
+    let changed_import = run_frontend(&fixture, "src/import_change.miz", ProviderSchedule::InOrder);
+
+    assert_ne!(baseline.cache_keys.source, changed_import.cache_keys.source);
+    assert_ne!(
+        baseline.cache_keys.preprocessed,
+        changed_import.cache_keys.preprocessed
+    );
+    assert_ne!(
+        baseline.cache_keys.active_lexical_environment,
+        changed_import.cache_keys.active_lexical_environment
+    );
+    assert_ne!(baseline.cache_keys.tokens, changed_import.cache_keys.tokens);
+    assert_ne!(baseline.cache_keys.ast, changed_import.cache_keys.ast);
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -143,7 +249,10 @@ enum ProviderSchedule {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct DeterminismProvider {
     schedule: ProviderSchedule,
+    beta_fingerprint: u64,
 }
+
+const DEFAULT_BETA_FINGERPRINT: u64 = 202;
 
 impl LexicalSummaryProvider for DeterminismProvider {
     fn resolve_imports(
@@ -188,20 +297,17 @@ impl LexicalSummaryProvider for DeterminismProvider {
                         101,
                         vec![symbol("+*+", "alpha.plus_star_plus", "alpha")],
                     ),
-                    summary("beta", 202, vec![symbol("**", "beta.times", "beta")]),
+                    summary(
+                        "beta",
+                        self.beta_fingerprint,
+                        vec![symbol("**", "beta.times", "beta")],
+                    ),
                 ],
                 self.schedule,
             ),
             diagnostics: schedule_items(diagnostics, self.schedule),
         })
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct TokenCacheKey {
-    lexical_hash: Hash,
-    lexical_environment: LexicalEnvironmentFingerprint,
-    parser_context: ParserLexContext,
 }
 
 fn run_frontend(
@@ -211,7 +317,33 @@ fn run_frontend(
 ) -> mizar_frontend::orchestration::FrontendOutput<mizar_syntax::SurfaceAst> {
     let frontend = Frontend::new(
         FrontendSourceLoader::new(DiskSourceLoader::new(fixture.root())),
-        DeterminismProvider { schedule },
+        DeterminismProvider {
+            schedule,
+            beta_fingerprint: DEFAULT_BETA_FINGERPRINT,
+        },
+        MizarParserSeam,
+    );
+
+    frontend
+        .run(
+            fixture.request(relative),
+            &InMemorySessionIdAllocator::new(),
+        )
+        .expect("determinism fixtures should produce recovered frontend output")
+}
+
+fn run_frontend_with_beta_fingerprint(
+    fixture: &PackageFixture,
+    relative: &str,
+    schedule: ProviderSchedule,
+    beta_fingerprint: u64,
+) -> mizar_frontend::orchestration::FrontendOutput<mizar_syntax::SurfaceAst> {
+    let frontend = Frontend::new(
+        FrontendSourceLoader::new(DiskSourceLoader::new(fixture.root())),
+        DeterminismProvider {
+            schedule,
+            beta_fingerprint,
+        },
         MizarParserSeam,
     );
 
@@ -228,26 +360,66 @@ fn lexical_environment_fingerprint(
     import_stubs: &[ImportStub],
     schedule: ProviderSchedule,
 ) -> LexicalEnvironmentFingerprint {
+    lexical_environment(source_id, import_stubs, schedule, DEFAULT_BETA_FINGERPRINT).fingerprint
+}
+
+fn lexical_environment(
+    source_id: SourceId,
+    import_stubs: &[ImportStub],
+    schedule: ProviderSchedule,
+    beta_fingerprint: u64,
+) -> ActiveLexicalEnvironmentResult {
     build_active_lexical_environment(
         &LexicalEnvironmentRequest {
             source_id,
             import_stubs,
             edition: Edition::new("2026"),
         },
-        &DeterminismProvider { schedule },
+        &DeterminismProvider {
+            schedule,
+            beta_fingerprint,
+        },
     )
     .expect("fixture provider should build a lexical environment")
-    .fingerprint
 }
 
-fn token_cache_key(
+fn expected_cache_keys(
     output: &mizar_frontend::orchestration::FrontendOutput<mizar_syntax::SurfaceAst>,
-    lexical_environment: LexicalEnvironmentFingerprint,
-) -> TokenCacheKey {
-    TokenCacheKey {
-        lexical_hash: output.preprocessed.lexical_hash,
-        lexical_environment,
-        parser_context: output.tokens.parser_context,
+    schedule: ProviderSchedule,
+    beta_fingerprint: u64,
+) -> FrontendCacheKeys {
+    let lexical_environment = lexical_environment(
+        output.source.source_id,
+        &output.preprocessed.import_stubs,
+        schedule,
+        beta_fingerprint,
+    );
+    let token_key = TokenStreamCacheKey::new(
+        &output.preprocessed,
+        lexical_environment.fingerprint,
+        output.tokens.parser_context,
+        ParserLexingPlanCacheKey::current(),
+    );
+    let parser_inputs = ParserInputs::from_active_environment(
+        output.source.edition.clone(),
+        &lexical_environment.environment,
+    );
+    let ast = output.ast.as_ref().map(|_| {
+        SurfaceAstCacheKey::new(
+            token_key.stable_hash(),
+            MizarParserSeam.cache_key_version(),
+            &parser_inputs,
+        )
+    });
+
+    FrontendCacheKeys {
+        source: SourceUnitCacheKey::from_source(&output.source),
+        preprocessed: PreprocessedSourceCacheKey::from_source(&output.source),
+        active_lexical_environment: ActiveLexicalEnvironmentCacheKey::new(
+            lexical_environment.fingerprint,
+        ),
+        tokens: token_key,
+        ast,
     }
 }
 

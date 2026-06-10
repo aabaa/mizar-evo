@@ -31,6 +31,7 @@ pub struct FrontendOutput<A> {
     pub tokens: TokenStream,
     pub ast: Option<A>,
     pub diagnostics: Vec<FrontendDiagnostic>,
+    pub cache_keys: FrontendCacheKeys,
 }
 
 pub struct Frontend<L, P, PS>
@@ -118,7 +119,10 @@ pub trait FrontendParserDiagnostic {
 
 `FrontendOutput<A>` matches the architecture interface while keeping the parser
 AST type abstract. With `StubParserSeam`, `ast` is always `None`; with the real
-parser seam, `A` is `mizar_syntax::SurfaceAst`. `FrontendDiagnostic` is the
+parser seam, `A` is `mizar_syntax::SurfaceAst`. `cache_keys` is the
+frontend-computed content-key bundle from [cache_key.md](./cache_key.md);
+drivers decide how to persist cache records and compose these content keys with
+snapshot/task identity. `FrontendDiagnostic` is the
 unified diagnostic that all phase-specific diagnostics
 (`SourcePreprocessDiagnostic`, `ImportPrescanDiagnostic`,
 `LexicalEnvironmentDiagnostic`, `LexingDiagnostic` including raw-scan /
@@ -145,7 +149,7 @@ returned.
 ## Dependencies
 
 - Internal: `source`, `preprocess`, `lexical_env`, `lexing`, `parsing`,
-  `span_bridge` (constructed once and threaded through the phases).
+  `cache_key`, `span_bridge` (constructed once and threaded through the phases).
 - External: `mizar-session` (`SourceId`, `SourceRange`, `SourceAnchor`,
   `NormalizedPath`, `DocumentUri`, `SessionIdAllocator`, `BuildSnapshotId`),
   `mizar-lexer`, `mizar-syntax`, `mizar-parser`, and `std::path::PathBuf`.
@@ -157,13 +161,15 @@ compiler driver, LSP, the formatter, and tests.
 
 ### Frontend Output
 
-`FrontendOutput` bundles each phase artifact plus the merged diagnostics. It is
-the unit later phases (module/name resolution) consume: they read `ast` and
-`tokens`, and they read `source`/`preprocessed` for spans, comments, and import
-stubs. Each artifact carries its own cache key per
+`FrontendOutput` bundles each phase artifact plus the merged diagnostics and
+frontend content cache keys. It is the unit later phases (module/name
+resolution) consume: they read `ast` and `tokens`, and they read
+`source`/`preprocessed` for spans, comments, and import stubs. Each artifact's
+content key is exposed in `cache_keys` per
 [architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md)
 "Incrementality", so a comment-only edit can reuse semantic outputs while a
-dependency export change invalidates tokenization.
+dependency export change invalidates tokenization. Cache storage and scheduler
+task keys remain outside this crate.
 
 ### Diagnostic Merge Order
 
@@ -213,7 +219,8 @@ attached when a later diagnostic may be affected by an earlier recovery.
    context or the stub/general context when the real parser contract is not yet
    available. Propagate a `SpanBridgeError` as `FrontendError`.
 7. Parse (`parsing`) through the configured `ParserSeam` into an optional AST.
-8. Map every phase diagnostic into `FrontendDiagnostic`, merge in the
+8. Compute the frontend content cache-key bundle for the phase artifacts.
+9. Map every phase diagnostic into `FrontendDiagnostic`, merge in the
    deterministic order above, and assemble `FrontendOutput`.
 
 Phases 2-5 do not abort on recoverable problems: they record diagnostics and

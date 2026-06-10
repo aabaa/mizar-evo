@@ -1,3 +1,7 @@
+use crate::cache_key::{
+    ActiveLexicalEnvironmentCacheKey, FrontendCacheKeys, ParserLexingPlanCacheKey,
+    PreprocessedSourceCacheKey, SourceUnitCacheKey, SurfaceAstCacheKey, TokenStreamCacheKey,
+};
 use crate::lexical_env::{
     FrontendLexicalEnvironmentError, LexicalEnvironmentDiagnostic,
     LexicalEnvironmentDiagnosticCode, LexicalEnvironmentRequest, LexicalSummaryProvider,
@@ -28,6 +32,7 @@ pub struct FrontendOutput<A> {
     pub tokens: TokenStream,
     pub ast: Option<A>,
     pub diagnostics: Vec<FrontendDiagnostic>,
+    pub cache_keys: FrontendCacheKeys,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -99,7 +104,23 @@ where
             &bridge,
         )
         .map_err(|source| FrontendError::SpanBridge { source })?;
+        let token_cache_key = TokenStreamCacheKey::new(
+            &preprocessed,
+            lexical_environment.fingerprint,
+            tokens.parser_context,
+            ParserLexingPlanCacheKey::current(),
+        );
+        let token_stream_hash = token_cache_key.stable_hash();
+        let parser_cache_key_version = self.parser.cache_key_version();
+        let parser_inputs_for_cache = parser_inputs.clone();
         let parser_output = self.parser.parse(ParseRequest::new(&tokens, parser_inputs));
+        let ast_cache_key = parser_output.ast.as_ref().map(|_| {
+            SurfaceAstCacheKey::new(
+                token_stream_hash,
+                parser_cache_key_version,
+                &parser_inputs_for_cache,
+            )
+        });
 
         let diagnostics = merge_phase_diagnostics(
             &preprocessed.diagnostics,
@@ -107,6 +128,15 @@ where
             &tokens.diagnostics,
             parser_output.diagnostics,
         );
+        let cache_keys = FrontendCacheKeys {
+            source: SourceUnitCacheKey::from_source(&source),
+            preprocessed: PreprocessedSourceCacheKey::from_source(&source),
+            active_lexical_environment: ActiveLexicalEnvironmentCacheKey::new(
+                lexical_environment.fingerprint,
+            ),
+            tokens: token_cache_key,
+            ast: ast_cache_key,
+        };
 
         Ok(FrontendOutput {
             source,
@@ -114,6 +144,7 @@ where
             tokens,
             ast: parser_output.ast,
             diagnostics,
+            cache_keys,
         })
     }
 }

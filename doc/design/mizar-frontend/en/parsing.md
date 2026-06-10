@@ -27,6 +27,10 @@ See
 ## Public API
 
 ```rust
+pub const DEFAULT_PARSER_CACHE_KEY_VERSION: &str;
+pub const STUB_PARSER_CACHE_KEY_VERSION: &str;
+pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str;
+
 pub struct ParseRequest<'a> {
     pub tokens: &'a TokenStream,
     pub parser_inputs: ParserInputs,
@@ -90,7 +94,16 @@ pub trait ParserSeam {
     type Ast;
     type Diagnostic;
 
+    fn cache_key_version(&self) -> ParserCacheKeyVersion;
     fn parse(&self, request: ParseRequest<'_>) -> ParseOutput<Self::Ast, Self::Diagnostic>;
+}
+
+pub struct ParserCacheKeyVersion {
+    pub version: Arc<str>,
+}
+
+impl ParserCacheKeyVersion {
+    pub fn new(version: impl Into<Arc<str>>) -> Self;
 }
 
 pub struct ParseOutput<A, D> {
@@ -114,6 +127,10 @@ coordinator paths and returns `ast = None` plus an empty diagnostic list.
 `ParserInputs` is derived by the frontend from the active lexical environment
 and edition after Step 3; callers do not supply it to the top-level frontend
 coordinator.
+`ParserSeam::cache_key_version` supplies the parser component of
+`SurfaceAstCacheKey`; `MizarParserSeam` and `StubParserSeam` use explicit
+versions, while custom seams inherit a conservative custom-seam version unless
+they override it.
 
 `operator_fixity` is populated only from data present in dependency lexical
 summaries. If the current summary shape does not yet expose fixity, the default
@@ -236,5 +253,5 @@ Key scenarios:
 - `ParserInputs` carries only grammar-affecting configuration, not resolver state.
 - `SurfaceAst` may contain recovery nodes; later phases must tolerate or reject
   them explicitly.
-- The `SurfaceAst` cache key is the token-stream hash plus parser version and
-  edition.
+- The `SurfaceAst` cache key is the token-stream hash plus parser version,
+  parser inputs hash, and edition.

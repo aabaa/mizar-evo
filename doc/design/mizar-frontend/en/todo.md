@@ -18,6 +18,7 @@
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [x] |
 | parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] implemented through task 12 |
+| cache_key | [cache_key.md](./cache_key.md) | `src/cache_key.rs` | [x] |
 | orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [~] implemented through task 14 |
 
 `mizar-frontend` is an orchestration crate, so it is built bottom-up by phase:
@@ -26,7 +27,7 @@ end-to-end coordinator. `span_bridge` is the shared primitive every later step
 references; `orchestration` is the only module that wires the full pipeline.
 
 Dependency order: `span_bridge` → `source` → `preprocess` → `lexical_env` →
-`lexing` → `parsing` → `orchestration`.
+`lexing` → `parsing` → `cache_key` → `orchestration`.
 
 ## Crate Prerequisites
 
@@ -405,7 +406,7 @@ should keep `cargo test -p mizar-frontend` green (see
     - Depends on: 16. Spec: [orchestration.md](./orchestration.md),
       [lexical_env.md](./lexical_env.md).
 
-19. **Incremental cache-key wiring.** [ ]
+19. **Incremental cache-key wiring.** [x]
     - Decide where the layered frontend cache keys from
       [architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md)
       "Incrementality" are computed and stored (this crate vs. the driver/artifact
@@ -414,6 +415,13 @@ should keep `cargo test -p mizar-frontend` green (see
     - Verify comment-only edits can reuse semantic outputs while import / dependency
       export edits and parser lexing context / parser-assisted lexing-plan changes
       invalidate tokenization and downstream layers.
+    - Result: [cache_key.md](./cache_key.md) documents the split: this crate
+      computes deterministic frontend content keys and returns them through
+      `FrontendOutput.cache_keys`, while the driver/artifact layer owns cache
+      storage, validation, and task-key composition. Unit tests cover source,
+      preprocessing, lexical-environment, token-stream, and AST key invalidation;
+      `tests/determinism.rs` now asserts the crate-level frontend cache keys for
+      comment-equivalent runs and end-to-end import/dependency invalidation.
     - Depends on: 16. Spec: architecture incrementality table.
 
 20. **Parser-assisted lexing contract finalization.** [ ]

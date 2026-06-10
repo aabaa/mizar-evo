@@ -3,6 +3,10 @@ use crate::lexing::{ParserLexContext, TokenKind, TokenStream};
 use mizar_session::Edition;
 use std::sync::Arc;
 
+pub const DEFAULT_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/parser-seam/custom-v1";
+pub const STUB_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/stub-parser/no-ast-v1";
+pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v1";
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseRequest<'a> {
     pub tokens: &'a TokenStream,
@@ -112,7 +116,24 @@ pub trait ParserSeam {
     type Ast;
     type Diagnostic;
 
+    fn cache_key_version(&self) -> ParserCacheKeyVersion {
+        ParserCacheKeyVersion::new(DEFAULT_PARSER_CACHE_KEY_VERSION)
+    }
+
     fn parse(&self, request: ParseRequest<'_>) -> ParseOutput<Self::Ast, Self::Diagnostic>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParserCacheKeyVersion {
+    pub version: Arc<str>,
+}
+
+impl ParserCacheKeyVersion {
+    pub fn new(version: impl Into<Arc<str>>) -> Self {
+        Self {
+            version: version.into(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -121,6 +142,10 @@ pub struct StubParserSeam;
 impl ParserSeam for StubParserSeam {
     type Ast = ();
     type Diagnostic = ();
+
+    fn cache_key_version(&self) -> ParserCacheKeyVersion {
+        ParserCacheKeyVersion::new(STUB_PARSER_CACHE_KEY_VERSION)
+    }
 
     fn parse(&self, _request: ParseRequest<'_>) -> ParseOutput<Self::Ast, Self::Diagnostic> {
         ParseOutput {
@@ -136,6 +161,10 @@ pub struct MizarParserSeam;
 impl ParserSeam for MizarParserSeam {
     type Ast = mizar_syntax::SurfaceAst;
     type Diagnostic = mizar_syntax::SyntaxDiagnostic;
+
+    fn cache_key_version(&self) -> ParserCacheKeyVersion {
+        ParserCacheKeyVersion::new(MIZAR_PARSER_CACHE_KEY_VERSION)
+    }
 
     fn parse(&self, request: ParseRequest<'_>) -> ParseOutput<Self::Ast, Self::Diagnostic> {
         let parser_request = mizar_parser::ParseRequest::new(

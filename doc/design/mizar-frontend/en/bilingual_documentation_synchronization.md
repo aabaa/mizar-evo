@@ -31,12 +31,12 @@ readers.
 
 - No remaining public API or error/diagnostic variant drift was found between the
   English canonical module specs and the Japanese companions.
-- Module and task statuses are synchronized: tasks 1-17 remain complete from
-  this audit, task 18 is now complete, and follow-up tasks 19-24 remain open.
+- Module and task statuses are synchronized: tasks 1-19 are complete, and
+  follow-up tasks 20-24 remain open.
 - Terminology is synchronized for `SourceUnit`, `PreprocessedSource`,
   `ImportStub`, `ActiveLexicalEnvironment`, `TokenStream`, parser seam,
-  `FrontendOutput`, recoverable diagnostics, hard `FrontendError`s, and
-  parser-assisted lexing gates.
+  `FrontendOutput`, frontend content cache keys, recoverable diagnostics, hard
+  `FrontendError`s, and parser-assisted lexing gates.
 - Japanese companion links now prefer Japanese companion architecture/spec/module
   links when the companion exists, while preserving links to English canonical
   files where the referenced canonical source is intentionally English.
@@ -44,7 +44,8 @@ readers.
   raw-scan recovery, provider provenance validation, bounded conflict retry,
   structured lexing payload preservation, `ast = None` parser recovery, stable
   diagnostic merge order, source-load locations without fabricated ranges, and
-  the resident-set `ModuleLexicalSummary` boundary.
+  the resident-set `ModuleLexicalSummary` boundary, plus task-19 cache-key
+  storage/computation boundaries.
 - No unsynchronized Japanese companion gap remains.
 
 ## Pair Checklist
@@ -57,10 +58,11 @@ readers.
 | [preprocess.md](./preprocess.md) | [../ja/preprocess.md](../ja/preprocess.md) | Public API, comment/doc-comment handling, import stubs, coarse raw import recovery, diagnostics, and annotation-gate terminology are synchronized. |
 | [lexical_env.md](./lexical_env.md) | [../ja/lexical_env.md](../ja/lexical_env.md) | Provider seam API, provenance validation, import canonicalization, conflict retry, malformed-summary boundary, cache fingerprint, and resident-set links are synchronized. |
 | [lexing.md](./lexing.md) | [../ja/lexing.md](../ja/lexing.md) | Token stream API, scope view API, payload variants, two-pass contextual skeleton behavior, raw-scan recovery, and parser-context gates are synchronized. |
-| [parsing.md](./parsing.md) | [../ja/parsing.md](../ja/parsing.md) | Parser input API, seam API, stub/real parser behavior, Pratt/fixity coverage, parser recovery, and task-20 gates are synchronized. |
-| [orchestration.md](./orchestration.md) | [../ja/orchestration.md](../ja/orchestration.md) | Frontend API, diagnostic classes, source-load locations, merge order, hard-error boundaries, syntax pass-through, and output constraints are synchronized. |
-| [source_spec_correspondence.md](./source_spec_correspondence.md) | [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md) | Task-16 audit text now points to this completed task-17 audit instead of leaving bilingual wording review open. |
-| [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Task statuses and follow-up records are synchronized; task 17 is checked off with this audit result. |
+| [parsing.md](./parsing.md) | [../ja/parsing.md](../ja/parsing.md) | Parser input API, seam API, parser cache-key version API, stub/real parser behavior, Pratt/fixity coverage, parser recovery, and task-20 gates are synchronized. |
+| [cache_key.md](./cache_key.md) | [../ja/cache_key.md](../ja/cache_key.md) | Frontend content cache-key APIs, storage boundary, invalidation rules, and tests are synchronized. |
+| [orchestration.md](./orchestration.md) | [../ja/orchestration.md](../ja/orchestration.md) | Frontend API, `FrontendOutput.cache_keys`, diagnostic classes, source-load locations, merge order, hard-error boundaries, syntax pass-through, and output constraints are synchronized. |
+| [source_spec_correspondence.md](./source_spec_correspondence.md) | [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md) | Task-16 audit text now records task-19 cache-key wiring and remaining tasks 20-24. |
+| [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Task statuses and follow-up records are synchronized; task 19 is checked off with this result. |
 
 ## Link Policy
 
@@ -74,10 +76,9 @@ the English canonical decision itself.
 
 ## Follow-up Records
 
-No new follow-up task was added by this audit. Task 18 has since been completed;
-existing open follow-ups are:
+No new follow-up task was added by this audit. Tasks 18 and 19 have since been
+completed; existing open follow-ups are:
 
-- Task 19: incremental cache-key wiring.
 - Task 20: parser-assisted lexing contract finalization.
 - Task 21: durable lint enforcement.
 - Task 22: precise raw-scan recovery contract.

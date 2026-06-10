@@ -16,6 +16,10 @@
 ## 公開 API
 
 ```rust
+pub const DEFAULT_PARSER_CACHE_KEY_VERSION: &str;
+pub const STUB_PARSER_CACHE_KEY_VERSION: &str;
+pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str;
+
 pub struct ParseRequest<'a> {
     pub tokens: &'a TokenStream,
     pub parser_inputs: ParserInputs,
@@ -79,7 +83,16 @@ pub trait ParserSeam {
     type Ast;
     type Diagnostic;
 
+    fn cache_key_version(&self) -> ParserCacheKeyVersion;
     fn parse(&self, request: ParseRequest<'_>) -> ParseOutput<Self::Ast, Self::Diagnostic>;
+}
+
+pub struct ParserCacheKeyVersion {
+    pub version: Arc<str>,
+}
+
+impl ParserCacheKeyVersion {
+    pub fn new(version: impl Into<Arc<str>>) -> Self;
 }
 
 pub struct ParseOutput<A, D> {
@@ -96,7 +109,7 @@ pub struct StubParserSeam;
 pub struct MizarParserSeam;
 ```
 
-`SurfaceAst` と `SyntaxDiagnostic` は `mizar-syntax` が所有する。実 `MizarParserSeam` は `mizar-parser` のエントリポイントへ委譲し、それらの出力をそのまま返す。`StubParserSeam` は source-to-token coordinator 経路のために残り、`ast = None` と空の診断リストを返す。`ParserInputs` は、Step 3 の後にフロントエンドがアクティブ字句環境とエディションから導出する。トップレベルのコーディネータの呼び出し側は、これを渡さない。
+`SurfaceAst` と `SyntaxDiagnostic` は `mizar-syntax` が所有する。実 `MizarParserSeam` は `mizar-parser` のエントリポイントへ委譲し、それらの出力をそのまま返す。`StubParserSeam` は source-to-token coordinator 経路のために残り、`ast = None` と空の診断リストを返す。`ParserInputs` は、Step 3 の後にフロントエンドがアクティブ字句環境とエディションから導出する。トップレベルのコーディネータの呼び出し側は、これを渡さない。`ParserSeam::cache_key_version` は `SurfaceAstCacheKey` の parser component を供給する。`MizarParserSeam` と `StubParserSeam` は明示的な version を使い、custom seam は override しない限り保守的な custom-seam version を継承する。
 
 `operator_fixity` は、依存字句サマリが公開しているデータからのみ埋める。現在のサマリの形がまだ fixity を公開していない場合、通常の source-to-token 経路では `OperatorFixityTable { entries: Vec::new() }` を使う。一方で、明示的な合成 parser 入力により、実 Pratt/fixity seam は検証できる。`StringRequiredContext::None` は通常の source-to-token 基盤モードであり、`UniformForTest` は、字句解析器全体を意図的に `ParserLexContext::string_required()` で実行する有界なテスト専用である。位置別の文字列必須スパンとパーサー駆動の記号種別フィルタは、この初期型では表現しない。実ソース入力で文法位置の文字列リテラルが必要になる前に、パーサー支援字句解析の契約で追加する。
 
@@ -156,4 +169,4 @@ parser seam により、フロントエンドは stubbed source-to-token pipelin
 - パーサーは、フロントエンドが生成したトークンストリームを消費する。文字列リテラルにパーサー支援字句解析が必要な場合でも、パーサーは合意済みの狭い文脈／プランオブジェクトを通じてのみ通信し、任意のパーサー状態を字句解析器に晒さない。
 - `ParserInputs` は文法に影響する設定のみを運び、解決器の状態は運ばない。
 - `SurfaceAst` は回復ノードを含みうる。後のフェーズは、それらを明示的に許容または拒否しなければならない。
-- `SurfaceAst` のキャッシュキーは、トークンストリームハッシュ、パーサーバージョン、エディションである。
+- `SurfaceAst` のキャッシュキーは、トークンストリームハッシュ、パーサーバージョン、parser inputs hash、エディションである。

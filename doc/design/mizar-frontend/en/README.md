@@ -33,6 +33,7 @@ coordinator paths and returns `ast = None`.
 | [lexical_env.md](./lexical_env.md) | `crates/mizar-frontend/src/lexical_env.rs` | Step 3: active lexical environment construction from import stubs and dependency lexical summaries | Implemented through task 6 |
 | [lexing.md](./lexing.md) | `crates/mizar-frontend/src/lexing.rs` | Step 4: `TokenStream` via raw scan, scope skeleton, and context-sensitive disambiguation | Implemented |
 | [parsing.md](./parsing.md) | `crates/mizar-frontend/src/parsing.rs` | Step 5: parser-seam invocation, parser-input assembly, and `SurfaceAst` handoff | Implemented through task 12; full grammar recovery pending |
+| [cache_key.md](./cache_key.md) | `crates/mizar-frontend/src/cache_key.rs` | Layered frontend content cache keys exposed through `FrontendOutput.cache_keys` | Implemented through task 19 |
 | [span_bridge.md](./span_bridge.md) | `crates/mizar-frontend/src/span_bridge.rs` | Lexer byte span → `mizar-session` `SourceRange` coordinate bridge | Implemented for task 1 |
 | [orchestration.md](./orchestration.md) | `crates/mizar-frontend/src/orchestration.rs` | End-to-end phase 1-3 coordination (pipeline Steps 1-5), diagnostic merge, and `FrontendOutput` | Implemented through task 14 |
 | [source_spec_correspondence.md](./source_spec_correspondence.md) | `crates/mizar-frontend` specs, sources, and unit tests | Task 16 public API / error variant / task requirement correspondence audit | Implemented |
@@ -54,6 +55,8 @@ coordinator paths and returns `ast = None`.
 - parser-seam invocation producing an optional AST (`ast = None` under the stub
   seam or unrecoverable real parser input, `SurfaceAst` under recoverable real
   parser input);
+- layered frontend content cache keys for `SourceUnit`, `PreprocessedSource`,
+  `ActiveLexicalEnvironment`, `TokenStream`, and `SurfaceAst`;
 - the lexer-span → session-`SourceRange` coordinate bridge;
 - deterministic diagnostic merging into a single `FrontendOutput`.
 
@@ -62,5 +65,6 @@ It must not:
 - own source identity, source hashes, or snapshots;
 - own raw scanning, comment stripping, or token disambiguation rules;
 - own `SurfaceAst` node definitions or parser grammar/recovery logic;
+- own cache storage, cache-hit validation, or scheduler task-key composition;
 - perform semantic name resolution, type checking, overload selection, cluster
   registration, or proof-obligation generation.

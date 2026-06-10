@@ -18,11 +18,12 @@
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [x] |
 | parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] task 12 まで実装済み |
+| cache_key | [cache_key.md](./cache_key.md) | `src/cache_key.rs` | [x] |
 | orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [~] task 14 まで実装済み |
 
 `mizar-frontend` は統制を担う crate なので、フェーズの順にボトムアップで構築する。まず座標の橋渡しを用意し、続いてパイプライン順に Step 1〜5、最後にエンドツーエンドのコーディネータを作る。`span_bridge` は後続の各フェーズが参照する共有プリミティブであり、`orchestration` はパイプライン全体を配線する唯一のモジュールである。
 
-依存順序: `span_bridge` → `source` → `preprocess` → `lexical_env` → `lexing` → `parsing` → `orchestration`。
+依存順序: `span_bridge` → `source` → `preprocess` → `lexical_env` → `lexing` → `parsing` → `cache_key` → `orchestration`。
 
 ## crate の前提条件
 
@@ -172,9 +173,10 @@
       安定性を網羅する。
     - 依存: 16。仕様: [orchestration.md](./orchestration.md)、[lexical_env.md](./lexical_env.md)。
 
-19. **インクリメンタルキャッシュキーの配線。** [ ]
+19. **インクリメンタルキャッシュキーの配線。** [x]
     - [architecture/ja/02.source_and_frontend.md](../../architecture/ja/02.source_and_frontend.md)「増分処理」の層状フロントエンドキャッシュキーを、どこで計算・保存するか（本 crate か、ドライバ／成果物層か）を決め、成果物単位のキー（`SourceUnit`、`PreprocessedSource`、`ActiveLexicalEnvironment`、`TokenStream`、`SurfaceAst`）を公開する。
     - コメントのみの編集が意味的出力を再利用でき、インポート／依存エクスポートの編集およびパーサー字句文脈／パーサー支援字句解析プランの変更が、トークン化と下流層を無効化することを検証する。
+    - 結果: [cache_key.md](./cache_key.md) に分担を記録した。この crate は決定的な frontend content key を計算して `FrontendOutput.cache_keys` で返し、driver / artifact 層は cache storage、検証、task-key composition を所有する。ユニットテストは source、preprocessing、lexical-environment、token-stream、AST key の無効化を網羅し、`tests/determinism.rs` は comment-equivalent な実行と end-to-end import/dependency invalidation について crate-level frontend cache keys を検証する。
     - 依存: 16。仕様: アーキテクチャのインクリメンタリティ表。
 
 20. **パーサー支援字句解析契約の確定。** [ ]
