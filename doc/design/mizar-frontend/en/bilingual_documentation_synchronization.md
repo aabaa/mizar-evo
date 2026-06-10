@@ -31,8 +31,8 @@ readers.
 
 - No remaining public API or error/diagnostic variant drift was found between the
   English canonical module specs and the Japanese companions.
-- Module and task statuses are synchronized: tasks 1-22 are complete, and
-  follow-up tasks 23-24 remain open.
+- Module and task statuses are synchronized: tasks 1-23 are complete, and
+  follow-up task 24 remains open.
 - Terminology is synchronized for `SourceUnit`, `PreprocessedSource`,
   `ImportStub`, `ActiveLexicalEnvironment`, `TokenStream`, parser seam,
   `FrontendOutput`, frontend content cache keys, recoverable diagnostics, hard
@@ -44,7 +44,8 @@ readers.
   recoverable raw-scan recovery, provider provenance validation, bounded conflict retry,
   structured lexing payload preservation, `ast = None` parser recovery, stable
   diagnostic merge order, source-load locations without fabricated ranges, and
-  the resident-set `ModuleLexicalSummary` boundary, task-19 cache-key
+  the resident-set `ModuleLexicalSummary` boundary and task-23 guard,
+  task-19 cache-key
   storage/computation boundaries, task-20 parser-assisted lexing-plan
   boundaries, task-21 durable lint-policy guards, and task-22 raw-scan recovery
   boundaries.
@@ -63,8 +64,8 @@ readers.
 | [parsing.md](./parsing.md) | [../ja/parsing.md](../ja/parsing.md) | Parser input API, position-sensitive string context API, seam API, parser cache-key version API, stub/real parser behavior, Pratt/fixity coverage, and parser recovery are synchronized. |
 | [cache_key.md](./cache_key.md) | [../ja/cache_key.md](../ja/cache_key.md) | Frontend content cache-key APIs, parser lexing-plan content keys, storage boundary, invalidation rules, and tests are synchronized. |
 | [orchestration.md](./orchestration.md) | [../ja/orchestration.md](../ja/orchestration.md) | Frontend API, `FrontendOutput.cache_keys`, diagnostic classes, source-load locations, merge order, hard-error boundaries, syntax pass-through, and output constraints are synchronized. |
-| [source_spec_correspondence.md](./source_spec_correspondence.md) | [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md) | Task-16 audit text now records task-19 cache-key wiring, task-20 parser-assisted lexing, task-21 durable lint enforcement, task-22 raw-scan recovery, and remaining tasks 23-24. |
-| [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Task statuses and follow-up records are synchronized; task 22 is checked off with this result. |
+| [source_spec_correspondence.md](./source_spec_correspondence.md) | [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md) | Task-16 audit text records task-19 cache-key wiring, task-20 parser-assisted lexing, task-21 durable lint enforcement, task-22 raw-scan recovery, and task-23 resident-set guard status; task 24 remains open. |
+| [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Task statuses and follow-up records are synchronized; task 23 is checked off with this result. |
 
 ## Link Policy
 
@@ -78,8 +79,7 @@ the English canonical decision itself.
 
 ## Follow-up Records
 
-No new follow-up task was added by this audit. Tasks 18, 19, 20, 21, and 22 have
-since been completed; existing open follow-ups are:
+No new follow-up task was added by this audit. Tasks 18, 19, 20, 21, 22, and 23
+have since been completed; the existing open follow-up is:
 
-- Task 23: resident-set contract guard for the lexical environment.
 - Task 24: reserved frontend diagnostic surface coverage.

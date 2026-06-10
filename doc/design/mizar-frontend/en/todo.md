@@ -478,7 +478,7 @@ should keep `cargo test -p mizar-frontend` green (see
       imports, and tokenization that emits precise `ErrorRecovery` tokens while
       continuing with later source tokens.
 
-23. **Resident-set contract guard for the lexical environment.** [ ]
+23. **Resident-set contract guard for the lexical environment.** [x]
     - Add coverage that locks the resident-set contract now stated in
       [lexical_env.md](./lexical_env.md) "Constraints and Assumptions": the active
       lexical environment holds only compact `ModuleLexicalSummary` projections of
@@ -495,6 +495,13 @@ should keep `cargo test -p mizar-frontend` green (see
     - Depends on: 6. Spec: [lexical_env.md](./lexical_env.md) "Constraints and
       Assumptions"; resident-set memory model spec
       [§12.6.3](../../../spec/en/12.modules_and_namespaces.md#1263-memory-model).
+    - Result: `tests/lexical_env_resident_set.rs` adds a recording
+      `LexicalSummaryProvider` that proves `build_active_lexical_environment`
+      asks exactly once for the current request's direct `ImportStub`s and never
+      expands the import closure. The test also checks that the resulting
+      `ActiveLexicalEnvironment` exposes only summary-derived lexical shape and
+      provenance fields, and that a transitive fixture symbol is absent unless it
+      appears in a direct `ModuleLexicalSummary`.
 
 24. **Reserved frontend diagnostic surface coverage.** [ ]
     - Review public variants that are reserved or have no current producer:

@@ -213,10 +213,17 @@
       lexer 側の継続、import を保持する精密な事前走査診断、精密な
       `ErrorRecovery` token と後続 tokenization の継続を確認する。
 
-23. **字句環境の常駐集合契約のガード。** [ ]
+23. **字句環境の常駐集合契約のガード。** [x]
     - [lexical_env.md](./lexical_env.md)「制約と前提」で明示された常駐集合契約を固定するカバレッジを追加する。すなわち、アクティブ字句環境はインポートされたモジュールの圧縮された `ModuleLexicalSummary` 射影のみを保持し、その定義や完全なモジュール IR は決して保持しないこと、そして `LexicalSummaryProvider` が import closure を先読みで展開するのではなく現在のファイルの解決済みインポートについてのみ問い合わせられること。
     - テスト: 記録用のフェイク `LexicalSummaryProvider` が、リクエストの `ImportStub` にスコープされた `resolve_imports` 呼び出しを正確に 1 回だけ受け取り、推移的インポートへの展開を要求されないこと。得られる `ActiveLexicalEnvironment` が summary 由来の字句的形状と出所（綴り・種別・arity・symbol id・定義／インポート元モジュール・インポート序数・export rank など、いずれも軽量な `ModuleLexicalSummary` 由来データ）のみを公開し、完全な依存 IR を要求する API 経路が無いこと。
     - 依存: 6。仕様: [lexical_env.md](./lexical_env.md)「制約と前提」、常駐集合メモリモデル spec [§12.6.3](../../../spec/ja/12.modules_and_namespaces.md#1263-メモリモデル)。
+    - 結果: `tests/lexical_env_resident_set.rs` は記録用の
+      `LexicalSummaryProvider` を追加し、`build_active_lexical_environment`
+      が現在の request の直接 `ImportStub` だけを正確に 1 回問い合わせ、
+      import closure を展開しないことを固定する。このテストは、得られる
+      `ActiveLexicalEnvironment` が summary 由来の字句的形状と出所フィールド
+      だけを公開し、推移的 fixture symbol が直接の `ModuleLexicalSummary` に
+      入らない限り存在しないことも確認する。
 
 24. **予約済み frontend diagnostic surface の coverage。** [ ]
     - 予約済みまたは現在 producer を持たない公開 variant を見直す:
