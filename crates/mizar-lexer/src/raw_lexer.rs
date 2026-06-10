@@ -23,6 +23,33 @@ impl RawTokenStream {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecoverableRawTokenStream {
+    pub tokens: Vec<RawToken>,
+    pub diagnostics: Vec<RawScanDiagnostic>,
+}
+
+impl RecoverableRawTokenStream {
+    pub fn new(tokens: Vec<RawToken>, diagnostics: Vec<RawScanDiagnostic>) -> Self {
+        Self {
+            tokens,
+            diagnostics,
+        }
+    }
+
+    pub fn tokens(&self) -> &[RawToken] {
+        &self.tokens
+    }
+
+    pub fn diagnostics(&self) -> &[RawScanDiagnostic] {
+        &self.diagnostics
+    }
+
+    pub fn into_parts(self) -> (Vec<RawToken>, Vec<RawScanDiagnostic>) {
+        (self.tokens, self.diagnostics)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RawToken {
     pub kind: RawTokenKind,
     pub lexeme: String,
@@ -62,15 +89,64 @@ pub enum RawTokenKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RawScanDiagnostic {
+    pub code: RawScanDiagnosticCode,
+    pub message: String,
+    pub span: SourceSpan,
+}
+
+impl RawScanDiagnostic {
+    pub fn new(code: RawScanDiagnosticCode, message: impl Into<String>, span: SourceSpan) -> Self {
+        Self {
+            code,
+            message: message.into(),
+            span,
+        }
+    }
+
+    pub const fn code(&self) -> RawScanDiagnosticCode {
+        self.code
+    }
+
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+
+    pub const fn span(&self) -> SourceSpan {
+        self.span
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum RawScanDiagnosticCode {
+    UnsupportedAnnotationMarker,
+    UnsupportedInput,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LexError {
     message: String,
+    span: Option<SourceSpan>,
 }
 
 impl LexError {
     pub(crate) fn new(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
+            span: None,
         }
+    }
+
+    pub(crate) fn from_raw_scan_diagnostic(diagnostic: RawScanDiagnostic) -> Self {
+        Self {
+            message: diagnostic.message,
+            span: Some(diagnostic.span),
+        }
+    }
+
+    pub const fn span(&self) -> Option<SourceSpan> {
+        self.span
     }
 }
 
@@ -82,7 +158,23 @@ impl fmt::Display for LexError {
 
 impl Error for LexError {}
 pub fn scan_raw(input: &str) -> Result<RawTokenStream, LexError> {
+    scan_raw_impl(input, RawScanMode::Strict).map(|stream| RawTokenStream::new(stream.tokens))
+}
+
+pub fn scan_raw_recoverable(input: &str) -> RecoverableRawTokenStream {
+    scan_raw_impl(input, RawScanMode::Recoverable)
+        .expect("recoverable raw scanning should not return hard errors")
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RawScanMode {
+    Strict,
+    Recoverable,
+}
+
+fn scan_raw_impl(input: &str, mode: RawScanMode) -> Result<RecoverableRawTokenStream, LexError> {
     let mut tokens = Vec::new();
+    let mut diagnostics = Vec::new();
     let mut chars = input.char_indices().peekable();
 
     while let Some((start, ch)) = chars.peek().copied() {
@@ -127,9 +219,23 @@ pub fn scan_raw(input: &str) -> Result<RawTokenStream, LexError> {
                     end
                 }
                 _ => {
-                    return Err(LexError::new(format!(
-                        "unsupported annotation marker at byte {start}"
-                    )));
+                    push_recoverable_error_token(
+                        input,
+                        &mut tokens,
+                        mode,
+                        start,
+                        start + ch.len_utf8(),
+                    );
+                    handle_raw_scan_diagnostic(
+                        &mut diagnostics,
+                        mode,
+                        RawScanDiagnostic::new(
+                            RawScanDiagnosticCode::UnsupportedAnnotationMarker,
+                            format!("unsupported annotation marker at byte {start}"),
+                            SourceSpan::new(start, start + ch.len_utf8()),
+                        ),
+                    )?;
+                    continue;
                 }
             };
 
@@ -159,12 +265,49 @@ pub fn scan_raw(input: &str) -> Result<RawTokenStream, LexError> {
             continue;
         }
 
-        return Err(LexError::new(format!(
-            "unsupported raw lexer input at byte {start}: {ch:?}"
-        )));
+        chars.next();
+        push_recoverable_error_token(input, &mut tokens, mode, start, start + ch.len_utf8());
+        handle_raw_scan_diagnostic(
+            &mut diagnostics,
+            mode,
+            RawScanDiagnostic::new(
+                RawScanDiagnosticCode::UnsupportedInput,
+                format!("unsupported raw lexer input at byte {start}: {ch:?}"),
+                SourceSpan::new(start, start + ch.len_utf8()),
+            ),
+        )?;
     }
 
-    Ok(RawTokenStream { tokens })
+    Ok(RecoverableRawTokenStream {
+        tokens,
+        diagnostics,
+    })
+}
+
+fn push_recoverable_error_token(
+    input: &str,
+    tokens: &mut Vec<RawToken>,
+    mode: RawScanMode,
+    start: usize,
+    end: usize,
+) {
+    if mode == RawScanMode::Recoverable {
+        tokens.push(raw_token(input, RawTokenKind::Error, start, end));
+    }
+}
+
+fn handle_raw_scan_diagnostic(
+    diagnostics: &mut Vec<RawScanDiagnostic>,
+    mode: RawScanMode,
+    diagnostic: RawScanDiagnostic,
+) -> Result<(), LexError> {
+    match mode {
+        RawScanMode::Strict => Err(LexError::from_raw_scan_diagnostic(diagnostic)),
+        RawScanMode::Recoverable => {
+            diagnostics.push(diagnostic);
+            Ok(())
+        }
+    }
 }
 fn raw_token(input: &str, kind: RawTokenKind, start: usize, end: usize) -> RawToken {
     RawToken::new(kind, &input[start..end], SourceSpan::new(start, end))

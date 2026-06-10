@@ -68,9 +68,9 @@
    - 依存: 2。仕様: [preprocess.md](./preprocess.md)「Comments and Doc Comments」「Algorithm / Logic」。
 
 4. **浅いインポート事前走査の統合。** [x]
-   - 字句テキストを生スキャン（`scan_raw`）し、`mizar_lexer::scan_import_prelude` を実行する。変換済みの `SourceRange` を持つ `import_stubs` を満たし、`ImportPrescanDiagnostic` を `diagnostics` に集める。
-   - 厳密な生スキャンが失敗した場合は、字句テキスト全体（空ならソース先頭のゼロ長範囲）を覆うフロントエンドローカルなインポート事前走査診断を記録し、`import_stubs` を空にして、部分的な生テキストから import を推測せずに続行する。回復可能な生スキャナーの契約が用意されるまでは、`mizar_lexer::LexError` がスパンを持つと仮定しない。
-   - テスト: トップレベルの `import` 形式が、生パス・任意の alias・`path.relative`・`path.source_segments`・スパンを持つ `ImportStub` を生む。`.` と `..` の相対 prefix が current／parent インポートとして区別されたまま保持される。不正なインポートが中断せずにインポート事前走査診断を生む。インポート事前走査中の生スキャン失敗が、粗い診断と空の `import_stubs` を生む。出所と決定的なフィンガープリントのために、インポート順が保持される。
+   - 字句テキストを回復可能に生スキャン（`scan_raw_recoverable`）し、`mizar_lexer::scan_import_prelude` を実行する。変換済みの `SourceRange` を持つ `import_stubs` を満たし、`ImportPrescanDiagnostic` と精密な `RawImportScan` 診断を `diagnostics` に集める。
+   - 回復可能な生スキャンが診断を報告した場合は、各問題スパンを精密に写像し、利用可能な部分的生トークン上で import 事前走査を継続する。字句テキスト全体の fallback は、ユーザー記述の不正な生入力ではなく、内部 scanner/plan 不変条件の失敗に限る。
+   - テスト: トップレベルの `import` 形式が、生パス・任意の alias・`path.relative`・`path.source_segments`・スパンを持つ `ImportStub` を生む。`.` と `..` の相対 prefix が current／parent インポートとして区別されたまま保持される。不正なインポートが中断せずにインポート事前走査診断を生む。インポート事前走査中の生スキャン回復が精密な診断を生み、利用可能な部分的 `import_stubs` を保持する。出所と決定的なフィンガープリントのために、インポート順が保持される。
    - 依存: 3。仕様: [preprocess.md](./preprocess.md)「Import Stubs」「Error Handling」。
 
 ### モジュール: lexical_env (`src/lexical_env.rs`)
@@ -182,7 +182,7 @@
 20. **パーサー支援字句解析契約の確定。** [x]
     - 位置別の `ParserLexContext` を事前計算して 1 パスで曖昧性解消するか、狭い文脈オブジェクトを通じて構文解析と交錯させるかを確定し、選択した統合方式を [lexing.md](./lexing.md) と [parsing.md](./parsing.md) に記録する。
     - いずれの選択でも、字句解析器を任意のパーサー状態から自由に保つ。
-    - 結果: 契約は、事前計算された位置別 lexing plan を採用する。通常の source run では `ParserInputs` が `StringRequiredContext::PositionSensitive` を使い、orchestration が preprocessing 後に 1 つの `ParserLexingPlan` を導出し、`TokenizeRequest::with_plan` が tokenization に使い、`TokenStream` がその plan を保持し、token cache key がその実際の range/context 内容を hash する。preprocessing と import pre-scan は、厳密な raw scan の前に対応する recognized string-argument protection を使う。tests は Unicode/comment-marker 内容を持つ単一行 annotation string argument、line-boundary guard、範囲別 user-symbol kind filter、`MizarParserSeam` を通した実 source-to-token-to-parser handoff を確認する。
+    - 結果: 契約は、事前計算された位置別 lexing plan を採用する。通常の source run では `ParserInputs` が `StringRequiredContext::PositionSensitive` を使い、orchestration が preprocessing 後に 1 つの `ParserLexingPlan` を導出し、`TokenizeRequest::with_plan` が tokenization に使い、`TokenStream` がその plan を保持し、token cache key がその実際の range/context 内容を hash する。preprocessing と import pre-scan は、回復可能な raw scan の前に対応する recognized string-argument protection を使う。tests は Unicode/comment-marker 内容を持つ単一行 annotation string argument、line-boundary guard、範囲別 user-symbol kind filter、`MizarParserSeam` を通した実 source-to-token-to-parser handoff を確認する。
     - 依存: 10。実 parser の検証は 11 にも依存する。仕様: トップレベルの [../../todo.md](../../todo.md)「Resolved And Open Decisions」、[lexing.md](./lexing.md)、[parsing.md](./parsing.md)。
 
 21. **恒久的な lint 強制。** [x]
@@ -197,11 +197,21 @@
       frontend `allow` 属性に隣接した理由が必要であることを固定する。
       現在、意図的な `allow` 例外は存在しない。
 
-22. **精密な生スキャン回復契約。** [ ]
+22. **精密な生スキャン回復契約。** [x]
     - `mizar-lexer` が、失敗スパンと部分的な生トークンを返す回復可能な生スキャナーを公開するか、`mizar-frontend` が厳密な `scan_raw` の失敗に対して字句テキスト全体の粗い回復だけを維持するかを決める。
     - 回復可能な生スキャナーを追加する場合は、[preprocess.md](./preprocess.md) と [lexing.md](./lexing.md) を更新し、粗い診断／回復トークンを、精密な失敗スパンと同期境界からの継続に置き換える。
-    - テスト: この契約が入るまでは、厳密な `scan_raw` の失敗が粗い回復のままであることを確認する。契約後は、インポート事前走査とトークン化が、問題箇所の正確なスパンを報告し、利用可能な部分的生トークンを保持することを確認する。
+    - テスト: この契約が入るまでは、厳密な `scan_raw` の失敗が粗い回復のままであることを確認する。契約後は、インポート事前走査とトークン化が、問題箇所の正確なスパンを報告し、利用可能な部分的生トークンを保持し、回復境界に error sentinel を残して不正テキストを連結しないことを確認する。
     - 依存: 9。仕様: [preprocess.md](./preprocess.md)、[lexing.md](./lexing.md)。
+    - 結果: `mizar-lexer` は、厳密な `scan_raw` に加えて
+      `scan_raw_recoverable` を公開する。この API は利用可能な部分的生
+      トークン、error sentinel、精密な `RawScanDiagnostic` を持つ
+      `RecoverableRawTokenStream` を返す。`mizar-frontend` はインポート
+      事前走査とトークン化でこの回復可能経路を使い、問題箇所のスパンを
+      `SpanBridge` で写像し、利用可能な部分ストリームから見つかる import
+      stub と後続トークンを保持する。従来の字句テキスト全体の fallback は、
+      parser plan の range 不整合のような内部欠陥に限って残る。tests は
+      lexer 側の継続、import を保持する精密な事前走査診断、精密な
+      `ErrorRecovery` token と後続 tokenization の継続を確認する。
 
 23. **字句環境の常駐集合契約のガード。** [ ]
     - [lexical_env.md](./lexical_env.md)「制約と前提」で明示された常駐集合契約を固定するカバレッジを追加する。すなわち、アクティブ字句環境はインポートされたモジュールの圧縮された `ModuleLexicalSummary` 射影のみを保持し、その定義や完全なモジュール IR は決して保持しないこと、そして `LexicalSummaryProvider` が import closure を先読みで展開するのではなく現在のファイルの解決済みインポートについてのみ問い合わせられること。

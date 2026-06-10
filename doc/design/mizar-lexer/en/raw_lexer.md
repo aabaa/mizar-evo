@@ -20,7 +20,7 @@ For the next parser-integration `0.x` milestone, downstream crates may rely on t
 
 | Surface | Compatibility promise for the next parser milestone |
 |---|---|
-| Entry points | `load_source_text_from_bytes`, `preprocess_source_for_lexing`, `scan_raw`, `scan_import_prelude`, `build_lexical_environment`, `build_scope_skeleton`, `lex`, and `disambiguate` remain the executable lexer handoff path. |
+| Entry points | `load_source_text_from_bytes`, `preprocess_source_for_lexing`, strict `scan_raw`, recoverable `scan_raw_recoverable`, `scan_import_prelude`, `build_lexical_environment`, `build_scope_skeleton`, `lex`, and `disambiguate` remain the executable lexer handoff path. |
 | Coordinates | `SourceSpan` remains a half-open byte range in the exact text passed to the producing stage. `SourceSpan::new`, `try_new`, `len`, `is_empty`, `is_valid`, and `contains` are the preferred stable helpers for downstream code that does not need field construction. `SourceSpan::new` rejects reversed ranges; defensive boundary APIs still reject invalid spans that external callers construct through visible fields. |
 | Token access | `RawToken`, `RawTokenStream`, `Token`, `TokenStream`, and `LexDiagnostic` keep parser-facing fields visible for now, but callers should prefer their constructors and accessor methods where possible. `TokenStream::into_parts` should be used when taking ownership so recoverable diagnostics are not dropped accidentally. This leaves room to add cached metadata or wrappers later without changing the read-only parser path. |
 | IDs and fingerprints | `ModuleId`, `SymbolId`, `ExportRank`, `LexicalSummaryFingerprint`, and `LexicalEnvironmentFingerprint` remain lightweight newtypes. Prefer `new`, `as_str`, or `get` over tuple-field access in new integration code. The exact fingerprint algorithm may still change between `0.x` releases when the lexical summary shape changes. |
@@ -81,12 +81,12 @@ Lexing is split into two conceptual stages.
 The current crate separates source preparation, raw scanning, and final disambiguation even when a caller uses the convenience `lex` entry point.
 
 1. `preprocess_source_for_lexing` walks the input byte span in source order. It preserves recognized single-line parser-assisted string argument spans verbatim before comment stripping, removes comments from lexical text, preserves newline characters from comment bodies, inserts synthetic layout when removal would concatenate adjacent token-shaped text, stores comment trivia with source spans, records a lightweight preprocess map from lexical ranges back to loaded-source ranges, and reports carriage returns, non-ASCII code characters outside recognized string argument spans, or unterminated multi-line comments as preprocessing diagnostics. Multi-line comments are non-nesting: the first `=::` after a `::=` opener closes the comment, and any inner `::=` spelling is ordinary comment text. This helper does not read files or normalize platform-specific paths.
-2. `scan_raw` consumes LF-only lexical text with a `char_indices` cursor. It coalesces adjacent layout into one `Layout`, recognizes annotation markers beginning with `@`, coalesces ASCII graphic non-`@` characters into either `NumeralLike` when all characters are digits or `LexemeRun` otherwise, and rejects unsupported characters with `LexError`.
+2. `scan_raw` consumes LF-only lexical text with a `char_indices` cursor. It coalesces adjacent layout into one `Layout`, recognizes annotation markers beginning with `@`, coalesces ASCII graphic non-`@` characters into either `NumeralLike` when all characters are digits or `LexemeRun` otherwise, and rejects unsupported characters with `LexError`. `scan_raw_recoverable` uses the same tokenization rules but records `RawScanDiagnostic`s with precise offending spans, emits matching `RawTokenKind::Error` sentinels for malformed spellings, and resumes so callers can keep usable partial raw tokens without joining text across recovery boundaries.
 3. `disambiguate_reserved_shell` is the context-free shell used by `lex`. It drops layout, maps `NumeralLike` to `Numeral`, maps `@[` to a reserved symbol, and classifies whole `LexemeRun` values as reserved symbols, reserved words, identifiers, or opaque `LexemeRun` values.
 4. Context-sensitive callers use `disambiguate` instead. That path keeps raw scanning deliberately coarse and lets the disambiguator split each `LexemeRun` using reserved tables, the active lexical environment, parser lexical context, and `ScopeLexView`.
 5. `module_source_name_from_path` is a source-boundary helper rather than a scanner. It validates the package name, requires a `.miz` file under a `src` root, checks that the source root matches the package name, normalizes path separators, and emits namespace components that are all identifier-shaped.
 
-The raw scanner's main invariant is span contiguity: every emitted raw token points back to the exact byte slice it came from, and the concatenation of raw token lexemes reconstructs the raw scanner input.
+The strict raw scanner's main invariant is span contiguity: every emitted raw token points back to the exact byte slice it came from, and the concatenation of raw token lexemes reconstructs the raw scanner input. The recoverable scanner preserves that invariant by inserting `RawTokenKind::Error` sentinels for diagnostic spans; callers that want only usable raw units can filter those sentinels while still using them to avoid joining text across recovery boundaries.
 
 ### Source Coordinates
 
@@ -149,7 +149,28 @@ pub enum RawTokenKind {
 }
 ```
 
-`scan_raw` currently returns `LexError` for unsupported raw input instead of emitting `RawTokenKind::Error`. The `Error` variant is reserved for callers or future recovery paths that need to carry malformed raw units into later disambiguation.
+`scan_raw` returns `LexError` for unsupported raw input instead of emitting `RawTokenKind::Error`. `scan_raw_recoverable` returns:
+
+```rust
+pub struct RecoverableRawTokenStream {
+    pub tokens: Vec<RawToken>,
+    pub diagnostics: Vec<RawScanDiagnostic>,
+}
+
+pub struct RawScanDiagnostic {
+    pub code: RawScanDiagnosticCode,
+    pub message: String,
+    pub span: SourceSpan,
+}
+
+#[non_exhaustive]
+pub enum RawScanDiagnosticCode {
+    UnsupportedAnnotationMarker,
+    UnsupportedInput,
+}
+```
+
+It emits usable raw tokens for valid spans, records malformed raw input as diagnostics, emits an `Error` raw token for each offending span, and resumes at the next character boundary. Malformed annotation markers consume only the offending `@`, so following text such as `@ name` can still produce later raw tokens.
 
 `LexemeRun` is the central raw unit. It covers both identifier-shaped and punctuation-shaped spelling:
 
@@ -344,6 +365,25 @@ pub fn module_source_name_from_path(
 ) -> Result<ModuleSourceName, ModuleNamingError>;
 
 pub fn scan_raw(input: &str) -> Result<RawTokenStream, LexError>;
+pub fn scan_raw_recoverable(input: &str) -> RecoverableRawTokenStream;
+
+pub struct RecoverableRawTokenStream {
+    pub tokens: Vec<RawToken>,
+    pub diagnostics: Vec<RawScanDiagnostic>,
+}
+
+pub struct RawScanDiagnostic {
+    pub code: RawScanDiagnosticCode,
+    pub message: String,
+    pub span: SourceSpan,
+}
+
+#[non_exhaustive]
+pub enum RawScanDiagnosticCode {
+    UnsupportedAnnotationMarker,
+    UnsupportedInput,
+}
+
 pub fn disambiguate_reserved_shell(raw: &RawTokenStream) -> Result<Vec<Token>, LexError>;
 pub fn lex(input: &str) -> Result<Vec<Token>, LexError>;
 

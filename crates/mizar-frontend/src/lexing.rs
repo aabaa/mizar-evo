@@ -2,10 +2,11 @@ use crate::lexical_env::ActiveLexicalEnvironment;
 use crate::preprocess::PreprocessedSource;
 use crate::span_bridge::{LexerByteSpan, SpanBridge, SpanBridgeError};
 use mizar_lexer::{
-    LexDiagnostic as LexerDiagnostic, LexDiagnosticPayload as LexerDiagnosticPayload, RawToken,
-    RawTokenStream, RejectedTokenCandidate as LexerRejectedTokenCandidate, ScopeSkeleton,
-    ScopeSkeletonDiagnostic, SourceSpan as LexerSourceSpan, Token as LexerToken,
-    TokenStream as LexerTokenStream, build_scope_skeleton, disambiguate, scan_raw,
+    LexDiagnostic as LexerDiagnostic, LexDiagnosticPayload as LexerDiagnosticPayload,
+    RawScanDiagnostic, RawScanDiagnosticCode, RawToken, RawTokenStream, RecoverableRawTokenStream,
+    RejectedTokenCandidate as LexerRejectedTokenCandidate, ScopeSkeleton, ScopeSkeletonDiagnostic,
+    SourceSpan as LexerSourceSpan, Token as LexerToken, TokenStream as LexerTokenStream,
+    build_scope_skeleton, disambiguate, scan_raw_recoverable,
 };
 use mizar_session::{MappedSourceRange, SourceAnchor, SourceId, SourceRange};
 use std::sync::Arc;
@@ -287,7 +288,8 @@ pub fn tokenize(
     let raw = match scan_raw_with_plan(lexical_text, &request.parser_lexing_plan) {
         Ok(raw) => raw,
         Err(error) => {
-            let (token, diagnostic) = raw_scan_recovery(source_id, lexical_text, bridge, error)?;
+            let (token, diagnostic) =
+                whole_text_raw_scan_recovery(source_id, lexical_text, bridge, error)?;
             return Ok(TokenStream {
                 source_id,
                 parser_context: request.parser_context,
@@ -298,14 +300,33 @@ pub fn tokenize(
             });
         }
     };
+    let (raw_tokens, raw_scan_diagnostics) = raw.into_parts();
+    let raw = RawTokenStream::new(
+        raw_tokens
+            .into_iter()
+            .filter(|token| token.kind != RawTokenKind::Error)
+            .collect(),
+    );
 
-    token_stream_from_raw(
+    let mut token_stream = token_stream_from_raw(
         source_id,
         request.parser_lexing_plan,
         &raw,
         request.environment,
         bridge,
-    )
+    )?;
+    let (mut recovery_tokens, mut raw_diagnostics) =
+        raw_scan_recovery(source_id, lexical_text, bridge, &raw_scan_diagnostics)?;
+    token_stream.tokens.append(&mut recovery_tokens);
+    token_stream.tokens.sort_by(|left, right| {
+        left.span
+            .start
+            .cmp(&right.span.start)
+            .then(left.span.end.cmp(&right.span.end))
+    });
+    raw_diagnostics.append(&mut token_stream.diagnostics);
+    token_stream.diagnostics = raw_diagnostics;
+    Ok(token_stream)
 }
 
 fn token_stream_from_raw(
@@ -403,18 +424,25 @@ fn disambiguate_with_plan(
 fn scan_raw_with_plan(
     lexical_text: &str,
     parser_lexing_plan: &ParserLexingPlan,
-) -> Result<RawTokenStream, String> {
+) -> Result<RecoverableRawTokenStream, String> {
     if parser_lexing_plan.is_uniform() {
-        return scan_raw(lexical_text).map_err(|error| error.to_string());
+        return Ok(scan_raw_recoverable(lexical_text));
     }
 
     let mut tokens = Vec::new();
+    let mut diagnostics = Vec::new();
     let mut cursor = 0;
     for context in &parser_lexing_plan.contexts {
         if context.range.start < cursor {
             continue;
         }
-        scan_raw_segment(lexical_text, cursor, context.range.start, &mut tokens)?;
+        scan_raw_segment(
+            lexical_text,
+            cursor,
+            context.range.start,
+            &mut tokens,
+            &mut diagnostics,
+        )?;
         if context.context.mode() == ParserLexMode::StringRequired {
             push_planned_string_raw_token(lexical_text, context.range, &mut tokens)?;
         } else {
@@ -423,13 +451,20 @@ fn scan_raw_with_plan(
                 context.range.start,
                 context.range.end,
                 &mut tokens,
+                &mut diagnostics,
             )?;
         }
         cursor = context.range.end;
     }
-    scan_raw_segment(lexical_text, cursor, lexical_text.len(), &mut tokens)?;
+    scan_raw_segment(
+        lexical_text,
+        cursor,
+        lexical_text.len(),
+        &mut tokens,
+        &mut diagnostics,
+    )?;
 
-    Ok(RawTokenStream::new(tokens))
+    Ok(RecoverableRawTokenStream::new(tokens, diagnostics))
 }
 
 fn scan_raw_segment(
@@ -437,6 +472,7 @@ fn scan_raw_segment(
     start: usize,
     end: usize,
     tokens: &mut Vec<RawToken>,
+    diagnostics: &mut Vec<RawScanDiagnostic>,
 ) -> Result<(), String> {
     if start == end {
         return Ok(());
@@ -444,8 +480,8 @@ fn scan_raw_segment(
     let segment = lexical_text
         .get(start..end)
         .ok_or_else(|| format!("parser lexing plan range {start}..{end} is not a UTF-8 span"))?;
-    let raw = scan_raw(segment).map_err(|error| error.to_string())?;
-    tokens.extend(raw.into_tokens().into_iter().map(|token| {
+    let (raw_tokens, raw_diagnostics) = scan_raw_recoverable(segment).into_parts();
+    tokens.extend(raw_tokens.into_iter().map(|token| {
         RawToken::new(
             token.kind,
             token.lexeme,
@@ -455,7 +491,41 @@ fn scan_raw_segment(
             },
         )
     }));
+    diagnostics.extend(raw_diagnostics.into_iter().map(|diagnostic| {
+        let span = LexerSourceSpan {
+            start: diagnostic.span.start + start,
+            end: diagnostic.span.end + start,
+        };
+        RawScanDiagnostic::new(
+            diagnostic.code,
+            raw_scan_diagnostic_message(diagnostic.code, lexical_text, span.start),
+            span,
+        )
+    }));
     Ok(())
+}
+
+fn raw_scan_diagnostic_message(
+    code: RawScanDiagnosticCode,
+    lexical_text: &str,
+    start: usize,
+) -> String {
+    match code {
+        RawScanDiagnosticCode::UnsupportedAnnotationMarker => {
+            format!("unsupported annotation marker at byte {start}")
+        }
+        RawScanDiagnosticCode::UnsupportedInput => {
+            if let Some(ch) = lexical_text
+                .get(start..)
+                .and_then(|text| text.chars().next())
+            {
+                format!("unsupported raw lexer input at byte {start}: {ch:?}")
+            } else {
+                format!("unsupported raw lexer input at byte {start}")
+            }
+        }
+        _ => format!("unsupported raw lexer input at byte {start}"),
+    }
 }
 
 fn push_planned_string_raw_token(
@@ -734,6 +804,41 @@ fn lexer_rejected_candidate(
 }
 
 fn raw_scan_recovery(
+    source_id: SourceId,
+    lexical_text: &str,
+    bridge: &SpanBridge,
+    diagnostics: &[RawScanDiagnostic],
+) -> Result<(Vec<Token>, Vec<LexingDiagnostic>), SpanBridgeError> {
+    let pairs = diagnostics
+        .iter()
+        .map(|diagnostic| {
+            let mapping = lexical_mapping(source_id, bridge, diagnostic.span)?;
+            let text = lexical_text
+                .get(diagnostic.span.start..diagnostic.span.end)
+                .unwrap_or("");
+            Ok((
+                Token {
+                    kind: TokenKind::ErrorRecovery,
+                    text: Arc::<str>::from(text),
+                    span: mapping.primary,
+                },
+                LexingDiagnostic {
+                    kind: LexingDiagnosticKind::RawScan,
+                    message: Arc::<str>::from(format!(
+                        "raw scan recovered after raw scan error: {}",
+                        diagnostic.message
+                    )),
+                    primary: mapping.primary,
+                    secondary: mapping.secondary,
+                    payload: LexingDiagnosticPayload::None,
+                },
+            ))
+        })
+        .collect::<Result<Vec<_>, SpanBridgeError>>()?;
+    Ok(pairs.into_iter().unzip())
+}
+
+fn whole_text_raw_scan_recovery(
     source_id: SourceId,
     lexical_text: &str,
     bridge: &SpanBridge,
@@ -1198,6 +1303,65 @@ mod tests {
             ]
         );
         assert!(stream.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn position_sensitive_plan_raw_scan_recovery_uses_absolute_spans() {
+        let text = "foo(\"α::β\")\n@ name";
+        let (source, preprocessed, bridge) = preprocessed_source(text);
+        let environment = empty_environment();
+        let plan = ParserLexingPlan::for_lexical_text(preprocessed.lexical_text.as_str());
+
+        assert_eq!(plan.contexts.len(), 1);
+        assert_eq!(
+            plan.contexts[0].range,
+            LexicalByteRange::new(nth_index(text, "\"α", 0), nth_index(text, "\")", 0) + 1)
+        );
+
+        let stream = tokenize(
+            TokenizeRequest::with_plan(&preprocessed, &environment, plan),
+            &bridge,
+        )
+        .unwrap();
+
+        assert_eq!(
+            token_kinds_texts_and_spans(&stream),
+            vec![
+                (TokenKind::Identifier, "foo", range(source.source_id, 0, 3)),
+                (
+                    TokenKind::ReservedSymbol,
+                    "(",
+                    range(source.source_id, 3, 4)
+                ),
+                (
+                    TokenKind::StringLiteral,
+                    "\"α::β\"",
+                    range(source.source_id, 4, 12),
+                ),
+                (
+                    TokenKind::ReservedSymbol,
+                    ")",
+                    range(source.source_id, 12, 13),
+                ),
+                (
+                    TokenKind::ErrorRecovery,
+                    "@",
+                    range(source.source_id, 14, 15),
+                ),
+                (
+                    TokenKind::Identifier,
+                    "name",
+                    range(source.source_id, 16, 20),
+                ),
+            ]
+        );
+        assert_eq!(stream.diagnostics.len(), 1);
+        assert_eq!(stream.diagnostics[0].kind, LexingDiagnosticKind::RawScan);
+        assert_eq!(
+            stream.diagnostics[0].primary,
+            range(source.source_id, 14, 15)
+        );
+        assert!(stream.diagnostics[0].message.contains("byte 14"));
     }
 
     #[test]
@@ -1752,8 +1916,8 @@ x;";
     }
 
     #[test]
-    fn raw_scan_failure_returns_coarse_recovery_token_and_diagnostic() {
-        let text = "@-";
+    fn raw_scan_recovery_returns_precise_token_and_continues() {
+        let text = "@ name";
         let (source, preprocessed, bridge) = preprocessed_source(text);
         let environment = empty_environment();
 
@@ -1764,24 +1928,31 @@ x;";
         .unwrap();
 
         assert_eq!(stream.scope_view.frames, Vec::new());
-        assert_eq!(stream.tokens.len(), 1);
-        assert_eq!(stream.tokens[0].kind, TokenKind::ErrorRecovery);
-        assert_eq!(stream.tokens[0].text.as_ref(), "@-");
-        assert_eq!(stream.tokens[0].span, range(source.source_id, 0, 2));
+        assert_eq!(
+            token_kinds_texts_and_spans(&stream),
+            vec![
+                (TokenKind::ErrorRecovery, "@", range(source.source_id, 0, 1)),
+                (TokenKind::Identifier, "name", range(source.source_id, 2, 6)),
+            ]
+        );
         assert_eq!(stream.diagnostics.len(), 1);
         assert_eq!(stream.diagnostics[0].kind, LexingDiagnosticKind::RawScan);
-        assert!(stream.diagnostics[0].message.contains("raw scan failed"));
-        assert_eq!(stream.diagnostics[0].primary, range(source.source_id, 0, 2));
+        assert!(
+            stream.diagnostics[0]
+                .message
+                .starts_with("raw scan recovered after raw scan error:")
+        );
+        assert_eq!(stream.diagnostics[0].primary, range(source.source_id, 0, 1));
         assert_eq!(stream.diagnostics[0].payload, LexingDiagnosticPayload::None);
     }
 
     #[test]
-    fn raw_scan_failure_preserves_secondary_anchors_from_preprocess_mapping() {
-        let text = "@-::=hidden=::beta";
+    fn raw_scan_recovery_preserves_partial_tokens_after_removed_comment() {
+        let text = "@::=hidden=::beta";
         let (source, preprocessed, bridge) = preprocessed_source(text);
         let environment = empty_environment();
 
-        assert_eq!(preprocessed.lexical_text.as_str(), "@- beta");
+        assert_eq!(preprocessed.lexical_text.as_str(), "@ beta");
 
         let stream = tokenize(
             TokenizeRequest::new(&preprocessed, &environment, ParserLexContext::general()),
@@ -1789,34 +1960,25 @@ x;";
         )
         .unwrap();
 
-        assert_eq!(stream.tokens.len(), 1);
-        assert_eq!(stream.tokens[0].kind, TokenKind::ErrorRecovery);
         assert_eq!(
-            stream.tokens[0].span,
-            range(source.source_id, 0, text.len())
+            token_kinds_texts_and_spans(&stream),
+            vec![
+                (TokenKind::ErrorRecovery, "@", range(source.source_id, 0, 1)),
+                (
+                    TokenKind::Identifier,
+                    "beta",
+                    range(
+                        source.source_id,
+                        nth_index(text, "beta", 0),
+                        nth_index(text, "beta", 0) + "beta".len(),
+                    ),
+                ),
+            ]
         );
         assert_eq!(stream.diagnostics.len(), 1);
         assert_eq!(stream.diagnostics[0].kind, LexingDiagnosticKind::RawScan);
-        assert_eq!(
-            stream.diagnostics[0].primary,
-            range(source.source_id, 0, text.len())
-        );
-        assert_eq!(
-            stream.diagnostics[0].secondary,
-            vec![
-                SourceAnchor::Range(range(source.source_id, 0, 2)),
-                SourceAnchor::Range(range(
-                    source.source_id,
-                    nth_index(text, "::=hidden=::", 0),
-                    nth_index(text, "beta", 0)
-                )),
-                SourceAnchor::Range(range(
-                    source.source_id,
-                    nth_index(text, "beta", 0),
-                    text.len()
-                )),
-            ]
-        );
+        assert_eq!(stream.diagnostics[0].primary, range(source.source_id, 0, 1));
+        assert!(stream.diagnostics[0].secondary.is_empty());
     }
 
     fn preprocessed_source(

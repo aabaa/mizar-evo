@@ -2,7 +2,8 @@
 
 > Canonical language: English. Japanese companion: [../ja/lexing.md](../ja/lexing.md).
 
-Status: complete for tasks 7-9 and task 20 parser-assisted lexing contract.
+Status: complete for tasks 7-9, task 20 parser-assisted lexing contract, and
+task 22 precise raw-scan recovery.
 
 ## Purpose
 
@@ -225,9 +226,10 @@ lexeme run.
 - Internal: `preprocess` (lexical text + map), `lexical_env`
   (`ActiveLexicalEnvironment`), `span_bridge` (lexical-byte → `SourceRange`),
   `parsing` (consumes `TokenStream`).
-- External: `mizar-lexer` (`scan_raw`, `build_scope_skeleton`, `disambiguate`,
-  `TokenKind`, `ParserLexContext`, `LexDiagnostic`, `LexDiagnosticCode`,
-  structured lexer payload enums, `ScopeSkeletonDiagnostic`,
+- External: `mizar-lexer` (`scan_raw_recoverable`, `RawScanDiagnostic`,
+  `build_scope_skeleton`, `disambiguate`, `TokenKind`, `ParserLexContext`,
+  `LexDiagnostic`, `LexDiagnosticCode`, structured lexer payload enums,
+  `ScopeSkeletonDiagnostic`,
   `ScopeSkeletonDiagnosticCode`, and scope block / statement / binding shape enums),
   `mizar-session` (`SourceId`, `SourceRange`, `SourceAnchor`).
 
@@ -242,10 +244,10 @@ orchestration merge.
 parser lexing context used for the run. Successful tokenization surfaces final
 parser-facing `UserSymbol`, `ReservedWord`, `ReservedSymbol`, `Identifier`,
 `Numeral`, and `StringLiteral` classifications, with `TokenKind::ErrorRecovery`
-tokens interleaved where recoverable lexer or disambiguator diagnostics consumed
-input. Strict raw-scan failure emits one coarse
-`TokenKind::ErrorRecovery` for the whole lexical text instead. Each `Token`
-preserves its original spelling (`text`) and a session `SourceRange`.
+tokens interleaved where recoverable raw-scan, lexer, or disambiguator
+diagnostics consumed input. Raw-scan diagnostics use precise offending spans and
+do not discard usable partial raw tokens. Each `Token` preserves its original
+spelling (`text`) and a session `SourceRange`.
 
 `LexingDiagnostic` is the mapped frontend diagnostic payload for Step 4. It
 represents raw-scan failures, scope-skeleton diagnostics, and lexer
@@ -274,16 +276,16 @@ view records lexical shape only — never resolved bindings.
 1. Build or receive the `ParserLexingPlan`. `ParserInputs` normally requests a
    position-sensitive plan computed from the lexical text; bounded tests may
    still request a uniform context.
-2. Raw-scan the lexical text into raw units with preserved spans. String-required
-   ranges in the plan are protected as raw lexeme runs before strict raw
-   scanning so Unicode and comment marker text inside annotation string
-   arguments remain string contents. If strict raw scanning still fails outside
-   planned string ranges, emit one coarse `ErrorRecovery` token and one mapped
-   `LexingDiagnosticKind::RawScan` diagnostic covering the whole lexical text (or
-   the source-start zero-length range for empty text), then skip scope-skeleton
-   construction and disambiguation for that run. The current
-   `mizar_lexer::LexError` has no span or partial-token payload, so finer
-   recovery is tracked as a follow-up contract.
+2. Recoverably raw-scan the lexical text into raw units with preserved spans.
+   String-required ranges in the plan are protected as raw lexeme runs before
+   ordinary segments are scanned so Unicode and comment marker text inside
+   annotation string arguments remain string contents. Raw-scan diagnostics are
+   mapped to `LexingDiagnosticKind::RawScan` at their precise offending spans,
+   and matching `ErrorRecovery` tokens are merged with the disambiguated tokens
+   in source order. Usable partial raw tokens continue through scope-skeleton
+   construction and disambiguation. Only internal parser-plan defects, such as
+   non-UTF-8 ranges or line-crossing planned string spans, fall back to the
+   older whole-lexical-text recovery.
 3. Build an initial `ScopeSkeleton` / `ScopeLexView` from the raw tokens and run
    disambiguation once with the raw token stream, active lexical environment, and
    the `ParserLexContext` selected by the plan for each raw unit.
@@ -311,20 +313,19 @@ never decides definedness, applicability, or overload selection.
 The lexing wrapper preserves recoverable raw-scan, scope-skeleton, and current
 disambiguator problems:
 
-- strict raw-scan hard failure emits one coarse `TokenKind::ErrorRecovery` with
-  the best available source range plus a `RawScan` diagnostic;
+- recoverable raw-scan diagnostics emit precise `TokenKind::ErrorRecovery`
+  tokens with `RawScan` diagnostics and preserve usable partial raw tokens for
+  scope construction and disambiguation;
 - `ScopeSkeletonDiagnostic`s are mapped into frontend diagnostics without
   storing raw span-bearing diagnostic structs in `TokenStream`;
 - current `LexDiagnostic`s are mapped into `LexingDiagnosticKind::Lexer` with
   frontend-owned payloads and mapped nested rejected-candidate spans.
 
 For user-recoverable lexical input problems, `tokenize` returns
-`Ok(TokenStream)`: strict raw-scan failures degrade to a coarse recovery token
-and mapped diagnostic, while scope-skeleton and disambiguator problems are
-mapped without dropping recoverable tokens. It returns `Err(SpanBridgeError)`
-only when a token, scope shape, or diagnostic span cannot be mapped through the
-registered bridge. Task 9 keeps the same boundary and adds the remaining
-recovery passthrough coverage and follow-up cases.
+`Ok(TokenStream)`: raw-scan failures become precise recovery tokens and mapped
+diagnostics, while scope-skeleton and disambiguator problems are mapped without
+dropping recoverable tokens. It returns `Err(SpanBridgeError)` only when a token,
+scope shape, or diagnostic span cannot be mapped through the registered bridge.
 
 ## Tests
 
@@ -343,8 +344,9 @@ Implemented task-7/8/9 and task-20 scenarios:
   reports mapped lexer diagnostics for rejected string candidates;
 - lexer diagnostic payloads preserve non-span data and mapped nested candidate
   spans.
-- malformed lexemes and unsupported raw-token cases emit mapped
-  `ErrorRecovery` tokens without preventing later tokens from being emitted;
+- malformed raw input, malformed lexemes, and unsupported raw-token cases emit
+  mapped `ErrorRecovery` tokens without preventing later tokens from being
+  emitted;
 - parser-context-rejected numerals preserve mapped rejected-candidate payloads
   until a dedicated invalid-numeral lexer diagnostic exists;
 - scope diagnostics remain preserved with mapped spans after disambiguation even

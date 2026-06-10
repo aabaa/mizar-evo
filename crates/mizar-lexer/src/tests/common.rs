@@ -3,16 +3,17 @@ pub(crate) use crate::{
     LexDiagnosticPayload, LexRecoveryHint, LexicalBlockKind, LexicalEnvironmentError,
     LexicalSummaryFingerprint, MalformedStringLiteralReason, ModuleId, ModuleLexicalSummary,
     ModuleNamingError, ParserLexContext, ParserLexMode, RESERVED_SYMBOLS, RESERVED_WORDS,
-    RawModuleRelativePrefix, RawToken, RawTokenKind, RejectedTokenCandidate, ResolvedImport,
-    ScopeLexView, ScopeSkeletonDiagnosticCode, SourceLineIndex, SourceLoadError,
-    SourceLoadingMapSegment, SourceLocation, SourceLocationRange, SourcePreprocessDiagnosticCode,
+    RawModuleRelativePrefix, RawScanDiagnostic, RawScanDiagnosticCode, RawToken, RawTokenKind,
+    RecoverableRawTokenStream, RejectedTokenCandidate, ResolvedImport, ScopeLexView,
+    ScopeSkeletonDiagnosticCode, SourceLineIndex, SourceLoadError, SourceLoadingMapSegment,
+    SourceLocation, SourceLocationRange, SourcePreprocessDiagnosticCode,
     SourcePreprocessDiagnosticPayload, SourcePreprocessMapSegment, SourcePreprocessRecoveryHint,
     SourceSpan, SymbolId, Token, TokenKind, UserSymbolArity, UserSymbolCandidate, UserSymbolKind,
     UserSymbolKindSet, build_lexical_environment, build_scope_skeleton, disambiguate,
     is_identifier, is_layout, is_numeral, is_reserved_symbol, is_reserved_word,
     is_string_literal_spelling, is_user_symbol_spelling, lex, load_source_text_from_bytes,
     longest_reserved_symbol_prefix, module_source_name_from_path, preprocess_source_for_lexing,
-    scan_import_prelude, scan_raw,
+    scan_import_prelude, scan_raw, scan_raw_recoverable,
 };
 
 pub(crate) fn token(kind: TokenKind, lexeme: &str, start: usize, end: usize) -> Token {

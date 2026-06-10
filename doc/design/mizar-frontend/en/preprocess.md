@@ -120,7 +120,8 @@ conflicting map registration, or an unsupported lexer-owned metadata variant.
   `SourcePreprocessDiagnostic`, `scan_import_prelude`, `ImportPrelude`,
   `mizar_lexer::ImportStub`, `RawModuleRelativePrefix`,
   `ImportPrescanDiagnostic`, `SourcePreprocessDiagnosticCode`,
-  `ImportPrescanDiagnosticCode`, `scan_raw`),
+  `ImportPrescanDiagnosticCode`, `scan_raw_recoverable`,
+  `RawScanDiagnostic`),
   `mizar-session`
   (`SourceId`, `SourceRange`, `SourceAnchor`).
 
@@ -160,9 +161,9 @@ parent), and split source coverage for branch imports live on `path.spelling`,
 resolved import — it is only enough to request an active lexical environment and
 to produce good diagnostics if lexicon loading fails. Package/module existence,
 visibility, export checks, and re-export semantics are deferred to module
-resolution.
-`preprocess` fills `import_stubs` from the shallow raw import pre-scan when the
-strict raw scan succeeds.
+resolution. `preprocess` fills `import_stubs` from the shallow raw import
+pre-scan over the recoverable raw token stream, preserving imports that remain
+readable without joining module-path text across raw-scan recovery boundaries.
 
 `PreprocessDiagnostic` is the frontend-mapped diagnostic form for
 `SourcePreprocessDiagnostic`, `ImportPrescanDiagnostic`, and frontend-local raw
@@ -186,16 +187,17 @@ encountered.
    register it on the mutable `SpanBridge` for the `SourceId`.
 3. Map every retained comment, doc comment, and preprocess diagnostic span from
    lexical/source offsets to `mizar-session` `SourceRange` through `span_bridge`.
-4. Raw-scan the lexical text for import pre-scan, preserving recognized
-   single-line string argument spans before strict scanning. If it succeeds, run
-   `scan_import_prelude` to extract `ImportStub`s and import-prescan
-   diagnostics, then map their spans to `SourceRange`.
-5. If the raw scan fails, record a frontend-local import-pre-scan diagnostic over
-   the whole lexical text (or the source-start zero-length range when the lexical
-   text is empty), leave `import_stubs` empty, and continue. Do not attempt to
-   infer imports from a partial raw stream. The current `mizar_lexer::LexError`
-   has no span or partial-token payload, so precise raw-scan failure locations are
-   deferred to a future recoverable raw-scanner contract.
+4. Recoverably raw-scan the lexical text for import pre-scan, preserving
+   recognized single-line string argument spans before scanning ordinary
+   segments. `mizar_lexer::scan_raw_recoverable` reports precise raw-scan
+   diagnostics and returns usable partial raw tokens plus `RawTokenKind::Error`
+   sentinels for recovery boundaries.
+5. Run `scan_import_prelude` over the partial raw token stream to extract
+   `ImportStub`s and import-prescan diagnostics, then map their spans to
+   `SourceRange`. Raw-scan diagnostics become frontend-local `RawImportScan`
+   diagnostics at the offending spans instead of whole-file fallback ranges. The
+   error sentinels prevent module-path text from being joined across malformed
+   spans.
 6. Collect import-prescan diagnostics into `diagnostics` after the comment
    structure and ASCII-precondition diagnostics, preserving source order within
    each phase.
@@ -205,10 +207,10 @@ encountered.
    registered bridge state and return `PreprocessedSource`.
 
 The import pre-scan consumes raw lexer output; raw scanning itself does not
-interpret imports. Because `scan_raw` is strict, recovered lexical text from
-preprocessing can still fail raw scanning. That failure disables only the shallow
-import extraction for Step 2; Step 4 tokenization performs its own recovery
-adaptation and still reports token-level diagnostics.
+interpret imports. Recovered lexical text from preprocessing can still contain
+raw-scan errors. Those errors no longer disable the whole shallow import
+extraction: the recoverable scanner reports the precise offending span and lets
+import pre-scan continue from the next raw boundary.
 
 ## Error Handling
 
@@ -221,9 +223,10 @@ as a hard error. The module records:
 - unterminated block comment and other comment-structure problems.
 - import pre-scan failures that prevent active lexical environment construction
   (`ImportPrescanDiagnostic`);
-- raw-scan failures during import pre-scan, represented as a frontend-local
-  `PreprocessDiagnostic` variant with coarse lexical-text coverage so
-  preprocessing can still return recovered lexical text.
+- raw-scan failures during import pre-scan, represented as frontend-local
+  `PreprocessDiagnostic` values with precise offending spans so preprocessing
+  can still return recovered lexical text and any import stubs found in the
+  usable partial raw stream.
 
 A pre-scan failure severe enough to block lexicon loading is recorded so the
 orchestration layer can decide whether to skip lexical-environment extension for
@@ -255,8 +258,8 @@ Key scenarios:
   alias, `path.relative`, `path.source_segments`, and span; `.` and `..`
   relative prefixes remain distinguishable as current and parent imports; a
   malformed import yields an `ImportPrescanDiagnostic` without aborting;
-- a strict raw-scan failure during import pre-scan yields a diagnostic and empty
-  `import_stubs` without aborting preprocessing;
+- a recoverable raw-scan failure during import pre-scan yields a precise
+  diagnostic while preserving usable partial import stubs;
 - multiple preprocess diagnostics preserve phase order, messages, primary
   ranges, and secondary anchors.
 

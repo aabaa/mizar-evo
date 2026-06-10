@@ -4,12 +4,26 @@ use super::common::*;
 fn raw_token_types_expose_stable_accessors() {
     let token = RawToken::new(RawTokenKind::LexemeRun, "alpha", SourceSpan::new(0, 5));
     let stream = crate::RawTokenStream::new(vec![token.clone()]);
+    let diagnostic = RawScanDiagnostic::new(
+        RawScanDiagnosticCode::UnsupportedInput,
+        "unsupported",
+        SourceSpan::new(5, 6),
+    );
+    let recoverable = RecoverableRawTokenStream::new(vec![token.clone()], vec![diagnostic.clone()]);
 
     assert_eq!(token.kind(), RawTokenKind::LexemeRun);
     assert_eq!(token.lexeme(), "alpha");
     assert_eq!(token.span(), SourceSpan::new(0, 5));
-    assert_eq!(stream.tokens(), &[token]);
+    assert_eq!(stream.tokens(), std::slice::from_ref(&token));
     assert_eq!(stream.into_tokens().len(), 1);
+    assert_eq!(diagnostic.code(), RawScanDiagnosticCode::UnsupportedInput);
+    assert_eq!(diagnostic.message(), "unsupported");
+    assert_eq!(diagnostic.span(), SourceSpan::new(5, 6));
+    assert_eq!(recoverable.tokens(), &[token]);
+    assert_eq!(recoverable.diagnostics(), &[diagnostic]);
+    let (tokens, diagnostics) = recoverable.into_parts();
+    assert_eq!(tokens.len(), 1);
+    assert_eq!(diagnostics.len(), 1);
 }
 
 #[test]
@@ -267,4 +281,105 @@ fn reports_stable_raw_diagnostics_for_malformed_annotation_markers() {
     let error = scan_raw("@-").expect_err("bare annotation marker should be rejected");
 
     assert_eq!("unsupported annotation marker at byte 0", error.to_string());
+    assert_eq!(error.span(), Some(SourceSpan::new(0, 1)));
+}
+
+#[test]
+fn recoverable_raw_scan_matches_strict_scan_for_valid_input() {
+    let strict = scan_raw("alpha @latex \t\n42").expect("valid input should scan");
+    let recoverable = scan_raw_recoverable("alpha @latex \t\n42");
+
+    assert_eq!(recoverable.tokens, strict.tokens);
+    assert!(recoverable.diagnostics.is_empty());
+}
+
+#[test]
+fn recoverable_raw_scan_reports_precise_spans_and_continues() {
+    let source = "alpha\rbeta @- gamma\u{03b2}delta";
+    let recoverable = scan_raw_recoverable(source);
+
+    assert_eq!(
+        recoverable.tokens,
+        vec![
+            RawToken::new(
+                RawTokenKind::LexemeRun,
+                "alpha",
+                SourceSpan::new(0, "alpha".len()),
+            ),
+            RawToken::new(
+                RawTokenKind::Error,
+                "\r",
+                SourceSpan::new("alpha".len(), "alpha\r".len()),
+            ),
+            RawToken::new(
+                RawTokenKind::LexemeRun,
+                "beta",
+                SourceSpan::new("alpha\r".len(), "alpha\rbeta".len()),
+            ),
+            RawToken::new(
+                RawTokenKind::Layout,
+                " ",
+                SourceSpan::new("alpha\rbeta".len(), "alpha\rbeta ".len()),
+            ),
+            RawToken::new(
+                RawTokenKind::Error,
+                "@",
+                SourceSpan::new("alpha\rbeta ".len(), "alpha\rbeta @".len()),
+            ),
+            RawToken::new(
+                RawTokenKind::LexemeRun,
+                "-",
+                SourceSpan::new("alpha\rbeta @".len(), "alpha\rbeta @-".len()),
+            ),
+            RawToken::new(
+                RawTokenKind::Layout,
+                " ",
+                SourceSpan::new("alpha\rbeta @-".len(), "alpha\rbeta @- ".len()),
+            ),
+            RawToken::new(
+                RawTokenKind::LexemeRun,
+                "gamma",
+                SourceSpan::new("alpha\rbeta @- ".len(), "alpha\rbeta @- gamma".len()),
+            ),
+            RawToken::new(
+                RawTokenKind::Error,
+                "\u{03b2}",
+                SourceSpan::new(
+                    "alpha\rbeta @- gamma".len(),
+                    "alpha\rbeta @- gamma\u{03b2}".len(),
+                ),
+            ),
+            RawToken::new(
+                RawTokenKind::LexemeRun,
+                "delta",
+                SourceSpan::new(
+                    "alpha\rbeta @- gamma\u{03b2}".len(),
+                    "alpha\rbeta @- gamma\u{03b2}delta".len(),
+                ),
+            ),
+        ]
+    );
+    assert_eq!(
+        recoverable.diagnostics,
+        vec![
+            RawScanDiagnostic::new(
+                RawScanDiagnosticCode::UnsupportedInput,
+                "unsupported raw lexer input at byte 5: '\\r'",
+                SourceSpan::new("alpha".len(), "alpha\r".len()),
+            ),
+            RawScanDiagnostic::new(
+                RawScanDiagnosticCode::UnsupportedAnnotationMarker,
+                "unsupported annotation marker at byte 11",
+                SourceSpan::new("alpha\rbeta ".len(), "alpha\rbeta @".len()),
+            ),
+            RawScanDiagnostic::new(
+                RawScanDiagnosticCode::UnsupportedInput,
+                "unsupported raw lexer input at byte 19: 'β'",
+                SourceSpan::new(
+                    "alpha\rbeta @- gamma".len(),
+                    "alpha\rbeta @- gamma\u{03b2}".len(),
+                ),
+            ),
+        ]
+    );
 }

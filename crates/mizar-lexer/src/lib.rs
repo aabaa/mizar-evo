@@ -1,9 +1,11 @@
 //! Lexical analysis helpers for Mizar source text.
 //!
 //! The lexer exposes a small pipeline: [`scan_raw`] performs strict raw
-//! scanning, [`lex`] applies reserved-word and reserved-symbol shell
-//! disambiguation, and [`disambiguate`] uses the active lexical environment plus
-//! parser context when callers need the full parser-facing token stream.
+//! scanning, [`scan_raw_recoverable`] performs raw scanning with precise
+//! diagnostics and usable partial raw tokens, [`lex`] applies reserved-word and
+//! reserved-symbol shell disambiguation, and [`disambiguate`] uses the active
+//! lexical environment plus parser context when callers need the full
+//! parser-facing token stream.
 //!
 //! Token spans are byte offsets into the string passed to the scanner.
 //! File-loading callers should validate UTF-8 bytes with
@@ -112,9 +114,10 @@ pub use lexical_environment::{
     UserSymbolKind, UserSymbolKindSet, build_lexical_environment,
 };
 pub use raw_lexer::{
-    LexError, RawToken, RawTokenKind, RawTokenStream, is_identifier, is_identifier_continue,
-    is_identifier_start, is_layout, is_lexeme_run_char, is_numeral, is_string_literal_spelling,
-    is_user_symbol_spelling, scan_raw,
+    LexError, RawScanDiagnostic, RawScanDiagnosticCode, RawToken, RawTokenKind, RawTokenStream,
+    RecoverableRawTokenStream, is_identifier, is_identifier_continue, is_identifier_start,
+    is_layout, is_lexeme_run_char, is_numeral, is_string_literal_spelling, is_user_symbol_spelling,
+    scan_raw, scan_raw_recoverable,
 };
 pub use scope_skeleton::{
     BindingShapeKind, LexicalBlockKind, LexicalBlockRange, LexicalScopeFrame, LexicalStatementKind,

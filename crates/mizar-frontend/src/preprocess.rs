@@ -4,8 +4,9 @@ use mizar_lexer::{
     CommentKind as LexerCommentKind, ImportPrescanDiagnostic as LexerImportPrescanDiagnostic,
     ImportStub as LexerImportStub, RawModuleAlias as LexerRawModuleAlias,
     RawModulePath as LexerRawModulePath, RawModuleRelativePrefix as LexerRawModuleRelativePrefix,
-    RawToken, RawTokenKind, RawTokenStream, SourcePreprocessMap, SourceSpan as LexerSourceSpan,
-    preprocess_source_for_lexing, scan_import_prelude, scan_raw,
+    RawScanDiagnostic, RawScanDiagnosticCode, RawToken, RawTokenKind, RawTokenStream,
+    RecoverableRawTokenStream, SourcePreprocessMap, SourceSpan as LexerSourceSpan,
+    preprocess_source_for_lexing, scan_import_prelude, scan_raw_recoverable,
 };
 pub use mizar_lexer::{ImportPrescanDiagnosticCode, SourcePreprocessDiagnosticCode};
 pub use mizar_session::CommentKind;
@@ -203,44 +204,73 @@ fn scan_imports(
     lexical_text: &LexicalText,
     bridge: &SpanBridge,
 ) -> Result<(Vec<ImportStub>, Vec<PreprocessDiagnostic>), SpanBridgeError> {
-    let raw = match scan_raw_with_string_argument_spans(lexical_text.as_str()) {
-        Ok(raw) => raw,
+    let raw_scan = match scan_raw_with_string_argument_spans(lexical_text.as_str()) {
+        Ok(raw_scan) => raw_scan,
         Err(error) => {
             return Ok((
                 Vec::new(),
                 vec![raw_import_scan_diagnostic(
                     source_id,
-                    lexical_text,
                     bridge,
-                    error.to_string(),
+                    &RawScanDiagnostic::new(
+                        RawScanDiagnosticCode::UnsupportedInput,
+                        error.to_string(),
+                        LexerSourceSpan {
+                            start: 0,
+                            end: lexical_text.as_str().len(),
+                        },
+                    ),
                 )?],
             ));
         }
     };
+    let raw = RawTokenStream::new(raw_scan.tokens);
     let prelude = scan_import_prelude(&raw);
     let import_stubs = prelude
         .imports
         .into_iter()
         .map(|import| import_stub(source_id, bridge, import))
         .collect::<Result<Vec<_>, SpanBridgeError>>()?;
-    let diagnostics = prelude
+    let mut diagnostics = raw_scan
         .diagnostics
-        .into_iter()
-        .map(|diagnostic| import_prescan_diagnostic(source_id, bridge, diagnostic))
+        .iter()
+        .map(|diagnostic| raw_import_scan_diagnostic(source_id, bridge, diagnostic))
         .collect::<Result<Vec<_>, SpanBridgeError>>()?;
+    diagnostics.extend(
+        prelude
+            .diagnostics
+            .into_iter()
+            .map(|diagnostic| import_prescan_diagnostic(source_id, bridge, diagnostic))
+            .collect::<Result<Vec<_>, SpanBridgeError>>()?,
+    );
     Ok((import_stubs, diagnostics))
 }
 
-fn scan_raw_with_string_argument_spans(lexical_text: &str) -> Result<RawTokenStream, String> {
+fn scan_raw_with_string_argument_spans(
+    lexical_text: &str,
+) -> Result<RecoverableRawTokenStream, String> {
     let mut tokens = Vec::new();
+    let mut diagnostics = Vec::new();
     let mut cursor = 0;
     for range in string_argument_ranges(lexical_text) {
-        scan_raw_segment(lexical_text, cursor, range.start, &mut tokens)?;
+        scan_raw_segment(
+            lexical_text,
+            cursor,
+            range.start,
+            &mut tokens,
+            &mut diagnostics,
+        )?;
         push_string_argument_raw_token(lexical_text, range, &mut tokens)?;
         cursor = range.end;
     }
-    scan_raw_segment(lexical_text, cursor, lexical_text.len(), &mut tokens)?;
-    Ok(RawTokenStream::new(tokens))
+    scan_raw_segment(
+        lexical_text,
+        cursor,
+        lexical_text.len(),
+        &mut tokens,
+        &mut diagnostics,
+    )?;
+    Ok(RecoverableRawTokenStream::new(tokens, diagnostics))
 }
 
 fn scan_raw_segment(
@@ -248,6 +278,7 @@ fn scan_raw_segment(
     start: usize,
     end: usize,
     tokens: &mut Vec<RawToken>,
+    diagnostics: &mut Vec<RawScanDiagnostic>,
 ) -> Result<(), String> {
     if start == end {
         return Ok(());
@@ -255,8 +286,8 @@ fn scan_raw_segment(
     let segment = lexical_text
         .get(start..end)
         .ok_or_else(|| format!("string-argument scan range {start}..{end} is not a UTF-8 span"))?;
-    let raw = scan_raw(segment).map_err(|error| error.to_string())?;
-    tokens.extend(raw.into_tokens().into_iter().map(|token| {
+    let (raw_tokens, raw_diagnostics) = scan_raw_recoverable(segment).into_parts();
+    tokens.extend(raw_tokens.into_iter().map(|token| {
         RawToken::new(
             token.kind,
             token.lexeme,
@@ -264,6 +295,17 @@ fn scan_raw_segment(
                 start: token.span.start + start,
                 end: token.span.end + start,
             },
+        )
+    }));
+    diagnostics.extend(raw_diagnostics.into_iter().map(|diagnostic| {
+        let span = LexerSourceSpan {
+            start: diagnostic.span.start + start,
+            end: diagnostic.span.end + start,
+        };
+        RawScanDiagnostic::new(
+            diagnostic.code,
+            raw_scan_diagnostic_message(diagnostic.code, lexical_text, span.start),
+            span,
         )
     }));
     Ok(())
@@ -437,17 +479,42 @@ fn import_prescan_diagnostic(
 
 fn raw_import_scan_diagnostic(
     source_id: SourceId,
-    lexical_text: &LexicalText,
     bridge: &SpanBridge,
-    error: String,
+    diagnostic: &RawScanDiagnostic,
 ) -> Result<PreprocessDiagnostic, SpanBridgeError> {
-    let mapping = bridge.whole_lexical_text_mapping(source_id, lexical_text.as_str())?;
+    let mapping = lexical_mapping(source_id, bridge, diagnostic.span)?;
     Ok(PreprocessDiagnostic {
         kind: PreprocessDiagnosticKind::RawImportScan,
-        message: Arc::<str>::from(format!("raw import pre-scan failed: {error}")),
+        message: Arc::<str>::from(format!(
+            "raw import pre-scan recovered after raw scan error: {}",
+            diagnostic.message
+        )),
         primary: mapping.primary,
         secondary: mapping.secondary,
     })
+}
+
+fn raw_scan_diagnostic_message(
+    code: RawScanDiagnosticCode,
+    lexical_text: &str,
+    start: usize,
+) -> String {
+    match code {
+        RawScanDiagnosticCode::UnsupportedAnnotationMarker => {
+            format!("unsupported annotation marker at byte {start}")
+        }
+        RawScanDiagnosticCode::UnsupportedInput => {
+            if let Some(ch) = lexical_text
+                .get(start..)
+                .and_then(|text| text.chars().next())
+            {
+                format!("unsupported raw lexer input at byte {start}: {ch:?}")
+            } else {
+                format!("unsupported raw lexer input at byte {start}")
+            }
+        }
+        _ => format!("unsupported raw lexer input at byte {start}"),
+    }
 }
 
 fn lexical_source_range(
@@ -795,12 +862,20 @@ open block";
     }
 
     #[test]
-    fn raw_import_scan_failure_is_coarse_and_leaves_import_stubs_empty() {
-        let (source, mut bridge) = registered_source_unit("@-");
+    fn raw_import_scan_recovery_is_precise_and_preserves_partial_imports() {
+        let text = "import std.core;\n@ name\n";
+        let (source, mut bridge) = registered_source_unit(text);
 
         let preprocessed = preprocess(&source, &mut bridge).unwrap();
 
-        assert!(preprocessed.import_stubs.is_empty());
+        assert_eq!(
+            preprocessed
+                .import_stubs
+                .iter()
+                .map(|stub| stub.path.spelling.as_ref())
+                .collect::<Vec<_>>(),
+            vec!["std.core"]
+        );
         assert_eq!(preprocessed.diagnostics.len(), 1);
         assert_eq!(
             preprocessed.diagnostics[0].kind,
@@ -809,17 +884,64 @@ open block";
         assert!(
             preprocessed.diagnostics[0]
                 .message
-                .starts_with("raw import pre-scan failed:")
+                .starts_with("raw import pre-scan recovered after raw scan error:")
         );
         assert_eq!(
             preprocessed.diagnostics[0].primary,
-            SourceRange {
-                source_id: source.source_id,
-                start: 0,
-                end: 2,
-            }
+            source_range_of(source.source_id, text, "@")
         );
         assert!(preprocessed.diagnostics[0].secondary.is_empty());
+    }
+
+    #[test]
+    fn raw_import_scan_recovery_does_not_join_path_across_error_sentinel() {
+        let text = "import std.\u{03b2}core;\n";
+        let (source, mut bridge) = registered_source_unit(text);
+
+        let preprocessed = preprocess(&source, &mut bridge).unwrap();
+
+        assert!(
+            preprocessed
+                .import_stubs
+                .iter()
+                .all(|stub| stub.path.spelling.as_ref() != "std.core")
+        );
+        assert!(
+            preprocessed
+                .diagnostics
+                .iter()
+                .any(
+                    |diagnostic| diagnostic.kind == PreprocessDiagnosticKind::RawImportScan
+                        && diagnostic.primary
+                            == source_range_of(source.source_id, text, "\u{03b2}")
+                )
+        );
+    }
+
+    #[test]
+    fn raw_import_scan_recovery_rebases_diagnostic_message_after_string_argument() {
+        let text = "@[label(\"β\")]\n@ name";
+        let (source, mut bridge) = registered_source_unit(text);
+
+        let preprocessed = preprocess(&source, &mut bridge).unwrap();
+        let at = text
+            .rfind('@')
+            .expect("fixture has trailing annotation marker");
+        let diagnostic = preprocessed
+            .diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.kind == PreprocessDiagnosticKind::RawImportScan)
+            .expect("raw import scan recovery diagnostic exists");
+
+        assert_eq!(
+            diagnostic.primary,
+            SourceRange {
+                source_id: source.source_id,
+                start: at,
+                end: at + 1,
+            }
+        );
+        assert!(diagnostic.message.contains(&format!("byte {at}")));
     }
 
     #[test]
@@ -902,8 +1024,8 @@ open block";
             preprocessed.diagnostics[1].primary,
             SourceRange {
                 source_id: source.source_id,
-                start: 0,
-                end: source.source_text.len(),
+                start: "alpha".len(),
+                end: "alpha\u{03b2}".len(),
             }
         );
     }
@@ -966,7 +1088,7 @@ open block";
             vec![
                 "code regions must be ASCII before lexing",
                 "unterminated multi-line comment",
-                "raw import pre-scan failed: unsupported raw lexer input at byte 5: 'β'",
+                "raw import pre-scan recovered after raw scan error: unsupported raw lexer input at byte 5: 'β'",
             ]
         );
         assert_eq!(
@@ -988,8 +1110,8 @@ open block";
                 },
                 SourceRange {
                     source_id: source.source_id,
-                    start: 0,
-                    end: source.source_text.len(),
+                    start: "alpha".len(),
+                    end: "alpha\u{03b2}".len(),
                 },
             ]
         );
@@ -997,17 +1119,7 @@ open block";
             preprocessed
                 .diagnostics
                 .iter()
-                .take(2)
                 .all(|diagnostic| diagnostic.secondary.is_empty())
-        );
-        assert!(
-            !preprocessed
-                .diagnostics
-                .iter()
-                .last()
-                .expect("raw import scan diagnostic exists")
-                .secondary
-                .is_empty()
         );
     }
 

@@ -2,11 +2,11 @@
 
 > 正本は英語です。英語版: [../en/source_spec_correspondence.md](../en/source_spec_correspondence.md)。
 
-状態: task 21 まで完了。
+状態: task 22 まで完了。
 
 ## 範囲
 
-この監査は、task 21 後の `mizar-frontend` 実装を、まず英語正本の
+この監査は、task 22 後の `mizar-frontend` 実装を、まず英語正本の
 `doc/design/mizar-frontend/en/` 仕様に照合し、その後で日本語 companion
 仕様が同じ公開 API 名、エラー／診断 variant、挙動の約束を保持している
 ことを確認する。
@@ -18,18 +18,20 @@
 
 ## 結果
 
-- task 1-20 が約束する公開 API とエラー／診断 variant、および task 21 の
-  lint policy guard について、欠落した実装は見つからなかった。
+- task 1-20 が約束する公開 API とエラー／診断 variant、task 21 の lint
+  policy guard、および task 22 の精密な生スキャン回復契約について、欠落した
+  実装は見つからなかった。
 - task 2 の source 要件文は、監査前に追加済みだった open-buffer `file://`
   診断パスの decode/fallback テストを明示するよう更新した。
-- task 1-21 について、英語正本仕様に残る古い記述は見つからなかった。
+- task 1-22 について、英語正本仕様に残る古い記述は見つからなかった。
 - 日本語 companion 仕様は、API 名と挙動の約束が英語正本と一致することを
   確認した。API または挙動の drift は残っていない。
 - より広い bilingual wording/terminology review は task 17 で完了し、
   [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md)
   に記録した。task 19 の incremental cache-key wiring、task 20 の
-  parser-assisted lexing、task 21 の durable lint enforcement は現在完了済み
-  である。他の延期された実装または coverage 作業は task 22-24 に残る。
+  parser-assisted lexing、task 21 の durable lint enforcement、task 22 の
+  precise raw-scan recovery は現在完了済みである。他の延期された実装または
+  coverage 作業は task 23-24 に残る。
 
 ## 公開 API 対応
 
@@ -37,9 +39,9 @@
 |---|---|---|---|
 | [span_bridge.md](./span_bridge.md) | `SpanBridge`, `LexerByteSpan`, `SpanBridgeError`; `SpanBridge::{new, source_map_service, register_source, register_preprocess_map, loaded_span, loaded_mapping, lexical_span}`; crate 可視 `whole_lexical_text_mapping` | `crates/mizar-frontend/src/span_bridge.rs` | inline tests が loaded/lexical mapping、loading-map identity behavior、composite/degraded preprocess mapping、whole-lexical-text recovery mapping、不正 span、未登録、登録衝突を確認する。unsupported lexer preprocess metadata は防御的 guard で表現されるが、現在の `mizar-lexer` からは未対応 map variant を構築できない。 |
 | [source.md](./source.md) | `SourceUnit`, `SourceUnitRequest`, `SourceUnitLoader`, `SourceUnitLoader::load_source_unit`, `FrontendSourceLoader`, `FrontendSourceLoader::new`, `source_unit_from_loaded`, `register_source_unit` | `crates/mizar-frontend/src/source.rs` | inline tests が再計算しない projection、loader forwarding、BOM/CRLF loading map、identity load、open-buffer origin/version、open-buffer `file://` path decode/fallback、generated source、bridge registration、`SourceLoadError` の非再分類伝播を確認する。 |
-| [preprocess.md](./preprocess.md) | `PreprocessedSource`, `LexicalText`, `LexicalText::as_str`, `Comment`, `DocComment`, `LexicalSourceMap`, `LexicalSourceMap::{lexical_span, lexical_len, is_empty}`, `ImportStub`, `ImportStubPath`, `ImportStubRelativePrefix::{Current, Parent}`, `ImportStubAlias`, `PreprocessDiagnostic`, `PreprocessDiagnosticKind`, `preprocess`, `lexical_hash`; 再エクスポート `ImportPrescanDiagnosticCode`, `SourcePreprocessDiagnosticCode`, `CommentKind` | `crates/mizar-frontend/src/preprocess.rs` | inline tests が comment/doc-comment separation、annotation preservation、import stub と relative prefix、malformed import recovery、coarse raw import scan recovery、mapped diagnostics、composite/degraded lexical mappings、stable lexical hash、non-ASCII code diagnostics、unterminated block comment を確認する。 |
+| [preprocess.md](./preprocess.md) | `PreprocessedSource`, `LexicalText`, `LexicalText::as_str`, `Comment`, `DocComment`, `LexicalSourceMap`, `LexicalSourceMap::{lexical_span, lexical_len, is_empty}`, `ImportStub`, `ImportStubPath`, `ImportStubRelativePrefix::{Current, Parent}`, `ImportStubAlias`, `PreprocessDiagnostic`, `PreprocessDiagnosticKind`, `preprocess`, `lexical_hash`; 再エクスポート `ImportPrescanDiagnosticCode`, `SourcePreprocessDiagnosticCode`, `CommentKind` | `crates/mizar-frontend/src/preprocess.rs` | inline tests が comment/doc-comment separation、annotation preservation、import stub と relative prefix、malformed import recovery、import を保持し error-sentinel path boundary も固定する精密な回復可能 raw import scan diagnostics、mapped diagnostics、composite/degraded lexical mappings、stable lexical hash、non-ASCII code diagnostics、unterminated block comment を確認する。 |
 | [lexical_env.md](./lexical_env.md) | `LexicalEnvironmentRequest`, `LexicalSummaryProvider`, `LexicalSummaryProvider::resolve_imports`, `ResolvedImports`, `ResolvedImportEntry`, `ActiveLexicalEnvironmentResult`, `FrontendLexicalEnvironmentError`, `LexicalEnvironmentDiagnostic`, `LexicalEnvironmentDiagnosticCode`, `build_active_lexical_environment`; 再エクスポートされた lexer environment 型 | `crates/mizar-frontend/src/lexical_env.rs` | inline tests が provider seam output、import deduplication、reserved tables、provider infrastructure failure、provider provenance hard failure、unresolved import、missing summary、conflict retry、non-conflict malformed summary、fingerprint stability/change behavior を確認する。 |
-| [lexing.md](./lexing.md) | `InternedText`, `TokenizeRequest`, `TokenizeRequest::{new, with_plan}`, `ParserLexingPlan`, `ParserLexingPlan::{uniform, new, for_lexical_text, context_at, is_uniform}`, `ParserLexingPlanContext`, `ParserLexingPlanContext::new`, `LexicalByteRange`, `LexicalByteRange::{new, contains}`, `TokenStream`, `TokenStream::{tokens, diagnostics, scope_view, into_parts}`, `Token`, `ScopeView`, `ScopeView::{empty, binding_overrides_symbol}`, `ScopeFrame`, `ScopedBinding`, `ScopeBlock`, `ScopeStatement`, `LexingDiagnostic`, `LexingDiagnosticKind`, `LexingDiagnosticPayload`, `LexingRejectedTokenCandidate`, `tokenize`; 再エクスポートされた lexer token/context/scope enum | `crates/mizar-frontend/src/lexing.rs` | inline tests が raw-span preservation、preprocess mapping、longest-match user symbols、scoped identifier overrides、compound reserved tokens、parser context/string behavior、Unicode/comment-marker 内容を持つ位置別 annotation string argument、planned string range の line-boundary rejection、範囲別 user-symbol kind filter、payload mapping、recoverable error tokens、unsupported raw-token recovery、rejected candidates、secondary anchors、scope view contents、scope diagnostics、coarse raw scan recovery を確認する。 |
+| [lexing.md](./lexing.md) | `InternedText`, `TokenizeRequest`, `TokenizeRequest::{new, with_plan}`, `ParserLexingPlan`, `ParserLexingPlan::{uniform, new, for_lexical_text, context_at, is_uniform}`, `ParserLexingPlanContext`, `ParserLexingPlanContext::new`, `LexicalByteRange`, `LexicalByteRange::{new, contains}`, `TokenStream`, `TokenStream::{tokens, diagnostics, scope_view, into_parts}`, `Token`, `ScopeView`, `ScopeView::{empty, binding_overrides_symbol}`, `ScopeFrame`, `ScopedBinding`, `ScopeBlock`, `ScopeStatement`, `LexingDiagnostic`, `LexingDiagnosticKind`, `LexingDiagnosticPayload`, `LexingRejectedTokenCandidate`, `tokenize`; 再エクスポートされた lexer token/context/scope enum | `crates/mizar-frontend/src/lexing.rs` | inline tests が raw-span preservation、preprocess mapping、longest-match user symbols、scoped identifier overrides、compound reserved tokens、parser context/string behavior、Unicode/comment-marker 内容を持つ位置別 annotation string argument、planned string range の line-boundary rejection、範囲別 user-symbol kind filter、payload mapping、recoverable error tokens、unsupported raw-token recovery、rejected candidates、secondary anchors、scope view contents、scope diagnostics、partial token continuation を伴う精密な回復可能 raw-scan diagnostics を確認する。 |
 | [parsing.md](./parsing.md) | `DEFAULT_PARSER_CACHE_KEY_VERSION`, `STUB_PARSER_CACHE_KEY_VERSION`, `MIZAR_PARSER_CACHE_KEY_VERSION`, `ParseRequest`, `ParseRequest::new`, `ParserInputs`, `ParserInputs::{new, from_active_environment}`, `OperatorFixityTable`, `OperatorFixityTable::{empty, is_empty}`, `OperatorFixityEntry`, `OperatorAssociativity::{Left, Right, NonAssociative}`, `StringRequiredContext::{None, PositionSensitive, UniformForTest}`, `StringRequiredContext::{parser_lex_context, parser_lexing_plan}`, `ParserCacheKeyVersion`, `ParserCacheKeyVersion::new`, `ParseOutput`, `ParseOutput::new`, `ParserSeam`, `ParserSeam::{cache_key_version, parse}`, `StubParserSeam`, `MizarParserSeam` | `crates/mizar-frontend/src/parsing.rs` | inline tests が parser inputs、resolver state 不保持、string-required context mapping、位置別 plan construction、stub seam output、real parser AST handoff、token-kind adaptation、error-recovery tokens、missing-`end` recovery、unrecoverable `ast = None`、string-required forwarding、Pratt fixity/associativity、syntax diagnostic passthrough を確認する。cache-key version の利用は `cache_key` と frontend determinism tests で確認する。 |
 | [cache_key.md](./cache_key.md) | `SOURCE_UNIT_CACHE_KEY_VERSION`, `PREPROCESSED_SOURCE_CACHE_KEY_VERSION`, `ACTIVE_LEXICAL_ENVIRONMENT_CACHE_KEY_VERSION`, `PARSER_LEXING_PLAN_CACHE_KEY_VERSION`, `TOKEN_STREAM_CACHE_KEY_VERSION`, `SURFACE_AST_CACHE_KEY_VERSION`, `FrontendCacheKeys`, `SourceUnitCacheKey`, `SourceUnitCacheKey::{from_source, stable_hash}`, `PreprocessedSourceCacheKey`, `PreprocessedSourceCacheKey::{from_source, stable_hash}`, `ActiveLexicalEnvironmentCacheKey`, `ActiveLexicalEnvironmentCacheKey::{new, stable_hash}`, `ParserLexingPlanCacheKey`, `ParserLexingPlanContextCacheKey`, `ParserLexingPlanCacheKey::{current, from_plan}`, `TokenStreamCacheKey`, `TokenStreamCacheKey::{new, stable_hash}`, `SurfaceAstCacheKey`, `SurfaceAstCacheKey::{new, stable_hash}`, `parser_inputs_hash` | `crates/mizar-frontend/src/cache_key.rs` | inline tests が source-key freshness exclusion と content identity changes、コメントのみ編集での preprocessing invalidation と token/AST reuse、同一 version の位置別 plan 内容を含む import/environment/parser-context/parser-plan による token invalidation、token-stream/parser-version/parser-input/edition による AST invalidation を確認する。crate-level determinism tests は comment-equivalent run と end-to-end import/dependency invalidation の `FrontendOutput.cache_keys` を確認する。 |
 | [orchestration.md](./orchestration.md) | `cache_keys` を含む `FrontendOutput`, `Frontend`, `Frontend::{new, run}`, `FrontendDiagnostic`, `DiagnosticLocation`, `SourceLoadLocation`, `DiagnosticCode`, `DiagnosticClass`, `FrontendError`, `FrontendParserDiagnostic`, `FrontendParserDiagnostic::into_frontend_diagnostic` | `crates/mizar-frontend/src/orchestration.rs` | inline tests が stub/real parser coordinator output、syntax diagnostic merge order、現在の coordinator path に対する repeated-run determinism、same-class sorting、捏造 range のない source-load diagnostic、open-buffer/generated load location、span-bridge hard failure、lexical-environment hard failure、`ast = None` parser seam、valid range-backed merged diagnostics を確認する。crate-level determinism tests は `FrontendOutput.cache_keys` を確認する。 |
@@ -89,13 +91,13 @@
 | 19 | 完了 | incremental cache-key wiring は `src/cache_key.rs` に実装され、`FrontendOutput.cache_keys` で公開され、`cache_key.md` に記録された。tests は source/preprocess/environment/token/AST invalidation boundaries を確認する。 |
 | 20 | 完了 | parser-assisted lexing は `src/lexing.rs` / `src/parsing.rs` / `src/orchestration.rs` の事前計算済み `ParserLexingPlan` を使う。tests は Unicode/comment-marker 内容を持つ annotation string argument、単一行 range guard、範囲別 user-symbol kind filter、cache-key plan invalidation、実 source-to-token-to-parser handoff を確認する。 |
 | 21 | 完了 | durable lint enforcement は `crates/mizar-frontend/tests/lint_policy.rs` で固定する。この test は frontend manifest の workspace lint opt-in、共有 rustc/clippy denial baseline、将来の frontend `allow` 属性に隣接した理由があることを確認する。 |
+| 22 | 完了 | 精密な生スキャン回復は `mizar_lexer::scan_raw_recoverable` で実装する。frontend の import pre-scan と tokenization は `RawScanDiagnostic` のスパンを精密に写像し、利用可能な部分的 import/token を保持し、字句テキスト全体の fallback は parser plan の内部欠陥に限る。 |
 
 ## Follow-up 記録
 
 この監査では、予約済みまたは現在 producer を持たない diagnostic/fallback surface
-の coverage 用に task 24 を追加した。task 18、task 19、task 20、task 21 は
-その後完了した。残る cross-cutting item は次のとおり。
+の coverage 用に task 24 を追加した。task 18、task 19、task 20、task 21、
+task 22 はその後完了した。残る cross-cutting item は次のとおり。
 
-- Task 22: precise raw-scan recovery contract。
 - Task 23: lexical environment の resident-set contract guard。
 - Task 24: reserved frontend diagnostic surface coverage。

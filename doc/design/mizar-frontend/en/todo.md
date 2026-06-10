@@ -143,21 +143,21 @@ should keep `cargo test -p mizar-frontend` green (see
      Comments", "Algorithm / Logic".
 
 4. **Shallow import pre-scan integration.** [x]
-   - Raw-scan lexical text (`scan_raw`) and run `mizar_lexer::scan_import_prelude`;
-     populate `import_stubs` with mapped `SourceRange`s and collect
-     `ImportPrescanDiagnostic`s into `diagnostics`.
-   - If the strict raw scan fails, record a frontend-local import-pre-scan
-     diagnostic over the whole lexical text (or source-start zero-length range for
-     empty text), leave `import_stubs` empty, and continue without inferring
-     imports from partial raw text. Do not assume `mizar_lexer::LexError` carries a
-     span until the recoverable raw-scanner contract exists.
+   - Recoverably raw-scan lexical text (`scan_raw_recoverable`) and run
+     `mizar_lexer::scan_import_prelude`; populate `import_stubs` with mapped
+     `SourceRange`s and collect `ImportPrescanDiagnostic`s plus precise
+     `RawImportScan` diagnostics into `diagnostics`.
+   - If recoverable raw scanning reports diagnostics, map each offending span
+     precisely and continue import pre-scan over the usable partial raw tokens.
+     Whole-lexical-text fallback is reserved for internal scanner/plan invariant
+     failures rather than user-authored malformed raw input.
    - Tests: top-level `import` forms produce `ImportStub`s with raw path, optional
      alias, `path.relative`, `path.source_segments`, and span; `.` and `..`
      relative prefixes remain distinguishable as current and parent imports; a
      malformed import yields an import-prescan diagnostic without aborting;
-     raw-scan failure during import pre-scan yields a coarse diagnostic and empty
-     `import_stubs`; import order is preserved for provenance and deterministic
-     fingerprints.
+     raw-scan recovery during import pre-scan yields precise diagnostics while
+     preserving usable partial `import_stubs`; import order is preserved for
+     provenance and deterministic fingerprints.
    - Depends on: 3. Spec: [preprocess.md](./preprocess.md) "Import Stubs",
      "Error Handling".
 
@@ -431,7 +431,7 @@ should keep `cargo test -p mizar-frontend` green (see
       preprocessing, `TokenizeRequest::with_plan` uses it for tokenization,
       `TokenStream` retains it, and token cache keys hash its actual range and
       context content. Preprocessing and import pre-scan use matching recognized
-      string-argument protection before strict raw scanning. Tests cover
+      string-argument protection before recoverable raw scanning. Tests cover
       single-line annotation string arguments with Unicode/comment-marker
       contents, line-boundary guards, range-specific user-symbol kind filters,
       and real source-to-token-to-parser
@@ -454,7 +454,7 @@ should keep `cargo test -p mizar-frontend` green (see
       frontend `allow` attribute carries an adjacent reason. No intentional
       `allow` exceptions are currently present.
 
-22. **Precise raw-scan recovery contract.** [ ]
+22. **Precise raw-scan recovery contract.** [x]
     - Decide whether `mizar-lexer` should expose a recoverable raw scanner that
       returns failure spans and partial raw tokens, or whether `mizar-frontend`
       keeps only coarse full-lexical-text recovery for strict `scan_raw` failures.
@@ -462,9 +462,21 @@ should keep `cargo test -p mizar-frontend` green (see
       and [lexing.md](./lexing.md) to replace the coarse diagnostics/recovery token
       with precise failure spans and synchronization-boundary continuation.
     - Tests: strict `scan_raw` failure remains coarse until this contract lands;
-      after it lands, import pre-scan and tokenization report the precise offending
-      span and preserve usable partial raw tokens.
+      after it lands, import pre-scan and tokenization report the precise
+      offending span, preserve usable partial raw tokens, and keep error
+      sentinels at recovery boundaries so callers do not join malformed text.
     - Depends on: 9. Spec: [preprocess.md](./preprocess.md), [lexing.md](./lexing.md).
+    - Result: `mizar-lexer` now exposes strict `scan_raw` plus
+      `scan_raw_recoverable`, which returns `RecoverableRawTokenStream` with
+      usable partial raw tokens, error sentinels, and precise
+      `RawScanDiagnostic`s. `mizar-frontend`
+      uses the recoverable path for import pre-scan and tokenization, maps
+      offending spans through `SpanBridge`, preserves import stubs and tokens
+      found in the usable partial stream, and keeps the older whole-text fallback
+      only for internal parser-plan range defects. Tests cover lexer-side
+      recovery continuation, precise import pre-scan diagnostics with preserved
+      imports, and tokenization that emits precise `ErrorRecovery` tokens while
+      continuing with later source tokens.
 
 23. **Resident-set contract guard for the lexical environment.** [ ]
     - Add coverage that locks the resident-set contract now stated in

@@ -23,7 +23,7 @@
 | [source.md](./source.md) | `crates/mizar-frontend/src/source.rs` | Step 1: `mizar-session` のソース同一性・line map・loading map を橋渡しする `SourceUnit` の読み込み | Implemented |
 | [preprocess.md](./preprocess.md) | `crates/mizar-frontend/src/preprocess.rs` | Step 2: `PreprocessedSource`、コメント／ドキュメントコメントの分離、注釈構文の保持、浅いインポート事前走査の統制 | Implemented |
 | [lexical_env.md](./lexical_env.md) | `crates/mizar-frontend/src/lexical_env.rs` | Step 3: インポートスタブと依存字句サマリからのアクティブ字句環境の構築 | Implemented through task 6 |
-| [lexing.md](./lexing.md) | `crates/mizar-frontend/src/lexing.rs` | Step 4: 生スキャン・スコープスケルトン・位置別 parser lexing plan・文脈依存の曖昧性解消による `TokenStream` | Implemented through task 20 |
+| [lexing.md](./lexing.md) | `crates/mizar-frontend/src/lexing.rs` | Step 4: 回復可能な生スキャン・スコープスケルトン・位置別 parser lexing plan・文脈依存の曖昧性解消による `TokenStream` | Implemented through task 22 |
 | [parsing.md](./parsing.md) | `crates/mizar-frontend/src/parsing.rs` | Step 5: parser seam の呼び出し、パーサー入力の組み立て、位置別 string context planning、`SurfaceAst` の受け渡し | Implemented through task 20; full grammar recovery pending |
 | [cache_key.md](./cache_key.md) | `crates/mizar-frontend/src/cache_key.rs` | parser lexing-plan content key を含め、`FrontendOutput.cache_keys` で公開する層状 frontend content cache keys | Implemented through task 20 |
 | [span_bridge.md](./span_bridge.md) | `crates/mizar-frontend/src/span_bridge.rs` | 字句解析器のバイトスパンから `mizar-session` の `SourceRange` への座標橋渡し | Implemented for task 1 |
