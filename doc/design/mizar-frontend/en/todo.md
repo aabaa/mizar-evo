@@ -17,9 +17,9 @@
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [x] |
-| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] implemented through task 20; full grammar recovery pending |
+| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] implemented through task 20; full grammar recovery pending (task 28) |
 | cache_key | [cache_key.md](./cache_key.md) | `src/cache_key.rs` | [x] |
-| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [~] implemented through task 20; later follow-up gates remain |
+| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [~] implemented through task 20; later follow-up gates remain (task 28) |
 
 `mizar-frontend` is an orchestration crate, so it is built bottom-up by phase:
 the coordinate bridge first, then pipeline Steps 1-5 in order, then the
@@ -53,6 +53,14 @@ These public API decisions are tracked at the top level in
   interleave, and the lexer never receives arbitrary parser state. The plan now
   covers grammar-position string literals, Unicode inside annotation string
   arguments, and parser-driven user-symbol kind filters.
+- **Quality bar before the next crate: resolved.** Task 25 is the only remaining
+  frontend-side gate before development moves to the next crate: deciding the
+  public-enum forward-compatibility policy is cheapest now, while
+  `mizar-frontend` has no downstream consumers. Tasks 26-28 are deliberately
+  deferred follow-ups with explicit re-entry triggers and do not block the
+  handoff. The `[~]` module statuses for `parsing` and `orchestration` track
+  future `mizar-parser` grammar/recovery growth (task 28), not missing
+  frontend-side work, so they are not a handoff gate either.
 
 ## Ordered Task List
 
@@ -534,6 +542,75 @@ should keep `cargo test -p mizar-frontend` green (see
       [span_bridge.md](./span_bridge.md), [lexical_env.md](./lexical_env.md),
       [orchestration.md](./orchestration.md), [lexing.md](./lexing.md),
       [parsing.md](./parsing.md).
+
+### Quality bar before the next crate
+
+Task 25 is the only gate before next-crate development starts. Tasks 26-28 are
+deliberately deferred; each records the re-entry trigger that reopens it so the
+deferral is a decision, not an omission.
+
+25. **Public enum forward-compatibility decision.** [ ]
+    - For each public frontend enum whose spec already promises future variants
+      or reserved surfaces — `SpanBridgeError`,
+      `LexicalEnvironmentDiagnosticCode`, `LexingDiagnosticKind`,
+      `LexingDiagnosticPayload`, `PreprocessDiagnosticKind`, `DiagnosticCode`,
+      `DiagnosticClass`, `SourceLoadLocation`, and `FrontendError` — decide
+      whether to mark it `#[non_exhaustive]` so future variants do not break
+      downstream crates, or to deliberately keep exhaustive matching so a new
+      variant is a compile-time signal inside the workspace.
+    - Record the per-enum decision next to the enum in the owning module spec
+      and in [source_spec_correspondence.md](./source_spec_correspondence.md);
+      apply the chosen attributes in the same change.
+    - This is the cheapest moment for the decision: no crate outside the
+      frontend pipeline consumes these enums yet, so either choice is still
+      free to apply.
+    - Tests: `cargo test -p mizar-frontend` and the clippy gate stay green;
+      matches inside this crate remain exhaustive either way.
+    - Depends on: 24. Spec: all module specs,
+      [source_spec_correspondence.md](./source_spec_correspondence.md).
+
+26. **Public API rustdoc summaries.** [ ] Deferred.
+    - No crate in the workspace currently carries rustdoc; the canonical API
+      contracts live in the `doc/design` specs. Adding `///` summaries only to
+      `mizar-frontend` would break that symmetry, so this is deferred as a
+      workspace-level documentation decision rather than a frontend gap.
+    - Re-entry trigger: before the first long-lived consumer outside the
+      frontend pipeline (the driver or `mizar-lsp`) starts coding against the
+      `mizar-frontend` public API, or when the workspace adopts a rustdoc
+      policy — whichever comes first.
+    - Content when reopened: transcribe one-line summaries from each spec's
+      "Public API" section onto the public items, link each module header to
+      its spec, and keep `doc/design` canonical for behavior promises.
+    - Depends on: 16. Spec: repository documentation policy.
+
+27. **Frontend pipeline fuzz target and performance baselines.** [ ] Deferred.
+    - The workspace fuzz harness covers only `lexer_valid_utf8` today. Add a
+      frontend target that drives preprocess → import pre-scan → tokenize over
+      arbitrary UTF-8 input with a stub summary provider, asserting no panics
+      and recoverable-diagnostics-only outcomes on the recovery paths that
+      tasks 9 and 22 promise.
+    - Re-entry trigger (fuzz): when the recovery surface grows with
+      `mizar-parser` grammar expansion (task 28), or before the first
+      end-user-facing milestone, whichever comes first. Re-entry trigger
+      (performance): when the driver's incremental loop exists and consumes
+      `FrontendOutput.cache_keys`, add timing baselines for comment-only versus
+      import-edit reruns.
+    - Depends on: 22. Spec: [preprocess.md](./preprocess.md),
+      [lexing.md](./lexing.md), [cache_key.md](./cache_key.md).
+
+28. **Grammar-recovery follow-through with `mizar-parser` growth.** [ ] Deferred.
+    - The pending work behind the `[~]` statuses of `parsing` and
+      `orchestration` is owned by future `mizar-parser` grammar and recovery
+      development, not by this crate. As the grammar grows beyond the minimal
+      seam, extend the frontend passthrough coverage in step: recovery-node
+      markers, syntax-diagnostic merge ordering, and `SurfaceAstCacheKey`
+      invalidation for the new grammar shapes.
+    - Flip `parsing` and `orchestration` to `[x]` in the module table when the
+      full grammar-recovery contract lands.
+    - Re-entry trigger: the start of `mizar-parser` grammar expansion beyond
+      the current minimal seam.
+    - Depends on: 12, 13. Spec: [parsing.md](./parsing.md),
+      [orchestration.md](./orchestration.md).
 
 ## Suggested Verification
 

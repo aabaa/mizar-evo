@@ -17,9 +17,9 @@
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [x] |
-| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] task 20 まで実装済み。full grammar recovery は保留中 |
+| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] task 20 まで実装済み。full grammar recovery は保留中（task 28） |
 | cache_key | [cache_key.md](./cache_key.md) | `src/cache_key.rs` | [x] |
-| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [~] task 20 まで実装済み。後続 follow-up gate は残る |
+| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [~] task 20 まで実装済み。後続 follow-up gate は残る（task 28） |
 
 `mizar-frontend` は統制を担う crate なので、フェーズの順にボトムアップで構築する。まず座標の橋渡しを用意し、続いてパイプライン順に Step 1〜5、最後にエンドツーエンドのコーディネータを作る。`span_bridge` は後続の各フェーズが参照する共有プリミティブであり、`orchestration` はパイプライン全体を配線する唯一のモジュールである。
 
@@ -35,6 +35,7 @@
 
 - **字句解析器スパンの橋渡し: 解決済み。** この crate は分離方式を採用する。`mizar-lexer` はバイトオフセットのスパンを保持し、`span_bridge`（タスク 1）がそれらを `mizar-session` の `SourceRange` へ変換する。
 - **パーサー支援字句解析の契約: 解決済み。** フロントエンドは、字句バイト範囲上の位置別 `ParserLexingPlan` を事前計算し、狭い `ParserLexContext` 値だけを字句解析器に渡す。parser と lexer は交錯せず、lexer は任意の parser state を受け取らない。この plan は文法位置の string literal、注釈文字列引数内の Unicode、parser 駆動の user-symbol kind filter を扱う。
+- **次クレート着手前の品質基準: 解決済み。** 次のクレートの開発へ移る前に残るフロントエンド側のゲートは task 25 のみとする。公開 enum の前方互換方針の決定は、`mizar-frontend` に下流の消費者がまだ存在しない今が最も安価である。task 26〜28 は、明示的な再着手トリガーを持つ意図的な保留フォローアップであり、引き継ぎを妨げない。`parsing` と `orchestration` の `[~]` 状態は、フロントエンド側の未完了作業ではなく、将来の `mizar-parser` の文法／回復の拡大（task 28）を追跡するものなので、これも引き継ぎのゲートではない。
 
 ## 順序付きタスク一覧
 
@@ -244,6 +245,38 @@
       `LexingDiagnosticPayload::UnsupportedLexerPayload` で recovery note を作らない方針を固定した。
       producer-backed coverage は、将来の non-exhaustive lexer/session/parser variant が追加されるまで延期する。
     - 依存: 16。仕様: [source_spec_correspondence.md](./source_spec_correspondence.md)、[span_bridge.md](./span_bridge.md)、[lexical_env.md](./lexical_env.md)、[orchestration.md](./orchestration.md)、[lexing.md](./lexing.md)、[parsing.md](./parsing.md)。
+
+### 次クレート着手前の品質基準
+
+次のクレートの開発を始める前のゲートは task 25 のみである。task 26〜28 は意図的な保留であり、それぞれ再着手のトリガーを記録することで、保留が「漏れ」ではなく「決定」であることを保証する。
+
+25. **公開 enum の前方互換方針の決定。** [ ]
+    - 仕様が将来の variant や予約 surface を約束している各公開 enum —
+      `SpanBridgeError`、`LexicalEnvironmentDiagnosticCode`、
+      `LexingDiagnosticKind`、`LexingDiagnosticPayload`、
+      `PreprocessDiagnosticKind`、`DiagnosticCode`、`DiagnosticClass`、
+      `SourceLoadLocation`、`FrontendError` — について、将来の variant 追加が下流 crate を壊さないよう `#[non_exhaustive]` を付けるか、新しい variant がワークスペース内でコンパイル時のシグナルになるよう意図的に exhaustive match を維持するかを決める。
+    - enum ごとの決定を、所有モジュール仕様の enum の隣と [source_spec_correspondence.md](./source_spec_correspondence.md) に記録し、選んだ属性を同じ変更で適用する。
+    - フロントエンドパイプラインの外でこれらの enum を消費する crate はまだ存在しないため、どちらの選択も今なら無償で適用できる。この決定の最安のタイミングである。
+    - テスト: `cargo test -p mizar-frontend` と clippy ゲートを成功状態に保つ。いずれの選択でも、この crate 内部の match は exhaustive のままである。
+    - 依存: 24。仕様: すべてのモジュール仕様、[source_spec_correspondence.md](./source_spec_correspondence.md)。
+
+26. **公開 API の rustdoc サマリ。** [ ] 保留。
+    - 現在、ワークスペースのどの crate も rustdoc を持たず、正準の API 契約は `doc/design` の仕様にある。`mizar-frontend` だけに `///` サマリを加えるとその対称性が崩れるため、これはフロントエンドの欠陥としてではなく、ワークスペースレベルのドキュメント決定として保留する。
+    - 再着手トリガー: フロントエンドパイプラインの外の最初の長命な消費者（driver または `mizar-lsp`）が `mizar-frontend` の公開 API に対するコーディングを始める前、またはワークスペースが rustdoc 方針を採用したとき — いずれか早い方。
+    - 再開時の内容: 各仕様の「Public API」節から 1 行サマリを公開アイテムへ転記し、各モジュールヘッダから仕様へリンクし、挙動の約束については `doc/design` を正準のまま保つ。
+    - 依存: 16。仕様: リポジトリのドキュメント方針。
+
+27. **フロントエンドパイプラインの fuzz ターゲットと性能ベースライン。** [ ] 保留。
+    - ワークスペースの fuzz ハーネスは現在 `lexer_valid_utf8` のみを対象とする。スタブのサマリプロバイダを使って任意の UTF-8 入力上で preprocess → import 事前走査 → tokenize を駆動するフロントエンドターゲットを追加し、task 9 と task 22 が約束する回復経路で panic が起きず、回復可能診断のみで完了することをアサートする。
+    - 再着手トリガー（fuzz）: `mizar-parser` の文法拡大（task 28）で回復 surface が拡大したとき、または最初のエンドユーザー向けマイルストーンの前 — いずれか早い方。再着手トリガー（性能）: driver の増分ループが存在し `FrontendOutput.cache_keys` を消費するようになったとき、コメントのみの編集と import 編集の再実行について計時ベースラインを追加する。
+    - 依存: 22。仕様: [preprocess.md](./preprocess.md)、[lexing.md](./lexing.md)、[cache_key.md](./cache_key.md)。
+
+28. **`mizar-parser` の成長に伴う grammar-recovery のフォロースルー。** [ ] 保留。
+    - `parsing` と `orchestration` の `[~]` 状態の背後にある保留作業は、この crate ではなく、将来の `mizar-parser` の文法・回復開発が所有する。文法が最小の seam を超えて成長するのに合わせて、フロントエンドのパススルー網羅を歩調を合わせて拡張する: 回復ノードの印、構文診断の統合順序、新しい文法形状に対する `SurfaceAstCacheKey` の無効化。
+    - full grammar-recovery 契約が入った時点で、モジュール表の `parsing` と `orchestration` を `[x]` に切り替える。
+    - 再着手トリガー: `mizar-parser` の文法が現在の最小 seam を超えて拡大を始めたとき。
+    - 依存: 12、13。仕様: [parsing.md](./parsing.md)、[orchestration.md](./orchestration.md)。
 
 ## 推奨検証
 
