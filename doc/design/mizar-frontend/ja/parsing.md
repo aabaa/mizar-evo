@@ -3,11 +3,11 @@
 > 正本は英語です。英語版: [../en/parsing.md](../en/parsing.md)。
 
 状態: パーサー入力の組み立て、スタブ parser seam、最小限の実
-`mizar-parser` seam、task 12 の parser recovery passthrough は実装済み。完全な文法回復は引き続き保留中。
+`mizar-parser` seam、task 12 の parser recovery passthrough、task 20 の位置別 parser lexing-plan integration は実装済み。完全な文法回復は引き続き保留中。
 
 ## 目的
 
-このモジュールは、フロントエンドパイプラインの Step 5（パーサー呼び出し）を実装する。parser seam を通じて `TokenStream` を AST へ変え、アクティブ字句環境から導出したパーサー入力（演算子 fixity、すなわち優先順位と結合性、文字列必須の文法文脈）を供給し、統合がパーサー駆動の曖昧性解消を用いる場合には、パーサーが要求する字句文脈を Step 4 へ戻す。
+このモジュールは、フロントエンドパイプラインの Step 5（パーサー呼び出し）を実装する。parser seam を通じて `TokenStream` を AST へ変え、アクティブ字句環境から導出したパーサー入力（演算子 fixity、すなわち優先順位と結合性、文字列必須の文法文脈）を供給し、orchestration が Step 4 の tokenization 前に parser lexing plan を事前計算するための狭い parser-facing contract を定義する。
 
 `SurfaceAst` ノード定義（実 parser seam では `mizar-syntax` にある）も、文法・Pratt 優先順位・回復・注釈付与のロジック（実 parser seam では `mizar-parser` にある）も所有しない。crate 境界で入出力を適合させるだけである。
 
@@ -72,11 +72,13 @@ pub enum OperatorAssociativity {
 
 pub enum StringRequiredContext {
     None,
+    PositionSensitive,
     UniformForTest,
 }
 
 impl StringRequiredContext {
     pub fn parser_lex_context(self) -> ParserLexContext;
+    pub fn parser_lexing_plan(self, lexical_text: &str) -> ParserLexingPlan;
 }
 
 pub trait ParserSeam {
@@ -111,7 +113,7 @@ pub struct MizarParserSeam;
 
 `SurfaceAst` と `SyntaxDiagnostic` は `mizar-syntax` が所有する。実 `MizarParserSeam` は `mizar-parser` のエントリポイントへ委譲し、それらの出力をそのまま返す。`StubParserSeam` は source-to-token coordinator 経路のために残り、`ast = None` と空の診断リストを返す。`ParserInputs` は、Step 3 の後にフロントエンドがアクティブ字句環境とエディションから導出する。トップレベルのコーディネータの呼び出し側は、これを渡さない。`ParserSeam::cache_key_version` は `SurfaceAstCacheKey` の parser component を供給する。`MizarParserSeam` と `StubParserSeam` は明示的な version を使い、custom seam は override しない限り保守的な custom-seam version を継承する。
 
-`operator_fixity` は、依存字句サマリが公開しているデータからのみ埋める。現在のサマリの形がまだ fixity を公開していない場合、通常の source-to-token 経路では `OperatorFixityTable { entries: Vec::new() }` を使う。一方で、明示的な合成 parser 入力により、実 Pratt/fixity seam は検証できる。`StringRequiredContext::None` は通常の source-to-token 基盤モードであり、`UniformForTest` は、字句解析器全体を意図的に `ParserLexContext::string_required()` で実行する有界なテスト専用である。位置別の文字列必須スパンとパーサー駆動の記号種別フィルタは、この初期型では表現しない。実ソース入力で文法位置の文字列リテラルが必要になる前に、パーサー支援字句解析の契約で追加する。
+`operator_fixity` は、依存字句サマリが公開しているデータからのみ埋める。現在のサマリの形がまだ fixity を公開していない場合、通常の source-to-token 経路では `OperatorFixityTable { entries: Vec::new() }` を使う。一方で、明示的な合成 parser 入力により、実 Pratt/fixity seam は検証できる。`StringRequiredContext::PositionSensitive` は通常の source-to-token mode であり、tokenization 前に字句バイト範囲上の `ParserLexingPlan` を事前計算するよう frontend に要求する。`StringRequiredContext::None` は parser-assisted lexing を意図的に無効にする合成 parser 入力用に残り、`UniformForTest` は、字句解析器全体を意図的に `ParserLexContext::string_required()` で実行する有界なテスト専用である。位置別の文字列必須スパンとパーサー駆動の記号種別フィルタは `ParserLexingPlan` で表現され、任意の parser state を lexer に公開しない。
 
 stub parser seam では、`ast = None` は期待されるプレースホルダ結果である。実 parser seam は、`end` token が存在しない場合の `end` 欠落と、文字列リテラル必須位置の task 12 回復ノードを含め、回復済みトークン列に対して最小の `SurfaceAst` を返す。パーサーが以降のフェーズに十分な構造を回復できない場合は `ast = None` を返せる。字句診断と構文診断は依然として返される。
 
@@ -141,7 +143,7 @@ parser seam により、フロントエンドは stubbed source-to-token pipelin
 3. parser は、token node をソース順に保持し、明示的な演算子 fixity が与えられた場合に最小限の infix expression node を構築し、`end` token が存在しない場合の `end` 欠落と、文字列リテラル必須位置の task 12 回復マーカーを保持する。後続の parser タスクで、完全なモジュール／項目構文解析、注釈とドキュメントコメントの付与、より広い同期回復を追加する。
 4. `SurfaceAst` と構文診断を返す。parser が回復不能な入力を報告した場合は `ast = None` を返す。
 
-統合がパーサー駆動の曖昧性解消を用いる場合、パーサーは狭い文脈オブジェクトを通じて、文字列必須位置または記号種別フィルタを Step 4 へ供給する。その契約が導入されるまでは、実 parser 統合は、ソースレベルの注釈／演算子文字列リテラルのトークン化を要求してはならない。それらのテストは、合成トークンストリームを使うか、保留のままにする。パーサーが字句解析器のカーソルを直接駆動することは決してない。
+パーサー支援の曖昧性解消は、parser と lexer の実行を交錯させるのではなく、事前計算された位置別 plan を使う。parser-facing input は `StringRequiredContext::PositionSensitive` を選び、orchestration は字句テキストから 1 つの `ParserLexingPlan` を導出し、Step 4 はその plan に従って `ParserLexContext` 値だけを lexer に渡す。lexer は任意の parser state を受け取らず、parser が lexer 内部を直接変更することもない。
 
 ## エラー処理
 
@@ -152,7 +154,7 @@ parser seam により、フロントエンドは stubbed source-to-token pipelin
 主要シナリオ:
 
 - スタブの seam は、`ast = None` と空の診断リストを返す。
-- スタブの source-to-token 経路では、`ParserInputs` が空の `OperatorFixityTable` と `StringRequiredContext::None` を使う。
+- 通常の source-to-token 経路では、`ParserInputs` が空の `OperatorFixityTable` と `StringRequiredContext::PositionSensitive` を使う。
 - 実 seam は、整形式のトークンストリームを、ソース順と `SourceRange` を保持した `SurfaceAst` へ解析する。
 - 実 seam は token-kind adaptation を保持し、parser 診断をそのまま返す。
 - 明示的な演算子 fixity が、対応する infix operator の Pratt 優先順位と結合性を駆動する。字句サマリが fixity を公開したら、アクティブ字句環境は同じ parser 入力を埋める。
@@ -160,7 +162,7 @@ parser seam により、フロントエンドは stubbed source-to-token pipelin
 - 同じ非結合演算子の連鎖は診断され、同じ precedence の別演算子は区別される。
 - `end` token が存在しない場合、`end` の欠落は保守的に EOF で回復し、明示的な回復ノードを返す。
 - 回復不能な 1 トークンの `end` 入力では、構文診断とともに `ast = None` が保持される。
-- 文字列リテラル必須位置での欠落は、task 20 まで実ソーステキストではなく合成トークンストリームで診断を検証する。
+- 一様な string-required 位置での文字列リテラル欠落は、合成トークンストリームで診断を検証する。一方、実ソーステキストの annotation string argument は位置別 plan を通じて token 化される。
 - 注釈ノード、不正な注釈の回復、ドキュメントコメント付与は、後続の parser/recovery coverage として残る。
 
 ## 制約と前提

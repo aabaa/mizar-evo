@@ -17,9 +17,9 @@
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [x] |
-| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] implemented through task 12 |
+| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] implemented through task 20; full grammar recovery pending |
 | cache_key | [cache_key.md](./cache_key.md) | `src/cache_key.rs` | [x] |
-| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [~] implemented through task 14 |
+| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [~] implemented through task 20; later follow-up gates remain |
 
 `mizar-frontend` is an orchestration crate, so it is built bottom-up by phase:
 the coordinate bridge first, then pipeline Steps 1-5 in order, then the
@@ -47,12 +47,12 @@ These public API decisions are tracked at the top level in
 - **Lexer span bridging: resolved.** This crate adopts the decoupled option: `mizar-lexer`
   keeps its byte-offset spans and `span_bridge` (task 1) maps them onto
   `mizar-session` `SourceRange`.
-- **Parser-assisted lexing contract: gated.** The current lexer exposes a uniform
-  `ParserLexContext`, not position-sensitive string-required spans. Position-
-  sensitive string literal recognition, Unicode inside annotation string
-  arguments, and parser-driven symbol-kind filters remain gated on a narrow
-  `ParserLexContext` / `ParserInputs` contract that never exposes arbitrary
-  parser state.
+- **Parser-assisted lexing contract: resolved.** The frontend precomputes a
+  position-sensitive `ParserLexingPlan` over lexical byte ranges and passes only
+  narrow `ParserLexContext` values to the lexer. The parser and lexer do not
+  interleave, and the lexer never receives arbitrary parser state. The plan now
+  covers grammar-position string literals, Unicode inside annotation string
+  arguments, and parser-driven user-symbol kind filters.
 
 ## Ordered Task List
 
@@ -235,8 +235,8 @@ should keep `cargo test -p mizar-frontend` green (see
    - Run `disambiguate` (or parser-integrated `lex`) with the active lexical
      environment, an initial raw `ScopeSkeleton` / `ScopeLexView`, a contextual
      scope skeleton rebuilt from final token shapes, and the current
-     `ParserLexContext` (general/stub context until the parser-assisted contract
-     is finalized); map every lexer token and diagnostic span through the
+     `ParserLexContext` selected by the parser-assisted lexing plan; map every
+     lexer token and diagnostic span through the
      `SpanBridge` to session `SourceRange`s. Convert raw `LexDiagnostic`s to
      frontend `LexingDiagnostic`s
      by copying code/message and preserving structured payloads in mapped form;
@@ -252,9 +252,7 @@ should keep `cargo test -p mizar-frontend` green (see
      every emitted token span resolves to a valid primary `SourceRange` while
      secondary anchors are preserved for diagnostics; lexer payloads with
      rejected token candidates preserve non-span payload data and mapped nested
-     spans.
-     Position-specific annotation/operator string-literal tests are deferred to
-     the parser-assisted lexing contract.
+     spans. Task 20 adds position-specific annotation string-literal coverage.
    - Depends on: 7. Spec: [lexing.md](./lexing.md) "Token Stream",
      "Algorithm / Logic".
 
@@ -283,9 +281,9 @@ should keep `cargo test -p mizar-frontend` green (see
       `ast = None` plus an empty diagnostic list, so the source → tokens pipeline
       is exercisable.
     - Tests: `ParserInputs` carries the edition, uses an empty operator-fixity
-      table when summaries do not expose fixity, uses `StringRequiredContext::None`
-      for the stub source-to-token path, carries no resolver state, and the stub
-      seam returns `ast = None`.
+      table when summaries do not expose fixity, uses
+      `StringRequiredContext::PositionSensitive` for normal source-to-token
+      paths, carries no resolver state, and the stub seam returns `ast = None`.
     - Depends on: 8. Spec: [parsing.md](./parsing.md) "Parser Inputs",
       "Public API".
 
@@ -298,11 +296,9 @@ should keep `cargo test -p mizar-frontend` green (see
     - Tests: a well-formed token stream parses to a `SurfaceAst` with preserved
       source order and ranges; explicit operator fixity drives Pratt precedence
       for a user infix operator. Summary-derived fixity remains empty until
-      lexical summaries expose fixity. Annotation/operator string-literal tests
-      must use synthetic parser token streams until task 20 finalizes
-      parser-assisted lexing for real source text.
-    - Depends on: 10, plus `mizar-parser`/`mizar-syntax`. Real source-text tests
-      that require grammar-position string literals also depend on 20. Spec:
+      lexical summaries expose fixity. Task 20 adds real source-text coverage for
+      annotation string literals.
+    - Depends on: 10, plus `mizar-parser`/`mizar-syntax`. Spec:
       [parsing.md](./parsing.md) "Algorithm / Logic".
 
 12. **Parser recovery passthrough.** [x]
@@ -311,9 +307,8 @@ should keep `cargo test -p mizar-frontend` green (see
     - Tests: a missing `end` recovers conservatively at EOF when no `end` token is
       present, with `ast = Some` and an explicit error node; an unrecoverable
       one-token `end` stream returns `ast = None` with diagnostics; a missing
-      string literal at a string-required position yields the expected syntax
-      diagnostic using a synthetic token stream until task 20 finalizes
-      parser-assisted lexing for real source text.
+      string literal at a uniform string-required position yields the expected
+      syntax diagnostic using a synthetic token stream.
     - Depends on: 11. Spec: [parsing.md](./parsing.md) "Error Handling".
 
 ### Module: orchestration (`src/orchestration.rs`)
@@ -424,18 +419,23 @@ should keep `cargo test -p mizar-frontend` green (see
       comment-equivalent runs and end-to-end import/dependency invalidation.
     - Depends on: 16. Spec: architecture incrementality table.
 
-20. **Parser-assisted lexing contract finalization.** [ ]
+20. **Parser-assisted lexing contract finalization.** [x]
     - Finalize whether disambiguation runs in one pass with a precomputed
       position-sensitive `ParserLexContext` or interleaves with parsing through
       the narrow context object, and document the chosen integration in
       [lexing.md](./lexing.md) and [parsing.md](./parsing.md).
-    - Keep the lexer free of arbitrary parser state under either choice. This
-      task blocks position-specific `StringLiteral` tests and Unicode acceptance
-      inside annotation string arguments.
-    - This task must land before real source-to-token-to-parser tests that require
-      grammar-position string literal tokenization or parser-driven symbol-kind
-      filters. Before this task, tasks 11-12 may use synthetic parser token streams
-      for string-literal parser behavior.
+    - Keep the lexer free of arbitrary parser state under either choice.
+    - Result: the contract chooses precomputed, position-sensitive lexing plans.
+      `ParserInputs` uses `StringRequiredContext::PositionSensitive` for normal
+      source runs, orchestration derives one `ParserLexingPlan` after
+      preprocessing, `TokenizeRequest::with_plan` uses it for tokenization,
+      `TokenStream` retains it, and token cache keys hash its actual range and
+      context content. Preprocessing and import pre-scan use matching recognized
+      string-argument protection before strict raw scanning. Tests cover
+      single-line annotation string arguments with Unicode/comment-marker
+      contents, line-boundary guards, range-specific user-symbol kind filters,
+      and real source-to-token-to-parser
+      handoff through `MizarParserSeam`.
     - Depends on: 10; real-parser validation also depends on 11. Spec: top-level
      [../../todo.md](../../todo.md) "Resolved And Open Decisions", [lexing.md](./lexing.md),
      [parsing.md](./parsing.md).

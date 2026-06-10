@@ -3,16 +3,18 @@
 > Canonical language: English. Japanese companion: [../ja/parsing.md](../ja/parsing.md).
 
 Status: parser-input assembly, the stub parser seam, a minimal real
-`mizar-parser` seam, and task-12 parser recovery passthrough are implemented;
-full grammar recovery remains gated.
+`mizar-parser` seam, task-12 parser recovery passthrough, and task-20
+position-sensitive parser lexing-plan integration are implemented; full grammar
+recovery remains gated.
 
 ## Purpose
 
 This module implements the frontend pipeline Step 5 (parser invocation). It
 calls a parser seam to turn a `TokenStream` into an AST, supplies the parser
 inputs derived from the active lexical environment (operator fixity,
-string-required grammar contexts), and threads parser-requested lexing context
-back to Step 4 when the integration uses parser-driven disambiguation.
+string-required grammar contexts), and defines the narrow parser-facing contract
+that orchestration uses to precompute parser lexing plans before Step 4
+tokenization.
 
 It does not own `SurfaceAst` node definitions (those live in `mizar-syntax` for
 the real parser seam) or the grammar, Pratt precedence, recovery, or
@@ -83,11 +85,13 @@ pub enum OperatorAssociativity {
 
 pub enum StringRequiredContext {
     None,
+    PositionSensitive,
     UniformForTest,
 }
 
 impl StringRequiredContext {
     pub fn parser_lex_context(self) -> ParserLexContext;
+    pub fn parser_lexing_plan(self, lexical_text: &str) -> ParserLexingPlan;
 }
 
 pub trait ParserSeam {
@@ -136,12 +140,14 @@ they override it.
 summaries. If the current summary shape does not yet expose fixity, the default
 source-to-token path uses `OperatorFixityTable { entries: Vec::new() }`; explicit
 synthetic parser inputs can still exercise the real Pratt/fixity seam.
-`StringRequiredContext::None` is the normal source-to-token foundation mode, and
+`StringRequiredContext::PositionSensitive` is the normal source-to-token mode:
+it asks the frontend to precompute a `ParserLexingPlan` over lexical byte ranges
+before tokenization. `StringRequiredContext::None` remains available for
+synthetic parser inputs that intentionally disable parser-assisted lexing, and
 `UniformForTest` is only for bounded tests that intentionally run the whole lexer
 under `ParserLexContext::string_required()`. Position-specific string-required
-spans and parser-driven symbol-kind filters are not represented by this initial
-type; they are added by the parser-assisted lexing contract before real source
-inputs that require grammar-position string literals are enabled.
+spans and parser-driven symbol-kind filters are represented by
+`ParserLexingPlan`; they do not expose arbitrary parser state to the lexer.
 
 With the stub parser seam, `ast = None` is the expected placeholder result. The
 real parser seam returns a minimal `SurfaceAst` for recovered token streams,
@@ -196,13 +202,12 @@ rewrite, prune, or interpret nodes.
 4. Return the `SurfaceAst` plus syntax diagnostics, or `ast = None` when the
    parser reports unrecoverable input.
 
-When the integration uses parser-assisted disambiguation, the parser-facing seam
-supplies string-required positions or symbol-kind filters back to Step 4 through
-a narrow request object. Until that contract lands, real parser integration must
-not require source-level annotation/operator string-literal tokenization; tests
-for those cases use synthetic token streams or remain gated. The lexer still must
-not receive arbitrary parser state, and the parser must not mutate lexer internals
-directly.
+Parser-assisted disambiguation uses a precomputed, position-sensitive plan rather
+than interleaving parser and lexer execution. The parser-facing inputs select
+`StringRequiredContext::PositionSensitive`, orchestration derives one
+`ParserLexingPlan` from the lexical text, and Step 4 applies the plan by passing
+only `ParserLexContext` values to the lexer. The lexer still must not receive
+arbitrary parser state, and the parser must not mutate lexer internals directly.
 
 ## Error Handling
 
@@ -222,7 +227,7 @@ Key scenarios:
 
 - the stub seam returns `ast = None` and no diagnostics;
 - `ParserInputs` uses an empty `OperatorFixityTable` and
-  `StringRequiredContext::None` for the stub source-to-token path;
+  `StringRequiredContext::PositionSensitive` for normal source-to-token paths;
 - the real seam parses a well-formed token stream to a `SurfaceAst` with
   preserved source order and `SourceRange`s;
 - the real seam preserves token-kind adaptation and returns parser diagnostics
@@ -237,9 +242,9 @@ Key scenarios:
   when no `end` token is present;
 - one-token unrecoverable `end` input preserves `ast = None` plus syntax
   diagnostics;
-- missing string literals at string-required positions are diagnosed using
-  synthetic token streams while real source-text coverage remains gated on task
-  20;
+- missing string literals at uniform string-required positions are diagnosed
+  using synthetic token streams, while real source-text annotation string
+  arguments are tokenized through the position-sensitive plan;
 - annotation nodes, malformed annotation recovery, and doc-comment attachment
   remain future parser/recovery coverage.
 

@@ -178,15 +178,16 @@ encountered.
 ### Preprocess a SourceUnit
 
 1. Call `mizar_lexer::preprocess_source_for_lexing` over `SourceUnit.source_text`
-   to validate code-region ASCII (allowing Unicode in comments, and leaving
-   string-literal Unicode acceptance to the parser-assisted lexing contract),
-   strip ordinary comments, retain doc comments, preserve annotation syntax in
-   lexical text, and produce a `SourcePreprocessMap`.
+   to validate code-region ASCII while allowing Unicode in comments and
+   recognized single-line parser-assisted string argument spans, strip ordinary
+   comments, retain doc comments, preserve annotation syntax in lexical text, and
+   produce a `SourcePreprocessMap`.
 2. Convert the lexer `SourcePreprocessMap` to the session `PreprocessMap` and
    register it on the mutable `SpanBridge` for the `SourceId`.
 3. Map every retained comment, doc comment, and preprocess diagnostic span from
    lexical/source offsets to `mizar-session` `SourceRange` through `span_bridge`.
-4. Raw-scan the lexical text (`scan_raw`). If it succeeds, run
+4. Raw-scan the lexical text for import pre-scan, preserving recognized
+   single-line string argument spans before strict scanning. If it succeeds, run
    `scan_import_prelude` to extract `ImportStub`s and import-prescan
    diagnostics, then map their spans to `SourceRange`.
 5. If the raw scan fails, record a frontend-local import-pre-scan diagnostic over
@@ -215,7 +216,8 @@ Step-2 diagnostics are carried in `PreprocessedSource.diagnostics`, not raised
 as a hard error. The module records:
 
 - code-region non-ASCII characters and other lexical preconditions
-  (`SourcePreprocessDiagnostic`);
+  (`SourcePreprocessDiagnostic`), excluding characters inside recognized
+  single-line parser-assisted string argument spans;
 - unterminated block comment and other comment-structure problems.
 - import pre-scan failures that prevent active lexical environment construction
   (`ImportPrescanDiagnostic`);
@@ -237,13 +239,17 @@ Key scenarios:
 - a doc comment is preserved with its raw body and source range and is not fed
   into lexical text;
 - annotation syntax (`@latex(...)`, `@[...]`) stays in `lexical_text`;
+- Unicode and comment-marker text inside recognized single-line
+  annotation/string arguments stays in `lexical_text` and is not reported as a
+  code-region non-ASCII precondition;
 - a removed comment yields a composite mapping for a lexical range that spans it;
 - synthetic whitespace is exposed only through degraded anchor-backed mappings,
   not exact user-authored ranges;
 - `lexical_hash` stays stable when comment-only edits leave `lexical_text`
   unchanged;
-- a non-ASCII character in a code region is reported as a lexical-precondition
-  diagnostic while preprocessing still returns recovered lexical text;
+- a non-ASCII character outside recognized single-line string argument spans is
+  reported as a lexical-precondition diagnostic while preprocessing still
+  returns recovered lexical text;
 - an unterminated block comment is reported and recovered;
 - top-level `import` forms produce `ImportStub`s with correct raw path, optional
   alias, `path.relative`, `path.source_segments`, and span; `.` and `..`
@@ -260,11 +266,11 @@ Key scenarios:
 - Comment-stripping, ASCII validation, and import-prescan algorithms belong to
   `mizar-lexer`; this module orchestrates them and owns span bridging.
 - Annotation syntax remains in lexical text for parser ownership; preprocessing
-  does not collect annotations into a separate metadata channel. Unicode inside
-  annotation string arguments is accepted only once the parser-assisted lexing
-  contract can identify string-required spans before ASCII precondition
-  reporting; until then, non-ASCII outside comments remains a lexical
-  precondition diagnostic.
+  does not collect annotations into a separate metadata channel. Task 20 lets
+  preprocessing preserve recognized single-line string argument spans before
+  ASCII precondition reporting, so Unicode and comment markers inside those spans
+  are accepted while non-ASCII outside comments and string arguments remains a
+  lexical precondition diagnostic.
 - Synthetic whitespace is never an exact primary user-facing source range;
   degraded anchor fallbacks are allowed only to satisfy the session
   `MappedSourceRange` shape.

@@ -95,11 +95,14 @@ where
             source.edition.clone(),
             &lexical_environment.environment,
         );
+        let parser_lexing_plan = parser_inputs
+            .string_required_positions
+            .parser_lexing_plan(preprocessed.lexical_text.as_str());
         let tokens = tokenize(
-            TokenizeRequest::new(
+            TokenizeRequest::with_plan(
                 &preprocessed,
                 &lexical_environment.environment,
-                parser_inputs.string_required_positions.parser_lex_context(),
+                parser_lexing_plan,
             ),
             &bridge,
         )
@@ -108,7 +111,7 @@ where
             &preprocessed,
             lexical_environment.fingerprint,
             tokens.parser_context,
-            ParserLexingPlanCacheKey::current(),
+            ParserLexingPlanCacheKey::from_plan(&tokens.parser_lexing_plan),
         );
         let token_stream_hash = token_cache_key.stable_hash();
         let parser_cache_key_version = self.parser.cache_key_version();
@@ -556,6 +559,7 @@ mod tests {
         LexicalEnvironmentDiagnostic, LexicalEnvironmentDiagnosticCode, LexicalEnvironmentRequest,
         LexicalSummaryProvider, ResolvedImports,
     };
+    use crate::lexing::{ParserLexMode, TokenKind};
     use crate::parsing::{MizarParserSeam, ParseOutput, ParseRequest, ParserSeam, StubParserSeam};
     use crate::source::{FrontendSourceLoader, SourceUnit, SourceUnitLoader, SourceUnitRequest};
     use crate::span_bridge::SpanBridgeError;
@@ -672,6 +676,37 @@ mod tests {
 
         assert!(output.ast.is_some());
         assert!(output.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn real_parser_frontend_accepts_annotation_string_arguments_from_source() {
+        let fixture = PackageFixture::new();
+        fixture.write(
+            "src/annotation_string.miz",
+            "@[label(\"α::β\")]\ndefinition\nend;\n",
+        );
+        let frontend = frontend_for_fixture(&fixture, MizarParserSeam);
+        let ids = InMemorySessionIdAllocator::new();
+
+        let output = frontend
+            .run(fixture.request("src/annotation_string.miz"), &ids)
+            .expect("annotation string source should run through the real parser frontend");
+
+        assert!(output.ast.is_some());
+        assert!(output.diagnostics.is_empty());
+        assert!(output.tokens.tokens().iter().any(
+            |token| token.kind == TokenKind::StringLiteral && token.text.as_ref() == "\"α::β\""
+        ));
+        assert_eq!(
+            output.cache_keys.tokens.parser_lexing_plan.contexts.len(),
+            1
+        );
+        assert_eq!(
+            output.cache_keys.tokens.parser_lexing_plan.contexts[0]
+                .context
+                .mode(),
+            ParserLexMode::StringRequired
+        );
     }
 
     #[test]

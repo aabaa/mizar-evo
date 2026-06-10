@@ -17,9 +17,9 @@
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [x] |
-| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] task 12 まで実装済み |
+| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] task 20 まで実装済み。full grammar recovery は保留中 |
 | cache_key | [cache_key.md](./cache_key.md) | `src/cache_key.rs` | [x] |
-| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [~] task 14 まで実装済み |
+| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [~] task 20 まで実装済み。後続 follow-up gate は残る |
 
 `mizar-frontend` は統制を担う crate なので、フェーズの順にボトムアップで構築する。まず座標の橋渡しを用意し、続いてパイプライン順に Step 1〜5、最後にエンドツーエンドのコーディネータを作る。`span_bridge` は後続の各フェーズが参照する共有プリミティブであり、`orchestration` はパイプライン全体を配線する唯一のモジュールである。
 
@@ -34,7 +34,7 @@
 これらの公開 API に関する決定は、[../../todo.md](../../todo.md) の「Resolved And Open Decisions」でトップレベルとして管理している。
 
 - **字句解析器スパンの橋渡し: 解決済み。** この crate は分離方式を採用する。`mizar-lexer` はバイトオフセットのスパンを保持し、`span_bridge`（タスク 1）がそれらを `mizar-session` の `SourceRange` へ変換する。
-- **パーサー支援字句解析の契約: 保留中。** 現在の字句解析器は一様な `ParserLexContext` を公開しており、位置ごとに異なる文字列必須スパンはまだ表現できない。位置別の `StringLiteral` 認識、注釈の文字列引数内での Unicode 受理、パーサー駆動の記号種別フィルタは、任意のパーサー状態を晒さない狭い `ParserLexContext` / `ParserInputs` 契約が固まってから着手する。
+- **パーサー支援字句解析の契約: 解決済み。** フロントエンドは、字句バイト範囲上の位置別 `ParserLexingPlan` を事前計算し、狭い `ParserLexContext` 値だけを字句解析器に渡す。parser と lexer は交錯せず、lexer は任意の parser state を受け取らない。この plan は文法位置の string literal、注釈文字列引数内の Unicode、parser 駆動の user-symbol kind filter を扱う。
 
 ## 順序付きタスク一覧
 
@@ -99,8 +99,8 @@
    - 依存: 6。仕様: [lexing.md](./lexing.md)「Scope Lex View」「Algorithm / Logic」。
 
 8. **文脈依存の曖昧性解消による `TokenStream`。** [x]
-   - アクティブ字句環境、初回の生 `ScopeSkeleton` / `ScopeLexView`、最終 token 形状から作り直した contextual scope skeleton、現在の `ParserLexContext`（パーサー支援契約が確定するまでは一般／スタブの文脈）を与えて `disambiguate`（またはパーサー統合の `lex`）を実行する。各字句解析器トークンと診断のスパンを `SpanBridge` を通じて session の `SourceRange` へ変換する。生の `LexDiagnostic` は code/message をコピーし、構造化ペイロードは写像済みの形で保持して、フロントエンドの `LexingDiagnostic` へ変換する。棄却候補の入れ子スパンは session 範囲へ写像し、複合／縮退マッピング由来の副次 `SourceAnchor` を保持する。内部の写像不変条件の失敗だけを `Err(SpanBridgeError)` として返す。
-   - テスト: 識別子とつづりを共有するユーザー記号が、最長一致で分類される。複合予約トークン（`.{`、`.*`、`.=`、`...`）が単一トークンとして字句解析される。引用符で囲まれた綴りは、アクティブな字句環境から記号として供給されない限り、一般文脈では写像済み字句解析器診断として棄却され、有界で一様な `StringRequired` 文脈では `StringLiteral` を生む。送出された各トークンスパンが妥当な第一 `SourceRange` へ解決され、隣接アンカーは診断用に保持される。棄却トークン候補を持つ字句解析器ペイロードは、スパン以外のペイロードデータと写像済みの入れ子スパンを保持する。注釈／演算子位置の文字列リテラルテストは、パーサー支援字句解析の契約まで延期する。
+   - アクティブ字句環境、初回の生 `ScopeSkeleton` / `ScopeLexView`、最終 token 形状から作り直した contextual scope skeleton、parser-assisted lexing plan が選んだ `ParserLexContext` を与えて `disambiguate`（またはパーサー統合の `lex`）を実行する。各字句解析器トークンと診断のスパンを `SpanBridge` を通じて session の `SourceRange` へ変換する。生の `LexDiagnostic` は code/message をコピーし、構造化ペイロードは写像済みの形で保持して、フロントエンドの `LexingDiagnostic` へ変換する。棄却候補の入れ子スパンは session 範囲へ写像し、複合／縮退マッピング由来の副次 `SourceAnchor` を保持する。内部の写像不変条件の失敗だけを `Err(SpanBridgeError)` として返す。
+   - テスト: 識別子とつづりを共有するユーザー記号が、最長一致で分類される。複合予約トークン（`.{`、`.*`、`.=`、`...`）が単一トークンとして字句解析される。引用符で囲まれた綴りは、アクティブな字句環境から記号として供給されない限り、一般文脈では写像済み字句解析器診断として棄却され、有界で一様な `StringRequired` 文脈では `StringLiteral` を生む。送出された各トークンスパンが妥当な第一 `SourceRange` へ解決され、隣接アンカーは診断用に保持される。棄却トークン候補を持つ字句解析器ペイロードは、スパン以外のペイロードデータと写像済みの入れ子スパンを保持する。task 20 は位置別 annotation string-literal coverage を追加する。
    - 依存: 7。仕様: [lexing.md](./lexing.md)「Token Stream」「Algorithm / Logic」。
 
 9. **字句解析器の回復のパススルー。** [x]
@@ -113,18 +113,18 @@
 10. **パーサー入力の組み立てとパーサーの継ぎ目。** [x]
     - `pub mod parsing;` を追加する。`ParseRequest`、`ParserInputs`、`OperatorFixityTable`、`OperatorFixityEntry`、`OperatorAssociativity`、`StringRequiredContext`、`ParseOutput`、`ParserSeam`、`StubParserSeam` を定義し、アクティブ字句環境の構築後に、ソースのエディションと、字句サマリが現在公開しているデータだけを使って `ParserInputs` を導出する。
     - `mizar-parser` が存在するまでは、継ぎ目を `ast = None` と空の診断リストを返すスタブとして実装し、ソース → トークンのパイプラインを実行可能にする。
-    - テスト: `ParserInputs` はエディションを運び、サマリが fixity を公開していないときは空の演算子 fixity テーブルを使い、スタブの source-to-token 経路では `StringRequiredContext::None` を使い、解決器の状態を運ばない。スタブの継ぎ目が `ast = None` を返す。
+    - テスト: `ParserInputs` はエディションを運び、サマリが fixity を公開していないときは空の演算子 fixity テーブルを使い、通常の source-to-token 経路では `StringRequiredContext::PositionSensitive` を使い、解決器の状態を運ばない。スタブの継ぎ目が `ast = None` を返す。
     - 依存: 8。仕様: [parsing.md](./parsing.md)「Parser Inputs」「Public API」。
 
 11. **`mizar-parser` の呼び出し。** [x]
     - 最小限の `mizar-syntax` / `mizar-parser` crate と `MizarParserSeam` を追加する。frontend の `TokenStream` と `ParserInputs` を parser エントリポイントへ適合し、`mizar_syntax::SurfaceAst` と構文診断をそのまま返す。
     - `StubParserSeam` は、スタブ版 coordinator 経路のために引き続き利用可能である。
-    - テスト: 整形式のトークンストリームが、ソース順と範囲を保持した `SurfaceAst` へ解析される。明示的に与えた演算子 fixity が、ユーザー定義中置演算子に対する Pratt 優先順位を駆動する。サマリ由来の fixity は、字句サマリが fixity を公開するまで空のままである。注釈／演算子の文字列リテラルテストは、タスク 20 が実ソーステキスト向けのパーサー支援字句解析を確定するまで、合成パーサートークンストリームを使う。
-    - 依存: 10、加えて `mizar-parser`/`mizar-syntax`。文法位置の文字列リテラルを必要とする実ソーステキストのテストは、20 にも依存する。仕様: [parsing.md](./parsing.md)「Algorithm / Logic」。
+    - テスト: 整形式のトークンストリームが、ソース順と範囲を保持した `SurfaceAst` へ解析される。明示的に与えた演算子 fixity が、ユーザー定義中置演算子に対する Pratt 優先順位を駆動する。サマリ由来の fixity は、字句サマリが fixity を公開するまで空のままである。task 20 は annotation string literal の実 source-text coverage を追加する。
+    - 依存: 10、加えて `mizar-parser`/`mizar-syntax`。仕様: [parsing.md](./parsing.md)「Algorithm / Logic」。
 
 12. **パーサーの回復のパススルー。** [x]
     - 回復不能な入力での `ast = None` と、返された `SurfaceAst` 内の明示的な回復ノードの印を保持する。構文診断を通す。
-    - テスト: `end` token が存在しない場合、`end` の欠落は保守的に EOF で回復し、`ast = Some` と明示的なエラーノードを生む。回復不能な 1 トークンの `end` ストリームが、診断とともに `ast = None` を返す。文字列必須位置での文字列リテラルの欠落は、タスク 20 が実ソーステキスト向けのパーサー支援字句解析を確定するまで、合成トークンストリームで期待される構文診断を確認する。
+    - テスト: `end` token が存在しない場合、`end` の欠落は保守的に EOF で回復し、`ast = Some` と明示的なエラーノードを生む。回復不能な 1 トークンの `end` ストリームが、診断とともに `ast = None` を返す。一様な string-required 位置での文字列リテラル欠落は、合成トークンストリームで期待される構文診断を確認する。
     - 依存: 11。仕様: [parsing.md](./parsing.md)「Error Handling」。
 
 ### モジュール: orchestration (`src/orchestration.rs`)
@@ -179,9 +179,10 @@
     - 結果: [cache_key.md](./cache_key.md) に分担を記録した。この crate は決定的な frontend content key を計算して `FrontendOutput.cache_keys` で返し、driver / artifact 層は cache storage、検証、task-key composition を所有する。ユニットテストは source、preprocessing、lexical-environment、token-stream、AST key の無効化を網羅し、`tests/determinism.rs` は comment-equivalent な実行と end-to-end import/dependency invalidation について crate-level frontend cache keys を検証する。
     - 依存: 16。仕様: アーキテクチャのインクリメンタリティ表。
 
-20. **パーサー支援字句解析契約の確定。** [ ]
+20. **パーサー支援字句解析契約の確定。** [x]
     - 位置別の `ParserLexContext` を事前計算して 1 パスで曖昧性解消するか、狭い文脈オブジェクトを通じて構文解析と交錯させるかを確定し、選択した統合方式を [lexing.md](./lexing.md) と [parsing.md](./parsing.md) に記録する。
-    - いずれの選択でも、字句解析器を任意のパーサー状態から自由に保つ。このタスクは、文法位置の文字列必須判定または記号種別フィルタを必要とする実 source-to-token-to-parser テスト、位置別の `StringLiteral` テスト、注釈の文字列引数内での Unicode 受理をブロックする。タスク 20 までは、タスク 11〜12 は必要に応じて合成パーサートークンストリームを使う。
+    - いずれの選択でも、字句解析器を任意のパーサー状態から自由に保つ。
+    - 結果: 契約は、事前計算された位置別 lexing plan を採用する。通常の source run では `ParserInputs` が `StringRequiredContext::PositionSensitive` を使い、orchestration が preprocessing 後に 1 つの `ParserLexingPlan` を導出し、`TokenizeRequest::with_plan` が tokenization に使い、`TokenStream` がその plan を保持し、token cache key がその実際の range/context 内容を hash する。preprocessing と import pre-scan は、厳密な raw scan の前に対応する recognized string-argument protection を使う。tests は Unicode/comment-marker 内容を持つ単一行 annotation string argument、line-boundary guard、範囲別 user-symbol kind filter、`MizarParserSeam` を通した実 source-to-token-to-parser handoff を確認する。
     - 依存: 10。実 parser の検証は 11 にも依存する。仕様: トップレベルの [../../todo.md](../../todo.md)「Resolved And Open Decisions」、[lexing.md](./lexing.md)、[parsing.md](./parsing.md)。
 
 21. **恒久的な lint 強制。** [ ]

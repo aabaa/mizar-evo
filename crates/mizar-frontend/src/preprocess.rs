@@ -4,8 +4,8 @@ use mizar_lexer::{
     CommentKind as LexerCommentKind, ImportPrescanDiagnostic as LexerImportPrescanDiagnostic,
     ImportStub as LexerImportStub, RawModuleAlias as LexerRawModuleAlias,
     RawModulePath as LexerRawModulePath, RawModuleRelativePrefix as LexerRawModuleRelativePrefix,
-    SourcePreprocessMap, SourceSpan as LexerSourceSpan, preprocess_source_for_lexing,
-    scan_import_prelude, scan_raw,
+    RawToken, RawTokenKind, RawTokenStream, SourcePreprocessMap, SourceSpan as LexerSourceSpan,
+    preprocess_source_for_lexing, scan_import_prelude, scan_raw,
 };
 pub use mizar_lexer::{ImportPrescanDiagnosticCode, SourcePreprocessDiagnosticCode};
 pub use mizar_session::CommentKind;
@@ -203,7 +203,7 @@ fn scan_imports(
     lexical_text: &LexicalText,
     bridge: &SpanBridge,
 ) -> Result<(Vec<ImportStub>, Vec<PreprocessDiagnostic>), SpanBridgeError> {
-    let raw = match scan_raw(lexical_text.as_str()) {
+    let raw = match scan_raw_with_string_argument_spans(lexical_text.as_str()) {
         Ok(raw) => raw,
         Err(error) => {
             return Ok((
@@ -229,6 +229,134 @@ fn scan_imports(
         .map(|diagnostic| import_prescan_diagnostic(source_id, bridge, diagnostic))
         .collect::<Result<Vec<_>, SpanBridgeError>>()?;
     Ok((import_stubs, diagnostics))
+}
+
+fn scan_raw_with_string_argument_spans(lexical_text: &str) -> Result<RawTokenStream, String> {
+    let mut tokens = Vec::new();
+    let mut cursor = 0;
+    for range in string_argument_ranges(lexical_text) {
+        scan_raw_segment(lexical_text, cursor, range.start, &mut tokens)?;
+        push_string_argument_raw_token(lexical_text, range, &mut tokens)?;
+        cursor = range.end;
+    }
+    scan_raw_segment(lexical_text, cursor, lexical_text.len(), &mut tokens)?;
+    Ok(RawTokenStream::new(tokens))
+}
+
+fn scan_raw_segment(
+    lexical_text: &str,
+    start: usize,
+    end: usize,
+    tokens: &mut Vec<RawToken>,
+) -> Result<(), String> {
+    if start == end {
+        return Ok(());
+    }
+    let segment = lexical_text
+        .get(start..end)
+        .ok_or_else(|| format!("string-argument scan range {start}..{end} is not a UTF-8 span"))?;
+    let raw = scan_raw(segment).map_err(|error| error.to_string())?;
+    tokens.extend(raw.into_tokens().into_iter().map(|token| {
+        RawToken::new(
+            token.kind,
+            token.lexeme,
+            LexerSourceSpan {
+                start: token.span.start + start,
+                end: token.span.end + start,
+            },
+        )
+    }));
+    Ok(())
+}
+
+fn push_string_argument_raw_token(
+    lexical_text: &str,
+    range: LexicalByteRange,
+    tokens: &mut Vec<RawToken>,
+) -> Result<(), String> {
+    let lexeme = lexical_text.get(range.start..range.end).ok_or_else(|| {
+        format!(
+            "string-argument range {}..{} is not a UTF-8 span",
+            range.start, range.end
+        )
+    })?;
+    if lexeme.chars().any(|ch| matches!(ch, '\n' | '\r')) {
+        return Err(format!(
+            "string-argument range {}..{} crosses a line boundary",
+            range.start, range.end
+        ));
+    }
+    tokens.push(RawToken::new(
+        RawTokenKind::LexemeRun,
+        lexeme,
+        LexerSourceSpan {
+            start: range.start,
+            end: range.end,
+        },
+    ));
+    Ok(())
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct LexicalByteRange {
+    start: usize,
+    end: usize,
+}
+
+fn string_argument_ranges(lexical_text: &str) -> Vec<LexicalByteRange> {
+    let mut ranges = Vec::new();
+    let mut cursor = 0;
+    while cursor < lexical_text.len() {
+        if let Some(end) = string_argument_end(lexical_text, cursor) {
+            ranges.push(LexicalByteRange { start: cursor, end });
+            cursor = end;
+            continue;
+        }
+        let ch = lexical_text[cursor..]
+            .chars()
+            .next()
+            .expect("cursor is inside lexical text");
+        cursor += ch.len_utf8();
+    }
+    ranges
+}
+
+fn string_argument_end(input: &str, start: usize) -> Option<usize> {
+    let quote = input[start..].chars().next()?;
+    if !matches!(quote, '"' | '\'') || !is_string_argument_start(input, start) {
+        return None;
+    }
+
+    let mut escaped = false;
+    for (relative, ch) in input[start + quote.len_utf8()..].char_indices() {
+        if matches!(ch, '\n' | '\r') {
+            return None;
+        }
+        if escaped {
+            escaped = false;
+            continue;
+        }
+        if ch == '\\' {
+            escaped = true;
+            continue;
+        }
+        if ch == quote {
+            return Some(start + quote.len_utf8() + relative + ch.len_utf8());
+        }
+    }
+
+    None
+}
+
+fn is_string_argument_start(input: &str, start: usize) -> bool {
+    previous_significant_char(input, start).is_some_and(|ch| matches!(ch, '(' | ','))
+}
+
+fn previous_significant_char(input: &str, end: usize) -> Option<char> {
+    input[..end]
+        .chars()
+        .rev()
+        .find(|ch| !matches!(ch, ' ' | '\t' | '\n' | '\r'))
 }
 
 fn import_stub(

@@ -2,7 +2,7 @@
 
 > Canonical language: English. Japanese companion: [../ja/cache_key.md](../ja/cache_key.md).
 
-Status: implemented by task 19.
+Status: implemented by task 19 and updated for the task-20 parser lexing plan.
 
 ## Purpose
 
@@ -72,10 +72,18 @@ impl ActiveLexicalEnvironmentCacheKey {
 
 pub struct ParserLexingPlanCacheKey {
     pub version: Arc<str>,
+    pub default_context: ParserLexContext,
+    pub contexts: Vec<ParserLexingPlanContextCacheKey>,
+}
+
+pub struct ParserLexingPlanContextCacheKey {
+    pub range: LexicalByteRange,
+    pub context: ParserLexContext,
 }
 
 impl ParserLexingPlanCacheKey {
     pub fn current() -> Self;
+    pub fn from_plan(plan: &ParserLexingPlan) -> Self;
 }
 
 pub struct TokenStreamCacheKey {
@@ -140,13 +148,14 @@ resolved imports, dependency lexical-summary fingerprints, import order, and the
 active lexical shape.
 
 `TokenStreamCacheKey` combines the lexical hash, active lexical-environment
-fingerprint, current `ParserLexContext`, and parser-assisted lexing plan key.
-The current parser-assisted plan is the uniform parser-context plan; task 20 may
-replace it with a position-sensitive plan and must bump the plan version. This is
-a content key for the token sequence and diagnostics, not a complete
-range-faithful artifact key; a driver that reuses source-spanned tokens must
-compose it with source-version or source-map identity when exact source ranges
-matter.
+fingerprint, current default `ParserLexContext`, and parser-assisted lexing plan
+key. The task-20 plan key records the plan version, default context, and every
+position-sensitive lexical byte range plus its `ParserLexContext`; changing a
+string-required range or user-symbol kind filter invalidates tokenization even
+when the version string is unchanged. This is a content key for the token
+sequence and diagnostics, not a complete range-faithful artifact key; a driver
+that reuses source-spanned tokens must compose it with source-version or
+source-map identity when exact source ranges matter.
 
 `SurfaceAstCacheKey` combines the token-stream content hash, parser seam cache
 version, parser-input hash, and edition. Parser seams expose their version

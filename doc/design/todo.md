@@ -76,8 +76,9 @@ See the affected-modules lists in
 - **Lexer span bridging: resolved.** `mizar-lexer` stays decoupled and the
   frontend maps lexer byte spans onto `mizar-session::SourceRange` through
   `mizar-frontend::span_bridge`; the lexer does not adopt session types.
-- **Parser-assisted lexing contract.** The current lexer context is uniform.
-  Specify the narrow request object by which `mizar-parser` communicates
-  grammar-required string literal positions and symbol-kind filters to
-  `mizar-lexer` without giving the lexer arbitrary parser state. This also gates
-  Unicode acceptance inside annotation string arguments.
+- **Parser-assisted lexing contract: resolved.** `mizar-frontend` precomputes a
+  position-sensitive `ParserLexingPlan` over lexical byte ranges and passes only
+  `ParserLexContext` values to the lexer. The parser and lexer do not interleave,
+  and the lexer never receives arbitrary parser state. The plan covers
+  grammar-position string literals and parser-driven user-symbol kind filters,
+  including Unicode inside annotation string arguments.

@@ -2,7 +2,7 @@
 
 > Canonical language: English. Japanese companion: [../ja/lexing.md](../ja/lexing.md).
 
-Status: complete for tasks 7-9; parser-assisted lexing follow-ups remain gated.
+Status: complete for tasks 7-9 and task 20 parser-assisted lexing contract.
 
 ## Purpose
 
@@ -29,6 +29,7 @@ See
 pub struct TokenStream {
     pub source_id: SourceId,
     pub parser_context: ParserLexContext,
+    pub parser_lexing_plan: ParserLexingPlan,
     pub tokens: Vec<Token>,
     pub scope_view: ScopeView,
     pub diagnostics: Vec<LexingDiagnostic>,
@@ -46,6 +47,7 @@ pub struct TokenizeRequest<'a> {
     pub preprocessed: &'a PreprocessedSource,
     pub environment: &'a ActiveLexicalEnvironment,
     pub parser_context: ParserLexContext,
+    pub parser_lexing_plan: ParserLexingPlan,
 }
 
 impl<'a> TokenizeRequest<'a> {
@@ -54,6 +56,47 @@ impl<'a> TokenizeRequest<'a> {
         environment: &'a ActiveLexicalEnvironment,
         parser_context: ParserLexContext,
     ) -> Self;
+
+    pub fn with_plan(
+        preprocessed: &'a PreprocessedSource,
+        environment: &'a ActiveLexicalEnvironment,
+        parser_lexing_plan: ParserLexingPlan,
+    ) -> Self;
+}
+
+pub struct ParserLexingPlan {
+    pub default_context: ParserLexContext,
+    pub contexts: Vec<ParserLexingPlanContext>,
+}
+
+impl ParserLexingPlan {
+    pub fn uniform(default_context: ParserLexContext) -> Self;
+    pub fn new(
+        default_context: ParserLexContext,
+        contexts: Vec<ParserLexingPlanContext>,
+    ) -> Self;
+    pub fn for_lexical_text(lexical_text: &str) -> Self;
+    pub fn context_at(&self, offset: usize) -> ParserLexContext;
+    pub fn is_uniform(&self) -> bool;
+}
+
+pub struct ParserLexingPlanContext {
+    pub range: LexicalByteRange,
+    pub context: ParserLexContext,
+}
+
+impl ParserLexingPlanContext {
+    pub fn new(range: LexicalByteRange, context: ParserLexContext) -> Self;
+}
+
+pub struct LexicalByteRange {
+    pub start: usize,
+    pub end: usize,
+}
+
+impl LexicalByteRange {
+    pub fn new(start: usize, end: usize) -> Self;
+    pub fn contains(self, offset: usize) -> bool;
 }
 
 pub struct LexingDiagnostic {
@@ -163,11 +206,19 @@ values with mapped session spans and secondary anchors. Future lexer payload
 variants that this frontend has not learned to map are represented explicitly as
 `UnsupportedLexerPayload`, not silently collapsed to `None`.
 
-`parser_context` is carried into `mizar_lexer::disambiguate` so the same
-frontend request can produce general, namespace-path, string-required, or
-recovery-mode token streams. `environment` provides the active user-symbol
+`parser_lexing_plan` is the task-20 narrow parser-assisted lexing contract. It
+contains a default `ParserLexContext` plus lexical-byte ranges whose context
+differs from the default. The frontend precomputes this plan before
+tokenization, then calls the lexer with only the `ParserLexContext` for the raw
+unit being disambiguated. The lexer never receives arbitrary parser state and
+the parser does not interleave with lexing. `TokenizeRequest::new` remains a
+uniform-context convenience wrapper; source-to-token coordinator paths use
+`TokenizeRequest::with_plan`. `environment` provides the active user-symbol
 index. Imported symbols participate in token classification but are not mixed
 into the public lexical `ScopeView`.
+Planned string-required ranges are single-line lexical byte spans; a plan that
+would cross `\n` or `\r` is rejected before it can be injected as a protected raw
+lexeme run.
 
 ## Dependencies
 
@@ -220,31 +271,34 @@ view records lexical shape only — never resolved bindings.
 
 ### Tokenize a preprocessed source
 
-1. Raw-scan the lexical text (`scan_raw`) into raw units with preserved spans.
-   If strict raw scanning fails, emit one coarse `ErrorRecovery` token and one
-   mapped `LexingDiagnosticKind::RawScan` diagnostic covering the whole lexical
-   text (or the source-start zero-length range for empty text), then skip
-   scope-skeleton construction and disambiguation for that run. The current
-   `mizar_lexer::LexError` has no span or partial-token payload, so finer recovery
-   is tracked as a follow-up contract.
-2. Build an initial `ScopeSkeleton` / `ScopeLexView` from the raw tokens and run
-   `disambiguate` once with the raw token stream, active lexical environment,
-   and current `ParserLexContext`.
-3. Rebuild the scope skeleton from the first final token shapes, treating
+1. Build or receive the `ParserLexingPlan`. `ParserInputs` normally requests a
+   position-sensitive plan computed from the lexical text; bounded tests may
+   still request a uniform context.
+2. Raw-scan the lexical text into raw units with preserved spans. String-required
+   ranges in the plan are protected as raw lexeme runs before strict raw
+   scanning so Unicode and comment marker text inside annotation string
+   arguments remain string contents. If strict raw scanning still fails outside
+   planned string ranges, emit one coarse `ErrorRecovery` token and one mapped
+   `LexingDiagnosticKind::RawScan` diagnostic covering the whole lexical text (or
+   the source-start zero-length range for empty text), then skip scope-skeleton
+   construction and disambiguation for that run. The current
+   `mizar_lexer::LexError` has no span or partial-token payload, so finer
+   recovery is tracked as a follow-up contract.
+3. Build an initial `ScopeSkeleton` / `ScopeLexView` from the raw tokens and run
+   disambiguation once with the raw token stream, active lexical environment, and
+   the `ParserLexContext` selected by the plan for each raw unit.
+4. Rebuild the scope skeleton from the first final token shapes, treating
    `StringLiteral`, `ErrorRecovery`, numerals, and non-identifier user symbols as
    scope-inert. Run `disambiguate` again with that contextual skeleton so scoped
    identifier overrides are available without treating string contents or
    user-symbol spellings as scope syntax. Build the public scope skeleton from
    the final token shapes.
-4. The disambiguator applies longest match against, in order: active user
+5. The disambiguator applies longest match against, in order: active user
    symbols, reserved special symbols, reserved words, identifier/numeral rules,
    and parser expectation / scoped override where the language requires it.
-5. Map every final lexer token through `span_bridge.lexical_span` into a
+6. Map every final lexer token through `span_bridge.lexical_span` into a
    session-spanned frontend `Token`. Map the scope-skeleton frames, blocks,
    statements, and binding shapes into the public `ScopeView`.
-6. Recognize `StringLiteral` tokens only when the current parser lexing context
-   is `StringRequired`; position-sensitive context for only selected byte spans
-   is deferred until the parser-assisted lexing contract lands.
 7. Collect lexer diagnostics as `LexingDiagnostic`s, copy non-span payload data,
    and map nested rejected-candidate spans into frontend payload structures.
 
@@ -274,7 +328,7 @@ recovery passthrough coverage and follow-up cases.
 
 ## Tests
 
-Implemented task-7/8/9 scenarios:
+Implemented task-7/8/9 and task-20 scenarios:
 
 - raw scan and disambiguation preserve final token spans, including spans mapped
   through preprocess mappings such as removed comments;
@@ -294,7 +348,14 @@ Implemented task-7/8/9 scenarios:
 - parser-context-rejected numerals preserve mapped rejected-candidate payloads
   until a dedicated invalid-numeral lexer diagnostic exists;
 - scope diagnostics remain preserved with mapped spans after disambiguation even
-  when recoverable lexer diagnostics are also present.
+  when recoverable lexer diagnostics are also present;
+- position-sensitive parser lexing plans emit `StringLiteral` only at planned
+  single-line lexical byte ranges, including annotation string arguments with
+  Unicode and comment-marker contents;
+- position-sensitive user-symbol kind filters can classify the same spelling
+  differently at different lexical byte ranges;
+- real source-to-token-to-parser orchestration carries planned annotation string
+  tokens through `MizarParserSeam`.
 
 ## Constraints and Assumptions
 
@@ -302,9 +363,11 @@ Implemented task-7/8/9 scenarios:
   skeleton, or disambiguation rules.
 - The lexer recognizes compound reserved tokens and active user symbols but not
   semantic selector/namespace roles.
-- `StringLiteral` tokens are emitted only when the parser lexing context requires
-  strings. Grammar-position-specific string recognition is a parser integration
-  task, not part of the source-to-token foundation.
+- `StringLiteral` tokens are emitted only where the `ParserLexingPlan` selects a
+  string-required context. The current plan builder recognizes single-line
+  string arguments at quote positions after `(` or `,`; later grammar work can
+  narrow or expand the planner without exposing arbitrary parser state to the
+  lexer.
 - When token streams are cached, the cache key is `PreprocessedSource.lexical_hash`,
   the active lexical environment fingerprint, and a stable encoding of the
   `ParserLexContext` / parser-assisted lexing plan used for the run.

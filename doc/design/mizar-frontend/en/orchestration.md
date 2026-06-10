@@ -2,8 +2,9 @@
 
 > Canonical language: English. Japanese companion: [../ja/orchestration.md](../ja/orchestration.md).
 
-Status: implemented through task 14, including unrecoverable-failure coverage
-and end-to-end failure assertions.
+Status: implemented through task 20, including unrecoverable-failure coverage,
+end-to-end failure assertions, cache-key output wiring, and parser lexing-plan
+wiring.
 
 ## Purpose
 
@@ -214,10 +215,12 @@ attached when a later diagnostic may be affected by an earlier recovery.
 4. Build the `ActiveLexicalEnvironment` (`lexical_env`) from the import stubs.
    Recoverable import/provider issues become `LexicalEnvironmentDiagnostic`s;
    `FrontendLexicalEnvironmentError` becomes `FrontendError`.
-5. Derive `ParserInputs` from the active lexical environment and source edition.
-6. Tokenize (`lexing`) into a `TokenStream` using the current parser lexing
-   context or the stub/general context when the real parser contract is not yet
-   available. Propagate a `SpanBridgeError` as `FrontendError`.
+5. Derive `ParserInputs` from the active lexical environment and source edition,
+   then derive the position-sensitive `ParserLexingPlan` from the preprocessed
+   lexical text.
+6. Tokenize (`lexing`) into a `TokenStream` with `TokenizeRequest::with_plan`,
+   retaining the plan on the token stream. Propagate a `SpanBridgeError` as
+   `FrontendError`.
 7. Parse (`parsing`) through the configured `ParserSeam` into an optional AST.
 8. Compute the frontend content cache-key bundle for the phase artifacts.
 9. Map every phase diagnostic into `FrontendDiagnostic`, merge in the

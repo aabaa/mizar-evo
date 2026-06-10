@@ -1,5 +1,5 @@
 use crate::lexical_env::LexicalEnvironmentFingerprint;
-use crate::lexing::{ParserLexContext, ParserLexMode};
+use crate::lexing::{LexicalByteRange, ParserLexContext, ParserLexMode, ParserLexingPlan};
 use crate::parsing::{
     OperatorAssociativity, ParserCacheKeyVersion, ParserInputs, StringRequiredContext,
 };
@@ -15,7 +15,7 @@ pub const PREPROCESSED_SOURCE_CACHE_KEY_VERSION: &str =
 pub const ACTIVE_LEXICAL_ENVIRONMENT_CACHE_KEY_VERSION: &str =
     "mizar-frontend/active-lexical-environment-cache-key/v1";
 pub const PARSER_LEXING_PLAN_CACHE_KEY_VERSION: &str =
-    "mizar-frontend/parser-lexing-plan/uniform-context-v1";
+    "mizar-frontend/parser-lexing-plan/position-sensitive-v1";
 pub const TOKEN_STREAM_CACHE_KEY_VERSION: &str = "mizar-frontend/token-stream-cache-key/v1";
 pub const SURFACE_AST_CACHE_KEY_VERSION: &str = "mizar-frontend/surface-ast-cache-key/v1";
 
@@ -109,12 +109,33 @@ impl ActiveLexicalEnvironmentCacheKey {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParserLexingPlanCacheKey {
     pub version: Arc<str>,
+    pub default_context: ParserLexContext,
+    pub contexts: Vec<ParserLexingPlanContextCacheKey>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParserLexingPlanContextCacheKey {
+    pub range: LexicalByteRange,
+    pub context: ParserLexContext,
 }
 
 impl ParserLexingPlanCacheKey {
     pub fn current() -> Self {
+        Self::from_plan(&ParserLexingPlan::uniform(ParserLexContext::general()))
+    }
+
+    pub fn from_plan(plan: &ParserLexingPlan) -> Self {
         Self {
             version: Arc::from(PARSER_LEXING_PLAN_CACHE_KEY_VERSION),
+            default_context: plan.default_context,
+            contexts: plan
+                .contexts
+                .iter()
+                .map(|context| ParserLexingPlanContextCacheKey {
+                    range: context.range,
+                    context: context.context,
+                })
+                .collect(),
         }
     }
 }
@@ -151,6 +172,13 @@ impl TokenStreamCacheKey {
         write_u64(&mut hasher, self.active_lexical_environment.get());
         write_parser_lex_context(&mut hasher, self.parser_context);
         write_str(&mut hasher, self.parser_lexing_plan.version.as_ref());
+        write_parser_lex_context(&mut hasher, self.parser_lexing_plan.default_context);
+        write_u64(&mut hasher, self.parser_lexing_plan.contexts.len() as u64);
+        for context in &self.parser_lexing_plan.contexts {
+            write_u64(&mut hasher, context.range.start as u64);
+            write_u64(&mut hasher, context.range.end as u64);
+            write_parser_lex_context(&mut hasher, context.context);
+        }
         finish_hash(hasher)
     }
 }
@@ -261,6 +289,7 @@ pub fn parser_inputs_hash(inputs: &ParserInputs) -> Hash {
 fn write_string_required_context(hasher: &mut blake3::Hasher, context: StringRequiredContext) {
     let context_key = match context {
         StringRequiredContext::None => "none",
+        StringRequiredContext::PositionSensitive => "position_sensitive",
         StringRequiredContext::UniformForTest => "uniform_for_test",
     };
     write_str(hasher, context_key);
@@ -299,7 +328,9 @@ mod tests {
         SourceUnitCacheKey, SurfaceAstCacheKey, TokenStreamCacheKey,
     };
     use crate::lexical_env::LexicalEnvironmentFingerprint;
-    use crate::lexing::ParserLexContext;
+    use crate::lexing::{
+        LexicalByteRange, ParserLexContext, ParserLexingPlan, ParserLexingPlanContext,
+    };
     use crate::parsing::{
         OperatorAssociativity, OperatorFixityEntry, OperatorFixityTable, ParserCacheKeyVersion,
         ParserInputs, StringRequiredContext,
@@ -445,9 +476,41 @@ mod tests {
             &base_preprocessed,
             LexicalEnvironmentFingerprint::new(10),
             ParserLexContext::general(),
-            ParserLexingPlanCacheKey {
-                version: Arc::from("mizar-frontend/parser-lexing-plan/position-sensitive-test"),
-            },
+            ParserLexingPlanCacheKey::from_plan(&ParserLexingPlan::new(
+                ParserLexContext::general(),
+                vec![ParserLexingPlanContext::new(
+                    LexicalByteRange::new(0, 6),
+                    ParserLexContext::string_required(),
+                )],
+            )),
+        );
+        let changed_parser_plan_range = TokenStreamCacheKey::new(
+            &base_preprocessed,
+            LexicalEnvironmentFingerprint::new(10),
+            ParserLexContext::general(),
+            ParserLexingPlanCacheKey::from_plan(&ParserLexingPlan::new(
+                ParserLexContext::general(),
+                vec![ParserLexingPlanContext::new(
+                    LexicalByteRange::new(1, 6),
+                    ParserLexContext::string_required(),
+                )],
+            )),
+        );
+        let changed_parser_plan_context = TokenStreamCacheKey::new(
+            &base_preprocessed,
+            LexicalEnvironmentFingerprint::new(10),
+            ParserLexContext::general(),
+            ParserLexingPlanCacheKey::from_plan(&ParserLexingPlan::new(
+                ParserLexContext::general(),
+                vec![ParserLexingPlanContext::new(
+                    LexicalByteRange::new(0, 6),
+                    ParserLexContext::general().with_user_symbol_kinds(
+                        mizar_lexer::UserSymbolKindSet::only(
+                            mizar_lexer::UserSymbolKind::Predicate,
+                        ),
+                    ),
+                )],
+            )),
         );
         let changed_import_text = TokenStreamCacheKey::new(
             &preprocessed("import beta;\ndefinition\nend;\n"),
@@ -468,6 +531,16 @@ mod tests {
         assert_ne!(base.stable_hash(), changed_parser_context.stable_hash());
         assert_ne!(base, changed_parser_plan);
         assert_ne!(base.stable_hash(), changed_parser_plan.stable_hash());
+        assert_ne!(changed_parser_plan, changed_parser_plan_range);
+        assert_ne!(
+            changed_parser_plan.stable_hash(),
+            changed_parser_plan_range.stable_hash()
+        );
+        assert_ne!(changed_parser_plan, changed_parser_plan_context);
+        assert_ne!(
+            changed_parser_plan.stable_hash(),
+            changed_parser_plan_context.stable_hash()
+        );
     }
 
     #[test]

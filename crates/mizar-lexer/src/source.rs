@@ -585,6 +585,12 @@ pub fn preprocess_source_for_lexing(input: &str) -> PreprocessedLexicalSource {
 
     while cursor < input.len() {
         let rest = &input[cursor..];
+        if let Some(end) = string_argument_end(input, cursor, &lexical_text) {
+            preserve_original_text(input, cursor, end, &mut lexical_text, &mut map_segments);
+            cursor = end;
+            continue;
+        }
+
         if rest.starts_with(":::") {
             let end = line_comment_end(input, cursor);
             let span = SourceSpan { start: cursor, end };
@@ -775,6 +781,63 @@ fn line_comment_end(input: &str, start: usize) -> usize {
     input[start..]
         .find('\n')
         .map_or(input.len(), |relative| start + relative + '\n'.len_utf8())
+}
+
+fn string_argument_end(input: &str, start: usize, previous_lexical_text: &str) -> Option<usize> {
+    let quote = input[start..].chars().next()?;
+    if !matches!(quote, '"' | '\'') || !is_string_argument_start(previous_lexical_text) {
+        return None;
+    }
+
+    let mut escaped = false;
+    for (relative, ch) in input[start + quote.len_utf8()..].char_indices() {
+        if matches!(ch, '\n' | '\r') {
+            return None;
+        }
+        if escaped {
+            escaped = false;
+            continue;
+        }
+        if ch == '\\' {
+            escaped = true;
+            continue;
+        }
+        if ch == quote {
+            return Some(start + quote.len_utf8() + relative + ch.len_utf8());
+        }
+    }
+
+    None
+}
+
+fn is_string_argument_start(previous_lexical_text: &str) -> bool {
+    previous_significant_char(previous_lexical_text).is_some_and(|ch| matches!(ch, '(' | ','))
+}
+
+fn previous_significant_char(input: &str) -> Option<char> {
+    input
+        .chars()
+        .rev()
+        .find(|ch| !matches!(ch, ' ' | '\t' | '\n' | '\r'))
+}
+
+fn preserve_original_text(
+    input: &str,
+    start: usize,
+    end: usize,
+    output: &mut String,
+    map_segments: &mut Vec<SourcePreprocessMapSegment>,
+) {
+    let lexical_start = output.len();
+    output.push_str(&input[start..end]);
+    push_original_preprocess_segment(
+        map_segments,
+        SourceSpan {
+            start: lexical_start,
+            end: output.len(),
+        },
+        SourceSpan { start, end },
+    );
 }
 
 fn preserve_comment_replacement(

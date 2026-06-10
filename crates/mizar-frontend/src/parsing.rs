@@ -1,5 +1,5 @@
 use crate::lexical_env::{ActiveLexicalEnvironment, SymbolId};
-use crate::lexing::{ParserLexContext, TokenKind, TokenStream};
+use crate::lexing::{ParserLexContext, ParserLexingPlan, TokenKind, TokenStream};
 use mizar_session::Edition;
 use std::sync::Arc;
 
@@ -49,7 +49,7 @@ impl ParserInputs {
         Self {
             edition,
             operator_fixity: OperatorFixityTable::empty(),
-            string_required_positions: StringRequiredContext::None,
+            string_required_positions: StringRequiredContext::PositionSensitive,
         }
     }
 }
@@ -88,14 +88,23 @@ pub enum OperatorAssociativity {
 pub enum StringRequiredContext {
     #[default]
     None,
+    PositionSensitive,
     UniformForTest,
 }
 
 impl StringRequiredContext {
     pub fn parser_lex_context(self) -> ParserLexContext {
         match self {
-            Self::None => ParserLexContext::general(),
+            Self::None | Self::PositionSensitive => ParserLexContext::general(),
             Self::UniformForTest => ParserLexContext::string_required(),
+        }
+    }
+
+    pub fn parser_lexing_plan(self, lexical_text: &str) -> ParserLexingPlan {
+        match self {
+            Self::None => ParserLexingPlan::uniform(ParserLexContext::general()),
+            Self::PositionSensitive => ParserLexingPlan::for_lexical_text(lexical_text),
+            Self::UniformForTest => ParserLexingPlan::uniform(ParserLexContext::string_required()),
         }
     }
 }
@@ -239,6 +248,7 @@ fn parser_string_required_context(
 ) -> mizar_parser::StringRequiredContext {
     match context {
         StringRequiredContext::None => mizar_parser::StringRequiredContext::None,
+        StringRequiredContext::PositionSensitive => mizar_parser::StringRequiredContext::None,
         StringRequiredContext::UniformForTest => {
             mizar_parser::StringRequiredContext::UniformForTest
         }
@@ -256,7 +266,9 @@ mod tests {
         LexicalSummaryFingerprint, ModuleId, ModuleLexicalSummary, ResolvedImport, SymbolId,
         UserSymbolArity, UserSymbolKind,
     };
-    use crate::lexing::{ParserLexContext, ScopeView, Token, TokenKind, TokenStream};
+    use crate::lexing::{
+        ParserLexContext, ParserLexingPlan, ScopeView, Token, TokenKind, TokenStream,
+    };
     use mizar_session::{
         BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, SessionIdAllocator,
         SourceAnchor, SourceId, SourceRange,
@@ -278,7 +290,7 @@ mod tests {
         assert!(inputs.operator_fixity.is_empty());
         assert_eq!(
             inputs.string_required_positions,
-            StringRequiredContext::None
+            StringRequiredContext::PositionSensitive
         );
         assert_eq!(
             inputs.string_required_positions.parser_lex_context(),
@@ -306,6 +318,21 @@ mod tests {
     fn uniform_test_string_context_maps_to_string_required_lexer_context() {
         assert_eq!(
             StringRequiredContext::UniformForTest.parser_lex_context(),
+            ParserLexContext::string_required()
+        );
+    }
+
+    #[test]
+    fn position_sensitive_string_context_builds_parser_lexing_plan() {
+        let plan = StringRequiredContext::PositionSensitive
+            .parser_lexing_plan("@[label(\"name\")]\n\"symbol\"");
+
+        assert_eq!(plan.default_context, ParserLexContext::general());
+        assert_eq!(plan.contexts.len(), 1);
+        assert_eq!(plan.contexts[0].range.start, "@[label(".len());
+        assert_eq!(plan.contexts[0].range.end, "@[label(\"name\"".len());
+        assert_eq!(
+            plan.contexts[0].context,
             ParserLexContext::string_required()
         );
     }
@@ -930,6 +957,7 @@ mod tests {
         TokenStream {
             source_id,
             parser_context: ParserLexContext::general(),
+            parser_lexing_plan: ParserLexingPlan::uniform(ParserLexContext::general()),
             tokens,
             scope_view: ScopeView::empty(source_id),
             diagnostics: Vec::new(),

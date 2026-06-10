@@ -802,6 +802,76 @@ fn preprocess_source_keeps_annotations_parser_visible() {
 }
 
 #[test]
+fn preprocess_source_preserves_annotation_string_argument_contents() {
+    let source = "@latex(\"α::β\")\nalphaβ";
+    let preprocessed = preprocess_source_for_lexing(source);
+
+    assert_eq!(preprocessed.lexical_text, source);
+    assert!(
+        preprocessed.comments.is_empty(),
+        "comment markers inside string arguments must remain source text"
+    );
+    assert_eq!(preprocessed.diagnostics.len(), 1);
+    assert_eq!(
+        preprocessed.diagnostics[0].code,
+        SourcePreprocessDiagnosticCode::NonAsciiCode,
+        "non-ASCII outside string arguments remains a code-region precondition"
+    );
+    assert_eq!(
+        preprocessed.diagnostics[0].span,
+        SourceSpan {
+            start: "@latex(\"α::β\")\nalpha".len(),
+            end: source.len(),
+        }
+    );
+}
+
+#[test]
+fn preprocess_source_does_not_preserve_multiline_string_argument_contents() {
+    let source = "@latex(\"α\rβ\")";
+    let preprocessed = preprocess_source_for_lexing(source);
+
+    assert_eq!(preprocessed.lexical_text, source);
+    assert!(preprocessed.comments.is_empty());
+    assert_eq!(
+        preprocessed
+            .diagnostics
+            .iter()
+            .map(|diagnostic| diagnostic.code)
+            .collect::<Vec<_>>(),
+        vec![
+            SourcePreprocessDiagnosticCode::NonAsciiCode,
+            SourcePreprocessDiagnosticCode::CarriageReturn,
+            SourcePreprocessDiagnosticCode::NonAsciiCode,
+        ],
+        "line-boundary-crossing quoted text must not bypass code-region preconditions"
+    );
+}
+
+#[test]
+fn preprocess_source_ignores_comment_text_when_detecting_string_arguments() {
+    let source = "alpha ::= (, =:: \"β\"";
+    let preprocessed = preprocess_source_for_lexing(source);
+    let beta_start = source.find('β').expect("fixture contains beta");
+
+    assert_eq!(preprocessed.comments.len(), 1);
+    assert_eq!(preprocessed.lexical_text, "alpha  \"β\"");
+    assert_eq!(preprocessed.diagnostics.len(), 1);
+    assert_eq!(
+        preprocessed.diagnostics[0].code,
+        SourcePreprocessDiagnosticCode::NonAsciiCode,
+        "removed comment contents must not make the following quote a string argument"
+    );
+    assert_eq!(
+        preprocessed.diagnostics[0].span,
+        SourceSpan {
+            start: beta_start,
+            end: beta_start + 'β'.len_utf8(),
+        }
+    );
+}
+
+#[test]
 fn module_source_name_api_derives_miz_module_and_namespace() {
     let naming = module_source_name_from_path("algebra", "algebra/src/groups/basic.miz")
         .expect(".miz module path should derive names");

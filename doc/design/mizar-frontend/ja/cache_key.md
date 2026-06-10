@@ -2,7 +2,7 @@
 
 > 正本は英語です。英語版: [../en/cache_key.md](../en/cache_key.md)。
 
-状態: task 19 で実装済み。
+状態: task 19 で実装済み。task 20 の parser lexing plan に合わせて更新済み。
 
 ## 目的
 
@@ -66,10 +66,18 @@ impl ActiveLexicalEnvironmentCacheKey {
 
 pub struct ParserLexingPlanCacheKey {
     pub version: Arc<str>,
+    pub default_context: ParserLexContext,
+    pub contexts: Vec<ParserLexingPlanContextCacheKey>,
+}
+
+pub struct ParserLexingPlanContextCacheKey {
+    pub range: LexicalByteRange,
+    pub context: ParserLexContext,
 }
 
 impl ParserLexingPlanCacheKey {
     pub fn current() -> Self;
+    pub fn from_plan(plan: &ParserLexingPlan) -> Self;
 }
 
 pub struct TokenStreamCacheKey {
@@ -122,7 +130,7 @@ pub fn parser_inputs_hash(inputs: &ParserInputs) -> Hash;
 
 `ActiveLexicalEnvironmentCacheKey` は lexer 所有の `LexicalEnvironmentFingerprint` を包む。この fingerprint は、canonical resolved imports、依存字句サマリ fingerprint、import order、アクティブな字句形状をすでに要約している。
 
-`TokenStreamCacheKey` は lexical hash、アクティブ字句環境 fingerprint、現在の `ParserLexContext`、parser-assisted lexing plan key を組み合わせる。現在の parser-assisted plan は一様な parser-context plan である。task 20 で位置別 plan に置き換える場合は、plan version を上げなければならない。これは token sequence と diagnostics の content key であり、range-faithful artifact key 全体ではない。source-spanned token を再利用する driver は、正確な source range が重要な場合、source-version または source-map identity と合成する必要がある。
+`TokenStreamCacheKey` は lexical hash、アクティブ字句環境 fingerprint、現在の default `ParserLexContext`、parser-assisted lexing plan key を組み合わせる。task 20 の plan key は、plan version、default context、位置別の各 lexical byte range とその `ParserLexContext` を記録する。string-required range や user-symbol kind filter が変わると、version string が同じでも tokenization は無効化される。これは token sequence と diagnostics の content key であり、range-faithful artifact key 全体ではない。source-spanned token を再利用する driver は、正確な source range が重要な場合、source-version または source-map identity と合成する必要がある。
 
 `SurfaceAstCacheKey` は token-stream content hash、parser seam cache version、parser-input hash、edition を組み合わせる。Parser seam は `ParserSeam::cache_key_version` により version を公開する。`parser_inputs_hash` は、token stream が不変でも AST shape を変え得るため、edition、string-required context、明示的な operator fixity entries を含む。
 
