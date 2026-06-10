@@ -202,6 +202,11 @@ map, missing preprocess-map segment, line/column overflow — plus frontend-loca
 "source not registered", "preprocess map not registered", "conflicting map
 registration", and "unsupported lexer-owned preprocess/import metadata variant"
 cases.
+The unsupported-metadata case is intentionally public and covered directly as a
+defensive surface, but it has no current producer because the corresponding
+`mizar-lexer` enums are non-exhaustive and expose only the variants mapped above.
+Producer-backed coverage should be added when the lexer exposes a concrete new
+preprocess metadata variant.
 A bridge failure is an internal invariant violation (a span that does not belong
 to its declared source), not a user diagnostic; orchestration treats it as a bug
 surface rather than a recoverable lexical/syntax diagnostic.

@@ -147,7 +147,7 @@ parser seam により、フロントエンドは stubbed source-to-token pipelin
 
 ## エラー処理
 
-構文診断は `mizar-parser` から来る。フロントエンドは構文エラーのカテゴリを追加しない。parser は、`UnexpectedErrorToken`、`DanglingOperator`、`NonAssociativeOperatorChain`、`MissingEnd`、`MissingStringLiteral`、`UnrecoverableInput` を送出できる。回復可能な欠落構文要素は、`recovered` が付いた明示的な `SurfaceNodeKind::ErrorRecovery` node で表す。回復不能な入力では、診断とともに `ast = None` を返す。一般的な予期しないトークン、不整合な区切り、不正な注釈引数リストのような広い診断は、後続の parser/recovery 作業で扱う。スタブの seam は構文診断を送出せず、`ast = None` を返す。
+構文診断は `mizar-parser` から来る。フロントエンドは構文エラーのカテゴリを追加しない。parser は、`UnexpectedErrorToken`、`DanglingOperator`、`NonAssociativeOperatorChain`、`MissingEnd`、`MissingStringLiteral`、`UnrecoverableInput` を送出できる。回復可能な欠落構文要素は、`recovered` が付いた明示的な `SurfaceNodeKind::ErrorRecovery` node で表す。回復不能な入力では、診断とともに `ast = None` を返す。一般的な予期しないトークン、不整合な区切り、不正な注釈引数リストのような広い診断は、後続の parser/recovery 作業で扱う。スタブの seam は構文診断を送出せず、`ast = None` を返す。そのため、`DiagnosticClass::AnnotationSyntax` はまだ parser-backed producer surface ではなく、orchestration レベルの予約 class である。
 
 ## テスト
 

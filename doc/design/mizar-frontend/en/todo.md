@@ -503,7 +503,7 @@ should keep `cargo test -p mizar-frontend` green (see
       provenance fields, and that a transitive fixture symbol is absent unless it
       appears in a direct `ModuleLexicalSummary`.
 
-24. **Reserved frontend diagnostic surface coverage.** [ ]
+24. **Reserved frontend diagnostic surface coverage.** [x]
     - Review public variants that are reserved or have no current producer:
       `SpanBridgeError::UnsupportedLexerPreprocessMap`,
       `LexicalEnvironmentDiagnosticCode::{InvalidUserSymbolSpelling,
@@ -522,6 +522,14 @@ should keep `cargo test -p mizar-frontend` green (see
     - Tests: add coverage for constructible fallback/reserved variants, and add
       producer-backed tests when future lexer/session/parser contracts expose the
       remaining surfaces.
+    - Result: constructible reserved surfaces are covered directly:
+      `SpanBridgeError::UnsupportedLexerPreprocessMap` display/construction,
+      provider-owned pass-through for the four reserved
+      `LexicalEnvironmentDiagnosticCode`s, deterministic ordering for
+      `SourceLoadLocation::{NormalizedPath, Unknown}` and
+      `DiagnosticClass::AnnotationSyntax`, and the no-recovery-note policy for
+      `LexingDiagnosticPayload::UnsupportedLexerPayload`. Producer-backed coverage
+      remains deferred for future non-exhaustive lexer/session/parser variants.
     - Depends on: 16. Spec: [source_spec_correspondence.md](./source_spec_correspondence.md),
       [span_bridge.md](./span_bridge.md), [lexical_env.md](./lexical_env.md),
       [orchestration.md](./orchestration.md), [lexing.md](./lexing.md),

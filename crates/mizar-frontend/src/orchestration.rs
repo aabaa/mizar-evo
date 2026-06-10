@@ -559,7 +559,10 @@ mod tests {
         LexicalEnvironmentDiagnostic, LexicalEnvironmentDiagnosticCode, LexicalEnvironmentRequest,
         LexicalSummaryProvider, ResolvedImports,
     };
-    use crate::lexing::{ParserLexMode, TokenKind};
+    use crate::lexing::{
+        LexDiagnosticCode, LexingDiagnostic, LexingDiagnosticKind, LexingDiagnosticPayload,
+        ParserLexMode, TokenKind,
+    };
     use crate::parsing::{MizarParserSeam, ParseOutput, ParseRequest, ParserSeam, StubParserSeam};
     use crate::source::{FrontendSourceLoader, SourceUnit, SourceUnitLoader, SourceUnitRequest};
     use crate::span_bridge::SpanBridgeError;
@@ -791,6 +794,62 @@ mod tests {
             ),
             std::cmp::Ordering::Less,
             "identical diagnostics should fall back to phase-local emission ordinal"
+        );
+    }
+
+    #[test]
+    fn reserved_frontend_diagnostic_surfaces_have_stable_local_policy() {
+        let fixture = PackageFixture::new();
+        fixture.write("src/reserved_surface.miz", "definition\nend;\n");
+        let normalized_path =
+            normalize_path(fixture.root(), &fixture.path("src/reserved_surface.miz")).unwrap();
+        let source_id = source_id();
+        let primary = SourceRange {
+            source_id,
+            start: 0,
+            end: 0,
+        };
+        let lexing = super::frontend_lexing_diagnostic(&LexingDiagnostic {
+            kind: LexingDiagnosticKind::Lexer(LexDiagnosticCode::NoValidTokenCandidate),
+            message: Arc::from("future lexer payload"),
+            primary,
+            secondary: Vec::new(),
+            payload: LexingDiagnosticPayload::UnsupportedLexerPayload,
+        });
+        assert_eq!(lexing.class, DiagnosticClass::Tokenization);
+        assert_eq!(
+            lexing.recovery_note, None,
+            "fallback payloads must not invent recovery advice"
+        );
+
+        let normalized = source_load_reserved_diagnostic(
+            "normalized",
+            SourceLoadLocation::NormalizedPath {
+                path: normalized_path,
+            },
+        );
+        let unknown = source_load_reserved_diagnostic("unknown", SourceLoadLocation::Unknown);
+        let annotation = FrontendDiagnostic {
+            code: DiagnosticCode::Syntax(Arc::from("annotation_reserved")),
+            message: Arc::from("annotation"),
+            class: DiagnosticClass::AnnotationSyntax,
+            location: DiagnosticLocation::SourceRange(primary),
+            secondary: Vec::new(),
+            recovery_note: None,
+        };
+
+        let sorted = sort_collected_diagnostics(vec![
+            collected(annotation, 0),
+            collected(unknown, 0),
+            collected(normalized, 0),
+        ]);
+
+        assert_eq!(
+            sorted
+                .iter()
+                .map(|diagnostic| diagnostic.message.as_ref())
+                .collect::<Vec<_>>(),
+            vec!["normalized", "unknown", "annotation"]
         );
     }
 
@@ -1311,6 +1370,20 @@ mod tests {
         CollectedDiagnostic {
             diagnostic,
             emission_ordinal,
+        }
+    }
+
+    fn source_load_reserved_diagnostic(
+        message: &str,
+        location: SourceLoadLocation,
+    ) -> FrontendDiagnostic {
+        FrontendDiagnostic {
+            code: DiagnosticCode::SourceLoad,
+            message: Arc::from(message),
+            class: DiagnosticClass::SourceLoad,
+            location: DiagnosticLocation::SourceLoad(location),
+            secondary: Vec::new(),
+            recovery_note: None,
         }
     }
 

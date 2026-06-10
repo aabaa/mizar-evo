@@ -242,6 +242,12 @@ Source-load errors are allowed to lack a `SourceRange` because most of them occu
 before `SourceId` allocation, UTF-8 validation, or `LineMap` construction. They
 must be reported with `DiagnosticLocation::SourceLoad`, never with a fabricated
 zero-length source range.
+`SourceLoadLocation::NormalizedPath` and `SourceLoadLocation::Unknown` are
+reserved fallback locations: the former is for future non-exhaustive
+`SourceOriginInput` variants that still carry a normalized input path, and the
+latter is for future source-load diagnostics that cannot be tied to even that
+path. They are public and sorted deterministically, but they have no current
+runtime producer.
 Recoverable lexical precondition, comment, import pre-scan, lexical-environment,
 scope-skeleton, tokenization, and syntax problems are not `FrontendError`s; they
 are `FrontendDiagnostic`s inside a returned `FrontendOutput`. The stub parser
@@ -269,6 +275,8 @@ Key scenarios:
   scheduling;
 - same-class diagnostics with the same start and code still sort deterministically
   by the complete stable tie-breaker key;
+- reserved source-load fallback locations and the reserved `AnnotationSyntax`
+  class have deterministic local ordering even without current producers;
 - the merged diagnostics carry valid `SourceRange`s resolved through the span
   bridge when they are range-backed, while source-load failures carry non-range
   `SourceLoadLocation`s.

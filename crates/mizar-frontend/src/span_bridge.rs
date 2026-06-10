@@ -798,6 +798,19 @@ mod tests {
         );
     }
 
+    #[test]
+    fn unsupported_lexer_preprocess_map_variant_remains_public_defensive_surface() {
+        let source_id = source_id(1);
+        let error = SpanBridgeError::UnsupportedLexerPreprocessMap { source_id };
+
+        assert_eq!(
+            error.to_string(),
+            format!(
+                "source `{source_id:?}` uses a lexer preprocess map variant this span bridge does not support"
+            )
+        );
+    }
+
     fn registered_source(source_id: SourceId, source: &str) -> SpanBridge {
         let mut bridge = SpanBridge::new();
         bridge

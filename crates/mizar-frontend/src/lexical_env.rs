@@ -572,6 +572,51 @@ mod tests {
     }
 
     #[test]
+    fn provider_owned_reserved_diagnostic_codes_pass_through_after_provenance_validation() {
+        let source_id = source_id(3);
+        let reserved_codes = [
+            LexicalEnvironmentDiagnosticCode::InvalidUserSymbolSpelling,
+            LexicalEnvironmentDiagnosticCode::InvalidUserSymbolArity,
+            LexicalEnvironmentDiagnosticCode::ReservedWordCollision,
+            LexicalEnvironmentDiagnosticCode::ReservedSymbolCollision,
+        ];
+        let provider = FakeProvider {
+            resolved: ResolvedImports {
+                imports: Vec::new(),
+                summaries: Vec::new(),
+                diagnostics: reserved_codes
+                    .into_iter()
+                    .enumerate()
+                    .map(|(index, code)| LexicalEnvironmentDiagnostic {
+                        code,
+                        message: Arc::from(format!("provider reserved diagnostic {index}")),
+                        primary: SourceRange {
+                            source_id,
+                            start: index,
+                            end: index,
+                        },
+                        secondary: Vec::new(),
+                        import_ordinal: None,
+                        module_id: Some(ModuleId::new(format!("provider.module.{index}"))),
+                    })
+                    .collect(),
+            },
+        };
+
+        let result = build(&[], source_id, &provider).unwrap();
+
+        assert_eq!(
+            result
+                .diagnostics
+                .iter()
+                .map(|diagnostic| diagnostic.code)
+                .collect::<Vec<_>>(),
+            reserved_codes
+        );
+        assert!(result.environment.user_symbol("definition").is_none());
+    }
+
+    #[test]
     fn reserved_tables_are_present_without_imports() {
         let source_id = source_id(3);
         let provider = FakeProvider {

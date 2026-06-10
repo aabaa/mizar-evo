@@ -344,6 +344,8 @@ Implemented task-7/8/9 and task-20 scenarios:
   reports mapped lexer diagnostics for rejected string candidates;
 - lexer diagnostic payloads preserve non-span data and mapped nested candidate
   spans.
+- `UnsupportedLexerPayload` remains a constructible fallback for future
+  non-exhaustive lexer payload variants and does not invent recovery advice;
 - malformed raw input, malformed lexemes, and unsupported raw-token cases emit
   mapped `ErrorRecovery` tokens without preventing later tokens from being
   emitted;

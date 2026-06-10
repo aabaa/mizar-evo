@@ -220,6 +220,8 @@ returns diagnostics with `ast = None`. Broader diagnostics such as general
 unexpected tokens, unmatched delimiters, and malformed annotation argument lists
 remain future parser/recovery work. The stub seam still emits no syntax
 diagnostics and returns `ast = None`.
+`DiagnosticClass::AnnotationSyntax` is therefore still an orchestration-level
+reserved class rather than a parser-backed producer surface.
 
 ## Tests
 

@@ -116,6 +116,13 @@ infrastructure failures plus unrecoverable lexer structural errors.
 lexer-side case: the frontend reports it as a diagnostic, removes the later
 conflicting import, and retries. All other lexer `LexicalEnvironmentError`
 variants remain malformed summary/provider contracts.
+Provider-owned recoverable diagnostics may use any
+`LexicalEnvironmentDiagnosticCode` after their primary and secondary provenance
+passes validation. The frontend does not synthesize
+`InvalidUserSymbolSpelling`, `InvalidUserSymbolArity`, `ReservedWordCollision`,
+or `ReservedSymbolCollision` from lexer summary validation today; lexer-owned
+malformed dependency summaries still become
+`FrontendLexicalEnvironmentError::MalformedSummary`.
 `LexicalSummaryProvider` is the seam by which the build planner / resolver
 supplies already-resolved imports plus lexical summaries; the frontend never
 reaches into module IR to build them.
@@ -247,6 +254,8 @@ Key scenarios:
   different spellings are still available for lexer longest-match selection;
 - an unresolved import degrades to a smaller environment with a diagnostic, and
   the remaining symbols still load;
+- provider-owned reserved diagnostic codes pass through after provenance
+  validation, while lexer-owned malformed summaries stay hard failures;
 - the `LexicalEnvironmentFingerprint` changes when a dependency lexical summary
   changes and is stable when only comments change in the local file;
 - reserved words and reserved symbols are always present regardless of imports.

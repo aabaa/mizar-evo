@@ -115,7 +115,7 @@ pub enum LexicalEnvironmentDiagnosticCode {
 
 ## エラー処理
 
-`LexicalEnvironmentError`（`mizar-lexer` 由来）は、衝突するサマリフィンガープリントや不正なサマリデータといった構造的失敗を扱う。プロバイダ基盤の障害は、字句解析器が所有する enum では表現できないため、フロントエンドが回復不能な失敗を `FrontendLexicalEnvironmentError` で包む。プロバイダ側の問題（どのモジュールにも解決しないインポート、字句サマリが利用できない依存）は `LexicalEnvironmentDiagnostic` として運び、該当インポートを字句解析器の呼び出し前に除外するので、ファイル全体を失敗させるのではなく、より小さなアクティブ環境へ縮退できる。解決済みインポートまたはプロバイダ診断の出所が現在の request と一致しない場合は、`FrontendLexicalEnvironmentError::MalformedProviderProvenance` として報告する。それを使うと、診断を誤ったインポートや source へ結び付けてしまうためである。字句解析器側で回復可能なケースは `UserSymbolImportConflict` に限定する。フロントエンドは、後側の衝突 module を正準の出所で診断し、前側のインポートを副次コンテキストに加え、後側の module を除去して環境構築を再試行する。不正なエクスポート記号のつづり、不正な arity、予約語／予約記号の衝突、一貫しない重複サマリ、想定外の欠落サマリは、回復不能な不正サマリ失敗である。フロントエンドは、不正な依存サマリのどの部分集合が利用可能かを安全に推測できないためである。インポートの合法性（可視性、字句的な形を超えるエクスポートランクの衝突）はモジュール解決へ先送りし、ここでは決して判断しない。
+`LexicalEnvironmentError`（`mizar-lexer` 由来）は、衝突するサマリフィンガープリントや不正なサマリデータといった構造的失敗を扱う。プロバイダ基盤の障害は、字句解析器が所有する enum では表現できないため、フロントエンドが回復不能な失敗を `FrontendLexicalEnvironmentError` で包む。プロバイダ側の問題（どのモジュールにも解決しないインポート、字句サマリが利用できない依存）は `LexicalEnvironmentDiagnostic` として運び、該当インポートを字句解析器の呼び出し前に除外するので、ファイル全体を失敗させるのではなく、より小さなアクティブ環境へ縮退できる。解決済みインポートまたはプロバイダ診断の出所が現在の request と一致しない場合は、`FrontendLexicalEnvironmentError::MalformedProviderProvenance` として報告する。それを使うと、診断を誤ったインポートや source へ結び付けてしまうためである。字句解析器側で回復可能なケースは `UserSymbolImportConflict` に限定する。フロントエンドは、後側の衝突 module を正準の出所で診断し、前側のインポートを副次コンテキストに加え、後側の module を除去して環境構築を再試行する。provider-owned の回復可能診断は、primary と secondary の出所検証を通れば任意の `LexicalEnvironmentDiagnosticCode` を利用できる。フロントエンドは、`InvalidUserSymbolSpelling`、`InvalidUserSymbolArity`、`ReservedWordCollision`、`ReservedSymbolCollision` を lexer の summary validation から現在は合成しない。lexer-owned の不正な依存サマリは、引き続き `FrontendLexicalEnvironmentError::MalformedSummary` になる。不正なエクスポート記号のつづり、不正な arity、予約語／予約記号の衝突、一貫しない重複サマリ、想定外の欠落サマリは、回復不能な不正サマリ失敗である。フロントエンドは、不正な依存サマリのどの部分集合が利用可能かを安全に推測できないためである。インポートの合法性（可視性、字句的な形を超えるエクスポートランクの衝突）はモジュール解決へ先送りし、ここでは決して判断しない。
 
 ## テスト
 
@@ -129,6 +129,7 @@ pub enum LexicalEnvironmentDiagnosticCode {
 - 衝突以外の字句解析器 `LexicalEnvironmentError` は、任意のサマリを黙って落とすのではなく、`FrontendLexicalEnvironmentError::MalformedSummary` になる。
 - 異なるモジュールからインポートされた同綴りのユーザー記号は、決定的な字句環境衝突を生み、異なる綴りで重なり合う記号は、字句解析器の最長一致選択で引き続き利用できる。
 - 未解決インポートは、診断とともに、より小さな環境へ縮退し、残りの記号は読み込まれる。
+- provider-owned の予約診断 code は出所検証後に pass-through し、lexer-owned の不正サマリは hard failure のまま残る。
 - `LexicalEnvironmentFingerprint` は、依存字句サマリが変わると変化し、ローカルファイルのコメントのみが変わるときは安定である。
 - 予約語と予約記号は、インポートに関係なく常に存在する。
 

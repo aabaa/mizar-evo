@@ -225,7 +225,7 @@
       だけを公開し、推移的 fixture symbol が直接の `ModuleLexicalSummary` に
       入らない限り存在しないことも確認する。
 
-24. **予約済み frontend diagnostic surface の coverage。** [ ]
+24. **予約済み frontend diagnostic surface の coverage。** [x]
     - 予約済みまたは現在 producer を持たない公開 variant を見直す:
       `SpanBridgeError::UnsupportedLexerPreprocessMap`,
       `LexicalEnvironmentDiagnosticCode::{InvalidUserSymbolSpelling,
@@ -236,6 +236,13 @@
     - provider-owned の回復可能診断契約が明示されるまでは、lexer-owned の不正な依存 summary は `FrontendLexicalEnvironmentError::MalformedSummary` のまま扱う。
     - 各 reserved surface について、producer がなくても公開のまま維持するか、構築可能な fixture で直接 coverage を追加するか、producer が存在するまで延期するかを決める。決定後に [source_spec_correspondence.md](./source_spec_correspondence.md) と関連 module spec を更新する。
     - テスト: 構築可能な fallback/reserved variant の coverage を追加し、将来の lexer/session/parser 契約が残りの surface を公開したら producer-backed tests を追加する。
+    - 結果: 構築可能な予約 surface を直接 coverage した。
+      `SpanBridgeError::UnsupportedLexerPreprocessMap` の表示／構築、4 つの予約済み
+      `LexicalEnvironmentDiagnosticCode` に対する provider-owned pass-through、
+      `SourceLoadLocation::{NormalizedPath, Unknown}` と
+      `DiagnosticClass::AnnotationSyntax` の決定的順序、および
+      `LexingDiagnosticPayload::UnsupportedLexerPayload` で recovery note を作らない方針を固定した。
+      producer-backed coverage は、将来の non-exhaustive lexer/session/parser variant が追加されるまで延期する。
     - 依存: 16。仕様: [source_spec_correspondence.md](./source_spec_correspondence.md)、[span_bridge.md](./span_bridge.md)、[lexical_env.md](./lexical_env.md)、[orchestration.md](./orchestration.md)、[lexing.md](./lexing.md)、[parsing.md](./parsing.md)。
 
 ## 推奨検証

@@ -119,7 +119,7 @@ pub enum SpanBridgeError {
 
 ## エラー処理
 
-`SpanBridgeError` は、session の常駐 `SourceMapService` が報告する失敗（未知のソース id、ソース／字句テキスト外の範囲、UTF-8 境界上にないオフセット、登録済みだが不完全な loading map を合成しようとした場合の欠落 loading-map セグメント、欠落した preprocess-map セグメント、行／列オーバーフロー）を `SpanBridgeError::SourceMap` として包み、さらに、フロントエンドローカルな「ソース未登録」「preprocess map 未登録」「マップ登録の衝突」「未対応の字句解析器所有 preprocess／import metadata 変種」の場合を表す。橋渡しの失敗は、内部不変条件の違反（宣言したソースに属さないスパン）であり、ユーザー診断ではない。統制層はこれを、回復可能な字句／構文診断ではなく、バグの表面として扱う。
+`SpanBridgeError` は、session の常駐 `SourceMapService` が報告する失敗（未知のソース id、ソース／字句テキスト外の範囲、UTF-8 境界上にないオフセット、登録済みだが不完全な loading map を合成しようとした場合の欠落 loading-map セグメント、欠落した preprocess-map セグメント、行／列オーバーフロー）を `SpanBridgeError::SourceMap` として包み、さらに、フロントエンドローカルな「ソース未登録」「preprocess map 未登録」「マップ登録の衝突」「未対応の字句解析器所有 preprocess／import metadata 変種」の場合を表す。未対応 metadata case は防御的 surface として意図的に公開され、直接 coverage されているが、対応する `mizar-lexer` enum は non-exhaustive であり、現在は上で写像した variant だけを公開しているため producer はない。lexer が具体的な新しい preprocess metadata variant を公開した時点で producer-backed coverage を追加する。橋渡しの失敗は、内部不変条件の違反（宣言したソースに属さないスパン）であり、ユーザー診断ではない。統制層はこれを、回復可能な字句／構文診断ではなく、バグの表面として扱う。
 
 ## テスト
 

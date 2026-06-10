@@ -157,7 +157,7 @@ Step 2〜5 は、回復可能な問題では中断しない。診断を記録し
 
 ## エラー処理
 
-`FrontendError` は、いかなる `FrontendOutput` も生成できない失敗のために予約される。主に、Step 1 のソース読み込み失敗（読み取り不能ファイル、不正 UTF-8、ルート外パス）と、内部 `SpanBridgeError` の不変条件違反である。字句環境構築からの `FrontendLexicalEnvironmentError` も、アクティブ字句環境へ安全に縮退できない場合は `FrontendError` になる。ソース読み込みエラーは、`SourceId` 割り当て、UTF-8 検証、`LineMap` 構築より前に起きることが多いため、`SourceRange` を持たなくてよい。これらは、捏造されたゼロ長ソース範囲ではなく、必ず `DiagnosticLocation::SourceLoad` で報告する。回復可能な字句前提・コメント・インポート事前走査・字句環境・スコープスケルトン・トークン化・構文の問題は、`FrontendError` ではなく、返された `FrontendOutput` 内の `FrontendDiagnostic` である。スタブの parser seam は構文診断を生成せず、`ast = None` を返す。構文診断は、実 parser seam が設定されているときだけ期待する。フロントエンド診断は、「未定義記号」や「曖昧なオーバーロード」のような意味的事実を決して主張しない。それらは後のフェーズに属する。
+`FrontendError` は、いかなる `FrontendOutput` も生成できない失敗のために予約される。主に、Step 1 のソース読み込み失敗（読み取り不能ファイル、不正 UTF-8、ルート外パス）と、内部 `SpanBridgeError` の不変条件違反である。字句環境構築からの `FrontendLexicalEnvironmentError` も、アクティブ字句環境へ安全に縮退できない場合は `FrontendError` になる。ソース読み込みエラーは、`SourceId` 割り当て、UTF-8 検証、`LineMap` 構築より前に起きることが多いため、`SourceRange` を持たなくてよい。これらは、捏造されたゼロ長ソース範囲ではなく、必ず `DiagnosticLocation::SourceLoad` で報告する。`SourceLoadLocation::NormalizedPath` と `SourceLoadLocation::Unknown` は予約 fallback location である。前者は normalized input path を持つ将来の non-exhaustive `SourceOriginInput` variant 用、後者はそれすら持たない将来の source-load 診断用である。どちらも公開され、決定的に並ぶが、現在の runtime producer はない。回復可能な字句前提・コメント・インポート事前走査・字句環境・スコープスケルトン・トークン化・構文の問題は、`FrontendError` ではなく、返された `FrontendOutput` 内の `FrontendDiagnostic` である。スタブの parser seam は構文診断を生成せず、`ast = None` を返す。構文診断は、実 parser seam が設定されているときだけ期待する。フロントエンド診断は、「未定義記号」や「曖昧なオーバーロード」のような意味的事実を決して主張しない。それらは後のフェーズに属する。
 
 ## テスト
 
@@ -170,6 +170,7 @@ Step 2〜5 は、回復可能な問題では中断しない。診断を記録し
 - Step 1 の読み込み失敗が、ファイルレベルの診断を伴う `FrontendError` を返し、`FrontendOutput` を返さない。
 - 診断順序が、内部スケジューリングに関係なく、繰り返し実行で同一である。
 - 同じ class / start / code の診断も、完全な安定同順位決定キーで決定的に並ぶ。
+- 予約 source-load fallback location と予約 `AnnotationSyntax` class は、現在 producer がなくてもローカルに決定的順序を持つ。
 - 範囲付きの統合診断が、スパン橋渡しを通じて解決された妥当な `SourceRange` を持ち、ソース読み込み失敗は、範囲を持たない `SourceLoadLocation` を持つ。
 
 ## 制約と前提
