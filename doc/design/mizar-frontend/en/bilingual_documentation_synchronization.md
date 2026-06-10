@@ -31,8 +31,8 @@ readers.
 
 - No remaining public API or error/diagnostic variant drift was found between the
   English canonical module specs and the Japanese companions.
-- Module and task statuses are synchronized: tasks 1-16 remain complete, task 17
-  is complete in this audit, and follow-up tasks 18-24 remain open.
+- Module and task statuses are synchronized: tasks 1-17 remain complete from
+  this audit, task 18 is now complete, and follow-up tasks 19-24 remain open.
 - Terminology is synchronized for `SourceUnit`, `PreprocessedSource`,
   `ImportStub`, `ActiveLexicalEnvironment`, `TokenStream`, parser seam,
   `FrontendOutput`, recoverable diagnostics, hard `FrontendError`s, and
@@ -74,9 +74,9 @@ the English canonical decision itself.
 
 ## Follow-up Records
 
-No new follow-up task was added by this audit. Existing open follow-ups remain:
+No new follow-up task was added by this audit. Task 18 has since been completed;
+existing open follow-ups are:
 
-- Task 18: crate-level frontend determinism property tests.
 - Task 19: incremental cache-key wiring.
 - Task 20: parser-assisted lexing contract finalization.
 - Task 21: durable lint enforcement.

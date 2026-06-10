@@ -164,8 +164,12 @@
       挙動の約束について同期済み。未同期の日本語 companion gap は残っていない。
     - 依存: 16。仕様: リポジトリのドキュメント方針。
 
-18. **フロントエンドの決定性プロパティテスト。** [ ]
+18. **フロントエンドの決定性プロパティテスト。** [x]
     - 同一入力が、内部スケジューリングと独立に同一の `FrontendOutput` 診断順序と同一のトークンスパンを生むこと、および `LexicalEnvironmentFingerprint` とキャッシュキーが等価な入力に対して安定であることについて、crate レベルの網羅を追加する。
+    - 結果: `crates/mizar-frontend/tests/determinism.rs` が、provider scheduling
+      permutation に対する frontend 診断順序と token span、および comment-equivalent
+      な `lexical_hash`、`LexicalEnvironmentFingerprint`、parser context の cache-key
+      安定性を網羅する。
     - 依存: 16。仕様: [orchestration.md](./orchestration.md)、[lexical_env.md](./lexical_env.md)。
 
 19. **インクリメンタルキャッシュキーの配線。** [ ]

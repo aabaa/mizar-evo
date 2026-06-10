@@ -27,7 +27,8 @@
   確認した。API または挙動の drift は残っていない。
 - より広い bilingual wording/terminology review は task 17 で完了し、
   [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md)
-  に記録した。他の延期された実装または coverage 作業は task 18-24 に残る。
+  に記録した。他の延期された実装または coverage 作業は task 19-24 に残る。
+  task 18 は現在完了済みである。
 
 ## 公開 API 対応
 
@@ -85,9 +86,9 @@
 ## Follow-up 記録
 
 この監査では、予約済みまたは現在 producer を持たない diagnostic/fallback surface
-の coverage 用に task 24 を追加した。既存の cross-cutting item も残る。
+の coverage 用に task 24 を追加した。task 18 はその後完了した。残る
+cross-cutting item は次のとおり。
 
-- Task 18: crate-level frontend determinism property tests。
 - Task 19: incremental cache-key wiring。
 - Task 20: parser-assisted lexing contract finalization。
 - Task 21: durable lint enforcement。

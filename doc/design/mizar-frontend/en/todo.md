@@ -393,11 +393,15 @@ should keep `cargo test -p mizar-frontend` green (see
       unsynchronized Japanese companion gap remains.
     - Depends on: 16. Spec: repository documentation policy.
 
-18. **Frontend determinism property tests.** [ ]
+18. **Frontend determinism property tests.** [x]
     - Add crate-level coverage that identical inputs produce identical
       `FrontendOutput` diagnostics order and identical token spans independent of
       internal scheduling, and that the `LexicalEnvironmentFingerprint` and cache
       keys are stable for equivalent inputs.
+    - Result: `crates/mizar-frontend/tests/determinism.rs` covers provider
+      scheduling permutations for frontend diagnostic order and token spans, plus
+      comment-equivalent cache-key stability for `lexical_hash`,
+      `LexicalEnvironmentFingerprint`, and parser context.
     - Depends on: 16. Spec: [orchestration.md](./orchestration.md),
       [lexical_env.md](./lexical_env.md).
 

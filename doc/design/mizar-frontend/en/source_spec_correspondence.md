@@ -27,7 +27,8 @@ follow-up task instead of being mixed into the audit.
   promises. No remaining API or behavior drift was found.
 - Broader bilingual wording/terminology review was completed by task 17 in
   [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md).
-  Other deferred implementation or coverage work remains tasks 18-24.
+  Other deferred implementation or coverage work remains tasks 19-24; task 18
+  is now complete.
 
 ## Public API Correspondence
 
@@ -85,9 +86,9 @@ language synchronization was completed by task 17 in
 ## Follow-up Records
 
 This audit added task 24 for reserved or currently unproduced diagnostic/fallback
-surface coverage. The existing cross-cutting items also remain:
+surface coverage. Task 18 has since been completed; the remaining cross-cutting
+items are:
 
-- Task 18: crate-level frontend determinism property tests.
 - Task 19: incremental cache-key wiring.
 - Task 20: parser-assisted lexing contract finalization.
 - Task 21: durable lint enforcement.
