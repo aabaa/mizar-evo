@@ -1,0 +1,247 @@
+# mizar-diagnostics TODO
+
+> Canonical language: English. Japanese companion: [../ja/todo.md](../ja/todo.md).
+
+## Status Legend
+
+- [ ] not started
+- [~] in progress
+- [x] done
+
+## Module Implementation
+
+Module specs do not exist yet; each is written by its own spec task (English
+and Japanese in the same change) before the implementation tasks that cite it.
+Module names follow the minimum split of
+[internal 07](../../internal/en/07.crate_module_layout.md) (`failure_record`,
+`aggregator`) plus the registry/render/fix/explain modules of architecture 12
+and internal 03; the crate refines architecture 12 and 19 and internal 03.
+
+| Module | Spec | Source | Status |
+|---|---|---|---|
+| registry | `registry.md` (task 2) | `src/registry.rs` | [ ] |
+| failure_record | `failure_record.md` (task 4) | `src/failure_record.rs` | [ ] |
+| sink | `sink.md` (task 6) | `src/sink.rs` | [ ] |
+| aggregator | `aggregator.md` (task 8) | `src/aggregator.rs` | [ ] |
+| render | `render.md` (task 10) | `src/render.rs` | [ ] |
+| fix | `fix.md` (task 12) | `src/fix.rs` | [ ] |
+| explain | `explain.md` (task 14) | `src/explain.rs` | [ ] |
+
+`mizar-diagnostics` owns the canonical diagnostic record shared by every
+phase: the stable diagnostic-code registry, structured failure records
+(architecture 19), the producer sink API, build-level aggregation with
+deterministic ordering, CLI rendering, structured fix suggestions, and lazy
+explanation handles. Tools key on `DiagnosticCode`, never on message text;
+messages may improve across versions, codes may not be reused.
+
+Dependency order: `registry` → `failure_record` → `sink` → `aggregator` →
+`render` / `fix` / `explain`.
+
+Each task below is deliberately small — one module spec, or one behavior slice
+of one module — so that a single task can be implemented, tested, and
+committed autonomously without holding the rest of the crate in flight.
+
+## Crate Prerequisites
+
+The crate depends on `mizar-session` only (source ranges and snapshot ids).
+Its first consumer is `mizar-resolve` (the adoption-timing decision at that
+crate's task 13 gate); the LSP bridge consumes the same records from
+`mizar-lsp`. Architecture:
+[12.diagnostics_and_lsp.md](../../architecture/en/12.diagnostics_and_lsp.md),
+[19.failure_semantics.md](../../architecture/en/19.failure_semantics.md);
+internal: [03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md);
+spec: [22.error_handling_and_diagnostics.md](../../../spec/en/22.error_handling_and_diagnostics.md).
+
+## Resolved And Open Decisions
+
+- **Adoption timing: open, owned by `mizar-resolve` task 13's gate.** This
+  crate exists in the target layout either way; the decision is whether the
+  resolver adopts it from its first diagnostic or one layer later.
+  Registered at the top level.
+- **Migration of existing per-crate diagnostics: open, resolved by
+  task 16.** `mizar-lexer`/`mizar-frontend`/`mizar-parser` diagnostics
+  predate this crate. Decide whether they migrate to the shared record (and
+  in what order) or keep local types behind conversion adapters; record the
+  decision and its trigger here and at the top level.
+- **Code-space allocation: open, resolved by task 2.** Decide the numeric
+  code ranges per phase family and the retirement policy, following spec
+  chapter 22.
+
+## Ordered Task List
+
+Keep `cargo test -p mizar-diagnostics` green after each task (see
+[Recommended Verification](#recommended-verification)).
+
+### Records and registry
+
+1. **Crate scaffold and lint-policy guard.** [ ]
+   - Add the `mizar-diagnostics` workspace member depending on
+     `mizar-session`; add `tests/lint_policy.rs` mirroring the
+     `mizar-frontend` guard.
+   - Tests: lint-policy guard passes; workspace builds.
+   - Deps: none. Spec: architecture 12.
+
+2. **Spec: `registry.md`.** [ ]
+   - Write the registry spec (English and Japanese, no code): permanent
+     `DiagnosticCode` allocation, code-space ranges per phase family,
+     retirement rules, compatibility validation, and lookup metadata
+     (semantic name, default severity, documentation URL).
+   - Deps: 1. Spec: [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md)
+     "Diagnostic Registry",
+     [22.error_handling_and_diagnostics.md](../../../spec/en/22.error_handling_and_diagnostics.md).
+
+3. **Registry implementation.** [ ]
+   - Implement the code registry with compatibility validation (a code is
+     never reused for a different meaning) and a registry-consistency test
+     that locks allocated codes.
+   - Tests: allocation/retirement fixtures; reuse attempts fail; lookup
+     metadata round-trips.
+   - Deps: 2. Spec: `registry.md`.
+
+4. **Spec: `failure_record.md`.** [ ]
+   - Write the record spec (English and Japanese, no code):
+     `DiagnosticDraft` and `DiagnosticRecord` shapes, stable failure
+     categories per architecture 19, primary/secondary spans, structured
+     details, and machine-readable payload rules.
+   - Deps: 2. Spec: [19.failure_semantics.md](../../architecture/en/19.failure_semantics.md),
+     [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md).
+
+5. **Record and draft implementation.** [ ]
+   - Implement drafts and records with span and detail tables and a
+     deterministic debug rendering.
+   - Tests: record round-trips; spans always reference a `SourceId`;
+     rendering stability.
+   - Deps: 3, 4. Spec: `failure_record.md`.
+
+### Production and aggregation
+
+6. **Spec: `sink.md`.** [ ]
+   - Write the producer-API spec (English and Japanese, no code):
+     `DiagnosticSink`, phase-side draft emission rules, and what producers
+     may not do (no CLI formatting, no LSP shapes).
+   - Deps: 4. Spec: [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md)
+     "Diagnostic Producer API".
+
+7. **Sink implementation.** [ ]
+   - Implement the sink with per-phase draft collection ready for
+     aggregation.
+   - Tests: sink fixtures across simulated phases; drafts preserved
+     unmodified.
+   - Deps: 5, 6. Spec: `sink.md`.
+
+8. **Spec: `aggregator.md`.** [ ]
+   - Write the aggregator spec (English and Japanese, no code):
+     normalization, identity assignment, deduplication, canonical sort
+     order, `BuildDiagnosticIndex`, and the obsolete-snapshot rule
+     (diagnostics from stale snapshots are never published as current).
+   - Deps: 4. Spec: [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md)
+     "Diagnostic Aggregator", architecture 19.
+
+9. **Aggregator implementation.** [ ]
+   - Implement aggregation into immutable `BuildDiagnosticIndex` values
+     with deterministic ordering independent of production order.
+   - Tests: shuffled input produces identical indexes; dedup fixtures;
+     stale-snapshot rejection.
+   - Deps: 7, 8. Spec: `aggregator.md`.
+
+### Presentation
+
+10. **Spec: `render.md`.** [ ]
+    - Write the CLI rendering spec (English and Japanese, no code): message
+      layout, span excerpts, severity styling, and the rule that rendering
+      is keyed by code metadata.
+    - Deps: 8. Spec: [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md),
+      architecture 12.
+
+11. **CLI rendering.** [ ]
+    - Implement deterministic CLI rendering from records and line maps.
+    - Tests: golden-file render fixtures; byte-identical output.
+    - Deps: 9, 10. Spec: `render.md`.
+
+12. **Spec: `fix.md`.** [ ]
+    - Write the fix-suggestion spec (English and Japanese, no code):
+      structured edit suggestions, applicability levels, and safety rules
+      (suggestions never auto-apply).
+    - Deps: 4. Spec: architecture 12 "Fix Suggestion".
+
+13. **Fix suggestions.** [ ]
+    - Implement structured fix payloads attached to records.
+    - Tests: fix round-trips; edits reference valid ranges.
+    - Deps: 5, 12. Spec: `fix.md`.
+
+14. **Spec: `explain.md`.** [ ]
+    - Write the explanation spec (English and Japanese, no code): lazy
+      explanation handles, bounded previews, and the rule that large traces
+      stay in artifacts or dedicated files.
+    - Deps: 4. Spec: [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md)
+      "Explanation Store".
+
+15. **Explanation store.** [ ]
+    - Implement the explanation store with lazy resolution and bounded
+      previews.
+    - Tests: handle resolution fixtures; preview bounds enforced; missing
+      backing data degrades cleanly.
+    - Deps: 13, 14. Spec: `explain.md`.
+
+### Adoption and follow-ups
+
+16. **Consumer adoption and migration decision.** [ ]
+    - Wire the first consumer (`mizar-resolve`) through the sink and
+      aggregator; resolve the migration decision for the pre-existing
+      lexer/frontend/parser diagnostics and record it here and at the top
+      level.
+    - Tests: resolver diagnostics flow end-to-end; conversion adapters (if
+      chosen) round-trip.
+    - Deps: 9, `mizar-resolve` task 15. Spec: `aggregator.md`.
+
+17. **Determinism suite.** [ ]
+    - Property coverage that identical inputs produce identical records,
+      indexes, render output, and explanation previews.
+    - Deps: 11, 15. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
+
+18. **Public-enum forward-compatibility policy.** [ ]
+    - Apply the `mizar-frontend` task-25 procedure to each public enum;
+      severity and category enums additionally follow the architecture 19
+      compatibility policy.
+    - Deps: 16. Spec: all module specs.
+
+19. **Source/spec correspondence audit.** [ ]
+    - Trace every public API and promised behavior in the module specs to
+      implementation and tests; record gaps as follow-up tasks.
+    - Deps: 18. Spec: all module specs and this TODO.
+
+20. **Bilingual documentation sync audit.** [ ]
+    - Compare each English canonical document under
+      `doc/design/mizar-diagnostics/en/` with its Japanese companion and
+      synchronize content.
+    - Deps: 19. Spec: repository documentation policy.
+
+## Recommended Verification
+
+Run after each task:
+
+```text
+cargo test -p mizar-diagnostics
+cargo clippy -p mizar-diagnostics --all-targets -- -D warnings
+```
+
+For adoption/migration tasks, also run the consumers:
+
+```text
+cargo test -p mizar-resolve
+cargo test -p mizar-frontend
+```
+
+Check the task off here once tests pass.
+
+## Notes
+
+- Tools key on `DiagnosticCode`; messages may improve across versions,
+  codes are permanent and never reused for a different meaning.
+- Aggregation output is immutable and deterministically ordered; production
+  order and parallelism never show through.
+- Open-buffer (LSP overlay) diagnostics reuse the record shape but are
+  never published to CLI output or `VerifiedArtifact`; the bridge logic
+  lives in `mizar-lsp`.
+- Large traces never live inline in diagnostics — compact references and
+  bounded previews only.

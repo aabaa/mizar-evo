@@ -1,0 +1,228 @@
+# mizar-proof TODO
+
+> 正本は英語です。英語版: [../en/todo.md](../en/todo.md)。
+
+## 状態の凡例
+
+- [ ] 未着手
+- [~] 進行中
+- [x] 完了
+
+## モジュール実装
+
+モジュール仕様はまだ存在しない。各仕様は、それを引用する実装タスクより前に、
+専用の仕様タスクが（英語と日本語を同じ変更で）執筆する。モジュール名は
+[internal 07](../../internal/ja/07.crate_module_layout.md) の最小分割
+（`policy`、`witness_store`）に、internal 04 の選択/状態射影を加えたものに
+従う。この crate はアーキテクチャ 08、15、19 と internal 04 を精緻化する。
+
+| モジュール | 仕様 | ソース | 状態 |
+|---|---|---|---|
+| policy | `policy.md`（task 2） | `src/policy.rs` | [ ] |
+| selection | `selection.md`（task 5） | `src/selection.rs` | [ ] |
+| status | `status.md`（task 8） | `src/status.rs` | [ ] |
+| witness_store | `witness_store.md`（task 10） | `src/witness_store.rs` | [ ] |
+
+`mizar-proof` は untrusted な証拠生産（`mizar-atp`、`mizar-vc` の
+discharge）と信頼された検証（`mizar-kernel`）の間のポリシー層を所有する:
+`ProofPolicyEvaluator`（候補クラス、外部認証の規則、
+`require_kernel_certificates`、ビルドモードごとの open 義務の許容）、
+portfolio 候補上の決定的な勝者選択、artifact 向けの証明状態射影
+（`kernel_verified`、`discharged_builtin`、ポリシー管理の external と
+open 状態）、artifact コミットに向けて stage される proof witness ストア。
+ポリシーの結果は信頼された証明状態とは常に区別される: この crate は
+何かを「より証明済み」にすることは決してない — 何を記録し、選択し、公開
+するかを決めるだけである。
+
+依存順序: `policy` → `selection` → `status` → `witness_store`。
+
+以下の各タスクは意図的に小さくしてある — 1 つのモジュール仕様、または
+1 モジュールの 1 挙動スライス — 。これにより、crate の残りを抱え込まずに
+1 タスクを単独で実装・テスト・コミットまで自律的に完遂できる。
+
+## crate の前提条件
+
+この crate は `mizar-session`、`mizar-kernel`（`KernelCheckResult`、
+証明書スキーマ）、`mizar-vc`（`VcId`、discharge 証拠）、`mizar-atp`
+（portfolio 候補）、`mizar-artifact`（witness 参照スキーマ）に依存する。
+kernel がこの crate に依存することは決してない。アーキテクチャ:
+[08.reasoning_boundary.md](../../architecture/ja/08.reasoning_boundary.md)、
+[15.kernel_certificate_format.md](../../architecture/ja/15.kernel_certificate_format.md)。
+internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)。
+
+## 解決済みおよび保留中の決定
+
+- **ポリシー/信頼の分離: internal 04 により解決済み。** kernel はポリシー
+  非依存の検証結果を返し、この crate がその上でポリシーを評価する。外部
+  認証された証拠はポリシーで記録される証拠であって信頼された状態では
+  決してなく、`require_kernel_certificates` の下では勝てない。
+- **discharge 証拠の検証範囲: 未解決。task 6 で解決する。** `mizar-vc`
+  の pre-ATP discharge 証拠を kernel が再生するか、ポリシーに従う
+  決定的な built-in 証拠として受理するか。`mizar-kernel` とともにここで
+  決める（トップレベルと両 crate の todo に登録済み）。
+- **ポリシー fingerprint の表面: 未解決。task 3 で解決する。** キャッシュ
+  キーと proof 再利用が使う `PolicyFingerprint` にどのポリシー設定が
+  入るか。`mizar-cache` task 2 と調整する。
+
+## 順序付きタスク一覧
+
+各タスクの後で `cargo test -p mizar-proof` を成功状態に保つこと
+（[推奨検証](#推奨検証)を参照）。
+
+### ポリシー
+
+1. **crate の足場と lint 方針のガード。** [ ]
+   - `mizar-session`、`mizar-kernel`、`mizar-vc`、`mizar-atp`、
+     `mizar-artifact` に依存する workspace メンバー `mizar-proof` を追加
+     し、`mizar-frontend` のガードに倣った `tests/lint_policy.rs` を追加
+     する。
+   - テスト: lint 方針ガードが通る。workspace がビルドできる。
+   - 依存: `mizar-kernel` task 1、`mizar-atp` task 1。仕様: internal 04。
+
+2. **仕様: `policy.md`。** [ ]
+   - ポリシーの仕様を執筆する（英語と日本語、コードなし）: verifier
+     ポリシー設定、`CandidatePolicyClass`、外部認証の許可規則、
+     `require_kernel_certificates`、ビルドモードごとの open 義務の許容、
+     「ポリシーの結果は信頼された状態と区別される」規則。
+   - 依存: 1。仕様: [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
+     「Proof Policy Evaluator」、アーキテクチャ 08。
+
+3. **ポリシー評価器。** [ ]
+   - `ProofPolicyEvaluator` を実装する: 候補分類、
+     `can_schedule_kernel_check`、ポリシー fingerprint の射影
+     （`mizar-cache` とともにその決定を解決する）。
+   - テスト: 証拠種別ごとの分類フィクスチャ。fingerprint はポリシーに
+     関係する設定が変わったときだけ変わる。
+   - 依存: 2。仕様: `policy.md`。
+
+4. **外部認証された証拠の扱い。** [ ]
+   - 外部認証された証拠の許可とラベル付けを実装する: プロファイルが
+     許せば開発証拠として記録可能、`require_kernel_certificates` の下では
+     決して勝てない、信頼された `used_axioms` を決して生まない。
+   - テスト: プロファイルごとの許可マトリクス。安定した拒否診断。
+   - 依存: 3。仕様: `policy.md`（外部証拠の節）。
+
+### 選択と状態
+
+5. **仕様: `selection.md`。** [ ]
+   - 勝者選択の仕様を執筆する（英語と日本語、コードなし）: 決定的な
+     順序クラス（リリースポリシーを満たす kernel 検証済み → ポリシーが
+     許す external → 最良の説明を持つ open）、タイブレークキー
+     （backend プロファイル優先度、証明書フォーマット優先度、エンコード
+     済み problem ハッシュ、プロファイル id）、完了時刻の使用禁止。
+   - 依存: 2。仕様: [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
+     「Winner Selection」。
+
+6. **勝者選択。** [ ]
+   - `ProofEvidenceSet` 上の決定的な勝者選択を実装する。built-in
+     discharge 証拠がどのクラスに入るかを定める discharge 証拠の検証範囲
+     決定を（`mizar-kernel` とともに）解決し記録する。
+   - テスト: クラスとタイブレークをまたぐ順序フィクスチャ。候補到着を
+     シャッフルしても勝者は変わらない。
+   - 依存: 3、5、`mizar-kernel` task 16。仕様: `selection.md`。
+
+7. **artifact proof selection のマージ。** [ ]
+   - portfolio の結果と phase 12 の built-in discharge の結果を `VcId`
+     ごとにマージし、`kernel_verified` / `discharged_builtin` の選択に
+     する。external と open の状態は区別可能なまま保つ。
+   - テスト: 組み合わせごとのマージフィクスチャ。どの状態も別の状態に
+     潰れない。
+   - 依存: 6、`mizar-vc` task 12。仕様: `selection.md`（マージの節）、
+     [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
+     「Artifact Proof Selection」。
+
+8. **仕様: `status.md`。** [ ]
+   - 状態射影の仕様を執筆する（英語と日本語、コードなし）: artifact と
+     診断に向けた証明状態モデル、信頼された `used_axioms` の伝播
+     （kernel が受理した証拠からのみ）、open/拒否された義務の
+     explanation 参照。
+   - 依存: 5。仕様: [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
+     「Proof Witness and Artifact Flow」、アーキテクチャ 19。
+
+9. **証明状態の射影。** [ ]
+   - artifact と診断のための状態射影を実装する。信頼された
+     `used_axioms` の抽出境界を含む。
+   - テスト: 選択結果ごとの射影フィクスチャ。`used_axioms` は kernel が
+     受理した証拠からのみ。
+   - 依存: 7、8。仕様: `status.md`。
+
+### witness ストア
+
+10. **仕様: `witness_store.md`。** [ ]
+    - witness ストアの仕様を執筆する（英語と日本語、コードなし）:
+      stage/publish のフロー（コミット前に `stage`、artifact manifest が
+      witness を参照した後にのみ `publish_ref`）、内容ハッシュ、来歴
+      メタデータ。
+    - 依存: 2。仕様: [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
+      「Proof Witness Store」。
+
+11. **witness ストアの実装。** [ ]
+    - `mizar-artifact` の witness 参照スキーマに対する
+      `ProofWitnessDraft` の stage と公開を実装する。
+    - テスト: stage/publish のラウンドトリップ。manifest 参照前の公開の
+      失敗。コミット前のハッシュ記録。
+    - 依存: 9、10、`mizar-artifact` task 9。仕様: `witness_store.md`。
+
+12. **portfolio early-stop のポリシーフック。** [ ]
+    - ATP portfolio が early stop に使うポリシークエリ（これ以上良い
+      クラスが不可能かの判定）を提供する。終了の決定はポリシー駆動で
+      あり、時間駆動ではない。
+    - テスト: ポリシーごとの early-stop フィクスチャ。停止しても完走
+      した場合と選択される勝者が変わらない。
+    - 依存: 6、`mizar-atp` task 18。仕様: `policy.md`、
+      [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
+      「Early Stop and Cancellation」。
+
+### 強化と横断フォローアップ
+
+13. **決定性スイート。** [ ]
+    - 同一の証拠集合が、到着順をシャッフルしても同一の分類、勝者、状態、
+      witness 参照を生むことのプロパティ的検証。
+    - 依存: 11、12。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
+
+14. **公開 enum の前方互換性ポリシー。** [ ]
+    - 各公開 enum に `mizar-frontend` task 25 の手続きを適用する。状態
+      enum はさらに artifact 互換性ポリシーに従う。
+    - 依存: 11。仕様: 全モジュール仕様。
+
+15. **ソース/仕様対応監査。** [ ]
+    - モジュール仕様の全公開 API と約束された挙動を実装とテストへ
+      トレースする。すべてのモジュール仕様がポリシー/信頼の分離を再掲
+      していることを検証する。
+    - 依存: 14。仕様: 全モジュール仕様と本 TODO。
+
+16. **二言語ドキュメント同期監査。** [ ]
+    - `doc/design/mizar-proof/en/` の各英語正本と日本語版を比較し、内容を
+      同期する。
+    - 依存: 15。仕様: リポジトリのドキュメント方針。
+
+## 推奨検証
+
+各タスクの後で実行する:
+
+```text
+cargo test -p mizar-proof
+cargo clippy -p mizar-proof --all-targets -- -D warnings
+```
+
+kernel、ATP、artifact の境界に触れるタスクでは追加で実行する:
+
+```text
+cargo test -p mizar-kernel
+cargo test -p mizar-atp
+cargo test -p mizar-artifact
+```
+
+テストが通ったらここでタスクにチェックを付ける。
+
+## 備考
+
+- ポリシーの結果は信頼された証明状態と区別される。この crate が証拠を
+  昇格させることは決してない — 信頼の唯一の源は kernel の肯定的結果で
+  ある。
+- 勝者選択は決定的かつポリシー駆動である。生の完了時刻は記録されるが、
+  何かを決めることは決してない。
+- 外部認証された証拠は信頼された `used_axioms` を決して生まず、
+  `require_kernel_certificates` の下では勝てない。
+- witness は artifact manifest が参照して初めて公開到達可能になる。
+  stage だけでは何も公開されない。

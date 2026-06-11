@@ -1,0 +1,277 @@
+# mizar-atp TODO
+
+> 正本は英語です。英語版: [../en/todo.md](../en/todo.md)。
+
+## 状態の凡例
+
+- [ ] 未着手
+- [~] 進行中
+- [x] 完了
+
+## モジュール実装
+
+モジュール仕様はまだ存在しない。各仕様は、それを引用する実装タスクより前に、
+専用の仕様タスクが（英語と日本語を同じ変更で）執筆する。この crate は
+アーキテクチャ 09、10、15、19 と internal 04 を精緻化する。
+
+| モジュール | 仕様 | ソース | 状態 |
+|---|---|---|---|
+| problem | `problem.md`（task 2） | `src/problem.rs` | [ ] |
+| translator | `translator.md`（task 4） | `src/translator.rs` | [ ] |
+| property_encoding | `property_encoding.md`（task 7） | `src/property_encoding.rs` | [ ] |
+| tptp_encoder | `tptp_encoder.md`（task 9） | `src/tptp_encoder.rs` | [ ] |
+| smtlib_encoder | `smtlib_encoder.md`（task 11） | `src/smtlib_encoder.rs` | [ ] |
+| backend | `backend.md`（task 13） | `src/backend.rs` | [ ] |
+| portfolio | `portfolio.md`（task 17） | `src/portfolio.rs` | [ ] |
+
+`mizar-atp` はパイプライン phase 13 を実装する。入力は open な `VcIr`
+義務、出力はバックエンド中立の `AtpProblem`、具体的な prover プロトコルの
+出力、外部バックエンドの実行、そして証明書候補である。この crate が生産
+するものはすべて untrusted な証拠である: `Proved` の主張は
+`mizar-kernel` が証明書を検査して初めて信頼され、勝者/ポリシーの選択は
+`mizar-proof` に属する。決定性規則は Mizar 側のすべて（premise 順、
+エンコーディング、problem id）に適用され、バックエンドの非決定性は
+メタデータとして記録され、黙って吸収されることはない。
+
+依存順序: `problem` データ → `translator` / `property_encoding` →
+プロトコルエンコーダ → `backend` runner → `portfolio`。
+
+以下の各タスクは意図的に小さくしてある — 1 つのモジュール仕様、または
+1 モジュールの 1 挙動スライス — 。これにより、crate の残りを抱え込まずに
+1 タスクを単独で実装・テスト・コミットまで自律的に完遂できる。
+
+## crate の前提条件
+
+この crate は `mizar-session`、`mizar-core`（core 論理式）、`mizar-vc`
+（`NeedsAtp` 状態の `VcIr`）、`mizar-kernel`（kernel task 4 の所有権決定に
+よる証明書スキーマ型）に依存する。バックエンドのバイナリは `PATH` または
+明示的設定で構成される外部プロセスであり、crate のテストはモック
+バックエンドを使う。アーキテクチャ:
+[09.atp_interface_protocol.md](../../architecture/ja/09.atp_interface_protocol.md)、
+[10.atp_backend_integration.md](../../architecture/ja/10.atp_backend_integration.md)。
+統合: [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)。
+
+## 解決済みおよび保留中の決定
+
+- **最初のバックエンドと証明書ルート: 未解決。task 15 で解決する。**
+  アーキテクチャ 10 のサポート集合から最初の具体バックエンドを選ぶ。
+  既定候補は、証明が MiniSAT 互換 resolution trace に写像されるルート
+  （kernel 受理経路を最も早く検証できるため）。決定とバージョン固定
+  ポリシーを `backend.md` に記録する。
+- **証明書スキーマの所有権: `mizar-kernel` task 4 に従う。** この crate は
+  kernel 所有のスキーマ型に対して証明書候補を構築する。kernel がこの
+  crate に依存することは決してない。
+- **外部認証された証拠: ここでは範囲外。** ラベル付けはこの crate が
+  生産するが、受理ポリシーは `mizar-proof` が所有する（アーキテクチャ 10
+  の制約）。トップレベルに登録済み。
+
+## 順序付きタスク一覧
+
+各タスクの後で `cargo test -p mizar-atp` を成功状態に保つこと
+（[推奨検証](#推奨検証)を参照）。
+
+### problem 層
+
+1. **crate の足場と lint 方針のガード。** [ ]
+   - `mizar-session`、`mizar-core`、`mizar-vc`、`mizar-kernel` に依存する
+     workspace メンバー `mizar-atp` を追加し、`mizar-frontend` のガードに
+     倣った `tests/lint_policy.rs` を追加する。
+   - テスト: lint 方針ガードが通る。workspace がビルドできる。
+   - 依存: `mizar-vc` task 1、`mizar-kernel` task 1。仕様: アーキテクチャ
+     09。
+
+2. **仕様: `problem.md`。** [ ]
+   - `AtpProblem` のデータ形状仕様を執筆する（英語と日本語、コードなし）:
+     logic profile、宣言、公理、conjecture、型コンテキスト、エンコード
+     済みプロパティ、シンボルマップ、`AtpProvenance`、`expected_result` の
+     極性。
+   - 依存: 1。仕様: アーキテクチャ 09「Backend-Neutral Problem Layer」、
+     [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
+
+3. **`problem` データ形状の実装。** [ ]
+   - task 2 に従って `AtpProblem` と来歴テーブルを実装し、決定的 debug
+     レンダリングを加える。
+   - テスト: 構築のラウンドトリップ。すべての論理式が来歴で追跡可能。
+     レンダリングの安定性。
+   - 依存: 2。仕様: `problem.md`。
+
+### 翻訳
+
+4. **仕様: `translator.md`。** [ ]
+   - `VcIr`→`AtpProblem` 翻訳の仕様を執筆する（英語と日本語、コード
+     なし）: premise の具体化、決定的な premise 順、soft type 事実の保存
+     （sort エンコーディングは VC の正当化に必要な事実を消してはなら
+     ない）、validity 検査の極性。
+   - 依存: 2。仕様: アーキテクチャ 09「Encoding Strategy」「Validity
+     Checking Polarity」。
+
+5. **宣言とシンボルマップの翻訳。** [ ]
+   - `VcIr` のローカルコンテキストと参照シンボルを、診断に十分なだけ
+     逆引き可能なシンボルマップとともに `AtpDeclaration` へ翻訳する。
+   - テスト: 宣言のフィクスチャ。診断のためのシンボルマップの
+     ラウンドトリップ。
+   - 依存: 3、4。仕様: `translator.md`。
+
+6. **公理と conjecture の翻訳。** [ ]
+   - 引用された premise を決定的な順序で公理に具体化し、goal を
+     conjecture としてエンコードし、来歴と `expected_result` を付ける。
+   - テスト: premise 順の決定性。来歴の完全性。極性のフィクスチャ。
+   - 依存: 5。仕様: `translator.md`。
+
+7. **仕様: `property_encoding.md`。** [ ]
+   - プロパティエンコーディングの仕様を執筆する（英語と日本語、コード
+     なし）: 定義のプロパティ（commutativity など）を公理として、または
+     バックエンドネイティブのプロパティとしてエンコードする方法と、
+     各戦略の適用条件。
+   - 依存: 4。仕様: アーキテクチャ 09「Property Encoding」。
+
+8. **プロパティエンコーディング。** [ ]
+   - エンコーディング決定を `EncodedProperty` に記録しつつプロパティ
+     エンコーディング規則を実装する。
+   - テスト: プロパティごとのフィクスチャ。バックエンド拡張の
+     エンコーディングはそれを記録するプロファイル下のみ。
+   - 依存: 6、7。仕様: `property_encoding.md`。
+
+### プロトコルエンコーダ
+
+9. **仕様: `tptp_encoder.md`。** [ ]
+   - TPTP 出力の仕様を執筆する（英語と日本語、コードなし）: 方言の
+     カバレッジ、名前マングリング、決定的出力規則。
+   - 依存: 2。仕様: アーキテクチャ 09「Supported Formats」。
+
+10. **TPTP エンコーダ。** [ ]
+    - `AtpProblem` から TPTP テキストを決定的に出力する。
+    - テスト: golden ファイルのフィクスチャ。実行をまたぐバイト同一の
+      出力。マングリング衝突の拒否。
+    - 依存: 6、9。仕様: `tptp_encoder.md`。
+
+11. **仕様: `smtlib_encoder.md`。** [ ]
+    - SMT-LIB 出力の仕様を執筆する（英語と日本語、コードなし）: sort
+      エンコーディング、logic の選択、決定的出力規則。
+    - 依存: 2。仕様: アーキテクチャ 09「Supported Formats」。
+
+12. **SMT-LIB エンコーダ。** [ ]
+    - `AtpProblem` から SMT-LIB テキストを決定的に出力する。
+    - テスト: golden ファイルのフィクスチャ。sort エンコーディングが
+      必要な soft type 事実を保存する。
+    - 依存: 6、11。仕様: `smtlib_encoder.md`。
+
+### バックエンド実行
+
+13. **仕様: `backend.md`。** [ ]
+    - バックエンドの仕様を執筆する（英語と日本語、コードなし）:
+      バックエンド trait、プロセスモデル（spawn、リソース制限、終了）、
+      設定とバージョン記録、クラッシュ処理、そして「`Proved` は
+      `expected_result` の一致と証拠の存在を要する」規則を含む結果分類。
+    - 依存: 2。仕様: アーキテクチャ 10「Process Model」「Result
+      Classification」、[internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
+      「Backend Runner」。
+
+14. **バックエンド runner。** [ ]
+    - リソース制限、タイムアウト、キャンセル、graceful なクラッシュ処理を
+      備えたプロセス実行を実装する。テスト用モックバックエンドを用意する。
+    - テスト: モックプロセスによるタイムアウト/クラッシュ/kill の
+      フィクスチャ。ゾンビプロセスなし。リソースメタデータの記録。
+    - 依存: 13。仕様: `backend.md`。
+
+15. **最初の具体バックエンド統合。** [ ]
+    - 最初のバックエンドの決定を解決し、実バックエンド 1 つをエンド
+      ツーエンドで統合する: problem 出力、実行、出力を kernel スキーマに
+      対する証明書候補へ構文解析。
+    - テスト: バックエンド存在ガード付きの統合テスト。候補証明書が
+      `mizar-kernel` の構造検証を通る。
+    - 依存: 10 または 12（選んだバックエンドに応じて）、14、
+      `mizar-kernel` task 5。仕様: `backend.md`。
+
+16. **結果分類と極性検証。** [ ]
+    - バックエンドの結果を分類する（proved、反例、タイムアウト、
+      unknown、エラー）。観測結果が `expected_result` に一致し証明証拠が
+      存在するときのみ `Proved` を発行する。反例は診断のみに供給する。
+    - テスト: 結果ごとの分類フィクスチャ。極性不一致ケースが proved に
+      分類されない。
+    - 依存: 15。仕様: `backend.md`（分類の節）。
+
+### portfolio
+
+17. **仕様: `portfolio.md`。** [ ]
+    - portfolio の仕様を執筆する（英語と日本語、コードなし）: VC ごとの
+      portfolio タスク、候補証拠の収集、early stop、リソース予算、そして
+      「勝者選択は `mizar-proof` のポリシーであり、完了順が結果を決める
+      ことは決してない」という境界。
+    - 依存: 13。仕様: アーキテクチャ 10「Portfolio Execution」、
+      [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
+      「ATP Portfolio Service」。
+
+18. **portfolio 実行。** [ ]
+    - 決定的な候補順と協調的キャンセルを備えた portfolio 構築と候補収集を
+      実装する。
+    - テスト: 完了順をシャッフルしても同一の候補集合と順序。early stop が
+      部分状態を残さない。
+    - 依存: 14、16、17。仕様: `portfolio.md`。
+
+19. **ATP 実行メタデータの記録。** [ ]
+    - artifact と再現性記録のために、シード、タイムアウト設定、
+      バックエンドの識別/バージョン、リソース使用を記録する。
+    - テスト: メタデータ完全性のフィクスチャ。メタデータが意味論ハッシュ
+      から除外される。
+    - 依存: 16。仕様: アーキテクチャ 00「Incrementality and
+      Reproducibility」。
+
+### 強化と横断フォローアップ
+
+20. **コーパスとモックバックエンド統合スイート。** [ ]
+    - モックバックエンドで駆動する stage `advanced_semantics` のコーパス
+      ケースを `spec_trace.toml` 項目付きで追加する。
+    - 依存: 18。仕様: [staged_model.md](../../mizar-test/ja/staged_model.md)。
+
+21. **決定性スイート。** [ ]
+    - 同一の `VcIr` 入力がモックバックエンドの下で同一の problem、
+      エンコーディング、候補順を生むことのプロパティ的検証。
+    - 依存: 18。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
+
+22. **公開 enum の前方互換性ポリシー。** [ ]
+    - 各公開 enum に `mizar-frontend` task 25 の手続きを適用し、所有
+      モジュール仕様に決定を記録する。
+    - 依存: 18。仕様: 全モジュール仕様。
+
+23. **ソース/仕様対応監査。** [ ]
+    - モジュール仕様の全公開 API と約束された挙動を実装とテストへ
+      トレースし、ギャップをフォローアップタスクとして記録する。
+    - 依存: 22。仕様: 全モジュール仕様と本 TODO。
+
+24. **二言語ドキュメント同期監査。** [ ]
+    - `doc/design/mizar-atp/en/` の各英語正本と日本語版を比較し、内容を
+      同期する。
+    - 依存: 23。仕様: リポジトリのドキュメント方針。
+
+## 推奨検証
+
+各タスクの後で実行する:
+
+```text
+cargo test -p mizar-atp
+cargo clippy -p mizar-atp --all-targets -- -D warnings
+```
+
+VC や kernel の境界に触れるタスクでは追加で実行する:
+
+```text
+cargo test -p mizar-vc
+cargo test -p mizar-kernel
+```
+
+テストが通ったらここでタスクにチェックを付ける。
+
+## 備考
+
+- ここで生産されるものはすべて untrusted な証拠である。信頼された状態は
+  kernel の証明書検査後にのみ存在し、受理ポリシーは `mizar-proof` にある。
+- エンコーディングは可逆である必要はないが、バックエンドに見えるすべての
+  論理式は `AtpProvenance` で追跡可能でなければならず、バックエンドが
+  報告した used axioms は kernel 検査が検証するまで artifact の
+  `used_axioms` にならない。
+- バックエンドの非決定性は記録される（シード、バージョン、時間）。黙って
+  吸収されることはない。Mizar 側の翻訳とエンコーディングはビット安定で
+  ある。
+- ATP が利用不能でも前段の phase を壊してはならない。この crate は
+  パイプラインの他所のエラーではなく、`open` の VC 状態へ退化する。

@@ -1,0 +1,267 @@
+# mizar-kernel TODO
+
+> Canonical language: English. Japanese companion: [../ja/todo.md](../ja/todo.md).
+
+## Status Legend
+
+- [ ] not started
+- [~] in progress
+- [x] done
+
+## Module Implementation
+
+Module specs do not exist yet; each is written by its own spec task (English
+and Japanese in the same change) before the implementation tasks that cite it.
+Module names follow the minimum split of
+[internal 07](../../internal/en/07.crate_module_layout.md); the crate refines
+architecture 15, 16, and 19 and internal 04. Every module spec must restate
+the kernel prohibitions: no proof search, no heuristic selection, no overload
+resolution, no cluster search, no ATP search, no implicit coercion insertion,
+no fallback inference.
+
+| Module | Spec | Source | Status |
+|---|---|---|---|
+| clause | `clause.md` (task 2) | `src/clause.rs` | [ ] |
+| certificate_parser | `certificate_parser.md` (task 4) | `src/certificate_parser.rs` | [ ] |
+| rejection | `rejection.md` (task 6) | `src/rejection.rs` | [ ] |
+| resolution_trace | `resolution_trace.md` (task 8) | `src/resolution_trace.rs` | [ ] |
+| substitution_checker | `substitution_checker.md` (task 10) | `src/substitution_checker.rs` | [ ] |
+| checker | `checker.md` (task 13) | `src/checker.rs` | [ ] |
+
+`mizar-kernel` implements pipeline phase 14: proof certificates and kernel
+context in, trusted proof status out. It is the trusted core of the whole
+verifier (Small Kernel Principle): it verifies evidence only — certificate
+parsing and structural validation, MiniSAT-compatible resolution trace
+checking, substitution/alpha/free-variable checking, cluster trace replay,
+and imported-fact checking. A certificate is evidence, not acceptance; only
+this crate's positive result is trusted, and policy projection on top of it
+belongs to `mizar-proof`, not here.
+
+Dependency order: `clause` → `certificate_parser` / `rejection` →
+`resolution_trace` / `substitution_checker` → `checker` (orchestration,
+imported facts, cluster replay).
+
+Each task below is deliberately small — one module spec, or one behavior slice
+of one module — so that a single task can be implemented, tested, and
+committed autonomously without holding the rest of the crate in flight.
+
+## Crate Prerequisites
+
+The crate depends on `mizar-session` and `mizar-core` (core formula
+representation and the binder contract it independently re-checks) and on
+nothing else — the dependency set is deliberately minimal and additions
+require a recorded justification. `mizar-atp` and `mizar-proof` depend on
+this crate, never the reverse. Architecture:
+[15.kernel_certificate_format.md](../../architecture/en/15.kernel_certificate_format.md),
+[16.substitution_and_binding.md](../../architecture/en/16.substitution_and_binding.md),
+[17.cluster_trace_format.md](../../architecture/en/17.cluster_trace_format.md),
+[08.reasoning_boundary.md](../../architecture/en/08.reasoning_boundary.md);
+integration: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md).
+
+## Resolved And Open Decisions
+
+- **Certificate schema ownership: open, resolved by task 4.** Architecture 15
+  defines the certificate format; the default candidate is that this crate
+  owns the schema types (parsing included) and `mizar-atp` depends on
+  `mizar-kernel` to construct candidates, so the kernel never depends on
+  evidence producers. Record the decision in `certificate_parser.md` and at
+  the top level.
+- **Trusted-baseline crate policy: open, resolved by task 1.** Decide the
+  extra strictness for trusted code (e.g. `#![forbid(unsafe_code)]`, no
+  third-party runtime dependencies, mandatory trust statements per module)
+  and encode it in the lint-policy guard.
+- **Discharge-evidence validation scope: open, deferred.** Whether
+  `mizar-vc` pre-ATP discharge evidence is kernel-replayed or accepted as
+  policy-level evidence is decided with `mizar-proof` (its policy spec);
+  tracked at the top level.
+
+## Ordered Task List
+
+Keep `cargo test -p mizar-kernel` green after each task (see
+[Recommended Verification](#recommended-verification)).
+
+### Clause and certificate foundation
+
+1. **Crate scaffold and trusted-baseline lint policy.** [ ]
+   - Add the `mizar-kernel` workspace member depending on `mizar-session`
+     and `mizar-core` only; resolve the trusted-baseline decision and encode
+     it in `tests/lint_policy.rs` (deny baseline plus the trusted-code
+     additions).
+   - Tests: lint-policy guard passes; dependency set is exactly the declared
+     one.
+   - Deps: `mizar-core` task 5. Spec: internal 07 "Kernel and Proof".
+
+2. **Spec: `clause.md`.** [ ]
+   - Write the clause-representation spec (English and Japanese, no code)
+     per architecture 15 "Clause Representation": literals, canonical
+     ordering, structural well-formedness, and the trust statement.
+   - Deps: 1. Spec: architecture 15.
+
+3. **Implement clause representation.** [ ]
+   - Implement clauses with structural validation and deterministic
+     rendering.
+   - Tests: well-formed/malformed fixtures; canonical ordering; rendering
+     stability.
+   - Deps: 2. Spec: `clause.md`.
+
+4. **Spec: `certificate_parser.md`.** [ ]
+   - Write the certificate spec (English and Japanese, no code): top-level
+     schema per architecture 15, format tags, backend metadata, structural
+     validation rules, and the schema-ownership decision.
+   - Deps: 2. Spec: architecture 15 "Certificate Top Level"/"Trust Scope".
+
+5. **Implement certificate parsing and structural validation.** [ ]
+   - Parse certificates into schema types with structural validation only —
+     no semantic trust is granted by parsing.
+   - Tests: round-trips; malformed certificates rejected with positions;
+     unknown format tags rejected.
+   - Deps: 4. Spec: `certificate_parser.md`.
+
+6. **Spec: `rejection.md`.** [ ]
+   - Write the rejection-semantics spec (English and Japanese, no code):
+     stable rejection categories and structured reasons per architecture 15
+     "Kernel Rejection Semantics" and architecture 19.
+   - Deps: 1. Spec: architecture 15, 
+     [19.failure_semantics.md](../../architecture/en/19.failure_semantics.md).
+
+7. **Implement rejection records.** [ ]
+   - Implement the rejection categories/reasons used by every later checker;
+     rejection is a proof error even when a backend reported success.
+   - Tests: category stability; reasons carry certificate locations.
+   - Deps: 5, 6. Spec: `rejection.md`.
+
+### Checkers
+
+8. **Spec: `resolution_trace.md`.** [ ]
+   - Write the resolution-trace checking spec (English and Japanese, no
+     code): MiniSAT-compatible trace steps, clause-resolution validation,
+     and linear replay bounds per architecture 15 "Resolution Trace".
+   - Deps: 4. Spec: architecture 15.
+
+9. **Implement the resolution trace checker.** [ ]
+   - Check clause resolution traces step by step; reject any step that does
+     not follow.
+   - Tests: valid traces accepted; each single-step mutation rejected;
+     replay cost linear in trace size.
+   - Deps: 7, 8. Spec: `resolution_trace.md`.
+
+10. **Spec: `substitution_checker.md`.** [ ]
+    - Write the substitution-checking spec (English and Japanese, no code):
+      substitution validation, alpha-conversion checking, and free-variable
+      conditions per architecture 15 "Substitution Rule" and architecture
+      16, independently re-checking (not reusing the logic of) the
+      `mizar-core` binder library.
+    - Deps: 4. Spec: architecture 15, 16.
+
+11. **Implement substitution checking.** [ ]
+    - Validate substitution applications against the certificate's claimed
+      results.
+    - Tests: valid substitutions accepted; capture violations rejected;
+      mismatched results rejected.
+    - Deps: 7, 10. Spec: `substitution_checker.md`.
+
+12. **Implement alpha-conversion and free-variable checks.** [ ]
+    - Check alpha-equivalence claims and free-variable side conditions.
+    - Tests: equivalence fixtures; FV-condition violations rejected.
+    - Deps: 11. Spec: `substitution_checker.md`.
+
+### Orchestration and acceptance
+
+13. **Spec: `checker.md`.** [ ]
+    - Write the kernel check-service spec (English and Japanese, no code):
+      `KernelCheckInput`/`KernelCheckResult`, the check pipeline over the
+      sub-checkers, imported-fact checking per architecture 15, cluster
+      trace replay per architecture 17, and acceptance conditions —
+      restating the kernel prohibitions.
+    - Deps: 6, 8, 10. Spec: architecture 15 "Imported Facts",
+      [17.cluster_trace_format.md](../../architecture/en/17.cluster_trace_format.md),
+      [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
+      "Kernel Check Service".
+
+14. **Implement imported-fact checking.** [ ]
+    - Validate that facts a certificate uses are exactly the declared
+      imported facts (content-addressed references, no silent extras).
+    - Tests: undeclared-fact use rejected; hash mismatches rejected.
+    - Deps: 13. Spec: `checker.md` (imported-facts section).
+
+15. **Implement cluster trace replay.** [ ]
+    - Replay `ResolutionTrace` cluster/reduction steps in linear time,
+      rejecting traces whose steps do not re-derive their claimed facts.
+    - Tests: valid traces replay; mutated antecedents/derived facts
+      rejected; replay cost bound enforced.
+    - Deps: 13, `mizar-checker` task 16. Spec: `checker.md` (cluster-replay
+      section), architecture 17.
+
+16. **Kernel check service and deterministic batch ordering.** [ ]
+    - Implement the service API: one certificate in, one trusted result out;
+      batch checking with deterministic result ordering independent of
+      completion order (internal 04 "Kernel Check Scheduling").
+    - Tests: service round-trips; batch order determinism under shuffled
+      completion.
+    - Deps: 9, 12, 14, 15. Spec: `checker.md`,
+      [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md).
+
+### Hardening and cross-cutting follow-ups
+
+17. **Soundness fail-test corpus.** [ ]
+    - Build the mutation-based soundness suite: every checker gets
+      systematically mutated certificates/traces that must be rejected
+      (fail-heavy per the test strategy and
+      [fail_soundness.md](../../mizar-test/en/fail_soundness.md)).
+    - Deps: 16. Spec: [fail_soundness.md](../../mizar-test/en/fail_soundness.md),
+      [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
+
+18. **Determinism and replay-cost suite.** [ ]
+    - Property coverage that identical inputs produce identical results and
+      rejection reasons, and that replay stays within the documented cost
+      bounds.
+    - Deps: 16. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
+
+19. **Public-enum forward-compatibility policy.** [ ]
+    - Apply the `mizar-frontend` task-25 procedure to each public enum;
+      rejection categories additionally follow the architecture 19
+      compatibility policy.
+    - Deps: 16. Spec: all module specs.
+
+20. **Source/spec correspondence and prohibition audit.** [ ]
+    - Trace every public API and promised behavior to implementation and
+      tests; verify every module spec restates the kernel prohibitions and
+      its trust statement.
+    - Deps: 19. Spec: all module specs and this TODO.
+
+21. **Bilingual documentation sync audit.** [ ]
+    - Compare each English canonical document under
+      `doc/design/mizar-kernel/en/` with its Japanese companion and
+      synchronize content.
+    - Deps: 20. Spec: repository documentation policy.
+
+## Recommended Verification
+
+Run after each task:
+
+```text
+cargo test -p mizar-kernel
+cargo clippy -p mizar-kernel --all-targets -- -D warnings
+```
+
+For tasks that touch the core binder contract or cluster replay, also run:
+
+```text
+cargo test -p mizar-core
+cargo test -p mizar-checker
+```
+
+Check the task off here once tests pass.
+
+## Notes
+
+- The kernel verifies evidence only. It must never perform proof search,
+  heuristic selection, overload resolution, cluster search, ATP search,
+  implicit coercion insertion, or fallback inference.
+- Certificate validation failure is a proof error even if the backend
+  reported success; externally attested evidence is `mizar-proof` policy,
+  never a kernel result.
+- Keep the dependency set minimal and audited; soundness-relevant code
+  favors duplication over shared cleverness (the substitution checker
+  re-checks, it does not reuse).
+- Fail/soundness tests take priority over pass tests near this crate.

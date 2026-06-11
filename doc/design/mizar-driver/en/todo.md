@@ -1,0 +1,254 @@
+# mizar-driver TODO
+
+> Canonical language: English. Japanese companion: [../ja/todo.md](../ja/todo.md).
+
+## Status Legend
+
+- [ ] not started
+- [~] in progress
+- [x] done
+
+## Module Implementation
+
+Module specs do not exist yet; each is written by its own spec task (English
+and Japanese in the same change) before the implementation tasks that cite it.
+The crate refines [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
+per the ownership map of
+[internal 07](../../internal/en/07.crate_module_layout.md).
+
+| Module | Spec | Source | Status |
+|---|---|---|---|
+| request | `request.md` (task 2) | `src/request.rs` | [ ] |
+| registry | `registry.md` (task 4) | `src/registry.rs` | [ ] |
+| driver | `driver.md` (task 7) | `src/driver.rs` | [ ] |
+| events | `events.md` (task 9) | `src/events.rs` | [ ] |
+| cli | `cli.md` (task 12) | `src/cli.rs` | [ ] |
+
+`mizar-driver` is the front door for all build modes: it parses CLI/watch/LSP
+requests into `BuildRequest`s, bootstraps phase 0 through the `mizar-build`
+planner, creates `BuildSession`s with source and dependency snapshots,
+registers phase service implementations behind the `PhaseService` trait,
+submits the initial task graph to the scheduler, and publishes build events
+to progress reporters and the LSP bridge. It owns no phase semantics, no
+cache compatibility decisions, no artifact serialization, and no editor
+protocol conversion — it wires the pieces together and stays thin.
+
+Dependency order: `request` → `registry` → `driver` → `events` → `cli` /
+watch mode.
+
+Each task below is deliberately small — one module spec, or one behavior slice
+of one module — so that a single task can be implemented, tested, and
+committed autonomously without holding the rest of the crate in flight.
+
+## Crate Prerequisites
+
+The crate depends on `mizar-session`, `mizar-build` (planner, task graph,
+scheduler), `mizar-ir` (output storage and snapshot handles),
+`mizar-diagnostics` (sink and aggregation), and — through phase-service
+adapters registered at the binary level — on the pipeline crates as they
+land (`mizar-frontend` first). It is the last subsystem to assemble; start
+it with `mizar-build` wave B. Internal:
+[01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md);
+spec: [23.package_management_and_build_system.md](../../../spec/en/23.package_management_and_build_system.md).
+
+## Resolved And Open Decisions
+
+- **Driver/build split: resolved by internal 00/01.** Planning and
+  scheduling live in `mizar-build`; this crate owns request lifecycle,
+  service registry, and entry points.
+- **CLI surface: open, resolved by task 12.** Decide the binary name and
+  subcommand set against the build lifecycle of spec chapter 23 (default
+  candidate: a single `mizar` binary with `build`/`check`/`doc`
+  subcommands grown incrementally) and record the decision in `cli.md`.
+- **`cache_key` purity: resolved by internal 01.** `PhaseService::cache_key`
+  is a pure projection from input identities, configuration, schema
+  versions, and dependency hashes; the registry enforces and tests this
+  contract.
+
+## Ordered Task List
+
+Keep `cargo test -p mizar-driver` green after each task (see
+[Recommended Verification](#recommended-verification)).
+
+### Requests and services
+
+1. **Crate scaffold and lint-policy guard.** [ ]
+   - Add the `mizar-driver` workspace member depending on `mizar-session`,
+     `mizar-build`, `mizar-ir`, and `mizar-diagnostics`; add
+     `tests/lint_policy.rs` mirroring the `mizar-frontend` guard.
+   - Tests: lint-policy guard passes; workspace builds.
+   - Deps: `mizar-build` task 10, `mizar-ir` task 8,
+     `mizar-diagnostics` task 9. Spec: internal 01.
+
+2. **Spec: `request.md`.** [ ]
+   - Write the request spec (English and Japanese, no code):
+     `BuildRequest` shapes for batch/watch/LSP, `BuildSession` and its
+     source/dependency snapshots, and session lifecycle states.
+   - Deps: 1. Spec: [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
+     "Build Session".
+
+3. **`BuildRequest` and `BuildSession`.** [ ]
+   - Implement requests and sessions with snapshot capture through
+     `mizar-session`/`mizar-ir` identities.
+   - Tests: session round-trips; identical workspace states produce
+     identical snapshot ids.
+   - Deps: 2. Spec: `request.md`.
+
+4. **Spec: `registry.md`.** [ ]
+   - Write the registry spec (English and Japanese, no code): the
+     `PhaseService` trait (`phase`, `cache_key`, `execute`),
+     `PhaseContext`/`PhaseResult`, the service table for phases 0-16, and
+     the cache-key purity contract.
+   - Deps: 2. Spec: [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
+     "Phase Services"/"Phase Service API".
+
+5. **Phase service registry.** [ ]
+   - Implement registration and lookup of phase services with
+     duplicate-phase rejection and a purity test harness for `cache_key`.
+   - Tests: registration fixtures; duplicate rejection; `cache_key`
+     determinism harness with a stub service.
+   - Deps: 4. Spec: `registry.md`.
+
+6. **`SourceFrontend` service adapter.** [ ]
+   - Wrap `mizar-frontend` phases 1-3 as the first real `PhaseService`
+     (input: plan slice; output: frontend outputs sealed through
+     `mizar-ir`).
+   - Tests: adapter round-trip over a fixture module; diagnostics flow
+     into the sink.
+   - Deps: 5, `mizar-ir` task 8. Spec: `registry.md`,
+     [mizar-frontend todo](../../mizar-frontend/en/todo.md).
+
+### Orchestration
+
+7. **Spec: `driver.md`.** [ ]
+   - Write the driver spec (English and Japanese, no code): the
+     `CompilerDriver` API (`submit`, `cancel`, `events`), phase-0
+     bootstrap, task-graph submission, and the artifact commit boundary
+     hand-off.
+   - Deps: 4. Spec: [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
+     "Driver API"/"Control Flow".
+
+8. **Driver core.** [ ]
+   - Implement `submit`: bootstrap phase 0 via the `mizar-build` planner,
+     create the session, expand and submit the task graph, and drive
+     registered services through the scheduler.
+   - Tests: batch run over a fixture workspace with the frontend service;
+     deterministic phase ordering.
+   - Deps: 3, 5, 6, 7, `mizar-build` task 8. Spec: `driver.md`.
+
+9. **Spec: `events.md`.** [ ]
+   - Write the events spec (English and Japanese, no code): the
+     `BuildEventStream` (progress, phase completion, diagnostics
+     readiness, commit), deterministic event ordering, and consumer rules
+     for CLI and LSP.
+   - Deps: 7. Spec: [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
+     "Build Events".
+
+10. **Build event stream.** [ ]
+    - Implement event publication with deterministic ordering independent
+      of worker completion order.
+    - Tests: shuffled completion produces identical event sequences;
+      events reference valid sessions.
+    - Deps: 8, 9. Spec: `events.md`.
+
+11. **Cancellation flow.** [ ]
+    - Implement `cancel`: propagate through `mizar-build` cancellation
+      tokens and report a terminal session state; superseded watch
+      sessions cancel cleanly.
+    - Tests: cancel mid-build reaches a terminal state without partial
+      publications; double-cancel is idempotent.
+    - Deps: 8, `mizar-build` task 14. Spec: `driver.md`,
+      [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
+      "Cancellation".
+
+### Entry points
+
+12. **Spec: `cli.md` and the CLI surface decision.** [ ]
+    - Resolve the CLI-surface decision against the spec-23 build
+      lifecycle; write the CLI spec (binary, subcommands, exit codes,
+      progress rendering via `mizar-diagnostics`).
+    - Deps: 7. Spec:
+      [23.package_management_and_build_system.md](../../../spec/en/23.package_management_and_build_system.md).
+
+13. **CLI batch entry point.** [ ]
+    - Implement the batch subcommand: parse arguments into a
+      `BuildRequest`, run the driver, render diagnostics and progress,
+      and map results to exit codes.
+    - Tests: end-to-end CLI run over a fixture workspace; stable exit
+      codes; golden-file output.
+    - Deps: 10, 12. Spec: `cli.md`.
+
+14. **Watch mode.** [ ]
+    - Implement the watch loop: file-change detection, snapshot
+      replacement through `mizar-ir`, superseding-session cancellation,
+      and incremental resubmission.
+    - Tests: change → rebuild fixtures; stale sessions never publish;
+      replacement keeps retained outputs alive.
+    - Deps: 11, 13, `mizar-ir` task 13. Spec:
+      [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
+      "Watch and LSP Build".
+
+15. **Phase service adapters for semantic phases.** [ ] — paced by the
+    pipeline crates.
+    - Register adapters for `ModuleResolver`, `SemanticChecker`,
+      `Elaborator`, `VcService`, `AtpService`, `KernelService`, and
+      `ArtifactService` as each crate's service-facing surface lands; one
+      adapter per change. Checked off when the last adapter lands.
+    - Tests per adapter: fixture run through the driver; diagnostics and
+      outputs flow end-to-end.
+    - Deps: 8; pairs with the respective crates' integration tasks. Spec:
+      `registry.md`.
+
+### Hardening and cross-cutting follow-ups
+
+16. **End-to-end determinism suite.** [ ]
+    - Property coverage that identical workspaces produce identical event
+      streams, diagnostics, and exit codes across worker counts and runs.
+    - Deps: 13. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
+
+17. **Public-enum forward-compatibility policy.** [ ]
+    - Apply the `mizar-frontend` task-25 procedure to each public enum.
+    - Deps: 13. Spec: all module specs.
+
+18. **Source/spec correspondence audit.** [ ]
+    - Trace every public API and promised behavior in the module specs to
+      implementation and tests; record gaps as follow-up tasks.
+    - Deps: 17. Spec: all module specs and this TODO.
+
+19. **Bilingual documentation sync audit.** [ ]
+    - Compare each English canonical document under
+      `doc/design/mizar-driver/en/` with its Japanese companion and
+      synchronize content.
+    - Deps: 18. Spec: repository documentation policy.
+
+## Recommended Verification
+
+Run after each task:
+
+```text
+cargo test -p mizar-driver
+cargo clippy -p mizar-driver --all-targets -- -D warnings
+```
+
+For orchestration tasks, also run:
+
+```text
+cargo test -p mizar-build
+cargo test -p mizar-ir
+cargo test -p mizar-frontend
+```
+
+Check the task off here once tests pass.
+
+## Notes
+
+- The driver owns wiring, not semantics: no type checking, no overload
+  resolution, no VC generation, no proof acceptance, no cache
+  compatibility decisions, no artifact serialization, no LSP range
+  conversion.
+- `PhaseService::cache_key` must stay a pure projection; the registry's
+  purity harness is the enforcement point.
+- Diagnostics from obsolete snapshots are never published as current;
+  artifact commits never happen in completion order.
+- LSP entry points reuse the same driver API through `mizar-lsp`; this
+  crate stays protocol-agnostic.
