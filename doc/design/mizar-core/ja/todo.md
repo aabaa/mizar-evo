@@ -206,7 +206,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       契約を網羅する。
     - テスト: seed カバレッジのフィクスチャ。seed が
       `CoreIr`/`ControlFlowIr` ノードとソース範囲を参照する。
-    - 依存: 12、16。`mizar-vc` task 2 と調整する。仕様: `core_ir.md`
+    - 依存: 12、16。`mizar-vc` task 2 と 4 と調整する。仕様: `core_ir.md`
       （seed の節）、アーキテクチャ 06 の制約。
 
 19. **snapshot ダンプとコーパス寄与。** [ ]

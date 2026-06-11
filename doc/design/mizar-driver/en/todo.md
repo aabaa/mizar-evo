@@ -191,9 +191,10 @@ Keep `cargo test -p mizar-driver` green after each task (see
 15. **Phase service adapters for semantic phases.** [ ] — paced by the
     pipeline crates.
     - Register adapters for `ModuleResolver`, `SemanticChecker`,
-      `Elaborator`, `VcService`, `AtpService`, `KernelService`, and
-      `ArtifactService` as each crate's service-facing surface lands; one
-      adapter per change. Checked off when the last adapter lands.
+      `Elaborator`, `VcService`, `AtpService`, `KernelService`,
+      `ArtifactService`, and `DocExtractionService` as each crate's
+      service-facing surface lands; one adapter per change. Checked off
+      when the last adapter lands.
     - Tests per adapter: fixture run through the driver; diagnostics and
       outputs flow end-to-end.
     - Deps: 8; pairs with the respective crates' integration tasks. Spec:

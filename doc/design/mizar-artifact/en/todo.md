@@ -208,8 +208,8 @@ Keep `cargo test -p mizar-artifact` green after each task (see
       transactions only.
     - Tests: end-to-end emission fixture over a small verified module;
       re-emission is byte-identical.
-    - Deps: 14, 15, `mizar-kernel` task 16 (and `mizar-proof` witness
-      selection when available). Spec: `verified_artifact.md`,
+    - Deps: 14, 15, `mizar-kernel` task 16, `mizar-proof` task 11
+      (witness staging/publication). Spec: `verified_artifact.md`,
       `manifest.md`.
 
 ### Hardening and cross-cutting follow-ups

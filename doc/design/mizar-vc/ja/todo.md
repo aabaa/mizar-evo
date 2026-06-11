@@ -57,6 +57,10 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
   は同一のソース、依存、ツールチェーン、ポリシー、計算上限に対して決定的で
   なければならない。上限モデル（ステップ数予算、再帰深さ、数値範囲）と
   その設定面を決め、`discharge.md` に記録する。
+- **discharge 証拠の検証範囲: 未解決。`mizar-proof` task 6 が所有する。**
+  task 12 の discharge 証拠を kernel が再生するか、ポリシーに従う
+  決定的な built-in 証拠として受理するか。この crate はどちらの場合でも
+  証拠が再生可能であることを保証する。トップレベルに登録済み。
 - **diagnostics レコード: `mizar-resolve` の決定に従う**
   （`mizar-diagnostics` 採用時期）。トップレベルに登録済み。
 

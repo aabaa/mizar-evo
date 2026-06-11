@@ -212,8 +212,8 @@ Keep `cargo test -p mizar-core` green after each task (see
       and algorithm contracts.
     - Tests: seed coverage fixtures; seeds reference `CoreIr`/`ControlFlowIr`
       nodes and source ranges.
-    - Deps: 12, 16, coordinated with `mizar-vc` task 2. Spec: `core_ir.md`
-      (seed section), architecture 06 constraints.
+    - Deps: 12, 16, coordinated with `mizar-vc` tasks 2 and 4. Spec:
+      `core_ir.md` (seed section), architecture 06 constraints.
 
 19. **Snapshot dumps and corpus contributions.** [ ]
     - Wire deterministic `CoreIr`/`ControlFlowIr` renderings into corpus

@@ -61,6 +61,11 @@ crate ownership: [internal 07](../../internal/en/07.crate_module_layout.md).
   toolchain, policy, and computation limits; decide the limit model
   (step-count budgets, recursion depth, numeric bounds) and its
   configuration surface, and record it in `discharge.md`.
+- **Discharge-evidence validation scope: open, owned by `mizar-proof`
+  task 6.** Whether the task-12 discharge evidence is kernel-replayed or
+  accepted as deterministic built-in evidence per policy; this crate
+  guarantees the evidence is replayable either way. Registered at the top
+  level.
 - **Diagnostics record: follows the `mizar-resolve` decision** on
   `mizar-diagnostics` adoption timing. Registered at the top level.
 

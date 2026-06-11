@@ -208,8 +208,8 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       manifest トランザクションのみを通す。
     - テスト: 小さな検証済みモジュール上のエンドツーエンド emission
       フィクスチャ。再 emission がバイト同一である。
-    - 依存: 14、15、`mizar-kernel` task 16（および利用可能になったら
-      `mizar-proof` の witness 選択）。仕様: `verified_artifact.md`、
+    - 依存: 14、15、`mizar-kernel` task 16、`mizar-proof` task 11
+      （witness の stage/公開）。仕様: `verified_artifact.md`、
       `manifest.md`。
 
 ### 強化と横断フォローアップ

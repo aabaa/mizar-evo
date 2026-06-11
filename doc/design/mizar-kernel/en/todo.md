@@ -70,10 +70,11 @@ integration: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_i
   extra strictness for trusted code (e.g. `#![forbid(unsafe_code)]`, no
   third-party runtime dependencies, mandatory trust statements per module)
   and encode it in the lint-policy guard.
-- **Discharge-evidence validation scope: open, deferred.** Whether
-  `mizar-vc` pre-ATP discharge evidence is kernel-replayed or accepted as
-  policy-level evidence is decided with `mizar-proof` (its policy spec);
-  tracked at the top level.
+- **Discharge-evidence validation scope: open, owned by `mizar-proof`
+  task 6.** Whether `mizar-vc` pre-ATP discharge evidence is
+  kernel-replayed or accepted as policy-level built-in evidence; if
+  replay is chosen, the replay checker lands here as a follow-up task.
+  Tracked at the top level.
 
 ## Ordered Task List
 

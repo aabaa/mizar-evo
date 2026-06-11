@@ -62,7 +62,7 @@ It is the leaf identity/coordinate layer that every downstream phase references
 (`SourceId`, `SourceRange`, `LineMap`, `BuildSnapshotId`). `mizar-lsp` already depends
 on it. Module order and remaining work: [mizar-session/en/todo.md](./mizar-session/en/todo.md).
 
-### Now: **mizar-frontend** foundation (pipeline Steps 1-5)
+### Finished: **mizar-frontend** foundation (pipeline Steps 1-5)
 Source loading orchestration — the coordinate bridge, file I/O via `mizar-session`,
 preprocessing coordination, active lexical environment construction, and
 tokenization, and parser-seam invocation — wiring the existing `mizar-lexer`
@@ -86,8 +86,8 @@ in `mizar-frontend`.
 Per-crate roadmaps exist for every crate below; the order here is the
 recommended start order, derived from the internal crate dependencies and
 [internal/en/07.crate_module_layout.md](./internal/en/07.crate_module_layout.md).
-Bottom-up by phase, with two leaf strands pulled forward because they sit on
-the critical path of cross-module work.
+Bottom-up by phase, with three leaf strands pulled forward because they sit
+on the critical path of cross-module work.
 
 1. **mizar-resolve** (phases 4-5) — first consumer of `SurfaceAst`; start
    once parser tasks 5-7 (module/import/export items) land, then grow with
@@ -158,6 +158,11 @@ ownership in [01.ir_layers.md](./architecture/en/01.ir_layers.md).
   introduce it when resolver diagnostics begin or keep per-crate diagnostics
   one more layer. Owned by
   [mizar-resolve/en/todo.md](./mizar-resolve/en/todo.md) task 13's gate.
+- **ModuleSummary reuse timing: open.** The first resolver iteration resolves
+  the in-memory dependency closure; summary-backed resolution needs the
+  `mizar-artifact` schema wave first. Owned by
+  [mizar-resolve/en/todo.md](./mizar-resolve/en/todo.md) task 24 together
+  with [mizar-artifact/en/todo.md](./mizar-artifact/en/todo.md) task 5.
 - **Registration activation gating: open.** Local registrations must not
   affect inference until their obligations are accepted by verifier policy;
   an interim policy is needed before phases 11-14 exist. Owned by

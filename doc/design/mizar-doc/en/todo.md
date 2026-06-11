@@ -59,7 +59,7 @@ internal: [05](../../internal/en/05.documentation_extraction.md).
 - **Extraction lives in this crate: resolved by internal 07.** The
   architecture-13 module list named `mizar-extract`; internal 07
   consolidates rendering and extraction here. If extraction grows large, a
-  later split decision is registered at the top level.
+  split decision will be raised and registered at the top level then.
 - **Doc-comment source: open, resolved by task 6.** Decide how doc comments
   reach phase 16: projected into artifacts at emission (default candidate,
   honoring the consumer-phase rule) or re-read from `PreprocessedSource`

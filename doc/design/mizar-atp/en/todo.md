@@ -63,7 +63,7 @@ integration: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_i
   the kernel never depends on this crate.
 - **Externally attested evidence: out of scope here.** Labeling is produced
   by this crate, but the acceptance policy is owned by `mizar-proof`
-  (architecture 10 constraints). Registered at the top level.
+  (architecture 10 constraints; its task 4).
 
 ## Ordered Task List
 
