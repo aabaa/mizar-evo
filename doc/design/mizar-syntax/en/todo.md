@@ -12,9 +12,9 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| ast | [ast.md](./ast.md) | `src/ast.rs` | [~] minimal task-12 surface currently lives in `src/lib.rs` |
+| ast | [ast.md](./ast.md) | `src/ast.rs` | [~] minimal task-12 surface split into module |
 | trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [ ] |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] minimal task-12 recovery kinds currently live in `src/lib.rs` |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] minimal task-12 recovery kinds split into module |
 
 `mizar-syntax` is a data-definition crate: it owns the `SurfaceAst` shape shared
 by `mizar-parser`, `mizar-frontend`, and future resolver/LSP/formatter
@@ -80,7 +80,7 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
 
 ### Representation foundation
 
-1. **Module split and lint-policy guard.** [ ]
+1. **Module split and lint-policy guard.** [x]
    - Split `src/lib.rs` into `pub mod ast;` and `pub mod recovery;`, moving the
      task-12 types without behavior changes, and re-export everything from the
      crate root so `mizar-parser` and `mizar-frontend` paths stay valid.

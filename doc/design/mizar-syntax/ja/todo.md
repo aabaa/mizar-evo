@@ -12,9 +12,9 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| ast | [ast.md](./ast.md) | `src/ast.rs` | [~] task 12 の最小 surface は現在 `src/lib.rs` にある |
+| ast | [ast.md](./ast.md) | `src/ast.rs` | [~] task 12 の最小 surface はモジュールへ分割済み |
 | trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [ ] |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task 12 の最小 recovery kind は現在 `src/lib.rs` にある |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task 12 の最小 recovery kind はモジュールへ分割済み |
 
 `mizar-syntax` はデータ定義 crate である。`mizar-parser`、`mizar-frontend`、
 および将来の resolver / LSP / formatter の消費者が共有する `SurfaceAst` の形を
@@ -77,7 +77,7 @@ task 11/12 の最小境界（`SurfaceAst`、`SurfaceNode`、recovery kind、
 
 ### 表現基盤
 
-1. **モジュール分割と lint 方針のガード。** [ ]
+1. **モジュール分割と lint 方針のガード。** [x]
    - `src/lib.rs` を `pub mod ast;` と `pub mod recovery;` に分割し、task 12 の
      型を挙動変更なしに移動する。`mizar-parser` と `mizar-frontend` のパスが
      有効なままになるよう、crate ルートからすべて再エクスポートする。
