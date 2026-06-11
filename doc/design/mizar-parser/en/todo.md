@@ -18,12 +18,12 @@
 
 `mizar-parser` implements the syntax grammar: frontend-adapted tokens in,
 `mizar_syntax::SurfaceAst` plus syntax diagnostics out. It is built as a thin
-infrastructure layer (cursor, synchronization, recovery emission, corpus
-runner) followed by grammar growth a few productions at a time. Each grammar
-task is paired with a `mizar-syntax` node-vocabulary increment and a corpus
-expansion, and is deliberately sized so that one task can be implemented,
-tested, and committed autonomously without holding the rest of the grammar in
-flight.
+infrastructure layer (cursor, syntax-event/builder emission, synchronization,
+recovery emission, corpus runner) followed by grammar growth a few productions
+at a time. Each grammar task is paired with a `mizar-syntax` node-vocabulary
+increment and a corpus expansion, and is deliberately sized so that one task
+can be implemented, tested, and committed autonomously without holding the rest
+of the grammar in flight.
 
 ## Crate Prerequisites
 
@@ -36,6 +36,14 @@ level, see [../../todo.md](../../todo.md) "Resolved And Open Decisions").
 summary-driven fixity stays empty until lexical summaries expose fixity
 metadata. The corpus harness (`mizar-test`) and the corpus tree
 ([tests/README.md](../../../../tests/README.md)) already exist.
+
+`mizar-parser` should not depend on an ad hoc `SurfaceAst` arena layout. The
+storage backend belongs to `mizar-syntax` task 2, whose target is rowan-backed
+syntax; parser code must construct trees through the `mizar-syntax`
+builder/event boundary and consume only documented accessors in tests. The
+parser also stays `salsa`-free: later query layers can wrap
+`ParseRequest -> ParseOutput` as a pure query only if this crate avoids global
+state, hidden caches, and resolver/build-system dependencies.
 
 ## Test Corpus Policy
 
@@ -97,6 +105,15 @@ shape, not just "did not crash".
   of pipeline dependencies and provides discovery/expectation helpers; do not
   move parser execution into `mizar-test` unless its harness scope is
   deliberately changed and documented.
+- **Syntax-tree storage dependency: delegated to `mizar-syntax` task 2.** The
+  parser's boundary is a builder/event API that can target rowan-backed syntax
+  without letting grammar code depend on raw rowan node layout. Do not add a
+  direct `rowan` dependency to `mizar-parser`; if grammar work needs a missing
+  tree operation, add it to the `mizar-syntax` builder/accessor API first.
+- **Salsa integration: deferred from this crate, required later.** `salsa` is
+  required in the compiler's query and cache layers, not in `mizar-parser`.
+  Keep parsing deterministic and side-effect-free so later build/frontend
+  queries can cache `ParseOutput` without changing grammar code.
 
 ## Ordered Task List
 
@@ -115,11 +132,17 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
    - Tests: existing parser and frontend seam tests pass unchanged.
    - Deps: none. Spec: [grammar.md](./grammar.md).
 
-2. **Parser infrastructure: cursor, expected-token diagnostics, synchronization.** [ ]
+2. **Parser infrastructure: cursor, syntax events, expected-token diagnostics, synchronization.** [ ]
    - Add a token cursor with bounded lookahead, an expected-token diagnostic
-     helper producing `SyntaxDiagnostic` with precise ranges, synchronization
-     sets (`;`, `end`, top-level item keywords, EOF), and recovery-node
-     emission helpers built on the `mizar-syntax` builder API.
+     helper producing `SyntaxDiagnostic` with precise ranges, a syntax-event
+     sink that feeds the `mizar-syntax` builder, synchronization sets (`;`,
+     `end`, top-level item keywords, EOF), and recovery-node emission helpers
+     built on the `mizar-syntax` builder API.
+   - Keep grammar code independent of the concrete `SurfaceAst` storage
+     backend: no direct pushes into a syntax arena, no reliance on dense node
+     indices, and no raw rowan traversal. Missing construction or inspection
+     operations must be added to `mizar-syntax` as documented builder/accessor
+     APIs before parser grammar code uses them.
    - Generalize the task-12 recovery plus mizar-frontend task-28 block-stack
      matching (missing `end`, missing string literal, unrecoverable input,
      contextual block openers) onto these helpers without changing observable
@@ -168,7 +191,8 @@ Each grammar task follows the same template, in one change:
    together), brushing up the chapter and
    [appendix A](../../../spec/en/appendix_a.grammar_summary.md) if the
    transcription exposes gaps;
-2. add the paired `mizar-syntax` node increment;
+2. add the paired `mizar-syntax` node increment through the documented
+   rowan-backed builder/accessor boundary;
 3. implement the productions with synchronization and recovery;
 4. ship unit tests plus pass/fail corpus cases with `spec_trace.toml` entries
    per the [Test Corpus Policy](#test-corpus-policy).
@@ -504,6 +528,11 @@ Check the task off here once tests pass.
   far as syntax allows; the resolver finishes the job.
 - The parser consumes frontend-adapted tokens only; it never re-lexes source
   text and never receives arbitrary lexer or resolver state.
+- The parser emits syntax through `mizar-syntax` builder/event APIs. Grammar
+  code should not depend on custom arena indices or raw rowan layout.
+- `salsa` is a later query/cache layer concern. Preserve deterministic,
+  side-effect-free parsing so `ParseRequest -> ParseOutput` can become a query
+  without rewriting grammar tasks.
 - Grammar growth after the current mizar-frontend task-28 parser-recovery
   surface should open a new `mizar-frontend` follow-up for fuzz coverage,
   recovery-marker passthrough, diagnostic merge ordering, and

@@ -18,8 +18,11 @@
 
 `mizar-syntax` はデータ定義 crate である。`mizar-parser`、`mizar-frontend`、
 および将来の resolver / LSP / formatter の消費者が共有する `SurfaceAst` の形を
-所有し、構文解析ロジックも意味論も一切所有しない。構築は 2 つの波で行う。
-まず表現基盤（arena、レンダリング、trivia、recovery 語彙）、次にノード語彙で
+所有し、構文解析ロジックも意味論も一切所有しない。目標となる構文木バック
+エンドは `rowan` である。初期の表現作業では rowan-backed な green tree を
+採用し、移行中に現在の最小境界を保つために必要な互換 wrapper だけを残して
+よい。構築は 2 つの波で行う。まず表現基盤（rowan storage 境界、レンダリング、
+trivia、recovery 語彙）、次にノード語彙で
 あり、後者は `mizar-parser` の文法タスクと歩調を合わせて成長する。
 
 依存順序: `ast` 基盤 → `trivia` / `recovery` → `mizar-parser` と対になる
@@ -27,23 +30,34 @@
 
 ## crate の前提条件
 
-この crate は `mizar-session`（`SourceId`、`SourceRange`、`SourceAnchor`）に
-のみ依存する。task 11/12 の最小境界（`SurfaceAst`、`SurfaceNode`、recovery
-kind、`SyntaxDiagnostic`）はすでに `mizar-parser` と
+この crate は現在、`mizar-session`（`SourceId`、`SourceRange`、
+`SourceAnchor`）にのみ依存する。task 2 で `rowan` を追加する。task 11/12 の
+`SurfaceNode` 風 API に移行経路が必要な場合は、backend 選択を延期するのでは
+なく、rowan-backed 表現の上の互換 wrapper として保つ。ここに `salsa` は追加
+しない: query engine は frontend / build / resolver / checker 層の責務であり、
+この crate は immutable で query-friendly な構文データ境界にとどめる。
+task 11/12 の最小境界（`SurfaceAst`、`SurfaceNode`、recovery kind、
+`SyntaxDiagnostic`）はすでに `mizar-parser` と
 `mizar-frontend::parsing::MizarParserSeam` が消費しているため、ここでの変更は
 同じ変更で `cargo test -p mizar-parser` と `cargo test -p mizar-frontend` を
 成功状態に保たなければならない。
 
 ## 解決済みおよび保留中の決定
 
-- **arena 表現: 未解決。task 2 で解決する。** 現在の同質な `SurfaceNode`
-  arena ＋ `SurfaceNodeKind` enum に型付き accessor/view ヘルパーを加える形を
-  維持するか、構文カテゴリごとの型付きノード構造体へ移行するか。語彙タスクで
-  ノード種別が増殖する前に決定しなければならない。
+- **構文木バックエンド: 未解決。task 2 で解決する。** `rowan` は
+  `SurfaceAst` の必須ターゲットバックエンドである。既定の決定は、task 2 で
+  rowan-backed な green tree を導入すること。既存の task 11/12 名に対する互換
+  wrapper は残してよいが、parser task 5〜7 を custom arena backend に対して
+  成長させてはならない。
 - **trivia の所有権: 未解決。task 4 で解決する。** `mizar-frontend` はすでに
   コメントとドキュメントコメントを `PreprocessedSource` へ抽出している。
   `SurfaceAst` が付随 trivia を保持するか、frontend 所有の trivia を範囲で
   参照するか、attachment ヒントのみを保存するかを決める。
+- **salsa 統合: この crate では保留、後段では必須。** `salsa` は compiler の
+  query / cache 層で必須であり、`mizar-syntax` には入れない。後続の
+  `salsa` query がこの crate の意味論なし境界を変えずに `SurfaceAst` を
+  出力値として扱えるよう、`SurfaceAst` を immutable、決定的、共有しやすい形に
+  保つ。
 - **ドットの役割の surface 形状: 未解決。`mizar-parser` task 10 が所有する。**
   パーサーは resolver なしでは selector access と namespace 区切りを完全には
   分離できない（仕様 [§A.2.5](../../../spec/ja/appendix_a.grammar_summary.md)）。
@@ -73,16 +87,24 @@ kind、`SyntaxDiagnostic`）はすでに `mizar-parser` と
    - テスト: 既存の消費者が変更なしにコンパイルできる。lint 方針ガードが通る。
    - 依存: なし。仕様: [ast.md](./ast.md)、[recovery.md](./recovery.md)。
 
-2. **AST arena 表現の決定と builder API。** [ ]
-   - arena 表現を決定し（同質な kind-enum arena ＋ 型付き accessor view が
-     既定候補）、決定と根拠を [ast.md](./ast.md) に記録する。
-   - ノード id の不変条件（id は arena への密な index であり、文書化された
-     構築順序に従って子が親に先行または後続する）、子の役割（child-role）の
-     規約、および arena 内部を晒さずに `mizar-parser` がノードを構築するための
-     builder API を定義する。
-   - テスト: arena 不変条件（すべての子 id が有効、循環なし）。文書化された
-     recovery の例外を除き、親の範囲が子の範囲を包含する。builder の
-     round-trip。
+2. **`rowan` storage 境界と builder / accessor API。** [ ]
+   - rowan-backed な `SurfaceAst` green-tree 表現を採用し、決定と根拠を
+     [ast.md](./ast.md) に記録する。既存の `SurfaceNode` / `SurfaceNodeId` 名を
+     互換のために残す場合は、それらを storage backend ではなく rowan-backed
+     表現の wrapper または view として文書化する。
+   - raw `SyntaxKind` / node-kind mapping、node / token role の規約、範囲の
+     attachment ルール、resolver / checker の消費者から rowan 内部を隠す
+     型付き accessor / view ヘルパーを定義する。ただし公開が意図的な場合は
+     文書化する。
+   - `mizar-parser` が使う `SurfaceAstBuilder` 境界を定義する。parser コードは
+     具体的な arena へ push したり rowan の raw tree 形状に依存したりせず、
+     builder / event API 経由でノードと recovery マーカーを構築する。
+   - identity ルールを記録する: rowan green-node identity と密な index は内部
+     キャッシュ詳細であり、安定した artifact id ではない。決定的 snapshot と
+     content cache key が安定性の表面である。
+   - テスト: rowan-backed tree への builder round-trip。現在の全 node / token
+     kind に対する型付き accessor の網羅。文書化された recovery の例外を除き、
+     親の範囲が子の範囲を包含すること。繰り返し構築が決定的 snapshot を生むこと。
    - 依存: 1。仕様: [ast.md](./ast.md)「Public API」。
 
 3. **決定的なスナップショットレンダリング。** [ ]
@@ -228,19 +250,29 @@ kind、`SyntaxDiagnostic`）はすでに `mizar-parser` と
     - 最終決定を所有モジュール仕様の enum の隣に記録し、残りの属性を適用する。
     - 依存: 13。仕様: すべてのモジュール仕様。
 
-15. **ソース／仕様の対応監査。** [ ]
+15. **増分構文再利用の監査。** [ ]
+    - 完成した rowan-backed 構文木について、細粒度 incremental parsing と LSP
+      再利用への準備状況を監査する: stable syntax-kind numbering 方針、
+      trivia / recovery の配置、範囲の attachment、node-role accessor、局所的な
+      編集時の部分木 snapshot 挙動。
+    - この task は `salsa` を導入しない。後続の query 層が不安定な arena id や
+      parser 内部を公開せずに `SurfaceAst` を生成・キャッシュできることを確認する。
+    - 依存: 13、14。仕様: [ast.md](./ast.md)、[trivia.md](./trivia.md)、
+      [recovery.md](./recovery.md)。
+
+16. **ソース／仕様の対応監査。** [ ]
     - `mizar-frontend` task 16 の監査に倣う: [ast.md](./ast.md)、
       [trivia.md](./trivia.md)、[recovery.md](./recovery.md) のすべての公開
       API と約束された挙動を実装とテストへトレースし、ギャップをフォロー
       アップタスクとして記録する。
-    - 依存: 13。仕様: すべてのモジュール仕様と本 TODO。
+    - 依存: 15。仕様: すべてのモジュール仕様と本 TODO。
 
-16. **二言語ドキュメント同期監査。** [ ]
+17. **二言語ドキュメント同期監査。** [ ]
     - `doc/design/mizar-syntax/en/` の各英語正本ドキュメントを日本語版と
       比較し、API 一覧、状態、用語、リンク、挙動の約束を同期する。
-    - 依存: 15。仕様: リポジトリのドキュメント方針。
+    - 依存: 16。仕様: リポジトリのドキュメント方針。
 
-17. **rustdoc サマリ。** [ ] 保留。
+18. **rustdoc サマリ。** [ ] 保留。
     - `mizar-frontend` task 26 と同じワークスペースレベルの保留。再着手
       トリガー: フロントエンドパイプラインの外の最初の長命な消費者
       （resolver または `mizar-lsp`）が `mizar-syntax` に対するコーディングを
@@ -272,6 +304,12 @@ cargo test -p mizar-frontend
 - `mizar-syntax` は構文データの形だけを所有する。文法ロジック、名前解決、
   型付け、証明の意味論は持たない。解決済みシンボル id、推論された型、証明
   義務が `SurfaceAst` に現れることはない。
+- `rowan` が予定された構文木バックエンドである。parser と consumer のコードは
+  ad hoc な arena layout ではなく、`mizar-syntax` の builder / accessor API に
+  依存する。
+- `salsa` は後続の query / cache 層の関心事である。syntax crate を書き直さず
+  導入できるよう、ここでは純粋な phase 境界と immutable な構文 snapshot を
+  保つ。
 - 語彙の成長は `mizar-parser` の文法タスクがペースを決める。それを構築する
   パーサータスクに先行して、投機的にノード種別を追加しない。
 - `SurfaceAst` は内部コンパイラデータであり、安定した外部スキーマではない。

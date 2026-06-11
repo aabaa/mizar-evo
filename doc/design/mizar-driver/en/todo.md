@@ -51,6 +51,11 @@ it with `mizar-build` wave B. Internal:
 [01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md);
 spec: [23.package_management_and_build_system.md](../../../spec/en/23.package_management_and_build_system.md).
 
+`salsa` is the required target query engine for the final driver/phase-service
+orchestration layer. The syntax and parser crates stay `salsa`-free; this crate
+owns the database/query boundary that wraps phase services and exposes pure
+inputs/outputs to the build scheduler and cache seams.
+
 ## Resolved And Open Decisions
 
 - **Driver/build split: resolved by internal 00/01.** Planning and
@@ -64,6 +69,11 @@ spec: [23.package_management_and_build_system.md](../../../spec/en/23.package_ma
   is a pure projection from input identities, configuration, schema
   versions, and dependency hashes; the registry enforces and tests this
   contract.
+- **Salsa query boundary: open, resolved by tasks 4-5.** `salsa` is required
+  for the final query/cache layer. Decide how `PhaseService` inputs, outputs,
+  cancellation/versioning, and cache keys map onto a salsa database in
+  `registry.md`, then keep phase crates free of direct driver/query-engine
+  dependencies.
 
 ## Ordered Task List
 
@@ -99,12 +109,20 @@ Keep `cargo test -p mizar-driver` green after each task (see
      `PhaseService` trait (`phase`, `cache_key`, `execute`),
      `PhaseContext`/`PhaseResult`, the service table for phases 0-16, and
      the cache-key purity contract.
+   - Define the required `salsa` integration boundary: database lifetime,
+     input queries, derived phase-output queries, cancellation/snapshot-version
+     interaction, and the rule that phase crates expose pure services rather
+     than depending on `salsa` directly.
    - Deps: 2. Spec: [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
      "Phase Services"/"Phase Service API".
 
 5. **Phase service registry.** [ ]
    - Implement registration and lookup of phase services with
      duplicate-phase rejection and a purity test harness for `cache_key`.
+   - Add the initial salsa-backed registry seam from `registry.md`: services
+     execute through deterministic query adapters, the registry owns the
+     database handles, and all inputs/outputs pass through the same
+     query-compatible boundary used by later real phase services.
    - Tests: registration fixtures; duplicate rejection; `cache_key`
      determinism harness with a stub service.
    - Deps: 4. Spec: `registry.md`.
@@ -249,6 +267,9 @@ Check the task off here once tests pass.
   conversion.
 - `PhaseService::cache_key` must stay a pure projection; the registry's
   purity harness is the enforcement point.
+- `salsa` is introduced at the driver/registry layer, not in syntax, parser, or
+  semantic phase crates. Phase adapters provide pure query-compatible
+  boundaries.
 - Diagnostics from obsolete snapshots are never published as current;
   artifact commits never happen in completion order.
 - LSP entry points reuse the same driver API through `mizar-lsp`; this

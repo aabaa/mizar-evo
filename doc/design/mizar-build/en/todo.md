@@ -70,8 +70,9 @@ spec: [23.package_management_and_build_system.md](../../../spec/en/23.package_ma
   granularity (default candidate: per-module semantic tasks, per-VC proof
   tasks later) and record it in `task_graph.md`.
 - **Cache-aware scheduling timing: open, resolved by task 18.** Cache
-  lookup before task execution needs `mizar-cache`; until then the
-  scheduler runs uncached with the seam in place.
+  lookup before task execution needs `mizar-cache` and must be callable from
+  the required driver-owned `salsa` query boundary (`mizar-driver` tasks 4-5);
+  until then the scheduler runs uncached with the seam in place.
 
 ## Ordered Task List
 
@@ -211,6 +212,11 @@ Keep `cargo test -p mizar-build` green after each task (see
     - Add the cache-lookup-before-execution seam (internal 02 control flow)
       behind an interface so `mizar-cache` can plug in; uncached execution
       remains the default until then.
+    - Provide the scheduler/cache seam consumed by the driver-owned `salsa`
+      query boundary (`mizar-driver` tasks 4-5): the driver may skip, reuse, or
+      enqueue work through this seam, while result ordering and artifact commits
+      remain deterministic. `mizar-build` still does not depend on
+      `mizar-driver`.
     - Tests: seam fixtures with a mock cache; hits skip execution with
       identical externally visible results.
     - Deps: 10. Spec: [internal 02](../../internal/en/02.artifact_store_cache_key_and_manifest.md)

@@ -18,9 +18,12 @@
 
 `mizar-syntax` is a data-definition crate: it owns the `SurfaceAst` shape shared
 by `mizar-parser`, `mizar-frontend`, and future resolver/LSP/formatter
-consumers, and it owns no parsing logic and no semantics. It is built in two
-waves: first the representation foundation (arena, rendering, trivia, recovery
-vocabulary), then the node vocabulary, which grows in lockstep with
+consumers, and it owns no parsing logic and no semantics. The target syntax-tree
+backend is `rowan`: the early representation work must adopt a rowan-backed
+green tree and may keep only compatibility wrappers needed to preserve the
+current minimal boundary during the migration. It is built in two waves: first
+the representation foundation (rowan storage boundary, rendering, trivia,
+recovery vocabulary), then the node vocabulary, which grows in lockstep with
 `mizar-parser` grammar tasks.
 
 Dependency order: `ast` foundation → `trivia` / `recovery` → node vocabulary
@@ -28,23 +31,34 @@ paired with `mizar-parser`.
 
 ## Crate Prerequisites
 
-The crate depends only on `mizar-session` (for `SourceId`, `SourceRange`,
-`SourceAnchor`). The task-11/12 minimal boundary (`SurfaceAst`, `SurfaceNode`,
-recovery kinds, `SyntaxDiagnostic`) is already consumed by `mizar-parser` and
-`mizar-frontend::parsing::MizarParserSeam`; every change here must keep
-`cargo test -p mizar-parser` and `cargo test -p mizar-frontend` green in the
-same change.
+The crate currently depends only on `mizar-session` (for `SourceId`,
+`SourceRange`, `SourceAnchor`). Task 2 adds `rowan`; if the task-11/12
+`SurfaceNode`-style API needs a transition path, keep it as a compatibility
+wrapper over the rowan-backed representation rather than deferring the backend
+choice. Do not add `salsa` here: the query engine belongs to the
+frontend/build/resolver/checker layers, while this crate must stay an
+immutable, query-friendly syntax data boundary. The task-11/12 minimal boundary
+(`SurfaceAst`, `SurfaceNode`, recovery kinds, `SyntaxDiagnostic`) is already
+consumed by `mizar-parser` and `mizar-frontend::parsing::MizarParserSeam`;
+every change here must keep `cargo test -p mizar-parser` and
+`cargo test -p mizar-frontend` green in the same change.
 
 ## Resolved And Open Decisions
 
-- **Arena representation: open, resolved by task 2.** Keep the current
-  homogeneous `SurfaceNode` arena with a `SurfaceNodeKind` enum plus typed
-  accessor/view helpers, or move to typed node structs per syntactic category.
-  The decision must be made before the vocabulary tasks multiply node kinds.
+- **Syntax-tree backend: open, resolved by task 2.** `rowan` is the required
+  target backend for `SurfaceAst`. The default decision is to introduce a
+  rowan-backed green tree in task 2. Compatibility wrappers for existing
+  task-11/12 names may remain, but parser tasks 5-7 must not grow against a
+  custom arena backend.
 - **Trivia ownership: open, resolved by task 4.** `mizar-frontend` already
   extracts comments and doc comments into `PreprocessedSource`; decide whether
   `SurfaceAst` carries attached trivia, references frontend-owned trivia by
   range, or stores only attachment hints.
+- **Salsa integration: deferred from this crate, required later.** `salsa` is
+  required in the compiler's query and cache layers, not in `mizar-syntax`.
+  Keep `SurfaceAst` immutable,
+  deterministic, and cheap to share so later `salsa` queries can use it as an
+  output value without changing this crate's semantic-free boundary.
 - **Dot-role surface shape: open, owned by `mizar-parser` task 10.** The
   parser cannot fully separate selector access from namespace separation
   without the resolver (spec
@@ -76,17 +90,26 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
    - Tests: existing consumers compile unchanged; lint-policy guard passes.
    - Deps: none. Spec: [ast.md](./ast.md), [recovery.md](./recovery.md).
 
-2. **Arena representation decision and builder API.** [ ]
-   - Decide the arena representation (homogeneous kind-enum arena with typed
-     accessor views is the default candidate) and record the decision with its
-     rationale in [ast.md](./ast.md).
-   - Define node-id invariants (ids are dense indices into the arena, children
-     precede or follow parents per a documented construction order), child-role
-     conventions, and a builder API that `mizar-parser` uses to construct nodes
-     without exposing arena internals.
-   - Tests: arena invariants (every child id valid, no cycles), parent ranges
-     contain child ranges except for documented recovery cases, builder
-     round-trip.
+2. **`rowan` storage boundary and builder/accessor API.** [ ]
+   - Adopt a rowan-backed `SurfaceAst` green-tree representation and record the
+     decision with its rationale in [ast.md](./ast.md). If existing
+     `SurfaceNode`/`SurfaceNodeId` names are kept for compatibility, document
+     them as wrappers or views over the rowan-backed representation rather than
+     as the storage backend.
+   - Define the raw `SyntaxKind`/node-kind mapping, node/token role
+     conventions, range attachment rules, and typed accessor/view helpers that
+     hide rowan internals from resolver/checker consumers unless exposure is
+     deliberately documented.
+   - Define the `SurfaceAstBuilder` boundary used by `mizar-parser`: parser code
+     constructs nodes and recovery markers through builder/event APIs rather
+     than pushing into a concrete arena or depending on rowan's raw tree shape.
+   - Record identity rules: rowan green-node identity and any dense indices are
+     internal cache details, not stable artifact ids; deterministic snapshots
+     and content cache keys are the stability surface.
+   - Tests: builder round-trip into the rowan-backed tree, typed accessor
+     coverage for every current node/token kind, parent ranges contain child
+     ranges except for documented recovery cases, and repeated construction
+     produces deterministic snapshots.
    - Deps: 1. Spec: [ast.md](./ast.md) "Public API".
 
 3. **Deterministic snapshot rendering.** [ ]
@@ -234,20 +257,31 @@ normative grammar chapters under [doc/spec/en/](../../../spec/en/00.index.md).
       apply any remaining attributes.
     - Deps: 13. Spec: all module specs.
 
-15. **Source/spec correspondence audit.** [ ]
+15. **Incremental syntax reuse audit.** [ ]
+    - Audit the completed rowan-backed syntax tree for fine-grained incremental
+      parsing and LSP reuse readiness: stable syntax-kind numbering policy,
+      trivia/recovery placement, range attachment, node-role accessors, and
+      subtree snapshot behavior under localized edits.
+    - This task does not introduce `salsa`; it verifies that `SurfaceAst` can
+      be produced and cached by later query layers without exposing unstable
+      arena ids or parser internals.
+    - Deps: 13, 14. Spec: [ast.md](./ast.md), [trivia.md](./trivia.md),
+      [recovery.md](./recovery.md).
+
+16. **Source/spec correspondence audit.** [ ]
     - Mirror the `mizar-frontend` task-16 audit: trace every public API and
       promised behavior in [ast.md](./ast.md), [trivia.md](./trivia.md), and
       [recovery.md](./recovery.md) to implementation and tests, and record
       gaps as follow-up tasks.
-    - Deps: 13. Spec: all module specs and this TODO.
+    - Deps: 15. Spec: all module specs and this TODO.
 
-16. **Bilingual documentation sync audit.** [ ]
+17. **Bilingual documentation sync audit.** [ ]
     - Compare each English canonical document under
       `doc/design/mizar-syntax/en/` with its Japanese companion and synchronize
       API lists, statuses, terminology, links, and behavior promises.
-    - Deps: 15. Spec: repository documentation policy.
+    - Deps: 16. Spec: repository documentation policy.
 
-17. **Rustdoc summaries.** [ ] Deferred.
+18. **Rustdoc summaries.** [ ] Deferred.
     - Same workspace-level deferral as `mizar-frontend` task 26. Re-entry
       trigger: the first long-lived consumer outside the frontend pipeline
       (resolver or `mizar-lsp`) starts coding against `mizar-syntax`, or the
@@ -278,6 +312,11 @@ Check the task off here once tests pass.
 - `mizar-syntax` owns syntax data shapes only: no grammar logic, no name
   resolution, no typing, no proof semantics. Resolved symbol ids, inferred
   types, and proof obligations never appear in `SurfaceAst`.
+- `rowan` is the planned syntax-tree backend; parser and consumer code should
+  depend on `mizar-syntax` builder/accessor APIs, not on an ad hoc arena layout.
+- `salsa` is a later query/cache layer concern. Preserve pure phase boundaries
+  and immutable syntax snapshots here so it can be introduced without rewriting
+  the syntax crate.
 - Vocabulary growth is paced by `mizar-parser` grammar tasks; do not add node
   kinds speculatively ahead of a parser task that constructs them.
 - `SurfaceAst` is internal compiler data, not a stable external schema; the
