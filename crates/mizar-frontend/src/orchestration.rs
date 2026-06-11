@@ -1,3 +1,8 @@
+//! End-to-end frontend orchestration for source-to-syntax processing.
+//!
+//! Canonical behavior is specified in the
+//! [orchestration design spec](../../../../doc/design/mizar-frontend/en/orchestration.md).
+
 use crate::cache_key::{
     ActiveLexicalEnvironmentCacheKey, FrontendCacheKeys, ParserLexingPlanCacheKey,
     PreprocessedSourceCacheKey, SourceUnitCacheKey, SurfaceAstCacheKey, TokenStreamCacheKey,
@@ -25,16 +30,24 @@ use std::fmt;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+/// Complete frontend output for one source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FrontendOutput<A> {
+    /// Loaded source unit.
     pub source: SourceUnit,
+    /// Preprocessed source and import stubs.
     pub preprocessed: PreprocessedSource,
+    /// Token stream produced from the preprocessed source.
     pub tokens: TokenStream,
+    /// Parser AST, absent when the configured parser produced no AST.
     pub ast: Option<A>,
+    /// Recoverable diagnostics merged across frontend phases.
     pub diagnostics: Vec<FrontendDiagnostic>,
+    /// Layered content cache keys for the output.
     pub cache_keys: FrontendCacheKeys,
 }
 
+/// Frontend coordinator parameterized by loader, provider, and parser seam.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Frontend<L, P, PS>
 where
@@ -54,6 +67,7 @@ where
     PS: ParserSeam,
     PS::Diagnostic: FrontendParserDiagnostic,
 {
+    /// Creates a frontend coordinator.
     pub fn new(loader: L, provider: P, parser: PS) -> Self {
         Self {
             loader,
@@ -62,6 +76,7 @@ where
         }
     }
 
+    /// Runs the frontend pipeline for one source request.
     pub fn run(
         &self,
         request: SourceUnitRequest,
@@ -152,72 +167,126 @@ where
     }
 }
 
+/// Recoverable frontend diagnostic with source or load-location context.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FrontendDiagnostic {
+    /// Stable diagnostic code.
     pub code: DiagnosticCode,
+    /// Human-readable diagnostic message.
     pub message: Arc<str>,
+    /// Diagnostic class used for deterministic merge ordering.
     pub class: DiagnosticClass,
+    /// Primary diagnostic location.
     pub location: DiagnosticLocation,
+    /// Secondary source anchors for related context.
     pub secondary: Vec<SourceAnchor>,
+    /// Optional recovery note from lower phases.
     pub recovery_note: Option<String>,
 }
 
+/// Location for a frontend diagnostic.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DiagnosticLocation {
+    /// Diagnostic points at a source range.
     SourceRange(SourceRange),
+    /// Diagnostic points at source-loading metadata.
     SourceLoad(SourceLoadLocation),
 }
 
+/// Source-loading location used when no loaded source range exists.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum SourceLoadLocation {
-    Path { path: PathBuf },
-    NormalizedPath { path: NormalizedPath },
-    OpenBuffer { uri: DocumentUri },
-    Generated { anchor: Option<SourceAnchor> },
+    /// Filesystem path location.
+    Path {
+        /// Filesystem path.
+        path: PathBuf,
+    },
+    /// Normalized source path location.
+    NormalizedPath {
+        /// Normalized source path.
+        path: NormalizedPath,
+    },
+    /// Open-buffer document URI location.
+    OpenBuffer {
+        /// Open-buffer document URI.
+        uri: DocumentUri,
+    },
+    /// Generated source location with an optional anchor.
+    Generated {
+        /// Optional generated-source anchor.
+        anchor: Option<SourceAnchor>,
+    },
+    /// No stable load location is available.
     Unknown,
 }
 
+/// Stable frontend diagnostic code.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum DiagnosticCode {
+    /// Source-loading diagnostic.
     SourceLoad,
+    /// Preprocessing diagnostic.
     Preprocess(PreprocessDiagnosticKind),
+    /// Lexical-environment diagnostic.
     LexicalEnvironment(LexicalEnvironmentDiagnosticCode),
+    /// Lexing diagnostic.
     Lexing(LexingDiagnosticKind),
+    /// Parser syntax diagnostic code.
     Syntax(Arc<str>),
 }
 
+/// Frontend diagnostic class used for grouping and ordering.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum DiagnosticClass {
+    /// Source-loading failure.
     SourceLoad,
+    /// Lexical source precondition issue.
     LexicalPrecondition,
+    /// Comment structure issue.
     CommentStructure,
+    /// Import pre-scan issue.
     ImportPrescan,
+    /// Lexical-environment issue.
     LexicalEnvironment,
+    /// Scope skeleton issue.
     ScopeSkeleton,
+    /// Tokenization issue.
     Tokenization,
+    /// Parser syntax issue.
     Syntax,
+    /// Annotation syntax issue.
     AnnotationSyntax,
 }
 
+/// Unrecoverable frontend pipeline error.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum FrontendError {
+    /// Source loading failed before a source unit was available.
     SourceLoad {
+        /// Underlying source loading error.
         source: Box<SourceLoadError>,
+        /// Diagnostic describing the source loading failure.
         diagnostic: Box<FrontendDiagnostic>,
     },
+    /// Span conversion or source-map registration failed.
     SpanBridge {
+        /// Underlying span bridge error.
         source: SpanBridgeError,
     },
+    /// Active lexical-environment construction failed unrecoverably.
     LexicalEnvironment {
+        /// Underlying lexical-environment error.
         source: FrontendLexicalEnvironmentError,
     },
 }
 
+/// Converts parser diagnostics into merged frontend diagnostics.
 pub trait FrontendParserDiagnostic {
+    /// Converts one parser diagnostic, or drops it when the seam has no diagnostics.
     fn into_frontend_diagnostic(self) -> Option<FrontendDiagnostic>;
 }
 

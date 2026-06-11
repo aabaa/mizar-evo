@@ -91,6 +91,67 @@ fn public_forward_compatible_enums_are_marked_non_exhaustive() {
 }
 
 #[test]
+fn public_api_rustdoc_summaries_and_spec_links_are_guarded() {
+    let root = crate_root();
+    let module_specs = [
+        (
+            "src/cache_key.rs",
+            "../../../../doc/design/mizar-frontend/en/cache_key.md",
+        ),
+        (
+            "src/lexical_env.rs",
+            "../../../../doc/design/mizar-frontend/en/lexical_env.md",
+        ),
+        (
+            "src/lexing.rs",
+            "../../../../doc/design/mizar-frontend/en/lexing.md",
+        ),
+        (
+            "src/orchestration.rs",
+            "../../../../doc/design/mizar-frontend/en/orchestration.md",
+        ),
+        (
+            "src/parsing.rs",
+            "../../../../doc/design/mizar-frontend/en/parsing.md",
+        ),
+        (
+            "src/preprocess.rs",
+            "../../../../doc/design/mizar-frontend/en/preprocess.md",
+        ),
+        (
+            "src/source.rs",
+            "../../../../doc/design/mizar-frontend/en/source.md",
+        ),
+        (
+            "src/span_bridge.rs",
+            "../../../../doc/design/mizar-frontend/en/span_bridge.md",
+        ),
+    ];
+    let mut violations = Vec::new();
+
+    for (relative_path, spec_link) in module_specs {
+        let source = read_to_string(&root.join(relative_path));
+        if !source.contains(&format!("]({spec_link})")) {
+            violations.push(format!(
+                "{relative_path}: missing rustdoc link to {spec_link}"
+            ));
+        }
+    }
+
+    for relative_path in frontend_src_files(&root) {
+        let source = read_to_string(&relative_path);
+        collect_public_items_without_doc_comments(&root, &relative_path, &source, &mut violations);
+    }
+
+    assert!(
+        violations.is_empty(),
+        "task 26 public API rustdoc policy requires short summaries and \
+         module spec links:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
 fn allow_detector_covers_common_attribute_shapes() {
     let samples = [
         "#[allow(dead_code)]",
@@ -241,6 +302,49 @@ fn collect_undocumented_allows(root: &Path, path: &Path, violations: &mut Vec<St
         let display_path = path.strip_prefix(root).unwrap_or(path);
         violations.push(format!("{}:{line_number}", display_path.display()));
     }
+}
+
+fn collect_public_items_without_doc_comments(
+    root: &Path,
+    path: &Path,
+    source: &str,
+    violations: &mut Vec<String>,
+) {
+    let lines = source.lines().collect::<Vec<_>>();
+    for (line_index, line) in lines.iter().enumerate() {
+        if public_doc_target(line) && !has_doc_comment_before(&lines, line_index) {
+            let display_path = path.strip_prefix(root).unwrap_or(path);
+            violations.push(format!("{}:{}", display_path.display(), line_index + 1));
+        }
+    }
+}
+
+fn public_doc_target(line: &str) -> bool {
+    let trimmed = line.trim_start();
+
+    trimmed.starts_with("pub ")
+        || trimmed.starts_with("pub const ")
+        || trimmed.starts_with("pub enum ")
+        || trimmed.starts_with("pub fn ")
+        || trimmed.starts_with("pub mod ")
+        || trimmed.starts_with("pub struct ")
+        || trimmed.starts_with("pub trait ")
+        || trimmed.starts_with("pub type ")
+        || trimmed.starts_with("pub use ")
+}
+
+fn has_doc_comment_before(lines: &[&str], line_index: usize) -> bool {
+    let mut index = line_index;
+    while index > 0 {
+        index -= 1;
+        let previous = lines[index].trim_start();
+        if previous.starts_with("#[") || previous.starts_with("#!") || previous.is_empty() {
+            continue;
+        }
+        return previous.starts_with("///");
+    }
+
+    false
 }
 
 fn undocumented_allow_line_numbers(source: &str) -> Vec<usize> {
@@ -524,6 +628,13 @@ fn frontend_rust_target_files(root: &Path) -> Vec<PathBuf> {
     add_explicit_manifest_target_files(root, &mut files);
     files.sort();
     files.dedup();
+    files
+}
+
+fn frontend_src_files(root: &Path) -> Vec<PathBuf> {
+    let mut files = Vec::new();
+    collect_rust_files(&root.join("src"), &mut files);
+    files.sort();
     files
 }
 

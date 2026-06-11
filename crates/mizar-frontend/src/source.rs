@@ -1,3 +1,8 @@
+//! Source loading bridge for frontend phase 1.
+//!
+//! Canonical behavior is specified in the
+//! [source design spec](../../../../doc/design/mizar-frontend/en/source.md).
+
 use crate::span_bridge::{SpanBridge, SpanBridgeError};
 use mizar_session::{
     BuildSnapshotId, Edition, Hash, LineMap, LoadedSource, LoadingMap, ModulePath, NormalizedPath,
@@ -7,29 +12,47 @@ use mizar_session::{
 use std::path::PathBuf;
 use std::sync::Arc;
 
+/// Loaded source identity and maps projected from `mizar-session`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceUnit {
+    /// Session-owned source identity for this loaded source.
     pub source_id: SourceId,
+    /// Package identity that owns the source.
     pub package_id: PackageId,
+    /// Logical module path derived during source loading.
     pub module_path: ModulePath,
+    /// Normalized source path used for stable identity.
     pub normalized_path: NormalizedPath,
+    /// Language edition selected for this source.
     pub edition: Edition,
+    /// Diagnostic file path associated with this source.
     pub file_path: PathBuf,
+    /// Loaded source text after session-level normalization.
     pub source_text: Arc<str>,
+    /// Session-owned hash of the loaded source text.
     pub source_hash: Hash,
+    /// Line map for loaded-text coordinates.
     pub line_map: LineMap,
+    /// Optional map from loaded text back to the original input.
     pub loading_map: Option<LoadingMap>,
+    /// Source origin preserved from the session loader.
     pub origin: SourceOrigin,
+    /// Anchor for generated sources, when one exists.
     pub generated_anchor: Option<SourceAnchor>,
 }
 
+/// Request to load one source unit in a build snapshot.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceUnitRequest {
+    /// Snapshot that owns the requested source load.
     pub snapshot: BuildSnapshotId,
+    /// Session source input to load.
     pub input: SourceInput,
 }
 
+/// Loads session sources and projects them into frontend `SourceUnit`s.
 pub trait SourceUnitLoader {
+    /// Loads one source unit using the provided session id allocator.
     fn load_source_unit(
         &self,
         request: SourceUnitRequest,
@@ -37,12 +60,14 @@ pub trait SourceUnitLoader {
     ) -> Result<SourceUnit, SourceLoadError>;
 }
 
+/// Adapter from a `mizar-session` source loader to the frontend loader trait.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FrontendSourceLoader<L: SourceLoader> {
     loader: L,
 }
 
 impl<L: SourceLoader> FrontendSourceLoader<L> {
+    /// Creates a frontend source loader around a session loader.
     pub fn new(loader: L) -> Self {
         Self { loader }
     }
@@ -61,6 +86,7 @@ impl<L: SourceLoader> SourceUnitLoader for FrontendSourceLoader<L> {
     }
 }
 
+/// Projects a `LoadedSource` into a `SourceUnit` without recomputing identity or maps.
 pub fn source_unit_from_loaded(loaded: LoadedSource, file_path: PathBuf) -> SourceUnit {
     let LoadedSource {
         source_id,
@@ -92,6 +118,7 @@ pub fn source_unit_from_loaded(loaded: LoadedSource, file_path: PathBuf) -> Sour
     }
 }
 
+/// Registers a source unit's line and loading maps in the span bridge.
 pub fn register_source_unit(
     bridge: &mut SpanBridge,
     source: &SourceUnit,

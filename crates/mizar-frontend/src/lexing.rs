@@ -1,3 +1,8 @@
+//! Tokenization, scope-view extraction, and parser-assisted lexing plans.
+//!
+//! Canonical behavior is specified in the
+//! [lexing design spec](../../../../doc/design/mizar-frontend/en/lexing.md).
+
 use crate::lexical_env::ActiveLexicalEnvironment;
 use crate::preprocess::PreprocessedSource;
 use crate::span_bridge::{LexerByteSpan, SpanBridge, SpanBridgeError};
@@ -11,23 +16,31 @@ use mizar_lexer::{
 use mizar_session::{MappedSourceRange, SourceAnchor, SourceId, SourceRange};
 use std::sync::Arc;
 
+/// Re-exported lexer token, context, scope, and diagnostic vocabulary.
 pub use mizar_lexer::{
     BindingShapeKind, LexDiagnosticCode, LexRecoveryHint, LexicalBlockKind, LexicalStatementKind,
     MalformedStringLiteralReason, ParserLexContext, ParserLexMode, RawTokenKind,
     ScopeSkeletonDiagnosticCode, TokenKind,
 };
 
+/// Shared interned text used by frontend token and diagnostic payloads.
 pub type InternedText = Arc<str>;
 
+/// Tokenization request for one preprocessed source.
 #[derive(Debug, Clone)]
 pub struct TokenizeRequest<'a> {
+    /// Preprocessed source to tokenize.
     pub preprocessed: &'a PreprocessedSource,
+    /// Active lexical environment for disambiguation.
     pub environment: &'a ActiveLexicalEnvironment,
+    /// Default parser lexing context.
     pub parser_context: ParserLexContext,
+    /// Position-sensitive parser lexing plan.
     pub parser_lexing_plan: ParserLexingPlan,
 }
 
 impl<'a> TokenizeRequest<'a> {
+    /// Creates a tokenization request with a uniform parser lexing context.
     pub fn new(
         preprocessed: &'a PreprocessedSource,
         environment: &'a ActiveLexicalEnvironment,
@@ -41,6 +54,7 @@ impl<'a> TokenizeRequest<'a> {
         }
     }
 
+    /// Creates a tokenization request with a position-sensitive lexing plan.
     pub fn with_plan(
         preprocessed: &'a PreprocessedSource,
         environment: &'a ActiveLexicalEnvironment,
@@ -55,13 +69,17 @@ impl<'a> TokenizeRequest<'a> {
     }
 }
 
+/// Position-sensitive lexer context plan produced for parser-sensitive regions.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParserLexingPlan {
+    /// Context used outside explicit context ranges.
     pub default_context: ParserLexContext,
+    /// Sorted context overrides in lexical-text byte coordinates.
     pub contexts: Vec<ParserLexingPlanContext>,
 }
 
 impl ParserLexingPlan {
+    /// Creates a plan with one context for the whole source.
     pub fn uniform(default_context: ParserLexContext) -> Self {
         Self {
             default_context,
@@ -69,6 +87,7 @@ impl ParserLexingPlan {
         }
     }
 
+    /// Creates a plan from explicit context ranges, sorting ranges by position.
     pub fn new(
         default_context: ParserLexContext,
         mut contexts: Vec<ParserLexingPlanContext>,
@@ -85,6 +104,7 @@ impl ParserLexingPlan {
         }
     }
 
+    /// Builds the current position-sensitive plan for a lexical text.
     pub fn for_lexical_text(lexical_text: &str) -> Self {
         Self::new(
             ParserLexContext::general(),
@@ -97,6 +117,7 @@ impl ParserLexingPlan {
         )
     }
 
+    /// Returns the parser lexing context active at the byte offset.
     pub fn context_at(&self, offset: usize) -> ParserLexContext {
         self.contexts
             .iter()
@@ -104,84 +125,115 @@ impl ParserLexingPlan {
             .map_or(self.default_context, |context| context.context)
     }
 
+    /// Returns whether the plan uses only its default context.
     pub fn is_uniform(&self) -> bool {
         self.contexts.is_empty()
     }
 }
 
+/// Parser lexing context override for a lexical byte range.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParserLexingPlanContext {
+    /// Lexical byte range covered by this override.
     pub range: LexicalByteRange,
+    /// Parser lexing context active in the range.
     pub context: ParserLexContext,
 }
 
 impl ParserLexingPlanContext {
+    /// Creates a parser lexing context override.
     pub fn new(range: LexicalByteRange, context: ParserLexContext) -> Self {
         Self { range, context }
     }
 }
 
+/// Half-open byte range in lexical-text coordinates.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LexicalByteRange {
+    /// Inclusive start byte offset.
     pub start: usize,
+    /// Exclusive end byte offset.
     pub end: usize,
 }
 
 impl LexicalByteRange {
+    /// Creates a lexical byte range, requiring `start <= end`.
     pub fn new(start: usize, end: usize) -> Self {
         assert!(start <= end, "lexical byte range start must not exceed end");
         Self { start, end }
     }
 
+    /// Returns whether the byte offset is inside the half-open range.
     pub fn contains(self, offset: usize) -> bool {
         self.start <= offset && offset < self.end
     }
 }
 
+/// Token stream produced by frontend tokenization.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TokenStream {
+    /// Source id for all ranges in the token stream.
     pub source_id: SourceId,
+    /// Default parser lexing context used by the stream.
     pub parser_context: ParserLexContext,
+    /// Position-sensitive parser lexing plan used by the stream.
     pub parser_lexing_plan: ParserLexingPlan,
+    /// Tokens sorted in source order.
     pub tokens: Vec<Token>,
+    /// Scope skeleton view derived during lexing.
     pub scope_view: ScopeView,
+    /// Recoverable lexing diagnostics.
     pub diagnostics: Vec<LexingDiagnostic>,
 }
 
 impl TokenStream {
+    /// Returns the tokens in source order.
     pub fn tokens(&self) -> &[Token] {
         &self.tokens
     }
 
+    /// Returns recoverable lexing diagnostics.
     pub fn diagnostics(&self) -> &[LexingDiagnostic] {
         &self.diagnostics
     }
 
+    /// Returns the scope skeleton view.
     pub fn scope_view(&self) -> &ScopeView {
         &self.scope_view
     }
 
+    /// Splits the stream into tokens, scope view, and diagnostics.
     pub fn into_parts(self) -> (Vec<Token>, ScopeView, Vec<LexingDiagnostic>) {
         (self.tokens, self.scope_view, self.diagnostics)
     }
 }
 
+/// Frontend token with session source coordinates.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Token {
+    /// Final token kind after disambiguation.
     pub kind: TokenKind,
+    /// Token text as it appears in lexical text.
     pub text: InternedText,
+    /// Source range mapped through preprocessing.
     pub span: SourceRange,
 }
 
+/// Scope skeleton view exposed for later phases and diagnostics.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScopeView {
+    /// Source id for all ranges in the scope view.
     pub source_id: SourceId,
+    /// Lexical scope frames and their bindings.
     pub frames: Vec<ScopeFrame>,
+    /// Lexical block ranges.
     pub blocks: Vec<ScopeBlock>,
+    /// Lexical statement ranges.
     pub statements: Vec<ScopeStatement>,
 }
 
 impl ScopeView {
+    /// Creates an empty scope view for a source.
     pub fn empty(source_id: SourceId) -> Self {
         Self {
             source_id,
@@ -191,6 +243,7 @@ impl ScopeView {
         }
     }
 
+    /// Returns whether a local binding overrides a user symbol at the position.
     pub fn binding_overrides_symbol(&self, spelling: &str, position: usize) -> bool {
         self.frames.iter().any(|frame| {
             frame.range.start <= position
@@ -204,83 +257,131 @@ impl ScopeView {
     }
 }
 
+/// Lexical scope frame with locally introduced bindings.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScopeFrame {
+    /// Source range covered by the frame.
     pub range: SourceRange,
+    /// Bindings introduced inside the frame.
     pub bindings: Vec<ScopedBinding>,
 }
 
+/// Binding introduced by the scope skeleton.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScopedBinding {
+    /// Binding spelling.
     pub spelling: InternedText,
+    /// Source range where the binding was introduced.
     pub introduced_at: SourceRange,
+    /// Shape of the binding.
     pub kind: BindingShapeKind,
 }
 
+/// Lexical block recognized by the scope skeleton.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScopeBlock {
+    /// Block kind.
     pub kind: LexicalBlockKind,
+    /// Source range covered by the block.
     pub range: SourceRange,
 }
 
+/// Lexical statement recognized by the scope skeleton.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScopeStatement {
+    /// Statement kind.
     pub kind: LexicalStatementKind,
+    /// Source range covered by the statement.
     pub range: SourceRange,
 }
 
+/// Recoverable lexing diagnostic mapped to source coordinates.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LexingDiagnostic {
+    /// Diagnostic category.
     pub kind: LexingDiagnosticKind,
+    /// Human-readable diagnostic message.
     pub message: InternedText,
+    /// Primary source range.
     pub primary: SourceRange,
+    /// Secondary source anchors for related context.
     pub secondary: Vec<SourceAnchor>,
+    /// Structured diagnostic payload.
     pub payload: LexingDiagnosticPayload,
 }
 
+/// Category of recoverable lexing diagnostic.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum LexingDiagnosticKind {
+    /// Diagnostic reported by recoverable raw scanning.
     RawScan,
+    /// Diagnostic reported by scope skeleton construction.
     ScopeSkeleton(ScopeSkeletonDiagnosticCode),
+    /// Diagnostic reported by token disambiguation.
     Lexer(LexDiagnosticCode),
 }
 
+/// Structured payload attached to recoverable lexing diagnostics.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum LexingDiagnosticPayload {
+    /// No structured payload is available.
     None,
+    /// No valid token candidate was accepted for a lexeme.
     NoValidTokenCandidate {
+        /// Rejected lexeme text.
         rejected_lexeme: InternedText,
+        /// Lexer recovery hint.
         recovery: LexRecoveryHint,
     },
+    /// Parser context rejected otherwise valid token candidates.
     ParserContextRejectedCandidate {
+        /// Parser lexing mode active for the rejected lexeme.
         mode: ParserLexMode,
+        /// Rejected lexeme text.
         rejected_lexeme: InternedText,
+        /// Candidate tokens rejected by the active context.
         candidates: Vec<LexingRejectedTokenCandidate>,
+        /// Lexer recovery hint.
         recovery: LexRecoveryHint,
     },
+    /// Malformed string literal diagnostic payload.
     MalformedStringLiteral {
+        /// Opening quote character for the literal.
         opening_quote: char,
+        /// Reason the string literal is malformed.
         reason: MalformedStringLiteralReason,
+        /// Lexer recovery hint.
         recovery: LexRecoveryHint,
     },
+    /// Raw token variant not supported by frontend token mapping.
     UnsupportedRawToken {
+        /// Raw token kind that could not be mapped.
         raw_kind: RawTokenKind,
+        /// Raw token lexeme.
         raw_lexeme: InternedText,
+        /// Lexer recovery hint.
         recovery: LexRecoveryHint,
     },
+    /// Fallback for future lexer payload variants with no frontend mapping yet.
     UnsupportedLexerPayload,
 }
 
+/// Candidate token rejected during lexing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LexingRejectedTokenCandidate {
+    /// Candidate token kind.
     pub kind: TokenKind,
+    /// Candidate token text.
     pub text: InternedText,
+    /// Candidate source range.
     pub span: SourceRange,
+    /// Candidate secondary anchors from source mapping.
     pub secondary: Vec<SourceAnchor>,
 }
 
+/// Tokenizes a preprocessed source using the active lexical environment.
 pub fn tokenize(
     request: TokenizeRequest<'_>,
     bridge: &SpanBridge,

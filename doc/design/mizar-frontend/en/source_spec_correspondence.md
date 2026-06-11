@@ -2,11 +2,11 @@
 
 > Canonical language: English. Japanese companion: [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md).
 
-Status: completed through task 24.
+Status: completed through task 26.
 
 ## Scope
 
-This audit checks the task-24 `mizar-frontend` implementation against the
+This audit checks the task-26 `mizar-frontend` implementation against the
 English canonical module specs under `doc/design/mizar-frontend/en/`, then checks
 that the Japanese companion specs carry the same public API names, error and
 diagnostic variants, and behavior promises.
@@ -20,10 +20,12 @@ follow-up task instead of being mixed into the audit.
 
 - No missing implementation was found for the public APIs and error/diagnostic
   variants promised by tasks 1-20, the task-21 lint policy guard, the task-22
-  precise raw-scan recovery contract, or the task-23 resident-set guard.
+  precise raw-scan recovery contract, the task-23 resident-set guard, the
+  task-25 enum forward-compatibility policy, or the task-26 rustdoc summary
+  policy.
 - The task-2 source requirement text now names the open-buffer `file://`
   diagnostic-path decode/fallback tests that were added before this audit.
-- No remaining stale English canonical spec text was found for tasks 1-23.
+- No remaining stale English canonical spec text was found for tasks 1-26.
 - Japanese companion specs were checked for matching API names and behavior
   promises. No remaining API or behavior drift was found.
 - Broader bilingual wording/terminology review was completed by task 17 in
@@ -31,8 +33,9 @@ follow-up task instead of being mixed into the audit.
   Task 19 incremental cache-key wiring, task 20 parser-assisted lexing,
   task 21 durable lint enforcement, task 22 precise raw-scan recovery,
   task 23 resident-set contract coverage, and task 24 reserved diagnostic
-  surface coverage are now complete. Future producer-backed tests remain tied to
-  future lexer/session/parser producers.
+  surface coverage, task 25 enum forward-compatibility, and task 26 rustdoc
+  summary coverage are now complete. Future producer-backed tests remain tied
+  to future lexer/session/parser producers.
 
 ## Public API Correspondence
 
@@ -104,11 +107,12 @@ exhaustive.
 | 23 | Complete | Resident-set contract coverage is guarded by `crates/mizar-frontend/tests/lexical_env_resident_set.rs`, which records exactly one direct-`ImportStub` provider request and checks that `ActiveLexicalEnvironment` exposes only `ModuleLexicalSummary`-derived lexical shape/provenance, not transitive dependency symbols. |
 | 24 | Complete | Reserved frontend diagnostic surfaces are covered where constructible: `UnsupportedLexerPreprocessMap`, provider-owned reserved lexical-environment diagnostic codes, reserved source-load fallback locations, `AnnotationSyntax`, and `UnsupportedLexerPayload`. Producer-backed tests remain deferred for future non-exhaustive lexer/session/parser contracts. |
 | 25 | Complete | Public frontend enums with promised future variants or reserved surfaces are `#[non_exhaustive]` for downstream crates, while internal `mizar-frontend` matches remain exhaustive. Owning module specs record the per-enum decision next to each enum. |
+| 26 | Complete | Public `mizar-frontend` modules and public API items carry short rustdoc summaries derived from the canonical design specs, while detailed behavior promises remain in `doc/design/mizar-frontend/en/`. |
 
 ## Follow-up Records
 
 This audit added task 24 for reserved or currently unproduced diagnostic/fallback
-surface coverage. Tasks 18, 19, 20, 21, 22, 23, and 24 have since been
+surface coverage. Tasks 18, 19, 20, 21, 22, 23, 24, 25, and 26 have since been
 completed. Future producer-backed tests should be added when non-exhaustive
 lexer/session/parser contracts expose new concrete producers for the currently
 reserved fallback variants.

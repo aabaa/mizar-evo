@@ -1,3 +1,8 @@
+//! Coordinate bridge between lexer byte spans and session source maps.
+//!
+//! Canonical behavior is specified in the
+//! [span-bridge design spec](../../../../doc/design/mizar-frontend/en/span_bridge.md).
+
 use mizar_lexer::{
     CommentKind as LexerCommentKind, SourcePreprocessMap, SourcePreprocessMapSegment,
     SourceSpan as LexerSourceSpan,
@@ -11,6 +16,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
 
+/// Registry-backed converter from frontend/lexer spans to session source ranges.
 #[derive(Debug, Clone, Default)]
 pub struct SpanBridge {
     source_maps: HashMap<SourceId, SourceRegistration>,
@@ -24,32 +30,63 @@ struct SourceRegistration {
     loading_map: Option<LoadingMap>,
 }
 
+/// Byte span in lexer or lexical-text coordinates.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LexerByteSpan {
+    /// Inclusive start byte offset.
     pub start: usize,
+    /// Exclusive end byte offset.
     pub end: usize,
 }
 
+/// Error raised while registering or converting frontend spans.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum SpanBridgeError {
-    SourceNotRegistered { source_id: SourceId },
-    PreprocessMapNotRegistered { source_id: SourceId },
-    ConflictingSourceRegistration { source_id: SourceId },
-    ConflictingPreprocessMapRegistration { source_id: SourceId },
-    UnsupportedLexerPreprocessMap { source_id: SourceId },
-    SourceMap { source: SourceMapError },
+    /// The source id has not been registered in the bridge.
+    SourceNotRegistered {
+        /// Missing source id.
+        source_id: SourceId,
+    },
+    /// The source id has no registered preprocess map.
+    PreprocessMapNotRegistered {
+        /// Source id without a preprocess map.
+        source_id: SourceId,
+    },
+    /// A source id was registered with different line or loading maps.
+    ConflictingSourceRegistration {
+        /// Source id with conflicting source maps.
+        source_id: SourceId,
+    },
+    /// A source id was registered with different preprocess maps.
+    ConflictingPreprocessMapRegistration {
+        /// Source id with conflicting preprocess maps.
+        source_id: SourceId,
+    },
+    /// The lexer emitted a preprocess map variant this bridge cannot translate.
+    UnsupportedLexerPreprocessMap {
+        /// Source id whose preprocess map is unsupported.
+        source_id: SourceId,
+    },
+    /// Session source-map conversion failed.
+    SourceMap {
+        /// Underlying session source-map error.
+        source: SourceMapError,
+    },
 }
 
 impl SpanBridge {
+    /// Creates an empty span bridge.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Returns the retained session source-map service used by this bridge.
     pub fn source_map_service(&self) -> &dyn SourceMapService {
         &self.service
     }
 
+    /// Registers line and optional loading maps for a source id.
     pub fn register_source(
         &mut self,
         source_id: SourceId,
@@ -77,6 +114,7 @@ impl SpanBridge {
         Ok(())
     }
 
+    /// Registers the preprocess map that relates lexical text back to loaded text.
     pub fn register_preprocess_map(
         &mut self,
         source_id: SourceId,
@@ -99,6 +137,7 @@ impl SpanBridge {
         Ok(())
     }
 
+    /// Validates and returns a loaded-text source range for a lexer byte span.
     pub fn loaded_span(
         &self,
         source_id: SourceId,
@@ -115,6 +154,7 @@ impl SpanBridge {
         Ok(range)
     }
 
+    /// Maps a loaded-text span to its original input range when a loading map exists.
     pub fn loaded_mapping(
         &self,
         source_id: SourceId,
@@ -136,6 +176,7 @@ impl SpanBridge {
         })
     }
 
+    /// Maps a lexical-text span through the registered preprocess map.
     pub fn lexical_span(
         &self,
         source_id: SourceId,

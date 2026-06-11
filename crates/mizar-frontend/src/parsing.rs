@@ -1,19 +1,31 @@
+//! Parser input assembly and parser seam integration.
+//!
+//! Canonical behavior is specified in the
+//! [parsing design spec](../../../../doc/design/mizar-frontend/en/parsing.md).
+
 use crate::lexical_env::{ActiveLexicalEnvironment, SymbolId};
 use crate::lexing::{ParserLexContext, ParserLexingPlan, TokenKind, TokenStream};
 use mizar_session::Edition;
 use std::sync::Arc;
 
+/// Default cache-key version for custom parser seam implementations.
 pub const DEFAULT_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/parser-seam/custom-v1";
+/// Cache-key version used by the stub parser seam.
 pub const STUB_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/stub-parser/no-ast-v1";
+/// Cache-key version used by the real Mizar parser seam.
 pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v1";
 
+/// Parser request containing a token stream and parser inputs.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseRequest<'a> {
+    /// Token stream to parse.
     pub tokens: &'a TokenStream,
+    /// Parser inputs derived from the active lexical environment.
     pub parser_inputs: ParserInputs,
 }
 
 impl<'a> ParseRequest<'a> {
+    /// Creates a parser request.
     pub fn new(tokens: &'a TokenStream, parser_inputs: ParserInputs) -> Self {
         Self {
             tokens,
@@ -22,14 +34,19 @@ impl<'a> ParseRequest<'a> {
     }
 }
 
+/// Inputs assembled for a parser seam.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParserInputs {
+    /// Edition of the source being parsed.
     pub edition: Edition,
+    /// Operator fixity table visible to the parser.
     pub operator_fixity: OperatorFixityTable,
+    /// String-literal context requirements for parser-assisted lexing.
     pub string_required_positions: StringRequiredContext,
 }
 
 impl ParserInputs {
+    /// Creates parser inputs explicitly.
     pub fn new(
         edition: Edition,
         operator_fixity: OperatorFixityTable,
@@ -42,6 +59,7 @@ impl ParserInputs {
         }
     }
 
+    /// Derives parser inputs from the active lexical environment.
     pub fn from_active_environment(
         edition: Edition,
         _environment: &ActiveLexicalEnvironment,
@@ -54,45 +72,63 @@ impl ParserInputs {
     }
 }
 
+/// Operator fixity entries supplied to the parser.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct OperatorFixityTable {
+    /// Operator fixity entries in deterministic order.
     pub entries: Vec<OperatorFixityEntry>,
 }
 
 impl OperatorFixityTable {
+    /// Returns an empty fixity table.
     pub fn empty() -> Self {
         Self::default()
     }
 
+    /// Returns whether the table has no entries.
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
 }
 
+/// One operator fixity entry supplied to the parser.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OperatorFixityEntry {
+    /// Symbol id of the operator.
     pub symbol_id: SymbolId,
+    /// Operator spelling.
     pub spelling: Arc<str>,
+    /// Pratt precedence assigned to the operator.
     pub precedence: u8,
+    /// Operator associativity.
     pub associativity: OperatorAssociativity,
 }
 
+/// Operator associativity used by parser fixity entries.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OperatorAssociativity {
+    /// Left-associative operator.
     Left,
+    /// Right-associative operator.
     Right,
+    /// Non-associative operator.
     NonAssociative,
 }
 
+/// String-literal context policy used for parser-assisted lexing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum StringRequiredContext {
+    /// No string-required lexing contexts are requested.
     #[default]
     None,
+    /// String-required ranges are discovered from lexical text positions.
     PositionSensitive,
+    /// A uniform string-required context used by tests.
     UniformForTest,
 }
 
 impl StringRequiredContext {
+    /// Returns the default parser lexing context for this policy.
     pub fn parser_lex_context(self) -> ParserLexContext {
         match self {
             Self::None | Self::PositionSensitive => ParserLexContext::general(),
@@ -100,6 +136,7 @@ impl StringRequiredContext {
         }
     }
 
+    /// Builds the parser lexing plan for this policy and lexical text.
     pub fn parser_lexing_plan(self, lexical_text: &str) -> ParserLexingPlan {
         match self {
             Self::None => ParserLexingPlan::uniform(ParserLexContext::general()),
@@ -109,35 +146,47 @@ impl StringRequiredContext {
     }
 }
 
+/// Parser output with optional AST and parser diagnostics.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseOutput<A, D> {
+    /// Parsed AST, absent for unrecoverable parse failures or stub seams.
     pub ast: Option<A>,
+    /// Parser diagnostics in parser emission order.
     pub diagnostics: Vec<D>,
 }
 
 impl<A, D> ParseOutput<A, D> {
+    /// Creates parser output from an optional AST and diagnostics.
     pub fn new(ast: Option<A>, diagnostics: Vec<D>) -> Self {
         Self { ast, diagnostics }
     }
 }
 
+/// Parser seam consumed by frontend orchestration.
 pub trait ParserSeam {
+    /// AST type returned by the parser seam.
     type Ast;
+    /// Diagnostic type returned by the parser seam.
     type Diagnostic;
 
+    /// Returns the parser cache-key version for this seam.
     fn cache_key_version(&self) -> ParserCacheKeyVersion {
         ParserCacheKeyVersion::new(DEFAULT_PARSER_CACHE_KEY_VERSION)
     }
 
+    /// Parses a token stream.
     fn parse(&self, request: ParseRequest<'_>) -> ParseOutput<Self::Ast, Self::Diagnostic>;
 }
 
+/// Version tag included in surface-AST cache keys for parser outputs.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParserCacheKeyVersion {
+    /// Parser cache-key version string.
     pub version: Arc<str>,
 }
 
 impl ParserCacheKeyVersion {
+    /// Creates a parser cache-key version.
     pub fn new(version: impl Into<Arc<str>>) -> Self {
         Self {
             version: version.into(),
@@ -145,6 +194,7 @@ impl ParserCacheKeyVersion {
     }
 }
 
+/// Parser seam that never produces an AST or diagnostics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct StubParserSeam;
 
@@ -164,6 +214,7 @@ impl ParserSeam for StubParserSeam {
     }
 }
 
+/// Parser seam that adapts frontend tokens into `mizar-parser`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct MizarParserSeam;
 

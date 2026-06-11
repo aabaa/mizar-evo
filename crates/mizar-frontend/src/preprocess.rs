@@ -1,3 +1,8 @@
+//! Source preprocessing, comment retention, and import pre-scan integration.
+//!
+//! Canonical behavior is specified in the
+//! [preprocess design spec](../../../../doc/design/mizar-frontend/en/preprocess.md).
+
 use crate::source::SourceUnit;
 use crate::span_bridge::{LexerByteSpan, SpanBridge, SpanBridgeError, comment_kind_from_lexer};
 use mizar_lexer::{
@@ -8,56 +13,81 @@ use mizar_lexer::{
     RecoverableRawTokenStream, SourcePreprocessMap, SourceSpan as LexerSourceSpan,
     preprocess_source_for_lexing, scan_import_prelude, scan_raw_recoverable,
 };
+/// Re-exported import pre-scan diagnostic codes from the lexer crate.
 pub use mizar_lexer::{ImportPrescanDiagnosticCode, SourcePreprocessDiagnosticCode};
+/// Re-exported comment classification shared with session source maps.
 pub use mizar_session::CommentKind;
 use mizar_session::{Hash, MappedSourceRange, SourceAnchor, SourceId, SourceRange};
 use std::sync::Arc;
 
 const LEXICAL_HASH_DOMAIN: &[u8] = b"mizar-frontend/preprocess/lexical-text/v1";
 
+/// Preprocessed source text and metadata passed to later frontend phases.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PreprocessedSource {
+    /// Session source id for the original source unit.
     pub source_id: SourceId,
+    /// Lexical text after comment removal and source preprocessing.
     pub lexical_text: LexicalText,
+    /// Stable hash of the lexical text.
     pub lexical_hash: Hash,
+    /// Non-documentation comments retained from the original source.
     pub comments: Vec<Comment>,
+    /// Documentation comments retained from the original source.
     pub doc_comments: Vec<DocComment>,
+    /// Shallow import declarations discovered before parsing.
     pub import_stubs: Vec<ImportStub>,
+    /// Mapping from lexical text back to source coordinates.
     pub source_map: LexicalSourceMap,
+    /// Recoverable diagnostics produced during preprocessing.
     pub diagnostics: Vec<PreprocessDiagnostic>,
 }
 
+/// Interned lexical text produced by preprocessing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LexicalText {
+    /// Preprocessed text used by the lexer.
     pub text: Arc<str>,
 }
 
 impl LexicalText {
+    /// Returns the lexical text as a string slice.
     pub fn as_str(&self) -> &str {
         &self.text
     }
 }
 
+/// Retained non-documentation source comment.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Comment {
+    /// Source-level comment kind.
     pub kind: CommentKind,
+    /// Source range occupied by the comment.
     pub source_range: SourceRange,
 }
 
+/// Retained documentation comment.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DocComment {
+    /// Source range occupied by the documentation comment.
     pub source_range: SourceRange,
+    /// Documentation body without the comment marker.
     pub raw_body: Arc<str>,
 }
 
+/// Source map metadata for the lexical text.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LexicalSourceMap {
+    /// Source id that owns this lexical map.
     pub source_id: SourceId,
+    /// Length in bytes of the lexical text.
     pub lexical_text_len: usize,
+    /// Lexer-owned preprocess map retained for diagnostics and cache inputs.
     pub preprocess_map: SourcePreprocessMap,
 }
 
 impl LexicalSourceMap {
+    /// Maps a lexical byte span back to source coordinates.
     pub fn lexical_span(
         &self,
         bridge: &SpanBridge,
@@ -66,59 +96,87 @@ impl LexicalSourceMap {
         bridge.lexical_span(self.source_id, span)
     }
 
+    /// Returns the lexical text length in bytes.
     pub const fn lexical_len(&self) -> usize {
         self.lexical_text_len
     }
 
+    /// Returns whether the lexical text is empty.
     pub const fn is_empty(&self) -> bool {
         self.lexical_text_len == 0
     }
 }
 
+/// Shallow import declaration discovered in the lexical prelude.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImportStub {
+    /// Imported module path.
     pub path: ImportStubPath,
+    /// Optional import alias.
     pub alias: Option<ImportStubAlias>,
+    /// Source range of the import declaration.
     pub span: SourceRange,
 }
 
+/// Parsed module path from a shallow import declaration.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImportStubPath {
+    /// Original path spelling.
     pub spelling: Arc<str>,
+    /// Optional relative import prefix.
     pub relative: Option<ImportStubRelativePrefix>,
+    /// Dot-separated path components.
     pub components: Vec<Arc<str>>,
+    /// Source ranges for individual path segments.
     pub source_segments: Vec<SourceRange>,
+    /// Source range of the full path.
     pub span: SourceRange,
 }
 
+/// Relative prefix attached to an import path.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImportStubRelativePrefix {
+    /// Current module or package-relative import.
     Current,
+    /// Parent module or package-relative import.
     Parent,
 }
 
+/// Alias attached to a shallow import declaration.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImportStubAlias {
+    /// Alias spelling.
     pub spelling: Arc<str>,
+    /// Source range of the alias spelling.
     pub span: SourceRange,
 }
 
+/// Recoverable preprocessing diagnostic mapped to source coordinates.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PreprocessDiagnostic {
+    /// Preprocessing diagnostic category.
     pub kind: PreprocessDiagnosticKind,
+    /// Human-readable diagnostic message.
     pub message: Arc<str>,
+    /// Primary source range for the diagnostic.
     pub primary: SourceRange,
+    /// Secondary source anchors for related context.
     pub secondary: Vec<SourceAnchor>,
 }
 
+/// Kind of recoverable preprocessing diagnostic.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum PreprocessDiagnosticKind {
+    /// Source precondition diagnostic reported by preprocessing.
     SourcePrecondition(SourcePreprocessDiagnosticCode),
+    /// Import pre-scan diagnostic reported by the lexer.
     ImportPrescan(ImportPrescanDiagnosticCode),
+    /// Recoverable raw scan diagnostic encountered while scanning imports.
     RawImportScan,
 }
 
+/// Preprocesses one source unit and registers its lexical source map.
 pub fn preprocess(
     source: &SourceUnit,
     bridge: &mut SpanBridge,
@@ -188,6 +246,7 @@ pub fn preprocess(
     })
 }
 
+/// Computes the stable hash of lexical text used by downstream cache keys.
 pub fn lexical_hash(lexical_text: &LexicalText) -> Hash {
     let mut hasher = blake3::Hasher::new();
     hasher.update(LEXICAL_HASH_DOMAIN);

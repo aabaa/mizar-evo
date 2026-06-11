@@ -55,7 +55,7 @@ These public API decisions are tracked at the top level in
   arguments, and parser-driven user-symbol kind filters.
 - **Quality bar before the next crate: resolved.** Task 25 is complete, so
   there are no remaining frontend-side gates before development moves to the
-  next crate. Tasks 26-28 are deliberately deferred follow-ups with explicit
+  next crate. Tasks 27-28 are deliberately deferred follow-ups with explicit
   re-entry triggers and do not block the handoff. The `[~]` module statuses for
   `parsing` and `orchestration` track future `mizar-parser` grammar/recovery
   growth (task 28), not missing frontend-side work, so they are not a handoff
@@ -544,7 +544,8 @@ should keep `cargo test -p mizar-frontend` green (see
 
 ### Quality bar before the next crate
 
-Task 25 is the only gate before next-crate development starts. Tasks 26-28 are
+Task 25 was the only gate before next-crate development started. Task 26 is now
+complete, and tasks 27-28 remain
 deliberately deferred; each records the re-entry trigger that reopens it so the
 deferral is a decision, not an omission.
 
@@ -572,18 +573,22 @@ deferral is a decision, not an omission.
     - Depends on: 24. Spec: all module specs,
       [source_spec_correspondence.md](./source_spec_correspondence.md).
 
-26. **Public API rustdoc summaries.** [ ] Deferred.
-    - No crate in the workspace currently carries rustdoc; the canonical API
-      contracts live in the `doc/design` specs. Adding `///` summaries only to
-      `mizar-frontend` would break that symmetry, so this is deferred as a
-      workspace-level documentation decision rather than a frontend gap.
-    - Re-entry trigger: before the first long-lived consumer outside the
+26. **Public API rustdoc summaries.** [x]
+    - Original deferral rationale: before this task was reopened, no crate in
+      the workspace carried rustdoc and the canonical API contracts lived in
+      the `doc/design` specs. Adding `///` summaries only to `mizar-frontend`
+      was treated as a workspace-level documentation decision rather than a
+      frontend gap.
+    - Re-entry trigger, now satisfied by this task: before the first long-lived consumer outside the
       frontend pipeline (the driver or `mizar-lsp`) starts coding against the
       `mizar-frontend` public API, or when the workspace adopts a rustdoc
       policy — whichever comes first.
-    - Content when reopened: transcribe one-line summaries from each spec's
+    - Completed content: transcribe one-line summaries from each spec's
       "Public API" section onto the public items, link each module header to
       its spec, and keep `doc/design` canonical for behavior promises.
+    - Result: `mizar-frontend` public modules and public API items now carry
+      short rustdoc summaries derived from the canonical design specs; module
+      headers point back to the owning `doc/design/mizar-frontend/en/` spec.
     - Depends on: 16. Spec: repository documentation policy.
 
 27. **Frontend pipeline fuzz target and performance baselines.** [ ] Deferred.

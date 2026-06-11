@@ -1,3 +1,8 @@
+//! Active lexical environment construction from shallow imports.
+//!
+//! Canonical behavior is specified in the
+//! [lexical-environment design spec](../../../../doc/design/mizar-frontend/en/lexical_env.md).
+
 use crate::preprocess::ImportStub;
 use mizar_session::{Edition, SourceAnchor, SourceId, SourceRange};
 use std::collections::BTreeSet;
@@ -5,6 +10,7 @@ use std::error::Error;
 use std::fmt;
 use std::sync::Arc;
 
+/// Re-exported lexer lexical-environment types used by frontend consumers.
 pub use mizar_lexer::{
     ActiveLexicalEnvironment, ExportRank, ExportedSymbolShape, LexicalEnvironmentError,
     LexicalEnvironmentFingerprint, LexicalSummaryFingerprint, ModuleId, ModuleLexicalSummary,
@@ -12,67 +18,113 @@ pub use mizar_lexer::{
     UserSymbolKind, UserSymbolKindSet,
 };
 
+/// Request passed to a lexical summary provider for one source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LexicalEnvironmentRequest<'a> {
+    /// Source id whose import stubs are being resolved.
     pub source_id: SourceId,
+    /// Shallow import stubs discovered during preprocessing.
     pub import_stubs: &'a [ImportStub],
+    /// Edition of the source being processed.
     pub edition: Edition,
 }
 
+/// Provides resolved imports and dependency lexical summaries to the frontend.
 pub trait LexicalSummaryProvider {
+    /// Resolves direct import stubs and returns summaries for available modules.
     fn resolve_imports(
         &self,
         request: &LexicalEnvironmentRequest<'_>,
     ) -> Result<ResolvedImports, FrontendLexicalEnvironmentError>;
 }
 
+/// Provider response containing resolved imports, summaries, and diagnostics.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResolvedImports {
+    /// Imports resolved from the request's direct import stubs.
     pub imports: Vec<ResolvedImportEntry>,
+    /// Lexical summaries available for resolved imports.
     pub summaries: Vec<ModuleLexicalSummary>,
+    /// Provider-owned recoverable diagnostics.
     pub diagnostics: Vec<LexicalEnvironmentDiagnostic>,
 }
 
+/// Resolved import with provenance back to an import stub.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResolvedImportEntry {
+    /// Ordinal of the originating import stub in the request.
     pub stub_ordinal: usize,
+    /// Source range of the originating import stub.
     pub stub_span: SourceRange,
+    /// Lexer-level resolved import.
     pub import: ResolvedImport,
 }
 
+/// Active lexical environment plus cache fingerprint and diagnostics.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActiveLexicalEnvironmentResult {
+    /// Active lexical environment used for token disambiguation.
     pub environment: ActiveLexicalEnvironment,
+    /// Stable fingerprint of the active lexical environment.
     pub fingerprint: LexicalEnvironmentFingerprint,
+    /// Recoverable diagnostics produced while building the environment.
     pub diagnostics: Vec<LexicalEnvironmentDiagnostic>,
 }
 
+/// Unrecoverable frontend lexical-environment error.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FrontendLexicalEnvironmentError {
-    ProviderUnavailable { message: String },
-    MalformedProviderProvenance { message: String },
-    MalformedSummary { source: LexicalEnvironmentError },
+    /// The provider could not answer the request.
+    ProviderUnavailable {
+        /// Provider failure message.
+        message: String,
+    },
+    /// The provider returned spans or ordinals inconsistent with the request.
+    MalformedProviderProvenance {
+        /// Provenance validation failure message.
+        message: String,
+    },
+    /// A dependency summary was malformed for lexer environment construction.
+    MalformedSummary {
+        /// Underlying lexer lexical-environment error.
+        source: LexicalEnvironmentError,
+    },
 }
 
+/// Recoverable lexical-environment diagnostic mapped to source coordinates.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LexicalEnvironmentDiagnostic {
+    /// Diagnostic code for the lexical-environment issue.
     pub code: LexicalEnvironmentDiagnosticCode,
+    /// Human-readable diagnostic message.
     pub message: Arc<str>,
+    /// Primary source range for the diagnostic.
     pub primary: SourceRange,
+    /// Secondary source anchors for related context.
     pub secondary: Vec<SourceAnchor>,
+    /// Import stub ordinal associated with the diagnostic, when known.
     pub import_ordinal: Option<usize>,
+    /// Module associated with the diagnostic, when known.
     pub module_id: Option<ModuleId>,
 }
 
+/// Recoverable lexical-environment diagnostic code.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum LexicalEnvironmentDiagnosticCode {
+    /// Import could not be resolved.
     UnresolvedImport,
+    /// Resolved import has no available lexical summary.
     MissingSummary,
+    /// Imported user symbols conflict and one import was dropped.
     UserSymbolImportConflict,
+    /// Dependency summary contains an invalid user-symbol spelling.
     InvalidUserSymbolSpelling,
+    /// Dependency summary contains an invalid user-symbol arity.
     InvalidUserSymbolArity,
+    /// Dependency summary collides with a reserved word.
     ReservedWordCollision,
+    /// Dependency summary collides with a reserved symbol.
     ReservedSymbolCollision,
 }
 
@@ -90,6 +142,7 @@ impl LexicalEnvironmentDiagnosticCode {
     }
 }
 
+/// Builds the active lexical environment for one preprocessed source.
 pub fn build_active_lexical_environment(
     request: &LexicalEnvironmentRequest<'_>,
     provider: &dyn LexicalSummaryProvider,

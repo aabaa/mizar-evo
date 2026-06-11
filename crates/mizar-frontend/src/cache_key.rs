@@ -1,3 +1,8 @@
+//! Layered content cache keys for frontend pipeline outputs.
+//!
+//! Canonical behavior is specified in the
+//! [cache-key design spec](../../../../doc/design/mizar-frontend/en/cache_key.md).
+
 use crate::lexical_env::LexicalEnvironmentFingerprint;
 use crate::lexing::{LexicalByteRange, ParserLexContext, ParserLexMode, ParserLexingPlan};
 use crate::parsing::{
@@ -9,36 +14,56 @@ use mizar_lexer::UserSymbolKind;
 use mizar_session::{Edition, Hash, ModulePath, NormalizedPath, PackageId};
 use std::sync::Arc;
 
+/// Version tag for source-unit cache keys.
 pub const SOURCE_UNIT_CACHE_KEY_VERSION: &str = "mizar-frontend/source-unit-cache-key/v1";
+/// Version tag for preprocessed-source cache keys.
 pub const PREPROCESSED_SOURCE_CACHE_KEY_VERSION: &str =
     "mizar-frontend/preprocessed-source-cache-key/v1";
+/// Version tag for active lexical-environment cache keys.
 pub const ACTIVE_LEXICAL_ENVIRONMENT_CACHE_KEY_VERSION: &str =
     "mizar-frontend/active-lexical-environment-cache-key/v1";
+/// Version tag for parser lexing-plan cache keys.
 pub const PARSER_LEXING_PLAN_CACHE_KEY_VERSION: &str =
     "mizar-frontend/parser-lexing-plan/position-sensitive-v1";
+/// Version tag for token-stream cache keys.
 pub const TOKEN_STREAM_CACHE_KEY_VERSION: &str = "mizar-frontend/token-stream-cache-key/v1";
+/// Version tag for surface-AST cache keys.
 pub const SURFACE_AST_CACHE_KEY_VERSION: &str = "mizar-frontend/surface-ast-cache-key/v1";
 
+/// Cache keys emitted with a complete frontend output.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FrontendCacheKeys {
+    /// Source-unit cache key.
     pub source: SourceUnitCacheKey,
+    /// Preprocessed-source cache key.
     pub preprocessed: PreprocessedSourceCacheKey,
+    /// Active lexical-environment cache key.
     pub active_lexical_environment: ActiveLexicalEnvironmentCacheKey,
+    /// Token-stream cache key.
     pub tokens: TokenStreamCacheKey,
+    /// Surface-AST cache key, absent when parsing produced no AST.
     pub ast: Option<SurfaceAstCacheKey>,
 }
 
+/// Content key for source-unit identity and text.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceUnitCacheKey {
+    /// Version tag for this key shape.
     pub version: Arc<str>,
+    /// Package id of the source unit.
     pub package_id: PackageId,
+    /// Module path of the source unit.
     pub module_path: ModulePath,
+    /// Normalized source path.
     pub normalized_path: NormalizedPath,
+    /// Hash of loaded source text.
     pub source_hash: Hash,
+    /// Source edition.
     pub edition: Edition,
 }
 
 impl SourceUnitCacheKey {
+    /// Builds a source-unit cache key from a source unit.
     pub fn from_source(source: &SourceUnit) -> Self {
         Self {
             version: Arc::from(SOURCE_UNIT_CACHE_KEY_VERSION),
@@ -50,6 +75,7 @@ impl SourceUnitCacheKey {
         }
     }
 
+    /// Computes the stable hash for this cache key.
     pub fn stable_hash(&self) -> Hash {
         let mut hasher = stable_hasher("source-unit");
         write_str(&mut hasher, self.version.as_ref());
@@ -62,13 +88,17 @@ impl SourceUnitCacheKey {
     }
 }
 
+/// Content key for preprocessing output.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PreprocessedSourceCacheKey {
+    /// Version tag for this key shape.
     pub version: Arc<str>,
+    /// Hash of loaded source text.
     pub source_hash: Hash,
 }
 
 impl PreprocessedSourceCacheKey {
+    /// Builds a preprocessed-source cache key from a source unit.
     pub fn from_source(source: &SourceUnit) -> Self {
         Self {
             version: Arc::from(PREPROCESSED_SOURCE_CACHE_KEY_VERSION),
@@ -76,6 +106,7 @@ impl PreprocessedSourceCacheKey {
         }
     }
 
+    /// Computes the stable hash for this cache key.
     pub fn stable_hash(&self) -> Hash {
         let mut hasher = stable_hasher("preprocessed-source");
         write_str(&mut hasher, self.version.as_ref());
@@ -84,13 +115,17 @@ impl PreprocessedSourceCacheKey {
     }
 }
 
+/// Content key for an active lexical environment.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActiveLexicalEnvironmentCacheKey {
+    /// Version tag for this key shape.
     pub version: Arc<str>,
+    /// Fingerprint of the active lexical environment.
     pub fingerprint: LexicalEnvironmentFingerprint,
 }
 
 impl ActiveLexicalEnvironmentCacheKey {
+    /// Creates an active lexical-environment cache key.
     pub fn new(fingerprint: LexicalEnvironmentFingerprint) -> Self {
         Self {
             version: Arc::from(ACTIVE_LEXICAL_ENVIRONMENT_CACHE_KEY_VERSION),
@@ -98,6 +133,7 @@ impl ActiveLexicalEnvironmentCacheKey {
         }
     }
 
+    /// Computes the stable hash for this cache key.
     pub fn stable_hash(&self) -> Hash {
         let mut hasher = stable_hasher("active-lexical-environment");
         write_str(&mut hasher, self.version.as_ref());
@@ -106,24 +142,33 @@ impl ActiveLexicalEnvironmentCacheKey {
     }
 }
 
+/// Content key for a parser lexing plan.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParserLexingPlanCacheKey {
+    /// Version tag for this key shape.
     pub version: Arc<str>,
+    /// Default parser lexing context.
     pub default_context: ParserLexContext,
+    /// Position-sensitive context overrides.
     pub contexts: Vec<ParserLexingPlanContextCacheKey>,
 }
 
+/// Cache-key representation of one parser lexing-plan context override.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParserLexingPlanContextCacheKey {
+    /// Lexical byte range covered by this context.
     pub range: LexicalByteRange,
+    /// Parser lexing context active in the range.
     pub context: ParserLexContext,
 }
 
 impl ParserLexingPlanCacheKey {
+    /// Returns the current uniform general parser lexing-plan key.
     pub fn current() -> Self {
         Self::from_plan(&ParserLexingPlan::uniform(ParserLexContext::general()))
     }
 
+    /// Builds a cache key from a parser lexing plan.
     pub fn from_plan(plan: &ParserLexingPlan) -> Self {
         Self {
             version: Arc::from(PARSER_LEXING_PLAN_CACHE_KEY_VERSION),
@@ -140,16 +185,23 @@ impl ParserLexingPlanCacheKey {
     }
 }
 
+/// Content key for token-stream output.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TokenStreamCacheKey {
+    /// Version tag for this key shape.
     pub version: Arc<str>,
+    /// Stable hash of lexical text.
     pub lexical_hash: Hash,
+    /// Fingerprint of the active lexical environment.
     pub active_lexical_environment: LexicalEnvironmentFingerprint,
+    /// Default parser lexing context used for tokenization.
     pub parser_context: ParserLexContext,
+    /// Position-sensitive parser lexing-plan key.
     pub parser_lexing_plan: ParserLexingPlanCacheKey,
 }
 
 impl TokenStreamCacheKey {
+    /// Creates a token-stream cache key from tokenization inputs.
     pub fn new(
         preprocessed: &PreprocessedSource,
         active_lexical_environment: LexicalEnvironmentFingerprint,
@@ -165,6 +217,7 @@ impl TokenStreamCacheKey {
         }
     }
 
+    /// Computes the stable hash for this cache key.
     pub fn stable_hash(&self) -> Hash {
         let mut hasher = stable_hasher("token-stream");
         write_str(&mut hasher, self.version.as_ref());
@@ -183,16 +236,23 @@ impl TokenStreamCacheKey {
     }
 }
 
+/// Content key for surface-AST output.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SurfaceAstCacheKey {
+    /// Version tag for this key shape.
     pub version: Arc<str>,
+    /// Stable hash of the token-stream cache key.
     pub token_stream_hash: Hash,
+    /// Parser seam cache-key version.
     pub parser_version: ParserCacheKeyVersion,
+    /// Stable hash of parser inputs.
     pub parser_inputs_hash: Hash,
+    /// Source edition used for parsing.
     pub edition: Edition,
 }
 
 impl SurfaceAstCacheKey {
+    /// Creates a surface-AST cache key from parser inputs.
     pub fn new(
         token_stream_hash: Hash,
         parser_version: ParserCacheKeyVersion,
@@ -207,6 +267,7 @@ impl SurfaceAstCacheKey {
         }
     }
 
+    /// Computes the stable hash for this cache key.
     pub fn stable_hash(&self) -> Hash {
         let mut hasher = stable_hasher("surface-ast");
         write_str(&mut hasher, self.version.as_ref());
@@ -272,6 +333,7 @@ fn known_user_symbol_kind_set_bits(context: ParserLexContext) -> u64 {
     })
 }
 
+/// Computes a stable hash for parser inputs.
 pub fn parser_inputs_hash(inputs: &ParserInputs) -> Hash {
     let mut hasher = stable_hasher("parser-inputs");
     write_str(&mut hasher, inputs.edition.as_str());
