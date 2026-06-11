@@ -55,11 +55,11 @@ These public API decisions are tracked at the top level in
   arguments, and parser-driven user-symbol kind filters.
 - **Quality bar before the next crate: resolved.** Task 25 is complete, so
   there are no remaining frontend-side gates before development moves to the
-  next crate. Tasks 27-28 are deliberately deferred follow-ups with explicit
-  re-entry triggers and do not block the handoff. The `[~]` module statuses for
-  `parsing` and `orchestration` track future `mizar-parser` grammar/recovery
-  growth (task 28), not missing frontend-side work, so they are not a handoff
-  gate either.
+  next crate. Task 27 is complete, and task 28 remains a deliberately deferred
+  follow-up with explicit re-entry triggers; neither blocks the handoff. The
+  `[~]` module statuses for `parsing` and `orchestration` track future
+  `mizar-parser` grammar/recovery growth (task 28), not missing frontend-side
+  work, so they are not a handoff gate either.
 
 ## Ordered Task List
 
@@ -544,10 +544,9 @@ should keep `cargo test -p mizar-frontend` green (see
 
 ### Quality bar before the next crate
 
-Task 25 was the only gate before next-crate development started. Task 26 is now
-complete, and tasks 27-28 remain
-deliberately deferred; each records the re-entry trigger that reopens it so the
-deferral is a decision, not an omission.
+Task 25 was the only gate before next-crate development started. Tasks 26 and
+27 are now complete, and task 28 remains deliberately deferred with a recorded
+re-entry trigger so the deferral is a decision, not an omission.
 
 25. **Public enum forward-compatibility decision.** [x]
     - For each public frontend enum whose spec already promises future variants
@@ -591,20 +590,30 @@ deferral is a decision, not an omission.
       headers point back to the owning `doc/design/mizar-frontend/en/` spec.
     - Depends on: 16. Spec: repository documentation policy.
 
-27. **Frontend pipeline fuzz target and performance baselines.** [ ] Deferred.
-    - The workspace fuzz harness covers only `lexer_valid_utf8` today. Add a
-      frontend target that drives preprocess → import pre-scan → tokenize over
-      arbitrary UTF-8 input with a stub summary provider, asserting no panics
-      and recoverable-diagnostics-only outcomes on the recovery paths that
-      tasks 9 and 22 promise.
+27. **Frontend pipeline fuzz target and performance baselines.** [x] Complete.
+    - Before this task, the workspace fuzz harness covered only
+      `lexer_valid_utf8`. Add a frontend target that drives preprocess → import
+      pre-scan → tokenize over arbitrary UTF-8 input with a stub summary
+      provider, asserting no panics and recoverable-diagnostics-only outcomes
+      on the recovery paths that tasks 9 and 22 promise.
     - Re-entry trigger (fuzz): when the recovery surface grows with
       `mizar-parser` grammar expansion (task 28), or before the first
       end-user-facing milestone, whichever comes first. Re-entry trigger
       (performance): when the driver's incremental loop exists and consumes
-      `FrontendOutput.cache_keys`, add timing baselines for comment-only versus
-      import-edit reruns.
+      `FrontendOutput.cache_keys`, extend the current full-pipeline baselines
+      with true incremental timing for comment-only versus import-edit reruns.
     - Depends on: 22. Spec: [preprocess.md](./preprocess.md),
       [lexing.md](./lexing.md), [cache_key.md](./cache_key.md).
+    - Completed in task 27: added `frontend_valid_utf8` under `fuzz/` using an
+      empty summary provider and the stub parser seam, so arbitrary valid UTF-8
+      exercises source loading, preprocessing/import pre-scan, active lexical
+      environment recovery, tokenization, and diagnostic merging without hard
+      frontend errors. Added Criterion baselines in
+      `crates/mizar-frontend/benches/frontend_pipeline.rs` for cold full
+      pipeline runs plus comment-only and import-edit full-pipeline edited
+      fixtures that consume `FrontendOutput.cache_keys`; true driver
+      incremental rerun timing remains reserved for the performance re-entry
+      trigger above.
 
 28. **Grammar-recovery follow-through with `mizar-parser` growth.** [ ] Deferred.
     - The pending work behind the `[~]` statuses of `parsing` and

@@ -9,11 +9,20 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
+mizar-frontend = { path = "../crates/mizar-frontend" }
 mizar-lexer = { path = "../crates/mizar-lexer" }
+mizar-session = { path = "../crates/mizar-session" }
 
 [[bin]]
 name = "lexer_valid_utf8"
 path = "fuzz_targets/lexer_valid_utf8.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "frontend_valid_utf8"
+path = "fuzz_targets/frontend_valid_utf8.rs"
 test = false
 doc = false
 bench = false

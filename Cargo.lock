@@ -305,6 +305,7 @@ name = "mizar-frontend"
 version = "0.1.0"
 dependencies = [
  "blake3",
+ "criterion",
  "mizar-lexer",
  "mizar-parser",
  "mizar-session",

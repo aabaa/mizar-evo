@@ -18,3 +18,10 @@ mizar-lexer = { path = "../mizar-lexer" }
 mizar-parser = { path = "../mizar-parser" }
 mizar-session = { path = "../mizar-session" }
 mizar-syntax = { path = "../mizar-syntax" }
+
+[dev-dependencies]
+criterion = "0.7"
+
+[[bench]]
+name = "frontend_pipeline"
+harness = false
