@@ -1,0 +1,35 @@
+surface-ast-snapshot-v1
+root:
+  Root range=0..48 recovered=false
+    Token kind=Identifier text="id" range=0..2 recovered=false
+    Token kind=ReservedWord text="theorem" range=3..10 recovered=false
+    Token kind=ReservedSymbol text=";" range=10..11 recovered=false
+    Token kind=Numeral text="42" range=12..14 recovered=false
+    Token kind=LexemeRun text="abc" range=15..18 recovered=false
+    Token kind=UserSymbol text="++" range=19..21 recovered=false
+    Token kind=StringLiteral text="line\nvalue" range=22..32 recovered=false
+    Token kind=ErrorRecovery text="<error>" range=32..39 recovered=false
+    Token kind=Unknown text="?" range=39..40 recovered=false
+    Token kind=ErrorRecovery text="bad\ttext" range=40..48 recovered=true
+    InfixExpression spelling="++" precedence=10 associativity=Right range=0..21 recovered=false
+      Token kind=Identifier text="id" range=0..2 recovered=false
+      Token kind=UserSymbol text="++" range=19..21 recovered=false
+      Token kind=Numeral text="42" range=12..14 recovered=false
+    ErrorRecovery kind=MissingEnd range=48..48 recovered=true
+      Token kind=ReservedWord text="theorem" range=3..10 recovered=false
+expression_root:
+  InfixExpression spelling="++" precedence=10 associativity=Right range=0..21 recovered=false
+    Token kind=Identifier text="id" range=0..2 recovered=false
+    Token kind=UserSymbol text="++" range=19..21 recovered=false
+    Token kind=Numeral text="42" range=12..14 recovered=false
+token_nodes:
+  Token kind=Identifier text="id" range=0..2 recovered=false
+  Token kind=ReservedWord text="theorem" range=3..10 recovered=false
+  Token kind=ReservedSymbol text=";" range=10..11 recovered=false
+  Token kind=Numeral text="42" range=12..14 recovered=false
+  Token kind=LexemeRun text="abc" range=15..18 recovered=false
+  Token kind=UserSymbol text="++" range=19..21 recovered=false
+  Token kind=StringLiteral text="line\nvalue" range=22..32 recovered=false
+  Token kind=ErrorRecovery text="<error>" range=32..39 recovered=false
+  Token kind=Unknown text="?" range=39..40 recovered=false
+  Token kind=ErrorRecovery text="bad\ttext" range=40..48 recovered=true

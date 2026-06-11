@@ -112,7 +112,7 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
      produces deterministic snapshots.
    - Deps: 1. Spec: [ast.md](./ast.md) "Public API".
 
-3. **Deterministic snapshot rendering.** [ ]
+3. **Deterministic snapshot rendering.** [x]
    - Add a stable, human-readable text rendering of `SurfaceAst` (kind, range,
      recovered flag, children indented) for corpus snapshot baselines required
      by [architecture/en/20.test_strategy.md](../../architecture/en/20.test_strategy.md)

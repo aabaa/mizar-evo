@@ -4,9 +4,10 @@
 
 The crate should provide syntax data structures that are stable enough for the parser, resolver, LSP, formatter, and tests to share, while still remaining internal compiler data rather than a stable public artifact schema.
 
-Status: the task-12 minimal crate defines `SurfaceAst`, source-preserving nodes,
-syntax diagnostics, and recovery nodes sufficient for frontend parser-seam
-integration. Full trivia and recovery modeling remain planned.
+Status: the representation foundation owns a rowan-backed `SurfaceAst`, typed
+compatibility views, deterministic snapshot rendering, syntax diagnostics, and
+recovery nodes sufficient for frontend parser-seam integration. Full trivia and
+expanded recovery modeling remain planned.
 
 Initial module specs:
 

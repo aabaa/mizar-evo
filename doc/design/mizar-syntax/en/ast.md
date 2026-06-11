@@ -72,6 +72,23 @@ payload, infix payload, and recovery kind without requiring rowan traversal.
 The compatibility `SurfaceAst::node` accessor remains available for existing
 tests and migration code.
 
+### Snapshot Rendering
+
+`SurfaceAst::snapshot_text` returns the deterministic, human-readable surface
+snapshot format used by syntax tests and later parser corpus baselines. The
+format is versioned with the `surface-ast-snapshot-v1` header and renders the
+root view, optional expression root, and token compatibility view in stable
+stored order. Each node line includes the surface kind, source-local byte range,
+`recovered` flag, and kind-specific payload needed to distinguish the current
+syntax vocabulary: token kind/text, infix spelling/precedence/associativity,
+or recovery kind.
+
+Snapshot text deliberately avoids rowan pointer identity, builder ids,
+`SurfaceNodeId` values, raw `SourceId` debug output, absolute paths, timings,
+hash-map iteration order, and other nondeterministic data. Ranges are rendered
+as byte offsets within the `SurfaceAst` source; source identity belongs to the
+outer snapshot/profile record owned by `mizar-test`.
+
 ### Range Attachment
 
 Every surface node carries a `SourceRange` from `mizar-session`. For ordinary

@@ -1,5 +1,6 @@
 use crate::recovery::SyntaxRecoveryKind;
 use mizar_session::{SourceId, SourceRange};
+use std::fmt::Write as _;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -168,6 +169,30 @@ impl SurfaceAst {
 
     pub fn rowan_root(&self) -> RowanSyntaxNode {
         RowanSyntaxNode::new_root(self.green.clone())
+    }
+
+    pub fn snapshot_text(&self) -> String {
+        let mut output = String::from("surface-ast-snapshot-v1\n");
+        output.push_str("root:\n");
+        match self.root_view() {
+            Some(root) => write_snapshot_node(&mut output, root, 1),
+            None => output.push_str("  <none>\n"),
+        }
+        output.push_str("expression_root:\n");
+        match self.expression_view() {
+            Some(expression) => write_snapshot_node(&mut output, expression, 1),
+            None => output.push_str("  <none>\n"),
+        }
+        output.push_str("token_nodes:\n");
+        let mut token_count = 0;
+        for token in self.token_views() {
+            token_count += 1;
+            write_snapshot_node(&mut output, token, 1);
+        }
+        if token_count == 0 {
+            output.push_str("  <none>\n");
+        }
+        output
     }
 
     pub fn range_contains_child_ranges(&self, id: SurfaceNodeId) -> Option<bool> {
@@ -625,6 +650,20 @@ impl SurfaceTokenKind {
             Self::Unknown => SyntaxKind::TokenUnknown,
         }
     }
+
+    const fn snapshot_name(self) -> &'static str {
+        match self {
+            Self::Identifier => "Identifier",
+            Self::ReservedWord => "ReservedWord",
+            Self::ReservedSymbol => "ReservedSymbol",
+            Self::Numeral => "Numeral",
+            Self::LexemeRun => "LexemeRun",
+            Self::UserSymbol => "UserSymbol",
+            Self::StringLiteral => "StringLiteral",
+            Self::ErrorRecovery => "ErrorRecovery",
+            Self::Unknown => "Unknown",
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -639,6 +678,85 @@ pub enum SurfaceOperatorAssociativity {
     Left,
     Right,
     NonAssociative,
+}
+
+impl SurfaceOperatorAssociativity {
+    const fn snapshot_name(self) -> &'static str {
+        match self {
+            Self::Left => "Left",
+            Self::Right => "Right",
+            Self::NonAssociative => "NonAssociative",
+        }
+    }
+}
+
+fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: usize) {
+    write_snapshot_indent(output, indent);
+    match view.kind() {
+        SurfaceNodeKind::Root => output.push_str("Root"),
+        SurfaceNodeKind::Token(token) => {
+            let _ = write!(
+                output,
+                "Token kind={} text=\"{}\"",
+                token.kind.snapshot_name(),
+                SnapshotEscaped(token.text.as_ref())
+            );
+        }
+        SurfaceNodeKind::InfixExpression(operator) => {
+            let _ = write!(
+                output,
+                "InfixExpression spelling=\"{}\" precedence={} associativity={}",
+                SnapshotEscaped(operator.spelling.as_ref()),
+                operator.precedence,
+                operator.associativity.snapshot_name()
+            );
+        }
+        SurfaceNodeKind::ErrorRecovery(kind) => {
+            let _ = write!(
+                output,
+                "ErrorRecovery kind={}",
+                recovery_snapshot_name(*kind)
+            );
+        }
+    }
+    let range = view.range();
+    let _ = writeln!(
+        output,
+        " range={}..{} recovered={}",
+        range.start,
+        range.end,
+        view.is_recovered()
+    );
+    for child in view.child_views() {
+        write_snapshot_node(output, child, indent + 1);
+    }
+}
+
+fn write_snapshot_indent(output: &mut String, indent: usize) {
+    for _ in 0..indent {
+        output.push_str("  ");
+    }
+}
+
+fn recovery_snapshot_name(kind: SyntaxRecoveryKind) -> &'static str {
+    match kind {
+        SyntaxRecoveryKind::ErrorToken => "ErrorToken",
+        SyntaxRecoveryKind::MissingEnd => "MissingEnd",
+        SyntaxRecoveryKind::MissingStringLiteral => "MissingStringLiteral",
+    }
+}
+
+struct SnapshotEscaped<'a>(&'a str);
+
+impl std::fmt::Display for SnapshotEscaped<'_> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for character in self.0.chars() {
+            for escaped in character.escape_default() {
+                formatter.write_char(escaped)?;
+            }
+        }
+        Ok(())
+    }
 }
 
 fn build_green_tree(nodes: &[SurfaceNode], root: Option<SurfaceNodeId>) -> rowan::GreenNode {
@@ -1051,9 +1169,68 @@ mod tests {
     }
 
     #[test]
+    fn repeated_snapshot_rendering_is_byte_identical() {
+        let ast = expression_ast(source_id(5));
+
+        assert_eq!(ast.snapshot_text(), ast.snapshot_text());
+        assert_eq!(
+            ast.snapshot_text(),
+            expression_ast(source_id(5)).snapshot_text()
+        );
+    }
+
+    #[test]
+    fn snapshot_rendering_matches_current_vocabulary_baseline() {
+        const EXPECTED: &str = include_str!(
+            "../../../tests/snapshots/mizar_syntax_surface_ast_current_vocabulary.snap"
+        );
+        let ast = current_vocabulary_snapshot_ast(source_id(6));
+        let actual = ast.snapshot_text();
+
+        assert_eq!(actual, EXPECTED);
+        assert!(actual.contains("ErrorRecovery kind=MissingEnd range=48..48 recovered=true"));
+        assert!(actual.contains("text=\"line\\nvalue\""));
+        assert!(
+            !actual.contains("SourceId"),
+            "snapshot text must not expose opaque source-id debug output"
+        );
+    }
+
+    #[test]
+    fn snapshot_payload_names_cover_current_variants() {
+        let source_id = source_id(7);
+
+        for (associativity, expected) in [
+            (SurfaceOperatorAssociativity::Left, "associativity=Left"),
+            (SurfaceOperatorAssociativity::Right, "associativity=Right"),
+            (
+                SurfaceOperatorAssociativity::NonAssociative,
+                "associativity=NonAssociative",
+            ),
+        ] {
+            let ast = expression_ast_with_associativity(source_id, associativity);
+
+            assert!(ast.snapshot_text().contains(expected));
+        }
+
+        for (recovery_kind, expected) in [
+            (SyntaxRecoveryKind::ErrorToken, "kind=ErrorToken"),
+            (SyntaxRecoveryKind::MissingEnd, "kind=MissingEnd"),
+            (
+                SyntaxRecoveryKind::MissingStringLiteral,
+                "kind=MissingStringLiteral",
+            ),
+        ] {
+            let ast = recovery_ast(source_id, recovery_kind);
+
+            assert!(ast.snapshot_text().contains(expected));
+        }
+    }
+
+    #[test]
     #[should_panic(expected = "must have been created by this builder")]
     fn builder_rejects_child_ids_not_created_by_this_builder() {
-        let source_id = source_id(5);
+        let source_id = source_id(8);
         let other_id = {
             let mut other = SurfaceAstBuilder::new(source_id);
             other.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1))
@@ -1070,7 +1247,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "cannot be shared by multiple non-root parents")]
     fn builder_rejects_token_sharing_between_multiple_structural_parents() {
-        let source_id = source_id(6);
+        let source_id = source_id(9);
         let mut builder = SurfaceAstBuilder::new(source_id);
         let token = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
         let left_expression = builder.add_node(
@@ -1119,6 +1296,113 @@ mod tests {
             SurfaceNodeKind::Root,
             range(source_id, 0, 6),
             vec![left, operator, right, expression],
+        );
+        builder.finish(Some(root), Some(expression))
+    }
+
+    fn expression_ast_with_associativity(
+        source_id: SourceId,
+        associativity: SurfaceOperatorAssociativity,
+    ) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let left = builder.add_token(SurfaceTokenKind::Identifier, "a", range(source_id, 0, 1));
+        let operator =
+            builder.add_token(SurfaceTokenKind::UserSymbol, "++", range(source_id, 2, 4));
+        let right = builder.add_token(SurfaceTokenKind::Identifier, "b", range(source_id, 5, 6));
+        let expression = builder.add_node(
+            SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
+                spelling: "++".into(),
+                precedence: 10,
+                associativity,
+            }),
+            range(source_id, 0, 6),
+            vec![left, operator, right],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 6),
+            vec![left, operator, right, expression],
+        );
+        builder.finish(Some(root), Some(expression))
+    }
+
+    fn recovery_ast(source_id: SourceId, recovery_kind: SyntaxRecoveryKind) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let recovery = builder.add_recovery(recovery_kind, range(source_id, 0, 0), Vec::new());
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 0),
+            vec![recovery],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn current_vocabulary_snapshot_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let identifier =
+            builder.add_token(SurfaceTokenKind::Identifier, "id", range(source_id, 0, 2));
+        let reserved_word = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+            range(source_id, 3, 10),
+        );
+        let reserved_symbol = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 10, 11),
+        );
+        let numeral = builder.add_token(SurfaceTokenKind::Numeral, "42", range(source_id, 12, 14));
+        let lexeme_run =
+            builder.add_token(SurfaceTokenKind::LexemeRun, "abc", range(source_id, 15, 18));
+        let user_symbol =
+            builder.add_token(SurfaceTokenKind::UserSymbol, "++", range(source_id, 19, 21));
+        let string_literal = builder.add_token(
+            SurfaceTokenKind::StringLiteral,
+            "line\nvalue",
+            range(source_id, 22, 32),
+        );
+        let error_token = builder.add_token(
+            SurfaceTokenKind::ErrorRecovery,
+            "<error>",
+            range(source_id, 32, 39),
+        );
+        let unknown = builder.add_token(SurfaceTokenKind::Unknown, "?", range(source_id, 39, 40));
+        let recovered_token = builder.add_recovered_token(
+            SurfaceTokenKind::ErrorRecovery,
+            "bad\ttext",
+            range(source_id, 40, 48),
+        );
+        let expression = builder.add_node(
+            SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
+                spelling: "++".into(),
+                precedence: 10,
+                associativity: SurfaceOperatorAssociativity::Right,
+            }),
+            range(source_id, 0, 21),
+            vec![identifier, user_symbol, numeral],
+        );
+        let recovery = builder.add_recovery(
+            SyntaxRecoveryKind::MissingEnd,
+            range(source_id, 48, 48),
+            vec![reserved_word],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 48),
+            vec![
+                identifier,
+                reserved_word,
+                reserved_symbol,
+                numeral,
+                lexeme_run,
+                user_symbol,
+                string_literal,
+                error_token,
+                unknown,
+                recovered_token,
+                expression,
+                recovery,
+            ],
         );
         builder.finish(Some(root), Some(expression))
     }

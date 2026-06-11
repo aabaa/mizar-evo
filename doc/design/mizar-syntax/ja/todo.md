@@ -107,7 +107,7 @@ task 11/12 の最小境界（`SurfaceAst`、`SurfaceNode`、recovery kind、
      親の範囲が子の範囲を包含すること。繰り返し構築が決定的 snapshot を生むこと。
    - 依存: 1。仕様: [ast.md](./ast.md)「Public API」。
 
-3. **決定的なスナップショットレンダリング。** [ ]
+3. **決定的なスナップショットレンダリング。** [x]
    - [architecture/ja/20.test_strategy.md](../../architecture/ja/20.test_strategy.md)
      「スナップショットテスト」が要求するコーパスのスナップショット
      ベースラインのために、`SurfaceAst` の安定した人間可読テキスト

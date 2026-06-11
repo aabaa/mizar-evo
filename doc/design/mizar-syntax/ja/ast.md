@@ -70,6 +70,22 @@ view を返し、rowan traversal を要求せずに kind、range、recovered fla
 token payload、infix payload、recovery kind を公開する。互換用の
 `SurfaceAst::node` accessor は既存テストと移行コードのために残す。
 
+### Snapshot rendering
+
+`SurfaceAst::snapshot_text` は、syntax test と後続の parser corpus baseline が使う、
+決定的で人間可読な surface snapshot format を返す。format は
+`surface-ast-snapshot-v1` header で version 付けされ、root view、任意の
+expression root、token 互換 view を保存順で安定して描画する。各 node 行には
+surface kind、source-local な byte range、`recovered` flag、および現在の構文語彙
+を区別するための kind 固有 payload（token kind/text、infix の
+spelling/precedence/associativity、または recovery kind）を含める。
+
+snapshot text は、rowan pointer identity、builder id、`SurfaceNodeId` 値、
+生の `SourceId` debug 出力、absolute path、実行時間、hash-map iteration order、
+その他の非決定的データを意図的に含めない。range は `SurfaceAst` の source 内の
+byte offset として描画する。source identity は `mizar-test` が所有する外側の
+snapshot/profile record の責務である。
+
 ### Range attachment
 
 各 surface node は `mizar-session` の `SourceRange` を持つ。通常 node では親の

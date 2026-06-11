@@ -6,7 +6,9 @@
 
 この crate は、パーサー、リゾルバ、LSP、フォーマッタ、テストが共有できる構文データ構造を提供する。ただし、安定した公開アーティファクトスキーマではなく、コンパイラ内部データである。
 
-状態: task 12 の最小 crate は、frontend parser-seam 統合に必要な `SurfaceAst`、ソース順を保持するノード、構文診断、回復ノードを定義している。完全な trivia と回復モデルは引き続き計画中である。
+状態: 表現基盤は、frontend parser-seam 統合に必要な rowan-backed `SurfaceAst`、typed
+互換 view、決定的な snapshot rendering、構文診断、回復ノードを所有している。完全な
+trivia と拡張された回復モデルは引き続き計画中である。
 
 初期のモジュール仕様:
 
