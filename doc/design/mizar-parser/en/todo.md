@@ -19,9 +19,11 @@
 `mizar-parser` implements the syntax grammar: frontend-adapted tokens in,
 `mizar_syntax::SurfaceAst` plus syntax diagnostics out. It is built as a thin
 infrastructure layer (cursor, synchronization, recovery emission, corpus
-runner) followed by grammar growth one syntactic category at a time, each
-category paired with a `mizar-syntax` node-vocabulary task and a corpus
-expansion.
+runner) followed by grammar growth a few productions at a time. Each grammar
+task is paired with a `mizar-syntax` node-vocabulary increment and a corpus
+expansion, and is deliberately sized so that one task can be implemented,
+tested, and committed autonomously without holding the rest of the grammar in
+flight.
 
 ## Crate Prerequisites
 
@@ -51,6 +53,11 @@ grammar task ships, in the same change:
   the spec section it pins
   ([traceability.md](../../mizar-test/en/traceability.md)).
 
+Exception: a helper task whose production has no stand-alone grammar position
+(for example task 4, qualified symbols) ships unit tests in its own change and
+notes which later task delivers its corpus coverage; that later task must list
+the helper's corpus cases explicitly.
+
 Grow toward the recommended pass/fail mix of
 [architecture/en/20.test_strategy.md](../../architecture/en/20.test_strategy.md)
 (40% pass / 60% fail overall): every accepted form gets at least one
@@ -67,13 +74,17 @@ shape, not just "did not crash".
   specs under [doc/spec/en/](../../../spec/en/00.index.md) are normative;
   [appendix_a.grammar_summary.md](../../../spec/en/appendix_a.grammar_summary.md)
   is the consolidated summary and is still being brushed up. Each grammar task
-  re-derives its productions from the owning chapter; when implementation
+  starts by transcribing its production inventory into a named section of
+  [grammar.md](./grammar.md) (English and Japanese in the same change); that
+  section is the task's bounded normative reference. When implementation
   exposes a gap, ambiguity, or contradiction in the EBNF, fix the owning
-  chapter and the appendix (English and Japanese in the same change) as part
-  of that task rather than deferring. Grammar brush-up is expected to proceed
-  alongside implementation, not ahead of it.
-- **Dot-role surface shape: open, resolved by task 6.** The parser resolves
-  dot roles only as far as syntax allows (spec
+  chapter and the appendix (English and Japanese together) as part of that
+  task rather than deferring. Grammar brush-up proceeds alongside
+  implementation, not ahead of it.
+- **Dot-role surface shape: open, resolved by task 10.** Also registered at
+  the top level ([../../todo.md](../../todo.md) "Resolved And Open Decisions")
+  because it spans `mizar-parser`, `mizar-syntax`, and the future resolver.
+  The parser resolves dot roles only as far as syntax allows (spec
   [§A.2.5](../../../spec/en/appendix_a.grammar_summary.md) "Dot
   disambiguation"): compound reserved tokens and registered user symbols are
   lexer-owned; selector-versus-namespace separation depends on variable scope
@@ -133,16 +144,31 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
 
 ### Grammar growth
 
-Each grammar task follows the same template, in one change: re-derive the
-EBNF from the owning spec chapter (brush up the spec if implementation exposes
-gaps — English and Japanese together), add the paired `mizar-syntax` nodes,
-implement the productions with synchronization and recovery, and ship unit
-tests plus pass/fail corpus cases with `spec_trace.toml` entries per the
-[Test Corpus Policy](#test-corpus-policy).
+Each grammar task follows the same template, in one change:
 
-4. **Module skeleton and top-level item dispatch.** [ ]
-   - Module file shape; `import` items with aliases and relative prefixes;
-     export/visibility forms; top-level item dispatch by keyword with
+1. transcribe the task's production inventory from the owning spec chapter
+   into a named section of [grammar.md](./grammar.md) (English and Japanese
+   together), brushing up the chapter and
+   [appendix A](../../../spec/en/appendix_a.grammar_summary.md) if the
+   transcription exposes gaps;
+2. add the paired `mizar-syntax` node increment;
+3. implement the productions with synchronization and recovery;
+4. ship unit tests plus pass/fail corpus cases with `spec_trace.toml` entries
+   per the [Test Corpus Policy](#test-corpus-policy).
+
+4. **Qualified symbols and namespace paths.** [ ]
+   - A shared helper for `qualified_symbol = { namespace_segment "." }
+     user_symbol` and dotted module paths, used later by imports, type heads,
+     terms, and citations. Path shapes only; variable shadowing stays
+     resolver-side.
+   - Corpus exception: unit tests here; corpus coverage lands with the first
+     consuming positions (tasks 6 and 8) and must be listed there.
+   - Deps: 3, `mizar-syntax` task 8 (path-node increment). Spec:
+     [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md)
+     §12.7, [§A.2.5/§A.2.8](../../../spec/en/appendix_a.grammar_summary.md).
+
+5. **Module skeleton and top-level item dispatch.** [ ]
+   - Module file shape and top-level item dispatch by keyword with
      synchronization at item boundaries, so every later category drops into a
      stable skeleton.
    - Recovery: unknown top-level token skips to the next item keyword with a
@@ -150,158 +176,268 @@ tests plus pass/fail corpus cases with `spec_trace.toml` entries per the
    - Deps: 3, `mizar-syntax` task 6. Spec:
      [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
-5. **Type expressions.** [ ]
+6. **Import items.** [ ]
+   - `import` items with aliases and relative prefixes (`.`/`..`); shapes stay
+     consistent with the frontend import-prescan stubs. Includes the deferred
+     corpus cases for task 4 path shapes.
+   - Deps: 4, 5. Spec:
+     [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
+
+7. **Export and visibility items.** [ ]
+   - Export forms, `open`/`inherit`, and `public`/`private` visibility markers
+     on items, per the module chapter.
+   - Deps: 5. Spec:
+     [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
+
+8. **Type expressions.** [ ]
    - Attribute chains (with `non`), radix/mode type heads, `of`/`over`
      argument lists, struct-qualified attribute references. Term arguments
-     enter through a term-entry stub until task 6 lands (types and terms are
-     mutually recursive).
-   - Deps: 4, `mizar-syntax` task 7. Spec:
+     enter through a term-entry stub until task 9 lands (types and terms are
+     mutually recursive). Includes the deferred corpus cases for task 4
+     qualified type heads.
+   - Deps: 4, 5, `mizar-syntax` task 7. Spec:
      [03.type_system.md](../../../spec/en/03.type_system.md),
      [§A.3.2](../../../spec/en/appendix_a.grammar_summary.md).
 
-6. **Primary terms and dot-role surface shape.** [ ]
-   - Primary terms: identifiers, numerals, qualified symbols/namespace paths,
-     parenthesized terms, application forms, selector access/update chains,
-     Fraenkel/set-builder forms, `qua`. Resolve the dot-role surface-shape
-     decision (see Resolved And Open Decisions) and record it in
-     [grammar.md](./grammar.md) and the spec appendix.
-   - Deps: 5, `mizar-syntax` task 8. Spec:
-     [13.term_expression.md](../../../spec/en/13.term_expression.md),
-     [§A.2.5](../../../spec/en/appendix_a.grammar_summary.md).
-
-7. **Operator expressions (Pratt over the active lexicon).** [ ]
-   - Generalize the task-11 explicit-fixity Pratt parser to user prefix,
-     infix, and postfix operators driven by `ParserInputs` fixity metadata,
-     with precedence and associativity per
-     [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md);
-     diagnose non-associative chaining and dangling operators with
-     source-local ranges.
-   - Deps: 6. Spec: [pratt.md](./pratt.md),
+9. **Primary terms.** [ ]
+   - Identifiers, numerals, qualified symbols in term position, parenthesized
+     terms, and application forms; replace the task-8 term-entry stub.
+   - Deps: 8, `mizar-syntax` task 8. Spec:
      [13.term_expression.md](../../../spec/en/13.term_expression.md).
 
-8. **Formulas.** [ ]
-   - Fixed connective table, quantifiers (`for`/`ex` with `st`/`holds`),
-     atomic predicate application, `is` formulas, attribute formulas;
-     formula-level precedence stays separate from term-level fixity.
-   - Deps: 7, `mizar-syntax` task 9. Spec:
-     [14.formulas.md](../../../spec/en/14.formulas.md).
+10. **Selector access/update and the dot-role surface shape.** [ ]
+    - Selector access and update chains (`p.x`, `line.end.y`, `p.x := t`) and
+      the unresolved-dot-chain representation. Resolve the dot-role
+      surface-shape decision (see Resolved And Open Decisions) and record it
+      in [grammar.md](./grammar.md), the spec appendix, and the top-level
+      decision list.
+    - Deps: 9, `mizar-syntax` task 8. Spec:
+      [13.term_expression.md](../../../spec/en/13.term_expression.md),
+      [§A.2.5](../../../spec/en/appendix_a.grammar_summary.md).
 
-9. **Statements.** [ ]
-   - `reserve`, `let`, `assume`, `take`, `consider`, `reconsider`, `set`,
-     `given`, `thus`/`hence`, `then` chains, iterative equality `.=`,
-     `per cases`/`suppose`, `now`/`hereby`.
-   - Deps: 8, `mizar-syntax` task 10. Spec:
-     [15.statements.md](../../../spec/en/15.statements.md).
+11. **`qua` qualification.** [ ]
+    - `term qua type_expression` with precedence against selector and
+      application forms.
+    - Deps: 8, 9. Spec:
+      [13.term_expression.md](../../../spec/en/13.term_expression.md).
 
-10. **Theorems, proofs, and justifications.** [ ]
-    - `theorem`/`lemma` items, labels, `proof … end` nesting, `by`/`from`
-      justifications, citation forms including `.{ … }` grouped citations and
-      `.*` bulk citations.
-    - Deps: 9, `mizar-syntax` task 11. Spec:
+12. **Operator expressions (Pratt over the active lexicon).** [ ]
+    - Generalize the task-11 explicit-fixity Pratt parser to user prefix,
+      infix, and postfix operators driven by `ParserInputs` fixity metadata,
+      with precedence and associativity per
+      [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md);
+      diagnose non-associative chaining and dangling operators with
+      source-local ranges.
+    - Deps: 10, 11, `mizar-syntax` task 8 (operator-node increment). Spec:
+      [pratt.md](./pratt.md),
+      [13.term_expression.md](../../../spec/en/13.term_expression.md).
+
+13. **Atomic formulas.** [ ]
+    - Predicate application (symbolic and identifier forms), `is` formulas,
+      attribute formulas, equality/inequality atoms.
+    - Deps: 12, `mizar-syntax` task 9. Spec:
+      [14.formulas.md](../../../spec/en/14.formulas.md).
+
+14. **Connectives and quantifiers.** [ ]
+    - The fixed connective table (`not`, `&`, `or`, `implies`, `iff`) with its
+      formula-level precedence, kept separate from term-level fixity;
+      quantifiers `for`/`ex` with `st`/`holds` bodies.
+    - Deps: 13. Spec: [14.formulas.md](../../../spec/en/14.formulas.md),
+      [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md).
+
+15. **Fraenkel and set-builder terms.** [ ]
+    - `{ term where … : formula }` and related set-builder forms; placed after
+      formulas because the separator clause embeds a formula.
+    - Deps: 14, `mizar-syntax` task 8 (Fraenkel-node increment). Spec:
+      [13.term_expression.md](../../../spec/en/13.term_expression.md).
+
+16. **Simple statements.** [ ]
+    - `reserve`, `let`, `assume`, `take`, `set`, `given` — the statement forms
+      that carry no justification clause.
+    - Deps: 14, `mizar-syntax` task 10. Spec:
+      [15.statements.md](../../../spec/en/15.statements.md).
+
+17. **Justifications and citations.** [ ]
+    - `by`/`from` justification clauses, citation lists, `.{ … }` grouped
+      citations, `.*` bulk citations, and the compact justified statement
+      (`φ by A;`).
+    - Deps: 16, `mizar-syntax` task 11 (justification-node increment). Spec:
+      [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md) §16.5.
+
+18. **`consider` and `reconsider`.** [ ]
+    - `consider … such that … by …` and `reconsider … as … by …`, both of
+      which carry justifications.
+    - Deps: 17. Spec: [15.statements.md](../../../spec/en/15.statements.md).
+
+19. **Conclusion steps and iterative equality.** [ ]
+    - `thus`/`hence`, `then` chains, and iterative equality `.=` steps with
+      their per-step justifications.
+    - Deps: 17. Spec: [15.statements.md](../../../spec/en/15.statements.md).
+
+20. **Block statements.** [ ]
+    - `now`/`hereby` blocks and `per cases`/`suppose`/`case` blocks with their
+      `end` synchronization.
+    - Deps: 19. Spec: [15.statements.md](../../../spec/en/15.statements.md).
+
+21. **Local definitions and claims.** [ ]
+    - `deffunc`/`defpred` private local definitions and `claim` statements.
+    - Deps: 20. Spec: [15.statements.md](../../../spec/en/15.statements.md),
       [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md).
 
-11. **Definitions.** [ ]
-    - `definition … end` blocks: `attr`/`mode`/`pred`/`func` bodies,
-      `means`/`equals`, `redefine`, `synonym`/`antonym`, correctness
-      conditions, properties.
-    - Deps: 10, `mizar-syntax` task 12. Spec:
+22. **Theorems and proofs.** [ ]
+    - `theorem`/`lemma` items, labels, `proof … end` nesting, and proof-body
+      statement wiring.
+    - Deps: 21, `mizar-syntax` task 11. Spec:
+      [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md).
+
+23. **Definition block skeleton, correctness conditions, and attribute definitions.** [ ]
+    - `definition … end` block shape shared by all definition kinds, the
+      correctness-condition clause shape (`existence`, `uniqueness`,
+      `coherence`, `consistency`, `compatibility`, … with justifications), and
+      `attr` definitions as the first concrete kind.
+    - Deps: 22, `mizar-syntax` task 12. Spec:
+      [06.attributes.md](../../../spec/en/06.attributes.md).
+
+24. **Predicate definitions.** [ ]
+    - `pred` definitions with `means` bodies.
+    - Deps: 23. Spec: [09.predicates.md](../../../spec/en/09.predicates.md).
+
+25. **Functor definitions.** [ ]
+    - `func` definitions with `means`/`equals` bodies.
+    - Deps: 23. Spec: [10.functors.md](../../../spec/en/10.functors.md).
+
+26. **Mode definitions.** [ ]
+    - `mode` definitions with `means` bodies.
+    - Deps: 23. Spec: [07.modes.md](../../../spec/en/07.modes.md).
+
+27. **`redefine`, `synonym`, and `antonym`.** [ ]
+    - Redefinition and notation-aliasing forms across the definition kinds of
+      tasks 23-26.
+    - Deps: 24, 25, 26. Spec:
       [06.attributes.md](../../../spec/en/06.attributes.md),
+      [07.modes.md](../../../spec/en/07.modes.md),
+      [09.predicates.md](../../../spec/en/09.predicates.md),
+      [10.functors.md](../../../spec/en/10.functors.md),
+      [11.symbol_management.md](../../../spec/en/11.symbol_management.md).
+
+28. **Property clauses.** [ ]
+    - Property clauses across definition kinds (`commutativity`,
+      `idempotence`, `involutiveness`, `projectivity`, `reflexivity`,
+      `irreflexivity`, `symmetry`, `asymmetry`, `connectedness`,
+      `transitivity`, `sethood`, …) with justifications.
+    - Deps: 27. Spec: [06.attributes.md](../../../spec/en/06.attributes.md),
       [07.modes.md](../../../spec/en/07.modes.md),
       [09.predicates.md](../../../spec/en/09.predicates.md),
       [10.functors.md](../../../spec/en/10.functors.md).
 
-12. **Structures.** [ ]
+29. **Structures.** [ ]
     - `struct` definitions: fields, inheritance/`extends`, selector
       declarations.
-    - Deps: 11. Spec: [05.structures.md](../../../spec/en/05.structures.md).
+    - Deps: 28, `mizar-syntax` task 12. Spec:
+      [05.structures.md](../../../spec/en/05.structures.md).
 
-13. **Registrations and clusters.** [ ]
-    - `registration … end` blocks, cluster forms, `reduce`, related
-      correctness conditions.
-    - Deps: 12, `mizar-syntax` task 12. Spec:
+30. **Registrations and clusters.** [ ]
+    - `registration … end` blocks, existential/conditional/functorial cluster
+      forms, `reduce`, and their correctness conditions.
+    - Deps: 29, `mizar-syntax` task 12. Spec:
       [17.clusters_and_registrations.md](../../../spec/en/17.clusters_and_registrations.md).
 
-14. **Templates.** [ ]
-    - Template parameters, bracket-form type arguments and parameter
-      prefixes extending the task-5 productions.
-    - Deps: 13, `mizar-syntax` task 13. Spec:
+31. **Templates.** [ ]
+    - Template parameters, bracket-form type arguments and parameter prefixes
+      extending the task-8 productions, `nest` forms.
+    - Deps: 30, `mizar-syntax` task 13. Spec:
       [18.templates.md](../../../spec/en/18.templates.md).
 
-15. **Algorithms.** [ ]
-    - `algorithm` blocks and algorithmic statements: assignment, `while`,
-      `if`, `match`, `break`/`continue`/`return`, `var`/`const`,
-      `invariant`/`decreasing`/`terminating`, `assert`, `ghost`,
-      `requires`/`ensures`.
-    - Deps: 14. Spec:
+32. **Algorithm blocks, assignment, and declarations.** [ ]
+    - `algorithm` block shape, assignment statements, `var`/`const`
+      declarations, `return`.
+    - Deps: 31, `mizar-syntax` task 13. Spec:
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 
-16. **Annotations.** [ ]
+33. **Algorithm control flow.** [ ]
+    - `while`/`do` (with `to`/`downto`), `if`/`else`, `match`,
+      `break`/`continue`.
+    - Deps: 32. Spec:
+      [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
+
+34. **Algorithm verification clauses.** [ ]
+    - `invariant`/`decreasing`/`terminating`, `assert`, `ghost`,
+      `requires`/`ensures`.
+    - Deps: 33. Spec:
+      [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
+
+35. **Annotations.** [ ]
     - Statement-level annotations, `@[...]` library annotations, and
       string-literal annotation arguments (the string-required positions are
       already covered by the frontend lexing plan).
-    - Deps: 15, `mizar-syntax` task 13. Spec:
+    - Deps: 34, `mizar-syntax` task 13. Spec:
       [21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md).
 
 ### Hardening and cross-cutting follow-ups
 
-17. **Recovery consolidation and fail-corpus expansion.** [ ]
+36. **Recovery consolidation and fail-corpus expansion.** [ ]
     - Audit recovery behavior across all categories: skipped-token nodes,
       unmatched delimiters, malformed annotations; close gaps where a category
       still aborts instead of synchronizing. Expand the fail corpus toward the
       recommended pass/fail mix.
-    - Deps: 16. Spec: [recovery.md](./recovery.md),
+    - Deps: 35. Spec: [recovery.md](./recovery.md),
       [architecture/en/20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 
-18. **`SurfaceAst` snapshot baselines.** [ ]
+37. **`SurfaceAst` snapshot baselines.** [ ]
     - Add deterministic snapshot baselines under `tests/snapshots/` for
       representative corpus cases, using the `mizar-syntax` rendering (its
       task 3); wire snapshot comparison into the corpus runner.
-    - Deps: 3, 16, `mizar-syntax` task 3. Spec:
+    - Deps: 3, 35, `mizar-syntax` task 3. Spec:
       [../../mizar-test/en/snapshot.md](../../mizar-test/en/snapshot.md).
 
-19. **Determinism property tests.** [ ]
+38. **Determinism property tests.** [ ]
     - Crate-level coverage that identical token streams produce identical
       `SurfaceAst` node orders, ranges, and diagnostic orders, mirroring the
       frontend determinism suite.
-    - Deps: 16. Spec:
+    - Deps: 35. Spec:
       [architecture/en/20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 
-20. **Parser fuzz target.** [ ]
+39. **Parser fuzz target.** [ ]
     - Add a workspace fuzz target driving tokenization plus parsing over
       arbitrary UTF-8, asserting no panics and recoverable-diagnostics-only
       completion. This is the same trigger that re-opens `mizar-frontend`
       task 27; coordinate so the frontend target and this one land together.
-    - Deps: 17. Spec: [recovery.md](./recovery.md),
+    - Deps: 36. Spec: [recovery.md](./recovery.md),
       [../../mizar-frontend/en/todo.md](../../mizar-frontend/en/todo.md) task 27.
 
-21. **Frontend passthrough follow-through.** [ ]
+40. **Frontend passthrough follow-through.** [ ]
     - Grammar growth past the minimal seam re-opens `mizar-frontend` task 28:
       keep frontend recovery-marker passthrough, diagnostic merge order, and
       `SurfaceAstCacheKey` invalidation coverage in step with each grammar
       task, and flip the frontend `parsing`/`orchestration` statuses to `[x]`
       once the full grammar-recovery contract is in.
-    - Deps: starts with 4, completes with 17. Spec:
+    - Deps: starts with 5, completes with 36. Spec:
       [../../mizar-frontend/en/todo.md](../../mizar-frontend/en/todo.md) task 28.
 
-22. **Source/spec correspondence audit.** [ ]
+41. **Source/spec correspondence audit and reserved-word coverage.** [ ]
     - Trace every public API and promised behavior in [grammar.md](./grammar.md),
       [pratt.md](./pratt.md), and [recovery.md](./recovery.md) to
       implementation and tests; record gaps as follow-up tasks.
-    - Deps: 17. Spec: all module specs and this TODO.
+    - Verify that every reserved word of
+      [§A.2.4](../../../spec/en/appendix_a.grammar_summary.md) is consumed by
+      at least one parser corpus test (or is explicitly recorded as
+      reserved-for-future with no grammar position yet), so silently
+      unimplemented keywords are detected mechanically.
+    - Deps: 36. Spec: all module specs and this TODO.
 
-23. **Bilingual documentation sync audit.** [ ]
+42. **Bilingual documentation sync audit.** [ ]
     - Compare each English canonical document under
       `doc/design/mizar-parser/en/` with its Japanese companion and
       synchronize API lists, statuses, terminology, links, and behavior
       promises.
-    - Deps: 22. Spec: repository documentation policy.
+    - Deps: 41. Spec: repository documentation policy.
 
-24. **Public enum forward-compatibility policy.** [ ]
+43. **Public enum forward-compatibility policy.** [ ]
     - Decide `#[non_exhaustive]` versus deliberate exhaustiveness for
       `ParserTokenKind`, `OperatorAssociativity`, `StringRequiredContext`, and
       any later public enums, aligned with the `mizar-frontend` task-25
       procedure and the `mizar-syntax` task-14 decisions.
-    - Deps: 16. Spec: all module specs.
+    - Deps: 35. Spec: all module specs.
 
 ## Recommended Verification
 
@@ -333,5 +469,6 @@ Check the task off here once tests pass.
   28 grammar-recovery follow-through); check that TODO when expanding
   recovery surfaces.
 - Spec EBNF brush-up is part of each grammar task, not a separate workstream;
-  fixes land in the owning chapter and appendix A, English and Japanese
-  together.
+  the production inventory transcribed into [grammar.md](./grammar.md) is each
+  task's bounded contract, and fixes land in the owning chapter and appendix
+  A, English and Japanese together.

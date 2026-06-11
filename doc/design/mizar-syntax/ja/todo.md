@@ -44,11 +44,13 @@ kind、`SyntaxDiagnostic`）はすでに `mizar-parser` と
   コメントとドキュメントコメントを `PreprocessedSource` へ抽出している。
   `SurfaceAst` が付随 trivia を保持するか、frontend 所有の trivia を範囲で
   参照するか、attachment ヒントのみを保存するかを決める。
-- **ドットの役割の surface 形状: 未解決。`mizar-parser` task 6 が所有する。**
+- **ドットの役割の surface 形状: 未解決。`mizar-parser` task 10 が所有する。**
   パーサーは resolver なしでは selector access と namespace 区切りを完全には
   分離できない（仕様 [§A.2.5](../../../spec/ja/appendix_a.grammar_summary.md)）。
-  AST は未解決のドット連鎖を構文的に表現しなければならない。
-  [../../mizar-parser/ja/todo.md](../../mizar-parser/ja/todo.md) で管理する。
+  AST は未解決のドット連鎖を構文的に表現しなければならない。トップレベル
+  （[../../todo.md](../../todo.md)「Resolved And Open Decisions」）にも登録
+  済みで、[../../mizar-parser/ja/todo.md](../../mizar-parser/ja/todo.md) で
+  管理する。
 - **公開 enum の前方互換性: 未解決。task 14 で解決する。** 語彙が公開 enum を
   列挙できる程度に安定したら、`mizar-frontend` task 25 が確立したのと同じ
   enum ごとの `#[non_exhaustive]` 対 exhaustive の決定手続きを適用する。
@@ -122,51 +124,63 @@ kind、`SyntaxDiagnostic`）はすでに `mizar-parser` と
 
 ### ノード語彙（`mizar-parser` の文法タスクと対）
 
-各語彙タスクは、対になる `mizar-parser` 文法タスクと同じ変更（または直前）で
-着地し、その文法領域が必要とするノード種別と子の役割を追加し、スナップショット
-レンダリングを拡張する。仕様参照は [doc/spec/ja/](../../../spec/ja/00.index.md)
-配下の規範的な文法章である。
+各領域のノード種別は**増分的に**追加する: 各増分は、それを構築する
+`mizar-parser` 文法タスクと同じ変更で着地し（変更の粒度はパーサー todo の
+番号付けが統制する）、各増分はスナップショットレンダリングを拡張する。以下の
+語彙タスクは、対になるパーサータスクの最後が着地した時点でチェックを入れる。
+それを構築するパーサータスクに先行して、投機的にノード種別を追加しない。
+仕様参照は [doc/spec/ja/](../../../spec/ja/00.index.md) 配下の規範的な文法章で
+ある。
 
-6. **モジュールと item のノード。** [ ] — `mizar-parser` task 4 と対。
-   - モジュールファイルの形、import / export / open の item、トップレベル
-     item リストとキーワードでディスパッチ可能な item 種別。
+6. **モジュールと item のノード。** [ ] — `mizar-parser` task 5〜7 と対。
+   - モジュールファイルの形、トップレベル item リストとキーワードで
+     ディスパッチ可能な item 種別（parser task 5）。alias と相対 prefix を
+     持つ import item（parser task 6）。export、`open` / `inherit`、可視性の
+     形（parser task 7）。
    - 仕様: [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)。
 
-7. **型式のノード。** [ ] — `mizar-parser` task 5 と対。
+7. **型式のノード。** [ ] — `mizar-parser` task 8 と対。
    - 属性連鎖（`non` を含む）、radix / mode の型ヘッド、`of` / `over` 引数、
      struct 修飾の属性参照。
    - 仕様: [03.type_system.md](../../../spec/ja/03.type_system.md)、
      [§A.3.2](../../../spec/ja/appendix_a.grammar_summary.md)。
 
-8. **項のノード。** [ ] — `mizar-parser` task 6〜7 と対。
-   - 一次項（識別子、数値、修飾シンボル、括弧、適用形）、未解決のドット連鎖、
-     selector access / update、Fraenkel / 集合内包形、`qua`、および task 12 の
-     `InfixExpression` を prefix / postfix 形へ一般化する演算子式ノード。
+8. **項のノード。** [ ] — `mizar-parser` task 4、9〜12、15 と対。
+   - 最初の増分: parser task 4 が必要とする修飾シンボル／namespace パスの
+     ノード。続いて一次項（parser task 9）、未解決ドット連鎖と selector
+     access / update（parser task 10、ドットの役割の surface 形状の決定を
+     含む）、`qua`（parser task 11）、task 12 の `InfixExpression` を
+     prefix / postfix 形へ一般化する演算子式ノード（parser task 12）、
+     Fraenkel / 集合内包形（parser task 15）。
    - 仕様: [13.term_expression.md](../../../spec/ja/13.term_expression.md)、
      [appendix_b.operator_precedence.md](../../../spec/ja/appendix_b.operator_precedence.md)。
 
-9. **論理式のノード。** [ ] — `mizar-parser` task 8 と対。
-   - 結合子、量化子（`for` / `ex` / `st` / `holds`）、原子述語適用、`is`
-     論理式、属性論理式。
+9. **論理式のノード。** [ ] — `mizar-parser` task 13〜14 と対。
+   - 原子述語適用、`is` 論理式、属性論理式（parser task 13）。結合子と
+     量化子（`for` / `ex` / `st` / `holds`）（parser task 14）。
    - 仕様: [14.formulas.md](../../../spec/ja/14.formulas.md)。
 
-10. **文のノード。** [ ] — `mizar-parser` task 9 と対。
-    - `reserve`、`let`、`assume`、`take`、`consider`、`reconsider`、`set`、
-      `given`、`thus` / `hence`、`then` 連鎖、逐次的等式 `.=`、
-      `per cases` / `suppose`、`now` / `hereby`。
+10. **文のノード。** [ ] — `mizar-parser` task 16 と 18〜21 と対。
+    - 単純文 `reserve`、`let`、`assume`、`take`、`set`、`given`（parser
+      task 16）。`consider` / `reconsider`（parser task 18）。
+      `thus` / `hence`、`then` 連鎖、逐次的等式 `.=`（parser task 19）。
+      `now` / `hereby` と `per cases` / `suppose` ブロック（parser task 20）。
+      `deffunc` / `defpred` のローカル定義と `claim`（parser task 21）。
     - 仕様: [15.statements.md](../../../spec/ja/15.statements.md)。
 
-11. **定理・証明・正当化のノード。** [ ] — `mizar-parser` task 10 と対。
-    - `theorem` / `lemma` の item、ラベル、`proof … end` の入れ子、正当化
-      （`by`、`from`）、`.{ … }` と `.*` を含む引用形。
+11. **定理・証明・正当化のノード。** [ ] — `mizar-parser` task 17 と 22 と対。
+    - 正当化句（`by`、`from`）、`.{ … }` と `.*` を含む引用形（parser
+      task 17）。`theorem` / `lemma` の item、ラベル、`proof … end` の入れ子
+      （parser task 22）。
     - 仕様: [16.theorems_and_proofs.md](../../../spec/ja/16.theorems_and_proofs.md)。
 
 12. **定義・構造体・registration のノード。** [ ] — `mizar-parser`
-    task 11〜13 と対。
-    - definition ブロック（`attr` / `mode` / `pred` / `func`、
-      `means` / `equals`、`redefine`、`synonym` / `antonym`、correctness
-      条件、property）、フィールドと継承を持つ `struct` 定義、registration と
-      cluster の形、`reduce`。
+    task 23〜30 と対。
+    - definition ブロック骨格、correctness 条件句、`attr` 定義（parser
+      task 23）。`pred` / `func` / `mode` の本体（parser task 24〜26）。
+      `redefine`、`synonym` / `antonym`（parser task 27）。property 句
+      （parser task 28）。フィールドと継承を持つ `struct` 定義（parser
+      task 29）。registration と cluster の形、`reduce`（parser task 30）。
     - 仕様: [06.attributes.md](../../../spec/ja/06.attributes.md)、
       [07.modes.md](../../../spec/ja/07.modes.md)、
       [09.predicates.md](../../../spec/ja/09.predicates.md)、
@@ -175,11 +189,11 @@ kind、`SyntaxDiagnostic`）はすでに `mizar-parser` と
       [17.clusters_and_registrations.md](../../../spec/ja/17.clusters_and_registrations.md)。
 
 13. **テンプレート・アルゴリズム・注釈のノード。** [ ] — `mizar-parser`
-    task 14〜16 と対。
-    - テンプレートパラメータと bracket 形の型引数。algorithm ブロックと
-      アルゴリズム文（`while`、`if`、`match`、代入、
-      `invariant` / `decreasing`、`assert`、`ghost`、`var` / `const`）。
-      文レベル注釈、`@[...]` ライブラリ注釈、文字列リテラル注釈引数。
+    task 31〜35 と対。
+    - テンプレートパラメータと bracket 形の型引数（parser task 31）。
+      algorithm ブロック・代入・宣言（parser task 32）。制御フロー（parser
+      task 33）。検証句（parser task 34）。文レベル注釈、`@[...]` ライブラリ
+      注釈、文字列リテラル注釈引数（parser task 35）。
     - 仕様: [18.templates.md](../../../spec/ja/18.templates.md)、
       [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)、
       [21.source_code_annotation_and_atp.md](../../../spec/ja/21.source_code_annotation_and_atp.md)。
@@ -194,7 +208,8 @@ kind、`SyntaxDiagnostic`）はすでに `mizar-parser` と
       記録し、属性を適用する。
     - この crate は frontend よりも早く resolver / LSP / formatter の消費者を
       得る。最初のそうした消費者が着地する前に決定する。
-    - 依存: 12（語彙が概ね安定）。仕様: すべてのモジュール仕様。
+    - 依存: 13（語彙の完成）。仕様: すべてのモジュール仕様。
+
 15. **ソース／仕様の対応監査。** [ ]
     - `mizar-frontend` task 16 の監査に倣う: [ast.md](./ast.md)、
       [trivia.md](./trivia.md)、[recovery.md](./recovery.md) のすべての公開

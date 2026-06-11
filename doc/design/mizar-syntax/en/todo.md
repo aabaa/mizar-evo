@@ -45,11 +45,13 @@ same change.
   extracts comments and doc comments into `PreprocessedSource`; decide whether
   `SurfaceAst` carries attached trivia, references frontend-owned trivia by
   range, or stores only attachment hints.
-- **Dot-role surface shape: open, owned by `mizar-parser` task 6.** The parser
-  cannot fully separate selector access from namespace separation without the
-  resolver (spec [§A.2.5](../../../spec/en/appendix_a.grammar_summary.md)); the
-  AST must represent unresolved dot chains syntactically. Tracked in
-  [../../mizar-parser/en/todo.md](../../mizar-parser/en/todo.md).
+- **Dot-role surface shape: open, owned by `mizar-parser` task 10.** The
+  parser cannot fully separate selector access from namespace separation
+  without the resolver (spec
+  [§A.2.5](../../../spec/en/appendix_a.grammar_summary.md)); the AST must
+  represent unresolved dot chains syntactically. Also registered at the top
+  level ([../../todo.md](../../todo.md) "Resolved And Open Decisions");
+  tracked in [../../mizar-parser/en/todo.md](../../mizar-parser/en/todo.md).
 - **Public enum forward compatibility: open, resolved by task 14.** Apply the
   same per-enum `#[non_exhaustive]`-versus-exhaustive decision procedure that
   `mizar-frontend` task 25 established, once the vocabulary stabilizes enough
@@ -123,53 +125,66 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
 
 ### Node vocabulary (paired with `mizar-parser` grammar tasks)
 
-Each vocabulary task lands in the same change as (or immediately before) the
-paired `mizar-parser` grammar task, adds the node kinds and child roles that
-grammar area needs, and extends snapshot rendering. Spec references are the
+Node kinds for each area are added **incrementally**: each increment lands in
+the same change as the `mizar-parser` grammar task that constructs it (the
+parser todo's numbering governs the change granularity), and each increment
+extends snapshot rendering. A vocabulary task below is checked off when the
+last of its paired parser tasks lands. Do not add node kinds speculatively
+ahead of the parser task that constructs them. Spec references are the
 normative grammar chapters under [doc/spec/en/](../../../spec/en/00.index.md).
 
-6. **Module and item nodes.** [ ] — paired with `mizar-parser` task 4.
-   - Module file shape, import/export/open items, top-level item list and item
-     kinds dispatchable by keyword.
+6. **Module and item nodes.** [ ] — paired with `mizar-parser` tasks 5-7.
+   - Module file shape, top-level item list and item kinds dispatchable by
+     keyword (parser task 5); import items with aliases and relative prefixes
+     (parser task 6); export, `open`/`inherit`, and visibility forms (parser
+     task 7).
    - Spec: [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
-7. **Type expression nodes.** [ ] — paired with `mizar-parser` task 5.
+7. **Type expression nodes.** [ ] — paired with `mizar-parser` task 8.
    - Attribute chains (with `non`), radix/mode type heads, `of`/`over`
      arguments, struct-qualified attribute references.
    - Spec: [03.type_system.md](../../../spec/en/03.type_system.md),
      [§A.3.2](../../../spec/en/appendix_a.grammar_summary.md).
 
-8. **Term nodes.** [ ] — paired with `mizar-parser` tasks 6-7.
-   - Primary terms (identifiers, numerals, qualified symbols, parenthesized,
-     application forms), unresolved dot chains, selector access and update,
-     Fraenkel/set-builder forms, `qua`, and operator-expression nodes
-     generalizing the task-12 `InfixExpression` to prefix/postfix forms.
+8. **Term nodes.** [ ] — paired with `mizar-parser` tasks 4, 9-12, and 15.
+   - First increment: qualified-symbol/namespace-path nodes needed by parser
+     task 4. Then primary terms (parser task 9), unresolved dot chains and
+     selector access/update (parser task 10, including the dot-role surface
+     shape decision), `qua` (parser task 11), operator-expression nodes
+     generalizing the task-12 `InfixExpression` to prefix/postfix forms
+     (parser task 12), and Fraenkel/set-builder forms (parser task 15).
    - Spec: [13.term_expression.md](../../../spec/en/13.term_expression.md),
      [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md).
 
-9. **Formula nodes.** [ ] — paired with `mizar-parser` task 8.
-   - Connectives, quantifiers (`for`/`ex`/`st`/`holds`), atomic predicate
-     application, `is` formulas, attribute formulas.
+9. **Formula nodes.** [ ] — paired with `mizar-parser` tasks 13-14.
+   - Atomic predicate application, `is` formulas, attribute formulas (parser
+     task 13); connectives and quantifiers (`for`/`ex`/`st`/`holds`) (parser
+     task 14).
    - Spec: [14.formulas.md](../../../spec/en/14.formulas.md).
 
-10. **Statement nodes.** [ ] — paired with `mizar-parser` task 9.
-    - `reserve`, `let`, `assume`, `take`, `consider`, `reconsider`, `set`,
-      `given`, `thus`/`hence`, `then` chains, iterative equality `.=`,
-      `per cases`/`suppose`, `now`/`hereby`.
+10. **Statement nodes.** [ ] — paired with `mizar-parser` tasks 16 and 18-21.
+    - Simple statements `reserve`, `let`, `assume`, `take`, `set`, `given`
+      (parser task 16); `consider`/`reconsider` (parser task 18);
+      `thus`/`hence`, `then` chains, iterative equality `.=` (parser task 19);
+      `now`/`hereby` and `per cases`/`suppose` blocks (parser task 20);
+      `deffunc`/`defpred` local definitions and `claim` (parser task 21).
     - Spec: [15.statements.md](../../../spec/en/15.statements.md).
 
 11. **Theorem, proof, and justification nodes.** [ ] — paired with
-    `mizar-parser` task 10.
-    - `theorem`/`lemma` items, labels, `proof … end` nesting, justifications
-      (`by`, `from`), citation forms including `.{ … }` and `.*`.
+    `mizar-parser` tasks 17 and 22.
+    - Justification clauses (`by`, `from`), citation forms including `.{ … }`
+      and `.*` (parser task 17); `theorem`/`lemma` items, labels,
+      `proof … end` nesting (parser task 22).
     - Spec: [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md).
 
 12. **Definition, structure, and registration nodes.** [ ] — paired with
-    `mizar-parser` tasks 11-13.
-    - Definition blocks (`attr`/`mode`/`pred`/`func`, `means`/`equals`,
-      `redefine`, `synonym`/`antonym`, correctness conditions, properties),
-      `struct` definitions with fields and inheritance, registration and
-      cluster forms, `reduce`.
+    `mizar-parser` tasks 23-30.
+    - Definition block skeleton, correctness-condition clauses, and `attr`
+      definitions (parser task 23); `pred`/`func`/`mode` bodies (parser tasks
+      24-26); `redefine`, `synonym`/`antonym` (parser task 27); property
+      clauses (parser task 28); `struct` definitions with fields and
+      inheritance (parser task 29); registration and cluster forms and
+      `reduce` (parser task 30).
     - Spec: [06.attributes.md](../../../spec/en/06.attributes.md),
       [07.modes.md](../../../spec/en/07.modes.md),
       [09.predicates.md](../../../spec/en/09.predicates.md),
@@ -178,12 +193,12 @@ normative grammar chapters under [doc/spec/en/](../../../spec/en/00.index.md).
       [17.clusters_and_registrations.md](../../../spec/en/17.clusters_and_registrations.md).
 
 13. **Template, algorithm, and annotation nodes.** [ ] — paired with
-    `mizar-parser` tasks 14-16.
-    - Template parameters and bracket-form type arguments; algorithm blocks
-      and algorithmic statements (`while`, `if`, `match`, assignment,
-      `invariant`/`decreasing`, `assert`, `ghost`, `var`/`const`);
+    `mizar-parser` tasks 31-35.
+    - Template parameters and bracket-form type arguments (parser task 31);
+      algorithm blocks, assignment, declarations (parser task 32); control
+      flow (parser task 33); verification clauses (parser task 34);
       statement-level annotations, `@[...]` library annotations, and
-      string-literal annotation arguments.
+      string-literal annotation arguments (parser task 35).
     - Spec: [18.templates.md](../../../spec/en/18.templates.md),
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md),
       [21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md).
@@ -198,7 +213,7 @@ normative grammar chapters under [doc/spec/en/](../../../spec/en/00.index.md).
       enum in the owning module spec, and apply the attributes.
     - This crate gains resolver/LSP/formatter consumers earlier than the
       frontend did; decide before the first such consumer lands.
-    - Deps: 12 (vocabulary mostly stable). Spec: all module specs.
+    - Deps: 13 (vocabulary complete). Spec: all module specs.
 
 15. **Source/spec correspondence audit.** [ ]
     - Mirror the `mizar-frontend` task-16 audit: trace every public API and

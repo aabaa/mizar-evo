@@ -82,3 +82,11 @@ See the affected-modules lists in
   and the lexer never receives arbitrary parser state. The plan covers
   grammar-position string literals and parser-driven user-symbol kind filters,
   including Unicode inside annotation string arguments.
+- **Dot-role surface shape: open.** The parser resolves dot roles only as far
+  as syntax allows (spec
+  [§A.2.5](../spec/en/appendix_a.grammar_summary.md)): selector-versus-namespace
+  separation depends on variable scope and is finalized by the resolver, so
+  `mizar-syntax` must represent unresolved dot chains syntactically. This
+  decision spans `mizar-parser`, `mizar-syntax`, and the future resolver; it is
+  owned by [mizar-parser/en/todo.md](./mizar-parser/en/todo.md) task 10
+  together with `mizar-syntax` task 8.
