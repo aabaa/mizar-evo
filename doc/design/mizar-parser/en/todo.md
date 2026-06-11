@@ -400,9 +400,9 @@ Each grammar task follows the same template, in one change:
 39. **Parser fuzz target.** [ ]
     - Add a workspace fuzz target driving tokenization plus parsing over
       arbitrary UTF-8, asserting no panics and recoverable-diagnostics-only
-      completion. Coordinate with the `mizar-frontend` task 29 real-parser fuzz
-      follow-up so the frontend target and this one land together when
-      possible.
+      completion. The `mizar-frontend` task 29 real-parser fuzz follow-up has
+      landed the frontend-owned target; this task tracks the parser-owned
+      counterpart.
     - Deps: 36. Spec: [recovery.md](./recovery.md),
       [../../mizar-frontend/en/todo.md](../../mizar-frontend/en/todo.md) task 29.
 

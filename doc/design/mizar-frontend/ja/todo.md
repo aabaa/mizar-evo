@@ -271,7 +271,7 @@
 
 27. **フロントエンドパイプラインの fuzz ターゲットと性能ベースライン。** [x] 完了。
     - この task の前は、ワークスペースの fuzz ハーネスは `lexer_valid_utf8` のみを対象としていた。スタブのサマリプロバイダを使って任意の UTF-8 入力上で preprocess → import 事前走査 → tokenize を駆動するフロントエンドターゲットを追加し、task 9 と task 22 が約束する回復経路で panic が起きず、回復可能診断のみで完了することをアサートする。
-    - 再着手トリガー（fuzz）: task 28 が parser-recovery growth trigger を満たしたため、task 29 で real-parser fuzz follow-up を明示的に記録する。再着手トリガー（性能）: driver の増分ループが存在し `FrontendOutput.cache_keys` を消費するようになったとき、現在の full-pipeline baseline を拡張し、コメントのみの編集と import 編集の真の増分再実行について計時を追加する。
+    - 再着手トリガー（fuzz）: task 28 が parser-recovery growth trigger を満たし、task 29 で real-parser fuzz follow-up は完了した。再着手トリガー（性能）: driver の増分ループが存在し `FrontendOutput.cache_keys` を消費するようになったとき、現在の full-pipeline baseline を拡張し、コメントのみの編集と import 編集の真の増分再実行について計時を追加する。
     - 依存: 22。仕様: [preprocess.md](./preprocess.md)、[lexing.md](./lexing.md)、[cache_key.md](./cache_key.md)。
     - task 27 で完了した内容: 空の summary provider と stub parser seam を使う `frontend_valid_utf8` を `fuzz/` に追加し、任意の valid UTF-8 について source loading、preprocess/import 事前走査、active lexical environment の回復、tokenize、diagnostic merge が hard frontend error なしで走ることを確認するようにした。`crates/mizar-frontend/benches/frontend_pipeline.rs` に Criterion baseline を追加し、cold full pipeline run と、`FrontendOutput.cache_keys` を消費する comment-only / import-edit の full-pipeline 編集 fixture を計測する。driver の真の増分再実行 timing は、上記の性能再着手トリガーまで保留する。
 
@@ -280,9 +280,9 @@
     - 将来の文法／回復拡大では、同じ checklist（recovery-node passthrough、構文診断の merge ordering、新しい文法形状に対する `SurfaceAstCacheKey` 無効化）を繰り返す新しい task を開く。
     - 依存: 12、13。仕様: [parsing.md](./parsing.md)、[orchestration.md](./orchestration.md)。
 
-29. **実 parser を使う frontend fuzz follow-up。** [ ] 計画済み。
-    - task 28 は、task 27 で追加した stub-only fuzz target を超えて parser recovery surface を拡大した。valid UTF-8 を preprocessing、tokenization、`MizarParserSeam`、構文診断 merge、`SurfaceAstCacheKey` construction へ通し、parser recovery path でも panic せず recoverable diagnostics のみで完了することを確認する frontend fuzz target を追加または拡張する。
-    - 可能なら `mizar-parser` task 39 と調整し、parser-owned と frontend-owned の fuzz coverage を一緒に着地させる。
+29. **実 parser を使う frontend fuzz follow-up。** [x] 完了。
+    - `frontend_valid_utf8` fuzz target は stub seam ではなく `MizarParserSeam` を使うようになった。これにより任意の valid UTF-8 は preprocessing、tokenization、実 parser seam、構文診断 merge、parser が AST を返す場合の `SurfaceAstCacheKey` construction まで流れる。parser 診断は hard frontend error ではなく、回復可能な frontend output として残る。
+    - `mizar-parser` task 39 と調整する frontend-owned 側は着地済み。parser-owned fuzz target は引き続き task 39 で追跡する。
     - 依存: 27、28。仕様: [parsing.md](./parsing.md)、[orchestration.md](./orchestration.md)、[cache_key.md](./cache_key.md)。
 
 ## 推奨検証

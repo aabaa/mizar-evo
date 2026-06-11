@@ -2,11 +2,11 @@
 
 > 正本は英語です。英語版: [../en/source_spec_correspondence.md](../en/source_spec_correspondence.md)。
 
-状態: task 28 まで完了。
+状態: task 29 まで完了。
 
 ## 範囲
 
-この監査は、task 28 後の `mizar-frontend` 実装を、まず英語正本の
+この監査は、task 29 後の `mizar-frontend` 実装を、まず英語正本の
 `doc/design/mizar-frontend/en/` 仕様に照合し、その後で日本語 companion
 仕様が同じ公開 API 名、エラー／診断 variant、挙動の約束を保持している
 ことを確認する。
@@ -21,10 +21,11 @@
 - task 1-20 が約束する公開 API とエラー／診断 variant、task 21 の lint
   policy guard、task 22 の精密な生スキャン回復契約、および task 23 の
   resident-set guard、task 25 の enum 前方互換方針、task 26 の rustdoc
-  summary 方針、task 28 の parser-growth follow-through について、欠落した実装は見つからなかった。
+  summary 方針、task 28 の parser-growth follow-through、task 29 の
+  real-parser frontend fuzz coverage について、欠落した実装は見つからなかった。
 - task 2 の source 要件文は、監査前に追加済みだった open-buffer `file://`
   診断パスの decode/fallback テストを明示するよう更新した。
-- task 1-28 について、英語正本仕様に残る古い記述は見つからなかった。
+- task 1-29 について、英語正本仕様に残る古い記述は見つからなかった。
 - 日本語 companion 仕様は、API 名と挙動の約束が英語正本と一致することを
   確認した。API または挙動の drift は残っていない。
 - より広い bilingual wording/terminology review は task 17 で完了し、
@@ -105,14 +106,16 @@ task 25 では、将来 variant または予約 surface を約束する公開 fr
 | 24 | 完了 | 予約済み frontend diagnostic surface は、構築可能な範囲で coverage 済み: `UnsupportedLexerPreprocessMap`、provider-owned の予約 lexical-environment diagnostic code、予約 source-load fallback location、`AnnotationSyntax`、`UnsupportedLexerPayload`。producer-backed tests は、将来の non-exhaustive lexer/session/parser contract まで延期する。 |
 | 25 | 完了 | 将来 variant または予約 surface を約束する公開 frontend enum は下流 crate 向けに `#[non_exhaustive]` とし、`mizar-frontend` 内部の match は exhaustive に保つ。所有モジュール仕様は enum の隣に enum ごとの決定を記録している。 |
 | 26 | 完了 | 公開 `mizar-frontend` module と公開 API item は、正準 design spec 由来の短い rustdoc summary を持つ。詳細な挙動の約束は引き続き `doc/design/mizar-frontend/en/` に置く。 |
-| 27 | 完了 | `frontend_valid_utf8` fuzz target と Criterion frontend baseline は `fuzz/` と `crates/mizar-frontend/benches/frontend_pipeline.rs` に実装済み。task 28 で発火した real-parser fuzz follow-up は task 29 に記録する。 |
+| 27 | 完了 | `frontend_valid_utf8` fuzz target と Criterion frontend baseline は `fuzz/` と `crates/mizar-frontend/benches/frontend_pipeline.rs` に実装済み。task 28 で発火した real-parser fuzz follow-up は task 29 で完了した。 |
 | 28 | 完了 | parser-growth follow-through は `mizar-parser`、`src/parsing.rs`、`src/orchestration.rs` に実装済み。nested block-end recovery、algorithm control-block matching、quantifier `for` exclusion、frontend recovery-node passthrough、構文診断 merge coverage、parser 出力 semantics 変更に対する `MIZAR_PARSER_CACHE_KEY_VERSION` invalidation を確認する。 |
+| 29 | 完了 | `frontend_valid_utf8` fuzz target は valid UTF-8 を `MizarParserSeam`、構文診断 merge、AST が生成された場合の `SurfaceAstCacheKey` construction まで流す。parser-owned fuzz target は引き続き `mizar-parser` task 39 で追跡する。 |
 
 ## Follow-up 記録
 
 この監査では、予約済みまたは現在 producer を持たない diagnostic/fallback surface
 の coverage 用に task 24 を追加した。task 18、task 19、task 20、task 21、
-task 22、task 23、task 24、task 25、task 26、task 27、task 28 はその後完了した。
-task 29 は次の real-parser frontend fuzz follow-up を記録する。現在予約されている
-fallback variant に対する具体的 producer を将来の non-exhaustive lexer/session/parser
-contract が公開した場合は、producer-backed tests を追加する。
+task 22、task 23、task 24、task 25、task 26、task 27、task 28、task 29 はその後完了した。
+task 29 は frontend-owned の real-parser fuzz follow-up を完了した。parser-owned 側は
+`mizar-parser` task 39 で引き続き追跡する。現在予約されている fallback variant に対する
+具体的 producer を将来の non-exhaustive lexer/session/parser contract が公開した場合は、
+producer-backed tests を追加する。

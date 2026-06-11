@@ -2,11 +2,11 @@
 
 > Canonical language: English. Japanese companion: [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md).
 
-Status: completed through task 28.
+Status: completed through task 29.
 
 ## Scope
 
-This audit checks the task-28 `mizar-frontend` implementation against the
+This audit checks the task-29 `mizar-frontend` implementation against the
 English canonical module specs under `doc/design/mizar-frontend/en/`, then checks
 that the Japanese companion specs carry the same public API names, error and
 diagnostic variants, and behavior promises.
@@ -22,10 +22,11 @@ follow-up task instead of being mixed into the audit.
   variants promised by tasks 1-20, the task-21 lint policy guard, the task-22
   precise raw-scan recovery contract, the task-23 resident-set guard, the
   task-25 enum forward-compatibility policy, the task-26 rustdoc summary
-  policy, or the task-28 parser-growth follow-through.
+  policy, the task-28 parser-growth follow-through, or the task-29
+  real-parser frontend fuzz coverage.
 - The task-2 source requirement text now names the open-buffer `file://`
   diagnostic-path decode/fallback tests that were added before this audit.
-- No remaining stale English canonical spec text was found for tasks 1-28.
+- No remaining stale English canonical spec text was found for tasks 1-29.
 - Japanese companion specs were checked for matching API names and behavior
   promises. No remaining API or behavior drift was found.
 - Broader bilingual wording/terminology review was completed by task 17 in
@@ -109,14 +110,16 @@ exhaustive.
 | 24 | Complete | Reserved frontend diagnostic surfaces are covered where constructible: `UnsupportedLexerPreprocessMap`, provider-owned reserved lexical-environment diagnostic codes, reserved source-load fallback locations, `AnnotationSyntax`, and `UnsupportedLexerPayload`. Producer-backed tests remain deferred for future non-exhaustive lexer/session/parser contracts. |
 | 25 | Complete | Public frontend enums with promised future variants or reserved surfaces are `#[non_exhaustive]` for downstream crates, while internal `mizar-frontend` matches remain exhaustive. Owning module specs record the per-enum decision next to each enum. |
 | 26 | Complete | Public `mizar-frontend` modules and public API items carry short rustdoc summaries derived from the canonical design specs, while detailed behavior promises remain in `doc/design/mizar-frontend/en/`. |
-| 27 | Complete | The `frontend_valid_utf8` fuzz target and Criterion frontend baselines are implemented under `fuzz/` and `crates/mizar-frontend/benches/frontend_pipeline.rs`; task 29 records the real-parser fuzz follow-up triggered by task 28. |
+| 27 | Complete | The `frontend_valid_utf8` fuzz target and Criterion frontend baselines are implemented under `fuzz/` and `crates/mizar-frontend/benches/frontend_pipeline.rs`; task 29 completed the real-parser fuzz follow-up triggered by task 28. |
 | 28 | Complete | Parser-growth follow-through is implemented in `mizar-parser`, `src/parsing.rs`, and `src/orchestration.rs` with nested block-end recovery, algorithm control-block matching, quantifier `for` exclusion, frontend recovery-node passthrough, syntax diagnostic merge coverage, and `MIZAR_PARSER_CACHE_KEY_VERSION` invalidation for changed parser output semantics. |
+| 29 | Complete | The `frontend_valid_utf8` fuzz target now runs valid UTF-8 through `MizarParserSeam`, syntax diagnostic merging, and `SurfaceAstCacheKey` construction when an AST is produced; `mizar-parser` task 39 continues tracking the parser-owned fuzz target. |
 
 ## Follow-up Records
 
 This audit added task 24 for reserved or currently unproduced diagnostic/fallback
-surface coverage. Tasks 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, and 28 have
-since been completed. Task 29 records the next real-parser frontend fuzz
-follow-up. Future producer-backed tests should be added when non-exhaustive
+surface coverage. Tasks 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, and 29
+have since been completed. Task 29 completed the frontend-owned real-parser
+fuzz follow-up; the parser-owned counterpart remains tracked by `mizar-parser`
+task 39. Future producer-backed tests should be added when non-exhaustive
 lexer/session/parser contracts expose new concrete producers for the currently
 reserved fallback variants.

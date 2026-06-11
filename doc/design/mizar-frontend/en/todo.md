@@ -596,7 +596,7 @@ diagnostic ordering, and cache-key checks.
       provider, asserting no panics and recoverable-diagnostics-only outcomes
       on the recovery paths that tasks 9 and 22 promise.
     - Re-entry trigger (fuzz): task 28 satisfied the parser-recovery growth
-      trigger; task 29 records the real-parser fuzz follow-up explicitly.
+      trigger, and task 29 completed the real-parser fuzz follow-up.
       Re-entry trigger (performance): when the driver's incremental loop exists
       and consumes `FrontendOutput.cache_keys`, extend the current
       full-pipeline baselines with true incremental timing for comment-only
@@ -628,15 +628,15 @@ diagnostic ordering, and cache-key checks.
     - Depends on: 12, 13. Spec: [parsing.md](./parsing.md),
       [orchestration.md](./orchestration.md).
 
-29. **Real-parser frontend fuzz follow-up.** [ ] Planned.
-    - Task 28 expanded the parser recovery surface beyond the stub-only fuzz
-      target added in task 27. Add or extend a frontend fuzz target that runs
-      valid UTF-8 through preprocessing, tokenization, `MizarParserSeam`, syntax
-      diagnostic merging, and `SurfaceAstCacheKey` construction, asserting no
-      panics and recoverable-diagnostics-only completion for parser recovery
-      paths.
-    - Coordinate with `mizar-parser` task 39 so parser-owned and
-      frontend-owned fuzz coverage land together when possible.
+29. **Real-parser frontend fuzz follow-up.** [x] Complete.
+    - The `frontend_valid_utf8` fuzz target now uses `MizarParserSeam` instead
+      of the stub seam, so arbitrary valid UTF-8 flows through preprocessing,
+      tokenization, the real parser seam, syntax diagnostic merging, and
+      `SurfaceAstCacheKey` construction when the parser returns an AST.
+      Parser diagnostics remain recoverable frontend output rather than hard
+      frontend errors.
+    - This lands the frontend-owned half coordinated with `mizar-parser` task
+      39; the parser-owned fuzz target remains tracked there.
     - Depends on: 27, 28. Spec: [parsing.md](./parsing.md),
       [orchestration.md](./orchestration.md), [cache_key.md](./cache_key.md).
 
