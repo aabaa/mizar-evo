@@ -90,7 +90,8 @@ Bottom-up by phase, with three leaf strands pulled forward because they sit
 on the critical path of cross-module work.
 
 1. **mizar-resolve** (phases 4-5) — first consumer of `SurfaceAst`; start
-   once parser tasks 5-7 (module/import/export items) land, then grow with
+   once parser tasks 5-7 (module/import/export items) land and the initial
+   parser/syntax public-enum compatibility policy is recorded, then grow with
    parser grammar coverage. [todo](./mizar-resolve/en/todo.md)
 2. **Early leaf strands, in parallel with 1:**
    - **mizar-artifact wave A** — canonical serialization plus

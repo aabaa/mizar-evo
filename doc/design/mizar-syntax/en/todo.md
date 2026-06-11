@@ -52,10 +52,11 @@ same change.
   represent unresolved dot chains syntactically. Also registered at the top
   level ([../../todo.md](../../todo.md) "Resolved And Open Decisions");
   tracked in [../../mizar-parser/en/todo.md](../../mizar-parser/en/todo.md).
-- **Public enum forward compatibility: open, resolved by task 14.** Apply the
-  same per-enum `#[non_exhaustive]`-versus-exhaustive decision procedure that
-  `mizar-frontend` task 25 established, once the vocabulary stabilizes enough
-  to enumerate the public enums.
+- **Public enum forward compatibility: open, initially resolved by the
+  pre-consumer gate.** Apply the same per-enum `#[non_exhaustive]`-versus-
+  exhaustive decision procedure that `mizar-frontend` task 25 established
+  before `mizar-syntax` becomes a resolver/LSP input, and revisit it as new
+  vocabulary enums are added.
 
 ## Ordered Task List
 
@@ -107,9 +108,10 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
      attachment targets, skipped-token ranges, and whitespace-sensitive hints
      needed by formatter and LSP consumers.
    - Doc-comment attachment stays syntactic; no semantic interpretation.
-   - Tests: attachment of a doc comment to the following item node; skipped
-     ranges preserved with source ranges; rendering includes trivia
-     deterministically when requested.
+   - Tests: trivia ownership and attachment hints; skipped ranges preserved with
+     source ranges; rendering includes trivia deterministically when requested.
+     The concrete "doc comment attaches to the following item node" fixture
+     lands with the first item-node increment in task 6 / parser task 5.
    - Deps: 2, 3. Spec: [trivia.md](./trivia.md).
 
 5. **Recovery vocabulary expansion.** [ ]
@@ -122,6 +124,18 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
    - Tests: each recovery kind constructible with correct ranges; recovered
      subtree query helpers; snapshot rendering marks each kind distinctly.
    - Deps: 2. Spec: [recovery.md](./recovery.md).
+
+### Pre-consumer compatibility gate
+
+**Initial public enum forward-compatibility gate.** [ ]
+- For each public enum available at the phase-3 boundary (`SurfaceNodeKind`,
+  `SurfaceTokenKind`, `SyntaxRecoveryKind`, `SyntaxDiagnosticCode`, and trivia
+  kinds introduced by task 4), decide `#[non_exhaustive]` versus deliberate
+  exhaustiveness using the `mizar-frontend` task-25 procedure.
+- Record each decision next to the enum in the owning module spec and apply the
+  attributes before parser tasks 5-7 can make resolver/LSP consumers plausible.
+- Deps: 4, 5. Spec: [ast.md](./ast.md), [trivia.md](./trivia.md),
+  [recovery.md](./recovery.md).
 
 ### Node vocabulary (paired with `mizar-parser` grammar tasks)
 
@@ -150,9 +164,12 @@ normative grammar chapters under [doc/spec/en/](../../../spec/en/00.index.md).
    - First increment: qualified-symbol/namespace-path nodes needed by parser
      task 4. Then primary terms (parser task 9), unresolved dot chains and
      selector access/update (parser task 10, including the dot-role surface
-     shape decision), `qua` (parser task 11), operator-expression nodes
-     generalizing the task-12 `InfixExpression` to prefix/postfix forms
-     (parser task 12), and Fraenkel/set-builder forms (parser task 15).
+     shape decision), functional structure updates, `qua` (parser task 11),
+     operator-expression nodes generalizing the task-12 `InfixExpression` to
+     prefix/postfix forms (parser task 12), and Fraenkel/set-builder forms
+     (parser task 15). Primary-term coverage includes `it`, choice expressions
+     (`the type_expression`), structure constructors, set enumeration literals,
+     and application forms.
    - Spec: [13.term_expression.md](../../../spec/en/13.term_expression.md),
      [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md).
 
@@ -173,9 +190,11 @@ normative grammar chapters under [doc/spec/en/](../../../spec/en/00.index.md).
 11. **Theorem, proof, and justification nodes.** [ ] — paired with
     `mizar-parser` tasks 17 and 22.
     - Justification clauses (`by`, `from`), citation forms including `.{ … }`
-      and `.*` (parser task 17); `theorem`/`lemma` items, labels,
-      `proof … end` nesting (parser task 22).
-    - Spec: [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md).
+      and `.*`, plus `by computation(...)` option nodes (parser task 17);
+      `theorem`/`lemma` items, labels, `proof … end` nesting (parser task 22).
+    - Spec: [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md),
+      [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md)
+      §20.9.2.
 
 12. **Definition, structure, and registration nodes.** [ ] — paired with
     `mizar-parser` tasks 23-30.
@@ -195,8 +214,10 @@ normative grammar chapters under [doc/spec/en/](../../../spec/en/00.index.md).
 13. **Template, algorithm, and annotation nodes.** [ ] — paired with
     `mizar-parser` tasks 31-35.
     - Template parameters and bracket-form type arguments (parser task 31);
-      algorithm blocks, assignment, declarations (parser task 32); control
-      flow (parser task 33); verification clauses (parser task 34);
+      algorithm blocks, assignment, declarations, ghost declarations/assignments,
+      snapshots, and returns (parser task 32); control flow including processed
+      collection loops and match endings (parser task 33); verification clauses
+      (parser task 34);
       statement-level annotations, `@[...]` library annotations, and
       string-literal annotation arguments (parser task 35).
     - Spec: [18.templates.md](../../../spec/en/18.templates.md),
@@ -206,14 +227,12 @@ normative grammar chapters under [doc/spec/en/](../../../spec/en/00.index.md).
 ### Cross-cutting follow-ups
 
 14. **Public enum forward-compatibility policy.** [ ]
-    - For each public enum (`SurfaceNodeKind`, `SurfaceTokenKind`,
-      `SyntaxRecoveryKind`, `SyntaxDiagnosticCode`, trivia kinds), decide
-      `#[non_exhaustive]` versus deliberate exhaustiveness using the procedure
-      `mizar-frontend` task 25 established, record each decision next to the
-      enum in the owning module spec, and apply the attributes.
-    - This crate gains resolver/LSP/formatter consumers earlier than the
-      frontend did; decide before the first such consumer lands.
-    - Deps: 13 (vocabulary complete). Spec: all module specs.
+    - Revisit the initial public-enum gate once the vocabulary is complete and
+      decide `#[non_exhaustive]` versus deliberate exhaustiveness for any public
+      enums added by later node-vocabulary increments.
+    - Record final decisions next to the enum in the owning module spec and
+      apply any remaining attributes.
+    - Deps: 13. Spec: all module specs.
 
 15. **Source/spec correspondence audit.** [ ]
     - Mirror the `mizar-frontend` task-16 audit: trace every public API and
@@ -241,7 +260,8 @@ Run after each task:
 
 ```text
 cargo test -p mizar-syntax
-cargo clippy -p mizar-syntax --all-targets -- -D warnings
+cargo fmt --check
+cargo clippy -p mizar-syntax --all-targets --all-features -- -D warnings
 ```
 
 For tasks that move or extend the shared boundary, also run:

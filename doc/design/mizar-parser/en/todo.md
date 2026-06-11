@@ -14,7 +14,7 @@
 |---|---|---|---|
 | grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] minimal task-11/12 entry currently lives in `src/lib.rs` |
 | pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] minimal explicit-fixity Pratt currently lives in `src/lib.rs` |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task-12 recovery plus task-28 nested block-end matching currently lives in `src/lib.rs` |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task-12 recovery plus mizar-frontend task-28 nested block-end matching currently lives in `src/lib.rs` |
 
 `mizar-parser` implements the syntax grammar: frontend-adapted tokens in,
 `mizar_syntax::SurfaceAst` plus syntax diagnostics out. It is built as a thin
@@ -91,9 +91,12 @@ shape, not just "did not crash".
   and is finalized by the resolver. Decide the `SurfaceAst` shape that keeps
   unresolved dot chains syntactic, with `mizar-syntax` task 8.
 - **Corpus runner location: open, resolved by task 3.** Parse-only corpus
-  cases need real tokens, so the runner most likely drives the frontend real
-  seam (precedent: `crates/mizar-frontend/tests/lexical_corpus.rs`); the
-  alternative is a runner inside `mizar-test`. Decide and record.
+  cases need real tokens, so the default candidate is a consumer-owned
+  frontend-seam integration test (precedent:
+  `crates/mizar-frontend/tests/lexical_corpus.rs`). `mizar-test` remains free
+  of pipeline dependencies and provides discovery/expectation helpers; do not
+  move parser execution into `mizar-test` unless its harness scope is
+  deliberately changed and documented.
 
 ## Ordered Task List
 
@@ -117,19 +120,20 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
      helper producing `SyntaxDiagnostic` with precise ranges, synchronization
      sets (`;`, `end`, top-level item keywords, EOF), and recovery-node
      emission helpers built on the `mizar-syntax` builder API.
-   - Generalize the task-12 recovery plus task-28 block-stack matching
-     (missing `end`, missing string literal, unrecoverable input, contextual
-     block openers) onto these helpers without changing observable behavior.
+   - Generalize the task-12 recovery plus mizar-frontend task-28 block-stack
+     matching (missing `end`, missing string literal, unrecoverable input,
+     contextual block openers) onto these helpers without changing observable
+     behavior.
    - Tests: synchronization skips to each boundary kind and records skipped
      ranges; expected-token diagnostics carry the right primary range at EOF
      and mid-stream.
    - Deps: 1, `mizar-syntax` task 2. Spec: [recovery.md](./recovery.md).
 
 3. **Parse-only corpus runner.** [ ]
-   - Decide the runner location (frontend-seam integration test following the
-     `lexical_corpus.rs` precedent, or a `mizar-test` runner), record the
-     decision here and in [../../mizar-test/en/harness.md](../../mizar-test/en/harness.md)
-     if it changes harness scope.
+   - Decide the runner location (default: frontend-seam integration test
+     following the `lexical_corpus.rs` precedent), record the decision here and
+     in [../../mizar-test/en/harness.md](../../mizar-test/en/harness.md) only if
+     it changes the no-pipeline-dependency harness scope.
    - Wire `mizar-test` discovery and `.expect.toml` expectations to run every
      `tests/miz/{pass,fail}/parser/` case at stage `parse_only` through real
      tokenization, asserting outcome, diagnostics, and (where present)
@@ -141,6 +145,19 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
      mismatched sidecar fails; seeded pass and fail cases enforce diagnostics.
    - Deps: 2. Spec: [staged_model.md](../../mizar-test/en/staged_model.md),
      [expectation_schema.md](../../mizar-test/en/expectation_schema.md).
+
+### Pre-resolver compatibility gate
+
+**Initial public enum forward-compatibility gate.** [ ]
+- Decide `#[non_exhaustive]` versus deliberate exhaustiveness for the parser
+  public enums that already exist at the phase-3 boundary
+  (`ParserTokenKind`, `OperatorAssociativity`, `StringRequiredContext`), using
+  the `mizar-frontend` task-25 procedure and the initial `mizar-syntax` gate.
+- Record each decision in the owning module spec and apply the attributes before
+  parser tasks 5-7 can become resolver/LSP inputs.
+- Deps: 3 and the initial `mizar-syntax` public-enum gate. Spec:
+  [grammar.md](./grammar.md), [pratt.md](./pratt.md),
+  [recovery.md](./recovery.md).
 
 ### Grammar growth
 
@@ -155,6 +172,10 @@ Each grammar task follows the same template, in one change:
 3. implement the productions with synchronization and recovery;
 4. ship unit tests plus pass/fail corpus cases with `spec_trace.toml` entries
    per the [Test Corpus Policy](#test-corpus-policy).
+
+In dependency lines, a reference such as `mizar-syntax task 8` means the
+specific node-vocabulary increment required by that parser task, not completion
+of the whole syntax vocabulary bucket.
 
 4. **Qualified symbols and namespace paths.** [ ]
    - A shared helper for `qualified_symbol = { namespace_segment "." }
@@ -201,13 +222,16 @@ Each grammar task follows the same template, in one change:
 
 9. **Primary terms.** [ ]
    - Identifiers, numerals, qualified symbols in term position, parenthesized
-     terms, and application forms; replace the task-8 term-entry stub.
+     terms, `it`, choice expressions (`the type_expression`), structure
+     constructors with named field arguments, set enumeration literals, and
+     application forms; replace the task-8 term-entry stub.
    - Deps: 8, `mizar-syntax` task 8. Spec:
      [13.term_expression.md](../../../spec/en/13.term_expression.md).
 
 10. **Selector access/update and the dot-role surface shape.** [ ]
     - Selector access and update chains (`p.x`, `line.end.y`, `p.x := t`) and
-      the unresolved-dot-chain representation. Resolve the dot-role
+      functional structure updates (`p with (...)`), plus the unresolved-dot-chain
+      representation. Resolve the dot-role
       surface-shape decision (see Resolved And Open Decisions) and record it
       in [grammar.md](./grammar.md), the spec appendix, and the top-level
       decision list.
@@ -246,8 +270,10 @@ Each grammar task follows the same template, in one change:
       [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md).
 
 15. **Fraenkel and set-builder terms.** [ ]
-    - `{ term where … : formula }` and related set-builder forms; placed after
-      formulas because the separator clause embeds a formula.
+    - `{ term where … : formula }` and related set-builder/comprehension forms,
+      including the omitted-condition form; placed after formulas because the
+      separator clause embeds a formula. Set enumeration literals are covered by
+      task 9.
     - Deps: 14, `mizar-syntax` task 8 (Fraenkel-node increment). Spec:
       [13.term_expression.md](../../../spec/en/13.term_expression.md).
 
@@ -260,9 +286,12 @@ Each grammar task follows the same template, in one change:
 17. **Justifications and citations.** [ ]
     - `by`/`from` justification clauses, citation lists, `.{ … }` grouped
       citations, `.*` bulk citations, and the compact justified statement
-      (`φ by A;`).
+      (`φ by A;`), including `by computation(...)` options from the algorithm
+      chapter.
     - Deps: 16, `mizar-syntax` task 11 (justification-node increment). Spec:
-      [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md) §16.5.
+      [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md) §16.5,
+      [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md)
+      §20.9.2.
 
 18. **`consider` and `reconsider`.** [ ]
     - `consider … such that … by …` and `reconsider … as … by …`, both of
@@ -307,7 +336,8 @@ Each grammar task follows the same template, in one change:
     - Deps: 23. Spec: [10.functors.md](../../../spec/en/10.functors.md).
 
 26. **Mode definitions.** [ ]
-    - `mode` definitions with `means` bodies.
+    - `mode` definitions using the canonical `is` form: attribute-chain plus
+      radix type, type parameters, and optional `sethood` property clauses.
     - Deps: 23. Spec: [07.modes.md](../../../spec/en/07.modes.md).
 
 27. **`redefine`, `synonym`, and `antonym`.** [ ]
@@ -350,19 +380,22 @@ Each grammar task follows the same template, in one change:
 
 32. **Algorithm blocks, assignment, and declarations.** [ ]
     - `algorithm` block shape, assignment statements, `var`/`const`
-      declarations, `return`.
+      declarations, `ghost var`/`ghost const`, ghost assignments, `snapshot`,
+      and `return` statements with optional justifications.
     - Deps: 31, `mizar-syntax` task 13. Spec:
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 
 33. **Algorithm control flow.** [ ]
     - `while`/`do` (with `to`/`downto`), `if`/`else`, `match`,
+      `for ... in ... processed ...`, `otherwise`/`exhaustive` match endings,
       `break`/`continue`.
     - Deps: 32. Spec:
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 
 34. **Algorithm verification clauses.** [ ]
-    - `invariant`/`decreasing`/`terminating`, `assert`, `ghost`,
-      `requires`/`ensures`.
+    - Header and loop verification clauses: `requires`/`ensures`,
+      `decreasing`, `terminating`, `invariant`, `assert`, and their
+      justifications.
     - Deps: 33. Spec:
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 
@@ -407,8 +440,8 @@ Each grammar task follows the same template, in one change:
       [../../mizar-frontend/en/todo.md](../../mizar-frontend/en/todo.md) task 29.
 
 40. **Frontend passthrough follow-through.** [ ]
-    - Grammar growth past the current task-28 surface opens a new
-      `mizar-frontend` follow-up:
+    - Grammar growth past the current mizar-frontend task-28 parser-recovery
+      surface opens a new `mizar-frontend` follow-up:
       keep frontend recovery-marker passthrough, diagnostic merge order, and
       `SurfaceAstCacheKey` invalidation coverage in step with each grammar
       task.
@@ -434,10 +467,10 @@ Each grammar task follows the same template, in one change:
     - Deps: 41. Spec: repository documentation policy.
 
 43. **Public enum forward-compatibility policy.** [ ]
-    - Decide `#[non_exhaustive]` versus deliberate exhaustiveness for
-      `ParserTokenKind`, `OperatorAssociativity`, `StringRequiredContext`, and
-      any later public enums, aligned with the `mizar-frontend` task-25
-      procedure and the `mizar-syntax` task-14 decisions.
+    - Revisit the initial public-enum gate after task 35 and decide
+      `#[non_exhaustive]` versus deliberate exhaustiveness for any later public
+      enums added by grammar growth, aligned with the `mizar-frontend` task-25
+      procedure and the `mizar-syntax` task-14 final audit.
     - Deps: 35. Spec: all module specs.
 
 ## Recommended Verification
@@ -447,10 +480,15 @@ Run after each task:
 ```text
 cargo test -p mizar-parser
 cargo test -p mizar-syntax
-cargo clippy -p mizar-parser --all-targets -- -D warnings
+cargo fmt --check
+cargo clippy -p mizar-parser --all-targets --all-features -- -D warnings
+cargo clippy -p mizar-syntax --all-targets --all-features -- -D warnings
 ```
 
-For tasks that touch the frontend seam or the corpus runner, also run:
+For every grammar task after the parse-only runner lands, also run the crate
+that owns the parse-only corpus runner selected in task 3 and validate
+`mizar-test` expectations/discovery. If the default frontend-seam runner is
+selected, that means:
 
 ```text
 cargo test -p mizar-frontend
@@ -466,9 +504,10 @@ Check the task off here once tests pass.
   far as syntax allows; the resolver finishes the job.
 - The parser consumes frontend-adapted tokens only; it never re-lexes source
   text and never receives arbitrary lexer or resolver state.
-- Grammar growth after the current task-28 surface should open a new
-  `mizar-frontend` follow-up for fuzz coverage, recovery-marker passthrough,
-  diagnostic merge ordering, and `SurfaceAstCacheKey` invalidation.
+- Grammar growth after the current mizar-frontend task-28 parser-recovery
+  surface should open a new `mizar-frontend` follow-up for fuzz coverage,
+  recovery-marker passthrough, diagnostic merge ordering, and
+  `SurfaceAstCacheKey` invalidation.
 - Spec EBNF brush-up is part of each grammar task, not a separate workstream;
   the production inventory transcribed into [grammar.md](./grammar.md) is each
   task's bounded contract, and fixes land in the owning chapter and appendix

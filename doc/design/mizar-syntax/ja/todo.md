@@ -51,9 +51,10 @@ kind、`SyntaxDiagnostic`）はすでに `mizar-parser` と
   （[../../todo.md](../../todo.md)「Resolved And Open Decisions」）にも登録
   済みで、[../../mizar-parser/ja/todo.md](../../mizar-parser/ja/todo.md) で
   管理する。
-- **公開 enum の前方互換性: 未解決。task 14 で解決する。** 語彙が公開 enum を
-  列挙できる程度に安定したら、`mizar-frontend` task 25 が確立したのと同じ
-  enum ごとの `#[non_exhaustive]` 対 exhaustive の決定手続きを適用する。
+- **公開 enum の前方互換性: 未解決。consumer 前ゲートで初回解決する。**
+  `mizar-syntax` が resolver / LSP の入力になる前に、`mizar-frontend`
+  task 25 が確立したのと同じ enum ごとの `#[non_exhaustive]` 対 exhaustive の
+  決定手続きを適用し、語彙 enum が増えるたびに再確認する。
 
 ## 順序付きタスク一覧
 
@@ -105,9 +106,10 @@ kind、`SyntaxDiagnostic`）はすでに `mizar-parser` と
      消費者が必要とする空白依存ヒント。
    - ドキュメントコメントの attachment は構文的なものにとどめ、意味的解釈を
      持ち込まない。
-   - テスト: ドキュメントコメントが直後の item ノードへ付着する。スキップ
-     範囲がソース範囲とともに保持される。要求時に trivia を含む
-     レンダリングが決定的である。
+   - テスト: trivia の所有権と attachment ヒント。スキップ範囲がソース範囲と
+     ともに保持される。要求時に trivia を含むレンダリングが決定的である。
+     「ドキュメントコメントが直後の item ノードへ付着する」具体 fixture は、
+     task 6 / parser task 5 の最初の item-node 増分で着地させる。
    - 依存: 2、3。仕様: [trivia.md](./trivia.md)。
 
 5. **recovery 語彙の拡張。** [ ]
@@ -121,6 +123,18 @@ kind、`SyntaxDiagnostic`）はすでに `mizar-parser` と
      問い合わせヘルパー。スナップショットレンダリングが各 kind を区別して
      印付けする。
    - 依存: 2。仕様: [recovery.md](./recovery.md)。
+
+### consumer 前の互換性ゲート
+
+**公開 enum 前方互換性の初期ゲート。** [ ]
+- phase 3 境界で利用可能な各公開 enum（`SurfaceNodeKind`、`SurfaceTokenKind`、
+  `SyntaxRecoveryKind`、`SyntaxDiagnosticCode`、および task 4 で導入される
+  trivia の kind）について、`mizar-frontend` task 25 の手続きで
+  `#[non_exhaustive]` 対 意図的 exhaustive を決定する。
+- 各決定を所有モジュール仕様の enum の隣に記録し、parser task 5〜7 によって
+  resolver / LSP の消費者が現実的になる前に属性を適用する。
+- 依存: 4、5。仕様: [ast.md](./ast.md)、[trivia.md](./trivia.md)、
+  [recovery.md](./recovery.md)。
 
 ### ノード語彙（`mizar-parser` の文法タスクと対）
 
@@ -149,9 +163,11 @@ kind、`SyntaxDiagnostic`）はすでに `mizar-parser` と
    - 最初の増分: parser task 4 が必要とする修飾シンボル／namespace パスの
      ノード。続いて一次項（parser task 9）、未解決ドット連鎖と selector
      access / update（parser task 10、ドットの役割の surface 形状の決定を
-     含む）、`qua`（parser task 11）、task 12 の `InfixExpression` を
-     prefix / postfix 形へ一般化する演算子式ノード（parser task 12）、
-     Fraenkel / 集合内包形（parser task 15）。
+     含む）、functional structure update、`qua`（parser task 11）、task 12 の
+     `InfixExpression` を prefix / postfix 形へ一般化する演算子式ノード
+     （parser task 12）、Fraenkel / 集合内包形（parser task 15）。一次項の
+     網羅には `it`、選択式（`the type_expression`）、構造体コンストラクタ、
+     集合列挙リテラル、適用形を含む。
    - 仕様: [13.term_expression.md](../../../spec/ja/13.term_expression.md)、
      [appendix_b.operator_precedence.md](../../../spec/ja/appendix_b.operator_precedence.md)。
 
@@ -170,9 +186,12 @@ kind、`SyntaxDiagnostic`）はすでに `mizar-parser` と
 
 11. **定理・証明・正当化のノード。** [ ] — `mizar-parser` task 17 と 22 と対。
     - 正当化句（`by`、`from`）、`.{ … }` と `.*` を含む引用形（parser
+      task 17）に加え、`by computation(...)` オプションノード（parser
       task 17）。`theorem` / `lemma` の item、ラベル、`proof … end` の入れ子
       （parser task 22）。
-    - 仕様: [16.theorems_and_proofs.md](../../../spec/ja/16.theorems_and_proofs.md)。
+    - 仕様: [16.theorems_and_proofs.md](../../../spec/ja/16.theorems_and_proofs.md)、
+      [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)
+      §20.9.2。
 
 12. **定義・構造体・registration のノード。** [ ] — `mizar-parser`
     task 23〜30 と対。
@@ -191,9 +210,11 @@ kind、`SyntaxDiagnostic`）はすでに `mizar-parser` と
 13. **テンプレート・アルゴリズム・注釈のノード。** [ ] — `mizar-parser`
     task 31〜35 と対。
     - テンプレートパラメータと bracket 形の型引数（parser task 31）。
-      algorithm ブロック・代入・宣言（parser task 32）。制御フロー（parser
-      task 33）。検証句（parser task 34）。文レベル注釈、`@[...]` ライブラリ
-      注釈、文字列リテラル注釈引数（parser task 35）。
+      algorithm ブロック・代入・宣言・ghost 宣言 / 代入・snapshot・return
+      （parser task 32）。processed collection loop と match 終端を含む制御
+      フロー（parser task 33）。検証句（parser task 34）。
+      文レベル注釈、`@[...]` ライブラリ注釈、文字列リテラル注釈引数
+      （parser task 35）。
     - 仕様: [18.templates.md](../../../spec/ja/18.templates.md)、
       [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)、
       [21.source_code_annotation_and_atp.md](../../../spec/ja/21.source_code_annotation_and_atp.md)。
@@ -201,14 +222,11 @@ kind、`SyntaxDiagnostic`）はすでに `mizar-parser` と
 ### 横断的フォローアップ
 
 14. **公開 enum の前方互換方針。** [ ]
-    - 各公開 enum（`SurfaceNodeKind`、`SurfaceTokenKind`、
-      `SyntaxRecoveryKind`、`SyntaxDiagnosticCode`、trivia の kind）について、
-      `mizar-frontend` task 25 が確立した手続きで `#[non_exhaustive]` 対
-      意図的 exhaustive を決定し、所有モジュール仕様の enum の隣に各決定を
-      記録し、属性を適用する。
-    - この crate は frontend よりも早く resolver / LSP / formatter の消費者を
-      得る。最初のそうした消費者が着地する前に決定する。
-    - 依存: 13（語彙の完成）。仕様: すべてのモジュール仕様。
+    - 語彙が完成した時点で公開 enum 初期ゲートを再確認し、後続のノード語彙
+      増分で追加された公開 enum について、`#[non_exhaustive]` 対 意図的
+      exhaustive を決定する。
+    - 最終決定を所有モジュール仕様の enum の隣に記録し、残りの属性を適用する。
+    - 依存: 13。仕様: すべてのモジュール仕様。
 
 15. **ソース／仕様の対応監査。** [ ]
     - `mizar-frontend` task 16 の監査に倣う: [ast.md](./ast.md)、
@@ -236,7 +254,8 @@ kind、`SyntaxDiagnostic`）はすでに `mizar-parser` と
 
 ```text
 cargo test -p mizar-syntax
-cargo clippy -p mizar-syntax --all-targets -- -D warnings
+cargo fmt --check
+cargo clippy -p mizar-syntax --all-targets --all-features -- -D warnings
 ```
 
 共有境界を移動・拡張するタスクでは、次も実行する。
