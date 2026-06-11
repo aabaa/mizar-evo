@@ -35,8 +35,8 @@ It complements [README.md](./README.md) (doc layout) and the pipeline definition
 | mizar-syntax | `SurfaceAst`, syntax nodes, trivia, recovery markers | mizar-session | [~] minimal task-12 surface boundary | [todo](./mizar-syntax/en/todo.md) |
 | mizar-parser | Grammar, Pratt parsing, syntax recovery | mizar-session, mizar-syntax | [~] minimal task-12 parser entry/recovery | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading + phase 1-3 orchestration | mizar-session, mizar-lexer, mizar-syntax, mizar-parser | [x] | [todo](./mizar-frontend/en/todo.md) |
-| mizar-test | Test corpus + harness | (consumers) | [~] skeleton | — |
-| mizar-lsp | Editor integration / range mapping | mizar-session, mizar-lexer | [~] skeleton | — |
+| mizar-test | Test corpus + harness (validation/planning only, no pipeline deps) | — | [~] discovery, expectations, staged model, traceability | [todo](./mizar-test/en/todo.md) |
+| mizar-lsp | Editor protocol bridge, snapshots, range mapping | mizar-session, mizar-lexer (+ mizar-diagnostics, mizar-ir, mizar-driver, mizar-artifact later) | [~] range conversion only | [todo](./mizar-lsp/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signature collection (phases 4-5) | mizar-session, mizar-syntax (+ mizar-artifact summaries later) | [ ] | [todo](./mizar-resolve/en/todo.md) |
 | mizar-checker | Type checking, cluster/registration resolution, overload resolution (phases 6-8) | mizar-session, mizar-resolve | [ ] | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation (phases 9-10) | mizar-session, mizar-resolve, mizar-checker | [ ] | [todo](./mizar-core/en/todo.md) |
@@ -127,6 +127,14 @@ on the critical path of cross-module work.
    [todo](./mizar-driver/en/todo.md)) join here.
 9. **mizar-doc** (phase 16) — documentation rendering and extraction over
    published artifacts. [todo](./mizar-doc/en/todo.md)
+
+Two crates run as cross-cutting strands rather than steps:
+**mizar-test** supports every step from 1 onward (snapshot and
+fail/soundness support ahead of their first consumers,
+[todo](./mizar-test/en/todo.md)); **mizar-lsp** retrofits its range spec
+now, then lands its server/diagnostics wave with `mizar-diagnostics` and
+`mizar-driver` and its metadata features with the semantic layers
+([todo](./mizar-lsp/en/todo.md)).
 
 See the phase table in
 [00.pipeline_overview.md](./architecture/en/00.pipeline_overview.md) and IR
