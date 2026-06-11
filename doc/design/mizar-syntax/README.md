@@ -8,6 +8,6 @@ This directory contains implementation-facing design notes for the `mizar-syntax
 
 ## Expected Module Specs
 
-- [en/ast.md](./en/ast.md) - `SurfaceAst`, node ids, arenas, and syntax node kinds
+- [en/ast.md](./en/ast.md) - `SurfaceAst`, rowan storage, compatibility node views, and syntax node kinds
 - [en/trivia.md](./en/trivia.md) - comments, doc-comment attachment targets, whitespace/trivia retention
 - [en/recovery.md](./en/recovery.md) - error nodes, skipped tokens, and parser recovery markers

@@ -12,7 +12,7 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| ast | [ast.md](./ast.md) | `src/ast.rs` | [~] minimal task-12 surface split into module |
+| ast | [ast.md](./ast.md) | `src/ast.rs` | [~] rowan storage boundary in place; vocabulary still growing |
 | trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [ ] |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] minimal task-12 recovery kinds split into module |
 
@@ -31,11 +31,11 @@ paired with `mizar-parser`.
 
 ## Crate Prerequisites
 
-The crate currently depends only on `mizar-session` (for `SourceId`,
-`SourceRange`, `SourceAnchor`). Task 2 adds `rowan`; if the task-11/12
-`SurfaceNode`-style API needs a transition path, keep it as a compatibility
-wrapper over the rowan-backed representation rather than deferring the backend
-choice. Do not add `salsa` here: the query engine belongs to the
+The crate depends on `mizar-session` (for `SourceId`, `SourceRange`,
+`SourceAnchor`) and `rowan` (for immutable green-tree storage). The task-11/12
+`SurfaceNode`-style API remains as private compatibility side tables exposed
+through typed accessors over the rowan-backed representation. Do not add
+`salsa` here: the query engine belongs to the
 frontend/build/resolver/checker layers, while this crate must stay an
 immutable, query-friendly syntax data boundary. The task-11/12 minimal boundary
 (`SurfaceAst`, `SurfaceNode`, recovery kinds, `SyntaxDiagnostic`) is already
@@ -45,11 +45,11 @@ every change here must keep `cargo test -p mizar-parser` and
 
 ## Resolved And Open Decisions
 
-- **Syntax-tree backend: open, resolved by task 2.** `rowan` is the required
-  target backend for `SurfaceAst`. The default decision is to introduce a
-  rowan-backed green tree in task 2. Compatibility wrappers for existing
-  task-11/12 names may remain, but parser tasks 5-7 must not grow against a
-  custom arena backend.
+- **Syntax-tree backend: resolved.** `SurfaceAst` owns a rowan-backed green
+  tree. Compatibility wrappers for existing task-11/12 names remain as private
+  side-table views exposed through typed accessors, but parser tasks 5-7 must
+  grow against the `SurfaceAstBuilder` and typed accessor boundary rather than
+  a custom arena backend.
 - **Trivia ownership: open, resolved by task 4.** `mizar-frontend` already
   extracts comments and doc comments into `PreprocessedSource`; decide whether
   `SurfaceAst` carries attached trivia, references frontend-owned trivia by
@@ -90,7 +90,7 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
    - Tests: existing consumers compile unchanged; lint-policy guard passes.
    - Deps: none. Spec: [ast.md](./ast.md), [recovery.md](./recovery.md).
 
-2. **`rowan` storage boundary and builder/accessor API.** [ ]
+2. **`rowan` storage boundary and builder/accessor API.** [x]
    - Adopt a rowan-backed `SurfaceAst` green-tree representation and record the
      decision with its rationale in [ast.md](./ast.md). If existing
      `SurfaceNode`/`SurfaceNodeId` names are kept for compatibility, document
@@ -312,7 +312,7 @@ Check the task off here once tests pass.
 - `mizar-syntax` owns syntax data shapes only: no grammar logic, no name
   resolution, no typing, no proof semantics. Resolved symbol ids, inferred
   types, and proof obligations never appear in `SurfaceAst`.
-- `rowan` is the planned syntax-tree backend; parser and consumer code should
+- `rowan` is the syntax-tree backend; parser and consumer code should
   depend on `mizar-syntax` builder/accessor APIs, not on an ad hoc arena layout.
 - `salsa` is a later query/cache layer concern. Preserve pure phase boundaries
   and immutable syntax snapshots here so it can be introduced without rewriting

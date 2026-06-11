@@ -14,3 +14,4 @@ workspace = true
 
 [dependencies]
 mizar-session = { path = "../mizar-session" }
+rowan = "0.16.1"

@@ -427,7 +427,7 @@ mod tests {
             .expect("real parser seam should return SurfaceAst");
         assert_eq!(ast.token_texts(), vec!["alpha", ";", "beta"]);
         let ranges = ast
-            .token_nodes
+            .token_nodes()
             .iter()
             .map(|id| ast.node(*id).unwrap().range)
             .collect::<Vec<_>>();
@@ -482,7 +482,7 @@ mod tests {
             .ast
             .expect("real parser seam should return SurfaceAst");
         let kinds = ast
-            .token_nodes
+            .token_nodes()
             .iter()
             .map(|id| match &ast.node(*id).unwrap().kind {
                 SurfaceNodeKind::Token(token) => token.kind,
@@ -536,7 +536,7 @@ mod tests {
             .ast
             .expect("real parser seam should preserve recovered token streams");
         assert_eq!(ast.token_texts(), vec!["@"]);
-        let node = ast.node(ast.token_nodes[0]).unwrap();
+        let node = ast.node(ast.token_nodes()[0]).unwrap();
         assert!(node.recovered);
         assert_eq!(
             node.range,
@@ -603,7 +603,7 @@ mod tests {
             .ast
             .expect("real parser seam should preserve recovered AST");
         let (recovery_index, recovery_node) = ast
-            .nodes
+            .nodes()
             .iter()
             .enumerate()
             .find(|(_, node)| {
@@ -622,8 +622,8 @@ mod tests {
                 end: 18,
             }
         );
-        assert_eq!(recovery_node.children, vec![ast.token_nodes[0]]);
-        let root = ast.root.expect("recovered AST should have a root");
+        assert_eq!(recovery_node.children, vec![ast.token_nodes()[0]]);
+        let root = ast.root().expect("recovered AST should have a root");
         assert!(
             ast.node(root)
                 .unwrap()
@@ -677,7 +677,7 @@ mod tests {
             .ast
             .expect("nested missing end recovery should preserve an AST");
         let (recovery_index, recovery_node) = ast
-            .nodes
+            .nodes()
             .iter()
             .enumerate()
             .find(|(_, node)| {
@@ -688,8 +688,8 @@ mod tests {
             })
             .expect("nested missing end recovery node should pass through unchanged");
         assert!(recovery_node.recovered);
-        assert_eq!(recovery_node.children, vec![ast.token_nodes[0]]);
-        let root = ast.root.expect("recovered AST should have a root");
+        assert_eq!(recovery_node.children, vec![ast.token_nodes()[0]]);
+        let root = ast.root().expect("recovered AST should have a root");
         assert!(
             ast.node(root)
                 .unwrap()
@@ -783,7 +783,7 @@ mod tests {
             .ast
             .expect("missing string literal should recover an AST");
         let (recovery_index, recovery_node) = ast
-            .nodes
+            .nodes()
             .iter()
             .enumerate()
             .find(|(_, node)| {
@@ -802,7 +802,7 @@ mod tests {
                 end: 0,
             }
         );
-        let root = ast.root.expect("recovered AST should have a root");
+        let root = ast.root().expect("recovered AST should have a root");
         assert!(
             ast.node(root)
                 .unwrap()
@@ -855,7 +855,7 @@ mod tests {
             .ast
             .expect("real parser seam should return SurfaceAst");
         let root = ast
-            .expression_root
+            .expression_root()
             .expect("fixity should build an expression");
         let SurfaceNodeKind::InfixExpression(root_operator) = &ast.node(root).unwrap().kind else {
             panic!("expected infix expression root");
@@ -913,7 +913,7 @@ mod tests {
             .ast
             .expect("real parser seam should return SurfaceAst");
         let root = ast
-            .expression_root
+            .expression_root()
             .expect("fixity should build an expression");
         let SurfaceNodeKind::InfixExpression(root_operator) = &ast.node(root).unwrap().kind else {
             panic!("expected infix expression root");
@@ -983,7 +983,7 @@ mod tests {
             .ast
             .expect("real parser seam should return SurfaceAst");
         let root = ast
-            .expression_root
+            .expression_root()
             .expect("fixity should build an expression");
         let SurfaceNodeKind::InfixExpression(root_operator) = &ast.node(root).unwrap().kind else {
             panic!("expected infix expression root");

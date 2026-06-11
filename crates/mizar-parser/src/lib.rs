@@ -1,8 +1,8 @@
 use mizar_session::{Edition, SourceAnchor, SourceId, SourceRange};
 use mizar_syntax::{
-    SurfaceAst, SurfaceInfixOperator, SurfaceNode, SurfaceNodeId, SurfaceNodeKind,
-    SurfaceOperatorAssociativity, SurfaceToken, SurfaceTokenKind, SyntaxDiagnostic,
-    SyntaxDiagnosticCode, SyntaxRecoveryKind,
+    SurfaceAst, SurfaceAstBuilder, SurfaceBuilderNodeId, SurfaceInfixOperator, SurfaceNodeKind,
+    SurfaceOperatorAssociativity, SurfaceTokenKind, SyntaxDiagnostic, SyntaxDiagnosticCode,
+    SyntaxRecoveryKind,
 };
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -121,9 +121,8 @@ pub fn parse(request: ParseRequest) -> ParseOutput {
 
 struct Parser {
     request: ParseRequest,
-    nodes: Vec<SurfaceNode>,
-    token_node_ids: Vec<SurfaceNodeId>,
-    recovery_node_ids: Vec<SurfaceNodeId>,
+    builder: SurfaceAstBuilder,
+    token_node_ids: Vec<SurfaceBuilderNodeId>,
     diagnostics: Vec<SyntaxDiagnostic>,
     fixity: BTreeMap<Arc<str>, OperatorFixityEntry>,
 }
@@ -137,10 +136,9 @@ impl Parser {
             .map(|entry| (entry.spelling.clone(), entry))
             .collect();
         Self {
+            builder: SurfaceAstBuilder::new(request.source_id),
             request,
-            nodes: Vec::new(),
             token_node_ids: Vec::new(),
-            recovery_node_ids: Vec::new(),
             diagnostics: Vec::new(),
             fixity,
         }
@@ -157,13 +155,7 @@ impl Parser {
         let expression_root = self.parse_expression();
         let root = self.add_root(expression_root);
         ParseOutput {
-            ast: Some(SurfaceAst::new(
-                self.request.source_id,
-                self.nodes,
-                Some(root),
-                self.token_node_ids,
-                expression_root,
-            )),
+            ast: Some(self.builder.finish(Some(root), expression_root)),
             diagnostics: self.diagnostics,
         }
     }
@@ -171,21 +163,24 @@ impl Parser {
     fn add_token_nodes(&mut self) {
         let tokens = self.request.tokens.clone();
         for token in tokens {
-            let kind = SurfaceNodeKind::Token(SurfaceToken::new(
-                surface_token_kind(token.kind),
-                token.text.clone(),
-            ));
-            let node = if token.kind == ParserTokenKind::ErrorRecovery {
+            let id = if token.kind == ParserTokenKind::ErrorRecovery {
                 self.diagnostics.push(SyntaxDiagnostic::new(
                     SyntaxDiagnosticCode::UnexpectedErrorToken,
                     "error-recovery token reached the parser",
                     token.span,
                 ));
-                SurfaceNode::recovered(kind, token.span, Vec::new())
+                self.builder.add_recovered_token(
+                    surface_token_kind(token.kind),
+                    token.text.clone(),
+                    token.span,
+                )
             } else {
-                SurfaceNode::new(kind, token.span, Vec::new())
+                self.builder.add_token(
+                    surface_token_kind(token.kind),
+                    token.text.clone(),
+                    token.span,
+                )
             };
-            let id = self.push_node(node);
             self.token_node_ids.push(id);
         }
     }
@@ -314,24 +309,18 @@ impl Parser {
         &mut self,
         recovery_kind: SyntaxRecoveryKind,
         range: SourceRange,
-        children: Vec<SurfaceNodeId>,
-    ) -> SurfaceNodeId {
-        let id = self.push_node(SurfaceNode::recovered(
-            SurfaceNodeKind::ErrorRecovery(recovery_kind),
-            range,
-            children,
-        ));
-        self.recovery_node_ids.push(id);
-        id
+        children: Vec<SurfaceBuilderNodeId>,
+    ) -> SurfaceBuilderNodeId {
+        self.builder.add_recovery(recovery_kind, range, children)
     }
 
-    fn add_root(&mut self, expression_root: Option<SurfaceNodeId>) -> SurfaceNodeId {
+    fn add_root(&mut self, expression_root: Option<SurfaceBuilderNodeId>) -> SurfaceBuilderNodeId {
         let children = self
             .token_node_ids
             .iter()
             .copied()
             .chain(expression_root)
-            .chain(self.recovery_node_ids.iter().copied())
+            .chain(self.builder.recovery_node_ids().iter().copied())
             .collect::<Vec<_>>();
         let range = self
             .request
@@ -350,10 +339,11 @@ impl Parser {
                     end: last.span.end,
                 },
             );
-        self.push_node(SurfaceNode::new(SurfaceNodeKind::Root, range, children))
+        self.builder
+            .add_node(SurfaceNodeKind::Root, range, children)
     }
 
-    fn parse_expression(&mut self) -> Option<SurfaceNodeId> {
+    fn parse_expression(&mut self) -> Option<SurfaceBuilderNodeId> {
         if self.fixity.is_empty() || self.token_node_ids.is_empty() {
             return None;
         }
@@ -365,12 +355,6 @@ impl Parser {
         };
         let root = expression.parse_binding_power(0);
         root.filter(|_| expression.built_infix)
-    }
-
-    fn push_node(&mut self, node: SurfaceNode) -> SurfaceNodeId {
-        let id = SurfaceNodeId::new(self.nodes.len());
-        self.nodes.push(node);
-        id
     }
 
     fn fixity_for_token(&self, token: &ParserToken) -> Option<&OperatorFixityEntry> {
@@ -394,7 +378,7 @@ enum RecoveryOutcome {
 struct BlockStart {
     keyword: Arc<str>,
     span: SourceRange,
-    token_node_id: SurfaceNodeId,
+    token_node_id: SurfaceBuilderNodeId,
 }
 
 struct ExpressionParser<'a> {
@@ -404,7 +388,7 @@ struct ExpressionParser<'a> {
 }
 
 impl ExpressionParser<'_> {
-    fn parse_binding_power(&mut self, minimum_binding_power: u32) -> Option<SurfaceNodeId> {
+    fn parse_binding_power(&mut self, minimum_binding_power: u32) -> Option<SurfaceBuilderNodeId> {
         let mut left = self.next_operand()?;
 
         while let Some(operator) = self.current_operator().cloned() {
@@ -442,7 +426,7 @@ impl ExpressionParser<'_> {
         Some(left)
     }
 
-    fn next_operand(&mut self) -> Option<SurfaceNodeId> {
+    fn next_operand(&mut self) -> Option<SurfaceBuilderNodeId> {
         let token = self.parser.request.tokens.get(self.position)?;
         if self.parser.fixity_for_token(token).is_some() || !is_operand_token(token.kind) {
             return None;
@@ -459,11 +443,11 @@ impl ExpressionParser<'_> {
 
     fn left_is_non_associative_chain(
         &self,
-        left: SurfaceNodeId,
+        left: SurfaceBuilderNodeId,
         operator: &OperatorFixityEntry,
     ) -> bool {
         matches!(
-            &self.parser.nodes[left.index()].kind,
+            &self.parser.builder.node(left).unwrap().kind,
             SurfaceNodeKind::InfixExpression(left_operator)
                 if left_operator.associativity == SurfaceOperatorAssociativity::NonAssociative
                     && left_operator.spelling == operator.spelling
@@ -472,16 +456,16 @@ impl ExpressionParser<'_> {
 
     fn infix_node(
         &mut self,
-        left: SurfaceNodeId,
+        left: SurfaceBuilderNodeId,
         operator_position: usize,
-        right: SurfaceNodeId,
+        right: SurfaceBuilderNodeId,
         operator: &OperatorFixityEntry,
-    ) -> SurfaceNodeId {
-        let left_range = self.parser.nodes[left.index()].range;
-        let right_range = self.parser.nodes[right.index()].range;
+    ) -> SurfaceBuilderNodeId {
+        let left_range = self.parser.builder.node(left).unwrap().range;
+        let right_range = self.parser.builder.node(right).unwrap().range;
         let operator_id = self.parser.token_node_ids[operator_position];
         self.built_infix = true;
-        self.parser.push_node(SurfaceNode::new(
+        self.parser.builder.add_node(
             SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
                 spelling: operator.spelling.clone(),
                 precedence: operator.precedence,
@@ -493,7 +477,7 @@ impl ExpressionParser<'_> {
                 end: right_range.end,
             },
             vec![left, operator_id, right],
-        ))
+        )
     }
 }
 
@@ -630,7 +614,7 @@ mod tests {
         let ast = output.ast.expect("well-formed token stream should parse");
         assert_eq!(ast.token_texts(), vec!["alpha", ";", "beta"]);
         let ranges = ast
-            .token_nodes
+            .token_nodes()
             .iter()
             .map(|id| ast.node(*id).unwrap().range)
             .collect::<Vec<_>>();
@@ -680,7 +664,7 @@ mod tests {
         assert!(output.diagnostics.is_empty());
         let ast = output.ast.expect("expression should parse");
         let root = ast
-            .expression_root
+            .expression_root()
             .expect("fixity input should build an expression");
         let SurfaceNodeKind::InfixExpression(root_operator) = &ast.node(root).unwrap().kind else {
             panic!("expected infix expression root");
@@ -728,7 +712,7 @@ mod tests {
 
         assert!(output.diagnostics.is_empty());
         let ast = output.ast.expect("expression should parse");
-        let root = ast.expression_root.expect("expression should have root");
+        let root = ast.expression_root().expect("expression should have root");
         let SurfaceNodeKind::InfixExpression(root_operator) = &ast.node(root).unwrap().kind else {
             panic!("expected infix expression root");
         };
@@ -770,7 +754,7 @@ mod tests {
         );
         let ast = output.ast.expect("recovered token should preserve AST");
         assert_eq!(ast.token_texts(), vec!["@"]);
-        let node = ast.node(ast.token_nodes[0]).unwrap();
+        let node = ast.node(ast.token_nodes()[0]).unwrap();
         assert!(node.recovered);
         let SurfaceNodeKind::Token(token) = &node.kind else {
             panic!("expected recovered token node");
@@ -821,7 +805,7 @@ mod tests {
             .ast
             .expect("missing end should recover a surface AST");
         let recovery_node = ast
-            .nodes
+            .nodes()
             .iter()
             .enumerate()
             .find(|node| {
@@ -840,8 +824,8 @@ mod tests {
                 end: 18,
             }
         );
-        assert_eq!(recovery_node.1.children, vec![ast.token_nodes[0]]);
-        let root = ast.root.expect("recovered AST should have a root");
+        assert_eq!(recovery_node.1.children, vec![ast.token_nodes()[0]]);
+        let root = ast.root().expect("recovered AST should have a root");
         assert!(
             ast.node(root)
                 .unwrap()
@@ -1131,7 +1115,7 @@ mod tests {
             .ast
             .expect("partially closed nested blocks should recover");
         let recovery_node = ast
-            .nodes
+            .nodes()
             .iter()
             .find(|node| {
                 matches!(
@@ -1140,7 +1124,7 @@ mod tests {
                 )
             })
             .expect("outer missing end should create an explicit recovery node");
-        assert_eq!(recovery_node.children, vec![ast.token_nodes[0]]);
+        assert_eq!(recovery_node.children, vec![ast.token_nodes()[0]]);
     }
 
     #[test]
@@ -1242,7 +1226,7 @@ mod tests {
             .ast
             .expect("missing string literal should recover a surface AST");
         let recovery_node = ast
-            .nodes
+            .nodes()
             .iter()
             .enumerate()
             .find(|node| {
@@ -1261,7 +1245,7 @@ mod tests {
                 end: 0,
             }
         );
-        let root = ast.root.expect("recovered AST should have a root");
+        let root = ast.root().expect("recovered AST should have a root");
         assert!(
             ast.node(root)
                 .unwrap()
@@ -1308,7 +1292,7 @@ mod tests {
             }
         );
         let ast = output.ast.expect("expression should parse");
-        let root = ast.expression_root.expect("expression should have root");
+        let root = ast.expression_root().expect("expression should have root");
         let SurfaceNodeKind::InfixExpression(root_operator) = &ast.node(root).unwrap().kind else {
             panic!("expected infix expression root");
         };
@@ -1366,7 +1350,7 @@ mod tests {
             ));
 
             let ast = output.ast.expect("parser should preserve token stream");
-            assert_eq!(ast.expression_root, None);
+            assert_eq!(ast.expression_root(), None);
             assert_eq!(ast.token_texts(), vec!["a", "++", "b"]);
         }
     }
@@ -1435,7 +1419,7 @@ mod tests {
         ));
         assert!(left_output.diagnostics.is_empty());
         let left_ast = left_output.ast.expect("left expression should parse");
-        let left_root = left_ast.expression_root.unwrap();
+        let left_root = left_ast.expression_root().unwrap();
         let SurfaceNodeKind::InfixExpression(_) = &left_ast.node(left_root).unwrap().kind else {
             panic!("expected infix expression root");
         };

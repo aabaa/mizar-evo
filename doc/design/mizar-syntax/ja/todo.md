@@ -12,7 +12,7 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| ast | [ast.md](./ast.md) | `src/ast.rs` | [~] task 12 の最小 surface はモジュールへ分割済み |
+| ast | [ast.md](./ast.md) | `src/ast.rs` | [~] rowan storage 境界は導入済み、語彙は拡張中 |
 | trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [ ] |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task 12 の最小 recovery kind はモジュールへ分割済み |
 
@@ -30,11 +30,11 @@ trivia、recovery 語彙）、次にノード語彙で
 
 ## crate の前提条件
 
-この crate は現在、`mizar-session`（`SourceId`、`SourceRange`、
-`SourceAnchor`）にのみ依存する。task 2 で `rowan` を追加する。task 11/12 の
-`SurfaceNode` 風 API に移行経路が必要な場合は、backend 選択を延期するのでは
-なく、rowan-backed 表現の上の互換 wrapper として保つ。ここに `salsa` は追加
-しない: query engine は frontend / build / resolver / checker 層の責務であり、
+この crate は `mizar-session`（`SourceId`、`SourceRange`、`SourceAnchor`）と、
+immutable green-tree storage のための `rowan` に依存する。task 11/12 の
+`SurfaceNode` 風 API は、typed accessor 経由で公開される private な互換 side
+table として rowan-backed 表現上に残す。ここに `salsa` は追加しない:
+query engine は frontend / build / resolver / checker 層の責務であり、
 この crate は immutable で query-friendly な構文データ境界にとどめる。
 task 11/12 の最小境界（`SurfaceAst`、`SurfaceNode`、recovery kind、
 `SyntaxDiagnostic`）はすでに `mizar-parser` と
@@ -44,11 +44,11 @@ task 11/12 の最小境界（`SurfaceAst`、`SurfaceNode`、recovery kind、
 
 ## 解決済みおよび保留中の決定
 
-- **構文木バックエンド: 未解決。task 2 で解決する。** `rowan` は
-  `SurfaceAst` の必須ターゲットバックエンドである。既定の決定は、task 2 で
-  rowan-backed な green tree を導入すること。既存の task 11/12 名に対する互換
-  wrapper は残してよいが、parser task 5〜7 を custom arena backend に対して
-  成長させてはならない。
+- **構文木バックエンド: 解決済み。** `SurfaceAst` は rowan-backed な green tree
+  を所有する。既存の task 11/12 名に対する互換 wrapper は typed accessor 経由
+  で公開される private side-table view として残すが、parser task 5〜7 は
+  custom arena backend ではなく `SurfaceAstBuilder` と typed accessor 境界に
+  対して成長させる。
 - **trivia の所有権: 未解決。task 4 で解決する。** `mizar-frontend` はすでに
   コメントとドキュメントコメントを `PreprocessedSource` へ抽出している。
   `SurfaceAst` が付随 trivia を保持するか、frontend 所有の trivia を範囲で
@@ -87,7 +87,7 @@ task 11/12 の最小境界（`SurfaceAst`、`SurfaceNode`、recovery kind、
    - テスト: 既存の消費者が変更なしにコンパイルできる。lint 方針ガードが通る。
    - 依存: なし。仕様: [ast.md](./ast.md)、[recovery.md](./recovery.md)。
 
-2. **`rowan` storage 境界と builder / accessor API。** [ ]
+2. **`rowan` storage 境界と builder / accessor API。** [x]
    - rowan-backed な `SurfaceAst` green-tree 表現を採用し、決定と根拠を
      [ast.md](./ast.md) に記録する。既存の `SurfaceNode` / `SurfaceNodeId` 名を
      互換のために残す場合は、それらを storage backend ではなく rowan-backed
@@ -304,7 +304,7 @@ cargo test -p mizar-frontend
 - `mizar-syntax` は構文データの形だけを所有する。文法ロジック、名前解決、
   型付け、証明の意味論は持たない。解決済みシンボル id、推論された型、証明
   義務が `SurfaceAst` に現れることはない。
-- `rowan` が予定された構文木バックエンドである。parser と consumer のコードは
+- `rowan` が構文木バックエンドである。parser と consumer のコードは
   ad hoc な arena layout ではなく、`mizar-syntax` の builder / accessor API に
   依存する。
 - `salsa` は後続の query / cache 層の関心事である。syntax crate を書き直さず

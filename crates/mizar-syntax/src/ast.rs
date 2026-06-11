@@ -1,30 +1,117 @@
 use crate::recovery::SyntaxRecoveryKind;
 use mizar_session::{SourceId, SourceRange};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static NEXT_BUILDER_ID: AtomicU64 = AtomicU64::new(1);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum MizarLanguage {}
+
+impl rowan::Language for MizarLanguage {
+    type Kind = SyntaxKind;
+
+    fn kind_from_raw(raw: rowan::SyntaxKind) -> Self::Kind {
+        SyntaxKind::from_raw(raw.0)
+    }
+
+    fn kind_to_raw(kind: Self::Kind) -> rowan::SyntaxKind {
+        rowan::SyntaxKind(kind as u16)
+    }
+}
+
+pub type RowanSyntaxNode = rowan::SyntaxNode<MizarLanguage>;
+pub type RowanSyntaxToken = rowan::SyntaxToken<MizarLanguage>;
+pub type RowanSyntaxElement = rowan::SyntaxElement<MizarLanguage>;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(u16)]
+pub enum SyntaxKind {
+    Unknown = 0,
+    Root = 1,
+    Token = 2,
+    InfixExpression = 3,
+    ErrorRecovery = 4,
+    TokenIdentifier = 100,
+    TokenReservedWord = 101,
+    TokenReservedSymbol = 102,
+    TokenNumeral = 103,
+    TokenLexemeRun = 104,
+    TokenUserSymbol = 105,
+    TokenStringLiteral = 106,
+    TokenErrorRecovery = 107,
+    TokenUnknown = 108,
+}
+
+impl SyntaxKind {
+    pub const fn from_raw(raw: u16) -> Self {
+        match raw {
+            1 => Self::Root,
+            2 => Self::Token,
+            3 => Self::InfixExpression,
+            4 => Self::ErrorRecovery,
+            100 => Self::TokenIdentifier,
+            101 => Self::TokenReservedWord,
+            102 => Self::TokenReservedSymbol,
+            103 => Self::TokenNumeral,
+            104 => Self::TokenLexemeRun,
+            105 => Self::TokenUserSymbol,
+            106 => Self::TokenStringLiteral,
+            107 => Self::TokenErrorRecovery,
+            108 => Self::TokenUnknown,
+            _ => Self::Unknown,
+        }
+    }
+
+    pub const fn is_node_kind(self) -> bool {
+        matches!(
+            self,
+            Self::Root | Self::Token | Self::InfixExpression | Self::ErrorRecovery
+        )
+    }
+
+    pub const fn is_token_kind(self) -> bool {
+        matches!(
+            self,
+            Self::TokenIdentifier
+                | Self::TokenReservedWord
+                | Self::TokenReservedSymbol
+                | Self::TokenNumeral
+                | Self::TokenLexemeRun
+                | Self::TokenUserSymbol
+                | Self::TokenStringLiteral
+                | Self::TokenErrorRecovery
+                | Self::TokenUnknown
+        )
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SurfaceAst {
     pub source_id: SourceId,
-    pub nodes: Vec<SurfaceNode>,
-    pub root: Option<SurfaceNodeId>,
-    pub token_nodes: Vec<SurfaceNodeId>,
-    pub expression_root: Option<SurfaceNodeId>,
+    nodes: Vec<SurfaceNode>,
+    root: Option<SurfaceNodeId>,
+    token_nodes: Vec<SurfaceNodeId>,
+    expression_root: Option<SurfaceNodeId>,
+    green: rowan::GreenNode,
 }
 
 impl SurfaceAst {
-    pub fn new(
+    fn new(
         source_id: SourceId,
         nodes: Vec<SurfaceNode>,
         root: Option<SurfaceNodeId>,
         token_nodes: Vec<SurfaceNodeId>,
         expression_root: Option<SurfaceNodeId>,
     ) -> Self {
+        let green = build_green_tree(&nodes, root);
         Self {
             source_id,
             nodes,
             root,
             token_nodes,
             expression_root,
+            green,
         }
     }
 
@@ -32,12 +119,390 @@ impl SurfaceAst {
         self.nodes.get(id.index())
     }
 
+    pub fn nodes(&self) -> &[SurfaceNode] {
+        &self.nodes
+    }
+
+    pub const fn root(&self) -> Option<SurfaceNodeId> {
+        self.root
+    }
+
+    pub fn token_nodes(&self) -> &[SurfaceNodeId] {
+        &self.token_nodes
+    }
+
+    pub const fn expression_root(&self) -> Option<SurfaceNodeId> {
+        self.expression_root
+    }
+
+    pub fn node_view(&self, id: SurfaceNodeId) -> Option<SurfaceNodeView<'_>> {
+        self.node(id).map(|node| SurfaceNodeView {
+            ast: self,
+            id,
+            node,
+        })
+    }
+
+    pub fn root_view(&self) -> Option<SurfaceNodeView<'_>> {
+        self.root.and_then(|root| self.node_view(root))
+    }
+
+    pub fn expression_view(&self) -> Option<SurfaceNodeView<'_>> {
+        self.expression_root
+            .and_then(|expression| self.node_view(expression))
+    }
+
+    pub fn token_views(&self) -> impl Iterator<Item = SurfaceNodeView<'_>> {
+        self.token_nodes.iter().filter_map(|id| self.node_view(*id))
+    }
+
     pub fn token_texts(&self) -> Vec<&str> {
-        self.token_nodes
-            .iter()
-            .filter_map(|id| self.node(*id))
-            .filter_map(SurfaceNode::token_text)
+        self.token_views()
+            .filter_map(|node| node.as_token().map(|token| token.text.as_ref()))
             .collect()
+    }
+
+    pub fn green_node(&self) -> &rowan::GreenNode {
+        &self.green
+    }
+
+    pub fn rowan_root(&self) -> RowanSyntaxNode {
+        RowanSyntaxNode::new_root(self.green.clone())
+    }
+
+    pub fn range_contains_child_ranges(&self, id: SurfaceNodeId) -> Option<bool> {
+        let parent = self.node(id)?;
+        Some(parent.children.iter().all(|child| {
+            self.node(*child)
+                .is_some_and(|child| contains_range(parent.range, child.range))
+        }))
+    }
+}
+
+pub struct SurfaceAstBuilder {
+    source_id: SourceId,
+    builder_id: u64,
+    nodes: Vec<BuilderNode>,
+    token_nodes: Vec<SurfaceBuilderNodeId>,
+    recovery_nodes: Vec<SurfaceBuilderNodeId>,
+}
+
+impl SurfaceAstBuilder {
+    pub fn new(source_id: SourceId) -> Self {
+        Self {
+            source_id,
+            builder_id: NEXT_BUILDER_ID.fetch_add(1, Ordering::Relaxed),
+            nodes: Vec::new(),
+            token_nodes: Vec::new(),
+            recovery_nodes: Vec::new(),
+        }
+    }
+
+    pub fn add_node(
+        &mut self,
+        kind: SurfaceNodeKind,
+        range: SourceRange,
+        children: Vec<SurfaceBuilderNodeId>,
+    ) -> SurfaceBuilderNodeId {
+        assert!(
+            !matches!(
+                kind,
+                SurfaceNodeKind::Token(_) | SurfaceNodeKind::ErrorRecovery(_)
+            ),
+            "SurfaceAstBuilder::add_node cannot create token or recovery side-table entries"
+        );
+        self.assert_existing_children(&children);
+        self.push_node(BuilderNode::new(kind, range, children))
+    }
+
+    fn add_recovered_node(
+        &mut self,
+        kind: SurfaceNodeKind,
+        range: SourceRange,
+        children: Vec<SurfaceBuilderNodeId>,
+    ) -> SurfaceBuilderNodeId {
+        self.assert_existing_children(&children);
+        self.push_node(BuilderNode::recovered(kind, range, children))
+    }
+
+    pub fn add_token(
+        &mut self,
+        kind: SurfaceTokenKind,
+        text: impl Into<Arc<str>>,
+        range: SourceRange,
+    ) -> SurfaceBuilderNodeId {
+        let id = self.push_node(BuilderNode::new(
+            SurfaceNodeKind::Token(SurfaceToken::new(kind, text)),
+            range,
+            Vec::new(),
+        ));
+        self.token_nodes.push(id);
+        id
+    }
+
+    pub fn add_recovered_token(
+        &mut self,
+        kind: SurfaceTokenKind,
+        text: impl Into<Arc<str>>,
+        range: SourceRange,
+    ) -> SurfaceBuilderNodeId {
+        let id = self.add_recovered_node(
+            SurfaceNodeKind::Token(SurfaceToken::new(kind, text)),
+            range,
+            Vec::new(),
+        );
+        self.token_nodes.push(id);
+        id
+    }
+
+    pub fn add_recovery(
+        &mut self,
+        recovery_kind: SyntaxRecoveryKind,
+        range: SourceRange,
+        children: Vec<SurfaceBuilderNodeId>,
+    ) -> SurfaceBuilderNodeId {
+        let id = self.add_recovered_node(
+            SurfaceNodeKind::ErrorRecovery(recovery_kind),
+            range,
+            children,
+        );
+        self.recovery_nodes.push(id);
+        id
+    }
+
+    pub fn node(&self, id: SurfaceBuilderNodeId) -> Option<&BuilderNode> {
+        self.assert_same_builder(id);
+        self.nodes.get(id.index())
+    }
+
+    pub fn token_node_ids(&self) -> &[SurfaceBuilderNodeId] {
+        &self.token_nodes
+    }
+
+    pub fn recovery_node_ids(&self) -> &[SurfaceBuilderNodeId] {
+        &self.recovery_nodes
+    }
+
+    pub fn finish(
+        self,
+        root: Option<SurfaceBuilderNodeId>,
+        expression_root: Option<SurfaceBuilderNodeId>,
+    ) -> SurfaceAst {
+        self.assert_existing_optional_id(root, "root");
+        self.assert_existing_optional_id(expression_root, "expression root");
+        self.assert_tree_shaped_except_root_listing(root);
+        let nodes = self
+            .nodes
+            .into_iter()
+            .map(BuilderNode::into_surface_node)
+            .collect();
+        SurfaceAst::new(
+            self.source_id,
+            nodes,
+            root.map(SurfaceBuilderNodeId::into_surface_node_id),
+            self.token_nodes
+                .into_iter()
+                .map(SurfaceBuilderNodeId::into_surface_node_id)
+                .collect(),
+            expression_root.map(SurfaceBuilderNodeId::into_surface_node_id),
+        )
+    }
+
+    fn push_node(&mut self, node: BuilderNode) -> SurfaceBuilderNodeId {
+        let id = SurfaceBuilderNodeId::new(self.nodes.len(), self.builder_id);
+        self.nodes.push(node);
+        id
+    }
+
+    fn assert_existing_children(&self, children: &[SurfaceBuilderNodeId]) {
+        for child in children {
+            self.assert_same_builder(*child);
+            assert!(
+                child.index() < self.nodes.len(),
+                "SurfaceAstBuilder child id {child:?} must refer to an existing node in this builder"
+            );
+        }
+    }
+
+    fn assert_existing_optional_id(&self, id: Option<SurfaceBuilderNodeId>, role: &str) {
+        if let Some(id) = id {
+            self.assert_same_builder(id);
+            assert!(
+                id.index() < self.nodes.len(),
+                "SurfaceAstBuilder {role} id {id:?} must refer to an existing node in this builder"
+            );
+        }
+    }
+
+    fn assert_same_builder(&self, id: SurfaceBuilderNodeId) {
+        assert!(
+            id.builder_id == self.builder_id,
+            "SurfaceAstBuilder node id {id:?} must have been created by this builder"
+        );
+    }
+
+    fn assert_tree_shaped_except_root_listing(&self, root: Option<SurfaceBuilderNodeId>) {
+        let mut non_root_parent_counts = vec![0_u8; self.nodes.len()];
+        for (parent_index, node) in self.nodes.iter().enumerate() {
+            if Some(SurfaceBuilderNodeId::new(parent_index, self.builder_id)) == root {
+                continue;
+            }
+            for child in &node.children {
+                non_root_parent_counts[child.index()] =
+                    non_root_parent_counts[child.index()].saturating_add(1);
+            }
+        }
+        for (index, count) in non_root_parent_counts.iter().copied().enumerate() {
+            assert!(
+                count <= 1,
+                "SurfaceAstBuilder node id {:?} cannot be shared by multiple non-root parents",
+                SurfaceBuilderNodeId::new(index, self.builder_id)
+            );
+        }
+        if let Some(root) = root {
+            let root_node = &self.nodes[root.index()];
+            for child in &root_node.children {
+                if self.nodes[child.index()].kind.is_structural()
+                    && non_root_parent_counts[child.index()] > 0
+                {
+                    panic!(
+                        "SurfaceAstBuilder structural root child {child:?} cannot also have a non-root parent"
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BuilderNode {
+    pub kind: SurfaceNodeKind,
+    pub range: SourceRange,
+    pub children: Vec<SurfaceBuilderNodeId>,
+    pub recovered: bool,
+}
+
+impl BuilderNode {
+    fn new(kind: SurfaceNodeKind, range: SourceRange, children: Vec<SurfaceBuilderNodeId>) -> Self {
+        Self {
+            kind,
+            range,
+            children,
+            recovered: false,
+        }
+    }
+
+    fn recovered(
+        kind: SurfaceNodeKind,
+        range: SourceRange,
+        children: Vec<SurfaceBuilderNodeId>,
+    ) -> Self {
+        Self {
+            kind,
+            range,
+            children,
+            recovered: true,
+        }
+    }
+
+    fn into_surface_node(self) -> SurfaceNode {
+        SurfaceNode {
+            kind: self.kind,
+            range: self.range,
+            children: self
+                .children
+                .into_iter()
+                .map(SurfaceBuilderNodeId::into_surface_node_id)
+                .collect(),
+            recovered: self.recovered,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SurfaceBuilderNodeId {
+    index: usize,
+    builder_id: u64,
+}
+
+impl SurfaceBuilderNodeId {
+    const fn new(index: usize, builder_id: u64) -> Self {
+        Self { index, builder_id }
+    }
+
+    const fn index(self) -> usize {
+        self.index
+    }
+
+    const fn into_surface_node_id(self) -> SurfaceNodeId {
+        SurfaceNodeId::new(self.index)
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct SurfaceNodeView<'a> {
+    ast: &'a SurfaceAst,
+    id: SurfaceNodeId,
+    node: &'a SurfaceNode,
+}
+
+impl<'a> SurfaceNodeView<'a> {
+    pub const fn id(self) -> SurfaceNodeId {
+        self.id
+    }
+
+    pub const fn kind(self) -> &'a SurfaceNodeKind {
+        &self.node.kind
+    }
+
+    pub const fn syntax_kind(self) -> SyntaxKind {
+        self.node.kind.syntax_kind()
+    }
+
+    pub const fn range(self) -> SourceRange {
+        self.node.range
+    }
+
+    pub fn children(self) -> &'a [SurfaceNodeId] {
+        &self.node.children
+    }
+
+    pub const fn is_recovered(self) -> bool {
+        self.node.recovered
+    }
+
+    pub const fn as_token(self) -> Option<&'a SurfaceToken> {
+        match &self.node.kind {
+            SurfaceNodeKind::Token(token) => Some(token),
+            SurfaceNodeKind::Root
+            | SurfaceNodeKind::InfixExpression(_)
+            | SurfaceNodeKind::ErrorRecovery(_) => None,
+        }
+    }
+
+    pub const fn as_infix_expression(self) -> Option<&'a SurfaceInfixOperator> {
+        match &self.node.kind {
+            SurfaceNodeKind::InfixExpression(operator) => Some(operator),
+            SurfaceNodeKind::Root
+            | SurfaceNodeKind::Token(_)
+            | SurfaceNodeKind::ErrorRecovery(_) => None,
+        }
+    }
+
+    pub const fn as_recovery(self) -> Option<SyntaxRecoveryKind> {
+        match self.node.kind {
+            SurfaceNodeKind::ErrorRecovery(kind) => Some(kind),
+            SurfaceNodeKind::Root
+            | SurfaceNodeKind::Token(_)
+            | SurfaceNodeKind::InfixExpression(_) => None,
+        }
+    }
+
+    pub fn child_views(self) -> impl Iterator<Item = SurfaceNodeView<'a>> {
+        self.node
+            .children
+            .iter()
+            .filter_map(|child| self.ast.node_view(*child))
     }
 }
 
@@ -45,7 +510,7 @@ impl SurfaceAst {
 pub struct SurfaceNodeId(usize);
 
 impl SurfaceNodeId {
-    pub const fn new(index: usize) -> Self {
+    const fn new(index: usize) -> Self {
         Self(index)
     }
 
@@ -88,7 +553,9 @@ impl SurfaceNode {
     pub fn token_text(&self) -> Option<&str> {
         match &self.kind {
             SurfaceNodeKind::Token(token) => Some(token.text.as_ref()),
-            _ => None,
+            SurfaceNodeKind::Root
+            | SurfaceNodeKind::InfixExpression(_)
+            | SurfaceNodeKind::ErrorRecovery(_) => None,
         }
     }
 }
@@ -99,6 +566,21 @@ pub enum SurfaceNodeKind {
     Token(SurfaceToken),
     InfixExpression(SurfaceInfixOperator),
     ErrorRecovery(SyntaxRecoveryKind),
+}
+
+impl SurfaceNodeKind {
+    pub const fn syntax_kind(&self) -> SyntaxKind {
+        match self {
+            Self::Root => SyntaxKind::Root,
+            Self::Token(_) => SyntaxKind::Token,
+            Self::InfixExpression(_) => SyntaxKind::InfixExpression,
+            Self::ErrorRecovery(_) => SyntaxKind::ErrorRecovery,
+        }
+    }
+
+    pub const fn is_structural(&self) -> bool {
+        !matches!(self, Self::Token(_) | Self::ErrorRecovery(_))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -129,6 +611,22 @@ pub enum SurfaceTokenKind {
     Unknown,
 }
 
+impl SurfaceTokenKind {
+    pub const fn syntax_kind(self) -> SyntaxKind {
+        match self {
+            Self::Identifier => SyntaxKind::TokenIdentifier,
+            Self::ReservedWord => SyntaxKind::TokenReservedWord,
+            Self::ReservedSymbol => SyntaxKind::TokenReservedSymbol,
+            Self::Numeral => SyntaxKind::TokenNumeral,
+            Self::LexemeRun => SyntaxKind::TokenLexemeRun,
+            Self::UserSymbol => SyntaxKind::TokenUserSymbol,
+            Self::StringLiteral => SyntaxKind::TokenStringLiteral,
+            Self::ErrorRecovery => SyntaxKind::TokenErrorRecovery,
+            Self::Unknown => SyntaxKind::TokenUnknown,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SurfaceInfixOperator {
     pub spelling: Arc<str>,
@@ -141,4 +639,513 @@ pub enum SurfaceOperatorAssociativity {
     Left,
     Right,
     NonAssociative,
+}
+
+fn build_green_tree(nodes: &[SurfaceNode], root: Option<SurfaceNodeId>) -> rowan::GreenNode {
+    let mut builder = rowan::GreenNodeBuilder::new();
+    builder.start_node(rowan::SyntaxKind(SyntaxKind::Root as u16));
+    if let Some(root) = root.and_then(|root| nodes.get(root.index()).map(|node| (root, node))) {
+        append_root_contents(&mut builder, nodes, root.1);
+    }
+    builder.finish_node();
+    builder.finish()
+}
+
+fn append_root_contents(
+    builder: &mut rowan::GreenNodeBuilder<'_>,
+    nodes: &[SurfaceNode],
+    root: &SurfaceNode,
+) {
+    let structural_children = root
+        .children
+        .iter()
+        .copied()
+        .filter(|child| {
+            node_kind(nodes, *child).is_some_and(|kind| {
+                !matches!(
+                    kind,
+                    SurfaceNodeKind::Token(_) | SurfaceNodeKind::ErrorRecovery(_)
+                )
+            })
+        })
+        .collect::<Vec<_>>();
+    let structural_tokens = structural_children
+        .iter()
+        .flat_map(|child| collect_token_descendants(nodes, *child))
+        .collect::<Vec<_>>();
+    let mut appended_structural = Vec::new();
+
+    for child in root.children.iter().copied() {
+        if structural_tokens.contains(&child) {
+            let containing_structural = structural_children.iter().copied().find(|structure| {
+                collect_token_descendants(nodes, *structure)
+                    .first()
+                    .copied()
+                    == Some(child)
+            });
+            if let Some(structure) = containing_structural {
+                append_green_node(builder, nodes, structure);
+                appended_structural.push(structure);
+            }
+            continue;
+        }
+        if structural_children.contains(&child) {
+            if !appended_structural.contains(&child) {
+                append_green_node(builder, nodes, child);
+                appended_structural.push(child);
+            }
+            continue;
+        }
+        append_green_node(builder, nodes, child);
+    }
+}
+
+fn append_green_node(
+    builder: &mut rowan::GreenNodeBuilder<'_>,
+    nodes: &[SurfaceNode],
+    id: SurfaceNodeId,
+) {
+    let Some(node) = nodes.get(id.index()) else {
+        return;
+    };
+    builder.start_node(rowan::SyntaxKind(node.kind.syntax_kind() as u16));
+    if let SurfaceNodeKind::Token(token) = &node.kind {
+        builder.token(
+            rowan::SyntaxKind(token.kind.syntax_kind() as u16),
+            token.text.as_ref(),
+        );
+    }
+    for child in children_to_append(nodes, node) {
+        append_green_node(builder, nodes, child);
+    }
+    builder.finish_node();
+}
+
+fn children_to_append(nodes: &[SurfaceNode], node: &SurfaceNode) -> Vec<SurfaceNodeId> {
+    if matches!(node.kind, SurfaceNodeKind::ErrorRecovery(_)) {
+        node.children
+            .iter()
+            .copied()
+            .filter(|child| {
+                nodes
+                    .get(child.index())
+                    .is_some_and(|child| contains_range(node.range, child.range))
+            })
+            .collect()
+    } else {
+        node.children.clone()
+    }
+}
+
+fn collect_token_descendants(nodes: &[SurfaceNode], id: SurfaceNodeId) -> Vec<SurfaceNodeId> {
+    let Some(node) = nodes.get(id.index()) else {
+        return Vec::new();
+    };
+    if matches!(node.kind, SurfaceNodeKind::Token(_)) {
+        return vec![id];
+    }
+    node.children
+        .iter()
+        .flat_map(|child| collect_token_descendants(nodes, *child))
+        .collect()
+}
+
+fn node_kind(nodes: &[SurfaceNode], id: SurfaceNodeId) -> Option<&SurfaceNodeKind> {
+    nodes.get(id.index()).map(|node| &node.kind)
+}
+
+fn contains_range(parent: SourceRange, child: SourceRange) -> bool {
+    parent.source_id == child.source_id && parent.start <= child.start && child.end <= parent.end
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        SurfaceAstBuilder, SurfaceInfixOperator, SurfaceNodeKind, SurfaceOperatorAssociativity,
+        SurfaceTokenKind, SyntaxKind,
+    };
+    use crate::SyntaxRecoveryKind;
+    use mizar_session::{
+        BuildSnapshotId, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceId,
+        SourceRange,
+    };
+
+    #[test]
+    fn builder_round_trips_into_rowan_backed_tree() {
+        let source_id = source_id(1);
+        let ast = expression_ast(source_id);
+
+        assert_eq!(ast.token_texts(), vec!["a", "++", "b"]);
+        assert_eq!(ast.rowan_root().kind(), SyntaxKind::Root);
+        let rowan_kinds = ast
+            .rowan_root()
+            .descendants_with_tokens()
+            .map(|element| element.kind())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            rowan_kinds,
+            vec![
+                SyntaxKind::Root,
+                SyntaxKind::InfixExpression,
+                SyntaxKind::Token,
+                SyntaxKind::TokenIdentifier,
+                SyntaxKind::Token,
+                SyntaxKind::TokenUserSymbol,
+                SyntaxKind::Token,
+                SyntaxKind::TokenIdentifier,
+            ]
+        );
+        let rowan_tokens = ast
+            .rowan_root()
+            .descendants_with_tokens()
+            .filter_map(|element| element.into_token())
+            .map(|token| (token.kind(), token.text().to_owned()))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            rowan_tokens,
+            vec![
+                (SyntaxKind::TokenIdentifier, "a".to_owned()),
+                (SyntaxKind::TokenUserSymbol, "++".to_owned()),
+                (SyntaxKind::TokenIdentifier, "b".to_owned()),
+            ]
+        );
+        assert_eq!(
+            ast.rowan_root()
+                .descendants_with_tokens()
+                .filter(|element| element.as_token().is_some())
+                .count(),
+            3,
+            "the rowan storage is source-shaped even while compatibility views keep dense token ids"
+        );
+        assert_eq!(ast.green_node(), expression_ast(source_id).green_node());
+    }
+
+    #[test]
+    fn typed_accessors_cover_current_node_and_token_kinds() {
+        let source_id = source_id(2);
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let token_kinds = [
+            SurfaceTokenKind::Identifier,
+            SurfaceTokenKind::ReservedWord,
+            SurfaceTokenKind::ReservedSymbol,
+            SurfaceTokenKind::Numeral,
+            SurfaceTokenKind::LexemeRun,
+            SurfaceTokenKind::UserSymbol,
+            SurfaceTokenKind::StringLiteral,
+            SurfaceTokenKind::ErrorRecovery,
+            SurfaceTokenKind::Unknown,
+        ];
+        let mut token_ids = Vec::new();
+        for (index, kind) in token_kinds.into_iter().enumerate() {
+            token_ids.push(builder.add_token(
+                kind,
+                format!("t{index}"),
+                range(source_id, index, index + 1),
+            ));
+        }
+        let recovered_token = builder.add_recovered_token(
+            SurfaceTokenKind::ErrorRecovery,
+            "bad",
+            range(source_id, 20, 21),
+        );
+        let recovery = builder.add_recovery(
+            SyntaxRecoveryKind::ErrorToken,
+            range(source_id, 9, 9),
+            Vec::new(),
+        );
+        let infix = builder.add_node(
+            SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
+                spelling: "++".into(),
+                precedence: 10,
+                associativity: SurfaceOperatorAssociativity::Left,
+            }),
+            range(source_id, 0, 3),
+            token_ids[..3].to_vec(),
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 9),
+            token_ids
+                .iter()
+                .copied()
+                .chain([recovered_token, infix, recovery])
+                .collect(),
+        );
+        let ast = builder.finish(Some(root), Some(infix));
+
+        let root_view = ast.root_view().unwrap();
+        assert_eq!(root_view.id(), sid(root));
+        assert_eq!(root_view.kind(), &SurfaceNodeKind::Root);
+        assert_eq!(root_view.syntax_kind(), SyntaxKind::Root);
+        assert_eq!(root_view.range(), range(source_id, 0, 9));
+        assert!(!root_view.is_recovered());
+        assert!(root_view.as_token().is_none());
+        assert!(root_view.as_infix_expression().is_none());
+        assert!(root_view.as_recovery().is_none());
+        assert_eq!(
+            root_view.children(),
+            &token_ids
+                .iter()
+                .copied()
+                .chain([recovered_token, infix, recovery])
+                .map(sid)
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            root_view
+                .child_views()
+                .map(super::SurfaceNodeView::id)
+                .collect::<Vec<_>>(),
+            root_view.children()
+        );
+
+        let expression_view = ast.expression_view().unwrap();
+        let infix_operator = expression_view.as_infix_expression().unwrap();
+        assert_eq!(expression_view.id(), sid(infix));
+        assert_eq!(expression_view.syntax_kind(), SyntaxKind::InfixExpression);
+        assert_eq!(expression_view.range(), range(source_id, 0, 3));
+        assert_eq!(
+            expression_view.children(),
+            &token_ids[..3].iter().copied().map(sid).collect::<Vec<_>>()
+        );
+        assert_eq!(infix_operator.spelling.as_ref(), "++");
+        assert_eq!(infix_operator.precedence, 10);
+        assert_eq!(
+            infix_operator.associativity,
+            SurfaceOperatorAssociativity::Left
+        );
+        assert!(!expression_view.is_recovered());
+        assert!(expression_view.as_token().is_none());
+        assert!(expression_view.as_recovery().is_none());
+
+        let recovery_view = ast.node_view(sid(recovery)).unwrap();
+        assert_eq!(
+            recovery_view.as_recovery(),
+            Some(SyntaxRecoveryKind::ErrorToken)
+        );
+        assert_eq!(recovery_view.syntax_kind(), SyntaxKind::ErrorRecovery);
+        assert_eq!(recovery_view.range(), range(source_id, 9, 9));
+        assert!(recovery_view.is_recovered());
+        assert!(recovery_view.children().is_empty());
+        assert!(recovery_view.as_token().is_none());
+        assert!(recovery_view.as_infix_expression().is_none());
+
+        let recovered_token_view = ast.node_view(sid(recovered_token)).unwrap();
+        assert!(recovered_token_view.is_recovered());
+        assert_eq!(recovered_token_view.range(), range(source_id, 20, 21));
+        assert_eq!(
+            recovered_token_view.as_token().unwrap().text.as_ref(),
+            "bad"
+        );
+        assert!(recovered_token_view.as_infix_expression().is_none());
+        assert!(recovered_token_view.as_recovery().is_none());
+
+        let actual_token_kinds = ast
+            .token_views()
+            .map(|view| view.as_token().unwrap().kind.syntax_kind())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            actual_token_kinds,
+            vec![
+                SyntaxKind::TokenIdentifier,
+                SyntaxKind::TokenReservedWord,
+                SyntaxKind::TokenReservedSymbol,
+                SyntaxKind::TokenNumeral,
+                SyntaxKind::TokenLexemeRun,
+                SyntaxKind::TokenUserSymbol,
+                SyntaxKind::TokenStringLiteral,
+                SyntaxKind::TokenErrorRecovery,
+                SyntaxKind::TokenUnknown,
+                SyntaxKind::TokenErrorRecovery,
+            ]
+        );
+        for (index, token_view) in ast.token_views().take(token_kinds.len()).enumerate() {
+            assert_eq!(token_view.id(), sid(token_ids[index]));
+            assert_eq!(token_view.syntax_kind(), SyntaxKind::Token);
+            assert_eq!(token_view.range(), range(source_id, index, index + 1));
+            assert_eq!(
+                token_view.as_token().unwrap().text.as_ref(),
+                format!("t{index}")
+            );
+            assert!(!token_view.is_recovered());
+            assert!(token_view.children().is_empty());
+            assert!(token_view.as_infix_expression().is_none());
+            assert!(token_view.as_recovery().is_none());
+        }
+    }
+
+    #[test]
+    fn parent_ranges_contain_child_ranges_except_recovery_attachments() {
+        let source_id = source_id(3);
+        let ast = expression_ast(source_id);
+        let expression = ast.expression_root().unwrap();
+        let root = ast.root().unwrap();
+
+        assert_eq!(ast.range_contains_child_ranges(expression), Some(true));
+        assert_eq!(ast.range_contains_child_ranges(root), Some(true));
+
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let opener = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "definition",
+            range(source_id, 0, 10),
+        );
+        let recovery = builder.add_recovery(
+            SyntaxRecoveryKind::MissingEnd,
+            range(source_id, 10, 10),
+            vec![opener],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 10),
+            vec![opener, recovery],
+        );
+        let recovered_ast = builder.finish(Some(root), None);
+
+        for node_id in [opener, root].map(sid) {
+            assert_eq!(
+                recovered_ast.range_contains_child_ranges(node_id),
+                Some(true),
+                "ordinary non-recovery node {node_id:?} should contain all child ranges"
+            );
+        }
+        assert_eq!(
+            recovered_ast.range_contains_child_ranges(sid(recovery)),
+            Some(false),
+            "missing-end recovery attaches the opener as context even though the zero-width insertion range does not contain it"
+        );
+
+        let mut missing_string_builder = SurfaceAstBuilder::new(source_id);
+        let missing_string = missing_string_builder.add_recovery(
+            SyntaxRecoveryKind::MissingStringLiteral,
+            range(source_id, 12, 12),
+            Vec::new(),
+        );
+        let root = missing_string_builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 12, 12),
+            vec![missing_string],
+        );
+        let missing_string_ast = missing_string_builder.finish(Some(root), None);
+        assert_eq!(
+            missing_string_ast.range_contains_child_ranges(sid(missing_string)),
+            Some(true),
+            "zero-width missing string recovery without context children still satisfies containment"
+        );
+        assert_eq!(
+            missing_string_ast.range_contains_child_ranges(sid(root)),
+            Some(true)
+        );
+    }
+
+    #[test]
+    fn repeated_construction_produces_deterministic_green_tree_and_views() {
+        let source_id = source_id(4);
+        let first = expression_ast(source_id);
+        let second = expression_ast(source_id);
+
+        assert_eq!(first.green_node(), second.green_node());
+        assert_eq!(first.nodes(), second.nodes());
+        assert_eq!(first.token_nodes(), second.token_nodes());
+        assert_eq!(first.expression_root(), second.expression_root());
+    }
+
+    #[test]
+    #[should_panic(expected = "must have been created by this builder")]
+    fn builder_rejects_child_ids_not_created_by_this_builder() {
+        let source_id = source_id(5);
+        let other_id = {
+            let mut other = SurfaceAstBuilder::new(source_id);
+            other.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1))
+        };
+        let mut builder = SurfaceAstBuilder::new(source_id);
+
+        builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 1),
+            vec![other_id],
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "cannot be shared by multiple non-root parents")]
+    fn builder_rejects_token_sharing_between_multiple_structural_parents() {
+        let source_id = source_id(6);
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let token = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+        let left_expression = builder.add_node(
+            SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
+                spelling: "left".into(),
+                precedence: 1,
+                associativity: SurfaceOperatorAssociativity::Left,
+            }),
+            range(source_id, 0, 1),
+            vec![token],
+        );
+        let right_expression = builder.add_node(
+            SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
+                spelling: "right".into(),
+                precedence: 1,
+                associativity: SurfaceOperatorAssociativity::Left,
+            }),
+            range(source_id, 0, 1),
+            vec![token],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 1),
+            vec![token, left_expression, right_expression],
+        );
+
+        let _ = builder.finish(Some(root), Some(left_expression));
+    }
+
+    fn expression_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let left = builder.add_token(SurfaceTokenKind::Identifier, "a", range(source_id, 0, 1));
+        let operator =
+            builder.add_token(SurfaceTokenKind::UserSymbol, "++", range(source_id, 2, 4));
+        let right = builder.add_token(SurfaceTokenKind::Identifier, "b", range(source_id, 5, 6));
+        let expression = builder.add_node(
+            SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
+                spelling: "++".into(),
+                precedence: 10,
+                associativity: SurfaceOperatorAssociativity::Left,
+            }),
+            range(source_id, 0, 6),
+            vec![left, operator, right],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 6),
+            vec![left, operator, right, expression],
+        );
+        builder.finish(Some(root), Some(expression))
+    }
+
+    const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
+        SourceRange {
+            source_id,
+            start,
+            end,
+        }
+    }
+
+    fn source_id(byte: u8) -> SourceId {
+        InMemorySessionIdAllocator::new()
+            .next_source_id(snapshot_id(byte))
+            .unwrap()
+    }
+
+    const fn sid(id: super::SurfaceBuilderNodeId) -> super::SurfaceNodeId {
+        id.into_surface_node_id()
+    }
+
+    fn snapshot_id(byte: u8) -> BuildSnapshotId {
+        let hex = format!("{byte:02x}").repeat(Hash::BYTE_LEN);
+        BuildSnapshotId::from_published_schema_str(&format!(
+            "mizar-session-build-snapshot-v1:{hex}"
+        ))
+        .unwrap()
+    }
 }

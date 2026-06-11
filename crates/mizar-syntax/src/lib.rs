@@ -2,7 +2,9 @@ pub mod ast;
 pub mod recovery;
 
 pub use ast::{
-    SurfaceAst, SurfaceInfixOperator, SurfaceNode, SurfaceNodeId, SurfaceNodeKind,
-    SurfaceOperatorAssociativity, SurfaceToken, SurfaceTokenKind,
+    MizarLanguage, RowanSyntaxElement, RowanSyntaxNode, RowanSyntaxToken, SurfaceAst,
+    SurfaceAstBuilder, SurfaceBuilderNodeId, SurfaceInfixOperator, SurfaceNode, SurfaceNodeId,
+    SurfaceNodeKind, SurfaceNodeView, SurfaceOperatorAssociativity, SurfaceToken, SurfaceTokenKind,
+    SyntaxKind,
 };
 pub use recovery::{SyntaxDiagnostic, SyntaxDiagnosticCode, SyntaxRecoveryKind};

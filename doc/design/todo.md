@@ -32,7 +32,7 @@ It complements [README.md](./README.md) (doc layout) and the pipeline definition
 |---|---|---|---|---|
 | mizar-session | Source identity, source maps, build snapshots, retention (foundation) | — | [x] | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | Raw scan + context-sensitive token disambiguation | — | [x] | [todo](./mizar-lexer/en/todo.md) |
-| mizar-syntax | `SurfaceAst`, rowan-targeted syntax nodes, trivia, recovery markers | mizar-session | [~] minimal task-12 surface boundary | [todo](./mizar-syntax/en/todo.md) |
+| mizar-syntax | `SurfaceAst`, rowan-backed syntax nodes, trivia, recovery markers | mizar-session | [~] rowan storage boundary; vocabulary still growing | [todo](./mizar-syntax/en/todo.md) |
 | mizar-parser | Grammar, Pratt parsing, syntax recovery | mizar-session, mizar-syntax | [~] minimal task-12 parser entry/recovery | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading + phase 1-3 orchestration | mizar-session, mizar-lexer, mizar-syntax, mizar-parser | [x] | [todo](./mizar-frontend/en/todo.md) |
 | mizar-test | Test corpus + harness (validation/planning only, no pipeline deps) | — | [~] discovery, expectations, staged model, traceability | [todo](./mizar-test/en/todo.md) |
@@ -76,11 +76,11 @@ Architecture: [architecture/en/02.source_and_frontend.md](./architecture/en/02.s
 ### Next: harden **mizar-syntax (AST)** + **mizar-parser** (phase 3)
 The task-12 boundary now provides a minimal `SurfaceAst`, parser entry point,
 Pratt operator metadata, and parser recovery passthrough for frontend seam
-integration. Next, expand the syntax node model, grammar coverage, and broader
-recovery behavior into the full `source → tokens → SurfaceAst` pipeline. The
-target syntax-tree backend is `rowan`, so settle the `mizar-syntax` storage
-boundary before parser grammar consumers grow; parser code should emit through
-the syntax builder/event API rather than depending on an ad hoc arena layout.
+integration. The `mizar-syntax` storage boundary is now rowan-backed; next,
+expand the syntax node model, grammar coverage, and broader recovery behavior
+into the full `source → tokens → SurfaceAst` pipeline. Parser code should emit
+through the syntax builder/event API rather than depending on an ad hoc arena
+layout.
 Keep syntax data structures in `mizar-syntax`, grammar and recovery in
 `mizar-parser`, and phase orchestration in `mizar-frontend`. `salsa` is required
 later at the driver/build query-cache layer, so these crates should keep phase
@@ -166,12 +166,11 @@ ownership in [01.ir_layers.md](./architecture/en/01.ir_layers.md).
   owned by [mizar-parser/en/todo.md](./mizar-parser/en/todo.md) task 10
   together with `mizar-syntax` task 8, and closed by
   [mizar-resolve/en/todo.md](./mizar-resolve/en/todo.md) task 16.
-- **Syntax tree backend: open, rowan required.** `mizar-syntax` must converge on
-  a rowan-backed `SurfaceAst` before parser node vocabulary and resolver/LSP
-  consumers grow. The initial storage decision is owned by
-  [mizar-syntax/en/todo.md](./mizar-syntax/en/todo.md) task 2; parser grammar
-  code must go through the syntax builder/event boundary rather than relying on
-  arena indices or raw rowan layout.
+- **Syntax tree backend: resolved, rowan-backed.** `mizar-syntax` now owns a
+  rowan-backed `SurfaceAst` storage boundary before parser node vocabulary and
+  resolver/LSP consumers grow. Parser grammar code must go through the syntax
+  builder/event boundary rather than relying on arena indices or raw rowan
+  layout.
 - **Salsa query engine timing: required later.** `salsa` is the required target
   for later query/cache orchestration, but not as a dependency of
   `mizar-syntax` or `mizar-parser`. The query boundary is owned by
