@@ -254,36 +254,29 @@ impl Parser {
 
     fn recover_block_ends(&mut self) -> RecoveryOutcome {
         let tokens = self.request.tokens.clone();
-        if let [token] = tokens.as_slice()
-            && is_end_keyword(token)
-        {
-            self.diagnostics.push(
-                SyntaxDiagnostic::new(
-                    SyntaxDiagnosticCode::UnrecoverableInput,
-                    "`end` has no matching block opener",
-                    token.span,
-                )
-                .with_recovery_note(
-                    "remove the stray `end` or add a matching block opener before it",
-                ),
-            );
-            return RecoveryOutcome::Unrecoverable;
-        }
+        let mut stack = Vec::new();
 
-        if tokens.iter().any(is_end_keyword) {
-            return RecoveryOutcome::Recovered;
+        for (position, token) in tokens.iter().enumerate() {
+            if opens_recovery_block(&tokens, position) {
+                stack.push(BlockStart {
+                    keyword: token.text.clone(),
+                    span: token.span,
+                    token_node_id: self.token_node_ids[position],
+                });
+            } else if is_end_keyword(token) && stack.pop().is_none() {
+                self.diagnostics.push(
+                    SyntaxDiagnostic::new(
+                        SyntaxDiagnosticCode::UnrecoverableInput,
+                        "`end` has no matching block opener",
+                        token.span,
+                    )
+                    .with_recovery_note(
+                        "remove the stray `end` or add a matching block opener before it",
+                    ),
+                );
+                return RecoveryOutcome::Unrecoverable;
+            }
         }
-
-        let mut stack = tokens
-            .iter()
-            .enumerate()
-            .filter(|(_, token)| is_block_start_keyword(token))
-            .map(|(position, token)| BlockStart {
-                keyword: token.text.clone(),
-                span: token.span,
-                token_node_id: self.token_node_ids[position],
-            })
-            .collect::<Vec<_>>();
 
         if !stack.is_empty() {
             let offset = tokens.last().map_or(0, |token| token.span.end);
@@ -529,6 +522,37 @@ fn is_end_keyword(token: &ParserToken) -> bool {
     is_reserved_word_token(token, "end")
 }
 
+fn is_else_keyword(token: &ParserToken) -> bool {
+    is_reserved_word_token(token, "else")
+}
+
+fn opens_recovery_block(tokens: &[ParserToken], position: usize) -> bool {
+    let token = &tokens[position];
+    if !is_block_start_keyword(token) {
+        return false;
+    }
+
+    if is_reserved_word_token(token, "for") {
+        return looks_like_algorithm_for_loop(tokens, position);
+    }
+
+    !(is_reserved_word_token(token, "if") && position > 0 && is_else_keyword(&tokens[position - 1]))
+}
+
+fn looks_like_algorithm_for_loop(tokens: &[ParserToken], position: usize) -> bool {
+    matches!(
+        (tokens.get(position + 1), tokens.get(position + 2)),
+        (
+            Some(ParserToken {
+                kind: ParserTokenKind::Identifier,
+                ..
+            }),
+            Some(next)
+        ) if is_reserved_word_token(next, "in")
+            || (next.kind == ParserTokenKind::ReservedSymbol && next.text.as_ref() == "=")
+    )
+}
+
 fn is_block_start_keyword(token: &ParserToken) -> bool {
     token.kind == ParserTokenKind::ReservedWord
         && matches!(
@@ -541,6 +565,12 @@ fn is_block_start_keyword(token: &ParserToken) -> bool {
                 | "hereby"
                 | "case"
                 | "suppose"
+                | "if"
+                | "while"
+                | "for"
+                | "match"
+                | "claim"
+                | "otherwise"
         )
 }
 
@@ -889,6 +919,231 @@ mod tests {
     }
 
     #[test]
+    fn algorithm_control_blocks_match_their_own_end_before_outer_algorithm_end() {
+        let source_id = source_id(15);
+        for (block_tokens, block_end_start, outer_end_start) in [
+            (vec![("if", ParserTokenKind::ReservedWord)], 21, 25),
+            (vec![("while", ParserTokenKind::ReservedWord)], 24, 28),
+            (
+                vec![
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("i", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                ],
+                26,
+                30,
+            ),
+            (
+                vec![
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("in", ParserTokenKind::ReservedWord),
+                ],
+                27,
+                31,
+            ),
+            (vec![("match", ParserTokenKind::ReservedWord)], 24, 28),
+            (vec![("claim", ParserTokenKind::ReservedWord)], 24, 28),
+        ] {
+            let block_name = block_tokens[0].0;
+            let mut tokens = vec![token(
+                source_id,
+                ParserTokenKind::ReservedWord,
+                "algorithm",
+                0,
+                9,
+            )];
+            let mut offset = 10;
+            for (text, kind) in block_tokens {
+                tokens.push(token(source_id, kind, text, offset, offset + text.len()));
+                offset += text.len() + 1;
+            }
+            tokens.extend([
+                token(
+                    source_id,
+                    ParserTokenKind::ReservedWord,
+                    "end",
+                    block_end_start,
+                    block_end_start + 3,
+                ),
+                token(
+                    source_id,
+                    ParserTokenKind::ReservedWord,
+                    "end",
+                    outer_end_start,
+                    outer_end_start + 3,
+                ),
+            ]);
+
+            let output = parse(ParseRequest::new(
+                source_id,
+                Edition::new("2026"),
+                tokens,
+                Vec::new(),
+            ));
+
+            assert!(
+                output.diagnostics.is_empty(),
+                "{block_name} should consume the inner end without making the outer end stray"
+            );
+            assert!(
+                output.ast.is_some(),
+                "{block_name} nested inside algorithm should remain recoverable"
+            );
+        }
+    }
+
+    #[test]
+    fn quantifier_for_does_not_open_recovery_block() {
+        let source_id = source_id(16);
+        let tokens = vec![
+            token(
+                source_id,
+                ParserTokenKind::ReservedWord,
+                "definition",
+                0,
+                10,
+            ),
+            token(source_id, ParserTokenKind::ReservedWord, "theorem", 11, 18),
+            token(source_id, ParserTokenKind::ReservedWord, "for", 19, 22),
+            token(source_id, ParserTokenKind::Identifier, "x", 23, 24),
+            token(source_id, ParserTokenKind::ReservedWord, "being", 25, 30),
+            token(source_id, ParserTokenKind::Identifier, "Nat", 31, 34),
+            token(source_id, ParserTokenKind::ReservedWord, "holds", 35, 40),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 41, 44),
+        ];
+
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "formula quantifiers must not consume a surrounding block end"
+        );
+        assert!(output.ast.is_some());
+    }
+
+    #[test]
+    fn match_otherwise_branch_matches_its_own_end() {
+        let source_id = source_id(17);
+        let tokens = vec![
+            token(source_id, ParserTokenKind::ReservedWord, "algorithm", 0, 9),
+            token(source_id, ParserTokenKind::ReservedWord, "match", 10, 15),
+            token(source_id, ParserTokenKind::ReservedWord, "case", 20, 24),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 30, 33),
+            token(
+                source_id,
+                ParserTokenKind::ReservedWord,
+                "otherwise",
+                34,
+                43,
+            ),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 50, 53),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 54, 57),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 58, 61),
+        ];
+
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert!(output.diagnostics.is_empty());
+        assert!(output.ast.is_some());
+    }
+
+    #[test]
+    fn else_if_chain_uses_one_recovery_block_for_the_if_chain() {
+        let source_id = source_id(18);
+        let tokens = vec![
+            token(source_id, ParserTokenKind::ReservedWord, "algorithm", 0, 9),
+            token(source_id, ParserTokenKind::ReservedWord, "if", 10, 12),
+            token(source_id, ParserTokenKind::ReservedWord, "else", 18, 22),
+            token(source_id, ParserTokenKind::ReservedWord, "if", 23, 25),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 31, 34),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 35, 38),
+        ];
+
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert!(output.diagnostics.is_empty());
+        assert!(output.ast.is_some());
+    }
+
+    #[test]
+    fn partially_closed_nested_blocks_recover_missing_outer_end() {
+        let source_id = source_id(19);
+        let tokens = vec![
+            token(
+                source_id,
+                ParserTokenKind::ReservedWord,
+                "definition",
+                0,
+                10,
+            ),
+            token(
+                source_id,
+                ParserTokenKind::ReservedWord,
+                "algorithm",
+                11,
+                20,
+            ),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 21, 24),
+        ];
+
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(output.diagnostics[0].code, SyntaxDiagnosticCode::MissingEnd);
+        assert_eq!(
+            output.diagnostics[0].primary,
+            SourceRange {
+                source_id,
+                start: 24,
+                end: 24,
+            }
+        );
+        assert_eq!(
+            output.diagnostics[0].secondary,
+            vec![mizar_session::SourceAnchor::Range(SourceRange {
+                source_id,
+                start: 0,
+                end: 10,
+            })]
+        );
+        let ast = output
+            .ast
+            .expect("partially closed nested blocks should recover");
+        let recovery_node = ast
+            .nodes
+            .iter()
+            .find(|node| {
+                matches!(
+                    &node.kind,
+                    SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingEnd)
+                )
+            })
+            .expect("outer missing end should create an explicit recovery node");
+        assert_eq!(recovery_node.children, vec![ast.token_nodes[0]]);
+    }
+
+    #[test]
     fn unrecoverable_stream_returns_no_ast_with_diagnostic() {
         let source_id = source_id(6);
         let tokens = vec![token(source_id, ParserTokenKind::ReservedWord, "end", 0, 3)];
@@ -912,6 +1167,44 @@ mod tests {
                 source_id,
                 start: 0,
                 end: 3,
+            }
+        );
+    }
+
+    #[test]
+    fn stray_end_after_closed_block_is_unrecoverable() {
+        let source_id = source_id(20);
+        let tokens = vec![
+            token(
+                source_id,
+                ParserTokenKind::ReservedWord,
+                "definition",
+                0,
+                10,
+            ),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 11, 14),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 15, 18),
+        ];
+
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert!(output.ast.is_none());
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::UnrecoverableInput
+        );
+        assert_eq!(
+            output.diagnostics[0].primary,
+            SourceRange {
+                source_id,
+                start: 15,
+                end: 18,
             }
         );
     }

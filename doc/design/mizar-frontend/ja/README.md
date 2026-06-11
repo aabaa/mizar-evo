@@ -24,10 +24,10 @@
 | [preprocess.md](./preprocess.md) | `crates/mizar-frontend/src/preprocess.rs` | Step 2: `PreprocessedSource`、コメント／ドキュメントコメントの分離、注釈構文の保持、浅いインポート事前走査の統制 | Implemented |
 | [lexical_env.md](./lexical_env.md) | `crates/mizar-frontend/src/lexical_env.rs` | Step 3: インポートスタブと依存字句サマリからのアクティブ字句環境の構築 | Implemented through task 6 |
 | [lexing.md](./lexing.md) | `crates/mizar-frontend/src/lexing.rs` | Step 4: 回復可能な生スキャン・スコープスケルトン・位置別 parser lexing plan・文脈依存の曖昧性解消による `TokenStream` | Implemented through task 22 |
-| [parsing.md](./parsing.md) | `crates/mizar-frontend/src/parsing.rs` | Step 5: parser seam の呼び出し、パーサー入力の組み立て、位置別 string context planning、`SurfaceAst` の受け渡し | Implemented through task 20; full grammar recovery pending |
+| [parsing.md](./parsing.md) | `crates/mizar-frontend/src/parsing.rs` | Step 5: parser seam の呼び出し、パーサー入力の組み立て、位置別 string context planning、`SurfaceAst` の受け渡し | Implemented through task 28 current parser growth |
 | [cache_key.md](./cache_key.md) | `crates/mizar-frontend/src/cache_key.rs` | parser lexing-plan content key を含め、`FrontendOutput.cache_keys` で公開する層状 frontend content cache keys | Implemented through task 20 |
 | [span_bridge.md](./span_bridge.md) | `crates/mizar-frontend/src/span_bridge.rs` | 字句解析器のバイトスパンから `mizar-session` の `SourceRange` への座標橋渡し | Implemented for task 1 |
-| [orchestration.md](./orchestration.md) | `crates/mizar-frontend/src/orchestration.rs` | フェーズ 1〜3 のエンドツーエンド統制（Step 1〜5）、parser lexing-plan wiring、診断統合、`FrontendOutput` | Implemented through task 20 |
+| [orchestration.md](./orchestration.md) | `crates/mizar-frontend/src/orchestration.rs` | フェーズ 1〜3 のエンドツーエンド統制（Step 1〜5）、parser lexing-plan wiring、診断統合、`FrontendOutput` | Implemented through task 28 current parser growth |
 | [source_spec_correspondence.md](./source_spec_correspondence.md) | `crates/mizar-frontend` の仕様、ソース、ユニットテスト | task 16 の公開 API／エラー variant／タスク要件対応監査 | Implemented |
 | [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | `doc/design/mizar-frontend/en/` と `doc/design/mizar-frontend/ja/` | task 17 の二言語 API／状態／用語／リンク／挙動同期監査 | Implemented |
 | [todo.md](./todo.md) | `crates/mizar-frontend` | モジュール実装順序、状態、残作業 | Living |

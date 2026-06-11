@@ -17,9 +17,9 @@
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [x] |
-| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] implemented through task 20; full grammar recovery pending (task 28) |
+| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [x] implemented through task 28 current parser growth |
 | cache_key | [cache_key.md](./cache_key.md) | `src/cache_key.rs` | [x] |
-| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [~] implemented through task 20; later follow-up gates remain (task 28) |
+| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [x] implemented through task 28 current parser growth |
 
 `mizar-frontend` is an orchestration crate, so it is built bottom-up by phase:
 the coordinate bridge first, then pipeline Steps 1-5 in order, then the
@@ -55,11 +55,9 @@ These public API decisions are tracked at the top level in
   arguments, and parser-driven user-symbol kind filters.
 - **Quality bar before the next crate: resolved.** Task 25 is complete, so
   there are no remaining frontend-side gates before development moves to the
-  next crate. Task 27 is complete, and task 28 remains a deliberately deferred
-  follow-up with explicit re-entry triggers; neither blocks the handoff. The
-  `[~]` module statuses for `parsing` and `orchestration` track future
-  `mizar-parser` grammar/recovery growth (task 28), not missing frontend-side
-  work, so they are not a handoff gate either.
+  next crate. Tasks 27 and 28 are complete for the current parser/recovery
+  surface; future `mizar-parser` grammar/recovery growth should open a new
+  frontend follow-up rather than leaving hidden work in this crate.
 
 ## Ordered Task List
 
@@ -311,8 +309,8 @@ should keep `cargo test -p mizar-frontend` green (see
 12. **Parser recovery passthrough.** [x]
     - Preserve `ast = None` on unrecoverable input and explicit recovery-node
       markers inside a returned `SurfaceAst`; carry syntax diagnostics through.
-    - Tests: a missing `end` recovers conservatively at EOF when no `end` token is
-      present, with `ast = Some` and an explicit error node; an unrecoverable
+    - Tests: a missing `end` recovers conservatively at EOF when block-stack
+      matching leaves an opener unclosed, with `ast = Some` and an explicit error node; an unrecoverable
       one-token `end` stream returns `ast = None` with diagnostics; a missing
       string literal at a uniform string-required position yields the expected
       syntax diagnostic using a synthetic token stream.
@@ -544,9 +542,10 @@ should keep `cargo test -p mizar-frontend` green (see
 
 ### Quality bar before the next crate
 
-Task 25 was the only gate before next-crate development started. Tasks 26 and
-27 are now complete, and task 28 remains deliberately deferred with a recorded
-re-entry trigger so the deferral is a decision, not an omission.
+Task 25 was the only gate before next-crate development started. Tasks 26, 27,
+and 28 are now complete for the current frontend/parser surface. Future parser
+grammar growth should add a new follow-up task with the same passthrough,
+diagnostic ordering, and cache-key checks.
 
 25. **Public enum forward-compatibility decision.** [x]
     - For each public frontend enum whose spec already promises future variants
@@ -596,12 +595,12 @@ re-entry trigger so the deferral is a decision, not an omission.
       pre-scan → tokenize over arbitrary UTF-8 input with a stub summary
       provider, asserting no panics and recoverable-diagnostics-only outcomes
       on the recovery paths that tasks 9 and 22 promise.
-    - Re-entry trigger (fuzz): when the recovery surface grows with
-      `mizar-parser` grammar expansion (task 28), or before the first
-      end-user-facing milestone, whichever comes first. Re-entry trigger
-      (performance): when the driver's incremental loop exists and consumes
-      `FrontendOutput.cache_keys`, extend the current full-pipeline baselines
-      with true incremental timing for comment-only versus import-edit reruns.
+    - Re-entry trigger (fuzz): task 28 satisfied the parser-recovery growth
+      trigger; task 29 records the real-parser fuzz follow-up explicitly.
+      Re-entry trigger (performance): when the driver's incremental loop exists
+      and consumes `FrontendOutput.cache_keys`, extend the current
+      full-pipeline baselines with true incremental timing for comment-only
+      versus import-edit reruns.
     - Depends on: 22. Spec: [preprocess.md](./preprocess.md),
       [lexing.md](./lexing.md), [cache_key.md](./cache_key.md).
     - Completed in task 27: added `frontend_valid_utf8` under `fuzz/` using an
@@ -615,19 +614,31 @@ re-entry trigger so the deferral is a decision, not an omission.
       incremental rerun timing remains reserved for the performance re-entry
       trigger above.
 
-28. **Grammar-recovery follow-through with `mizar-parser` growth.** [ ] Deferred.
-    - The pending work behind the `[~]` statuses of `parsing` and
-      `orchestration` is owned by future `mizar-parser` grammar and recovery
-      development, not by this crate. As the grammar grows beyond the minimal
-      seam, extend the frontend passthrough coverage in step: recovery-node
-      markers, syntax-diagnostic merge ordering, and `SurfaceAstCacheKey`
-      invalidation for the new grammar shapes.
-    - Flip `parsing` and `orchestration` to `[x]` in the module table when the
-      full grammar-recovery contract lands.
-    - Re-entry trigger: the start of `mizar-parser` grammar expansion beyond
-      the current minimal seam.
+28. **Grammar-recovery follow-through with `mizar-parser` growth.** [x] Complete.
+    - Completed follow-through for the current parser growth: nested block-end
+      recovery now matches available `end` tokens before diagnosing still-open
+      block starts, frontend seam tests preserve the new recovery node shape,
+      orchestration tests merge the resulting syntax diagnostic, and
+      `MIZAR_PARSER_CACHE_KEY_VERSION` invalidates `SurfaceAstCacheKey`s for
+      the changed parser output semantics.
+    - Future grammar/recovery expansion should open a new task that repeats the
+      same checklist: recovery-node passthrough, syntax-diagnostic merge
+      ordering, and `SurfaceAstCacheKey` invalidation for the new grammar
+      shapes.
     - Depends on: 12, 13. Spec: [parsing.md](./parsing.md),
       [orchestration.md](./orchestration.md).
+
+29. **Real-parser frontend fuzz follow-up.** [ ] Planned.
+    - Task 28 expanded the parser recovery surface beyond the stub-only fuzz
+      target added in task 27. Add or extend a frontend fuzz target that runs
+      valid UTF-8 through preprocessing, tokenization, `MizarParserSeam`, syntax
+      diagnostic merging, and `SurfaceAstCacheKey` construction, asserting no
+      panics and recoverable-diagnostics-only completion for parser recovery
+      paths.
+    - Coordinate with `mizar-parser` task 39 so parser-owned and
+      frontend-owned fuzz coverage land together when possible.
+    - Depends on: 27, 28. Spec: [parsing.md](./parsing.md),
+      [orchestration.md](./orchestration.md), [cache_key.md](./cache_key.md).
 
 ## Suggested Verification
 

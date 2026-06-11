@@ -3,9 +3,9 @@
 > Canonical language: English. Japanese companion: [../ja/parsing.md](../ja/parsing.md).
 
 Status: parser-input assembly, the stub parser seam, a minimal real
-`mizar-parser` seam, task-12 parser recovery passthrough, and task-20
-position-sensitive parser lexing-plan integration are implemented; full grammar
-recovery remains gated.
+`mizar-parser` seam, task-12 parser recovery passthrough, task-20
+position-sensitive parser lexing-plan integration, and task-28 nested
+block-end recovery follow-through are implemented.
 
 ## Purpose
 
@@ -151,8 +151,8 @@ spans and parser-driven symbol-kind filters are represented by
 
 With the stub parser seam, `ast = None` is the expected placeholder result. The
 real parser seam returns a minimal `SurfaceAst` for recovered token streams,
-including task-12 recovery nodes for missing `end` when no `end` token is present
-and for expected string literal positions. It may return `ast = None` when
+including recovery nodes for missing `end` after block-stack matching and for
+expected string literal positions. It may return `ast = None` when
 parsing cannot recover enough structure for downstream phases. Lexical and
 syntax diagnostics are still returned.
 
@@ -181,7 +181,7 @@ arbitrary scope or resolver state.
 The parser seam lets the frontend compile and test either the stubbed
 source-to-token pipeline or the real parser boundary. The real seam preserves
 source order and `SourceRange`s in `SurfaceAst` token nodes, supports explicit
-infix fixity through a small Pratt parser, and forwards task-12 recovery markers
+infix fixity through a small Pratt parser, and forwards parser recovery markers
 unchanged. Later parser tasks expand that same boundary with full module/item
 nodes, annotation attachment, doc-comment attachment, and broader recovery
 markers. The frontend passes parser output through unchanged; it does not
@@ -196,8 +196,8 @@ rewrite, prune, or interpret nodes.
    stub seam returns `ast = None` with no syntax diagnostics.
 3. The parser preserves token nodes in source order, builds minimal infix
    expression nodes when explicit operator fixity is supplied, and preserves
-   task-12 recovery markers for missing `end` when no `end` token is present and
-   expected string literals. Later parser tasks add full module/item parsing,
+   recovery markers for missing `end` after block-stack matching and expected
+   string literals. Later parser tasks add full module/item parsing,
    annotation and doc-comment attachment, and broader synchronization coverage.
 4. Return the `SurfaceAst` plus syntax diagnostics, or `ast = None` when the
    parser reports unrecoverable input.
@@ -241,7 +241,7 @@ Key scenarios:
 - non-associative chains of the same operator are diagnosed while different
   operators at the same precedence remain distinct;
 - missing `end` recovers conservatively at EOF with an explicit recovery node
-  when no `end` token is present;
+  for still-open block starts after matching available `end` tokens;
 - one-token unrecoverable `end` input preserves `ast = None` plus syntax
   diagnostics;
 - missing string literals at uniform string-required positions are diagnosed

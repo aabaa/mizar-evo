@@ -17,9 +17,9 @@
 | preprocess | [preprocess.md](./preprocess.md) | `src/preprocess.rs` | [x] |
 | lexical_env | [lexical_env.md](./lexical_env.md) | `src/lexical_env.rs` | [x] |
 | lexing | [lexing.md](./lexing.md) | `src/lexing.rs` | [x] |
-| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [~] task 20 まで実装済み。full grammar recovery は保留中（task 28） |
+| parsing | [parsing.md](./parsing.md) | `src/parsing.rs` | [x] 現在の parser 成長分は task 28 まで実装済み |
 | cache_key | [cache_key.md](./cache_key.md) | `src/cache_key.rs` | [x] |
-| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [~] task 20 まで実装済み。後続 follow-up gate は残る（task 28） |
+| orchestration | [orchestration.md](./orchestration.md) | `src/orchestration.rs` | [x] 現在の parser 成長分は task 28 まで実装済み |
 
 `mizar-frontend` は統制を担う crate なので、フェーズの順にボトムアップで構築する。まず座標の橋渡しを用意し、続いてパイプライン順に Step 1〜5、最後にエンドツーエンドのコーディネータを作る。`span_bridge` は後続の各フェーズが参照する共有プリミティブであり、`orchestration` はパイプライン全体を配線する唯一のモジュールである。
 
@@ -35,7 +35,7 @@
 
 - **字句解析器スパンの橋渡し: 解決済み。** この crate は分離方式を採用する。`mizar-lexer` はバイトオフセットのスパンを保持し、`span_bridge`（タスク 1）がそれらを `mizar-session` の `SourceRange` へ変換する。
 - **パーサー支援字句解析の契約: 解決済み。** フロントエンドは、字句バイト範囲上の位置別 `ParserLexingPlan` を事前計算し、狭い `ParserLexContext` 値だけを字句解析器に渡す。parser と lexer は交錯せず、lexer は任意の parser state を受け取らない。この plan は文法位置の string literal、注釈文字列引数内の Unicode、parser 駆動の user-symbol kind filter を扱う。
-- **次クレート着手前の品質基準: 解決済み。** task 25 は完了したため、次のクレートの開発へ移る前に残るフロントエンド側のゲートはない。task 27 は完了済みであり、task 28 だけが、明示的な再着手トリガーを持つ意図的な保留フォローアップとして残る。どちらも引き継ぎを妨げない。`parsing` と `orchestration` の `[~]` 状態は、フロントエンド側の未完了作業ではなく、将来の `mizar-parser` の文法／回復の拡大（task 28）を追跡するものなので、これも引き継ぎのゲートではない。
+- **次クレート着手前の品質基準: 解決済み。** task 25 は完了したため、次のクレートの開発へ移る前に残るフロントエンド側のゲートはない。task 27 と task 28 は、現在の parser／recovery surface について完了済みである。将来 `mizar-parser` の文法／回復がさらに拡大した場合は、この crate に隠れた未完了作業として残すのではなく、新しいフロントエンド follow-up を開く。
 
 ## 順序付きタスク一覧
 
@@ -125,7 +125,7 @@
 
 12. **パーサーの回復のパススルー。** [x]
     - 回復不能な入力での `ast = None` と、返された `SurfaceAst` 内の明示的な回復ノードの印を保持する。構文診断を通す。
-    - テスト: `end` token が存在しない場合、`end` の欠落は保守的に EOF で回復し、`ast = Some` と明示的なエラーノードを生む。回復不能な 1 トークンの `end` ストリームが、診断とともに `ast = None` を返す。一様な string-required 位置での文字列リテラル欠落は、合成トークンストリームで期待される構文診断を確認する。
+    - テスト: block-stack matching 後も opener が閉じられていない場合、`end` の欠落は保守的に EOF で回復し、`ast = Some` と明示的なエラーノードを生む。回復不能な 1 トークンの `end` ストリームが、診断とともに `ast = None` を返す。一様な string-required 位置での文字列リテラル欠落は、合成トークンストリームで期待される構文診断を確認する。
     - 依存: 11。仕様: [parsing.md](./parsing.md)「Error Handling」。
 
 ### モジュール: orchestration (`src/orchestration.rs`)
@@ -248,7 +248,7 @@
 
 ### 次クレート着手前の品質基準
 
-次のクレートの開発を始める前のゲートは task 25 のみだった。task 26 と task 27 は現在完了済みであり、task 28 だけが意図的な保留として残る。再着手のトリガーを記録することで、保留が「漏れ」ではなく「決定」であることを保証する。
+次のクレートの開発を始める前のゲートは task 25 のみだった。task 26、task 27、task 28 は現在の frontend/parser surface について完了済みである。将来の parser 文法拡大では、同じ方針の新しい follow-up task を追加する。
 
 25. **公開 enum の前方互換方針の決定。** [x]
     - 仕様が将来の variant や予約 surface を約束している各公開 enum —
@@ -271,15 +271,19 @@
 
 27. **フロントエンドパイプラインの fuzz ターゲットと性能ベースライン。** [x] 完了。
     - この task の前は、ワークスペースの fuzz ハーネスは `lexer_valid_utf8` のみを対象としていた。スタブのサマリプロバイダを使って任意の UTF-8 入力上で preprocess → import 事前走査 → tokenize を駆動するフロントエンドターゲットを追加し、task 9 と task 22 が約束する回復経路で panic が起きず、回復可能診断のみで完了することをアサートする。
-    - 再着手トリガー（fuzz）: `mizar-parser` の文法拡大（task 28）で回復 surface が拡大したとき、または最初のエンドユーザー向けマイルストーンの前 — いずれか早い方。再着手トリガー（性能）: driver の増分ループが存在し `FrontendOutput.cache_keys` を消費するようになったとき、現在の full-pipeline baseline を拡張し、コメントのみの編集と import 編集の真の増分再実行について計時を追加する。
+    - 再着手トリガー（fuzz）: task 28 が parser-recovery growth trigger を満たしたため、task 29 で real-parser fuzz follow-up を明示的に記録する。再着手トリガー（性能）: driver の増分ループが存在し `FrontendOutput.cache_keys` を消費するようになったとき、現在の full-pipeline baseline を拡張し、コメントのみの編集と import 編集の真の増分再実行について計時を追加する。
     - 依存: 22。仕様: [preprocess.md](./preprocess.md)、[lexing.md](./lexing.md)、[cache_key.md](./cache_key.md)。
     - task 27 で完了した内容: 空の summary provider と stub parser seam を使う `frontend_valid_utf8` を `fuzz/` に追加し、任意の valid UTF-8 について source loading、preprocess/import 事前走査、active lexical environment の回復、tokenize、diagnostic merge が hard frontend error なしで走ることを確認するようにした。`crates/mizar-frontend/benches/frontend_pipeline.rs` に Criterion baseline を追加し、cold full pipeline run と、`FrontendOutput.cache_keys` を消費する comment-only / import-edit の full-pipeline 編集 fixture を計測する。driver の真の増分再実行 timing は、上記の性能再着手トリガーまで保留する。
 
-28. **`mizar-parser` の成長に伴う grammar-recovery のフォロースルー。** [ ] 保留。
-    - `parsing` と `orchestration` の `[~]` 状態の背後にある保留作業は、この crate ではなく、将来の `mizar-parser` の文法・回復開発が所有する。文法が最小の seam を超えて成長するのに合わせて、フロントエンドのパススルー網羅を歩調を合わせて拡張する: 回復ノードの印、構文診断の統合順序、新しい文法形状に対する `SurfaceAstCacheKey` の無効化。
-    - full grammar-recovery 契約が入った時点で、モジュール表の `parsing` と `orchestration` を `[x]` に切り替える。
-    - 再着手トリガー: `mizar-parser` の文法が現在の最小 seam を超えて拡大を始めたとき。
+28. **`mizar-parser` の成長に伴う grammar-recovery のフォロースルー。** [x] 完了。
+    - 現在の parser 成長分の follow-through は完了した。nested block-end recovery は利用可能な `end` token を対応付けた後、まだ開いている block start を診断する。frontend seam test は新しい recovery node 形状を保持し、orchestration test は結果の構文診断を merge し、`MIZAR_PARSER_CACHE_KEY_VERSION` は parser 出力 semantics の変更に合わせて `SurfaceAstCacheKey` を無効化する。
+    - 将来の文法／回復拡大では、同じ checklist（recovery-node passthrough、構文診断の merge ordering、新しい文法形状に対する `SurfaceAstCacheKey` 無効化）を繰り返す新しい task を開く。
     - 依存: 12、13。仕様: [parsing.md](./parsing.md)、[orchestration.md](./orchestration.md)。
+
+29. **実 parser を使う frontend fuzz follow-up。** [ ] 計画済み。
+    - task 28 は、task 27 で追加した stub-only fuzz target を超えて parser recovery surface を拡大した。valid UTF-8 を preprocessing、tokenization、`MizarParserSeam`、構文診断 merge、`SurfaceAstCacheKey` construction へ通し、parser recovery path でも panic せず recoverable diagnostics のみで完了することを確認する frontend fuzz target を追加または拡張する。
+    - 可能なら `mizar-parser` task 39 と調整し、parser-owned と frontend-owned の fuzz coverage を一緒に着地させる。
+    - 依存: 27、28。仕様: [parsing.md](./parsing.md)、[orchestration.md](./orchestration.md)、[cache_key.md](./cache_key.md)。
 
 ## 推奨検証
 

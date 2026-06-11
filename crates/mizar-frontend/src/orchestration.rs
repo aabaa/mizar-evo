@@ -636,7 +636,10 @@ mod tests {
         LexDiagnosticCode, LexingDiagnostic, LexingDiagnosticKind, LexingDiagnosticPayload,
         ParserLexMode, TokenKind,
     };
-    use crate::parsing::{MizarParserSeam, ParseOutput, ParseRequest, ParserSeam, StubParserSeam};
+    use crate::parsing::{
+        MIZAR_PARSER_CACHE_KEY_VERSION, MizarParserSeam, ParseOutput, ParseRequest, ParserSeam,
+        StubParserSeam,
+    };
     use crate::source::{FrontendSourceLoader, SourceUnit, SourceUnitLoader, SourceUnitRequest};
     use crate::span_bridge::SpanBridgeError;
     use mizar_session::{
@@ -782,6 +785,51 @@ mod tests {
                 .context
                 .mode(),
             ParserLexMode::StringRequired
+        );
+    }
+
+    #[test]
+    fn real_parser_frontend_merges_nested_missing_end_and_uses_parser_v2_cache_key() {
+        let fixture = PackageFixture::new();
+        fixture.write(
+            "src/nested_missing_end.miz",
+            "definition\nalgorithm\nend;\n",
+        );
+        let frontend = frontend_for_fixture(&fixture, MizarParserSeam);
+        let ids = InMemorySessionIdAllocator::new();
+
+        let output = frontend
+            .run(fixture.request("src/nested_missing_end.miz"), &ids)
+            .expect("nested missing end should recover through the real parser frontend");
+
+        assert!(output.ast.is_some());
+        let syntax = output
+            .diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.class == DiagnosticClass::Syntax)
+            .expect("nested missing end should be merged as a syntax diagnostic");
+        assert!(matches!(
+            &syntax.code,
+            DiagnosticCode::Syntax(code) if code.as_ref() == "missing_end"
+        ));
+        assert_eq!(
+            syntax.recovery_note.as_deref(),
+            Some("insert `end` before this synchronization point")
+        );
+        assert_eq!(
+            output
+                .cache_keys
+                .ast
+                .as_ref()
+                .expect("recovered AST should have an AST cache key")
+                .parser_version
+                .version
+                .as_ref(),
+            MIZAR_PARSER_CACHE_KEY_VERSION
+        );
+        assert_eq!(
+            MIZAR_PARSER_CACHE_KEY_VERSION, "mizar-parser/surface-ast-v2",
+            "task-28 parser output semantics must not reuse the v1 AST cache namespace"
         );
     }
 

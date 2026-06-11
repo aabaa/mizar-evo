@@ -14,7 +14,7 @@
 |---|---|---|---|
 | grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] minimal task-11/12 entry currently lives in `src/lib.rs` |
 | pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] minimal explicit-fixity Pratt currently lives in `src/lib.rs` |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] minimal task-12 recovery currently lives in `src/lib.rs` |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task-12 recovery plus task-28 nested block-end matching currently lives in `src/lib.rs` |
 
 `mizar-parser` implements the syntax grammar: frontend-adapted tokens in,
 `mizar_syntax::SurfaceAst` plus syntax diagnostics out. It is built as a thin
@@ -117,9 +117,9 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
      helper producing `SyntaxDiagnostic` with precise ranges, synchronization
      sets (`;`, `end`, top-level item keywords, EOF), and recovery-node
      emission helpers built on the `mizar-syntax` builder API.
-   - Generalize the task-12 ad-hoc recovery (missing `end`, missing string
-     literal, unrecoverable input) onto these helpers without changing
-     observable behavior.
+   - Generalize the task-12 recovery plus task-28 block-stack matching
+     (missing `end`, missing string literal, unrecoverable input, contextual
+     block openers) onto these helpers without changing observable behavior.
    - Tests: synchronization skips to each boundary kind and records skipped
      ranges; expected-token diagnostics carry the right primary range at EOF
      and mid-stream.
@@ -400,19 +400,20 @@ Each grammar task follows the same template, in one change:
 39. **Parser fuzz target.** [ ]
     - Add a workspace fuzz target driving tokenization plus parsing over
       arbitrary UTF-8, asserting no panics and recoverable-diagnostics-only
-      completion. This is the same trigger that re-opens `mizar-frontend`
-      task 27; coordinate so the frontend target and this one land together.
+      completion. Coordinate with the `mizar-frontend` task 29 real-parser fuzz
+      follow-up so the frontend target and this one land together when
+      possible.
     - Deps: 36. Spec: [recovery.md](./recovery.md),
-      [../../mizar-frontend/en/todo.md](../../mizar-frontend/en/todo.md) task 27.
+      [../../mizar-frontend/en/todo.md](../../mizar-frontend/en/todo.md) task 29.
 
 40. **Frontend passthrough follow-through.** [ ]
-    - Grammar growth past the minimal seam re-opens `mizar-frontend` task 28:
+    - Grammar growth past the current task-28 surface opens a new
+      `mizar-frontend` follow-up:
       keep frontend recovery-marker passthrough, diagnostic merge order, and
       `SurfaceAstCacheKey` invalidation coverage in step with each grammar
-      task, and flip the frontend `parsing`/`orchestration` statuses to `[x]`
-      once the full grammar-recovery contract is in.
+      task.
     - Deps: starts with 5, completes with 36. Spec:
-      [../../mizar-frontend/en/todo.md](../../mizar-frontend/en/todo.md) task 28.
+      [../../mizar-frontend/en/todo.md](../../mizar-frontend/en/todo.md).
 
 41. **Source/spec correspondence audit and reserved-word coverage.** [ ]
     - Trace every public API and promised behavior in [grammar.md](./grammar.md),
@@ -465,9 +466,9 @@ Check the task off here once tests pass.
   far as syntax allows; the resolver finishes the job.
 - The parser consumes frontend-adapted tokens only; it never re-lexes source
   text and never receives arbitrary lexer or resolver state.
-- Grammar growth fires the `mizar-frontend` deferred-task triggers (27 fuzz,
-  28 grammar-recovery follow-through); check that TODO when expanding
-  recovery surfaces.
+- Grammar growth after the current task-28 surface should open a new
+  `mizar-frontend` follow-up for fuzz coverage, recovery-marker passthrough,
+  diagnostic merge ordering, and `SurfaceAstCacheKey` invalidation.
 - Spec EBNF brush-up is part of each grammar task, not a separate workstream;
   the production inventory transcribed into [grammar.md](./grammar.md) is each
   task's bounded contract, and fixes land in the owning chapter and appendix

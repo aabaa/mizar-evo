@@ -13,7 +13,7 @@ pub const DEFAULT_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/parser-seam/c
 /// Cache-key version used by the stub parser seam.
 pub const STUB_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/stub-parser/no-ast-v1";
 /// Cache-key version used by the real Mizar parser seam.
-pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v1";
+pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v2";
 
 /// Parser request containing a token stream and parser inputs.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -631,6 +631,72 @@ mod tests {
                 .iter()
                 .any(|child| child.index() == recovery_index),
             "missing end recovery node should remain root-reachable"
+        );
+    }
+
+    #[test]
+    fn real_parser_seam_preserves_nested_missing_end_recovery_nodes() {
+        let source_id = source_id(15);
+        let tokens = token_stream(
+            source_id,
+            vec![
+                token(source_id, TokenKind::ReservedWord, "definition", 0, 10),
+                token(source_id, TokenKind::ReservedWord, "algorithm", 11, 20),
+                token(source_id, TokenKind::ReservedWord, "end", 21, 24),
+            ],
+        );
+        let inputs = ParserInputs::new(
+            Edition::new("2026"),
+            OperatorFixityTable::empty(),
+            StringRequiredContext::None,
+        );
+        let seam = MizarParserSeam;
+
+        let output = seam.parse(ParseRequest::new(&tokens, inputs));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        let diagnostic = &output.diagnostics[0];
+        assert_eq!(diagnostic.code, SyntaxDiagnosticCode::MissingEnd);
+        assert_eq!(
+            diagnostic.primary,
+            SourceRange {
+                source_id,
+                start: 24,
+                end: 24,
+            }
+        );
+        assert_eq!(
+            diagnostic.secondary,
+            vec![SourceAnchor::Range(SourceRange {
+                source_id,
+                start: 0,
+                end: 10,
+            })]
+        );
+        let ast = output
+            .ast
+            .expect("nested missing end recovery should preserve an AST");
+        let (recovery_index, recovery_node) = ast
+            .nodes
+            .iter()
+            .enumerate()
+            .find(|(_, node)| {
+                matches!(
+                    &node.kind,
+                    SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingEnd)
+                )
+            })
+            .expect("nested missing end recovery node should pass through unchanged");
+        assert!(recovery_node.recovered);
+        assert_eq!(recovery_node.children, vec![ast.token_nodes[0]]);
+        let root = ast.root.expect("recovered AST should have a root");
+        assert!(
+            ast.node(root)
+                .unwrap()
+                .children
+                .iter()
+                .any(|child| child.index() == recovery_index),
+            "nested missing end recovery node should remain root-reachable"
         );
     }
 

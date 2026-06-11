@@ -2,11 +2,11 @@
 
 > Canonical language: English. Japanese companion: [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md).
 
-Status: completed through task 26.
+Status: completed through task 28.
 
 ## Scope
 
-This audit checks the task-26 `mizar-frontend` implementation against the
+This audit checks the task-28 `mizar-frontend` implementation against the
 English canonical module specs under `doc/design/mizar-frontend/en/`, then checks
 that the Japanese companion specs carry the same public API names, error and
 diagnostic variants, and behavior promises.
@@ -21,20 +21,21 @@ follow-up task instead of being mixed into the audit.
 - No missing implementation was found for the public APIs and error/diagnostic
   variants promised by tasks 1-20, the task-21 lint policy guard, the task-22
   precise raw-scan recovery contract, the task-23 resident-set guard, the
-  task-25 enum forward-compatibility policy, or the task-26 rustdoc summary
-  policy.
+  task-25 enum forward-compatibility policy, the task-26 rustdoc summary
+  policy, or the task-28 parser-growth follow-through.
 - The task-2 source requirement text now names the open-buffer `file://`
   diagnostic-path decode/fallback tests that were added before this audit.
-- No remaining stale English canonical spec text was found for tasks 1-26.
+- No remaining stale English canonical spec text was found for tasks 1-28.
 - Japanese companion specs were checked for matching API names and behavior
   promises. No remaining API or behavior drift was found.
 - Broader bilingual wording/terminology review was completed by task 17 in
   [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md).
   Task 19 incremental cache-key wiring, task 20 parser-assisted lexing,
   task 21 durable lint enforcement, task 22 precise raw-scan recovery,
-  task 23 resident-set contract coverage, and task 24 reserved diagnostic
-  surface coverage, task 25 enum forward-compatibility, and task 26 rustdoc
-  summary coverage are now complete. Future producer-backed tests remain tied
+  task 23 resident-set contract coverage, task 24 reserved diagnostic
+  surface coverage, task 25 enum forward-compatibility, task 26 rustdoc
+  summary coverage, and task 28 parser-growth follow-through are now complete.
+  Future producer-backed tests remain tied
   to future lexer/session/parser producers.
 
 ## Public API Correspondence
@@ -46,9 +47,9 @@ follow-up task instead of being mixed into the audit.
 | [preprocess.md](./preprocess.md) | `PreprocessedSource`, `LexicalText`, `LexicalText::as_str`, `Comment`, `DocComment`, `LexicalSourceMap`, `LexicalSourceMap::{lexical_span, lexical_len, is_empty}`, `ImportStub`, `ImportStubPath`, `ImportStubRelativePrefix::{Current, Parent}`, `ImportStubAlias`, `PreprocessDiagnostic`, `PreprocessDiagnosticKind`, `preprocess`, `lexical_hash`; re-exported `ImportPrescanDiagnosticCode`, `SourcePreprocessDiagnosticCode`, `CommentKind` | `crates/mizar-frontend/src/preprocess.rs` | Inline tests cover comment/doc-comment separation, annotation preservation, import stubs and relative prefixes, malformed import recovery, precise recoverable raw import scan diagnostics with preserved partial imports and error-sentinel path boundaries, mapped diagnostics, composite/degraded lexical mappings, stable lexical hashes, non-ASCII code diagnostics, and unterminated block comments. |
 | [lexical_env.md](./lexical_env.md) | `LexicalEnvironmentRequest`, `LexicalSummaryProvider`, `LexicalSummaryProvider::resolve_imports`, `ResolvedImports`, `ResolvedImportEntry`, `ActiveLexicalEnvironmentResult`, `FrontendLexicalEnvironmentError`, `LexicalEnvironmentDiagnostic`, `LexicalEnvironmentDiagnosticCode`, `build_active_lexical_environment`; re-exported lexer environment types | `crates/mizar-frontend/src/lexical_env.rs` | Inline tests cover provider seam output, import deduplication, reserved tables, provider infrastructure failure, provider provenance hard failures, unresolved imports, missing summaries, conflict retry, non-conflict malformed summaries, provider-owned pass-through for the reserved diagnostic codes, and fingerprint stability/change behavior. `tests/lexical_env_resident_set.rs` covers the resident-set boundary: one provider call scoped to direct `ImportStub`s and summary-derived active-environment candidate fields without transitive dependency symbols. |
 | [lexing.md](./lexing.md) | `InternedText`, `TokenizeRequest`, `TokenizeRequest::{new, with_plan}`, `ParserLexingPlan`, `ParserLexingPlan::{uniform, new, for_lexical_text, context_at, is_uniform}`, `ParserLexingPlanContext`, `ParserLexingPlanContext::new`, `LexicalByteRange`, `LexicalByteRange::{new, contains}`, `TokenStream`, `TokenStream::{tokens, diagnostics, scope_view, into_parts}`, `Token`, `ScopeView`, `ScopeView::{empty, binding_overrides_symbol}`, `ScopeFrame`, `ScopedBinding`, `ScopeBlock`, `ScopeStatement`, `LexingDiagnostic`, `LexingDiagnosticKind`, `LexingDiagnosticPayload`, `LexingRejectedTokenCandidate`, `tokenize`; re-exported lexer token/context/scope enums | `crates/mizar-frontend/src/lexing.rs` | Inline tests cover raw-span preservation, preprocess mapping, longest-match user symbols, scoped identifier overrides, compound reserved tokens, parser context/string behavior, position-sensitive annotation string arguments with Unicode/comment-marker contents, line-boundary rejection for planned string ranges, range-specific user-symbol kind filters, current producer-backed payload mapping, recoverable error tokens, unsupported raw-token recovery, rejected candidates, secondary anchors, scope view contents, scope diagnostics, and precise recoverable raw-scan diagnostics with partial token continuation. `UnsupportedLexerPayload` remains the documented fallback mapping for future non-exhaustive lexer payload variants with no current producer. |
-| [parsing.md](./parsing.md) | `DEFAULT_PARSER_CACHE_KEY_VERSION`, `STUB_PARSER_CACHE_KEY_VERSION`, `MIZAR_PARSER_CACHE_KEY_VERSION`, `ParseRequest`, `ParseRequest::new`, `ParserInputs`, `ParserInputs::{new, from_active_environment}`, `OperatorFixityTable`, `OperatorFixityTable::{empty, is_empty}`, `OperatorFixityEntry`, `OperatorAssociativity::{Left, Right, NonAssociative}`, `StringRequiredContext::{None, PositionSensitive, UniformForTest}`, `StringRequiredContext::{parser_lex_context, parser_lexing_plan}`, `ParserCacheKeyVersion`, `ParserCacheKeyVersion::new`, `ParseOutput`, `ParseOutput::new`, `ParserSeam`, `ParserSeam::{cache_key_version, parse}`, `StubParserSeam`, `MizarParserSeam` | `crates/mizar-frontend/src/parsing.rs` | Inline tests cover parser inputs, absence of resolver state, string-required context mapping, position-sensitive plan construction, stub seam output, real parser AST handoff, token-kind adaptation, error-recovery tokens, missing-`end` recovery, unrecoverable `ast = None`, string-required forwarding, Pratt fixity and associativity, and syntax diagnostic passthrough. Cache-key version use is covered through `cache_key` and frontend determinism tests. |
+| [parsing.md](./parsing.md) | `DEFAULT_PARSER_CACHE_KEY_VERSION`, `STUB_PARSER_CACHE_KEY_VERSION`, `MIZAR_PARSER_CACHE_KEY_VERSION`, `ParseRequest`, `ParseRequest::new`, `ParserInputs`, `ParserInputs::{new, from_active_environment}`, `OperatorFixityTable`, `OperatorFixityTable::{empty, is_empty}`, `OperatorFixityEntry`, `OperatorAssociativity::{Left, Right, NonAssociative}`, `StringRequiredContext::{None, PositionSensitive, UniformForTest}`, `StringRequiredContext::{parser_lex_context, parser_lexing_plan}`, `ParserCacheKeyVersion`, `ParserCacheKeyVersion::new`, `ParseOutput`, `ParseOutput::new`, `ParserSeam`, `ParserSeam::{cache_key_version, parse}`, `StubParserSeam`, `MizarParserSeam` | `crates/mizar-frontend/src/parsing.rs` | Inline tests cover parser inputs, absence of resolver state, string-required context mapping, position-sensitive plan construction, stub seam output, real parser AST handoff, token-kind adaptation, error-recovery tokens, EOF missing-`end` recovery including partially closed nested blocks and algorithm control blocks, quantifier `for` exclusion, `match otherwise` branch matching, unrecoverable `ast = None`, string-required forwarding, Pratt fixity and associativity, and syntax diagnostic passthrough. Cache-key version use is covered through `cache_key`, frontend determinism tests, and orchestration parser-version passthrough coverage. |
 | [cache_key.md](./cache_key.md) | `SOURCE_UNIT_CACHE_KEY_VERSION`, `PREPROCESSED_SOURCE_CACHE_KEY_VERSION`, `ACTIVE_LEXICAL_ENVIRONMENT_CACHE_KEY_VERSION`, `PARSER_LEXING_PLAN_CACHE_KEY_VERSION`, `TOKEN_STREAM_CACHE_KEY_VERSION`, `SURFACE_AST_CACHE_KEY_VERSION`, `FrontendCacheKeys`, `SourceUnitCacheKey`, `SourceUnitCacheKey::{from_source, stable_hash}`, `PreprocessedSourceCacheKey`, `PreprocessedSourceCacheKey::{from_source, stable_hash}`, `ActiveLexicalEnvironmentCacheKey`, `ActiveLexicalEnvironmentCacheKey::{new, stable_hash}`, `ParserLexingPlanCacheKey`, `ParserLexingPlanContextCacheKey`, `ParserLexingPlanCacheKey::{current, from_plan}`, `TokenStreamCacheKey`, `TokenStreamCacheKey::{new, stable_hash}`, `SurfaceAstCacheKey`, `SurfaceAstCacheKey::{new, stable_hash}`, `parser_inputs_hash` | `crates/mizar-frontend/src/cache_key.rs` | Inline tests cover source-key freshness exclusions and content identity changes, comment-only preprocessing invalidation with token/AST reuse, import/environment/parser-context/parser-plan token invalidation including same-version position-sensitive plan content, and token-stream/parser-version/parser-input/edition AST invalidation. Crate-level determinism tests assert `FrontendOutput.cache_keys` for comment-equivalent runs and end-to-end import/dependency invalidation. |
-| [orchestration.md](./orchestration.md) | `FrontendOutput` including `cache_keys`, `Frontend`, `Frontend::{new, run}`, `FrontendDiagnostic`, `DiagnosticLocation`, `SourceLoadLocation`, `DiagnosticCode`, `DiagnosticClass`, `FrontendError`, `FrontendParserDiagnostic`, `FrontendParserDiagnostic::into_frontend_diagnostic` | `crates/mizar-frontend/src/orchestration.rs` | Inline tests cover stub and real parser coordinator output, syntax diagnostic merge order, repeated-run determinism for current coordinator paths, same-class sorting, source-load diagnostics without fabricated ranges, open-buffer/generated load locations, reserved source-load fallback locations, the reserved annotation-syntax class, no-recovery-note conversion for `UnsupportedLexerPayload`, span-bridge hard failures, lexical-environment hard failures, `ast = None` parser seams, and valid range-backed merged diagnostics. Crate-level determinism tests cover `FrontendOutput.cache_keys`. |
+| [orchestration.md](./orchestration.md) | `FrontendOutput` including `cache_keys`, `Frontend`, `Frontend::{new, run}`, `FrontendDiagnostic`, `DiagnosticLocation`, `SourceLoadLocation`, `DiagnosticCode`, `DiagnosticClass`, `FrontendError`, `FrontendParserDiagnostic`, `FrontendParserDiagnostic::into_frontend_diagnostic` | `crates/mizar-frontend/src/orchestration.rs` | Inline tests cover stub and real parser coordinator output, syntax diagnostic merge order including nested missing-`end` recovery, parser-version cache-key passthrough, repeated-run determinism for current coordinator paths, same-class sorting, source-load diagnostics without fabricated ranges, open-buffer/generated load locations, reserved source-load fallback locations, the reserved annotation-syntax class, no-recovery-note conversion for `UnsupportedLexerPayload`, span-bridge hard failures, lexical-environment hard failures, `ast = None` parser seams, and valid range-backed merged diagnostics. Crate-level determinism tests cover `FrontendOutput.cache_keys`. |
 
 The Japanese companion files under `doc/design/mizar-frontend/ja/` carry the
 same API names, variants, and behavior boundaries for every row above. Broader
@@ -108,11 +109,14 @@ exhaustive.
 | 24 | Complete | Reserved frontend diagnostic surfaces are covered where constructible: `UnsupportedLexerPreprocessMap`, provider-owned reserved lexical-environment diagnostic codes, reserved source-load fallback locations, `AnnotationSyntax`, and `UnsupportedLexerPayload`. Producer-backed tests remain deferred for future non-exhaustive lexer/session/parser contracts. |
 | 25 | Complete | Public frontend enums with promised future variants or reserved surfaces are `#[non_exhaustive]` for downstream crates, while internal `mizar-frontend` matches remain exhaustive. Owning module specs record the per-enum decision next to each enum. |
 | 26 | Complete | Public `mizar-frontend` modules and public API items carry short rustdoc summaries derived from the canonical design specs, while detailed behavior promises remain in `doc/design/mizar-frontend/en/`. |
+| 27 | Complete | The `frontend_valid_utf8` fuzz target and Criterion frontend baselines are implemented under `fuzz/` and `crates/mizar-frontend/benches/frontend_pipeline.rs`; task 29 records the real-parser fuzz follow-up triggered by task 28. |
+| 28 | Complete | Parser-growth follow-through is implemented in `mizar-parser`, `src/parsing.rs`, and `src/orchestration.rs` with nested block-end recovery, algorithm control-block matching, quantifier `for` exclusion, frontend recovery-node passthrough, syntax diagnostic merge coverage, and `MIZAR_PARSER_CACHE_KEY_VERSION` invalidation for changed parser output semantics. |
 
 ## Follow-up Records
 
 This audit added task 24 for reserved or currently unproduced diagnostic/fallback
-surface coverage. Tasks 18, 19, 20, 21, 22, 23, 24, 25, and 26 have since been
-completed. Future producer-backed tests should be added when non-exhaustive
+surface coverage. Tasks 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, and 28 have
+since been completed. Task 29 records the next real-parser frontend fuzz
+follow-up. Future producer-backed tests should be added when non-exhaustive
 lexer/session/parser contracts expose new concrete producers for the currently
 reserved fallback variants.
