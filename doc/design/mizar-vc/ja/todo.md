@@ -123,7 +123,11 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
    - 構造化制御フローに従って `ControlFlowIr` から VC を生成する: 契約、
      不変条件（導入/保存）、assert、ghost 規則、停止性測度。
    - テスト: 構文ごとの VC フィクスチャ（`while`、`if`、`match`）。
-     不変条件の導入/保存の組。停止性 VC が測度を参照する。
+     不変条件の導入/保存の組。停止性 VC が測度を参照する。レビュー監査由来の
+     algorithm fixture として、old-state assignment、field update の alias
+     identity、`not C` を獲得しない `break` exit、`continue`/decreasing
+     check、`downto` と `step` の range loop、ghost-only `Pick` erasure も
+     含める。
    - 依存: 6、`mizar-core` task 16。仕様: `generator.md`（アルゴリズムの
      節）。
 
@@ -186,7 +190,8 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 15. **stage `proof_verification` のコーパスランナー。** [ ]
     - `tests/miz/{pass,fail}/` のケースを stage `proof_verification` で
       ハーネスに接続し、`spec_trace.toml` 項目を付ける。生成と discharge の
-      ケースをシードする。
+      ケースをシードする。task 7 に列挙した algorithm VC のレビュー監査ケース
+      も含める。
     - 依存: 11。仕様: [staged_model.md](../../mizar-test/ja/staged_model.md)。
 
 16. **決定性スイート。** [ ]

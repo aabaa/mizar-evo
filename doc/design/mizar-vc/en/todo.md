@@ -129,7 +129,11 @@ Keep `cargo test -p mizar-vc` green after each task (see
      contracts, invariants (entry/preservation), assertions, ghost rules,
      and termination measures.
    - Tests: per-construct VC fixtures (`while`, `if`, `match`); invariant
-     entry/preservation pairs; termination VCs reference measures.
+     entry/preservation pairs; termination VCs reference measures. Include the
+     review-audit algorithm fixtures for old-state assignment, field-update
+     alias identity, `break` exits that do not gain `not C`,
+     `continue`/decreasing checks, `downto` and `step` range loops, and
+     ghost-only `Pick` erasure.
    - Deps: 6, `mizar-core` task 16. Spec: `generator.md` (algorithm
      section).
 
@@ -193,7 +197,8 @@ Keep `cargo test -p mizar-vc` green after each task (see
 15. **Corpus runner at stage `proof_verification`.** [ ]
     - Wire `tests/miz/{pass,fail}/` cases at stage `proof_verification`
       through the harness with `spec_trace.toml` entries; seed cases for
-      generation and discharge.
+      generation and discharge, including the algorithm VC review-audit cases
+      listed in task 7.
     - Deps: 11. Spec: [staged_model.md](../../mizar-test/en/staged_model.md).
 
 16. **Determinism suite.** [ ]

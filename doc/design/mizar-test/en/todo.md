@@ -153,6 +153,11 @@ Keep `cargo test -p mizar-test` green after each task (see
       task 15, `mizar-atp` task 20, `mizar-kernel` task 17); one increment
       per consumer, in its own change. Checked off when the last runner
       lands.
+    - Support explicit active/planned gating for consumer runners when
+      traceability seed cases are committed before the owning pipeline stage
+      can execute them. The default metadata plan may discover such cases, but
+      a consumer runner must not silently count a planned seed as executed
+      coverage.
     - Deps: 5, 8. Spec: [harness.md](./harness.md).
 
 11. **Determinism suite.** [ ]

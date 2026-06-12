@@ -105,7 +105,9 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 5. **binder 表現と置換。** [ ]
    - 選ばれた表現と、core の項/論理式上の捕獲回避置換を実装する。
    - テスト: シャドーイングと捕獲ケースを含む置換フィクスチャ。置換の
-     合成則。
+     合成則。置換 coverage を完了扱いする前に、レビュー監査由来の
+     `defpred P(n be Nat) means n < m` shadowing ケースと、捕獲を生む不正な
+     置換のリグレッションを含める。
    - 依存: 3、4。仕様: `binder_normalization.md`。
 
 6. **alpha 同値と正規化ユーティリティ。** [ ]
@@ -143,27 +145,33 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       論理式を binder 正規化された core 形へ下ろす。
     - テスト: surface 形ごとの lowering フィクスチャ。失敗した意味論
       サイトは明示的なエラーノードのままで、決して有効な core 項に
-      ならない。
+      ならない。stable choice と comprehension のレビューケースも含める:
+      stable `the T` は生成された `Apply(choice_T(...))` シンボルへ lower し、
+      Fraenkel comprehension は必要な sethood evidence を保持する。
     - 依存: 9。仕様: `elaborator.md`（項/論理式の節）。
 
 11. **定義の lowering。** [ ]
     - Step 4 を実装する: 安定した展開境界を持つ定義の lowering（先行
       インライン化なし）。correctness condition の本体を含む。
     - テスト: 展開境界のフィクスチャ。定義の unfold は明示的であり、
-      偶発的には起こらない。
+      偶発的には起こらない。export された定義 choice が unfold 時に再生成
+      されず再利用されることも含める。
     - 依存: 10。仕様: `elaborator.md`（定義の節）。
 
 12. **証明骨格の lowering。** [ ]
     - Step 5 を実装する: 証明構造（`proof`/`now`/`per cases`、結論
       ステップ、引用）を thesis 追跡付きの core 証明木へ下ろす。
     - テスト: 証明形ごとの骨格フィクスチャ。thesis 遷移の記録。引用参照は
-      シンボリックに保持される。
+      シンボリックに保持される。定理/補題命題が自身の stable choice
+      シンボルを所有するケースも含める。
     - 依存: 11。仕様: `elaborator.md`（証明の節）。
 
 13. **アルゴリズムシェルの lowering。** [ ]
     - Step 6 を実装する: アルゴリズム本体を core item へ下ろす（CFG は
       まだ作らない）。契約と ghost 注釈は phase 10 のために保持する。
-    - テスト: シェルのフィクスチャ。ghost/実行時の区別の保持。
+    - テスト: シェルのフィクスチャ。ghost/実行時の区別の保持。実行可能な
+      algorithm 文中の `the` サイトが `Pick` 束縛へ lower されることと、
+      ghost-only `Pick` サイトが後続 erasure 用に印付けされることを含める。
     - 依存: 11、`mizar-parser` task 32-34 のカバレッジ。仕様:
       `elaborator.md`（アルゴリズムの節）。
 

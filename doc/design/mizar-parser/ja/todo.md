@@ -72,6 +72,22 @@ resolver / build-system 依存を避ける。
 不正な対応物を少なくとも 1 つ用意する。recovery ケースは「クラッシュしない」
 だけでなく、診断と回復後の `SurfaceAst` の形の両方をアサートする。
 
+## レビュー監査由来の parser coverage backlog
+
+`tests/coverage/spec_trace.toml` に記録された文法/VC レビューのフォローアップ
+には、所有する文法タスクが着地した時点で実行可能にすべき parser-facing ケース
+が含まれている。parse-only ランナーと該当生成規則が存在する前に、これらを
+即時の coverage 義務として扱わない。
+
+- template 引数: definition、formula、predicate/functor、template の各生成規則
+  が parse 可能になったら、`pass_parser_template_arguments_001` と
+  `fail_parser_template_arguments_chained_iff_001` を実行可能にする。
+- まだ必要な受理ケース: `by` 参照付き `let` 制約、witness 付き `take`、
+  条件付き definiens、Fraenkel generator、`qua` 連鎖、述語連鎖、template
+  predicate/functor の use。
+- まだ必要な拒否ケース: 非結合演算子の連鎖、builtin/user 述語連鎖の混在、
+  不完全な項始まり論理式。
+
 ## 解決済みおよび保留中の決定
 
 - **パーサー支援字句解析の契約: トップレベルで解決済み。** パーサーは
@@ -154,12 +170,18 @@ resolver / build-system 依存を避ける。
      [../../mizar-test/ja/harness.md](../../mizar-test/ja/harness.md) にも
      記録する。
    - `mizar-test` の discovery と `.expect.toml` 期待値を配線し、
-     `tests/miz/{pass,fail}/parser/` のすべてのケースを stage `parse_only` で
-     実トークン化を通して実行し、結果・診断・（あれば）スナップショット
-     期待値をアサートする。
+     `tests/miz/{pass,fail}/parser/` の active なケースを stage `parse_only`
+     で実トークン化を通して実行し、結果・診断・（あれば）スナップショット
+     期待値をアサートする。生成規則の実装より先に planned grammar seed が
+     存在する場合は、明示的な profile/tag gate を追加し、runner にとって
+     どのケースが active かを文書化する。
    - 現在の最小文法に対するケース（トークンストリーム、明示 fixity の中置式、
      `end` 欠落、孤立した `end`）でコーパスをシードし、初日からランナーを
      意味のあるものにする。
+   - コミット済みの template 引数 seed ケースは、task 14、23-25、31 が
+     それらの formula、definition、template 形を parse できるまで active
+     runner から外すか、同じ変更で該当タスクを更新して seed が実際に実行
+     されるようにする。
    - テスト: ランナーがすべてのケースを決定的に発見する。意図的に不一致に
      したサイドカーが失敗する。シードした pass / fail ケースが診断を強制する。
    - 依存: 2。仕様: [staged_model.md](../../mizar-test/ja/staged_model.md)、
@@ -387,6 +409,11 @@ resolver / build-system 依存を避ける。
 31. **テンプレート。** [ ]
     - テンプレートパラメータ、task 8 の生成規則を拡張する bracket 形の型引数
       とパラメータ prefix、`nest` の形。
+    - レビュー監査由来の seed ケース
+      `tests/miz/pass/parser/pass_parser_template_arguments_001.*` と
+      `tests/miz/fail/parser/fail_parser_template_arguments_chained_iff_001.*`
+      を、traceability metadata から runner 実行済みの parse-only coverage へ
+      昇格させる。
     - 依存: 30、`mizar-syntax` task 13。仕様:
       [18.templates.md](../../../spec/ja/18.templates.md)。
 

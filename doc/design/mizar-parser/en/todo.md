@@ -73,6 +73,23 @@ malformed counterpart that must be rejected or recovered with diagnostics, and
 recovery cases assert both the diagnostic and the recovered `SurfaceAst`
 shape, not just "did not crash".
 
+## Review-Audit Parser Coverage Backlog
+
+The grammar/VC review follow-up in `tests/coverage/spec_trace.toml` records
+parser-facing cases that should become executable as their owning grammar tasks
+land. Do not treat these as immediate coverage obligations before the
+parse-only runner and the relevant productions exist.
+
+- Template arguments: make
+  `pass_parser_template_arguments_001` and
+  `fail_parser_template_arguments_chained_iff_001` executable once definition,
+  formula, predicate/functor, and template productions can parse them.
+- Accepted syntax cases still needed: `let` constraints with `by` references,
+  take-with-witness examples, conditional definiens, Fraenkel generators,
+  `qua` chains, predicate chains, and template predicate/functor uses.
+- Rejection cases still needed: non-associative operator chains,
+  builtin/user predicate-chain mixing, and incomplete term-headed formulas.
+
 ## Resolved And Open Decisions
 
 - **Parser-assisted lexing contract: resolved** at the top level. The parser
@@ -158,12 +175,18 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
      in [../../mizar-test/en/harness.md](../../mizar-test/en/harness.md) only if
      it changes the no-pipeline-dependency harness scope.
    - Wire `mizar-test` discovery and `.expect.toml` expectations to run every
-     `tests/miz/{pass,fail}/parser/` case at stage `parse_only` through real
-     tokenization, asserting outcome, diagnostics, and (where present)
-     snapshot expectations.
+     active `tests/miz/{pass,fail}/parser/` case at stage `parse_only` through
+     real tokenization, asserting outcome, diagnostics, and (where present)
+     snapshot expectations. If planned grammar seeds already exist before their
+     productions are implemented, add an explicit profile/tag gate and document
+     which cases are active for the runner.
    - Seed the corpus with cases for the current minimal grammar (token
      streams, explicit-fixity infix expressions, missing `end`, stray `end`)
      so the runner is meaningful from day one.
+   - Keep the committed template-argument seed cases out of the active runner
+     until tasks 14, 23-25, and 31 can parse their formula, definition, and
+     template forms, or update those tasks in the same change so the seeds
+     genuinely execute.
    - Tests: runner discovers all cases deterministically; a deliberately
      mismatched sidecar fails; seeded pass and fail cases enforce diagnostics.
    - Deps: 2. Spec: [staged_model.md](../../mizar-test/en/staged_model.md),
@@ -401,6 +424,10 @@ of the whole syntax vocabulary bucket.
 31. **Templates.** [ ]
     - Template parameters, bracket-form type arguments and parameter prefixes
       extending the task-8 productions, `nest` forms.
+    - Promote the review-audit seed cases
+      `tests/miz/pass/parser/pass_parser_template_arguments_001.*` and
+      `tests/miz/fail/parser/fail_parser_template_arguments_chained_iff_001.*`
+      from traceability metadata into runner-executed parse-only coverage.
     - Deps: 30, `mizar-syntax` task 13. Spec:
       [18.templates.md](../../../spec/en/18.templates.md).
 

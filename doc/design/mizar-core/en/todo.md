@@ -109,7 +109,10 @@ Keep `cargo test -p mizar-core` green after each task (see
    - Implement the chosen representation and capture-avoiding substitution
      over core terms/formulas.
    - Tests: substitution fixtures including shadowing and capture cases;
-     substitution composition laws.
+     substitution composition laws. Include the review-audit
+     `defpred P(n be Nat) means n < m` shadowing case and malformed
+     capture-producing substitution regressions before marking substitution
+     coverage complete.
    - Deps: 3, 4. Spec: `binder_normalization.md`.
 
 6. **Alpha-equivalence and normalization utilities.** [ ]
@@ -147,14 +150,18 @@ Keep `cargo test -p mizar-core` green after each task (see
     - Implement Step 3: lower resolved terms and formulas, including
       inserted `qua` views, into binder-normalized core forms.
     - Tests: lowering fixtures per surface form; failed semantic sites stay
-      explicit error nodes, never valid core terms.
+      explicit error nodes, never valid core terms. Include stable-choice and
+      comprehension review cases: stable `the T` lowers to generated
+      `Apply(choice_T(...))` symbols, and Fraenkel comprehensions retain
+      required sethood evidence.
     - Deps: 9. Spec: `elaborator.md` (terms/formulas section).
 
 11. **Definition lowering.** [ ]
     - Implement Step 4: lower definitions with stable expansion boundaries
       (no eager inlining), including correctness-condition bodies.
     - Tests: expansion boundary fixtures; definition unfolding is explicit,
-      never accidental.
+      never accidental. Include exported definition choices being reused on
+      unfolding rather than regenerated.
     - Deps: 10. Spec: `elaborator.md` (definitions section).
 
 12. **Proof-skeleton lowering.** [ ]
@@ -162,13 +169,16 @@ Keep `cargo test -p mizar-core` green after each task (see
       conclusion steps, citations) into core proof trees with thesis
       tracking.
     - Tests: skeleton fixtures per proof form; thesis transitions recorded;
-      citation references preserved symbolically.
+      citation references preserved symbolically. Include theorem/lemma
+      propositions that own their stable choice symbols.
     - Deps: 11. Spec: `elaborator.md` (proofs section).
 
 13. **Algorithm-shell lowering.** [ ]
     - Implement Step 6: lower algorithm bodies to core items (no CFG yet),
       preserving contracts and ghost annotations for phase 10.
-    - Tests: shell fixtures; ghost/runtime distinction preserved.
+    - Tests: shell fixtures; ghost/runtime distinction preserved. Include
+      executable algorithm statement `the` sites lowering to `Pick` bindings
+      and ghost-only `Pick` sites staying marked for later erasure.
     - Deps: 11, `mizar-parser` tasks 32-34 coverage. Spec: `elaborator.md`
       (algorithms section).
 

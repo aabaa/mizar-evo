@@ -152,7 +152,8 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - widening/narrowing/`qua` の coercion 候補を `CoercionTable` に記録し、
       sethood/narrowing の `InitialObligation` を発行する。
     - テスト: coercion 種別ごとの候補集合。義務が `InitialObligationId` と
-      ソース範囲を保持する。
+      ソース範囲を保持する。comprehension の sethood evidence 欠落と不正な
+      `qua` narrowing の fail fixture も含める。
     - 依存: 9。仕様: `type_checker.md`（coercion/義務の節）。
 
 11. **型事実の記録とクエリ。** [ ]
@@ -294,6 +295,9 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - registration/overload のコーパスケース（cluster、reduction、曖昧性、
       refinement 結合）を `spec_trace.toml` 項目付きで追加し、40/60 の
       pass/fail 比率へ向けて拡大する。
+    - レビュー監査由来の advanced-semantics negative case として、
+      `now`/`proof` block からの witness leakage、未充足の `deffunc`/`defpred`
+      guard、comprehension の sethood 欠落、不正な `qua` narrowing を含める。
     - 依存: 20、28。仕様: [staged_model.md](../../mizar-test/ja/staged_model.md)。
 
 30. **決定性スイート。** [ ]

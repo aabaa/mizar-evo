@@ -155,7 +155,8 @@ Keep `cargo test -p mizar-checker` green after each task (see
     - Record widening/narrowing/`qua` coercion candidates in `CoercionTable`
       and emit sethood/narrowing `InitialObligation`s.
     - Tests: candidate sets per coercion kind; obligations carry
-      `InitialObligationId` and source ranges.
+      `InitialObligationId` and source ranges. Include fail fixtures for
+      missing sethood evidence on comprehensions and invalid `qua` narrowing.
     - Deps: 9. Spec: `type_checker.md` (coercion/obligation section).
 
 11. **Type-fact recording and queries.** [ ]
@@ -303,6 +304,9 @@ Keep `cargo test -p mizar-checker` green after each task (see
     - Add registration/overload corpus cases (clusters, reductions,
       ambiguity, refinement joins) with `spec_trace.toml` entries; grow
       toward the 40/60 pass/fail mix.
+    - Include the review-audit advanced-semantics negative cases: witness
+      leakage from `now`/`proof` blocks, unmet `deffunc`/`defpred` guards,
+      missing sethood for comprehensions, and invalid `qua` narrowing.
     - Deps: 20, 28. Spec: [staged_model.md](../../mizar-test/en/staged_model.md).
 
 30. **Determinism suite.** [ ]
