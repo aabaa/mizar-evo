@@ -20,19 +20,19 @@ If the task is ambiguous enough that implementation would be risky, ask one conc
 
 For each task, complete these phases in order:
 
-1. Write or update the implementation specification for the requested task.
+1. Write or update the implementation specification for the requested task. For small, localized changes, a concise specification in the chat is enough. For changes that alter documented behavior, architecture, or language semantics, update the relevant file under `doc/` instead.
 2. Review the implementation specification and relevant documentation for completeness, clarity, and consistency.
-3. If the documentation review finds gaps, update the implementation specification or documentation carefully and repeat the documentation review until there are no findings.
+3. If the specification or documentation review finds gaps, update the implementation specification or documentation carefully and repeat the review until there are no findings.
 4. Implement the requested task.
 5. Review whether tests are sufficient compared with the relevant specification.
 6. If the test review finds gaps, expand tests carefully and repeat the test review until there are no findings.
 7. Review the full implementation for bugs, regressions, design mismatches, and missing edge cases.
 8. If the implementation review finds issues, fix them and repeat the implementation review until there are no findings.
 9. Review whether source code and documentation still agree.
-10. If the documentation review finds issues, fix them and repeat the documentation review until there are no findings.
+10. If the source-documentation consistency review finds issues, fix them and repeat the consistency review until there are no findings.
 11. Run the relevant verification commands.
 12. Prepare a handoff prompt for the next task so it can be started in a separate chat. Include a recommended reasoning setting for the next task, a short rationale, and any conditions that would justify raising or lowering that setting.
-13. Prepare a commit message. Commit the completed change only when the user explicitly requested committing or when the task explicitly includes the full workflow through commit, unless the user asks not to commit.
+13. Prepare a commit message. Commit the completed change only when the user explicitly requested committing, for example by saying `commit`, `commitまで`, or `コミットまで`, unless the user asks not to commit.
 
 ## Agent Delegation
 
@@ -83,7 +83,7 @@ Also run Clippy before finalizing Rust changes because CI commonly reports Clipp
 cargo clippy --all-targets --all-features -- -D warnings
 ```
 
-Run narrower tests first when they are clearly sufficient for the active change, then run broader verification before finalizing if the change has meaningful cross-module risk.
+Run narrower tests first when they are clearly sufficient for the active change, then run broader verification before finalizing if the change has meaningful cross-module risk. For Rust source changes, run `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, and `cargo test` before finalizing unless the change is documentation-only or the commands cannot be run.
 
 If a command cannot be run, explain why in the final response and describe the remaining risk.
 
@@ -95,6 +95,7 @@ Follow the repository documentation policy:
 - When updating bilingual documentation, keep the English canonical document and Japanese companion document synchronized in the same change.
 - For language specifications, update matching files under `doc/spec/en/` and `doc/spec/ja/`.
 - For architecture specifications, update matching files under `doc/design/architecture/en/` and `doc/design/architecture/ja/`.
+- For component design documents, update matching files under paired `doc/design/<component>/en/` and `doc/design/<component>/ja/` directories when both exist.
 - Keep file names aligned across language directories whenever possible.
 - If an English document changes but the Japanese companion cannot be updated in the same change, explicitly note the reason and mark the Japanese document as needing synchronization.
 - When adding a new English documentation file in a bilingual area, add the corresponding Japanese companion or a clearly marked Japanese placeholder that links to the canonical English file.
