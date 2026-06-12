@@ -206,7 +206,7 @@ reserve_segment    ::= identifier_list "for" type_expression ;
 
 identifier_list    ::= identifier { "," identifier } ;
 
-let_decl           ::= "let" qualified_vars [ "such" conditions ] ";" ;
+let_decl           ::= "let" qualified_vars [ "such" conditions ] [ "by" references ] ";" ;
 qualified_vars     ::= explicit_qualified_vars [ "," implicit_qualified_vars ]
                      | implicit_qualified_vars ;
 explicit_qualified_vars ::= qualified_segment { "," qualified_segment } ;
@@ -612,7 +612,7 @@ standalone_statement ::= generalization
                        | exemplification
                        | standalone_diagnostic_annotation ;
 
-generalization               ::= "let" qualified_vars [ "such" conditions ] ";" ;
+generalization               ::= "let" qualified_vars [ "such" conditions ] [ "by" references ] ";" ;
 constant_definition          ::= "set" equating_list ";" ;
 inline_functor_definition    ::= "deffunc" identifier "(" [ typed_params ] ")"
                                  "->" type_expression "equals"
