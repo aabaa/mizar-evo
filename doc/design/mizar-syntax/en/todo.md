@@ -26,8 +26,8 @@ the representation foundation (rowan storage boundary, rendering, trivia,
 recovery vocabulary), then the node vocabulary, which grows in lockstep with
 `mizar-parser` grammar tasks.
 
-Dependency order: `ast` foundation → `trivia` / `recovery` → node vocabulary
-paired with `mizar-parser`.
+Dependency order: `ast` foundation → `trivia` / `recovery` → grammar
+consistency gate → node vocabulary paired with `mizar-parser`.
 
 ## Crate Prerequisites
 
@@ -174,6 +174,59 @@ lands. Keep `cargo test -p mizar-syntax` green after each change (see
 - Deps: 4, 5. Spec: [ast.md](./ast.md), [trivia.md](./trivia.md),
   [recovery.md](./recovery.md).
 
+### Grammar consistency gate
+
+These tasks intentionally interrupt the node-vocabulary track. Do not start
+new AST node-kind design beyond the current task-12 compatibility surface until
+the grammar audit has either closed its findings or explicitly recorded them
+as accepted follow-ups. The purpose is to avoid freezing grammar drift into
+`SurfaceAst` node kinds, child roles, or snapshot baselines.
+
+6. **Canonical grammar consistency audit.** [ ]
+   - Treat [Appendix A](../../../spec/en/appendix_a.grammar_summary.md) as the
+     parser-facing canonical grammar summary and review it against the
+     chapter-local syntax blocks in Chapters 2-21.
+   - Check for undefined nonterminals, duplicate definitions, unreachable
+     productions from `compilation_unit`, direct left recursion outside the
+     documented precedence parsers, chapter drift, reserved-token mismatches,
+     and ambiguous boundaries that would affect AST shape.
+   - Record findings in a grammar audit note or in the relevant spec files,
+     with concrete references and one of: fix before AST design, accept as a
+     semantic-only issue, or defer with an owner and parser task.
+   - Deps: Appendix A normalization. Spec:
+     [../../../spec/en/appendix_a.grammar_summary.md](../../../spec/en/appendix_a.grammar_summary.md),
+     chapter-local grammar sections under [../../../spec/en/](../../../spec/en/00.index.md).
+
+7. **Parse-only acceptance matrix and fixture plan.** [ ]
+   - Define a parse-only acceptance matrix before AST snapshots are designed:
+     positive, negative, ambiguous, and recovery-required examples for module
+     structure, declarations, type expressions, term expressions, formulas,
+     statements/proofs, annotations, registrations, templates, and algorithms.
+   - Keep expectations independent of final AST shape at this stage. The
+     expected result should be syntactic acceptance, rejection, or recovery
+     category, plus the grammar rule being exercised.
+   - Identify which fixtures belong to `mizar-parser`, which belong to
+     `mizar-test`, and which are pure spec examples. Record traceability to
+     Appendix A sections so later AST snapshots inherit a stable fixture set.
+   - Deps: 6. Spec:
+     [../../mizar-test/en/staged_model.md](../../mizar-test/en/staged_model.md),
+     [../../mizar-test/en/expectation_schema.md](../../mizar-test/en/expectation_schema.md).
+
+8. **Initial parse-only grammar fixture seed.** [ ]
+   - Add the first small parse-only fixture seed or, if parser support is not
+     ready, a checked-in fixture manifest/design note that can be activated
+     without changing the selected cases.
+   - Cover at least the high-risk grammar boundaries identified by task 6:
+     term-vs-formula boundaries, dot chains, statement reachability, import
+     prelude forms, contextual string literals, `qua`, `the`, `reconsider`,
+     and recovery around missing delimiters or `end`.
+   - Do not require final AST node snapshots yet. AST snapshots are added only
+     after the corresponding node vocabulary increment defines node kinds,
+     child roles, range rules, and recovery rendering.
+   - Deps: 7. Spec:
+     [../../../spec/en/appendix_a.grammar_summary.md](../../../spec/en/appendix_a.grammar_summary.md),
+     [../../mizar-test/en/layout.md](../../mizar-test/en/layout.md).
+
 ### Node vocabulary (paired with `mizar-parser` grammar tasks)
 
 Node kinds for each area are added **incrementally**: each increment lands in
@@ -181,26 +234,28 @@ the same change as the `mizar-parser` grammar task that constructs it (the
 parser todo's numbering governs the change granularity), and each increment
 extends snapshot rendering. A vocabulary task below is checked off when the
 last of its paired parser tasks lands. Do not add node kinds speculatively
-ahead of the parser task that constructs them. Each increment must first extend
-the vocabulary-increment contract in [ast.md](./ast.md) with node kinds,
+ahead of the parser task that constructs them, and do not begin these tasks
+until tasks 6-8 have produced the grammar audit and parse-only fixture plan.
+Each increment must first extend the vocabulary-increment contract in
+[ast.md](./ast.md) with node kinds,
 payloads, child roles, range rules, accessors, snapshots, and recovery/trivia
 interaction. Spec references are the normative grammar chapters under
 [doc/spec/en/](../../../spec/en/00.index.md).
 
-6. **Module and item nodes.** [ ] — paired with `mizar-parser` tasks 5-7.
+9. **Module and item nodes.** [ ] — paired with `mizar-parser` tasks 5-7.
    - Module file shape, top-level item list and item kinds dispatchable by
      keyword (parser task 5); import items with aliases and relative prefixes
      (parser task 6); export, `open`/`inherit`, and visibility forms (parser
      task 7).
    - Spec: [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
-7. **Type expression nodes.** [ ] — paired with `mizar-parser` task 8.
+10. **Type expression nodes.** [ ] — paired with `mizar-parser` task 8.
    - Attribute chains (with `non`), radix/mode type heads, `of`/`over`
      arguments, struct-qualified attribute references.
    - Spec: [03.type_system.md](../../../spec/en/03.type_system.md),
      [§A.3.2](../../../spec/en/appendix_a.grammar_summary.md).
 
-8. **Term nodes.** [ ] — paired with `mizar-parser` tasks 4, 9-12, and 15.
+11. **Term nodes.** [ ] — paired with `mizar-parser` tasks 4, 9-12, and 15.
    - First increment: qualified-symbol/namespace-path nodes needed by parser
      task 4. Then primary terms (parser task 9), unresolved dot chains and
      selector access/update (parser task 10, including the dot-role surface
@@ -213,13 +268,13 @@ interaction. Spec references are the normative grammar chapters under
    - Spec: [13.term_expression.md](../../../spec/en/13.term_expression.md),
      [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md).
 
-9. **Formula nodes.** [ ] — paired with `mizar-parser` tasks 13-14.
+12. **Formula nodes.** [ ] — paired with `mizar-parser` tasks 13-14.
    - Atomic predicate application, `is` formulas, attribute formulas (parser
      task 13); connectives and quantifiers (`for`/`ex`/`st`/`holds`) (parser
      task 14).
    - Spec: [14.formulas.md](../../../spec/en/14.formulas.md).
 
-10. **Statement nodes.** [ ] — paired with `mizar-parser` tasks 16 and 18-21.
+13. **Statement nodes.** [ ] — paired with `mizar-parser` tasks 16 and 18-21.
     - Simple statements `reserve`, `let`, `assume`, `take`, `set`, `given`
       (parser task 16); `consider`/`reconsider` (parser task 18);
       `thus`/`hence`, `then` chains, iterative equality `.=` (parser task 19);
@@ -227,7 +282,7 @@ interaction. Spec references are the normative grammar chapters under
       `deffunc`/`defpred` local definitions and `claim` (parser task 21).
     - Spec: [15.statements.md](../../../spec/en/15.statements.md).
 
-11. **Theorem, proof, and justification nodes.** [ ] — paired with
+14. **Theorem, proof, and justification nodes.** [ ] — paired with
     `mizar-parser` tasks 17 and 22.
     - Justification clauses (`by`, `from`), citation forms including `.{ … }`
       and `.*`, plus `by computation(...)` option nodes (parser task 17);
@@ -236,7 +291,7 @@ interaction. Spec references are the normative grammar chapters under
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md)
       §20.9.2.
 
-12. **Definition, structure, and registration nodes.** [ ] — paired with
+15. **Definition, structure, and registration nodes.** [ ] — paired with
     `mizar-parser` tasks 23-30.
     - Definition block skeleton, correctness-condition clauses, and `attr`
       definitions (parser task 23); `pred`/`func`/`mode` bodies (parser tasks
@@ -251,7 +306,7 @@ interaction. Spec references are the normative grammar chapters under
       [05.structures.md](../../../spec/en/05.structures.md),
       [17.clusters_and_registrations.md](../../../spec/en/17.clusters_and_registrations.md).
 
-13. **Template, algorithm, and annotation nodes.** [ ] — paired with
+16. **Template, algorithm, and annotation nodes.** [ ] — paired with
     `mizar-parser` tasks 31-35.
     - Template parameters and bracket-form type arguments (parser task 31);
       algorithm blocks, assignment, declarations, ghost declarations/assignments,
@@ -266,15 +321,15 @@ interaction. Spec references are the normative grammar chapters under
 
 ### Cross-cutting follow-ups
 
-14. **Public enum forward-compatibility policy.** [ ]
+17. **Public enum forward-compatibility policy.** [ ]
     - Revisit the initial public-enum gate once the vocabulary is complete and
       decide `#[non_exhaustive]` versus deliberate exhaustiveness for any public
       enums added by later node-vocabulary increments.
     - Record final decisions next to the enum in the owning module spec and
       apply any remaining attributes.
-    - Deps: 13. Spec: all module specs.
+    - Deps: 16. Spec: all module specs.
 
-15. **Incremental syntax reuse audit.** [ ]
+18. **Incremental syntax reuse audit.** [ ]
     - Audit the completed rowan-backed syntax tree for fine-grained incremental
       parsing and LSP reuse readiness: stable syntax-kind numbering policy,
       trivia/recovery placement, range attachment, node-role accessors, and
@@ -282,28 +337,28 @@ interaction. Spec references are the normative grammar chapters under
     - This task does not introduce `salsa`; it verifies that `SurfaceAst` can
       be produced and cached by later query layers without exposing unstable
       arena ids or parser internals.
-    - Deps: 13, 14. Spec: [ast.md](./ast.md), [trivia.md](./trivia.md),
+    - Deps: 16, 17. Spec: [ast.md](./ast.md), [trivia.md](./trivia.md),
       [recovery.md](./recovery.md).
 
-16. **Source/spec correspondence audit.** [ ]
+19. **Source/spec correspondence audit.** [ ]
     - Mirror the `mizar-frontend` task-16 audit: trace every public API and
       promised behavior in [ast.md](./ast.md), [trivia.md](./trivia.md), and
       [recovery.md](./recovery.md) to implementation and tests, and record
       gaps as follow-up tasks.
-    - Deps: 15. Spec: all module specs and this TODO.
+    - Deps: 18. Spec: all module specs and this TODO.
 
-17. **Bilingual documentation sync audit.** [ ]
+20. **Bilingual documentation sync audit.** [ ]
     - Compare each English canonical document under
       `doc/design/mizar-syntax/en/` with its Japanese companion and synchronize
       API lists, statuses, terminology, links, and behavior promises.
-    - Deps: 16. Spec: repository documentation policy.
+    - Deps: 19. Spec: repository documentation policy.
 
-18. **Rustdoc summaries.** [ ] Deferred.
+21. **Rustdoc summaries.** [ ] Deferred.
     - Same workspace-level deferral as `mizar-frontend` task 26. Re-entry
       trigger: the first long-lived consumer outside the frontend pipeline
       (resolver or `mizar-lsp`) starts coding against `mizar-syntax`, or the
       workspace adopts a rustdoc policy — whichever comes first.
-    - Deps: 14. Spec: repository documentation policy.
+    - Deps: 17. Spec: repository documentation policy.
 
 ## Recommended Verification
 
