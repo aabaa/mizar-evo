@@ -661,126 +661,132 @@ span_end = 807
 
 [[tokens]]
 kind = "reserved_word"
-lexeme = "struct"
+lexeme = "step"
 span_start = 808
-span_end = 814
+span_end = 812
 
 [[tokens]]
 kind = "reserved_word"
-lexeme = "such"
-span_start = 815
+lexeme = "struct"
+span_start = 813
 span_end = 819
 
 [[tokens]]
 kind = "reserved_word"
-lexeme = "suppose"
+lexeme = "such"
 span_start = 820
-span_end = 827
+span_end = 824
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "suppose"
+span_start = 825
+span_end = 832
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "symmetry"
-span_start = 828
-span_end = 836
+span_start = 833
+span_end = 841
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "synonym"
-span_start = 837
-span_end = 844
-
-[[tokens]]
-kind = "reserved_word"
-lexeme = "take"
-span_start = 845
+span_start = 842
 span_end = 849
 
 [[tokens]]
 kind = "reserved_word"
-lexeme = "terminating"
+lexeme = "take"
 span_start = 850
-span_end = 861
+span_end = 854
 
 [[tokens]]
 kind = "reserved_word"
-lexeme = "that"
-span_start = 862
+lexeme = "terminating"
+span_start = 855
 span_end = 866
 
 [[tokens]]
 kind = "reserved_word"
-lexeme = "the"
+lexeme = "that"
 span_start = 867
-span_end = 870
+span_end = 871
 
 [[tokens]]
 kind = "reserved_word"
-lexeme = "then"
-span_start = 871
+lexeme = "the"
+span_start = 872
 span_end = 875
 
 [[tokens]]
 kind = "reserved_word"
-lexeme = "theorem"
+lexeme = "then"
 span_start = 876
-span_end = 883
+span_end = 880
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "theorem"
+span_start = 881
+span_end = 888
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "thesis"
-span_start = 884
-span_end = 890
-
-[[tokens]]
-kind = "reserved_word"
-lexeme = "thus"
-span_start = 891
+span_start = 889
 span_end = 895
 
 [[tokens]]
 kind = "reserved_word"
-lexeme = "to"
+lexeme = "thus"
 span_start = 896
-span_end = 898
+span_end = 900
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "to"
+span_start = 901
+span_end = 903
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "transitivity"
-span_start = 899
-span_end = 911
-
-[[tokens]]
-kind = "reserved_word"
-lexeme = "type"
-span_start = 912
+span_start = 904
 span_end = 916
 
 [[tokens]]
 kind = "reserved_word"
-lexeme = "uniqueness"
+lexeme = "type"
 span_start = 917
-span_end = 927
+span_end = 921
+
+[[tokens]]
+kind = "reserved_word"
+lexeme = "uniqueness"
+span_start = 922
+span_end = 932
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "var"
-span_start = 928
-span_end = 931
+span_start = 933
+span_end = 936
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "where"
-span_start = 932
-span_end = 937
+span_start = 937
+span_end = 942
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "while"
-span_start = 938
-span_end = 943
+span_start = 943
+span_end = 948
 
 [[tokens]]
 kind = "reserved_word"
 lexeme = "with"
-span_start = 944
-span_end = 948
+span_start = 949
+span_end = 953

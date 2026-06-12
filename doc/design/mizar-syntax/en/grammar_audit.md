@@ -65,7 +65,7 @@ corresponding AST node vocabulary is frozen.
 |---|---|---|
 | G-AUD-001 | `builtin_pred ::= "in" | "=" | "<>"` existed but was not connected to formula parsing, so built-in membership/equality/inequality formulas were not reachable. | Fixed in Appendix A and Chapter 14 with a separate `builtin_predicate_application`, while `pred_pattern` still uses `def_predicate_symbol` so primitive predicates cannot be defined or redefined by grammar alone. Chapter 9 examples now avoid defining `in` or `=` as user predicates. Task 7 should include `x in X`, `x = y`, and `x <> y` formula fixtures plus negative fixtures for `pred`/`redefine pred` attempts using `in`, `=`, and `<>`. |
 | G-AUD-002 | Annotation productions were unreachable from module items, proof statements, and algorithm statements. | Fixed in Appendix A with `annotated_declaration`, `annotated_statement`, `annotated_algo_statement`, annotated registration/template content, and annotated theorem items inside `claim_block`. Context validity remains semantic/diagnostic. |
-| G-AUD-003 | Token lists drifted: `step` was used by range loops but not reserved; Chapter 2 lacked `..` while imports use it; standalone `@` needed clearer treatment. | Fixed at the specification level in Appendix A and Chapter 2, including the dot-compound priority list. `@` is an annotation marker, not a standalone reserved-symbol token. Synchronizing `mizar-lexer`/`mizar-session` tables and lexical fixtures for `step` and `..` is deferred to the lexer implementation track, now explicitly owned by `doc/design/mizar-lexer/en/todo.md`; affected lexical table and dot-disambiguation requirements in `tests/coverage/spec_trace.toml` are marked `partial` until that sync lands. |
+| G-AUD-003 | Token lists drifted: `step` was used by range loops but not reserved; Chapter 2 lacked `..` while imports use it; standalone `@` needed clearer treatment. | Fixed in Appendix A, Chapter 2, and the lexer implementation track, including the dot-compound priority list. `@` is an annotation marker, not a standalone reserved-symbol token. The `mizar-lexer`/`mizar-session` tables, lexical fixtures, and traceability entries have been synchronized for `step` and `..`, so the affected lexical table and dot-disambiguation requirements in `tests/coverage/spec_trace.toml` are covered. |
 | G-AUD-003a | Option and solver spellings such as `max_axioms`, `steps`, and `timeout` appear as fixed literal spellings but should not become globally reserved words. | Fixed in Appendix A by documenting them as contextual spellings. `nest` remains reserved intentionally under the current lexical contract and can be revisited only with a lexer-facing language change. |
 | G-AUD-004 | `claim_block` appeared both as a top-level declaration and as an `algo_statement`, while Chapter 20 describes and exemplifies it as a top-level block about an algorithm's snapshots. | Fixed in Appendix A by keeping top-level `claim_block` and removing it from `algo_statement`. |
 | G-AUD-005 | `attribute_assertion` used nullable `attribute_chain`, which allowed an empty `x is` shape. | Fixed in Appendix A with non-empty `attribute_test_chain`. |
@@ -151,9 +151,8 @@ pass:
 The follow-up review-only pass found three remaining issues. All were addressed:
 
 - Lexer token drift was deferred but not concretely owned. The `mizar-lexer`
-  TODO now owns `step`/`..` table and fixture synchronization, and the affected
-  lexical table coverage entries are marked `partial` until implementation
-  catches up.
+  TODO owned and completed `step`/`..` table and fixture synchronization, and
+  the affected lexical table coverage entries are now covered.
 - Chapter 9 still showed `in` and `=` as predicate definition examples. Those
   examples now avoid primitive built-ins and state that `in`, `=`, and `<>` are
   built-in applications, not `pred`/`redefine pred` symbols.
@@ -166,9 +165,8 @@ classified:
 
 - The `compact_statement` / zero-step `iterative_equality` overlap is now
   recorded as G-AUD-010 and added to Task 7 fixture inputs.
-- Chapter 2's dot-compound priority list now includes `..`; the
-  dot-disambiguation coverage entry is marked `partial` until lexer fixtures
-  catch up.
+- Chapter 2's dot-compound priority list now includes `..`; lexer fixtures and
+  dot-disambiguation coverage have caught up in the lexer implementation track.
 - The unreachable-production explanation now includes `functor_loci`,
   `scheme_name`, and `reconsider_target`, and no longer lists reachable
   `dq_char`.

@@ -107,6 +107,7 @@ pub const RESERVED_WORDS: &[&str] = &[
     "sethood",
     "snapshot",
     "st",
+    "step",
     "struct",
     "such",
     "suppose",
@@ -131,8 +132,8 @@ pub const RESERVED_WORDS: &[&str] = &[
 ];
 
 pub const RESERVED_SYMBOLS: &[&str] = &[
-    "...", ":=", ".{", "<>", "->", ".=", ".*", "@[", ",", ".", ";", ":", "(", ")", "[", "]", "{",
-    "}", "=", "&",
+    "...", "..", ":=", ".{", "<>", "->", ".=", ".*", "@[", ",", ".", ";", ":", "(", ")", "[", "]",
+    "{", "}", "=", "&",
 ];
 
 pub type ReservedWordTable = &'static [&'static str];

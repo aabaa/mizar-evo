@@ -1583,6 +1583,8 @@ fn invalid_module_paths_are_rejected_before_duplicate_module_validation() {
         "groups.1bad.basic",
         "theorem",
         "groups.theorem.basic",
+        "step",
+        "groups.step.basic",
     ] {
         let registry = SnapshotRegistry::with_allocator(CountingLeaseAllocator::new());
         let request = request_id();

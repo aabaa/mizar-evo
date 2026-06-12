@@ -134,7 +134,7 @@ The implemented modes admit candidates as follows:
 | `IdentifierRequired` | yes | no | no | no | no | no |
 | `Symbolic` | yes | yes | yes | yes | yes | no |
 | `StringRequired` | no | no | no | no | no | yes |
-| `NamespacePath` | yes | no | only `.` | no | no | no |
+| `NamespacePath` | yes | no | only `.` / `..` | no | no | no |
 | `Recovery` | yes | yes | yes | yes | yes | no |
 
 ## Error Handling

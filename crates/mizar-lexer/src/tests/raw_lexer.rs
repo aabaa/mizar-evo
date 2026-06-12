@@ -79,6 +79,7 @@ fn helpers_recognize_layout_symbol_shapes_and_string_shells() {
     assert!(!is_string_literal_spelling("\"unterminated"));
 
     assert_eq!(longest_reserved_symbol_prefix("..."), Some("..."));
+    assert_eq!(longest_reserved_symbol_prefix("..common"), Some(".."));
     assert_eq!(longest_reserved_symbol_prefix(".{"), Some(".{"));
 }
 

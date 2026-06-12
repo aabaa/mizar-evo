@@ -317,7 +317,7 @@ impl ParserLexContext {
     fn admits_symbol(self, spelling: &str) -> bool {
         match self.mode {
             ParserLexMode::General | ParserLexMode::Symbolic | ParserLexMode::Recovery => true,
-            ParserLexMode::NamespacePath => spelling == ".",
+            ParserLexMode::NamespacePath => matches!(spelling, "." | ".."),
             ParserLexMode::IdentifierRequired | ParserLexMode::StringRequired => false,
         }
     }

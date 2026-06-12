@@ -38,7 +38,7 @@ span_start = 11
 span_end = 14
 
 [[tokens]]
-kind = "lexeme_run"
+kind = "reserved_symbol"
 lexeme = ".."
 span_start = 15
 span_end = 17

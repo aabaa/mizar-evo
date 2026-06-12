@@ -101,7 +101,7 @@
 
 8. **文脈依存の曖昧性解消による `TokenStream`。** [x]
    - アクティブ字句環境、初回の生 `ScopeSkeleton` / `ScopeLexView`、最終 token 形状から作り直した contextual scope skeleton、parser-assisted lexing plan が選んだ `ParserLexContext` を与えて `disambiguate`（またはパーサー統合の `lex`）を実行する。各字句解析器トークンと診断のスパンを `SpanBridge` を通じて session の `SourceRange` へ変換する。生の `LexDiagnostic` は code/message をコピーし、構造化ペイロードは写像済みの形で保持して、フロントエンドの `LexingDiagnostic` へ変換する。棄却候補の入れ子スパンは session 範囲へ写像し、複合／縮退マッピング由来の副次 `SourceAnchor` を保持する。内部の写像不変条件の失敗だけを `Err(SpanBridgeError)` として返す。
-   - テスト: 識別子とつづりを共有するユーザー記号が、最長一致で分類される。複合予約トークン（`.{`、`.*`、`.=`、`...`）が単一トークンとして字句解析される。引用符で囲まれた綴りは、アクティブな字句環境から記号として供給されない限り、一般文脈では写像済み字句解析器診断として棄却され、有界で一様な `StringRequired` 文脈では `StringLiteral` を生む。送出された各トークンスパンが妥当な第一 `SourceRange` へ解決され、隣接アンカーは診断用に保持される。棄却トークン候補を持つ字句解析器ペイロードは、スパン以外のペイロードデータと写像済みの入れ子スパンを保持する。task 20 は位置別 annotation string-literal coverage を追加する。
+   - テスト: 識別子とつづりを共有するユーザー記号が、最長一致で分類される。複合予約トークン（`..`、`.{`、`.*`、`.=`、`...`）が単一トークンとして字句解析される。引用符で囲まれた綴りは、アクティブな字句環境から記号として供給されない限り、一般文脈では写像済み字句解析器診断として棄却され、有界で一様な `StringRequired` 文脈では `StringLiteral` を生む。送出された各トークンスパンが妥当な第一 `SourceRange` へ解決され、隣接アンカーは診断用に保持される。棄却トークン候補を持つ字句解析器ペイロードは、スパン以外のペイロードデータと写像済みの入れ子スパンを保持する。task 20 は位置別 annotation string-literal coverage を追加する。
    - 依存: 7。仕様: [lexing.md](./lexing.md)「Token Stream」「Algorithm / Logic」。
 
 9. **字句解析器の回復のパススルー。** [x]

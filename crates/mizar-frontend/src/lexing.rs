@@ -1174,7 +1174,7 @@ mod tests {
 
     #[test]
     fn disambiguation_emits_compound_reserved_symbols_as_single_tokens() {
-        let text = ".{.*.=...";
+        let text = ".{.*.=.....";
         let (source, preprocessed, bridge) = preprocessed_source(text);
         let environment = empty_environment();
 
@@ -1206,6 +1206,11 @@ mod tests {
                     TokenKind::ReservedSymbol,
                     "...",
                     range(source.source_id, 6, 9)
+                ),
+                (
+                    TokenKind::ReservedSymbol,
+                    "..",
+                    range(source.source_id, 9, 11)
                 ),
             ]
         );

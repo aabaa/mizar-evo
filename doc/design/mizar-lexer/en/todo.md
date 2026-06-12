@@ -7,16 +7,7 @@ language-spec synchronization.
 
 ## Ordered Task List
 
-1. **Synchronize reserved-token tables after the Task 6 grammar audit.** [ ]
-   - Appendix A and Chapter 2 now reserve `step` and include `..` as the
-     relative-import parent prefix. Update `mizar-lexer` reserved word/symbol
-     tables, the `mizar-session` reserved-word mirror, lexical fixtures
-     including dot-disambiguation coverage, and `tests/coverage/spec_trace.toml`
-     so the affected table and dot-disambiguation requirements can return from
-     `partial` to `covered`.
-   - Do not add a standalone `@` reserved-symbol token; `@` remains the raw
-     annotation-name marker and is only reserved as that marker.
-   - Source: mizar-syntax Task 6 grammar audit.
+No open ordered tasks.
 
 ## Completed Tasks
 
@@ -155,6 +146,12 @@ language-spec synchronization.
    - Added machine-readable `SourcePreprocessDiagnosticPayload` values for carriage returns, non-ASCII code-region characters, and unterminated multi-line comments.
    - Kept stable diagnostic codes and byte spans while leaving human-facing message text provisional.
    - Added optional `diagnostic_payloads` fixture expectations so corpus tests can assert structured payload summaries without matching diagnostic wording.
+
+28. Synchronized reserved-token tables after the Task 6 grammar audit.
+   - Added `step` to the `mizar-lexer` reserved word table and the `mizar-session` reserved-word mirror.
+   - Added `..` to the `mizar-lexer` reserved symbol table and admitted it in `NamespacePath` parser lexical context for relative-import parent prefixes.
+   - Updated lexical fixtures, dot-disambiguation coverage, and traceability entries so the affected requirements are covered again.
+   - Kept standalone `@` out of the reserved-symbol table; `@` remains reserved only as the raw annotation-name marker.
 
 ## Suggested Verification
 

@@ -1,0 +1,28 @@
+schema_version = 1
+id = "fail_lexical_disambiguator_namespace_path_dot_compound_rejected_001"
+kind = "fail"
+stage = "lexical"
+domain = "disambiguator"
+source = "fail_lexical_disambiguator_namespace_path_dot_compound_rejected_001.src"
+expected_outcome = "fail"
+expected_phase = "lex"
+failure_category = "lexical_diagnostic"
+stable_detail_key = "fail_lexical_disambiguator_namespace_path_dot_compound_rejected_001"
+diagnostic_codes = [
+  "parser_context_rejected_candidate",
+]
+spec_refs = [
+  "spec.en.02.lexical.dot_disambiguation",
+]
+
+[[tokens]]
+kind = "error_recovery"
+lexeme = "."
+span_start = 0
+span_end = 1
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ".."
+span_start = 1
+span_end = 3

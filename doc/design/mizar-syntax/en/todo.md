@@ -199,10 +199,10 @@ as accepted follow-ups. The purpose is to avoid freezing grammar drift into
      parser-owned statement/item wrappers, `claim` is top-level rather than an
      algorithm statement, `is` assertions stay generic until resolution,
      `character` is defined, and `step` / `..` token drift is normalized at the
-     spec level. Lexer table/test synchronization is deferred to
-     `mizar-lexer` and tracked there, with affected lexical coverage entries
-     marked `partial`. Remaining pre-AST issues and Task 7 fixture inputs are
-     classified in the audit note.
+     spec level. Lexer table/test synchronization was completed in the
+     `mizar-lexer` track, with affected lexical coverage entries marked
+     covered. Remaining pre-AST issues and Task 7 fixture inputs are classified
+     in the audit note.
    - Deps: Appendix A normalization. Spec:
      [../../../spec/en/appendix_a.grammar_summary.md](../../../spec/en/appendix_a.grammar_summary.md),
      chapter-local grammar sections under [../../../spec/en/](../../../spec/en/00.index.md).

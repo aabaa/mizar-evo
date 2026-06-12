@@ -59,10 +59,9 @@ id = "spec.en.02.lexical.dot_disambiguation"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.5.3 Dot Disambiguation"
 stage = "lexical"
-status = "partial"
+status = "covered"
 required = true
 coverage = "pass_and_fail"
-deferred_reason = "Task 6 grammar audit added `..` to the dot-compound priority list; lexer tables and dot-disambiguation fixtures still need synchronization."
 tests = [
   "tests/lexical/pass/pass_lexical_disambiguator_reserved_dot_compounds_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_dot_user_general_001.expect.toml",
@@ -70,6 +69,7 @@ tests = [
   "tests/lexical/pass/pass_lexical_disambiguator_dot_whitespace_general_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_composite_longest_scope_dot_001.expect.toml",
   "tests/lexical/pass/pass_lexical_disambiguator_namespace_path_composite_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_disambiguator_namespace_path_dot_compound_rejected_001.expect.toml",
 ]
 
 [[requirement]]
@@ -349,10 +349,9 @@ id = "spec.en.02.lexical.reserved_symbols.longest_compound"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.5.1 Reserved Special Symbols"
 stage = "lexical"
-status = "partial"
+status = "covered"
 required = true
 coverage = "pass"
-deferred_reason = "Task 6 grammar audit added `..` as a reserved relative-import prefix; lexer tables and fixtures still need synchronization."
 tests = [
   "tests/lexical/pass/pass_lexical_disambiguator_reserved_dot_compounds_001.expect.toml",
   "tests/lexical/pass/pass_lexical_reserved_symbols_longest_compound_001.expect.toml",
@@ -363,10 +362,9 @@ id = "spec.en.02.lexical.reserved_symbols.table"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.5.1 Reserved Special Symbols"
 stage = "lexical"
-status = "partial"
+status = "covered"
 required = true
 coverage = "pass"
-deferred_reason = "Task 6 grammar audit added `..` to the reserved-symbol table; lexer tables and fixtures still need synchronization."
 tests = [
   "tests/lexical/pass/pass_lexical_reserved_symbols_table_001.expect.toml",
 ]
@@ -388,10 +386,9 @@ id = "spec.en.02.lexical.reserved_words.table"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.4 Reserved Words"
 stage = "lexical"
-status = "partial"
+status = "covered"
 required = true
 coverage = "pass"
-deferred_reason = "Task 6 grammar audit added `step` to the reserved-word table; lexer/session tables and fixtures still need synchronization."
 tests = [
   "tests/lexical/pass/pass_lexical_reserved_words_table_001.expect.toml",
 ]

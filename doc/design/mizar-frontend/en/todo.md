@@ -250,7 +250,7 @@ should keep `cargo test -p mizar-frontend` green (see
      `Err(SpanBridgeError)` only for internal mapping invariant
      failures.
    - Tests: a user symbol sharing spelling with an identifier is classified by
-     longest-match; compound reserved tokens (`.{`, `.*`, `.=`, `...`) lex as
+     longest-match; compound reserved tokens (`..`, `.{`, `.*`, `.=`, `...`) lex as
      single tokens; quote-delimited spelling is rejected with mapped lexer
      diagnostics under the general context unless supplied by the active lexicon,
      while a bounded uniform `StringRequired` context produces a `StringLiteral`;

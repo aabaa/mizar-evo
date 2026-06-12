@@ -311,7 +311,7 @@ view records lexical shape only — never resolved bindings.
 7. Collect lexer diagnostics as `LexingDiagnostic`s, copy non-span payload data,
    and map nested rejected-candidate spans into frontend payload structures.
 
-Compound reserved tokens (`.{`, `.*`, `.=`, `...`) are recognized by the lexer;
+Compound reserved tokens (`..`, `.{`, `.*`, `.=`, `...`) are recognized by the lexer;
 selector/namespace roles for `.` are left to the parser and resolver. The lexer
 never decides definedness, applicability, or overload selection.
 

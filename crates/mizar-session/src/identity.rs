@@ -107,6 +107,7 @@ const RESERVED_WORDS: &[&str] = &[
     "sethood",
     "snapshot",
     "st",
+    "step",
     "struct",
     "such",
     "suppose",

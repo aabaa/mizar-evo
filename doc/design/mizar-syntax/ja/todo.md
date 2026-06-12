@@ -192,9 +192,9 @@ task 12 互換 surface を超える新しい AST node kind 設計を始めない
      statement / item wrapper 経由で付着し、`claim` は algorithm statement では
      なく top-level、`is` assertion は resolution まで generic に保持し、
      `character` は定義済み、`step` / `..` の token drift は仕様レベルで正規化
-     済みである。lexer table / test の同期は `mizar-lexer` に defer してそこで
-     追跡し、該当する lexical coverage entry は `partial` とした。残る AST 前の
-     論点と Task 7 fixture input は監査ノートで分類した。
+     済みである。lexer table / test の同期は `mizar-lexer` トラックで完了し、
+     該当する lexical coverage entry は covered になった。残る AST 前の論点と
+     Task 7 fixture input は監査ノートで分類した。
    - 依存: Appendix A normalization。仕様:
      [../../../spec/ja/appendix_a.grammar_summary.md](../../../spec/ja/appendix_a.grammar_summary.md)、
      [../../../spec/ja/](../../../spec/ja/00.index.md) 配下の章内 grammar section。

@@ -7,16 +7,7 @@
 
 ## Ordered Task List
 
-1. **Task 6 文法監査後の reserved-token table を同期する。** [ ]
-   - Appendix A と第 2 章は、`step` を予約語にし、relative-import parent
-     prefix として `..` を含めるようになった。`mizar-lexer` の予約語/予約記号
-     table、`mizar-session` の reserved-word mirror、dot-disambiguation coverage
-     を含む lexical fixture、`tests/coverage/spec_trace.toml` を更新し、該当
-     table と dot-disambiguation requirement を `partial` から `covered` に
-     戻せるようにする。
-   - 単独の `@` reserved-symbol token は追加しない。`@` は raw annotation-name
-     marker としてだけ予約される。
-   - 出所: mizar-syntax Task 6 grammar audit。
+未完了の ordered task はありません。
 
 ## Completed Tasks
 
@@ -155,6 +146,12 @@
    - キャリッジリターン、コード領域の非 ASCII 文字、未終端の複数行コメントのために、機械可読な `SourcePreprocessDiagnosticPayload` を追加した。
    - 安定した診断コードとバイトスパンを維持し、人間向けのメッセージ文は暫定のままにした。
    - コーパステストが診断文言に依存せず、構造化ペイロードの要約を表明できるよう、任意の `diagnostic_payloads` フィクスチャ期待値を追加した。
+
+28. Task 6 文法監査後の reserved-token table を同期した。
+   - `mizar-lexer` の予約語テーブルと `mizar-session` の reserved-word mirror に `step` を追加した。
+   - `mizar-lexer` の予約記号テーブルに `..` を追加し、relative-import parent prefix のために `NamespacePath` パーサー字句コンテキストで許可した。
+   - lexical fixture、dot-disambiguation coverage、traceability entry を更新し、該当 requirement を再び covered にした。
+   - 単独の `@` は reserved-symbol table に追加せず、raw annotation-name marker としてだけ予約される状態を保った。
 
 ## Suggested Verification
 

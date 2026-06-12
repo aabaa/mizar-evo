@@ -29,3 +29,15 @@ kind = "identifier"
 lexeme = "succ"
 span_start = 2
 span_end = 6
+
+[[tokens]]
+kind = "reserved_symbol"
+lexeme = ".."
+span_start = 7
+span_end = 9
+
+[[tokens]]
+kind = "identifier"
+lexeme = "common"
+span_start = 9
+span_end = 15

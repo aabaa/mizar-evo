@@ -1127,7 +1127,12 @@ fn source_path_normalization_rejects_invalid_namespace_components() {
 
 #[test]
 fn source_path_normalization_rejects_reserved_namespace_components() {
-    for source_path in ["src/theorem.miz", "src/groups/theorem/basic.miz"] {
+    for (source_path, expected_component) in [
+        ("src/theorem.miz", "theorem"),
+        ("src/groups/theorem/basic.miz", "theorem"),
+        ("src/step.miz", "step"),
+        ("src/groups/step/basic.miz", "step"),
+    ] {
         let package = PackageFixture::new();
         package.write(source_path, "");
 
@@ -1137,7 +1142,7 @@ fn source_path_normalization_rejects_reserved_namespace_components() {
             matches!(
                 normalized,
                 Err(SourcePathError::InvalidNamespaceComponent { component })
-                    if component == "theorem"
+                    if component == expected_component
             ),
             "{source_path:?}"
         );
