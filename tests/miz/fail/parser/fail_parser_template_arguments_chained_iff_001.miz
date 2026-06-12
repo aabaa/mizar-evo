@@ -1,0 +1,6 @@
+definition
+  let T be type;
+  let x be T;
+  pred TemplatePredDef: x matches[T] means
+    x = x iff x = x iff x = x;
+end;

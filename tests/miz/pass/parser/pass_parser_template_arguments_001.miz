@@ -1,0 +1,8 @@
+definition
+  let T be type;
+  let x be T;
+  pred TemplatePredDef: x matches[T] means x = x;
+  func TemplateFuncDef: pick[T](x) -> T equals x;
+  theorem TemplateUse:
+    x matches[T] iff pick[T](x) = x;
+end;

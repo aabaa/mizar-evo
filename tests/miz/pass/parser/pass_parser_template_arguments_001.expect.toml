@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_parser_template_arguments_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.template_arguments"
+source = "pass_parser_template_arguments_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.syntax.template_arguments.parser",
+]
+notes = "Seed metadata for the future parse-only corpus runner; mizar-test currently validates discovery and traceability only."

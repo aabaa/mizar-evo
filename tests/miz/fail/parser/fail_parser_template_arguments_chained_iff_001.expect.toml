@@ -1,0 +1,18 @@
+schema_version = 1
+id = "fail_parser_template_arguments_chained_iff_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.template_arguments"
+source = "fail_parser_template_arguments_chained_iff_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "chained_iff_without_grouping"
+stable_detail_key = "parser.template_arguments.chained_iff"
+diagnostic_codes = [
+  "non_associative_operator_chain",
+]
+spec_refs = [
+  "spec.en.syntax.template_arguments.parser",
+]
+notes = "Seed metadata for the future parse-only corpus runner; the parser runner will own the executable diagnostic check."

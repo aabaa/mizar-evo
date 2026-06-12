@@ -2,9 +2,13 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use mizar_test::{DiscoveryConfig, TestProfile, ValidationMode, build_test_plan};
+use mizar_test::{
+    DiscoveryConfig, ExpectedOutcome, PipelinePhase, Stage, TestKind, TestPlan, TestProfile,
+    ValidationMode, build_test_plan,
+};
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
+const TEMPLATE_ARGUMENTS_REQUIREMENT_ID: &str = "spec.en.syntax.template_arguments.parser";
 
 #[test]
 fn empty_corpus_succeeds() {
@@ -484,20 +488,7 @@ fn plan_order_is_deterministic_by_expectation_path() {
 
 #[test]
 fn repository_corpus_plan_succeeds() {
-    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(Path::parent)
-        .unwrap()
-        .to_path_buf();
-    let config = DiscoveryConfig {
-        workspace_root: workspace_root.clone(),
-        tests_root: workspace_root.join("tests"),
-        manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
-        profile: TestProfile::Fast,
-        validation_mode: ValidationMode::Metadata,
-    };
-
-    let plan = build_test_plan(&config).unwrap();
+    let plan = repository_plan();
 
     assert_eq!(plan.error_count(), 0, "{:#?}", plan.diagnostics);
     assert!(plan.cases.iter().any(|case| {
@@ -513,6 +504,98 @@ fn repository_corpus_plan_succeeds() {
                 .iter()
                 .any(|spec_ref| spec_ref.0 == "spec.en.02.lexical.identifiers.basic")
     }));
+}
+
+#[test]
+fn repository_parse_only_seed_cases_are_parser_metadata_only() {
+    let plan = repository_plan();
+
+    let pass_case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_parser_template_arguments_001")
+        .expect("parse-only pass seed should be discovered");
+    assert_eq!(pass_case.expectation.kind, TestKind::Pass);
+    assert_eq!(pass_case.expectation.stage, Stage::ParseOnly);
+    assert_eq!(
+        pass_case.expectation.expected_outcome,
+        ExpectedOutcome::Pass
+    );
+    assert_eq!(
+        pass_case.expectation.expected_phase,
+        Some(PipelinePhase::Parse)
+    );
+    assert!(pass_case.expectation.tokens.is_empty());
+    assert!(
+        pass_case
+            .expectation
+            .spec_refs
+            .iter()
+            .any(|spec_ref| spec_ref.0 == TEMPLATE_ARGUMENTS_REQUIREMENT_ID)
+    );
+
+    let fail_case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fail_parser_template_arguments_chained_iff_001")
+        .expect("parse-only fail seed should be discovered");
+    assert_eq!(fail_case.expectation.kind, TestKind::Fail);
+    assert_eq!(fail_case.expectation.stage, Stage::ParseOnly);
+    assert_eq!(
+        fail_case.expectation.expected_outcome,
+        ExpectedOutcome::Fail
+    );
+    assert_eq!(
+        fail_case.expectation.expected_phase,
+        Some(PipelinePhase::Parse)
+    );
+    assert_eq!(
+        fail_case.expectation.failure_category.as_deref(),
+        Some("syntax_error")
+    );
+    assert_eq!(
+        fail_case.expectation.diagnostic_codes,
+        vec!["non_associative_operator_chain".to_owned()]
+    );
+
+    let template_requirement = plan
+        .manifest
+        .requirements
+        .iter()
+        .find(|requirement| requirement.id.0 == TEMPLATE_ARGUMENTS_REQUIREMENT_ID)
+        .expect("template parse-only requirement should exist");
+    assert_eq!(template_requirement.stage, Stage::ParseOnly);
+    assert_eq!(
+        template_requirement.tests,
+        vec![
+            PathBuf::from("tests/miz/pass/parser/pass_parser_template_arguments_001.expect.toml"),
+            PathBuf::from(
+                "tests/miz/fail/parser/fail_parser_template_arguments_chained_iff_001.expect.toml"
+            ),
+        ]
+    );
+
+    for requirement_id in [
+        "spec.en.elaboration.choice_comprehension.lowering",
+        "spec.en.binding.substitution.capture_avoidance",
+        "spec.en.algorithm.vc.assignment_loop_exits",
+        "spec.en.type_soundness.escape_and_guard_failures",
+    ] {
+        let requirement = plan
+            .manifest
+            .requirements
+            .iter()
+            .find(|requirement| requirement.id.0 == requirement_id)
+            .unwrap_or_else(|| panic!("planned requirement `{requirement_id}` should exist"));
+        assert!(
+            requirement.tests.is_empty(),
+            "`{requirement_id}` should remain unlinked until its semantic stage exists"
+        );
+        assert!(
+            requirement.deferred_reason.is_some(),
+            "`{requirement_id}` should keep a deferral reason"
+        );
+    }
 }
 
 #[test]
@@ -821,6 +904,23 @@ fn assert_has_code(plan: &mizar_test::TestPlan, code: &str) {
         "expected diagnostic {code}, got {:#?}",
         plan.diagnostics
     );
+}
+
+fn repository_plan() -> TestPlan {
+    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .unwrap()
+        .to_path_buf();
+    let config = DiscoveryConfig {
+        workspace_root: workspace_root.clone(),
+        tests_root: workspace_root.join("tests"),
+        manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+        profile: TestProfile::Fast,
+        validation_mode: ValidationMode::Metadata,
+    };
+
+    build_test_plan(&config).unwrap()
 }
 
 fn rel(root: &Path, path: &Path) -> PathBuf {

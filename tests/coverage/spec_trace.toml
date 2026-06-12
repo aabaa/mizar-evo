@@ -714,8 +714,11 @@ stage = "parse_only"
 status = "planned"
 required = true
 coverage = "pass_and_fail"
-deferred_reason = "Parser corpus is not yet implemented beyond the staged lexical model. Add pass cases for let constraints with by references, template predicate/functor definitions and uses, take-with-witness, conditional definiens, Fraenkel generators, qua chains, and predicate chains; add fail cases for chained iff, non-associative operator chains, builtin/user predicate chain mixing, and incomplete term-headed formulas."
-tests = []
+deferred_reason = "Initial parse-only corpus metadata exists for template predicate/functor definitions and a chained-iff syntax rejection, but the real parse-only runner is still deferred to the parser corpus-runner task. Add runner-backed pass cases for let constraints with by references, take-with-witness, conditional definiens, Fraenkel generators, qua chains, and predicate chains; add runner-backed fail cases for non-associative operator chains, builtin/user predicate chain mixing, and incomplete term-headed formulas."
+tests = [
+  "tests/miz/pass/parser/pass_parser_template_arguments_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_template_arguments_chained_iff_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.elaboration.choice_comprehension.lowering"
