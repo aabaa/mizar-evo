@@ -1,6 +1,8 @@
 # mizar-parser: Pratt Parsing
 
-Status: minimal task-11 explicit infix Pratt parsing implemented; full term/formula precedence planned.
+Status: minimal task-11 explicit infix Pratt parsing implemented and task-1
+module split in place as an internal `pratt` module; full term/formula
+precedence planned.
 
 ## Purpose
 

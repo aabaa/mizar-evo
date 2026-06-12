@@ -2,7 +2,9 @@
 
 > 正本は英語です。英語版: [../en/recovery.md](../en/recovery.md)。
 
-状態: task 12 の最小回復と task 28 の入れ子 block-end 回復は実装済み。完全な文法回復は計画中。
+状態: task 12 の最小回復と task 28 の入れ子 block-end 回復は実装済みで、task 1
+の module split により内部 `recovery` module として配置済み。完全な文法回復は
+計画中。
 
 ## 目的
 

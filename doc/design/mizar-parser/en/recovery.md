@@ -1,7 +1,8 @@
 # mizar-parser: Recovery
 
 Status: minimal task-12 recovery plus task-28 nested block-end recovery
-implemented; full grammar recovery planned.
+implemented, with task-1 module split in place as an internal `recovery`
+module; full grammar recovery planned.
 
 ## Purpose
 

@@ -12,9 +12,9 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] minimal task-11/12 entry currently lives in `src/lib.rs` |
-| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] minimal explicit-fixity Pratt currently lives in `src/lib.rs` |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task-12 recovery plus mizar-frontend task-28 nested block-end matching currently lives in `src/lib.rs` |
+| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] minimal task-11/12 entry is split into the internal `grammar` module |
+| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] minimal explicit-fixity Pratt is split into the internal `pratt` module |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task-12 recovery plus mizar-frontend task-28 nested block-end matching is split into the internal `recovery` module |
 
 `mizar-parser` implements the syntax grammar: frontend-adapted tokens in,
 `mizar_syntax::SurfaceAst` plus syntax diagnostics out. It is built as a thin
@@ -140,12 +140,17 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
 
 ### Infrastructure
 
-1. **Module split and lint-policy guard.** [ ]
-   - Split `src/lib.rs` into `pub mod grammar;`, `pub mod pratt;`, and
-     `pub mod recovery;`, moving task-11/12 code without behavior changes, and
-     keep `parse`, `ParseRequest`, `ParserToken`, and `ParseOutput` reachable
-     at their current paths.
-   - Add `tests/lint_policy.rs` mirroring the `mizar-frontend` guard.
+1. **Module split and lint-policy guard.** [x]
+   - Split `src/lib.rs` into internal `grammar`, `pratt`, and `recovery`
+     implementation modules, moving task-11/12 code without behavior changes,
+     and keep `parse`, `ParseRequest`, `ParserToken`, and `ParseOutput`
+     reachable at their current crate-root paths. Keep these modules private
+     until a later task intentionally exposes module-level parser APIs.
+   - Add `tests/lint_policy.rs` mirroring the `mizar-frontend` guard for
+     workspace lint opt-in, the shared rustc/clippy baseline, and documented
+     inline rationales for intentional `allow` attributes in parser Rust target
+     files. This task does not add the later parser public-enum
+     forward-compatibility or rustdoc policy gates.
    - Tests: existing parser and frontend seam tests pass unchanged.
    - Deps: none. Spec: [grammar.md](./grammar.md).
 

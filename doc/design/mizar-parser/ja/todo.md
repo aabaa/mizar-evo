@@ -12,9 +12,9 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] task 11/12 の最小エントリは現在 `src/lib.rs` にある |
-| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] 明示 fixity の最小 Pratt は現在 `src/lib.rs` にある |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task 12 の recovery と mizar-frontend task 28 の nested block-end matching は現在 `src/lib.rs` にある |
+| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] task 11/12 の最小エントリは内部 `grammar` module に分割済み |
+| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] 明示 fixity の最小 Pratt は内部 `pratt` module に分割済み |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task 12 の recovery と mizar-frontend task 28 の nested block-end matching は内部 `recovery` module に分割済み |
 
 `mizar-parser` は構文文法を実装する: frontend 適合済みトークンを入力とし、
 `mizar_syntax::SurfaceAst` と構文診断を出力する。薄い基盤層（cursor、同期、
@@ -137,12 +137,17 @@ resolver / build-system 依存を避ける。
 
 ### 基盤
 
-1. **モジュール分割と lint 方針のガード。** [ ]
-   - `src/lib.rs` を `pub mod grammar;`、`pub mod pratt;`、`pub mod recovery;`
-     に分割し、task 11/12 のコードを挙動変更なしに移動する。`parse`、
-     `ParseRequest`、`ParserToken`、`ParseOutput` は現在のパスから到達可能の
-     まま保つ。
-   - `mizar-frontend` のガードに倣った `tests/lint_policy.rs` を追加する。
+1. **モジュール分割と lint 方針のガード。** [x]
+   - `src/lib.rs` を内部実装 module の `grammar`、`pratt`、`recovery` に分割し、
+     task 11/12 のコードを挙動変更なしに移動する。`parse`、`ParseRequest`、
+     `ParserToken`、`ParseOutput` は現在の crate-root path から到達可能のまま
+     保つ。module-level parser API を意図的に公開する後続タスクまでは、これらの
+     module は private に保つ。
+   - `mizar-frontend` のガードに倣った `tests/lint_policy.rs` を追加し、
+     workspace lint opt-in、共有 rustc / clippy baseline、parser Rust target
+     files にある意図的な `allow` 属性の inline rationale を確認する。この
+     タスクでは後続の parser public-enum forward-compatibility gate や rustdoc
+     policy gate は追加しない。
    - テスト: 既存のパーサーテストと frontend seam テストが変更なしに通る。
    - 依存: なし。仕様: [grammar.md](./grammar.md)。
 

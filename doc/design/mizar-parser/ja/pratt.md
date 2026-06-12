@@ -2,7 +2,9 @@
 
 > 正本は英語です。英語版: [../en/pratt.md](../en/pratt.md)。
 
-状態: task 11 の明示的な infix Pratt 解析は最小実装済み。完全な項／論理式の優先順位解析は計画中。
+状態: task 11 の明示的な infix Pratt 解析は最小実装済みで、task 1 の module
+split により内部 `pratt` module として配置済み。完全な項／論理式の優先順位解析は
+計画中。
 
 ## 目的
 
