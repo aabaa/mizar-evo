@@ -13,7 +13,8 @@ normalized grammar-facing form that the parser should follow.
 The grammar uses this notation:
 
 - `::=` defines a production.
-- `"token"` is a reserved word or reserved symbol token.
+- `"token"` is a literal token spelling. Reserved words and reserved symbols
+  are listed in A.2; contextual spellings are called out where they are used.
 - `[ item ]` is optional.
 - `{ item }` repeats zero or more times.
 - `( a | b )` groups alternatives.
@@ -59,6 +60,7 @@ identifier       ::= ( letter | "_" ) { letter | digit | "_" | "'" } ;
 label_identifier ::= identifier ;
 letter           ::= "a"..."z" | "A"..."Z" ;
 digit            ::= "0"..."9" ;
+character        ::= ? any Unicode scalar value ? ;
 
 numeral          ::= digit { digit } ;
 
@@ -100,7 +102,7 @@ projectivity proof property public
 qua
 reconsider reduce reducibility redefine reflexivity registration requires
 reserve return right
-set sethood snapshot st struct such suppose symmetry synonym
+set sethood snapshot st step struct such suppose symmetry synonym
 take terminating that the then theorem thesis thus to transitivity type
 uniqueness
 var
@@ -122,6 +124,13 @@ user-symbol lexing.
 When `.` is not consumed as a compound reserved token or an active user symbol,
 the parser and resolver classify it as selector access/update or as a namespace
 separator according to the context described in Chapter 2.
+
+Fixed annotation names and option names are contextual spellings, not reserved
+identifiers outside their grammar positions. Current contextual spellings are
+`auto`, `cvc5`, `e`, `max_axioms`, `solver`, `steps`, `timeout`, `vampire`,
+and `z3`, plus the fixed annotation-name spellings following `@` in A.21.
+The `@` marker is lexically reserved for annotations, but it is not a
+standalone reserved-symbol token.
 
 ## A.3 Type Expressions
 
@@ -254,10 +263,11 @@ Normative reference: [Chapter 9 (Predicates)](./09.predicates.md).
 
 ```ebnf
 pred_def         ::= "pred" label ":" pred_pattern "means" formula ";" ;
-pred_pattern     ::= [ loci ] predicate_symbol [ loci ] ;
+pred_pattern     ::= [ loci ] def_predicate_symbol [ loci ] ;
 loci             ::= locus | "(" locus_list ")" ;
 locus_list       ::= locus { "," locus } ;
 locus            ::= identifier ;
+def_predicate_symbol ::= def_symbol ;
 predicate_symbol ::= def_symbol ;
 
 redefine_pred    ::= "redefine" "pred" pred_pattern "means" formula ";"
@@ -266,7 +276,11 @@ redefine_pred    ::= "redefine" "pred" pred_pattern "means" formula ";"
 pred_property    ::= ( "symmetry" | "asymmetry" | "connectedness"
                      | "reflexivity" | "irreflexivity" ) justification ";" ;
 
-predicate_application ::= [ term_list ] [ negation ] predicate_symbol [ term_list ] ;
+predicate_application ::= user_predicate_application
+                        | builtin_predicate_application ;
+user_predicate_application ::= [ term_list ] [ negation ] predicate_symbol
+                               [ term_list ] ;
+builtin_predicate_application ::= term_expression builtin_pred term_expression ;
 negation              ::= "does" "not" | "do" "not" ;
 term_list             ::= term_expression { "," term_expression } ;
 builtin_pred          ::= "in" | "=" | "<>" ;
@@ -328,7 +342,7 @@ forms that model visibility as optional `"private"` are compatibility wording.
 Normative reference: [Chapter 12 (Modules and Namespaces)](./12.modules_and_namespaces.md).
 
 ```ebnf
-compilation_unit   ::= import_prelude export_prelude { declaration } ;
+compilation_unit   ::= import_prelude export_prelude { annotated_declaration } ;
 
 import_prelude     ::= { import_stmt } ;
 export_prelude     ::= { export_stmt } ;
@@ -346,6 +360,8 @@ module_path        ::= [ relative_prefix ] module_identifier
 relative_prefix    ::= "." | ".." ;
 module_identifier  ::= identifier ;
 
+annotated_declaration ::= { annotation } declaration ;
+
 declaration        ::= definition_block
                      | reserve_decl
                      | template_def
@@ -357,11 +373,12 @@ declaration        ::= definition_block
 visibility         ::= "private" | "public" ;
 
 definition_block   ::= "definition" { definition_content } "end" ";" ;
-definition_content ::= parameter_decl
-                     | assumption
-                     | correctness_condition
-                     | property_item
-                     | [ visibility ] definitional_item ;
+definition_content ::= { annotation }
+                       ( parameter_decl
+                       | assumption
+                       | correctness_condition
+                       | property_item
+                       | [ visibility ] definitional_item ) ;
 
 parameter_decl     ::= "let" variable_list [ qualification ]
                        [ "such" conditions ] ";" ;
@@ -466,12 +483,14 @@ not_formula          ::= "not" not_formula
 
 atomic_formula       ::= predicate_application
                        | inline_predicate_application
-                       | type_assertion
-                       | attribute_assertion ;
+                       | is_assertion ;
 
 inline_predicate_application ::= inline_pred_name "(" [ term_list ] ")" ;
-type_assertion               ::= term_expression "is" type_expression ;
-attribute_assertion          ::= term_expression "is" [ "not" ] attribute_chain ;
+is_assertion                 ::= term_expression "is" [ "not" ]
+                                  is_assertion_body ;
+is_assertion_body            ::= type_expression | attribute_test_chain ;
+attribute_test_chain         ::= [ "non" ] attribute_ref
+                                  { [ "non" ] attribute_ref } ;
 
 quantified_vars      ::= explicit_vars [ "," implicit_vars ] | implicit_vars ;
 explicit_vars        ::= quantified_segment { "," quantified_segment } ;
@@ -481,6 +500,10 @@ var_list             ::= identifier { "," identifier } ;
 ```
 
 `iff` is non-associative. Chaining `iff` without parentheses is a syntax error.
+The `is_assertion_body` alternatives can overlap syntactically because type
+heads and attributes both use active-lexicon symbols. Parser-facing ASTs should
+preserve a generic `is_assertion` until name/type resolution classifies it as a
+type assertion or an attribute assertion.
 
 ## A.15 Statements, Proofs, and References
 
@@ -488,9 +511,10 @@ Normative references: [Chapter 15 (Statements)](./15.statements.md) and
 [Chapter 16 (Theorems and Proofs)](./16.theorems_and_proofs.md).
 
 ```ebnf
-reasoning           ::= { statement } ;
+reasoning           ::= { annotated_statement } ;
 proof               ::= "proof" reasoning "end" ;
 
+annotated_statement ::= { annotation } statement ;
 statement           ::= [ "then" ] linkable_statement
                       | standalone_statement ;
 
@@ -607,7 +631,7 @@ Normative reference: [Chapter 17 (Clusters and Registrations)](./17.clusters_and
 
 ```ebnf
 registration_block ::= "registration" { registration_content } "end" ";" ;
-registration_content ::= parameter_decl | registration_item ;
+registration_content ::= { annotation } ( parameter_decl | registration_item ) ;
 
 registration_item  ::= existential_registration
                      | conditional_registration
@@ -641,14 +665,19 @@ functor_term          ::= functor_application ;
 Normative reference: [Chapter 18 (Templates)](./18.templates.md).
 
 ```ebnf
-template_def    ::= "definition" { let_param } { template_item } "end" ";" ;
+template_def    ::= "definition" { let_param } { annotated_template_item }
+                    "end" ";" ;
 
-let_param       ::= "let" identifier_list "be" let_type
+let_param       ::= "let" template_param
                     [ "such" "that" formula
                       ( "by" references | proof ) ] ";" ;
+template_param  ::= identifier_list "be" let_type
+                  | pred_param
+                  | func_param ;
 let_type        ::= "type" [ "extends" bound_type ] | type_expression ;
 bound_type      ::= [ attribute_chain ] radix_type ;
 
+annotated_template_item ::= { annotation } template_item ;
 template_item   ::= attr_def
                   | mode_def
                   | struct_def
@@ -688,8 +717,9 @@ algorithm_def ::= [ "terminating" ] "algorithm" identifier
 
 schema_params      ::= identifier { "," identifier } ;
 algorithm_body     ::= "do" algo_statement_list "end" ;
-algo_statement_list ::= { algo_statement } ;
+algo_statement_list ::= { annotated_algo_statement } ;
 
+annotated_algo_statement ::= { annotation } algo_statement ;
 algo_statement     ::= var_decl
                      | ghost_var_decl
                      | const_decl
@@ -705,8 +735,7 @@ algo_statement     ::= var_decl
                      | break_stmt
                      | continue_stmt
                      | assert_stmt
-                     | snapshot_stmt
-                     | claim_block ;
+                     | snapshot_stmt ;
 
 var_decl           ::= "var" var_binding { "," var_binding }
                        [ "as" type_expression [ justification ] ] ";" ;
@@ -761,7 +790,9 @@ continue_stmt      ::= "continue" ";" ;
 assert_stmt        ::= "assert" formula [ justification ] ";" ;
 snapshot_stmt      ::= "snapshot" identifier ";" ;
 
-claim_block        ::= "claim" identifier "do" { theorem_item } "end" ";" ;
+claim_block        ::= "claim" identifier "do" { annotated_theorem_item }
+                       "end" ";" ;
+annotated_theorem_item ::= { annotation } theorem_item ;
 
 computation_proof  ::= "by" "computation"
                        [ "(" computation_option

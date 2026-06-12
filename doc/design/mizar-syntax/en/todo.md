@@ -182,7 +182,7 @@ the grammar audit has either closed its findings or explicitly recorded them
 as accepted follow-ups. The purpose is to avoid freezing grammar drift into
 `SurfaceAst` node kinds, child roles, or snapshot baselines.
 
-6. **Canonical grammar consistency audit.** [ ]
+6. **Canonical grammar consistency audit.** [x]
    - Treat [Appendix A](../../../spec/en/appendix_a.grammar_summary.md) as the
      parser-facing canonical grammar summary and review it against the
      chapter-local syntax blocks in Chapters 2-21.
@@ -193,6 +193,16 @@ as accepted follow-ups. The purpose is to avoid freezing grammar drift into
    - Record findings in a grammar audit note or in the relevant spec files,
      with concrete references and one of: fix before AST design, accept as a
      semantic-only issue, or defer with an owner and parser task.
+   - Result: recorded in [grammar_audit.md](./grammar_audit.md). Appendix A and
+     Chapter 2 were synchronized for the concrete parser-facing fixes found in
+     the audit: built-in predicates are reachable, annotations attach through
+     parser-owned statement/item wrappers, `claim` is top-level rather than an
+     algorithm statement, `is` assertions stay generic until resolution,
+     `character` is defined, and `step` / `..` token drift is normalized at the
+     spec level. Lexer table/test synchronization is deferred to
+     `mizar-lexer` and tracked there, with affected lexical coverage entries
+     marked `partial`. Remaining pre-AST issues and Task 7 fixture inputs are
+     classified in the audit note.
    - Deps: Appendix A normalization. Spec:
      [../../../spec/en/appendix_a.grammar_summary.md](../../../spec/en/appendix_a.grammar_summary.md),
      chapter-local grammar sections under [../../../spec/en/](../../../spec/en/00.index.md).
@@ -245,8 +255,7 @@ interaction. Spec references are the normative grammar chapters under
 9. **Module and item nodes.** [ ] — paired with `mizar-parser` tasks 5-7.
    - Module file shape, top-level item list and item kinds dispatchable by
      keyword (parser task 5); import items with aliases and relative prefixes
-     (parser task 6); export, `open`/`inherit`, and visibility forms (parser
-     task 7).
+     (parser task 6); export and visibility forms (parser task 7).
    - Spec: [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
 10. **Type expression nodes.** [ ] — paired with `mizar-parser` task 8.
@@ -269,17 +278,19 @@ interaction. Spec references are the normative grammar chapters under
      [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md).
 
 12. **Formula nodes.** [ ] — paired with `mizar-parser` tasks 13-14.
-   - Atomic predicate application, `is` formulas, attribute formulas (parser
-     task 13); connectives and quantifiers (`for`/`ex`/`st`/`holds`) (parser
-     task 14).
+   - Atomic predicate application and generic `is` assertions that resolution
+     later classifies as type or attribute assertions (parser task 13);
+     connectives and quantifiers (`for`/`ex`/`st`/`holds`) (parser task 14).
    - Spec: [14.formulas.md](../../../spec/en/14.formulas.md).
 
 13. **Statement nodes.** [ ] — paired with `mizar-parser` tasks 16 and 18-21.
     - Simple statements `reserve`, `let`, `assume`, `take`, `set`, `given`
       (parser task 16); `consider`/`reconsider` (parser task 18);
       `thus`/`hence`, `then` chains, iterative equality `.=` (parser task 19);
+      compact equality statements versus zero-step iterative equality
+      dispatch (grammar audit G-AUD-010);
       `now`/`hereby` and `per cases`/`suppose` blocks (parser task 20);
-      `deffunc`/`defpred` local definitions and `claim` (parser task 21).
+      `deffunc`/`defpred` local definitions (parser task 21).
     - Spec: [15.statements.md](../../../spec/en/15.statements.md).
 
 14. **Theorem, proof, and justification nodes.** [ ] — paired with
@@ -310,9 +321,9 @@ interaction. Spec references are the normative grammar chapters under
     `mizar-parser` tasks 31-35.
     - Template parameters and bracket-form type arguments (parser task 31);
       algorithm blocks, assignment, declarations, ghost declarations/assignments,
-      snapshots, and returns (parser task 32); control flow including processed
-      collection loops and match endings (parser task 33); verification clauses
-      (parser task 34);
+      snapshots, top-level `claim` blocks, and returns (parser task 32);
+      control flow including processed collection loops and match endings
+      (parser task 33); verification clauses (parser task 34);
       statement-level annotations, `@[...]` library annotations, and
       string-literal annotation arguments (parser task 35).
     - Spec: [18.templates.md](../../../spec/en/18.templates.md),

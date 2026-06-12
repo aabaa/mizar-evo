@@ -2,11 +2,21 @@
 
 > Canonical language: English. Japanese companion: [../ja/todo.md](../ja/todo.md).
 
-This document records follow-up tasks identified during the lexer quality review after adding final-token source spans.
+This document records follow-up tasks identified during lexer reviews and
+language-spec synchronization.
 
 ## Ordered Task List
 
-No open lexer quality-review follow-up tasks remain in this list.
+1. **Synchronize reserved-token tables after the Task 6 grammar audit.** [ ]
+   - Appendix A and Chapter 2 now reserve `step` and include `..` as the
+     relative-import parent prefix. Update `mizar-lexer` reserved word/symbol
+     tables, the `mizar-session` reserved-word mirror, lexical fixtures
+     including dot-disambiguation coverage, and `tests/coverage/spec_trace.toml`
+     so the affected table and dot-disambiguation requirements can return from
+     `partial` to `covered`.
+   - Do not add a standalone `@` reserved-symbol token; `@` remains the raw
+     annotation-name marker and is only reserved as that marker.
+   - Source: mizar-syntax Task 6 grammar audit.
 
 ## Completed Tasks
 

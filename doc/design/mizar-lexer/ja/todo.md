@@ -2,11 +2,21 @@
 
 > Canonical language: English. English canonical version: [../en/todo.md](../en/todo.md).
 
-この文書は、最終トークンへのソーススパン追加後の、字句解析器(lexer)の品質レビューで見つかったフォローアップタスクを記録します。
+この文書は、lexer review と language-spec synchronization で見つかった
+フォローアップタスクを記録します。
 
 ## Ordered Task List
 
-このリストに残っている字句解析器品質レビューのフォローアップタスクはありません。
+1. **Task 6 文法監査後の reserved-token table を同期する。** [ ]
+   - Appendix A と第 2 章は、`step` を予約語にし、relative-import parent
+     prefix として `..` を含めるようになった。`mizar-lexer` の予約語/予約記号
+     table、`mizar-session` の reserved-word mirror、dot-disambiguation coverage
+     を含む lexical fixture、`tests/coverage/spec_trace.toml` を更新し、該当
+     table と dot-disambiguation requirement を `partial` から `covered` に
+     戻せるようにする。
+   - 単独の `@` reserved-symbol token は追加しない。`@` は raw annotation-name
+     marker としてだけ予約される。
+   - 出所: mizar-syntax Task 6 grammar audit。
 
 ## Completed Tasks
 

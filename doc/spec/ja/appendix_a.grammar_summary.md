@@ -9,7 +9,8 @@
 この文法では次の記法を使います。
 
 - `::=` は生成規則を定義します。
-- `"token"` は予約語または予約記号 token です。
+- `"token"` は literal token spelling です。予約語と予約記号は A.2 に列挙し、
+  文脈限定の spelling は使用箇所で明示します。
 - `[ item ]` は省略可能です。
 - `{ item }` は 0 回以上の繰り返しです。
 - `( a | b )` は選択肢のグループです。
@@ -52,6 +53,7 @@ identifier       ::= ( letter | "_" ) { letter | digit | "_" | "'" } ;
 label_identifier ::= identifier ;
 letter           ::= "a"..."z" | "A"..."Z" ;
 digit            ::= "0"..."9" ;
+character        ::= ? any Unicode scalar value ? ;
 
 numeral          ::= digit { digit } ;
 
@@ -93,7 +95,7 @@ projectivity proof property public
 qua
 reconsider reduce reducibility redefine reflexivity registration requires
 reserve return right
-set sethood snapshot st struct such suppose symmetry synonym
+set sethood snapshot st step struct such suppose symmetry synonym
 take terminating that the then theorem thesis thus to transitivity type
 uniqueness
 var
@@ -110,6 +112,13 @@ where while with
 文字列リテラルは、文字列引数を要求する文法位置でのみ認識されます。現在は演算子宣言と文字列値 annotation が該当します。それ以外の位置では、引用符は通常の識別子またはユーザーシンボルの字句解析に参加します。
 
 `.` が複合予約 token または active user symbol として消費されない場合、parser と resolver は、第 2 章で説明される文脈に従って selector access/update または namespace separator として分類します。
+
+固定 annotation name と option name は文脈限定 spelling であり、その文法位置の
+外では予約識別子ではありません。現在の文脈限定 spelling は `auto`, `cvc5`,
+`e`, `max_axioms`, `solver`, `steps`, `timeout`, `vampire`, `z3` と、A.21 で
+`@` の後に現れる固定 annotation-name spelling です。
+`@` marker は annotation のために語彙的に予約されていますが、単独の予約記号
+token ではありません。
 
 ## A.3 型式
 
@@ -240,10 +249,11 @@ mode_application     ::= mode_name [ type_args ] ;
 
 ```ebnf
 pred_def         ::= "pred" label ":" pred_pattern "means" formula ";" ;
-pred_pattern     ::= [ loci ] predicate_symbol [ loci ] ;
+pred_pattern     ::= [ loci ] def_predicate_symbol [ loci ] ;
 loci             ::= locus | "(" locus_list ")" ;
 locus_list       ::= locus { "," locus } ;
 locus            ::= identifier ;
+def_predicate_symbol ::= def_symbol ;
 predicate_symbol ::= def_symbol ;
 
 redefine_pred    ::= "redefine" "pred" pred_pattern "means" formula ";"
@@ -252,7 +262,11 @@ redefine_pred    ::= "redefine" "pred" pred_pattern "means" formula ";"
 pred_property    ::= ( "symmetry" | "asymmetry" | "connectedness"
                      | "reflexivity" | "irreflexivity" ) justification ";" ;
 
-predicate_application ::= [ term_list ] [ negation ] predicate_symbol [ term_list ] ;
+predicate_application ::= user_predicate_application
+                        | builtin_predicate_application ;
+user_predicate_application ::= [ term_list ] [ negation ] predicate_symbol
+                               [ term_list ] ;
+builtin_predicate_application ::= term_expression builtin_pred term_expression ;
 negation              ::= "does" "not" | "do" "not" ;
 term_list             ::= term_expression { "," term_expression } ;
 builtin_pred          ::= "in" | "=" | "<>" ;
@@ -312,7 +326,7 @@ import 構文は A.12 で正規化します。この付録では可視性を `vi
 規範参照: [第 12 章 (モジュールと namespace)](./12.modules_and_namespaces.md)。
 
 ```ebnf
-compilation_unit   ::= import_prelude export_prelude { declaration } ;
+compilation_unit   ::= import_prelude export_prelude { annotated_declaration } ;
 
 import_prelude     ::= { import_stmt } ;
 export_prelude     ::= { export_stmt } ;
@@ -330,6 +344,8 @@ module_path        ::= [ relative_prefix ] module_identifier
 relative_prefix    ::= "." | ".." ;
 module_identifier  ::= identifier ;
 
+annotated_declaration ::= { annotation } declaration ;
+
 declaration        ::= definition_block
                      | reserve_decl
                      | template_def
@@ -341,11 +357,12 @@ declaration        ::= definition_block
 visibility         ::= "private" | "public" ;
 
 definition_block   ::= "definition" { definition_content } "end" ";" ;
-definition_content ::= parameter_decl
-                     | assumption
-                     | correctness_condition
-                     | property_item
-                     | [ visibility ] definitional_item ;
+definition_content ::= { annotation }
+                       ( parameter_decl
+                       | assumption
+                       | correctness_condition
+                       | property_item
+                       | [ visibility ] definitional_item ) ;
 
 parameter_decl     ::= "let" variable_list [ qualification ]
                        [ "such" conditions ] ";" ;
@@ -447,12 +464,14 @@ not_formula          ::= "not" not_formula
 
 atomic_formula       ::= predicate_application
                        | inline_predicate_application
-                       | type_assertion
-                       | attribute_assertion ;
+                       | is_assertion ;
 
 inline_predicate_application ::= inline_pred_name "(" [ term_list ] ")" ;
-type_assertion               ::= term_expression "is" type_expression ;
-attribute_assertion          ::= term_expression "is" [ "not" ] attribute_chain ;
+is_assertion                 ::= term_expression "is" [ "not" ]
+                                  is_assertion_body ;
+is_assertion_body            ::= type_expression | attribute_test_chain ;
+attribute_test_chain         ::= [ "non" ] attribute_ref
+                                  { [ "non" ] attribute_ref } ;
 
 quantified_vars      ::= explicit_vars [ "," implicit_vars ] | implicit_vars ;
 explicit_vars        ::= quantified_segment { "," quantified_segment } ;
@@ -462,15 +481,20 @@ var_list             ::= identifier { "," identifier } ;
 ```
 
 `iff` は非結合です。括弧なしで `iff` を連鎖させると構文エラーです。
+`is_assertion_body` の選択肢は、type head と attribute がいずれも
+active-lexicon symbol を使うため、構文上重なりえます。parser-facing AST は、
+name / type resolution が type assertion または attribute assertion に分類するまで、
+generic な `is_assertion` を保持するべきです。
 
 ## A.15 文、証明、参照
 
 規範参照: [第 15 章 (文)](./15.statements.md) および [第 16 章 (定理と証明)](./16.theorems_and_proofs.md)。
 
 ```ebnf
-reasoning           ::= { statement } ;
+reasoning           ::= { annotated_statement } ;
 proof               ::= "proof" reasoning "end" ;
 
+annotated_statement ::= { annotation } statement ;
 statement           ::= [ "then" ] linkable_statement
                       | standalone_statement ;
 
@@ -587,7 +611,7 @@ reducibility_block     ::= "reducibility" proof_or_refs ;
 
 ```ebnf
 registration_block ::= "registration" { registration_content } "end" ";" ;
-registration_content ::= parameter_decl | registration_item ;
+registration_content ::= { annotation } ( parameter_decl | registration_item ) ;
 
 registration_item  ::= existential_registration
                      | conditional_registration
@@ -621,14 +645,19 @@ functor_term          ::= functor_application ;
 規範参照: [第 18 章 (template)](./18.templates.md)。
 
 ```ebnf
-template_def    ::= "definition" { let_param } { template_item } "end" ";" ;
+template_def    ::= "definition" { let_param } { annotated_template_item }
+                    "end" ";" ;
 
-let_param       ::= "let" identifier_list "be" let_type
+let_param       ::= "let" template_param
                     [ "such" "that" formula
                       ( "by" references | proof ) ] ";" ;
+template_param  ::= identifier_list "be" let_type
+                  | pred_param
+                  | func_param ;
 let_type        ::= "type" [ "extends" bound_type ] | type_expression ;
 bound_type      ::= [ attribute_chain ] radix_type ;
 
+annotated_template_item ::= { annotation } template_item ;
 template_item   ::= attr_def
                   | mode_def
                   | struct_def
@@ -668,8 +697,9 @@ algorithm_def ::= [ "terminating" ] "algorithm" identifier
 
 schema_params      ::= identifier { "," identifier } ;
 algorithm_body     ::= "do" algo_statement_list "end" ;
-algo_statement_list ::= { algo_statement } ;
+algo_statement_list ::= { annotated_algo_statement } ;
 
+annotated_algo_statement ::= { annotation } algo_statement ;
 algo_statement     ::= var_decl
                      | ghost_var_decl
                      | const_decl
@@ -685,8 +715,7 @@ algo_statement     ::= var_decl
                      | break_stmt
                      | continue_stmt
                      | assert_stmt
-                     | snapshot_stmt
-                     | claim_block ;
+                     | snapshot_stmt ;
 
 var_decl           ::= "var" var_binding { "," var_binding }
                        [ "as" type_expression [ justification ] ] ";" ;
@@ -741,7 +770,9 @@ continue_stmt      ::= "continue" ";" ;
 assert_stmt        ::= "assert" formula [ justification ] ";" ;
 snapshot_stmt      ::= "snapshot" identifier ";" ;
 
-claim_block        ::= "claim" identifier "do" { theorem_item } "end" ";" ;
+claim_block        ::= "claim" identifier "do" { annotated_theorem_item }
+                       "end" ";" ;
+annotated_theorem_item ::= { annotation } theorem_item ;
 
 computation_proof  ::= "by" "computation"
                        [ "(" computation_option

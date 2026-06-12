@@ -229,8 +229,8 @@ of the whole syntax vocabulary bucket.
      [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
 7. **Export and visibility items.** [ ]
-   - Export forms, `open`/`inherit`, and `public`/`private` visibility markers
-     on items, per the module chapter.
+   - Export forms and `public`/`private` visibility markers on items, per the
+     module chapter.
    - Deps: 5. Spec:
      [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
@@ -281,8 +281,9 @@ of the whole syntax vocabulary bucket.
       [13.term_expression.md](../../../spec/en/13.term_expression.md).
 
 13. **Atomic formulas.** [ ]
-    - Predicate application (symbolic and identifier forms), `is` formulas,
-      attribute formulas, equality/inequality atoms.
+    - Predicate application (symbolic and identifier forms), built-in
+      membership/equality/inequality atoms, and generic `is_assertion` forms
+      that resolution later classifies as type or attribute assertions.
     - Deps: 12, `mizar-syntax` task 9. Spec:
       [14.formulas.md](../../../spec/en/14.formulas.md).
 
@@ -324,7 +325,9 @@ of the whole syntax vocabulary bucket.
 
 19. **Conclusion steps and iterative equality.** [ ]
     - `thus`/`hence`, `then` chains, and iterative equality `.=` steps with
-      their per-step justifications.
+      their per-step justifications. Include the grammar-audit boundary between
+      compact equality statements and zero-step iterative equality (`x = y by
+      A;` versus `x = y by A .= z by B;`).
     - Deps: 17. Spec: [15.statements.md](../../../spec/en/15.statements.md).
 
 20. **Block statements.** [ ]
@@ -332,10 +335,9 @@ of the whole syntax vocabulary bucket.
       `end` synchronization.
     - Deps: 19. Spec: [15.statements.md](../../../spec/en/15.statements.md).
 
-21. **Local definitions and claims.** [ ]
-    - `deffunc`/`defpred` private local definitions and `claim` statements.
-    - Deps: 20. Spec: [15.statements.md](../../../spec/en/15.statements.md),
-      [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md).
+21. **Local definitions.** [ ]
+    - `deffunc`/`defpred` private local definitions.
+    - Deps: 20. Spec: [15.statements.md](../../../spec/en/15.statements.md).
 
 22. **Theorems and proofs.** [ ]
     - `theorem`/`lemma` items, labels, `proof … end` nesting, and proof-body
@@ -402,10 +404,11 @@ of the whole syntax vocabulary bucket.
     - Deps: 30, `mizar-syntax` task 13. Spec:
       [18.templates.md](../../../spec/en/18.templates.md).
 
-32. **Algorithm blocks, assignment, and declarations.** [ ]
+32. **Algorithm blocks, assignments, declarations, and claims.** [ ]
     - `algorithm` block shape, assignment statements, `var`/`const`
       declarations, `ghost var`/`ghost const`, ghost assignments, `snapshot`,
-      and `return` statements with optional justifications.
+      top-level `claim` blocks, and `return` statements with optional
+      justifications.
     - Deps: 31, `mizar-syntax` task 13. Spec:
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 

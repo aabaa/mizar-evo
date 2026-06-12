@@ -222,8 +222,8 @@ resolver / build-system 依存を避ける。
      [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)。
 
 7. **export と可視性の item。** [ ]
-   - モジュール章に従った export の形、`open` / `inherit`、item 上の
-     `public` / `private` 可視性マーカー。
+   - モジュール章に従った export の形と、item 上の `public` / `private`
+     可視性マーカー。
    - 依存: 5。仕様:
      [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)。
 
@@ -270,8 +270,9 @@ resolver / build-system 依存を避ける。
       [13.term_expression.md](../../../spec/ja/13.term_expression.md)。
 
 13. **原子論理式。** [ ]
-    - 述語適用（記号形と識別子形）、`is` 論理式、属性論理式、等式／不等式の
-      原子。
+    - 述語適用（記号形と識別子形）、built-in membership / equality /
+      inequality atom、および resolution が後で type assertion または
+      attribute assertion に分類する generic `is_assertion` form。
     - 依存: 12、`mizar-syntax` task 9。仕様:
       [14.formulas.md](../../../spec/ja/14.formulas.md)。
 
@@ -312,7 +313,9 @@ resolver / build-system 依存を避ける。
 
 19. **結論ステップと逐次的等式。** [ ]
     - `thus` / `hence`、`then` 連鎖、およびステップごとの正当化を持つ逐次的
-      等式 `.=` ステップ。
+      等式 `.=` ステップ。compact equality statement と zero-step iterative
+      equality の grammar-audit 境界（`x = y by A;` と
+      `x = y by A .= z by B;`）を含める。
     - 依存: 17。仕様: [15.statements.md](../../../spec/ja/15.statements.md)。
 
 20. **ブロック文。** [ ]
@@ -320,10 +323,9 @@ resolver / build-system 依存を避ける。
       `per cases` / `suppose` / `case` ブロック。
     - 依存: 19。仕様: [15.statements.md](../../../spec/ja/15.statements.md)。
 
-21. **ローカル定義と claim。** [ ]
-    - `deffunc` / `defpred` のプライベートなローカル定義と `claim` 文。
-    - 依存: 20。仕様: [15.statements.md](../../../spec/ja/15.statements.md)、
-      [16.theorems_and_proofs.md](../../../spec/ja/16.theorems_and_proofs.md)。
+21. **ローカル定義。** [ ]
+    - `deffunc` / `defpred` のプライベートなローカル定義。
+    - 依存: 20。仕様: [15.statements.md](../../../spec/ja/15.statements.md)。
 
 22. **定理と証明。** [ ]
     - `theorem` / `lemma` の item、ラベル、`proof … end` の入れ子、証明本体の
@@ -388,10 +390,10 @@ resolver / build-system 依存を避ける。
     - 依存: 30、`mizar-syntax` task 13。仕様:
       [18.templates.md](../../../spec/ja/18.templates.md)。
 
-32. **algorithm ブロック・代入・宣言。** [ ]
+32. **algorithm ブロック・代入・宣言・claim。** [ ]
     - `algorithm` ブロックの形、代入文、`var` / `const` 宣言、
-      `ghost var` / `ghost const`、ghost 代入、`snapshot`、任意の正当化を持つ
-      `return` 文。
+      `ghost var` / `ghost const`、ghost 代入、`snapshot`、top-level `claim`
+      block、任意の正当化を持つ `return` 文。
     - 依存: 31、`mizar-syntax` task 13。仕様:
       [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)。
 
