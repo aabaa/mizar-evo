@@ -428,7 +428,8 @@ definition_implicit_vars ::= identifier_list ;
 parameter_qualification ::= ( "being" | "be" ) let_type ;
 definition_parameter_constraint ::= "such" conditions
                                   | "such" "that" formula
-                                    ( "by" references | proof ) ;
+                                    ( "by" references | proof )
+                                  | "by" references ;
 
 definitional_item  ::= struct_def
                      | inherit_def
