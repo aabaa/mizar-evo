@@ -2,65 +2,77 @@
 
 > Canonical language: English. English canonical version: [../en/appendix_a.grammar_summary.md](../en/appendix_a.grammar_summary.md).
 
-この付録には、主要仕様全体で導入されている EBNF 生成と語彙規則が統合されています。セクション番号は、ルールが規範的に定義されている章と一致します。ここのテキストは参照の概要であり、再定義ではありません。
+この付録は、parser と surface AST の作業で参照するための、章横断の正本文法サマリです。意味論、well-formedness、可視性、型検査、検証の振る舞いについては本文の各章が引き続き規範です。章本文に古い綴りや局所的な補助名が残っている場合、この付録は parser が従うべき正規化済みの文法向け形式を示します。
 
-* [A. 文法要約](#付録-a-文法概要)
-  * [A.2 語彙構造](#a2-語彙構造)
-    * [A.2.1 文字セット](#a21-文字セット)
-    * [A.2.2 空白](#a22-空白)
-    * [A.2.3 トークンのカテゴリ](#a23-tokenのカテゴリ)
-    * [A.2.4 予約​​語](#a24-予約語)
-    * [A.2.5 特殊記号](#a25-特殊記号)
-    * [A.2.6 識別子](#a26-識別子)
-    * [A.2.7 数値と文字列リテラル](#a27-数値と文字列リテラル)
-    * [A.2.8 ファイルとモジュールの命名](#a28-fileとmoduleの命名)
-    * [A.2.9 コメントと注釈](#a29-コメントと注釈)
-    * [A.2.10 レクサー/パーサーの責任分割](#a210-レクサーparserの責任分割)
-  * [A.3 タイプシステム](#a3-タイプシステム)
-    * [A.3.1 タイプカテゴリ](#a31-タイプカテゴリ)
-    * [A.3.2 型式の文法](#a32-型式の文法)
-    * [A.3.3 組み込み型](#a33-組み込み型)
-    * [A.3.4 サブ型の意味論](#a34-サブ型の意味論)
+## A.1 EBNF 記法と共有 alias
 
+この文法では次の記法を使います。
+
+- `::=` は生成規則を定義します。
+- `"token"` は予約語または予約記号 token です。
+- `[ item ]` は省略可能です。
+- `{ item }` は 0 回以上の繰り返しです。
+- `( a | b )` は選択肢のグループです。
+- `? ... ?` は字句上の文字クラスを記述します。
+
+章ごとの局所用語をそろえるための共通 alias は次の通りです。
+
+```ebnf
+label              ::= label_identifier ;
+nat_literal        ::= numeral ;
+term               ::= term_expression ;
+expr               ::= term_expression ;
+proof_block        ::= proof ;
+by_refs            ::= "by" references ";" ;
+proof_or_refs      ::= proof | by_refs ;
+
+symbol_name        ::= identifier | user_symbol ;
+def_symbol         ::= identifier | user_symbol ;
+field_name         ::= identifier ;
+selector           ::= field_name { "." field_name } ;
+inline_func_name   ::= identifier ;
+inline_pred_name   ::= identifier ;
+deffunc_identifier ::= identifier ;
+defpred_identifier ::= identifier ;
+scheme_name        ::= label_identifier ;
+```
+
+`term_expression` と `formula` は優先順位に基づく文法です。以下の生成規則では可能な範囲で直接左再帰を除いていますが、term レベルのユーザー演算子は、付録 B と第 10 章・第 13 章で定義される active operator table によって解析されます。
 
 ## A.2 語彙構造
 
-規格参照: [第 2 章 (語彙構造)](./02.lexical_structure.md)。
-
-### A.2.1 文字セット
-
-* source fileは **UTF-8** でエンコードされます。
-* **コード領域**は ASCII のみを使用します。
-* **コメントと注釈**には完全な Unicode が含まれる場合があります。
-* バックスラッシュ `\` は、文字列リテラル内のエスケープ文字です (§A.2.7)。
-
-### A.2.2 空白
+規範参照: [第 2 章 (語彙構造)](./02.lexical_structure.md)。
 
 ```ebnf
-whitespace    = " " | tab | newline ;
-tab           = ? ASCII 0x09 ? ;
-newline       = ? ASCII 0x0A | 0x0D 0x0A ? ;
+whitespace    ::= " " | tab | newline ;
+tab           ::= ? ASCII 0x09 ? ;
+newline       ::= ? ASCII 0x0A | 0x0D 0x0A ? ;
+
+identifier       ::= ( letter | "_" ) { letter | digit | "_" | "'" } ;
+label_identifier ::= identifier ;
+letter           ::= "a"..."z" | "A"..."Z" ;
+digit            ::= "0"..."9" ;
+
+numeral          ::= digit { digit } ;
+
+string_literal   ::= dq_string | sq_string ;
+dq_string        ::= '"' { dq_char | escape_seq } '"' ;
+sq_string        ::= "'" { sq_char | escape_seq } "'" ;
+dq_char          ::= ? any character except '"' or '\' ? ;
+sq_char          ::= ? any character except "'" or '\' ? ;
+escape_seq       ::= "\" ( '"' | "'" | "\" ) ;
+
+symbol_char      ::= ? any ASCII graphic character except "@" and whitespace ? ;
+user_symbol      ::= symbol_char { symbol_char } ;
+
+line_comment     ::= "::"  { character - newline } newline ;
+block_comment    ::= "::=" { character } "=::" ;
+doc_comment      ::= ":::" { character - newline } newline ;
 ```
 
-空白はtokenを区切るものであり、文字列リテラル内を除いて重要ではありません。
+予約語は大文字小文字を区別し、識別子またはユーザーシンボルとして使えません。
 
-### A.2.3 tokenのカテゴリ
-
-コメントの除去 (§A.2.9) とマクロレベルのインポート解決後の Mizar source fileは、次の 5 つのカテゴリから抽出された一連のtokenになります。
-
-1. **予約語** (§A.2.4) — 固定キーワード。
-2. **特殊記号** (§A.2.5) — 予約された句読点およびユーザー定義の記号名。
-3. **識別子** (§A.2.6) — ユーザーが選択した英数字の名前。
-4. **数値** (§A.2.7) — 符号なし整数リテラル。
-5. **文字列リテラル** (§A.2.7) — 引用符で囲まれた文字シーケンス。文法上の必要な位置でのみ認識されます。
-
-token化は、file-scoped active lexicon に対する **最長一致ルール** によって管理されます。この lexicon は final tokenization の前に top-of-file import prelude から一度だけ構築されます (§A.2.10)。
-
-### A.2.4 予約​​語
-
-予約語は大文字と小文字が区別され、識別子またはユーザー シンボルとして使用することはできません。
-
-```
+```text
 algorithm and antonym as assert assume assumed asymmetry attr
 be being break by
 case cases claim cluster coherence commutativity compatibility computation
@@ -88,194 +100,699 @@ var
 where while with
 ```
 
-### A.2.5 特殊記号
+予約特殊記号は次の通りです。
 
-#### 予約された特殊シンボル
-
-```
-,   .   ;   :   :=   (   )   [   ]   {   }   .{
+```text
+,   .   ..   ;   :   :=   (   )   [   ]   {   }   .{
 =   <>   &   ->   .=   .*   @[   ...
 ```
 
-|token |役割 |
-|---|---|
-| `,` `;` `:` |区切り文字 |
-| `:=` |割り当て — フィールド更新 (§13.3.3)、変数初期化 (§20.3.1)、アルゴリズム割り当て (§20.4) |
-| `.` |複合token オープナー、セレクター アクセス / 更新、namespaceセパレーター、またはユーザー登録のバイナリ functor (§A.2.5 ドット曖昧さ回避) - ユーザーによって再定義することもできる唯一の予約記号。
-| `.*` |一括引用 (§16.5) |
-| `.{` … `}` |グループ化された引用 (§16.5); `}` はセット/フランケルクローザーとしても機能します |
-| `@[` … `]` |library の注釈 (§21.2)。 `]` はリスト/インデックスクローザーとしても機能します。
-| `=` `<>` `.=` |等式、組み込み不等式、段階的変換 |
-| `->` |関数矢印 |
-| `...` |省略記号 |
-| `(` `)` `[` `]` `{` `}` `&` |標準的なグループ化と結合 |
+文字列リテラルは、文字列引数を要求する文法位置でのみ認識されます。現在は演算子宣言と文字列値 annotation が該当します。それ以外の位置では、引用符は通常の識別子またはユーザーシンボルの字句解析に参加します。
 
-#### ユーザー定義のシンボル名
+`.` が複合予約 token または active user symbol として消費されない場合、parser と resolver は、第 2 章で説明される文脈に従って selector access/update または namespace separator として分類します。
+
+## A.3 型式
+
+規範参照: [第 3 章 (型システム)](./03.type_system.md)。
 
 ```ebnf
-symbol_char = ? any ASCII graphic character except "@" and whitespace ? ;
-user_symbol = symbol_char { symbol_char } ;
+type_expression   ::= attribute_chain type_head ;
+type_head         ::= radix_type | mode_type ;
+
+attribute_chain   ::= { [ "non" ] attribute_ref } ;
+attribute_ref     ::= [ param_prefix ] [ struct_name "." ] attribute_name
+                      [ "(" argument_list ")" ] ;
+param_prefix      ::= parameter "-" | "(" parameter_list ")" "-" ;
+
+radix_type        ::= builtin_type | struct_name [ type_args ] ;
+mode_type         ::= mode_name [ type_args ] ;
+type_args         ::= ( "of" | "over" ) argument_list ;
+argument_list     ::= term_expression { "," term_expression } ;
+
+builtin_type      ::= "object" | "set" ;
+attribute_name    ::= qualified_symbol ;
+mode_name         ::= qualified_symbol ;
+struct_name       ::= qualified_symbol ;
+
+parameter_list    ::= parameter { "," parameter } ;
+parameter         ::= identifier | numeral ;
+qualified_symbol  ::= { namespace_segment "." } user_symbol ;
+namespace_segment ::= identifier ;
 ```
 
-`@` を除く任意の ASCII グラフィックが許容されます。ユーザーシンボルは、予約語または `.` 以外の予約された特殊シンボルと正確に一致してはなりません。最長一致により曖昧さが解決されます。後のインポートは、以前のインポートを同点でシャドウします。
+`qualified_symbol` の最後の token は active lexicon にある user symbol です。そのため、識別子形の symbol は、その lexicon で利用可能な場合に限って symbol として解析されます。
 
-#### ドットの曖昧さ回避 (parser側)
+## A.4 変数と定数
 
-§A.2.10 で採用されたレクサー/parserの分割では、`.` は単一の `DOT` tokenとして発行され、parserは優先順位に従ってその役割を解決します。
-
-1. **複合予約token** — `.{`、`.*`、`.=`、`...` は、必要な後続文字が存在する場合、レクサーによって直接認識されます。
-2. **`.` を含むユーザー定義シンボル** — 例: `|.`、`.|`、`|. .|`、または古典的な Mizar 形式 `f.x` を与えるバイナリfunctor `.`。レクサーは、アクティブなレキシコンに対する最長一致により、登録されたシンボルを認識します。
-3. **セレクター アクセス / 更新** — 用語式の直後にある `DOT` は、フィールド アクセス (`p.x`、`line.end.y`; §5.7、§13.3.2)、または `:=` の左側としてフィールド更新 (§13.3.3) を示します。
-4. **namespace区切り文字** — module参照として使用されるパス内の識別子間の `DOT` (`import`、引用 `by` 句、`@[...]`、または用語コンテキストが確立される前の修飾名内) は、namespaceコンポーネント (§A.2.8) を分離します。
-
-変数としてもスコープ内にあるnamespaceコンポーネントは、変数として解決されます。次の `.` は、namespace区切り文字ではなく、セレクター アクセスになります。
-
-### A.2.6 識別子
+規範参照: [第 4 章 (変数と定数)](./04.variables_and_constants.md)。
 
 ```ebnf
-identifier = ( letter | "_" ) { letter | digit | "_" | "'" } ;
-label_identifier = identifier ;
-letter     = "a"..."z" | "A"..."Z" ;
-digit      = "0"..."9" ;
+reserve_decl       ::= "reserve" reserve_segment ";" ;
+reserve_segment    ::= identifier_list "for" type_expression ;
+
+identifier_list    ::= identifier { "," identifier } ;
+
+let_decl           ::= "let" qualified_vars [ "such" conditions ] ";" ;
+qualified_vars     ::= identifier_list [ "be" type_expression ] ;
+
+set_decl           ::= "set" identifier "=" term_expression ";" ;
+
+reconsider_decl    ::= "reconsider" reconsider_target "as" type_expression
+                       [ simple_justification ] ";" ;
+reconsider_target  ::= identifier "=" term_expression | term_expression ;
+
+quantified_var     ::= identifier_list [ "being" type_expression ] ;
 ```
 
-識別子は予約語と一致してはなりません。識別子では大文字と小文字が区別されます。形状が識別子の文法と登録ユーザーのシンボルの両方に一致するtokenは、アクティブな辞書に表示される場合に限り、シンボルとして分類されます。
+statement レベルの形式は A.15 で正規化します。
 
-ラベルは`label_identifier`を使用します。これらは識別子tokenの形状を共有していますが、§16.4.2 および項目固有の章で説明されているラベルnamespaceを占有します。
+## A.5 構造体
 
-### A.2.7 数値と文字列リテラル
-
-#### 数字
+規範参照: [第 5 章 (構造体)](./05.structures.md)。
 
 ```ebnf
-numeral = digit { digit } ;
+struct_def       ::= "struct" struct_name [ type_params ] "where"
+                     struct_member { struct_member } "end" ";" ;
+struct_member    ::= field_decl | property_decl ;
+field_decl       ::= "field" identifier "->" type_expression
+                     [ ":=" term_expression ] ";" ;
+property_decl    ::= "property" identifier "->" type_expression ";" ;
+type_params      ::= ( "of" | "over" ) type_parameter_list ;
+type_parameter_list ::= identifier { "," identifier } ;
+
+inherit_def      ::= "inherit" struct_name "extends" parent_type
+                     [ "where" inherit_member { inherit_member }
+                       [ coherence_block ] "end" ] ";" ;
+parent_type      ::= struct_name | "set" ;
+inherit_member   ::= field_redef | property_redef ;
+field_redef      ::= "field" identifier [ "->" type_expression ]
+                     "from" ( identifier | "it" ) ";" ;
+property_redef   ::= "property" identifier [ "->" type_expression ]
+                     "from" identifier ";" ;
+
+struct_constructor ::= struct_name "(" [ named_arg { "," named_arg } ] ")" ;
+named_arg          ::= identifier ":" term_expression ;
+field_access       ::= term_expression "." field_name ;
 ```
 
-浮動小数点、ブール値、またはその他のリテラル型は組み込まれていません。非整数値はlibrary用語としてエンコードされます。
+## A.6 属性
 
-#### 文字列リテラル
+規範参照: [第 6 章 (属性)](./06.attributes.md)。
 
 ```ebnf
-string_literal  = dq_string | sq_string ;
-dq_string       = '"' { dq_char | escape_seq } '"' ;
-sq_string       = "'" { sq_char | escape_seq } "'" ;
-dq_char         = ? any character except '"' or '\' ? ;
-sq_char         = ? any character except "'" or '\' ? ;
-escape_seq      = "\" ( '"' | "'" | "\" ) ;
+attr_def       ::= "attr" label ":" subject "is" attr_pattern
+                   "means" formula ";" ;
+subject        ::= identifier ;
+attr_pattern   ::= [ param_prefix ] attribute_name ;
+
+redefine_attr  ::= "redefine" "attr" label ":" subject "is" attr_pattern
+                   "means" formula ";"
+                   "coherence" [ "with" label ] proof_or_refs ;
 ```
 
-**コンテキスト認識**: `"` および `'` は、**文字列リテラル引数を必要とする文法の位置でのみ**、文字列区切り文字としてtoken化されます。ドキュメント コメントの外側では、すべての文字列リテラルは、指定されたフォーム内の `(` または `,` の直後に表示されます。他のすべての位置では、識別子またはユーザー定義シンボルの一部として通常の字句解析に参加します。特に、後置逆演算子 `f"` (§11) は、文字列区切り文字ではなく、`"` のユーザー シンボルの使用です。
+型式内での属性利用は A.3 にまとめています。
 
-現在文字列リテラルが必要な文法位置:
+## A.7 モード
 
-|ポジション |参考資料 |
-|---|---|
-| `infix_operator(STRING, ...)`、`prefix_operator(STRING, ...)`、`postfix_operator(STRING, ...)` — 最初の引数 | §10.7、§13 |
-| `@latex(STRING)` およびその他の文字列値の注釈引数 | §21 |
-
-### A.2.8 fileとmoduleの命名
-
-* fileは `.miz` で終わります。
-* 各fileは 1 つのmoduleを定義します。module名は拡張子なしのfile名と同じです。
-* namespaceは、パッケージの `src/` ルートを基準としたfileのパスから派生します。パッケージ名 (`mizar.pkg` から) はnamespaceのルートです。 `src/` の下の各中間ディレクトリは、1 つの点線コンポーネントを提供します。 [§23.3](./23.package_management_and_build_system.md#233-ワークスペースのレイアウト)を参照してください。
-
-例 — パッケージ `algebra`、file `algebra/src/groups/basic.miz`:
-
-```
-Module name:  basic
-Namespace:    algebra.groups.basic
-```
-
-### A.2.9 コメントと注釈
+規範参照: [第 7 章 (モード)](./07.modes.md)。
 
 ```ebnf
-line_comment   = "::"  { character - newline } newline ;
-block_comment  = "::=" { character } "=::" ;
-doc_comment    = ":::" { character - newline } newline ;
+mode_def       ::= "mode" label ":" mode_name [ type_params ] "is"
+                   attribute_chain radix_type ";"
+                   [ mode_property ] ;
+mode_property  ::= "sethood" justification ";" ;
 
-annotation_name  = "@" identifier ;
-library_annot    = "@[" label_name { "," label_name } "]" ;
-label_name       = label_identifier [ "(" annotation_args ")" ] ;
-annotation_args  = annotation_arg { "," annotation_arg } ;
-annotation_arg   = identifier | numeral | string_literal ;
+property_impl        ::= "definition"
+                           "let" identifier "be" mode_name ";"
+                           ( property_means_impl | property_equals_impl )
+                         "end" ";" ;
+property_means_impl  ::= "property" identifier "." identifier "means" formula ";"
+                         existence_block uniqueness_block ;
+property_equals_impl ::= "property" identifier "." identifier
+                         "equals" term_expression ";" ;
+
+mode_application     ::= mode_name [ type_args ] ;
 ```
 
-* コメントは解析前に削除されます (§A.2.10)。
-* `@` の直後には識別子が続く必要があります (空白は不可)。
-* 注釈名には `snake_case` が使用されます。レジストリは固定されており、インポートによって拡張できません。
-* 3 つの注釈コンテキスト: ステートメント レベル、`:::` コメント内のドキュメント タグ、および括弧形式のlibrary参照 `@[...]`。
+## A.9 述語
 
-### A.2.10 レクサー/parserの責任分割
-
-字句解析と解析は次のように分割されます (§2 の説明を参照)。
-
-|懸念事項 |レイヤー |
-|---|---|
-|コメントの削除 |前処理 |
-|import prelude scan and import resolution |前処理 (final tokenization 前) |
-|予約語 / 予約された特殊記号 |レクサー |
-|ユーザー記号認識 (アクティブな辞書、最長一致) |レクサー |
-|数字認識 |レクサー |
-| `"` / `'` 文字列リテラル認識 |parser支援 (文字列が必要な位置でのみ有効) |
-| `.` ロールの割り当て (セレクター vs namespace vs 複合 vs ユーザーfunctor) |parser + ネームリゾルバー |
-|namespaceパスの変数シャドウイング |ネームリゾルバー |
-
-レクサーは均一なtoken ストリームを発行します。 `"`、`'`、および `.` のコンテキスト依存の解釈は、アクティブなレキシコンと現在のスコープに対してparserとネーム リゾルバーによって実行されます。
-
-
-## A.3 タイプシステム
-
-規格参照: [第3章 (型システム)](./03.type_system.md)。 Mizar は、型なし集合理論を層にした **ソフト型システム** を使用します。型はチェックと可読性をガイドしますが、論理コアについては消去されます。
-
-### A.3.1 タイプカテゴリ
-
-|カテゴリー |役割 | | で定義
-|---|---|---|
-|基数型 |型階層のルート — 組み込み (`object`、`set`) およびユーザー定義構造体 | §A.3.3、第 5 章 |
-|モードの種類 |名前付きタイプ。それぞれは `attribute_chain radix_type` に展開します。第7章 |
-|属性 |型を絞り込む述語 |第6章 |
-|クラスター |型推論の登録メカニズム |第17章 |
-
-基数型とモード型は 2 つの素な構文カテゴリを形成し、どちらも型式の先頭で使用できます。
-
-### A.3.2 型式の文法
+規範参照: [第 9 章 (述語)](./09.predicates.md)。
 
 ```ebnf
-type_expression   = attribute_chain type_head ;
-type_head         = radix_type | mode_type ;
-attribute_chain   = { [ "non" ] attribute_ref } ;
-attribute_ref     = [ param_prefix ] [ struct_name "." ] attribute_name ;
-param_prefix      = parameter "-" | "(" parameter_list ")" "-" ;
+pred_def         ::= "pred" label ":" pred_pattern "means" formula ";" ;
+pred_pattern     ::= [ loci ] predicate_symbol [ loci ] ;
+loci             ::= locus | "(" locus_list ")" ;
+locus_list       ::= locus { "," locus } ;
+locus            ::= identifier ;
+predicate_symbol ::= def_symbol ;
 
-radix_type        = builtin_type | struct_name [ type_args ] ;
-mode_type         = mode_name [ type_args ] ;
+redefine_pred    ::= "redefine" "pred" pred_pattern "means" formula ";"
+                     "coherence" [ "with" label ] proof_or_refs ;
 
-type_args         = ( "of" | "over" ) argument_list ;
-argument_list     = term_expression { "," term_expression } ;
+pred_property    ::= ( "symmetry" | "asymmetry" | "connectedness"
+                     | "reflexivity" | "irreflexivity" ) justification ";" ;
 
-builtin_type      = "object" | "set" ;
-attribute_name    = qualified_symbol ;   (* registered by Ch.6 *)
-mode_name         = qualified_symbol ;   (* registered by Ch.7 *)
-struct_name       = qualified_symbol ;   (* registered by Ch.5 *)
+predicate_application ::= [ term_list ] [ negation ] predicate_symbol [ term_list ] ;
+negation              ::= "does" "not" | "do" "not" ;
+term_list             ::= term_expression { "," term_expression } ;
+builtin_pred          ::= "in" | "=" | "<>" ;
 ```
 
-* `qualified_symbol` は、第 12 章 §12.7 で `{ namespace_segment "." } user_symbol` として定義されており、`namespace_segment` は `identifier` です。 `Group` や `std.algebra.Group` など、裸の形式とnamespace修飾された形式の両方をサポートします。
-* `struct_name "." attribute_name` は、構造体修飾された属性参照です。チェーン内のすべての `.` は、§A.2.5 (ドットの曖昧さ回避、規則 4) のnamespace区切り規則に従い、スコープ内の変数によってシャドウされたセグメントはセレクター アクセスとして再解釈されます。
-* `qualified_symbol` (§A.2.5.2) の末尾の `user_symbol` は、定義章 (Ch.5 構造体 / Ch.6 属性 / Ch.7 モード) によって登録された、アクティブな辞書内に存在する必要があります。
-* `parameter`、`parameter_list`は18章で定義されたtemplateパラメータです。
-* `type_args` と `param_prefix` には、Ch.18 で導入された代替ブラケット形式のプロダクションがあります。これらの形式は上記の形式を拡張しますが、置き換えるものではありません。
+## A.10 functor と演算子宣言
 
-### A.3.3 組み込み型
+規範参照: [第 10 章 (functor)](./10.functors.md)。
 
-|タイプ |説明 |
-|---|---|
-| `object` |ユニバーサル タイプ — Mizar ユニバースのすべての値 (構造体を含む) |
-| `set` | ZFC スタイルの数学セット。 `object` のサブタイプ |
+```ebnf
+func_def         ::= "func" label ":" func_pattern "->" type_expression
+                     ( "means" formula | "equals" term_expression ) ";"
+                     [ correctness_conditions ] ;
+func_pattern     ::= [ loci ] functor_symbol [ loci ] ;
+functor_symbol   ::= def_symbol ;
 
-`struct` で定義された型は、`object` のサブタイプですが、`set` のサブタイプではありません。
+func_property    ::= ( "commutativity" | "idempotence"
+                     | "involutiveness" | "projectivity" )
+                     justification ";" ;
 
-### A.3.4 サブ型の意味論
+redefine_func    ::= "redefine" "func" label ":" func_pattern
+                     "->" type_expression
+                     ( "means" formula | "equals" term_expression ) ";"
+                     "coherence" [ "with" label ] proof_or_refs ;
 
-「`S` は `T` のサブタイプです」は、`S` のすべてのメンバーが `T` のメンバーであり、FOL では `∀x. is_S(x) ⇒ is_T(x)` としてエンコードされることを意味します。 (スーパータイプへの) 拡張は自動的に行われます。 (サブタイプに) 絞り込むには、証明義務のある `reconsider` (Ch.15) が必要です。
+operator_decl    ::= infix_operator_decl
+                   | prefix_operator_decl
+                   | postfix_operator_decl ;
+infix_operator_decl   ::= "infix_operator" "(" string_literal ","
+                          infix_assoc "," nat_literal ")" ";" ;
+prefix_operator_decl  ::= "prefix_operator" "(" string_literal ","
+                          nat_literal ")" ";" ;
+postfix_operator_decl ::= "postfix_operator" "(" string_literal ","
+                          nat_literal ")" ";" ;
+infix_assoc           ::= "left" | "right" | "none" ;
+```
 
-ATP にエクスポートするときに型は消去されます。変数宣言は型なしになり、型の仮定は仮説になり、属性チェーンは結合になります。
+functor application の構文は term expression とともに A.13 にまとめています。
+
+## A.11 シンボル管理
+
+規範参照: [第 11 章 (シンボル管理)](./11.symbol_management.md)。
+
+```ebnf
+synonym_def    ::= "synonym" alt_pattern "for" original_pattern ";" ;
+antonym_def    ::= "antonym" alt_pattern "for" original_pattern ";" ;
+
+alt_pattern      ::= pred_pattern | func_pattern | mode_pattern | attr_pattern ;
+original_pattern ::= pred_pattern | func_pattern | mode_pattern | attr_pattern ;
+mode_pattern     ::= mode_name [ type_params ] ;
+```
+
+import 構文は A.12 で正規化します。この付録では可視性を `visibility ::= "private" | "public"` として表します。可視性を省略可能な `"private"` として扱う古い章内表現は互換用の説明です。
+
+## A.12 モジュールと namespace
+
+規範参照: [第 12 章 (モジュールと namespace)](./12.modules_and_namespaces.md)。
+
+```ebnf
+compilation_unit   ::= import_prelude export_prelude { declaration } ;
+
+import_prelude     ::= { import_stmt } ;
+export_prelude     ::= { export_stmt } ;
+
+import_stmt        ::= "import" module_alias_decl
+                       { "," module_alias_decl } ";" ;
+export_stmt        ::= "export" module_path { "," module_path } ";" ;
+
+module_alias_decl  ::= module_path [ "as" module_identifier ]
+                     | module_branch_import ;
+module_branch_import ::= module_path ".{" module_identifier
+                       { "," module_identifier } "}" ;
+module_path        ::= [ relative_prefix ] module_identifier
+                       { "." module_identifier } ;
+relative_prefix    ::= "." | ".." ;
+module_identifier  ::= identifier ;
+
+declaration        ::= definition_block
+                     | reserve_decl
+                     | template_def
+                     | registration_block
+                     | claim_block
+                     | [ visibility ] theorem_item
+                     | [ visibility ] notation_decl ;
+
+visibility         ::= "private" | "public" ;
+
+definition_block   ::= "definition" { definition_content } "end" ";" ;
+definition_content ::= parameter_decl
+                     | assumption
+                     | correctness_condition
+                     | property_item
+                     | [ visibility ] definitional_item ;
+
+parameter_decl     ::= "let" variable_list [ qualification ]
+                       [ "such" conditions ] ";" ;
+
+definitional_item  ::= struct_def
+                     | inherit_def
+                     | attr_def
+                     | redefine_attr
+                     | mode_def
+                     | property_impl
+                     | pred_def
+                     | redefine_pred
+                     | func_def
+                     | redefine_func
+                     | algorithm_def
+                     | notation_decl ;
+
+notation_decl      ::= operator_decl | synonym_def | antonym_def ;
+property_item      ::= pred_property | func_property | mode_property ;
+correctness_condition ::= existence_block
+                        | uniqueness_block
+                        | coherence_block
+                        | compatibility_block
+                        | consistency_block
+                        | reducibility_block ;
+```
+
+## A.13 項式
+
+規範参照: [第 13 章 (項式)](./13.term_expression.md)。
+
+```ebnf
+term_expression      ::= operator_expression { "qua" type_expression } ;
+
+operator_expression  ::= term_primary { term_postfix } ;
+term_primary         ::= variable_identifier
+                       | "it"
+                       | numeral
+                       | "(" term_expression ")"
+                       | struct_constructor
+                       | set_expression
+                       | choice_expression
+                       | inline_functor_application
+                       | bracket_functor_application ;
+
+term_postfix         ::= "." field_name
+                       | "with" "(" field_update_list ")" ;
+
+variable_identifier ::= identifier ;
+
+inline_functor_application ::= inline_func_name "(" [ term_list ] ")" ;
+
+functor_application  ::= operator_expression ;
+functor_loci         ::= locus | "(" term_list ")" ;
+bracket_functor_application ::= user_symbol term_list user_symbol ;
+
+field_update_list    ::= field_update { "," field_update } ;
+field_update         ::= selector ":" term_expression ;
+
+set_expression       ::= set_enumeration | set_comprehension ;
+set_enumeration      ::= "{" [ term_list ] "}" ;
+set_comprehension    ::= "{" term_expression "where" typed_var_list
+                         [ ":" formula ] "}" ;
+typed_var_list       ::= typed_var { "," typed_var } ;
+typed_var            ::= identifier "is" type_expression ;
+
+choice_expression    ::= "the" type_expression ;
+qua_expression       ::= operator_expression "qua" type_expression
+                         { "qua" type_expression } ;
+```
+
+`operator_expression` は、active な prefix、infix、postfix、bracket functor 宣言によって拡張されます。parser 実装では、これらの演算子を直接左再帰 EBNF として展開せず、付録 B の優先順位・結合性 table を使います。
+
+## A.14 論理式
+
+規範参照: [第 14 章 (論理式)](./14.formulas.md)。
+
+```ebnf
+formula              ::= quantified_formula | iff_formula ;
+
+quantified_formula   ::= universal_formula | existential_formula ;
+universal_formula    ::= "for" quantified_vars [ "st" formula ]
+                         ( "holds" formula | quantified_formula ) ;
+existential_formula  ::= "ex" quantified_vars "st" formula ;
+
+iff_formula          ::= implies_formula [ "iff" implies_formula ] ;
+implies_formula      ::= or_formula [ "implies" implies_formula ] ;
+or_formula           ::= and_formula
+                         { "or" and_formula
+                         | "or" "..." "or" and_formula } ;
+and_formula          ::= not_formula
+                         { "&" not_formula
+                         | "&" "..." "&" not_formula } ;
+not_formula          ::= "not" not_formula
+                       | atomic_formula
+                       | "(" formula ")"
+                       | "contradiction"
+                       | "thesis" ;
+
+atomic_formula       ::= predicate_application
+                       | inline_predicate_application
+                       | type_assertion
+                       | attribute_assertion ;
+
+inline_predicate_application ::= inline_pred_name "(" [ term_list ] ")" ;
+type_assertion               ::= term_expression "is" type_expression ;
+attribute_assertion          ::= term_expression "is" [ "not" ] attribute_chain ;
+
+quantified_vars      ::= explicit_vars [ "," implicit_vars ] | implicit_vars ;
+explicit_vars        ::= quantified_segment { "," quantified_segment } ;
+quantified_segment   ::= var_list ( "being" | "be" ) type_expression ;
+implicit_vars        ::= var_list ;
+var_list             ::= identifier { "," identifier } ;
+```
+
+`iff` は非結合です。括弧なしで `iff` を連鎖させると構文エラーです。
+
+## A.15 文、証明、参照
+
+規範参照: [第 15 章 (文)](./15.statements.md) および [第 16 章 (定理と証明)](./16.theorems_and_proofs.md)。
+
+```ebnf
+reasoning           ::= { statement } ;
+proof               ::= "proof" reasoning "end" ;
+
+statement           ::= [ "then" ] linkable_statement
+                      | standalone_statement ;
+
+linkable_statement  ::= compact_statement
+                      | conclusion
+                      | choice_statement
+                      | type_changing_statement
+                      | iterative_equality
+                      | case_reasoning ;
+
+standalone_statement ::= generalization
+                       | constant_definition
+                       | inline_functor_definition
+                       | inline_predicate_definition
+                       | assumption
+                       | diffuse_statement
+                       | diffuse_conclusion
+                       | exemplification ;
+
+generalization               ::= "let" variable_list [ qualification ]
+                                 [ "such" conditions ] ";" ;
+constant_definition          ::= "set" identifier "=" term_expression ";" ;
+inline_functor_definition    ::= "deffunc" identifier "(" [ typed_params ] ")"
+                                 "->" type_expression "equals"
+                                 term_expression ";" ;
+inline_predicate_definition  ::= "defpred" identifier "(" [ typed_params ] ")"
+                                 "means" formula ";" ;
+typed_params                 ::= typed_param { "," typed_param } ;
+typed_param                  ::= identifier ( "being" | "be" ) type_expression ;
+
+assumption                   ::= single_assumption
+                               | collective_assumption
+                               | existential_assumption ;
+single_assumption            ::= "assume" proposition ";" ;
+collective_assumption        ::= "assume" conditions ";" ;
+existential_assumption       ::= "given" variable_list [ qualification ]
+                                 [ "such" conditions ] ";" ;
+choice_statement             ::= "consider" identifier qualification "such"
+                                 conditions simple_justification ";" ;
+
+conclusion                   ::= ( "thus" | "hence" ) proposition
+                                 justification ";" ;
+diffuse_conclusion           ::= "hereby" reasoning "end" ;
+exemplification              ::= "take" example ";" ;
+example                      ::= term_expression | identifier "=" term_expression ;
+
+type_changing_statement      ::= "reconsider" reconsider_item "as"
+                                 type_expression simple_justification ";" ;
+reconsider_item              ::= identifier | identifier "=" term_expression ;
+
+compact_statement            ::= proposition justification ";" ;
+iterative_equality           ::= [ label_identifier ":" ] term_expression
+                                 "=" term_expression simple_justification
+                                 { ".=" term_expression simple_justification } ";" ;
+diffuse_statement            ::= [ label_identifier ":" ] "now" reasoning "end" ;
+
+case_reasoning               ::= "per" "cases" simple_justification ";"
+                                 ( case_list | suppose_list ) ;
+case_list                    ::= case_item { case_item } ;
+suppose_list                 ::= suppose_item { suppose_item } ;
+case_item                    ::= "case" ( proposition | conditions ) ";"
+                                 reasoning "end" ;
+suppose_item                 ::= "suppose" ( proposition | conditions ) ";"
+                                 reasoning "end" ;
+
+proposition                  ::= [ label_identifier ":" ] formula ;
+conditions                   ::= "that" proposition { "and" proposition } ;
+variable_list                ::= identifier { "," identifier } ;
+qualification                ::= ( "being" | "be" ) type_expression ;
+
+justification                ::= simple_justification | proof | computation_proof ;
+simple_justification         ::= [ "by" references ] ;
+references                   ::= reference { "," reference } ;
+reference                    ::= label_identifier [ template_args ]
+                               | qualified_reference [ template_args ]
+                               | grouped_reference
+                               | bulk_reference ;
+qualified_reference          ::= namespace_path "." label_identifier ;
+grouped_reference            ::= namespace_path ".{" grouped_item
+                                 { "," grouped_item } "}" ;
+grouped_item                 ::= label_identifier [ template_args ] ;
+bulk_reference               ::= namespace_path ".*" ;
+namespace_path               ::= identifier { "." identifier } ;
+template_args                ::= "[" template_arg { "," template_arg } "]" ;
+template_arg                 ::= type_expression
+                               | coercion_arg
+                               | defpred_identifier
+                               | deffunc_identifier ;
+coercion_arg                 ::= identifier "as" radix_type ;
+```
+
+## A.16 定理と correctness block
+
+規範参照: [第 16 章 (定理と証明)](./16.theorems_and_proofs.md)。
+
+```ebnf
+theorem_item     ::= [ theorem_status ] theorem_role label_identifier ":"
+                     formula [ justification ] ";" ;
+theorem_status   ::= "open" | "assumed" | "conditional" ;
+theorem_role     ::= "theorem" | "lemma" ;
+
+correctness_conditions ::= { correctness_condition } ;
+existence_block        ::= "existence" proof_or_refs ;
+uniqueness_block       ::= "uniqueness" proof_or_refs ;
+coherence_block        ::= "coherence" proof_or_refs ;
+compatibility_block    ::= "compatibility" proof_or_refs ;
+consistency_block      ::= "consistency" proof_or_refs ;
+reducibility_block     ::= "reducibility" proof_or_refs ;
+```
+
+## A.17 cluster と registration
+
+規範参照: [第 17 章 (cluster と registration)](./17.clusters_and_registrations.md)。
+
+```ebnf
+registration_block ::= "registration" { registration_content } "end" ";" ;
+registration_content ::= parameter_decl | registration_item ;
+
+registration_item  ::= existential_registration
+                     | conditional_registration
+                     | functorial_registration
+                     | reduction_registration ;
+
+existential_registration ::= "cluster" label ":" adjective_list
+                             type_expression ";"
+                             "existence" justification ";" ;
+conditional_registration ::= "cluster" label ":" antecedent_adjectives
+                             "->" consequent_adjectives
+                             "for" type_expression ";"
+                             "coherence" justification ";" ;
+functorial_registration  ::= "cluster" label ":" functor_term
+                             "->" consequent_adjectives
+                             "for" type_expression ";"
+                             "coherence" justification ";" ;
+reduction_registration   ::= "reduce" label ":" term_expression
+                             "to" term_expression ";"
+                             "reducibility" justification ";" ;
+
+adjective_list        ::= adjective { adjective } ;
+adjective             ::= [ "non" ] [ param_prefix ] attribute_name ;
+antecedent_adjectives ::= adjective_list ;
+consequent_adjectives ::= adjective_list ;
+functor_term          ::= functor_application ;
+```
+
+## A.18 template
+
+規範参照: [第 18 章 (template)](./18.templates.md)。
+
+```ebnf
+template_def    ::= "definition" { let_param } { template_item } "end" ";" ;
+
+let_param       ::= "let" identifier_list "be" let_type
+                    [ "such" "that" formula
+                      ( "by" references | proof ) ] ";" ;
+let_type        ::= "type" [ "extends" bound_type ] | type_expression ;
+bound_type      ::= [ attribute_chain ] radix_type ;
+
+template_item   ::= attr_def
+                  | mode_def
+                  | struct_def
+                  | pred_def
+                  | func_def
+                  | algorithm_def
+                  | theorem_item
+                  | registration_item ;
+
+pred_param      ::= identifier "be" "pred" "(" type_list ")" ;
+func_param      ::= identifier "be" "func" "(" type_list ")" "->"
+                    type_expression ;
+type_list       ::= type_expression { "," type_expression } ;
+
+param_name      ::= identifier [ "[" type_arg_list "]" ] ;
+type_arg_list   ::= type_arg { "," type_arg } ;
+type_arg        ::= type_expression | qua_arg ;
+qua_arg         ::= identifier { "qua" radix_type } ;
+
+scheme_app      ::= "by" scheme_name template_args
+                    { "," label_identifier } ";" ;
+```
+
+## A.20 algorithm と computation
+
+規範参照: [第 20 章 (algorithm と検証)](./20.algorithm_and_verification.md)。
+
+```ebnf
+algorithm_def ::= [ "terminating" ] "algorithm" identifier
+                  [ "[" schema_params "]" ]
+                  "(" [ identifier_list ] ")"
+                  [ "->" type_expression ]
+                  [ "requires" formula ]
+                  [ "ensures" formula ]
+                  [ "decreasing" term_list ]
+                  algorithm_body ";" ;
+
+schema_params      ::= identifier { "," identifier } ;
+algorithm_body     ::= "do" algo_statement_list "end" ;
+algo_statement_list ::= { algo_statement } ;
+
+algo_statement     ::= var_decl
+                     | ghost_var_decl
+                     | const_decl
+                     | ghost_const_decl
+                     | assignment
+                     | ghost_assignment
+                     | if_stmt
+                     | while_stmt
+                     | for_range_stmt
+                     | for_collection_stmt
+                     | match_stmt
+                     | return_stmt
+                     | break_stmt
+                     | continue_stmt
+                     | assert_stmt
+                     | snapshot_stmt
+                     | claim_block ;
+
+var_decl           ::= "var" var_binding { "," var_binding }
+                       [ "as" type_expression [ justification ] ] ";" ;
+ghost_var_decl     ::= "ghost" "var" var_binding { "," var_binding }
+                       [ "as" type_expression [ justification ] ] ";" ;
+const_decl         ::= "const" const_binding { "," const_binding }
+                       [ "as" type_expression [ justification ] ] ";" ;
+ghost_const_decl   ::= "ghost" "const" const_binding { "," const_binding }
+                       [ "as" type_expression [ justification ] ] ";" ;
+var_binding        ::= identifier [ ":=" term_expression ] ;
+const_binding      ::= identifier ":=" term_expression ;
+
+assignment         ::= lvalue ":=" term_expression ";" ;
+ghost_assignment   ::= "ghost" lvalue ":=" term_expression ";" ;
+lvalue             ::= identifier { "." identifier } ;
+
+if_stmt            ::= "if" formula "do" algo_statement_list if_tail ;
+if_tail            ::= "end" ";"
+                     | "else" if_stmt
+                     | "else" algo_statement_list "end" ";" ;
+
+while_stmt         ::= "while" formula "do"
+                       { while_annotation ";" }
+                       algo_statement_list "end" ";" ;
+while_annotation   ::= "invariant" formula [ justification ]
+                     | "decreasing" term_list [ justification ] ;
+
+for_range_stmt     ::= "for" identifier "=" term_expression
+                       ( "to" | "downto" ) term_expression
+                       [ "step" term_expression ]
+                       "do" { for_annotation ";" }
+                       algo_statement_list "end" ";" ;
+for_collection_stmt ::= "for" identifier "in" term_expression
+                        [ "processed" identifier ] "do"
+                        { for_annotation ";" }
+                        algo_statement_list "end" ";" ;
+for_annotation     ::= "invariant" formula [ justification ] ;
+
+match_stmt         ::= "match" term_expression "do"
+                       match_case { match_case }
+                       ( "otherwise" algo_statement_list "end" ";"
+                       | exhaustiveness_proof )
+                       "end" ";" ;
+match_case         ::= "case" term_pattern "do"
+                       algo_statement_list "end" ";" ;
+term_pattern       ::= term_expression ;
+exhaustiveness_proof ::= "exhaustive" [ justification ] ";" ;
+
+return_stmt        ::= "return" [ term_expression [ justification ] ] ";" ;
+break_stmt         ::= "break" ";" ;
+continue_stmt      ::= "continue" ";" ;
+assert_stmt        ::= "assert" formula [ justification ] ";" ;
+snapshot_stmt      ::= "snapshot" identifier ";" ;
+
+claim_block        ::= "claim" identifier "do" { theorem_item } "end" ";" ;
+
+computation_proof  ::= "by" "computation"
+                       [ "(" computation_option
+                         { "," computation_option } ")" ] ;
+computation_option ::= "steps" ":" nat_literal
+                     | "timeout" ":" nat_literal
+                     | "nest" ":" nat_literal ;
+
+pick_expr          ::= "the" type_expression ;
+```
+
+## A.21 annotation
+
+規範参照: [第 21 章 (ソースコード annotation と ATP 連携)](./21.source_code_annotation_and_atp.md)。
+
+```ebnf
+annotation_name     ::= "@" identifier ;
+annotation          ::= library_annotation
+                      | statement_annotation
+                      | latex_annotation
+                      | proof_hint_annotation
+                      | show_thesis_annotation
+                      | show_resolution_annotation
+                      | show_type_annotation
+                      | eval_annotation
+                      | suppress_annotation ;
+
+statement_annotation ::= annotation_name [ "(" annotation_args ")" ] ;
+
+library_annotation  ::= "@[" label_list "]" ;
+label_list          ::= label_name { "," label_name } ;
+label_name          ::= label_identifier [ "(" annotation_args ")" ] ;
+annotation_args     ::= annotation_arg { "," annotation_arg } ;
+annotation_arg      ::= identifier | nat_literal | string_literal ;
+
+latex_annotation    ::= "@latex" "(" string_literal ")" ;
+
+proof_hint_annotation ::= "@proof_hint" "(" proof_hint_options ")" ;
+proof_hint_options    ::= proof_hint_option { "," proof_hint_option } ;
+proof_hint_option     ::= "max_axioms" ":" nat_literal
+                        | "timeout" ":" nat_literal
+                        | "solver" ":" solver_name ;
+solver_name           ::= "vampire" | "e" | "cvc5" | "z3" | "auto" ;
+
+show_thesis_annotation     ::= "@show_thesis" ;
+show_resolution_annotation ::= "@show_resolution" ;
+show_type_annotation       ::= "@show_type" "(" term_expression ")" ;
+eval_annotation            ::= "@eval" "(" term_expression ")" ;
+suppress_annotation        ::= "@suppress" "(" identifier ")" ;
+```
+
+## A.22 追加の表層文法を持たない章
+
+第 8 章、第 19 章、第 22 章、第 23 章、第 24 章は、主に推論、overload resolution、診断、package/build、documentation generation を定義します。これらは上でまとめた構文に依存し、すでに列挙した annotation と reference 形式を超える parser-owned surface form は追加しません。
