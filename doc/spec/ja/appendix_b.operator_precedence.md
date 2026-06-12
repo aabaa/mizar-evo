@@ -79,8 +79,11 @@ a %% b %% c     :: error, if %% is a non-associative term operator
 は `formula` を含みます。atomic-formula 境界では、parser はまず term-headed な
 atomic formula を完成させようとします。括弧内に `implies`、`iff`、`&`、`or`、
 quantifier など formula 専用の構文が含まれる場合、その括弧 group は term ではなく
-formula operand として分類されます。たとえば `(a + b) = c` は括弧付き term から始まり、
-`(P implies Q) & R` は括弧付き formula から始まります。
+formula operand として分類されます。括弧内の parse が `=`、`<>`、`in`、`is`
+などの atomic formula boundary operator に到達するため完全な `term_expression`
+として消費できない場合も、同じ再分類を行います。たとえば `(a + b) = c` は
+括弧付き term から始まり、`(P implies Q) & R` と `(x = y) & R` は括弧付き
+formula から始まります。
 
 Predicate-chain notation is resolved at the atomic-formula boundary, not as
 term-operator associativity. For example, after predicate resolution,

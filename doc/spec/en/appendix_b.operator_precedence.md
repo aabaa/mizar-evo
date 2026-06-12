@@ -80,8 +80,11 @@ is expected, `( ... )` contains a `formula`. At an atomic-formula boundary the
 parser first attempts to complete a term-headed atomic formula; if the
 parenthesized contents contain formula-only syntax such as `implies`, `iff`,
 `&`, `or`, or a quantifier, the parenthesized group is classified as a formula
-operand instead. For example, `(a + b) = c` starts from a parenthesized term,
-whereas `(P implies Q) & R` starts from a parenthesized formula.
+operand instead. The same reclassification is required when the contents cannot
+be consumed as a complete `term_expression` because their parse reaches an
+atomic formula boundary operator such as `=`, `<>`, `in`, or `is`. For example,
+`(a + b) = c` starts from a parenthesized term, whereas `(P implies Q) & R` and
+`(x = y) & R` start from parenthesized formulas.
 
 Predicate-chain notation is resolved at the atomic-formula boundary, not as
 term-operator associativity. For example, after predicate resolution,
