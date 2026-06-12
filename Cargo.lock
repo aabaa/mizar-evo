@@ -366,6 +366,10 @@ dependencies = [
 [[package]]
 name = "mizar-test"
 version = "0.1.0"
+dependencies = [
+ "mizar-frontend",
+ "mizar-session",
+]
 
 [[package]]
 name = "num-traits"

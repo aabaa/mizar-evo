@@ -65,6 +65,7 @@ pub struct Expectation {
     pub diagnostic_codes: Vec<String>,
     pub diagnostic_payloads: Vec<String>,
     pub stable_detail_key: Option<String>,
+    pub tags: Vec<String>,
     pub tokens: Vec<TokenExpectation>,
 }
 
@@ -173,6 +174,16 @@ fn expectation_from_table(
         })
         .collect::<Result<Vec<_>, _>>()?;
     let stable_detail_key = toml_lite::optional_string(table, "stable_detail_key")?;
+    let tags = optional_string_array(table, "tags")?
+        .into_iter()
+        .map(|tag| {
+            if tag.is_empty() {
+                Err("`tags` entries must not be empty".to_owned())
+            } else {
+                Ok(tag)
+            }
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     for (field, value) in [
         ("failure_category", failure_category.as_deref()),
         ("rejection_reason", rejection_reason.as_deref()),
@@ -231,6 +242,7 @@ fn expectation_from_table(
         diagnostic_codes,
         diagnostic_payloads,
         stable_detail_key,
+        tags,
         tokens,
     })
 }
@@ -365,7 +377,7 @@ fn validate_known_fields(table: &TomlTable) -> Result<(), String> {
 }
 
 fn validate_optional_metadata_fields(table: &TomlTable) -> Result<(), String> {
-    for key in ["profiles", "tags", "snapshot_profiles"] {
+    for key in ["profiles", "snapshot_profiles"] {
         if table.contains_key(key) {
             toml_lite::string_array(table, key)?;
         }

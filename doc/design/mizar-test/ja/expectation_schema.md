@@ -220,9 +220,22 @@ Parse-only fixtures は semantic validation なしで syntactic acceptance、rej
 ```toml
 stage = "parse_only"
 expected_phase = "parse"
+tags = ["active_parse_only"]
 ast_profile = "surface"
 snapshot_profiles = ["surface_ast"]
 ```
+
+parse-only corpus runner は、`active_parse_only` tag を持つ `.miz` の pass/fail
+sidecar だけを実行する。tag のない parse-only sidecar は引き続き discover と
+trace の対象だが、将来の grammar 作業用の inactive seed metadata に留める。
+現在の runner では、`diagnostic_codes` は `missing_end` のような bare parser
+syntax key と比較する。AST profile と snapshot は後続の surface vocabulary task
+まで予約扱いとする。
+
+現在の parser recovery case が preprocess や lexing 由来の frontend recovery
+diagnostic も同時に出す場合、sidecar は `allow_frontend_recovery_diagnostics` を
+追加して parser syntax key だけを assert してよい。この opt-in がない場合、
+syntax 以外の diagnostic も assertion result に含まれる。
 
 Parse-only expectations は type、resolver、proof、certificate、kernel failure identities を含めてはならない。
 

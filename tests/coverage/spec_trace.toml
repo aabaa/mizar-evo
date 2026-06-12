@@ -704,6 +704,42 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.syntax.parser_minimal_token_stream"
+source = "doc/design/mizar-parser/en/grammar.md"
+section = "Current behavior"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/parser/pass_parser_minimal_token_stream_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.syntax.parser_recovery.missing_end"
+source = "doc/design/mizar-parser/en/recovery.md"
+section = "Current behavior"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/parser/fail_parser_missing_definition_end_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.syntax.parser_recovery.stray_end"
+source = "doc/design/mizar-parser/en/recovery.md"
+section = "Current behavior"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/parser/fail_parser_stray_end_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.syntax.template_arguments.parser"
 source = "doc/spec/en/appendix_a.grammar_summary.md"
 section = "A.9 Predicates; A.10 Functors; A.18 Templates"
@@ -711,7 +747,7 @@ stage = "parse_only"
 status = "planned"
 required = true
 coverage = "pass_and_fail"
-deferred_reason = "Initial parse-only corpus metadata exists for template predicate/functor definitions and a chained-iff syntax rejection, but the real parse-only runner is still deferred to the parser corpus-runner task. Add runner-backed pass cases for let constraints with by references, take-with-witness, conditional definiens, Fraenkel generators, qua chains, and predicate chains; add runner-backed fail cases for non-associative operator chains, builtin/user predicate chain mixing, and incomplete term-headed formulas."
+deferred_reason = "Initial parse-only corpus metadata exists for template predicate/functor definitions and a chained-iff syntax rejection, but template productions and frontend-visible operator fixity are still deferred. Activate these seeds only after the owning parser tasks can satisfy their diagnostics through the frontend seam. Add runner-backed pass cases for let constraints with by references, take-with-witness, conditional definiens, Fraenkel generators, qua chains, and predicate chains; add runner-backed fail cases for non-associative operator chains, builtin/user predicate chain mixing, and incomplete term-headed formulas."
 tests = [
   "tests/miz/pass/parser/pass_parser_template_arguments_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_template_arguments_chained_iff_001.expect.toml",

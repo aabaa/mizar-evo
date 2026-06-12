@@ -1,0 +1,19 @@
+schema_version = 1
+id = "fail_parser_stray_end_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.recovery"
+source = "fail_parser_stray_end_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "stray_end"
+stable_detail_key = "parser.recovery.stray_end"
+diagnostic_codes = [
+  "unrecoverable_input",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = [
+  "spec.en.syntax.parser_recovery.stray_end",
+]
+notes = "Active parse-only runner seed for current stray-end rejection through the frontend seam."

@@ -1,0 +1,19 @@
+schema_version = 1
+id = "fail_parser_missing_definition_end_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.recovery"
+source = "fail_parser_missing_definition_end_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "missing_definition_end"
+stable_detail_key = "parser.recovery.missing_definition_end"
+diagnostic_codes = [
+  "missing_end",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = [
+  "spec.en.syntax.parser_recovery.missing_end",
+]
+notes = "Active parse-only runner seed for current missing-end recovery through the frontend seam."

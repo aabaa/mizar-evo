@@ -4,6 +4,7 @@ use std::process::ExitCode;
 
 use mizar_test::{
     DiscoveryConfig, TestProfile, ValidationMode, ValidationSeverity, build_test_plan,
+    run_parse_only_corpus,
 };
 
 fn main() -> ExitCode {
@@ -18,8 +19,11 @@ fn main() -> ExitCode {
 
 fn run() -> Result<ExitCode, String> {
     let args = env::args().skip(1).collect::<Vec<_>>();
-    if args.first().is_none_or(|arg| arg != "plan") {
-        return Err("usage: mizar-test plan [--tests-root tests] [--manifest tests/coverage/spec_trace.toml] [--workspace-root .]".to_owned());
+    let Some(command) = args.first() else {
+        return Err(usage());
+    };
+    if !matches!(command.as_str(), "plan" | "parse-only") {
+        return Err(usage());
     }
 
     let mut workspace_root = PathBuf::from(".");
@@ -62,7 +66,15 @@ fn run() -> Result<ExitCode, String> {
         profile: TestProfile::Fast,
         validation_mode: ValidationMode::Metadata,
     };
-    let plan = build_test_plan(&config).map_err(|error| error.to_string())?;
+    match command.as_str() {
+        "plan" => run_plan(&config),
+        "parse-only" => run_parse_only(&config),
+        _ => unreachable!("command was validated above"),
+    }
+}
+
+fn run_plan(config: &DiscoveryConfig) -> Result<ExitCode, String> {
+    let plan = build_test_plan(config).map_err(|error| error.to_string())?;
 
     for diagnostic in &plan.diagnostics {
         eprintln!("{diagnostic}");
@@ -82,6 +94,30 @@ fn run() -> Result<ExitCode, String> {
     } else {
         Ok(ExitCode::SUCCESS)
     }
+}
+
+fn run_parse_only(config: &DiscoveryConfig) -> Result<ExitCode, String> {
+    let report = run_parse_only_corpus(config).map_err(|error| error.to_string())?;
+
+    for diagnostic in &report.diagnostics {
+        eprintln!("{diagnostic}");
+    }
+
+    println!("parse-only cases: {}", report.results.len());
+    println!("passed: {}", report.passed_count());
+    println!("failed: {}", report.failed_count());
+    println!("errors: {}", report.error_count());
+    println!("warnings: {}", report.warning_count());
+
+    if report.error_count() > 0 {
+        Ok(ExitCode::from(1))
+    } else {
+        Ok(ExitCode::SUCCESS)
+    }
+}
+
+fn usage() -> String {
+    "usage: mizar-test <plan|parse-only> [--tests-root tests] [--manifest tests/coverage/spec_trace.toml] [--workspace-root .]".to_owned()
 }
 
 fn next_value(args: &[String], idx: usize, name: &str) -> Result<String, String> {

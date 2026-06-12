@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use mizar_test::{
     DiscoveryConfig, ExpectedOutcome, PipelinePhase, Stage, TestKind, TestPlan, TestProfile,
-    ValidationMode, build_test_plan,
+    ValidationMode, active_parse_only_cases, build_test_plan, run_parse_only_corpus,
 };
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
@@ -507,7 +507,7 @@ fn repository_corpus_plan_succeeds() {
 }
 
 #[test]
-fn repository_parse_only_seed_cases_are_parser_metadata_only() {
+fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata() {
     let plan = repository_plan();
 
     let pass_case = plan
@@ -533,6 +533,7 @@ fn repository_parse_only_seed_cases_are_parser_metadata_only() {
             .iter()
             .any(|spec_ref| spec_ref.0 == TEMPLATE_ARGUMENTS_REQUIREMENT_ID)
     );
+    assert!(pass_case.expectation.tags.is_empty());
 
     let fail_case = plan
         .cases
@@ -556,6 +557,19 @@ fn repository_parse_only_seed_cases_are_parser_metadata_only() {
     assert_eq!(
         fail_case.expectation.diagnostic_codes,
         vec!["non_associative_operator_chain".to_owned()]
+    );
+    assert!(fail_case.expectation.tags.is_empty());
+
+    let active_cases = active_parse_only_cases(&plan)
+        .map(|case| case.id.0.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        active_cases,
+        vec![
+            "fail_parser_missing_definition_end_001",
+            "fail_parser_stray_end_001",
+            "pass_parser_minimal_token_stream_001",
+        ]
     );
 
     let template_requirement = plan
@@ -596,6 +610,135 @@ fn repository_parse_only_seed_cases_are_parser_metadata_only() {
             "`{requirement_id}` should keep a deferral reason"
         );
     }
+}
+
+#[test]
+fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
+    let config = repository_config();
+    let report = run_parse_only_corpus(&config).unwrap();
+
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
+    assert_eq!(report.results.len(), 3);
+    assert_eq!(report.passed_count(), 3);
+    assert_eq!(report.failed_count(), 0);
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_minimal_token_stream_001"
+            && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_missing_definition_end_001"
+            && result.actual_diagnostic_codes == vec!["missing_end".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_stray_end_001"
+            && result.actual_diagnostic_codes == vec!["unrecoverable_input".to_owned()]
+    }));
+}
+
+#[test]
+fn parse_only_runner_reports_mismatched_active_expectation() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/pass/parser/pass_parser_mismatch_001.miz",
+        "alpha;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/parser/pass_parser_mismatch_001.expect.toml",
+        r#"schema_version = 1
+id = "pass_parser_mismatch_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.test"
+source = "pass_parser_mismatch_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = ["missing_end"]
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.test.parse"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.parse"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass"
+tests = ["tests/miz/pass/parser/pass_parser_mismatch_001.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_parse_only_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.failed_count(), 1);
+    assert_has_report_code(&report, "E-PARSE-ONLY-ASSERT");
+}
+
+#[test]
+fn parse_only_runner_rejects_active_tag_on_non_parse_case() {
+    let corpus = Corpus::new();
+    corpus.write("tests/lexical/pass/tagged_lexical.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/tagged_lexical.expect.toml",
+        r#"schema_version = 1
+id = "tagged_lexical"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "tagged_lexical.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.test.lexical"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.lexical"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = ["tests/lexical/pass/tagged_lexical.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_parse_only_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.results.len(), 0);
+    assert_has_report_code(&report, "E-PARSE-ONLY-ACTIVE-GATE");
+}
+
+#[test]
+fn parse_only_cli_reports_active_runner_summary() {
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_mizar-test"))
+        .arg("parse-only")
+        .arg("--workspace-root")
+        .arg(repository_config().workspace_root)
+        .output()
+        .expect("mizar-test parse-only should run");
+
+    assert!(
+        output.status.success(),
+        "parse-only CLI failed: stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("parse-only cases: 3"));
+    assert!(stdout.contains("passed: 3"));
+    assert!(stdout.contains("failed: 0"));
 }
 
 #[test]
@@ -863,14 +1006,17 @@ tests = [{tests}]
     }
 
     fn plan(&self) -> mizar_test::TestPlan {
-        let config = DiscoveryConfig {
+        build_test_plan(&self.config()).unwrap()
+    }
+
+    fn config(&self) -> DiscoveryConfig {
+        DiscoveryConfig {
             workspace_root: self.root.clone(),
             tests_root: self.root.join("tests"),
             manifest_path: self.root.join("tests/coverage/spec_trace.toml"),
             profile: TestProfile::Fast,
             validation_mode: ValidationMode::Metadata,
-        };
-        build_test_plan(&config).unwrap()
+        }
     }
 }
 
@@ -906,21 +1052,34 @@ fn assert_has_code(plan: &mizar_test::TestPlan, code: &str) {
     );
 }
 
+fn assert_has_report_code(report: &mizar_test::ParseOnlyRunReport, code: &str) {
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code.0 == code),
+        "expected diagnostic {code}, got {:#?}",
+        report.diagnostics
+    );
+}
+
 fn repository_plan() -> TestPlan {
+    build_test_plan(&repository_config()).unwrap()
+}
+
+fn repository_config() -> DiscoveryConfig {
     let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .and_then(Path::parent)
         .unwrap()
         .to_path_buf();
-    let config = DiscoveryConfig {
+    DiscoveryConfig {
         workspace_root: workspace_root.clone(),
         tests_root: workspace_root.join("tests"),
         manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
         profile: TestProfile::Fast,
         validation_mode: ValidationMode::Metadata,
-    };
-
-    build_test_plan(&config).unwrap()
+    }
 }
 
 fn rel(root: &Path, path: &Path) -> PathBuf {

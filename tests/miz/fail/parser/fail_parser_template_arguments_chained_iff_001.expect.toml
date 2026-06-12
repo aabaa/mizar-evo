@@ -15,4 +15,4 @@ diagnostic_codes = [
 spec_refs = [
   "spec.en.syntax.template_arguments.parser",
 ]
-notes = "Seed metadata for the future parse-only corpus runner; the parser runner will own the executable diagnostic check."
+notes = "Future grammar seed kept inactive until template productions and frontend-visible fixity can produce this parser diagnostic; active parse-only runner cases carry tags = [\"active_parse_only\"]."

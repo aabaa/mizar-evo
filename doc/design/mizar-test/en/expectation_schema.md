@@ -236,9 +236,22 @@ semantic validation.
 ```toml
 stage = "parse_only"
 expected_phase = "parse"
+tags = ["active_parse_only"]
 ast_profile = "surface"
 snapshot_profiles = ["surface_ast"]
 ```
+
+The parse-only corpus runner executes only `.miz` pass/fail sidecars that carry
+the `active_parse_only` tag. Untagged parse-only sidecars are still discovered
+and traced, but remain inactive seed metadata for future grammar work. For the
+current runner, `diagnostic_codes` compare against bare parser syntax keys such
+as `missing_end`; AST profiles and snapshots are reserved for later surface
+vocabulary tasks.
+
+If a current parser recovery case also emits frontend recovery diagnostics from
+preprocessing or lexing, the sidecar may add
+`allow_frontend_recovery_diagnostics` to assert only the parser syntax keys.
+Without that opt-in, non-syntax diagnostics are part of the assertion result.
 
 Parse-only expectations must not include type, resolver, proof, certificate, or
 kernel failure identities.

@@ -3,7 +3,8 @@
 > Canonical language: English. Japanese companion:
 > [../ja/parse_only_fixture_seed.md](../ja/parse_only_fixture_seed.md).
 
-Status: completed as a checked-in fixture manifest on 2026-06-13.
+Status: completed as a checked-in fixture manifest on 2026-06-13; task 3
+parse-only runner active-gate follow-up completed on 2026-06-13.
 
 ## Purpose
 
@@ -16,12 +17,14 @@ execute the full grammar surface yet.
 explicit-fixity expression surface, and performs block-end/string recovery
 needed by earlier infrastructure tasks. It does not yet implement the module,
 declaration, term, formula, statement, annotation, template, or algorithm
-productions required by the Task 7 matrix. For that reason, Task 8 lands this
-checked-in manifest instead of default-discovered `.miz` corpus files.
+productions required by the Task 7 matrix. For that reason, Task 8 landed this
+checked-in manifest separately from active runner execution.
 
-When the parse-only corpus runner and the owning grammar productions are
-available, each row below can be activated without changing the selected case
-ID, source shape, parse-only expectation, or Appendix A traceability.
+The parse-only corpus runner now exists in `mizar-test`, but it executes only
+sidecars tagged with `active_parse_only`. Each row below remains inactive until
+the owning grammar production is available; at that point it can be activated
+without changing the selected case ID, source shape, parse-only expectation, or
+Appendix A traceability.
 
 ## Activation Rules
 
@@ -30,7 +33,9 @@ ID, source shape, parse-only expectation, or Appendix A traceability.
   range rules, and recovery rendering.
 - Activation means adding the source as a `.miz` file under
   `tests/miz/{pass,fail}/parser/`, adding the adjacent `.expect.toml`, and
-  linking the expectation path from `tests/coverage/spec_trace.toml`.
+  linking the expectation path from `tests/coverage/spec_trace.toml`. Add
+  `tags = ["active_parse_only"]` only when the current frontend parser seam can
+  satisfy the expectation.
 - `accept` and `ambiguous-preserve-surface` rows activate as
   `expected_outcome = "pass"`, `stage = "parse_only"`, and
   `expected_phase = "parse"`.

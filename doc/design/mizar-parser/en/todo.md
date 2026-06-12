@@ -115,13 +115,11 @@ parse-only runner and the relevant productions exist.
   lexer-owned; selector-versus-namespace separation depends on variable scope
   and is finalized by the resolver. Decide the `SurfaceAst` shape that keeps
   unresolved dot chains syntactic, with `mizar-syntax` task 8.
-- **Corpus runner location: open, resolved by task 3.** Parse-only corpus
-  cases need real tokens, so the default candidate is a consumer-owned
-  frontend-seam integration test (precedent:
-  `crates/mizar-frontend/tests/lexical_corpus.rs`). `mizar-test` remains free
-  of pipeline dependencies and provides discovery/expectation helpers; do not
-  move parser execution into `mizar-test` unless its harness scope is
-  deliberately changed and documented.
+- **Corpus runner location: resolved by task 3.** Parse-only corpus execution
+  lives in `mizar-test`, which now deliberately owns the active runner in
+  addition to discovery, expectation sidecars, traceability, and CLI reporting.
+  The metadata `plan` path remains payload-free; only the `parse-only`
+  subcommand depends on the frontend seam and session source loading.
 - **Syntax-tree storage dependency: delegated to `mizar-syntax` task 2.** The
   parser's boundary is a builder/event API that can target rowan-backed syntax
   without letting grammar code depend on raw rowan node layout. Do not add a
@@ -178,26 +176,29 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
      grammar tasks may refine this placeholder when they add real dispatch.
    - Deps: 1, `mizar-syntax` task 2. Spec: [recovery.md](./recovery.md).
 
-3. **Parse-only corpus runner.** [ ]
-   - Decide the runner location (default: frontend-seam integration test
-     following the `lexical_corpus.rs` precedent), record the decision here and
-     in [../../mizar-test/en/harness.md](../../mizar-test/en/harness.md) only if
-     it changes the no-pipeline-dependency harness scope.
-   - Wire `mizar-test` discovery and `.expect.toml` expectations to run every
-     active `tests/miz/{pass,fail}/parser/` case at stage `parse_only` through
-     real tokenization, asserting outcome, diagnostics, and (where present)
-     snapshot expectations. If planned grammar seeds already exist before their
-     productions are implemented, add an explicit profile/tag gate and document
-     which cases are active for the runner.
-   - Seed the corpus with cases for the current minimal grammar (token
-     streams, explicit-fixity infix expressions, missing `end`, stray `end`)
-     so the runner is meaningful from day one.
-   - Keep the committed template-argument seed cases out of the active runner
+3. **Parse-only corpus runner.** [x]
+   - Runner location: `mizar-test` owns the parse-only runner because it already
+     owns corpus discovery, expectation sidecars, traceability, and CLI
+     reporting. The runner depends on `mizar-frontend` and `mizar-session` only
+     for this parse-only execution path; the metadata `plan` mode remains
+     payload-free.
+   - `mizar-test parse-only` discovers expectations through the normal plan and
+     runs active `.miz` cases tagged `active_parse_only` at
+     `stage = "parse_only"` / `expected_phase = "parse"` through real
+     tokenization and `MizarParserSeam`. Inactive planned grammar seeds remain
+     discovery and traceability metadata.
+   - Active seed coverage now includes current frontend-reachable parser
+     behavior: token stream preservation, missing `end`, and stray `end`.
+     Explicit-fixity infix behavior remains covered by parser and frontend seam
+     unit tests until a corpus expectation can provide frontend-visible fixity
+     without bypassing resolver-owned inputs.
+   - The committed template-argument seed cases stay out of the active runner
      until tasks 14, 23-25, and 31 can parse their formula, definition, and
-     template forms, or update those tasks in the same change so the seeds
-     genuinely execute.
-   - Tests: runner discovers all cases deterministically; a deliberately
-     mismatched sidecar fails; seeded pass and fail cases enforce diagnostics.
+     template forms.
+   - Tests: active/inactive discovery is deterministic; active-tag mistakes are
+     harness errors; a deliberately mismatched sidecar fails; seeded pass and
+     fail cases enforce diagnostics; the `parse-only` CLI reports the active
+     runner summary.
    - Deps: 2. Spec: [staged_model.md](../../mizar-test/en/staged_model.md),
      [expectation_schema.md](../../mizar-test/en/expectation_schema.md).
 

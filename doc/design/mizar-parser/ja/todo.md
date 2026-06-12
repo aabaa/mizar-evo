@@ -112,13 +112,11 @@ resolver / build-system 依存を避ける。
   所有し、selector 対 namespace の区別は変数スコープに依存して resolver が
   確定する。未解決のドット連鎖を構文的に保つ `SurfaceAst` の形を、
   `mizar-syntax` task 8 とともに決定する。
-- **コーパスランナーの場所: 未解決。task 3 で解決する。** parse-only の
-  コーパスケースは実トークンを必要とするため、既定候補は frontend の実 seam を
-  駆動する consumer 側の統合テストである（先例:
-  `crates/mizar-frontend/tests/lexical_corpus.rs`）。`mizar-test` は pipeline
-  依存を持たないまま discovery / expectation ヘルパーを提供する。ハーネスの
-  責務を意図的に変更して文書化しない限り、parser 実行を `mizar-test` へ
-  移さない。
+- **コーパスランナーの場所: task 3 で解決済み。** parse-only corpus execution
+  は `mizar-test` に置く。`mizar-test` は discovery、expectation sidecar、
+  traceability、CLI reporting に加えて active runner も意図的に所有する。
+  metadata `plan` path は payload-free のままにし、frontend seam と session
+  source loading に依存するのは `parse-only` subcommand だけとする。
 - **構文木 storage 依存: `mizar-syntax` task 2 に委譲。** parser の境界は、
   文法コードを raw rowan node layout に依存させず rowan-backed syntax を
   target にできる builder / event API である。`mizar-parser` に `rowan` への
@@ -172,27 +170,28 @@ resolver / build-system 依存を避ける。
      実際の dispatch を追加するときにこの placeholder を調整してよい。
    - 依存: 1、`mizar-syntax` task 2。仕様: [recovery.md](./recovery.md)。
 
-3. **parse-only コーパスランナー。** [ ]
-   - ランナーの場所を決定する（既定: `lexical_corpus.rs` の先例に従う
-     frontend seam 統合テスト）。決定をここに記録し、pipeline 依存を持たない
-     ハーネスの責務が変わる場合にのみ
-     [../../mizar-test/ja/harness.md](../../mizar-test/ja/harness.md) にも
-     記録する。
-   - `mizar-test` の discovery と `.expect.toml` 期待値を配線し、
-     `tests/miz/{pass,fail}/parser/` の active なケースを stage `parse_only`
-     で実トークン化を通して実行し、結果・診断・（あれば）スナップショット
-     期待値をアサートする。生成規則の実装より先に planned grammar seed が
-     存在する場合は、明示的な profile/tag gate を追加し、runner にとって
-     どのケースが active かを文書化する。
-   - 現在の最小文法に対するケース（トークンストリーム、明示 fixity の中置式、
-     `end` 欠落、孤立した `end`）でコーパスをシードし、初日からランナーを
-     意味のあるものにする。
+3. **parse-only コーパスランナー。** [x]
+   - ランナーの場所: `mizar-test` が parse-only runner を所有する。これは
+     corpus discovery、expectation sidecar、traceability、CLI reporting をすでに
+     所有しているためである。この parse-only execution path のために
+     `mizar-frontend` と `mizar-session` へ依存するが、metadata `plan` mode は
+     payload-free のままにする。
+   - `mizar-test parse-only` は通常の plan を通して expectations を discover し、
+     `stage = "parse_only"` / `expected_phase = "parse"` かつ `active_parse_only`
+     tag を持つ active `.miz` case を実トークン化と `MizarParserSeam` で実行する。
+     inactive な planned grammar seed は discovery と traceability metadata のままにする。
+   - active seed coverage は、現在 frontend から到達できる parser behavior
+     （token stream preservation、`end` 欠落、孤立した `end`）を含む。明示
+     fixity の中置式は、resolver が所有する input を bypass せずに corpus
+     expectation から frontend-visible fixity を供給できるようになるまで、parser
+     と frontend seam の unit test coverage に残す。
    - コミット済みの template 引数 seed ケースは、task 14、23-25、31 が
      それらの formula、definition、template 形を parse できるまで active
-     runner から外すか、同じ変更で該当タスクを更新して seed が実際に実行
-     されるようにする。
-   - テスト: ランナーがすべてのケースを決定的に発見する。意図的に不一致に
-     したサイドカーが失敗する。シードした pass / fail ケースが診断を強制する。
+     runner から外す。
+   - テスト: active / inactive discovery は決定的である。active tag の誤用は
+     harness error になる。意図的に不一致にした sidecar は失敗する。seed した
+     pass / fail case は diagnostics を強制する。`parse-only` CLI は active runner
+     summary を report する。
    - 依存: 2。仕様: [staged_model.md](../../mizar-test/ja/staged_model.md)、
      [expectation_schema.md](../../mizar-test/ja/expectation_schema.md)。
 

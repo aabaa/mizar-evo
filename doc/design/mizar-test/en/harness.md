@@ -28,12 +28,19 @@ pub struct TestOutcome {
     pub diagnostics: Vec<Diagnostic>,
     pub snapshots: Vec<SnapshotRecord>,
 }
+
+pub struct ParseOnlyRunReport {
+    pub results: Vec<ParseOnlyCaseResult>,
+    pub diagnostics: Vec<ValidationDiagnostic>,
+}
 ```
 
 ## Runner Modes
 
 | Mode | Behavior |
 |---|---|
+| metadata plan | discover sidecars and validate layout, expectation schema, and traceability without executing payloads |
+| parse-only | run active `.miz` parse-only cases through `mizar-frontend` and `MizarParserSeam` |
 | pass/fail | run `.miz` cases and match expected outcome |
 | snapshot | compare canonical snapshot hashes |
 | determinism | repeat runs and compare artifacts, diagnostics, and hashes |
@@ -45,11 +52,27 @@ pub struct TestOutcome {
 
 1. Discover tests through `layout`.
 2. Build a canonical `TestPlan`.
-3. Run cases in deterministic display order, even when execution is parallel.
-4. Capture compiler outputs as structured records.
-5. Match pass/fail expectations before snapshot expectations.
-6. Compare snapshots by canonical hash.
-7. Report failures with phase, failure category, rejection reason, diagnostic code, and snapshot diff summary.
+3. For `parse-only`, select only cases with `stage = "parse_only"`,
+   `expected_phase = "parse"`, `.miz` payloads, pass/fail outcomes, and
+   `tags = ["active_parse_only"]`. Untagged parse-only sidecars remain
+   discovery and traceability metadata.
+4. Run cases in deterministic display order, even when execution is parallel.
+5. Capture compiler outputs as structured records.
+6. Match pass/fail expectations before snapshot expectations.
+7. Compare snapshots by canonical hash.
+8. Report failures with phase, failure category, rejection reason, diagnostic code, and snapshot diff summary.
+
+The current parse-only runner copies each active corpus file into a temporary
+`src/` package, runs the real frontend parser seam, requires pass cases to
+produce an AST with no assertion diagnostics, and compares fail cases against
+the expected bare syntax diagnostic keys. If parser syntax diagnostics and
+non-syntax frontend recovery diagnostics both appear, the runner reports all
+diagnostic codes unless the sidecar explicitly includes
+`allow_frontend_recovery_diagnostics`. AST snapshot assertion is deferred until
+the surface node vocabulary is expanded.
+
+An expectation tagged `active_parse_only` but missing one of the runnable case
+predicates is a harness error rather than a silent skip.
 
 ## Determinism Requirements
 

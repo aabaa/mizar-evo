@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_minimal_token_stream_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.minimal_token_stream"
+source = "pass_parser_minimal_token_stream_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.syntax.parser_minimal_token_stream",
+]
+notes = "Active parse-only runner seed for current parser token preservation through the frontend seam."

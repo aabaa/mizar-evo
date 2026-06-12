@@ -9,6 +9,10 @@ repository.workspace = true
 name = "mizar_test"
 path = "src/lib.rs"
 
+[dependencies]
+mizar-frontend = { path = "../mizar-frontend" }
+mizar-session = { path = "../mizar-session" }
+
 [[bin]]
 name = "mizar-test"
 path = "src/main.rs"
