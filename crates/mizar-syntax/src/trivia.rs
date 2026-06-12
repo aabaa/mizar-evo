@@ -213,6 +213,7 @@ impl TriviaNodeTarget {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum TriviaAttachmentTarget {
     Node(TriviaNodeTarget),
     Token(TriviaNodeTarget),
@@ -226,6 +227,7 @@ pub enum TriviaPlacement {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SkippedTokenReason {
     Recovery,
     MalformedAnnotation,
@@ -233,6 +235,7 @@ pub enum SkippedTokenReason {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum WhitespaceHintKind {
     RequiresSeparation,
     LineBreakBefore,

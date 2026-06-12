@@ -563,11 +563,13 @@ diagnostic ordering, and cache-key checks.
       frontend pipeline consumes these enums yet, so either choice is still
       free to apply.
     - Tests: `cargo test -p mizar-frontend` and the clippy gate stay green;
-      matches inside this crate remain exhaustive either way.
+      matches on the listed frontend-owned enums inside this crate remain
+      exhaustive either way.
     - Result: the listed public frontend enums are `#[non_exhaustive]` for
-      downstream crates, while `mizar-frontend` keeps its internal matches
-      exhaustive. The per-enum decision is recorded in the owning module specs
-      and in [source_spec_correspondence.md](./source_spec_correspondence.md).
+      downstream crates, while `mizar-frontend` keeps its internal matches on
+      those frontend-owned enums exhaustive. The per-enum decision is recorded
+      in the owning module specs and in
+      [source_spec_correspondence.md](./source_spec_correspondence.md).
     - Depends on: 24. Spec: all module specs,
       [source_spec_correspondence.md](./source_spec_correspondence.md).
 

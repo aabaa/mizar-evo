@@ -61,7 +61,9 @@ task 25 では、将来 variant または予約 surface を約束する公開 fr
 `SpanBridgeError`、`PreprocessDiagnosticKind`、
 `LexicalEnvironmentDiagnosticCode`、`LexingDiagnosticKind`、
 `LexingDiagnosticPayload`、`SourceLoadLocation`、`DiagnosticCode`、
-`DiagnosticClass`、`FrontendError`。`mizar-frontend` 内部の match は引き続き exhaustive に保つ。
+`DiagnosticClass`、`FrontendError`。これら frontend-owned enum に対する内部 match は
+引き続き exhaustive に保つ。上流 crate が所有する non-exhaustive enum には、文書化された
+frontend fallback を使う。
 
 | 対象 | variant | ソース／テスト状態 |
 |---|---|---|
@@ -71,7 +73,7 @@ task 25 では、将来 variant または予約 surface を約束する公開 fr
 | `LexicalEnvironmentDiagnosticCode` | `UnresolvedImport`, `MissingSummary`, `UserSymbolImportConflict`, `InvalidUserSymbolSpelling`, `InvalidUserSymbolArity`, `ReservedWordCollision`, `ReservedSymbolCollision` | `lexical_env.rs` に実装済み。最初の 3 つは現在の frontend recovery path が送出し、直接テスト済み。最後の 4 つは、出所検証後の provider-owned pass-through 診断として直接 provider fixture でテスト済み。lexer-owned invalid spelling/arity と reserved collision は仕様どおり `MalformedSummary` hard failure のまま扱う。 |
 | `LexingDiagnosticKind` | `RawScan`, `ScopeSkeleton`, `Lexer` | `lexing.rs` に実装済み。raw-scan recovery、scope-skeleton diagnostic、lexer diagnostic テストで確認。 |
 | `LexingDiagnosticPayload` | `None`, `NoValidTokenCandidate`, `ParserContextRejectedCandidate`, `MalformedStringLiteral`, `UnsupportedRawToken`, `UnsupportedLexerPayload` | `lexing.rs` に実装済み。現在の lexer payload は producer-backed lexing tests で確認済み。`UnsupportedLexerPayload` は将来 payload variant の明示的 fallback であり、ユーザー向け no-recovery-note 方針は orchestration の diagnostic conversion 経由で直接テスト済み。 |
-| `mizar_syntax::SyntaxDiagnosticCode` through `DiagnosticCode::Syntax` | `UnexpectedErrorToken`, `DanglingOperator`, `NonAssociativeOperatorChain`, `MissingEnd`, `MissingStringLiteral`, `UnrecoverableInput` | `mizar-syntax` / `mizar-parser` が所有し、`MizarParserSeam` と `FrontendParserDiagnostic` が pass-through する。frontend/parser tests は現在の各 parser code と syntax diagnostic passthrough を確認している。 |
+| `mizar_syntax::SyntaxDiagnosticCode` through `DiagnosticCode::Syntax` | `UnexpectedErrorToken`, `DanglingOperator`, `NonAssociativeOperatorChain`, `MissingEnd`, `MissingStringLiteral`, `UnrecoverableInput`; 将来の non-exhaustive code 用 fallback key `syntax_diagnostic` | `mizar-syntax` / `mizar-parser` が所有し、`MizarParserSeam` と `FrontendParserDiagnostic` が pass-through する。frontend/parser tests は現在の各 parser code と syntax diagnostic passthrough を確認している。fallback の producer-backed coverage は、`mizar-syntax` が新しい code を追加するまで延期する。 |
 | `DiagnosticLocation` / `SourceLoadLocation` | `SourceRange`, `SourceLoad`; `Path`, `NormalizedPath`, `OpenBuffer`, `Generated`, `Unknown` | `orchestration.rs` に実装済み。現在の disk、open-buffer、generated、range-backed location はテスト済み。`NormalizedPath` は将来の non-exhaustive source origin 用 fallback、`Unknown` は normalized input path を持たない将来の source-load 診断用に予約する。どちらの fallback variant も決定的順序を直接テスト済みで、producer-backed coverage はそのような source contract が追加されるまで延期する。 |
 | `DiagnosticCode` / `DiagnosticClass` | `SourceLoad`, `Preprocess`, `LexicalEnvironment`, `Lexing`, `Syntax`; `SourceLoad`, `LexicalPrecondition`, `CommentStructure`, `ImportPrescan`, `LexicalEnvironment`, `ScopeSkeleton`, `Tokenization`, `Syntax`, `AnnotationSyntax` | `orchestration.rs` に実装済み。送出済みおよび予約済み frontend diagnostic は merge-order と class sorting テストで確認。`AnnotationSyntax` は producer を持たない予約 class だが、決定的順序 coverage はある。producer-backed coverage は annotation parsing が専用診断を公開するまで延期する。 |
 | `FrontendError` | `SourceLoad`, `SpanBridge`, `LexicalEnvironment` | `orchestration.rs` に実装済み。hard-failure path テストで確認。 |
@@ -104,7 +106,7 @@ task 25 では、将来 variant または予約 surface を約束する公開 fr
 | 22 | 完了 | 精密な生スキャン回復は `mizar_lexer::scan_raw_recoverable` で実装する。frontend の import pre-scan と tokenization は `RawScanDiagnostic` のスパンを精密に写像し、利用可能な部分的 import/token を保持し、字句テキスト全体の fallback は parser plan の内部欠陥に限る。 |
 | 23 | 完了 | resident-set contract coverage は `crates/mizar-frontend/tests/lexical_env_resident_set.rs` で固定する。この test は直接 `ImportStub` に対する provider request が正確に 1 回であること、`ActiveLexicalEnvironment` が `ModuleLexicalSummary` 由来の字句的形状／出所だけを公開し、推移依存 symbol を含まないことを確認する。 |
 | 24 | 完了 | 予約済み frontend diagnostic surface は、構築可能な範囲で coverage 済み: `UnsupportedLexerPreprocessMap`、provider-owned の予約 lexical-environment diagnostic code、予約 source-load fallback location、`AnnotationSyntax`、`UnsupportedLexerPayload`。producer-backed tests は、将来の non-exhaustive lexer/session/parser contract まで延期する。 |
-| 25 | 完了 | 将来 variant または予約 surface を約束する公開 frontend enum は下流 crate 向けに `#[non_exhaustive]` とし、`mizar-frontend` 内部の match は exhaustive に保つ。所有モジュール仕様は enum の隣に enum ごとの決定を記録している。 |
+| 25 | 完了 | 将来 variant または予約 surface を約束する公開 frontend enum は下流 crate 向けに `#[non_exhaustive]` とし、これら frontend-owned enum に対する内部 match は exhaustive に保つ。所有モジュール仕様は enum の隣に enum ごとの決定を記録している。 |
 | 26 | 完了 | 公開 `mizar-frontend` module と公開 API item は、正準 design spec 由来の短い rustdoc summary を持つ。詳細な挙動の約束は引き続き `doc/design/mizar-frontend/en/` に置く。 |
 | 27 | 完了 | `frontend_valid_utf8` fuzz target と Criterion frontend baseline は `fuzz/` と `crates/mizar-frontend/benches/frontend_pipeline.rs` に実装済み。task 28 で発火した real-parser fuzz follow-up は task 29 で完了した。 |
 | 28 | 完了 | parser-growth follow-through は `mizar-parser`、`src/parsing.rs`、`src/orchestration.rs` に実装済み。nested block-end recovery、algorithm control-block matching、quantifier `for` exclusion、frontend recovery-node passthrough、構文診断 merge coverage、parser 出力 semantics 変更に対する `MIZAR_PARSER_CACHE_KEY_VERSION` invalidation を確認する。 |

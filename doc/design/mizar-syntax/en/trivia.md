@@ -145,10 +145,10 @@ must reject such targets before normal snapshots are produced.
 `TriviaAttachmentTarget`, `TriviaPlacement`, `SkippedTokenReason`, and
 `WhitespaceHintKind` are public because parser, frontend, formatter, and LSP
 layers will share trivia ownership. The pre-consumer gate in
-[todo.md](./todo.md) should mark the enums that can grow
+[todo.md](./todo.md) marks the enums that can grow
 (`TriviaAttachmentTarget`, `SkippedTokenReason`, and `WhitespaceHintKind`) as
-`#[non_exhaustive]` for downstream crates unless the owning task records a
-deliberate exhaustive decision. `TriviaPlacement` is currently expected to
-remain exhaustive because leading/trailing placement is a closed two-way
-syntactic relation; revisit that decision only if a concrete middle/detached
-placement is designed. Internal matches remain exhaustive.
+`#[non_exhaustive]` for downstream crates, and the lint-policy gate keeps those
+attributes present. `TriviaPlacement` remains deliberately exhaustive because
+leading/trailing placement is a closed two-way syntactic relation; revisit that
+decision only if a concrete middle/detached placement is designed. Internal
+matches remain exhaustive.

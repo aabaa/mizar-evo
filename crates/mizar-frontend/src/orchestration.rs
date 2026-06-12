@@ -618,6 +618,7 @@ fn syntax_code_key(code: &mizar_syntax::SyntaxDiagnosticCode) -> Arc<str> {
         mizar_syntax::SyntaxDiagnosticCode::MissingEnd => "missing_end",
         mizar_syntax::SyntaxDiagnosticCode::MissingStringLiteral => "missing_string_literal",
         mizar_syntax::SyntaxDiagnosticCode::UnrecoverableInput => "unrecoverable_input",
+        _ => "syntax_diagnostic",
     })
 }
 

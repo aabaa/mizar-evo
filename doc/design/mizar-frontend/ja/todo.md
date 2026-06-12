@@ -258,8 +258,8 @@
       `SourceLoadLocation`、`FrontendError` — について、将来の variant 追加が下流 crate を壊さないよう `#[non_exhaustive]` を付けるか、新しい variant がワークスペース内でコンパイル時のシグナルになるよう意図的に exhaustive match を維持するかを決める。
     - enum ごとの決定を、所有モジュール仕様の enum の隣と [source_spec_correspondence.md](./source_spec_correspondence.md) に記録し、選んだ属性を同じ変更で適用する。
     - フロントエンドパイプラインの外でこれらの enum を消費する crate はまだ存在しないため、どちらの選択も今なら無償で適用できる。この決定の最安のタイミングである。
-    - テスト: `cargo test -p mizar-frontend` と clippy ゲートを成功状態に保つ。いずれの選択でも、この crate 内部の match は exhaustive のままである。
-    - 結果: 列挙された公開 frontend enum は下流 crate 向けに `#[non_exhaustive]` とし、`mizar-frontend` 内部の match は exhaustive に保つ。enum ごとの決定は、所有モジュール仕様と [source_spec_correspondence.md](./source_spec_correspondence.md) に記録済みである。
+    - テスト: `cargo test -p mizar-frontend` と clippy ゲートを成功状態に保つ。いずれの選択でも、列挙された frontend-owned enum に対するこの crate 内部の match は exhaustive のままである。
+    - 結果: 列挙された公開 frontend enum は下流 crate 向けに `#[non_exhaustive]` とし、`mizar-frontend` はこれら frontend-owned enum に対する内部 match を exhaustive に保つ。enum ごとの決定は、所有モジュール仕様と [source_spec_correspondence.md](./source_spec_correspondence.md) に記録済みである。
     - 依存: 24。仕様: すべてのモジュール仕様、[source_spec_correspondence.md](./source_spec_correspondence.md)。
 
 26. **公開 API の rustdoc サマリ。** [x]

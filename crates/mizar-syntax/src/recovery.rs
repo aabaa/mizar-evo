@@ -2,6 +2,7 @@ use mizar_session::{SourceAnchor, SourceRange};
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SyntaxRecoveryKind {
     ErrorToken,
     MissingEnd,
@@ -55,6 +56,7 @@ impl SyntaxDiagnostic {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SyntaxDiagnosticCode {
     UnexpectedErrorToken,
     DanglingOperator,

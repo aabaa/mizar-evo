@@ -30,6 +30,7 @@ pub type RowanSyntaxElement = rowan::SyntaxElement<MizarLanguage>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u16)]
+#[non_exhaustive]
 pub enum SyntaxKind {
     Unknown = 0,
     Root = 1,
@@ -657,6 +658,7 @@ impl SurfaceNode {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SurfaceNodeKind {
     Root,
     Token(SurfaceToken),
@@ -695,6 +697,7 @@ impl SurfaceToken {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SurfaceTokenKind {
     Identifier,
     ReservedWord,

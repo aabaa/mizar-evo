@@ -138,8 +138,10 @@ consumers see one ordered list. Range-backed diagnostics use
 available path, normalized-path, open-buffer URI, generated anchor, or `Unknown`
 location.
 `DiagnosticCode::Syntax` stores the parser-owned syntax diagnostic code key once
-the real parser seam is enabled; with `StubParserSeam` no syntax diagnostics are
-emitted.
+the real parser seam is enabled; current `mizar-syntax` codes map to stable
+snake-case keys, and future non-exhaustive syntax codes fall back to
+`syntax_diagnostic` until frontend-owned handling is added. With
+`StubParserSeam` no syntax diagnostics are emitted.
 `FrontendParserDiagnostic` is the narrow adapter that lets the coordinator map
 the configured parser seam's diagnostic type into the unified frontend
 diagnostic stream; it is implemented for `mizar_syntax::SyntaxDiagnostic` and
@@ -148,7 +150,9 @@ for the stub seam's unit diagnostic type.
 `SourceLoadLocation`, `DiagnosticCode`, `DiagnosticClass`, and `FrontendError`
 are `#[non_exhaustive]` for downstream crates so future source, diagnostic, and
 unrecoverable frontend surfaces can be added without breaking external matches.
-Matches inside `mizar-frontend` remain exhaustive.
+Matches on these frontend-owned enums inside `mizar-frontend` remain
+exhaustive; non-exhaustive enums owned by upstream crates use explicit frontend
+fallbacks such as the syntax diagnostic key above.
 
 With the stub parser seam, `ast = None` is the expected placeholder result. The
 real parser seam returns a minimal `SurfaceAst` for recovered token streams and

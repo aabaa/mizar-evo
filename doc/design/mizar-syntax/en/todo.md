@@ -158,7 +158,7 @@ lands. Keep `cargo test -p mizar-syntax` green after each change (see
 
 ### Pre-consumer compatibility gate
 
-**Initial public enum forward-compatibility gate.** [ ]
+**Initial public enum forward-compatibility gate.** [x]
 - For each public enum available at the phase-3 boundary (`SyntaxKind`,
   `SurfaceNodeKind`, `SurfaceTokenKind`, `SurfaceOperatorAssociativity`,
   `SyntaxRecoveryKind`, `SyntaxDiagnosticCode`, and trivia kinds introduced by
@@ -166,6 +166,11 @@ lands. Keep `cargo test -p mizar-syntax` green after each change (see
   `mizar-frontend` task-25 procedure.
 - Record each decision next to the enum in the owning module spec and apply the
   attributes before parser tasks 5-7 can make resolver/LSP consumers plausible.
+- Result: `SyntaxKind`, `SurfaceNodeKind`, `SurfaceTokenKind`,
+  `SyntaxRecoveryKind`, `SyntaxDiagnosticCode`, `TriviaAttachmentTarget`,
+  `SkippedTokenReason`, and `WhitespaceHintKind` are guarded as
+  `#[non_exhaustive]`. `MizarLanguage`, `SurfaceOperatorAssociativity`, and
+  `TriviaPlacement` are documented deliberate exhaustive exceptions.
 - Deps: 4, 5. Spec: [ast.md](./ast.md), [trivia.md](./trivia.md),
   [recovery.md](./recovery.md).
 

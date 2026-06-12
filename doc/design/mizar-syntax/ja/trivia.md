@@ -141,8 +141,7 @@ snapshot が生成される前に `SurfaceAst::with_trivia` がそのような t
 `WhitespaceHintKind` は、parser、frontend、formatter、LSP 層が trivia ownership を
 共有するため公開されている。[todo.md](./todo.md) の consumer 前ゲートでは、成長し得る
 enum（`TriviaAttachmentTarget`、`SkippedTokenReason`、`WhitespaceHintKind`）を、
-所有タスクが意図的な exhaustive decision を記録しない限り、下流 crate 向けに
-`#[non_exhaustive]` とするべきである。`TriviaPlacement` は、leading / trailing
-placement が閉じた二分の構文関係であるため、現時点では exhaustive のままと想定する。
-具体的な middle / detached placement が設計された場合だけ、この判断を見直す。
-内部 match は exhaustive のままにする。
+下流 crate 向けに `#[non_exhaustive]` とし、lint-policy gate がこれらの属性を
+固定する。`TriviaPlacement` は、leading / trailing placement が閉じた二分の
+構文関係であるため、意図的に exhaustive のままとする。具体的な middle / detached
+placement が設計された場合だけ、この判断を見直す。内部 match は exhaustive のままにする。

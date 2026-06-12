@@ -235,11 +235,13 @@ by resolver/checker layers.
 The current public syntax enums are not yet the long-lived resolver/LSP surface.
 Before parser tasks 5-7 make them plausible downstream inputs, apply the
 pre-consumer gate in [todo.md](./todo.md): enums that promise future vocabulary
-growth (`SyntaxKind`, `SurfaceNodeKind`, and `SurfaceTokenKind`) should be
-marked `#[non_exhaustive]` for downstream crates unless the owning task
-deliberately records an exhaustive decision. `SurfaceOperatorAssociativity` is
-currently a closed three-way operator property (`Left`, `Right`,
-`NonAssociative`) and should remain deliberately exhaustive unless a later
-operator-model task designs a new associativity category. Matches inside this
-crate and the paired parser tests should remain exhaustive so new variants cause
-local compile-time updates.
+growth (`SyntaxKind`, `SurfaceNodeKind`, and `SurfaceTokenKind`) are marked
+`#[non_exhaustive]` for downstream crates, and the lint-policy gate keeps those
+attributes present. `MizarLanguage` remains deliberately exhaustive because it
+is an empty rowan marker enum rather than a downstream syntax category.
+`SurfaceOperatorAssociativity` is currently a closed three-way operator property
+(`Left`, `Right`, `NonAssociative`) and remains deliberately exhaustive unless a
+later operator-model task designs a new associativity category. Matches inside
+this crate should remain exhaustive so new variants cause local compile-time
+updates; downstream crates must include wildcard fallback arms where
+`#[non_exhaustive]` requires them.
