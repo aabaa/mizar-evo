@@ -33,8 +33,10 @@ paired with `mizar-parser`.
 
 The crate depends on `mizar-session` (for `SourceId`, `SourceRange`,
 `SourceAnchor`) and `rowan` (for immutable green-tree storage). The task-11/12
-`SurfaceNode`-style API remains as private compatibility side tables exposed
-through typed accessors over the rowan-backed representation. Do not add
+`SurfaceNode`-style data remains privately stored inside `SurfaceAst`, with a
+temporary public compatibility API that includes exported compatibility types,
+read-only accessors, typed views, and `SurfaceNode` constructors/fields over the
+rowan-backed representation. Do not add
 `salsa` here: the query engine belongs to the
 frontend/build/resolver/checker layers, while this crate must stay an
 immutable, query-friendly syntax data boundary. The task-11/12 minimal boundary
@@ -46,10 +48,11 @@ every change here must keep `cargo test -p mizar-parser` and
 ## Resolved And Open Decisions
 
 - **Syntax-tree backend: resolved.** `SurfaceAst` owns a rowan-backed green
-  tree. Compatibility wrappers for existing task-11/12 names remain as private
-  side-table views exposed through typed accessors, but parser tasks 5-7 must
-  grow against the `SurfaceAstBuilder` and typed accessor boundary rather than
-  a custom arena backend.
+  tree. Compatibility wrappers for existing task-11/12 names remain temporarily
+  public as exported types, read-only accessors, typed views, and
+  `SurfaceNode` constructors/fields over privately stored data, but parser tasks
+  5-7 must grow against the `SurfaceAstBuilder` and typed accessor boundary
+  rather than a custom arena backend.
 - **Trivia ownership: resolved.** `mizar-frontend` owns comment/doc-comment
   extraction, raw doc-comment bodies, lexical text, and preprocess maps.
   `SurfaceAst` carries syntax-owned trivia side tables that reference that
@@ -74,8 +77,11 @@ every change here must keep `cargo test -p mizar-parser` and
 
 ## Ordered Task List
 
-Each task is sized to be implemented, tested, and committed on its own. Keep
-`cargo test -p mizar-syntax` green after each task (see
+Representation-foundation tasks are sized to be implemented, tested, and
+committed on their own. Later node-vocabulary entries are tracking buckets:
+their individual parser-paired increments should land as separate tested
+changes, and the bucket is checked off only when the last paired increment
+lands. Keep `cargo test -p mizar-syntax` green after each change (see
 [Recommended Verification](#recommended-verification)).
 
 ### Representation foundation
@@ -121,8 +127,10 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
      hash-map iteration order, addresses, and other nondeterminism.
    - Tests: identical output across repeated renders; representative fixture
      covering every current node kind; recovery nodes visibly marked.
-   - Deps: 2. Spec: [ast.md](./ast.md); snapshot layout in
-     [../../mizar-test/en/snapshot.md](../../mizar-test/en/snapshot.md).
+   - Deps: 2. Spec: [ast.md](./ast.md); snapshot envelope/update policy in
+     [../../mizar-test/en/snapshot.md](../../mizar-test/en/snapshot.md). The
+     concrete `SurfaceAst` body layout is owned by [ast.md](./ast.md)
+     "Snapshot Rendering".
 
 4. **Trivia model.** [x]
    - Add `pub mod trivia;`. Decide and record the ownership split with
@@ -151,10 +159,11 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
 ### Pre-consumer compatibility gate
 
 **Initial public enum forward-compatibility gate.** [ ]
-- For each public enum available at the phase-3 boundary (`SurfaceNodeKind`,
-  `SurfaceTokenKind`, `SyntaxRecoveryKind`, `SyntaxDiagnosticCode`, and trivia
-  kinds introduced by task 4), decide `#[non_exhaustive]` versus deliberate
-  exhaustiveness using the `mizar-frontend` task-25 procedure.
+- For each public enum available at the phase-3 boundary (`SyntaxKind`,
+  `SurfaceNodeKind`, `SurfaceTokenKind`, `SurfaceOperatorAssociativity`,
+  `SyntaxRecoveryKind`, `SyntaxDiagnosticCode`, and trivia kinds introduced by
+  task 4), decide `#[non_exhaustive]` versus deliberate exhaustiveness using the
+  `mizar-frontend` task-25 procedure.
 - Record each decision next to the enum in the owning module spec and apply the
   attributes before parser tasks 5-7 can make resolver/LSP consumers plausible.
 - Deps: 4, 5. Spec: [ast.md](./ast.md), [trivia.md](./trivia.md),
@@ -167,8 +176,11 @@ the same change as the `mizar-parser` grammar task that constructs it (the
 parser todo's numbering governs the change granularity), and each increment
 extends snapshot rendering. A vocabulary task below is checked off when the
 last of its paired parser tasks lands. Do not add node kinds speculatively
-ahead of the parser task that constructs them. Spec references are the
-normative grammar chapters under [doc/spec/en/](../../../spec/en/00.index.md).
+ahead of the parser task that constructs them. Each increment must first extend
+the vocabulary-increment contract in [ast.md](./ast.md) with node kinds,
+payloads, child roles, range rules, accessors, snapshots, and recovery/trivia
+interaction. Spec references are the normative grammar chapters under
+[doc/spec/en/](../../../spec/en/00.index.md).
 
 6. **Module and item nodes.** [ ] — paired with `mizar-parser` tasks 5-7.
    - Module file shape, top-level item list and item kinds dispatchable by

@@ -43,6 +43,26 @@ It contains:
 range and kind before `finish`, so snapshots do not depend on construction
 order. All ranges must belong to the same `SourceId` as the trivia table.
 
+Sorting is deterministic within each table:
+
+- comments sort by range start, range end, then `CommentKind` order
+  (`SingleLine`, `MultiLine`, `Documentation`, unknown kinds last);
+- doc-comment attachments sort by range start, range end, placement
+  (`Leading`, then `Trailing`), then target key;
+- skipped ranges sort by range start, range end, reason (`Recovery`,
+  `MalformedAnnotation`, `UnexpectedToken`), then optional owner key; present
+  owners sort before `None`;
+- whitespace hints sort by range start, range end, then hint kind
+  (`RequiresSeparation`, `LineBreakBefore`, `LineBreakAfter`,
+  `SyntheticBoundary`).
+
+Target keys sort node targets before token targets before detached anchors. Node
+and token targets then sort by compatibility id index, range start, and range
+end. Detached anchors sort by their rendered key prefix and local data:
+generated anchors, points, ranges, then unknown anchors; generated anchors
+include their generated-origin reason after the anchor range or point. Target
+keys must not include raw `SourceId` debug output.
+
 ### Ownership Split
 
 The frontend preprocessing layer extracts comments and doc comments from loaded
@@ -97,3 +117,38 @@ ownership and attachment. The trivia snapshot renders source-local byte ranges,
 kind names, attachment targets, skipped reasons, and whitespace hint kinds; it
 does not render raw comment text, file paths, source-id debug output, or rowan
 identity.
+
+The current trivia snapshot section is:
+
+```text
+trivia:
+  <entry-or-none>
+```
+
+Entry lines use these forms:
+
+```text
+Comment kind=<CommentKind> range=<start>..<end>
+DocComment range=<start>..<end> placement=<TriviaPlacement> target=<target>
+SkippedTokens reason=<SkippedTokenReason> range=<start>..<end> owner=<target-or-none>
+WhitespaceHint kind=<WhitespaceHintKind> range=<start>..<end>
+```
+
+Targets render as `node:range:<start>..<end>`, `token:range:<start>..<end>`,
+`detached:range:<start>..<end>`, `detached:point:<offset>`,
+`detached:generated`, or `detached:unknown`. A missing node/token target renders
+as `<missing>` only for defensive snapshot rendering; `SurfaceAst::with_trivia`
+must reject such targets before normal snapshots are produced.
+
+### Public Enum Compatibility
+
+`TriviaAttachmentTarget`, `TriviaPlacement`, `SkippedTokenReason`, and
+`WhitespaceHintKind` are public because parser, frontend, formatter, and LSP
+layers will share trivia ownership. The pre-consumer gate in
+[todo.md](./todo.md) should mark the enums that can grow
+(`TriviaAttachmentTarget`, `SkippedTokenReason`, and `WhitespaceHintKind`) as
+`#[non_exhaustive]` for downstream crates unless the owning task records a
+deliberate exhaustive decision. `TriviaPlacement` is currently expected to
+remain exhaustive because leading/trailing placement is a closed two-way
+syntactic relation; revisit that decision only if a concrete middle/detached
+placement is designed. Internal matches remain exhaustive.

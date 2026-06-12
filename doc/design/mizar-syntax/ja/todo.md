@@ -32,8 +32,9 @@ trivia、recovery 語彙）、次にノード語彙で
 
 この crate は `mizar-session`（`SourceId`、`SourceRange`、`SourceAnchor`）と、
 immutable green-tree storage のための `rowan` に依存する。task 11/12 の
-`SurfaceNode` 風 API は、typed accessor 経由で公開される private な互換 side
-table として rowan-backed 表現上に残す。ここに `salsa` は追加しない:
+`SurfaceNode` 風 data は `SurfaceAst` 内部に private に保持し、rowan-backed 表現上の
+exported compatibility type、read-only accessor、typed view、`SurfaceNode`
+constructor / field を含む一時的な公開互換 API を公開する。ここに `salsa` は追加しない:
 query engine は frontend / build / resolver / checker 層の責務であり、
 この crate は immutable で query-friendly な構文データ境界にとどめる。
 task 11/12 の最小境界（`SurfaceAst`、`SurfaceNode`、recovery kind、
@@ -45,10 +46,10 @@ task 11/12 の最小境界（`SurfaceAst`、`SurfaceNode`、recovery kind、
 ## 解決済みおよび保留中の決定
 
 - **構文木バックエンド: 解決済み。** `SurfaceAst` は rowan-backed な green tree
-  を所有する。既存の task 11/12 名に対する互換 wrapper は typed accessor 経由
-  で公開される private side-table view として残すが、parser task 5〜7 は
-  custom arena backend ではなく `SurfaceAstBuilder` と typed accessor 境界に
-  対して成長させる。
+  を所有する。既存の task 11/12 名に対する互換 wrapper は、private に保持された
+  data 上の exported type、read-only accessor、typed view、`SurfaceNode`
+  constructor / field として一時的に公開するが、parser task 5〜7 は custom arena
+  backend ではなく `SurfaceAstBuilder` と typed accessor 境界に対して成長させる。
 - **trivia の所有権: 解決済み。** `mizar-frontend` はコメント／ドキュメント
   コメントの抽出、raw doc-comment body、字句用テキスト、preprocess map を
   所有する。`SurfaceAst` は、その frontend 所有データを `SourceRange` と
@@ -72,8 +73,11 @@ task 11/12 の最小境界（`SurfaceAst`、`SurfaceNode`、recovery kind、
 
 ## 順序付きタスク一覧
 
-各タスクは、単独で実装・テスト・コミットできる粒度になっている。各タスクの後で
-`cargo test -p mizar-syntax` を成功状態に保つこと（[推奨検証](#推奨検証)を参照）。
+表現基盤 task は、単独で実装・テスト・コミットできる粒度になっている。後続の
+node vocabulary entry は tracking bucket である。対になる parser 増分ごとに、
+個別の tested change として着地させ、bucket は最後の対になる増分が着地した時点で
+check off する。各変更の後で `cargo test -p mizar-syntax` を成功状態に保つこと
+（[推奨検証](#推奨検証)を参照）。
 
 ### 表現基盤
 
@@ -117,8 +121,9 @@ task 11/12 の最小境界（`SurfaceAst`、`SurfaceNode`、recovery kind、
      ハッシュマップの反復順序やアドレスなどの非決定性を含まない。
    - テスト: 繰り返しレンダリングで同一の出力。現在の全ノード種別を網羅する
      代表 fixture。recovery ノードが視認できる形で印付けされる。
-   - 依存: 2。仕様: [ast.md](./ast.md)。スナップショット配置は
-     [../../mizar-test/ja/snapshot.md](../../mizar-test/ja/snapshot.md)。
+   - 依存: 2。仕様: [ast.md](./ast.md)。snapshot envelope / update policy は
+     [../../mizar-test/ja/snapshot.md](../../mizar-test/ja/snapshot.md)。具体的な
+     `SurfaceAst` body layout は [ast.md](./ast.md)「Snapshot rendering」が所有する。
 
 4. **trivia モデル。** [x]
    - `pub mod trivia;` を追加する。`mizar-frontend::PreprocessedSource`
@@ -149,10 +154,11 @@ task 11/12 の最小境界（`SurfaceAst`、`SurfaceNode`、recovery kind、
 ### consumer 前の互換性ゲート
 
 **公開 enum 前方互換性の初期ゲート。** [ ]
-- phase 3 境界で利用可能な各公開 enum（`SurfaceNodeKind`、`SurfaceTokenKind`、
-  `SyntaxRecoveryKind`、`SyntaxDiagnosticCode`、および task 4 で導入される
-  trivia の kind）について、`mizar-frontend` task 25 の手続きで
-  `#[non_exhaustive]` 対 意図的 exhaustive を決定する。
+- phase 3 境界で利用可能な各公開 enum（`SyntaxKind`、`SurfaceNodeKind`、
+  `SurfaceTokenKind`、`SurfaceOperatorAssociativity`、`SyntaxRecoveryKind`、
+  `SyntaxDiagnosticCode`、および task 4 で導入される trivia の kind）について、
+  `mizar-frontend` task 25 の手続きで `#[non_exhaustive]` 対 意図的 exhaustive を
+  決定する。
 - 各決定を所有モジュール仕様の enum の隣に記録し、parser task 5〜7 によって
   resolver / LSP の消費者が現実的になる前に属性を適用する。
 - 依存: 4、5。仕様: [ast.md](./ast.md)、[trivia.md](./trivia.md)、
@@ -164,9 +170,11 @@ task 11/12 の最小境界（`SurfaceAst`、`SurfaceNode`、recovery kind、
 `mizar-parser` 文法タスクと同じ変更で着地し（変更の粒度はパーサー todo の
 番号付けが統制する）、各増分はスナップショットレンダリングを拡張する。以下の
 語彙タスクは、対になるパーサータスクの最後が着地した時点でチェックを入れる。
-それを構築するパーサータスクに先行して、投機的にノード種別を追加しない。
-仕様参照は [doc/spec/ja/](../../../spec/ja/00.index.md) 配下の規範的な文法章で
-ある。
+それを構築するパーサータスクに先行して、投機的にノード種別を追加しない。各増分
+では、まず [ast.md](./ast.md) の語彙増分の契約を拡張し、node kind、payload、
+child role、range rule、accessor、snapshot、recovery / trivia との相互作用を
+記録しなければならない。仕様参照は [doc/spec/ja/](../../../spec/ja/00.index.md)
+配下の規範的な文法章である。
 
 6. **モジュールと item のノード。** [ ] — `mizar-parser` task 5〜7 と対。
    - モジュールファイルの形、トップレベル item リストとキーワードで
