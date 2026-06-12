@@ -27,9 +27,9 @@ proof_block        ::= proof ;
 
 symbol_name        ::= identifier | user_symbol ;
 def_symbol         ::= identifier | user_symbol ;
-attribute_def_name ::= identifier ;
-mode_def_name      ::= identifier ;
-struct_def_name    ::= identifier ;
+attribute_def_name ::= def_symbol ;
+mode_def_name      ::= def_symbol ;
+struct_def_name    ::= def_symbol ;
 field_name         ::= identifier ;
 selector           ::= field_name { "." field_name } ;
 inline_func_name   ::= identifier ;
@@ -122,10 +122,15 @@ where while with
 
 固定 annotation name と option name は文脈限定 spelling であり、その文法位置の
 外では予約識別子ではありません。現在の文脈限定 spelling は `auto`, `cvc5`,
-`e`, `max_axioms`, `solver`, `steps`, `timeout`, `vampire`, `z3` と、A.21 で
-`@` の後に現れる固定 annotation-name spelling です。
+`e`, `max_axioms`, `solver`, `steps`, `timeout`, `vampire`, `z3`, `result`,
+`term_size` と、A.21 で `@` の後に現れる固定 annotation-name spelling です。
 `@` marker は annotation のために語彙的に予約されていますが、単独の予約記号
 token ではありません。
+
+予約 bracket token `[` と `]` は user symbol ではありませんが、term primary が
+期待される位置では、組み込み bracket functor の区切り対として文法上認められます。
+template-capable な名前の後では、同じ token は template 引数を開始します。
+複合 token `@[` は library annotation を開始します。
 
 `n-dimensional` や `(m,n)-ary` のような parameterized attribute spelling
 に現れるハイフンは、予約 special symbol ではなく、文脈依存の
@@ -148,7 +153,11 @@ param_prefix      ::= parameter "-" | "(" parameter_list ")" "-" ;
 
 radix_type        ::= builtin_type | struct_ref_name [ type_args ] ;
 mode_type         ::= mode_ref_name [ type_args ] ;
-type_args         ::= ( "of" | "over" ) argument_list ;
+type_args         ::= ( "of" | "over" ) argument_list
+                    | "[" type_arg_list "]" ;
+type_arg_list     ::= type_arg { "," type_arg } ;
+type_arg          ::= type_expression | qua_arg ;
+qua_arg           ::= identifier { "qua" radix_type } ;
 argument_list     ::= term_expression { "," term_expression } ;
 
 builtin_type      ::= "object" | "set" ;
@@ -209,22 +218,26 @@ struct_member    ::= field_decl | property_decl ;
 field_decl       ::= "field" identifier "->" type_expression
                      [ ":=" term_expression ] ";" ;
 property_decl    ::= "property" identifier "->" type_expression ";" ;
-type_params      ::= ( "of" | "over" ) type_parameter_list ;
+type_params      ::= ( "of" | "over" ) type_parameter_list
+                   | "[" type_parameter_list "]" ;
 type_parameter_list ::= identifier { "," identifier } ;
 
-inherit_def      ::= "inherit" struct_def_name "extends" parent_type
+inherit_def      ::= "inherit" inherit_child "extends" parent_type
                      [ "where" inherit_member { inherit_member }
                        [ coherence_block ] "end" ] ";" ;
-parent_type      ::= struct_ref_name | "set" ;
+inherit_child    ::= struct_ref_name [ type_args ] ;
+parent_type      ::= struct_ref_name [ type_args ] | "set" ;
 inherit_member   ::= field_redef | property_redef ;
 field_redef      ::= "field" identifier [ "->" type_expression ]
                      "from" ( identifier | "it" ) ";" ;
 property_redef   ::= "property" identifier [ "->" type_expression ]
                      "from" identifier ";" ;
 
-struct_constructor ::= struct_ref_name "(" [ named_arg { "," named_arg } ] ")" ;
+struct_constructor ::= struct_ref_name [ type_args ]
+                       "(" [ named_arg { "," named_arg } ] ")" ;
 named_arg          ::= identifier ":" term_expression ;
-field_access       ::= term_expression "." field_name ;
+field_access       ::= term_expression "." field_name
+                       [ "(" [ term_list ] ")" ] ;
 ```
 
 ## A.6 属性
@@ -255,7 +268,7 @@ mode_def       ::= "mode" label ":" mode_def_name [ type_params ] "is"
 mode_property  ::= "sethood" justification ";" ;
 
 property_impl        ::= "definition"
-                           "let" identifier "be" mode_ref_name ";"
+                           "let" identifier "be" mode_application ";"
                            ( property_means_impl | property_equals_impl )
                          "end" ";" ;
 property_means_impl  ::= "property" identifier "." identifier
@@ -374,7 +387,8 @@ module_path        ::= [ relative_prefix ] module_identifier
 relative_prefix    ::= "." | ".." ;
 module_identifier  ::= identifier ;
 
-annotated_declaration ::= { annotation } declaration ;
+annotated_declaration ::= { annotation } declaration
+                        | standalone_diagnostic_annotation ;
 
 declaration        ::= definition_block
                      | reserve_decl
@@ -392,8 +406,8 @@ definition_content ::= { annotation }
                        | correctness_condition
                        | property_item
                        | [ visibility ] definitional_item
-                       | theorem_item
-                       | registration_item ) ;
+                       | [ visibility ] theorem_item
+                       | [ visibility ] registration_item ) ;
 
 parameter_decl     ::= "let" qualified_vars [ "such" conditions ] ";" ;
 definition_parameter_decl ::= "let" definition_parameter_binding
@@ -442,7 +456,8 @@ correctness_condition ::= existence_block
 ```ebnf
 term_expression      ::= operator_expression { "qua" type_expression } ;
 
-operator_expression  ::= term_primary { term_postfix } ;
+operator_expression  ::= postfix_expression | functor_application ;
+postfix_expression   ::= term_primary { term_postfix } ;
 term_primary         ::= variable_identifier
                        | "it"
                        | numeral
@@ -454,14 +469,19 @@ term_primary         ::= variable_identifier
                        | bracket_functor_application ;
 
 term_postfix         ::= "." field_name
+                         [ "(" [ term_list ] ")" ]
                        | "with" "(" field_update_list ")" ;
 
 variable_identifier ::= identifier ;
 
 inline_functor_application ::= inline_func_name "(" [ term_list ] ")" ;
 
-functor_application  ::= operator_expression ;
-bracket_functor_application ::= user_symbol term_list user_symbol ;
+functor_application  ::= [ functor_loci ] functor_symbol [ functor_loci ]
+                       | bracket_functor_application
+                       | inline_functor_application ;
+functor_loci         ::= term_expression | "(" term_list ")" ;
+bracket_functor_application ::= user_symbol term_list user_symbol
+                              | "[" term_list "]" ;
 
 field_update_list    ::= field_update { "," field_update } ;
 field_update         ::= selector ":=" term_expression ;
@@ -504,7 +524,7 @@ and_formula          ::= not_formula
                          { "&" ( not_formula | quantified_formula )
                          | "&" "..." "&"
                            ( not_formula | quantified_formula ) } ;
-not_formula          ::= "not" not_formula
+not_formula          ::= "not" ( not_formula | quantified_formula )
                        | atomic_formula
                        | "(" formula ")"
                        | "contradiction"
@@ -560,7 +580,8 @@ standalone_statement ::= generalization
                        | assumption
                        | diffuse_statement
                        | diffuse_conclusion
-                       | exemplification ;
+                       | exemplification
+                       | standalone_diagnostic_annotation ;
 
 generalization               ::= "let" qualified_vars [ "such" conditions ] ";" ;
 constant_definition          ::= "set" equating_list ";" ;
@@ -590,8 +611,7 @@ example                      ::= term_expression | identifier "=" term_expressio
 
 type_changing_statement      ::= "reconsider" type_change_list "as"
                                  type_expression simple_justification ";" ;
-type_change_list             ::= reconsider_item { "," reconsider_item } ;
-reconsider_item              ::= identifier | identifier "=" term_expression ;
+(* type_change_list and reconsider_item are defined in A.4. *)
 
 compact_statement            ::= proposition justification ";" ;
 iterative_equality           ::= [ label_identifier ":" ] term_expression
@@ -627,10 +647,10 @@ bulk_reference               ::= namespace_path ".*" ;
 namespace_path               ::= identifier { "." identifier } ;
 template_args                ::= "[" template_arg { "," template_arg } "]" ;
 template_arg                 ::= type_expression
-                               | coercion_arg
+                               | qua_arg
                                | defpred_identifier
                                | deffunc_identifier ;
-coercion_arg                 ::= identifier "as" radix_type ;
+(* qua_arg is defined in A.3. *)
 ```
 
 ## A.16 定理と correctness block
@@ -712,10 +732,7 @@ func_param      ::= identifier "be" "func" "(" type_list ")" "->"
                     type_expression ;
 type_list       ::= type_expression { "," type_expression } ;
 
-param_name      ::= identifier [ "[" type_arg_list "]" ] ;
-type_arg_list   ::= type_arg { "," type_arg } ;
-type_arg        ::= type_expression | qua_arg ;
-qua_arg         ::= identifier { "qua" radix_type } ;
+param_name      ::= qualified_symbol [ "[" type_arg_list "]" ] ;
 
 scheme_app      ::= "by" scheme_name template_args
                     { "," label_identifier } ";" ;
@@ -755,7 +772,8 @@ algo_statement     ::= var_decl
                      | break_stmt
                      | continue_stmt
                      | assert_stmt
-                     | snapshot_stmt ;
+                     | snapshot_stmt
+                     | standalone_diagnostic_annotation ;
 
 var_decl           ::= "var" var_binding { "," var_binding }
                        [ "as" type_expression [ justification ] ] ";" ;
@@ -822,6 +840,7 @@ computation_option ::= "steps" ":" nat_literal
                      | "nest" ":" nat_literal ;
 
 pick_expr          ::= "the" type_expression ;
+term_size_expr     ::= "term_size" "(" term_expression ")" ;
 ```
 
 ## A.21 annotation
@@ -829,18 +848,20 @@ pick_expr          ::= "the" type_expression ;
 規範参照: [第 21 章 (ソースコード annotation と ATP 連携)](./21.source_code_annotation_and_atp.md)。
 
 ```ebnf
-annotation_name     ::= "@" identifier ;
 annotation          ::= library_annotation
                       | statement_annotation
                       | latex_annotation
                       | proof_hint_annotation
                       | show_thesis_annotation
                       | show_resolution_annotation
-                      | show_type_annotation
-                      | eval_annotation
                       | suppress_annotation ;
 
-statement_annotation ::= annotation_name [ "(" annotation_args ")" ] ;
+statement_annotation ::= generic_annotation_name [ "(" annotation_args ")" ] ;
+generic_annotation_name ::= "@" generic_annotation_identifier ;
+generic_annotation_identifier ::= ? identifier other than fixed annotation names
+                                    latex, proof_hint, show_thesis,
+                                    show_resolution, show_type, eval,
+                                    suppress ? ;
 
 library_annotation  ::= "@[" label_list "]" ;
 label_list          ::= label_name { "," label_name } ;
@@ -862,7 +883,13 @@ show_resolution_annotation ::= "@show_resolution" ;
 show_type_annotation       ::= "@show_type" "(" term_expression ")" ;
 eval_annotation            ::= "@eval" "(" term_expression ")" ;
 suppress_annotation        ::= "@suppress" "(" identifier ")" ;
+standalone_diagnostic_annotation ::= show_type_annotation | eval_annotation ;
 ```
+
+`@show_type(...)` と `@eval(...)` は意図的に `annotation` から除外されています。
+これらは `standalone_diagnostic_annotation` としてのみ解析され、後続の宣言や文には
+付与されません。固定 annotation 名は `statement_annotation` からも除外されるため、
+generic annotation として再解釈されることはありません。
 
 ## A.22 追加の表層文法を持たない章
 

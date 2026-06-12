@@ -57,7 +57,7 @@ Examples:
 a + b * c       :: a + (b * c)
 a * b + c       :: (a * b) + c
 a ^ b ^ c       :: a ^ (b ^ c), if ^ is right-associative
-a < b < c       :: error, if < is non-associative
+a %% b %% c     :: error, if %% is a non-associative term operator
 ```
 
 ## B.3 Atomic Formula Boundary
@@ -73,6 +73,11 @@ Atomic formulas are the bridge between term parsing and formula parsing. The par
 | Attribute assertion | `n is positive even Integer` | Subject is parsed as a term expression |
 
 Formula connectives do not bind inside terms. Thus `f(x & y)` is invalid unless a grammar position explicitly expects a formula. Likewise, `x + y & z` is invalid as written: `x + y` is a term, not an atomic formula, so the left operand of `&` is incomplete. The author must write a complete formula such as `x + y = 0 & z is Nat`.
+
+Predicate-chain notation is resolved at the atomic-formula boundary, not as
+term-operator associativity. For example, after predicate resolution,
+`a < b < c` denotes the conjunction `a < b & b < c`; it is not rejected merely
+because `<` would be non-associative as a term operator.
 
 ## B.4 Formula Operators
 

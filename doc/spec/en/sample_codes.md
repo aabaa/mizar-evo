@@ -250,33 +250,38 @@ mml/
     definition
       let M be Magma;
 
-      attr M is associative means
+      attr AssociativeDef: M is associative means
         for x,y,z being Element of M holds
         M.binop(M.binop(x,y),z) = M.binop(x,M.binop(y,z));
 
-      attr M is unital means
+      attr UnitalDef: M is unital means
         ex e being Element of M st
         for x being Element of M holds
         M.binop(x,e) = x & M.binop(e,x) = x;
 
-      func id. M -> Element of unital M means
-        for x being Element of M holds
-        M.binop(x, it) = x & M.binop(it, x) = x;
-      existence;
-      uniqueness;
-
-      attr M is commutative means
+      attr CommutativeDef: M is commutative means
         for x,y being Element of M holds
         M.binop(x,y) = M.binop(y,x);
     end;
 
     definition
+      let M be unital Magma;
+
+      func IdentityDef: id. M -> Element of M means
+        for x being Element of M holds
+        M.binop(x, it) = x & M.binop(it, x) = x;
+      existence;
+      uniqueness;
+    end;
+
+    definition
       let M be LoopStr;
 
-      redefine attr M is unital means
+      redefine attr LoopUnitalDef: M is unital means
         (M qua Magma) is unital & M.unit = id. M;
+      coherence;
 
-      attr M is invertible means
+      attr InvertibleDef: M is invertible means
         for x being Element of M
         ex y being Element of M
         st M.binop(x,y) = M.unit
@@ -312,7 +317,7 @@ mml/
         the analyzer returns an error because it cannot determine
         whether the `commutative` is associated with `AddLoopStr` or `MulLoopStr`.
       =::
-      attr R is commutative means
+      attr RingCommutativeDef: R is commutative means
       (R qua MulLoopStr) is commutative;
     end;
     ```

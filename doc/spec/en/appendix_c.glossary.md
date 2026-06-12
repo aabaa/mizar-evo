@@ -108,5 +108,6 @@ This appendix gives short, non-normative definitions of recurring terms in the M
 | LSP | The Language Server Protocol interface used for hover, diagnostics, code actions, and editor integration. | Ch.23 |
 | Minimum kernel | The small trusted checker responsible for validating proof certificates and critical logical artifacts. | Ch.21 |
 | Proof trace | A recorded derivation or replay sequence used to justify an inference result, certificate, or cluster-resolution step. | Ch.21, Ch.23 |
-| Statement / item annotation | A source-level `@name` or `@name(...)` annotation attached to the immediately following statement or item, such as `@proof_hint`, `@show_type`, `@eval`, `@latex`, or `@suppress`. This is distinct from documentation tags and bracket-form library annotations. | Ch.2, Ch.21 |
+| Statement / item annotation | A source-level `@name` or `@name(...)` annotation attached to the immediately following statement or item, such as `@proof_hint`, `@show_thesis`, `@latex`, or `@suppress`. This is distinct from documentation tags, standalone diagnostic annotations, and bracket-form library annotations. | Ch.2, Ch.21 |
+| Standalone diagnostic annotation | A fixed source-level diagnostic item such as `@show_type(expr)` or `@eval(expr)` that reports information without attaching to a following statement or item. | Ch.21 |
 | Verifier | The implementation component that parses, type-checks, resolves symbols, generates obligations, dispatches provers, and accepts or rejects source files. | Ch.8, Ch.16, Ch.20-Ch.23 |

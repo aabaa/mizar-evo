@@ -57,7 +57,7 @@ postfix_operator("!", 95);
 a + b * c       :: a + (b * c)
 a * b + c       :: (a * b) + c
 a ^ b ^ c       :: a ^ (b ^ c), if ^ is right-associative
-a < b < c       :: error, if < is non-associative
+a %% b %% c     :: error, if %% is a non-associative term operator
 ```
 
 ## B.3 原子式境界
@@ -73,6 +73,11 @@ a < b < c       :: error, if < is non-associative
 |属性アサーション | `n is positive even Integer` |件名は用語式として解析されます |
 
 数式接続詞は用語内で結合しません。したがって、文法位置が明示的に式を予期しない限り、`f(x & y)` は無効です。同様に、`x + y & z` は記述どおり無効です。`x + y` は項であり、原子式ではないため、`&` の左側のオペランドは不完全です。作成者は、`x + y = 0 & z is Nat` などの完全な式を作成する必要があります。
+
+Predicate-chain notation is resolved at the atomic-formula boundary, not as
+term-operator associativity. For example, after predicate resolution,
+`a < b < c` denotes the conjunction `a < b & b < c`; it is not rejected merely
+because `<` would be non-associative as a term operator.
 
 ## B.4 数式演算子
 

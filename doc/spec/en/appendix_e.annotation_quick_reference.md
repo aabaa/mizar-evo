@@ -15,13 +15,14 @@ This appendix is a non-normative quick reference for annotation forms used in Mi
 
 | Context | Surface Form | Typical Placement | Primary Use | See |
 |---|---|---|---|---|
-| Statement / item annotation | `@name` or `@name(...)` | Immediately before the item or source location it annotates | Proof hints, rendering hints, diagnostics, evaluation | Ch.2, Ch.21, Ch.22 |
+| Statement / item annotation | `@name` or `@name(...)` | Immediately before the item or source location it annotates | Proof hints and rendering hints | Ch.2, Ch.21, Ch.22 |
+| Standalone diagnostic annotation | `@show_type(expr)`, `@eval(expr)` | As its own source item | Diagnostics and verification-time evaluation | Ch.21 |
 | Library annotation | `@[label, ...]` | Immediately before a definition, theorem, or registration | Stable metadata labels for proof search | Ch.21 |
 | Documentation tag | `@name ...` inside `:::` comments | First token of a documentation-comment paragraph | Structured generated documentation | Ch.24 |
 
 Annotation names are fixed by the language registry for statement and item annotations. Documentation tags inside `:::` comments are handled by the documentation generator; unrecognized documentation tags are passed through rather than rejected by the verifier.
 
-## E.2 Statement and Item Annotations
+## E.2 Statement, Item, and Diagnostic Forms
 
 | Annotation | Form | Applies To | Effect |
 |---|---|---|---|
@@ -29,9 +30,12 @@ Annotation names are fixed by the language registry for statement and item annot
 | Proof hint | `@proof_hint(...)` | Immediately before a `by` step, `thus` statement, or `proof ... end` block | Restricts or configures ATP proof search for the following proof obligation. |
 | Show thesis | `@show_thesis` | Proof position | Emits the current thesis as an informational diagnostic. |
 | Show resolution | `@show_resolution` | Immediately before an expression | Emits overload-resolution details for the following expression. |
-| Show type | `@show_type(expr)` | Development position | Emits the inferred type of `expr` without binding it. |
-| Evaluate expression | `@eval(expr)` | Top level, proof block, or algorithm body | Runs verification-time evaluation and emits the computed result when possible. |
+| Show type | `@show_type(expr)` | Standalone diagnostic item | Emits the inferred type of `expr` without binding it. |
+| Evaluate expression | `@eval(expr)` | Standalone diagnostic item at top level, proof block, or algorithm body | Runs verification-time evaluation and emits the computed result when possible. |
 | Suppress warning | `@suppress(Wnnnn)` | Item or smallest supported warning scope | Suppresses a warning such as `W0102` for the annotated scope. |
+
+`@show_type(expr)` and `@eval(expr)` are standalone diagnostic forms; they do
+not annotate a following declaration or statement.
 
 `@proof_hint` accepts options separated by commas:
 
