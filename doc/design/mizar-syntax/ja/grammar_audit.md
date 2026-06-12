@@ -46,8 +46,7 @@ Task 6 の Appendix A 仕様修正後の結果:
 - lexical / trivia helper: `whitespace`, `tab`, `newline`, `line_comment`,
   `block_comment`, `doc_comment`, `character`。
 - 互換 alias: `term`, `expr`, `proof_block`, `symbol_name`, `let_decl`,
-  `set_decl`, `reconsider_decl`, `reconsider_target`, `qualified_vars`,
-  `quantified_var`。
+  `set_decl`, `reconsider_decl`, `reconsider_target`, `qualified_vars`。
 - 実際の構文は別 production から到達する parser-normalized helper:
   `field_access` は `term_postfix`、`qua_expression` は `term_expression`、
   `pick_expr` は `choice_expression`、`mode_application` は `type_expression`

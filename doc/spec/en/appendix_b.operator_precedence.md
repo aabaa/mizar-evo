@@ -74,10 +74,23 @@ Atomic formulas are the bridge between term parsing and formula parsing. The par
 
 Formula connectives do not bind inside terms. Thus `f(x & y)` is invalid unless a grammar position explicitly expects a formula. Likewise, `x + y & z` is invalid as written: `x + y` is a term, not an atomic formula, so the left operand of `&` is incomplete. The author must write a complete formula such as `x + y = 0 & z is Nat`.
 
+Parentheses are interpreted by the grammar position that requested the parse.
+When a term is expected, `( ... )` contains a `term_expression`. When a formula
+is expected, `( ... )` contains a `formula`. At an atomic-formula boundary the
+parser first attempts to complete a term-headed atomic formula; if the
+parenthesized contents contain formula-only syntax such as `implies`, `iff`,
+`&`, `or`, or a quantifier, the parenthesized group is classified as a formula
+operand instead. For example, `(a + b) = c` starts from a parenthesized term,
+whereas `(P implies Q) & R` starts from a parenthesized formula.
+
 Predicate-chain notation is resolved at the atomic-formula boundary, not as
 term-operator associativity. For example, after predicate resolution,
 `a < b < c` denotes the conjunction `a < b & b < c`; it is not rejected merely
 because `<` would be non-associative as a term operator.
+Built-in predicates (`=`, `<>`, and `in`) do not participate in user predicate
+chains. Mixed chains such as `a < b = c` or `a in B < c` are syntax errors
+unless the author inserts explicit formula connectives and complete atomic
+formulas.
 
 ## B.4 Formula Operators
 
@@ -118,7 +131,7 @@ Recommended implementation outline:
 4. Parse term-level prefix and postfix operators using their declared binding powers.
 5. Parse term-level infix operators by comparing the next operator's left binding power against the current minimum binding power.
 6. Parse `qua` as the lowest-precedence term-level type qualification.
-7. Complete an atomic formula by parsing predicate notation, equality, membership, type assertions, or attribute assertions around the parsed term operands.
+7. Complete an atomic formula by parsing predicate notation, equality, membership, type assertions, or attribute assertions around the parsed term operands. If a parenthesized group at this point contains formula-only syntax, classify it as a parenthesized formula instead of a parenthesized term.
 8. Parse formula-level prefix, infix, and quantifier forms using a separate fixed binding-power table.
 
 For infix term operators, use the following binding-power convention:

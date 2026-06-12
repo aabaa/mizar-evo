@@ -222,7 +222,6 @@ reconsider_decl    ::= "reconsider" type_change_list "as" type_expression
 type_change_list   ::= reconsider_item { "," reconsider_item } ;
 reconsider_item    ::= identifier | identifier "=" term_expression ;
 
-quantified_var     ::= identifier_list [ "being" type_expression ] ;
 ```
 
 Statement-level forms are normalized in A.15.
@@ -306,10 +305,11 @@ Normative reference: [Chapter 9 (Predicates)](./09.predicates.md).
 
 ```ebnf
 pred_def         ::= "pred" label ":" pred_pattern "means" formula_definiens ";" ;
-pred_pattern     ::= [ loci ] def_predicate_symbol [ loci ] ;
-loci             ::= locus | "(" locus_list ")" ;
+pred_pattern     ::= [ loci ] def_predicate_symbol [ template_loci ] [ loci ] ;
+loci             ::= locus_list | "(" locus_list ")" ;
 locus_list       ::= locus { "," locus } ;
 locus            ::= identifier ;
+template_loci    ::= "[" locus_list "]" ;
 def_predicate_symbol ::= def_symbol ;
 predicate_symbol ::= def_symbol ;
 
@@ -322,8 +322,9 @@ pred_property    ::= ( "symmetry" | "asymmetry" | "connectedness"
 predicate_application ::= user_predicate_application
                         | builtin_predicate_application ;
 user_predicate_application ::= predicate_segment { predicate_chain_segment } ;
-predicate_segment ::= [ term_list ] [ negation ] predicate_symbol [ term_list ] ;
-predicate_chain_segment ::= [ negation ] predicate_symbol term_list ;
+predicate_segment ::= [ term_list ] [ negation ] predicate_head [ term_list ] ;
+predicate_chain_segment ::= [ negation ] predicate_head term_list ;
+predicate_head ::= predicate_symbol [ template_args ] ;
 builtin_predicate_application ::= term_expression builtin_pred term_expression ;
 negation              ::= "does" "not" | "do" "not" ;
 term_list             ::= term_expression { "," term_expression } ;
@@ -338,7 +339,7 @@ Normative reference: [Chapter 10 (Functors)](./10.functors.md).
 func_def         ::= "func" label ":" func_pattern "->" type_expression
                      ( "means" formula_definiens | "equals" term_definiens ) ";"
                      [ correctness_conditions ] ;
-func_pattern     ::= [ loci ] functor_symbol [ loci ] ;
+func_pattern     ::= [ loci ] functor_symbol [ template_loci ] [ loci ] ;
 functor_symbol   ::= def_symbol ;
 
 func_property    ::= ( "commutativity" | "idempotence"
@@ -431,7 +432,7 @@ definition_content ::= { annotation }
                        | [ visibility ] theorem_item
                        | [ visibility ] registration_item ) ;
 
-parameter_decl     ::= "let" qualified_vars [ "such" conditions ] ";" ;
+parameter_decl     ::= "let" qualified_vars [ "such" conditions ] [ "by" references ] ";" ;
 definition_parameter_decl ::= "let" definition_parameter_binding
                               [ definition_parameter_constraint ] ";" ;
 definition_parameter_binding ::= definition_qualified_vars
@@ -676,6 +677,7 @@ bulk_reference               ::= namespace_path ".*" ;
 namespace_path               ::= identifier { "." identifier } ;
 template_args                ::= "[" template_arg { "," template_arg } "]" ;
 template_arg                 ::= type_expression
+                               | term_expression
                                | qua_arg
                                | defpred_identifier
                                | deffunc_identifier ;
@@ -761,7 +763,7 @@ func_param      ::= identifier "be" "func" "(" type_list ")" "->"
                     type_expression ;
 type_list       ::= type_expression { "," type_expression } ;
 
-param_name      ::= qualified_symbol [ "[" type_arg_list "]" ] ;
+param_name      ::= qualified_symbol [ template_args ] ;
 
 scheme_app      ::= "by" scheme_name template_args
                     { "," label_identifier } ";" ;

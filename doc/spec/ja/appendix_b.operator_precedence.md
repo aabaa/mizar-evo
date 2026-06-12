@@ -74,10 +74,21 @@ a %% b %% c     :: error, if %% is a non-associative term operator
 
 数式接続詞は用語内で結合しません。したがって、文法位置が明示的に式を予期しない限り、`f(x & y)` は無効です。同様に、`x + y & z` は記述どおり無効です。`x + y` は項であり、原子式ではないため、`&` の左側のオペランドは不完全です。作成者は、`x + y = 0 & z is Nat` などの完全な式を作成する必要があります。
 
+括弧は、parse を要求した文法位置によって解釈されます。term が期待される場合、
+`( ... )` は `term_expression` を含みます。formula が期待される場合、`( ... )`
+は `formula` を含みます。atomic-formula 境界では、parser はまず term-headed な
+atomic formula を完成させようとします。括弧内に `implies`、`iff`、`&`、`or`、
+quantifier など formula 専用の構文が含まれる場合、その括弧 group は term ではなく
+formula operand として分類されます。たとえば `(a + b) = c` は括弧付き term から始まり、
+`(P implies Q) & R` は括弧付き formula から始まります。
+
 Predicate-chain notation is resolved at the atomic-formula boundary, not as
 term-operator associativity. For example, after predicate resolution,
 `a < b < c` denotes the conjunction `a < b & b < c`; it is not rejected merely
 because `<` would be non-associative as a term operator.
+組み込み述語 (`=`、`<>`、`in`) は user predicate chain には参加しません。
+`a < b = c` や `a in B < c` のような混在 chain は、明示的な formula connective と
+完全な atomic formula を書かない限り構文エラーです。
 
 ## B.4 数式演算子
 
@@ -118,7 +129,7 @@ Pratt parserは、null と left の表記による優先クライミングとも
 4. 宣言された結合力を使用して、用語レベルの接頭辞および後置演算子を解析します。
 5. 次の演算子の左結合力と現在の最小結合力を比較することにより、用語レベルの中置演算子を解析します。
 6. `qua` を最も優先順位の低い用語レベルの型修飾として解析します。
-7. 解析された用語オペランドの周囲の述語表記、等価性、メンバーシップ、型アサーション、または属性アサーションを解析することにより、アトミック式を完成させます。
+7. 解析された用語オペランドの周囲の述語表記、等価性、メンバーシップ、型アサーション、または属性アサーションを解析することにより、アトミック式を完成させます。この位置の括弧 group が formula 専用構文を含む場合、括弧付き term ではなく括弧付き formula として分類します。
 8. 別の固定結合力テーブルを使用して、数式レベルの接頭語、中置語、および数量詞の形式を解析します。
 
 中置項演算子の場合は、次の結合力規則を使用します。

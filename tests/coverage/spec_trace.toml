@@ -705,3 +705,58 @@ tests = [
   "tests/lexical/pass/pass_lexical_scope_skeleton_shadowing_001.expect.toml",
   "tests/property/scope_skeleton_phase5_001.expect.toml",
 ]
+
+[[requirement]]
+id = "spec.en.syntax.template_arguments.parser"
+source = "doc/spec/en/appendix_a.grammar_summary.md"
+section = "A.9 Predicates; A.10 Functors; A.18 Templates"
+stage = "parse_only"
+status = "planned"
+required = true
+coverage = "pass_and_fail"
+deferred_reason = "Parser corpus is not yet implemented beyond the staged lexical model. Add pass cases for let constraints with by references, template predicate/functor definitions and uses, take-with-witness, conditional definiens, Fraenkel generators, qua chains, and predicate chains; add fail cases for chained iff, non-associative operator chains, builtin/user predicate chain mixing, and incomplete term-headed formulas."
+tests = []
+
+[[requirement]]
+id = "spec.en.elaboration.choice_comprehension.lowering"
+source = "doc/design/architecture/en/06.elaboration_and_core_ir.md"
+section = "Surface Terms Lower Through Canonical Core Symbols"
+stage = "type_elaboration"
+status = "planned"
+required = true
+coverage = "property"
+deferred_reason = "Core elaboration is not implemented yet. Add semantic tests that stable `the T` lowers to generated Apply symbols, theorem propositions own stable choice symbols, exported definition choices are reused on unfolding, executable algorithm statement `the` sites lower to Pick bindings, and Fraenkel comprehensions require sethood evidence."
+tests = []
+
+[[requirement]]
+id = "spec.en.binding.substitution.capture_avoidance"
+source = "doc/design/architecture/en/16.substitution_and_binding.md"
+section = "Definition-Time Closures"
+stage = "advanced_semantics"
+status = "planned"
+required = true
+coverage = "pass_and_fail"
+deferred_reason = "Substitution replay and proof-local abbreviation expansion are not implemented yet. Add regression coverage for the `defpred P(n be Nat) means n < m` shadowing example and malformed capture-producing substitutions."
+tests = []
+
+[[requirement]]
+id = "spec.en.algorithm.vc.assignment_loop_exits"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.13.3 Verification Condition Schema"
+stage = "proof_verification"
+status = "planned"
+required = true
+coverage = "property"
+deferred_reason = "VC generation is not implemented yet. Add coverage for old-state assignment, field update alias identity, break exits that do not gain `not C`, continue/decreasing checks, `downto` and `step` range loops, and ghost-only Pick erasure."
+tests = []
+
+[[requirement]]
+id = "spec.en.type_soundness.escape_and_guard_failures"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.3.3 Skeleton Decomposition Rules"
+stage = "advanced_semantics"
+status = "planned"
+required = true
+coverage = "fail"
+deferred_reason = "Name/type/proof checking is not implemented yet. Add fail coverage for witness leakage from now/proof blocks, unmet deffunc/defpred guards, missing sethood for comprehension, and invalid qua narrowing."
+tests = []

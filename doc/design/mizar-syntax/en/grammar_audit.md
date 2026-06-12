@@ -48,7 +48,7 @@ intentional helpers or tracked follow-ups:
   `block_comment`, `doc_comment`, `character`.
 - Compatibility aliases: `term`, `expr`, `proof_block`, `symbol_name`,
   `let_decl`, `set_decl`, `reconsider_decl`, `reconsider_target`,
-  `qualified_vars`, `quantified_var`.
+  `qualified_vars`.
 - Parser-normalized helper names whose concrete syntax is reached through
   another production: `field_access` through `term_postfix`,
   `qua_expression` through `term_expression`, `pick_expr` through
