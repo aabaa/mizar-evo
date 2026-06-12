@@ -171,6 +171,16 @@ Accepting cases use `expected_outcome = "pass"` with
 parser-owned `rejection_reason` / `stable_detail_key` values. Snapshot
 profiles stay absent until AST snapshot design lands.
 
+## Task 8 Seed Status
+
+Task 8 records the initial seed in
+[parse_only_fixture_seed.md](./parse_only_fixture_seed.md). The seed keeps the
+Fixture Activation Plan case IDs and source shapes stable, adds supplemental
+rows for `qua`, `reconsider`, and the string-required annotation rejection
+boundary, and stays as a checked-in manifest until the parse-only corpus runner
+and owning grammar productions can execute the cases. No AST snapshot
+expectation is introduced.
+
 ## Appendix A Traceability Summary
 
 | Appendix A section | Matrix areas |

@@ -20,5 +20,6 @@ Grammar-gate planning notes:
 
 - `grammar_audit.md`
 - `parse_only_acceptance_matrix.md`
+- `parse_only_fixture_seed.md`
 
 Implementation roadmap: [todo.md](./todo.md).

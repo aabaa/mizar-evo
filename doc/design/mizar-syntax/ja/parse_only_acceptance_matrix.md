@@ -168,6 +168,14 @@ expected_phase = "parse"
 `rejection_reason` / `stable_detail_key` を使う。AST snapshot design が着地するまで
 snapshot profile は置かない。
 
+## Task 8 seed status
+
+Task 8 は初期 seed を [parse_only_fixture_seed.md](./parse_only_fixture_seed.md)
+に記録する。この seed は Fixture 有効化計画の case ID と source shape を安定
+させ、`qua`、`reconsider`、string-required annotation rejection boundary の補助行を
+追加し、parse-only corpus runner と所有する grammar production が case を実行できる
+まで checked-in manifest として保持する。AST snapshot expectation は導入しない。
+
 ## Appendix A Traceability Summary
 
 | Appendix A section | Matrix areas |

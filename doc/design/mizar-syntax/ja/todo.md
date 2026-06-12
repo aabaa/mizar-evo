@@ -218,7 +218,7 @@ task 12 互換 surface を超える新しい AST node kind 設計を始めない
      [../../mizar-test/ja/staged_model.md](../../mizar-test/ja/staged_model.md)、
      [../../mizar-test/ja/expectation_schema.md](../../mizar-test/ja/expectation_schema.md)。
 
-8. **初期 parse-only grammar fixture seed。** [ ]
+8. **初期 parse-only grammar fixture seed。** [x]
    - 最初の小さな parse-only fixture seed を追加する。parser support がまだ
      十分でない場合は、選定済み case を変更せずに後で有効化できる checked-in
      fixture manifest / design note を追加する。
@@ -229,6 +229,13 @@ task 12 互換 surface を超える新しい AST node kind 設計を始めない
    - まだ最終 AST node snapshot は要求しない。AST snapshot は、対応する node
      vocabulary 増分が node kind、child role、range rule、recovery rendering を
      定義した後に追加する。
+   - 結果: [parse_only_fixture_seed.md](./parse_only_fixture_seed.md) に記録した。
+     現在の parser readiness は full grammar corpus を default discovery で実行する
+     には十分でないため、Task 8 seed は checked-in fixture manifest とし、選定済み
+     case ID、source shape、parse-only expectation、有効化先を安定させた。この
+     seed は Task 7 の Fixture 有効化計画を優先し、`qua`、`reconsider`、
+     string-required annotation rejection boundary の補助行を追加する。AST snapshot
+     は追加していない。
    - 依存: 7。仕様:
      [../../../spec/ja/appendix_a.grammar_summary.md](../../../spec/ja/appendix_a.grammar_summary.md)、
      [../../mizar-test/ja/layout.md](../../mizar-test/ja/layout.md)。

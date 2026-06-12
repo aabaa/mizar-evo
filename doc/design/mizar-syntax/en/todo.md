@@ -228,7 +228,7 @@ as accepted follow-ups. The purpose is to avoid freezing grammar drift into
      [../../mizar-test/en/staged_model.md](../../mizar-test/en/staged_model.md),
      [../../mizar-test/en/expectation_schema.md](../../mizar-test/en/expectation_schema.md).
 
-8. **Initial parse-only grammar fixture seed.** [ ]
+8. **Initial parse-only grammar fixture seed.** [x]
    - Add the first small parse-only fixture seed or, if parser support is not
      ready, a checked-in fixture manifest/design note that can be activated
      without changing the selected cases.
@@ -239,6 +239,15 @@ as accepted follow-ups. The purpose is to avoid freezing grammar drift into
    - Do not require final AST node snapshots yet. AST snapshots are added only
      after the corresponding node vocabulary increment defines node kinds,
      child roles, range rules, and recovery rendering.
+   - Result: recorded in
+     [parse_only_fixture_seed.md](./parse_only_fixture_seed.md). Current parser
+     readiness is not sufficient for default-discovered full-grammar corpus
+     execution, so the Task 8 seed is a checked-in fixture manifest that keeps
+     the selected case IDs, source shapes, parse-only expectations, and
+     activation targets stable. The seed prioritizes the Task 7 Fixture
+     Activation Plan and adds supplemental rows for `qua`, `reconsider`, and
+     the string-required annotation rejection boundary. No AST snapshots were
+     added.
    - Deps: 7. Spec:
      [../../../spec/en/appendix_a.grammar_summary.md](../../../spec/en/appendix_a.grammar_summary.md),
      [../../mizar-test/en/layout.md](../../mizar-test/en/layout.md).
