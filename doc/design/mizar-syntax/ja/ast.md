@@ -86,6 +86,10 @@ snapshot text は、rowan pointer identity、builder id、`SurfaceNodeId` 値、
 byte offset として描画する。source identity は `mizar-test` が所有する外側の
 snapshot/profile record の責務である。
 
+`SurfaceAst::snapshot_text_with_trivia` は、[trivia.md](./trivia.md) で定義する
+決定的な trivia side table を追加して描画する。既定の syntax snapshot はその
+section を省略し、既存の syntax-only baseline を安定させる。
+
 ### Range attachment
 
 各 surface node は `mizar-session` の `SourceRange` を持つ。通常 node では親の

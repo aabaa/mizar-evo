@@ -1,4 +1,7 @@
 use crate::recovery::SyntaxRecoveryKind;
+use crate::trivia::{
+    SurfaceTrivia, TriviaAttachmentTarget, TriviaNodeTarget, write_trivia_snapshot,
+};
 use mizar_session::{SourceId, SourceRange};
 use std::fmt::Write as _;
 use std::sync::Arc;
@@ -95,6 +98,7 @@ pub struct SurfaceAst {
     token_nodes: Vec<SurfaceNodeId>,
     expression_root: Option<SurfaceNodeId>,
     green: rowan::GreenNode,
+    trivia: SurfaceTrivia,
 }
 
 impl SurfaceAst {
@@ -106,6 +110,7 @@ impl SurfaceAst {
         expression_root: Option<SurfaceNodeId>,
     ) -> Self {
         let green = build_green_tree(&nodes, root);
+        let trivia = SurfaceTrivia::empty(source_id);
         Self {
             source_id,
             nodes,
@@ -113,6 +118,7 @@ impl SurfaceAst {
             token_nodes,
             expression_root,
             green,
+            trivia,
         }
     }
 
@@ -171,6 +177,63 @@ impl SurfaceAst {
         RowanSyntaxNode::new_root(self.green.clone())
     }
 
+    pub fn trivia(&self) -> &SurfaceTrivia {
+        &self.trivia
+    }
+
+    pub fn with_trivia(mut self, trivia: SurfaceTrivia) -> Self {
+        assert_eq!(
+            trivia.source_id(),
+            self.source_id,
+            "SurfaceAst trivia must belong to the AST source"
+        );
+        self.assert_trivia_targets(&trivia);
+        self.trivia = trivia;
+        self
+    }
+
+    fn assert_trivia_targets(&self, trivia: &SurfaceTrivia) {
+        for attachment in trivia.doc_comment_attachments() {
+            self.assert_trivia_target(&attachment.target);
+        }
+        for skipped in trivia.skipped_token_ranges() {
+            if let Some(owner) = &skipped.owner {
+                self.assert_trivia_target(owner);
+            }
+        }
+    }
+
+    fn assert_trivia_target(&self, target: &TriviaAttachmentTarget) {
+        match target {
+            TriviaAttachmentTarget::Node(target) => {
+                let node = self.assert_existing_trivia_target(*target, "node");
+                assert!(
+                    !matches!(node.kind, SurfaceNodeKind::Token(_)),
+                    "SurfaceAst trivia node target must not refer to a token node"
+                );
+            }
+            TriviaAttachmentTarget::Token(target) => {
+                let node = self.assert_existing_trivia_target(*target, "token");
+                assert!(
+                    matches!(node.kind, SurfaceNodeKind::Token(_)),
+                    "SurfaceAst trivia token target must refer to a token node"
+                );
+            }
+            TriviaAttachmentTarget::Detached(_) => {}
+        }
+    }
+
+    fn assert_existing_trivia_target(&self, target: TriviaNodeTarget, role: &str) -> &SurfaceNode {
+        let node = self
+            .node(target.id)
+            .unwrap_or_else(|| panic!("SurfaceAst trivia {role} target must exist in the AST"));
+        assert_eq!(
+            node.range, target.range,
+            "SurfaceAst trivia {role} target range must match the AST node range"
+        );
+        node
+    }
+
     pub fn snapshot_text(&self) -> String {
         let mut output = String::from("surface-ast-snapshot-v1\n");
         output.push_str("root:\n");
@@ -192,6 +255,14 @@ impl SurfaceAst {
         if token_count == 0 {
             output.push_str("  <none>\n");
         }
+        output
+    }
+
+    pub fn snapshot_text_with_trivia(&self) -> String {
+        let mut output = self.snapshot_text();
+        write_trivia_snapshot(&mut output, &self.trivia, |id| {
+            self.node(id).map(|node| node.range)
+        });
         output
     }
 
@@ -883,9 +954,13 @@ mod tests {
         SurfaceTokenKind, SyntaxKind,
     };
     use crate::SyntaxRecoveryKind;
+    use crate::{
+        SkippedTokenReason, SurfaceTriviaBuilder, TriviaAttachmentTarget, TriviaNodeTarget,
+        TriviaPlacement, WhitespaceHintKind,
+    };
     use mizar_session::{
-        BuildSnapshotId, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceId,
-        SourceRange,
+        BuildSnapshotId, CommentKind, Hash, InMemorySessionIdAllocator, SessionIdAllocator,
+        SourceAnchor, SourceId, SourceRange,
     };
 
     #[test]
@@ -1228,9 +1303,176 @@ mod tests {
     }
 
     #[test]
+    fn snapshot_rendering_includes_trivia_when_requested() {
+        let source_id = source_id(8);
+        let ast = expression_ast(source_id);
+        let expression = ast.expression_root().unwrap();
+        let token = ast.token_nodes()[0];
+        let mut trivia = SurfaceTriviaBuilder::new(source_id);
+        trivia.add_comment(CommentKind::SingleLine, range(source_id, 22, 31));
+        trivia.add_doc_comment_attachment(
+            range(source_id, 0, 8),
+            TriviaAttachmentTarget::Node(TriviaNodeTarget::new(expression, range(source_id, 0, 6))),
+            TriviaPlacement::Leading,
+        );
+        trivia.add_skipped_token_range(
+            range(source_id, 32, 35),
+            Some(TriviaAttachmentTarget::Token(TriviaNodeTarget::new(
+                token,
+                range(source_id, 0, 1),
+            ))),
+            SkippedTokenReason::UnexpectedToken,
+        );
+        trivia.add_whitespace_hint(
+            WhitespaceHintKind::RequiresSeparation,
+            range(source_id, 1, 2),
+        );
+        let ast = ast.with_trivia(trivia.finish());
+        let actual = ast.snapshot_text_with_trivia();
+
+        assert!(actual.starts_with(&ast.snapshot_text()));
+        assert!(actual.contains("trivia:\n"));
+        assert!(actual.contains("Comment kind=SingleLine range=22..31"));
+        assert!(actual.contains("DocComment range=0..8 placement=Leading target=node:range:0..6"));
+        assert!(
+            actual.contains(
+                "SkippedTokens reason=UnexpectedToken range=32..35 owner=token:range:0..1"
+            )
+        );
+        assert!(actual.contains("WhitespaceHint kind=RequiresSeparation range=1..2"));
+        assert!(
+            !ast.snapshot_text().contains("trivia:"),
+            "default snapshot rendering stays compatible with task-3 baselines"
+        );
+    }
+
+    #[test]
+    fn trivia_snapshot_rendering_is_sorted_and_byte_identical() {
+        let source_id = source_id(9);
+        let first = expression_ast(source_id).with_trivia(scrambled_trivia(source_id).finish());
+        let second = expression_ast(source_id).with_trivia(scrambled_trivia(source_id).finish());
+        let expected = format!(
+            "{}{}",
+            expression_ast(source_id).snapshot_text(),
+            concat!(
+                "trivia:\n",
+                "  Comment kind=MultiLine range=2..5\n",
+                "  Comment kind=SingleLine range=30..39\n",
+                "  DocComment range=6..8 placement=Leading target=detached:point:9\n",
+                "  DocComment range=10..12 placement=Trailing target=detached:range:12..13\n",
+                "  SkippedTokens reason=MalformedAnnotation range=40..44 owner=<none>\n",
+                "  SkippedTokens reason=UnexpectedToken range=50..51 owner=detached:range:48..52\n",
+                "  WhitespaceHint kind=LineBreakBefore range=14..15\n",
+                "  WhitespaceHint kind=SyntheticBoundary range=60..61\n",
+            )
+        );
+
+        assert_eq!(first.snapshot_text_with_trivia(), expected);
+        assert_eq!(
+            first.snapshot_text_with_trivia(),
+            second.snapshot_text_with_trivia()
+        );
+    }
+
+    #[test]
+    fn trivia_snapshot_target_sorting_breaks_collisions_deterministically() {
+        let source_id = source_id(10);
+        let first = expression_ast(source_id)
+            .with_trivia(colliding_target_trivia(source_id, false).finish());
+        let second = expression_ast(source_id)
+            .with_trivia(colliding_target_trivia(source_id, true).finish());
+        let expected = format!(
+            "{}{}",
+            expression_ast(source_id).snapshot_text(),
+            concat!(
+                "trivia:\n",
+                "  DocComment range=20..22 placement=Leading target=detached:point:30\n",
+                "  DocComment range=20..22 placement=Leading target=detached:range:30..31\n",
+            )
+        );
+
+        assert_eq!(first.snapshot_text_with_trivia(), expected);
+        assert_eq!(
+            first.snapshot_text_with_trivia(),
+            second.snapshot_text_with_trivia()
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "SurfaceAst trivia node target must not refer to a token node")]
+    fn ast_rejects_token_node_as_trivia_node_target() {
+        let source_id = source_id(11);
+        let ast = expression_ast(source_id);
+        let token = ast.token_nodes()[0];
+        let mut trivia = SurfaceTriviaBuilder::new(source_id);
+        trivia.add_doc_comment_attachment(
+            range(source_id, 0, 8),
+            TriviaAttachmentTarget::Node(TriviaNodeTarget::new(token, range(source_id, 0, 1))),
+            TriviaPlacement::Leading,
+        );
+
+        let _ = ast.with_trivia(trivia.finish());
+    }
+
+    #[test]
+    #[should_panic(expected = "SurfaceAst trivia token target must refer to a token node")]
+    fn ast_rejects_non_token_trivia_token_target() {
+        let source_id = source_id(12);
+        let ast = expression_ast(source_id);
+        let expression = ast.expression_root().unwrap();
+        let mut trivia = SurfaceTriviaBuilder::new(source_id);
+        trivia.add_skipped_token_range(
+            range(source_id, 32, 35),
+            Some(TriviaAttachmentTarget::Token(TriviaNodeTarget::new(
+                expression,
+                range(source_id, 0, 6),
+            ))),
+            SkippedTokenReason::UnexpectedToken,
+        );
+
+        let _ = ast.with_trivia(trivia.finish());
+    }
+
+    #[test]
+    #[should_panic(expected = "SurfaceAst trivia node target range must match the AST node range")]
+    fn ast_rejects_trivia_target_with_mismatched_range() {
+        let source_id = source_id(13);
+        let ast = expression_ast(source_id);
+        let expression = ast.expression_root().unwrap();
+        let mut trivia = SurfaceTriviaBuilder::new(source_id);
+        trivia.add_doc_comment_attachment(
+            range(source_id, 0, 8),
+            TriviaAttachmentTarget::Node(TriviaNodeTarget::new(expression, range(source_id, 0, 5))),
+            TriviaPlacement::Leading,
+        );
+
+        let _ = ast.with_trivia(trivia.finish());
+    }
+
+    #[test]
+    #[should_panic(expected = "SurfaceAst trivia must belong to the AST source")]
+    fn ast_rejects_trivia_from_another_source() {
+        let ids = InMemorySessionIdAllocator::new();
+        let ast_source_id = ids.next_source_id(snapshot_id(14)).unwrap();
+        let trivia_source_id = ids.next_source_id(snapshot_id(15)).unwrap();
+        let ast = expression_ast(ast_source_id);
+        let mut trivia = SurfaceTriviaBuilder::new(trivia_source_id);
+        trivia.add_doc_comment_attachment(
+            range(trivia_source_id, 0, 8),
+            TriviaAttachmentTarget::Detached(SourceAnchor::Point {
+                source_id: trivia_source_id,
+                offset: 8,
+            }),
+            TriviaPlacement::Leading,
+        );
+
+        let _ = ast.with_trivia(trivia.finish());
+    }
+
+    #[test]
     #[should_panic(expected = "must have been created by this builder")]
     fn builder_rejects_child_ids_not_created_by_this_builder() {
-        let source_id = source_id(8);
+        let source_id = source_id(16);
         let other_id = {
             let mut other = SurfaceAstBuilder::new(source_id);
             other.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1))
@@ -1247,7 +1489,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "cannot be shared by multiple non-root parents")]
     fn builder_rejects_token_sharing_between_multiple_structural_parents() {
-        let source_id = source_id(9);
+        let source_id = source_id(17);
         let mut builder = SurfaceAstBuilder::new(source_id);
         let token = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
         let left_expression = builder.add_node(
@@ -1275,6 +1517,70 @@ mod tests {
         );
 
         let _ = builder.finish(Some(root), Some(left_expression));
+    }
+
+    fn scrambled_trivia(source_id: SourceId) -> SurfaceTriviaBuilder {
+        let mut trivia = SurfaceTriviaBuilder::new(source_id);
+        trivia.add_whitespace_hint(
+            WhitespaceHintKind::SyntheticBoundary,
+            range(source_id, 60, 61),
+        );
+        trivia.add_comment(CommentKind::SingleLine, range(source_id, 30, 39));
+        trivia.add_skipped_token_range(
+            range(source_id, 50, 51),
+            Some(TriviaAttachmentTarget::Detached(SourceAnchor::Range(
+                range(source_id, 48, 52),
+            ))),
+            SkippedTokenReason::UnexpectedToken,
+        );
+        trivia.add_doc_comment_attachment(
+            range(source_id, 10, 12),
+            TriviaAttachmentTarget::Detached(SourceAnchor::Range(range(source_id, 12, 13))),
+            TriviaPlacement::Trailing,
+        );
+        trivia.add_comment(CommentKind::MultiLine, range(source_id, 2, 5));
+        trivia.add_whitespace_hint(
+            WhitespaceHintKind::LineBreakBefore,
+            range(source_id, 14, 15),
+        );
+        trivia.add_skipped_token_range(
+            range(source_id, 40, 44),
+            None,
+            SkippedTokenReason::MalformedAnnotation,
+        );
+        trivia.add_doc_comment_attachment(
+            range(source_id, 6, 8),
+            TriviaAttachmentTarget::Detached(SourceAnchor::Point {
+                source_id,
+                offset: 9,
+            }),
+            TriviaPlacement::Leading,
+        );
+        trivia
+    }
+
+    fn colliding_target_trivia(source_id: SourceId, reverse: bool) -> SurfaceTriviaBuilder {
+        let mut trivia = SurfaceTriviaBuilder::new(source_id);
+        let point = (
+            range(source_id, 20, 22),
+            TriviaAttachmentTarget::Detached(SourceAnchor::Point {
+                source_id,
+                offset: 30,
+            }),
+        );
+        let range_target = (
+            range(source_id, 20, 22),
+            TriviaAttachmentTarget::Detached(SourceAnchor::Range(range(source_id, 30, 31))),
+        );
+        let entries = if reverse {
+            [range_target, point]
+        } else {
+            [point, range_target]
+        };
+        for (range, target) in entries {
+            trivia.add_doc_comment_attachment(range, target, TriviaPlacement::Leading);
+        }
+        trivia
     }
 
     fn expression_ast(source_id: SourceId) -> crate::SurfaceAst {

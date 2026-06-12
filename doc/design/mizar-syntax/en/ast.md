@@ -89,6 +89,10 @@ hash-map iteration order, and other nondeterministic data. Ranges are rendered
 as byte offsets within the `SurfaceAst` source; source identity belongs to the
 outer snapshot/profile record owned by `mizar-test`.
 
+`SurfaceAst::snapshot_text_with_trivia` appends the deterministic trivia side
+table described in [trivia.md](./trivia.md). The default syntax snapshot omits
+that section so existing syntax-only baselines remain stable.
+
 ### Range Attachment
 
 Every surface node carries a `SourceRange` from `mizar-session`. For ordinary

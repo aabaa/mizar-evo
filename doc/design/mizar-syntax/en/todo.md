@@ -13,7 +13,7 @@
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | ast | [ast.md](./ast.md) | `src/ast.rs` | [~] rowan storage boundary in place; vocabulary still growing |
-| trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [ ] |
+| trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [x] task-4 model implemented; item attachment fixture deferred |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] minimal task-12 recovery kinds split into module |
 
 `mizar-syntax` is a data-definition crate: it owns the `SurfaceAst` shape shared
@@ -50,10 +50,10 @@ every change here must keep `cargo test -p mizar-parser` and
   side-table views exposed through typed accessors, but parser tasks 5-7 must
   grow against the `SurfaceAstBuilder` and typed accessor boundary rather than
   a custom arena backend.
-- **Trivia ownership: open, resolved by task 4.** `mizar-frontend` already
-  extracts comments and doc comments into `PreprocessedSource`; decide whether
-  `SurfaceAst` carries attached trivia, references frontend-owned trivia by
-  range, or stores only attachment hints.
+- **Trivia ownership: resolved.** `mizar-frontend` owns comment/doc-comment
+  extraction, raw doc-comment bodies, lexical text, and preprocess maps.
+  `SurfaceAst` carries syntax-owned trivia side tables that reference that
+  frontend-owned data by `SourceRange` plus syntactic attachment hints.
 - **Salsa integration: deferred from this crate, required later.** `salsa` is
   required in the compiler's query and cache layers, not in `mizar-syntax`.
   Keep `SurfaceAst` immutable,
@@ -124,7 +124,7 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
    - Deps: 2. Spec: [ast.md](./ast.md); snapshot layout in
      [../../mizar-test/en/snapshot.md](../../mizar-test/en/snapshot.md).
 
-4. **Trivia model.** [ ]
+4. **Trivia model.** [x]
    - Add `pub mod trivia;`. Decide and record the ownership split with
      `mizar-frontend::PreprocessedSource` (which already owns comment and
      doc-comment extraction), then define trivia attachment: doc-comment

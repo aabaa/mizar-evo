@@ -6,8 +6,9 @@ The crate should provide syntax data structures that are stable enough for the p
 
 Status: the representation foundation owns a rowan-backed `SurfaceAst`, typed
 compatibility views, deterministic snapshot rendering, syntax diagnostics, and
-recovery nodes sufficient for frontend parser-seam integration. Full trivia and
-expanded recovery modeling remain planned.
+syntax-owned trivia side tables. Recovery nodes sufficient for frontend
+parser-seam integration are available; expanded recovery modeling remains
+planned.
 
 Initial module specs:
 

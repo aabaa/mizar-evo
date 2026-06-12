@@ -13,7 +13,7 @@
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | ast | [ast.md](./ast.md) | `src/ast.rs` | [~] rowan storage 境界は導入済み、語彙は拡張中 |
-| trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [ ] |
+| trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [x] task 4 のモデルは実装済み、item attachment fixture は保留 |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task 12 の最小 recovery kind はモジュールへ分割済み |
 
 `mizar-syntax` はデータ定義 crate である。`mizar-parser`、`mizar-frontend`、
@@ -49,10 +49,10 @@ task 11/12 の最小境界（`SurfaceAst`、`SurfaceNode`、recovery kind、
   で公開される private side-table view として残すが、parser task 5〜7 は
   custom arena backend ではなく `SurfaceAstBuilder` と typed accessor 境界に
   対して成長させる。
-- **trivia の所有権: 未解決。task 4 で解決する。** `mizar-frontend` はすでに
-  コメントとドキュメントコメントを `PreprocessedSource` へ抽出している。
-  `SurfaceAst` が付随 trivia を保持するか、frontend 所有の trivia を範囲で
-  参照するか、attachment ヒントのみを保存するかを決める。
+- **trivia の所有権: 解決済み。** `mizar-frontend` はコメント／ドキュメント
+  コメントの抽出、raw doc-comment body、字句用テキスト、preprocess map を
+  所有する。`SurfaceAst` は、その frontend 所有データを `SourceRange` と
+  構文的 attachment hint で参照する、syntax-owned trivia side table を持つ。
 - **salsa 統合: この crate では保留、後段では必須。** `salsa` は compiler の
   query / cache 層で必須であり、`mizar-syntax` には入れない。後続の
   `salsa` query がこの crate の意味論なし境界を変えずに `SurfaceAst` を
@@ -120,7 +120,7 @@ task 11/12 の最小境界（`SurfaceAst`、`SurfaceNode`、recovery kind、
    - 依存: 2。仕様: [ast.md](./ast.md)。スナップショット配置は
      [../../mizar-test/ja/snapshot.md](../../mizar-test/ja/snapshot.md)。
 
-4. **trivia モデル。** [ ]
+4. **trivia モデル。** [x]
    - `pub mod trivia;` を追加する。`mizar-frontend::PreprocessedSource`
      （すでにコメント・ドキュメントコメント抽出を所有する）との所有権分担を
      決定・記録し、その上で trivia の attachment を定義する: ドキュメント
