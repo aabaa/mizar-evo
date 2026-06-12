@@ -14,7 +14,7 @@
 |---|---|---|---|
 | ast | [ast.md](./ast.md) | `src/ast.rs` | [~] rowan storage boundary in place; vocabulary still growing |
 | trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [x] task-4 model implemented; item attachment fixture deferred |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] minimal task-12 recovery kinds split into module |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [x] task-5 recovery vocabulary implemented; parser producers remain incremental |
 
 `mizar-syntax` is a data-definition crate: it owns the `SurfaceAst` shape shared
 by `mizar-parser`, `mizar-frontend`, and future resolver/LSP/formatter
@@ -145,7 +145,7 @@ lands. Keep `cargo test -p mizar-syntax` green after each change (see
      lands with the first item-node increment in task 6 / parser task 5.
    - Deps: 2, 3. Spec: [trivia.md](./trivia.md).
 
-5. **Recovery vocabulary expansion.** [ ]
+5. **Recovery vocabulary expansion.** [x]
    - Extend `SyntaxRecoveryKind` beyond the task-12 minimum (`ErrorToken`,
      `MissingEnd`, `MissingStringLiteral`) to the full vocabulary promised by
      [recovery.md](./recovery.md): missing constructs, skipped tokens,

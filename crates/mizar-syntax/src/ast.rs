@@ -814,6 +814,17 @@ fn recovery_snapshot_name(kind: SyntaxRecoveryKind) -> &'static str {
         SyntaxRecoveryKind::ErrorToken => "ErrorToken",
         SyntaxRecoveryKind::MissingEnd => "MissingEnd",
         SyntaxRecoveryKind::MissingStringLiteral => "MissingStringLiteral",
+        SyntaxRecoveryKind::MissingItem => "MissingItem",
+        SyntaxRecoveryKind::MissingTypeExpression => "MissingTypeExpression",
+        SyntaxRecoveryKind::MissingTerm => "MissingTerm",
+        SyntaxRecoveryKind::MissingFormula => "MissingFormula",
+        SyntaxRecoveryKind::MissingStatement => "MissingStatement",
+        SyntaxRecoveryKind::MissingProofStep => "MissingProofStep",
+        SyntaxRecoveryKind::MissingAnnotationArgument => "MissingAnnotationArgument",
+        SyntaxRecoveryKind::SkippedToken => "SkippedToken",
+        SyntaxRecoveryKind::UnmatchedOpeningDelimiter => "UnmatchedOpeningDelimiter",
+        SyntaxRecoveryKind::UnmatchedClosingDelimiter => "UnmatchedClosingDelimiter",
+        SyntaxRecoveryKind::MalformedAnnotation => "MalformedAnnotation",
     }
 }
 
@@ -1232,8 +1243,70 @@ mod tests {
     }
 
     #[test]
-    fn repeated_construction_produces_deterministic_green_tree_and_views() {
+    fn recovery_kinds_are_constructible_with_documented_ranges() {
         let source_id = source_id(4);
+
+        for fixture in recovery_fixtures(source_id) {
+            let mut builder = SurfaceAstBuilder::new(source_id);
+            let context = fixture.has_context_child.then(|| {
+                builder.add_token(
+                    SurfaceTokenKind::ReservedWord,
+                    "context",
+                    range(source_id, 0, 7),
+                )
+            });
+            let recovery_children = context.into_iter().collect::<Vec<_>>();
+            let recovery =
+                builder.add_recovery(fixture.kind, fixture.range, recovery_children.clone());
+            let root_children = recovery_children
+                .iter()
+                .copied()
+                .chain([recovery])
+                .collect::<Vec<_>>();
+            let root = builder.add_node(
+                SurfaceNodeKind::Root,
+                range(source_id, 0, 40),
+                root_children,
+            );
+            let ast = builder.finish(Some(root), None);
+            let recovery_view = ast.node_view(sid(recovery)).unwrap();
+
+            assert_eq!(recovery_view.as_recovery(), Some(fixture.kind));
+            assert_eq!(recovery_view.syntax_kind(), SyntaxKind::ErrorRecovery);
+            assert_eq!(recovery_view.range(), fixture.range);
+            assert!(recovery_view.is_recovered());
+            assert_eq!(
+                recovery_view.children(),
+                &recovery_children
+                    .iter()
+                    .copied()
+                    .map(sid)
+                    .collect::<Vec<_>>()
+            );
+            assert_eq!(
+                ast.range_contains_child_ranges(sid(recovery)),
+                Some(!fixture.has_context_child),
+                "{:?} should follow its documented context-child range rule",
+                fixture.kind
+            );
+
+            let snapshot_line = format!(
+                "ErrorRecovery kind={} range={}..{} recovered=true",
+                super::recovery_snapshot_name(fixture.kind),
+                fixture.range.start,
+                fixture.range.end
+            );
+            assert!(
+                ast.snapshot_text().contains(&snapshot_line),
+                "snapshot should render {:?} with its distinct recovery kind name",
+                fixture.kind
+            );
+        }
+    }
+
+    #[test]
+    fn repeated_construction_produces_deterministic_green_tree_and_views() {
+        let source_id = source_id(5);
         let first = expression_ast(source_id);
         let second = expression_ast(source_id);
 
@@ -1245,12 +1318,12 @@ mod tests {
 
     #[test]
     fn repeated_snapshot_rendering_is_byte_identical() {
-        let ast = expression_ast(source_id(5));
+        let ast = expression_ast(source_id(6));
 
         assert_eq!(ast.snapshot_text(), ast.snapshot_text());
         assert_eq!(
             ast.snapshot_text(),
-            expression_ast(source_id(5)).snapshot_text()
+            expression_ast(source_id(6)).snapshot_text()
         );
     }
 
@@ -1259,7 +1332,7 @@ mod tests {
         const EXPECTED: &str = include_str!(
             "../../../tests/snapshots/mizar_syntax_surface_ast_current_vocabulary.snap"
         );
-        let ast = current_vocabulary_snapshot_ast(source_id(6));
+        let ast = current_vocabulary_snapshot_ast(source_id(7));
         let actual = ast.snapshot_text();
 
         assert_eq!(actual, EXPECTED);
@@ -1273,7 +1346,7 @@ mod tests {
 
     #[test]
     fn snapshot_payload_names_cover_current_variants() {
-        let source_id = source_id(7);
+        let source_id = source_id(8);
 
         for (associativity, expected) in [
             (SurfaceOperatorAssociativity::Left, "associativity=Left"),
@@ -1288,23 +1361,49 @@ mod tests {
             assert!(ast.snapshot_text().contains(expected));
         }
 
-        for (recovery_kind, expected) in [
-            (SyntaxRecoveryKind::ErrorToken, "kind=ErrorToken"),
-            (SyntaxRecoveryKind::MissingEnd, "kind=MissingEnd"),
-            (
-                SyntaxRecoveryKind::MissingStringLiteral,
-                "kind=MissingStringLiteral",
-            ),
-        ] {
+        for recovery_kind in all_recovery_kinds() {
+            let expected = format!("kind={}", super::recovery_snapshot_name(recovery_kind));
             let ast = recovery_ast(source_id, recovery_kind);
 
-            assert!(ast.snapshot_text().contains(expected));
+            assert!(ast.snapshot_text().contains(&expected));
+        }
+
+        let mut recovery_snapshot_names = std::collections::BTreeSet::new();
+        for recovery_kind in all_recovery_kinds() {
+            assert!(
+                recovery_snapshot_names.insert(super::recovery_snapshot_name(recovery_kind)),
+                "recovery snapshot names must distinguish every SyntaxRecoveryKind"
+            );
+        }
+    }
+
+    #[test]
+    fn recovery_snapshot_names_are_unique_and_fully_fixture_backed() {
+        let source_id = source_id(9);
+        let fixtures = recovery_fixtures(source_id);
+        let fixture_kinds = fixtures
+            .iter()
+            .map(|fixture| fixture.kind)
+            .collect::<Vec<_>>();
+        let all_kinds = all_recovery_kinds();
+
+        assert_eq!(fixture_kinds, all_kinds);
+
+        let mut names = std::collections::BTreeSet::new();
+        for recovery_kind in all_kinds {
+            let name = super::recovery_snapshot_name(recovery_kind);
+
+            assert!(!name.is_empty());
+            assert!(
+                names.insert(name),
+                "recovery snapshot name {name:?} should be unique"
+            );
         }
     }
 
     #[test]
     fn snapshot_rendering_includes_trivia_when_requested() {
-        let source_id = source_id(8);
+        let source_id = source_id(10);
         let ast = expression_ast(source_id);
         let expression = ast.expression_root().unwrap();
         let token = ast.token_nodes()[0];
@@ -1641,6 +1740,107 @@ mod tests {
             vec![recovery],
         );
         builder.finish(Some(root), None)
+    }
+
+    #[derive(Clone, Copy)]
+    struct RecoveryFixture {
+        kind: SyntaxRecoveryKind,
+        range: SourceRange,
+        has_context_child: bool,
+    }
+
+    fn recovery_fixtures(source_id: SourceId) -> Vec<RecoveryFixture> {
+        vec![
+            RecoveryFixture {
+                kind: SyntaxRecoveryKind::ErrorToken,
+                range: range(source_id, 8, 11),
+                has_context_child: false,
+            },
+            RecoveryFixture {
+                kind: SyntaxRecoveryKind::MissingEnd,
+                range: range(source_id, 12, 12),
+                has_context_child: true,
+            },
+            RecoveryFixture {
+                kind: SyntaxRecoveryKind::MissingStringLiteral,
+                range: range(source_id, 13, 13),
+                has_context_child: false,
+            },
+            RecoveryFixture {
+                kind: SyntaxRecoveryKind::MissingItem,
+                range: range(source_id, 14, 14),
+                has_context_child: true,
+            },
+            RecoveryFixture {
+                kind: SyntaxRecoveryKind::MissingTypeExpression,
+                range: range(source_id, 15, 15),
+                has_context_child: true,
+            },
+            RecoveryFixture {
+                kind: SyntaxRecoveryKind::MissingTerm,
+                range: range(source_id, 16, 16),
+                has_context_child: true,
+            },
+            RecoveryFixture {
+                kind: SyntaxRecoveryKind::MissingFormula,
+                range: range(source_id, 17, 17),
+                has_context_child: true,
+            },
+            RecoveryFixture {
+                kind: SyntaxRecoveryKind::MissingStatement,
+                range: range(source_id, 18, 18),
+                has_context_child: true,
+            },
+            RecoveryFixture {
+                kind: SyntaxRecoveryKind::MissingProofStep,
+                range: range(source_id, 19, 19),
+                has_context_child: true,
+            },
+            RecoveryFixture {
+                kind: SyntaxRecoveryKind::MissingAnnotationArgument,
+                range: range(source_id, 20, 20),
+                has_context_child: true,
+            },
+            RecoveryFixture {
+                kind: SyntaxRecoveryKind::SkippedToken,
+                range: range(source_id, 21, 24),
+                has_context_child: false,
+            },
+            RecoveryFixture {
+                kind: SyntaxRecoveryKind::UnmatchedOpeningDelimiter,
+                range: range(source_id, 25, 25),
+                has_context_child: true,
+            },
+            RecoveryFixture {
+                kind: SyntaxRecoveryKind::UnmatchedClosingDelimiter,
+                range: range(source_id, 26, 27),
+                has_context_child: false,
+            },
+            RecoveryFixture {
+                kind: SyntaxRecoveryKind::MalformedAnnotation,
+                range: range(source_id, 28, 35),
+                has_context_child: false,
+            },
+        ]
+    }
+
+    fn all_recovery_kinds() -> [SyntaxRecoveryKind; 14] {
+        [
+            SyntaxRecoveryKind::ErrorToken,
+            SyntaxRecoveryKind::MissingEnd,
+            SyntaxRecoveryKind::MissingStringLiteral,
+            SyntaxRecoveryKind::MissingItem,
+            SyntaxRecoveryKind::MissingTypeExpression,
+            SyntaxRecoveryKind::MissingTerm,
+            SyntaxRecoveryKind::MissingFormula,
+            SyntaxRecoveryKind::MissingStatement,
+            SyntaxRecoveryKind::MissingProofStep,
+            SyntaxRecoveryKind::MissingAnnotationArgument,
+            SyntaxRecoveryKind::SkippedToken,
+            SyntaxRecoveryKind::UnmatchedOpeningDelimiter,
+            SyntaxRecoveryKind::UnmatchedClosingDelimiter,
+            SyntaxRecoveryKind::MalformedAnnotation,
+        ]
     }
 
     fn current_vocabulary_snapshot_ast(source_id: SourceId) -> crate::SurfaceAst {

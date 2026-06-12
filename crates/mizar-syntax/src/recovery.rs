@@ -6,6 +6,17 @@ pub enum SyntaxRecoveryKind {
     ErrorToken,
     MissingEnd,
     MissingStringLiteral,
+    MissingItem,
+    MissingTypeExpression,
+    MissingTerm,
+    MissingFormula,
+    MissingStatement,
+    MissingProofStep,
+    MissingAnnotationArgument,
+    SkippedToken,
+    UnmatchedOpeningDelimiter,
+    UnmatchedClosingDelimiter,
+    MalformedAnnotation,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

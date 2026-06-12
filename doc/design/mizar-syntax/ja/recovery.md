@@ -2,7 +2,7 @@
 
 > 正本は英語です。英語版: [../en/recovery.md](../en/recovery.md)。
 
-状態: task 12 の最小回復ノードは実装済み。完全な回復語彙は計画中。
+状態: 欠落した構文要素、スキップされたトークン、対応しない区切り記号、不正な注釈の recovery 語彙は `mizar-syntax` に実装済み。parser による生成は段階的に追加する。
 
 ## 目的
 
@@ -14,7 +14,7 @@
 - リゾルバとチェッカが明示的にスキップまたは却下できるよう、回復ノードに印を付ける。
 - 診断のために元のソース範囲を保持する。
 
-現在の最小語彙には、lexer error token の recovered token node と、`end` 欠落および文字列リテラル欠落の明示的な recovered node が含まれる。より広い skipped-token、対応しない区切り記号、不正なアノテーションの回復は引き続き計画中である。
+parser は現在、lexer error token の recovered token node と、`end` 欠落および文字列リテラル欠落の明示的な recovered node を生成する。残りの recovery kind は、将来の parser grammar task が producer を追加するときに syntax snapshot 語彙を変更しなくてよいよう、`mizar-syntax` で構築可能にしておく。
 
 ## Public API
 
@@ -50,15 +50,28 @@ recover せず parsing を中止する diagnostic では未設定のままでよ
 diagnostic code 語彙は syntax-level に限る。名前解決、型検査、証明義務、意味的事実を
 encode してはならない。
 
-### 現在の recovery 語彙
+### recovery 語彙
 
-`SyntaxRecoveryKind` は現在、task 12 の最小語彙を持つ。
+`SyntaxRecoveryKind` は、consumer 前の syntax phase が約束する recovery category を
+カバーする。「未生成」の kind は、対応する parser grammar task が producer を仕様化し
+実装するまで、mizar-syntax の語彙としてのみ存在する。
 
-| kind | producer 上の意味 | node 形状 | diagnostic code |
-|---|---|---|---|
-| `ErrorToken` | lexer error-recovery token が syntax stream に保持された | `SurfaceTokenKind::ErrorRecovery` を持つ recovered token node。または parser task が明示的 wrapper を必要とする場合の recovery node | `SyntaxDiagnosticCode::UnexpectedErrorToken` |
-| `MissingEnd` | parser が同期点に欠落 `end` を挿入した | zero-width insertion range と任意の opener / context child を持つ `SurfaceNodeKind::ErrorRecovery(MissingEnd)` | `SyntaxDiagnosticCode::MissingEnd` |
-| `MissingStringLiteral` | string-required context で parser が欠落 string literal を挿入した | zero-width insertion range を持ち、必須 child を持たない `SurfaceNodeKind::ErrorRecovery(MissingStringLiteral)` | `SyntaxDiagnosticCode::MissingStringLiteral` |
+| kind | producer condition | node 形状 | range と child rule | diagnostic / trivia の分担 | snapshot name |
+|---|---|---|---|---|---|
+| `ErrorToken` | parser が lexer-owned error-recovery token を受け取った | `SurfaceTokenKind::ErrorRecovery` を持つ recovered token node。または parser task が明示的 wrapper を必要とする場合の `SurfaceNodeKind::ErrorRecovery(ErrorToken)` | token 形では元 token range を使う。wrapper 形では同じ source range を使い、必須 child はない | `SyntaxDiagnosticCode::UnexpectedErrorToken`。raw token text は recovered token に残し、trivia には入れない | `ErrorToken` |
+| `MissingEnd` | parser が block synchronization point に欠落 `end` を挿入した | 挿入 placeholder の `SurfaceNodeKind::ErrorRecovery(MissingEnd)` | insertion point の zero-width range。block opener / context child を insertion range の外に保持してよい | `SyntaxDiagnosticCode::MissingEnd`。同じ recovery が source text も skip する場合を除き skipped range はない | `MissingEnd` |
+| `MissingStringLiteral` | parser が string-required context で欠落 string literal を挿入した | 挿入 placeholder | insertion point の zero-width range。必須 child はない | `SyntaxDiagnosticCode::MissingStringLiteral`。skipped range はない | `MissingStringLiteral` |
+| `MissingItem` | 未生成。将来の module / item parser が top-level item を期待し、次の item boundary または EOF の前で同期する | 挿入 placeholder | insertion point の zero-width range。同期 token または包含 item list の任意 context child を持て、range 外でもよい | 専用 diagnostic code はまだない。producer task が user-facing diagnostic を出す前に code を追加するか既存 code 共有を明記する。skip された source は存在する場合 `SkippedTokenRange` に属する | `MissingItem` |
+| `MissingTypeExpression` | 未生成。将来の type parser が `of`、`over`、`mode`、declaration binder などの後に type expression を期待する | 挿入 placeholder | insertion point の zero-width range。任意の keyword / binder context child を持て、range 外でもよい | 専用 diagnostic code はまだない。純粋な挿入では skipped range はない | `MissingTypeExpression` |
+| `MissingTerm` | 未生成。将来の term parser が term operand、argument、selector base、constructor field value を期待する | 挿入 placeholder | insertion point の zero-width range。任意の operator / call / context child を持て、range 外でもよい | 専用 diagnostic code はまだない。純粋な挿入では skipped range はない | `MissingTerm` |
+| `MissingFormula` | 未生成。将来の formula parser が `st`、`holds`、connective、theorem / proof keyword などの後に formula を期待する | 挿入 placeholder | insertion point の zero-width range。任意の keyword / operator context child を持て、range 外でもよい | 専用 diagnostic code はまだない。純粋な挿入では skipped range はない | `MissingFormula` |
+| `MissingStatement` | 未生成。将来の statement parser が proof、algorithm、block statement を期待し、次の statement boundary で同期する | 挿入 placeholder | insertion point の zero-width range。任意の preceding keyword または block context child を持て、range 外でもよい | 専用 diagnostic code はまだない。skip された source は存在する場合 `SkippedTokenRange` に属する | `MissingStatement` |
+| `MissingProofStep` | 未生成。将来の proof parser が justification、inference step、case branch、proof-closing step を期待する | 挿入 placeholder | insertion point の zero-width range。任意の proof / block context child を持て、range 外でもよい | 専用 diagnostic code はまだない。skip された source は存在する場合 `SkippedTokenRange` に属する | `MissingProofStep` |
+| `MissingAnnotationArgument` | 未生成。将来の annotation parser が string literal や bracket argument などの annotation argument を期待する | 挿入 placeholder | insertion point の zero-width range。任意の annotation marker / list context child を持て、range 外でもよい | 専用 diagnostic code はまだない。不正または skip された source は状況に応じて `MalformedAnnotation` または `Recovery` の `SkippedTokenRange` に属する | `MissingAnnotationArgument` |
+| `SkippedToken` | 未生成。将来の parser が同期点へ進むため 1 個以上の token を skip し、可視の recovery marker を残す | skipped input の marker | skip された source span を覆う range。必須 child はない。root-listed token leaf を重複させない場合だけ任意の synchronization owner child を付けてよい | 専用 diagnostic code はまだない。skip span は `SurfaceTrivia::skipped_token_ranges` に `SkippedTokenReason::Recovery` で必ず記録する | `SkippedToken` |
+| `UnmatchedOpeningDelimiter` | 未生成。将来の parser が synchronization または EOF までに対応する closer を持たない opener を見つける | 通常は挿入された missing close と組になる marker | primary marker range は期待される closer または synchronization point の zero-width range。opener / context child が想定され、marker range 外でもよい | 専用 diagnostic code はまだない。opener span は secondary diagnostic anchor にするべきで、skip text があれば trivia に属する | `UnmatchedOpeningDelimiter` |
+| `UnmatchedClosingDelimiter` | 未生成。将来の parser が対応する opener を持たない closing delimiter を見つける | source text を囲む marker | unmatched closer token を覆う range。必須 child はない | 専用 diagnostic code はまだない。closer token は token stream に残し、それを超えて skip した token は trivia に属する | `UnmatchedClosingDelimiter` |
+| `MalformedAnnotation` | 未生成。将来の annotation parser が valid annotation として parse できない annotation marker または body を認識する | source text を囲む marker | 不正な annotation marker / body span を覆う range。利用できる場合、任意の annotation owner child を付けてよい | 専用 diagnostic code はまだない。不正 source は `SurfaceTrivia::skipped_token_ranges` に `SkippedTokenReason::MalformedAnnotation` で必ず記録する | `MalformedAnnotation` |
 
 recovered node は `recovered = true` でなければならない。recovered token は元の
 token text と source range を保持し、診断、formatter recovery、LSP 機能が捏造
@@ -88,27 +101,9 @@ skip された source span と任意の owner を表す。recovery strategy が 
 `SurfaceNodeKind::ErrorRecovery` に属し、skip された span は trivia に属する。
 raw skipped text を recovery node に encode してはならない。
 
-### 拡張時の契約
-
-recovery 語彙の拡張は [todo.md](./todo.md) の task 5 である。新しい
-`SyntaxRecoveryKind` はそれぞれ次を指定しなければならない。
-
-- それを生成する parser condition。
-- node が挿入 placeholder、source text の wrapper、skipped input の marker の
-  どれであるか。
-- range と child-role rule。out-of-range context child を許すかどうかも含む。
-- 対応する `SyntaxDiagnosticCode`、または既存 code を共有する理由。
-- skip された source span も `SkippedTokenRange` として記録するかどうか。
-- snapshot rendering name と、少なくとも 1 つの構築可能な test fixture。
-
-計画中の category は次のとおり。
-
-| category | 実装前に必要な仕様 |
-|---|---|
-| missing constructs | downstream phase が区別する必要のある construct family ごとの kind、insertion range、context-child role |
-| skipped tokens | owner selection、skipped range ownership、`SkippedTokenReason::Recovery` との相互作用 |
-| unmatched delimiters | opener / closer context role と primary diagnostic anchor |
-| malformed annotations | annotation range ownership と `SkippedTokenReason::MalformedAnnotation` との相互作用 |
+現在未生成の recovery kind を parser task が生成し始める場合、その task は producer
+condition を精密化する、専用 `SyntaxDiagnosticCode` を追加する、または trivia
+ownership rule をより具体化するなら、この表を更新しなければならない。
 
 ### 公開 enum の互換性
 

@@ -1,6 +1,6 @@
 # mizar-syntax: Recovery Nodes
 
-Status: minimal task-12 recovery nodes implemented; full recovery vocabulary planned.
+Status: recovery vocabulary for missing constructs, skipped tokens, unmatched delimiters, and malformed annotations implemented in `mizar-syntax`; parser production remains incremental.
 
 ## Purpose
 
@@ -12,10 +12,10 @@ This module defines the syntax representation of parser recovery.
 - mark recovered nodes so resolver and checker phases can skip or reject them explicitly;
 - preserve original source spans for diagnostics.
 
-Current minimal vocabulary includes recovered token nodes for lexer error tokens
-and explicit recovered nodes for missing `end` and missing string literals.
-Broader skipped-token, unmatched delimiter, and malformed-annotation recovery
-remains planned.
+The parser currently produces recovered token nodes for lexer error tokens and
+explicit recovered nodes for missing `end` and missing string literals. The
+remaining recovery kinds are constructible in `mizar-syntax` so future parser
+grammar tasks can add producers without changing the syntax snapshot vocabulary.
 
 ## Public API
 
@@ -51,15 +51,29 @@ Current `SyntaxDiagnosticCode` values are:
 The diagnostic code vocabulary is syntax-level only. It must not encode name
 resolution, type checking, proof obligations, or semantic facts.
 
-### Current Recovery Vocabulary
+### Recovery Vocabulary
 
-`SyntaxRecoveryKind` currently has the task-12 minimum vocabulary:
+`SyntaxRecoveryKind` covers the recovery categories promised for the
+pre-consumer syntax phase. Kinds marked "not produced yet" are mizar-syntax
+vocabulary only until the paired parser grammar task documents and implements a
+producer.
 
-| Kind | Producer meaning | Node shape | Diagnostic code |
-|---|---|---|---|
-| `ErrorToken` | a lexer error-recovery token was preserved in the syntax stream | recovered token node with `SurfaceTokenKind::ErrorRecovery`, or a recovery node when a parser task needs an explicit wrapper | `SyntaxDiagnosticCode::UnexpectedErrorToken` |
-| `MissingEnd` | parser inserted a missing `end` at a synchronization point | `SurfaceNodeKind::ErrorRecovery(MissingEnd)` with a zero-width insertion range and optional opener/context child | `SyntaxDiagnosticCode::MissingEnd` |
-| `MissingStringLiteral` | parser inserted a missing string literal in a string-required context | `SurfaceNodeKind::ErrorRecovery(MissingStringLiteral)` with a zero-width insertion range and no required children | `SyntaxDiagnosticCode::MissingStringLiteral` |
+| Kind | Producer condition | Node shape | Range and child rule | Diagnostic/trivia split | Snapshot name |
+|---|---|---|---|---|---|
+| `ErrorToken` | parser receives a lexer-owned error-recovery token | recovered token node with `SurfaceTokenKind::ErrorRecovery`, or `SurfaceNodeKind::ErrorRecovery(ErrorToken)` when a parser task needs an explicit wrapper | token form uses the original token range; wrapper form uses the same source range and no required children | `SyntaxDiagnosticCode::UnexpectedErrorToken`; raw token text remains on the recovered token, not in trivia | `ErrorToken` |
+| `MissingEnd` | parser inserts a missing `end` at a block synchronization point | `SurfaceNodeKind::ErrorRecovery(MissingEnd)` inserted placeholder | zero-width range at insertion point; may keep the block opener/context child outside the insertion range | `SyntaxDiagnosticCode::MissingEnd`; no skipped range unless the same recovery also skips source text | `MissingEnd` |
+| `MissingStringLiteral` | parser inserts a missing string literal in a string-required context | inserted placeholder | zero-width range at insertion point; no required children | `SyntaxDiagnosticCode::MissingStringLiteral`; no skipped range | `MissingStringLiteral` |
+| `MissingItem` | not produced yet; future module/item parser expects a top-level item and synchronizes before the next item boundary or EOF | inserted placeholder | zero-width range at insertion point; optional context child for the synchronization token or containing item list, allowed outside the insertion range | no dedicated diagnostic code yet; the producer task must add or explicitly share a code before emitting user-facing diagnostics; skipped source belongs to `SkippedTokenRange` when present | `MissingItem` |
+| `MissingTypeExpression` | not produced yet; future type parser expects a type expression after a keyword such as `of`, `over`, `mode`, or a declaration binder | inserted placeholder | zero-width range at insertion point; optional keyword/binder context child, allowed outside the insertion range | no dedicated diagnostic code yet; no skipped range for pure insertion | `MissingTypeExpression` |
+| `MissingTerm` | not produced yet; future term parser expects a term operand, argument, selector base, or constructor field value | inserted placeholder | zero-width range at insertion point; optional operator/call/context child, allowed outside the insertion range | no dedicated diagnostic code yet; no skipped range for pure insertion | `MissingTerm` |
+| `MissingFormula` | not produced yet; future formula parser expects a formula after logical syntax such as `st`, `holds`, a connective, or a theorem/proof keyword | inserted placeholder | zero-width range at insertion point; optional keyword/operator context child, allowed outside the insertion range | no dedicated diagnostic code yet; no skipped range for pure insertion | `MissingFormula` |
+| `MissingStatement` | not produced yet; future statement parser expects a proof, algorithm, or block statement and synchronizes at the next statement boundary | inserted placeholder | zero-width range at insertion point; optional preceding keyword or block context child, allowed outside the insertion range | no dedicated diagnostic code yet; skipped source belongs to `SkippedTokenRange` when present | `MissingStatement` |
+| `MissingProofStep` | not produced yet; future proof parser expects a justification, inference step, case branch, or proof-closing step | inserted placeholder | zero-width range at insertion point; optional proof/block context child, allowed outside the insertion range | no dedicated diagnostic code yet; skipped source belongs to `SkippedTokenRange` when present | `MissingProofStep` |
+| `MissingAnnotationArgument` | not produced yet; future annotation parser expects an annotation argument such as a string literal or bracket argument | inserted placeholder | zero-width range at insertion point; optional annotation marker/list context child, allowed outside the insertion range | no dedicated diagnostic code yet; malformed or skipped source belongs to `SkippedTokenRange` with `MalformedAnnotation` or `Recovery` as appropriate | `MissingAnnotationArgument` |
+| `SkippedToken` | not produced yet; future parser skips one or more tokens to reach a synchronization point while retaining a visible recovery marker | marker for skipped input | range covers the skipped source span; no required children; optional synchronization owner child may be attached when it does not duplicate root-listed token leaves | no dedicated diagnostic code yet; the skipped span must also be recorded in `SurfaceTrivia::skipped_token_ranges` with `SkippedTokenReason::Recovery` | `SkippedToken` |
+| `UnmatchedOpeningDelimiter` | not produced yet; future parser sees an opener with no matching closer before synchronization or EOF | marker, usually paired with an inserted missing close | primary marker range is zero-width at the expected closer or synchronization point; opener/context child is expected and may be outside the marker range | no dedicated diagnostic code yet; opener span should be a secondary diagnostic anchor; skipped text, if any, belongs to trivia | `UnmatchedOpeningDelimiter` |
+| `UnmatchedClosingDelimiter` | not produced yet; future parser sees a closing delimiter with no matching opener | marker around source text | range covers the unmatched closer token; no required children | no dedicated diagnostic code yet; the closer token remains in the token stream, and skipped tokens beyond it belong to trivia | `UnmatchedClosingDelimiter` |
+| `MalformedAnnotation` | not produced yet; future annotation parser recognizes an annotation marker or body that cannot be parsed as a valid annotation | marker around source text | range covers the malformed annotation marker/body span; optional annotation owner child may be attached when available | no dedicated diagnostic code yet; malformed source must also be recorded in `SurfaceTrivia::skipped_token_ranges` with `SkippedTokenReason::MalformedAnnotation` | `MalformedAnnotation` |
 
 Recovered nodes must have `recovered = true`. A recovered token preserves the
 original token text and source range so diagnostics, formatter recovery, and LSP
@@ -88,29 +102,9 @@ When a recovery strategy both inserts a placeholder and skips source text, the
 placeholder belongs in `SurfaceNodeKind::ErrorRecovery`, while the skipped span
 belongs in trivia. Do not encode raw skipped text in the recovery node.
 
-### Expansion Contract
-
-Expanding recovery vocabulary is task 5 in [todo.md](./todo.md). Each new
-`SyntaxRecoveryKind` must specify:
-
-- the parser condition that produces it;
-- whether the node is an inserted placeholder, a wrapper around source text, or
-  a marker for skipped input;
-- range and child-role rules, including whether out-of-range context children
-  are allowed;
-- the corresponding `SyntaxDiagnosticCode` or reason for sharing an existing
-  code;
-- whether skipped source spans are also recorded as `SkippedTokenRange`;
-- snapshot rendering name and at least one constructible test fixture.
-
-Planned categories are:
-
-| Category | Required specification before implementation |
-|---|---|
-| missing constructs | one kind per construct family that downstream phases need to distinguish; insertion range and context-child role |
-| skipped tokens | owner selection, skipped range ownership, and interaction with `SkippedTokenReason::Recovery` |
-| unmatched delimiters | opener/closer context roles and primary diagnostic anchor |
-| malformed annotations | annotation range ownership and interaction with `SkippedTokenReason::MalformedAnnotation` |
+Parser tasks that start producing a currently unproduced recovery kind must
+update this table if they refine the producer condition, add a dedicated
+`SyntaxDiagnosticCode`, or require a more specific trivia ownership rule.
 
 ### Public Enum Compatibility
 
