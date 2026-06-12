@@ -28,11 +28,12 @@ nat_literal        ::= numeral ;
 term               ::= term_expression ;
 expr               ::= term_expression ;
 proof_block        ::= proof ;
-by_refs            ::= "by" references ";" ;
-proof_or_refs      ::= proof | by_refs ;
 
 symbol_name        ::= identifier | user_symbol ;
 def_symbol         ::= identifier | user_symbol ;
+attribute_def_name ::= identifier ;
+mode_def_name      ::= identifier ;
+struct_def_name    ::= identifier ;
 field_name         ::= identifier ;
 selector           ::= field_name { "." field_name } ;
 inline_func_name   ::= identifier ;
@@ -40,6 +41,12 @@ inline_pred_name   ::= identifier ;
 deffunc_identifier ::= identifier ;
 defpred_identifier ::= identifier ;
 scheme_name        ::= label_identifier ;
+formula_definiens ::= formula
+                    | formula_case { "," formula_case } [ "otherwise" formula ] ;
+formula_case      ::= formula "if" formula ;
+term_definiens    ::= term_expression
+                    | term_case { "," term_case } [ "otherwise" term_expression ] ;
+term_case         ::= term_expression "if" formula ;
 ```
 
 `term_expression` and `formula` are precedence-driven grammars. The productions
@@ -125,6 +132,12 @@ When `.` is not consumed as a compound reserved token or an active user symbol,
 the parser and resolver classify it as selector access/update or as a namespace
 separator according to the context described in Chapter 2.
 
+The hyphen used in parameterized attribute spellings such as `n-dimensional`
+or `(m,n)-ary` is a contextual `param_prefix` separator, not a reserved special
+symbol. In that grammar position, the lexer/parser splits the prefix hyphen
+before applying ordinary longest-match user-symbol recognition to the attribute
+name.
+
 Fixed annotation names and option names are contextual spellings, not reserved
 identifiers outside their grammar positions. Current contextual spellings are
 `auto`, `cvc5`, `e`, `max_axioms`, `solver`, `steps`, `timeout`, `vampire`,
@@ -141,19 +154,22 @@ type_expression   ::= attribute_chain type_head ;
 type_head         ::= radix_type | mode_type ;
 
 attribute_chain   ::= { [ "non" ] attribute_ref } ;
-attribute_ref     ::= [ param_prefix ] [ struct_name "." ] attribute_name
+attribute_ref     ::= [ param_prefix ] [ struct_ref_name "." ] attribute_ref_name
                       [ "(" argument_list ")" ] ;
 param_prefix      ::= parameter "-" | "(" parameter_list ")" "-" ;
 
-radix_type        ::= builtin_type | struct_name [ type_args ] ;
-mode_type         ::= mode_name [ type_args ] ;
+radix_type        ::= builtin_type | struct_ref_name [ type_args ] ;
+mode_type         ::= mode_ref_name [ type_args ] ;
 type_args         ::= ( "of" | "over" ) argument_list ;
 argument_list     ::= term_expression { "," term_expression } ;
 
 builtin_type      ::= "object" | "set" ;
-attribute_name    ::= qualified_symbol ;
-mode_name         ::= qualified_symbol ;
-struct_name       ::= qualified_symbol ;
+attribute_name    ::= attribute_ref_name ;
+mode_name         ::= mode_ref_name ;
+struct_name       ::= struct_ref_name ;
+attribute_ref_name ::= qualified_symbol ;
+mode_ref_name     ::= qualified_symbol ;
+struct_ref_name   ::= qualified_symbol ;
 
 parameter_list    ::= parameter { "," parameter } ;
 parameter         ::= identifier | numeral ;
@@ -176,13 +192,20 @@ reserve_segment    ::= identifier_list "for" type_expression ;
 identifier_list    ::= identifier { "," identifier } ;
 
 let_decl           ::= "let" qualified_vars [ "such" conditions ] ";" ;
-qualified_vars     ::= identifier_list [ "be" type_expression ] ;
+qualified_vars     ::= explicit_qualified_vars [ "," implicit_qualified_vars ]
+                     | implicit_qualified_vars ;
+explicit_qualified_vars ::= qualified_segment { "," qualified_segment } ;
+qualified_segment  ::= identifier_list ( "being" | "be" ) type_expression ;
+implicit_qualified_vars ::= identifier_list ;
 
-set_decl           ::= "set" identifier "=" term_expression ";" ;
+set_decl           ::= "set" equating_list ";" ;
+equating_list      ::= equating { "," equating } ;
+equating           ::= identifier "=" term_expression ;
 
-reconsider_decl    ::= "reconsider" reconsider_target "as" type_expression
+reconsider_decl    ::= "reconsider" type_change_list "as" type_expression
                        [ simple_justification ] ";" ;
-reconsider_target  ::= identifier "=" term_expression | term_expression ;
+type_change_list   ::= reconsider_item { "," reconsider_item } ;
+reconsider_item    ::= identifier | identifier "=" term_expression ;
 
 quantified_var     ::= identifier_list [ "being" type_expression ] ;
 ```
@@ -194,7 +217,7 @@ Statement-level forms are normalized in A.15.
 Normative reference: [Chapter 5 (Structures)](./05.structures.md).
 
 ```ebnf
-struct_def       ::= "struct" struct_name [ type_params ] "where"
+struct_def       ::= "struct" struct_def_name [ type_params ] "where"
                      struct_member { struct_member } "end" ";" ;
 struct_member    ::= field_decl | property_decl ;
 field_decl       ::= "field" identifier "->" type_expression
@@ -203,17 +226,17 @@ property_decl    ::= "property" identifier "->" type_expression ";" ;
 type_params      ::= ( "of" | "over" ) type_parameter_list ;
 type_parameter_list ::= identifier { "," identifier } ;
 
-inherit_def      ::= "inherit" struct_name "extends" parent_type
+inherit_def      ::= "inherit" struct_def_name "extends" parent_type
                      [ "where" inherit_member { inherit_member }
                        [ coherence_block ] "end" ] ";" ;
-parent_type      ::= struct_name | "set" ;
+parent_type      ::= struct_ref_name | "set" ;
 inherit_member   ::= field_redef | property_redef ;
 field_redef      ::= "field" identifier [ "->" type_expression ]
                      "from" ( identifier | "it" ) ";" ;
 property_redef   ::= "property" identifier [ "->" type_expression ]
                      "from" identifier ";" ;
 
-struct_constructor ::= struct_name "(" [ named_arg { "," named_arg } ] ")" ;
+struct_constructor ::= struct_ref_name "(" [ named_arg { "," named_arg } ] ")" ;
 named_arg          ::= identifier ":" term_expression ;
 field_access       ::= term_expression "." field_name ;
 ```
@@ -224,13 +247,13 @@ Normative reference: [Chapter 6 (Attributes)](./06.attributes.md).
 
 ```ebnf
 attr_def       ::= "attr" label ":" subject "is" attr_pattern
-                   "means" formula ";" ;
+                   "means" formula_definiens ";" ;
 subject        ::= identifier ;
-attr_pattern   ::= [ param_prefix ] attribute_name ;
+attr_pattern   ::= [ param_prefix ] attribute_def_name ;
 
 redefine_attr  ::= "redefine" "attr" label ":" subject "is" attr_pattern
-                   "means" formula ";"
-                   "coherence" [ "with" label ] proof_or_refs ;
+                   "means" formula_definiens ";"
+                   "coherence" [ "with" label ] justification ";" ;
 ```
 
 Attribute use inside type expressions is summarized in A.3.
@@ -240,21 +263,22 @@ Attribute use inside type expressions is summarized in A.3.
 Normative reference: [Chapter 7 (Modes)](./07.modes.md).
 
 ```ebnf
-mode_def       ::= "mode" label ":" mode_name [ type_params ] "is"
+mode_def       ::= "mode" label ":" mode_def_name [ type_params ] "is"
                    attribute_chain radix_type ";"
                    [ mode_property ] ;
 mode_property  ::= "sethood" justification ";" ;
 
 property_impl        ::= "definition"
-                           "let" identifier "be" mode_name ";"
+                           "let" identifier "be" mode_ref_name ";"
                            ( property_means_impl | property_equals_impl )
                          "end" ";" ;
-property_means_impl  ::= "property" identifier "." identifier "means" formula ";"
+property_means_impl  ::= "property" identifier "." identifier
+                         "means" formula_definiens ";"
                          existence_block uniqueness_block ;
 property_equals_impl ::= "property" identifier "." identifier
-                         "equals" term_expression ";" ;
+                         "equals" term_definiens ";" ;
 
-mode_application     ::= mode_name [ type_args ] ;
+mode_application     ::= mode_ref_name [ type_args ] ;
 ```
 
 ## A.9 Predicates
@@ -262,7 +286,7 @@ mode_application     ::= mode_name [ type_args ] ;
 Normative reference: [Chapter 9 (Predicates)](./09.predicates.md).
 
 ```ebnf
-pred_def         ::= "pred" label ":" pred_pattern "means" formula ";" ;
+pred_def         ::= "pred" label ":" pred_pattern "means" formula_definiens ";" ;
 pred_pattern     ::= [ loci ] def_predicate_symbol [ loci ] ;
 loci             ::= locus | "(" locus_list ")" ;
 locus_list       ::= locus { "," locus } ;
@@ -270,16 +294,17 @@ locus            ::= identifier ;
 def_predicate_symbol ::= def_symbol ;
 predicate_symbol ::= def_symbol ;
 
-redefine_pred    ::= "redefine" "pred" pred_pattern "means" formula ";"
-                     "coherence" [ "with" label ] proof_or_refs ;
+redefine_pred    ::= "redefine" "pred" pred_pattern "means" formula_definiens ";"
+                     "coherence" [ "with" label ] justification ";" ;
 
 pred_property    ::= ( "symmetry" | "asymmetry" | "connectedness"
                      | "reflexivity" | "irreflexivity" ) justification ";" ;
 
 predicate_application ::= user_predicate_application
                         | builtin_predicate_application ;
-user_predicate_application ::= [ term_list ] [ negation ] predicate_symbol
-                               [ term_list ] ;
+user_predicate_application ::= predicate_segment { predicate_chain_segment } ;
+predicate_segment ::= [ term_list ] [ negation ] predicate_symbol [ term_list ] ;
+predicate_chain_segment ::= [ negation ] predicate_symbol term_list ;
 builtin_predicate_application ::= term_expression builtin_pred term_expression ;
 negation              ::= "does" "not" | "do" "not" ;
 term_list             ::= term_expression { "," term_expression } ;
@@ -292,7 +317,7 @@ Normative reference: [Chapter 10 (Functors)](./10.functors.md).
 
 ```ebnf
 func_def         ::= "func" label ":" func_pattern "->" type_expression
-                     ( "means" formula | "equals" term_expression ) ";"
+                     ( "means" formula_definiens | "equals" term_definiens ) ";"
                      [ correctness_conditions ] ;
 func_pattern     ::= [ loci ] functor_symbol [ loci ] ;
 functor_symbol   ::= def_symbol ;
@@ -303,8 +328,8 @@ func_property    ::= ( "commutativity" | "idempotence"
 
 redefine_func    ::= "redefine" "func" label ":" func_pattern
                      "->" type_expression
-                     ( "means" formula | "equals" term_expression ) ";"
-                     "coherence" [ "with" label ] proof_or_refs ;
+                     ( "means" formula_definiens | "equals" term_definiens ) ";"
+                     "coherence" [ "with" label ] justification ";" ;
 
 operator_decl    ::= infix_operator_decl
                    | prefix_operator_decl
@@ -328,9 +353,14 @@ Normative reference: [Chapter 11 (Symbol Management)](./11.symbol_management.md)
 synonym_def    ::= "synonym" alt_pattern "for" original_pattern ";" ;
 antonym_def    ::= "antonym" alt_pattern "for" original_pattern ";" ;
 
-alt_pattern      ::= pred_pattern | func_pattern | mode_pattern | attr_pattern ;
-original_pattern ::= pred_pattern | func_pattern | mode_pattern | attr_pattern ;
-mode_pattern     ::= mode_name [ type_params ] ;
+alt_pattern      ::= pred_pattern | func_pattern
+                   | alt_mode_pattern | alt_attr_pattern ;
+original_pattern ::= pred_pattern | func_pattern
+                   | original_mode_pattern | original_attr_pattern ;
+alt_mode_pattern      ::= mode_def_name [ type_params ] ;
+original_mode_pattern ::= mode_ref_name [ type_params ] ;
+alt_attr_pattern      ::= [ param_prefix ] attribute_def_name ;
+original_attr_pattern ::= [ param_prefix ] attribute_ref_name ;
 ```
 
 Import syntax is normalized in A.12. Visibility is represented by
@@ -364,7 +394,6 @@ annotated_declaration ::= { annotation } declaration ;
 
 declaration        ::= definition_block
                      | reserve_decl
-                     | template_def
                      | registration_block
                      | claim_block
                      | [ visibility ] theorem_item
@@ -374,14 +403,30 @@ visibility         ::= "private" | "public" ;
 
 definition_block   ::= "definition" { definition_content } "end" ";" ;
 definition_content ::= { annotation }
-                       ( parameter_decl
+                       ( definition_parameter_decl
                        | assumption
                        | correctness_condition
                        | property_item
-                       | [ visibility ] definitional_item ) ;
+                       | [ visibility ] definitional_item
+                       | theorem_item
+                       | registration_item ) ;
 
-parameter_decl     ::= "let" variable_list [ qualification ]
-                       [ "such" conditions ] ";" ;
+parameter_decl     ::= "let" qualified_vars [ "such" conditions ] ";" ;
+definition_parameter_decl ::= "let" definition_parameter_binding
+                              [ definition_parameter_constraint ] ";" ;
+definition_parameter_binding ::= definition_qualified_vars
+                               | pred_param
+                               | func_param ;
+definition_qualified_vars ::= definition_explicit_vars [ "," definition_implicit_vars ]
+                            | definition_implicit_vars ;
+definition_explicit_vars ::= definition_qualified_segment
+                             { "," definition_qualified_segment } ;
+definition_qualified_segment ::= identifier_list parameter_qualification ;
+definition_implicit_vars ::= identifier_list ;
+parameter_qualification ::= ( "being" | "be" ) let_type ;
+definition_parameter_constraint ::= "such" conditions
+                                  | "such" "that" formula
+                                    ( "by" references | proof ) ;
 
 definitional_item  ::= struct_def
                      | inherit_def
@@ -432,11 +477,10 @@ variable_identifier ::= identifier ;
 inline_functor_application ::= inline_func_name "(" [ term_list ] ")" ;
 
 functor_application  ::= operator_expression ;
-functor_loci         ::= locus | "(" term_list ")" ;
 bracket_functor_application ::= user_symbol term_list user_symbol ;
 
 field_update_list    ::= field_update { "," field_update } ;
-field_update         ::= selector ":" term_expression ;
+field_update         ::= selector ":=" term_expression ;
 
 set_expression       ::= set_enumeration | set_comprehension ;
 set_enumeration      ::= "{" [ term_list ] "}" ;
@@ -467,14 +511,18 @@ universal_formula    ::= "for" quantified_vars [ "st" formula ]
                          ( "holds" formula | quantified_formula ) ;
 existential_formula  ::= "ex" quantified_vars "st" formula ;
 
-iff_formula          ::= implies_formula [ "iff" implies_formula ] ;
-implies_formula      ::= or_formula [ "implies" implies_formula ] ;
+iff_formula          ::= implies_formula
+                         [ "iff" ( implies_formula | quantified_formula ) ] ;
+implies_formula      ::= or_formula
+                         [ "implies" ( implies_formula | quantified_formula ) ] ;
 or_formula           ::= and_formula
-                         { "or" and_formula
-                         | "or" "..." "or" and_formula } ;
+                         { "or" ( and_formula | quantified_formula )
+                         | "or" "..." "or"
+                           ( and_formula | quantified_formula ) } ;
 and_formula          ::= not_formula
-                         { "&" not_formula
-                         | "&" "..." "&" not_formula } ;
+                         { "&" ( not_formula | quantified_formula )
+                         | "&" "..." "&"
+                           ( not_formula | quantified_formula ) } ;
 not_formula          ::= "not" not_formula
                        | atomic_formula
                        | "(" formula ")"
@@ -534,9 +582,8 @@ standalone_statement ::= generalization
                        | diffuse_conclusion
                        | exemplification ;
 
-generalization               ::= "let" variable_list [ qualification ]
-                                 [ "such" conditions ] ";" ;
-constant_definition          ::= "set" identifier "=" term_expression ";" ;
+generalization               ::= "let" qualified_vars [ "such" conditions ] ";" ;
+constant_definition          ::= "set" equating_list ";" ;
 inline_functor_definition    ::= "deffunc" identifier "(" [ typed_params ] ")"
                                  "->" type_expression "equals"
                                  term_expression ";" ;
@@ -550,40 +597,40 @@ assumption                   ::= single_assumption
                                | existential_assumption ;
 single_assumption            ::= "assume" proposition ";" ;
 collective_assumption        ::= "assume" conditions ";" ;
-existential_assumption       ::= "given" variable_list [ qualification ]
-                                 [ "such" conditions ] ";" ;
-choice_statement             ::= "consider" identifier qualification "such"
+existential_assumption       ::= "given" qualified_vars [ "such" conditions ] ";" ;
+choice_statement             ::= "consider" qualified_vars "such"
                                  conditions simple_justification ";" ;
 
 conclusion                   ::= ( "thus" | "hence" ) proposition
                                  justification ";" ;
-diffuse_conclusion           ::= "hereby" reasoning "end" ;
-exemplification              ::= "take" example ";" ;
+diffuse_conclusion           ::= "hereby" reasoning "end" ";" ;
+exemplification              ::= "take" example_list ";" ;
+example_list                 ::= example { "," example } ;
 example                      ::= term_expression | identifier "=" term_expression ;
 
-type_changing_statement      ::= "reconsider" reconsider_item "as"
+type_changing_statement      ::= "reconsider" type_change_list "as"
                                  type_expression simple_justification ";" ;
+type_change_list             ::= reconsider_item { "," reconsider_item } ;
 reconsider_item              ::= identifier | identifier "=" term_expression ;
 
 compact_statement            ::= proposition justification ";" ;
 iterative_equality           ::= [ label_identifier ":" ] term_expression
                                  "=" term_expression simple_justification
+                                 ".=" term_expression simple_justification
                                  { ".=" term_expression simple_justification } ";" ;
-diffuse_statement            ::= [ label_identifier ":" ] "now" reasoning "end" ;
+diffuse_statement            ::= [ label_identifier ":" ] "now" reasoning "end" ";" ;
 
 case_reasoning               ::= "per" "cases" simple_justification ";"
                                  ( case_list | suppose_list ) ;
 case_list                    ::= case_item { case_item } ;
 suppose_list                 ::= suppose_item { suppose_item } ;
 case_item                    ::= "case" ( proposition | conditions ) ";"
-                                 reasoning "end" ;
+                                 reasoning "end" ";" ;
 suppose_item                 ::= "suppose" ( proposition | conditions ) ";"
-                                 reasoning "end" ;
+                                 reasoning "end" ";" ;
 
 proposition                  ::= [ label_identifier ":" ] formula ;
 conditions                   ::= "that" proposition { "and" proposition } ;
-variable_list                ::= identifier { "," identifier } ;
-qualification                ::= ( "being" | "be" ) type_expression ;
 
 justification                ::= simple_justification | proof | computation_proof ;
 simple_justification         ::= [ "by" references ] ;
@@ -617,12 +664,12 @@ theorem_status   ::= "open" | "assumed" | "conditional" ;
 theorem_role     ::= "theorem" | "lemma" ;
 
 correctness_conditions ::= { correctness_condition } ;
-existence_block        ::= "existence" proof_or_refs ;
-uniqueness_block       ::= "uniqueness" proof_or_refs ;
-coherence_block        ::= "coherence" proof_or_refs ;
-compatibility_block    ::= "compatibility" proof_or_refs ;
-consistency_block      ::= "consistency" proof_or_refs ;
-reducibility_block     ::= "reducibility" proof_or_refs ;
+existence_block        ::= "existence" justification ";" ;
+uniqueness_block       ::= "uniqueness" justification ";" ;
+coherence_block        ::= "coherence" justification ";" ;
+compatibility_block    ::= "compatibility" justification ";" ;
+consistency_block      ::= "consistency" justification ";" ;
+reducibility_block     ::= "reducibility" justification ";" ;
 ```
 
 ## A.17 Clusters and Registrations
@@ -665,19 +712,12 @@ functor_term          ::= functor_application ;
 Normative reference: [Chapter 18 (Templates)](./18.templates.md).
 
 ```ebnf
-template_def    ::= "definition" { let_param } { annotated_template_item }
-                    "end" ";" ;
+template_definition ::= definition_block ;
 
-let_param       ::= "let" template_param
-                    [ "such" "that" formula
-                      ( "by" references | proof ) ] ";" ;
-template_param  ::= identifier_list "be" let_type
-                  | pred_param
-                  | func_param ;
+template_parameter_decl ::= definition_parameter_decl ;
 let_type        ::= "type" [ "extends" bound_type ] | type_expression ;
 bound_type      ::= [ attribute_chain ] radix_type ;
 
-annotated_template_item ::= { annotation } template_item ;
 template_item   ::= attr_def
                   | mode_def
                   | struct_def
