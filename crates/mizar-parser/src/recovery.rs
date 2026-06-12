@@ -1,4 +1,10 @@
-use crate::{ParserToken, ParserTokenKind, StringRequiredContext, grammar::Parser};
+use crate::{
+    ParserToken, ParserTokenKind, StringRequiredContext,
+    cursor::{TokenCursor, is_reserved_word_token},
+    diagnostic::{ExpectedToken, expected_token_diagnostic},
+    grammar::Parser,
+    sync::{self, SynchronizationBoundary, SynchronizationSet},
+};
 use mizar_session::{SourceAnchor, SourceRange};
 use mizar_syntax::{
     SurfaceBuilderNodeId, SyntaxDiagnostic, SyntaxDiagnosticCode, SyntaxRecoveryKind,
@@ -21,47 +27,39 @@ impl Parser {
             return;
         }
 
-        let missing_position = self
-            .request
-            .tokens
-            .iter()
-            .position(|token| token.kind != ParserTokenKind::StringLiteral);
-        let (position, span) = missing_position.map_or_else(
-            || {
-                let offset = self.request.tokens.last().map_or(0, |token| token.span.end);
-                (
-                    None,
-                    SourceRange {
-                        source_id: self.request.source_id,
-                        start: offset,
-                        end: offset,
-                    },
-                )
-            },
-            |position| {
-                let token = &self.request.tokens[position];
-                (
-                    Some(position),
-                    SourceRange {
-                        source_id: token.span.source_id,
-                        start: token.span.start,
-                        end: token.span.start,
-                    },
-                )
-            },
-        );
+        let tokens = self.request.tokens.clone();
+        let mut cursor = TokenCursor::new(self.request.source_id, &tokens);
+        while cursor
+            .current()
+            .is_some_and(|token| token.kind == ParserTokenKind::StringLiteral)
+        {
+            cursor.advance();
+        }
 
-        if position.is_none() && !self.request.tokens.is_empty() {
+        if cursor.is_eof() && !tokens.is_empty() {
             return;
         }
 
-        let diagnostic_primary =
-            position.map_or(span, |position| self.request.tokens[position].span);
+        let span = cursor.current().map_or_else(
+            || cursor.eof_range(),
+            |token| SourceRange {
+                source_id: token.span.source_id,
+                start: token.span.start,
+                end: token.span.start,
+            },
+        );
+        let mut sync_cursor = TokenCursor::at(self.request.source_id, &tokens, cursor.position());
+        let sync = sync::synchronize(&mut sync_cursor, SynchronizationSet::item_boundary());
+        let _boundary = sync.boundary;
+        let _skipped_range = sync.skipped_range;
+
         self.diagnostics.push(
-            SyntaxDiagnostic::new(
+            expected_token_diagnostic(
                 SyntaxDiagnosticCode::MissingStringLiteral,
+                ExpectedToken::new("string literal"),
+                cursor.current(),
+                cursor.eof_range(),
                 "expected string literal at this grammar position",
-                diagnostic_primary,
             )
             .with_recovery_note("insert a string literal before continuing"),
         );
@@ -71,15 +69,19 @@ impl Parser {
     fn recover_block_ends(&mut self) -> RecoveryOutcome {
         let tokens = self.request.tokens.clone();
         let mut stack = Vec::new();
+        let mut cursor = TokenCursor::new(self.request.source_id, &tokens);
+        let sync_set = SynchronizationSet::item_boundary();
 
-        for (position, token) in tokens.iter().enumerate() {
-            if opens_recovery_block(&tokens, position) {
+        while let Some(token) = cursor.current() {
+            let boundary = sync::boundary_at(&cursor, sync_set);
+            if opens_recovery_block(&cursor) {
                 stack.push(BlockStart {
                     keyword: token.text.clone(),
                     span: token.span,
-                    token_node_id: self.token_node_ids[position],
+                    token_node_id: self.token_node_ids[cursor.position()],
                 });
-            } else if is_end_keyword(token) && stack.pop().is_none() {
+            } else if boundary == Some(SynchronizationBoundary::EndKeyword) && stack.pop().is_none()
+            {
                 self.diagnostics.push(
                     SyntaxDiagnostic::new(
                         SyntaxDiagnosticCode::UnrecoverableInput,
@@ -92,6 +94,7 @@ impl Parser {
                 );
                 return RecoveryOutcome::Unrecoverable;
             }
+            cursor.advance();
         }
 
         if !stack.is_empty() {
@@ -140,34 +143,28 @@ struct BlockStart {
     token_node_id: SurfaceBuilderNodeId,
 }
 
-fn is_reserved_word_token(token: &ParserToken, spelling: &str) -> bool {
-    token.kind == ParserTokenKind::ReservedWord && token.text.as_ref() == spelling
-}
-
-fn is_end_keyword(token: &ParserToken) -> bool {
-    is_reserved_word_token(token, "end")
-}
-
 fn is_else_keyword(token: &ParserToken) -> bool {
     is_reserved_word_token(token, "else")
 }
 
-fn opens_recovery_block(tokens: &[ParserToken], position: usize) -> bool {
-    let token = &tokens[position];
+fn opens_recovery_block(cursor: &TokenCursor<'_>) -> bool {
+    let Some(token) = cursor.current() else {
+        return false;
+    };
     if !is_block_start_keyword(token) {
         return false;
     }
 
     if is_reserved_word_token(token, "for") {
-        return looks_like_algorithm_for_loop(tokens, position);
+        return looks_like_algorithm_for_loop(cursor);
     }
 
-    !(is_reserved_word_token(token, "if") && position > 0 && is_else_keyword(&tokens[position - 1]))
+    !(is_reserved_word_token(token, "if") && cursor.previous().is_some_and(is_else_keyword))
 }
 
-fn looks_like_algorithm_for_loop(tokens: &[ParserToken], position: usize) -> bool {
+fn looks_like_algorithm_for_loop(cursor: &TokenCursor<'_>) -> bool {
     matches!(
-        (tokens.get(position + 1), tokens.get(position + 2)),
+        (cursor.peek(1), cursor.peek(2)),
         (
             Some(ParserToken {
                 kind: ParserTokenKind::Identifier,

@@ -12,9 +12,9 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] minimal task-11/12 entry is split into the internal `grammar` module |
+| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] minimal task-11/12 entry uses private task-2 cursor/event infrastructure |
 | pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] minimal explicit-fixity Pratt is split into the internal `pratt` module |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task-12 recovery plus mizar-frontend task-28 nested block-end matching is split into the internal `recovery` module |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task-12 recovery plus mizar-frontend task-28 nested block-end matching uses task-2 cursor/diagnostic/sync helpers |
 
 `mizar-parser` implements the syntax grammar: frontend-adapted tokens in,
 `mizar_syntax::SurfaceAst` plus syntax diagnostics out. It is built as a thin
@@ -154,7 +154,7 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
    - Tests: existing parser and frontend seam tests pass unchanged.
    - Deps: none. Spec: [grammar.md](./grammar.md).
 
-2. **Parser infrastructure: cursor, syntax events, expected-token diagnostics, synchronization.** [ ]
+2. **Parser infrastructure: cursor, syntax events, expected-token diagnostics, synchronization.** [x]
    - Add a token cursor with bounded lookahead, an expected-token diagnostic
      helper producing `SyntaxDiagnostic` with precise ranges, a syntax-event
      sink that feeds the `mizar-syntax` builder, synchronization sets (`;`,
@@ -172,6 +172,10 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
    - Tests: synchronization skips to each boundary kind and records skipped
      ranges; expected-token diagnostics carry the right primary range at EOF
      and mid-stream.
+   - Initial top-level item synchronization keywords are `theorem`,
+     `definition`, `registration`, `notation`, `scheme`, `reserve`, `begin`,
+     `environ`, `vocabularies`, `constructors`, and `requirements`; later item
+     grammar tasks may refine this placeholder when they add real dispatch.
    - Deps: 1, `mizar-syntax` task 2. Spec: [recovery.md](./recovery.md).
 
 3. **Parse-only corpus runner.** [ ]

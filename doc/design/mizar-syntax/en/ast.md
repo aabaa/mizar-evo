@@ -138,6 +138,11 @@ recovery nodes with `add_recovery`. `finish` verifies that the optional root and
 expression root exist and that non-root structural parents do not share child
 subtrees.
 
+During construction, parser infrastructure may inspect already-emitted builder
+nodes through typed builder accessors such as `node_kind` and `node_range`.
+Those accessors expose only the surface kind and source range needed for parser
+composition; they do not expose the private builder arena as a storage contract.
+
 The compatibility root may list both source-order token nodes and structural
 nodes that contain those tokens, because task-12 consumers still inspect both
 views. The rowan green tree remains source-shaped: when a structural child owns

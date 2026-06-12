@@ -1,8 +1,9 @@
 # mizar-parser: Recovery
 
 Status: minimal task-12 recovery plus task-28 nested block-end recovery
-implemented, with task-1 module split in place as an internal `recovery`
-module; full grammar recovery planned.
+implemented, with task-1 module split and task-2 cursor/diagnostic/
+synchronization helpers wired into the internal `recovery` module; full
+grammar recovery planned.
 
 ## Purpose
 
@@ -16,6 +17,15 @@ This module defines parser synchronization and recovery policy.
 
 Current behavior:
 
+- the parser has a private token cursor with bounded lookahead, an
+  expected-token diagnostic helper that reuses existing `SyntaxDiagnosticCode`
+  variants, synchronization sets, and recovery-node emission helpers. These are
+  internal infrastructure only and do not change the crate-root public API;
+- the initial synchronization set stops at `;`, `end`, EOF, and this task-2
+  top-level item keyword placeholder: `theorem`, `definition`, `registration`,
+  `notation`, `scheme`, `reserve`, `begin`, `environ`, `vocabularies`,
+  `constructors`, and `requirements`. Later item grammar tasks expand or
+  narrow this set when they add real top-level dispatch;
 - missing `end` for block-like keywords is diagnosed at EOF when the parser's
   block stack remains open after matching available `end` tokens, and each
   missing close is represented with an explicit recovered `MissingEnd` node.

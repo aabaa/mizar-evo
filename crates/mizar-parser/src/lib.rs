@@ -1,6 +1,10 @@
+mod cursor;
+mod diagnostic;
+mod event;
 mod grammar;
 mod pratt;
 mod recovery;
+mod sync;
 
 use mizar_session::{Edition, SourceId, SourceRange};
 use mizar_syntax::{SurfaceAst, SyntaxDiagnostic};

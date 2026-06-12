@@ -372,6 +372,14 @@ impl SurfaceAstBuilder {
         self.nodes.get(id.index())
     }
 
+    pub fn node_kind(&self, id: SurfaceBuilderNodeId) -> Option<&SurfaceNodeKind> {
+        self.node(id).map(|node| &node.kind)
+    }
+
+    pub fn node_range(&self, id: SurfaceBuilderNodeId) -> Option<SourceRange> {
+        self.node(id).map(|node| node.range)
+    }
+
     pub fn token_node_ids(&self) -> &[SurfaceBuilderNodeId] {
         &self.token_nodes
     }

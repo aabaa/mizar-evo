@@ -12,9 +12,9 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] task 11/12 の最小エントリは内部 `grammar` module に分割済み |
+| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] task 11/12 の最小エントリは private な task 2 cursor / event 基盤を使用 |
 | pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] 明示 fixity の最小 Pratt は内部 `pratt` module に分割済み |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task 12 の recovery と mizar-frontend task 28 の nested block-end matching は内部 `recovery` module に分割済み |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task 12 の recovery と mizar-frontend task 28 の nested block-end matching は task 2 cursor / diagnostic / sync helper を使用 |
 
 `mizar-parser` は構文文法を実装する: frontend 適合済みトークンを入力とし、
 `mizar_syntax::SurfaceAst` と構文診断を出力する。薄い基盤層（cursor、同期、
@@ -151,7 +151,7 @@ resolver / build-system 依存を避ける。
    - テスト: 既存のパーサーテストと frontend seam テストが変更なしに通る。
    - 依存: なし。仕様: [grammar.md](./grammar.md)。
 
-2. **パーサー基盤: cursor、構文イベント、期待トークン診断、同期。** [ ]
+2. **パーサー基盤: cursor、構文イベント、期待トークン診断、同期。** [x]
    - 有界先読み付きのトークン cursor、精密な範囲を持つ `SyntaxDiagnostic` を
      生成する期待トークン診断ヘルパー、`mizar-syntax` builder へ供給する
      構文イベント sink、同期集合（`;`、`end`、トップレベル item キーワード、
@@ -166,6 +166,10 @@ resolver / build-system 依存を避ける。
      観測可能な挙動を変えずにこれらのヘルパーへ一般化する。
    - テスト: 同期が各境界種別までスキップし、スキップ範囲を記録する。期待
      トークン診断が EOF とストリーム中間で正しい第一範囲を運ぶ。
+   - 初期 top-level item 同期キーワードは `theorem`、`definition`、
+     `registration`、`notation`、`scheme`、`reserve`、`begin`、`environ`、
+     `vocabularies`、`constructors`、`requirements` とする。後続の item 文法タスクは、
+     実際の dispatch を追加するときにこの placeholder を調整してよい。
    - 依存: 1、`mizar-syntax` task 2。仕様: [recovery.md](./recovery.md)。
 
 3. **parse-only コーパスランナー。** [ ]

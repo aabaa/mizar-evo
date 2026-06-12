@@ -1,16 +1,17 @@
 use crate::{
-    OperatorFixityEntry, ParseOutput, ParseRequest, ParserToken, ParserTokenKind, recovery,
+    OperatorFixityEntry, ParseOutput, ParseRequest, ParserToken, ParserTokenKind,
+    cursor::TokenCursor, event::SyntaxEvent, event::SyntaxEventSink, recovery,
 };
 use mizar_session::SourceRange;
 use mizar_syntax::{
-    SurfaceAstBuilder, SurfaceBuilderNodeId, SurfaceNodeKind, SurfaceTokenKind, SyntaxDiagnostic,
+    SurfaceBuilderNodeId, SurfaceNodeKind, SurfaceTokenKind, SyntaxDiagnostic,
     SyntaxDiagnosticCode, SyntaxRecoveryKind,
 };
 use std::{collections::BTreeMap, sync::Arc};
 
 pub(crate) struct Parser {
     pub(super) request: ParseRequest,
-    pub(super) builder: SurfaceAstBuilder,
+    pub(super) events: SyntaxEventSink,
     pub(super) token_node_ids: Vec<SurfaceBuilderNodeId>,
     pub(super) diagnostics: Vec<SyntaxDiagnostic>,
     pub(super) fixity: BTreeMap<Arc<str>, OperatorFixityEntry>,
@@ -25,7 +26,7 @@ impl Parser {
             .map(|entry| (entry.spelling.clone(), entry))
             .collect();
         Self {
-            builder: SurfaceAstBuilder::new(request.source_id),
+            events: SyntaxEventSink::new(request.source_id),
             request,
             token_node_ids: Vec::new(),
             diagnostics: Vec::new(),
@@ -44,31 +45,34 @@ impl Parser {
         let expression_root = self.parse_expression();
         let root = self.add_root(expression_root);
         ParseOutput {
-            ast: Some(self.builder.finish(Some(root), expression_root)),
+            ast: Some(self.events.finish(Some(root), expression_root)),
             diagnostics: self.diagnostics,
         }
     }
 
     fn add_token_nodes(&mut self) {
         let tokens = self.request.tokens.clone();
-        for token in tokens {
+        let mut cursor = TokenCursor::new(self.request.source_id, &tokens);
+        while let Some(token) = cursor.advance() {
             let id = if token.kind == ParserTokenKind::ErrorRecovery {
                 self.diagnostics.push(SyntaxDiagnostic::new(
                     SyntaxDiagnosticCode::UnexpectedErrorToken,
                     "error-recovery token reached the parser",
                     token.span,
                 ));
-                self.builder.add_recovered_token(
-                    surface_token_kind(token.kind),
-                    token.text.clone(),
-                    token.span,
-                )
+                self.events.emit(SyntaxEvent::Token {
+                    kind: surface_token_kind(token.kind),
+                    text: token.text.clone(),
+                    range: token.span,
+                    recovered: true,
+                })
             } else {
-                self.builder.add_token(
-                    surface_token_kind(token.kind),
-                    token.text.clone(),
-                    token.span,
-                )
+                self.events.emit(SyntaxEvent::Token {
+                    kind: surface_token_kind(token.kind),
+                    text: token.text.clone(),
+                    range: token.span,
+                    recovered: false,
+                })
             };
             self.token_node_ids.push(id);
         }
@@ -80,7 +84,11 @@ impl Parser {
         range: SourceRange,
         children: Vec<SurfaceBuilderNodeId>,
     ) -> SurfaceBuilderNodeId {
-        self.builder.add_recovery(recovery_kind, range, children)
+        self.events.emit(SyntaxEvent::Recovery {
+            kind: recovery_kind,
+            range,
+            children,
+        })
     }
 
     fn add_root(&mut self, expression_root: Option<SurfaceBuilderNodeId>) -> SurfaceBuilderNodeId {
@@ -89,7 +97,7 @@ impl Parser {
             .iter()
             .copied()
             .chain(expression_root)
-            .chain(self.builder.recovery_node_ids().iter().copied())
+            .chain(self.events.recovery_node_ids().iter().copied())
             .collect::<Vec<_>>();
         let range = self
             .request
@@ -108,8 +116,11 @@ impl Parser {
                     end: last.span.end,
                 },
             );
-        self.builder
-            .add_node(SurfaceNodeKind::Root, range, children)
+        self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::Root,
+            range,
+            children,
+        })
     }
 
     pub(super) fn fixity_for_token(&self, token: &ParserToken) -> Option<&OperatorFixityEntry> {

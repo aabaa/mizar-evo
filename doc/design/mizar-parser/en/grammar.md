@@ -1,7 +1,8 @@
 # mizar-parser: Grammar
 
-Status: minimal task-11 parser entry implemented and task-1 module split in
-place as an internal `grammar` module; full module/item grammar planned.
+Status: minimal task-11 parser entry implemented, task-1 module split in
+place, and task-2 private cursor/event infrastructure wired into the internal
+`grammar` module; full module/item grammar planned.
 
 ## Purpose
 
@@ -18,7 +19,9 @@ Current behavior:
 - the crate-root public API (`parse`, `ParseRequest`, `ParserToken`,
   `ParseOutput`, and related transfer enums/entries) remains reachable at the
   original `mizar_parser::...` paths;
-- `grammar` owns the current parser orchestration and syntax-tree builder
-  handoff, while Pratt expression parsing and recovery policy live in sibling
-  implementation modules until later tasks promote a fuller parser
-  infrastructure.
+- `grammar` owns the current parser orchestration and syntax-event sink handoff,
+  while Pratt expression parsing and recovery policy live in sibling
+  implementation modules until later tasks grow the full grammar;
+- grammar code emits tokens, ordinary nodes, and recovery nodes through the
+  private syntax-event sink and documented `mizar-syntax` builder/accessor API,
+  not by depending on rowan storage layout or dense arena indices.

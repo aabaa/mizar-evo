@@ -1,4 +1,7 @@
-use crate::{OperatorAssociativity, OperatorFixityEntry, ParserTokenKind, grammar::Parser};
+use crate::{
+    OperatorAssociativity, OperatorFixityEntry, ParserTokenKind, event::SyntaxEvent,
+    grammar::Parser,
+};
 use mizar_session::SourceRange;
 use mizar_syntax::{
     SurfaceBuilderNodeId, SurfaceInfixOperator, SurfaceNodeKind, SurfaceOperatorAssociativity,
@@ -87,7 +90,7 @@ impl ExpressionParser<'_> {
         operator: &OperatorFixityEntry,
     ) -> bool {
         matches!(
-            &self.parser.builder.node(left).unwrap().kind,
+            self.parser.events.node_kind(left).unwrap(),
             SurfaceNodeKind::InfixExpression(left_operator)
                 if left_operator.associativity == SurfaceOperatorAssociativity::NonAssociative
                     && left_operator.spelling == operator.spelling
@@ -101,23 +104,23 @@ impl ExpressionParser<'_> {
         right: SurfaceBuilderNodeId,
         operator: &OperatorFixityEntry,
     ) -> SurfaceBuilderNodeId {
-        let left_range = self.parser.builder.node(left).unwrap().range;
-        let right_range = self.parser.builder.node(right).unwrap().range;
+        let left_range = self.parser.events.node_range(left).unwrap();
+        let right_range = self.parser.events.node_range(right).unwrap();
         let operator_id = self.parser.token_node_ids[operator_position];
         self.built_infix = true;
-        self.parser.builder.add_node(
-            SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
+        self.parser.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
                 spelling: operator.spelling.clone(),
                 precedence: operator.precedence,
                 associativity: surface_associativity(operator.associativity),
             }),
-            SourceRange {
+            range: SourceRange {
                 source_id: left_range.source_id,
                 start: left_range.start,
                 end: right_range.end,
             },
-            vec![left, operator_id, right],
-        )
+            children: vec![left, operator_id, right],
+        })
     }
 }
 

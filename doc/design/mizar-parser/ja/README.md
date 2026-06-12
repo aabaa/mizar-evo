@@ -6,7 +6,7 @@
 
 依存境界は狭く保つべきである。入力は parser-facing token transfer object、出力は `SurfaceAst` と構文診断とする。パーサー補助付き字句解析は、文字列が必要な位置やシンボル種別フィルタのような、明示的なコンテキストオブジェクトを通じてのみ許可する。
 
-状態: 最小 crate は、session `SourceRange` を持つ frontend 適合済み token transfer object を消費する parser entry point を公開し、`mizar_syntax::SurfaceAst` と構文診断を返す。token 順と範囲を保持し、小さな Pratt parser によって明示的な演算子 fixity を検証し、task 12 の recovery passthrough と task 28 の入れ子 missing-`end` matching、文字列リテラル欠落、回復不能時の `ast = None` を実装している。完全な文法範囲は引き続き計画中である。
+状態: 最小 crate は、session `SourceRange` を持つ frontend 適合済み token transfer object を消費する parser entry point を公開し、`mizar_syntax::SurfaceAst` と構文診断を返す。token 順と範囲を保持し、小さな Pratt parser によって明示的な演算子 fixity を検証し、task 12 の recovery passthrough と task 28 の入れ子 missing-`end` matching、文字列リテラル欠落、回復不能時の `ast = None` を実装している。task 2 の parser 基盤は、private な cursor、構文 event、期待トークン診断、同期、recovery 送出 helper として配置済みである。完全な文法範囲は引き続き計画中である。
 
 初期のモジュール仕様:
 

@@ -133,6 +133,11 @@ root、expression-root id は無効である。`add_node` は通常の structura
 root が存在すること、また non-root の structural parent が child subtree を共有
 していないことを検証する。
 
+構築中、parser 基盤は `node_kind` や `node_range` のような typed builder accessor
+を通じて、すでに送出した builder node を検査してよい。これらの accessor は parser
+composition に必要な surface kind と source range だけを公開し、private builder
+arena を storage contract として露出しない。
+
 互換 root は、task 12 の consumer が両方の view を検査し続けられるよう、ソース順
 の token node と、それらの token を含む structural node の両方を列挙してよい。
 rowan green tree は source-shaped のままである。structural child が source token
