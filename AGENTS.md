@@ -20,16 +20,19 @@ If the task is ambiguous enough that implementation would be risky, ask one conc
 
 For each task, complete these phases in order:
 
-1. Implement the requested task.
-2. Review whether tests are sufficient compared with the relevant specification.
-3. If the test review finds gaps, expand tests carefully and repeat the test review until there are no findings.
-4. Review the full implementation for bugs, regressions, design mismatches, and missing edge cases.
-5. If the implementation review finds issues, fix them and repeat the implementation review until there are no findings.
-6. Review whether source code and documentation still agree.
-7. If the documentation review finds issues, fix them and repeat the documentation review until there are no findings.
-8. Run the relevant verification commands.
-9. Prepare a handoff prompt for the next task so it can be started in a separate chat. Include a recommended reasoning setting for the next task, a short rationale, and any conditions that would justify raising or lowering that setting.
-10. Prepare a commit message. Commit the completed change only when the user explicitly requested committing or when the task explicitly includes the full workflow through commit, unless the user asks not to commit.
+1. Write or update the implementation specification for the requested task.
+2. Review the implementation specification and relevant documentation for completeness, clarity, and consistency.
+3. If the documentation review finds gaps, update the implementation specification or documentation carefully and repeat the documentation review until there are no findings.
+4. Implement the requested task.
+5. Review whether tests are sufficient compared with the relevant specification.
+6. If the test review finds gaps, expand tests carefully and repeat the test review until there are no findings.
+7. Review the full implementation for bugs, regressions, design mismatches, and missing edge cases.
+8. If the implementation review finds issues, fix them and repeat the implementation review until there are no findings.
+9. Review whether source code and documentation still agree.
+10. If the documentation review finds issues, fix them and repeat the documentation review until there are no findings.
+11. Run the relevant verification commands.
+12. Prepare a handoff prompt for the next task so it can be started in a separate chat. Include a recommended reasoning setting for the next task, a short rationale, and any conditions that would justify raising or lowering that setting.
+13. Prepare a commit message. Commit the completed change only when the user explicitly requested committing or when the task explicitly includes the full workflow through commit, unless the user asks not to commit.
 
 ## Agent Delegation
 
@@ -38,6 +41,7 @@ Use sub-agents when the current Codex session has access to agent delegation and
 Recommended delegation pattern:
 
 - Use a worker agent for bounded implementation subtasks only when write scopes can be kept clear.
+- Use a review-only sub-agent prompt for the implementation specification and documentation review.
 - Use a review-only sub-agent prompt for the test sufficiency review.
 - Use a review-only sub-agent prompt for the full implementation review.
 - Use a review-only sub-agent prompt for the source/documentation consistency review.
