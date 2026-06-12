@@ -50,9 +50,10 @@ term_case         ::= term_expression "if" formula ;
 ```
 
 `term_expression` and `formula` are precedence-driven grammars. The productions
-below remove direct left recursion where possible, but term-level user operators
-are still parsed by the active operator table described in Appendix B and
-Chapters 10 and 13.
+below remove direct left recursion where possible. Term-level user operators
+and template functor applications are still parser-facing surface forms whose
+binding behavior is resolved by the active operator table described in
+Appendix B and Chapters 10 and 13.
 
 ## A.2 Lexical Structure
 
@@ -134,9 +135,12 @@ separator according to the context described in Chapter 2.
 
 The hyphen used in parameterized attribute spellings such as `n-dimensional`
 or `(m,n)-ary` is a contextual `param_prefix` separator, not a reserved special
-symbol. In that grammar position, the lexer/parser splits the prefix hyphen
-before applying ordinary longest-match user-symbol recognition to the attribute
-name.
+symbol. In attribute positions only, the lexer/parser first attempts a
+`param_prefix` split when the prefix is an in-scope parameter name, a numeral,
+or a parenthesized parameter list, and the suffix resolves to an active
+attribute name. If that check fails, the entire spelling is matched against the
+active lexicon as one attribute name. When both interpretations are valid, the
+`param_prefix` split wins.
 
 Fixed annotation names and option names are contextual spellings, not reserved
 identifiers outside their grammar positions. Current contextual spellings are
@@ -148,8 +152,9 @@ standalone reserved-symbol token.
 
 The reserved bracket tokens `[` and `]` are not user symbols, but they are
 admitted by the grammar as a built-in bracket-functor delimiter pair when a
-term primary is expected. After a template-capable name, the same tokens start
-template arguments. The compound token `@[` starts a library annotation.
+term primary is expected. After a template-capable type, functor, algorithm,
+definition, or reference name, the same tokens start template arguments. The
+compound token `@[` starts a library annotation.
 
 ## A.3 Type Expressions
 
@@ -483,6 +488,7 @@ term_primary         ::= variable_identifier
                        | set_expression
                        | choice_expression
                        | inline_functor_application
+                       | template_functor_application
                        | bracket_functor_application ;
 
 term_postfix         ::= "." field_name
@@ -493,9 +499,10 @@ variable_identifier ::= identifier ;
 
 inline_functor_application ::= inline_func_name "(" [ term_list ] ")" ;
 
-functor_application  ::= [ functor_loci ] functor_symbol [ functor_loci ]
-                       | bracket_functor_application
-                       | inline_functor_application ;
+template_functor_application ::= functor_symbol template_args
+                                 [ "(" [ term_list ] ")" ] ;
+
+functor_application  ::= [ functor_loci ] functor_symbol [ functor_loci ] ;
 functor_loci         ::= term_expression | "(" term_list ")" ;
 bracket_functor_application ::= user_symbol term_list user_symbol
                               | "[" term_list "]" ;

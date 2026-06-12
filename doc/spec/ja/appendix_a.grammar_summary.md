@@ -45,7 +45,7 @@ term_definiens    ::= term_expression
 term_case         ::= term_expression "if" formula ;
 ```
 
-`term_expression` と `formula` は優先順位に基づく文法です。以下の生成規則では可能な範囲で直接左再帰を除いていますが、term レベルのユーザー演算子は、付録 B と第 10 章・第 13 章で定義される active operator table によって解析されます。
+`term_expression` と `formula` は優先順位に基づく文法です。以下の生成規則では可能な範囲で直接左再帰を除いています。term レベルのユーザー演算子と template functor application は parser-facing な表層形式であり、その結合の振る舞いは付録 B と第 10 章・第 13 章で定義される active operator table によって解決されます。
 
 ## A.2 語彙構造
 
@@ -129,14 +129,18 @@ token ではありません。
 
 予約 bracket token `[` と `]` は user symbol ではありませんが、term primary が
 期待される位置では、組み込み bracket functor の区切り対として文法上認められます。
-template-capable な名前の後では、同じ token は template 引数を開始します。
-複合 token `@[` は library annotation を開始します。
+template-capable な type、functor、algorithm、definition、reference 名の後では、
+同じ token は template 引数を開始します。複合 token `@[` は library annotation を
+開始します。
 
 `n-dimensional` や `(m,n)-ary` のような parameterized attribute spelling
 に現れるハイフンは、予約 special symbol ではなく、文脈依存の
-`param_prefix` separator です。この文法位置では、lexer/parser は通常の
-longest-match user-symbol 認識を attribute name に適用する前に、prefix
-hyphen で spelling を分割します。
+`param_prefix` separator です。属性位置に限り、lexer/parser はまず、
+prefix が scope 内の parameter name、numeral、または parenthesized
+parameter list で、suffix が active attribute name として解決できる場合に
+`param_prefix` 分割を試みます。この判定に失敗した場合、spelling 全体を
+1 つの attribute name として active lexicon に照合します。両方が有効な場合は
+`param_prefix` 分割が優先されます。
 
 ## A.3 型式
 
@@ -466,6 +470,7 @@ term_primary         ::= variable_identifier
                        | set_expression
                        | choice_expression
                        | inline_functor_application
+                       | template_functor_application
                        | bracket_functor_application ;
 
 term_postfix         ::= "." field_name
@@ -476,9 +481,10 @@ variable_identifier ::= identifier ;
 
 inline_functor_application ::= inline_func_name "(" [ term_list ] ")" ;
 
-functor_application  ::= [ functor_loci ] functor_symbol [ functor_loci ]
-                       | bracket_functor_application
-                       | inline_functor_application ;
+template_functor_application ::= functor_symbol template_args
+                                 [ "(" [ term_list ] ")" ] ;
+
+functor_application  ::= [ functor_loci ] functor_symbol [ functor_loci ] ;
 functor_loci         ::= term_expression | "(" term_list ")" ;
 bracket_functor_application ::= user_symbol term_list user_symbol
                               | "[" term_list "]" ;
