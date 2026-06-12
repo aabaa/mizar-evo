@@ -199,7 +199,7 @@ task 12 互換 surface を超える新しい AST node kind 設計を始めない
      [../../../spec/ja/appendix_a.grammar_summary.md](../../../spec/ja/appendix_a.grammar_summary.md)、
      [../../../spec/ja/](../../../spec/ja/00.index.md) 配下の章内 grammar section。
 
-7. **parse-only acceptance matrix と fixture 計画。** [ ]
+7. **parse-only acceptance matrix と fixture 計画。** [x]
    - AST snapshot を設計する前に parse-only acceptance matrix を定義する:
      module structure、declaration、type expression、term expression、formula、
      statement / proof、annotation、registration、template、algorithm について、
@@ -209,6 +209,11 @@ task 12 互換 surface を超える新しい AST node kind 設計を始めない
    - どの fixture が `mizar-parser` に属し、どれが `mizar-test` に属し、どれが
      純粋な仕様例かを識別する。後続の AST snapshot が安定した fixture set を
      継承できるよう、Appendix A section への traceability を記録する。
+   - 結果: [parse_only_acceptance_matrix.md](./parse_only_acceptance_matrix.md)
+     に記録した。matrix は syntax-only outcome（`accept`、`reject`、
+     `ambiguous-preserve-surface`、`recover`）を使い、ambiguous 行は executable
+     corpus expectation では通常の parse acceptance に対応させる。fixture
+     ownership と、各対象領域の Appendix A traceability も記録した。
    - 依存: 6。仕様:
      [../../mizar-test/ja/staged_model.md](../../mizar-test/ja/staged_model.md)、
      [../../mizar-test/ja/expectation_schema.md](../../mizar-test/ja/expectation_schema.md)。

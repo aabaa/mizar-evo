@@ -11,3 +11,8 @@ This directory contains implementation-facing design notes for the `mizar-syntax
 - [en/ast.md](./en/ast.md) - `SurfaceAst`, rowan storage, compatibility node views, and syntax node kinds
 - [en/trivia.md](./en/trivia.md) - comments, doc-comment attachment targets, whitespace/trivia retention
 - [en/recovery.md](./en/recovery.md) - error nodes, skipped tokens, and parser recovery markers
+
+## Grammar Gate Notes
+
+- [en/grammar_audit.md](./en/grammar_audit.md) - Appendix A consistency audit before AST node vocabulary growth
+- [en/parse_only_acceptance_matrix.md](./en/parse_only_acceptance_matrix.md) - parse-only matrix and fixture ownership plan before AST snapshots

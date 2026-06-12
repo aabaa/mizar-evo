@@ -8,13 +8,18 @@
 
 状態: 表現基盤は、frontend parser-seam 統合に必要な rowan-backed `SurfaceAst`、typed
 互換 view、決定的な snapshot rendering、構文診断、syntax-owned trivia side table
-を所有している。frontend parser-seam 統合に十分な回復ノードは利用可能であり、
-拡張された回復モデルは引き続き計画中である。
+を所有している。frontend parser-seam 統合に十分な回復ノードと拡張済みの
+recovery 語彙は利用可能であり、parser producer は段階的に追加される。
 
 初期のモジュール仕様:
 
 - `ast.md`
 - `trivia.md`
 - `recovery.md`
+
+文法ゲートの計画ノート:
+
+- `grammar_audit.md`
+- `parse_only_acceptance_matrix.md`
 
 実装ロードマップ: [todo.md](./todo.md)。

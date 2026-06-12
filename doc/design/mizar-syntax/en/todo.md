@@ -207,7 +207,7 @@ as accepted follow-ups. The purpose is to avoid freezing grammar drift into
      [../../../spec/en/appendix_a.grammar_summary.md](../../../spec/en/appendix_a.grammar_summary.md),
      chapter-local grammar sections under [../../../spec/en/](../../../spec/en/00.index.md).
 
-7. **Parse-only acceptance matrix and fixture plan.** [ ]
+7. **Parse-only acceptance matrix and fixture plan.** [x]
    - Define a parse-only acceptance matrix before AST snapshots are designed:
      positive, negative, ambiguous, and recovery-required examples for module
      structure, declarations, type expressions, term expressions, formulas,
@@ -218,6 +218,12 @@ as accepted follow-ups. The purpose is to avoid freezing grammar drift into
    - Identify which fixtures belong to `mizar-parser`, which belong to
      `mizar-test`, and which are pure spec examples. Record traceability to
      Appendix A sections so later AST snapshots inherit a stable fixture set.
+   - Result: recorded in
+     [parse_only_acceptance_matrix.md](./parse_only_acceptance_matrix.md).
+     The matrix uses syntax-only outcomes (`accept`, `reject`,
+     `ambiguous-preserve-surface`, `recover`), maps ambiguous rows to ordinary
+     parse acceptance for executable corpus expectations, classifies fixture
+     ownership, and records Appendix A traceability for each covered area.
    - Deps: 6. Spec:
      [../../mizar-test/en/staged_model.md](../../mizar-test/en/staged_model.md),
      [../../mizar-test/en/expectation_schema.md](../../mizar-test/en/expectation_schema.md).
