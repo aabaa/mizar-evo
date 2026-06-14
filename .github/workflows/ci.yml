@@ -8,6 +8,11 @@ jobs:
   mizar-test:
     name: mizar-test
     runs-on: ubuntu-latest
+    env:
+      # Avoid intermittent HTTP/2 framing failures while downloading crates from
+      # the sparse registry, and let Cargo retry transient network errors.
+      CARGO_HTTP_MULTIPLEXING: "false"
+      CARGO_NET_RETRY: "10"
 
     steps:
       - name: Checkout
@@ -17,6 +22,25 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+
+      - name: Fetch dependencies
+        shell: bash
+        run: |
+          for attempt in 1 2 3 4; do
+            if cargo fetch --locked; then
+              exit 0
+            fi
+
+            if [ "${attempt}" -eq 4 ]; then
+              break
+            fi
+
+            sleep_seconds=$((attempt * 10))
+            echo "cargo fetch failed on attempt ${attempt}; retrying in ${sleep_seconds}s"
+            sleep "${sleep_seconds}"
+          done
+
+          exit 1
 
       - name: Check formatting
         run: cargo fmt --check
