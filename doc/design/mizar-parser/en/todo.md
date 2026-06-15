@@ -205,13 +205,17 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
 
 ### Pre-resolver compatibility gate
 
-**Initial public enum forward-compatibility gate.** [ ]
+**Initial public enum forward-compatibility gate.** [x]
 - Decide `#[non_exhaustive]` versus deliberate exhaustiveness for the parser
   public enums that already exist at the phase-3 boundary
   (`ParserTokenKind`, `OperatorAssociativity`, `StringRequiredContext`), using
   the `mizar-frontend` task-25 procedure and the initial `mizar-syntax` gate.
 - Record each decision in the owning module spec and apply the attributes before
   parser tasks 5-7 can become resolver/LSP inputs.
+- Result: `ParserTokenKind` and `StringRequiredContext` are
+  `#[non_exhaustive]` for downstream crates; `OperatorAssociativity` is a
+  documented exhaustive exception. `crates/mizar-parser/tests/lint_policy.rs`
+  guards the classification for every current public parser enum.
 - Deps: 3 and the initial `mizar-syntax` public-enum gate. Spec:
   [grammar.md](./grammar.md), [pratt.md](./pratt.md),
   [recovery.md](./recovery.md).

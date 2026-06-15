@@ -197,13 +197,17 @@ resolver / build-system 依存を避ける。
 
 ### resolver 前の互換性ゲート
 
-**公開 enum 前方互換性の初期ゲート。** [ ]
+**公開 enum 前方互換性の初期ゲート。** [x]
 - phase 3 境界にすでに存在する parser 公開 enum
   （`ParserTokenKind`、`OperatorAssociativity`、`StringRequiredContext`）について、
   `mizar-frontend` task 25 の手続きと `mizar-syntax` の初期ゲートに沿って、
   `#[non_exhaustive]` 対 意図的 exhaustive を決定する。
 - 各決定を所有モジュール仕様に記録し、parser task 5〜7 が resolver / LSP の
   入力になり得る前に属性を適用する。
+- 結果: `ParserTokenKind` と `StringRequiredContext` は downstream crate 向けに
+  `#[non_exhaustive]` とした。`OperatorAssociativity` は文書化された exhaustive
+  例外である。`crates/mizar-parser/tests/lint_policy.rs` が現在の parser public enum
+  すべての分類を guard する。
 - 依存: 3 と `mizar-syntax` の公開 enum 初期ゲート。仕様:
   [grammar.md](./grammar.md)、[pratt.md](./pratt.md)、[recovery.md](./recovery.md)。
 

@@ -57,3 +57,11 @@ task 単独の corpus position は導入しない。helper は syntax-event sink
 `mizar-syntax` task S-009 の path node を送出し、dot separator を構文として保持する。
 module resolution、namespace shadowing、symbol identity 割り当て、citation lookup、
 validity checking は行わない。
+
+## 公開 enum の互換性
+
+`ParserTokenKind` は downstream crate 向けに `#[non_exhaustive]` とする。parser-facing
+lexing context が追加の token class を得るにつれて、parser token transfer vocabulary
+は成長し得るため、downstream consumer は wildcard fallback arm を持つ必要がある。
+`mizar-parser` 内部の match は exhaustive のままにし、新しい token kind が追加された
+ときに parser 側の更新がローカルに強制されるようにする。

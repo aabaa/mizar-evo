@@ -23,8 +23,9 @@ impl Parser {
     }
 
     fn recover_missing_string_literal(&mut self) {
-        if self.request.string_required_context != StringRequiredContext::UniformForTest {
-            return;
+        match self.request.string_required_context {
+            StringRequiredContext::None => return,
+            StringRequiredContext::UniformForTest => {}
         }
 
         let tokens = self.request.tokens.clone();

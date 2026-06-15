@@ -59,6 +59,90 @@ fn parser_allow_exceptions_are_documented_inline() {
 }
 
 #[test]
+fn public_forward_compatible_enums_are_marked_non_exhaustive() {
+    let root = crate_root();
+    let expected = [
+        ("src/lib.rs", "ParserTokenKind"),
+        ("src/lib.rs", "StringRequiredContext"),
+    ];
+
+    let mut violations = Vec::new();
+    for (relative_path, enum_name) in expected {
+        let path = root.join(relative_path);
+        let source = read_to_string(&path);
+        if !enum_has_attribute(&source, enum_name, "non_exhaustive") {
+            violations.push(format!("{relative_path}: pub enum {enum_name}"));
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "pre-resolver public enum forward-compatibility policy requires \
+         #[non_exhaustive] on:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn public_enum_exhaustiveness_exceptions_are_documented() {
+    let root = crate_root();
+    let documented_exceptions = [(
+        "src/lib.rs",
+        "OperatorAssociativity",
+        "../../../../doc/design/mizar-parser/en/pratt.md",
+    )];
+
+    let mut violations = Vec::new();
+    for (relative_path, enum_name, spec_link) in documented_exceptions {
+        let source = read_to_string(&root.join(relative_path));
+        if enum_has_attribute(&source, enum_name, "non_exhaustive") {
+            violations.push(format!(
+                "{relative_path}: pub enum {enum_name} is listed as an exhaustive exception"
+            ));
+        }
+        if !source_contains_public_enum(&source, enum_name) {
+            violations.push(format!("{relative_path}: missing pub enum {enum_name}"));
+        }
+        let spec =
+            read_to_string(&workspace_root().join(spec_link.trim_start_matches("../../../../")));
+        if !spec.contains(enum_name) || !spec.contains("exhaustive") {
+            violations.push(format!(
+                "{relative_path}: pub enum {enum_name} needs an exhaustive decision in {spec_link}"
+            ));
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "intentional public enum exhaustiveness exceptions must stay explicit:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn every_public_enum_has_a_forward_compatibility_decision() {
+    let root = crate_root();
+    let forward_compatible = ["ParserTokenKind", "StringRequiredContext"];
+    let exhaustive_exceptions = ["OperatorAssociativity"];
+    let mut classified = forward_compatible
+        .iter()
+        .chain(exhaustive_exceptions.iter())
+        .map(|name| (*name).to_owned())
+        .collect::<Vec<_>>();
+    classified.sort_unstable();
+
+    let source = read_to_string(&root.join("src/lib.rs"));
+    let mut discovered = public_enum_names(&source);
+    discovered.sort_unstable();
+
+    assert_eq!(
+        discovered, classified,
+        "each public mizar-parser enum must be classified as #[non_exhaustive] \
+         or as a documented exhaustive exception"
+    );
+}
+
+#[test]
 fn manifest_target_path_parser_covers_custom_cargo_targets() {
     let root = Path::new("crate");
     let manifest = r#"
@@ -340,6 +424,64 @@ fn is_allow_attribute(attribute: &str) -> bool {
         || compact.starts_with("#![allow(")
         || (compact.starts_with("#[cfg_attr(") && compact.contains(",allow("))
         || (compact.starts_with("#![cfg_attr(") && compact.contains(",allow("))
+}
+
+fn enum_has_attribute(source: &str, enum_name: &str, attribute_name: &str) -> bool {
+    let enum_declaration = format!("pub enum {enum_name}");
+    let lines = source.lines().collect::<Vec<_>>();
+
+    for (line_index, line) in lines.iter().enumerate() {
+        if line.trim_start().starts_with(&enum_declaration) {
+            return preceding_attributes(&lines, line_index)
+                .iter()
+                .any(|attribute| attribute_is(attribute, attribute_name));
+        }
+    }
+
+    false
+}
+
+fn source_contains_public_enum(source: &str, enum_name: &str) -> bool {
+    let enum_declaration = format!("pub enum {enum_name}");
+    source
+        .lines()
+        .any(|line| line.trim_start().starts_with(&enum_declaration))
+}
+
+fn public_enum_names(source: &str) -> Vec<String> {
+    source
+        .lines()
+        .filter_map(|line| line.trim_start().strip_prefix("pub enum "))
+        .filter_map(|rest| {
+            rest.split(|character: char| !character.is_alphanumeric() && character != '_')
+                .next()
+        })
+        .filter(|name| !name.is_empty())
+        .map(str::to_owned)
+        .collect()
+}
+
+fn preceding_attributes(lines: &[&str], declaration_line_index: usize) -> Vec<String> {
+    let mut attributes = Vec::new();
+    let mut line_index = declaration_line_index;
+
+    while line_index > 0 {
+        let previous_line_index = line_index - 1;
+        if !starts_attribute(lines[previous_line_index]) {
+            break;
+        }
+        let (attribute, _) = attribute_block(lines, previous_line_index);
+        attributes.push(attribute);
+        line_index = previous_line_index;
+    }
+
+    attributes
+}
+
+fn attribute_is(attribute: &str, attribute_name: &str) -> bool {
+    let compact = compact_attribute_tokens(attribute);
+
+    compact == format!("#[{attribute_name}]") || compact == format!("#![{attribute_name}]")
 }
 
 fn compact_attribute_tokens(attribute: &str) -> String {

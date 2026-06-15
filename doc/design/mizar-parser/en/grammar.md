@@ -56,3 +56,11 @@ type heads (task 8), terms/formulas, and citations (task 17). The helper emits
 `mizar-syntax` task-S-009 path nodes through the syntax-event sink and preserves
 dot separators syntactically. It performs no module resolution, namespace
 shadowing, symbol identity assignment, citation lookup, or validity checking.
+
+## Public Enum Compatibility
+
+`ParserTokenKind` is `#[non_exhaustive]` for downstream crates. The parser token
+transfer vocabulary can grow as parser-facing lexing contexts gain additional
+token classes, and downstream consumers should keep wildcard fallback arms.
+Matches inside `mizar-parser` remain exhaustive so newly added token kinds force
+local parser updates.

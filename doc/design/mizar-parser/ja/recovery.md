@@ -29,3 +29,13 @@
 - 利用可能な `end` token を対応付けた後も parser の block stack が開いている場合、block 風キーワードに対する `end` 欠落を EOF で診断し、各欠落 close に明示的な recovered `MissingEnd` node を作る。現在の stack は top-level block と、それ自身の `end` を持つ algorithm control block を含む。`for` は formula quantifier が block end を消費しないように、`for <identifier> = ...` / `for <identifier> in ...` の loop 風 token shape の場合だけ開く。`else if` は nested block opener ではなく、1 つの conditional chain として扱う。
 - 合成の文字列必須 parser context で文字列リテラルが欠落した場合に診断し、明示的な recovered `MissingStringLiteral` node を作る。
 - 対応する block opener を持たない裸の `end` は、構文診断とともに `ast = None` を返す。
+
+## 公開 enum の互換性
+
+`StringRequiredContext` は downstream crate 向けに `#[non_exhaustive]` とする。現在の
+parser behavior は `None` と合成の `UniformForTest` context だけを区別するが、実際の
+grammar growth では operator declaration と annotation argument の parser-facing
+string-required position が追加される。downstream match は wildcard fallback arm を
+持たなければならない。一方、`mizar-parser` 内部の match は exhaustive のままにし、
+新しい context が追加されたときに recovery と token adaptation の更新がローカルに
+強制されるようにする。

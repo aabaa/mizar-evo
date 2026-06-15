@@ -39,3 +39,13 @@ Current behavior:
   node;
 - a stray `end` that has no matching block opener returns syntax diagnostics
   with `ast = None`.
+
+## Public Enum Compatibility
+
+`StringRequiredContext` is `#[non_exhaustive]` for downstream crates. Current
+parser behavior only distinguishes `None` from the synthetic `UniformForTest`
+context, but real grammar growth will add parser-facing string-required
+positions for operator declarations and annotation arguments. Downstream
+matches must keep wildcard fallback arms, while matches inside `mizar-parser`
+remain exhaustive so new contexts force local recovery and token-adaptation
+updates.
