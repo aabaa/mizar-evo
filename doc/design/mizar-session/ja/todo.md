@@ -440,6 +440,18 @@
       パスとは区別して、ソースルート欠落の条件として報告される。
     - 依存: 20。仕様: [source.md](./source.md)「Disk Source Loading」,
       「Error Handling」。
+    - 判断: package へ対応付けられるが source-path normalization に失敗するパスの
+      公開 carrier として、`SourceLoadError::InvalidSourcePath` を維持する。
+      `SourcePathError::MissingSourceRoot` はその変種を通じて観測可能なままにし、
+      追加の公開 `SourceLoadError` 変種を増やさずに「package root 内だが `src/`
+      外」と実際の package-root escape を区別できるようにする。
+    - テスト方針: disk と mapped-open-buffer の focused tests が package root 内
+      だが `src/` 外のパスをカバーし、package-root escape tests は引き続き
+      `SourcePathOutsidePackageRoot` / `UnmappedOpenBufferUri` をカバーする。
+    - 結果: `source.md` と英語正本が refined error boundary を文書化した。
+      `crates/mizar-session/src/source/tests.rs` には
+      `SourcePathError::MissingSourceRoot` を `SourceLoadError::InvalidSourcePath`
+      経由で保持する regression coverage がある。
 
 ## 推奨検証
 

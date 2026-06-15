@@ -457,6 +457,19 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
       outside the package root.
     - Depends on: 20. Spec: [source.md](./source.md) "Disk Source Loading",
       "Error Handling".
+    - Decision: keep `SourceLoadError::InvalidSourcePath` as the public carrier
+      for paths that map to the package but fail source-path normalization.
+      `SourcePathError::MissingSourceRoot` remains observable through that
+      variant, so callers can distinguish "inside package root but outside
+      `src/`" from a genuine package-root escape without adding another public
+      `SourceLoadError` variant.
+    - Test policy: focused disk and mapped-open-buffer tests cover paths inside
+      the package root but outside `src/`, and package-root escape tests continue
+      to cover `SourcePathOutsidePackageRoot` / `UnmappedOpenBufferUri`.
+    - Result: `source.md` and the Japanese companion document the refined error
+      boundary. `crates/mizar-session/src/source/tests.rs` includes regression
+      coverage that preserves `SourcePathError::MissingSourceRoot` through
+      `SourceLoadError::InvalidSourcePath`.
 
 ## Suggested Verification
 

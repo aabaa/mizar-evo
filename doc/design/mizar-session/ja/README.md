@@ -20,12 +20,14 @@
 
 | ドキュメント | 対応先 | 説明 | 状態 |
 |---|---|---|---|
-| [ids.md](./ids.md) | `crates/mizar-session/src/ids.rs` | 不透明なセッション識別子、順序付け、シリアライズ境界、互換性規則 | Draft |
-| [source.md](./source.md) | `crates/mizar-session/src/source.rs` | ソース読み込みレコード、正規化パス、ソースハッシュ、オープンバッファのソーステキスト | Draft |
-| [snapshot.md](./snapshot.md) | `crates/mizar-session/src/snapshot.rs` | `BuildSnapshot`、`SourceVersion`、スナップショットの同一性、保持、鮮度の契約 | Draft |
-| [source_map.md](./source_map.md) | `crates/mizar-session/src/source_map.rs` | `LineMap`、ソース範囲、前処理マップ、生成スパン、座標変換 | Draft |
-| [retention.md](./retention.md) | `crates/mizar-session/src/retention.rs` | スナップショットリース、LSP／watch の保持、ガベージコレクション方針 | Draft |
-| [todo.md](./todo.md) | `crates/mizar-session` | モジュールの実装順序、ステータス、残作業 | Living |
+| [00.crate_plan.md](./00.crate_plan.md) | `doc/design/autonomous_crate_development.md` | 後追いの autonomous crate plan、gap 分類、task decomposition、exit criteria | Complete |
+| [ids.md](./ids.md) | `crates/mizar-session/src/ids.rs` | 不透明なセッション識別子、順序付け、シリアライズ境界、互換性規則 | Implemented |
+| [source.md](./source.md) | `crates/mizar-session/src/source.rs` | ソース読み込みレコード、正規化パス、ソースハッシュ、オープンバッファのソーステキスト | Implemented |
+| [snapshot.md](./snapshot.md) | `crates/mizar-session/src/snapshot.rs` | `BuildSnapshot`、`SourceVersion`、スナップショットの同一性、保持、鮮度の契約 | Implemented |
+| [source_map.md](./source_map.md) | `crates/mizar-session/src/source_map.rs` | `LineMap`、ソース範囲、前処理マップ、生成スパン、座標変換 | Implemented |
+| [retention.md](./retention.md) | `crates/mizar-session/src/retention.rs` | スナップショットリース、LSP／watch の保持、ガベージコレクション方針 | Implemented |
+| [crate_exit_report.md](./crate_exit_report.md) | `doc/design/autonomous_crate_development.md` | crate exit gate、quality score、deferred item、review surface、verification、handoff | Complete |
+| [todo.md](./todo.md) | `crates/mizar-session` | モジュールの実装順序、ステータス、完了済み follow-up、検証期待値 | Living |
 
 ## crate 境界
 

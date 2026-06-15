@@ -20,12 +20,14 @@ It does not own task scheduling, IR storage, artifact publication, or diagnostic
 
 | Document | Maps To | Description | Status |
 |---|---|---|---|
-| [ids.md](./ids.md) | `crates/mizar-session/src/ids.rs` | Opaque session identifiers, ordering, serialization boundaries, and compatibility rules | Draft |
-| [source.md](./source.md) | `crates/mizar-session/src/source.rs` | Source loading records, normalized paths, source hashes, and open-buffer source text | Draft |
-| [snapshot.md](./snapshot.md) | `crates/mizar-session/src/snapshot.rs` | `BuildSnapshot`, `SourceVersion`, snapshot identity, retention, and freshness contracts | Draft |
-| [source_map.md](./source_map.md) | `crates/mizar-session/src/source_map.rs` | `LineMap`, source ranges, preprocessing maps, generated spans, and coordinate conversion | Draft |
-| [retention.md](./retention.md) | `crates/mizar-session/src/retention.rs` | Snapshot leases, LSP/watch retention, and garbage-collection policy | Draft |
-| [todo.md](./todo.md) | `crates/mizar-session` | Module implementation order, status, and remaining work | Living |
+| [00.crate_plan.md](./00.crate_plan.md) | `doc/design/autonomous_crate_development.md` | Retrospective autonomous crate plan, gap classification, task decomposition, and exit criteria | Complete |
+| [ids.md](./ids.md) | `crates/mizar-session/src/ids.rs` | Opaque session identifiers, ordering, serialization boundaries, and compatibility rules | Implemented |
+| [source.md](./source.md) | `crates/mizar-session/src/source.rs` | Source loading records, normalized paths, source hashes, and open-buffer source text | Implemented |
+| [snapshot.md](./snapshot.md) | `crates/mizar-session/src/snapshot.rs` | `BuildSnapshot`, `SourceVersion`, snapshot identity, retention, and freshness contracts | Implemented |
+| [source_map.md](./source_map.md) | `crates/mizar-session/src/source_map.rs` | `LineMap`, source ranges, preprocessing maps, generated spans, and coordinate conversion | Implemented |
+| [retention.md](./retention.md) | `crates/mizar-session/src/retention.rs` | Snapshot leases, LSP/watch retention, and garbage-collection policy | Implemented |
+| [crate_exit_report.md](./crate_exit_report.md) | `doc/design/autonomous_crate_development.md` | Crate exit gates, quality score, deferred items, review surface, verification, and handoff | Complete |
+| [todo.md](./todo.md) | `crates/mizar-session` | Module implementation order, status, completed follow-ups, and verification expectations | Living |
 
 ## Crate Boundary
 
