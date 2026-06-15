@@ -111,7 +111,7 @@ resolver / build-system 依存を避ける。
   曖昧性解消」）: 複合予約トークンと登録済みユーザーシンボルは字句解析器が
   所有し、selector 対 namespace の区別は変数スコープに依存して resolver が
   確定する。未解決のドット連鎖を構文的に保つ `SurfaceAst` の形を、
-  `mizar-syntax` task 8 とともに決定する。
+  `mizar-syntax` task 11 / crate-plan S-011 とともに決定する。
 - **コーパスランナーの場所: task 3 で解決済み。** parse-only corpus execution
   は `mizar-test` に置く。`mizar-test` は discovery、expectation sidecar、
   traceability、CLI reporting に加えて active runner も意図的に所有する。
@@ -222,8 +222,10 @@ resolver / build-system 依存を避ける。
 4. [テストコーパス方針](#テストコーパス方針)に従い、ユニットテストに加えて
    pass / fail コーパスケースと `spec_trace.toml` エントリを提供する。
 
-依存行の `mizar-syntax task 8` のような参照は、そのパーサータスクが必要とする
-特定のノード語彙増分を意味する。syntax 側の語彙 bucket 全体の完了を意味しない。
+依存行の `mizar-syntax task 11 / S-011` のような参照は、そのパーサータスクが
+必要とする特定のノード語彙増分を意味する。syntax 側の語彙 bucket 全体の完了を
+意味しない。crate-plan S-task と古い numeric syntax task reference が食い違って
+見える場合は、`doc/design/mizar-syntax/ja/00.crate_plan.md` を優先する。
 
 4. **修飾シンボルと namespace パス。** [ ]
    - `qualified_symbol = { namespace_segment "." } user_symbol` とドット
@@ -231,7 +233,7 @@ resolver / build-system 依存を避ける。
      使う。パスの形だけを扱い、変数 shadowing は resolver 側に残す。
    - コーパス例外: ここではユニットテストを提供する。コーパス網羅は最初の
      消費位置（task 6 と 8）で届け、そこに明示的に列挙する。
-   - 依存: 3、`mizar-syntax` task 8（パスノードの増分）。仕様:
+   - 依存: 3、`mizar-syntax` task 9 / S-009（shared path-node 増分）。仕様:
      [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)
      §12.7、[§A.2.5 / §A.2.8](../../../spec/ja/appendix_a.grammar_summary.md)。
 
@@ -241,20 +243,20 @@ resolver / build-system 依存を避ける。
      安定したスケルトンに収まる。
    - recovery: 未知のトップレベルトークンは、スキップトークンノードを残して
      次の item キーワードまでスキップする。`;` の欠落は次の境界で診断する。
-   - 依存: 3、`mizar-syntax` task 6。仕様:
+   - 依存: 3、`mizar-syntax` task 9 / S-009。仕様:
      [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)。
 
 6. **import item。** [ ]
    - alias と相対 prefix（`.` / `..`）を持つ `import` item。形は frontend の
      import 事前走査 stub と整合させる。task 4 のパス形に対する繰り延べ
      コーパスケースを含む。
-   - 依存: 4、5。仕様:
+   - 依存: 4、5、`mizar-syntax` task 9 / S-009。仕様:
      [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)。
 
 7. **export と可視性の item。** [ ]
    - モジュール章に従った export の形と、item 上の `public` / `private`
      可視性マーカー。
-   - 依存: 5。仕様:
+   - 依存: 5、`mizar-syntax` task 9 / S-009。仕様:
      [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)。
 
 8. **型式。** [ ]
@@ -262,7 +264,7 @@ resolver / build-system 依存を避ける。
      リスト、struct 修飾の属性参照。項引数は task 9 が着地するまで項エントリ
      のスタブを通す（型と項は相互再帰である）。task 4 の修飾型ヘッドに対する
      繰り延べコーパスケースを含む。
-   - 依存: 4、5、`mizar-syntax` task 7。仕様:
+   - 依存: 4、5、`mizar-syntax` task 10 / S-010。仕様:
      [03.type_system.md](../../../spec/ja/03.type_system.md)、
      [§A.3.2](../../../spec/ja/appendix_a.grammar_summary.md)。
 
@@ -270,7 +272,7 @@ resolver / build-system 依存を避ける。
    - 識別子、数値、項位置の修飾シンボル、括弧付き項、適用形。task 8 の項
      エントリスタブを置き換える。`it`、選択式（`the type_expression`）、
      名前付きフィールド引数を持つ構造体コンストラクタ、集合列挙リテラルも含む。
-   - 依存: 8、`mizar-syntax` task 8。仕様:
+   - 依存: 8、`mizar-syntax` task 11 / S-011。仕様:
      [13.term_expression.md](../../../spec/ja/13.term_expression.md)。
 
 10. **selector access / update とドットの役割の surface 形状。** [ ]
@@ -280,13 +282,13 @@ resolver / build-system 依存を避ける。
       （「解決済みおよび保留中の決定」を参照）を解決し、
       [grammar.md](./grammar.md)、仕様の付録、トップレベルの決定一覧に
       記録する。
-    - 依存: 9、`mizar-syntax` task 8。仕様:
+    - 依存: 9、`mizar-syntax` task 11 / S-011。仕様:
       [13.term_expression.md](../../../spec/ja/13.term_expression.md)、
       [§A.2.5](../../../spec/ja/appendix_a.grammar_summary.md)。
 
 11. **`qua` 修飾。** [ ]
     - selector と適用形に対する優先順位を持つ `term qua type_expression`。
-    - 依存: 8、9。仕様:
+    - 依存: 8、9、`mizar-syntax` task 11 / S-011。仕様:
       [13.term_expression.md](../../../spec/ja/13.term_expression.md)。
 
 12. **演算子式（アクティブレキシコン上の Pratt）。** [ ]
@@ -295,7 +297,7 @@ resolver / build-system 依存を避ける。
       する。優先順位と結合性は
       [appendix_b.operator_precedence.md](../../../spec/ja/appendix_b.operator_precedence.md)
       に従う。非結合の連鎖と宙吊り演算子を、ソースローカルな範囲で診断する。
-    - 依存: 10、11、`mizar-syntax` task 8（演算子ノードの増分）。仕様:
+    - 依存: 10、11、`mizar-syntax` task 11 / S-011（演算子ノードの増分）。仕様:
       [pratt.md](./pratt.md)、
       [13.term_expression.md](../../../spec/ja/13.term_expression.md)。
 
@@ -303,34 +305,35 @@ resolver / build-system 依存を避ける。
     - 述語適用（記号形と識別子形）、built-in membership / equality /
       inequality atom、および resolution が後で type assertion または
       attribute assertion に分類する generic `is_assertion` form。
-    - 依存: 12、`mizar-syntax` task 9。仕様:
+    - 依存: 12、`mizar-syntax` task 12 / S-012。仕様:
       [14.formulas.md](../../../spec/ja/14.formulas.md)。
 
 14. **結合子と量化子。** [ ]
     - 固定結合子テーブル（`not`、`&`、`or`、`implies`、`iff`）とその論理式
       レベルの優先順位（項レベルの fixity から分離したまま保つ）。`st` /
       `holds` 本体を持つ量化子 `for` / `ex`。
-    - 依存: 13。仕様: [14.formulas.md](../../../spec/ja/14.formulas.md)、
+    - 依存: 13、`mizar-syntax` task 12 / S-012。仕様:
+      [14.formulas.md](../../../spec/ja/14.formulas.md)、
       [appendix_b.operator_precedence.md](../../../spec/ja/appendix_b.operator_precedence.md)。
 
 15. **Fraenkel と集合内包の項。** [ ]
     - `{ term where … : formula }` と関連する集合内包形（条件を省略する形を
       含む）。区切り句が論理式を埋め込むため、論理式の後に置く。集合列挙
       リテラルは task 9 で扱う。
-    - 依存: 14、`mizar-syntax` task 8（Fraenkel ノードの増分）。仕様:
+    - 依存: 14、`mizar-syntax` task 11 / S-011（Fraenkel ノードの増分）。仕様:
       [13.term_expression.md](../../../spec/ja/13.term_expression.md)。
 
 16. **単純文。** [ ]
     - `reserve`、`let`、`assume`、`take`、`set`、`given` — 正当化句を運ばない
       文の形。
-    - 依存: 14、`mizar-syntax` task 10。仕様:
+    - 依存: 14、`mizar-syntax` task 13 / S-013。仕様:
       [15.statements.md](../../../spec/ja/15.statements.md)。
 
 17. **正当化と引用。** [ ]
     - `by` / `from` の正当化句、引用リスト、`.{ … }` グループ引用、`.*`
       一括引用、およびコンパクトな正当化付き文（`φ by A;`）。
       algorithm 章の `by computation(...)` オプションも含む。
-    - 依存: 16、`mizar-syntax` task 11（正当化ノードの増分）。仕様:
+    - 依存: 16、`mizar-syntax` task 14 / S-014（正当化ノードの増分）。仕様:
       [16.theorems_and_proofs.md](../../../spec/ja/16.theorems_and_proofs.md)
       §16.5、
       [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)
@@ -339,28 +342,32 @@ resolver / build-system 依存を避ける。
 18. **`consider` と `reconsider`。** [ ]
     - いずれも正当化を運ぶ `consider … such that … by …` と
       `reconsider … as … by …`。
-    - 依存: 17。仕様: [15.statements.md](../../../spec/ja/15.statements.md)。
+    - 依存: 17、`mizar-syntax` task 13 / S-013。仕様:
+      [15.statements.md](../../../spec/ja/15.statements.md)。
 
 19. **結論ステップと逐次的等式。** [ ]
     - `thus` / `hence`、`then` 連鎖、およびステップごとの正当化を持つ逐次的
       等式 `.=` ステップ。compact equality statement と zero-step iterative
       equality の grammar-audit 境界（`x = y by A;` と
       `x = y by A .= z by B;`）を含める。
-    - 依存: 17。仕様: [15.statements.md](../../../spec/ja/15.statements.md)。
+    - 依存: 17、`mizar-syntax` task 13 / S-013。仕様:
+      [15.statements.md](../../../spec/ja/15.statements.md)。
 
 20. **ブロック文。** [ ]
     - `now` / `hereby` ブロックと、`end` 同期を備えた
       `per cases` / `suppose` / `case` ブロック。
-    - 依存: 19。仕様: [15.statements.md](../../../spec/ja/15.statements.md)。
+    - 依存: 19、`mizar-syntax` task 13 / S-013。仕様:
+      [15.statements.md](../../../spec/ja/15.statements.md)。
 
 21. **ローカル定義。** [ ]
     - `deffunc` / `defpred` のプライベートなローカル定義。
-    - 依存: 20。仕様: [15.statements.md](../../../spec/ja/15.statements.md)。
+    - 依存: 20、`mizar-syntax` task 13 / S-013。仕様:
+      [15.statements.md](../../../spec/ja/15.statements.md)。
 
 22. **定理と証明。** [ ]
     - `theorem` / `lemma` の item、ラベル、`proof … end` の入れ子、証明本体の
       文の配線。
-    - 依存: 21、`mizar-syntax` task 11。仕様:
+    - 依存: 21、`mizar-syntax` task 14 / S-014。仕様:
       [16.theorems_and_proofs.md](../../../spec/ja/16.theorems_and_proofs.md)。
 
 23. **definition ブロック骨格・correctness 条件・属性定義。** [ ]
@@ -368,25 +375,28 @@ resolver / build-system 依存を避ける。
       correctness 条件句の形（`existence`、`uniqueness`、`coherence`、
       `consistency`、`compatibility` など、正当化付き）、および最初の具体
       種別としての `attr` 定義。
-    - 依存: 22、`mizar-syntax` task 12。仕様:
+    - 依存: 22、`mizar-syntax` task 15 / S-015。仕様:
       [06.attributes.md](../../../spec/ja/06.attributes.md)。
 
 24. **述語定義。** [ ]
     - `means` 本体を持つ `pred` 定義。
-    - 依存: 23。仕様: [09.predicates.md](../../../spec/ja/09.predicates.md)。
+    - 依存: 23、`mizar-syntax` task 15 / S-015。仕様:
+      [09.predicates.md](../../../spec/ja/09.predicates.md)。
 
 25. **ファンクタ定義。** [ ]
     - `means` / `equals` 本体を持つ `func` 定義。
-    - 依存: 23。仕様: [10.functors.md](../../../spec/ja/10.functors.md)。
+    - 依存: 23、`mizar-syntax` task 15 / S-015。仕様:
+      [10.functors.md](../../../spec/ja/10.functors.md)。
 
 26. **mode 定義。** [ ]
     - 正本の `is` 形を用いる `mode` 定義: 属性連鎖と radix 型、型パラメータ、
       任意の `sethood` property 句。
-    - 依存: 23。仕様: [07.modes.md](../../../spec/ja/07.modes.md)。
+    - 依存: 23、`mizar-syntax` task 15 / S-015。仕様:
+      [07.modes.md](../../../spec/ja/07.modes.md)。
 
 27. **`redefine`・`synonym`・`antonym`。** [ ]
     - task 23〜26 の定義種別にまたがる再定義と記法エイリアスの形。
-    - 依存: 24、25、26。仕様:
+    - 依存: 24、25、26、`mizar-syntax` task 15 / S-015。仕様:
       [06.attributes.md](../../../spec/ja/06.attributes.md)、
       [07.modes.md](../../../spec/ja/07.modes.md)、
       [09.predicates.md](../../../spec/ja/09.predicates.md)、
@@ -398,20 +408,21 @@ resolver / build-system 依存を避ける。
       `involutiveness`、`projectivity`、`reflexivity`、`irreflexivity`、
       `symmetry`、`asymmetry`、`connectedness`、`transitivity`、`sethood`
       など、正当化付き）。
-    - 依存: 27。仕様: [06.attributes.md](../../../spec/ja/06.attributes.md)、
+    - 依存: 27、`mizar-syntax` task 15 / S-015。仕様:
+      [06.attributes.md](../../../spec/ja/06.attributes.md)、
       [07.modes.md](../../../spec/ja/07.modes.md)、
       [09.predicates.md](../../../spec/ja/09.predicates.md)、
       [10.functors.md](../../../spec/ja/10.functors.md)。
 
 29. **構造体。** [ ]
     - `struct` 定義: フィールド、継承／`extends`、selector 宣言。
-    - 依存: 28、`mizar-syntax` task 12。仕様:
+    - 依存: 28、`mizar-syntax` task 15 / S-015。仕様:
       [05.structures.md](../../../spec/ja/05.structures.md)。
 
 30. **registration と cluster。** [ ]
     - `registration … end` ブロック、existential / conditional / functorial の
       cluster の形、`reduce`、およびそれらの correctness 条件。
-    - 依存: 29、`mizar-syntax` task 12。仕様:
+    - 依存: 29、`mizar-syntax` task 15 / S-015。仕様:
       [17.clusters_and_registrations.md](../../../spec/ja/17.clusters_and_registrations.md)。
 
 31. **テンプレート。** [ ]
@@ -422,33 +433,33 @@ resolver / build-system 依存を避ける。
       `tests/miz/fail/parser/fail_parser_template_arguments_chained_iff_001.*`
       を、traceability metadata から runner 実行済みの parse-only coverage へ
       昇格させる。
-    - 依存: 30、`mizar-syntax` task 13。仕様:
+    - 依存: 30、`mizar-syntax` task 16 / S-016。仕様:
       [18.templates.md](../../../spec/ja/18.templates.md)。
 
 32. **algorithm ブロック・代入・宣言・claim。** [ ]
     - `algorithm` ブロックの形、代入文、`var` / `const` 宣言、
       `ghost var` / `ghost const`、ghost 代入、`snapshot`、top-level `claim`
       block、任意の正当化を持つ `return` 文。
-    - 依存: 31、`mizar-syntax` task 13。仕様:
+    - 依存: 31、`mizar-syntax` task 16 / S-016。仕様:
       [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)。
 
 33. **algorithm の制御フロー。** [ ]
     - `while` / `do`（`to` / `downto` を含む）、`if` / `else`、`match`、
       `for ... in ... processed ...`、`otherwise` / `exhaustive` の match 終端、
       `break` / `continue`。
-    - 依存: 32。仕様:
+    - 依存: 32、`mizar-syntax` task 16 / S-016。仕様:
       [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)。
 
 34. **algorithm の検証句。** [ ]
     - ヘッダーおよび loop の検証句: `requires` / `ensures`、`decreasing`、
       `terminating`、`invariant`、`assert`、およびそれらの正当化。
-    - 依存: 33。仕様:
+    - 依存: 33、`mizar-syntax` task 16 / S-016。仕様:
       [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)。
 
 35. **注釈。** [ ]
     - 文レベル注釈、`@[...]` ライブラリ注釈、文字列リテラル注釈引数
       （string-required 位置は frontend の lexing plan がすでに網羅する）。
-    - 依存: 34、`mizar-syntax` task 13。仕様:
+    - 依存: 34、`mizar-syntax` task 16 / S-016。仕様:
       [21.source_code_annotation_and_atp.md](../../../spec/ja/21.source_code_annotation_and_atp.md)。
 
 ### 強化と横断的フォローアップ
@@ -510,7 +521,7 @@ resolver / build-system 依存を避ける。
 43. **公開 enum の前方互換方針。** [ ]
     - 初期の公開 enum ゲートを task 35 後に再確認し、文法成長で追加された
       後続の公開 enum について、`mizar-frontend` task 25 の手続きと
-      `mizar-syntax` task 14 の最終監査に整合する形で、
+      `mizar-syntax` task 17 の最終監査に整合する形で、
       `#[non_exhaustive]` 対 意図的 exhaustive を決定する。
     - 依存: 35。仕様: すべてのモジュール仕様。
 

@@ -142,7 +142,8 @@ lands. Keep `cargo test -p mizar-syntax` green after each change (see
    - Tests: trivia ownership and attachment hints; skipped ranges preserved with
      source ranges; rendering includes trivia deterministically when requested.
      The concrete "doc comment attaches to the following item node" fixture
-     lands with the first item-node increment in task 6 / parser task 5.
+     lands with the first item-node increment in task 9 / S-009 with parser
+     task 5.
    - Deps: 2, 3. Spec: [trivia.md](./trivia.md).
 
 5. **Recovery vocabulary expansion.** [x]
@@ -267,10 +268,13 @@ payloads, child roles, range rules, accessors, snapshots, and recovery/trivia
 interaction. Spec references are the normative grammar chapters under
 [doc/spec/en/](../../../spec/en/00.index.md).
 
-9. **Module and item nodes.** [ ] — paired with `mizar-parser` tasks 5-7.
-   - Module file shape, top-level item list and item kinds dispatchable by
-     keyword (parser task 5); import items with aliases and relative prefixes
-     (parser task 6); export and visibility forms (parser task 7).
+9. **Module, item, and shared path nodes.** [ ] — paired with `mizar-parser`
+   tasks 4-7.
+   - Shared qualified-symbol/namespace-path nodes needed by parser task 4 before
+     import parsing; module file shape, top-level item list and item kinds
+     dispatchable by keyword (parser task 5); import items with aliases and
+     relative prefixes (parser task 6); export and visibility forms (parser task
+     7).
    - Spec: [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
 10. **Type expression nodes.** [ ] — paired with `mizar-parser` task 8.
@@ -279,16 +283,15 @@ interaction. Spec references are the normative grammar chapters under
    - Spec: [03.type_system.md](../../../spec/en/03.type_system.md),
      [§A.3.2](../../../spec/en/appendix_a.grammar_summary.md).
 
-11. **Term nodes.** [ ] — paired with `mizar-parser` tasks 4, 9-12, and 15.
-   - First increment: qualified-symbol/namespace-path nodes needed by parser
-     task 4. Then primary terms (parser task 9), unresolved dot chains and
-     selector access/update (parser task 10, including the dot-role surface
-     shape decision), functional structure updates, `qua` (parser task 11),
-     operator-expression nodes generalizing the task-12 `InfixExpression` to
-     prefix/postfix forms (parser task 12), and Fraenkel/set-builder forms
-     (parser task 15). Primary-term coverage includes `it`, choice expressions
-     (`the type_expression`), structure constructors, set enumeration literals,
-     and application forms.
+11. **Term nodes.** [ ] — paired with `mizar-parser` tasks 9-12 and 15.
+   - Consume the shared path vocabulary introduced by task 9. Then add primary
+     terms (parser task 9), unresolved dot chains and selector access/update
+     (parser task 10, including the dot-role surface shape decision), functional
+     structure updates, `qua` (parser task 11), operator-expression nodes
+     generalizing the task-12 `InfixExpression` to prefix/postfix forms (parser
+     task 12), and Fraenkel/set-builder forms (parser task 15). Primary-term
+     coverage includes `it`, choice expressions (`the type_expression`),
+     structure constructors, set enumeration literals, and application forms.
    - Spec: [13.term_expression.md](../../../spec/en/13.term_expression.md),
      [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md).
 
@@ -329,6 +332,7 @@ interaction. Spec references are the normative grammar chapters under
       [07.modes.md](../../../spec/en/07.modes.md),
       [09.predicates.md](../../../spec/en/09.predicates.md),
       [10.functors.md](../../../spec/en/10.functors.md),
+      [11.symbol_management.md](../../../spec/en/11.symbol_management.md),
       [05.structures.md](../../../spec/en/05.structures.md),
       [17.clusters_and_registrations.md](../../../spec/en/17.clusters_and_registrations.md).
 

@@ -114,7 +114,8 @@ parse-only runner and the relevant productions exist.
   disambiguation"): compound reserved tokens and registered user symbols are
   lexer-owned; selector-versus-namespace separation depends on variable scope
   and is finalized by the resolver. Decide the `SurfaceAst` shape that keeps
-  unresolved dot chains syntactic, with `mizar-syntax` task 8.
+  unresolved dot chains syntactic, with `mizar-syntax` task 11 / crate-plan
+  S-011.
 - **Corpus runner location: resolved by task 3.** Parse-only corpus execution
   lives in `mizar-test`, which now deliberately owns the active runner in
   addition to discovery, expectation sidecars, traceability, and CLI reporting.
@@ -230,9 +231,11 @@ Each grammar task follows the same template, in one change:
 4. ship unit tests plus pass/fail corpus cases with `spec_trace.toml` entries
    per the [Test Corpus Policy](#test-corpus-policy).
 
-In dependency lines, a reference such as `mizar-syntax task 8` means the
-specific node-vocabulary increment required by that parser task, not completion
-of the whole syntax vocabulary bucket.
+In dependency lines, a reference such as `mizar-syntax task 11 / S-011` means
+the specific node-vocabulary increment required by that parser task, not
+completion of the whole syntax vocabulary bucket. When the crate-plan S-task and
+older numeric syntax task references appear to disagree, prefer
+`doc/design/mizar-syntax/en/00.crate_plan.md`.
 
 4. **Qualified symbols and namespace paths.** [ ]
    - A shared helper for `qualified_symbol = { namespace_segment "." }
@@ -241,7 +244,7 @@ of the whole syntax vocabulary bucket.
      resolver-side.
    - Corpus exception: unit tests here; corpus coverage lands with the first
      consuming positions (tasks 6 and 8) and must be listed there.
-   - Deps: 3, `mizar-syntax` task 8 (path-node increment). Spec:
+   - Deps: 3, `mizar-syntax` task 9 / S-009 (shared path-node increment). Spec:
      [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md)
      §12.7, [§A.2.5/§A.2.8](../../../spec/en/appendix_a.grammar_summary.md).
 
@@ -251,20 +254,20 @@ of the whole syntax vocabulary bucket.
      stable skeleton.
    - Recovery: unknown top-level token skips to the next item keyword with a
      skipped-tokens node; missing `;` diagnosed at the next boundary.
-   - Deps: 3, `mizar-syntax` task 6. Spec:
+   - Deps: 3, `mizar-syntax` task 9 / S-009. Spec:
      [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
 6. **Import items.** [ ]
    - `import` items with aliases and relative prefixes (`.`/`..`); shapes stay
      consistent with the frontend import-prescan stubs. Includes the deferred
      corpus cases for task 4 path shapes.
-   - Deps: 4, 5. Spec:
+   - Deps: 4, 5, `mizar-syntax` task 9 / S-009. Spec:
      [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
 7. **Export and visibility items.** [ ]
    - Export forms and `public`/`private` visibility markers on items, per the
      module chapter.
-   - Deps: 5. Spec:
+   - Deps: 5, `mizar-syntax` task 9 / S-009. Spec:
      [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
 8. **Type expressions.** [ ]
@@ -273,7 +276,7 @@ of the whole syntax vocabulary bucket.
      enter through a term-entry stub until task 9 lands (types and terms are
      mutually recursive). Includes the deferred corpus cases for task 4
      qualified type heads.
-   - Deps: 4, 5, `mizar-syntax` task 7. Spec:
+   - Deps: 4, 5, `mizar-syntax` task 10 / S-010. Spec:
      [03.type_system.md](../../../spec/en/03.type_system.md),
      [§A.3.2](../../../spec/en/appendix_a.grammar_summary.md).
 
@@ -282,7 +285,7 @@ of the whole syntax vocabulary bucket.
      terms, `it`, choice expressions (`the type_expression`), structure
      constructors with named field arguments, set enumeration literals, and
      application forms; replace the task-8 term-entry stub.
-   - Deps: 8, `mizar-syntax` task 8. Spec:
+   - Deps: 8, `mizar-syntax` task 11 / S-011. Spec:
      [13.term_expression.md](../../../spec/en/13.term_expression.md).
 
 10. **Selector access/update and the dot-role surface shape.** [ ]
@@ -292,14 +295,14 @@ of the whole syntax vocabulary bucket.
       surface-shape decision (see Resolved And Open Decisions) and record it
       in [grammar.md](./grammar.md), the spec appendix, and the top-level
       decision list.
-    - Deps: 9, `mizar-syntax` task 8. Spec:
+    - Deps: 9, `mizar-syntax` task 11 / S-011. Spec:
       [13.term_expression.md](../../../spec/en/13.term_expression.md),
       [§A.2.5](../../../spec/en/appendix_a.grammar_summary.md).
 
 11. **`qua` qualification.** [ ]
     - `term qua type_expression` with precedence against selector and
       application forms.
-    - Deps: 8, 9. Spec:
+    - Deps: 8, 9, `mizar-syntax` task 11 / S-011. Spec:
       [13.term_expression.md](../../../spec/en/13.term_expression.md).
 
 12. **Operator expressions (Pratt over the active lexicon).** [ ]
@@ -309,7 +312,7 @@ of the whole syntax vocabulary bucket.
       [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md);
       diagnose non-associative chaining and dangling operators with
       source-local ranges.
-    - Deps: 10, 11, `mizar-syntax` task 8 (operator-node increment). Spec:
+    - Deps: 10, 11, `mizar-syntax` task 11 / S-011 (operator-node increment). Spec:
       [pratt.md](./pratt.md),
       [13.term_expression.md](../../../spec/en/13.term_expression.md).
 
@@ -317,14 +320,14 @@ of the whole syntax vocabulary bucket.
     - Predicate application (symbolic and identifier forms), built-in
       membership/equality/inequality atoms, and generic `is_assertion` forms
       that resolution later classifies as type or attribute assertions.
-    - Deps: 12, `mizar-syntax` task 9. Spec:
+    - Deps: 12, `mizar-syntax` task 12 / S-012. Spec:
       [14.formulas.md](../../../spec/en/14.formulas.md).
 
 14. **Connectives and quantifiers.** [ ]
     - The fixed connective table (`not`, `&`, `or`, `implies`, `iff`) with its
       formula-level precedence, kept separate from term-level fixity;
       quantifiers `for`/`ex` with `st`/`holds` bodies.
-    - Deps: 13. Spec: [14.formulas.md](../../../spec/en/14.formulas.md),
+    - Deps: 13, `mizar-syntax` task 12 / S-012. Spec: [14.formulas.md](../../../spec/en/14.formulas.md),
       [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md).
 
 15. **Fraenkel and set-builder terms.** [ ]
@@ -332,13 +335,13 @@ of the whole syntax vocabulary bucket.
       including the omitted-condition form; placed after formulas because the
       separator clause embeds a formula. Set enumeration literals are covered by
       task 9.
-    - Deps: 14, `mizar-syntax` task 8 (Fraenkel-node increment). Spec:
+    - Deps: 14, `mizar-syntax` task 11 / S-011 (Fraenkel-node increment). Spec:
       [13.term_expression.md](../../../spec/en/13.term_expression.md).
 
 16. **Simple statements.** [ ]
     - `reserve`, `let`, `assume`, `take`, `set`, `given` — the statement forms
       that carry no justification clause.
-    - Deps: 14, `mizar-syntax` task 10. Spec:
+    - Deps: 14, `mizar-syntax` task 13 / S-013. Spec:
       [15.statements.md](../../../spec/en/15.statements.md).
 
 17. **Justifications and citations.** [ ]
@@ -346,7 +349,7 @@ of the whole syntax vocabulary bucket.
       citations, `.*` bulk citations, and the compact justified statement
       (`φ by A;`), including `by computation(...)` options from the algorithm
       chapter.
-    - Deps: 16, `mizar-syntax` task 11 (justification-node increment). Spec:
+    - Deps: 16, `mizar-syntax` task 14 / S-014 (justification-node increment). Spec:
       [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md) §16.5,
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md)
       §20.9.2.
@@ -354,28 +357,28 @@ of the whole syntax vocabulary bucket.
 18. **`consider` and `reconsider`.** [ ]
     - `consider … such that … by …` and `reconsider … as … by …`, both of
       which carry justifications.
-    - Deps: 17. Spec: [15.statements.md](../../../spec/en/15.statements.md).
+    - Deps: 17, `mizar-syntax` task 13 / S-013. Spec: [15.statements.md](../../../spec/en/15.statements.md).
 
 19. **Conclusion steps and iterative equality.** [ ]
     - `thus`/`hence`, `then` chains, and iterative equality `.=` steps with
       their per-step justifications. Include the grammar-audit boundary between
       compact equality statements and zero-step iterative equality (`x = y by
       A;` versus `x = y by A .= z by B;`).
-    - Deps: 17. Spec: [15.statements.md](../../../spec/en/15.statements.md).
+    - Deps: 17, `mizar-syntax` task 13 / S-013. Spec: [15.statements.md](../../../spec/en/15.statements.md).
 
 20. **Block statements.** [ ]
     - `now`/`hereby` blocks and `per cases`/`suppose`/`case` blocks with their
       `end` synchronization.
-    - Deps: 19. Spec: [15.statements.md](../../../spec/en/15.statements.md).
+    - Deps: 19, `mizar-syntax` task 13 / S-013. Spec: [15.statements.md](../../../spec/en/15.statements.md).
 
 21. **Local definitions.** [ ]
     - `deffunc`/`defpred` private local definitions.
-    - Deps: 20. Spec: [15.statements.md](../../../spec/en/15.statements.md).
+    - Deps: 20, `mizar-syntax` task 13 / S-013. Spec: [15.statements.md](../../../spec/en/15.statements.md).
 
 22. **Theorems and proofs.** [ ]
     - `theorem`/`lemma` items, labels, `proof … end` nesting, and proof-body
       statement wiring.
-    - Deps: 21, `mizar-syntax` task 11. Spec:
+    - Deps: 21, `mizar-syntax` task 14 / S-014. Spec:
       [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md).
 
 23. **Definition block skeleton, correctness conditions, and attribute definitions.** [ ]
@@ -383,26 +386,26 @@ of the whole syntax vocabulary bucket.
       correctness-condition clause shape (`existence`, `uniqueness`,
       `coherence`, `consistency`, `compatibility`, … with justifications), and
       `attr` definitions as the first concrete kind.
-    - Deps: 22, `mizar-syntax` task 12. Spec:
+    - Deps: 22, `mizar-syntax` task 15 / S-015. Spec:
       [06.attributes.md](../../../spec/en/06.attributes.md).
 
 24. **Predicate definitions.** [ ]
     - `pred` definitions with `means` bodies.
-    - Deps: 23. Spec: [09.predicates.md](../../../spec/en/09.predicates.md).
+    - Deps: 23, `mizar-syntax` task 15 / S-015. Spec: [09.predicates.md](../../../spec/en/09.predicates.md).
 
 25. **Functor definitions.** [ ]
     - `func` definitions with `means`/`equals` bodies.
-    - Deps: 23. Spec: [10.functors.md](../../../spec/en/10.functors.md).
+    - Deps: 23, `mizar-syntax` task 15 / S-015. Spec: [10.functors.md](../../../spec/en/10.functors.md).
 
 26. **Mode definitions.** [ ]
     - `mode` definitions using the canonical `is` form: attribute-chain plus
       radix type, type parameters, and optional `sethood` property clauses.
-    - Deps: 23. Spec: [07.modes.md](../../../spec/en/07.modes.md).
+    - Deps: 23, `mizar-syntax` task 15 / S-015. Spec: [07.modes.md](../../../spec/en/07.modes.md).
 
 27. **`redefine`, `synonym`, and `antonym`.** [ ]
     - Redefinition and notation-aliasing forms across the definition kinds of
       tasks 23-26.
-    - Deps: 24, 25, 26. Spec:
+    - Deps: 24, 25, 26, `mizar-syntax` task 15 / S-015. Spec:
       [06.attributes.md](../../../spec/en/06.attributes.md),
       [07.modes.md](../../../spec/en/07.modes.md),
       [09.predicates.md](../../../spec/en/09.predicates.md),
@@ -414,7 +417,7 @@ of the whole syntax vocabulary bucket.
       `idempotence`, `involutiveness`, `projectivity`, `reflexivity`,
       `irreflexivity`, `symmetry`, `asymmetry`, `connectedness`,
       `transitivity`, `sethood`, …) with justifications.
-    - Deps: 27. Spec: [06.attributes.md](../../../spec/en/06.attributes.md),
+    - Deps: 27, `mizar-syntax` task 15 / S-015. Spec: [06.attributes.md](../../../spec/en/06.attributes.md),
       [07.modes.md](../../../spec/en/07.modes.md),
       [09.predicates.md](../../../spec/en/09.predicates.md),
       [10.functors.md](../../../spec/en/10.functors.md).
@@ -422,13 +425,13 @@ of the whole syntax vocabulary bucket.
 29. **Structures.** [ ]
     - `struct` definitions: fields, inheritance/`extends`, selector
       declarations.
-    - Deps: 28, `mizar-syntax` task 12. Spec:
+    - Deps: 28, `mizar-syntax` task 15 / S-015. Spec:
       [05.structures.md](../../../spec/en/05.structures.md).
 
 30. **Registrations and clusters.** [ ]
     - `registration … end` blocks, existential/conditional/functorial cluster
       forms, `reduce`, and their correctness conditions.
-    - Deps: 29, `mizar-syntax` task 12. Spec:
+    - Deps: 29, `mizar-syntax` task 15 / S-015. Spec:
       [17.clusters_and_registrations.md](../../../spec/en/17.clusters_and_registrations.md).
 
 31. **Templates.** [ ]
@@ -438,7 +441,7 @@ of the whole syntax vocabulary bucket.
       `tests/miz/pass/parser/pass_parser_template_arguments_001.*` and
       `tests/miz/fail/parser/fail_parser_template_arguments_chained_iff_001.*`
       from traceability metadata into runner-executed parse-only coverage.
-    - Deps: 30, `mizar-syntax` task 13. Spec:
+    - Deps: 30, `mizar-syntax` task 16 / S-016. Spec:
       [18.templates.md](../../../spec/en/18.templates.md).
 
 32. **Algorithm blocks, assignments, declarations, and claims.** [ ]
@@ -446,28 +449,28 @@ of the whole syntax vocabulary bucket.
       declarations, `ghost var`/`ghost const`, ghost assignments, `snapshot`,
       top-level `claim` blocks, and `return` statements with optional
       justifications.
-    - Deps: 31, `mizar-syntax` task 13. Spec:
+    - Deps: 31, `mizar-syntax` task 16 / S-016. Spec:
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 
 33. **Algorithm control flow.** [ ]
     - `while`/`do` (with `to`/`downto`), `if`/`else`, `match`,
       `for ... in ... processed ...`, `otherwise`/`exhaustive` match endings,
       `break`/`continue`.
-    - Deps: 32. Spec:
+    - Deps: 32, `mizar-syntax` task 16 / S-016. Spec:
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 
 34. **Algorithm verification clauses.** [ ]
     - Header and loop verification clauses: `requires`/`ensures`,
       `decreasing`, `terminating`, `invariant`, `assert`, and their
       justifications.
-    - Deps: 33. Spec:
+    - Deps: 33, `mizar-syntax` task 16 / S-016. Spec:
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 
 35. **Annotations.** [ ]
     - Statement-level annotations, `@[...]` library annotations, and
       string-literal annotation arguments (the string-required positions are
       already covered by the frontend lexing plan).
-    - Deps: 34, `mizar-syntax` task 13. Spec:
+    - Deps: 34, `mizar-syntax` task 16 / S-016. Spec:
       [21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md).
 
 ### Hardening and cross-cutting follow-ups
@@ -534,7 +537,7 @@ of the whole syntax vocabulary bucket.
     - Revisit the initial public-enum gate after task 35 and decide
       `#[non_exhaustive]` versus deliberate exhaustiveness for any later public
       enums added by grammar growth, aligned with the `mizar-frontend` task-25
-      procedure and the `mizar-syntax` task-14 final audit.
+      procedure and the `mizar-syntax` task-17 final audit.
     - Deps: 35. Spec: all module specs.
 
 ## Recommended Verification
