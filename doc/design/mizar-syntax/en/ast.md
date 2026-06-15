@@ -59,6 +59,15 @@ green tree.
 | concrete export item node | `SyntaxKind::ExportItem` |
 | visibility marker node | `SyntaxKind::VisibilityMarker` |
 | visible item wrapper node | `SyntaxKind::VisibleItem` |
+| reserve item node | `SyntaxKind::ReserveItem` |
+| reserve segment node | `SyntaxKind::ReserveSegment` |
+| type expression node | `SyntaxKind::TypeExpression` |
+| attribute chain node | `SyntaxKind::AttributeChain` |
+| attribute reference node | `SyntaxKind::AttributeRef` |
+| parameter prefix node | `SyntaxKind::ParameterPrefix` |
+| generic type head node | `SyntaxKind::TypeHead` |
+| type arguments node | `SyntaxKind::TypeArguments` |
+| task-8 term placeholder node | `SyntaxKind::TermPlaceholder` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | recovery node | `SyntaxKind::ErrorRecovery` |
 
@@ -80,7 +89,7 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 4 | `ErrorRecovery` | recovery node |
 | 5 | `ModulePath` | module import/export path node |
 | 6 | `NamespacePath` | citation/reference namespace path node |
-| 7 | `QualifiedSymbol` | namespace-qualified active user symbol node |
+| 7 | `QualifiedSymbol` | dotted active user symbol node, including attribute-ref structure prefixes |
 | 8 | `PathSegment` | single identifier or user-symbol segment wrapper |
 | 9 | `RelativePrefix` | `.` / `..` import-relative prefix wrapper |
 | 10 | `CompilationUnit` | module file skeleton node |
@@ -92,6 +101,15 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 16 | `ExportItem` | task-7 concrete `export` item node |
 | 17 | `VisibilityMarker` | task-7 `private` / `public` token wrapper |
 | 18 | `VisibleItem` | task-7 visible top-level item wrapper |
+| 19 | `ReserveItem` | task-8 concrete top-level `reserve` host item |
+| 20 | `ReserveSegment` | task-8 `identifier_list "for" type_expression` segment |
+| 21 | `TypeExpression` | task-8 `attribute_chain type_head` node |
+| 22 | `AttributeChain` | task-8 non-empty sequence of attribute references |
+| 23 | `AttributeRef` | task-8 optional `non` plus syntactic attribute reference |
+| 24 | `ParameterPrefix` | task-8 attribute parameter-prefix wrapper |
+| 25 | `TypeHead` | task-8 generic radix-or-mode type head |
+| 26 | `TypeArguments` | task-8 `of` / `over` / bracket argument wrapper |
+| 27 | `TermPlaceholder` | task-8 temporary term-entry stub inside type or attribute arguments |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -104,11 +122,12 @@ The current raw discriminants are part of the rowan boundary for this phase:
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true only for `Root`, `Token`,
-`InfixExpression`, `ErrorRecovery`, the task-S-009 shared path node kinds, and
-the task-5/6/7 module, import, export, and visibility node kinds listed above;
-`is_token_kind` is true only for the token leaf kinds. Future raw values should
-be appended or assigned into a documented reserved range so existing snapshots
-and rowan tests fail loudly when the raw vocabulary changes.
+`InfixExpression`, `ErrorRecovery`, the task-S-009 shared path node kinds, the
+task-5/6/7 module, import, export, and visibility node kinds, and the task-S-010
+reserve/type node kinds listed above; `is_token_kind` is true only for the
+token leaf kinds. Future raw values should be appended or assigned into a
+documented reserved range so existing snapshots and rowan tests fail loudly
+when the raw vocabulary changes.
 
 ### Current Surface Vocabulary
 
@@ -127,9 +146,18 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::ExportItem` | none | `SyntaxKind::ExportItem` | parser task-7 concrete `export_stmt`; owns the `export` token, exported `ModulePath` nodes separated by comma tokens, optional malformed-tail recovery, and optional semicolon token |
 | `SurfaceNodeKind::VisibilityMarker` | none | `SyntaxKind::VisibilityMarker` | parser task-7 wrapper for exactly one `private` or `public` token |
 | `SurfaceNodeKind::VisibleItem` | none | `SyntaxKind::VisibleItem` | parser task-7 top-level visibility wrapper; owns annotation-prefix tokens when present, one `VisibilityMarker`, and the current target item node |
+| `SurfaceNodeKind::ReserveItem` | none | `SyntaxKind::ReserveItem` | parser task-8 concrete top-level `reserve_decl` host item; owns the `reserve` token, one `ReserveSegment`, optional malformed-tail recovery, and optional semicolon token |
+| `SurfaceNodeKind::ReserveSegment` | none | `SyntaxKind::ReserveSegment` | parser task-8 `identifier_list "for" type_expression`; owns identifier tokens separated by comma tokens, the `for` token, and a `TypeExpression` or missing-type recovery |
+| `SurfaceNodeKind::TypeExpression` | none | `SyntaxKind::TypeExpression` | parser task-8 `attribute_chain type_head`; owns an optional non-empty `AttributeChain` followed by a generic `TypeHead` |
+| `SurfaceNodeKind::AttributeChain` | none | `SyntaxKind::AttributeChain` | parser task-8 non-empty source-ordered sequence of `AttributeRef` nodes |
+| `SurfaceNodeKind::AttributeRef` | none | `SyntaxKind::AttributeRef` | parser task-8 optional `non` token, optional `ParameterPrefix`, syntactic `QualifiedSymbol`, and optional parenthesized term-placeholder arguments |
+| `SurfaceNodeKind::ParameterPrefix` | none | `SyntaxKind::ParameterPrefix` | parser task-8 attribute parameter prefix, either `parameter "-"` or `"(" parameter_list ")" "-"` |
+| `SurfaceNodeKind::TypeHead` | none | `SyntaxKind::TypeHead` | parser task-8 generic radix-or-mode head; owns builtin `object`/`set` token or `QualifiedSymbol`, plus optional `TypeArguments` |
+| `SurfaceNodeKind::TypeArguments` | none | `SyntaxKind::TypeArguments` | parser task-8 type argument wrapper for `of`, `over`, or bracket syntax; owns delimiter/keyword tokens and source-ordered argument placeholders |
+| `SurfaceNodeKind::TermPlaceholder` | none | `SyntaxKind::TermPlaceholder` | parser task-8 temporary syntax-only term-entry stub used inside `TypeArguments` and attribute argument lists until parser task 9 replaces it with concrete term nodes |
 | `SurfaceNodeKind::ModulePath` | none | `SyntaxKind::ModulePath` | `module_path`; optional `RelativePrefix`, first `PathSegment`, then repeated `.` token plus `PathSegment`; only this path shape may contain `RelativePrefix` |
 | `SurfaceNodeKind::NamespacePath` | none | `SyntaxKind::NamespacePath` | `namespace_path`; first `PathSegment`, then repeated `.` token plus identifier `PathSegment`; relative prefixes are not allowed |
-| `SurfaceNodeKind::QualifiedSymbol` | none | `SyntaxKind::QualifiedSymbol` | `qualified_symbol`; zero or more namespace identifier `PathSegment` + `.` token pairs followed by final user-symbol `PathSegment` |
+| `SurfaceNodeKind::QualifiedSymbol` | none | `SyntaxKind::QualifiedSymbol` | `qualified_symbol`; zero or more identifier namespace `PathSegment` + `.` token pairs followed by a final user-symbol `PathSegment`, or the task-8 attribute-ref flattening where dotted prefix `PathSegment`s may also be user-symbol tokens before the final user-symbol |
 | `SurfaceNodeKind::PathSegment` | none | `SyntaxKind::PathSegment` | wraps exactly one identifier or user-symbol token; role is determined by parent and token kind |
 | `SurfaceNodeKind::RelativePrefix` | none | `SyntaxKind::RelativePrefix` | wraps exactly one `.` or `..` token at the start of a `ModulePath` |
 | `SurfaceNodeKind::InfixExpression(SurfaceInfixOperator)` | spelling, precedence, associativity | `SyntaxKind::InfixExpression` | task-12 Pratt expression shape |
@@ -203,6 +231,51 @@ These nodes do not decide public/private semantics, export availability,
 symbol identities, theorem validity, or notation validity. `SurfaceNodeView`
 exposes typed `as_export_item`, `as_visibility_marker`, and `as_visible_item`
 helpers.
+
+Type-expression nodes added for `mizar-parser` task 8 are syntax-only shapes.
+`ReserveItem` is the current frontend-reachable host for `TypeExpression` nodes;
+it represents top-level `reserve_decl` only and does not implement local
+statement semantics. `ReserveSegment` preserves identifier-list commas, the
+`for` token, and the following type expression. `TypeExpression` preserves the
+surface split into an optional non-empty `AttributeChain` and a required
+`TypeHead`. Because mode/radix/attribute classification depends on the active
+environment, `TypeHead` is deliberately generic: it owns either builtin
+`object`/`set` or a `QualifiedSymbol` and optional `TypeArguments`; it does not
+record whether the head is a mode, structure, or radix type. The parser chooses
+the syntactic attribute/head boundary by keeping the rightmost available
+type-head candidate as the `TypeHead`, not by semantic lookup.
+
+`AttributeRef` owns source-ordered syntax for one attribute occurrence:
+optional `non`, optional `ParameterPrefix`, one syntactic `QualifiedSymbol`,
+and optional parenthesized `TermPlaceholder` arguments. Struct-qualified
+attribute spellings are preserved as the same `QualifiedSymbol` dotted surface;
+in that attribute-ref context, prefix `PathSegment`s may wrap user-symbol
+tokens as well as namespace identifiers. The AST does not decide which prefix
+segment is a structure. `ParameterPrefix`
+preserves only the local token split that task 8 can see before an attribute
+reference: a single identifier or numeral plus `-`, or a parenthesized
+identifier/numeral list plus `-`. It does not validate template-parameter scope
+and does not perform the full contextual whole-spelling split for names such as
+`n-dimensional`; that source drift remains owned by the future task that passes
+parameter-scope facts into lexing/parsing.
+
+`TypeArguments` owns either an `of`/`over` token followed by comma-separated
+`TermPlaceholder` arguments, or `[` followed by comma-separated type-template
+arguments and an optional `]`. A bracket argument that parses as a type
+expression is represented as a nested `TypeExpression`. A bracket argument that
+uses `qua_arg` syntax is represented by a temporary `TermPlaceholder` child
+that owns the identifier and any `qua`/radix-type tail tokens; it remains a
+syntax-only placeholder until term/template argument parsing lands. Missing
+bracket closers use
+`MalformedTypeExpression` plus `UnmatchedOpeningDelimiter` recovery under the
+`TypeArguments` node. `TermPlaceholder` is also reused for parenthesized
+attribute argument lists. It is a temporary syntactic stub for the mutual
+recursion between types and terms; it owns the shallow source tokens for one
+term argument and must not encode term classification, operator facts, or name
+resolution. `SurfaceNodeView` exposes typed `as_reserve_item`,
+`as_reserve_segment`, `as_type_expression`, `as_attribute_chain`,
+`as_attribute_ref`, `as_parameter_prefix`, `as_type_head`,
+`as_type_arguments`, and `as_term_placeholder` helpers.
 
 ### Vocabulary Increment Contract
 

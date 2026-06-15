@@ -291,14 +291,24 @@ resolver / build-system 依存を避ける。
    - 依存: 5、`mizar-syntax` task 9 / S-009。仕様:
      [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)。
 
-8. **型式。** [ ]
+8. **型式。** [x]
    - 属性連鎖（`non` を含む）、radix / mode の型ヘッド、`of` / `over` 引数
      リスト、struct 修飾の属性参照。項引数は task 9 が着地するまで項エントリ
      のスタブを通す（型と項は相互再帰である）。task 4 の修飾型ヘッドに対する
-     繰り延べコーパスケースを含む。
+     繰り延べコーパスケースを含む。test は右端の attribute / type-head split、
+     bracket nested type-expression argument、bracket `qua_arg` placeholder、
+     malformed type argument、incoming token が split を露出する場合の局所
+     parameter-prefix preservation を pin する。
    - 依存: 4、5、`mizar-syntax` task 10 / S-010。仕様:
      [03.type_system.md](../../../spec/ja/03.type_system.md)、
      [§A.3.2](../../../spec/ja/appendix_a.grammar_summary.md)。
+   - 結果: concrete top-level `reserve` parsing と
+     `ReserveItem` / `ReserveSegment`、syntax-only `TypeExpression`、
+     `AttributeChain`、`AttributeRef`、generic `TypeHead`、`TypeArguments`、
+     `TermPlaceholder` node を実装した。`MalformedTypeExpression` recovery、
+     token split が露出する局所 parameter-prefix の parser unit coverage、
+     `parser.type_fixtures` 経由の active parse-only pass/fail corpus coverage を
+     追加した。
 
 9. **一次項。** [ ]
    - 識別子、数値、項位置の修飾シンボル、括弧付き項、適用形。task 8 の項

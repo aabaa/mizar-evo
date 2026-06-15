@@ -290,11 +290,16 @@ interaction. Spec references are the normative grammar chapters under
      corpus coverage. The S-009 bucket is complete.
    - Spec: [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
-10. **Type expression nodes.** [ ] — paired with `mizar-parser` task 8.
+10. **Type expression nodes.** [x] — paired with `mizar-parser` task 8.
    - Attribute chains (with `non`), radix/mode type heads, `of`/`over`
      arguments, struct-qualified attribute references.
    - Spec: [03.type_system.md](../../../spec/en/03.type_system.md),
      [§A.3.2](../../../spec/en/appendix_a.grammar_summary.md).
+   - Result: added `ReserveItem`, `ReserveSegment`, `TypeExpression`,
+     `AttributeChain`, `AttributeRef`, `ParameterPrefix`, `TypeHead`,
+     `TypeArguments`, and `TermPlaceholder` syntax vocabulary, rowan/snapshot
+     coverage, typed accessors, `MalformedTypeExpression`, and active
+     parse-only corpus coverage with paired parser task 8.
 
 11. **Term nodes.** [ ] — paired with `mizar-parser` tasks 9-12 and 15.
    - Consume the shared path vocabulary introduced by task 9. Then add primary

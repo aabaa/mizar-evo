@@ -4,7 +4,7 @@
 
 状態: task 12 の最小回復、task 28 の入れ子 block-end 回復、task 5 の
 module-skeleton recovery、task 6 の import recovery、task 7 の export/visibility
-recovery は実装済み。完全な文法回復は計画中。
+recovery、task 8 の type-expression recovery は実装済み。完全な文法回復は計画中。
 
 ## 目的
 
@@ -59,6 +59,14 @@ recovery は実装済み。完全な文法回復は計画中。
   `MalformedExport` で診断する。task 7 の visibility parsing は、duplicate marker、
   dangling marker、非 theorem/notation top-level declaration への visibility を
   `MalformedVisibility` で診断する。
+- task 8 の reserve / type-expression parsing は、reserve-hosted type syntax の不正を
+  `MalformedTypeExpression` で診断する。`reserve ... for` の後、または bracket
+  `type_arg_list` 内で純粋に type が欠落した場合は recovered `MissingTypeExpression` を
+  作る。空でない malformed tail は、最も近い reserve/type node が所有する
+  `SkippedToken` recovery を使う。bracket type-argument list が `]` より前に `;`、
+  top-level item boundary、または EOF に到達した場合、`MalformedTypeExpression`、
+  `[` への secondary anchor、`TypeArguments` 下の `UnmatchedOpeningDelimiter`
+  recovery node を作る。
 - 対応する block opener を持たない裸の `end` は、構文診断とともに `ast = None` を返す。
 
 ## 公開 enum の互換性

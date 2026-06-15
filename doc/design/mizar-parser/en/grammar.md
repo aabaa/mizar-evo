@@ -1,8 +1,9 @@
 # mizar-parser: Grammar
 
 Status: module skeleton, top-level placeholder dispatch, concrete import
-items, export items, and visibility wrappers implemented through task 7;
-concrete non-module item grammars planned.
+items, export items, visibility wrappers, and reserve-hosted type expressions
+implemented through task 8; remaining concrete non-module item grammars
+planned.
 
 ## Purpose
 
@@ -25,6 +26,10 @@ Current behavior:
 - grammar code emits tokens, ordinary nodes, and recovery nodes through the
   private syntax-event sink and documented `mizar-syntax` builder/accessor API,
   not by depending on rowan storage layout or dense arena indices.
+- top-level `reserve` items are concrete enough to host syntax-only
+  `TypeExpression` trees with attribute chains, generic type heads,
+  `of`/`over` term placeholders, bracket nested type arguments, and bracket
+  `qua_arg` placeholders. Other non-module item grammars remain placeholders.
 
 ## Task 4: Shared Paths
 
@@ -202,6 +207,98 @@ top-level declaration (`definition`, `registration`, or `claim`), the same
 recovery owns the malformed target through its matching `end`; the following
 semicolon remains the wrapper's statement terminator when present, which keeps
 the wrapper from cascading into additional top-level recovery nodes.
+
+## Task 8: Type Expressions
+
+Production inventory:
+
+```ebnf
+reserve_decl      ::= "reserve" reserve_segment ";" ;
+reserve_segment   ::= identifier_list "for" type_expression ;
+identifier_list   ::= identifier { "," identifier } ;
+
+type_expression   ::= attribute_chain type_head ;
+type_head         ::= radix_type | mode_type ;
+
+attribute_chain   ::= { [ "non" ] attribute_ref } ;
+attribute_ref     ::= [ param_prefix ] [ struct_ref_name "." ] attribute_ref_name
+                      [ "(" argument_list ")" ] ;
+param_prefix      ::= parameter "-" | "(" parameter_list ")" "-" ;
+
+radix_type        ::= builtin_type | struct_ref_name [ type_args ] ;
+mode_type         ::= mode_ref_name [ type_args ] ;
+type_args         ::= ( "of" | "over" ) argument_list
+                    | "[" type_arg_list "]" ;
+type_arg_list     ::= type_arg { "," type_arg } ;
+type_arg          ::= type_expression | qua_arg ;
+qua_arg           ::= identifier { "qua" radix_type } ;
+argument_list     ::= term_expression { "," term_expression } ;
+
+builtin_type      ::= "object" | "set" ;
+attribute_ref_name ::= qualified_symbol ;
+mode_ref_name     ::= qualified_symbol ;
+struct_ref_name   ::= qualified_symbol ;
+```
+
+Task 8 makes type expressions executable through top-level `reserve`
+declarations. The parser emits `ReserveItem` and `ReserveSegment` only as the
+current host for `TypeExpression`; local statement-level `reserve` behavior is
+owned by later statement tasks. A well-formed `ReserveItem` owns the `reserve`
+token, one `ReserveSegment`, and the terminating semicolon. `ReserveSegment`
+owns source-ordered identifiers and comma tokens, the `for` token, and a
+`TypeExpression`.
+
+The parser emits `TypeExpression` with an optional non-empty `AttributeChain`
+and a required generic `TypeHead`. It does not decide whether a syntactic head
+is a radix type, structure, or mode, and it does not decide whether a dotted
+attribute spelling contains a structure qualifier or only namespace segments.
+When a sequence of user-symbol-shaped references could be split multiple ways,
+the parser keeps the rightmost available syntactic type-head candidate as the
+`TypeHead` and treats preceding references as attributes. This is a syntax-only
+boundary rule, not semantic classification.
+
+`AttributeRef` preserves optional `non`, optional parameter prefixes, a
+`QualifiedSymbol`, and optional parenthesized term arguments. `TypeHead`
+preserves builtin `object` / `set` tokens or `QualifiedSymbol` heads plus
+optional `TypeArguments`. Task 8 preserves `ParameterPrefix` only when the
+incoming tokens already expose a local prefix split before an attribute
+reference: identifier or numeral plus `-`, or a parenthesized identifier/numeral
+list plus `-`. It does not validate template-parameter scope and does not split
+one whole user-symbol spelling such as `n-dimensional`; that is classified as
+source drift until a later parser/lexer task can consume parameter-scope facts
+and active attribute suffixes.
+
+`TypeArguments` preserves `of` / `over` argument lists with temporary
+`TermPlaceholder` children because term parsing lands in task 9. Bracket type
+arguments recursively parse nested `TypeExpression` children when possible.
+When a bracket argument instead matches `qua_arg`, task 8 stores it in a
+temporary `TermPlaceholder` child that owns the identifier and any `qua`
+radix-type tail tokens. Missing `]` is kept as `MalformedTypeExpression` plus
+`UnmatchedOpeningDelimiter` recovery. The task-8 `TermPlaceholder` node is a
+shallow token owner for one term-entry or `qua_arg` argument only; it must not
+encode term classification, operator facts, name resolution, or overload
+selection.
+
+Malformed type syntax that can continue at the current reserve statement
+boundary uses `MalformedTypeExpression`. Missing pure type expressions after
+`reserve ... for` or inside bracket `type_arg_list` may insert
+`MissingTypeExpression` recovery. Missing `of` / `over` term arguments remain
+`TermPlaceholder` recovery candidates for task 9 and must not be reported as
+missing type expressions in task 8. Malformed tails before `;`, `,`, `]`, or
+`)` may use nested `SkippedToken` recovery and skipped-range trivia owned by the
+nearest reserve/type node.
+
+Active parse-only corpus imports the syntax-only `parser.type_fixtures` module
+to make identifier-shaped mode/attribute/structure symbols visible. The
+`mizar-test` parse-only provider exports a small fixed set of task-8 fixture
+symbols only for that fixture module; those symbols are test harness inputs only
+and do not imply resolver semantics or built-in library content. Task-8 tests
+pin at least: the rightmost attribute/type-head split for consecutive fixture
+symbols, positive `non` attribute chains, `of` / `over` term placeholders,
+bracket nested `TypeExpression` arguments, bracket `qua_arg` placeholders,
+local `ParameterPrefix` preservation in parser unit tests where tokens expose
+the split, missing `]` diagnostics, and malformed type-expression insertion
+after `reserve ... for`.
 
 ## Public Enum Compatibility
 

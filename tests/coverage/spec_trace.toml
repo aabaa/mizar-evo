@@ -768,6 +768,20 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.03.type_expressions.parser"
+source = "doc/spec/en/03.type_system.md"
+section = "3.3 Type Expressions"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_type_expressions_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_type_expression_malformed_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_type_expression_missing_bracket_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.syntax.parser_recovery.missing_end"
 source = "doc/design/mizar-parser/en/recovery.md"
 section = "Current behavior"

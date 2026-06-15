@@ -1,0 +1,19 @@
+schema_version = 1
+id = "fail_parser_type_expression_missing_bracket_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.type_expressions"
+source = "fail_parser_type_expression_missing_bracket_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "missing_type_argument_bracket"
+stable_detail_key = "parser.type_expressions.missing_bracket"
+diagnostic_codes = [
+  "malformed_type_expression",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = [
+  "spec.en.03.type_expressions.parser",
+]
+notes = "Active parse-only runner coverage for parser task 8 unmatched bracket type-argument recovery."

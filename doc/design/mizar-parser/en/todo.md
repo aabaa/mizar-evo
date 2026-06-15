@@ -305,15 +305,24 @@ older numeric syntax task references appear to disagree, prefer
    - Deps: 5, `mizar-syntax` task 9 / S-009. Spec:
      [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
-8. **Type expressions.** [ ]
+8. **Type expressions.** [x]
    - Attribute chains (with `non`), radix/mode type heads, `of`/`over`
      argument lists, struct-qualified attribute references. Term arguments
      enter through a term-entry stub until task 9 lands (types and terms are
      mutually recursive). Includes the deferred corpus cases for task 4
-     qualified type heads.
+     qualified type heads. Tests pin the rightmost attribute/type-head split,
+     bracket nested type-expression arguments, bracket `qua_arg` placeholders,
+     malformed type arguments, and local parameter-prefix preservation when the
+     incoming tokens expose the split.
    - Deps: 4, 5, `mizar-syntax` task 10 / S-010. Spec:
      [03.type_system.md](../../../spec/en/03.type_system.md),
      [§A.3.2](../../../spec/en/appendix_a.grammar_summary.md).
+   - Result: implemented concrete top-level `reserve` parsing with
+     `ReserveItem`/`ReserveSegment`, syntax-only `TypeExpression`,
+     `AttributeChain`, `AttributeRef`, generic `TypeHead`, `TypeArguments`, and
+     `TermPlaceholder` nodes; added `MalformedTypeExpression` recovery, parser
+     unit coverage for local parameter-prefix token splits, and active
+     parse-only pass/fail corpus coverage through `parser.type_fixtures`.
 
 9. **Primary terms.** [ ]
    - Identifiers, numerals, qualified symbols in term position, parenthesized

@@ -1,0 +1,4 @@
+import parser.type_fixtures;
+reserve x, y for non empty T of a, b;
+reserve w for T over c;
+reserve z for non empty T[set, V qua R];

@@ -1,8 +1,9 @@
 # mizar-parser: Recovery
 
 Status: minimal task-12 recovery, task-28 nested block-end recovery, task-5
-module-skeleton recovery, task-6 import recovery, and task-7 export/visibility
-recovery are implemented; full grammar recovery planned.
+module-skeleton recovery, task-6 import recovery, task-7 export/visibility
+recovery, and task-8 type-expression recovery are implemented; full grammar
+recovery planned.
 
 ## Purpose
 
@@ -61,6 +62,14 @@ Current behavior:
   `export` or after a comma, with `MalformedExport`. Task-7 visibility parsing
   diagnoses duplicate markers, dangling markers, and visibility applied to a
   non-theorem/non-notation top-level declaration with `MalformedVisibility`;
+- task-8 reserve/type-expression parsing diagnoses malformed reserve-hosted type
+  syntax with `MalformedTypeExpression`. A pure missing type after `reserve ...
+  for` or inside bracket `type_arg_list` gets an explicit recovered
+  `MissingTypeExpression`; malformed non-empty tails use `SkippedToken` recovery
+  owned by the nearest reserve/type node. A bracket type-argument list that
+  reaches `;`, a top-level item boundary, or EOF before `]` gets
+  `MalformedTypeExpression`, a secondary anchor on `[`, and an
+  `UnmatchedOpeningDelimiter` recovery node under `TypeArguments`;
 - a stray `end` that has no matching block opener returns syntax diagnostics
   with `ast = None`.
 

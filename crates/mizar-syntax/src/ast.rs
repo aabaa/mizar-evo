@@ -51,6 +51,15 @@ pub enum SyntaxKind {
     ExportItem = 16,
     VisibilityMarker = 17,
     VisibleItem = 18,
+    ReserveItem = 19,
+    ReserveSegment = 20,
+    TypeExpression = 21,
+    AttributeChain = 22,
+    AttributeRef = 23,
+    ParameterPrefix = 24,
+    TypeHead = 25,
+    TypeArguments = 26,
+    TermPlaceholder = 27,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -83,6 +92,15 @@ impl SyntaxKind {
             16 => Self::ExportItem,
             17 => Self::VisibilityMarker,
             18 => Self::VisibleItem,
+            19 => Self::ReserveItem,
+            20 => Self::ReserveSegment,
+            21 => Self::TypeExpression,
+            22 => Self::AttributeChain,
+            23 => Self::AttributeRef,
+            24 => Self::ParameterPrefix,
+            25 => Self::TypeHead,
+            26 => Self::TypeArguments,
+            27 => Self::TermPlaceholder,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -117,6 +135,15 @@ impl SyntaxKind {
                 | Self::ExportItem
                 | Self::VisibilityMarker
                 | Self::VisibleItem
+                | Self::ReserveItem
+                | Self::ReserveSegment
+                | Self::TypeExpression
+                | Self::AttributeChain
+                | Self::AttributeRef
+                | Self::ParameterPrefix
+                | Self::TypeHead
+                | Self::TypeArguments
+                | Self::TermPlaceholder
         )
     }
 
@@ -634,6 +661,15 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::ExportItem
             | SurfaceNodeKind::VisibilityMarker
             | SurfaceNodeKind::VisibleItem
+            | SurfaceNodeKind::ReserveItem
+            | SurfaceNodeKind::ReserveSegment
+            | SurfaceNodeKind::TypeExpression
+            | SurfaceNodeKind::AttributeChain
+            | SurfaceNodeKind::AttributeRef
+            | SurfaceNodeKind::ParameterPrefix
+            | SurfaceNodeKind::TypeHead
+            | SurfaceNodeKind::TypeArguments
+            | SurfaceNodeKind::TermPlaceholder
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -657,6 +693,15 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::ExportItem
             | SurfaceNodeKind::VisibilityMarker
             | SurfaceNodeKind::VisibleItem
+            | SurfaceNodeKind::ReserveItem
+            | SurfaceNodeKind::ReserveSegment
+            | SurfaceNodeKind::TypeExpression
+            | SurfaceNodeKind::AttributeChain
+            | SurfaceNodeKind::AttributeRef
+            | SurfaceNodeKind::ParameterPrefix
+            | SurfaceNodeKind::TypeHead
+            | SurfaceNodeKind::TypeArguments
+            | SurfaceNodeKind::TermPlaceholder
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -680,6 +725,15 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::ExportItem
             | SurfaceNodeKind::VisibilityMarker
             | SurfaceNodeKind::VisibleItem
+            | SurfaceNodeKind::ReserveItem
+            | SurfaceNodeKind::ReserveSegment
+            | SurfaceNodeKind::TypeExpression
+            | SurfaceNodeKind::AttributeChain
+            | SurfaceNodeKind::AttributeRef
+            | SurfaceNodeKind::ParameterPrefix
+            | SurfaceNodeKind::TypeHead
+            | SurfaceNodeKind::TypeArguments
+            | SurfaceNodeKind::TermPlaceholder
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -749,6 +803,69 @@ impl<'a> SurfaceNodeView<'a> {
     pub fn as_visible_item(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::VisibleItem => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_reserve_item(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ReserveItem => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_reserve_segment(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ReserveSegment => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_type_expression(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::TypeExpression => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_attribute_chain(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AttributeChain => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_attribute_ref(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AttributeRef => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_parameter_prefix(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ParameterPrefix => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_type_head(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::TypeHead => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_type_arguments(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::TypeArguments => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_term_placeholder(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::TermPlaceholder => Some(self),
             _ => None,
         }
     }
@@ -853,6 +970,15 @@ impl SurfaceNode {
             | SurfaceNodeKind::ExportItem
             | SurfaceNodeKind::VisibilityMarker
             | SurfaceNodeKind::VisibleItem
+            | SurfaceNodeKind::ReserveItem
+            | SurfaceNodeKind::ReserveSegment
+            | SurfaceNodeKind::TypeExpression
+            | SurfaceNodeKind::AttributeChain
+            | SurfaceNodeKind::AttributeRef
+            | SurfaceNodeKind::ParameterPrefix
+            | SurfaceNodeKind::TypeHead
+            | SurfaceNodeKind::TypeArguments
+            | SurfaceNodeKind::TermPlaceholder
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -880,6 +1006,15 @@ pub enum SurfaceNodeKind {
     ExportItem,
     VisibilityMarker,
     VisibleItem,
+    ReserveItem,
+    ReserveSegment,
+    TypeExpression,
+    AttributeChain,
+    AttributeRef,
+    ParameterPrefix,
+    TypeHead,
+    TypeArguments,
+    TermPlaceholder,
     ModulePath,
     NamespacePath,
     QualifiedSymbol,
@@ -903,6 +1038,15 @@ impl SurfaceNodeKind {
             Self::ExportItem => SyntaxKind::ExportItem,
             Self::VisibilityMarker => SyntaxKind::VisibilityMarker,
             Self::VisibleItem => SyntaxKind::VisibleItem,
+            Self::ReserveItem => SyntaxKind::ReserveItem,
+            Self::ReserveSegment => SyntaxKind::ReserveSegment,
+            Self::TypeExpression => SyntaxKind::TypeExpression,
+            Self::AttributeChain => SyntaxKind::AttributeChain,
+            Self::AttributeRef => SyntaxKind::AttributeRef,
+            Self::ParameterPrefix => SyntaxKind::ParameterPrefix,
+            Self::TypeHead => SyntaxKind::TypeHead,
+            Self::TypeArguments => SyntaxKind::TypeArguments,
+            Self::TermPlaceholder => SyntaxKind::TermPlaceholder,
             Self::ModulePath => SyntaxKind::ModulePath,
             Self::NamespacePath => SyntaxKind::NamespacePath,
             Self::QualifiedSymbol => SyntaxKind::QualifiedSymbol,
@@ -1012,6 +1156,15 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::ExportItem => output.push_str("ExportItem"),
         SurfaceNodeKind::VisibilityMarker => output.push_str("VisibilityMarker"),
         SurfaceNodeKind::VisibleItem => output.push_str("VisibleItem"),
+        SurfaceNodeKind::ReserveItem => output.push_str("ReserveItem"),
+        SurfaceNodeKind::ReserveSegment => output.push_str("ReserveSegment"),
+        SurfaceNodeKind::TypeExpression => output.push_str("TypeExpression"),
+        SurfaceNodeKind::AttributeChain => output.push_str("AttributeChain"),
+        SurfaceNodeKind::AttributeRef => output.push_str("AttributeRef"),
+        SurfaceNodeKind::ParameterPrefix => output.push_str("ParameterPrefix"),
+        SurfaceNodeKind::TypeHead => output.push_str("TypeHead"),
+        SurfaceNodeKind::TypeArguments => output.push_str("TypeArguments"),
+        SurfaceNodeKind::TermPlaceholder => output.push_str("TermPlaceholder"),
         SurfaceNodeKind::ModulePath => output.push_str("ModulePath"),
         SurfaceNodeKind::NamespacePath => output.push_str("NamespacePath"),
         SurfaceNodeKind::QualifiedSymbol => output.push_str("QualifiedSymbol"),
@@ -2008,6 +2161,15 @@ mod tests {
             SyntaxKind::ExportItem,
             SyntaxKind::VisibilityMarker,
             SyntaxKind::VisibleItem,
+            SyntaxKind::ReserveItem,
+            SyntaxKind::ReserveSegment,
+            SyntaxKind::TypeExpression,
+            SyntaxKind::AttributeChain,
+            SyntaxKind::AttributeRef,
+            SyntaxKind::ParameterPrefix,
+            SyntaxKind::TypeHead,
+            SyntaxKind::TypeArguments,
+            SyntaxKind::TermPlaceholder,
             SyntaxKind::ModulePath,
             SyntaxKind::NamespacePath,
             SyntaxKind::QualifiedSymbol,
@@ -2022,6 +2184,193 @@ mod tests {
                 "rowan tree should emit {kind:?} for current structural nodes"
             );
         }
+    }
+
+    #[test]
+    fn task8_typed_accessors_cover_type_expression_nodes() {
+        let source_id = source_id(23);
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let reserve = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "reserve",
+            range(source_id, 0, 7),
+        );
+        let identifier =
+            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 8, 9));
+        let for_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "for",
+            range(source_id, 10, 13),
+        );
+        let non = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "non",
+            range(source_id, 14, 17),
+        );
+        let n = builder.add_token(SurfaceTokenKind::Identifier, "n", range(source_id, 18, 19));
+        let hyphen = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "-",
+            range(source_id, 19, 20),
+        );
+        let empty = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "empty",
+            range(source_id, 20, 25),
+        );
+        let type_symbol =
+            builder.add_token(SurfaceTokenKind::UserSymbol, "T", range(source_id, 26, 27));
+        let of = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "of",
+            range(source_id, 28, 30),
+        );
+        let term = builder.add_token(SurfaceTokenKind::Identifier, "a", range(source_id, 31, 32));
+        let semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 32, 33),
+        );
+
+        let prefix = builder.add_node(
+            SurfaceNodeKind::ParameterPrefix,
+            range(source_id, 18, 20),
+            vec![n, hyphen],
+        );
+        let empty_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 20, 25),
+            vec![empty],
+        );
+        let empty_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 20, 25),
+            vec![empty_segment],
+        );
+        let attribute = builder.add_node(
+            SurfaceNodeKind::AttributeRef,
+            range(source_id, 14, 25),
+            vec![non, prefix, empty_symbol],
+        );
+        let attribute_chain = builder.add_node(
+            SurfaceNodeKind::AttributeChain,
+            range(source_id, 14, 25),
+            vec![attribute],
+        );
+        let type_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 26, 27),
+            vec![type_symbol],
+        );
+        let type_symbol_node = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 26, 27),
+            vec![type_segment],
+        );
+        let term_placeholder = builder.add_node(
+            SurfaceNodeKind::TermPlaceholder,
+            range(source_id, 31, 32),
+            vec![term],
+        );
+        let type_arguments = builder.add_node(
+            SurfaceNodeKind::TypeArguments,
+            range(source_id, 28, 32),
+            vec![of, term_placeholder],
+        );
+        let type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 26, 32),
+            vec![type_symbol_node, type_arguments],
+        );
+        let type_expression = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 14, 32),
+            vec![attribute_chain, type_head],
+        );
+        let reserve_segment = builder.add_node(
+            SurfaceNodeKind::ReserveSegment,
+            range(source_id, 8, 32),
+            vec![identifier, for_keyword, type_expression],
+        );
+        let reserve_item = builder.add_node(
+            SurfaceNodeKind::ReserveItem,
+            range(source_id, 0, 33),
+            vec![reserve, reserve_segment, semicolon],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 33),
+            vec![
+                reserve,
+                identifier,
+                for_keyword,
+                non,
+                n,
+                hyphen,
+                empty,
+                type_symbol,
+                of,
+                term,
+                semicolon,
+                reserve_item,
+            ],
+        );
+        let ast = builder.finish(Some(root), None);
+
+        assert!(
+            ast.node_view(sid(reserve_item))
+                .unwrap()
+                .as_reserve_item()
+                .is_some()
+        );
+        assert!(
+            ast.node_view(sid(reserve_segment))
+                .unwrap()
+                .as_reserve_segment()
+                .is_some()
+        );
+        assert!(
+            ast.node_view(sid(type_expression))
+                .unwrap()
+                .as_type_expression()
+                .is_some()
+        );
+        assert!(
+            ast.node_view(sid(attribute_chain))
+                .unwrap()
+                .as_attribute_chain()
+                .is_some()
+        );
+        assert!(
+            ast.node_view(sid(attribute))
+                .unwrap()
+                .as_attribute_ref()
+                .is_some()
+        );
+        assert!(
+            ast.node_view(sid(prefix))
+                .unwrap()
+                .as_parameter_prefix()
+                .is_some()
+        );
+        assert!(
+            ast.node_view(sid(type_head))
+                .unwrap()
+                .as_type_head()
+                .is_some()
+        );
+        assert!(
+            ast.node_view(sid(type_arguments))
+                .unwrap()
+                .as_type_arguments()
+                .is_some()
+        );
+        assert!(
+            ast.node_view(sid(term_placeholder))
+                .unwrap()
+                .as_term_placeholder()
+                .is_some()
+        );
     }
 
     #[test]
@@ -2919,6 +3268,86 @@ mod tests {
             ";",
             range(source_id, 153, 154),
         );
+        let reserve_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "reserve",
+            range(source_id, 155, 162),
+        );
+        let reserve_x = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(source_id, 163, 164),
+        );
+        let reserve_for = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "for",
+            range(source_id, 165, 168),
+        );
+        let reserve_non = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "non",
+            range(source_id, 169, 172),
+        );
+        let reserve_empty = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "empty",
+            range(source_id, 173, 178),
+        );
+        let reserve_type_symbol = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "T",
+            range(source_id, 179, 180),
+        );
+        let reserve_arg_open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "[",
+            range(source_id, 181, 182),
+        );
+        let reserve_set = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 182, 185),
+        );
+        let reserve_arg_comma = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ",",
+            range(source_id, 185, 186),
+        );
+        let reserve_arg_identifier = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "V",
+            range(source_id, 187, 188),
+        );
+        let reserve_qua = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "qua",
+            range(source_id, 189, 192),
+        );
+        let reserve_radix = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "R",
+            range(source_id, 193, 194),
+        );
+        let reserve_arg_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "]",
+            range(source_id, 194, 195),
+        );
+        let reserve_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 195, 196),
+        );
+        let standalone_prefix_n = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "n",
+            range(source_id, 197, 198),
+        );
+        let standalone_prefix_hyphen = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "-",
+            range(source_id, 198, 199),
+        );
         let expression = builder.add_node(
             SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
                 spelling: "++".into(),
@@ -3079,6 +3508,87 @@ mod tests {
             range(source_id, 139, 154),
             vec![visibility_marker, visible_placeholder],
         );
+        let reserve_empty_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 173, 178),
+            vec![reserve_empty],
+        );
+        let reserve_empty_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 173, 178),
+            vec![reserve_empty_segment],
+        );
+        let reserve_attribute = builder.add_node(
+            SurfaceNodeKind::AttributeRef,
+            range(source_id, 169, 178),
+            vec![reserve_non, reserve_empty_symbol],
+        );
+        let reserve_attribute_chain = builder.add_node(
+            SurfaceNodeKind::AttributeChain,
+            range(source_id, 169, 178),
+            vec![reserve_attribute],
+        );
+        let reserve_type_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 179, 180),
+            vec![reserve_type_symbol],
+        );
+        let reserve_type_symbol_node = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 179, 180),
+            vec![reserve_type_segment],
+        );
+        let reserve_set_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 182, 185),
+            vec![reserve_set],
+        );
+        let reserve_set_expression = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 182, 185),
+            vec![reserve_set_head],
+        );
+        let reserve_qua_placeholder = builder.add_node(
+            SurfaceNodeKind::TermPlaceholder,
+            range(source_id, 187, 194),
+            vec![reserve_arg_identifier, reserve_qua, reserve_radix],
+        );
+        let reserve_type_arguments = builder.add_node(
+            SurfaceNodeKind::TypeArguments,
+            range(source_id, 181, 195),
+            vec![
+                reserve_arg_open,
+                reserve_set_expression,
+                reserve_arg_comma,
+                reserve_qua_placeholder,
+                reserve_arg_close,
+            ],
+        );
+        let reserve_type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 179, 195),
+            vec![reserve_type_symbol_node, reserve_type_arguments],
+        );
+        let reserve_type_expression = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 169, 195),
+            vec![reserve_attribute_chain, reserve_type_head],
+        );
+        let reserve_segment = builder.add_node(
+            SurfaceNodeKind::ReserveSegment,
+            range(source_id, 163, 195),
+            vec![reserve_x, reserve_for, reserve_type_expression],
+        );
+        let reserve_item = builder.add_node(
+            SurfaceNodeKind::ReserveItem,
+            range(source_id, 155, 196),
+            vec![reserve_keyword, reserve_segment, reserve_semicolon],
+        );
+        let standalone_parameter_prefix = builder.add_node(
+            SurfaceNodeKind::ParameterPrefix,
+            range(source_id, 197, 199),
+            vec![standalone_prefix_n, standalone_prefix_hyphen],
+        );
         let item_list = builder.add_node(
             SurfaceNodeKind::ItemList,
             range(source_id, 81, 154),
@@ -3096,7 +3606,7 @@ mod tests {
         );
         let root = builder.add_node(
             SurfaceNodeKind::Root,
-            range(source_id, 0, 154),
+            range(source_id, 0, 199),
             vec![
                 identifier,
                 reserved_word,
@@ -3137,11 +3647,29 @@ mod tests {
                 visibility_public,
                 visible_theorem,
                 visible_semicolon,
+                reserve_keyword,
+                reserve_x,
+                reserve_for,
+                reserve_non,
+                reserve_empty,
+                reserve_type_symbol,
+                reserve_arg_open,
+                reserve_set,
+                reserve_arg_comma,
+                reserve_arg_identifier,
+                reserve_qua,
+                reserve_radix,
+                reserve_arg_close,
+                reserve_semicolon,
+                standalone_prefix_n,
+                standalone_prefix_hyphen,
                 expression,
                 module_path,
                 namespace_path,
                 qualified_symbol,
                 compilation_unit,
+                reserve_item,
+                standalone_parameter_prefix,
                 recovery,
             ],
         );

@@ -6,9 +6,10 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use mizar_frontend::lexical_env::{
-    FrontendLexicalEnvironmentError, LexicalEnvironmentRequest, LexicalSummaryFingerprint,
-    LexicalSummaryProvider, ModuleId, ModuleLexicalSummary, ResolvedImport, ResolvedImportEntry,
-    ResolvedImports,
+    ExportRank, ExportedSymbolShape, FrontendLexicalEnvironmentError, LexicalEnvironmentRequest,
+    LexicalSummaryFingerprint, LexicalSummaryProvider, ModuleId, ModuleLexicalSummary,
+    ResolvedImport, ResolvedImportEntry, ResolvedImports, SymbolId, UserSymbolArity,
+    UserSymbolKind,
 };
 use mizar_frontend::orchestration::{DiagnosticCode, Frontend, FrontendDiagnostic};
 use mizar_frontend::parsing::MizarParserSeam;
@@ -375,8 +376,8 @@ impl LexicalSummaryProvider for ParseOnlyImportProvider {
 
             if seen_modules.insert(module_id.clone()) {
                 summaries.push(ModuleLexicalSummary {
+                    exported_symbols: parse_only_fixture_symbols(&module_id),
                     module_id,
-                    exported_symbols: Vec::new(),
                     fingerprint: LexicalSummaryFingerprint::new((stub_ordinal as u64) + 1),
                 });
             }
@@ -388,6 +389,47 @@ impl LexicalSummaryProvider for ParseOnlyImportProvider {
             diagnostics: Vec::new(),
         })
     }
+}
+
+fn parse_only_fixture_symbols(module_id: &ModuleId) -> Vec<ExportedSymbolShape> {
+    if module_id.as_str() != "parser.type_fixtures" {
+        return Vec::new();
+    }
+    [
+        (
+            "empty",
+            UserSymbolKind::Attribute,
+            UserSymbolArity::exact(0),
+        ),
+        ("T", UserSymbolKind::Mode, UserSymbolArity::at_least(0)),
+        ("R", UserSymbolKind::Structure, UserSymbolArity::at_least(0)),
+        (
+            "TypeCaseAttr",
+            UserSymbolKind::Attribute,
+            UserSymbolArity::exact(0),
+        ),
+        (
+            "TypeCaseMode",
+            UserSymbolKind::Mode,
+            UserSymbolArity::at_least(0),
+        ),
+        (
+            "TypeCaseStruct",
+            UserSymbolKind::Structure,
+            UserSymbolArity::at_least(0),
+        ),
+    ]
+    .into_iter()
+    .enumerate()
+    .map(|(rank, (spelling, kind, arity))| ExportedSymbolShape {
+        spelling: spelling.to_owned(),
+        symbol_id: SymbolId::new(format!("{}#parse-only#{spelling}", module_id.as_str())),
+        source_module: module_id.clone(),
+        export_rank: ExportRank::new(rank as u32),
+        kind,
+        arity,
+    })
+    .collect()
 }
 
 impl fmt::Display for ParseOnlyCaseStatus {
@@ -402,7 +444,9 @@ impl fmt::Display for ParseOnlyCaseStatus {
 #[cfg(test)]
 mod tests {
     use super::ParseOnlyImportProvider;
-    use mizar_frontend::lexical_env::{LexicalEnvironmentRequest, LexicalSummaryProvider};
+    use mizar_frontend::lexical_env::{
+        LexicalEnvironmentRequest, LexicalSummaryProvider, UserSymbolKind,
+    };
     use mizar_frontend::preprocess::{ImportStub, ImportStubPath};
     use mizar_session::{
         BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceId,
@@ -411,12 +455,12 @@ mod tests {
     use std::sync::Arc;
 
     #[test]
-    fn parse_only_provider_resolves_every_stub_and_deduplicates_empty_summaries() {
+    fn parse_only_provider_resolves_every_stub_and_deduplicates_fixture_summaries() {
         let source_id = source_id(90);
         let stubs = vec![
             import_stub(source_id, "alpha", 0, 5),
             import_stub(source_id, "alpha", 7, 12),
-            import_stub(source_id, "beta", 14, 18),
+            import_stub(source_id, "parser.type_fixtures", 14, 34),
         ];
         let request = LexicalEnvironmentRequest {
             source_id,
@@ -442,7 +486,7 @@ mod tests {
             vec![
                 (0, range(source_id, 0, 5), "alpha"),
                 (1, range(source_id, 7, 12), "alpha"),
-                (2, range(source_id, 14, 18), "beta"),
+                (2, range(source_id, 14, 34), "parser.type_fixtures"),
             ]
         );
         assert_eq!(resolved.summaries.len(), 2);
@@ -456,7 +500,22 @@ mod tests {
                     summary.fingerprint.get()
                 ))
                 .collect::<Vec<_>>(),
-            vec![("alpha", 0, 1), ("beta", 0, 3)]
+            vec![("alpha", 0, 1), ("parser.type_fixtures", 6, 3)]
+        );
+        assert_eq!(
+            resolved.summaries[1]
+                .exported_symbols
+                .iter()
+                .map(|symbol| (symbol.spelling.as_str(), symbol.kind))
+                .collect::<Vec<_>>(),
+            vec![
+                ("empty", UserSymbolKind::Attribute),
+                ("T", UserSymbolKind::Mode),
+                ("R", UserSymbolKind::Structure),
+                ("TypeCaseAttr", UserSymbolKind::Attribute),
+                ("TypeCaseMode", UserSymbolKind::Mode),
+                ("TypeCaseStruct", UserSymbolKind::Structure),
+            ]
         );
         assert!(resolved.diagnostics.is_empty());
     }
