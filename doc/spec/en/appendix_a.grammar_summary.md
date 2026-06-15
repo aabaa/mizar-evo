@@ -130,8 +130,11 @@ Outside those positions, quote characters participate in ordinary identifier or
 user-symbol lexing.
 
 When `.` is not consumed as a compound reserved token or an active user symbol,
-the parser and resolver classify it as selector access/update or as a namespace
-separator according to the context described in Chapter 2.
+the parser preserves the syntax-only surface that is visible at the current
+grammar position: a `.` after an already parsed term is a selector/update
+postfix, while a `.` inside a qualified-name head stays part of that qualified
+surface. The resolver later applies scope-dependent selector-versus-namespace
+classification as described in Chapter 2.
 
 The hyphen used in parameterized attribute spellings such as `n-dimensional`
 or `(m,n)-ary` is a contextual `param_prefix` separator, not a reserved special

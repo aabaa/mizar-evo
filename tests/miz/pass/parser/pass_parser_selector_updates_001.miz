@@ -1,0 +1,2 @@
+import parser.type_fixtures;
+reserve x for T of p.x, line.finish.y, M.binop(a, b), p with (x := y, start.x := f(a));

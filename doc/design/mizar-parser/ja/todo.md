@@ -103,15 +103,15 @@ resolver / build-system 依存を避ける。
   場合は、後回しにせず、そのタスクの一部として所有章と付録を（英語と日本語を
   一緒に）修正する。文法のブラッシュアップは実装に先行してではなく、実装と
   並行して進める。
-- **ドットの役割の surface 形状: 未解決。task 10 で解決する。** この決定は
-  `mizar-parser`、`mizar-syntax`、将来の resolver にまたがるため、トップ
-  レベル（[../../todo.md](../../todo.md)「Resolved And Open Decisions」）にも
+- **ドットの役割の surface 形状: task 10 により parser/syntax では解決済み。**
+  この決定は `mizar-parser`、`mizar-syntax`、将来の resolver にまたがるため、
+  トップレベル（[../../todo.md](../../todo.md)「Resolved And Open Decisions」）にも
   登録済みである。パーサーは構文が許す範囲でのみドットの役割を解決する
   （仕様 [§A.2.5](../../../spec/ja/appendix_a.grammar_summary.md)「ドットの
   曖昧性解消」）: 複合予約トークンと登録済みユーザーシンボルは字句解析器が
-  所有し、selector 対 namespace の区別は変数スコープに依存して resolver が
-  確定する。未解決のドット連鎖を構文的に保つ `SurfaceAst` の形を、
-  `mizar-syntax` task 11 / crate-plan S-011 とともに決定する。
+  所有し、dotted qualified-name head は qualified surface として保持し、すでに parse
+  済みの term の後の `.` は selector/update postfix syntax になる。変数スコープに
+  依存する selector 対 namespace の区別は resolver-owned のまま残す。
 - **コーパスランナーの場所: task 3 で解決済み。** parse-only corpus execution
   は `mizar-test` に置く。`mizar-test` は discovery、expectation sidecar、
   traceability、CLI reporting に加えて active runner も意図的に所有する。
@@ -323,16 +323,25 @@ resolver / build-system 依存を避ける。
      `MalformedTermExpression` / `MissingTerm` / term delimiter recovery を追加し、
      parser unit test と active parse-only pass/fail corpus coverage を追加した。
 
-10. **selector access / update とドットの役割の surface 形状。** [ ]
-    - selector access / update の連鎖（`p.x`、`line.end.y`、`p.x := t`）と
-      functional structure update（`p with (...)`）、および未解決ドット連鎖の
-      表現。ドットの役割の surface 形状の決定
+10. **selector access / update とドットの役割の surface 形状。** [x]
+    - selector access / selector-call の連鎖（`p.x`、`line.finish.y`、
+      `M.binop(x, y)`）、functional structure update（`p with (...)`）、および
+      syntax-only dot-role representation。selector-update surface vocabulary は
+      導入するが、`p.x := t` のような standalone in-place assignment は後続の
+      statement / algorithm host に残す。ドットの役割の surface 形状の決定
       （「解決済みおよび保留中の決定」を参照）を解決し、
       [grammar.md](./grammar.md)、仕様の付録、トップレベルの決定一覧に
       記録する。
     - 依存: 9、`mizar-syntax` task 11 / S-011。仕様:
       [13.term_expression.md](../../../spec/ja/13.term_expression.md)、
       [§A.2.5](../../../spec/ja/appendix_a.grammar_summary.md)。
+   - 結果: syntax-only の `SelectorAccess`、`StructureUpdate`、`FieldUpdate`
+     surface を term postfix chain として実装した。selector-call argument list、
+     left-associative selector nesting、functional structure update list、
+     malformed selector / update syntax の `MalformedTermExpression` recovery、
+     update value 欠落の `MissingTerm`、active parse-only pass/fail corpus
+     coverage、traceability entry を追加した。standalone `p.x := t` は後続の
+     statement / algorithm host の担当として残す。
 
 11. **`qua` 修飾。** [ ]
     - selector と適用形に対する優先順位を持つ `term qua type_expression`。

@@ -580,7 +580,11 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "fail_parser_missing_semicolon_001",
             "fail_parser_primary_terms_missing_delimiter_001",
             "fail_parser_primary_terms_missing_term_001",
+            "fail_parser_selector_call_missing_close_001",
+            "fail_parser_selector_missing_name_001",
             "fail_parser_stray_end_001",
+            "fail_parser_structure_update_missing_close_001",
+            "fail_parser_structure_update_missing_value_001",
             "fail_parser_type_expression_malformed_001",
             "fail_parser_type_expression_missing_bracket_001",
             "fail_parser_unexpected_top_level_token_001",
@@ -592,6 +596,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_minimal_token_stream_001",
             "pass_parser_module_skeleton_001",
             "pass_parser_primary_terms_001",
+            "pass_parser_selector_updates_001",
             "pass_parser_type_expressions_001",
         ]
     );
@@ -642,8 +647,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 27);
-    assert_eq!(report.passed_count(), 27);
+    assert_eq!(report.results.len(), 32);
+    assert_eq!(report.passed_count(), 32);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_export_visibility_001"
@@ -726,8 +731,24 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
             && result.actual_diagnostic_codes == vec!["malformed_term_expression".to_owned()]
     }));
     assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_selector_call_missing_close_001"
+            && result.actual_diagnostic_codes == vec!["malformed_term_expression".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_selector_missing_name_001"
+            && result.actual_diagnostic_codes == vec!["malformed_term_expression".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_parser_stray_end_001"
             && result.actual_diagnostic_codes == vec!["unrecoverable_input".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_structure_update_missing_close_001"
+            && result.actual_diagnostic_codes == vec!["malformed_term_expression".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_structure_update_missing_value_001"
+            && result.actual_diagnostic_codes == vec!["malformed_term_expression".to_owned()]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_parser_unexpected_top_level_token_001"
@@ -739,6 +760,10 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_primary_terms_001" && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_selector_updates_001"
+            && result.actual_diagnostic_codes.is_empty()
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_type_expressions_001"
@@ -855,8 +880,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 27"));
-    assert!(stdout.contains("passed: 27"));
+    assert!(stdout.contains("parse-only cases: 32"));
+    assert!(stdout.contains("passed: 32"));
     assert!(stdout.contains("failed: 0"));
 }
 

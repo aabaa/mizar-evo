@@ -81,6 +81,13 @@ Current behavior:
   type-expression recovery (`MalformedTypeExpression` plus
   `MissingTypeExpression`) because the missing child is the choice term's type
   operand;
+- task-10 selector/update parsing diagnoses malformed selector postfixes,
+  selector-call arguments, and functional update lists with
+  `MalformedTermExpression`. Missing field-update values insert `MissingTerm`.
+  Selector-call and functional-update delimiters that reach synchronization
+  before the expected closer get `MalformedTermExpression`, a secondary opener
+  anchor, and `UnmatchedOpeningDelimiter` recovery under the nearest
+  selector/update term node;
 - a stray `end` that has no matching block opener returns syntax diagnostics
   with `ast = None`.
 

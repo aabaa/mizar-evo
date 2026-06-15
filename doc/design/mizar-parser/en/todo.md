@@ -106,16 +106,16 @@ parse-only runner and the relevant productions exist.
   chapter and the appendix (English and Japanese together) as part of that
   task rather than deferring. Grammar brush-up proceeds alongside
   implementation, not ahead of it.
-- **Dot-role surface shape: open, resolved by task 10.** Also registered at
-  the top level ([../../todo.md](../../todo.md) "Resolved And Open Decisions")
-  because it spans `mizar-parser`, `mizar-syntax`, and the future resolver.
-  The parser resolves dot roles only as far as syntax allows (spec
-  [§A.2.5](../../../spec/en/appendix_a.grammar_summary.md) "Dot
+- **Dot-role surface shape: resolved for parser/syntax by task 10.** Also
+  registered at the top level ([../../todo.md](../../todo.md) "Resolved And
+  Open Decisions") because it spans `mizar-parser`, `mizar-syntax`, and the
+  future resolver. The parser resolves dot roles only as far as syntax allows
+  (spec [§A.2.5](../../../spec/en/appendix_a.grammar_summary.md) "Dot
   disambiguation"): compound reserved tokens and registered user symbols are
-  lexer-owned; selector-versus-namespace separation depends on variable scope
-  and is finalized by the resolver. Decide the `SurfaceAst` shape that keeps
-  unresolved dot chains syntactic, with `mizar-syntax` task 11 / crate-plan
-  S-011.
+  lexer-owned, dotted qualified-name heads stay qualified surfaces, and `.`
+  after an already parsed term becomes selector/update postfix syntax.
+  Selector-versus-namespace separation that depends on variable scope remains
+  resolver-owned.
 - **Corpus runner location: resolved by task 3.** Parse-only corpus execution
   lives in `mizar-test`, which now deliberately owns the active runner in
   addition to discovery, expectation sidecars, traceability, and CLI reporting.
@@ -338,16 +338,25 @@ older numeric syntax task references appear to disagree, prefer
      `MalformedTermExpression` / `MissingTerm` / term-delimiter recovery, and
      shipped parser unit tests plus active parse-only pass/fail corpus coverage.
 
-10. **Selector access/update and the dot-role surface shape.** [ ]
-    - Selector access and update chains (`p.x`, `line.end.y`, `p.x := t`) and
-      functional structure updates (`p with (...)`), plus the unresolved-dot-chain
-      representation. Resolve the dot-role
+10. **Selector access/update and the dot-role surface shape.** [x]
+    - Selector access and selector-call chains (`p.x`, `line.finish.y`,
+      `M.binop(x, y)`), functional structure updates (`p with (...)`), and the
+      syntax-only dot-role representation. Introduce the selector-update
+      surface vocabulary, but keep standalone in-place assignments such as
+      `p.x := t` with their later statement/algorithm hosts. Resolve the dot-role
       surface-shape decision (see Resolved And Open Decisions) and record it
       in [grammar.md](./grammar.md), the spec appendix, and the top-level
       decision list.
     - Deps: 9, `mizar-syntax` task 11 / S-011. Spec:
       [13.term_expression.md](../../../spec/en/13.term_expression.md),
       [§A.2.5](../../../spec/en/appendix_a.grammar_summary.md).
+   - Result: implemented syntax-only `SelectorAccess`, `StructureUpdate`, and
+     `FieldUpdate` surfaces as term postfix chains, including selector-call
+     argument lists, left-associative selector nesting, functional structure
+     update lists, `MalformedTermExpression` recovery for malformed selector /
+     update syntax, `MissingTerm` for omitted update values, active parse-only
+     pass/fail corpus coverage, and traceability entries. Standalone
+     `p.x := t` remains assigned to later statement/algorithm hosts.
 
 11. **`qua` qualification.** [ ]
     - `term qua type_expression` with precedence against selector and

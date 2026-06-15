@@ -70,6 +70,9 @@ pub enum SyntaxKind {
     StructureConstructor = 35,
     FieldArgument = 36,
     SetEnumeration = 37,
+    SelectorAccess = 38,
+    StructureUpdate = 39,
+    FieldUpdate = 40,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -121,6 +124,9 @@ impl SyntaxKind {
             35 => Self::StructureConstructor,
             36 => Self::FieldArgument,
             37 => Self::SetEnumeration,
+            38 => Self::SelectorAccess,
+            39 => Self::StructureUpdate,
+            40 => Self::FieldUpdate,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -174,6 +180,9 @@ impl SyntaxKind {
                 | Self::StructureConstructor
                 | Self::FieldArgument
                 | Self::SetEnumeration
+                | Self::SelectorAccess
+                | Self::StructureUpdate
+                | Self::FieldUpdate
         )
     }
 
@@ -710,6 +719,9 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::StructureConstructor
             | SurfaceNodeKind::FieldArgument
             | SurfaceNodeKind::SetEnumeration
+            | SurfaceNodeKind::SelectorAccess
+            | SurfaceNodeKind::StructureUpdate
+            | SurfaceNodeKind::FieldUpdate
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -752,6 +764,9 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::StructureConstructor
             | SurfaceNodeKind::FieldArgument
             | SurfaceNodeKind::SetEnumeration
+            | SurfaceNodeKind::SelectorAccess
+            | SurfaceNodeKind::StructureUpdate
+            | SurfaceNodeKind::FieldUpdate
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -794,6 +809,9 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::StructureConstructor
             | SurfaceNodeKind::FieldArgument
             | SurfaceNodeKind::SetEnumeration
+            | SurfaceNodeKind::SelectorAccess
+            | SurfaceNodeKind::StructureUpdate
+            | SurfaceNodeKind::FieldUpdate
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -1000,6 +1018,27 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_selector_access(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::SelectorAccess => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_structure_update(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::StructureUpdate => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_field_update(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::FieldUpdate => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_module_path(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::ModulePath => Some(self),
@@ -1119,6 +1158,9 @@ impl SurfaceNode {
             | SurfaceNodeKind::StructureConstructor
             | SurfaceNodeKind::FieldArgument
             | SurfaceNodeKind::SetEnumeration
+            | SurfaceNodeKind::SelectorAccess
+            | SurfaceNodeKind::StructureUpdate
+            | SurfaceNodeKind::FieldUpdate
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -1165,6 +1207,9 @@ pub enum SurfaceNodeKind {
     StructureConstructor,
     FieldArgument,
     SetEnumeration,
+    SelectorAccess,
+    StructureUpdate,
+    FieldUpdate,
     ModulePath,
     NamespacePath,
     QualifiedSymbol,
@@ -1207,6 +1252,9 @@ impl SurfaceNodeKind {
             Self::StructureConstructor => SyntaxKind::StructureConstructor,
             Self::FieldArgument => SyntaxKind::FieldArgument,
             Self::SetEnumeration => SyntaxKind::SetEnumeration,
+            Self::SelectorAccess => SyntaxKind::SelectorAccess,
+            Self::StructureUpdate => SyntaxKind::StructureUpdate,
+            Self::FieldUpdate => SyntaxKind::FieldUpdate,
             Self::ModulePath => SyntaxKind::ModulePath,
             Self::NamespacePath => SyntaxKind::NamespacePath,
             Self::QualifiedSymbol => SyntaxKind::QualifiedSymbol,
@@ -1335,6 +1383,9 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::StructureConstructor => output.push_str("StructureConstructor"),
         SurfaceNodeKind::FieldArgument => output.push_str("FieldArgument"),
         SurfaceNodeKind::SetEnumeration => output.push_str("SetEnumeration"),
+        SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
+        SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
+        SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
         SurfaceNodeKind::ModulePath => output.push_str("ModulePath"),
         SurfaceNodeKind::NamespacePath => output.push_str("NamespacePath"),
         SurfaceNodeKind::QualifiedSymbol => output.push_str("QualifiedSymbol"),
@@ -2350,6 +2401,9 @@ mod tests {
             SyntaxKind::StructureConstructor,
             SyntaxKind::FieldArgument,
             SyntaxKind::SetEnumeration,
+            SyntaxKind::SelectorAccess,
+            SyntaxKind::StructureUpdate,
+            SyntaxKind::FieldUpdate,
             SyntaxKind::ModulePath,
             SyntaxKind::NamespacePath,
             SyntaxKind::QualifiedSymbol,
@@ -2814,6 +2868,108 @@ mod tests {
             ast.node_view(sid(set_enumeration))
                 .unwrap()
                 .as_set_enumeration()
+                .is_some()
+        );
+    }
+
+    #[test]
+    fn task10_typed_accessors_cover_selector_and_update_nodes() {
+        let source_id = source_id(25);
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let base = builder.add_token(SurfaceTokenKind::Identifier, "p", range(source_id, 0, 1));
+        let dot = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".",
+            range(source_id, 1, 2),
+        );
+        let field = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 2, 3));
+        let with = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "with",
+            range(source_id, 4, 8),
+        );
+        let open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 9, 10),
+        );
+        let target = builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 10, 11));
+        let assign = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":=",
+            range(source_id, 12, 14),
+        );
+        let value = builder.add_token(SurfaceTokenKind::Identifier, "z", range(source_id, 15, 16));
+        let close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 16, 17),
+        );
+
+        let base_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 0, 1),
+            vec![base],
+        );
+        let selector_access = builder.add_node(
+            SurfaceNodeKind::SelectorAccess,
+            range(source_id, 0, 3),
+            vec![base_reference, dot, field],
+        );
+        let value_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 15, 16),
+            vec![value],
+        );
+        let value_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 15, 16),
+            vec![value_reference],
+        );
+        let field_update = builder.add_node(
+            SurfaceNodeKind::FieldUpdate,
+            range(source_id, 10, 16),
+            vec![target, assign, value_expression],
+        );
+        let structure_update = builder.add_node(
+            SurfaceNodeKind::StructureUpdate,
+            range(source_id, 0, 17),
+            vec![selector_access, with, open, field_update, close],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 17),
+            vec![
+                base,
+                dot,
+                field,
+                with,
+                open,
+                target,
+                assign,
+                value,
+                close,
+                structure_update,
+            ],
+        );
+        let ast = builder.finish(Some(root), None);
+
+        assert!(
+            ast.node_view(sid(selector_access))
+                .unwrap()
+                .as_selector_access()
+                .is_some()
+        );
+        assert!(
+            ast.node_view(sid(structure_update))
+                .unwrap()
+                .as_structure_update()
+                .is_some()
+        );
+        assert!(
+            ast.node_view(sid(field_update))
+                .unwrap()
+                .as_field_update()
                 .is_some()
         );
     }
@@ -3905,6 +4061,76 @@ mod tests {
             "}",
             range(source_id, 236, 237),
         );
+        let term_selector_base = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "p",
+            range(source_id, 238, 239),
+        );
+        let term_selector_dot = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".",
+            range(source_id, 239, 240),
+        );
+        let term_selector_name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(source_id, 240, 241),
+        );
+        let term_selector_call_open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 241, 242),
+        );
+        let term_selector_call_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 242, 243),
+        );
+        let term_update_base = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "p",
+            range(source_id, 244, 245),
+        );
+        let term_update_with = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "with",
+            range(source_id, 246, 250),
+        );
+        let term_update_open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 251, 252),
+        );
+        let term_update_field_start = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "start",
+            range(source_id, 252, 257),
+        );
+        let term_update_field_dot = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".",
+            range(source_id, 257, 258),
+        );
+        let term_update_field_name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(source_id, 258, 259),
+        );
+        let term_update_assign = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":=",
+            range(source_id, 260, 262),
+        );
+        let term_update_value = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "y",
+            range(source_id, 263, 264),
+        );
+        let term_update_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 264, 265),
+        );
         let expression = builder.add_node(
             SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
                 spelling: "++".into(),
@@ -4332,6 +4558,69 @@ mod tests {
             range(source_id, 232, 237),
             vec![set_enumeration],
         );
+        let selector_base_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 238, 239),
+            vec![term_selector_base],
+        );
+        let selector_access = builder.add_node(
+            SurfaceNodeKind::SelectorAccess,
+            range(source_id, 238, 243),
+            vec![
+                selector_base_reference,
+                term_selector_dot,
+                term_selector_name,
+                term_selector_call_open,
+                term_selector_call_close,
+            ],
+        );
+        let selector_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 238, 243),
+            vec![selector_access],
+        );
+        let update_base_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 244, 245),
+            vec![term_update_base],
+        );
+        let update_value_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 263, 264),
+            vec![term_update_value],
+        );
+        let update_value_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 263, 264),
+            vec![update_value_reference],
+        );
+        let field_update = builder.add_node(
+            SurfaceNodeKind::FieldUpdate,
+            range(source_id, 252, 264),
+            vec![
+                term_update_field_start,
+                term_update_field_dot,
+                term_update_field_name,
+                term_update_assign,
+                update_value_expression,
+            ],
+        );
+        let structure_update = builder.add_node(
+            SurfaceNodeKind::StructureUpdate,
+            range(source_id, 244, 265),
+            vec![
+                update_base_reference,
+                term_update_with,
+                term_update_open,
+                field_update,
+                term_update_close,
+            ],
+        );
+        let structure_update_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 244, 265),
+            vec![structure_update],
+        );
         let item_list = builder.add_node(
             SurfaceNodeKind::ItemList,
             range(source_id, 81, 154),
@@ -4349,7 +4638,7 @@ mod tests {
         );
         let root = builder.add_node(
             SurfaceNodeKind::Root,
-            range(source_id, 0, 237),
+            range(source_id, 0, 265),
             vec![
                 identifier,
                 reserved_word,
@@ -4429,6 +4718,20 @@ mod tests {
                 term_set_comma,
                 term_set_second,
                 term_set_close,
+                term_selector_base,
+                term_selector_dot,
+                term_selector_name,
+                term_selector_call_open,
+                term_selector_call_close,
+                term_update_base,
+                term_update_with,
+                term_update_open,
+                term_update_field_start,
+                term_update_field_dot,
+                term_update_field_name,
+                term_update_assign,
+                term_update_value,
+                term_update_close,
                 expression,
                 module_path,
                 namespace_path,
@@ -4444,6 +4747,8 @@ mod tests {
                 application_expression,
                 structure_expression,
                 set_expression,
+                selector_expression,
+                structure_update_expression,
                 recovery,
             ],
         );

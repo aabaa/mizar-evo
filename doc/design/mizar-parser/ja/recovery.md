@@ -77,6 +77,12 @@ recovery、task 8 の type-expression recovery、task 9 の primary-term recover
   `UnmatchedOpeningDelimiter` recovery を作る。`the` の後に type expression を持たない
   `ChoiceTerm` は、欠落している child が choice term の type operand であるため、
   type-expression recovery（`MalformedTypeExpression` と `MissingTypeExpression`）を使う。
+- task 10 の selector / update parsing は、malformed selector postfix、selector-call
+  argument、functional update list を `MalformedTermExpression` で診断する。field-update
+  value 欠落では `MissingTerm` を挿入する。selector-call と functional-update delimiter が
+  期待する closer より前に synchronization に到達した場合、`MalformedTermExpression`、
+  opener への secondary anchor、nearest selector/update term node 下の
+  `UnmatchedOpeningDelimiter` recovery を作る。
 - 対応する block opener を持たない裸の `end` は、構文診断とともに `ast = None` を返す。
 
 ## 公開 enum の互換性

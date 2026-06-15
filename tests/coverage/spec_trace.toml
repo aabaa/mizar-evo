@@ -818,6 +818,47 @@ required = true
 coverage = "pass"
 tests = [
   "tests/miz/pass/parser/pass_parser_primary_terms_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_selector_updates_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.13.selector_access.parser"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.3.2 Selector Access"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_selector_updates_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_selector_call_missing_close_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_selector_missing_name_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.13.structure_update.parser"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.3.3 Structure Update"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_selector_updates_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_structure_update_missing_close_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_structure_update_missing_value_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.02.lexical.dot_disambiguation.parser_surface"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.5.3 Dot Disambiguation"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/parser/pass_parser_selector_updates_001.expect.toml",
 ]
 
 [[requirement]]

@@ -62,13 +62,16 @@ every change here must keep `cargo test -p mizar-parser` and
   Keep `SurfaceAst` immutable,
   deterministic, and cheap to share so later `salsa` queries can use it as an
   output value without changing this crate's semantic-free boundary.
-- **Dot-role surface shape: open, owned by `mizar-parser` task 10.** The
-  parser cannot fully separate selector access from namespace separation
-  without the resolver (spec
-  [§A.2.5](../../../spec/en/appendix_a.grammar_summary.md)); the AST must
-  represent unresolved dot chains syntactically. Also registered at the top
-  level ([../../todo.md](../../todo.md) "Resolved And Open Decisions");
-  tracked in [../../mizar-parser/en/todo.md](../../mizar-parser/en/todo.md).
+- **Dot-role surface shape: resolved for parser/syntax by `mizar-parser` task
+  10.** The parser cannot fully separate selector access from namespace
+  separation without the resolver (spec
+  [§A.2.5](../../../spec/en/appendix_a.grammar_summary.md)); the AST therefore
+  keeps dotted qualified-name heads as qualified surfaces and parses `.` after
+  an already parsed term as a selector/update postfix. Scope-dependent
+  selector-versus-namespace classification remains resolver-owned. Also
+  registered at the top level ([../../todo.md](../../todo.md) "Resolved And
+  Open Decisions"); tracked in
+  [../../mizar-parser/en/todo.md](../../mizar-parser/en/todo.md).
 - **Public enum forward compatibility: open, initially resolved by the
   pre-consumer gate.** Apply the same per-enum `#[non_exhaustive]`-versus-
   exhaustive decision procedure that `mizar-frontend` task 25 established
@@ -303,8 +306,8 @@ interaction. Spec references are the normative grammar chapters under
 
 11. **Term nodes.** [ ] — paired with `mizar-parser` tasks 9-12 and 15.
    - Consume the shared path vocabulary introduced by task 9. Then add primary
-     terms (parser task 9), unresolved dot chains and selector access/update
-     (parser task 10, including the dot-role surface shape decision), functional
+     terms (parser task 9), syntax-only dot-role and selector access/update
+     surfaces (parser task 10), functional
      structure updates, `qua` (parser task 11), operator-expression nodes
      generalizing the task-12 `InfixExpression` to prefix/postfix forms (parser
      task 12), and Fraenkel/set-builder forms (parser task 15). Primary-term
@@ -315,8 +318,11 @@ interaction. Spec references are the normative grammar chapters under
      `ParenthesizedTerm`, `ChoiceTerm`, `ApplicationTerm`,
      `StructureConstructor`, `FieldArgument`, and `SetEnumeration`, plus
      `MalformedTermExpression`, `MissingTerm` recovery coverage, and active
-     parse-only primary-term corpus cases. S-011 remains open for parser tasks
-     10-12 and 15.
+     parse-only primary-term corpus cases. Parser task 10 has landed the
+     syntax-only dot-role increment: `SelectorAccess`, `StructureUpdate`, and
+     `FieldUpdate`, selector/update recovery coverage, and active parse-only
+     selector/update corpus cases. S-011 remains open for parser tasks 11, 12,
+     and 15.
    - Spec: [13.term_expression.md](../../../spec/en/13.term_expression.md),
      [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md).
 

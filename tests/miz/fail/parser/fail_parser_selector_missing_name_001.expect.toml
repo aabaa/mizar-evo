@@ -1,0 +1,19 @@
+schema_version = 1
+id = "fail_parser_selector_missing_name_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.selector_updates"
+source = "fail_parser_selector_missing_name_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "missing_selector_name"
+stable_detail_key = "parser.selector_updates.missing_selector_name"
+diagnostic_codes = [
+  "malformed_term_expression",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = [
+  "spec.en.13.selector_access.parser",
+]
+notes = "Active parse-only runner coverage for parser task 10 malformed selector postfix recovery when `.` is not followed by an identifier selector name."

@@ -130,6 +130,9 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 35 | `StructureConstructor` | task-9 named-field structure-constructor surface |
 | 36 | `FieldArgument` | task-9 structure-constructor field argument |
 | 37 | `SetEnumeration` | task-9 set-enumeration term |
+| 38 | `SelectorAccess` | task-10 selector postfix and selector-call surface |
+| 39 | `StructureUpdate` | task-10 functional structure-update postfix |
+| 40 | `FieldUpdate` | task-10 structure-update field assignment |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -185,6 +188,9 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::StructureConstructor` | none | `SyntaxKind::StructureConstructor` | parser task-9 syntax-only structure-constructor surface when named field arguments are visible |
 | `SurfaceNodeKind::FieldArgument` | none | `SyntaxKind::FieldArgument` | parser task-9 `identifier ":" term_expression` field argument |
 | `SurfaceNodeKind::SetEnumeration` | none | `SyntaxKind::SetEnumeration` | parser task-9 set-enumeration term; Fraenkel/comprehension forms are parser task 15 |
+| `SurfaceNodeKind::SelectorAccess` | none | `SyntaxKind::SelectorAccess` | parser task-10 postfix selector access or selector-call surface; preserves syntax-only dot role |
+| `SurfaceNodeKind::StructureUpdate` | none | `SyntaxKind::StructureUpdate` | parser task-10 functional `term "with" "(" field_update_list ")"` update surface |
+| `SurfaceNodeKind::FieldUpdate` | none | `SyntaxKind::FieldUpdate` | parser task-10 `selector ":=" term_expression` field update inside `StructureUpdate` |
 | `SurfaceNodeKind::ModulePath` | none | `SyntaxKind::ModulePath` | `module_path`; optional `RelativePrefix`, first `PathSegment`, then repeated `.` token plus `PathSegment`; only this path shape may contain `RelativePrefix` |
 | `SurfaceNodeKind::NamespacePath` | none | `SyntaxKind::NamespacePath` | `namespace_path`; first `PathSegment`, then repeated `.` token plus identifier `PathSegment`; relative prefixes are not allowed |
 | `SurfaceNodeKind::QualifiedSymbol` | none | `SyntaxKind::QualifiedSymbol` | `qualified_symbol`; zero or more identifier namespace `PathSegment` + `.` token pairs followed by a final user-symbol `PathSegment`, or the task-8 attribute-ref flattening where dotted prefix `PathSegment`s may also be user-symbol tokens before the final user-symbol |
@@ -341,6 +347,18 @@ parser task 15. `SurfaceNodeView` exposes typed `as_term_expression`,
 `as_parenthesized_term`, `as_choice_term`, `as_application_term`,
 `as_structure_constructor`, `as_field_argument`, and `as_set_enumeration`
 helpers.
+
+Parser task 10 keeps the dot-role surface syntax-only. `SelectorAccess` owns
+the base term-shape child, a `.` token, an identifier field token, and optional
+call delimiters plus source-ordered `TermExpression` arguments separated by
+comma tokens. Chained selectors nest left-associatively. `StructureUpdate`
+owns the base term-shape child, the `with` token, `(`, `FieldUpdate` children
+separated by comma tokens, and optional `)`. `FieldUpdate` owns an identifier
+selector path (`identifier`, repeated `.` token plus identifier), the `:=`
+token, and a `TermExpression` or `MissingTerm` recovery. These nodes do not
+decide selector-versus-namespace roles using scope, and they do not represent
+standalone statement or algorithm assignments. `SurfaceNodeView` exposes typed
+`as_selector_access`, `as_structure_update`, and `as_field_update` helpers.
 
 ### Vocabulary Increment Contract
 

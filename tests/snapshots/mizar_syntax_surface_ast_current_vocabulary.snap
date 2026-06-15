@@ -1,6 +1,6 @@
 surface-ast-snapshot-v1
 root:
-  Root range=0..237 recovered=false
+  Root range=0..265 recovered=false
     Token kind=Identifier text="id" range=0..2 recovered=false
     Token kind=ReservedWord text="theorem" range=3..10 recovered=false
     Token kind=ReservedSymbol text=";" range=10..11 recovered=false
@@ -79,6 +79,20 @@ root:
     Token kind=ReservedSymbol text="," range=234..235 recovered=false
     Token kind=Identifier text="b" range=235..236 recovered=false
     Token kind=ReservedSymbol text="}" range=236..237 recovered=false
+    Token kind=Identifier text="p" range=238..239 recovered=false
+    Token kind=ReservedSymbol text="." range=239..240 recovered=false
+    Token kind=Identifier text="x" range=240..241 recovered=false
+    Token kind=ReservedSymbol text="(" range=241..242 recovered=false
+    Token kind=ReservedSymbol text=")" range=242..243 recovered=false
+    Token kind=Identifier text="p" range=244..245 recovered=false
+    Token kind=ReservedWord text="with" range=246..250 recovered=false
+    Token kind=ReservedSymbol text="(" range=251..252 recovered=false
+    Token kind=Identifier text="start" range=252..257 recovered=false
+    Token kind=ReservedSymbol text="." range=257..258 recovered=false
+    Token kind=Identifier text="x" range=258..259 recovered=false
+    Token kind=ReservedSymbol text=":=" range=260..262 recovered=false
+    Token kind=Identifier text="y" range=263..264 recovered=false
+    Token kind=ReservedSymbol text=")" range=264..265 recovered=false
     InfixExpression spelling="++" precedence=10 associativity=Right range=0..21 recovered=false
       Token kind=Identifier text="id" range=0..2 recovered=false
       Token kind=UserSymbol text="++" range=19..21 recovered=false
@@ -229,6 +243,29 @@ root:
           TermReference range=235..236 recovered=false
             Token kind=Identifier text="b" range=235..236 recovered=false
         Token kind=ReservedSymbol text="}" range=236..237 recovered=false
+    TermExpression range=238..243 recovered=false
+      SelectorAccess range=238..243 recovered=false
+        TermReference range=238..239 recovered=false
+          Token kind=Identifier text="p" range=238..239 recovered=false
+        Token kind=ReservedSymbol text="." range=239..240 recovered=false
+        Token kind=Identifier text="x" range=240..241 recovered=false
+        Token kind=ReservedSymbol text="(" range=241..242 recovered=false
+        Token kind=ReservedSymbol text=")" range=242..243 recovered=false
+    TermExpression range=244..265 recovered=false
+      StructureUpdate range=244..265 recovered=false
+        TermReference range=244..245 recovered=false
+          Token kind=Identifier text="p" range=244..245 recovered=false
+        Token kind=ReservedWord text="with" range=246..250 recovered=false
+        Token kind=ReservedSymbol text="(" range=251..252 recovered=false
+        FieldUpdate range=252..264 recovered=false
+          Token kind=Identifier text="start" range=252..257 recovered=false
+          Token kind=ReservedSymbol text="." range=257..258 recovered=false
+          Token kind=Identifier text="x" range=258..259 recovered=false
+          Token kind=ReservedSymbol text=":=" range=260..262 recovered=false
+          TermExpression range=263..264 recovered=false
+            TermReference range=263..264 recovered=false
+              Token kind=Identifier text="y" range=263..264 recovered=false
+        Token kind=ReservedSymbol text=")" range=264..265 recovered=false
     ErrorRecovery kind=MissingEnd range=89..89 recovered=true
       Token kind=ReservedWord text="theorem" range=3..10 recovered=false
 expression_root:
@@ -315,3 +352,17 @@ token_nodes:
   Token kind=ReservedSymbol text="," range=234..235 recovered=false
   Token kind=Identifier text="b" range=235..236 recovered=false
   Token kind=ReservedSymbol text="}" range=236..237 recovered=false
+  Token kind=Identifier text="p" range=238..239 recovered=false
+  Token kind=ReservedSymbol text="." range=239..240 recovered=false
+  Token kind=Identifier text="x" range=240..241 recovered=false
+  Token kind=ReservedSymbol text="(" range=241..242 recovered=false
+  Token kind=ReservedSymbol text=")" range=242..243 recovered=false
+  Token kind=Identifier text="p" range=244..245 recovered=false
+  Token kind=ReservedWord text="with" range=246..250 recovered=false
+  Token kind=ReservedSymbol text="(" range=251..252 recovered=false
+  Token kind=Identifier text="start" range=252..257 recovered=false
+  Token kind=ReservedSymbol text="." range=257..258 recovered=false
+  Token kind=Identifier text="x" range=258..259 recovered=false
+  Token kind=ReservedSymbol text=":=" range=260..262 recovered=false
+  Token kind=Identifier text="y" range=263..264 recovered=false
+  Token kind=ReservedSymbol text=")" range=264..265 recovered=false

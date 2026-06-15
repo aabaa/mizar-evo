@@ -1,0 +1,17 @@
+schema_version = 1
+id = "pass_parser_selector_updates_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.selector_updates"
+source = "pass_parser_selector_updates_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.02.lexical.dot_disambiguation.parser_surface",
+  "spec.en.13.structure_expressions.parser",
+  "spec.en.13.selector_access.parser",
+  "spec.en.13.structure_update.parser",
+]
+notes = "Active parse-only runner coverage for parser task 10 selector access chains, selector calls, and functional structure update surface nodes."

@@ -118,7 +118,11 @@ where while with
 
 文字列リテラルは、文字列引数を要求する文法位置でのみ認識されます。現在は演算子宣言と文字列値 annotation が該当します。それ以外の位置では、引用符は通常の識別子またはユーザーシンボルの字句解析に参加します。
 
-`.` が複合予約 token または active user symbol として消費されない場合、parser と resolver は、第 2 章で説明される文脈に従って selector access/update または namespace separator として分類します。
+`.` が複合予約 token または active user symbol として消費されない場合、
+parser は現在の文法位置で見える syntax-only surface を保持します。すでに parse 済みの
+term の後にある `.` は selector/update postfix であり、qualified-name head 内の
+`.` はその qualified surface の一部として残します。resolver は第 2 章で説明する
+scope-dependent な selector-versus-namespace classification を後で適用します。
 
 固定 annotation name と option name は文脈限定 spelling であり、その文法位置の
 外では予約識別子ではありません。現在の文脈限定 spelling は `auto`, `cvc5`,

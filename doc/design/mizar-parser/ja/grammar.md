@@ -368,6 +368,37 @@ bracket `type_arg_list` は引き続き nested `TypeExpression` child と `qua_a
 `TermPlaceholder` child を保持する。parser unit test と active parse-only pass/fail
 corpus case は、上記の primary-term 形と recovery 挙動を cover する。
 
+Task 10 は semantic lookup を追加せずに parser/syntax の dot-role surface 形状を
+解決する。incoming token kind が qualified symbol をすでに露出している dotted
+qualified-name head は `QualifiedSymbol` のまま保持する。すでに parse 済みの term の後に
+reserved `.` が来る場合は postfix selector surface とする。parser は scope を使って
+spelling が namespace segment なのか selected field なのかを判断しない。その分類は
+resolver phase の責務である。
+
+task 10 でも `TermExpression` は current term-shape child を 1 個所有するが、その child は
+primary term または nested postfix chain になり得る。`SelectorAccess` は base term-shape
+child、`.` token、identifier field token、任意の parenthesized argument list を保持する。
+selector chain は left-associative に nest するため、`line.finish.y` は base が
+`line.finish` selector の selector である。`StructureUpdate` は base term-shape child、
+`with` token、delimiter、source-order `FieldUpdate` children、comma token を保持する。
+`FieldUpdate` は identifier selector path、`:=` token、value の `TermExpression` または
+`MissingTerm` recovery を所有する。selector path は `field_name` に合わせて identifier
+だけを使い、example と test は `end` のような reserved-word field name を避ける。
+
+Task 10 は task 9 の term parser に現在到達できる位置で `p with (x := y)` のような
+functional update term を parse する。`p.x := t` のような standalone in-place selector
+assignment は statement / algorithm host が後続 parser task の責務であるため parse しない。
+leading `with (...)` は `with` が `term_primary` ではなく postfix なので malformed のままにする。
+malformed selector / update syntax は `MalformedTermExpression` を使う。update value 欠落は
+`MissingTerm` を挿入し、`)` delimiter 欠落は nearest selector/update term node の下で
+`UnmatchedOpeningDelimiter` を使う。
+
+Task 10 result: selector/update postfix parsing は module grammar に実装済みである。
+unit coverage は selector chain と call、functional update list、update value 欠落、
+update delimiter 欠落、selector argument 後の structure-constructor field-list boundary を
+pin する。active parse-only pass/fail fixture は frontend seam を cover し、§2.5.3 と
+§13.3.2-13.3.3 に trace back する。
+
 ## 公開 enum の互換性
 
 `ParserTokenKind` は downstream crate 向けに `#[non_exhaustive]` とする。parser-facing

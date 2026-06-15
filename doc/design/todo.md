@@ -157,14 +157,12 @@ ownership in [01.ir_layers.md](./architecture/en/01.ir_layers.md).
   and the lexer never receives arbitrary parser state. The plan covers
   grammar-position string literals and parser-driven user-symbol kind filters,
   including Unicode inside annotation string arguments.
-- **Dot-role surface shape: open.** The parser resolves dot roles only as far
-  as syntax allows (spec
-  [§A.2.5](../spec/en/appendix_a.grammar_summary.md)): selector-versus-namespace
-  separation depends on variable scope and is finalized by the resolver, so
-  `mizar-syntax` must represent unresolved dot chains syntactically. This
-  decision spans `mizar-parser`, `mizar-syntax`, and `mizar-resolve`; it is
-  owned by [mizar-parser/en/todo.md](./mizar-parser/en/todo.md) task 10
-  together with `mizar-syntax` task 8, and closed by
+- **Dot-role surface shape: resolved for parser/syntax.** The parser resolves
+  dot roles only as far as syntax allows (spec
+  [§A.2.5](../spec/en/appendix_a.grammar_summary.md)): dotted qualified-name
+  heads remain qualified surfaces, while `.` after an already parsed term is a
+  selector/update postfix. Selector-versus-namespace separation that depends on
+  variable scope remains resolver-owned and is finalized by
   [mizar-resolve/en/todo.md](./mizar-resolve/en/todo.md) task 16.
 - **Syntax tree backend: resolved, rowan-backed.** `mizar-syntax` now owns a
   rowan-backed `SurfaceAst` storage boundary before parser node vocabulary and

@@ -387,6 +387,40 @@ terms; bracket `type_arg_list` still keeps nested `TypeExpression` children and
 pass/fail corpus cases cover the primary-term forms and recovery behavior
 listed above.
 
+Task 10 resolves the parser/syntax dot-role surface shape without adding
+semantic lookup. A dotted qualified-name head remains a `QualifiedSymbol` when
+the incoming token kinds already expose a qualified symbol. A reserved `.`
+after an already parsed term is a postfix selector surface. The parser does
+not decide whether a spelling is a namespace segment or a selected field using
+scope; resolver phases own that classification.
+
+For task 10, `TermExpression` still owns one current term-shape child, but that
+child may now be a primary term or a nested postfix chain. `SelectorAccess`
+preserves the base term-shape child, the `.` token, an identifier field token,
+and an optional parenthesized argument list. Chained selectors nest
+left-associatively, so `line.finish.y` is a selector whose base is the selector
+`line.finish`. `StructureUpdate` preserves a base term-shape child, the `with`
+token, delimiters, source-ordered `FieldUpdate` children, and comma tokens.
+`FieldUpdate` owns an identifier selector path, the `:=` token, and a
+`TermExpression` or `MissingTerm` recovery for the value. The selector path
+uses identifiers only, matching `field_name`; examples and tests avoid
+reserved-word field names such as `end`.
+
+Task 10 parses functional update terms such as `p with (x := y)` wherever the
+task-9 term parser is currently reachable. It does not parse standalone
+in-place selector assignments such as `p.x := t`, because statement and
+algorithm hosts are owned by later parser tasks. A leading `with (...)` remains
+malformed because `with` is a postfix, not a `term_primary`. Malformed selector
+or update syntax uses `MalformedTermExpression`; missing update values insert
+`MissingTerm`; missing `)` delimiters use `UnmatchedOpeningDelimiter` under
+the nearest selector/update term node.
+
+Task 10 result: selector/update postfix parsing is implemented in the module
+grammar. Unit coverage pins selector chains and calls, functional update lists,
+missing update values, missing update delimiters, and the structure-constructor
+field-list boundary after selector arguments. Active parse-only pass/fail
+fixtures cover the frontend seam and trace back to §2.5.3 and §13.3.2-13.3.3.
+
 ## Public Enum Compatibility
 
 `ParserTokenKind` is `#[non_exhaustive]` for downstream crates. The parser token

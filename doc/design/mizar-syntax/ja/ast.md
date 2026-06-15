@@ -129,6 +129,9 @@ token payload を保持してよいが、それによって rowan tree 内の to
 | 35 | `StructureConstructor` | task-9 named-field structure-constructor surface |
 | 36 | `FieldArgument` | task-9 structure-constructor field argument |
 | 37 | `SetEnumeration` | task-9 set-enumeration term |
+| 38 | `SelectorAccess` | task-10 selector postfix / selector-call surface |
+| 39 | `StructureUpdate` | task-10 functional structure-update postfix |
+| 40 | `FieldUpdate` | task-10 structure-update field assignment |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -184,6 +187,9 @@ S-010 の reserve / type node kind、さらに上に列挙した task S-011 の 
 | `SurfaceNodeKind::StructureConstructor` | なし | `SyntaxKind::StructureConstructor` | parser task 9 の、named field argument が見える場合の syntax-only structure-constructor surface |
 | `SurfaceNodeKind::FieldArgument` | なし | `SyntaxKind::FieldArgument` | parser task 9 の `identifier ":" term_expression` field argument |
 | `SurfaceNodeKind::SetEnumeration` | なし | `SyntaxKind::SetEnumeration` | parser task 9 の set-enumeration term。Fraenkel/comprehension form は parser task 15 |
+| `SurfaceNodeKind::SelectorAccess` | なし | `SyntaxKind::SelectorAccess` | parser task 10 の postfix selector access または selector-call surface。syntax-only dot role を保持する |
+| `SurfaceNodeKind::StructureUpdate` | なし | `SyntaxKind::StructureUpdate` | parser task 10 の functional `term "with" "(" field_update_list ")"` update surface |
+| `SurfaceNodeKind::FieldUpdate` | なし | `SyntaxKind::FieldUpdate` | parser task 10 の、`StructureUpdate` 内の `selector ":=" term_expression` field update |
 | `SurfaceNodeKind::ModulePath` | なし | `SyntaxKind::ModulePath` | `module_path`。任意の `RelativePrefix`、最初の `PathSegment`、続く `.` token + `PathSegment` の反復。この path 形だけが `RelativePrefix` を持てる |
 | `SurfaceNodeKind::NamespacePath` | なし | `SyntaxKind::NamespacePath` | `namespace_path`。最初の `PathSegment`、続く `.` token + identifier `PathSegment` の反復。相対 prefix は許さない |
 | `SurfaceNodeKind::QualifiedSymbol` | なし | `SyntaxKind::QualifiedSymbol` | `qualified_symbol`。0 個以上の namespace identifier `PathSegment` + `.` token の組に最後の user-symbol `PathSegment` が続く形、または task 8 の attribute-ref flattening として、最後の user-symbol の前に user-symbol token の dotted prefix `PathSegment` も許す形 |
@@ -323,6 +329,17 @@ delimiter pair 自体が syntax-only head なので callee child を持たない
 `SurfaceNodeView` は `as_term_expression`、`as_term_reference`、`as_numeral_term`、
 `as_it_term`、`as_parenthesized_term`、`as_choice_term`、`as_application_term`、
 `as_structure_constructor`、`as_field_argument`、`as_set_enumeration` の typed helper を公開する。
+
+Parser task 10 は dot-role surface を syntax-only に保つ。`SelectorAccess` は
+base term-shape child、`.` token、identifier field token、任意の call delimiter と
+comma token で区切られた source-order `TermExpression` argument を所有する。
+selector chain は left-associative に nest する。`StructureUpdate` は base term-shape
+child、`with` token、`(`、comma token で区切られた `FieldUpdate` children、任意の `)` を
+所有する。`FieldUpdate` は identifier selector path（identifier、反復する `.` token +
+identifier）、`:=` token、`TermExpression` または `MissingTerm` recovery を所有する。
+これらの node は scope を使って selector-versus-namespace role を判断せず、standalone
+statement / algorithm assignment も表現しない。`SurfaceNodeView` は
+`as_selector_access`、`as_structure_update`、`as_field_update` の typed helper を公開する。
 
 ### 語彙増分の契約
 

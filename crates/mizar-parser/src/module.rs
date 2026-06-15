@@ -945,16 +945,8 @@ impl Parser {
         }
 
         let primary = self.parse_term_primary_at(position)?;
-        let id = self.events.emit(SyntaxEvent::Node {
-            kind: SurfaceNodeKind::TermExpression,
-            range: self.covering_token_range(position, primary.next_position),
-            children: vec![primary.id],
-        });
-        Some(ParsedTypeNode {
-            id,
-            next_position: primary.next_position.max(position + 1),
-            recovery_nodes: primary.recovery_nodes,
-        })
+        let term = self.parse_term_postfix_chain_at(position, primary);
+        Some(self.wrap_term_expression(position, term))
     }
 
     fn parse_term_expression_before_structure_field_list_at(
@@ -963,17 +955,26 @@ impl Parser {
     ) -> Option<ParsedTypeNode> {
         if self.is_identifier_at(position) && self.is_structure_field_list_opener_at(position + 1) {
             let primary = self.parse_identifier_reference_term_at(position);
-            return Some(self.wrap_term_expression(position, primary));
+            let term =
+                self.parse_term_postfix_chain_before_structure_field_list_at(position, primary);
+            return Some(self.wrap_term_expression(position, term));
         }
 
         if let Some(symbol_end) = self.qualified_symbol_next_at(position)
             && self.is_structure_field_list_opener_at(symbol_end)
         {
             let primary = self.parse_qualified_symbol_reference_term_at(position)?;
-            return Some(self.wrap_term_expression(position, primary));
+            let term =
+                self.parse_term_postfix_chain_before_structure_field_list_at(position, primary);
+            return Some(self.wrap_term_expression(position, term));
         }
 
-        self.parse_term_expression_at(position)
+        if self.is_term_expression_boundary_at(position) {
+            return None;
+        }
+        let primary = self.parse_term_primary_at(position)?;
+        let term = self.parse_term_postfix_chain_before_structure_field_list_at(position, primary);
+        Some(self.wrap_term_expression(position, term))
     }
 
     fn wrap_term_expression(&mut self, position: usize, primary: ParsedTypeNode) -> ParsedTypeNode {
@@ -987,6 +988,51 @@ impl Parser {
             next_position: primary.next_position.max(position + 1),
             recovery_nodes: primary.recovery_nodes,
         }
+    }
+
+    fn parse_term_postfix_chain_at(
+        &mut self,
+        start_position: usize,
+        primary: ParsedTypeNode,
+    ) -> ParsedTypeNode {
+        self.parse_term_postfix_chain(start_position, primary, false)
+    }
+
+    fn parse_term_postfix_chain_before_structure_field_list_at(
+        &mut self,
+        start_position: usize,
+        primary: ParsedTypeNode,
+    ) -> ParsedTypeNode {
+        self.parse_term_postfix_chain(start_position, primary, true)
+    }
+
+    fn parse_term_postfix_chain(
+        &mut self,
+        start_position: usize,
+        mut term: ParsedTypeNode,
+        stop_before_structure_field_list: bool,
+    ) -> ParsedTypeNode {
+        loop {
+            let cursor = term.next_position;
+            if stop_before_structure_field_list && self.is_structure_field_list_opener_at(cursor) {
+                break;
+            }
+            if self.is_reserved_symbol_at(cursor, ".") {
+                term = self.parse_selector_access_after_base(
+                    start_position,
+                    term,
+                    cursor,
+                    stop_before_structure_field_list,
+                );
+                continue;
+            }
+            if self.is_reserved_word_at(cursor, "with") {
+                term = self.parse_structure_update_after_base(start_position, term, cursor);
+                continue;
+            }
+            break;
+        }
+        term
     }
 
     fn parse_term_primary_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
@@ -1217,6 +1263,120 @@ impl Parser {
         }
     }
 
+    fn parse_selector_access_after_base(
+        &mut self,
+        start_position: usize,
+        base: ParsedTypeNode,
+        dot_position: usize,
+        stop_before_structure_field_list: bool,
+    ) -> ParsedTypeNode {
+        let mut children = vec![base.id, self.token_node_ids[dot_position]];
+        let mut recovery_nodes = base.recovery_nodes;
+        let mut cursor = dot_position + 1;
+        let mut has_selector_name = false;
+
+        if self.is_identifier_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            has_selector_name = true;
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected selector name after `.`");
+        }
+
+        if has_selector_name
+            && self.is_reserved_symbol_at(cursor, "(")
+            && !(stop_before_structure_field_list && self.is_structure_field_list_opener_at(cursor))
+        {
+            let opener = cursor;
+            children.push(self.token_node_ids[cursor]);
+            cursor = self.parse_term_list_until(
+                cursor + 1,
+                ")",
+                true,
+                None,
+                &mut children,
+                &mut recovery_nodes,
+            );
+            if self.is_reserved_symbol_at(cursor, ")") {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            } else {
+                self.diagnose_unmatched_term_delimiter(opener, cursor, ")");
+                let recovery = self.add_recovery_node(
+                    SyntaxRecoveryKind::UnmatchedOpeningDelimiter,
+                    self.zero_range_at(cursor),
+                    Vec::new(),
+                );
+                children.push(recovery);
+                recovery_nodes.push(recovery);
+            }
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::SelectorAccess,
+            range: self.covering_token_range(start_position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(dot_position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_structure_update_after_base(
+        &mut self,
+        start_position: usize,
+        base: ParsedTypeNode,
+        with_position: usize,
+    ) -> ParsedTypeNode {
+        let mut children = vec![base.id, self.token_node_ids[with_position]];
+        let mut recovery_nodes = base.recovery_nodes;
+        let mut cursor = with_position + 1;
+
+        if !self.is_reserved_symbol_at(cursor, "(") {
+            self.diagnose_malformed_term_expression(cursor, "expected `(` after `with`");
+            if let Some(recovery) = self.recover_malformed_term_tail(cursor, "") {
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+                cursor = recovery.next_position;
+            }
+        } else {
+            let opener = cursor;
+            children.push(self.token_node_ids[cursor]);
+            cursor = self.parse_field_update_list_until(
+                cursor + 1,
+                ")",
+                &mut children,
+                &mut recovery_nodes,
+            );
+            if self.is_reserved_symbol_at(cursor, ")") {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            } else {
+                self.diagnose_unmatched_term_delimiter(opener, cursor, ")");
+                let recovery = self.add_recovery_node(
+                    SyntaxRecoveryKind::UnmatchedOpeningDelimiter,
+                    self.zero_range_at(cursor),
+                    Vec::new(),
+                );
+                children.push(recovery);
+                recovery_nodes.push(recovery);
+            }
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::StructureUpdate,
+            range: self.covering_token_range(start_position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(with_position + 1),
+            recovery_nodes,
+        }
+    }
+
     fn parse_reserved_bracket_application_at(&mut self, position: usize) -> ParsedTypeNode {
         let mut children = vec![self.token_node_ids[position]];
         let mut recovery_nodes = Vec::new();
@@ -1366,6 +1526,78 @@ impl Parser {
 
         let id = self.events.emit(SyntaxEvent::Node {
             kind: SurfaceNodeKind::FieldArgument,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        Some(ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        })
+    }
+
+    fn parse_field_update_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        if !self.is_identifier_at(position) {
+            return None;
+        }
+
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+        let mut malformed_selector_path = false;
+        while self.is_reserved_symbol_at(cursor, ".") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            if self.is_identifier_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            } else {
+                self.diagnose_malformed_term_expression(
+                    cursor,
+                    "expected field selector after `.` in structure update",
+                );
+                malformed_selector_path = true;
+                break;
+            }
+        }
+
+        if !self.is_reserved_symbol_at(cursor, ":=") {
+            if malformed_selector_path {
+                let id = self.events.emit(SyntaxEvent::Node {
+                    kind: SurfaceNodeKind::FieldUpdate,
+                    range: self.covering_token_range(position, cursor),
+                    children,
+                });
+                return Some(ParsedTypeNode {
+                    id,
+                    next_position: cursor.max(position + 1),
+                    recovery_nodes,
+                });
+            }
+            return None;
+        }
+        children.push(self.token_node_ids[cursor]);
+        cursor += 1;
+
+        if let Some(term) = self.parse_term_expression_at(cursor) {
+            children.push(term.id);
+            recovery_nodes.extend(term.recovery_nodes);
+            cursor = term.next_position;
+        } else {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "expected term after field update `:=`",
+            );
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+            if let Some(recovery) = self.recover_malformed_term_tail(cursor, ")") {
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+                cursor = recovery.next_position;
+            }
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::FieldUpdate,
             range: self.covering_token_range(position, cursor),
             children,
         });
@@ -1527,6 +1759,83 @@ impl Parser {
 
         if expecting_argument && saw_argument {
             self.diagnose_malformed_term_expression(cursor, "expected field argument after `,`");
+        }
+        cursor
+    }
+
+    fn parse_field_update_list_until(
+        &mut self,
+        mut cursor: usize,
+        close_symbol: &str,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) -> usize {
+        let mut expecting_update = true;
+        let mut saw_update = false;
+        while cursor < self.request.tokens.len()
+            && !self.is_reserved_symbol_at(cursor, close_symbol)
+            && !self.is_term_argument_list_boundary_at(cursor)
+        {
+            if self.is_reserved_symbol_at(cursor, ",") {
+                if expecting_update {
+                    self.diagnose_malformed_term_expression(
+                        cursor,
+                        "expected field update before `,`",
+                    );
+                }
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+                expecting_update = true;
+                continue;
+            }
+
+            if let Some(update) = self.parse_field_update_at(cursor) {
+                children.push(update.id);
+                recovery_nodes.extend(update.recovery_nodes);
+                cursor = update.next_position;
+                expecting_update = false;
+                saw_update = true;
+            } else {
+                self.diagnose_malformed_term_expression(cursor, "expected field update");
+                if let Some(recovery) = self.recover_malformed_term_tail(cursor, close_symbol) {
+                    children.push(recovery.id);
+                    recovery_nodes.extend(recovery.recovery_nodes);
+                    cursor = recovery.next_position;
+                }
+                break;
+            }
+
+            if self.is_reserved_symbol_at(cursor, ",") {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+                expecting_update = true;
+            } else if self.is_reserved_symbol_at(cursor, close_symbol)
+                || self.is_term_argument_list_boundary_at(cursor)
+            {
+                break;
+            } else {
+                self.diagnose_malformed_term_expression(
+                    cursor,
+                    "expected `,` between field updates",
+                );
+                if let Some(recovery) = self.recover_malformed_term_tail(cursor, close_symbol) {
+                    children.push(recovery.id);
+                    recovery_nodes.extend(recovery.recovery_nodes);
+                    cursor = recovery.next_position;
+                }
+                break;
+            }
+        }
+
+        if expecting_update {
+            if saw_update {
+                self.diagnose_malformed_term_expression(cursor, "expected field update after `,`");
+            } else {
+                self.diagnose_malformed_term_expression(
+                    cursor,
+                    "expected field update before closing delimiter",
+                );
+            }
         }
         cursor
     }
@@ -4897,6 +5206,392 @@ mod tests {
                 matches!(ast.node(*id).unwrap().kind, SurfaceNodeKind::FieldArgument)
             })
         );
+    }
+
+    #[test]
+    fn parser_parses_selector_access_chains_and_calls() {
+        let source_id = source_id(124);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("p", ParserTokenKind::Identifier),
+                (".", ParserTokenKind::ReservedSymbol),
+                ("x", ParserTokenKind::Identifier),
+                (",", ParserTokenKind::ReservedSymbol),
+                ("line", ParserTokenKind::Identifier),
+                (".", ParserTokenKind::ReservedSymbol),
+                ("finish", ParserTokenKind::Identifier),
+                (".", ParserTokenKind::ReservedSymbol),
+                ("y", ParserTokenKind::Identifier),
+                (",", ParserTokenKind::ReservedSymbol),
+                ("M", ParserTokenKind::Identifier),
+                (".", ParserTokenKind::ReservedSymbol),
+                ("binop", ParserTokenKind::Identifier),
+                ("(", ParserTokenKind::ReservedSymbol),
+                ("a", ParserTokenKind::Identifier),
+                (",", ParserTokenKind::ReservedSymbol),
+                ("b", ParserTokenKind::Identifier),
+                (")", ParserTokenKind::ReservedSymbol),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "unexpected diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output.ast.expect("selector terms should parse");
+        assert_eq!(
+            ast.nodes()
+                .iter()
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::SelectorAccess))
+                .count(),
+            4
+        );
+        assert!(
+            ast.nodes()
+                .iter()
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::SelectorAccess))
+                .any(|node| {
+                    node.children
+                        .iter()
+                        .filter_map(|id| ast.node(*id))
+                        .filter_map(mizar_syntax::SurfaceNode::token_text)
+                        .collect::<Vec<_>>()
+                        == vec![".", "binop", "(", ",", ")"]
+                })
+        );
+    }
+
+    #[test]
+    fn parser_parses_functional_structure_updates() {
+        let source_id = source_id(125);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("p", ParserTokenKind::Identifier),
+                ("with", ParserTokenKind::ReservedWord),
+                ("(", ParserTokenKind::ReservedSymbol),
+                ("x", ParserTokenKind::Identifier),
+                (":=", ParserTokenKind::ReservedSymbol),
+                ("y", ParserTokenKind::Identifier),
+                (",", ParserTokenKind::ReservedSymbol),
+                ("start", ParserTokenKind::Identifier),
+                (".", ParserTokenKind::ReservedSymbol),
+                ("x", ParserTokenKind::Identifier),
+                (":=", ParserTokenKind::ReservedSymbol),
+                ("f", ParserTokenKind::Identifier),
+                ("(", ParserTokenKind::ReservedSymbol),
+                ("a", ParserTokenKind::Identifier),
+                (")", ParserTokenKind::ReservedSymbol),
+                (")", ParserTokenKind::ReservedSymbol),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "unexpected diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output.ast.expect("structure update should parse");
+        single_node(&ast, |kind| {
+            matches!(kind, SurfaceNodeKind::StructureUpdate)
+        });
+        assert_eq!(
+            ast.nodes()
+                .iter()
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::FieldUpdate))
+                .count(),
+            2
+        );
+        assert!(
+            ast.nodes()
+                .iter()
+                .any(|node| matches!(node.kind, SurfaceNodeKind::ApplicationTerm))
+        );
+    }
+
+    #[test]
+    fn parser_keeps_selector_arguments_before_structure_fields() {
+        let source_id = source_id(126);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("S", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("p", ParserTokenKind::Identifier),
+                (".", ParserTokenKind::ReservedSymbol),
+                ("x", ParserTokenKind::Identifier),
+                ("(", ParserTokenKind::ReservedSymbol),
+                ("f", ParserTokenKind::Identifier),
+                (":", ParserTokenKind::ReservedSymbol),
+                ("y", ParserTokenKind::Identifier),
+                (")", ParserTokenKind::ReservedSymbol),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "unexpected diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("selector type arg before fields should parse");
+        let constructor = single_node(&ast, |kind| {
+            matches!(kind, SurfaceNodeKind::StructureConstructor)
+        });
+        assert!(
+            constructor.children.iter().any(|id| {
+                matches!(ast.node(*id).unwrap().kind, SurfaceNodeKind::FieldArgument)
+            })
+        );
+        single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::SelectorAccess));
+    }
+
+    #[test]
+    fn parser_recovers_missing_structure_update_value() {
+        let source_id = source_id(127);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("p", ParserTokenKind::Identifier),
+                ("with", ParserTokenKind::ReservedWord),
+                ("(", ParserTokenKind::ReservedSymbol),
+                ("x", ParserTokenKind::Identifier),
+                (":=", ParserTokenKind::ReservedSymbol),
+                (")", ParserTokenKind::ReservedSymbol),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let close_range = tokens[10].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedTermExpression
+        );
+        assert_eq!(output.diagnostics[0].primary, close_range);
+        let ast = output.ast.expect("missing update value should recover");
+        let field_update = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::FieldUpdate));
+        assert!(field_update.children.iter().any(|id| {
+            matches!(
+                ast.node(*id).unwrap().kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingTerm)
+            )
+        }));
+    }
+
+    #[test]
+    fn parser_recovers_missing_structure_update_close() {
+        let source_id = source_id(128);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("p", ParserTokenKind::Identifier),
+                ("with", ParserTokenKind::ReservedWord),
+                ("(", ParserTokenKind::ReservedSymbol),
+                ("x", ParserTokenKind::Identifier),
+                (":=", ParserTokenKind::ReservedSymbol),
+                ("y", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let semicolon_range = tokens[11].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedTermExpression
+        );
+        assert_eq!(output.diagnostics[0].primary, semicolon_range);
+        let ast = output.ast.expect("missing update close should recover");
+        let structure_update = single_node(&ast, |kind| {
+            matches!(kind, SurfaceNodeKind::StructureUpdate)
+        });
+        assert!(structure_update.children.iter().any(|id| {
+            matches!(
+                ast.node(*id).unwrap().kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::UnmatchedOpeningDelimiter)
+            )
+        }));
+    }
+
+    #[test]
+    fn parser_recovers_missing_selector_name() {
+        let source_id = source_id(129);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("p", ParserTokenKind::Identifier),
+                (".", ParserTokenKind::ReservedSymbol),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let semicolon_range = tokens[7].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedTermExpression
+        );
+        assert_eq!(output.diagnostics[0].primary, semicolon_range);
+        let ast = output.ast.expect("missing selector name should recover");
+        single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::SelectorAccess));
+    }
+
+    #[test]
+    fn parser_recovers_missing_selector_call_close() {
+        let source_id = source_id(130);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("p", ParserTokenKind::Identifier),
+                (".", ParserTokenKind::ReservedSymbol),
+                ("f", ParserTokenKind::Identifier),
+                ("(", ParserTokenKind::ReservedSymbol),
+                ("a", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let semicolon_range = tokens[10].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedTermExpression
+        );
+        assert_eq!(output.diagnostics[0].primary, semicolon_range);
+        let ast = output
+            .ast
+            .expect("missing selector-call close should recover");
+        let selector = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::SelectorAccess));
+        assert!(selector.children.iter().any(|id| {
+            matches!(
+                ast.node(*id).unwrap().kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::UnmatchedOpeningDelimiter)
+            )
+        }));
+    }
+
+    #[test]
+    fn parser_recovers_malformed_structure_update_selector_path_once() {
+        let source_id = source_id(131);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("p", ParserTokenKind::Identifier),
+                ("with", ParserTokenKind::ReservedWord),
+                ("(", ParserTokenKind::ReservedSymbol),
+                ("start", ParserTokenKind::Identifier),
+                (".", ParserTokenKind::ReservedSymbol),
+                (")", ParserTokenKind::ReservedSymbol),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let close_range = tokens[10].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedTermExpression
+        );
+        assert_eq!(output.diagnostics[0].primary, close_range);
+        let ast = output
+            .ast
+            .expect("malformed update selector path should recover");
+        single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::FieldUpdate));
     }
 
     #[test]
