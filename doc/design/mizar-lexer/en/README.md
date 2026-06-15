@@ -18,12 +18,14 @@ The crate must preserve the distinction between raw lexical scanning and final t
 
 | Document | Maps To | Description | Status |
 |---|---|---|---|
+| [00.crate_plan.md](./00.crate_plan.md) | `doc/design/autonomous_crate_development.md`, `tests/coverage/spec_trace.toml`, `crates/mizar-lexer` | Retrospective autonomous crate plan, responsibility boundary, gap classification, and task decomposition | Complete |
 | [raw_lexer.md](./raw_lexer.md) | `crates/mizar-lexer/src/raw_lexer.rs`, with source/tables boundary notes | Raw scanning, `LexemeRun`, source preprocessing handoff, reserved tables, and the disambiguation boundary | Draft |
 | [import_prescan.md](./import_prescan.md) | `crates/mizar-lexer/src/import_prescan.rs` | Import prelude scanning and `ImportStub` extraction from raw tokens | Draft |
 | [lexical_environment.md](./lexical_environment.md) | `crates/mizar-lexer/src/lexical_environment.rs` | Active lexical environment construction from reserved tables and module lexical summaries | Draft |
 | [scope_skeleton.md](./scope_skeleton.md) | `crates/mizar-lexer/src/scope_skeleton.rs` | Reserved-keyword-based lexical scope skeleton and `ScopeLexView` projection | Draft |
 | [disambiguator.md](./disambiguator.md) | `crates/mizar-lexer/src/disambiguator.rs` | Context-sensitive longest-match token disambiguation from `LexemeRun` to final tokens | Draft |
 | [test_and_implementation_plan.md](./test_and_implementation_plan.md) | `tests/lexical`, `tests/coverage/spec_trace.toml`, `crates/mizar-lexer` | Ordered lexer test corpus and implementation checklist | Draft |
+| [crate_exit_report.md](./crate_exit_report.md) | `doc/design/autonomous_crate_development.md`, verification results, handoff | Retrospective crate exit report, quality score, hard gates, deferred items, and next-task handoff | Complete |
 | [todo.md](./todo.md) | `crates/mizar-lexer`, `tests/lexical`, review follow-ups | Quality-review follow-up tasks | Living |
 
 ## Crate Boundary

@@ -64,3 +64,10 @@ doc/design/<crate>/<module>.md  →  crates/<crate>/src/<module>.rs
 ```
 
 This enables spec-driven implementation where each module can be developed and verified against its specification independently.
+
+Current crate design roots and crate-wide autonomous development evidence are
+indexed in [`doc/design/README.md`](./doc/design/README.md). The completed
+lexer crate evidence is available from
+[`doc/design/mizar-lexer/`](./doc/design/mizar-lexer/README.md), including its
+[autonomous crate plan](./doc/design/mizar-lexer/en/00.crate_plan.md) and
+[crate exit report](./doc/design/mizar-lexer/en/crate_exit_report.md).
