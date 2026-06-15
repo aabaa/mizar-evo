@@ -1,0 +1,7 @@
+reserve r for set;
+let x, y be set;
+assume that thesis and contradiction;
+assume A: thesis;
+given z being set such that thesis;
+take a = x, y;
+set f = x, g = y;

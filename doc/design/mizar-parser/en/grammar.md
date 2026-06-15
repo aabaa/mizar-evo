@@ -247,10 +247,11 @@ struct_ref_name   ::= qualified_symbol ;
 Task 8 makes type expressions executable through top-level `reserve`
 declarations. The parser emits `ReserveItem` and `ReserveSegment` only as the
 current host for `TypeExpression`; local statement-level `reserve` behavior is
-owned by later statement tasks. A well-formed `ReserveItem` owns the `reserve`
-token, one `ReserveSegment`, and the terminating semicolon. `ReserveSegment`
-owns source-ordered identifiers and comma tokens, the `for` token, and a
-`TypeExpression`.
+not part of the language, and Chapter 4 classifies block-local
+`reserve`-shaped statements as syntax errors. A well-formed `ReserveItem` owns
+the `reserve` token, one `ReserveSegment`, and the terminating semicolon.
+`ReserveSegment` owns source-ordered identifiers and comma tokens, the `for`
+token, and a `TypeExpression`.
 
 The parser emits `TypeExpression` with an optional non-empty `AttributeChain`
 and a required generic `TypeHead`. It does not decide whether a syntactic head
@@ -775,6 +776,79 @@ nodes. Active parse-only pass/fail fixtures and
 lexer scope skeleton also treats expression-level `is set` type words as type
 syntax rather than malformed `set name =` binder statements, so
 set-comprehension fixtures can run in the active parse-only corpus.
+
+## Task 16: Simple Statements
+
+Task 16 starts S-013 statement syntax with the Chapter 15 statement forms that
+carry no justification clause in this increment:
+
+```ebnf
+statement_item      ::= simple_statement ;
+simple_statement   ::= let_statement
+                     | assume_statement
+                     | take_statement
+                     | set_statement
+                     | given_statement ;
+let_statement      ::= "let" qualified_variable_segment
+                       { "," qualified_variable_segment }
+                       [ "such" condition_list ] ";" ;
+assume_statement   ::= "assume" ( proposition | condition_list ) ";" ;
+take_statement     ::= "take" witness { "," witness } ";" ;
+set_statement      ::= "set" equating { "," equating } ";" ;
+given_statement    ::= "given" qualified_variable_segment
+                       { "," qualified_variable_segment }
+                       [ "such" condition_list ] ";" ;
+condition_list     ::= "that" proposition { "and" proposition } ;
+proposition        ::= [ identifier ":" ] formula_expression ;
+witness            ::= term_expression | identifier "=" term_expression ;
+equating           ::= identifier "=" term_expression ;
+```
+
+`StatementItem` is a parser-owned temporary item host so active parse-only
+fixtures can exercise statement nodes before theorem/proof block items land in
+task 22. Later proof or block parsers may own the same concrete statement nodes
+directly without the `StatementItem` wrapper. Statement-level annotations are
+not parsed in this task; annotated statement sources remain legacy placeholder
+or recovery input until task 35 / S-016. The canonical Chapter 4 specification
+classifies `reserve` as a top-level module declaration only, so task 16 treats
+`reserve` coverage as a non-regression of the existing task-8 `ReserveItem`
+path and does not add a block-local `ReserveStatement` node.
+
+`QualifiedVariableSegment` preserves the written identifier list, optional
+`be` / `being` token, and optional `TypeExpression` or `MissingTypeExpression`
+recovery. It does not resolve implicit types from module-level `reserve`.
+`ConditionList` preserves the statement-level `that` / `and` separators; `and`
+is not formula conjunction. `Proposition` owns an optional label token plus
+colon and one `FormulaExpression` or `MissingFormula` recovery. `Witness`
+preserves either an ordinary term witness or the `identifier "=" term` named
+witness shape. `Equating` preserves `identifier "=" term_expression` for `set`
+abbreviations.
+
+The task-17 justification surface is still deferred. A `let` statement with a
+top-level `by` tail before its semicolon remains a legacy placeholder instead
+of a partially concrete `LetStatement`; task 17 replaces that boundary with a
+concrete justification-aware shape. The task-16 parser also does not validate
+labels, references, witness leakage, type well-formedness, or proof
+obligations.
+
+Statement recovery reuses existing syntax-level diagnostics. Missing qualified
+types use `MalformedTypeExpression` plus `MissingTypeExpression`.
+Missing proposition formulas use `MalformedFormulaExpression` plus
+`MissingFormula`. Missing `take` witnesses, `set` equating identifiers, or
+`set` right-hand sides use `MalformedTermExpression` plus `MissingTerm` until a
+binder-specific recovery kind exists. Malformed statement tails synchronize at
+semicolon, EOF, or the next statement/item boundary and preserve skipped source
+under `SkippedToken` recovery when tokens must be skipped.
+
+Task 16 tests must pin: concrete `let`, `assume`, `assume that`, `given`,
+`take`, and `set` statements; `StatementItem` wrapping for direct statement
+heads; statement-level `and` condition splitting; named and unnamed take witnesses;
+multiple `set` equatings; top-level `reserve` non-regression through the
+existing `ReserveItem` path; deferral of `let ... by ...`; and recovery for
+missing type, formula, term, equals, and
+semicolon boundaries. Active parse-only corpus coverage should use top-level
+statement hosts for non-`reserve` simple statements and keep top-level
+`reserve` coverage on the existing `ReserveItem` path.
 
 ## Public Enum Compatibility
 

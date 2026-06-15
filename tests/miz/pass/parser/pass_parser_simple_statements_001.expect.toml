@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_simple_statements_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.simple_statements"
+source = "pass_parser_simple_statements_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.15.statements.syntax",
+]
+notes = "Active parse-only runner coverage for parser task 16 simple statements, top-level reserve non-regression, statement-level condition splitting, named and unnamed take witnesses, labeled propositions, and multiple set equatings."

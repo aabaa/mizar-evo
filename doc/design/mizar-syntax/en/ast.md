@@ -80,6 +80,17 @@ green tree.
 | set enumeration node | `SyntaxKind::SetEnumeration` |
 | set comprehension node | `SyntaxKind::SetComprehension` |
 | comprehension variable segment node | `SyntaxKind::ComprehensionVariableSegment` |
+| statement item wrapper node | `SyntaxKind::StatementItem` |
+| let statement node | `SyntaxKind::LetStatement` |
+| qualified variable segment node | `SyntaxKind::QualifiedVariableSegment` |
+| assumption statement node | `SyntaxKind::AssumptionStatement` |
+| proposition node | `SyntaxKind::Proposition` |
+| condition list node | `SyntaxKind::ConditionList` |
+| given statement node | `SyntaxKind::GivenStatement` |
+| take statement node | `SyntaxKind::TakeStatement` |
+| witness node | `SyntaxKind::Witness` |
+| set statement node | `SyntaxKind::SetStatement` |
+| equating node | `SyntaxKind::Equating` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -171,6 +182,17 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 57 | `FormulaConstant` | task-14 `thesis` or `contradiction` formula constant |
 | 58 | `SetComprehension` | task-15 set-comprehension / Fraenkel term |
 | 59 | `ComprehensionVariableSegment` | task-15 typed generator segment |
+| 60 | `StatementItem` | task-16 temporary item host for concrete statements |
+| 61 | `LetStatement` | task-16 `let` generalization statement |
+| 62 | `QualifiedVariableSegment` | task-16 statement-level qualified variable segment |
+| 63 | `AssumptionStatement` | task-16 `assume` / `assume that` statement |
+| 64 | `Proposition` | task-16 optional label plus formula proposition |
+| 65 | `ConditionList` | task-16 `that` / `and` statement-level condition list |
+| 66 | `GivenStatement` | task-16 existential assumption statement |
+| 67 | `TakeStatement` | task-16 witness introduction statement |
+| 68 | `Witness` | task-16 named or unnamed witness item |
+| 69 | `SetStatement` | task-16 local constant-definition statement |
+| 70 | `Equating` | task-16 `set` equating item |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -183,8 +205,8 @@ The current raw discriminants are part of the rowan boundary for this phase:
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
-above, currently `Root` through task-15 `ComprehensionVariableSegment` plus the
-compatibility `Token` wrapper and `ErrorRecovery`; `is_token_kind` is true
+above, currently `Root` through task-16 `Equating` plus the compatibility
+`Token` wrapper and `ErrorRecovery`; `is_token_kind` is true
 only for token leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future
 raw values should be appended or assigned into a documented reserved range so
 existing snapshots and rowan tests fail loudly when the raw vocabulary changes.
@@ -198,7 +220,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::Root` | none | `SyntaxKind::Root` | top-level compatibility root |
 | `SurfaceNodeKind::Token(SurfaceToken)` | token kind and interned text | `SyntaxKind::Token` with one token leaf of the token raw kind | compatibility wrapper around a rowan token leaf |
 | `SurfaceNodeKind::CompilationUnit` | none | `SyntaxKind::CompilationUnit` | parser task-5 module file skeleton; one `ItemList` child and no semantic module identity |
-| `SurfaceNodeKind::ItemList` | none | `SyntaxKind::ItemList` | source-order list of top-level item placeholders and item-level recovery markers |
+| `SurfaceNodeKind::ItemList` | none | `SyntaxKind::ItemList` | source-order list of top-level item placeholders, temporary `StatementItem` hosts, and item-level recovery markers |
 | `SurfaceNodeKind::PlaceholderItem` | none | `SyntaxKind::PlaceholderItem` | keyword-dispatched top-level item placeholder used until later tasks replace it with concrete item nodes |
 | `SurfaceNodeKind::ImportItem` | none | `SyntaxKind::ImportItem` | parser task-6 concrete `import_stmt`; owns the `import` token, import declaration nodes separated by comma tokens, optional malformed-tail recovery, and optional semicolon token |
 | `SurfaceNodeKind::ImportAliasDecl` | none | `SyntaxKind::ImportAliasDecl` | parser task-6 `module_path ["as" module_identifier]`; owns a `ModulePath`, optional `as` token, optional alias `PathSegment`, and optional malformed-tail recovery |
@@ -227,6 +249,17 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::SetEnumeration` | none | `SyntaxKind::SetEnumeration` | parser task-9 set-enumeration term |
 | `SurfaceNodeKind::SetComprehension` | none | `SyntaxKind::SetComprehension` | parser task-15 set-comprehension / Fraenkel term; owns `{`, a mapper `TermExpression`, `where`, generator segments, optional condition formula, and `}` or delimiter recovery |
 | `SurfaceNodeKind::ComprehensionVariableSegment` | none | `SyntaxKind::ComprehensionVariableSegment` | parser task-15 typed generator segment; owns identifier or `MissingTerm` recovery, optional `is`, and `TypeExpression` or `MissingTypeExpression` recovery when `is` is present |
+| `SurfaceNodeKind::StatementItem` | none | `SyntaxKind::StatementItem` | parser task-16 temporary module-level statement host; owns exactly one concrete simple statement node and no statement-level annotation payload |
+| `SurfaceNodeKind::LetStatement` | none | `SyntaxKind::LetStatement` | parser task-16 `let` generalization without a task-17 justification tail; owns `let`, qualified-variable segments with separator commas, optional `such` plus `ConditionList`, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::QualifiedVariableSegment` | none | `SyntaxKind::QualifiedVariableSegment` | parser task-16 statement-level variable segment; owns identifier tokens separated by comma tokens, optional `be` / `being`, and optional `TypeExpression` or `MissingTypeExpression` recovery |
+| `SurfaceNodeKind::AssumptionStatement` | none | `SyntaxKind::AssumptionStatement` | parser task-16 `assume` or `assume that`; owns `assume` plus either one `Proposition` or one `ConditionList`, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::Proposition` | none | `SyntaxKind::Proposition` | parser task-16 proposition surface; owns optional label identifier plus colon and one `FormulaExpression` or `MissingFormula` recovery |
+| `SurfaceNodeKind::ConditionList` | none | `SyntaxKind::ConditionList` | parser task-16 statement-level conditions; owns `that`, one or more `Proposition` children separated by `and` tokens, and optional recovery |
+| `SurfaceNodeKind::GivenStatement` | none | `SyntaxKind::GivenStatement` | parser task-16 existential assumption; owns `given`, qualified-variable segments with separator commas, optional `such` plus `ConditionList`, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::TakeStatement` | none | `SyntaxKind::TakeStatement` | parser task-16 witness introduction; owns `take`, one or more `Witness` children separated by comma tokens, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::Witness` | none | `SyntaxKind::Witness` | parser task-16 witness item; owns either one `TermExpression` or identifier, `=`, and a `TermExpression` / `MissingTerm` recovery |
+| `SurfaceNodeKind::SetStatement` | none | `SyntaxKind::SetStatement` | parser task-16 local constant definition; owns `set`, one or more `Equating` children separated by comma tokens, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::Equating` | none | `SyntaxKind::Equating` | parser task-16 equating item; owns identifier or `MissingTerm` recovery, `=` when present, and a `TermExpression` or `MissingTerm` recovery |
 | `SurfaceNodeKind::SelectorAccess` | none | `SyntaxKind::SelectorAccess` | parser task-10 postfix selector access or selector-call surface; preserves syntax-only dot role |
 | `SurfaceNodeKind::StructureUpdate` | none | `SyntaxKind::StructureUpdate` | parser task-10 functional `term "with" "(" field_update_list ")"` update surface |
 | `SurfaceNodeKind::FieldUpdate` | none | `SyntaxKind::FieldUpdate` | parser task-10 `selector ":=" term_expression` field update inside `StructureUpdate` |
@@ -530,6 +563,45 @@ the nested formula or insertion point; quantified formulas range through the
 condition/body formula or recovery insertion that completed the represented
 quantifier.
 
+Parser task 16 starts S-013 statement vocabulary with simple statement nodes.
+`StatementItem` is a temporary module-level wrapper that lets the parse-only
+corpus exercise concrete statement syntax before theorem/proof block hosts are
+implemented; proof and block parsers may later own the same statement nodes
+directly. Statement-level annotations are deferred to task 35 / S-016, so
+`StatementItem` does not own annotation-prefix tokens. `reserve` remains the
+top-level task-8 `ReserveItem` only because Chapter 4 forbids block-local
+`reserve`-shaped statements.
+
+`LetStatement` owns `let`, one or more `QualifiedVariableSegment` children
+separated by comma tokens, optional `such` plus `ConditionList`, and `;` when
+present. `GivenStatement` has the same qualified-variable and optional
+condition shape after `given`. `QualifiedVariableSegment` owns the written
+identifier tokens and internal commas, optional `be` / `being`, and optional
+`TypeExpression` or `MissingTypeExpression` recovery. It does not resolve
+implicit types from `reserve`.
+
+`AssumptionStatement` owns `assume` plus either a single `Proposition` or a
+`ConditionList`. `ConditionList` owns `that`, one or more `Proposition`
+children separated by statement-level `and` tokens, and optional recovery.
+`Proposition` owns an optional label identifier plus colon and one
+`FormulaExpression` or `MissingFormula` recovery. `TakeStatement` owns `take`
+and source-ordered `Witness` children separated by comma tokens. A `Witness`
+owns either one `TermExpression` or a named witness spelling
+`identifier "=" TermExpression`; missing witness terms use `MissingTerm`.
+`SetStatement` owns `set` and source-ordered `Equating` children separated by
+comma tokens. `Equating` owns an identifier or `MissingTerm` recovery, `=`
+when present, and a right-hand `TermExpression` or `MissingTerm`.
+
+Task 16 deliberately excludes task-17 justification nodes. A `let` statement
+with a top-level `by` tail before its semicolon remains a legacy placeholder
+instead of partially parsing into `LetStatement`. These statement nodes do not
+validate label uniqueness, references, type well-formedness, witness leakage,
+or proof obligations. `SurfaceNodeView` exposes typed `as_statement_item`,
+`as_let_statement`, `as_qualified_variable_segment`, `as_assumption_statement`,
+`as_proposition`, `as_condition_list`, `as_given_statement`,
+`as_take_statement`, `as_witness`, `as_set_statement`, and `as_equating`
+helpers.
+
 ### Vocabulary Increment Contract
 
 Node vocabulary grows only in the same change as the `mizar-parser` grammar task
@@ -656,6 +728,17 @@ ParenthesizedFormula range=<start>..<end> recovered=<bool>
 QuantifiedFormula quantifier=<SurfaceQuantifierKind> range=<start>..<end> recovered=<bool>
 QuantifierVariableSegment range=<start>..<end> recovered=<bool>
 FormulaConstant constant=<SurfaceFormulaConstant> range=<start>..<end> recovered=<bool>
+StatementItem range=<start>..<end> recovered=<bool>
+LetStatement range=<start>..<end> recovered=<bool>
+QualifiedVariableSegment range=<start>..<end> recovered=<bool>
+AssumptionStatement range=<start>..<end> recovered=<bool>
+Proposition range=<start>..<end> recovered=<bool>
+ConditionList range=<start>..<end> recovered=<bool>
+GivenStatement range=<start>..<end> recovered=<bool>
+TakeStatement range=<start>..<end> recovered=<bool>
+Witness range=<start>..<end> recovered=<bool>
+SetStatement range=<start>..<end> recovered=<bool>
+Equating range=<start>..<end> recovered=<bool>
 ErrorRecovery kind=<SyntaxRecoveryKind> range=<start>..<end> recovered=<bool>
 ```
 

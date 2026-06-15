@@ -452,11 +452,20 @@ older numeric syntax task references appear to disagree, prefer
       keeps expression-level `is set` type words from being reported as
       malformed `set name =` binder statements.
 
-16. **Simple statements.** [ ]
-    - `reserve`, `let`, `assume`, `take`, `set`, `given` — the statement forms
-      that carry no justification clause.
+16. **Simple statements.** [x]
+    - `let`, `assume`, `take`, `set`, `given` — the statement forms that carry
+      no justification clause. `reserve` remains the existing top-level
+      `ReserveItem` path because Chapter 4 forbids block-local
+      `reserve`-shaped statements; keep that path covered as a non-regression.
     - Deps: 14, `mizar-syntax` task 13 / S-013. Spec:
       [15.statements.md](../../../spec/en/15.statements.md).
+    - Implemented as `StatementItem`-hosted simple statements with
+      `QualifiedVariableSegment`, `ConditionList`, `Proposition`, `Witness`,
+      and `Equating` children; `let ... by ...` remains a task-17 placeholder
+      boundary. Unit tests and active parse-only pass/fail corpus coverage are
+      in place for happy paths, multiple set equatings, proposition labels,
+      recovery nodes, skipped tails, semicolon-boundary synchronization, and
+      the top-level `ReserveItem` non-regression.
 
 17. **Justifications and citations.** [ ]
     - `by`/`from` justification clauses, citation lists, `.{ … }` grouped

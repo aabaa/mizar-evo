@@ -92,6 +92,17 @@ pub enum SyntaxKind {
     FormulaConstant = 57,
     SetComprehension = 58,
     ComprehensionVariableSegment = 59,
+    StatementItem = 60,
+    LetStatement = 61,
+    QualifiedVariableSegment = 62,
+    AssumptionStatement = 63,
+    Proposition = 64,
+    ConditionList = 65,
+    GivenStatement = 66,
+    TakeStatement = 67,
+    Witness = 68,
+    SetStatement = 69,
+    Equating = 70,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -165,6 +176,17 @@ impl SyntaxKind {
             57 => Self::FormulaConstant,
             58 => Self::SetComprehension,
             59 => Self::ComprehensionVariableSegment,
+            60 => Self::StatementItem,
+            61 => Self::LetStatement,
+            62 => Self::QualifiedVariableSegment,
+            63 => Self::AssumptionStatement,
+            64 => Self::Proposition,
+            65 => Self::ConditionList,
+            66 => Self::GivenStatement,
+            67 => Self::TakeStatement,
+            68 => Self::Witness,
+            69 => Self::SetStatement,
+            70 => Self::Equating,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -240,6 +262,17 @@ impl SyntaxKind {
                 | Self::FormulaConstant
                 | Self::SetComprehension
                 | Self::ComprehensionVariableSegment
+                | Self::StatementItem
+                | Self::LetStatement
+                | Self::QualifiedVariableSegment
+                | Self::AssumptionStatement
+                | Self::Proposition
+                | Self::ConditionList
+                | Self::GivenStatement
+                | Self::TakeStatement
+                | Self::Witness
+                | Self::SetStatement
+                | Self::Equating
         )
     }
 
@@ -989,6 +1022,83 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_statement_item(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::StatementItem => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_let_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::LetStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_qualified_variable_segment(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::QualifiedVariableSegment => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_assumption_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AssumptionStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_proposition(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::Proposition => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_condition_list(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ConditionList => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_given_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::GivenStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_take_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::TakeStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_witness(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::Witness => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_set_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::SetStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_equating(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::Equating => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_selector_access(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::SelectorAccess => Some(self),
@@ -1263,6 +1373,17 @@ pub enum SurfaceNodeKind {
     SetEnumeration,
     SetComprehension,
     ComprehensionVariableSegment,
+    StatementItem,
+    LetStatement,
+    QualifiedVariableSegment,
+    AssumptionStatement,
+    Proposition,
+    ConditionList,
+    GivenStatement,
+    TakeStatement,
+    Witness,
+    SetStatement,
+    Equating,
     SelectorAccess,
     StructureUpdate,
     FieldUpdate,
@@ -1327,6 +1448,17 @@ impl SurfaceNodeKind {
             Self::SetEnumeration => SyntaxKind::SetEnumeration,
             Self::SetComprehension => SyntaxKind::SetComprehension,
             Self::ComprehensionVariableSegment => SyntaxKind::ComprehensionVariableSegment,
+            Self::StatementItem => SyntaxKind::StatementItem,
+            Self::LetStatement => SyntaxKind::LetStatement,
+            Self::QualifiedVariableSegment => SyntaxKind::QualifiedVariableSegment,
+            Self::AssumptionStatement => SyntaxKind::AssumptionStatement,
+            Self::Proposition => SyntaxKind::Proposition,
+            Self::ConditionList => SyntaxKind::ConditionList,
+            Self::GivenStatement => SyntaxKind::GivenStatement,
+            Self::TakeStatement => SyntaxKind::TakeStatement,
+            Self::Witness => SyntaxKind::Witness,
+            Self::SetStatement => SyntaxKind::SetStatement,
+            Self::Equating => SyntaxKind::Equating,
             Self::SelectorAccess => SyntaxKind::SelectorAccess,
             Self::StructureUpdate => SyntaxKind::StructureUpdate,
             Self::FieldUpdate => SyntaxKind::FieldUpdate,
@@ -1543,6 +1675,19 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::ComprehensionVariableSegment => {
             output.push_str("ComprehensionVariableSegment");
         }
+        SurfaceNodeKind::StatementItem => output.push_str("StatementItem"),
+        SurfaceNodeKind::LetStatement => output.push_str("LetStatement"),
+        SurfaceNodeKind::QualifiedVariableSegment => {
+            output.push_str("QualifiedVariableSegment");
+        }
+        SurfaceNodeKind::AssumptionStatement => output.push_str("AssumptionStatement"),
+        SurfaceNodeKind::Proposition => output.push_str("Proposition"),
+        SurfaceNodeKind::ConditionList => output.push_str("ConditionList"),
+        SurfaceNodeKind::GivenStatement => output.push_str("GivenStatement"),
+        SurfaceNodeKind::TakeStatement => output.push_str("TakeStatement"),
+        SurfaceNodeKind::Witness => output.push_str("Witness"),
+        SurfaceNodeKind::SetStatement => output.push_str("SetStatement"),
+        SurfaceNodeKind::Equating => output.push_str("Equating"),
         SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
@@ -2612,6 +2757,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            statement_nodes_ast(source_id(28))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -2644,6 +2795,17 @@ mod tests {
             SyntaxKind::SetEnumeration,
             SyntaxKind::SetComprehension,
             SyntaxKind::ComprehensionVariableSegment,
+            SyntaxKind::StatementItem,
+            SyntaxKind::LetStatement,
+            SyntaxKind::QualifiedVariableSegment,
+            SyntaxKind::AssumptionStatement,
+            SyntaxKind::Proposition,
+            SyntaxKind::ConditionList,
+            SyntaxKind::GivenStatement,
+            SyntaxKind::TakeStatement,
+            SyntaxKind::Witness,
+            SyntaxKind::SetStatement,
+            SyntaxKind::Equating,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -3741,6 +3903,97 @@ mod tests {
     }
 
     #[test]
+    fn task16_typed_accessors_cover_simple_statement_nodes() {
+        let ast = statement_nodes_ast(source_id(28));
+        let root = ast.root_view().unwrap();
+
+        let statement_item_view =
+            first_view(root, |kind| matches!(kind, SurfaceNodeKind::StatementItem)).unwrap();
+        assert_eq!(statement_item_view.syntax_kind(), SyntaxKind::StatementItem);
+        assert!(statement_item_view.as_statement_item().is_some());
+
+        let let_view =
+            first_view(root, |kind| matches!(kind, SurfaceNodeKind::LetStatement)).unwrap();
+        assert_eq!(let_view.syntax_kind(), SyntaxKind::LetStatement);
+        assert!(let_view.as_let_statement().is_some());
+
+        let segment_view = first_view(root, |kind| {
+            matches!(kind, SurfaceNodeKind::QualifiedVariableSegment)
+        })
+        .unwrap();
+        assert_eq!(
+            segment_view.syntax_kind(),
+            SyntaxKind::QualifiedVariableSegment
+        );
+        assert!(segment_view.as_qualified_variable_segment().is_some());
+
+        let assumption_view = first_view(root, |kind| {
+            matches!(kind, SurfaceNodeKind::AssumptionStatement)
+        })
+        .unwrap();
+        assert_eq!(
+            assumption_view.syntax_kind(),
+            SyntaxKind::AssumptionStatement
+        );
+        assert!(assumption_view.as_assumption_statement().is_some());
+
+        let proposition_view =
+            first_view(root, |kind| matches!(kind, SurfaceNodeKind::Proposition)).unwrap();
+        assert_eq!(proposition_view.syntax_kind(), SyntaxKind::Proposition);
+        assert!(proposition_view.as_proposition().is_some());
+
+        let condition_list_view =
+            first_view(root, |kind| matches!(kind, SurfaceNodeKind::ConditionList)).unwrap();
+        assert_eq!(condition_list_view.syntax_kind(), SyntaxKind::ConditionList);
+        assert!(condition_list_view.as_condition_list().is_some());
+
+        let given_view =
+            first_view(root, |kind| matches!(kind, SurfaceNodeKind::GivenStatement)).unwrap();
+        assert_eq!(given_view.syntax_kind(), SyntaxKind::GivenStatement);
+        assert!(given_view.as_given_statement().is_some());
+
+        let take_view =
+            first_view(root, |kind| matches!(kind, SurfaceNodeKind::TakeStatement)).unwrap();
+        assert_eq!(take_view.syntax_kind(), SyntaxKind::TakeStatement);
+        assert!(take_view.as_take_statement().is_some());
+
+        let witness_view =
+            first_view(root, |kind| matches!(kind, SurfaceNodeKind::Witness)).unwrap();
+        assert_eq!(witness_view.syntax_kind(), SyntaxKind::Witness);
+        assert!(witness_view.as_witness().is_some());
+
+        let set_view =
+            first_view(root, |kind| matches!(kind, SurfaceNodeKind::SetStatement)).unwrap();
+        assert_eq!(set_view.syntax_kind(), SyntaxKind::SetStatement);
+        assert!(set_view.as_set_statement().is_some());
+
+        let equating_view =
+            first_view(root, |kind| matches!(kind, SurfaceNodeKind::Equating)).unwrap();
+        assert_eq!(equating_view.syntax_kind(), SyntaxKind::Equating);
+        assert!(equating_view.as_equating().is_some());
+
+        let snapshot = ast.snapshot_text();
+        for expected in [
+            "StatementItem",
+            "LetStatement",
+            "QualifiedVariableSegment",
+            "AssumptionStatement",
+            "Proposition",
+            "ConditionList",
+            "GivenStatement",
+            "TakeStatement",
+            "Witness",
+            "SetStatement",
+            "Equating",
+        ] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-16 line {expected}"
+            );
+        }
+    }
+
+    #[test]
     fn recovery_snapshot_names_are_unique_and_fully_fixture_backed() {
         let source_id = source_id(9);
         let fixtures = recovery_fixtures(source_id);
@@ -4790,6 +5043,375 @@ mod tests {
             ],
         );
         builder.finish(Some(root), Some(comprehension))
+    }
+
+    fn statement_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let let_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "let",
+            range(source_id, 0, 3),
+        );
+        let let_identifier =
+            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 4, 5));
+        let be_token =
+            builder.add_token(SurfaceTokenKind::ReservedWord, "be", range(source_id, 6, 8));
+        let let_type_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 9, 12),
+        );
+        let let_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 12, 13),
+        );
+        let let_type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 9, 12),
+            vec![let_type_token],
+        );
+        let let_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 9, 12),
+            vec![let_type_head],
+        );
+        let let_segment = builder.add_node(
+            SurfaceNodeKind::QualifiedVariableSegment,
+            range(source_id, 4, 12),
+            vec![let_identifier, be_token, let_type],
+        );
+        let let_statement = builder.add_node(
+            SurfaceNodeKind::LetStatement,
+            range(source_id, 0, 13),
+            vec![let_token, let_segment, let_semicolon],
+        );
+        let let_item = builder.add_node(
+            SurfaceNodeKind::StatementItem,
+            range(source_id, 0, 13),
+            vec![let_statement],
+        );
+
+        let assume_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "assume",
+            range(source_id, 14, 20),
+        );
+        let assumption_that = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "that",
+            range(source_id, 21, 25),
+        );
+        let assumption_thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 26, 32),
+        );
+        let assumption_and = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "and",
+            range(source_id, 33, 36),
+        );
+        let assumption_contradiction = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "contradiction",
+            range(source_id, 37, 50),
+        );
+        let assume_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 50, 51),
+        );
+        let thesis_constant = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+            range(source_id, 26, 32),
+            vec![assumption_thesis],
+        );
+        let thesis_formula = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 26, 32),
+            vec![thesis_constant],
+        );
+        let first_proposition = builder.add_node(
+            SurfaceNodeKind::Proposition,
+            range(source_id, 26, 32),
+            vec![thesis_formula],
+        );
+        let contradiction_constant = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction),
+            range(source_id, 37, 50),
+            vec![assumption_contradiction],
+        );
+        let contradiction_formula = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 37, 50),
+            vec![contradiction_constant],
+        );
+        let second_proposition = builder.add_node(
+            SurfaceNodeKind::Proposition,
+            range(source_id, 37, 50),
+            vec![contradiction_formula],
+        );
+        let assumption_conditions = builder.add_node(
+            SurfaceNodeKind::ConditionList,
+            range(source_id, 21, 50),
+            vec![
+                assumption_that,
+                first_proposition,
+                assumption_and,
+                second_proposition,
+            ],
+        );
+        let assumption_statement = builder.add_node(
+            SurfaceNodeKind::AssumptionStatement,
+            range(source_id, 14, 51),
+            vec![assume_token, assumption_conditions, assume_semicolon],
+        );
+        let assumption_item = builder.add_node(
+            SurfaceNodeKind::StatementItem,
+            range(source_id, 14, 51),
+            vec![assumption_statement],
+        );
+
+        let given_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "given",
+            range(source_id, 52, 57),
+        );
+        let given_identifier =
+            builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 58, 59));
+        let being_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "being",
+            range(source_id, 60, 65),
+        );
+        let given_type_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 66, 69),
+        );
+        let such_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "such",
+            range(source_id, 70, 74),
+        );
+        let given_that = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "that",
+            range(source_id, 75, 79),
+        );
+        let given_thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 80, 86),
+        );
+        let given_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 86, 87),
+        );
+        let given_type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 66, 69),
+            vec![given_type_token],
+        );
+        let given_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 66, 69),
+            vec![given_type_head],
+        );
+        let given_segment = builder.add_node(
+            SurfaceNodeKind::QualifiedVariableSegment,
+            range(source_id, 58, 69),
+            vec![given_identifier, being_token, given_type],
+        );
+        let given_thesis_constant = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+            range(source_id, 80, 86),
+            vec![given_thesis],
+        );
+        let given_formula = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 80, 86),
+            vec![given_thesis_constant],
+        );
+        let given_proposition = builder.add_node(
+            SurfaceNodeKind::Proposition,
+            range(source_id, 80, 86),
+            vec![given_formula],
+        );
+        let given_conditions = builder.add_node(
+            SurfaceNodeKind::ConditionList,
+            range(source_id, 75, 86),
+            vec![given_that, given_proposition],
+        );
+        let given_statement = builder.add_node(
+            SurfaceNodeKind::GivenStatement,
+            range(source_id, 52, 87),
+            vec![
+                given_token,
+                given_segment,
+                such_token,
+                given_conditions,
+                given_semicolon,
+            ],
+        );
+        let given_item = builder.add_node(
+            SurfaceNodeKind::StatementItem,
+            range(source_id, 52, 87),
+            vec![given_statement],
+        );
+
+        let take_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "take",
+            range(source_id, 88, 92),
+        );
+        let witness_identifier =
+            builder.add_token(SurfaceTokenKind::Identifier, "z", range(source_id, 93, 94));
+        let witness_equals = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "=",
+            range(source_id, 95, 96),
+        );
+        let witness_value =
+            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 97, 98));
+        let witness_comma = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ",",
+            range(source_id, 98, 99),
+        );
+        let second_witness_value = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "y",
+            range(source_id, 100, 101),
+        );
+        let take_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 101, 102),
+        );
+        let witness_term = term_expression_node(&mut builder, source_id, witness_value, 97, 98);
+        let named_witness = builder.add_node(
+            SurfaceNodeKind::Witness,
+            range(source_id, 93, 98),
+            vec![witness_identifier, witness_equals, witness_term],
+        );
+        let second_witness_term =
+            term_expression_node(&mut builder, source_id, second_witness_value, 100, 101);
+        let second_witness = builder.add_node(
+            SurfaceNodeKind::Witness,
+            range(source_id, 100, 101),
+            vec![second_witness_term],
+        );
+        let take_statement = builder.add_node(
+            SurfaceNodeKind::TakeStatement,
+            range(source_id, 88, 102),
+            vec![
+                take_token,
+                named_witness,
+                witness_comma,
+                second_witness,
+                take_semicolon,
+            ],
+        );
+        let take_item = builder.add_node(
+            SurfaceNodeKind::StatementItem,
+            range(source_id, 88, 102),
+            vec![take_statement],
+        );
+
+        let set_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 103, 106),
+        );
+        let equating_identifier = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "f",
+            range(source_id, 107, 108),
+        );
+        let equating_equals = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "=",
+            range(source_id, 109, 110),
+        );
+        let equating_value = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(source_id, 111, 112),
+        );
+        let set_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 112, 113),
+        );
+        let equating_term = term_expression_node(&mut builder, source_id, equating_value, 111, 112);
+        let equating = builder.add_node(
+            SurfaceNodeKind::Equating,
+            range(source_id, 107, 112),
+            vec![equating_identifier, equating_equals, equating_term],
+        );
+        let set_statement = builder.add_node(
+            SurfaceNodeKind::SetStatement,
+            range(source_id, 103, 113),
+            vec![set_token, equating, set_semicolon],
+        );
+        let set_item = builder.add_node(
+            SurfaceNodeKind::StatementItem,
+            range(source_id, 103, 113),
+            vec![set_statement],
+        );
+
+        let item_list = builder.add_node(
+            SurfaceNodeKind::ItemList,
+            range(source_id, 0, 113),
+            vec![let_item, assumption_item, given_item, take_item, set_item],
+        );
+        let compilation_unit = builder.add_node(
+            SurfaceNodeKind::CompilationUnit,
+            range(source_id, 0, 113),
+            vec![item_list],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 113),
+            vec![
+                let_token,
+                let_identifier,
+                be_token,
+                let_type_token,
+                let_semicolon,
+                assume_token,
+                assumption_that,
+                assumption_thesis,
+                assumption_and,
+                assumption_contradiction,
+                assume_semicolon,
+                given_token,
+                given_identifier,
+                being_token,
+                given_type_token,
+                such_token,
+                given_that,
+                given_thesis,
+                given_semicolon,
+                take_token,
+                witness_identifier,
+                witness_equals,
+                witness_value,
+                witness_comma,
+                second_witness_value,
+                take_semicolon,
+                set_token,
+                equating_identifier,
+                equating_equals,
+                equating_value,
+                set_semicolon,
+                compilation_unit,
+            ],
+        );
+        builder.finish(Some(root), None)
     }
 
     fn term_expression_node(

@@ -353,8 +353,10 @@ interaction. Spec references are the normative grammar chapters under
    - Spec: [14.formulas.md](../../../spec/en/14.formulas.md).
 
 13. **Statement nodes.** [ ] — paired with `mizar-parser` tasks 16 and 18-21.
-    - Simple statements `reserve`, `let`, `assume`, `take`, `set`, `given`
-      (parser task 16); `consider`/`reconsider` (parser task 18);
+    - Simple statements `let`, `assume`, `take`, `set`, `given`
+      (parser task 16); top-level `reserve` remains the existing
+      `ReserveItem` path because Chapter 4 forbids block-local
+      `reserve`-shaped statements; `consider`/`reconsider` (parser task 18);
       `thus`/`hence`, `then` chains, iterative equality `.=` (parser task 19);
       compact equality statements versus zero-step iterative equality
       dispatch (grammar audit G-AUD-010);

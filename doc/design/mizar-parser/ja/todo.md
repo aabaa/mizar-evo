@@ -431,11 +431,20 @@ resolver / build-system 依存を避ける。
       の `is set` type word を malformed `set name =` binder statement として
       報告しない scope-skeleton guard を実装した。
 
-16. **単純文。** [ ]
-    - `reserve`、`let`、`assume`、`take`、`set`、`given` — 正当化句を運ばない
-      文の形。
+16. **単純文。** [x]
+    - `let`、`assume`、`take`、`set`、`given` — 正当化句を運ばない文の形。
+      `reserve` は、Chapter 4 が block-local `reserve` shaped statement を禁じているため
+      既存 top-level `ReserveItem` path のままにし、その path を non-regression として
+      覆う。
     - 依存: 14、`mizar-syntax` task 13 / S-013。仕様:
       [15.statements.md](../../../spec/ja/15.statements.md)。
+    - `StatementItem` が host する simple statement として実装した。
+      `QualifiedVariableSegment`、`ConditionList`、`Proposition`、`Witness`、
+      `Equating` child を持つ。`let ... by ...` は task 17 の placeholder
+      境界のままにした。正常系、複数 `set` equating、proposition label、
+      recovery node、skipped tail、semicolon-boundary 同期、および top-level
+      `ReserveItem` non-regression の unit test と active parse-only pass/fail
+      corpus coverage を追加済み。
 
 17. **正当化と引用。** [ ]
     - `by` / `from` の正当化句、引用リスト、`.{ … }` グループ引用、`.*`

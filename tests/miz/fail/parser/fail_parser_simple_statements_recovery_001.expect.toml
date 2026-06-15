@@ -1,0 +1,27 @@
+schema_version = 1
+id = "fail_parser_simple_statements_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.simple_statements"
+source = "fail_parser_simple_statements_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_simple_statement_recovery"
+stable_detail_key = "parser.simple_statements.recovery"
+diagnostic_codes = [
+  "malformed_type_expression",
+  "malformed_formula_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "missing_semicolon",
+  "missing_semicolon",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = [
+  "spec.en.15.statements.syntax",
+]
+notes = "Active parse-only runner coverage for parser task 16 missing type, formula, term, equals, skipped-tail, and semicolon-boundary recovery in simple statements."

@@ -236,10 +236,11 @@ struct_ref_name   ::= qualified_symbol ;
 
 task 8 は top-level `reserve` declaration を通じて type expression を実行可能にする。
 parser が送出する `ReserveItem` と `ReserveSegment` は、現在の `TypeExpression` host
-に限る。local statement-level `reserve` behavior は後続 statement task が所有する。
-well-formed `ReserveItem` は `reserve` token、1 個の `ReserveSegment`、終端 semicolon
-を所有する。`ReserveSegment` は source order の identifier / comma token、`for`
-token、`TypeExpression` を所有する。
+に限る。local statement-level `reserve` behavior は言語の一部ではなく、Chapter 4 は
+block-local `reserve` shaped statement を syntax error として分類する。well-formed
+`ReserveItem` は `reserve` token、1 個の `ReserveSegment`、終端 semicolon を所有する。
+`ReserveSegment` は source order の identifier / comma token、`for` token、
+`TypeExpression` を所有する。
 
 parser は、任意の non-empty `AttributeChain` と必須の generic `TypeHead` を持つ
 `TypeExpression` を送出する。syntactic head が radix type、structure、mode のいずれか、
@@ -726,6 +727,74 @@ pass/fail fixture と `spec.en.13.set_expressions.parser` traceability がこの
 覆う。lexer scope skeleton も expression-level の `is set` type word を malformed
 `set name =` binder statement ではなく type syntax として扱うため、set-comprehension
 fixture は active parse-only corpus で実行できる。
+
+## Task 16: simple statement
+
+Task 16 は、Chapter 15 のうち、この増分では justification clause を持たない statement
+形式から S-013 statement syntax を開始する。
+
+```ebnf
+statement_item      ::= simple_statement ;
+simple_statement   ::= let_statement
+                     | assume_statement
+                     | take_statement
+                     | set_statement
+                     | given_statement ;
+let_statement      ::= "let" qualified_variable_segment
+                       { "," qualified_variable_segment }
+                       [ "such" condition_list ] ";" ;
+assume_statement   ::= "assume" ( proposition | condition_list ) ";" ;
+take_statement     ::= "take" witness { "," witness } ";" ;
+set_statement      ::= "set" equating { "," equating } ";" ;
+given_statement    ::= "given" qualified_variable_segment
+                       { "," qualified_variable_segment }
+                       [ "such" condition_list ] ";" ;
+condition_list     ::= "that" proposition { "and" proposition } ;
+proposition        ::= [ identifier ":" ] formula_expression ;
+witness            ::= term_expression | identifier "=" term_expression ;
+equating           ::= identifier "=" term_expression ;
+```
+
+`StatementItem` は、task 22 で theorem/proof block item が入る前に active parse-only
+fixture が statement node を検査できるようにする parser-owned の一時 item host
+である。後続の proof / block parser は、同じ concrete statement node を
+`StatementItem` wrapper なしで直接所有してよい。statement-level annotation はこの
+task では parse せず、annotation 付き statement source は task 35 / S-016 まで
+legacy placeholder または recovery input のまま残す。canonical Chapter 4 specification は
+`reserve` を top-level module declaration のみに分類しているため、task 16 は
+`reserve` coverage を既存 task-8 `ReserveItem` path の non-regression として扱い、
+block-local `ReserveStatement` node を追加しない。
+
+`QualifiedVariableSegment` は、書かれた identifier list、任意の `be` / `being` token、
+任意の `TypeExpression` または `MissingTypeExpression` recovery を保持する。module-level
+`reserve` からの implicit type は解決しない。`ConditionList` は statement-level の
+`that` / `and` separator を保持し、`and` は formula conjunction ではない。`Proposition`
+は任意の label token と colon、および 1 個の `FormulaExpression` または `MissingFormula`
+recovery を所有する。`Witness` は通常の term witness または `identifier "=" term` の
+named witness 形状を保持する。`Equating` は `set` abbreviation 用の
+`identifier "=" term_expression` を保持する。
+
+task-17 justification surface はまだ deferred である。semicolon 前に top-level `by`
+tail を持つ `let` statement は、部分的な concrete `LetStatement` ではなく legacy
+placeholder のまま残す。task 17 がこの境界を concrete な justification-aware 形状に
+置き換える。この task-16 parser は label、reference、witness leakage、type
+well-formedness、proof obligation も検証しない。
+
+statement recovery は既存の syntax-level diagnostic を再利用する。qualified type の欠落は
+`MalformedTypeExpression` と `MissingTypeExpression` を使う。proposition
+formula の欠落は `MalformedFormulaExpression` と `MissingFormula` を使う。`take`
+witness、`set` equating identifier、`set` 右辺の欠落は、binder-specific recovery kind が
+入るまで `MalformedTermExpression` と `MissingTerm` を使う。malformed statement tail は
+semicolon、EOF、または次の statement/item boundary で同期し、token を skip する必要が
+ある場合は skipped source を `SkippedToken` recovery 配下に保持する。
+
+Task 16 の test は、concrete な `let`、`assume`、`assume that`、`given`、`take`、
+`set` statement、direct statement head 用の `StatementItem` wrapping、statement-level
+`and` condition splitting、named / unnamed take witness、複数 `set` equating、
+既存 `ReserveItem` path による top-level `reserve` non-regression、`let ... by ...` の deferral、missing type /
+formula / term / equals / semicolon boundary の recovery を固定する必要がある。
+active parse-only corpus coverage は non-`reserve` simple statement には top-level
+statement host を使い、top-level `reserve` coverage は既存の `ReserveItem` path に残す。
 
 ## 公開 enum の互換性
 

@@ -952,6 +952,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.15.statements.syntax"
+source = "doc/spec/en/15.statements.md"
+section = "15.2.1 Generalization Statement; 15.2.2 Constant Definition; 15.3.1 Single Assumption; 15.3.2 Collective Assumption; 15.3.3 Existential Assumption; 15.4.4 Witness Introduction"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_simple_statements_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_simple_statements_recovery_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.syntax.parser_recovery.missing_end"
 source = "doc/design/mizar-parser/en/recovery.md"
 section = "Current behavior"
