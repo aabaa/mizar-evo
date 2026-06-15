@@ -1,0 +1,8 @@
+deffunc F(x be set, y being set) -> set equals x;
+deffunc C() -> set equals 42;
+defpred P(x be set) means thesis;
+defpred Trivial() means thesis;
+now
+  deffunc H(y being set) -> set equals y;
+  defpred Q() means thesis;
+end;

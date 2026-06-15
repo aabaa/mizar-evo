@@ -103,6 +103,9 @@ green tree.
 | case reasoning statement node | `SyntaxKind::CaseReasoningStatement` |
 | case item node | `SyntaxKind::CaseItem` |
 | suppose item node | `SyntaxKind::SupposeItem` |
+| inline functor definition node | `SyntaxKind::InlineFunctorDefinition` |
+| inline predicate definition node | `SyntaxKind::InlinePredicateDefinition` |
+| typed parameter node | `SyntaxKind::TypedParameter` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -227,6 +230,9 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 90 | `CaseReasoningStatement` | task-20 `per cases` reasoning block |
 | 91 | `CaseItem` | task-20 `case ... end;` branch |
 | 92 | `SupposeItem` | task-20 `suppose ... end;` branch |
+| 93 | `InlineFunctorDefinition` | task-21 `deffunc ... equals ...;` local definition |
+| 94 | `InlinePredicateDefinition` | task-21 `defpred ... means ...;` local definition |
+| 95 | `TypedParameter` | task-21 inline-definition typed parameter |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -239,7 +245,7 @@ The current raw discriminants are part of the rowan boundary for this phase:
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
-above, currently `Root` through task-20 `SupposeItem` plus the compatibility
+above, currently `Root` through task-21 `TypedParameter` plus the compatibility
 `Token` wrapper and `ErrorRecovery`; `is_token_kind` is true
 only for token leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future
 raw values should be appended or assigned into a documented reserved range so
@@ -306,6 +312,9 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::CaseReasoningStatement` | none | `SyntaxKind::CaseReasoningStatement` | parser task-20 `per cases` block; owns `per`, `cases`, optional simple `JustificationClause`, header semicolon, and either source-ordered homogeneous `CaseItem` children or source-ordered homogeneous `SupposeItem` children |
 | `SurfaceNodeKind::CaseItem` | none | `SyntaxKind::CaseItem` | parser task-20 `case ... end;` branch; owns `case`, either `Proposition` or `ConditionList`, header semicolon, nested statement nodes, optional recovery including `MissingEnd`, `end` when present, and optional semicolon |
 | `SurfaceNodeKind::SupposeItem` | none | `SyntaxKind::SupposeItem` | parser task-20 `suppose ... end;` branch; owns `suppose`, either `Proposition` or `ConditionList`, header semicolon, nested statement nodes, optional recovery including `MissingEnd`, `end` when present, and optional semicolon |
+| `SurfaceNodeKind::InlineFunctorDefinition` | none | `SyntaxKind::InlineFunctorDefinition` | parser task-21 standalone `deffunc` definition; owns `deffunc`, a name identifier or `MissingTerm` recovery, parameter parentheses, zero or more `TypedParameter` children separated by comma tokens, `->`, a return `TypeExpression` or `MissingTypeExpression`, `equals`, a body `TermExpression` or `MissingTerm`, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::InlinePredicateDefinition` | none | `SyntaxKind::InlinePredicateDefinition` | parser task-21 standalone `defpred` definition; owns `defpred`, a name identifier or `MissingTerm` recovery, parameter parentheses, zero or more `TypedParameter` children separated by comma tokens, `means`, a body `FormulaExpression` or `MissingFormula`, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::TypedParameter` | none | `SyntaxKind::TypedParameter` | parser task-21 inline-definition parameter; owns the parameter identifier when present, optional `be` or `being` when written, and a `TypeExpression` or `MissingTypeExpression` recovery |
 | `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host; owns one `Proposition`, one `JustificationClause`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
@@ -772,6 +781,26 @@ formula exported by a `now` block. `SurfaceNodeView` exposes
 `as_case_item`, and `as_suppose_item` helpers. Snapshot rendering prints the
 literal node names.
 
+Parser task 21 adds the local inline-definition portion of S-013.
+`InlineFunctorDefinition` owns `deffunc`, the definition name identifier or a
+`MissingTerm` recovery,
+parameter parentheses, zero or more `TypedParameter` children separated by
+comma tokens, the `->` return-type delimiter, a `TypeExpression` or
+`MissingTypeExpression` recovery, `equals`, a `TermExpression` or `MissingTerm`
+recovery, optional malformed-tail recovery, and the final semicolon when
+present. `InlinePredicateDefinition` owns the same parameter head shape with
+`defpred`, `means`, and a `FormulaExpression` or `MissingFormula` recovery.
+`TypedParameter` owns the parameter identifier when present, optional `be` or
+`being` when written, and the `TypeExpression` or `MissingTypeExpression`
+recovery. A missing binder keyword is represented by the absence of that token
+inside `TypedParameter`, plus a malformed-type diagnostic; if no recoverable
+type follows before the delimiter, `MissingTypeExpression` fills the type slot.
+These nodes do
+not model scope introduction, definition expansion, parameter guard checks, or
+later inline-name application resolution. `SurfaceNodeView` exposes
+`as_inline_functor_definition`, `as_inline_predicate_definition`, and
+`as_typed_parameter` helpers. Snapshot rendering prints the literal node names.
+
 ### Vocabulary Increment Contract
 
 Node vocabulary grows only in the same change as the `mizar-parser` grammar task
@@ -921,6 +950,9 @@ HerebyStatement range=<start>..<end> recovered=<bool>
 CaseReasoningStatement range=<start>..<end> recovered=<bool>
 CaseItem range=<start>..<end> recovered=<bool>
 SupposeItem range=<start>..<end> recovered=<bool>
+InlineFunctorDefinition range=<start>..<end> recovered=<bool>
+InlinePredicateDefinition range=<start>..<end> recovered=<bool>
+TypedParameter range=<start>..<end> recovered=<bool>
 CompactStatement range=<start>..<end> recovered=<bool>
 JustificationClause range=<start>..<end> recovered=<bool>
 ReferenceList range=<start>..<end> recovered=<bool>

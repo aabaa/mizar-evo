@@ -518,10 +518,17 @@ resolver / build-system 依存を避ける。
       test、active parse-only pass/fail corpus fixture、traceability metadata が
       新しい形状と recovery case を覆う。
 
-21. **ローカル定義。** [ ]
+21. **ローカル定義。** [x]
     - `deffunc` / `defpred` のプライベートなローカル定義。
     - 依存: 20、`mizar-syntax` task 13 / S-013。仕様:
       [15.statements.md](../../../spec/ja/15.statements.md)。
+    - 結果: standalone 専用の `InlineFunctorDefinition` と
+      `InlinePredicateDefinition` の解析を実装した。`be` / `being` を持つ
+      `TypedParameter` list、zero-argument definition、`->` / `equals` /
+      `means` delimiter recovery、name / type / body / formula 欠落の
+      recovery、non-linkable な `then deffunc` / `then defpred` の拒否、
+      parser unit test、active parse-only pass/fail corpus fixture、traceability
+      metadata を含む。
 
 22. **定理と証明。** [ ]
     - `theorem` / `lemma` の item、ラベル、`proof … end` の入れ子、証明本体の

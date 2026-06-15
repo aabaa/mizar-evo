@@ -536,9 +536,16 @@ older numeric syntax task references appear to disagree, prefer
       `end`. Parser unit tests, active parse-only pass/fail corpus fixtures,
       and traceability metadata cover the new shapes and recovery cases.
 
-21. **Local definitions.** [ ]
+21. **Local definitions.** [x]
     - `deffunc`/`defpred` private local definitions.
     - Deps: 20, `mizar-syntax` task 13 / S-013. Spec: [15.statements.md](../../../spec/en/15.statements.md).
+    - Result: implemented standalone-only `InlineFunctorDefinition` and
+      `InlinePredicateDefinition` parsing, including `TypedParameter` lists
+      with `be` / `being`, zero-argument definitions, `->` / `equals` /
+      `means` delimiter recovery, missing name/type/body/formula recovery,
+      rejection of non-linkable `then deffunc` / `then defpred`, parser unit
+      tests, active parse-only pass/fail corpus fixtures, and traceability
+      metadata.
 
 22. **Theorems and proofs.** [ ]
     - `theorem`/`lemma` items, labels, `proof … end` nesting, and proof-body

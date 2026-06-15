@@ -1,0 +1,15 @@
+then deffunc F() -> set equals x;
+then defpred P() means thesis;
+deffunc () -> set equals x;
+deffunc N x be set -> set equals x;
+deffunc G(x Nat) -> set equals x;
+deffunc H(x be) -> set equals x;
+deffunc I(x be set -> set equals x;
+deffunc J() set equals x;
+deffunc K() -> equals x;
+deffunc L() -> set x;
+deffunc M() -> set equals ;
+defpred R() thesis;
+defpred U x be set means thesis;
+defpred S() means ;
+defpred T() means thesis

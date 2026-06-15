@@ -125,6 +125,9 @@ pub enum SyntaxKind {
     CaseReasoningStatement = 90,
     CaseItem = 91,
     SupposeItem = 92,
+    InlineFunctorDefinition = 93,
+    InlinePredicateDefinition = 94,
+    TypedParameter = 95,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -231,6 +234,9 @@ impl SyntaxKind {
             90 => Self::CaseReasoningStatement,
             91 => Self::CaseItem,
             92 => Self::SupposeItem,
+            93 => Self::InlineFunctorDefinition,
+            94 => Self::InlinePredicateDefinition,
+            95 => Self::TypedParameter,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -339,6 +345,9 @@ impl SyntaxKind {
                 | Self::CaseReasoningStatement
                 | Self::CaseItem
                 | Self::SupposeItem
+                | Self::InlineFunctorDefinition
+                | Self::InlinePredicateDefinition
+                | Self::TypedParameter
         )
     }
 
@@ -1319,6 +1328,27 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_inline_functor_definition(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::InlineFunctorDefinition => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_inline_predicate_definition(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::InlinePredicateDefinition => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_typed_parameter(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::TypedParameter => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_selector_access(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::SelectorAccess => Some(self),
@@ -1626,6 +1656,9 @@ pub enum SurfaceNodeKind {
     CaseReasoningStatement,
     CaseItem,
     SupposeItem,
+    InlineFunctorDefinition,
+    InlinePredicateDefinition,
+    TypedParameter,
     SelectorAccess,
     StructureUpdate,
     FieldUpdate,
@@ -1723,6 +1756,9 @@ impl SurfaceNodeKind {
             Self::CaseReasoningStatement => SyntaxKind::CaseReasoningStatement,
             Self::CaseItem => SyntaxKind::CaseItem,
             Self::SupposeItem => SyntaxKind::SupposeItem,
+            Self::InlineFunctorDefinition => SyntaxKind::InlineFunctorDefinition,
+            Self::InlinePredicateDefinition => SyntaxKind::InlinePredicateDefinition,
+            Self::TypedParameter => SyntaxKind::TypedParameter,
             Self::SelectorAccess => SyntaxKind::SelectorAccess,
             Self::StructureUpdate => SyntaxKind::StructureUpdate,
             Self::FieldUpdate => SyntaxKind::FieldUpdate,
@@ -1980,6 +2016,13 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         }
         SurfaceNodeKind::CaseItem => output.push_str("CaseItem"),
         SurfaceNodeKind::SupposeItem => output.push_str("SupposeItem"),
+        SurfaceNodeKind::InlineFunctorDefinition => {
+            output.push_str("InlineFunctorDefinition");
+        }
+        SurfaceNodeKind::InlinePredicateDefinition => {
+            output.push_str("InlinePredicateDefinition");
+        }
+        SurfaceNodeKind::TypedParameter => output.push_str("TypedParameter"),
         SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
@@ -3079,6 +3122,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            task21_statement_nodes_ast(source_id(33))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -3144,6 +3193,9 @@ mod tests {
             SyntaxKind::CaseReasoningStatement,
             SyntaxKind::CaseItem,
             SyntaxKind::SupposeItem,
+            SyntaxKind::InlineFunctorDefinition,
+            SyntaxKind::InlinePredicateDefinition,
+            SyntaxKind::TypedParameter,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -4551,6 +4603,48 @@ mod tests {
             assert!(
                 snapshot.contains(expected),
                 "snapshot should render task-20 line {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn task21_typed_accessors_cover_inline_definition_nodes() {
+        let ast = task21_statement_nodes_ast(source_id(33));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task21_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task21_view!(
+            SurfaceNodeKind::InlineFunctorDefinition,
+            SyntaxKind::InlineFunctorDefinition,
+            as_inline_functor_definition
+        );
+        assert_task21_view!(
+            SurfaceNodeKind::InlinePredicateDefinition,
+            SyntaxKind::InlinePredicateDefinition,
+            as_inline_predicate_definition
+        );
+        assert_task21_view!(
+            SurfaceNodeKind::TypedParameter,
+            SyntaxKind::TypedParameter,
+            as_typed_parameter
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in [
+            "InlineFunctorDefinition",
+            "InlinePredicateDefinition",
+            "TypedParameter",
+        ] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-21 line {expected}"
             );
         }
     }
@@ -7104,6 +7198,204 @@ mod tests {
             ],
         );
         builder.finish(Some(root), None)
+    }
+
+    fn task21_statement_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let deffunc = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "deffunc",
+            range(source_id, 0, 7),
+        );
+        let f = builder.add_token(SurfaceTokenKind::Identifier, "F", range(source_id, 8, 9));
+        let first_lparen = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 9, 10),
+        );
+        let x_param =
+            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 10, 11));
+        let be = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "be",
+            range(source_id, 12, 14),
+        );
+        let first_nat = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Nat",
+            range(source_id, 15, 18),
+        );
+        let first_rparen = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 18, 19),
+        );
+        let arrow = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "->",
+            range(source_id, 20, 22),
+        );
+        let second_nat = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Nat",
+            range(source_id, 23, 26),
+        );
+        let equals = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "equals",
+            range(source_id, 27, 33),
+        );
+        let x_body = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 34, 35));
+        let first_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 35, 36),
+        );
+        let defpred = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "defpred",
+            range(source_id, 37, 44),
+        );
+        let p = builder.add_token(SurfaceTokenKind::Identifier, "P", range(source_id, 45, 46));
+        let second_lparen = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 46, 47),
+        );
+        let second_rparen = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 47, 48),
+        );
+        let means = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "means",
+            range(source_id, 49, 54),
+        );
+        let thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 55, 61),
+        );
+        let second_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 61, 62),
+        );
+
+        let parameter_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 15, 18),
+            vec![first_nat],
+        );
+        let typed_parameter = builder.add_node(
+            SurfaceNodeKind::TypedParameter,
+            range(source_id, 10, 18),
+            vec![x_param, be, parameter_type],
+        );
+        let return_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 23, 26),
+            vec![second_nat],
+        );
+        let body_term = term_expression_node(&mut builder, source_id, x_body, 34, 35);
+        let functor_definition = builder.add_node(
+            SurfaceNodeKind::InlineFunctorDefinition,
+            range(source_id, 0, 36),
+            vec![
+                deffunc,
+                f,
+                first_lparen,
+                typed_parameter,
+                first_rparen,
+                arrow,
+                return_type,
+                equals,
+                body_term,
+                first_semicolon,
+            ],
+        );
+        let functor_item = builder.add_node(
+            SurfaceNodeKind::StatementItem,
+            range(source_id, 0, 36),
+            vec![functor_definition],
+        );
+
+        let formula = thesis_formula_node(&mut builder, source_id, thesis, 55, 61);
+        let predicate_definition = builder.add_node(
+            SurfaceNodeKind::InlinePredicateDefinition,
+            range(source_id, 37, 62),
+            vec![
+                defpred,
+                p,
+                second_lparen,
+                second_rparen,
+                means,
+                formula,
+                second_semicolon,
+            ],
+        );
+        let predicate_item = builder.add_node(
+            SurfaceNodeKind::StatementItem,
+            range(source_id, 37, 62),
+            vec![predicate_definition],
+        );
+        let item_list = builder.add_node(
+            SurfaceNodeKind::ItemList,
+            range(source_id, 0, 62),
+            vec![functor_item, predicate_item],
+        );
+        let compilation_unit = builder.add_node(
+            SurfaceNodeKind::CompilationUnit,
+            range(source_id, 0, 62),
+            vec![item_list],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 62),
+            vec![
+                deffunc,
+                f,
+                first_lparen,
+                x_param,
+                be,
+                first_nat,
+                first_rparen,
+                arrow,
+                second_nat,
+                equals,
+                x_body,
+                first_semicolon,
+                defpred,
+                p,
+                second_lparen,
+                second_rparen,
+                means,
+                thesis,
+                second_semicolon,
+                compilation_unit,
+            ],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn thesis_formula_node(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        token: super::SurfaceBuilderNodeId,
+        start: usize,
+        end: usize,
+    ) -> super::SurfaceBuilderNodeId {
+        let thesis_constant = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+            range(source_id, start, end),
+            vec![token],
+        );
+        builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, start, end),
+            vec![thesis_constant],
+        )
     }
 
     fn thesis_proposition_node(

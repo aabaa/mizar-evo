@@ -1,0 +1,37 @@
+schema_version = 1
+id = "fail_parser_inline_definitions_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.statements"
+source = "fail_parser_inline_definitions_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_inline_definitions"
+stable_detail_key = "parser.statements.inline_definition_recovery"
+diagnostic_codes = [
+  "lexing:ScopeSkeleton(UnsupportedBinderShape)",
+  "malformed_formula_expression",
+  "missing_semicolon",
+  "malformed_formula_expression",
+  "missing_semicolon",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_type_expression",
+  "malformed_type_expression",
+  "malformed_type_expression",
+  "malformed_term_expression",
+  "malformed_type_expression",
+  "malformed_type_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_formula_expression",
+  "malformed_term_expression",
+  "malformed_formula_expression",
+  "missing_semicolon",
+]
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.15.statements.syntax",
+]
+notes = "Active parse-only runner coverage for parser task 21 local inline definition recovery: non-linkable then-deffunc/then-defpred, missing name, open paren, binder, parameter type, close paren, arrow, return type, equals, body, means, formula, and semicolon."

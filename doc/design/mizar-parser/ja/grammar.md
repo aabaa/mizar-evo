@@ -1090,6 +1090,65 @@ branch/body `end` 欠落 recovery、branch-header semicolon 欠落 recovery、ac
 parse-only pass/fail corpus coverage、Chapter 15 §15.4.3、§15.6.1、§15.6.2、§15.6.3、
 §15.8、§15.9.1 への traceability を固定する必要がある。
 
+### Task 21: ローカル定義
+
+Task 21 は Chapter 15 の inline definition を concrete statement node にして
+S-013 statement-node bucket を完了させる。parser は standalone statement 形だけを
+受け付ける。Chapter 15 は inline definition を `linkable_statement` に含めないため、
+`then deffunc` と `then defpred` は不正なままにする。
+
+```ebnf
+standalone_statement        ::= ... | inline_functor_definition
+                                   | inline_predicate_definition ;
+inline_functor_definition   ::= "deffunc" identifier "(" [ typed_parameters ] ")"
+                                "->" type_expression "equals"
+                                term_expression ";" ;
+inline_predicate_definition ::= "defpred" identifier "(" [ typed_parameters ] ")"
+                                "means" formula ";" ;
+typed_parameters            ::= typed_parameter { "," typed_parameter } ;
+typed_parameter             ::= identifier ( "being" | "be" ) type_expression ;
+```
+
+`InlineFunctorDefinition` は `deffunc` keyword、definition-name slot、parameter
+parentheses、comma token で区切られた source-order の `TypedParameter` child 0 個以上、
+`->` token、1 個の return `TypeExpression` または `MissingTypeExpression`
+recovery、`equals` keyword、1 個の `TermExpression` または `MissingTerm`
+recovery、任意の malformed-tail recovery、存在する場合の final semicolon を所有する。
+`InlinePredicateDefinition` は同じ head 形状に加えて、`defpred` keyword、`means`
+keyword、1 個の `FormulaExpression` または `MissingFormula` recovery を所有する。
+definition-name slot は、書かれた identifier token または `MissingTerm` recovery である。
+`TypedParameter` は存在する場合の parameter identifier token、書かれた場合の optional
+`be` または `being`、`TypeExpression` または `MissingTypeExpression` recovery を所有する。
+binder keyword が欠落しているが parameter-list delimiter の前で type を parse できる場合、
+parser はその type を `TypedParameter` 配下に保持し、binder 欠落を診断する。それ以外では
+delimiter 位置に `MissingTypeExpression` を挿入する。
+
+parser は `->`、`equals`、`means` を inline-definition delimiter として扱う。
+これらは top-level の type / term / formula expression parsing と recovery を止めるが、
+expression operator にはならない。inline definition parsing は純粋に syntax-only
+である。definition expansion、captured variable validation、parameter guard
+satisfaction、scope binding の導入、後続の `deffunc` / `defpred` name application の
+分類は行わない。
+
+Task 21 recovery は既存 diagnostic を再利用する。definition name 欠落は
+`MalformedTermExpression` と `MissingTerm` recovery を使う。semicolon 欠落は
+`MissingSemicolon` を使う。`(`、`)`、`->`、`equals`、`means` delimiter 欠落は、
+recovery が継続できる場合に inline-definition node を保持しながら、最も近い既存の
+malformed type / term / formula diagnostic を使う。parameter / return type 欠落は
+`MalformedTypeExpression` と `MissingTypeExpression`、
+functor body 欠落は `MalformedTermExpression` と `MissingTerm`、predicate body 欠落は
+`MalformedFormulaExpression` と `MissingFormula` を使う。malformed parameter list と
+definition tail は `,`、`)`、`->`、`equals`、`means`、semicolon、`end`、次の
+statement boundary、次の item boundary、EOF で同期する。
+
+Task 21 tests は、typed parameter 付き `deffunc`、zero-argument `deffunc`、typed
+parameter 付き `defpred`、zero-argument `defpred`、reasoning body 内での使用、
+`then deffunc` / `then defpred` の rejection、definition name 欠落、parameter type
+binder または type 欠落、`)` 欠落、`->` 欠落、return type 欠落、`equals` 欠落、
+functor body 欠落、`means` 欠落、predicate body 欠落、semicolon 欠落、active
+parse-only pass/fail corpus coverage、Chapter 15 §15.2.3、§15.2.4、§15.9.1 への
+traceability を固定する必要がある。
+
 ## 公開 enum の互換性
 
 `ParserTokenKind` は downstream crate 向けに `#[non_exhaustive]` とする。parser-facing

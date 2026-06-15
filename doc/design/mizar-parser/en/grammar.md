@@ -1166,6 +1166,66 @@ recovery, missing branch-header semicolon recovery, active parse-only pass/fail
 corpus coverage, and traceability to Chapter 15 §15.4.3, §15.6.1, §15.6.2,
 §15.6.3, §15.8, and §15.9.1.
 
+### Task 21: Local Definitions
+
+Task 21 completes the S-013 statement-node bucket by making Chapter 15 inline
+definitions concrete statement nodes. The parser accepts the standalone
+statement forms only; `then deffunc` and `then defpred` remain invalid because
+Chapter 15 keeps inline definitions out of `linkable_statement`.
+
+```ebnf
+standalone_statement        ::= ... | inline_functor_definition
+                                   | inline_predicate_definition ;
+inline_functor_definition   ::= "deffunc" identifier "(" [ typed_parameters ] ")"
+                                "->" type_expression "equals"
+                                term_expression ";" ;
+inline_predicate_definition ::= "defpred" identifier "(" [ typed_parameters ] ")"
+                                "means" formula ";" ;
+typed_parameters            ::= typed_parameter { "," typed_parameter } ;
+typed_parameter             ::= identifier ( "being" | "be" ) type_expression ;
+```
+
+`InlineFunctorDefinition` owns the `deffunc` keyword, a definition-name slot,
+parameter parentheses, zero or more source-ordered `TypedParameter` children
+separated by comma tokens, the `->` token, one return `TypeExpression` or
+`MissingTypeExpression` recovery, the `equals` keyword, one `TermExpression` or
+`MissingTerm` recovery, optional malformed-tail recovery, and the final
+semicolon when present. `InlinePredicateDefinition` owns the same head shape
+with the `defpred` keyword, the `means` keyword, and one `FormulaExpression` or
+`MissingFormula` recovery. The definition-name slot is either the written
+identifier token or `MissingTerm` recovery. `TypedParameter` owns one parameter
+identifier token when present, optional `be` or `being` when written, and a
+`TypeExpression` or `MissingTypeExpression` recovery. If the binder keyword is
+missing but a type can be parsed before a parameter-list delimiter, the parser
+keeps that type under the `TypedParameter` and diagnoses the missing binder;
+otherwise it inserts `MissingTypeExpression` at the delimiter.
+
+The parser treats `->`, `equals`, and `means` as inline-definition delimiters:
+they stop type, term, and formula expression parsing/recovery at top level but
+do not become expression operators. Inline definition parsing remains purely
+syntactic. It does not expand definitions, validate captured variables, check
+parameter guard satisfaction, introduce scope bindings, or classify later
+applications of `deffunc` / `defpred` names.
+
+Task 21 recovery reuses existing diagnostics. Missing definition names use
+`MalformedTermExpression` plus `MissingTerm` recovery. Missing semicolons use
+`MissingSemicolon`; missing `(`, `)`, `->`, `equals`, or `means` delimiters use
+the closest existing malformed type/term/formula diagnostic while preserving
+the inline-definition node when recovery can continue. Missing parameter and return types use
+`MalformedTypeExpression` plus `MissingTypeExpression`; missing functor bodies
+use `MalformedTermExpression` plus `MissingTerm`; missing predicate bodies use
+`MalformedFormulaExpression` plus `MissingFormula`. Malformed parameter lists
+and definition tails synchronize at `,`, `)`, `->`, `equals`, `means`,
+semicolon, `end`, the next statement boundary, the next item boundary, or EOF.
+
+Task 21 tests must pin: `deffunc` with typed parameters, zero-argument
+`deffunc`, `defpred` with typed parameters, zero-argument `defpred`, use inside
+reasoning bodies, rejection of `then deffunc` / `then defpred`, missing
+definition names, missing parameter type binders or types, missing `)`, missing
+`->`, missing return type, missing `equals`, missing functor body, missing
+`means`, missing predicate body, missing semicolon, active parse-only pass/fail
+corpus coverage, and traceability to Chapter 15 §15.2.3, §15.2.4, and §15.9.1.
+
 ## Public Enum Compatibility
 
 `ParserTokenKind` is `#[non_exhaustive]` for downstream crates. The parser token

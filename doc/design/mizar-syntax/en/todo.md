@@ -352,7 +352,7 @@ interaction. Spec references are the normative grammar chapters under
      Fraenkel/set-builder terms are implemented by parser task 15 / S-011.
    - Spec: [14.formulas.md](../../../spec/en/14.formulas.md).
 
-13. **Statement nodes.** [ ] — paired with `mizar-parser` tasks 16 and 18-21.
+13. **Statement nodes.** [x] — paired with `mizar-parser` tasks 16 and 18-21.
     - Simple statements `let`, `assume`, `take`, `set`, `given`
       (parser task 16); top-level `reserve` remains the existing
       `ReserveItem` path because Chapter 4 forbids block-local
@@ -362,7 +362,7 @@ interaction. Spec references are the normative grammar chapters under
       dispatch (grammar audit G-AUD-010);
       `now`/`hereby` and `per cases`/`suppose` blocks (parser task 20);
       `deffunc`/`defpred` local definitions (parser task 21).
-    - Progress: parser tasks 16, 18, 19, and 20 are implemented. `ConsiderStatement`,
+    - Result: parser tasks 16, 18, 19, 20, and 21 are implemented. `ConsiderStatement`,
       `ReconsiderStatement`, and `ReconsiderItem` now cover shared-type
       `consider` variables, condition lists, mandatory simple justifications,
       reconsider item lists, target types, task-18 recovery, scope-skeleton
@@ -377,8 +377,13 @@ interaction. Spec references are the normative grammar chapters under
       `now` / `hereby` blocks, `per cases` branch blocks, optional explicit
       `per cases by` justification, homogeneous `case` / `suppose` branches,
       `then per cases`, block-end recovery, parser unit tests, and active
-      parse-only pass/fail corpus coverage. Parser task 21 remains before
-      S-013 can be marked complete.
+      parse-only pass/fail corpus coverage. `InlineFunctorDefinition`,
+      `InlinePredicateDefinition`, and `TypedParameter` now cover local
+      `deffunc` / `defpred` definitions, standalone-only dispatch, `be` /
+      `being` typed parameters, zero-argument definitions,
+      delimiter/name/type/body recovery, parser unit tests, syntax typed
+      accessors, and active parse-only pass/fail corpus coverage. S-013 is
+      complete.
     - Spec: [15.statements.md](../../../spec/en/15.statements.md).
 
 14. **Theorem, proof, and justification nodes.** [ ] — paired with
