@@ -83,6 +83,11 @@ recovery、task 8 の type-expression recovery、task 9 の primary-term recover
   期待する closer より前に synchronization に到達した場合、`MalformedTermExpression`、
   opener への secondary anchor、nearest selector/update term node 下の
   `UnmatchedOpeningDelimiter` recovery を作る。
+- task 12 の operator parsing は、同一 operator の non-associative chain を
+  `NonAssociativeOperatorChain` で報告する。dangling infix operator は
+  `DanglingOperator` を報告し、operator を消費して partial left expression を表現したままにし、
+  recovery node を必須とはしない。dangling prefix operator は `DanglingOperator` を報告し、
+  `MissingTerm` operand を挿入して recoverable な `PrefixExpression` を保持する。
 - 対応する block opener を持たない裸の `end` は、構文診断とともに `ast = None` を返す。
 
 ## 公開 enum の互換性

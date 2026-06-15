@@ -32,8 +32,8 @@ Dependency order: `span_bridge` → `source` → `preprocess` → `lexical_env` 
 ## Crate Prerequisites
 
 The frontend foundation began with `mizar-session` and `mizar-lexer` only. Task
-11 adds hard dependencies on the minimal `mizar-syntax::SurfaceAst` boundary and
-`mizar-parser` entry point needed by the real parser seam. Task 12 adds the
+11 added hard dependencies on the minimal `mizar-syntax::SurfaceAst` boundary
+and `mizar-parser` entry point needed by the real parser seam. Task 12 added the
 minimal parser recovery passthrough on that boundary. Tasks 1-10 and the task
 13-14 coordinator paths remain valid with `StubParserSeam`; task 14 failure
 assertions and real-parser assertions build on the task-12 parser/syntax
@@ -277,16 +277,17 @@ should keep `cargo test -p mizar-frontend` green (see
 
 10. **Parser-input assembly and parser seam.** [x]
     - Add `pub mod parsing;`. Define `ParseRequest`, `ParserInputs`,
-      `OperatorFixityTable`, `OperatorFixityEntry`, `OperatorAssociativity`,
-      `StringRequiredContext`, `ParseOutput`, `ParserSeam`, and `StubParserSeam`;
+      `OperatorFixityTable`, `OperatorFixityEntry`, `OperatorFixity`,
+      `OperatorAssociativity`, `StringRequiredContext`, `ParseOutput`,
+      `ParserSeam`, and `StubParserSeam`;
       derive `ParserInputs` after the active lexical environment is built, using
       the source edition plus only the data currently exposed by lexical
       summaries.
     - Until `mizar-parser` exists, implement the seam against a stub that returns
       `ast = None` plus an empty diagnostic list, so the source → tokens pipeline
       is exercisable.
-    - Tests: `ParserInputs` carries the edition, uses an empty operator-fixity
-      table when summaries do not expose fixity, uses
+    - Tests: `ParserInputs` carries the edition, derives operator-fixity
+      entries only when summaries expose fixity, uses
       `StringRequiredContext::PositionSensitive` for normal source-to-token
       paths, carries no resolver state, and the stub seam returns `ast = None`.
     - Depends on: 8. Spec: [parsing.md](./parsing.md) "Parser Inputs",
@@ -300,9 +301,9 @@ should keep `cargo test -p mizar-frontend` green (see
     - `StubParserSeam` remains available for stubbed coordinator paths.
     - Tests: a well-formed token stream parses to a `SurfaceAst` with preserved
       source order and ranges; explicit operator fixity drives Pratt precedence
-      for a user infix operator. Summary-derived fixity remains empty until
-      lexical summaries expose fixity. Task 20 adds real source-text coverage for
-      annotation string literals.
+      for user operators. Task 12 added summary-derived prefix/postfix/infix
+      fixity coverage through the active source path. Task 20 adds real
+      source-text coverage for annotation string literals.
     - Depends on: 10, plus `mizar-parser`/`mizar-syntax`. Spec:
       [parsing.md](./parsing.md) "Algorithm / Logic".
 

@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_operator_terms_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.operator_terms"
+source = "pass_parser_operator_terms_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.13.operator_precedence.parser",
+]
+notes = "Active parse-only runner coverage for parser task 12 prefix/postfix/infix operator grouping, selector/application precedence, parentheses, right associativity, and qua binding after Pratt."

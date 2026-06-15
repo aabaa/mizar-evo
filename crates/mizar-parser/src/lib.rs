@@ -77,8 +77,8 @@ pub enum ParserTokenKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OperatorFixityEntry {
     pub spelling: Arc<str>,
+    pub fixity: OperatorFixity,
     pub precedence: u8,
-    pub associativity: OperatorAssociativity,
 }
 
 impl OperatorFixityEntry {
@@ -87,12 +87,43 @@ impl OperatorFixityEntry {
         precedence: u8,
         associativity: OperatorAssociativity,
     ) -> Self {
+        Self::infix(spelling, precedence, associativity)
+    }
+
+    pub fn prefix(spelling: impl Into<Arc<str>>, precedence: u8) -> Self {
         Self {
             spelling: spelling.into(),
+            fixity: OperatorFixity::Prefix,
             precedence,
-            associativity,
         }
     }
+
+    pub fn infix(
+        spelling: impl Into<Arc<str>>,
+        precedence: u8,
+        associativity: OperatorAssociativity,
+    ) -> Self {
+        Self {
+            spelling: spelling.into(),
+            fixity: OperatorFixity::Infix(associativity),
+            precedence,
+        }
+    }
+
+    pub fn postfix(spelling: impl Into<Arc<str>>, precedence: u8) -> Self {
+        Self {
+            spelling: spelling.into(),
+            fixity: OperatorFixity::Postfix,
+            precedence,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OperatorFixity {
+    Prefix,
+    Infix(OperatorAssociativity),
+    Postfix,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -1,5 +1,6 @@
 pub(crate) use crate::{
-    CommentKind, ExportRank, ExportedSymbolShape, ImportPrescanDiagnosticCode, LexDiagnosticCode,
+    CommentKind, ExportRank, ExportedOperatorAssociativity, ExportedOperatorFixity,
+    ExportedOperatorMetadata, ExportedSymbolShape, ImportPrescanDiagnosticCode, LexDiagnosticCode,
     LexDiagnosticPayload, LexRecoveryHint, LexicalBlockKind, LexicalEnvironmentError,
     LexicalSummaryFingerprint, MalformedStringLiteralReason, ModuleId, ModuleLexicalSummary,
     ModuleNamingError, ParserLexContext, ParserLexMode, RESERVED_SYMBOLS, RESERVED_WORDS,
@@ -95,6 +96,33 @@ pub(crate) fn exported_with_metadata(
         export_rank: ExportRank(rank),
         kind,
         arity,
+        operator: None,
+    }
+}
+
+pub(crate) fn exported_with_operator_metadata(
+    spelling: &str,
+    symbol: &str,
+    source_module: &str,
+    rank: u32,
+    operator: ExportedOperatorMetadata,
+) -> ExportedSymbolShape {
+    let arity = match operator.fixity {
+        ExportedOperatorFixity::Prefix | ExportedOperatorFixity::Postfix => {
+            UserSymbolArity::exact(1)
+        }
+        ExportedOperatorFixity::Infix(_) => UserSymbolArity::exact(2),
+    };
+    ExportedSymbolShape {
+        operator: Some(operator),
+        ..exported_with_metadata(
+            spelling,
+            symbol,
+            source_module,
+            rank,
+            UserSymbolKind::Functor,
+            arity,
+        )
     }
 }
 

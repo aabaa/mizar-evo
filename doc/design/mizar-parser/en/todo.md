@@ -12,8 +12,8 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] minimal task-11/12 entry uses private task-2 cursor/event infrastructure |
-| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] minimal explicit-fixity Pratt is split into the internal `pratt` module |
+| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] minimal task-12 entry uses private task-2 cursor/event infrastructure |
+| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task-12 term Pratt over active prefix/postfix/infix operators is implemented; formula precedence remains planned |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task-12 recovery plus mizar-frontend task-28 nested block-end matching uses task-2 cursor/diagnostic/sync helpers |
 
 `mizar-parser` implements the syntax grammar: frontend-adapted tokens in,
@@ -32,9 +32,10 @@ already disambiguated by `mizar-frontend` with session `SourceRange`s;
 parser-assisted lexing happens only through the precomputed
 `ParserLexingPlan` / `StringRequiredContext` contract (resolved at the top
 level, see [../../todo.md](../../todo.md) "Resolved And Open Decisions").
-`ParseRequest` carries the operator fixity table and string-required context;
-summary-driven fixity stays empty until lexical summaries expose fixity
-metadata. The corpus harness (`mizar-test`) and the corpus tree
+`ParseRequest` carries the operator fixity table and string-required context.
+Task 12 exposes fixture lexical-summary fixity metadata so active parse-only
+cases can exercise the frontend-visible source path without synthetic parser
+inputs. The corpus harness (`mizar-test`) and the corpus tree
 ([tests/README.md](../../../../tests/README.md)) already exist.
 
 `mizar-parser` should not depend on an ad hoc `SurfaceAst` arena layout. The
@@ -189,10 +190,9 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
      tokenization and `MizarParserSeam`. Inactive planned grammar seeds remain
      discovery and traceability metadata.
    - Active seed coverage now includes current frontend-reachable parser
-     behavior: token stream preservation, missing `end`, and stray `end`.
-     Explicit-fixity infix behavior remains covered by parser and frontend seam
-     unit tests until a corpus expectation can provide frontend-visible fixity
-     without bypassing resolver-owned inputs.
+     behavior: token stream preservation, missing `end`, stray `end`, and,
+     beginning with task 12, source-path operator fixity supplied by fixture
+     lexical summaries.
    - The committed template-argument seed cases stay out of the active runner
      until tasks 14, 23-25, and 31 can parse their formula, definition, and
      template forms.
@@ -210,12 +210,15 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
   public enums that already exist at the phase-3 boundary
   (`ParserTokenKind`, `OperatorAssociativity`, `StringRequiredContext`), using
   the `mizar-frontend` task-25 procedure and the initial `mizar-syntax` gate.
+  Later public enums such as task-12 `OperatorFixity` must be classified by the
+  same gate.
 - Record each decision in the owning module spec and apply the attributes before
   parser tasks 5-7 can become resolver/LSP inputs.
 - Result: `ParserTokenKind` and `StringRequiredContext` are
-  `#[non_exhaustive]` for downstream crates; `OperatorAssociativity` is a
-  documented exhaustive exception. `crates/mizar-parser/tests/lint_policy.rs`
-  guards the classification for every current public parser enum.
+  `#[non_exhaustive]` for downstream crates; `OperatorAssociativity` and the
+  task-12 `OperatorFixity` are documented exhaustive exceptions.
+  `crates/mizar-parser/tests/lint_policy.rs` guards the classification for
+  every current public parser enum.
 - Deps: 3 and the initial `mizar-syntax` public-enum gate. Spec:
   [grammar.md](./grammar.md), [pratt.md](./pratt.md),
   [recovery.md](./recovery.md).
@@ -381,7 +384,7 @@ older numeric syntax task references appear to disagree, prefer
      `MissingTypeExpression` or skipped target tails, parser unit tests, active
      parse-only pass/fail corpus coverage, and traceability entries.
 
-12. **Operator expressions (Pratt over the active lexicon).** [ ]
+12. **Operator expressions (Pratt over the active lexicon).** [x]
     - Generalize the task-11 explicit-fixity Pratt parser to user prefix,
       infix, and postfix operators driven by `ParserInputs` fixity metadata,
       with precedence and associativity per
@@ -391,6 +394,13 @@ older numeric syntax task references appear to disagree, prefer
     - Deps: 10, 11, `mizar-syntax` task 11 / S-011 (operator-node increment). Spec:
       [pratt.md](./pratt.md),
       [13.term_expression.md](../../../spec/en/13.term_expression.md).
+   - Result: implemented parser-facing `OperatorFixity` metadata,
+     summary-derived `ParserInputs` transfer through the frontend seam,
+     module-term Pratt parsing for prefix/postfix/infix operators before
+     `qua`, `PrefixExpression` / `PostfixExpression` syntax surfaces,
+     non-associative and dangling-operator diagnostics, parser unit tests,
+     active parse-only pass/fail corpus coverage, and traceability entry
+     `spec.en.13.operator_precedence.parser`.
 
 13. **Atomic formulas.** [ ]
     - Predicate application (symbolic and identifier forms), built-in

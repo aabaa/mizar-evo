@@ -6,7 +6,8 @@
 use crate::lexical_env::LexicalEnvironmentFingerprint;
 use crate::lexing::{LexicalByteRange, ParserLexContext, ParserLexMode, ParserLexingPlan};
 use crate::parsing::{
-    OperatorAssociativity, ParserCacheKeyVersion, ParserInputs, StringRequiredContext,
+    OperatorAssociativity, OperatorFixity, ParserCacheKeyVersion, ParserInputs,
+    StringRequiredContext,
 };
 use crate::preprocess::PreprocessedSource;
 use crate::source::SourceUnit;
@@ -342,8 +343,8 @@ pub fn parser_inputs_hash(inputs: &ParserInputs) -> Hash {
     for entry in &inputs.operator_fixity.entries {
         write_str(&mut hasher, entry.symbol_id.as_str());
         write_str(&mut hasher, entry.spelling.as_ref());
+        write_operator_fixity(&mut hasher, entry.fixity);
         hasher.update(&[entry.precedence]);
-        write_operator_associativity(&mut hasher, entry.associativity);
     }
     finish_hash(hasher)
 }
@@ -364,6 +365,17 @@ fn write_operator_associativity(hasher: &mut blake3::Hasher, associativity: Oper
         OperatorAssociativity::NonAssociative => "non_associative",
     };
     write_str(hasher, associativity_key);
+}
+
+fn write_operator_fixity(hasher: &mut blake3::Hasher, fixity: OperatorFixity) {
+    match fixity {
+        OperatorFixity::Prefix => write_str(hasher, "prefix"),
+        OperatorFixity::Infix(associativity) => {
+            write_str(hasher, "infix");
+            write_operator_associativity(hasher, associativity);
+        }
+        OperatorFixity::Postfix => write_str(hasher, "postfix"),
+    }
 }
 
 fn write_str(hasher: &mut blake3::Hasher, value: &str) {
@@ -387,15 +399,15 @@ fn finish_hash(hasher: blake3::Hasher) -> Hash {
 mod tests {
     use super::{
         ActiveLexicalEnvironmentCacheKey, ParserLexingPlanCacheKey, PreprocessedSourceCacheKey,
-        SourceUnitCacheKey, SurfaceAstCacheKey, TokenStreamCacheKey,
+        SourceUnitCacheKey, SurfaceAstCacheKey, TokenStreamCacheKey, parser_inputs_hash,
     };
     use crate::lexical_env::LexicalEnvironmentFingerprint;
     use crate::lexing::{
         LexicalByteRange, ParserLexContext, ParserLexingPlan, ParserLexingPlanContext,
     };
     use crate::parsing::{
-        OperatorAssociativity, OperatorFixityEntry, OperatorFixityTable, ParserCacheKeyVersion,
-        ParserInputs, StringRequiredContext,
+        OperatorAssociativity, OperatorFixity, OperatorFixityEntry, OperatorFixityTable,
+        ParserCacheKeyVersion, ParserInputs, StringRequiredContext,
     };
     use crate::preprocess::{LexicalSourceMap, LexicalText, PreprocessedSource, lexical_hash};
     use crate::source::SourceUnit;
@@ -655,6 +667,52 @@ mod tests {
         assert_ne!(base.stable_hash(), changed_string_context.stable_hash());
     }
 
+    #[test]
+    fn parser_inputs_hash_changes_with_operator_fixity_kind() {
+        let prefix = parser_inputs_with_operator_fixity(
+            Edition::new("2026"),
+            "fixture.op",
+            "op",
+            OperatorFixity::Prefix,
+        );
+        let postfix = parser_inputs_with_operator_fixity(
+            Edition::new("2026"),
+            "fixture.op",
+            "op",
+            OperatorFixity::Postfix,
+        );
+        let left_infix = parser_inputs_with_operator_fixity(
+            Edition::new("2026"),
+            "fixture.op",
+            "op",
+            OperatorFixity::Infix(OperatorAssociativity::Left),
+        );
+        let right_infix = parser_inputs_with_operator_fixity(
+            Edition::new("2026"),
+            "fixture.op",
+            "op",
+            OperatorFixity::Infix(OperatorAssociativity::Right),
+        );
+        let left_infix_higher_precedence = parser_inputs_with_operator_fixity_and_precedence(
+            Edition::new("2026"),
+            "fixture.op",
+            "op",
+            OperatorFixity::Infix(OperatorAssociativity::Left),
+            51,
+        );
+
+        assert_ne!(parser_inputs_hash(&prefix), parser_inputs_hash(&postfix));
+        assert_ne!(parser_inputs_hash(&prefix), parser_inputs_hash(&left_infix));
+        assert_ne!(
+            parser_inputs_hash(&left_infix),
+            parser_inputs_hash(&right_infix)
+        );
+        assert_ne!(
+            parser_inputs_hash(&left_infix),
+            parser_inputs_hash(&left_infix_higher_precedence)
+        );
+    }
+
     fn source_unit(origin: SourceOrigin, file_path: &str) -> SourceUnit {
         SourceUnit {
             source_id: source_id(1),
@@ -741,14 +799,38 @@ mod tests {
     }
 
     fn parser_inputs_with_fixity(edition: Edition) -> ParserInputs {
+        parser_inputs_with_operator_fixity(
+            edition,
+            "fixture.plus",
+            "+",
+            OperatorFixity::Infix(OperatorAssociativity::Left),
+        )
+    }
+
+    fn parser_inputs_with_operator_fixity(
+        edition: Edition,
+        symbol_id: &str,
+        spelling: &str,
+        fixity: OperatorFixity,
+    ) -> ParserInputs {
+        parser_inputs_with_operator_fixity_and_precedence(edition, symbol_id, spelling, fixity, 50)
+    }
+
+    fn parser_inputs_with_operator_fixity_and_precedence(
+        edition: Edition,
+        symbol_id: &str,
+        spelling: &str,
+        fixity: OperatorFixity,
+        precedence: u8,
+    ) -> ParserInputs {
         ParserInputs::new(
             edition,
             OperatorFixityTable {
                 entries: vec![OperatorFixityEntry {
-                    symbol_id: crate::lexical_env::SymbolId::new("fixture.plus"),
-                    spelling: Arc::from("+"),
-                    precedence: 50,
-                    associativity: OperatorAssociativity::Left,
+                    symbol_id: crate::lexical_env::SymbolId::new(symbol_id),
+                    spelling: Arc::from(spelling),
+                    fixity,
+                    precedence,
                 }],
             },
             StringRequiredContext::None,

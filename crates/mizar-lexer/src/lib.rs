@@ -108,7 +108,8 @@ pub use import_prescan::{
     scan_import_prelude,
 };
 pub use lexical_environment::{
-    ActiveLexicalEnvironment, ExportRank, ExportedSymbolShape, LexicalEnvironmentError,
+    ActiveLexicalEnvironment, ExportRank, ExportedOperatorAssociativity, ExportedOperatorFixity,
+    ExportedOperatorMetadata, ExportedSymbolShape, LexicalEnvironmentError,
     LexicalEnvironmentFingerprint, LexicalSummaryFingerprint, ModuleId, ModuleLexicalSummary,
     ResolvedImport, SymbolId, UserSymbolArity, UserSymbolCandidate, UserSymbolIndex,
     UserSymbolKind, UserSymbolKindSet, build_lexical_environment,

@@ -88,6 +88,12 @@ Current behavior:
   before the expected closer get `MalformedTermExpression`, a secondary opener
   anchor, and `UnmatchedOpeningDelimiter` recovery under the nearest
   selector/update term node;
+- task-12 operator parsing reports same-operator non-associative chains with
+  `NonAssociativeOperatorChain`. A dangling infix operator reports
+  `DanglingOperator`, consumes the operator, and leaves the partial left
+  expression represented without requiring a recovery node. A dangling prefix
+  operator reports `DanglingOperator` and keeps a recoverable
+  `PrefixExpression` by inserting a `MissingTerm` operand;
 - a stray `end` that has no matching block opener returns syntax diagnostics
   with `ast = None`.
 

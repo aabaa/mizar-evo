@@ -80,6 +80,8 @@ green tree.
 | set enumeration node | `SyntaxKind::SetEnumeration` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
+| prefix expression node | `SyntaxKind::PrefixExpression` |
+| postfix expression node | `SyntaxKind::PostfixExpression` |
 | recovery node | `SyntaxKind::ErrorRecovery` |
 
 Token roles are separate raw kinds: identifier, reserved word, reserved symbol,
@@ -135,6 +137,8 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 39 | `StructureUpdate` | task-10 functional structure-update postfix |
 | 40 | `FieldUpdate` | task-10 structure-update field assignment |
 | 41 | `QuaExpression` | task-11 `term "qua" type_expression` qualification surface |
+| 42 | `PrefixExpression` | task-12 prefix operator expression surface |
+| 43 | `PostfixExpression` | task-12 postfix operator expression surface |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -147,12 +151,13 @@ The current raw discriminants are part of the rowan boundary for this phase:
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true only for `Root`, `Token`,
-`InfixExpression`, `ErrorRecovery`, the task-S-009 shared path node kinds, the
-task-5/6/7 module, import, export, and visibility node kinds, and the task-S-010
-reserve/type node kinds plus the task-S-011 term node kinds listed above;
-`is_token_kind` is true only for the token leaf kinds. Future raw values should
-be appended or assigned into a documented reserved range so existing snapshots
-and rowan tests fail loudly when the raw vocabulary changes.
+`InfixExpression`, `PrefixExpression`, `PostfixExpression`, `ErrorRecovery`,
+the task-S-009 shared path node kinds, the task-5/6/7 module, import, export,
+and visibility node kinds, and the task-S-010 reserve/type node kinds plus the
+task-S-011 term node kinds listed above; `is_token_kind` is true only for the
+token leaf kinds. Future raw values should be appended or assigned into a
+documented reserved range so existing snapshots and rowan tests fail loudly
+when the raw vocabulary changes.
 
 ### Current Surface Vocabulary
 
@@ -199,7 +204,9 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::QualifiedSymbol` | none | `SyntaxKind::QualifiedSymbol` | `qualified_symbol`; zero or more identifier namespace `PathSegment` + `.` token pairs followed by a final user-symbol `PathSegment`, or the task-8 attribute-ref flattening where dotted prefix `PathSegment`s may also be user-symbol tokens before the final user-symbol |
 | `SurfaceNodeKind::PathSegment` | none | `SyntaxKind::PathSegment` | wraps exactly one identifier or user-symbol token; role is determined by parent and token kind |
 | `SurfaceNodeKind::RelativePrefix` | none | `SyntaxKind::RelativePrefix` | wraps exactly one `.` or `..` token at the start of a `ModulePath` |
-| `SurfaceNodeKind::InfixExpression(SurfaceInfixOperator)` | spelling, precedence, associativity | `SyntaxKind::InfixExpression` | task-12 Pratt expression shape |
+| `SurfaceNodeKind::InfixExpression(SurfaceInfixOperator)` | spelling, precedence, associativity | `SyntaxKind::InfixExpression` | task-12 infix Pratt expression shape |
+| `SurfaceNodeKind::PrefixExpression(SurfacePrefixOperator)` | spelling, precedence | `SyntaxKind::PrefixExpression` | task-12 prefix Pratt expression shape |
+| `SurfaceNodeKind::PostfixExpression(SurfacePostfixOperator)` | spelling, precedence | `SyntaxKind::PostfixExpression` | task-12 postfix Pratt expression shape |
 | `SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind)` | recovery kind | `SyntaxKind::ErrorRecovery` | builder-created recovery nodes are recovered |
 
 `SurfaceTokenKind` currently maps to the token raw kinds listed above:
@@ -385,6 +392,23 @@ exposes `as_qua_expression` for this node. Static validity, type narrowing or
 widening, overload selection, and proof obligations remain resolver/checker
 responsibilities.
 
+Parser task 12 adds active-lexicon operator expression nodes. `PrefixExpression`
+owns the operator token followed by the operand term-shape child and stores the
+operator spelling and precedence supplied by parser inputs. `PostfixExpression`
+owns the base term-shape child followed by the operator token and stores the
+same spelling/precedence payload. `InfixExpression` keeps the existing
+`left`, operator token, `right` child order and additionally stores infix
+associativity. Selector/update postfix chains and ordinary application are
+formed inside Pratt operands and therefore bind tighter than these user
+operators; `qua` is formed after Pratt and therefore remains the lowest
+term-level operator. Non-associative errors are syntax diagnostics only.
+Dangling infix operators may remain diagnostic-only, while dangling prefix
+operators keep the represented `PrefixExpression` recoverable by inserting a
+`MissingTerm` operand. `SurfaceNodeView` exposes `as_prefix_expression`,
+`as_postfix_expression`, and `as_infix_expression` payload accessors. Operator
+metadata is parser input, not semantic resolution: these nodes must not carry
+symbol ids, selected overloads, inferred types, or proof facts.
+
 ### Vocabulary Increment Contract
 
 Node vocabulary grows only in the same change as the `mizar-parser` grammar task
@@ -452,7 +476,7 @@ non-recovery structural owner and record the skipped source span in trivia.
 
 `SurfaceAst::node_view`, `root_view`, `expression_view`, and `token_views`
 return typed views that expose kind, range, recovered flag, children, token
-payload, infix payload, and recovery kind without requiring rowan traversal.
+payload, operator payload, and recovery kind without requiring rowan traversal.
 The compatibility `SurfaceAst::node` accessor remains available for existing
 tests and migration code.
 
@@ -464,7 +488,7 @@ format is versioned with the `surface-ast-snapshot-v1` header and renders the
 root view, optional expression root, and token compatibility view in stable
 stored order. Each node line includes the surface kind, source-local byte range,
 `recovered` flag, and kind-specific payload needed to distinguish the current
-syntax vocabulary: token kind/text, infix spelling/precedence/associativity,
+syntax vocabulary: token kind/text, operator spelling/precedence/fixity facts,
 or recovery kind.
 
 Snapshot text deliberately avoids rowan pointer identity, builder ids,
@@ -503,6 +527,8 @@ QualifiedSymbol range=<start>..<end> recovered=<bool>
 PathSegment range=<start>..<end> recovered=<bool>
 RelativePrefix range=<start>..<end> recovered=<bool>
 InfixExpression spelling="<escaped-text>" precedence=<u8> associativity=<SurfaceOperatorAssociativity> range=<start>..<end> recovered=<bool>
+PrefixExpression spelling="<escaped-text>" precedence=<u8> range=<start>..<end> recovered=<bool>
+PostfixExpression spelling="<escaped-text>" precedence=<u8> range=<start>..<end> recovered=<bool>
 ErrorRecovery kind=<SyntaxRecoveryKind> range=<start>..<end> recovered=<bool>
 ```
 

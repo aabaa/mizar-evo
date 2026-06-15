@@ -113,6 +113,7 @@ pub struct ExportedSymbolShape {
     pub export_rank: ExportRank,
     pub kind: UserSymbolKind,
     pub arity: UserSymbolArity,
+    pub operator: Option<ExportedOperatorMetadata>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -145,6 +146,27 @@ pub struct UserSymbolCandidate {
     pub export_rank: ExportRank,
     pub kind: UserSymbolKind,
     pub arity: UserSymbolArity,
+    pub operator: Option<ExportedOperatorMetadata>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ExportedOperatorMetadata {
+    pub fixity: ExportedOperatorFixity,
+    pub precedence: u8,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExportedOperatorFixity {
+    Prefix,
+    Infix(ExportedOperatorAssociativity),
+    Postfix,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExportedOperatorAssociativity {
+    Left,
+    Right,
+    NonAssociative,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -164,6 +186,13 @@ pub enum LexicalEnvironmentError {
         spelling: String,
         module_id: ModuleId,
         arity: UserSymbolArity,
+    },
+    InvalidOperatorMetadata {
+        spelling: String,
+        module_id: ModuleId,
+        kind: UserSymbolKind,
+        arity: UserSymbolArity,
+        operator: ExportedOperatorMetadata,
     },
     ReservedWordCollision {
         spelling: String,
@@ -209,6 +238,17 @@ impl fmt::Display for LexicalEnvironmentError {
                 f,
                 "invalid arity {:?} for user symbol `{spelling}` exported by module `{}`",
                 arity, module_id.0
+            ),
+            Self::InvalidOperatorMetadata {
+                spelling,
+                module_id,
+                kind,
+                arity,
+                operator,
+            } => write!(
+                f,
+                "invalid operator metadata {:?} for {:?} symbol `{spelling}` with arity {:?} exported by module `{}`",
+                operator, kind, arity, module_id.0
             ),
             Self::ReservedWordCollision {
                 spelling,
@@ -369,6 +409,17 @@ pub fn build_lexical_environment(
                 }
                 None => fingerprint.write_byte(0),
             }
+            match exported.operator {
+                Some(operator) => {
+                    fingerprint.write_byte(1);
+                    fingerprint.write_byte(operator_fixity_tag(operator.fixity));
+                    if let ExportedOperatorFixity::Infix(associativity) = operator.fixity {
+                        fingerprint.write_byte(operator_associativity_tag(associativity));
+                    }
+                    fingerprint.write_byte(operator.precedence);
+                }
+                None => fingerprint.write_byte(0),
+            }
 
             user_symbols.insert(UserSymbolCandidate {
                 spelling: exported.spelling.clone(),
@@ -379,6 +430,7 @@ pub fn build_lexical_environment(
                 export_rank: exported.export_rank,
                 kind: exported.kind,
                 arity: exported.arity,
+                operator: exported.operator,
             })?;
         }
     }
@@ -409,6 +461,10 @@ impl ActiveLexicalEnvironment {
         self.user_symbols.visible_symbol(spelling)
     }
 
+    pub fn visible_user_symbols(&self) -> Vec<&UserSymbolCandidate> {
+        self.user_symbols.visible_symbols()
+    }
+
     pub fn longest_user_symbol_at(&self, input: &str, start: usize) -> Vec<UserSymbolCandidate> {
         self.user_symbols.longest_at(input, start)
     }
@@ -418,6 +474,25 @@ impl UserSymbolIndex {
         self.symbols_by_spelling
             .get(spelling)
             .and_then(|candidates| candidates.last())
+    }
+
+    pub fn visible_symbols(&self) -> Vec<&UserSymbolCandidate> {
+        let mut symbols = self
+            .symbols_by_spelling
+            .values()
+            .flat_map(|candidates| {
+                let visible_import = candidates.last().map(|candidate| candidate.import_ordinal);
+                candidates.iter().filter(move |candidate| {
+                    visible_import.is_some_and(|import| candidate.import_ordinal == import)
+                })
+            })
+            .collect::<Vec<_>>();
+        symbols.sort_by(|left, right| {
+            left.spelling
+                .cmp(&right.spelling)
+                .then_with(|| left.symbol_id.cmp(&right.symbol_id))
+        });
+        symbols
     }
 
     pub fn longest_at(&self, input: &str, start: usize) -> Vec<UserSymbolCandidate> {
@@ -515,6 +590,22 @@ fn sort_user_symbol_candidates(candidates: &mut [UserSymbolCandidate]) {
     });
 }
 
+fn operator_fixity_tag(fixity: ExportedOperatorFixity) -> u8 {
+    match fixity {
+        ExportedOperatorFixity::Prefix => 0,
+        ExportedOperatorFixity::Infix(_) => 1,
+        ExportedOperatorFixity::Postfix => 2,
+    }
+}
+
+fn operator_associativity_tag(associativity: ExportedOperatorAssociativity) -> u8 {
+    match associativity {
+        ExportedOperatorAssociativity::Left => 0,
+        ExportedOperatorAssociativity::Right => 1,
+        ExportedOperatorAssociativity::NonAssociative => 2,
+    }
+}
+
 #[cfg(test)]
 impl UserSymbolIndex {
     pub(crate) fn trie_node_count(&self) -> usize {
@@ -573,6 +664,23 @@ fn validate_exported_symbol_shape(
             spelling: exported.spelling.clone(),
             module_id: exported.source_module.clone(),
         });
+    }
+    if let Some(operator) = exported.operator {
+        let expected_arity = match operator.fixity {
+            ExportedOperatorFixity::Prefix | ExportedOperatorFixity::Postfix => 1,
+            ExportedOperatorFixity::Infix(_) => 2,
+        };
+        if exported.kind != UserSymbolKind::Functor
+            || exported.arity != UserSymbolArity::exact(expected_arity)
+        {
+            return Err(LexicalEnvironmentError::InvalidOperatorMetadata {
+                spelling: exported.spelling.clone(),
+                module_id: exported.source_module.clone(),
+                kind: exported.kind,
+                arity: exported.arity,
+                operator,
+            });
+        }
     }
     Ok(())
 }

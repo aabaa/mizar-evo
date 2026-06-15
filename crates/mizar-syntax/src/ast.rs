@@ -74,6 +74,8 @@ pub enum SyntaxKind {
     StructureUpdate = 39,
     FieldUpdate = 40,
     QuaExpression = 41,
+    PrefixExpression = 42,
+    PostfixExpression = 43,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -129,6 +131,8 @@ impl SyntaxKind {
             39 => Self::StructureUpdate,
             40 => Self::FieldUpdate,
             41 => Self::QuaExpression,
+            42 => Self::PrefixExpression,
+            43 => Self::PostfixExpression,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -186,6 +190,8 @@ impl SyntaxKind {
                 | Self::StructureUpdate
                 | Self::FieldUpdate
                 | Self::QuaExpression
+                | Self::PrefixExpression
+                | Self::PostfixExpression
         )
     }
 
@@ -732,6 +738,8 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::PathSegment
             | SurfaceNodeKind::RelativePrefix
             | SurfaceNodeKind::InfixExpression(_)
+            | SurfaceNodeKind::PrefixExpression(_)
+            | SurfaceNodeKind::PostfixExpression(_)
             | SurfaceNodeKind::ErrorRecovery(_) => None,
         }
     }
@@ -778,6 +786,104 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::PathSegment
             | SurfaceNodeKind::RelativePrefix
             | SurfaceNodeKind::Token(_)
+            | SurfaceNodeKind::PrefixExpression(_)
+            | SurfaceNodeKind::PostfixExpression(_)
+            | SurfaceNodeKind::ErrorRecovery(_) => None,
+        }
+    }
+
+    pub const fn as_prefix_expression(self) -> Option<&'a SurfacePrefixOperator> {
+        match &self.node.kind {
+            SurfaceNodeKind::PrefixExpression(operator) => Some(operator),
+            SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::PlaceholderItem
+            | SurfaceNodeKind::ImportItem
+            | SurfaceNodeKind::ImportAliasDecl
+            | SurfaceNodeKind::ModuleBranchImport
+            | SurfaceNodeKind::ExportItem
+            | SurfaceNodeKind::VisibilityMarker
+            | SurfaceNodeKind::VisibleItem
+            | SurfaceNodeKind::ReserveItem
+            | SurfaceNodeKind::ReserveSegment
+            | SurfaceNodeKind::TypeExpression
+            | SurfaceNodeKind::AttributeChain
+            | SurfaceNodeKind::AttributeRef
+            | SurfaceNodeKind::ParameterPrefix
+            | SurfaceNodeKind::TypeHead
+            | SurfaceNodeKind::TypeArguments
+            | SurfaceNodeKind::TermPlaceholder
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::TermReference
+            | SurfaceNodeKind::NumeralTerm
+            | SurfaceNodeKind::ItTerm
+            | SurfaceNodeKind::ParenthesizedTerm
+            | SurfaceNodeKind::ChoiceTerm
+            | SurfaceNodeKind::ApplicationTerm
+            | SurfaceNodeKind::StructureConstructor
+            | SurfaceNodeKind::FieldArgument
+            | SurfaceNodeKind::SetEnumeration
+            | SurfaceNodeKind::SelectorAccess
+            | SurfaceNodeKind::StructureUpdate
+            | SurfaceNodeKind::FieldUpdate
+            | SurfaceNodeKind::QuaExpression
+            | SurfaceNodeKind::ModulePath
+            | SurfaceNodeKind::NamespacePath
+            | SurfaceNodeKind::QualifiedSymbol
+            | SurfaceNodeKind::PathSegment
+            | SurfaceNodeKind::RelativePrefix
+            | SurfaceNodeKind::Token(_)
+            | SurfaceNodeKind::InfixExpression(_)
+            | SurfaceNodeKind::PostfixExpression(_)
+            | SurfaceNodeKind::ErrorRecovery(_) => None,
+        }
+    }
+
+    pub const fn as_postfix_expression(self) -> Option<&'a SurfacePostfixOperator> {
+        match &self.node.kind {
+            SurfaceNodeKind::PostfixExpression(operator) => Some(operator),
+            SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::PlaceholderItem
+            | SurfaceNodeKind::ImportItem
+            | SurfaceNodeKind::ImportAliasDecl
+            | SurfaceNodeKind::ModuleBranchImport
+            | SurfaceNodeKind::ExportItem
+            | SurfaceNodeKind::VisibilityMarker
+            | SurfaceNodeKind::VisibleItem
+            | SurfaceNodeKind::ReserveItem
+            | SurfaceNodeKind::ReserveSegment
+            | SurfaceNodeKind::TypeExpression
+            | SurfaceNodeKind::AttributeChain
+            | SurfaceNodeKind::AttributeRef
+            | SurfaceNodeKind::ParameterPrefix
+            | SurfaceNodeKind::TypeHead
+            | SurfaceNodeKind::TypeArguments
+            | SurfaceNodeKind::TermPlaceholder
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::TermReference
+            | SurfaceNodeKind::NumeralTerm
+            | SurfaceNodeKind::ItTerm
+            | SurfaceNodeKind::ParenthesizedTerm
+            | SurfaceNodeKind::ChoiceTerm
+            | SurfaceNodeKind::ApplicationTerm
+            | SurfaceNodeKind::StructureConstructor
+            | SurfaceNodeKind::FieldArgument
+            | SurfaceNodeKind::SetEnumeration
+            | SurfaceNodeKind::SelectorAccess
+            | SurfaceNodeKind::StructureUpdate
+            | SurfaceNodeKind::FieldUpdate
+            | SurfaceNodeKind::QuaExpression
+            | SurfaceNodeKind::ModulePath
+            | SurfaceNodeKind::NamespacePath
+            | SurfaceNodeKind::QualifiedSymbol
+            | SurfaceNodeKind::PathSegment
+            | SurfaceNodeKind::RelativePrefix
+            | SurfaceNodeKind::Token(_)
+            | SurfaceNodeKind::InfixExpression(_)
+            | SurfaceNodeKind::PrefixExpression(_)
             | SurfaceNodeKind::ErrorRecovery(_) => None,
         }
     }
@@ -824,7 +930,9 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::PathSegment
             | SurfaceNodeKind::RelativePrefix
             | SurfaceNodeKind::Token(_)
-            | SurfaceNodeKind::InfixExpression(_) => None,
+            | SurfaceNodeKind::InfixExpression(_)
+            | SurfaceNodeKind::PrefixExpression(_)
+            | SurfaceNodeKind::PostfixExpression(_) => None,
         }
     }
 
@@ -1181,6 +1289,8 @@ impl SurfaceNode {
             | SurfaceNodeKind::PathSegment
             | SurfaceNodeKind::RelativePrefix
             | SurfaceNodeKind::InfixExpression(_)
+            | SurfaceNodeKind::PrefixExpression(_)
+            | SurfaceNodeKind::PostfixExpression(_)
             | SurfaceNodeKind::ErrorRecovery(_) => None,
         }
     }
@@ -1192,6 +1302,8 @@ pub enum SurfaceNodeKind {
     Root,
     Token(SurfaceToken),
     InfixExpression(SurfaceInfixOperator),
+    PrefixExpression(SurfacePrefixOperator),
+    PostfixExpression(SurfacePostfixOperator),
     ErrorRecovery(SyntaxRecoveryKind),
     CompilationUnit,
     ItemList,
@@ -1238,6 +1350,8 @@ impl SurfaceNodeKind {
             Self::Root => SyntaxKind::Root,
             Self::Token(_) => SyntaxKind::Token,
             Self::InfixExpression(_) => SyntaxKind::InfixExpression,
+            Self::PrefixExpression(_) => SyntaxKind::PrefixExpression,
+            Self::PostfixExpression(_) => SyntaxKind::PostfixExpression,
             Self::ErrorRecovery(_) => SyntaxKind::ErrorRecovery,
             Self::CompilationUnit => SyntaxKind::CompilationUnit,
             Self::ItemList => SyntaxKind::ItemList,
@@ -1350,6 +1464,18 @@ pub struct SurfaceInfixOperator {
     pub associativity: SurfaceOperatorAssociativity,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SurfacePrefixOperator {
+    pub spelling: Arc<str>,
+    pub precedence: u8,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SurfacePostfixOperator {
+    pub spelling: Arc<str>,
+    pub precedence: u8,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SurfaceOperatorAssociativity {
     Left,
@@ -1423,6 +1549,22 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
                 SnapshotEscaped(operator.spelling.as_ref()),
                 operator.precedence,
                 operator.associativity.snapshot_name()
+            );
+        }
+        SurfaceNodeKind::PrefixExpression(operator) => {
+            let _ = write!(
+                output,
+                "PrefixExpression spelling=\"{}\" precedence={}",
+                SnapshotEscaped(operator.spelling.as_ref()),
+                operator.precedence
+            );
+        }
+        SurfaceNodeKind::PostfixExpression(operator) => {
+            let _ = write!(
+                output,
+                "PostfixExpression spelling=\"{}\" precedence={}",
+                SnapshotEscaped(operator.spelling.as_ref()),
+                operator.precedence
             );
         }
         SurfaceNodeKind::ErrorRecovery(kind) => {
@@ -1605,7 +1747,7 @@ fn contains_range(parent: SourceRange, child: SourceRange) -> bool {
 mod tests {
     use super::{
         SurfaceAstBuilder, SurfaceInfixOperator, SurfaceNodeKind, SurfaceOperatorAssociativity,
-        SurfaceTokenKind, SyntaxKind,
+        SurfacePostfixOperator, SurfacePrefixOperator, SurfaceTokenKind, SyntaxKind,
     };
     use crate::SyntaxRecoveryKind;
     use crate::{
@@ -3249,6 +3391,32 @@ mod tests {
     }
 
     #[test]
+    fn task12_typed_accessors_cover_prefix_and_postfix_operator_nodes() {
+        let source_id = source_id(18);
+        let ast = prefix_postfix_expression_ast(source_id);
+
+        let postfix_view = ast.expression_view().unwrap();
+        assert_eq!(postfix_view.syntax_kind(), SyntaxKind::PostfixExpression);
+        let postfix = postfix_view.as_postfix_expression().unwrap();
+        assert_eq!(postfix.spelling.as_ref(), "!");
+        assert_eq!(postfix.precedence, 90);
+        assert!(postfix_view.as_prefix_expression().is_none());
+        assert!(postfix_view.as_infix_expression().is_none());
+
+        let prefix_view = ast.node_view(postfix_view.children()[0]).unwrap();
+        assert_eq!(prefix_view.syntax_kind(), SyntaxKind::PrefixExpression);
+        let prefix = prefix_view.as_prefix_expression().unwrap();
+        assert_eq!(prefix.spelling.as_ref(), "~");
+        assert_eq!(prefix.precedence, 70);
+        assert!(prefix_view.as_postfix_expression().is_none());
+        assert!(prefix_view.as_infix_expression().is_none());
+
+        let snapshot = ast.snapshot_text();
+        assert!(snapshot.contains("PrefixExpression spelling=\"~\" precedence=70"));
+        assert!(snapshot.contains("PostfixExpression spelling=\"!\" precedence=90"));
+    }
+
+    #[test]
     fn recovery_snapshot_names_are_unique_and_fully_fixture_backed() {
         let source_id = source_id(9);
         let fixtures = recovery_fixtures(source_id);
@@ -3650,6 +3818,37 @@ mod tests {
             vec![left, operator, right, expression],
         );
         builder.finish(Some(root), Some(expression))
+    }
+
+    fn prefix_postfix_expression_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let prefix_token =
+            builder.add_token(SurfaceTokenKind::UserSymbol, "~", range(source_id, 0, 1));
+        let operand = builder.add_token(SurfaceTokenKind::Identifier, "a", range(source_id, 2, 3));
+        let postfix_token =
+            builder.add_token(SurfaceTokenKind::UserSymbol, "!", range(source_id, 4, 5));
+        let prefix = builder.add_node(
+            SurfaceNodeKind::PrefixExpression(SurfacePrefixOperator {
+                spelling: "~".into(),
+                precedence: 70,
+            }),
+            range(source_id, 0, 3),
+            vec![prefix_token, operand],
+        );
+        let postfix = builder.add_node(
+            SurfaceNodeKind::PostfixExpression(SurfacePostfixOperator {
+                spelling: "!".into(),
+                precedence: 90,
+            }),
+            range(source_id, 0, 5),
+            vec![prefix, postfix_token],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 5),
+            vec![prefix_token, operand, postfix_token, postfix],
+        );
+        builder.finish(Some(root), Some(postfix))
     }
 
     fn recovery_ast(source_id: SourceId, recovery_kind: SyntaxRecoveryKind) -> crate::SurfaceAst {

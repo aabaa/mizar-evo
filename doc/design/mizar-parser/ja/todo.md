@@ -12,8 +12,8 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] task 11/12 の最小エントリは private な task 2 cursor / event 基盤を使用 |
-| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] 明示 fixity の最小 Pratt は内部 `pratt` module に分割済み |
+| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] task 12 の最小エントリは private な task 2 cursor / event 基盤を使用 |
+| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task 12 の active prefix/postfix/infix operator に対する項 Pratt は実装済み。formula precedence は計画中 |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task 12 の recovery と mizar-frontend task 28 の nested block-end matching は task 2 cursor / diagnostic / sync helper を使用 |
 
 `mizar-parser` は構文文法を実装する: frontend 適合済みトークンを入力とし、
@@ -32,8 +32,9 @@
 `ParserLexingPlan` / `StringRequiredContext` 契約を通じてのみ行われる
 （トップレベルで解決済み。[../../todo.md](../../todo.md)「Resolved And Open
 Decisions」を参照）。`ParseRequest` は演算子 fixity テーブルと
-string-required 文脈を運ぶ。サマリ由来の fixity は、字句サマリが fixity
-メタデータを公開するまで空のままである。コーパスハーネス（`mizar-test`）と
+string-required 文脈を運ぶ。task 12 では fixture lexical-summary fixity metadata を公開し、
+active parse-only case が合成 parser input ではなく frontend-visible source path で
+operator fixity を検証できるようにする。コーパスハーネス（`mizar-test`）と
 コーパスツリー（[tests/README.md](../../../../tests/README.md)）はすでに
 存在する。
 
@@ -181,10 +182,8 @@ resolver / build-system 依存を避ける。
      tag を持つ active `.miz` case を実トークン化と `MizarParserSeam` で実行する。
      inactive な planned grammar seed は discovery と traceability metadata のままにする。
    - active seed coverage は、現在 frontend から到達できる parser behavior
-     （token stream preservation、`end` 欠落、孤立した `end`）を含む。明示
-     fixity の中置式は、resolver が所有する input を bypass せずに corpus
-     expectation から frontend-visible fixity を供給できるようになるまで、parser
-     と frontend seam の unit test coverage に残す。
+     （token stream preservation、`end` 欠落、孤立した `end`）を含み、task 12 以降は
+     fixture lexical summary から供給される source-path operator fixity も含む。
    - コミット済みの template 引数 seed ケースは、task 14、23-25、31 が
      それらの formula、definition、template 形を parse できるまで active
      runner から外す。
@@ -201,13 +200,15 @@ resolver / build-system 依存を避ける。
 - phase 3 境界にすでに存在する parser 公開 enum
   （`ParserTokenKind`、`OperatorAssociativity`、`StringRequiredContext`）について、
   `mizar-frontend` task 25 の手続きと `mizar-syntax` の初期ゲートに沿って、
-  `#[non_exhaustive]` 対 意図的 exhaustive を決定する。
+  `#[non_exhaustive]` 対 意図的 exhaustive を決定する。task 12 の
+  `OperatorFixity` のような後続の公開 enum も同じゲートで分類する。
 - 各決定を所有モジュール仕様に記録し、parser task 5〜7 が resolver / LSP の
   入力になり得る前に属性を適用する。
 - 結果: `ParserTokenKind` と `StringRequiredContext` は downstream crate 向けに
-  `#[non_exhaustive]` とした。`OperatorAssociativity` は文書化された exhaustive
-  例外である。`crates/mizar-parser/tests/lint_policy.rs` が現在の parser public enum
-  すべての分類を guard する。
+  `#[non_exhaustive]` とした。`OperatorAssociativity` と task 12 の
+  `OperatorFixity` は文書化された exhaustive 例外である。
+  `crates/mizar-parser/tests/lint_policy.rs` が現在の parser public enum すべての分類を
+  guard する。
 - 依存: 3 と `mizar-syntax` の公開 enum 初期ゲート。仕様:
   [grammar.md](./grammar.md)、[pratt.md](./pratt.md)、[recovery.md](./recovery.md)。
 
@@ -365,7 +366,7 @@ resolver / build-system 依存を避ける。
      `MalformedTypeExpression` recovery、parser unit test、active parse-only
      pass/fail corpus coverage、traceability entry を追加した。
 
-12. **演算子式（アクティブレキシコン上の Pratt）。** [ ]
+12. **演算子式（アクティブレキシコン上の Pratt）。** [x]
     - task 11 の明示 fixity の Pratt パーサーを、`ParserInputs` の fixity
       メタデータで駆動されるユーザー prefix / infix / postfix 演算子へ一般化
       する。優先順位と結合性は
@@ -374,6 +375,12 @@ resolver / build-system 依存を避ける。
     - 依存: 10、11、`mizar-syntax` task 11 / S-011（演算子ノードの増分）。仕様:
       [pratt.md](./pratt.md)、
       [13.term_expression.md](../../../spec/ja/13.term_expression.md)。
+   - 結果: parser-facing な `OperatorFixity` metadata、frontend seam 経由の
+     summary-derived `ParserInputs` 転送、`qua` の前に prefix/postfix/infix
+     operator を扱う module-term Pratt parsing、`PrefixExpression` /
+     `PostfixExpression` syntax surface、non-associative と dangling operator
+     診断、parser unit test、active parse-only pass/fail corpus coverage、
+     traceability entry `spec.en.13.operator_precedence.parser` を実装した。
 
 13. **原子論理式。** [ ]
     - 述語適用（記号形と識別子形）、built-in membership / equality /

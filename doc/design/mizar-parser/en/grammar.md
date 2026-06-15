@@ -2,7 +2,8 @@
 
 Status: module skeleton, top-level placeholder dispatch, concrete import
 items, export items, visibility wrappers, reserve-hosted type expressions, and
-reserve-hosted term surfaces implemented through task 11; remaining concrete
+reserve-hosted term surfaces implemented through task 12, including active
+prefix/postfix/infix operator expressions before `qua`; remaining concrete
 non-module item grammars planned.
 
 ## Purpose
@@ -30,7 +31,9 @@ Current behavior:
   `TypeExpression` trees with attribute chains, generic type heads,
   `of`/`over` `TermExpression` arguments, bracket nested type arguments, and
   bracket `qua_arg` entries parsed as `TermExpression` / `QuaExpression`
-  surfaces. Other non-module item grammars remain placeholders.
+  surfaces. Task 12 extends those term arguments with active-lexicon
+  prefix/postfix/infix operator expressions before `qua`. Other non-module
+  item grammars remain placeholders.
 
 ## Task 4: Shared Paths
 
@@ -365,8 +368,9 @@ This is a syntax-only split: zero-field constructors such as `S()` remain
 generic applications until a later semantic boundary supplies structure facts.
 Built-in bracket functor notation with reserved `[` and `]` is preserved as
 `ApplicationTerm`. Active user-symbol delimiter pairs from
-`user_symbol term_list user_symbol` require bracket-pair metadata that is not
-part of `ParserInputs` yet; parser task 12 owns that active-operator extension.
+`user_symbol term_list user_symbol` require bracket-pair metadata beyond the
+task-12 prefix/postfix/infix `OperatorFixity` entries and remain deferred until
+that metadata exists.
 
 Task 9 produces `MalformedTermExpression` diagnostics for missing or malformed
 primary terms inside term lists and may insert `MissingTerm` recovery at pure
@@ -478,6 +482,64 @@ precedence, parenthesized selector-after-`qua`, target-type argument binding,
 bracket `qua_arg` migration away from `TermPlaceholder`, missing target
 recovery, and malformed target-tail recovery. Active parse-only pass/fail
 fixtures cover the frontend seam and trace back to §13.6.
+
+## Task 12: Operator Expressions
+
+Production inventory:
+
+```ebnf
+operator_expression ::= prefix_expression
+                      | postfix_expression
+                      | infix_expression
+                      | selector_or_primary_term ;
+prefix_expression   ::= prefix_operator operator_expression ;
+postfix_expression  ::= operator_expression postfix_operator ;
+infix_expression    ::= operator_expression infix_operator operator_expression ;
+term_expression     ::= operator_expression { "qua" type_expression } ;
+```
+
+The concrete parser uses the Pratt contract in [pratt.md](./pratt.md) rather
+than directly recursing through the schematic productions above. Operator
+metadata reaches this crate as `ParseRequest::operator_fixity`, derived by the
+frontend from `ParserInputs`: each entry records the source spelling, fixity
+kind, precedence, and infix associativity when applicable. The parser uses this
+table to group source tokens into `PrefixExpression`,
+`PostfixExpression`, and `InfixExpression` syntax nodes. It does not resolve
+overloads, validate result types, or invent default fixity for visible symbols
+that are not present in the table. Default precedence and associativity from
+Chapter 10 / Appendix B are expected to be materialized by the lexical-summary
+producer before the frontend builds the parser `ParseRequest`.
+
+Task 12 extends the module term parser rather than the legacy token-only Pratt
+entry point. Each Pratt operand is the already implemented primary term plus
+fixed selector/update postfix chain, so selectors, selector calls, ordinary
+applications, structure updates, and parenthesized terms bind tighter than user
+operators. `qua` remains outside Pratt as the fixed lowest-precedence
+term-level operator. For example, `p.x ++ y qua T` groups the selector inside
+the left operand and then qualifies the full infix expression, while
+`(p qua T).x ++ y` requires parentheses for the selector after `qua`.
+If the same source spelling is visible as both postfix and infix after a left
+operand, the parser chooses the infix form when that infix entry is eligible
+and the following token can start a right operand; otherwise it chooses the
+postfix form when that postfix entry is eligible at the current binding power.
+
+Postfix operators use a two-child node `[base, operator_token]`. Prefix
+operators use `[operator_token, operand]`. Infix operators keep the existing
+three-child order `[left, operator_token, right]` and preserve spelling,
+precedence, and associativity payload. Non-associative chaining of the same
+infix operator emits `NonAssociativeOperatorChain` at the second operator's
+range. A missing infix right operand emits `DanglingOperator` at the dangling
+operator range and leaves the partial left expression represented. A missing
+prefix operand emits `DanglingOperator` at the prefix operator range and keeps
+the represented `PrefixExpression` recoverable by inserting a `MissingTerm`
+operand.
+
+Task 12 tests pin active-lexicon fixity derivation from parse-only fixture
+summaries, prefix/postfix/infix surface nodes, left/right/non-associative
+grouping, dangling operator diagnostics, interaction with selector/update,
+application, parentheses, and `qua`, plus active parse-only pass/fail corpus
+coverage traced to Chapter 13 and Appendix B by
+`spec.en.13.operator_precedence.parser`.
 
 ## Public Enum Compatibility
 

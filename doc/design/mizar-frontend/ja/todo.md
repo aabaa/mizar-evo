@@ -27,7 +27,7 @@
 
 ## crate の前提条件
 
-フロントエンドの基盤は `mizar-session` と `mizar-lexer` だけで始めた。task 11 は、実 parser seam に必要な最小限の `mizar-syntax::SurfaceAst` 境界と `mizar-parser` エントリポイントへの必須依存を追加する。task 12 は、その境界に最小限の parser recovery passthrough を追加する。タスク 1〜10 と task 13〜14 の coordinator 経路は、引き続き `StubParserSeam` で有効である。task 14 の失敗アサーションと実 parser 検証は、task 12 の parser/syntax 境界と task 13 の coordinator の上に構築する。
+フロントエンドの基盤は `mizar-session` と `mizar-lexer` だけで始めた。task 11 は、実 parser seam に必要な最小限の `mizar-syntax::SurfaceAst` 境界と `mizar-parser` エントリポイントへの必須依存を追加済みである。task 12 は、その境界に最小限の parser recovery passthrough を追加済みである。タスク 1〜10 と task 13〜14 の coordinator 経路は、引き続き `StubParserSeam` で有効である。task 14 の失敗アサーションと実 parser 検証は、task 12 の parser/syntax 境界と task 13 の coordinator の上に構築する。
 
 ## 解決済みおよび保留中の決定
 
@@ -112,15 +112,15 @@
 ### モジュール: parsing (`src/parsing.rs`)
 
 10. **パーサー入力の組み立てとパーサーの継ぎ目。** [x]
-    - `pub mod parsing;` を追加する。`ParseRequest`、`ParserInputs`、`OperatorFixityTable`、`OperatorFixityEntry`、`OperatorAssociativity`、`StringRequiredContext`、`ParseOutput`、`ParserSeam`、`StubParserSeam` を定義し、アクティブ字句環境の構築後に、ソースのエディションと、字句サマリが現在公開しているデータだけを使って `ParserInputs` を導出する。
+    - `pub mod parsing;` を追加する。`ParseRequest`、`ParserInputs`、`OperatorFixityTable`、`OperatorFixityEntry`、`OperatorFixity`、`OperatorAssociativity`、`StringRequiredContext`、`ParseOutput`、`ParserSeam`、`StubParserSeam` を定義し、アクティブ字句環境の構築後に、ソースのエディションと、字句サマリが現在公開しているデータだけを使って `ParserInputs` を導出する。
     - `mizar-parser` が存在するまでは、継ぎ目を `ast = None` と空の診断リストを返すスタブとして実装し、ソース → トークンのパイプラインを実行可能にする。
-    - テスト: `ParserInputs` はエディションを運び、サマリが fixity を公開していないときは空の演算子 fixity テーブルを使い、通常の source-to-token 経路では `StringRequiredContext::PositionSensitive` を使い、解決器の状態を運ばない。スタブの継ぎ目が `ast = None` を返す。
+    - テスト: `ParserInputs` はエディションを運び、summary が fixity を公開する場合だけ operator-fixity entry を導出し、通常の source-to-token 経路では `StringRequiredContext::PositionSensitive` を使い、解決器の状態を運ばない。スタブの継ぎ目が `ast = None` を返す。
     - 依存: 8。仕様: [parsing.md](./parsing.md)「Parser Inputs」「Public API」。
 
 11. **`mizar-parser` の呼び出し。** [x]
     - 最小限の `mizar-syntax` / `mizar-parser` crate と `MizarParserSeam` を追加する。frontend の `TokenStream` と `ParserInputs` を parser エントリポイントへ適合し、`mizar_syntax::SurfaceAst` と構文診断をそのまま返す。
     - `StubParserSeam` は、スタブ版 coordinator 経路のために引き続き利用可能である。
-    - テスト: 整形式のトークンストリームが、ソース順と範囲を保持した `SurfaceAst` へ解析される。明示的に与えた演算子 fixity が、ユーザー定義中置演算子に対する Pratt 優先順位を駆動する。サマリ由来の fixity は、字句サマリが fixity を公開するまで空のままである。task 20 は annotation string literal の実 source-text coverage を追加する。
+    - テスト: 整形式のトークンストリームが、ソース順と範囲を保持した `SurfaceAst` へ解析される。明示的に与えた演算子 fixity が、ユーザー演算子に対する Pratt 優先順位を駆動する。task 12 は active source path を通した summary-derived prefix/postfix/infix fixity coverage を追加済みである。task 20 は annotation string literal の実 source-text coverage を追加する。
     - 依存: 10、加えて `mizar-parser`/`mizar-syntax`。仕様: [parsing.md](./parsing.md)「Algorithm / Logic」。
 
 12. **パーサーの回復のパススルー。** [x]

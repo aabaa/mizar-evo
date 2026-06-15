@@ -87,12 +87,17 @@ pub enum LexicalEnvironmentDiagnosticCode {
 }
 ```
 
-`ActiveLexicalEnvironment`, `ExportRank`, `ExportedSymbolShape`,
+`ActiveLexicalEnvironment`, `ExportRank`, `ExportedOperatorAssociativity`,
+`ExportedOperatorFixity`, `ExportedOperatorMetadata`, `ExportedSymbolShape`,
 `LexicalEnvironmentError`, `LexicalEnvironmentFingerprint`,
 `LexicalSummaryFingerprint`, `ModuleId`, `ModuleLexicalSummary`,
 `ResolvedImport`, `SymbolId`, `UserSymbolArity`, `UserSymbolCandidate`,
 `UserSymbolIndex`, `UserSymbolKind`, and `UserSymbolKindSet` are re-exported
-from `mizar-lexer`. `ResolvedImportEntry` is frontend-owned
+from `mizar-lexer`. Dependency summaries and active candidates carry optional
+`ExportedOperatorMetadata`; lexer summary validation accepts it only for
+symbolic functors whose exact arity matches the prefix/postfix/infix fixity, and
+the frontend later copies the validated metadata into parser inputs.
+`ResolvedImportEntry` is frontend-owned
 provenance: it wraps the lexer `ResolvedImport` with the source span and ordinal
 of the `ImportStub` that produced it, so later diagnostics can point back to the
 right import even when several stubs resolve to the same module. The frontend
@@ -125,8 +130,8 @@ Provider-owned recoverable diagnostics may use any
 `LexicalEnvironmentDiagnosticCode` after their primary and secondary provenance
 passes validation. The frontend does not synthesize
 `InvalidUserSymbolSpelling`, `InvalidUserSymbolArity`, `ReservedWordCollision`,
-or `ReservedSymbolCollision` from lexer summary validation today; lexer-owned
-malformed dependency summaries still become
+`ReservedSymbolCollision`, or invalid operator metadata from lexer summary
+validation today; lexer-owned malformed dependency summaries still become
 `FrontendLexicalEnvironmentError::MalformedSummary`.
 `LexicalSummaryProvider` is the seam by which the build planner / resolver
 supplies already-resolved imports plus lexical summaries; the frontend never
@@ -163,10 +168,11 @@ semantic applicability.
 ### Fingerprint and Cache Key
 
 `LexicalEnvironmentFingerprint` summarizes resolved imports, dependency
-lexical-summary fingerprints, and import order. It is the cache key for the
-active lexical environment and a component of the `TokenStream` cache key, so a
-dependency export change can correctly invalidate tokenization even when the
-local file is unchanged.
+lexical-summary fingerprints, import order, symbol shape, arity, and optional
+operator metadata. It is the cache key for the active lexical environment and a
+component of the `TokenStream` cache key, so a dependency export or operator
+fixity change can correctly invalidate tokenization/parsing even when the local
+file is unchanged.
 
 ## Algorithm / Logic
 

@@ -1,5 +1,5 @@
 use crate::{
-    ParserToken, ParserTokenKind,
+    OperatorAssociativity, OperatorFixity, OperatorFixityEntry, ParserToken, ParserTokenKind,
     cursor::is_reserved_word_token,
     diagnostic::{ExpectedToken, expected_token_diagnostic},
     event::SyntaxEvent,
@@ -9,7 +9,8 @@ use crate::{
 };
 use mizar_session::{SourceAnchor, SourceRange};
 use mizar_syntax::{
-    SkippedTokenReason, SurfaceBuilderNodeId, SurfaceNodeKind, SyntaxDiagnostic,
+    SkippedTokenReason, SurfaceBuilderNodeId, SurfaceInfixOperator, SurfaceNodeKind,
+    SurfaceOperatorAssociativity, SurfacePostfixOperator, SurfacePrefixOperator, SyntaxDiagnostic,
     SyntaxDiagnosticCode, SyntaxRecoveryKind,
 };
 
@@ -951,9 +952,8 @@ impl Parser {
             return None;
         }
 
-        let primary = self.parse_term_primary_at(position)?;
-        let postfix = self.parse_term_postfix_chain_at(position, primary);
-        let term = self.parse_qua_chain_at(position, postfix, QuaTargetGrammar::TypeExpression);
+        let operator = self.parse_term_operator_expression_at(position, 0, false)?;
+        let term = self.parse_qua_chain_at(position, operator, QuaTargetGrammar::TypeExpression);
         Some(self.wrap_term_expression(position, term))
     }
 
@@ -965,7 +965,9 @@ impl Parser {
             let primary = self.parse_identifier_reference_term_at(position);
             let postfix =
                 self.parse_term_postfix_chain_before_structure_field_list_at(position, primary);
-            let term = self.parse_qua_chain_at(position, postfix, QuaTargetGrammar::TypeExpression);
+            let operator = self.parse_term_operator_tail_at(position, postfix, 0, true);
+            let term =
+                self.parse_qua_chain_at(position, operator, QuaTargetGrammar::TypeExpression);
             return Some(self.wrap_term_expression(position, term));
         }
 
@@ -975,17 +977,17 @@ impl Parser {
             let primary = self.parse_qualified_symbol_reference_term_at(position)?;
             let postfix =
                 self.parse_term_postfix_chain_before_structure_field_list_at(position, primary);
-            let term = self.parse_qua_chain_at(position, postfix, QuaTargetGrammar::TypeExpression);
+            let operator = self.parse_term_operator_tail_at(position, postfix, 0, true);
+            let term =
+                self.parse_qua_chain_at(position, operator, QuaTargetGrammar::TypeExpression);
             return Some(self.wrap_term_expression(position, term));
         }
 
         if self.is_term_expression_boundary_at(position) {
             return None;
         }
-        let primary = self.parse_term_primary_at(position)?;
-        let postfix =
-            self.parse_term_postfix_chain_before_structure_field_list_at(position, primary);
-        let term = self.parse_qua_chain_at(position, postfix, QuaTargetGrammar::TypeExpression);
+        let operator = self.parse_term_operator_expression_at(position, 0, true)?;
+        let term = self.parse_qua_chain_at(position, operator, QuaTargetGrammar::TypeExpression);
         Some(self.wrap_term_expression(position, term))
     }
 
@@ -1002,12 +1004,280 @@ impl Parser {
         }
     }
 
-    fn parse_term_postfix_chain_at(
+    fn parse_term_operator_expression_at(
+        &mut self,
+        position: usize,
+        minimum_binding_power: u32,
+        stop_before_structure_field_list: bool,
+    ) -> Option<ParsedTypeNode> {
+        let left = if let Some(operator) = self.prefix_operator_at(position).cloned() {
+            self.parse_prefix_operator_expression_at(
+                position,
+                operator,
+                stop_before_structure_field_list,
+            )
+        } else {
+            let primary = self.parse_term_primary_at(position)?;
+            self.parse_term_postfix_chain(position, primary, stop_before_structure_field_list)
+        };
+
+        Some(self.parse_term_operator_tail_at(
+            position,
+            left,
+            minimum_binding_power,
+            stop_before_structure_field_list,
+        ))
+    }
+
+    fn parse_term_operator_tail_at(
         &mut self,
         start_position: usize,
-        primary: ParsedTypeNode,
+        mut left: ParsedTypeNode,
+        minimum_binding_power: u32,
+        stop_before_structure_field_list: bool,
     ) -> ParsedTypeNode {
-        self.parse_term_postfix_chain(start_position, primary, false)
+        loop {
+            let cursor = left.next_position;
+            if stop_before_structure_field_list && self.is_structure_field_list_opener_at(cursor) {
+                break;
+            }
+
+            let postfix_operator = self.postfix_operator_at(cursor).cloned();
+            let postfix_eligible = postfix_operator
+                .as_ref()
+                .is_some_and(|operator| u32::from(operator.precedence) >= minimum_binding_power);
+
+            let Some(infix_operator) = self.infix_operator_at(cursor).cloned() else {
+                if let Some(operator) = postfix_operator.filter(|_| postfix_eligible) {
+                    left = self.parse_postfix_operator_expression_after_base(
+                        start_position,
+                        left,
+                        cursor,
+                        &operator,
+                    );
+                    continue;
+                }
+                break;
+            };
+            let (left_binding_power, right_binding_power) = infix_binding_powers(&infix_operator);
+            if left_binding_power < minimum_binding_power {
+                if let Some(operator) = postfix_operator.filter(|_| postfix_eligible) {
+                    left = self.parse_postfix_operator_expression_after_base(
+                        start_position,
+                        left,
+                        cursor,
+                        &operator,
+                    );
+                    continue;
+                }
+                break;
+            }
+
+            if postfix_eligible
+                && !self.can_start_term_operator_operand_at(
+                    cursor + 1,
+                    stop_before_structure_field_list,
+                )
+            {
+                let operator = postfix_operator.expect("postfix eligibility implies operator");
+                left = self.parse_postfix_operator_expression_after_base(
+                    start_position,
+                    left,
+                    cursor,
+                    &operator,
+                );
+                continue;
+            }
+
+            if infix_associativity(&infix_operator) == OperatorAssociativity::NonAssociative
+                && self.left_is_non_associative_chain(left.id, &infix_operator)
+            {
+                let span = self.request.tokens[cursor].span;
+                self.diagnostics.push(SyntaxDiagnostic::new(
+                    SyntaxDiagnosticCode::NonAssociativeOperatorChain,
+                    "non-associative operator chain requires explicit grouping",
+                    span,
+                ));
+            }
+
+            let Some(right) = self.parse_term_operator_expression_at(
+                cursor + 1,
+                right_binding_power,
+                stop_before_structure_field_list,
+            ) else {
+                let span = self.request.tokens[cursor].span;
+                self.diagnostics.push(SyntaxDiagnostic::new(
+                    SyntaxDiagnosticCode::DanglingOperator,
+                    "operator has no right operand",
+                    span,
+                ));
+                left.next_position = cursor + 1;
+                break;
+            };
+
+            left = self.parse_infix_operator_expression_after_base(
+                start_position,
+                left,
+                cursor,
+                right,
+                &infix_operator,
+            );
+        }
+        left
+    }
+
+    fn can_start_term_operator_operand_at(
+        &self,
+        position: usize,
+        stop_before_structure_field_list: bool,
+    ) -> bool {
+        if self.is_term_expression_boundary_at(position)
+            || (stop_before_structure_field_list
+                && self.is_structure_field_list_opener_at(position))
+        {
+            return false;
+        }
+
+        self.prefix_operator_at(position).is_some()
+            || self.qualified_symbol_next_at(position).is_some()
+            || self.is_identifier_at(position)
+            || self
+                .request
+                .tokens
+                .get(position)
+                .is_some_and(|token| token.kind == ParserTokenKind::Numeral)
+            || self.is_reserved_word_at(position, "it")
+            || self.is_reserved_word_at(position, "the")
+            || self.is_reserved_symbol_at(position, "(")
+            || self.is_reserved_symbol_at(position, "[")
+            || self.is_reserved_symbol_at(position, "{")
+    }
+
+    fn parse_prefix_operator_expression_at(
+        &mut self,
+        position: usize,
+        operator: OperatorFixityEntry,
+        stop_before_structure_field_list: bool,
+    ) -> ParsedTypeNode {
+        let operand_position = position + 1;
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let (operand, cursor) = match self.parse_term_operator_expression_at(
+            operand_position,
+            u32::from(operator.precedence),
+            stop_before_structure_field_list,
+        ) {
+            Some(operand) => {
+                let cursor = operand.next_position;
+                let operand_id = operand.id;
+                recovery_nodes.extend(operand.recovery_nodes);
+                (operand_id, cursor)
+            }
+            None => {
+                let span = self.request.tokens[position].span;
+                self.diagnostics.push(SyntaxDiagnostic::new(
+                    SyntaxDiagnosticCode::DanglingOperator,
+                    "operator has no operand",
+                    span,
+                ));
+                let missing = self.add_missing_term(operand_position);
+                recovery_nodes.push(missing);
+                (missing, operand_position)
+            }
+        };
+        children.push(operand);
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::PrefixExpression(SurfacePrefixOperator {
+                spelling: operator.spelling,
+                precedence: operator.precedence,
+            }),
+            range: self.covering_token_range(position, cursor.max(position + 1)),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_postfix_operator_expression_after_base(
+        &mut self,
+        start_position: usize,
+        base: ParsedTypeNode,
+        operator_position: usize,
+        operator: &OperatorFixityEntry,
+    ) -> ParsedTypeNode {
+        let recovery_nodes = base.recovery_nodes;
+        let cursor = operator_position + 1;
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::PostfixExpression(SurfacePostfixOperator {
+                spelling: operator.spelling.clone(),
+                precedence: operator.precedence,
+            }),
+            range: self.covering_token_range(start_position, cursor),
+            children: vec![base.id, self.token_node_ids[operator_position]],
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor,
+            recovery_nodes,
+        }
+    }
+
+    fn parse_infix_operator_expression_after_base(
+        &mut self,
+        start_position: usize,
+        left: ParsedTypeNode,
+        operator_position: usize,
+        right: ParsedTypeNode,
+        operator: &OperatorFixityEntry,
+    ) -> ParsedTypeNode {
+        let mut recovery_nodes = left.recovery_nodes;
+        recovery_nodes.extend(right.recovery_nodes);
+        let cursor = right.next_position;
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
+                spelling: operator.spelling.clone(),
+                precedence: operator.precedence,
+                associativity: surface_associativity(infix_associativity(operator)),
+            }),
+            range: self.covering_token_range(start_position, cursor),
+            children: vec![left.id, self.token_node_ids[operator_position], right.id],
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor,
+            recovery_nodes,
+        }
+    }
+
+    fn prefix_operator_at(&self, position: usize) -> Option<&OperatorFixityEntry> {
+        let token = self.request.tokens.get(position)?;
+        self.prefix_fixity_for_token(token)
+    }
+
+    fn postfix_operator_at(&self, position: usize) -> Option<&OperatorFixityEntry> {
+        let token = self.request.tokens.get(position)?;
+        self.postfix_fixity_for_token(token)
+    }
+
+    fn infix_operator_at(&self, position: usize) -> Option<&OperatorFixityEntry> {
+        let token = self.request.tokens.get(position)?;
+        self.infix_fixity_for_token(token)
+    }
+
+    fn left_is_non_associative_chain(
+        &self,
+        left: SurfaceBuilderNodeId,
+        operator: &OperatorFixityEntry,
+    ) -> bool {
+        matches!(
+            self.events.node_kind(left).unwrap(),
+            SurfaceNodeKind::InfixExpression(left_operator)
+                if left_operator.associativity == SurfaceOperatorAssociativity::NonAssociative
+                    && left_operator.spelling == operator.spelling
+        )
     }
 
     fn parse_term_postfix_chain_before_structure_field_list_at(
@@ -3000,15 +3270,46 @@ fn is_reserved_symbol_token(token: &ParserToken, spelling: &str) -> bool {
     token.kind == ParserTokenKind::ReservedSymbol && token.text.as_ref() == spelling
 }
 
+fn infix_binding_powers(operator: &OperatorFixityEntry) -> (u32, u32) {
+    let precedence = u32::from(operator.precedence);
+    match infix_associativity(operator) {
+        OperatorAssociativity::Left | OperatorAssociativity::NonAssociative => {
+            (precedence, precedence + 1)
+        }
+        OperatorAssociativity::Right => (precedence, precedence),
+    }
+}
+
+fn infix_associativity(operator: &OperatorFixityEntry) -> OperatorAssociativity {
+    match operator.fixity {
+        OperatorFixity::Infix(associativity) => associativity,
+        OperatorFixity::Prefix | OperatorFixity::Postfix => {
+            unreachable!("term Pratt requested infix data for a non-infix operator")
+        }
+    }
+}
+
+fn surface_associativity(associativity: OperatorAssociativity) -> SurfaceOperatorAssociativity {
+    match associativity {
+        OperatorAssociativity::Left => SurfaceOperatorAssociativity::Left,
+        OperatorAssociativity::Right => SurfaceOperatorAssociativity::Right,
+        OperatorAssociativity::NonAssociative => SurfaceOperatorAssociativity::NonAssociative,
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{ParseRequest, ParserToken, ParserTokenKind, parse};
+    use crate::{
+        OperatorAssociativity, OperatorFixityEntry, ParseRequest, ParserToken, ParserTokenKind,
+        parse,
+    };
     use mizar_session::{
         BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceId,
         SourceRange,
     };
     use mizar_syntax::{
-        SkippedTokenReason, SurfaceNodeKind, SyntaxDiagnosticCode, SyntaxRecoveryKind,
+        SkippedTokenReason, SurfaceNodeKind, SurfaceOperatorAssociativity, SyntaxDiagnosticCode,
+        SyntaxRecoveryKind,
     };
 
     #[test]
@@ -6929,6 +7230,355 @@ mod tests {
     }
 
     #[test]
+    fn parser_groups_active_operator_terms_before_qua() {
+        let source_id = source_id(160);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("~", ParserTokenKind::UserSymbol),
+                ("f", ParserTokenKind::Identifier),
+                ("(", ParserTokenKind::ReservedSymbol),
+                ("a", ParserTokenKind::Identifier),
+                (")", ParserTokenKind::ReservedSymbol),
+                ("!", ParserTokenKind::UserSymbol),
+                ("++", ParserTokenKind::UserSymbol),
+                ("p", ParserTokenKind::Identifier),
+                (".", ParserTokenKind::ReservedSymbol),
+                ("x", ParserTokenKind::Identifier),
+                ("**", ParserTokenKind::UserSymbol),
+                ("b", ParserTokenKind::Identifier),
+                ("qua", ParserTokenKind::ReservedWord),
+                ("R", ParserTokenKind::UserSymbol),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            operator_fixture_fixities(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "unexpected diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output.ast.expect("operator term should parse");
+        assert_eq!(
+            ast.nodes()
+                .iter()
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::PrefixExpression(_)))
+                .count(),
+            1
+        );
+        assert_eq!(
+            ast.nodes()
+                .iter()
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::PostfixExpression(_)))
+                .count(),
+            1
+        );
+        assert_eq!(
+            ast.nodes()
+                .iter()
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::InfixExpression(_)))
+                .count(),
+            2
+        );
+
+        let qua = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::QuaExpression));
+        assert!(direct_child_has_kind(&ast, qua, |kind| {
+            matches!(kind, SurfaceNodeKind::InfixExpression(operator) if operator.spelling.as_ref() == "++")
+        }));
+
+        let prefix = single_node(&ast, |kind| {
+            matches!(kind, SurfaceNodeKind::PrefixExpression(_))
+        });
+        let SurfaceNodeKind::PrefixExpression(prefix_operator) = &prefix.kind else {
+            panic!("expected prefix expression");
+        };
+        assert_eq!(prefix_operator.spelling.as_ref(), "~");
+        assert_eq!(prefix_operator.precedence, 70);
+        assert!(direct_child_has_kind(&ast, prefix, |kind| {
+            matches!(kind, SurfaceNodeKind::PostfixExpression(_))
+        }));
+
+        let postfix = single_node(&ast, |kind| {
+            matches!(kind, SurfaceNodeKind::PostfixExpression(_))
+        });
+        let SurfaceNodeKind::PostfixExpression(postfix_operator) = &postfix.kind else {
+            panic!("expected postfix expression");
+        };
+        assert_eq!(postfix_operator.spelling.as_ref(), "!");
+        assert_eq!(postfix_operator.precedence, 90);
+        assert!(direct_child_has_kind(&ast, postfix, |kind| {
+            matches!(kind, SurfaceNodeKind::ApplicationTerm)
+        }));
+
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(
+                &node.kind,
+                SurfaceNodeKind::InfixExpression(operator)
+                    if operator.spelling.as_ref() == "**"
+                        && operator.associativity == SurfaceOperatorAssociativity::Right
+                        && direct_child_has_kind(&ast, node, |kind| {
+                            matches!(kind, SurfaceNodeKind::SelectorAccess)
+                        })
+            )
+        }));
+    }
+
+    #[test]
+    fn parser_diagnoses_non_associative_operator_terms() {
+        let source_id = source_id(161);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("a", ParserTokenKind::Identifier),
+                ("%%", ParserTokenKind::UserSymbol),
+                ("b", ParserTokenKind::Identifier),
+                ("%%", ParserTokenKind::UserSymbol),
+                ("c", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let second_operator = tokens[8].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            operator_fixture_fixities(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::NonAssociativeOperatorChain
+        );
+        assert_eq!(output.diagnostics[0].primary, second_operator);
+        let ast = output
+            .ast
+            .expect("non-associative chain should keep an AST");
+        assert_eq!(
+            ast.nodes()
+                .iter()
+                .filter(|node| {
+                    matches!(
+                        &node.kind,
+                        SurfaceNodeKind::InfixExpression(operator)
+                            if operator.spelling.as_ref() == "%%"
+                    )
+                })
+                .count(),
+            2
+        );
+    }
+
+    #[test]
+    fn parser_diagnoses_dangling_infix_operator_terms_once() {
+        let source_id = source_id(162);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("a", ParserTokenKind::Identifier),
+                ("++", ParserTokenKind::UserSymbol),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let operator_range = tokens[6].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            operator_fixture_fixities(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::DanglingOperator
+        );
+        assert_eq!(output.diagnostics[0].primary, operator_range);
+        let ast = output.ast.expect("dangling operator should keep an AST");
+        single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::TermExpression));
+        assert!(
+            !ast.nodes()
+                .iter()
+                .any(|node| matches!(node.kind, SurfaceNodeKind::InfixExpression(_)))
+        );
+    }
+
+    #[test]
+    fn parser_diagnoses_dangling_prefix_operator_terms() {
+        let source_id = source_id(163);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("~", ParserTokenKind::UserSymbol),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let operator_range = tokens[5].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            operator_fixture_fixities(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::DanglingOperator
+        );
+        assert_eq!(
+            output.diagnostics[0].message.as_ref(),
+            "operator has no operand"
+        );
+        assert_eq!(output.diagnostics[0].primary, operator_range);
+        let ast = output.ast.expect("dangling prefix should keep an AST");
+        let prefix = single_node(&ast, |kind| {
+            matches!(kind, SurfaceNodeKind::PrefixExpression(_))
+        });
+        assert!(direct_child_has_kind(&ast, prefix, |kind| {
+            matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingTerm)
+            )
+        }));
+    }
+
+    #[test]
+    fn parser_considers_same_spelling_infix_when_postfix_binding_is_too_low() {
+        let source_id = source_id(164);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("a", ParserTokenKind::Identifier),
+                ("++", ParserTokenKind::UserSymbol),
+                ("b", ParserTokenKind::Identifier),
+                ("@", ParserTokenKind::UserSymbol),
+                ("c", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            vec![
+                OperatorFixityEntry::infix("++", 10, OperatorAssociativity::Left),
+                OperatorFixityEntry::postfix("@", 5),
+                OperatorFixityEntry::infix("@", 20, OperatorAssociativity::Left),
+            ],
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "unexpected diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("same-spelling postfix/infix case should parse");
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(
+                &node.kind,
+                SurfaceNodeKind::InfixExpression(operator)
+                    if operator.spelling.as_ref() == "@"
+                        && operator.precedence == 20
+                        && operator.associativity == SurfaceOperatorAssociativity::Left
+            )
+        }));
+        assert!(!ast.nodes().iter().any(|node| {
+            matches!(
+                &node.kind,
+                SurfaceNodeKind::PostfixExpression(operator)
+                    if operator.spelling.as_ref() == "@"
+            )
+        }));
+    }
+
+    #[test]
+    fn parser_prefers_same_spelling_infix_when_right_operand_is_present() {
+        let source_id = source_id(165);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("a", ParserTokenKind::Identifier),
+                ("@", ParserTokenKind::UserSymbol),
+                ("b", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            vec![
+                OperatorFixityEntry::postfix("@", 90),
+                OperatorFixityEntry::infix("@", 20, OperatorAssociativity::Left),
+            ],
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "unexpected diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("same-spelling infix with right operand should parse");
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(
+                &node.kind,
+                SurfaceNodeKind::InfixExpression(operator)
+                    if operator.spelling.as_ref() == "@"
+                        && operator.precedence == 20
+                        && operator.associativity == SurfaceOperatorAssociativity::Left
+            )
+        }));
+        assert!(!ast.nodes().iter().any(|node| {
+            matches!(
+                &node.kind,
+                SurfaceNodeKind::PostfixExpression(operator)
+                    if operator.spelling.as_ref() == "@"
+            )
+        }));
+    }
+
+    #[test]
     fn legacy_token_preservation_streams_without_item_starts_stay_diagnostic_free() {
         let source_id = source_id(44);
         let output = parse(ParseRequest::new(
@@ -7036,6 +7686,16 @@ mod tests {
                 token(source_id, *kind, text, start, end)
             })
             .collect()
+    }
+
+    fn operator_fixture_fixities() -> Vec<OperatorFixityEntry> {
+        vec![
+            OperatorFixityEntry::prefix("~", 70),
+            OperatorFixityEntry::postfix("!", 90),
+            OperatorFixityEntry::infix("++", 10, OperatorAssociativity::Left),
+            OperatorFixityEntry::infix("**", 20, OperatorAssociativity::Right),
+            OperatorFixityEntry::infix("%%", 10, OperatorAssociativity::NonAssociative),
+        ]
     }
 
     const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {

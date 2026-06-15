@@ -132,7 +132,7 @@ pub fn parser_inputs_hash(inputs: &ParserInputs) -> Hash;
 
 `TokenStreamCacheKey` は lexical hash、アクティブ字句環境 fingerprint、現在の default `ParserLexContext`、parser-assisted lexing plan key を組み合わせる。task 20 の plan key は、plan version、default context、位置別の各 lexical byte range とその `ParserLexContext` を記録する。string-required range や user-symbol kind filter が変わると、version string が同じでも tokenization は無効化される。これは token sequence と diagnostics の content key であり、range-faithful artifact key 全体ではない。source-spanned token を再利用する driver は、正確な source range が重要な場合、source-version または source-map identity と合成する必要がある。
 
-`SurfaceAstCacheKey` は token-stream content hash、parser seam cache version、parser-input hash、edition を組み合わせる。Parser seam は `ParserSeam::cache_key_version` により version を公開する。`parser_inputs_hash` は、token stream が不変でも AST shape を変え得るため、edition、string-required context、明示的な operator fixity entries を含む。
+`SurfaceAstCacheKey` は token-stream content hash、parser seam cache version、parser-input hash、edition を組み合わせる。Parser seam は `ParserSeam::cache_key_version` により version を公開する。`parser_inputs_hash` は、token stream が不変でも AST shape を変え得るため、edition、string-required context、operator fixity entries を含む。各 fixity entry hash は symbol id、spelling、fixity kind、precedence、fixity kind が infix の場合の associativity を含む。
 
 lexer 所有の non-exhaustive context enum の安定 encoding は、既知 variant の明示 key と、将来 variant 用の debug fallback text を含む。これにより、将来の lexer 変更は、このモジュールが意図的な新 key version を追加するまで cache key に反映される。
 

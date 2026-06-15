@@ -6,7 +6,8 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use mizar_frontend::lexical_env::{
-    ExportRank, ExportedSymbolShape, FrontendLexicalEnvironmentError, LexicalEnvironmentRequest,
+    ExportRank, ExportedOperatorAssociativity, ExportedOperatorFixity, ExportedOperatorMetadata,
+    ExportedSymbolShape, FrontendLexicalEnvironmentError, LexicalEnvironmentRequest,
     LexicalSummaryFingerprint, LexicalSummaryProvider, ModuleId, ModuleLexicalSummary,
     ResolvedImport, ResolvedImportEntry, ResolvedImports, SymbolId, UserSymbolArity,
     UserSymbolKind,
@@ -400,35 +401,99 @@ fn parse_only_fixture_symbols(module_id: &ModuleId) -> Vec<ExportedSymbolShape> 
             "empty",
             UserSymbolKind::Attribute,
             UserSymbolArity::exact(0),
+            None,
         ),
-        ("T", UserSymbolKind::Mode, UserSymbolArity::at_least(0)),
-        ("R", UserSymbolKind::Structure, UserSymbolArity::at_least(0)),
+        (
+            "T",
+            UserSymbolKind::Mode,
+            UserSymbolArity::at_least(0),
+            None,
+        ),
+        (
+            "R",
+            UserSymbolKind::Structure,
+            UserSymbolArity::at_least(0),
+            None,
+        ),
         (
             "TypeCaseAttr",
             UserSymbolKind::Attribute,
             UserSymbolArity::exact(0),
+            None,
         ),
         (
             "TypeCaseMode",
             UserSymbolKind::Mode,
             UserSymbolArity::at_least(0),
+            None,
         ),
         (
             "TypeCaseStruct",
             UserSymbolKind::Structure,
             UserSymbolArity::at_least(0),
+            None,
+        ),
+        (
+            "~",
+            UserSymbolKind::Functor,
+            UserSymbolArity::exact(1),
+            Some(ExportedOperatorMetadata {
+                fixity: ExportedOperatorFixity::Prefix,
+                precedence: 70,
+            }),
+        ),
+        (
+            "!",
+            UserSymbolKind::Functor,
+            UserSymbolArity::exact(1),
+            Some(ExportedOperatorMetadata {
+                fixity: ExportedOperatorFixity::Postfix,
+                precedence: 90,
+            }),
+        ),
+        (
+            "++",
+            UserSymbolKind::Functor,
+            UserSymbolArity::exact(2),
+            Some(ExportedOperatorMetadata {
+                fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+                precedence: 10,
+            }),
+        ),
+        (
+            "**",
+            UserSymbolKind::Functor,
+            UserSymbolArity::exact(2),
+            Some(ExportedOperatorMetadata {
+                fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Right),
+                precedence: 20,
+            }),
+        ),
+        (
+            "%%",
+            UserSymbolKind::Functor,
+            UserSymbolArity::exact(2),
+            Some(ExportedOperatorMetadata {
+                fixity: ExportedOperatorFixity::Infix(
+                    ExportedOperatorAssociativity::NonAssociative,
+                ),
+                precedence: 10,
+            }),
         ),
     ]
     .into_iter()
     .enumerate()
-    .map(|(rank, (spelling, kind, arity))| ExportedSymbolShape {
-        spelling: spelling.to_owned(),
-        symbol_id: SymbolId::new(format!("{}#parse-only#{spelling}", module_id.as_str())),
-        source_module: module_id.clone(),
-        export_rank: ExportRank::new(rank as u32),
-        kind,
-        arity,
-    })
+    .map(
+        |(rank, (spelling, kind, arity, operator))| ExportedSymbolShape {
+            spelling: spelling.to_owned(),
+            symbol_id: SymbolId::new(format!("{}#parse-only#{spelling}", module_id.as_str())),
+            source_module: module_id.clone(),
+            export_rank: ExportRank::new(rank as u32),
+            kind,
+            arity,
+            operator,
+        },
+    )
     .collect()
 }
 
@@ -445,6 +510,7 @@ impl fmt::Display for ParseOnlyCaseStatus {
 mod tests {
     use super::ParseOnlyImportProvider;
     use mizar_frontend::lexical_env::{
+        ExportedOperatorAssociativity, ExportedOperatorFixity, ExportedOperatorMetadata,
         LexicalEnvironmentRequest, LexicalSummaryProvider, UserSymbolKind,
     };
     use mizar_frontend::preprocess::{ImportStub, ImportStubPath};
@@ -500,21 +566,63 @@ mod tests {
                     summary.fingerprint.get()
                 ))
                 .collect::<Vec<_>>(),
-            vec![("alpha", 0, 1), ("parser.type_fixtures", 6, 3)]
+            vec![("alpha", 0, 1), ("parser.type_fixtures", 11, 3)]
         );
         assert_eq!(
             resolved.summaries[1]
                 .exported_symbols
                 .iter()
-                .map(|symbol| (symbol.spelling.as_str(), symbol.kind))
+                .map(|symbol| (symbol.spelling.as_str(), symbol.kind, symbol.operator))
                 .collect::<Vec<_>>(),
             vec![
-                ("empty", UserSymbolKind::Attribute),
-                ("T", UserSymbolKind::Mode),
-                ("R", UserSymbolKind::Structure),
-                ("TypeCaseAttr", UserSymbolKind::Attribute),
-                ("TypeCaseMode", UserSymbolKind::Mode),
-                ("TypeCaseStruct", UserSymbolKind::Structure),
+                ("empty", UserSymbolKind::Attribute, None),
+                ("T", UserSymbolKind::Mode, None),
+                ("R", UserSymbolKind::Structure, None),
+                ("TypeCaseAttr", UserSymbolKind::Attribute, None),
+                ("TypeCaseMode", UserSymbolKind::Mode, None),
+                ("TypeCaseStruct", UserSymbolKind::Structure, None),
+                (
+                    "~",
+                    UserSymbolKind::Functor,
+                    Some(ExportedOperatorMetadata {
+                        fixity: ExportedOperatorFixity::Prefix,
+                        precedence: 70,
+                    }),
+                ),
+                (
+                    "!",
+                    UserSymbolKind::Functor,
+                    Some(ExportedOperatorMetadata {
+                        fixity: ExportedOperatorFixity::Postfix,
+                        precedence: 90,
+                    }),
+                ),
+                (
+                    "++",
+                    UserSymbolKind::Functor,
+                    Some(ExportedOperatorMetadata {
+                        fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left,),
+                        precedence: 10,
+                    }),
+                ),
+                (
+                    "**",
+                    UserSymbolKind::Functor,
+                    Some(ExportedOperatorMetadata {
+                        fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Right,),
+                        precedence: 20,
+                    }),
+                ),
+                (
+                    "%%",
+                    UserSymbolKind::Functor,
+                    Some(ExportedOperatorMetadata {
+                        fixity: ExportedOperatorFixity::Infix(
+                            ExportedOperatorAssociativity::NonAssociative,
+                        ),
+                        precedence: 10,
+                    }),
+                ),
             ]
         );
         assert!(resolved.diagnostics.is_empty());

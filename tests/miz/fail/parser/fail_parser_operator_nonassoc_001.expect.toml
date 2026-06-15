@@ -1,0 +1,19 @@
+schema_version = 1
+id = "fail_parser_operator_nonassoc_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.operator_terms"
+source = "fail_parser_operator_nonassoc_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "non_associative_operator_chain"
+stable_detail_key = "parser.operator_terms.nonassoc"
+diagnostic_codes = [
+  "non_associative_operator_chain",
+]
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.13.operator_precedence.parser",
+]
+notes = "Active parse-only runner coverage for parser task 12 non-associative same-operator chain diagnostics through imported operator metadata."

@@ -2,9 +2,10 @@
 
 > 正本は英語です。英語版: [../en/grammar.md](../en/grammar.md)。
 
-状態: task 11 までの module skeleton、top-level placeholder dispatch、concrete
+状態: task 12 までの module skeleton、top-level placeholder dispatch、concrete
 import item、export item、visibility wrapper、reserve-hosted type expression、および
-reserve-hosted term surface は実装済み。残りの具体的な非 module item 文法は計画中。
+reserve-hosted term surface（`qua` 前の active prefix/postfix/infix operator
+expression を含む）は実装済み。残りの具体的な非 module item 文法は計画中。
 
 ## 目的
 
@@ -347,9 +348,9 @@ parenthesized application syntax は、argument list に目に見える
 これは syntax-only split である。`S()` のような zero-field constructor は、将来の semantic
 boundary が structure fact を渡すまで generic application のまま残す。reserved `[` と `]`
 による built-in bracket functor notation は `ApplicationTerm` として保持する。
-`user_symbol term_list user_symbol` の active user-symbol delimiter pair は、まだ
-`ParserInputs` に含まれていない bracket-pair metadata を必要とするため、その
-active-operator extension は parser task 12 が所有する。
+`user_symbol term_list user_symbol` の active user-symbol delimiter pair は、task 12 の
+prefix/postfix/infix `OperatorFixity` entry を超える bracket-pair metadata を必要とするため、
+その metadata が存在するまで deferred のままとする。
 
 Task 9 は term list 内の欠落または malformed primary term に
 `MalformedTermExpression` diagnostic を出し、pure insertion point では `MissingTerm`
@@ -451,6 +452,57 @@ parenthesized selector-after-`qua`、target-type argument binding、bracket `qua
 `TermPlaceholder` から移行したこと、target 欠落 recovery、malformed target-tail recovery を
 pin する。active parse-only pass/fail fixture は frontend seam を cover し、§13.6 に
 trace back する。
+
+## Task 12: Operator Expressions
+
+Production inventory:
+
+```ebnf
+operator_expression ::= prefix_expression
+                      | postfix_expression
+                      | infix_expression
+                      | selector_or_primary_term ;
+prefix_expression   ::= prefix_operator operator_expression ;
+postfix_expression  ::= operator_expression postfix_operator ;
+infix_expression    ::= operator_expression infix_operator operator_expression ;
+term_expression     ::= operator_expression { "qua" type_expression } ;
+```
+
+実 parser は、上の模式的な production を直接再帰するのではなく、
+[pratt.md](./pratt.md) の Pratt 契約を使う。Operator metadata は frontend が
+`ParserInputs` から導出した `ParseRequest::operator_fixity` としてこの crate に届く。
+各 entry は source spelling、fixity kind、precedence、infix の場合の associativity を記録する。
+parser はこの table を使って source token を `PrefixExpression`、`PostfixExpression`,
+`InfixExpression` syntax node に group 化する。overload 解決、result type validation、
+table に存在しない visible symbol の default fixity 創作は行わない。Chapter 10 /
+Appendix B の default precedence / associativity は、frontend が parser `ParseRequest` を
+組み立てる前に lexical-summary producer が materialize していることを期待する。
+
+Task 12 は、legacy token-only Pratt entry point ではなく module term parser を拡張する。
+各 Pratt operand は既存の primary term と固定 selector/update postfix chain であるため、
+selector、selector call、ordinary application、structure update、parenthesized term は
+user operator より強く bind する。`qua` は Pratt の外側に残り、固定の最も低い
+term-level operator である。たとえば `p.x ++ y qua T` は selector を left operand 内で
+group 化した後、infix expression 全体を修飾する。`(p qua T).x ++ y` のような
+`qua` 後の selector には括弧が必要である。
+left operand の後で同じ source spelling が postfix と infix の両方として visible な場合、
+その infix entry が eligible で、かつ後続 token が right operand を開始できるなら parser は
+infix form を選ぶ。そうでなければ、現在の binding power で eligible な postfix entry を選ぶ。
+
+Postfix operator は `[base, operator_token]` の 2 child node を使う。Prefix operator は
+`[operator_token, operand]` を使う。Infix operator は既存の 3 child order
+`[left, operator_token, right]` を保ち、spelling、precedence、associativity payload を
+保持する。同じ infix operator の non-associative chain は 2 個目の operator range に
+`NonAssociativeOperatorChain` を出す。infix の right operand 欠落時は dangling operator
+range に `DanglingOperator` を出し、partial left expression は表現したままにする。
+prefix operand 欠落時は prefix operator range に `DanglingOperator` を出し、
+`MissingTerm` operand を挿入して recoverable な `PrefixExpression` を保持する。
+
+Task 12 の test は、parse-only fixture summary 由来の active-lexicon fixity derivation、
+prefix/postfix/infix surface node、left/right/non-associative grouping、dangling operator
+diagnostic、selector/update、application、parentheses、`qua` との相互作用、および
+`spec.en.13.operator_precedence.parser` により Chapter 13 / Appendix B に trace する
+active parse-only pass/fail corpus coverage を pin する。
 
 ## 公開 enum の互換性
 

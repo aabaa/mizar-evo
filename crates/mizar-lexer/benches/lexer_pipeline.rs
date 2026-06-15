@@ -131,6 +131,7 @@ fn exported(spelling: &str, symbol: &str, rank: u32) -> ExportedSymbolShape {
         export_rank: ExportRank(rank),
         kind: UserSymbolKind::Functor,
         arity: UserSymbolArity::exact(2),
+        operator: None,
     }
 }
 

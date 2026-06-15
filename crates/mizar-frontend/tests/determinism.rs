@@ -466,6 +466,7 @@ fn symbol(spelling: &str, symbol_id: &str, source_module: &str) -> ExportedSymbo
         export_rank: ExportRank::new(0),
         kind: UserSymbolKind::Functor,
         arity: UserSymbolArity::exact(2),
+        operator: None,
     }
 }
 

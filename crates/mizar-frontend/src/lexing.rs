@@ -2133,6 +2133,7 @@ x;";
                         export_rank: mizar_lexer::ExportRank::new(rank as u32),
                         kind: mizar_lexer::UserSymbolKind::Functor,
                         arity: mizar_lexer::UserSymbolArity::exact(2),
+                        operator: None,
                     })
                     .collect(),
                 fingerprint: mizar_lexer::LexicalSummaryFingerprint::new(11),
@@ -2157,6 +2158,7 @@ x;";
                         export_rank: mizar_lexer::ExportRank::new(0),
                         kind: mizar_lexer::UserSymbolKind::Predicate,
                         arity: mizar_lexer::UserSymbolArity::exact(2),
+                        operator: None,
                     },
                     mizar_lexer::ExportedSymbolShape {
                         spelling: "op".to_owned(),
@@ -2165,6 +2167,7 @@ x;";
                         export_rank: mizar_lexer::ExportRank::new(1),
                         kind: mizar_lexer::UserSymbolKind::Functor,
                         arity: mizar_lexer::UserSymbolArity::exact(1),
+                        operator: None,
                     },
                 ],
                 fingerprint: mizar_lexer::LexicalSummaryFingerprint::new(17),

@@ -93,6 +93,7 @@ fn lexical_environment_longest_match_prefers_longest_user_symbol() {
             export_rank: ExportRank(2),
             kind: UserSymbolKind::Functor,
             arity: UserSymbolArity::exact(2),
+            operator: None,
         }]
     );
 }
@@ -386,9 +387,116 @@ fn lexical_environment_fingerprint_changes_with_symbol_metadata() {
         )],
     )
     .expect("arity metadata environment should build");
+    let prefix_operator_env = build_lexical_environment(
+        &imports,
+        &[summary(
+            "metadata",
+            27,
+            &[exported_with_operator_metadata(
+                "op",
+                "metadata#op",
+                "metadata",
+                0,
+                ExportedOperatorMetadata {
+                    fixity: ExportedOperatorFixity::Prefix,
+                    precedence: 70,
+                },
+            )],
+        )],
+    )
+    .expect("prefix operator metadata environment should build");
+    let postfix_operator_env = build_lexical_environment(
+        &imports,
+        &[summary(
+            "metadata",
+            27,
+            &[exported_with_operator_metadata(
+                "op",
+                "metadata#op",
+                "metadata",
+                0,
+                ExportedOperatorMetadata {
+                    fixity: ExportedOperatorFixity::Postfix,
+                    precedence: 70,
+                },
+            )],
+        )],
+    )
+    .expect("postfix operator metadata environment should build");
+    let right_infix_operator_env = build_lexical_environment(
+        &imports,
+        &[summary(
+            "metadata",
+            27,
+            &[exported_with_operator_metadata(
+                "op",
+                "metadata#op",
+                "metadata",
+                0,
+                ExportedOperatorMetadata {
+                    fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Right),
+                    precedence: 70,
+                },
+            )],
+        )],
+    )
+    .expect("infix operator metadata environment should build");
+    let left_infix_operator_env = build_lexical_environment(
+        &imports,
+        &[summary(
+            "metadata",
+            27,
+            &[exported_with_operator_metadata(
+                "op",
+                "metadata#op",
+                "metadata",
+                0,
+                ExportedOperatorMetadata {
+                    fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+                    precedence: 70,
+                },
+            )],
+        )],
+    )
+    .expect("left-infix operator metadata environment should build");
+    let left_infix_higher_precedence_env = build_lexical_environment(
+        &imports,
+        &[summary(
+            "metadata",
+            27,
+            &[exported_with_operator_metadata(
+                "op",
+                "metadata#op",
+                "metadata",
+                0,
+                ExportedOperatorMetadata {
+                    fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+                    precedence: 71,
+                },
+            )],
+        )],
+    )
+    .expect("operator precedence metadata environment should build");
 
     assert_ne!(functor_env.fingerprint, predicate_env.fingerprint);
     assert_ne!(functor_env.fingerprint, unary_functor_env.fingerprint);
+    assert_ne!(functor_env.fingerprint, prefix_operator_env.fingerprint);
+    assert_ne!(
+        prefix_operator_env.fingerprint,
+        postfix_operator_env.fingerprint
+    );
+    assert_ne!(
+        prefix_operator_env.fingerprint,
+        right_infix_operator_env.fingerprint
+    );
+    assert_ne!(
+        left_infix_operator_env.fingerprint,
+        right_infix_operator_env.fingerprint
+    );
+    assert_ne!(
+        left_infix_operator_env.fingerprint,
+        left_infix_higher_precedence_env.fingerprint
+    );
 }
 
 #[test]
@@ -413,6 +521,60 @@ fn lexical_environment_rejects_invalid_user_symbol_arity() {
     assert!(matches!(
         error,
         LexicalEnvironmentError::InvalidUserSymbolArity { .. }
+    ));
+}
+
+#[test]
+fn lexical_environment_rejects_operator_metadata_on_non_functors() {
+    let mut symbol = exported_with_metadata(
+        "op",
+        "bad.operator_kind#op",
+        "bad.operator_kind",
+        0,
+        UserSymbolKind::Predicate,
+        UserSymbolArity::exact(2),
+    );
+    symbol.operator = Some(ExportedOperatorMetadata {
+        fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+        precedence: 50,
+    });
+
+    let error = build_lexical_environment(
+        &[resolved_import("bad.operator_kind")],
+        &[summary("bad.operator_kind", 29, &[symbol])],
+    )
+    .expect_err("operator metadata is only valid for functors");
+
+    assert!(matches!(
+        error,
+        LexicalEnvironmentError::InvalidOperatorMetadata { .. }
+    ));
+}
+
+#[test]
+fn lexical_environment_rejects_operator_metadata_with_incompatible_arity() {
+    let mut symbol = exported_with_metadata(
+        "op",
+        "bad.operator_arity#op",
+        "bad.operator_arity",
+        0,
+        UserSymbolKind::Functor,
+        UserSymbolArity::exact(1),
+    );
+    symbol.operator = Some(ExportedOperatorMetadata {
+        fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+        precedence: 50,
+    });
+
+    let error = build_lexical_environment(
+        &[resolved_import("bad.operator_arity")],
+        &[summary("bad.operator_arity", 30, &[symbol])],
+    )
+    .expect_err("infix operator metadata requires binary functor arity");
+
+    assert!(matches!(
+        error,
+        LexicalEnvironmentError::InvalidOperatorMetadata { .. }
     ));
 }
 

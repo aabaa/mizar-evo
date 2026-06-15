@@ -86,11 +86,18 @@ fn public_forward_compatible_enums_are_marked_non_exhaustive() {
 #[test]
 fn public_enum_exhaustiveness_exceptions_are_documented() {
     let root = crate_root();
-    let documented_exceptions = [(
-        "src/lib.rs",
-        "OperatorAssociativity",
-        "../../../../doc/design/mizar-parser/en/pratt.md",
-    )];
+    let documented_exceptions = [
+        (
+            "src/lib.rs",
+            "OperatorAssociativity",
+            "../../../../doc/design/mizar-parser/en/pratt.md",
+        ),
+        (
+            "src/lib.rs",
+            "OperatorFixity",
+            "../../../../doc/design/mizar-parser/en/pratt.md",
+        ),
+    ];
 
     let mut violations = Vec::new();
     for (relative_path, enum_name, spec_link) in documented_exceptions {
@@ -123,7 +130,7 @@ fn public_enum_exhaustiveness_exceptions_are_documented() {
 fn every_public_enum_has_a_forward_compatibility_decision() {
     let root = crate_root();
     let forward_compatible = ["ParserTokenKind", "StringRequiredContext"];
-    let exhaustive_exceptions = ["OperatorAssociativity"];
+    let exhaustive_exceptions = ["OperatorAssociativity", "OperatorFixity"];
     let mut classified = forward_compatible
         .iter()
         .chain(exhaustive_exceptions.iter())

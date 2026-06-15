@@ -160,8 +160,10 @@ source-map identity when exact source ranges matter.
 `SurfaceAstCacheKey` combines the token-stream content hash, parser seam cache
 version, parser-input hash, and edition. Parser seams expose their version
 through `ParserSeam::cache_key_version`. `parser_inputs_hash` includes edition,
-string-required context, and explicit operator fixity entries because those
-inputs can change AST shape even when the token stream is unchanged.
+string-required context, and operator fixity entries because those inputs can
+change AST shape even when the token stream is unchanged. Each fixity entry
+hash includes symbol id, spelling, fixity kind, precedence, and infix
+associativity when the fixity kind is infix.
 
 Stable encodings for lexer-owned non-exhaustive context enums include explicit
 keys for known variants plus debug fallback text for future variants. This keeps

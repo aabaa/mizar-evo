@@ -12,7 +12,8 @@ use std::sync::Arc;
 
 /// Re-exported lexer lexical-environment types used by frontend consumers.
 pub use mizar_lexer::{
-    ActiveLexicalEnvironment, ExportRank, ExportedSymbolShape, LexicalEnvironmentError,
+    ActiveLexicalEnvironment, ExportRank, ExportedOperatorAssociativity, ExportedOperatorFixity,
+    ExportedOperatorMetadata, ExportedSymbolShape, LexicalEnvironmentError,
     LexicalEnvironmentFingerprint, LexicalSummaryFingerprint, ModuleId, ModuleLexicalSummary,
     ResolvedImport, SymbolId, UserSymbolArity, UserSymbolCandidate, UserSymbolIndex,
     UserSymbolKind, UserSymbolKindSet,
@@ -1272,6 +1273,7 @@ mod tests {
             export_rank: ExportRank::new(0),
             kind: UserSymbolKind::Functor,
             arity: UserSymbolArity::exact(2),
+            operator: None,
         }
     }
 

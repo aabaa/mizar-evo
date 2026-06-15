@@ -91,6 +91,49 @@ fn public_forward_compatible_enums_are_marked_non_exhaustive() {
 }
 
 #[test]
+fn public_enum_exhaustiveness_exceptions_are_documented() {
+    let root = crate_root();
+    let documented_exceptions = [
+        (
+            "src/parsing.rs",
+            "OperatorFixity",
+            "../../../../doc/design/mizar-frontend/en/parsing.md",
+        ),
+        (
+            "src/parsing.rs",
+            "OperatorAssociativity",
+            "../../../../doc/design/mizar-frontend/en/parsing.md",
+        ),
+    ];
+
+    let mut violations = Vec::new();
+    for (relative_path, enum_name, spec_link) in documented_exceptions {
+        let source = read_to_string(&root.join(relative_path));
+        if enum_has_attribute(&source, enum_name, "non_exhaustive") {
+            violations.push(format!(
+                "{relative_path}: pub enum {enum_name} is listed as an exhaustive exception"
+            ));
+        }
+        if !source_contains_public_enum(&source, enum_name) {
+            violations.push(format!("{relative_path}: missing pub enum {enum_name}"));
+        }
+        let spec =
+            read_to_string(&workspace_root().join(spec_link.trim_start_matches("../../../../")));
+        if !spec.contains(enum_name) || !spec.contains("exhaustive") {
+            violations.push(format!(
+                "{relative_path}: pub enum {enum_name} needs an exhaustive decision in {spec_link}"
+            ));
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "intentional public enum exhaustiveness exceptions must stay explicit:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
 fn public_api_rustdoc_summaries_and_spec_links_are_guarded() {
     let root = crate_root();
     let module_specs = [
@@ -470,6 +513,13 @@ fn enum_has_attribute(source: &str, enum_name: &str, attribute_name: &str) -> bo
     }
 
     false
+}
+
+fn source_contains_public_enum(source: &str, enum_name: &str) -> bool {
+    let enum_declaration = format!("pub enum {enum_name}");
+    source
+        .lines()
+        .any(|line| line.trim_start().starts_with(&enum_declaration))
 }
 
 fn preceding_attributes(lines: &[&str], declaration_line_index: usize) -> Vec<String> {

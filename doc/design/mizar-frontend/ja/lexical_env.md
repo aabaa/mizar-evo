@@ -78,7 +78,7 @@ pub enum LexicalEnvironmentDiagnosticCode {
 }
 ```
 
-`ActiveLexicalEnvironment`、`ExportRank`、`ExportedSymbolShape`、`LexicalEnvironmentError`、`LexicalEnvironmentFingerprint`、`LexicalSummaryFingerprint`、`ModuleId`、`ModuleLexicalSummary`、`ResolvedImport`、`SymbolId`、`UserSymbolArity`、`UserSymbolCandidate`、`UserSymbolIndex`、`UserSymbolKind`、`UserSymbolKindSet` は `mizar-lexer` から再エクスポートされる。`ResolvedImportEntry` は、フロントエンドが所有する出所情報である。字句解析器の `ResolvedImport` を、それを生んだ `ImportStub` のソーススパンと序数で包み、後続の診断が正しいインポートへ戻れるようにする。フロントエンドは `mizar_lexer::build_lexical_environment` へは、順序付きの `ResolvedImport` 値だけを渡す。プロバイダが返した解決済みインポートと診断の出所情報は、利用前に request の `ImportStub` 一覧と照合する。存在しない stub 序数、古い stub スパン、別 source のスパン、別 source を指す範囲付き secondary anchor は、回復可能なインポート診断ではなく、不正なプロバイダ契約である。
+`ActiveLexicalEnvironment`、`ExportRank`、`ExportedOperatorAssociativity`、`ExportedOperatorFixity`、`ExportedOperatorMetadata`、`ExportedSymbolShape`、`LexicalEnvironmentError`、`LexicalEnvironmentFingerprint`、`LexicalSummaryFingerprint`、`ModuleId`、`ModuleLexicalSummary`、`ResolvedImport`、`SymbolId`、`UserSymbolArity`、`UserSymbolCandidate`、`UserSymbolIndex`、`UserSymbolKind`、`UserSymbolKindSet` は `mizar-lexer` から再エクスポートされる。依存 summary と active candidate は optional な `ExportedOperatorMetadata` を運ぶ。lexer summary validation は、prefix/postfix/infix fixity に対応する exact arity を持つ symbolic functor に対してのみこれを受け付け、frontend は検証済み metadata を後で parser input へ写す。`ResolvedImportEntry` は、フロントエンドが所有する出所情報である。字句解析器の `ResolvedImport` を、それを生んだ `ImportStub` のソーススパンと序数で包み、後続の診断が正しいインポートへ戻れるようにする。フロントエンドは `mizar_lexer::build_lexical_environment` へは、順序付きの `ResolvedImport` 値だけを渡す。プロバイダが返した解決済みインポートと診断の出所情報は、利用前に request の `ImportStub` 一覧と照合する。存在しない stub 序数、古い stub スパン、別 source のスパン、別 source を指す範囲付き secondary anchor は、回復可能なインポート診断ではなく、不正なプロバイダ契約である。
 
 `LexicalEnvironmentDiagnosticCode` は下流 crate 向けに `#[non_exhaustive]` とし、将来の provider-owned 回復可能診断を外部 match を壊さずに追加できるようにする。`mizar-frontend` 内部の match は引き続き exhaustive に保つ。
 
@@ -101,7 +101,7 @@ pub enum LexicalEnvironmentDiagnosticCode {
 
 ### フィンガープリントとキャッシュキー
 
-`LexicalEnvironmentFingerprint` は、解決済みインポート、依存字句サマリのフィンガープリント、インポート順を要約する。アクティブ字句環境のキャッシュキーであり、`TokenStream` キャッシュキーの構成要素でもある。これにより、ローカルファイルが不変でも、依存のエクスポート変更がトークン化を正しく無効化できる。
+`LexicalEnvironmentFingerprint` は、解決済みインポート、依存字句サマリのフィンガープリント、インポート順、記号の形、arity、任意の operator metadata を要約する。アクティブ字句環境のキャッシュキーであり、`TokenStream` キャッシュキーの構成要素でもある。これにより、ローカルファイルが不変でも、依存のエクスポート変更や operator fixity 変更がトークン化／構文解析を正しく無効化できる。
 
 ## アルゴリズム / ロジック
 
@@ -118,7 +118,7 @@ pub enum LexicalEnvironmentDiagnosticCode {
 
 ## エラー処理
 
-`LexicalEnvironmentError`（`mizar-lexer` 由来）は、衝突するサマリフィンガープリントや不正なサマリデータといった構造的失敗を扱う。プロバイダ基盤の障害は、字句解析器が所有する enum では表現できないため、フロントエンドが回復不能な失敗を `FrontendLexicalEnvironmentError` で包む。プロバイダ側の問題（どのモジュールにも解決しないインポート、字句サマリが利用できない依存）は `LexicalEnvironmentDiagnostic` として運び、該当インポートを字句解析器の呼び出し前に除外するので、ファイル全体を失敗させるのではなく、より小さなアクティブ環境へ縮退できる。解決済みインポートまたはプロバイダ診断の出所が現在の request と一致しない場合は、`FrontendLexicalEnvironmentError::MalformedProviderProvenance` として報告する。それを使うと、診断を誤ったインポートや source へ結び付けてしまうためである。字句解析器側で回復可能なケースは `UserSymbolImportConflict` に限定する。フロントエンドは、後側の衝突 module を正準の出所で診断し、前側のインポートを副次コンテキストに加え、後側の module を除去して環境構築を再試行する。provider-owned の回復可能診断は、primary と secondary の出所検証を通れば任意の `LexicalEnvironmentDiagnosticCode` を利用できる。フロントエンドは、`InvalidUserSymbolSpelling`、`InvalidUserSymbolArity`、`ReservedWordCollision`、`ReservedSymbolCollision` を lexer の summary validation から現在は合成しない。lexer-owned の不正な依存サマリは、引き続き `FrontendLexicalEnvironmentError::MalformedSummary` になる。不正なエクスポート記号のつづり、不正な arity、予約語／予約記号の衝突、一貫しない重複サマリ、想定外の欠落サマリは、回復不能な不正サマリ失敗である。フロントエンドは、不正な依存サマリのどの部分集合が利用可能かを安全に推測できないためである。インポートの合法性（可視性、字句的な形を超えるエクスポートランクの衝突）はモジュール解決へ先送りし、ここでは決して判断しない。
+`LexicalEnvironmentError`（`mizar-lexer` 由来）は、衝突するサマリフィンガープリントや不正なサマリデータといった構造的失敗を扱う。プロバイダ基盤の障害は、字句解析器が所有する enum では表現できないため、フロントエンドが回復不能な失敗を `FrontendLexicalEnvironmentError` で包む。プロバイダ側の問題（どのモジュールにも解決しないインポート、字句サマリが利用できない依存）は `LexicalEnvironmentDiagnostic` として運び、該当インポートを字句解析器の呼び出し前に除外するので、ファイル全体を失敗させるのではなく、より小さなアクティブ環境へ縮退できる。解決済みインポートまたはプロバイダ診断の出所が現在の request と一致しない場合は、`FrontendLexicalEnvironmentError::MalformedProviderProvenance` として報告する。それを使うと、診断を誤ったインポートや source へ結び付けてしまうためである。字句解析器側で回復可能なケースは `UserSymbolImportConflict` に限定する。フロントエンドは、後側の衝突 module を正準の出所で診断し、前側のインポートを副次コンテキストに加え、後側の module を除去して環境構築を再試行する。provider-owned の回復可能診断は、primary と secondary の出所検証を通れば任意の `LexicalEnvironmentDiagnosticCode` を利用できる。フロントエンドは、`InvalidUserSymbolSpelling`、`InvalidUserSymbolArity`、`ReservedWordCollision`、`ReservedSymbolCollision`、不正な operator metadata を lexer の summary validation から現在は合成しない。lexer-owned の不正な依存サマリは、引き続き `FrontendLexicalEnvironmentError::MalformedSummary` になる。不正なエクスポート記号のつづり、不正な arity、不正な operator metadata、予約語／予約記号の衝突、一貫しない重複サマリ、想定外の欠落サマリは、回復不能な不正サマリ失敗である。フロントエンドは、不正な依存サマリのどの部分集合が利用可能かを安全に推測できないためである。インポートの合法性（可視性、字句的な形を超えるエクスポートランクの衝突）はモジュール解決へ先送りし、ここでは決して判断しない。
 
 ## テスト
 

@@ -227,6 +227,7 @@ fn symbol(
         export_rank,
         kind,
         arity,
+        operator: None,
     }
 }
 

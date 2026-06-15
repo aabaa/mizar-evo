@@ -73,8 +73,14 @@ impl OperatorFixityTable {
 pub struct OperatorFixityEntry {
     pub symbol_id: SymbolId,
     pub spelling: Arc<str>,
+    pub fixity: OperatorFixity,
     pub precedence: u8,
-    pub associativity: OperatorAssociativity,
+}
+
+pub enum OperatorFixity {
+    Prefix,
+    Infix(OperatorAssociativity),
+    Postfix,
 }
 
 pub enum OperatorAssociativity {
@@ -136,10 +142,25 @@ coordinator.
 versions, while custom seams inherit a conservative custom-seam version unless
 they override it.
 
+`OperatorFixity` and `OperatorAssociativity` are deliberately exhaustive in the
+frontend parser-input API. They mirror the parser-facing closed operator
+metadata currently accepted by `mizar-parser`: prefix, postfix, and infix
+fixity, with left/right/non-associative infix associativity. Any future
+operator model that adds a fixity or associativity class must update this API,
+`mizar-parser`, cache-key hashing, and the public enum lint-policy guard
+together rather than silently falling through a non-exhaustive match.
+
 `operator_fixity` is populated only from data present in dependency lexical
-summaries. If the current summary shape does not yet expose fixity, the default
-source-to-token path uses `OperatorFixityTable { entries: Vec::new() }`; explicit
-synthetic parser inputs can still exercise the real Pratt/fixity seam.
+summaries, including task-12 prefix, infix, and postfix operator metadata. For
+any visible symbolic functor whose notation is
+operator-shaped, the summary producer is responsible for exposing either the
+declared metadata or the Chapter 10 / Appendix B default (`64`,
+non-associative for infix forms with no declaration). `ParserInputs` copies
+only those grammar-affecting facts into deterministic parser entries; it does
+not infer missing notation forms or synthesize default precedence after the
+summary boundary. Symbols with no exposed operator metadata are omitted, and
+callers may still provide explicit synthetic parser inputs for bounded seam
+tests.
 `StringRequiredContext::PositionSensitive` is the normal source-to-token mode:
 it asks the frontend to precompute a `ParserLexingPlan` over lexical byte ranges
 before tokenization. `StringRequiredContext::None` remains available for
@@ -172,7 +193,9 @@ This module is consumed by orchestration to assemble `FrontendOutput`.
 
 `ParserInputs` is the frontend-assembled bundle of grammar-affecting
 configuration: language edition, operator fixity derived from the active lexical
-environment, and the registry of string-required argument positions. It is the
+environment, and the registry of string-required argument positions. Fixity
+entries contain only spelling, symbol id, fixity kind, precedence, and infix
+associativity when applicable. It is the
 parser-facing counterpart to the lexer's `ParserLexContext`: it never carries
 arbitrary scope or resolver state.
 
@@ -181,11 +204,11 @@ arbitrary scope or resolver state.
 The parser seam lets the frontend compile and test either the stubbed
 source-to-token pipeline or the real parser boundary. The real seam preserves
 source order and `SourceRange`s in `SurfaceAst` token nodes, supports explicit
-infix fixity through a small Pratt parser, and forwards parser recovery markers
-unchanged. Later parser tasks expand that same boundary with full module/item
-nodes, annotation attachment, doc-comment attachment, and broader recovery
-markers. The frontend passes parser output through unchanged; it does not
-rewrite, prune, or interpret nodes.
+prefix/postfix/infix fixity through the parser Pratt boundary, and forwards
+parser recovery markers unchanged. Later parser tasks expand that same boundary
+with full module/item nodes, annotation attachment, doc-comment attachment, and
+broader recovery markers. The frontend passes parser output through unchanged;
+it does not rewrite, prune, or interpret nodes.
 
 ## Algorithm / Logic
 
@@ -194,10 +217,10 @@ rewrite, prune, or interpret nodes.
 1. Build `ParserInputs` from the active lexical environment and edition.
 2. Invoke the configured `ParserSeam` with the `TokenStream` and inputs. The
    stub seam returns `ast = None` with no syntax diagnostics.
-3. The parser preserves token nodes in source order, builds minimal infix
-   expression nodes when explicit operator fixity is supplied, and preserves
-   recovery markers for missing `end` after block-stack matching and expected
-   string literals. Later parser tasks add full module/item parsing,
+3. The parser preserves token nodes in source order, builds operator
+   expression nodes when operator fixity is supplied, and preserves recovery
+   markers for missing `end` after block-stack matching and expected string
+   literals. Later parser tasks add full module/item parsing,
    annotation and doc-comment attachment, and broader synchronization coverage.
 4. Return the `SurfaceAst` plus syntax diagnostics, or `ast = None` when the
    parser reports unrecoverable input.
@@ -228,15 +251,16 @@ reserved class rather than a parser-backed producer surface.
 Key scenarios:
 
 - the stub seam returns `ast = None` and no diagnostics;
-- `ParserInputs` uses an empty `OperatorFixityTable` and
+- `ParserInputs` derives deterministic operator-fixity entries from active
+  lexical environment summaries that expose declared or spec-defaulted fixity,
+  omits symbols without operator metadata, and uses
   `StringRequiredContext::PositionSensitive` for normal source-to-token paths;
 - the real seam parses a well-formed token stream to a `SurfaceAst` with
   preserved source order and `SourceRange`s;
 - the real seam preserves token-kind adaptation and returns parser diagnostics
   unchanged;
-- explicit operator fixity drives Pratt precedence and associativity for
-  supported infix operators; once lexical summaries expose fixity, the active
-  lexical environment should populate those same parser inputs;
+- explicit and summary-derived operator fixity drive Pratt precedence and
+  associativity/fixity for supported prefix, infix, and postfix operators;
 - recovered and unknown tokens are preserved but do not become infix operators;
 - non-associative chains of the same operator are diagnosed while different
   operators at the same precedence remain distinct;

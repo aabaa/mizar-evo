@@ -1,8 +1,7 @@
 # mizar-parser: Pratt Parsing
 
-Status: minimal task-11 explicit infix Pratt parsing implemented and task-1
-module split in place as an internal `pratt` module; full term/formula
-precedence planned.
+Status: task-12 term Pratt parsing is implemented for active-lexicon prefix,
+postfix, and infix operators; formula precedence remains planned.
 
 ## Purpose
 
@@ -15,6 +14,45 @@ This module defines the precedence parser for term and formula expressions.
 - parse syntactic shape without performing overload resolution;
 - report non-associative chaining and precedence surprises with source-local diagnostics.
 
+## Term Pratt Contract
+
+`ParseRequest::operator_fixity` carries parser-facing operator metadata derived
+from `ParserInputs`: spelling, fixity kind, precedence, and, for infix
+operators, associativity. The parser consumes this metadata only as grammar
+configuration. It does not choose overload roots, infer result types, evaluate
+cluster facts, or resolve selector-versus-namespace roles.
+
+Term parsing uses the following order:
+
+1. Prefix operators are null denotations. Their operand is parsed at the
+   operator precedence.
+2. Primary terms and the fixed selector/update postfix chain are parsed next.
+   Selector/update/application syntax therefore binds tighter than user
+   operators.
+3. User postfix and infix operators are folded by Pratt binding power.
+4. `qua` is parsed by the module grammar after Pratt as the fixed lowest
+   term-level operator and remains left-associative.
+
+For infix term operators, the binding powers match Appendix B:
+
+| Associativity | Left binding power | Right minimum binding power |
+|---|---:|---:|
+| Left | `N` | `N + 1` |
+| Right | `N` | `N` |
+| None | `N` | `N + 1`, plus same-operator chain diagnostics |
+
+Prefix and postfix operators use the supplied precedence as binding power; the
+supplied metadata may come from an explicit declaration or from the
+spec-defaulted summary-side metadata. When a token has several visible operator
+entries for different fixities, the parser uses prefix entries only where a
+term operand may start, and postfix / infix entries only after a left operand
+has been parsed. When postfix and infix entries share the same spelling after a
+left operand, an eligible infix entry wins if the following token can start a
+right operand; otherwise an eligible postfix entry wins. A same-spelling
+operator conflict with incompatible metadata is a lexical-environment or link
+stage error; this parser stage assumes `ParserInputs` has already selected a
+deterministic visible table.
+
 ## Public Enum Compatibility
 
 `OperatorAssociativity` remains deliberately exhaustive. It is a closed
@@ -24,3 +62,7 @@ right-associative, and non-associative. A future operator-model change that
 needs another associativity category must update this design note, parser
 matches, syntax payload mapping, and lint-policy expectations in the same
 change.
+
+`OperatorFixity` is also deliberately exhaustive for the current term operator
+model: prefix, infix, and postfix. Bracket delimiter-pair functors are not
+represented by this enum until parser inputs grow bracket-pair metadata.

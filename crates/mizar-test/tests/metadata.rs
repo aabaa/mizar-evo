@@ -9,6 +9,7 @@ use mizar_test::{
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
 const TEMPLATE_ARGUMENTS_REQUIREMENT_ID: &str = "spec.en.syntax.template_arguments.parser";
+const OPERATOR_PRECEDENCE_REQUIREMENT_ID: &str = "spec.en.13.operator_precedence.parser";
 
 #[test]
 fn empty_corpus_succeeds() {
@@ -560,6 +561,51 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
     );
     assert!(fail_case.expectation.tags.is_empty());
 
+    let operator_pass = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_parser_operator_terms_001")
+        .expect("operator parse-only pass case should be discovered");
+    assert_eq!(operator_pass.expectation.kind, TestKind::Pass);
+    assert_eq!(operator_pass.expectation.stage, Stage::ParseOnly);
+    assert_eq!(
+        operator_pass.expectation.expected_phase,
+        Some(PipelinePhase::Parse)
+    );
+    assert!(
+        operator_pass
+            .expectation
+            .spec_refs
+            .iter()
+            .any(|spec_ref| spec_ref.0 == OPERATOR_PRECEDENCE_REQUIREMENT_ID)
+    );
+    assert!(
+        operator_pass
+            .expectation
+            .tags
+            .iter()
+            .any(|tag| tag == "active_parse_only")
+    );
+
+    let operator_fail = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fail_parser_operator_nonassoc_001")
+        .expect("operator parse-only fail case should be discovered");
+    assert_eq!(operator_fail.expectation.kind, TestKind::Fail);
+    assert_eq!(operator_fail.expectation.stage, Stage::ParseOnly);
+    assert_eq!(
+        operator_fail.expectation.diagnostic_codes,
+        vec!["non_associative_operator_chain".to_owned()]
+    );
+    assert!(
+        operator_fail
+            .expectation
+            .spec_refs
+            .iter()
+            .any(|spec_ref| spec_ref.0 == OPERATOR_PRECEDENCE_REQUIREMENT_ID)
+    );
+
     let active_cases = active_parse_only_cases(&plan)
         .map(|case| case.id.0.as_str())
         .collect::<Vec<_>>();
@@ -578,6 +624,8 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "fail_parser_missing_block_semicolon_001",
             "fail_parser_missing_definition_end_001",
             "fail_parser_missing_semicolon_001",
+            "fail_parser_operator_dangling_001",
+            "fail_parser_operator_nonassoc_001",
             "fail_parser_primary_terms_missing_delimiter_001",
             "fail_parser_primary_terms_missing_term_001",
             "fail_parser_qua_missing_type_001",
@@ -596,6 +644,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_import_items_001",
             "pass_parser_minimal_token_stream_001",
             "pass_parser_module_skeleton_001",
+            "pass_parser_operator_terms_001",
             "pass_parser_primary_terms_001",
             "pass_parser_qua_terms_001",
             "pass_parser_selector_updates_001",
@@ -617,6 +666,22 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from(
                 "tests/miz/fail/parser/fail_parser_template_arguments_chained_iff_001.expect.toml"
             ),
+        ]
+    );
+
+    let operator_requirement = plan
+        .manifest
+        .requirements
+        .iter()
+        .find(|requirement| requirement.id.0 == OPERATOR_PRECEDENCE_REQUIREMENT_ID)
+        .expect("operator parse-only requirement should exist");
+    assert_eq!(operator_requirement.stage, Stage::ParseOnly);
+    assert_eq!(
+        operator_requirement.tests,
+        vec![
+            PathBuf::from("tests/miz/pass/parser/pass_parser_operator_terms_001.expect.toml"),
+            PathBuf::from("tests/miz/fail/parser/fail_parser_operator_dangling_001.expect.toml"),
+            PathBuf::from("tests/miz/fail/parser/fail_parser_operator_nonassoc_001.expect.toml"),
         ]
     );
 
@@ -649,8 +714,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 34);
-    assert_eq!(report.passed_count(), 34);
+    assert_eq!(report.results.len(), 37);
+    assert_eq!(report.passed_count(), 37);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_export_visibility_001"
@@ -725,6 +790,14 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
             && result.actual_diagnostic_codes == vec!["missing_semicolon".to_owned()]
     }));
     assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_operator_dangling_001"
+            && result.actual_diagnostic_codes == vec!["dangling_operator".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_operator_nonassoc_001"
+            && result.actual_diagnostic_codes == vec!["non_associative_operator_chain".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_parser_primary_terms_missing_delimiter_001"
             && result.actual_diagnostic_codes == vec!["malformed_term_expression".to_owned()]
     }));
@@ -763,6 +836,9 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_module_skeleton_001"
             && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_operator_terms_001" && result.actual_diagnostic_codes.is_empty()
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_primary_terms_001" && result.actual_diagnostic_codes.is_empty()
@@ -889,8 +965,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 34"));
-    assert!(stdout.contains("passed: 34"));
+    assert!(stdout.contains("parse-only cases: 37"));
+    assert!(stdout.contains("passed: 37"));
     assert!(stdout.contains("failed: 0"));
 }
 

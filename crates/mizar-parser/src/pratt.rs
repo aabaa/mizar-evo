@@ -1,6 +1,6 @@
 use crate::{
-    OperatorAssociativity, OperatorFixityEntry, ParserTokenKind, event::SyntaxEvent,
-    grammar::Parser,
+    OperatorAssociativity, OperatorFixity, OperatorFixityEntry, ParserTokenKind,
+    event::SyntaxEvent, grammar::Parser,
 };
 use mizar_session::SourceRange;
 use mizar_syntax::{
@@ -41,7 +41,10 @@ impl ExpressionParser<'_> {
             }
 
             let operator_position = self.position;
-            if operator.associativity == OperatorAssociativity::NonAssociative
+            let OperatorFixity::Infix(associativity) = operator.fixity else {
+                break;
+            };
+            if associativity == OperatorAssociativity::NonAssociative
                 && self.left_is_non_associative_chain(left, &operator)
             {
                 let span = self.parser.request.tokens[operator_position].span;
@@ -71,7 +74,7 @@ impl ExpressionParser<'_> {
 
     fn next_operand(&mut self) -> Option<SurfaceBuilderNodeId> {
         let token = self.parser.request.tokens.get(self.position)?;
-        if self.parser.fixity_for_token(token).is_some() || !is_operand_token(token.kind) {
+        if self.parser.fixities_for_token(token).is_some() || !is_operand_token(token.kind) {
             return None;
         }
         let id = self.parser.token_node_ids[self.position];
@@ -81,7 +84,7 @@ impl ExpressionParser<'_> {
 
     fn current_operator(&self) -> Option<&OperatorFixityEntry> {
         let token = self.parser.request.tokens.get(self.position)?;
-        self.parser.fixity_for_token(token)
+        self.parser.infix_fixity_for_token(token)
     }
 
     fn left_is_non_associative_chain(
@@ -112,7 +115,7 @@ impl ExpressionParser<'_> {
             kind: SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
                 spelling: operator.spelling.clone(),
                 precedence: operator.precedence,
-                associativity: surface_associativity(operator.associativity),
+                associativity: surface_associativity(infix_associativity(operator)),
             }),
             range: SourceRange {
                 source_id: left_range.source_id,
@@ -126,11 +129,20 @@ impl ExpressionParser<'_> {
 
 fn binding_powers(operator: &OperatorFixityEntry) -> (u32, u32) {
     let precedence = u32::from(operator.precedence);
-    match operator.associativity {
+    match infix_associativity(operator) {
         OperatorAssociativity::Left | OperatorAssociativity::NonAssociative => {
             (precedence, precedence + 1)
         }
         OperatorAssociativity::Right => (precedence, precedence),
+    }
+}
+
+fn infix_associativity(operator: &OperatorFixityEntry) -> OperatorAssociativity {
+    match operator.fixity {
+        OperatorFixity::Infix(associativity) => associativity,
+        OperatorFixity::Prefix | OperatorFixity::Postfix => {
+            unreachable!("token-only Pratt receives only infix operators")
+        }
     }
 }
 

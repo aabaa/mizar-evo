@@ -1,5 +1,5 @@
 use crate::{
-    OperatorFixityEntry, ParseOutput, ParseRequest, ParserToken, ParserTokenKind,
+    OperatorFixity, OperatorFixityEntry, ParseOutput, ParseRequest, ParserToken, ParserTokenKind,
     cursor::TokenCursor, event::SyntaxEvent, event::SyntaxEventSink, recovery,
 };
 use mizar_session::SourceRange;
@@ -14,19 +14,20 @@ pub(crate) struct Parser {
     pub(super) events: SyntaxEventSink,
     pub(super) token_node_ids: Vec<SurfaceBuilderNodeId>,
     pub(super) diagnostics: Vec<SyntaxDiagnostic>,
-    pub(super) fixity: BTreeMap<Arc<str>, OperatorFixityEntry>,
+    pub(super) fixity: BTreeMap<Arc<str>, Vec<OperatorFixityEntry>>,
     pub(super) trivia: SurfaceTriviaBuilder,
 }
 
 impl Parser {
     pub(crate) fn new(request: ParseRequest) -> Self {
         let source_id = request.source_id;
-        let fixity = request
-            .operator_fixity
-            .iter()
-            .cloned()
-            .map(|entry| (entry.spelling.clone(), entry))
-            .collect();
+        let mut fixity: BTreeMap<Arc<str>, Vec<OperatorFixityEntry>> = BTreeMap::new();
+        for entry in request.operator_fixity.iter().cloned() {
+            fixity
+                .entry(entry.spelling.clone())
+                .or_default()
+                .push(entry);
+        }
         Self {
             events: SyntaxEventSink::new(request.source_id),
             request,
@@ -145,14 +146,41 @@ impl Parser {
         })
     }
 
-    pub(super) fn fixity_for_token(&self, token: &ParserToken) -> Option<&OperatorFixityEntry> {
+    pub(super) fn fixities_for_token(&self, token: &ParserToken) -> Option<&[OperatorFixityEntry]> {
         if !matches!(
             token.kind,
             ParserTokenKind::UserSymbol | ParserTokenKind::ReservedSymbol
         ) {
             return None;
         }
-        self.fixity.get(&token.text)
+        self.fixity.get(&token.text).map(Vec::as_slice)
+    }
+
+    pub(super) fn infix_fixity_for_token(
+        &self,
+        token: &ParserToken,
+    ) -> Option<&OperatorFixityEntry> {
+        self.fixities_for_token(token)?
+            .iter()
+            .find(|entry| matches!(entry.fixity, OperatorFixity::Infix(_)))
+    }
+
+    pub(super) fn prefix_fixity_for_token(
+        &self,
+        token: &ParserToken,
+    ) -> Option<&OperatorFixityEntry> {
+        self.fixities_for_token(token)?
+            .iter()
+            .find(|entry| matches!(entry.fixity, OperatorFixity::Prefix))
+    }
+
+    pub(super) fn postfix_fixity_for_token(
+        &self,
+        token: &ParserToken,
+    ) -> Option<&OperatorFixityEntry> {
+        self.fixities_for_token(token)?
+            .iter()
+            .find(|entry| matches!(entry.fixity, OperatorFixity::Postfix))
     }
 }
 

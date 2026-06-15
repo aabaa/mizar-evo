@@ -5,8 +5,8 @@ pub mod trivia;
 pub use ast::{
     MizarLanguage, RowanSyntaxElement, RowanSyntaxNode, RowanSyntaxToken, SurfaceAst,
     SurfaceAstBuilder, SurfaceBuilderNodeId, SurfaceInfixOperator, SurfaceNode, SurfaceNodeId,
-    SurfaceNodeKind, SurfaceNodeView, SurfaceOperatorAssociativity, SurfaceToken, SurfaceTokenKind,
-    SyntaxKind,
+    SurfaceNodeKind, SurfaceNodeView, SurfaceOperatorAssociativity, SurfacePostfixOperator,
+    SurfacePrefixOperator, SurfaceToken, SurfaceTokenKind, SyntaxKind,
 };
 pub use recovery::{SyntaxDiagnostic, SyntaxDiagnosticCode, SyntaxRecoveryKind};
 pub use trivia::{
