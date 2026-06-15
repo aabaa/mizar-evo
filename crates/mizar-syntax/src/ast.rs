@@ -113,6 +113,9 @@ pub enum SyntaxKind {
     BulkReference = 78,
     ComputationJustification = 79,
     ComputationOption = 80,
+    ConsiderStatement = 81,
+    ReconsiderStatement = 82,
+    ReconsiderItem = 83,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -207,6 +210,9 @@ impl SyntaxKind {
             78 => Self::BulkReference,
             79 => Self::ComputationJustification,
             80 => Self::ComputationOption,
+            81 => Self::ConsiderStatement,
+            82 => Self::ReconsiderStatement,
+            83 => Self::ReconsiderItem,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -303,6 +309,9 @@ impl SyntaxKind {
                 | Self::BulkReference
                 | Self::ComputationJustification
                 | Self::ComputationOption
+                | Self::ConsiderStatement
+                | Self::ReconsiderStatement
+                | Self::ReconsiderItem
         )
     }
 
@@ -1199,6 +1208,27 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_consider_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ConsiderStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_reconsider_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ReconsiderStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_reconsider_item(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ReconsiderItem => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_selector_access(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::SelectorAccess => Some(self),
@@ -1494,6 +1524,9 @@ pub enum SurfaceNodeKind {
     BulkReference,
     ComputationJustification,
     ComputationOption,
+    ConsiderStatement,
+    ReconsiderStatement,
+    ReconsiderItem,
     SelectorAccess,
     StructureUpdate,
     FieldUpdate,
@@ -1579,6 +1612,9 @@ impl SurfaceNodeKind {
             Self::BulkReference => SyntaxKind::BulkReference,
             Self::ComputationJustification => SyntaxKind::ComputationJustification,
             Self::ComputationOption => SyntaxKind::ComputationOption,
+            Self::ConsiderStatement => SyntaxKind::ConsiderStatement,
+            Self::ReconsiderStatement => SyntaxKind::ReconsiderStatement,
+            Self::ReconsiderItem => SyntaxKind::ReconsiderItem,
             Self::SelectorAccess => SyntaxKind::SelectorAccess,
             Self::StructureUpdate => SyntaxKind::StructureUpdate,
             Self::FieldUpdate => SyntaxKind::FieldUpdate,
@@ -1820,6 +1856,9 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
             output.push_str("ComputationJustification");
         }
         SurfaceNodeKind::ComputationOption => output.push_str("ComputationOption"),
+        SurfaceNodeKind::ConsiderStatement => output.push_str("ConsiderStatement"),
+        SurfaceNodeKind::ReconsiderStatement => output.push_str("ReconsiderStatement"),
+        SurfaceNodeKind::ReconsiderItem => output.push_str("ReconsiderItem"),
         SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
@@ -2901,6 +2940,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            task18_statement_nodes_ast(source_id(30))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -2954,6 +2999,9 @@ mod tests {
             SyntaxKind::BulkReference,
             SyntaxKind::ComputationJustification,
             SyntaxKind::ComputationOption,
+            SyntaxKind::ConsiderStatement,
+            SyntaxKind::ReconsiderStatement,
+            SyntaxKind::ReconsiderItem,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -4221,6 +4269,44 @@ mod tests {
             assert!(
                 snapshot.contains(expected),
                 "snapshot should render task-17 line {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn task18_typed_accessors_cover_consider_reconsider_nodes() {
+        let ast = task18_statement_nodes_ast(source_id(30));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task18_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task18_view!(
+            SurfaceNodeKind::ConsiderStatement,
+            SyntaxKind::ConsiderStatement,
+            as_consider_statement
+        );
+        assert_task18_view!(
+            SurfaceNodeKind::ReconsiderStatement,
+            SyntaxKind::ReconsiderStatement,
+            as_reconsider_statement
+        );
+        assert_task18_view!(
+            SurfaceNodeKind::ReconsiderItem,
+            SyntaxKind::ReconsiderItem,
+            as_reconsider_item
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in ["ConsiderStatement", "ReconsiderStatement", "ReconsiderItem"] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-18 line {expected}"
             );
         }
     }
@@ -6022,6 +6108,305 @@ mod tests {
                 option_value,
                 computation_close,
                 second_semicolon,
+                compilation_unit,
+            ],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn task18_statement_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let consider = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "consider",
+            range(source_id, 0, 8),
+        );
+        let x = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 9, 10));
+        let shared_comma = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ",",
+            range(source_id, 10, 11),
+        );
+        let y = builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 12, 13));
+        let being = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "being",
+            range(source_id, 14, 19),
+        );
+        let consider_type_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 20, 23),
+        );
+        let such = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "such",
+            range(source_id, 24, 28),
+        );
+        let that = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "that",
+            range(source_id, 29, 33),
+        );
+        let label = builder.add_token(SurfaceTokenKind::Identifier, "A", range(source_id, 34, 35));
+        let colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 35, 36),
+        );
+        let thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 37, 43),
+        );
+        let and = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "and",
+            range(source_id, 44, 47),
+        );
+        let contradiction = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "contradiction",
+            range(source_id, 48, 61),
+        );
+        let consider_by = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "by",
+            range(source_id, 62, 64),
+        );
+        let reference_label =
+            builder.add_token(SurfaceTokenKind::Identifier, "A", range(source_id, 65, 66));
+        let consider_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 67, 68),
+        );
+
+        let reconsider = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "reconsider",
+            range(source_id, 70, 80),
+        );
+        let reconsider_x =
+            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 81, 82));
+        let item_comma = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ",",
+            range(source_id, 82, 83),
+        );
+        let reconsider_y =
+            builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 84, 85));
+        let equals = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "=",
+            range(source_id, 86, 87),
+        );
+        let z = builder.add_token(SurfaceTokenKind::Identifier, "z", range(source_id, 88, 89));
+        let as_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "as",
+            range(source_id, 90, 92),
+        );
+        let reconsider_type_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 93, 96),
+        );
+        let reconsider_by = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "by",
+            range(source_id, 97, 99),
+        );
+        let reconsider_reference_label = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "A",
+            range(source_id, 100, 101),
+        );
+        let reconsider_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 102, 103),
+        );
+
+        let consider_type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 20, 23),
+            vec![consider_type_token],
+        );
+        let consider_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 20, 23),
+            vec![consider_type_head],
+        );
+        let segment = builder.add_node(
+            SurfaceNodeKind::QualifiedVariableSegment,
+            range(source_id, 9, 23),
+            vec![x, shared_comma, y, being, consider_type],
+        );
+        let thesis_constant = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+            range(source_id, 37, 43),
+            vec![thesis],
+        );
+        let thesis_formula = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 37, 43),
+            vec![thesis_constant],
+        );
+        let labelled_proposition = builder.add_node(
+            SurfaceNodeKind::Proposition,
+            range(source_id, 34, 43),
+            vec![label, colon, thesis_formula],
+        );
+        let contradiction_constant = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction),
+            range(source_id, 48, 61),
+            vec![contradiction],
+        );
+        let contradiction_formula = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 48, 61),
+            vec![contradiction_constant],
+        );
+        let unlabelled_proposition = builder.add_node(
+            SurfaceNodeKind::Proposition,
+            range(source_id, 48, 61),
+            vec![contradiction_formula],
+        );
+        let conditions = builder.add_node(
+            SurfaceNodeKind::ConditionList,
+            range(source_id, 29, 61),
+            vec![that, labelled_proposition, and, unlabelled_proposition],
+        );
+        let reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 65, 66),
+            vec![reference_label],
+        );
+        let reference_list = builder.add_node(
+            SurfaceNodeKind::ReferenceList,
+            range(source_id, 65, 66),
+            vec![reference],
+        );
+        let justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 62, 66),
+            vec![consider_by, reference_list],
+        );
+        let consider_statement = builder.add_node(
+            SurfaceNodeKind::ConsiderStatement,
+            range(source_id, 0, 68),
+            vec![
+                consider,
+                segment,
+                such,
+                conditions,
+                justification,
+                consider_semicolon,
+            ],
+        );
+        let consider_item = builder.add_node(
+            SurfaceNodeKind::StatementItem,
+            range(source_id, 0, 68),
+            vec![consider_statement],
+        );
+
+        let bare_reconsider_item = builder.add_node(
+            SurfaceNodeKind::ReconsiderItem,
+            range(source_id, 81, 82),
+            vec![reconsider_x],
+        );
+        let z_term = term_expression_node(&mut builder, source_id, z, 88, 89);
+        let equated_reconsider_item = builder.add_node(
+            SurfaceNodeKind::ReconsiderItem,
+            range(source_id, 84, 89),
+            vec![reconsider_y, equals, z_term],
+        );
+        let reconsider_type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 93, 96),
+            vec![reconsider_type_token],
+        );
+        let reconsider_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 93, 96),
+            vec![reconsider_type_head],
+        );
+        let reconsider_reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 100, 101),
+            vec![reconsider_reference_label],
+        );
+        let reconsider_reference_list = builder.add_node(
+            SurfaceNodeKind::ReferenceList,
+            range(source_id, 100, 101),
+            vec![reconsider_reference],
+        );
+        let reconsider_justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 97, 101),
+            vec![reconsider_by, reconsider_reference_list],
+        );
+        let reconsider_statement = builder.add_node(
+            SurfaceNodeKind::ReconsiderStatement,
+            range(source_id, 70, 103),
+            vec![
+                reconsider,
+                bare_reconsider_item,
+                item_comma,
+                equated_reconsider_item,
+                as_token,
+                reconsider_type,
+                reconsider_justification,
+                reconsider_semicolon,
+            ],
+        );
+        let reconsider_item = builder.add_node(
+            SurfaceNodeKind::StatementItem,
+            range(source_id, 70, 103),
+            vec![reconsider_statement],
+        );
+        let item_list = builder.add_node(
+            SurfaceNodeKind::ItemList,
+            range(source_id, 0, 103),
+            vec![consider_item, reconsider_item],
+        );
+        let compilation_unit = builder.add_node(
+            SurfaceNodeKind::CompilationUnit,
+            range(source_id, 0, 103),
+            vec![item_list],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 103),
+            vec![
+                consider,
+                x,
+                shared_comma,
+                y,
+                being,
+                consider_type_token,
+                such,
+                that,
+                label,
+                colon,
+                thesis,
+                and,
+                contradiction,
+                consider_by,
+                reference_label,
+                consider_semicolon,
+                reconsider,
+                reconsider_x,
+                item_comma,
+                reconsider_y,
+                equals,
+                z,
+                as_token,
+                reconsider_type_token,
+                reconsider_by,
+                reconsider_reference_label,
+                reconsider_semicolon,
                 compilation_unit,
             ],
         );

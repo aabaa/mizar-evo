@@ -492,10 +492,16 @@ older numeric syntax task references appear to disagree, prefer
       steps, skipped malformed citation tails, deferred reference template
       arguments, and semicolon-boundary recovery.
 
-18. **`consider` and `reconsider`.** [ ]
+18. **`consider` and `reconsider`.** [x]
     - `consider … such that … by …` and `reconsider … as … by …`, both of
       which carry justifications.
     - Deps: 17, `mizar-syntax` task 13 / S-013. Spec: [15.statements.md](../../../spec/en/15.statements.md).
+    - Result: implemented `ConsiderStatement`, `ReconsiderStatement`, and
+      `ReconsiderItem` parsing with shared-type qualified variables, condition
+      lists, mandatory simple `by` justifications, recovery for missing
+      `such` / conditions / `as` / target type / item pieces / justifications,
+      syntax typed accessors, scope-skeleton support for reconsider
+      `type_change_list`, and active parse-only pass/fail corpus coverage.
 
 19. **Conclusion steps and iterative equality.** [ ]
     - `thus`/`hence`, `then` chains, and iterative equality `.=` steps with

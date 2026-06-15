@@ -1,4 +1,5 @@
 use super::common::*;
+use crate::BindingShapeKind;
 
 #[test]
 fn scope_skeleton_handles_empty_stream() {
@@ -57,6 +58,39 @@ fn scope_skeleton_records_supported_for_reserve_and_given_binders() {
     );
     assert!(skeleton.binding_overrides_symbol("A", source.len() - 1));
     assert!(skeleton.binding_overrides_symbol("c", source.len() - 1));
+    assert!(skeleton.diagnostics.is_empty());
+}
+
+#[test]
+fn scope_skeleton_records_consider_and_reconsider_item_lists() {
+    let source = "\
+proof
+consider x, y being set such that thesis by A;
+reconsider br = [a, b], setterm = {c, d}, u, v = f(a, b), z as set by A;
+end;";
+    let raw = scan_raw(source).expect("source should raw scan");
+    let skeleton = build_scope_skeleton(&raw);
+
+    assert_eq!(skeleton.frames.len(), 1);
+    assert_eq!(
+        skeleton.frames[0]
+            .bindings
+            .iter()
+            .map(|binding| (binding.spelling.as_str(), binding.kind))
+            .collect::<Vec<_>>(),
+        vec![
+            ("x", BindingShapeKind::Consider),
+            ("y", BindingShapeKind::Consider),
+            ("br", BindingShapeKind::Reconsider),
+            ("setterm", BindingShapeKind::Reconsider),
+            ("u", BindingShapeKind::Reconsider),
+            ("v", BindingShapeKind::Reconsider),
+            ("z", BindingShapeKind::Reconsider),
+        ]
+    );
+    assert!(skeleton.binding_overrides_symbol("x", nth_index(source, "reconsider", 0)));
+    assert!(skeleton.binding_overrides_symbol("u", nth_index(source, "set by A", 0)));
+    assert!(skeleton.binding_overrides_symbol("z", nth_index(source, "set by A", 0)));
     assert!(skeleton.diagnostics.is_empty());
 }
 

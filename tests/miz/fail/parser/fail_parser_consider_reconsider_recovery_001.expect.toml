@@ -1,0 +1,28 @@
+schema_version = 1
+id = "fail_parser_consider_reconsider_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.statements"
+source = "fail_parser_consider_reconsider_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "consider_reconsider_statement_recovery"
+stable_detail_key = "parser.statements.consider_reconsider.recovery"
+diagnostic_codes = [
+  "malformed_type_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_justification",
+  "malformed_justification",
+  "malformed_term_expression",
+  "malformed_type_expression",
+  "malformed_type_expression",
+  "malformed_justification",
+  "malformed_term_expression",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = [
+  "spec.en.15.statements.syntax",
+]
+notes = "Active parse-only runner coverage for parser task 18 missing consider variable segments and conditions, missing or malformed mandatory simple justifications, disallowed computation justifications, and malformed reconsider item/as/type pieces."

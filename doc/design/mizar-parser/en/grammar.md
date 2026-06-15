@@ -944,6 +944,75 @@ nodes, and
 active parse-only pass/fail corpus coverage with traceability to Chapter 15
 §15.2.1/§15.8, Chapter 16 §16.5, and Chapter 20 §20.9.2.
 
+## Task 18: `consider` And `reconsider`
+
+Task 18 continues S-013 statement syntax with the Chapter 15 linkable
+statement forms that carry mandatory simple justifications. The task uses the
+task-17 `JustificationClause` and `ReferenceList` surfaces, but only in the
+simple citation form; `by computation` remains accepted only by the explicit
+task-17 compact-statement host until a later specification explicitly admits it
+for more statement kinds.
+
+Chapter 15 defines these statements with `simple_justification` while also
+stating that both forms have mandatory justification. For this parser
+increment, that prose and the crate plan are treated as the controlling
+syntax intent: task 18 requires an explicit `by references` tail and recovers a
+missing tail as malformed justification syntax instead of silently accepting an
+empty justification.
+
+```ebnf
+statement_item       ::= ... | consider_statement | reconsider_statement ;
+consider_statement  ::= "consider" qualified_vars
+                         "such" condition_list simple_justification ";" ;
+reconsider_statement::= "reconsider" reconsider_item
+                         { "," reconsider_item }
+                         "as" type_expression simple_justification ";" ;
+reconsider_item     ::= identifier [ "=" term_expression ] ;
+simple_justification::= "by" references ;
+```
+
+`ConsiderStatement` owns the `consider` token, source-ordered
+`QualifiedVariableSegment` children and comma tokens, the `such` token, a
+`ConditionList`, a simple `JustificationClause`, and the semicolon when
+present. It reuses task-16 `qualified_vars` behavior, so a single
+`QualifiedVariableSegment` may preserve a shared-type identifier list such as
+`x, y being Real`, and multiple typed segments remain source ordered. It also
+reuses task-16 condition-list behavior: the child `ConditionList` owns the
+`that` token and statement-level `and` separators, and propositions may carry
+labels.
+
+`ReconsiderStatement` owns the `reconsider` token, source-ordered
+`ReconsiderItem` children and comma tokens, the `as` token, one
+`TypeExpression`, a simple `JustificationClause`, and the semicolon when
+present. `ReconsiderItem` owns either an identifier token for an existing name
+or an identifier, `=`, and a `TermExpression` for a newly introduced narrowed
+name. The parser does not resolve whether an identifier is already bound, check
+that all reconsidered terms have the target type, or generate proof
+obligations.
+
+Task 18 recovery reuses existing syntax diagnostics. Missing or malformed
+qualified variables and target types use `MalformedTypeExpression` plus
+`MissingTypeExpression` when an insertion is needed. Missing `consider`
+conditions use `MalformedFormulaExpression` plus `MissingFormula` or malformed
+condition-list recovery. Missing or malformed `ReconsiderItem` identifiers or
+right-hand-side terms use `MalformedTermExpression` plus `MissingTerm`.
+Missing or malformed mandatory `by references` tails use
+`MalformedJustification` plus `MissingProofStep` or task-17 malformed
+reference-list recovery. Malformed statement tails synchronize at semicolon,
+EOF, or the next statement/item boundary and preserve skipped source under
+`SkippedToken` recovery when tokens must be skipped.
+
+Task 18 tests must pin: concrete `consider` with the canonical shared-type
+shape `consider x, y being T ... by ...`, concrete `consider` with multiple
+qualified-variable segments, statement-level `such that` / `and` conditions
+with labels, concrete `reconsider` with bare and equated items, shared
+target-type ownership, simple citation justification reuse, rejection/recovery
+for missing `qualified_vars` / `such` / condition / `as` / target type /
+justification / reconsider item pieces, recovery for `by computation` on
+these statement hosts, top-level `StatementItem` wrapping, active parse-only
+pass/fail corpus coverage, and traceability to Chapter 15 §15.3.4, §15.5.1,
+and §15.8.
+
 ## Public Enum Compatibility
 
 `ParserTokenKind` is `#[non_exhaustive]` for downstream crates. The parser token

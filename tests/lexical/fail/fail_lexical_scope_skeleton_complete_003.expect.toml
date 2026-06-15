@@ -14,7 +14,6 @@ diagnostic_codes = [
   "unsupported_binder_shape",
   "unsupported_binder_shape",
   "unsupported_binder_shape",
-  "unsupported_binder_shape",
 ]
 spec_refs = [
   "spec.en.02.lexical.scope_override.skeleton",
@@ -69,6 +68,14 @@ span_start_line = 6
 span_start_col = 5
 span_end_line = 6
 span_end_col = 10
+
+[[tokens]]
+kind = "scope_binding_reconsider"
+lexeme = "dup"
+span_start_line = 9
+span_start_col = 12
+span_end_line = 9
+span_end_col = 15
 
 [[tokens]]
 kind = "scope_active"

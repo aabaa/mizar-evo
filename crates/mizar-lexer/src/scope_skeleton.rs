@@ -129,6 +129,10 @@ enum ScopeSkeletonTokenKind {
     Semicolon,
     LParen,
     RParen,
+    LBracket,
+    RBracket,
+    LBrace,
+    RBrace,
     Other,
 }
 
@@ -261,7 +265,7 @@ impl ScopeSkeletonBuilder {
                     }
                     "reconsider" => {
                         self.advance();
-                        self.parse_named_equals_binder(BindingShapeKind::Reconsider, token.span);
+                        self.parse_reconsider_binders(token.span);
                         continue;
                     }
                     "take" => {
@@ -655,6 +659,117 @@ impl ScopeSkeletonBuilder {
         }
     }
 
+    fn parse_reconsider_binders(&mut self, keyword_span: SourceSpan) {
+        let mut bindings = Vec::new();
+        let mut saw_malformed_separator = false;
+
+        while let Some(token) = self.peek().cloned() {
+            if token.kind == ScopeSkeletonTokenKind::Semicolon || token_is_block_boundary(&token) {
+                break;
+            }
+            if token.kind == ScopeSkeletonTokenKind::Word && token.lexeme == "as" {
+                break;
+            }
+
+            if token.kind == ScopeSkeletonTokenKind::Comma {
+                saw_malformed_separator = true;
+                self.advance();
+                continue;
+            }
+
+            if token.kind == ScopeSkeletonTokenKind::Word && is_identifier(&token.lexeme) {
+                let token = self.advance().expect("peeked token exists");
+                bindings.push(ScopedBindingShape {
+                    spelling: token.lexeme,
+                    introduced_at: token.span,
+                    kind: BindingShapeKind::Reconsider,
+                });
+                self.skip_reconsider_item_tail();
+                continue;
+            }
+
+            break;
+        }
+
+        if bindings.is_empty() && saw_malformed_separator {
+            let span = self.peek().map_or(keyword_span, |token| token.span);
+            self.diagnostic(
+                ScopeSkeletonDiagnosticCode::MalformedBinderList,
+                "malformed reconsider binder list was under-approximated",
+                span,
+            );
+        }
+
+        let statement_end = self.recover_to_binder_statement_end();
+        if bindings.is_empty() {
+            return;
+        }
+        self.statements.push(LexicalStatementRange {
+            kind: LexicalStatementKind::Binder,
+            range: SourceSpan {
+                start: keyword_span.start,
+                end: statement_end,
+            },
+        });
+        self.extend_current_or_statement(keyword_span.start, statement_end, bindings);
+    }
+
+    fn skip_reconsider_item_tail(&mut self) {
+        if !self
+            .peek()
+            .is_some_and(|token| token.kind == ScopeSkeletonTokenKind::Other && token.lexeme == "=")
+        {
+            return;
+        }
+
+        self.advance();
+        let mut depth = 0usize;
+        let mut bracket_depth = 0usize;
+        let mut brace_depth = 0usize;
+        while let Some(token) = self.peek().cloned() {
+            if token.kind == ScopeSkeletonTokenKind::Semicolon || token_is_block_boundary(&token) {
+                break;
+            }
+            let top_level = depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            if top_level
+                && ((token.kind == ScopeSkeletonTokenKind::Word && token.lexeme == "as")
+                    || token.kind == ScopeSkeletonTokenKind::Comma)
+            {
+                break;
+            }
+
+            match token.kind {
+                ScopeSkeletonTokenKind::LParen => {
+                    depth += 1;
+                    self.advance();
+                }
+                ScopeSkeletonTokenKind::RParen => {
+                    depth = depth.saturating_sub(1);
+                    self.advance();
+                }
+                ScopeSkeletonTokenKind::LBracket => {
+                    bracket_depth += 1;
+                    self.advance();
+                }
+                ScopeSkeletonTokenKind::RBracket => {
+                    bracket_depth = bracket_depth.saturating_sub(1);
+                    self.advance();
+                }
+                ScopeSkeletonTokenKind::LBrace => {
+                    brace_depth += 1;
+                    self.advance();
+                }
+                ScopeSkeletonTokenKind::RBrace => {
+                    brace_depth = brace_depth.saturating_sub(1);
+                    self.advance();
+                }
+                _ => {
+                    self.advance();
+                }
+            }
+        }
+    }
+
     fn should_parse_set_named_equals_binder(&self) -> bool {
         self.named_equals_binder_shape_follows_keyword()
             || self.cursor == 0
@@ -978,6 +1093,46 @@ fn split_lexeme_run_for_scope(raw_token: &RawToken, tokens: &mut Vec<ScopeSkelet
                     cursor,
                 );
             }
+            '[' => {
+                cursor += 1;
+                push_scope_piece(
+                    raw_token,
+                    tokens,
+                    ScopeSkeletonTokenKind::LBracket,
+                    start,
+                    cursor,
+                );
+            }
+            ']' => {
+                cursor += 1;
+                push_scope_piece(
+                    raw_token,
+                    tokens,
+                    ScopeSkeletonTokenKind::RBracket,
+                    start,
+                    cursor,
+                );
+            }
+            '{' => {
+                cursor += 1;
+                push_scope_piece(
+                    raw_token,
+                    tokens,
+                    ScopeSkeletonTokenKind::LBrace,
+                    start,
+                    cursor,
+                );
+            }
+            '}' => {
+                cursor += 1;
+                push_scope_piece(
+                    raw_token,
+                    tokens,
+                    ScopeSkeletonTokenKind::RBrace,
+                    start,
+                    cursor,
+                );
+            }
             ';' => {
                 cursor += 1;
                 push_scope_piece(
@@ -995,7 +1150,9 @@ fn split_lexeme_run_for_scope(raw_token: &RawToken, tokens: &mut Vec<ScopeSkelet
                         .chars()
                         .next()
                         .expect("cursor is inside string");
-                    if is_identifier_start(next) || matches!(next, ',' | ';' | '(' | ')') {
+                    if is_identifier_start(next)
+                        || matches!(next, ',' | ';' | '(' | ')' | '[' | ']' | '{' | '}')
+                    {
                         break;
                     }
                     cursor += next.len_utf8();

@@ -1,0 +1,10 @@
+consider such that thesis by A;
+consider x being set by A;
+consider x being set such that by A;
+consider x being set such that thesis;
+consider x being set such that thesis by computation(steps: 1);
+reconsider as set by A;
+reconsider x by A;
+reconsider x as by A;
+reconsider x as set;
+reconsider x = as set by A;

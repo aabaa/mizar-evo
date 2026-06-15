@@ -91,6 +91,9 @@ green tree.
 | witness node | `SyntaxKind::Witness` |
 | set statement node | `SyntaxKind::SetStatement` |
 | equating node | `SyntaxKind::Equating` |
+| consider statement node | `SyntaxKind::ConsiderStatement` |
+| reconsider statement node | `SyntaxKind::ReconsiderStatement` |
+| reconsider item node | `SyntaxKind::ReconsiderItem` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -203,6 +206,9 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 78 | `BulkReference` | task-17 `namespace_path ".*"` bulk citation |
 | 79 | `ComputationJustification` | task-17 `by computation(...)` justification payload |
 | 80 | `ComputationOption` | task-17 `steps` / `timeout` / `nest` computation option |
+| 81 | `ConsiderStatement` | task-18 `consider ... such that ... by ...` choice statement |
+| 82 | `ReconsiderStatement` | task-18 `reconsider ... as ... by ...` type-changing statement |
+| 83 | `ReconsiderItem` | task-18 bare or equated reconsider item |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -215,7 +221,7 @@ The current raw discriminants are part of the rowan boundary for this phase:
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
-above, currently `Root` through task-17 `ComputationOption` plus the compatibility
+above, currently `Root` through task-18 `ReconsiderItem` plus the compatibility
 `Token` wrapper and `ErrorRecovery`; `is_token_kind` is true
 only for token leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future
 raw values should be appended or assigned into a documented reserved range so
@@ -270,6 +276,9 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::Witness` | none | `SyntaxKind::Witness` | parser task-16 witness item; owns either one `TermExpression` or identifier, `=`, and a `TermExpression` / `MissingTerm` recovery |
 | `SurfaceNodeKind::SetStatement` | none | `SyntaxKind::SetStatement` | parser task-16 local constant definition; owns `set`, one or more `Equating` children separated by comma tokens, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::Equating` | none | `SyntaxKind::Equating` | parser task-16 equating item; owns identifier or `MissingTerm` recovery, `=` when present, and a `TermExpression` or `MissingTerm` recovery |
+| `SurfaceNodeKind::ConsiderStatement` | none | `SyntaxKind::ConsiderStatement` | parser task-18 choice statement; owns `consider`, qualified-variable segments with separator commas, `such`, `ConditionList` or condition recovery, simple `JustificationClause` or missing-justification recovery, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::ReconsiderStatement` | none | `SyntaxKind::ReconsiderStatement` | parser task-18 type-changing statement; owns `reconsider`, reconsider items with separator commas, `as`, `TypeExpression` or `MissingTypeExpression`, simple `JustificationClause` or missing-justification recovery, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::ReconsiderItem` | none | `SyntaxKind::ReconsiderItem` | parser task-18 reconsider item; owns either identifier or identifier, `=`, and `TermExpression` / `MissingTerm` recovery |
 | `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host; owns one `Proposition`, one `JustificationClause`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
@@ -662,6 +671,29 @@ skipped-token trivia. `SurfaceNodeView` exposes `as_compact_statement`,
 `as_qualified_reference`, `as_grouped_reference`,
 `as_grouped_reference_item`, `as_bulk_reference`,
 `as_computation_justification`, and `as_computation_option` helpers.
+
+Parser task 18 continues S-013 statement vocabulary with the remaining
+justified introduction/type-changing forms. `ConsiderStatement` owns
+`consider`, one or more `QualifiedVariableSegment` children separated by comma
+tokens, `such`, a `ConditionList`, a simple `JustificationClause`, optional
+recovery, and the semicolon token when present. `ReconsiderStatement` owns
+`reconsider`, one or more `ReconsiderItem` children separated by comma tokens,
+`as`, a target `TypeExpression`, a simple `JustificationClause`, optional
+recovery, and the semicolon token when present. `ReconsiderItem` owns either a
+bare identifier token or the equated spelling `identifier "=" TermExpression`.
+Task 18 uses only simple citation justifications on these hosts; computation
+justifications remain limited to `CompactStatement` until a later specification
+admits them elsewhere.
+
+Task 18 statement nodes preserve syntax only. They do not resolve witness
+existence, check whether reconsidered names are already bound, validate target
+types, or generate proof obligations. Missing mandatory `by references` tails
+use `MissingProofStep` recovery directly under the statement node. Missing
+`consider` conditions use `MissingFormula`; missing `reconsider` item
+identifiers or right-hand-side terms use `MissingTerm`; missing target types
+use `MissingTypeExpression`. `SurfaceNodeView` exposes
+`as_consider_statement`, `as_reconsider_statement`, and
+`as_reconsider_item` helpers.
 Snapshot rendering prints the literal node names.
 
 ### Vocabulary Increment Contract
@@ -801,6 +833,9 @@ TakeStatement range=<start>..<end> recovered=<bool>
 Witness range=<start>..<end> recovered=<bool>
 SetStatement range=<start>..<end> recovered=<bool>
 Equating range=<start>..<end> recovered=<bool>
+ConsiderStatement range=<start>..<end> recovered=<bool>
+ReconsiderStatement range=<start>..<end> recovered=<bool>
+ReconsiderItem range=<start>..<end> recovered=<bool>
 CompactStatement range=<start>..<end> recovered=<bool>
 JustificationClause range=<start>..<end> recovered=<bool>
 ReferenceList range=<start>..<end> recovered=<bool>

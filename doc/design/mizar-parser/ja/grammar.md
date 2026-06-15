@@ -885,6 +885,66 @@ derived documentation drift である `from` tail が task-17 justification node
 および Chapter 15 §15.2.1 / §15.8、Chapter 16 §16.5、Chapter 20 §20.9.2 への traceability
 を持つ active parse-only pass/fail corpus coverage を固定する必要がある。
 
+## Task 18: `consider` と `reconsider`
+
+Task 18 は、mandatory な simple justification を持つ Chapter 15 の linkable
+statement form により、S-013 statement syntax を継続する。この task は task-17 の
+`JustificationClause` と `ReferenceList` surface を使うが、simple citation 形だけに
+限定する。`by computation` は、より多くの statement kind に仕様が明示的に許可するまで、
+task-17 の明示的 `CompactStatement` host だけで受け入れる。
+
+Chapter 15 はこれらの statement を `simple_justification` で定義しつつ、両方とも
+mandatory justification を持つとも述べている。この parser 増分では、その本文と crate
+plan を controlling syntax intent として扱う。つまり task 18 は明示的な
+`by references` tail を必須とし、空の justification を黙って受け入れるのではなく、
+欠落した tail を malformed justification syntax として recover する。
+
+```ebnf
+statement_item       ::= ... | consider_statement | reconsider_statement ;
+consider_statement  ::= "consider" qualified_vars
+                         "such" condition_list simple_justification ";" ;
+reconsider_statement::= "reconsider" reconsider_item
+                         { "," reconsider_item }
+                         "as" type_expression simple_justification ";" ;
+reconsider_item     ::= identifier [ "=" term_expression ] ;
+simple_justification::= "by" references ;
+```
+
+`ConsiderStatement` は `consider` token、source-order の `QualifiedVariableSegment`
+child と comma token、`such` token、`ConditionList`、simple `JustificationClause`、
+存在する場合の semicolon を所有する。task-16 の `qualified_vars` behavior を再利用するため、
+1 個の `QualifiedVariableSegment` は `x, y being Real` のような shared-type identifier list
+を保持でき、複数の typed segment も source-order のまま残る。task-16 の condition-list
+behavior も再利用し、child の `ConditionList` が `that` token と statement-level `and`
+separator を所有し、proposition は label を持てる。
+
+`ReconsiderStatement` は `reconsider` token、source-order の `ReconsiderItem` child
+と comma token、`as` token、1 個の `TypeExpression`、simple `JustificationClause`、
+存在する場合の semicolon を所有する。`ReconsiderItem` は既存名を表す identifier token
+だけ、または新しい narrowed name を導入する identifier、`=`、`TermExpression` を所有する。
+parser は identifier が既に束縛済みか、全 reconsidered term が target type を持つか、
+proof obligation を生成するかを検証しない。
+
+Task 18 の recovery は既存の syntax diagnostic を再利用する。欠落または malformed な
+qualified variable と target type は、挿入が必要な場合に `MalformedTypeExpression` と
+`MissingTypeExpression` を使う。`consider` condition の欠落は
+`MalformedFormulaExpression` と `MissingFormula`、または malformed condition-list
+recovery を使う。欠落または malformed な `ReconsiderItem` identifier / 右辺 term は
+`MalformedTermExpression` と `MissingTerm` を使う。mandatory な `by references` tail
+の欠落または malformed syntax は `MalformedJustification` と `MissingProofStep`、
+または task-17 の malformed reference-list recovery を使う。malformed statement tail は
+semicolon、EOF、または次の statement / item boundary で同期し、token を skip する必要が
+ある場合は skipped source を `SkippedToken` recovery 配下に保持する。
+
+Task 18 の test は、canonical shared-type 形 `consider x, y being T ... by ...`、
+複数の qualified-variable segment を持つ concrete `consider`、label 付き statement-level
+`such that` / `and` condition、bare item と equated item を持つ concrete `reconsider`、
+共有 target-type ownership、simple citation justification reuse、`qualified_vars` /
+`such` / condition / `as` / target type / justification / reconsider item 部品の欠落に対する
+reject / recovery、これらの statement host における `by computation` の
+recovery、top-level `StatementItem` wrapping、active parse-only pass/fail corpus
+coverage、Chapter 15 §15.3.4、§15.5.1、§15.8 への traceability を固定する必要がある。
+
 ## 公開 enum の互換性
 
 `ParserTokenKind` は downstream crate 向けに `#[non_exhaustive]` とする。parser-facing

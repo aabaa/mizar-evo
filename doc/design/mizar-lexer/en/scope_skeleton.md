@@ -64,22 +64,22 @@ The skeleton is suitable as a pre-parser handoff object: the parser may consume 
 Lexical lifetimes are conservative:
 
 - `reserve` is top-level/article scoped from the declaration point onward and is ignored with a recoverable diagnostic inside nested blocks;
-- `let`, `consider`, `set`, `reconsider name = ...`, `take name = ...`, `deffunc`, `defpred`, and algorithm `var` / `const` bind in the current lexical block, or fall back to a statement range when no block is open;
+- `let`, `consider`, `set`, `reconsider type_change_list as ...`, `take name = ...`, `deffunc`, `defpred`, and algorithm `var` / `const` bind in the current lexical block, or fall back to a statement range when no block is open;
 - `for`, `ex`, and `given` bind only for the recovered statement range;
 - algorithm `for ... do` binders, including optional `processed name`, bind in the following `do` block.
 
-The skeleton pre-scan must not require raw scan to split punctuation in advance. It may inspect inside `LexemeRun` spans to recognize delimiters such as `,`, `;`, and block-closing punctuation needed for binding-list recovery.
+The skeleton pre-scan must not require raw scan to split punctuation in advance. It may inspect inside `LexemeRun` spans to recognize delimiters such as `,`, `;`, parentheses, brackets, braces, and block-closing punctuation needed for binding-list and item-tail recovery.
 
 ## Implemented Algorithm Flow
 
 The implementation is a conservative single pass over a reduced token stream.
 
-1. Convert `RawTokenStream` into scope-skeleton tokens. Layout is ignored. `LexemeRun` values are split into identifier-shaped `Word` pieces, comma, semicolon, parentheses, and `Other` runs. Other raw token kinds become `Other`.
+1. Convert `RawTokenStream` into scope-skeleton tokens. Layout is ignored. `LexemeRun` values are split into identifier-shaped `Word` pieces, comma, semicolon, parentheses, brackets, braces, and `Other` runs. Other raw token kinds become `Other`.
 2. Initialize a synthetic root frame starting at byte `0`, an empty block stack, and an empty `pending_do_bindings` buffer used by algorithm `for ... do` forms.
 3. Walk tokens from left to right. Recognized block-opening words (`algorithm`, `definition`, `proof`, `now`, `suppose`, `hereby`, and `do`) push an open frame. `case` opens a frame only when the rest of the statement does not contain `do`, so algorithm `case ... do` does not look like a proof branch. `end` pops one frame and records both a block range and a lexical scope frame.
-4. Recognized binder words delegate to shape-specific parsers. Plain binder lists such as `let x, y be ...` accept identifier-shaped names until a comma, semicolon, or stop word. Named-equals binders such as `set x = ...`, `reconsider x = ...`, and `take x = ...` require the `name =` shape. Algorithm `var` and `const` binders scan comma-separated declaration heads while tracking parenthesis depth so initializer tuples do not create extra binders.
+4. Recognized binder words delegate to shape-specific parsers. Plain binder lists such as `let x, y be ...` accept identifier-shaped names until a comma, semicolon, or stop word. Named-equals binders such as `set x = ...` and `take x = ...` require the `name =` shape. `reconsider` scans the `type_change_list` conservatively, records each item-head identifier, and skips optional equated right-hand sides until a top-level comma or `as` while tracking parenthesis, bracket, and brace depth. Algorithm `var` and `const` binders scan comma-separated declaration heads while tracking parenthesis depth so initializer tuples do not create extra binders.
 5. `ghost var` and `ghost const` are treated as algorithm binders; unsupported `ghost` forms produce a recoverable diagnostic and do not invent bindings.
-6. Binder lifetimes are assigned by shape. `reserve` contributes to the root frame only outside nested blocks. `for`, `ex`, and `given` create statement-local frames. `consider`, `let` inside a block, named-equals binders, `deffunc`, `defpred`, `var`, `const`, and `processed` extend the current block frame when one exists, otherwise fall back to a statement-local frame. Algorithm `for ... do` moves its binders, plus optional `processed name`, into the following `do` block via `pending_do_bindings`.
+6. Binder lifetimes are assigned by shape. `reserve` contributes to the root frame only outside nested blocks. `for`, `ex`, and `given` create statement-local frames. `consider`, `reconsider`, `let` inside a block, named-equals binders, `deffunc`, `defpred`, `var`, `const`, and `processed` extend the current block frame when one exists, otherwise fall back to a statement-local frame. Algorithm `for ... do` moves its binders, plus optional `processed name`, into the following `do` block via `pending_do_bindings`.
 7. Before bindings enter a frame, names are deduplicated against existing names in that same lexical scope. Duplicates are ignored with a diagnostic so the skeleton cannot create two competing overrides for the same spelling and range.
 8. At EOF, any still-open block is closed at `source_end` and reported as `MissingEnd`. The root frame is emitted only if it contains bindings. Frames, blocks, statements, and diagnostics are sorted by source span before returning.
 

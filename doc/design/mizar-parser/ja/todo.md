@@ -471,11 +471,18 @@ resolver / build-system 依存を避ける。
       semicolon-boundary recovery を unit test と active parse-only pass/fail
       corpus coverage で確認済み。
 
-18. **`consider` と `reconsider`。** [ ]
+18. **`consider` と `reconsider`。** [x]
     - いずれも正当化を運ぶ `consider … such that … by …` と
       `reconsider … as … by …`。
     - 依存: 17、`mizar-syntax` task 13 / S-013。仕様:
       [15.statements.md](../../../spec/ja/15.statements.md)。
+    - 結果: `ConsiderStatement`、`ReconsiderStatement`、
+      `ReconsiderItem` の parsing を実装した。shared-type qualified
+      variable、condition list、必須の simple `by` justification、`such` /
+      condition / `as` / target type / item 部品 / justification 欠落の
+      recovery、syntax typed accessor、reconsider `type_change_list` 向けの
+      scope-skeleton support、active parse-only pass/fail corpus coverage を
+      追加した。
 
 19. **結論ステップと逐次的等式。** [ ]
     - `thus` / `hence`、`then` 連鎖、およびステップごとの正当化を持つ逐次的
