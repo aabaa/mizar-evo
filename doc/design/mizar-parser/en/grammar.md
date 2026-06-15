@@ -25,3 +25,34 @@ Current behavior:
 - grammar code emits tokens, ordinary nodes, and recovery nodes through the
   private syntax-event sink and documented `mizar-syntax` builder/accessor API,
   not by depending on rowan storage layout or dense arena indices.
+
+## Task 4: Shared Paths
+
+Production inventory:
+
+```ebnf
+module_path       ::= [ relative_prefix ] module_identifier
+                      { "." module_identifier } ;
+relative_prefix   ::= "." | ".." ;
+module_identifier ::= identifier ;
+
+namespace_path    ::= identifier { "." identifier } ;
+
+qualified_symbol  ::= { namespace_segment "." } user_symbol ;
+namespace_segment ::= identifier ;
+```
+
+`module_path` is the import/export path shape from Chapter 12. It is the only
+shared path helper that accepts `relative_prefix`; `namespace_path` is reserved
+for citation/reference prefixes and must not accept relative import prefixes.
+`qualified_symbol` ends in a parser-facing `user_symbol` token supplied by the
+active lexicon, with any preceding namespace segments represented as identifier
+segments.
+
+Parser task 4 provides shared helper methods and unit coverage only. It does
+not introduce a standalone corpus position because these path forms become
+frontend-reachable through later consuming grammar tasks: import items (task 6),
+type heads (task 8), terms/formulas, and citations (task 17). The helper emits
+`mizar-syntax` task-S-009 path nodes through the syntax-event sink and preserves
+dot separators syntactically. It performs no module resolution, namespace
+shadowing, symbol identity assignment, citation lookup, or validity checking.

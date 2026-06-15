@@ -2,6 +2,7 @@ mod cursor;
 mod diagnostic;
 mod event;
 mod grammar;
+mod path;
 mod pratt;
 mod recovery;
 mod sync;

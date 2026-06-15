@@ -37,6 +37,11 @@ pub enum SyntaxKind {
     Token = 2,
     InfixExpression = 3,
     ErrorRecovery = 4,
+    ModulePath = 5,
+    NamespacePath = 6,
+    QualifiedSymbol = 7,
+    PathSegment = 8,
+    RelativePrefix = 9,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -55,6 +60,11 @@ impl SyntaxKind {
             2 => Self::Token,
             3 => Self::InfixExpression,
             4 => Self::ErrorRecovery,
+            5 => Self::ModulePath,
+            6 => Self::NamespacePath,
+            7 => Self::QualifiedSymbol,
+            8 => Self::PathSegment,
+            9 => Self::RelativePrefix,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -71,7 +81,15 @@ impl SyntaxKind {
     pub const fn is_node_kind(self) -> bool {
         matches!(
             self,
-            Self::Root | Self::Token | Self::InfixExpression | Self::ErrorRecovery
+            Self::Root
+                | Self::Token
+                | Self::InfixExpression
+                | Self::ErrorRecovery
+                | Self::ModulePath
+                | Self::NamespacePath
+                | Self::QualifiedSymbol
+                | Self::PathSegment
+                | Self::RelativePrefix
         )
     }
 
@@ -580,6 +598,11 @@ impl<'a> SurfaceNodeView<'a> {
         match &self.node.kind {
             SurfaceNodeKind::Token(token) => Some(token),
             SurfaceNodeKind::Root
+            | SurfaceNodeKind::ModulePath
+            | SurfaceNodeKind::NamespacePath
+            | SurfaceNodeKind::QualifiedSymbol
+            | SurfaceNodeKind::PathSegment
+            | SurfaceNodeKind::RelativePrefix
             | SurfaceNodeKind::InfixExpression(_)
             | SurfaceNodeKind::ErrorRecovery(_) => None,
         }
@@ -589,6 +612,11 @@ impl<'a> SurfaceNodeView<'a> {
         match &self.node.kind {
             SurfaceNodeKind::InfixExpression(operator) => Some(operator),
             SurfaceNodeKind::Root
+            | SurfaceNodeKind::ModulePath
+            | SurfaceNodeKind::NamespacePath
+            | SurfaceNodeKind::QualifiedSymbol
+            | SurfaceNodeKind::PathSegment
+            | SurfaceNodeKind::RelativePrefix
             | SurfaceNodeKind::Token(_)
             | SurfaceNodeKind::ErrorRecovery(_) => None,
         }
@@ -598,8 +626,48 @@ impl<'a> SurfaceNodeView<'a> {
         match self.node.kind {
             SurfaceNodeKind::ErrorRecovery(kind) => Some(kind),
             SurfaceNodeKind::Root
+            | SurfaceNodeKind::ModulePath
+            | SurfaceNodeKind::NamespacePath
+            | SurfaceNodeKind::QualifiedSymbol
+            | SurfaceNodeKind::PathSegment
+            | SurfaceNodeKind::RelativePrefix
             | SurfaceNodeKind::Token(_)
             | SurfaceNodeKind::InfixExpression(_) => None,
+        }
+    }
+
+    pub fn as_module_path(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ModulePath => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_namespace_path(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::NamespacePath => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_qualified_symbol(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::QualifiedSymbol => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_path_segment(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::PathSegment => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_relative_prefix(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::RelativePrefix => Some(self),
+            _ => None,
         }
     }
 
@@ -659,6 +727,11 @@ impl SurfaceNode {
         match &self.kind {
             SurfaceNodeKind::Token(token) => Some(token.text.as_ref()),
             SurfaceNodeKind::Root
+            | SurfaceNodeKind::ModulePath
+            | SurfaceNodeKind::NamespacePath
+            | SurfaceNodeKind::QualifiedSymbol
+            | SurfaceNodeKind::PathSegment
+            | SurfaceNodeKind::RelativePrefix
             | SurfaceNodeKind::InfixExpression(_)
             | SurfaceNodeKind::ErrorRecovery(_) => None,
         }
@@ -672,6 +745,11 @@ pub enum SurfaceNodeKind {
     Token(SurfaceToken),
     InfixExpression(SurfaceInfixOperator),
     ErrorRecovery(SyntaxRecoveryKind),
+    ModulePath,
+    NamespacePath,
+    QualifiedSymbol,
+    PathSegment,
+    RelativePrefix,
 }
 
 impl SurfaceNodeKind {
@@ -681,6 +759,11 @@ impl SurfaceNodeKind {
             Self::Token(_) => SyntaxKind::Token,
             Self::InfixExpression(_) => SyntaxKind::InfixExpression,
             Self::ErrorRecovery(_) => SyntaxKind::ErrorRecovery,
+            Self::ModulePath => SyntaxKind::ModulePath,
+            Self::NamespacePath => SyntaxKind::NamespacePath,
+            Self::QualifiedSymbol => SyntaxKind::QualifiedSymbol,
+            Self::PathSegment => SyntaxKind::PathSegment,
+            Self::RelativePrefix => SyntaxKind::RelativePrefix,
         }
     }
 
@@ -776,6 +859,11 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
     write_snapshot_indent(output, indent);
     match view.kind() {
         SurfaceNodeKind::Root => output.push_str("Root"),
+        SurfaceNodeKind::ModulePath => output.push_str("ModulePath"),
+        SurfaceNodeKind::NamespacePath => output.push_str("NamespacePath"),
+        SurfaceNodeKind::QualifiedSymbol => output.push_str("QualifiedSymbol"),
+        SurfaceNodeKind::PathSegment => output.push_str("PathSegment"),
+        SurfaceNodeKind::RelativePrefix => output.push_str("RelativePrefix"),
         SurfaceNodeKind::Token(token) => {
             let _ = write!(
                 output,
@@ -1063,6 +1151,56 @@ mod tests {
             "bad",
             range(source_id, 20, 21),
         );
+        let module_prefix_token = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "..",
+            range(source_id, 30, 32),
+        );
+        let module_segment_a = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "std",
+            range(source_id, 32, 35),
+        );
+        let module_dot_token = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".",
+            range(source_id, 35, 36),
+        );
+        let module_segment_b = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "algebra",
+            range(source_id, 36, 43),
+        );
+        let namespace_segment_a = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "mml",
+            range(source_id, 44, 47),
+        );
+        let namespace_dot_token = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".",
+            range(source_id, 47, 48),
+        );
+        let namespace_segment_b = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "nat",
+            range(source_id, 48, 51),
+        );
+        let qualified_segment_a = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "algebra",
+            range(source_id, 52, 59),
+        );
+        let qualified_dot_token = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".",
+            range(source_id, 59, 60),
+        );
+        let qualified_symbol_token = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "Group",
+            range(source_id, 60, 65),
+        );
         let recovery = builder.add_recovery(
             SyntaxRecoveryKind::ErrorToken,
             range(source_id, 9, 9),
@@ -1077,14 +1215,98 @@ mod tests {
             range(source_id, 0, 3),
             token_ids[..3].to_vec(),
         );
+        let module_prefix = builder.add_node(
+            SurfaceNodeKind::RelativePrefix,
+            range(source_id, 30, 32),
+            vec![module_prefix_token],
+        );
+        let module_path_segment_a = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 32, 35),
+            vec![module_segment_a],
+        );
+        let module_path_segment_b = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 36, 43),
+            vec![module_segment_b],
+        );
+        let module_path = builder.add_node(
+            SurfaceNodeKind::ModulePath,
+            range(source_id, 30, 43),
+            vec![
+                module_prefix,
+                module_path_segment_a,
+                module_dot_token,
+                module_path_segment_b,
+            ],
+        );
+        let namespace_path_segment_a = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 44, 47),
+            vec![namespace_segment_a],
+        );
+        let namespace_path_segment_b = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 48, 51),
+            vec![namespace_segment_b],
+        );
+        let namespace_path = builder.add_node(
+            SurfaceNodeKind::NamespacePath,
+            range(source_id, 44, 51),
+            vec![
+                namespace_path_segment_a,
+                namespace_dot_token,
+                namespace_path_segment_b,
+            ],
+        );
+        let qualified_path_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 52, 59),
+            vec![qualified_segment_a],
+        );
+        let qualified_final_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 60, 65),
+            vec![qualified_symbol_token],
+        );
+        let qualified_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 52, 65),
+            vec![
+                qualified_path_segment,
+                qualified_dot_token,
+                qualified_final_segment,
+            ],
+        );
+        let path_tokens = [
+            module_prefix_token,
+            module_segment_a,
+            module_dot_token,
+            module_segment_b,
+            namespace_segment_a,
+            namespace_dot_token,
+            namespace_segment_b,
+            qualified_segment_a,
+            qualified_dot_token,
+            qualified_symbol_token,
+        ];
+        let root_children = token_ids
+            .iter()
+            .copied()
+            .chain([recovered_token])
+            .chain(path_tokens)
+            .chain([
+                infix,
+                module_path,
+                namespace_path,
+                qualified_symbol,
+                recovery,
+            ])
+            .collect::<Vec<_>>();
         let root = builder.add_node(
             SurfaceNodeKind::Root,
-            range(source_id, 0, 9),
-            token_ids
-                .iter()
-                .copied()
-                .chain([recovered_token, infix, recovery])
-                .collect(),
+            range(source_id, 0, 65),
+            root_children.clone(),
         );
         let ast = builder.finish(Some(root), Some(infix));
 
@@ -1092,19 +1314,14 @@ mod tests {
         assert_eq!(root_view.id(), sid(root));
         assert_eq!(root_view.kind(), &SurfaceNodeKind::Root);
         assert_eq!(root_view.syntax_kind(), SyntaxKind::Root);
-        assert_eq!(root_view.range(), range(source_id, 0, 9));
+        assert_eq!(root_view.range(), range(source_id, 0, 65));
         assert!(!root_view.is_recovered());
         assert!(root_view.as_token().is_none());
         assert!(root_view.as_infix_expression().is_none());
         assert!(root_view.as_recovery().is_none());
         assert_eq!(
             root_view.children(),
-            &token_ids
-                .iter()
-                .copied()
-                .chain([recovered_token, infix, recovery])
-                .map(sid)
-                .collect::<Vec<_>>()
+            &root_children.iter().copied().map(sid).collect::<Vec<_>>()
         );
         assert_eq!(
             root_view
@@ -1132,6 +1349,75 @@ mod tests {
         assert!(!expression_view.is_recovered());
         assert!(expression_view.as_token().is_none());
         assert!(expression_view.as_recovery().is_none());
+        assert!(expression_view.as_module_path().is_none());
+        assert!(expression_view.as_namespace_path().is_none());
+        assert!(expression_view.as_qualified_symbol().is_none());
+
+        let module_path_view = ast.node_view(sid(module_path)).unwrap();
+        assert_eq!(module_path_view.syntax_kind(), SyntaxKind::ModulePath);
+        assert_eq!(
+            module_path_view.as_module_path().unwrap().id(),
+            sid(module_path)
+        );
+        assert_eq!(module_path_view.range(), range(source_id, 30, 43));
+        assert_eq!(
+            module_path_view.children(),
+            &[
+                sid(module_prefix),
+                sid(module_path_segment_a),
+                sid(module_dot_token),
+                sid(module_path_segment_b),
+            ]
+        );
+        assert!(module_path_view.as_token().is_none());
+        assert!(module_path_view.as_infix_expression().is_none());
+        assert!(module_path_view.as_recovery().is_none());
+
+        let namespace_path_view = ast.node_view(sid(namespace_path)).unwrap();
+        assert_eq!(namespace_path_view.syntax_kind(), SyntaxKind::NamespacePath);
+        assert_eq!(
+            namespace_path_view.as_namespace_path().unwrap().id(),
+            sid(namespace_path)
+        );
+        assert_eq!(
+            namespace_path_view.children(),
+            &[
+                sid(namespace_path_segment_a),
+                sid(namespace_dot_token),
+                sid(namespace_path_segment_b),
+            ]
+        );
+
+        let qualified_symbol_view = ast.node_view(sid(qualified_symbol)).unwrap();
+        assert_eq!(
+            qualified_symbol_view.syntax_kind(),
+            SyntaxKind::QualifiedSymbol
+        );
+        assert_eq!(
+            qualified_symbol_view.as_qualified_symbol().unwrap().id(),
+            sid(qualified_symbol)
+        );
+        assert_eq!(
+            qualified_symbol_view.children(),
+            &[
+                sid(qualified_path_segment),
+                sid(qualified_dot_token),
+                sid(qualified_final_segment),
+            ]
+        );
+
+        let module_segment_view = ast.node_view(sid(module_path_segment_a)).unwrap();
+        assert_eq!(module_segment_view.syntax_kind(), SyntaxKind::PathSegment);
+        assert_eq!(
+            module_segment_view.as_path_segment().unwrap().children(),
+            &[sid(module_segment_a)]
+        );
+        let prefix_view = ast.node_view(sid(module_prefix)).unwrap();
+        assert_eq!(prefix_view.syntax_kind(), SyntaxKind::RelativePrefix);
+        assert_eq!(
+            prefix_view.as_relative_prefix().unwrap().children(),
+            &[sid(module_prefix_token)]
+        );
 
         let recovery_view = ast.node_view(sid(recovery)).unwrap();
         assert_eq!(
@@ -1172,6 +1458,16 @@ mod tests {
                 SyntaxKind::TokenErrorRecovery,
                 SyntaxKind::TokenUnknown,
                 SyntaxKind::TokenErrorRecovery,
+                SyntaxKind::TokenReservedSymbol,
+                SyntaxKind::TokenIdentifier,
+                SyntaxKind::TokenReservedSymbol,
+                SyntaxKind::TokenIdentifier,
+                SyntaxKind::TokenIdentifier,
+                SyntaxKind::TokenReservedSymbol,
+                SyntaxKind::TokenIdentifier,
+                SyntaxKind::TokenIdentifier,
+                SyntaxKind::TokenReservedSymbol,
+                SyntaxKind::TokenUserSymbol,
             ]
         );
         for (index, token_view) in ast.token_views().take(token_kinds.len()).enumerate() {
@@ -1186,6 +1482,32 @@ mod tests {
             assert!(token_view.children().is_empty());
             assert!(token_view.as_infix_expression().is_none());
             assert!(token_view.as_recovery().is_none());
+        }
+    }
+
+    #[test]
+    fn path_node_raw_kinds_round_trip_through_rowan_boundary() {
+        let ast = current_vocabulary_snapshot_ast(source_id(21));
+        let rowan_kinds = ast
+            .rowan_root()
+            .descendants_with_tokens()
+            .map(|element| element.kind())
+            .collect::<Vec<_>>();
+
+        for kind in [
+            SyntaxKind::ModulePath,
+            SyntaxKind::NamespacePath,
+            SyntaxKind::QualifiedSymbol,
+            SyntaxKind::PathSegment,
+            SyntaxKind::RelativePrefix,
+        ] {
+            assert_eq!(SyntaxKind::from_raw(kind as u16), kind);
+            assert!(kind.is_node_kind());
+            assert!(!kind.is_token_kind());
+            assert!(
+                rowan_kinds.contains(&kind),
+                "rowan tree should emit {kind:?} for shared path nodes"
+            );
         }
     }
 
@@ -1347,7 +1669,7 @@ mod tests {
         let actual = ast.snapshot_text();
 
         assert_eq!(actual, EXPECTED);
-        assert!(actual.contains("ErrorRecovery kind=MissingEnd range=48..48 recovered=true"));
+        assert!(actual.contains("ErrorRecovery kind=MissingEnd range=80..80 recovered=true"));
         assert!(actual.contains("text=\"line\\nvalue\""));
         assert!(
             !actual.contains("SourceId"),
@@ -1889,6 +2211,56 @@ mod tests {
             "bad\ttext",
             range(source_id, 40, 48),
         );
+        let module_prefix = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "..",
+            range(source_id, 49, 51),
+        );
+        let module_std = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "std",
+            range(source_id, 51, 54),
+        );
+        let module_dot = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".",
+            range(source_id, 54, 55),
+        );
+        let module_algebra = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "algebra",
+            range(source_id, 55, 62),
+        );
+        let namespace_mml = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "mml",
+            range(source_id, 63, 66),
+        );
+        let namespace_dot = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".",
+            range(source_id, 66, 67),
+        );
+        let namespace_nat = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "nat",
+            range(source_id, 67, 70),
+        );
+        let qualified_top = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "top",
+            range(source_id, 71, 74),
+        );
+        let qualified_dot = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".",
+            range(source_id, 74, 75),
+        );
+        let qualified_space = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "Space",
+            range(source_id, 75, 80),
+        );
         let expression = builder.add_node(
             SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
                 spelling: "++".into(),
@@ -1898,14 +2270,69 @@ mod tests {
             range(source_id, 0, 21),
             vec![identifier, user_symbol, numeral],
         );
+        let module_prefix_node = builder.add_node(
+            SurfaceNodeKind::RelativePrefix,
+            range(source_id, 49, 51),
+            vec![module_prefix],
+        );
+        let module_std_node = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 51, 54),
+            vec![module_std],
+        );
+        let module_algebra_node = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 55, 62),
+            vec![module_algebra],
+        );
+        let module_path = builder.add_node(
+            SurfaceNodeKind::ModulePath,
+            range(source_id, 49, 62),
+            vec![
+                module_prefix_node,
+                module_std_node,
+                module_dot,
+                module_algebra_node,
+            ],
+        );
+        let namespace_mml_node = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 63, 66),
+            vec![namespace_mml],
+        );
+        let namespace_nat_node = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 67, 70),
+            vec![namespace_nat],
+        );
+        let namespace_path = builder.add_node(
+            SurfaceNodeKind::NamespacePath,
+            range(source_id, 63, 70),
+            vec![namespace_mml_node, namespace_dot, namespace_nat_node],
+        );
+        let qualified_top_node = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 71, 74),
+            vec![qualified_top],
+        );
+        let qualified_space_node = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 75, 80),
+            vec![qualified_space],
+        );
+        let qualified_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 71, 80),
+            vec![qualified_top_node, qualified_dot, qualified_space_node],
+        );
         let recovery = builder.add_recovery(
             SyntaxRecoveryKind::MissingEnd,
-            range(source_id, 48, 48),
+            range(source_id, 80, 80),
             vec![reserved_word],
         );
         let root = builder.add_node(
             SurfaceNodeKind::Root,
-            range(source_id, 0, 48),
+            range(source_id, 0, 80),
             vec![
                 identifier,
                 reserved_word,
@@ -1917,7 +2344,20 @@ mod tests {
                 error_token,
                 unknown,
                 recovered_token,
+                module_prefix,
+                module_std,
+                module_dot,
+                module_algebra,
+                namespace_mml,
+                namespace_dot,
+                namespace_nat,
+                qualified_top,
+                qualified_dot,
+                qualified_space,
                 expression,
+                module_path,
+                namespace_path,
+                qualified_symbol,
                 recovery,
             ],
         );

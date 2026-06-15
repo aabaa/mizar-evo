@@ -237,16 +237,22 @@ completion of the whole syntax vocabulary bucket. When the crate-plan S-task and
 older numeric syntax task references appear to disagree, prefer
 `doc/design/mizar-syntax/en/00.crate_plan.md`.
 
-4. **Qualified symbols and namespace paths.** [ ]
+4. **Qualified symbols and namespace paths.** [x]
    - A shared helper for `qualified_symbol = { namespace_segment "." }
      user_symbol` and dotted module paths, used later by imports, type heads,
      terms, and citations. Path shapes only; variable shadowing stays
      resolver-side.
+   - Result: task-4 production inventory is recorded in [grammar.md](./grammar.md),
+     and shared helpers now emit `ModulePath`, `NamespacePath`,
+     `QualifiedSymbol`, `PathSegment`, and `RelativePrefix` syntax nodes with
+     unit coverage. Corpus coverage remains with consuming tasks 6 and 8, as
+     planned.
    - Corpus exception: unit tests here; corpus coverage lands with the first
      consuming positions (tasks 6 and 8) and must be listed there.
    - Deps: 3, `mizar-syntax` task 9 / S-009 (shared path-node increment). Spec:
-     [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md)
-     §12.7, [§A.2.5/§A.2.8](../../../spec/en/appendix_a.grammar_summary.md).
+    [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md)
+    §12.7, [Appendix A](../../../spec/en/appendix_a.grammar_summary.md) A.3/A.12/A.15,
+    and [Chapter 2](../../../spec/en/02.lexical_structure.md) §2.5.3/§2.8.
 
 5. **Module skeleton and top-level item dispatch.** [ ]
    - Module file shape and top-level item dispatch by keyword with

@@ -48,6 +48,11 @@ green tree.
 |---|---|
 | root node | `SyntaxKind::Root` |
 | compatibility token node | `SyntaxKind::Token` |
+| module path node | `SyntaxKind::ModulePath` |
+| namespace path node | `SyntaxKind::NamespacePath` |
+| qualified symbol node | `SyntaxKind::QualifiedSymbol` |
+| path segment node | `SyntaxKind::PathSegment` |
+| relative import prefix node | `SyntaxKind::RelativePrefix` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | recovery node | `SyntaxKind::ErrorRecovery` |
 
@@ -67,6 +72,11 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 2 | `Token` | compatibility token wrapper node |
 | 3 | `InfixExpression` | infix expression node |
 | 4 | `ErrorRecovery` | recovery node |
+| 5 | `ModulePath` | module import/export path node |
+| 6 | `NamespacePath` | citation/reference namespace path node |
+| 7 | `QualifiedSymbol` | namespace-qualified active user symbol node |
+| 8 | `PathSegment` | single identifier or user-symbol segment wrapper |
+| 9 | `RelativePrefix` | `.` / `..` import-relative prefix wrapper |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -79,10 +89,10 @@ The current raw discriminants are part of the rowan boundary for this phase:
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true only for `Root`, `Token`,
-`InfixExpression`, and `ErrorRecovery`; `is_token_kind` is true only for the
-token leaf kinds. Future raw values should be appended or assigned into a
-documented reserved range so existing snapshots and rowan tests fail loudly
-when the raw vocabulary changes.
+`InfixExpression`, `ErrorRecovery`, and the task-S-009 shared path node kinds
+listed above; `is_token_kind` is true only for the token leaf kinds. Future raw
+values should be appended or assigned into a documented reserved range so
+existing snapshots and rowan tests fail loudly when the raw vocabulary changes.
 
 ### Current Surface Vocabulary
 
@@ -92,6 +102,11 @@ The current implemented surface node vocabulary is deliberately small:
 |---|---|---|---|
 | `SurfaceNodeKind::Root` | none | `SyntaxKind::Root` | top-level compatibility root |
 | `SurfaceNodeKind::Token(SurfaceToken)` | token kind and interned text | `SyntaxKind::Token` with one token leaf of the token raw kind | compatibility wrapper around a rowan token leaf |
+| `SurfaceNodeKind::ModulePath` | none | `SyntaxKind::ModulePath` | `module_path`; optional `RelativePrefix`, first `PathSegment`, then repeated `.` token plus `PathSegment`; only this path shape may contain `RelativePrefix` |
+| `SurfaceNodeKind::NamespacePath` | none | `SyntaxKind::NamespacePath` | `namespace_path`; first `PathSegment`, then repeated `.` token plus identifier `PathSegment`; relative prefixes are not allowed |
+| `SurfaceNodeKind::QualifiedSymbol` | none | `SyntaxKind::QualifiedSymbol` | `qualified_symbol`; zero or more namespace identifier `PathSegment` + `.` token pairs followed by final user-symbol `PathSegment` |
+| `SurfaceNodeKind::PathSegment` | none | `SyntaxKind::PathSegment` | wraps exactly one identifier or user-symbol token; role is determined by parent and token kind |
+| `SurfaceNodeKind::RelativePrefix` | none | `SyntaxKind::RelativePrefix` | wraps exactly one `.` or `..` token at the start of a `ModulePath` |
 | `SurfaceNodeKind::InfixExpression(SurfaceInfixOperator)` | spelling, precedence, associativity | `SyntaxKind::InfixExpression` | task-12 Pratt expression shape |
 | `SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind)` | recovery kind | `SyntaxKind::ErrorRecovery` | builder-created recovery nodes are recovered |
 
@@ -100,6 +115,17 @@ The current implemented surface node vocabulary is deliberately small:
 `UserSymbol`, `StringLiteral`, `ErrorRecovery`, and `Unknown`.
 `SurfaceOperatorAssociativity` currently has `Left`, `Right`, and
 `NonAssociative`.
+
+Shared path nodes added for `mizar-parser` task 4 are syntax-only shapes. Their
+node ranges run from the first token owned by the path or wrapper through the
+last token owned by that node. Parent path nodes list children in source order.
+Separator `.` tokens between path segments are direct children of the parent
+path node rather than wrapped as `PathSegment`. These nodes do not produce
+recovery nodes or trivia entries by themselves; consuming grammar tasks own
+missing-path diagnostics, skipped-token trivia, and doc-comment attachment.
+`SurfaceNodeView` exposes typed `as_module_path`, `as_namespace_path`,
+`as_qualified_symbol`, `as_path_segment`, and `as_relative_prefix` helpers so
+consumers do not need raw rowan traversal for these shared path shapes.
 
 ### Vocabulary Increment Contract
 
@@ -207,6 +233,11 @@ Node lines are indented by two spaces per depth and use these current forms:
 ```text
 Root range=<start>..<end> recovered=<bool>
 Token kind=<SurfaceTokenKind> text="<escaped-text>" range=<start>..<end> recovered=<bool>
+ModulePath range=<start>..<end> recovered=<bool>
+NamespacePath range=<start>..<end> recovered=<bool>
+QualifiedSymbol range=<start>..<end> recovered=<bool>
+PathSegment range=<start>..<end> recovered=<bool>
+RelativePrefix range=<start>..<end> recovered=<bool>
 InfixExpression spelling="<escaped-text>" precedence=<u8> associativity=<SurfaceOperatorAssociativity> range=<start>..<end> recovered=<bool>
 ErrorRecovery kind=<SyntaxRecoveryKind> range=<start>..<end> recovered=<bool>
 ```

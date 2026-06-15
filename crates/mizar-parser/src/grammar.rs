@@ -50,7 +50,7 @@ impl Parser {
         }
     }
 
-    fn add_token_nodes(&mut self) {
+    pub(super) fn add_token_nodes(&mut self) {
         let tokens = self.request.tokens.clone();
         let mut cursor = TokenCursor::new(self.request.source_id, &tokens);
         while let Some(token) = cursor.advance() {

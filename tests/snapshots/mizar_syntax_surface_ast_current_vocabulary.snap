@@ -1,6 +1,6 @@
 surface-ast-snapshot-v1
 root:
-  Root range=0..48 recovered=false
+  Root range=0..80 recovered=false
     Token kind=Identifier text="id" range=0..2 recovered=false
     Token kind=ReservedWord text="theorem" range=3..10 recovered=false
     Token kind=ReservedSymbol text=";" range=10..11 recovered=false
@@ -11,11 +11,41 @@ root:
     Token kind=ErrorRecovery text="<error>" range=32..39 recovered=false
     Token kind=Unknown text="?" range=39..40 recovered=false
     Token kind=ErrorRecovery text="bad\ttext" range=40..48 recovered=true
+    Token kind=ReservedSymbol text=".." range=49..51 recovered=false
+    Token kind=Identifier text="std" range=51..54 recovered=false
+    Token kind=ReservedSymbol text="." range=54..55 recovered=false
+    Token kind=Identifier text="algebra" range=55..62 recovered=false
+    Token kind=Identifier text="mml" range=63..66 recovered=false
+    Token kind=ReservedSymbol text="." range=66..67 recovered=false
+    Token kind=Identifier text="nat" range=67..70 recovered=false
+    Token kind=Identifier text="top" range=71..74 recovered=false
+    Token kind=ReservedSymbol text="." range=74..75 recovered=false
+    Token kind=UserSymbol text="Space" range=75..80 recovered=false
     InfixExpression spelling="++" precedence=10 associativity=Right range=0..21 recovered=false
       Token kind=Identifier text="id" range=0..2 recovered=false
       Token kind=UserSymbol text="++" range=19..21 recovered=false
       Token kind=Numeral text="42" range=12..14 recovered=false
-    ErrorRecovery kind=MissingEnd range=48..48 recovered=true
+    ModulePath range=49..62 recovered=false
+      RelativePrefix range=49..51 recovered=false
+        Token kind=ReservedSymbol text=".." range=49..51 recovered=false
+      PathSegment range=51..54 recovered=false
+        Token kind=Identifier text="std" range=51..54 recovered=false
+      Token kind=ReservedSymbol text="." range=54..55 recovered=false
+      PathSegment range=55..62 recovered=false
+        Token kind=Identifier text="algebra" range=55..62 recovered=false
+    NamespacePath range=63..70 recovered=false
+      PathSegment range=63..66 recovered=false
+        Token kind=Identifier text="mml" range=63..66 recovered=false
+      Token kind=ReservedSymbol text="." range=66..67 recovered=false
+      PathSegment range=67..70 recovered=false
+        Token kind=Identifier text="nat" range=67..70 recovered=false
+    QualifiedSymbol range=71..80 recovered=false
+      PathSegment range=71..74 recovered=false
+        Token kind=Identifier text="top" range=71..74 recovered=false
+      Token kind=ReservedSymbol text="." range=74..75 recovered=false
+      PathSegment range=75..80 recovered=false
+        Token kind=UserSymbol text="Space" range=75..80 recovered=false
+    ErrorRecovery kind=MissingEnd range=80..80 recovered=true
       Token kind=ReservedWord text="theorem" range=3..10 recovered=false
 expression_root:
   InfixExpression spelling="++" precedence=10 associativity=Right range=0..21 recovered=false
@@ -33,3 +63,13 @@ token_nodes:
   Token kind=ErrorRecovery text="<error>" range=32..39 recovered=false
   Token kind=Unknown text="?" range=39..40 recovered=false
   Token kind=ErrorRecovery text="bad\ttext" range=40..48 recovered=true
+  Token kind=ReservedSymbol text=".." range=49..51 recovered=false
+  Token kind=Identifier text="std" range=51..54 recovered=false
+  Token kind=ReservedSymbol text="." range=54..55 recovered=false
+  Token kind=Identifier text="algebra" range=55..62 recovered=false
+  Token kind=Identifier text="mml" range=63..66 recovered=false
+  Token kind=ReservedSymbol text="." range=66..67 recovered=false
+  Token kind=Identifier text="nat" range=67..70 recovered=false
+  Token kind=Identifier text="top" range=71..74 recovered=false
+  Token kind=ReservedSymbol text="." range=74..75 recovered=false
+  Token kind=UserSymbol text="Space" range=75..80 recovered=false

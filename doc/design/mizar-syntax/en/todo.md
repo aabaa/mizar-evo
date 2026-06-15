@@ -268,13 +268,19 @@ payloads, child roles, range rules, accessors, snapshots, and recovery/trivia
 interaction. Spec references are the normative grammar chapters under
 [doc/spec/en/](../../../spec/en/00.index.md).
 
-9. **Module, item, and shared path nodes.** [ ] — paired with `mizar-parser`
+9. **Module, item, and shared path nodes.** [~] — paired with `mizar-parser`
    tasks 4-7.
    - Shared qualified-symbol/namespace-path nodes needed by parser task 4 before
      import parsing; module file shape, top-level item list and item kinds
      dispatchable by keyword (parser task 5); import items with aliases and
      relative prefixes (parser task 6); export and visibility forms (parser task
      7).
+   - Progress: parser task 4 landed the shared path-node increment:
+     `ModulePath`, `NamespacePath`, `QualifiedSymbol`, `PathSegment`, and
+     `RelativePrefix`, plus parser helper unit coverage. The bucket remains
+     open for module skeleton, import/export items, visibility, corpus cases,
+     traceability entries, and doc-comment item attachment fixtures in parser
+     tasks 5-7.
    - Spec: [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
 10. **Type expression nodes.** [ ] — paired with `mizar-parser` task 8.

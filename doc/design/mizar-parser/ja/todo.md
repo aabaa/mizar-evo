@@ -227,15 +227,20 @@ resolver / build-system 依存を避ける。
 意味しない。crate-plan S-task と古い numeric syntax task reference が食い違って
 見える場合は、`doc/design/mizar-syntax/ja/00.crate_plan.md` を優先する。
 
-4. **修飾シンボルと namespace パス。** [ ]
+4. **修飾シンボルと namespace パス。** [x]
    - `qualified_symbol = { namespace_segment "." } user_symbol` とドット
      区切りモジュールパスの共有ヘルパー。後続の import、型ヘッド、項、引用が
      使う。パスの形だけを扱い、変数 shadowing は resolver 側に残す。
+   - 結果: task 4 の production inventory は [grammar.md](./grammar.md) に記録済み。
+     共有 helper は `ModulePath`、`NamespacePath`、`QualifiedSymbol`、
+     `PathSegment`、`RelativePrefix` syntax node を送出し、unit coverage を持つ。
+     corpus coverage は計画どおり消費側 task 6 と 8 に残す。
    - コーパス例外: ここではユニットテストを提供する。コーパス網羅は最初の
      消費位置（task 6 と 8）で届け、そこに明示的に列挙する。
    - 依存: 3、`mizar-syntax` task 9 / S-009（shared path-node 増分）。仕様:
      [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)
-     §12.7、[§A.2.5 / §A.2.8](../../../spec/ja/appendix_a.grammar_summary.md)。
+     §12.7、[Appendix A](../../../spec/ja/appendix_a.grammar_summary.md) A.3/A.12/A.15、
+     [第 2 章](../../../spec/ja/02.lexical_structure.md) §2.5.3 / §2.8。
 
 5. **モジュールスケルトンとトップレベル item ディスパッチ。** [ ]
    - モジュールファイルの形と、item 境界での同期を備えたキーワードによる
