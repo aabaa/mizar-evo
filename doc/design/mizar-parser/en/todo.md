@@ -503,12 +503,22 @@ older numeric syntax task references appear to disagree, prefer
       syntax typed accessors, scope-skeleton support for reconsider
       `type_change_list`, and active parse-only pass/fail corpus coverage.
 
-19. **Conclusion steps and iterative equality.** [ ]
+19. **Conclusion steps and iterative equality.** [x]
     - `thus`/`hence`, `then` chains, and iterative equality `.=` steps with
       their per-step justifications. Include the grammar-audit boundary between
       compact equality statements and zero-step iterative equality (`x = y by
       A;` versus `x = y by A .= z by B;`).
     - Deps: 17, `mizar-syntax` task 13 / S-013. Spec: [15.statements.md](../../../spec/en/15.statements.md).
+    - Result: added `ConclusionStatement`, `ThenStatement`,
+      `IterativeEqualityStatement`, and `IterativeEqualityStep` parser/syntax
+      surfaces, with G-AUD-010 dispatch preserving `x = y by A;` as a
+      `CompactStatement` unless a top-level `.=` continuation follows. The
+      parser now accepts `thus`/`hence` conclusions, linkable `then`
+      statements, iterative equality steps with simple per-step `by`
+      justifications, label variants, and `then consider`/`then reconsider`.
+      `then per cases` remains a deferred block-statement placeholder for task
+      20. Parser unit tests, active pass/fail corpus fixtures, and
+      traceability metadata cover the new shapes and recovery cases.
 
 20. **Block statements.** [ ]
     - `now`/`hereby` blocks and `per cases`/`suppose`/`case` blocks with their

@@ -116,6 +116,10 @@ pub enum SyntaxKind {
     ConsiderStatement = 81,
     ReconsiderStatement = 82,
     ReconsiderItem = 83,
+    ConclusionStatement = 84,
+    ThenStatement = 85,
+    IterativeEqualityStatement = 86,
+    IterativeEqualityStep = 87,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -213,6 +217,10 @@ impl SyntaxKind {
             81 => Self::ConsiderStatement,
             82 => Self::ReconsiderStatement,
             83 => Self::ReconsiderItem,
+            84 => Self::ConclusionStatement,
+            85 => Self::ThenStatement,
+            86 => Self::IterativeEqualityStatement,
+            87 => Self::IterativeEqualityStep,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -312,6 +320,10 @@ impl SyntaxKind {
                 | Self::ConsiderStatement
                 | Self::ReconsiderStatement
                 | Self::ReconsiderItem
+                | Self::ConclusionStatement
+                | Self::ThenStatement
+                | Self::IterativeEqualityStatement
+                | Self::IterativeEqualityStep
         )
     }
 
@@ -1229,6 +1241,34 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_conclusion_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ConclusionStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_then_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ThenStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_iterative_equality_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::IterativeEqualityStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_iterative_equality_step(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::IterativeEqualityStep => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_selector_access(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::SelectorAccess => Some(self),
@@ -1527,6 +1567,10 @@ pub enum SurfaceNodeKind {
     ConsiderStatement,
     ReconsiderStatement,
     ReconsiderItem,
+    ConclusionStatement,
+    ThenStatement,
+    IterativeEqualityStatement,
+    IterativeEqualityStep,
     SelectorAccess,
     StructureUpdate,
     FieldUpdate,
@@ -1615,6 +1659,10 @@ impl SurfaceNodeKind {
             Self::ConsiderStatement => SyntaxKind::ConsiderStatement,
             Self::ReconsiderStatement => SyntaxKind::ReconsiderStatement,
             Self::ReconsiderItem => SyntaxKind::ReconsiderItem,
+            Self::ConclusionStatement => SyntaxKind::ConclusionStatement,
+            Self::ThenStatement => SyntaxKind::ThenStatement,
+            Self::IterativeEqualityStatement => SyntaxKind::IterativeEqualityStatement,
+            Self::IterativeEqualityStep => SyntaxKind::IterativeEqualityStep,
             Self::SelectorAccess => SyntaxKind::SelectorAccess,
             Self::StructureUpdate => SyntaxKind::StructureUpdate,
             Self::FieldUpdate => SyntaxKind::FieldUpdate,
@@ -1859,6 +1907,12 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::ConsiderStatement => output.push_str("ConsiderStatement"),
         SurfaceNodeKind::ReconsiderStatement => output.push_str("ReconsiderStatement"),
         SurfaceNodeKind::ReconsiderItem => output.push_str("ReconsiderItem"),
+        SurfaceNodeKind::ConclusionStatement => output.push_str("ConclusionStatement"),
+        SurfaceNodeKind::ThenStatement => output.push_str("ThenStatement"),
+        SurfaceNodeKind::IterativeEqualityStatement => {
+            output.push_str("IterativeEqualityStatement");
+        }
+        SurfaceNodeKind::IterativeEqualityStep => output.push_str("IterativeEqualityStep"),
         SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
@@ -2946,6 +3000,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            task19_statement_nodes_ast(source_id(31))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -3002,6 +3062,10 @@ mod tests {
             SyntaxKind::ConsiderStatement,
             SyntaxKind::ReconsiderStatement,
             SyntaxKind::ReconsiderItem,
+            SyntaxKind::ConclusionStatement,
+            SyntaxKind::ThenStatement,
+            SyntaxKind::IterativeEqualityStatement,
+            SyntaxKind::IterativeEqualityStep,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -4307,6 +4371,54 @@ mod tests {
             assert!(
                 snapshot.contains(expected),
                 "snapshot should render task-18 line {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn task19_typed_accessors_cover_conclusion_then_iterative_nodes() {
+        let ast = task19_statement_nodes_ast(source_id(31));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task19_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task19_view!(
+            SurfaceNodeKind::ConclusionStatement,
+            SyntaxKind::ConclusionStatement,
+            as_conclusion_statement
+        );
+        assert_task19_view!(
+            SurfaceNodeKind::ThenStatement,
+            SyntaxKind::ThenStatement,
+            as_then_statement
+        );
+        assert_task19_view!(
+            SurfaceNodeKind::IterativeEqualityStatement,
+            SyntaxKind::IterativeEqualityStatement,
+            as_iterative_equality_statement
+        );
+        assert_task19_view!(
+            SurfaceNodeKind::IterativeEqualityStep,
+            SyntaxKind::IterativeEqualityStep,
+            as_iterative_equality_step
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in [
+            "ConclusionStatement",
+            "ThenStatement",
+            "IterativeEqualityStatement",
+            "IterativeEqualityStep",
+        ] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-19 line {expected}"
             );
         }
     }
@@ -6407,6 +6519,179 @@ mod tests {
                 reconsider_by,
                 reconsider_reference_label,
                 reconsider_semicolon,
+                compilation_unit,
+            ],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn task19_statement_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let thus = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thus",
+            range(source_id, 0, 4),
+        );
+        let thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 5, 11),
+        );
+        let first_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 11, 12),
+        );
+        let then = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "then",
+            range(source_id, 13, 17),
+        );
+        let x = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 18, 19));
+        let equals = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "=",
+            range(source_id, 20, 21),
+        );
+        let y = builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 22, 23));
+        let first_by = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "by",
+            range(source_id, 24, 26),
+        );
+        let a = builder.add_token(SurfaceTokenKind::Identifier, "A", range(source_id, 27, 28));
+        let dot_equals = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".=",
+            range(source_id, 29, 31),
+        );
+        let z = builder.add_token(SurfaceTokenKind::Identifier, "z", range(source_id, 32, 33));
+        let second_by = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "by",
+            range(source_id, 34, 36),
+        );
+        let b = builder.add_token(SurfaceTokenKind::Identifier, "B", range(source_id, 37, 38));
+        let second_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 38, 39),
+        );
+
+        let thesis_constant = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+            range(source_id, 5, 11),
+            vec![thesis],
+        );
+        let thesis_formula = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 5, 11),
+            vec![thesis_constant],
+        );
+        let proposition = builder.add_node(
+            SurfaceNodeKind::Proposition,
+            range(source_id, 5, 11),
+            vec![thesis_formula],
+        );
+        let conclusion = builder.add_node(
+            SurfaceNodeKind::ConclusionStatement,
+            range(source_id, 0, 12),
+            vec![thus, proposition, first_semicolon],
+        );
+        let conclusion_item = builder.add_node(
+            SurfaceNodeKind::StatementItem,
+            range(source_id, 0, 12),
+            vec![conclusion],
+        );
+
+        let x_term = term_expression_node(&mut builder, source_id, x, 18, 19);
+        let y_term = term_expression_node(&mut builder, source_id, y, 22, 23);
+        let z_term = term_expression_node(&mut builder, source_id, z, 32, 33);
+        let first_reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 27, 28),
+            vec![a],
+        );
+        let first_reference_list = builder.add_node(
+            SurfaceNodeKind::ReferenceList,
+            range(source_id, 27, 28),
+            vec![first_reference],
+        );
+        let first_justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 24, 28),
+            vec![first_by, first_reference_list],
+        );
+        let second_reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 37, 38),
+            vec![b],
+        );
+        let second_reference_list = builder.add_node(
+            SurfaceNodeKind::ReferenceList,
+            range(source_id, 37, 38),
+            vec![second_reference],
+        );
+        let second_justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 34, 38),
+            vec![second_by, second_reference_list],
+        );
+        let iterative_step = builder.add_node(
+            SurfaceNodeKind::IterativeEqualityStep,
+            range(source_id, 29, 38),
+            vec![dot_equals, z_term, second_justification],
+        );
+        let iterative_statement = builder.add_node(
+            SurfaceNodeKind::IterativeEqualityStatement,
+            range(source_id, 18, 39),
+            vec![
+                x_term,
+                equals,
+                y_term,
+                first_justification,
+                iterative_step,
+                second_semicolon,
+            ],
+        );
+        let then_statement = builder.add_node(
+            SurfaceNodeKind::ThenStatement,
+            range(source_id, 13, 39),
+            vec![then, iterative_statement],
+        );
+        let then_item = builder.add_node(
+            SurfaceNodeKind::StatementItem,
+            range(source_id, 13, 39),
+            vec![then_statement],
+        );
+        let item_list = builder.add_node(
+            SurfaceNodeKind::ItemList,
+            range(source_id, 0, 39),
+            vec![conclusion_item, then_item],
+        );
+        let compilation_unit = builder.add_node(
+            SurfaceNodeKind::CompilationUnit,
+            range(source_id, 0, 39),
+            vec![item_list],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 39),
+            vec![
+                thus,
+                thesis,
+                first_semicolon,
+                then,
+                x,
+                equals,
+                y,
+                first_by,
+                a,
+                dot_equals,
+                z,
+                second_by,
+                b,
+                second_semicolon,
                 compilation_unit,
             ],
         );

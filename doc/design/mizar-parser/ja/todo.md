@@ -484,13 +484,23 @@ resolver / build-system 依存を避ける。
       scope-skeleton support、active parse-only pass/fail corpus coverage を
       追加した。
 
-19. **結論ステップと逐次的等式。** [ ]
+19. **結論ステップと逐次的等式。** [x]
     - `thus` / `hence`、`then` 連鎖、およびステップごとの正当化を持つ逐次的
       等式 `.=` ステップ。compact equality statement と zero-step iterative
       equality の grammar-audit 境界（`x = y by A;` と
       `x = y by A .= z by B;`）を含める。
     - 依存: 17、`mizar-syntax` task 13 / S-013。仕様:
       [15.statements.md](../../../spec/ja/15.statements.md)。
+    - 結果: `ConclusionStatement`、`ThenStatement`、
+      `IterativeEqualityStatement`、`IterativeEqualityStep` の parser / syntax
+      surface を追加した。G-AUD-010 dispatch により、top-level `.=` continuation
+      が続かない `x = y by A;` は `CompactStatement` のまま保持し、続く場合だけ
+      `IterativeEqualityStatement` にする。parser は `thus` / `hence`
+      conclusion、linkable な `then` statement、simple `by` justification を持つ
+      iterative equality step、label variant、`then consider` / `then reconsider`
+      を受け付ける。`then per cases` は task 20 の block-statement placeholder
+      として deferred のままである。parser unit test、active pass/fail corpus
+      fixture、traceability metadata が新しい形状と recovery case を覆う。
 
 20. **ブロック文。** [ ]
     - `now` / `hereby` ブロックと、`end` 同期を備えた

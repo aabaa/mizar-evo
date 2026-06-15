@@ -73,7 +73,7 @@ corresponding AST node vocabulary is frozen.
 | G-AUD-007 | `type_head ::= radix_type | mode_type` is syntactically ambiguous because both are `qualified_symbol [ type_args ]`; the category distinction depends on the active symbol table. | Open before type AST nodes. Either normalize to a generic syntactic type head and defer category resolution, or document a parser lookup boundary. Owner: parser type-expression task and mizar-syntax task 10. |
 | G-AUD-008 | Dot roles share surface tokens across selector access/update, namespace separation, and active user symbols. | Parser/syntax surface shape is resolved by parser task 10: qualified-name heads stay qualified surfaces, while `.` after an already parsed term becomes selector/update postfix syntax. Scope-dependent selector-versus-namespace classification remains resolver-owned. Dot-chain fixtures must include imports, references, qualified symbols, selector access, lvalues, and active `.` user-symbol cases as their owning parser tasks land. |
 | G-AUD-009 | `type_assertion` and `attribute_assertion` shared the `term_expression "is" ...` boundary and both tails can start with active-lexicon symbols, so separate parse-time AST shapes would force semantic knowledge into the parser. | Fixed in Appendix A, Chapter 14, and parser/syntax TODOs by replacing the split atomic alternatives with generic `is_assertion`. Resolution later classifies it as type assertion or attribute assertion. Task 7 should include ambiguous `x is T`, `x is non empty`, and qualified attribute/type examples. |
-| G-AUD-010 | `compact_statement` and zero-step `iterative_equality` overlap for a justified equality such as `x = y by A;`, because it can be parsed as a justified formula or as an iterative equality with no `.=` continuation. | Open before statement AST nodes. Parser design should either dispatch to `compact_statement` unless a `.=` continuation follows, or preserve a generic justified-equality surface until statement AST design decides. Task 7 should include `x = y by A;`, `x = y by A .= z by B;`, and label/`then` variants. |
+| G-AUD-010 | `compact_statement` and zero-step `iterative_equality` overlap for a justified equality such as `x = y by A;`, because it can be parsed as a justified formula or as an iterative equality with no `.=` continuation. | Fixed by parser task 19 / mizar-syntax S-013. Dispatch remains `CompactStatement` unless a top-level `.=` continuation follows the first equality, in which case the parser builds `IterativeEqualityStatement`. Task 19 fixtures cover `x = y by A;`, `x = y by A .= z by B;`, and label/`then` variants. |
 
 ## Semantic-Only Accepted
 
@@ -118,9 +118,10 @@ AST snapshots are designed:
   lvalues, grouped/bulk references, and active user-symbol uses.
 - `the type_expression` / `pick_expr`, `qua`, and `with (...)` term boundary
   fixtures.
-- Compact statement versus iterative equality boundary fixtures, especially the
-  zero-`.=` overlap for `x = y by A;` and the continued form
-  `x = y by A .= z by B;`, with label and `then` variants.
+- Compact statement versus iterative equality boundary fixtures are owned by
+  parser task 19 / mizar-syntax S-013 and cover the zero-`.=` overlap for
+  `x = y by A;`, the continued form `x = y by A .= z by B;`, and label /
+  `then` variants.
 - Chapter 8/19 duplicate-EBNF coverage through fixtures rather than separate
   parser productions: parenthesized and unparenthesized `qua`, chained `qua`,
   and `reconsider` forms with the current Appendix A justification boundary.
@@ -164,7 +165,7 @@ A later external review found five additional issues. All were addressed or
 classified:
 
 - The `compact_statement` / zero-step `iterative_equality` overlap is now
-  recorded as G-AUD-010 and added to Task 7 fixture inputs.
+  resolved by G-AUD-010's task-19 dispatch rule and fixture inputs.
 - Chapter 2's dot-compound priority list now includes `..`; lexer fixtures and
   dot-disambiguation coverage have caught up in the lexer implementation track.
 - The unreachable-production explanation now includes `functor_loci`,

@@ -954,7 +954,7 @@ tests = [
 [[requirement]]
 id = "spec.en.15.statements.syntax"
 source = "doc/spec/en/15.statements.md"
-section = "15.2.1 Generalization Statement; 15.2.2 Constant Definition; 15.3.1 Single Assumption; 15.3.2 Collective Assumption; 15.3.3 Existential Assumption; 15.3.4 Choice Statement (`consider`); 15.4.4 Witness Introduction; 15.5.1 Type Reconsideration (`reconsider`); 15.8 Justification Forms"
+section = "15.2.1 Generalization Statement; 15.2.2 Constant Definition; 15.3.1 Single Assumption; 15.3.2 Collective Assumption; 15.3.3 Existential Assumption; 15.3.4 Choice Statement (`consider`); 15.4.1 Conclusion Statement (`thus`/`hence`); 15.4.2 Hence Statement; 15.4.4 Witness Introduction; 15.5.1 Type Reconsideration (`reconsider`); 15.7 Iterative Equality; 15.8 Justification Forms; 15.9.1 Sequential Link (`then`)"
 stage = "parse_only"
 status = "covered"
 required = true
@@ -963,9 +963,11 @@ tests = [
   "tests/miz/pass/parser/pass_parser_simple_statements_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_justifications_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_consider_reconsider_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_conclusions_iterative_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_simple_statements_recovery_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_justifications_recovery_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_consider_reconsider_recovery_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_conclusions_iterative_recovery_001.expect.toml",
 ]
 
 [[requirement]]

@@ -94,6 +94,10 @@ green tree.
 | consider statement node | `SyntaxKind::ConsiderStatement` |
 | reconsider statement node | `SyntaxKind::ReconsiderStatement` |
 | reconsider item node | `SyntaxKind::ReconsiderItem` |
+| conclusion statement node | `SyntaxKind::ConclusionStatement` |
+| sequential `then` wrapper node | `SyntaxKind::ThenStatement` |
+| iterative equality statement node | `SyntaxKind::IterativeEqualityStatement` |
+| iterative equality step node | `SyntaxKind::IterativeEqualityStep` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -209,6 +213,10 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 81 | `ConsiderStatement` | task-18 `consider ... such that ... by ...` choice statement |
 | 82 | `ReconsiderStatement` | task-18 `reconsider ... as ... by ...` type-changing statement |
 | 83 | `ReconsiderItem` | task-18 bare or equated reconsider item |
+| 84 | `ConclusionStatement` | task-19 `thus` / `hence` conclusion statement |
+| 85 | `ThenStatement` | task-19 `then` modifier wrapper around a linkable statement |
+| 86 | `IterativeEqualityStatement` | task-19 equality chain with at least one `.=` continuation |
+| 87 | `IterativeEqualityStep` | task-19 `.=` equality-chain continuation step |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -221,7 +229,7 @@ The current raw discriminants are part of the rowan boundary for this phase:
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
-above, currently `Root` through task-18 `ReconsiderItem` plus the compatibility
+above, currently `Root` through task-19 `IterativeEqualityStep` plus the compatibility
 `Token` wrapper and `ErrorRecovery`; `is_token_kind` is true
 only for token leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future
 raw values should be appended or assigned into a documented reserved range so
@@ -265,7 +273,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::SetEnumeration` | none | `SyntaxKind::SetEnumeration` | parser task-9 set-enumeration term |
 | `SurfaceNodeKind::SetComprehension` | none | `SyntaxKind::SetComprehension` | parser task-15 set-comprehension / Fraenkel term; owns `{`, a mapper `TermExpression`, `where`, generator segments, optional condition formula, and `}` or delimiter recovery |
 | `SurfaceNodeKind::ComprehensionVariableSegment` | none | `SyntaxKind::ComprehensionVariableSegment` | parser task-15 typed generator segment; owns identifier or `MissingTerm` recovery, optional `is`, and `TypeExpression` or `MissingTypeExpression` recovery when `is` is present |
-| `SurfaceNodeKind::StatementItem` | none | `SyntaxKind::StatementItem` | parser task-16 temporary module-level statement host; owns exactly one concrete simple or explicit-justification compact statement node and no statement-level annotation payload |
+| `SurfaceNodeKind::StatementItem` | none | `SyntaxKind::StatementItem` | parser task-16 temporary module-level statement host; owns exactly one concrete parser-owned statement node from the currently implemented S-013 / S-014 statement vocabulary and no statement-level annotation payload |
 | `SurfaceNodeKind::LetStatement` | none | `SyntaxKind::LetStatement` | parser task-16/17 `let` generalization; owns `let`, qualified-variable segments with separator commas, optional `such` plus `ConditionList`, optional task-17 simple `JustificationClause`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::QualifiedVariableSegment` | none | `SyntaxKind::QualifiedVariableSegment` | parser task-16 statement-level variable segment; owns identifier tokens separated by comma tokens, optional `be` / `being`, and optional `TypeExpression` or `MissingTypeExpression` recovery |
 | `SurfaceNodeKind::AssumptionStatement` | none | `SyntaxKind::AssumptionStatement` | parser task-16 `assume` or `assume that`; owns `assume` plus either one `Proposition` or one `ConditionList`, optional recovery, and optional semicolon |
@@ -279,6 +287,10 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::ConsiderStatement` | none | `SyntaxKind::ConsiderStatement` | parser task-18 choice statement; owns `consider`, qualified-variable segments with separator commas, `such`, `ConditionList` or condition recovery, simple `JustificationClause` or missing-justification recovery, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::ReconsiderStatement` | none | `SyntaxKind::ReconsiderStatement` | parser task-18 type-changing statement; owns `reconsider`, reconsider items with separator commas, `as`, `TypeExpression` or `MissingTypeExpression`, simple `JustificationClause` or missing-justification recovery, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::ReconsiderItem` | none | `SyntaxKind::ReconsiderItem` | parser task-18 reconsider item; owns either identifier or identifier, `=`, and `TermExpression` / `MissingTerm` recovery |
+| `SurfaceNodeKind::ConclusionStatement` | none | `SyntaxKind::ConclusionStatement` | parser task-19 conclusion statement; owns `thus` or `hence`, one `Proposition`, an optional explicit `JustificationClause`, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::ThenStatement` | none | `SyntaxKind::ThenStatement` | parser task-19 sequential modifier wrapper; owns the `then` token and exactly one linkable statement child or `MissingStatement` recovery |
+| `SurfaceNodeKind::IterativeEqualityStatement` | none | `SyntaxKind::IterativeEqualityStatement` | parser task-19 equality chain; owns optional label identifier/colon, first `TermExpression`, `=`, second `TermExpression`, optional simple `JustificationClause`, one or more `IterativeEqualityStep` children, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::IterativeEqualityStep` | none | `SyntaxKind::IterativeEqualityStep` | parser task-19 `.=` continuation; owns `.=` token, a `TermExpression` or `MissingTerm`, and optional simple `JustificationClause` |
 | `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host; owns one `Proposition`, one `JustificationClause`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
@@ -595,11 +607,14 @@ quantifier.
 Parser task 16 starts S-013 statement vocabulary with simple statement nodes.
 `StatementItem` is a temporary module-level wrapper that lets the parse-only
 corpus exercise concrete statement syntax before theorem/proof block hosts are
-implemented; proof and block parsers may later own the same statement nodes
-directly. Statement-level annotations are deferred to task 35 / S-016, so
-`StatementItem` does not own annotation-prefix tokens. `reserve` remains the
-top-level task-8 `ReserveItem` only because Chapter 4 forbids block-local
-`reserve`-shaped statements.
+implemented. It owns exactly one concrete parser-owned statement node from the
+currently implemented statement vocabulary, including later S-013 / S-014
+increments such as compact, consider/reconsider, conclusion, `then`, and
+iterative-equality statements. Proof and block parsers may later own the same
+statement nodes directly. Statement-level annotations are deferred to task 35 /
+S-016, so `StatementItem` does not own annotation-prefix tokens. `reserve`
+remains the top-level task-8 `ReserveItem` only because Chapter 4 forbids
+block-local `reserve`-shaped statements.
 
 `LetStatement` owns `let`, one or more `QualifiedVariableSegment` children
 separated by comma tokens, optional `such` plus `ConditionList`, and `;` when
@@ -694,6 +709,33 @@ identifiers or right-hand-side terms use `MissingTerm`; missing target types
 use `MissingTypeExpression`. `SurfaceNodeView` exposes
 `as_consider_statement`, `as_reconsider_statement`, and
 `as_reconsider_item` helpers.
+Snapshot rendering prints the literal node names.
+
+Parser task 19 adds the conclusion and iterative-equality portion of S-013.
+`ConclusionStatement` owns `thus` or `hence`, one `Proposition`, an optional
+explicit `JustificationClause`, optional recovery, and the semicolon token
+when present. `ThenStatement` is a syntax-only wrapper that owns the `then`
+token plus exactly one linkable statement child, or `MissingStatement`
+recovery when the modifier appears before a standalone/non-linkable statement.
+It does not desugar `hence`, attach predecessor facts, or otherwise encode
+proof semantics.
+
+`IterativeEqualityStatement` owns an optional label identifier and colon, the
+initial left `TermExpression`, `=`, initial right `TermExpression`, optional
+simple citation `JustificationClause`, one or more `IterativeEqualityStep`
+children, optional recovery, and the semicolon token when present.
+`IterativeEqualityStep` owns `.=` plus one `TermExpression` or `MissingTerm`
+and an optional simple citation `JustificationClause`. The compact/equality
+dispatch boundary is syntax-only: a justified equality without a top-level
+`.=` continuation remains `CompactStatement`; a chain with at least one
+top-level `.=` becomes `IterativeEqualityStatement`. Computation
+justifications remain disallowed inside iterative equality because the
+Chapter 15 production uses `simple_justification` there, but explicit
+conclusions may reuse the general task-17 justification surface. These nodes
+do not check equality transitivity, predecessor availability, conclusion
+validity, or proof obligations. `SurfaceNodeView` exposes
+`as_conclusion_statement`, `as_then_statement`,
+`as_iterative_equality_statement`, and `as_iterative_equality_step` helpers.
 Snapshot rendering prints the literal node names.
 
 ### Vocabulary Increment Contract
@@ -836,6 +878,10 @@ Equating range=<start>..<end> recovered=<bool>
 ConsiderStatement range=<start>..<end> recovered=<bool>
 ReconsiderStatement range=<start>..<end> recovered=<bool>
 ReconsiderItem range=<start>..<end> recovered=<bool>
+ConclusionStatement range=<start>..<end> recovered=<bool>
+ThenStatement range=<start>..<end> recovered=<bool>
+IterativeEqualityStatement range=<start>..<end> recovered=<bool>
+IterativeEqualityStep range=<start>..<end> recovered=<bool>
 CompactStatement range=<start>..<end> recovered=<bool>
 JustificationClause range=<start>..<end> recovered=<bool>
 ReferenceList range=<start>..<end> recovered=<bool>

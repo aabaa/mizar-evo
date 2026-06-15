@@ -1,0 +1,5 @@
+then let x be set;
+thus by A;
+x = by A .= z by B;
+x = y by A .= by B;
+x = y by A .= z by computation(steps: 1);

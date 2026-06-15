@@ -1013,6 +1013,90 @@ these statement hosts, top-level `StatementItem` wrapping, active parse-only
 pass/fail corpus coverage, and traceability to Chapter 15 §15.3.4, §15.5.1,
 and §15.8.
 
+## Task 19: Conclusions, `then`, And Iterative Equality
+
+Task 19 continues S-013 statement syntax with conclusion statements,
+sequential `then` modifiers, and iterative equality chains. It also resolves
+grammar-audit G-AUD-010 for the parser-owned boundary between explicit
+compact equality statements and iterative equality chains.
+
+```ebnf
+statement_item              ::= ... | then_statement | conclusion_statement
+                              | iterative_equality_statement ;
+then_statement              ::= "then" linkable_statement ;
+linkable_statement          ::= compact_statement
+                              | conclusion_statement
+                              | consider_statement
+                              | reconsider_statement
+                              | iterative_equality_statement
+                              | case_reasoning ;
+conclusion_statement        ::= ( "thus" | "hence" ) proposition
+                                [ justification_clause ] ";" ;
+iterative_equality_statement::= [ label_identifier ":" ]
+                                term_expression "=" term_expression
+                                [ simple_justification ]
+                                iterative_equality_step
+                                { iterative_equality_step } ";" ;
+iterative_equality_step     ::= ".=" term_expression
+                                [ simple_justification ] ;
+simple_justification        ::= "by" references ;
+```
+
+`ThenStatement` is a syntax-only wrapper that owns the `then` token and one
+linkable statement child. The parser does not desugar `then`, does not attach
+the previous statement semantically, and does not rewrite `hence` into
+`then thus`. Case reasoning is spec-valid linkable syntax but its concrete
+statement nodes are owned by parser task 20, so task 19 leaves `then per cases`
+on the deferred statement-placeholder path rather than rejecting it as an
+invalid `then` modifier. A `then` before an implemented standalone statement
+such as `let` is rejected with `MissingStatement` recovery under
+`ThenStatement`; the following standalone statement remains available as the
+next statement boundary.
+
+`ConclusionStatement` owns `thus` or `hence`, one `Proposition`, an optional
+explicit `JustificationClause`, optional recovery, and the semicolon when
+present. Because Chapter 15 defines simple justifications as optional, a
+conclusion without an explicit `by` tail remains syntactically accepted. If an
+explicit `by` tail is present, the conclusion uses the task-17 justification
+surface; computation justifications are accepted here because `conclusion`
+uses the general `justification` production rather than `simple_justification`.
+Full `proof ... end` justification blocks remain task 22.
+
+`IterativeEqualityStatement` owns an optional label and colon, the first left
+term, `=`, the first right term, an optional simple citation
+`JustificationClause`, one or more `IterativeEqualityStep` children, optional
+recovery, and the semicolon when present. Each `IterativeEqualityStep` owns
+the `.=` token, one term expression, and an optional simple citation
+`JustificationClause`. Computation justifications are not accepted in
+iterative equality because the Chapter 15 production uses
+`simple_justification` for every step.
+
+G-AUD-010 dispatch is resolved as follows: the parser constructs
+`IterativeEqualityStatement` only when a top-level `.=` continuation follows
+the first equality. A justified equality with no `.=` continuation, such as
+`x = y by A;`, remains a `CompactStatement`. The same rule applies to label
+and `then` variants: `A1: x = y by A;` is compact, while
+`A1: x = y by A .= z by B;` is iterative.
+
+Task 19 recovery reuses existing diagnostics. Missing conclusion propositions
+or invalid `then` linkable statements use `MalformedFormulaExpression` plus
+`MissingFormula` or `MissingStatement` recovery. Missing or malformed equality
+terms and `.=` step terms use `MalformedTermExpression` plus `MissingTerm`.
+Malformed explicit citation tails use `MalformedJustification` plus task-17
+justification recovery. Malformed statement tails synchronize at semicolon,
+EOF, or the next statement/item boundary and preserve skipped source under
+`SkippedToken` recovery when tokens must be skipped.
+
+Task 19 tests must pin: `thus` with labels and explicit references, `hence`
+without an explicit `by`, `then` wrapping compact/conclusion/current
+introduction statements, rejection of `then` before standalone statements,
+iterative equality with one and multiple `.=` steps, the compact-versus-
+iterative boundary for `x = y by A;` versus `x = y by A .= z by B;`, label
+and `then` variants of that boundary, malformed conclusion propositions,
+missing iterative-equality terms, disallowed computation justifications inside
+iterative equality, active parse-only pass/fail corpus coverage, and
+traceability to Chapter 15 §15.4.1, §15.4.2, §15.7, §15.8, and §15.9.1.
+
 ## Public Enum Compatibility
 
 `ParserTokenKind` is `#[non_exhaustive]` for downstream crates. The parser token

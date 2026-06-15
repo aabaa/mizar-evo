@@ -1,0 +1,12 @@
+thus A: thesis by A;
+hence thesis;
+thus thesis by computation(steps: 1);
+then thesis by A;
+then thus thesis by computation(steps: 1);
+A1: x = y by A;
+then x = y by A;
+A2: x = y by A .= z by B .= w;
+then x = y by A .= z by B;
+then consider c being set such that thesis by A;
+then reconsider r as set by A;
+then per cases;

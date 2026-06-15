@@ -1,0 +1,24 @@
+schema_version = 1
+id = "fail_parser_conclusions_iterative_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.statements"
+source = "fail_parser_conclusions_iterative_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "conclusion_then_iterative_statement_recovery"
+stable_detail_key = "parser.statements.conclusion_then_iterative.recovery"
+diagnostic_codes = [
+  "malformed_formula_expression",
+  "missing_semicolon",
+  "malformed_formula_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_justification",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = [
+  "spec.en.15.statements.syntax",
+]
+notes = "Active parse-only runner coverage for parser task 19 invalid then linkables, missing conclusion propositions, missing iterative-equality initial/step terms, and disallowed computation justifications inside iterative equality."
