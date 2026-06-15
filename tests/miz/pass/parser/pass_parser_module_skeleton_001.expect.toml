@@ -11,4 +11,4 @@ tags = ["active_parse_only"]
 spec_refs = [
   "spec.en.12.modules.compilation_unit_skeleton",
 ]
-notes = "Active parse-only runner coverage for parser task 5 module skeleton placeholder dispatch, including export, status, visibility, annotation, and proof-block representative items."
+notes = "Active parse-only runner coverage for parser task 5 module skeleton placeholder dispatch, including an export prelude item, theorem status, visibility, annotation, and proof-block representative items."

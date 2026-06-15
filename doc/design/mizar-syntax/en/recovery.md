@@ -49,6 +49,8 @@ Current `SyntaxDiagnosticCode` values are:
 | `MissingSemicolon` | parser reaches a top-level item boundary or EOF where `;` is required | set when parsing continues with the next item or EOF |
 | `MissingStringLiteral` | parser inserts a missing string literal in a string-required context | set when parsing continues after insertion |
 | `MalformedImport` | parser task 6 finds import-internal syntax that can continue at the current import statement boundary | set when the import item remains represented, for example missing alias after `as` or missing `}` in a branch import |
+| `MalformedExport` | parser task 7 finds export-internal syntax that can continue at the current export statement boundary | set when the export item remains represented, for example missing module path after `export` or after `,` |
+| `MalformedVisibility` | parser task 7 finds a duplicate, dangling, or invalid top-level visibility marker | set when the visible item wrapper remains represented; malformed tail tokens are skipped inside it when present |
 | `UnexpectedTopLevelToken` | parser task 5 skips source tokens that cannot start a top-level item | set when a `SkippedToken` recovery node and skipped trivia range are emitted |
 | `UnrecoverableInput` | parser cannot construct a trustworthy `SurfaceAst` for the input | optional; set when the parser can suggest a source edit, and the parse result may have `ast = None` |
 

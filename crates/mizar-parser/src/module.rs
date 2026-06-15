@@ -35,32 +35,59 @@ impl Parser {
         if self.should_parse_module_skeleton() {
             let mut position = 0;
             let mut import_prelude_open = true;
+            let mut export_prelude_open = true;
             while position < self.request.tokens.len() {
-                if self.is_item_start_at(position) {
-                    if import_prelude_open && self.is_import_item_start_at(position) {
-                        let item = self.parse_import_item(position);
-                        item_children.push(item.id);
-                        recovery_nodes.extend(item.recovery_nodes);
-                        position = item.next_position;
-                        continue;
-                    }
-                    import_prelude_open = false;
-                    if self.is_import_item_start_at(position) {
+                if let Some(item_head) = self.item_head_position(position) {
+                    let direct_item_head = item_head == position;
+                    if self.is_reserved_word_at(item_head, "import") {
+                        if import_prelude_open && direct_item_head {
+                            let item = self.parse_import_item(position);
+                            item_children.push(item.id);
+                            recovery_nodes.extend(item.recovery_nodes);
+                            position = item.next_position;
+                            continue;
+                        }
+                        import_prelude_open = false;
+                        export_prelude_open = false;
                         let recovery = self.recover_unexpected_top_level_tokens(position);
                         item_children.push(recovery.id);
                         recovery_nodes.extend(recovery.recovery_nodes);
                         position = recovery.next_position;
                         continue;
                     }
+                    import_prelude_open = false;
+                    if self.is_reserved_word_at(item_head, "export") {
+                        if export_prelude_open && direct_item_head {
+                            let item = self.parse_export_item(position);
+                            item_children.push(item.id);
+                            recovery_nodes.extend(item.recovery_nodes);
+                            position = item.next_position;
+                            continue;
+                        }
+                        export_prelude_open = false;
+                        let recovery = self.recover_unexpected_top_level_tokens(position);
+                        item_children.push(recovery.id);
+                        recovery_nodes.extend(recovery.recovery_nodes);
+                        position = recovery.next_position;
+                        continue;
+                    }
+                    export_prelude_open = false;
+                    if self.is_visibility_marker_at(item_head) {
+                        let item = self.parse_visible_item(position);
+                        item_children.push(item.id);
+                        recovery_nodes.extend(item.recovery_nodes);
+                        position = item.next_position;
+                        continue;
+                    }
                     let item = self.parse_placeholder_item(position);
                     item_children.push(item.id);
                     position = item.next_position;
-                } else {
-                    let recovery = self.recover_unexpected_top_level_tokens(position);
-                    item_children.push(recovery.id);
-                    recovery_nodes.extend(recovery.recovery_nodes);
-                    position = recovery.next_position;
+                    continue;
                 }
+                let recovery = self.recover_unexpected_top_level_tokens(position);
+                item_children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+                position = recovery.next_position;
             }
         }
 
@@ -76,6 +103,125 @@ impl Parser {
         });
         ParsedCompilationUnit {
             id: compilation_unit,
+            recovery_nodes,
+        }
+    }
+
+    fn parse_export_item(&mut self, position: usize) -> ParsedItem {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if let Some(path) = self.parse_module_path_at(cursor) {
+            children.push(path.id);
+            cursor = path.next_position;
+
+            while self.is_reserved_symbol_at(cursor, ",") {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+                match self.parse_module_path_at(cursor) {
+                    Some(path) => {
+                        children.push(path.id);
+                        cursor = path.next_position;
+                    }
+                    None => {
+                        self.diagnose_malformed_export(
+                            cursor,
+                            "expected module path after `,` in export statement",
+                        );
+                        if let Some(recovery) = self.recover_malformed_tail(cursor) {
+                            children.push(recovery.id);
+                            recovery_nodes.extend(recovery.recovery_nodes);
+                            cursor = recovery.next_position;
+                        }
+                        break;
+                    }
+                }
+            }
+        } else {
+            self.diagnose_malformed_export(
+                cursor,
+                "expected module path after `export` in export statement",
+            );
+            if let Some(recovery) = self.recover_malformed_tail(cursor) {
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+                cursor = recovery.next_position;
+            }
+        }
+
+        if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else if cursor < self.request.tokens.len() && !self.is_item_start_at(cursor) {
+            self.diagnose_malformed_export(cursor, "unexpected token in export statement");
+            if let Some(recovery) = self.recover_malformed_tail(cursor) {
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+                cursor = recovery.next_position;
+            }
+            if self.is_semicolon_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            }
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::ExportItem,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedItem {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_visible_item(&mut self, position: usize) -> ParsedItem {
+        let marker_position = self
+            .item_head_position(position)
+            .expect("visible item parsing starts at an item boundary");
+        let mut children = self.token_node_ids[position..marker_position].to_vec();
+        let mut recovery_nodes = Vec::new();
+        let marker = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::VisibilityMarker,
+            range: self.request.tokens[marker_position].span,
+            children: vec![self.token_node_ids[marker_position]],
+        });
+        children.push(marker);
+
+        let target_position = marker_position + 1;
+        let cursor = if self.is_visibility_target_start_at(target_position) {
+            let target = self.parse_placeholder_item(target_position);
+            children.push(target.id);
+            recovery_nodes.extend(target.recovery_nodes);
+            target.next_position
+        } else {
+            self.diagnose_malformed_visibility(target_position);
+            let mut cursor = target_position;
+            if let Some(recovery) = self.recover_malformed_visibility_tail(target_position) {
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+                cursor = recovery.next_position;
+            }
+            if self.is_semicolon_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            }
+            cursor
+        };
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::VisibleItem,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedItem {
+            id,
+            next_position: cursor.max(position + 1),
             recovery_nodes,
         }
     }
@@ -104,7 +250,7 @@ impl Parser {
                             cursor,
                             "expected module path after `,` in import statement",
                         );
-                        if let Some(recovery) = self.recover_malformed_import_tail(cursor) {
+                        if let Some(recovery) = self.recover_malformed_tail(cursor) {
                             children.push(recovery.id);
                             recovery_nodes.extend(recovery.recovery_nodes);
                             cursor = recovery.next_position;
@@ -118,7 +264,7 @@ impl Parser {
                 cursor,
                 "expected module path after `import` in import statement",
             );
-            if let Some(recovery) = self.recover_malformed_import_tail(cursor) {
+            if let Some(recovery) = self.recover_malformed_tail(cursor) {
                 children.push(recovery.id);
                 recovery_nodes.extend(recovery.recovery_nodes);
                 cursor = recovery.next_position;
@@ -164,7 +310,7 @@ impl Parser {
                     cursor,
                     "expected module alias after `as` in import statement",
                 );
-                if let Some(recovery) = self.recover_malformed_import_tail(cursor) {
+                if let Some(recovery) = self.recover_malformed_tail(cursor) {
                     children.push(recovery.id);
                     recovery_nodes.extend(recovery.recovery_nodes);
                     cursor = recovery.next_position;
@@ -199,7 +345,7 @@ impl Parser {
                     cursor,
                     "expected module identifier in branch import",
                 );
-                if let Some(recovery) = self.recover_malformed_import_tail(cursor) {
+                if let Some(recovery) = self.recover_malformed_tail(cursor) {
                     children.push(recovery.id);
                     recovery_nodes.extend(recovery.recovery_nodes);
                     cursor = recovery.next_position;
@@ -224,7 +370,7 @@ impl Parser {
             cursor += 1;
         } else {
             self.diagnose_malformed_import(cursor, "expected `}` to close branch import");
-            if let Some(recovery) = self.recover_malformed_import_tail(cursor) {
+            if let Some(recovery) = self.recover_malformed_tail(cursor) {
                 children.push(recovery.id);
                 recovery_nodes.extend(recovery.recovery_nodes);
                 cursor = recovery.next_position;
@@ -324,8 +470,14 @@ impl Parser {
 
     fn recover_unexpected_top_level_tokens(&mut self, position: usize) -> ParsedItem {
         let mut cursor = position;
+        let prefixed_head = self
+            .item_head_position(position)
+            .filter(|head| *head > position);
         while cursor < self.request.tokens.len() {
-            if cursor > position && self.is_item_start_at(cursor) {
+            let is_same_prefixed_item = prefixed_head.is_some_and(|head| {
+                cursor <= head && self.item_head_position(cursor) == Some(head)
+            });
+            if cursor > position && !is_same_prefixed_item && self.is_item_start_at(cursor) {
                 break;
             }
             let is_synchronizing_token =
@@ -383,11 +535,96 @@ impl Parser {
         );
     }
 
-    fn recover_malformed_import_tail(&mut self, position: usize) -> Option<ParsedItem> {
+    fn diagnose_malformed_export(&mut self, position: usize, message: &'static str) {
+        let tokens = &self.request.tokens;
+        let cursor = crate::cursor::TokenCursor::at(self.request.source_id, tokens, position);
+        let primary = cursor
+            .current()
+            .map_or(cursor.eof_range(), |token| token.span);
+        self.diagnostics.push(
+            SyntaxDiagnostic::new(SyntaxDiagnosticCode::MalformedExport, message, primary)
+                .with_recovery_note("repair the export syntax before continuing"),
+        );
+    }
+
+    fn diagnose_malformed_visibility(&mut self, position: usize) {
+        let tokens = &self.request.tokens;
+        let cursor = crate::cursor::TokenCursor::at(self.request.source_id, tokens, position);
+        let primary = cursor
+            .current()
+            .map_or(cursor.eof_range(), |token| token.span);
+        self.diagnostics.push(
+            SyntaxDiagnostic::new(
+                SyntaxDiagnosticCode::MalformedVisibility,
+                "expected theorem or notation item after visibility marker",
+                primary,
+            )
+            .with_recovery_note("skip the malformed visible item tail before continuing"),
+        );
+    }
+
+    fn recover_malformed_tail(&mut self, position: usize) -> Option<ParsedItem> {
         let mut cursor = position;
         while cursor < self.request.tokens.len() && !self.is_semicolon_at(cursor) {
             cursor += 1;
         }
+        self.emit_malformed_tail_recovery(position, cursor)
+    }
+
+    fn recover_malformed_visibility_tail(&mut self, position: usize) -> Option<ParsedItem> {
+        let cursor = if let Some(block_head) = self.malformed_visibility_block_head(position) {
+            self.block_like_tail_semicolon_position(block_head)
+        } else {
+            let mut cursor = position;
+            while cursor < self.request.tokens.len() && !self.is_semicolon_at(cursor) {
+                cursor += 1;
+            }
+            cursor
+        };
+        self.emit_malformed_tail_recovery(position, cursor)
+    }
+
+    fn malformed_visibility_block_head(&self, position: usize) -> Option<usize> {
+        let mut cursor = position;
+        while cursor < self.request.tokens.len() && self.is_item_prefix_keyword_at(cursor) {
+            cursor += 1;
+        }
+        self.request
+            .tokens
+            .get(cursor)
+            .is_some_and(is_block_like_top_level_start)
+            .then_some(cursor)
+    }
+
+    fn block_like_tail_semicolon_position(&self, head: usize) -> usize {
+        let mut cursor = head + 1;
+        let mut block_depth = 1_usize;
+        while cursor < self.request.tokens.len() {
+            if self.is_end_keyword_at(cursor) {
+                block_depth -= 1;
+                if block_depth == 0 {
+                    let semicolon = cursor + 1;
+                    return if semicolon < self.request.tokens.len()
+                        && self.is_semicolon_at(semicolon)
+                    {
+                        semicolon
+                    } else {
+                        semicolon.min(self.request.tokens.len())
+                    };
+                }
+            } else if sync::opens_recovery_block_at(&self.request.tokens, cursor) {
+                block_depth += 1;
+            }
+            cursor += 1;
+        }
+        self.request.tokens.len()
+    }
+
+    fn emit_malformed_tail_recovery(
+        &mut self,
+        position: usize,
+        cursor: usize,
+    ) -> Option<ParsedItem> {
         if cursor == position {
             return None;
         }
@@ -427,8 +664,31 @@ impl Parser {
         self.item_head_position(position).is_some()
     }
 
-    fn is_import_item_start_at(&self, position: usize) -> bool {
-        self.is_reserved_word_at(position, "import")
+    fn is_visibility_marker_at(&self, position: usize) -> bool {
+        self.request.tokens.get(position).is_some_and(|token| {
+            token.kind == ParserTokenKind::ReservedWord
+                && matches!(token.text.as_ref(), "private" | "public")
+        })
+    }
+
+    fn is_visibility_target_start_at(&self, position: usize) -> bool {
+        let Some(token) = self.request.tokens.get(position) else {
+            return false;
+        };
+        if token.kind != ParserTokenKind::ReservedWord {
+            return false;
+        }
+        match token.text.as_ref() {
+            "theorem" | "lemma" | "infix_operator" | "prefix_operator" | "postfix_operator"
+            | "synonym" | "antonym" => true,
+            "open" | "assumed" | "conditional" => {
+                self.request.tokens.get(position + 1).is_some_and(|next| {
+                    next.kind == ParserTokenKind::ReservedWord
+                        && matches!(next.text.as_ref(), "theorem" | "lemma")
+                })
+            }
+            _ => false,
+        }
     }
 
     fn is_identifier_at(&self, position: usize) -> bool {
@@ -793,14 +1053,877 @@ mod tests {
             let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
             assert_eq!(item_list.children.len(), 1, "{name} should make one item");
             let item = ast.node(item_list.children[0]).unwrap();
-            let expected_kind = if *name == "import" {
-                SurfaceNodeKind::ImportItem
-            } else {
-                SurfaceNodeKind::PlaceholderItem
+            let expected_kind = match *name {
+                "import" => SurfaceNodeKind::ImportItem,
+                "export" => SurfaceNodeKind::ExportItem,
+                "private" | "public" => SurfaceNodeKind::VisibleItem,
+                _ => SurfaceNodeKind::PlaceholderItem,
             };
             assert_eq!(item.kind, expected_kind);
             assert_eq!(item.range, expected_range, "{name} placeholder range");
         }
+    }
+
+    #[test]
+    fn parser_parses_export_prelude_and_visibility_items() {
+        let source_id = source_id(82);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("import", ParserTokenKind::ReservedWord),
+                ("Std", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("export", ParserTokenKind::ReservedWord),
+                ("Std", ParserTokenKind::Identifier),
+                (".", ParserTokenKind::ReservedSymbol),
+                ("Core", ParserTokenKind::Identifier),
+                (",", ParserTokenKind::ReservedSymbol),
+                (".", ParserTokenKind::ReservedSymbol),
+                ("Facade", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("public", ParserTokenKind::ReservedWord),
+                ("open", ParserTokenKind::ReservedWord),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("private", ParserTokenKind::ReservedWord),
+                ("synonym", ParserTokenKind::ReservedWord),
+                ("P", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("Q", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert!(output.diagnostics.is_empty());
+        let ast = output.ast.expect("export and visible items should parse");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 4);
+        assert!(matches!(
+            ast.node(item_list.children[0]).unwrap().kind,
+            SurfaceNodeKind::ImportItem
+        ));
+        let export = ast.node(item_list.children[1]).unwrap();
+        assert!(matches!(export.kind, SurfaceNodeKind::ExportItem));
+        assert_eq!(export.children.len(), 5);
+        assert_eq!(
+            ast.node(export.children[0]).unwrap().token_text(),
+            Some("export")
+        );
+        assert!(matches!(
+            ast.node(export.children[1]).unwrap().kind,
+            SurfaceNodeKind::ModulePath
+        ));
+        assert_eq!(
+            ast.node(export.children[2]).unwrap().token_text(),
+            Some(",")
+        );
+        assert!(matches!(
+            ast.node(export.children[3]).unwrap().kind,
+            SurfaceNodeKind::ModulePath
+        ));
+        assert_eq!(
+            ast.node(export.children[4]).unwrap().token_text(),
+            Some(";")
+        );
+
+        for item_id in &item_list.children[2..] {
+            let visible = ast.node(*item_id).unwrap();
+            assert!(matches!(visible.kind, SurfaceNodeKind::VisibleItem));
+            assert_eq!(visible.children.len(), 2);
+            assert!(matches!(
+                ast.node(visible.children[0]).unwrap().kind,
+                SurfaceNodeKind::VisibilityMarker
+            ));
+            assert!(matches!(
+                ast.node(visible.children[1]).unwrap().kind,
+                SurfaceNodeKind::PlaceholderItem
+            ));
+        }
+    }
+
+    #[test]
+    fn parser_recovers_export_after_ordinary_item() {
+        let source_id = source_id(83);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("export", ParserTokenKind::ReservedWord),
+                ("Late", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("lemma", ParserTokenKind::ReservedWord),
+                ("U", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let export_range = tokens[3].span;
+        let skipped_range = range(source_id, tokens[3].span.start, tokens[5].span.end);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::UnexpectedTopLevelToken
+        );
+        assert_eq!(output.diagnostics[0].primary, export_range);
+        let ast = output.ast.expect("late export should recover");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 3);
+        assert!(matches!(
+            ast.node(item_list.children[0]).unwrap().kind,
+            SurfaceNodeKind::PlaceholderItem
+        ));
+        let skipped = ast.node(item_list.children[1]).unwrap();
+        assert!(matches!(
+            skipped.kind,
+            SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+        ));
+        assert_eq!(skipped.range, skipped_range);
+        assert!(matches!(
+            ast.node(item_list.children[2]).unwrap().kind,
+            SurfaceNodeKind::PlaceholderItem
+        ));
+    }
+
+    #[test]
+    fn parser_recovers_annotation_prefixed_import_and_export_as_unexpected_items() {
+        let source_id = source_id(94);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("@[", ParserTokenKind::ReservedSymbol),
+                ("note", ParserTokenKind::Identifier),
+                ("]", ParserTokenKind::ReservedSymbol),
+                ("@[", ParserTokenKind::ReservedSymbol),
+                ("note2", ParserTokenKind::Identifier),
+                ("]", ParserTokenKind::ReservedSymbol),
+                ("export", ParserTokenKind::ReservedWord),
+                ("Late", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("@[", ParserTokenKind::ReservedSymbol),
+                ("note", ParserTokenKind::Identifier),
+                ("]", ParserTokenKind::ReservedSymbol),
+                ("import", ParserTokenKind::ReservedWord),
+                ("Late", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("lemma", ParserTokenKind::ReservedWord),
+                ("U", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let export_annotation_range = tokens[3].span;
+        let import_annotation_range = tokens[12].span;
+        let export_skipped_range = range(source_id, tokens[3].span.start, tokens[11].span.end);
+        let import_skipped_range = range(source_id, tokens[12].span.start, tokens[17].span.end);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 2);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::UnexpectedTopLevelToken
+        );
+        assert_eq!(output.diagnostics[0].primary, export_annotation_range);
+        assert_eq!(
+            output.diagnostics[1].code,
+            SyntaxDiagnosticCode::UnexpectedTopLevelToken
+        );
+        assert_eq!(output.diagnostics[1].primary, import_annotation_range);
+        let ast = output
+            .ast
+            .expect("annotated import/export should recover as unexpected top-level input");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 4);
+        assert!(matches!(
+            ast.node(item_list.children[0]).unwrap().kind,
+            SurfaceNodeKind::PlaceholderItem
+        ));
+        assert_eq!(
+            ast.node(item_list.children[1]).unwrap().range,
+            export_skipped_range
+        );
+        assert!(matches!(
+            ast.node(item_list.children[1]).unwrap().kind,
+            SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+        ));
+        assert_eq!(
+            ast.node(item_list.children[2]).unwrap().range,
+            import_skipped_range
+        );
+        assert!(matches!(
+            ast.node(item_list.children[2]).unwrap().kind,
+            SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+        ));
+        assert!(matches!(
+            ast.node(item_list.children[3]).unwrap().kind,
+            SurfaceNodeKind::PlaceholderItem
+        ));
+    }
+
+    #[test]
+    fn parser_recovers_annotation_prefixed_import_while_import_prelude_open() {
+        let source_id = source_id(96);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("@[", ParserTokenKind::ReservedSymbol),
+                ("note", ParserTokenKind::Identifier),
+                ("]", ParserTokenKind::ReservedSymbol),
+                ("import", ParserTokenKind::ReservedWord),
+                ("Core", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let annotation_range = tokens[0].span;
+        let skipped_range = range(source_id, tokens[0].span.start, tokens[5].span.end);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::UnexpectedTopLevelToken
+        );
+        assert_eq!(output.diagnostics[0].primary, annotation_range);
+        let ast = output
+            .ast
+            .expect("annotated import should recover even while import prelude is open");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 2);
+        let recovery = ast.node(item_list.children[0]).unwrap();
+        assert!(matches!(
+            recovery.kind,
+            SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+        ));
+        assert_eq!(recovery.range, skipped_range);
+        assert!(matches!(
+            ast.node(item_list.children[1]).unwrap().kind,
+            SurfaceNodeKind::PlaceholderItem
+        ));
+    }
+
+    #[test]
+    fn parser_recovers_annotation_prefixed_export_while_export_prelude_open() {
+        let source_id = source_id(97);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("import", ParserTokenKind::ReservedWord),
+                ("Core", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("@[", ParserTokenKind::ReservedSymbol),
+                ("note", ParserTokenKind::Identifier),
+                ("]", ParserTokenKind::ReservedSymbol),
+                ("export", ParserTokenKind::ReservedWord),
+                ("Facade", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let annotation_range = tokens[3].span;
+        let skipped_range = range(source_id, tokens[3].span.start, tokens[8].span.end);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::UnexpectedTopLevelToken
+        );
+        assert_eq!(output.diagnostics[0].primary, annotation_range);
+        let ast = output
+            .ast
+            .expect("annotated export should recover even while export prelude is open");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 3);
+        assert!(matches!(
+            ast.node(item_list.children[0]).unwrap().kind,
+            SurfaceNodeKind::ImportItem
+        ));
+        let recovery = ast.node(item_list.children[1]).unwrap();
+        assert!(matches!(
+            recovery.kind,
+            SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+        ));
+        assert_eq!(recovery.range, skipped_range);
+        assert!(matches!(
+            ast.node(item_list.children[2]).unwrap().kind,
+            SurfaceNodeKind::PlaceholderItem
+        ));
+    }
+
+    #[test]
+    fn parser_recovers_bad_export_path_tail_inside_export_item() {
+        let source_id = source_id(84);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("export", ParserTokenKind::ReservedWord),
+                ("123", ParserTokenKind::Numeral),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let bad_range = tokens[1].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedExport
+        );
+        assert_eq!(output.diagnostics[0].primary, bad_range);
+        let ast = output
+            .ast
+            .expect("bad export path should recover inside export item");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 2);
+        let export_item = ast.node(item_list.children[0]).unwrap();
+        assert!(matches!(export_item.kind, SurfaceNodeKind::ExportItem));
+        let recovery = export_item
+            .children
+            .iter()
+            .filter_map(|id| ast.node(*id))
+            .find(|node| {
+                matches!(
+                    node.kind,
+                    SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+                )
+            })
+            .expect("bad export path token should be owned by a recovery node");
+        assert_eq!(recovery.range, bad_range);
+        assert_eq!(
+            rowan_token_texts(&ast),
+            vec!["export", "123", ";", "theorem", "T", ";"]
+        );
+    }
+
+    #[test]
+    fn parser_recovers_bad_export_tail_after_path_inside_export_item() {
+        let source_id = source_id(89);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("export", ParserTokenKind::ReservedWord),
+                ("Std", ParserTokenKind::Identifier),
+                (".", ParserTokenKind::ReservedSymbol),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let bad_range = tokens[2].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedExport
+        );
+        assert_eq!(output.diagnostics[0].primary, bad_range);
+        let ast = output
+            .ast
+            .expect("bad export tail should recover inside export item");
+        let export_item = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ExportItem));
+        let recovery = export_item
+            .children
+            .iter()
+            .filter_map(|id| ast.node(*id))
+            .find(|node| {
+                matches!(
+                    node.kind,
+                    SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+                )
+            })
+            .expect("bad tail token should be owned by export recovery");
+        assert_eq!(recovery.range, bad_range);
+        assert_eq!(
+            rowan_token_texts(&ast),
+            vec!["export", "Std", ".", ";", "theorem", "T", ";"]
+        );
+    }
+
+    #[test]
+    fn parser_recovers_bad_export_path_after_comma_inside_export_item() {
+        let source_id = source_id(90);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("export", ParserTokenKind::ReservedWord),
+                ("Std", ParserTokenKind::Identifier),
+                (",", ParserTokenKind::ReservedSymbol),
+                ("123", ParserTokenKind::Numeral),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let bad_range = tokens[3].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedExport
+        );
+        assert_eq!(output.diagnostics[0].primary, bad_range);
+        let ast = output
+            .ast
+            .expect("bad export path after comma should recover inside export item");
+        let export_item = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ExportItem));
+        let recovery = export_item
+            .children
+            .iter()
+            .filter_map(|id| ast.node(*id))
+            .find(|node| {
+                matches!(
+                    node.kind,
+                    SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+                )
+            })
+            .expect("bad comma tail should be owned by export recovery");
+        assert_eq!(recovery.range, bad_range);
+        assert_eq!(
+            rowan_token_texts(&ast),
+            vec!["export", "Std", ",", "123", ";"]
+        );
+    }
+
+    #[test]
+    fn parser_diagnoses_missing_export_semicolon_before_next_item() {
+        let source_id = source_id(85);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("export", ParserTokenKind::ReservedWord),
+                ("Std", ParserTokenKind::Identifier),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let theorem_range = tokens[2].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MissingSemicolon
+        );
+        assert_eq!(output.diagnostics[0].primary, theorem_range);
+        let ast = output.ast.expect("missing export semicolon should recover");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 2);
+        assert!(matches!(
+            ast.node(item_list.children[0]).unwrap().kind,
+            SurfaceNodeKind::ExportItem
+        ));
+        assert!(matches!(
+            ast.node(item_list.children[1]).unwrap().kind,
+            SurfaceNodeKind::PlaceholderItem
+        ));
+    }
+
+    #[test]
+    fn parser_recovers_import_after_export_prelude() {
+        let source_id = source_id(91);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("export", ParserTokenKind::ReservedWord),
+                ("Facade", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("import", ParserTokenKind::ReservedWord),
+                ("Late", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let import_range = tokens[3].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::UnexpectedTopLevelToken
+        );
+        assert_eq!(output.diagnostics[0].primary, import_range);
+        let ast = output.ast.expect("late import after export should recover");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 2);
+        assert!(matches!(
+            ast.node(item_list.children[0]).unwrap().kind,
+            SurfaceNodeKind::ExportItem
+        ));
+        assert!(matches!(
+            ast.node(item_list.children[1]).unwrap().kind,
+            SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+        ));
+    }
+
+    #[test]
+    fn parser_wraps_annotated_visible_item_in_source_order() {
+        let source_id = source_id(86);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("@[", ParserTokenKind::ReservedSymbol),
+                ("label", ParserTokenKind::Identifier),
+                ("]", ParserTokenKind::ReservedSymbol),
+                ("private", ParserTokenKind::ReservedWord),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let expected_range = range(source_id, 0, tokens.last().unwrap().span.end);
+        let target_range = range(source_id, tokens[4].span.start, tokens[6].span.end);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert!(output.diagnostics.is_empty());
+        let ast = output.ast.expect("annotated visible item should parse");
+        let visible = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::VisibleItem));
+        assert_eq!(visible.range, expected_range);
+        assert_eq!(visible.children.len(), 5);
+        assert_eq!(
+            ast.node(visible.children[0]).unwrap().token_text(),
+            Some("@[")
+        );
+        assert_eq!(
+            ast.node(visible.children[1]).unwrap().token_text(),
+            Some("label")
+        );
+        assert_eq!(
+            ast.node(visible.children[2]).unwrap().token_text(),
+            Some("]")
+        );
+        let marker = ast.node(visible.children[3]).unwrap();
+        assert!(matches!(marker.kind, SurfaceNodeKind::VisibilityMarker));
+        assert_eq!(
+            ast.node(marker.children[0]).unwrap().token_text(),
+            Some("private")
+        );
+        let item = ast.node(visible.children[4]).unwrap();
+        assert!(matches!(item.kind, SurfaceNodeKind::PlaceholderItem));
+        assert_eq!(item.range, target_range);
+    }
+
+    #[test]
+    fn parser_diagnoses_dangling_visibility_marker_inside_visible_item() {
+        let source_id = source_id(92);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("private", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let semicolon_range = tokens[1].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedVisibility
+        );
+        assert_eq!(output.diagnostics[0].primary, semicolon_range);
+        let ast = output
+            .ast
+            .expect("dangling visibility should recover inside visible item");
+        let visible = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::VisibleItem));
+        assert_eq!(visible.children.len(), 2);
+        assert!(matches!(
+            ast.node(visible.children[0]).unwrap().kind,
+            SurfaceNodeKind::VisibilityMarker
+        ));
+        assert_eq!(
+            ast.node(visible.children[1]).unwrap().token_text(),
+            Some(";")
+        );
+    }
+
+    #[test]
+    fn parser_diagnoses_duplicate_visibility_marker_inside_visible_item() {
+        let source_id = source_id(87);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("public", ParserTokenKind::ReservedWord),
+                ("private", ParserTokenKind::ReservedWord),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let duplicate_range = tokens[1].span;
+        let skipped_range = range(source_id, tokens[1].span.start, tokens[3].span.end);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedVisibility
+        );
+        assert_eq!(output.diagnostics[0].primary, duplicate_range);
+        let ast = output
+            .ast
+            .expect("duplicate visibility should recover inside one visible item");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 1);
+        let visible = ast.node(item_list.children[0]).unwrap();
+        assert!(matches!(visible.kind, SurfaceNodeKind::VisibleItem));
+        assert_eq!(visible.children.len(), 3);
+        assert!(matches!(
+            ast.node(visible.children[0]).unwrap().kind,
+            SurfaceNodeKind::VisibilityMarker
+        ));
+        let recovery = ast.node(visible.children[1]).unwrap();
+        assert!(matches!(
+            recovery.kind,
+            SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+        ));
+        assert_eq!(recovery.range, skipped_range);
+        assert_eq!(
+            ast.node(visible.children[2]).unwrap().token_text(),
+            Some(";")
+        );
+        assert_eq!(
+            rowan_token_texts(&ast),
+            vec!["public", "private", "theorem", "T", ";"]
+        );
+    }
+
+    #[test]
+    fn parser_recovers_block_like_invalid_visibility_target_as_one_visible_item() {
+        let source_id = source_id(93);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("private", ParserTokenKind::ReservedWord),
+                ("definition", ParserTokenKind::ReservedWord),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("U", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let definition_range = tokens[1].span;
+        let skipped_range = range(source_id, tokens[1].span.start, tokens[5].span.end);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedVisibility
+        );
+        assert_eq!(output.diagnostics[0].primary, definition_range);
+        let ast = output
+            .ast
+            .expect("block-like invalid visible target should recover inside one visible item");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 2);
+        let visible = ast.node(item_list.children[0]).unwrap();
+        assert!(matches!(visible.kind, SurfaceNodeKind::VisibleItem));
+        let recovery = visible
+            .children
+            .iter()
+            .filter_map(|id| ast.node(*id))
+            .find(|node| {
+                matches!(
+                    node.kind,
+                    SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+                )
+            })
+            .expect("invalid definition target should be owned by visible recovery");
+        assert_eq!(recovery.range, skipped_range);
+        assert!(matches!(
+            ast.node(item_list.children[1]).unwrap().kind,
+            SurfaceNodeKind::PlaceholderItem
+        ));
+    }
+
+    #[test]
+    fn parser_recovers_prefixed_block_like_invalid_visibility_target_as_one_visible_item() {
+        let source_id = source_id(95);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("public", ParserTokenKind::ReservedWord),
+                ("private", ParserTokenKind::ReservedWord),
+                ("open", ParserTokenKind::ReservedWord),
+                ("definition", ParserTokenKind::ReservedWord),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("U", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let duplicate_range = tokens[1].span;
+        let skipped_range = range(source_id, tokens[1].span.start, tokens[7].span.end);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedVisibility
+        );
+        assert_eq!(output.diagnostics[0].primary, duplicate_range);
+        let ast = output
+            .ast
+            .expect("prefixed block-like invalid visible target should recover inside one item");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 2);
+        let visible = ast.node(item_list.children[0]).unwrap();
+        assert!(matches!(visible.kind, SurfaceNodeKind::VisibleItem));
+        let recovery = visible
+            .children
+            .iter()
+            .filter_map(|id| ast.node(*id))
+            .find(|node| {
+                matches!(
+                    node.kind,
+                    SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+                )
+            })
+            .expect("prefixed invalid definition target should be owned by visible recovery");
+        assert_eq!(recovery.range, skipped_range);
+        assert_eq!(
+            ast.node(visible.children[2]).unwrap().token_text(),
+            Some(";")
+        );
+        assert!(matches!(
+            ast.node(item_list.children[1]).unwrap().kind,
+            SurfaceNodeKind::PlaceholderItem
+        ));
+    }
+
+    #[test]
+    fn parser_diagnoses_visibility_on_non_visible_top_level_item() {
+        let source_id = source_id(88);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("private", ParserTokenKind::ReservedWord),
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let reserve_range = tokens[1].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedVisibility
+        );
+        assert_eq!(output.diagnostics[0].primary, reserve_range);
+        let ast = output
+            .ast
+            .expect("invalid visible target should recover inside visible item");
+        let visible = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::VisibleItem));
+        assert_eq!(visible.children.len(), 3);
+        assert!(matches!(
+            ast.node(visible.children[1]).unwrap().kind,
+            SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+        ));
     }
 
     #[test]

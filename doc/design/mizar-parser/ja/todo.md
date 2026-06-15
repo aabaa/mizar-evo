@@ -278,9 +278,16 @@ resolver / build-system 依存を避ける。
    - 依存: 4、5、`mizar-syntax` task 9 / S-009。仕様:
      [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)。
 
-7. **export と可視性の item。** [ ]
+7. **export と可視性の item。** [x]
    - モジュール章に従った export の形と、item 上の `public` / `private`
      可視性マーカー。
+   - 結果: task 7 の production inventory を [grammar.md](./grammar.md) に記録した。
+     parser は `ExportItem`、`VisibilityMarker`、`VisibleItem` syntax node を送出し、
+     export prelude が開いている間だけ export を concrete に扱う。遅れた export は
+     `UnexpectedTopLevelToken` で回復し、不正な export path list は `MalformedExport`、
+     duplicate または不正な visibility prefix は `MalformedVisibility` で診断する。
+     visible wrapper 内では annotation-prefix token order を保持し、active parse-only
+     pass/fail corpus coverage と traceability を追加した。
    - 依存: 5、`mizar-syntax` task 9 / S-009。仕様:
      [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)。
 

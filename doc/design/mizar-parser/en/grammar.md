@@ -1,7 +1,8 @@
 # mizar-parser: Grammar
 
-Status: module skeleton, top-level placeholder dispatch, and concrete import
-items implemented through task 6; concrete export/other item grammars planned.
+Status: module skeleton, top-level placeholder dispatch, concrete import
+items, export items, and visibility wrappers implemented through task 7;
+concrete non-module item grammars planned.
 
 ## Purpose
 
@@ -78,9 +79,10 @@ notation_decl      ::= operator_decl | synonym_def | antonym_def ;
 
 Task 5 builds the stable surface skeleton that later item parsers replace with
 concrete nodes. The parser emits a `CompilationUnit` node with one `ItemList`
-child. The `ItemList` contains source-ordered `PlaceholderItem` nodes for
-recognized top-level starts and `SkippedToken` recovery nodes for skipped
-top-level input. Recognized starts are `import`, `export`, `definition`,
+child. The `ItemList` contains source-ordered concrete item nodes,
+`PlaceholderItem` nodes for not-yet-concrete recognized top-level starts, and
+`SkippedToken` recovery nodes for skipped top-level input. Recognized starts
+are `import`, `export`, `definition`,
 `reserve`, `registration`, `claim`, `theorem`, `lemma`, theorem-status prefixes
 `open` / `assumed` / `conditional`, visibility prefixes `private` / `public`,
 and notation starts `infix_operator`, `prefix_operator`, `postfix_operator`,
@@ -89,18 +91,20 @@ the import prelude is still open; later `import` tokens are recovered as
 misplaced top-level input.
 
 Consecutive library annotation prefixes beginning with `@[` are retained in the
-same placeholder when they are followed by a recognized top-level start.
-Malformed annotation parsing and concrete annotation nodes remain deferred to
-the annotation grammar tasks. Semicolon-style placeholders scan through nested
-`proof ... end` and contextual algorithm/proof blocks, so semicolons inside a
-proof body do not split a theorem or lemma item. Contextual formula keywords
-such as expression-level `if` and `otherwise` do not affect placeholder block
-depth.
+same placeholder when they are followed by a recognized annotated-declaration
+start. They do not make `import` or `export` eligible for annotation; an
+annotation prefix before an import/export prelude item is recovered as
+unexpected top-level input together with that statement. Malformed annotation
+parsing and concrete annotation nodes remain deferred to the annotation grammar
+tasks. Semicolon-style placeholders scan through nested `proof ... end` and
+contextual algorithm/proof blocks, so semicolons inside a proof body do not
+split a theorem or lemma item. Contextual formula keywords such as
+expression-level `if` and `otherwise` do not affect placeholder block depth.
 
-This task does not parse export paths, theorem formulas, visibility semantics,
-item validity, or symbol identities. `export` remains a placeholder until task
-7 replaces it with a concrete item node; non-import declarations remain
-placeholder items until their owning grammar tasks land. Token streams that
+This task does not parse theorem formulas, visibility semantics, item validity,
+or symbol identities. After task 7, `export` and visibility prefixes are
+concrete syntax wrappers; non-module declarations remain placeholder items
+until their owning grammar tasks land. Token streams that
 contain no recognizable top-level item start keep the task-3 compatibility
 behavior for the module skeleton: tokens are preserved and the item list is
 empty. Such streams remain diagnostic-free only when the earlier recovery pass
@@ -149,6 +153,55 @@ inside the import item or its malformed declaration. Recovery shapes may
 therefore include an `ImportItem` with no declaration after `import`, a trailing
 comma without a following declaration, an `ImportAliasDecl` without an alias
 segment, or a `ModuleBranchImport` without branch segments or `}`.
+
+## Task 7: Export And Visibility Items
+
+Production inventory:
+
+```ebnf
+export_stmt ::= "export" module_path { "," module_path } ";" ;
+visibility  ::= "private" | "public" ;
+```
+
+The parser emits one `ExportItem` per `export_stmt` while the export prelude is
+open. The import prelude still comes first; once the first non-import item is
+seen, imports are closed. Contiguous `export` statements immediately after the
+import prelude form the export prelude. The first ordinary declaration closes
+the export prelude, and later `export` tokens recover as unexpected top-level
+input with `UnexpectedTopLevelToken`, `SkippedToken` recovery, and skipped-range
+trivia. Later `import` tokens remain late-import recovery.
+
+For well-formed exports, `ExportItem` children are the `export` token, one or
+more `ModulePath` nodes separated by comma tokens, and the terminating
+semicolon token. Export paths use the task-4 `ModulePath`, `RelativePrefix`,
+and `PathSegment` nodes. The parser preserves relative prefixes and comma
+lists syntactically, but it does not resolve modules, inspect imported exports,
+build facade summaries, or validate visibility.
+
+Malformed export-internal syntax that can continue at the current statement
+boundary uses `MalformedExport`. Examples include a missing path after
+`export` or after a comma. Malformed source before the semicolon is owned by a
+nested `SkippedToken` recovery node plus skipped-range trivia inside the
+`ExportItem`. Missing export semicolons use `MissingSemicolon`.
+
+Top-level visibility is represented only for the Chapter 12 forms that accept
+it: theorem items and notation declarations. While those concrete item grammars
+are still deferred, the parser emits a `VisibleItem` wrapper whose children are
+source ordered: any already-skipped library annotation prefix tokens, one
+`VisibilityMarker` wrapping the `private` or `public` token, and the following
+target `PlaceholderItem`. Legal target starts are `theorem`, `lemma`, theorem
+status plus theorem role (`open`, `assumed`, or `conditional` followed by
+`theorem` or `lemma`), and notation starts `infix_operator`, `prefix_operator`,
+`postfix_operator`, `synonym`, and `antonym`. Visibility on other top-level
+declarations, duplicate visibility markers, and a dangling marker use
+`MalformedVisibility`; any malformed tail tokens before the statement
+semicolon are skipped inside the single `VisibleItem`. A semicolon-only
+dangling marker keeps the semicolon as a direct `VisibleItem` child rather than
+creating an empty recovery node. If the invalid target is a block-like
+top-level declaration (`definition`, `registration`, or `claim`), the same
+recovery owns the malformed target through its matching `end`; the following
+semicolon remains the wrapper's statement terminator when present, which keeps
+the wrapper from cascading into additional top-level recovery nodes.
 
 ## Public Enum Compatibility
 

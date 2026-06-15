@@ -1,0 +1,5 @@
+import std.core;
+export std.core, .facade;
+public open theorem Visible: thesis;
+@[label("visible")]
+private synonym P for Q;

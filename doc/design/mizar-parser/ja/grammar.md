@@ -2,8 +2,9 @@
 
 > 正本は英語です。英語版: [../en/grammar.md](../en/grammar.md)。
 
-状態: task 6 までの module skeleton、top-level placeholder dispatch、concrete
-import item は実装済み。具体的な export / その他 item 文法は計画中。
+状態: task 7 までの module skeleton、top-level placeholder dispatch、concrete
+import item、export item、および visibility wrapper は実装済み。具体的な非 module
+item 文法は計画中。
 
 ## 目的
 
@@ -79,9 +80,9 @@ notation_decl      ::= operator_decl | synonym_def | antonym_def ;
 
 task 5 は、後続の item parser が concrete node に置き換える安定した surface
 skeleton を構築する。parser は `CompilationUnit` node を送出し、その child として
-`ItemList` を 1 つ持たせる。`ItemList` には、認識した top-level start に対応する
-source order の `PlaceholderItem` node と、skip された top-level input の
-`SkippedToken` recovery node が入る。認識する start は `import`、`export`、
+`ItemList` を 1 つ持たせる。`ItemList` には、source order の concrete item node、
+まだ concrete でない認識済み top-level start に対応する `PlaceholderItem` node、
+skip された top-level input の `SkippedToken` recovery node が入る。認識する start は `import`、`export`、
 `definition`、`reserve`、`registration`、`claim`、`theorem`、`lemma`、
 theorem-status prefix の `open` / `assumed` / `conditional`、visibility prefix の
 `private` / `public`、notation start の `infix_operator`、`prefix_operator`、
@@ -89,17 +90,20 @@ theorem-status prefix の `open` / `assumed` / `conditional`、visibility prefix
 prelude がまだ開いている場合だけ concrete item になり、それより後の `import`
 token は位置が不正な top-level input として回復する。
 
-`@[` で始まる連続した library annotation prefix は、認識済み top-level start が
-後続する場合、同じ placeholder に保持する。malformed annotation parsing と
-concrete annotation node は annotation grammar task まで延期する。セミコロン型
+`@[` で始まる連続した library annotation prefix は、認識済み
+annotated-declaration start が後続する場合、同じ placeholder に保持する。annotation
+prefix により `import` や `export` が annotation 可能になるわけではないため、
+import/export prelude item の前に annotation prefix がある場合は、その statement
+全体とともに予期しない top-level input として回復する。malformed annotation parsing
+と concrete annotation node は annotation grammar task まで延期する。セミコロン型
 placeholder は nested `proof ... end` と文脈付き algorithm/proof block をまたいで
 scan するため、proof body 内のセミコロンで theorem / lemma item を分割しない。
 式レベルの `if` や `otherwise` のような文脈依存 formula keyword は placeholder の
 block depth に影響しない。
 
-この task は export path、theorem formula、visibility semantics、item validity、
-symbol identity を parse しない。`export` は task 7 が concrete item node に
-置き換えるまで placeholder であり、import 以外の declaration は所有する文法 task が
+この task は theorem formula、visibility semantics、item validity、symbol identity を
+parse しない。task 7 以降、`export` と visibility prefix は concrete な syntax
+wrapper であり、非 module declaration は所有する文法 task が
 着地するまで placeholder item のままである。認識可能な top-level item start を
 含まない token stream は module skeleton に関して task 3 の互換 behavior を保つ。
 つまり token は保持され、item list は空になる。このような stream が diagnostic-free
@@ -146,6 +150,51 @@ node と skipped-range trivia を持たせて所有する。そのため recover
 `import` の後に declaration を持たない `ImportItem`、後続 declaration のない trailing
 comma、alias segment のない `ImportAliasDecl`、branch segment または `}` のない
 `ModuleBranchImport` が現れ得る。
+
+## Task 7: export と visibility item
+
+Production inventory:
+
+```ebnf
+export_stmt ::= "export" module_path { "," module_path } ";" ;
+visibility  ::= "private" | "public" ;
+```
+
+parser は export prelude が開いている間、`export_stmt` ごとに `ExportItem` を
+1 つ送出する。import prelude は引き続き最初に来る。最初の非 import item を見た時点で
+import は閉じる。import prelude の直後に連続する `export` statement が export
+prelude を構成する。最初の通常 declaration が export prelude を閉じ、それ以降の
+`export` token は `UnexpectedTopLevelToken`、`SkippedToken` recovery、skipped-range
+trivia により、予期しない top-level input として回復される。それ以降の `import`
+token は late-import recovery のままである。
+
+well-formed export では、`ExportItem` の child は `export` token、comma token で
+区切られた 1 個以上の `ModulePath` node、終端 semicolon token である。export path は
+task 4 の `ModulePath`、`RelativePrefix`、`PathSegment` node を使う。parser は
+relative prefix と comma list を構文的に保持するが、module resolution、import された
+export の検査、facade summary 構築、visibility 検証は行わない。
+
+現在の statement boundary で継続できる export 内部の不正構文は `MalformedExport` を
+使う。例は `export` の後または comma の後の path 欠落である。semicolon の前にある
+malformed source は、`ExportItem` 内部の nested `SkippedToken` recovery node と
+skipped-range trivia が所有する。export の semicolon 欠落は `MissingSemicolon` を使う。
+
+top-level visibility は、Chapter 12 が許す theorem item と notation declaration に
+だけ表現する。それらの concrete item grammar がまだ延期中である間、parser は
+`VisibleItem` wrapper を送出する。child は source order で、既に skip 済みの library
+annotation prefix token があればそれら、`private` または `public` token を包む
+`VisibilityMarker` 1 個、後続 target `PlaceholderItem` である。合法 target start は
+`theorem`、`lemma`、theorem status と theorem role の組（`open`、`assumed`、
+`conditional` の後に `theorem` または `lemma`）、および notation start の
+`infix_operator`、`prefix_operator`、`postfix_operator`、`synonym`、`antonym` である。
+他の top-level declaration への visibility、duplicate visibility marker、dangling
+marker は `MalformedVisibility` を使い、statement semicolon より前に malformed tail
+token があれば単一の `VisibleItem` 内部で skip する。semicolon だけの dangling
+marker では、空の recovery node を作らず semicolon を `VisibleItem` の直接 child として
+残す。不正な target が block-like な top-level declaration（`definition`、
+`registration`、`claim`）である場合、同じ recovery が matching `end` までを
+malformed target として所有する。後続 semicolon があれば wrapper の statement
+terminator のままにし、追加の top-level recovery node へ cascade しないようにする。
 
 ## 公開 enum の互換性
 

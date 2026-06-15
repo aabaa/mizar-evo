@@ -1,0 +1,19 @@
+schema_version = 1
+id = "fail_parser_visibility_invalid_target_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.export_visibility"
+source = "fail_parser_visibility_invalid_target_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "invalid_visibility_target"
+stable_detail_key = "parser.export_visibility.invalid_target"
+diagnostic_codes = [
+  "malformed_visibility",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = [
+  "spec.en.12.modules.export_visibility.parser",
+]
+notes = "Active parse-only runner coverage for parser task 7 malformed visibility recovery when a top-level visibility marker prefixes a declaration kind not allowed by Chapter 12."

@@ -1,0 +1,2 @@
+export std.core, ;
+theorem T: thesis;

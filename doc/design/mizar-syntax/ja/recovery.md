@@ -50,6 +50,8 @@ recover せず parsing を中止する diagnostic では未設定のままでよ
 | `MissingSemicolon` | parser が `;` を必要とする top-level item boundary または EOF に到達した | 次の item または EOF へ継続する場合は設定する |
 | `MissingStringLiteral` | parser が string-required context で欠落 string literal を挿入した | 挿入後に parsing を継続する場合は設定する |
 | `MalformedImport` | parser task 6 が現在の import statement boundary で継続できる import 内部の不正構文を見つけた | `as` 後の alias 欠落や branch import の `}` 欠落などで、import item を表現したまま継続する場合は設定する |
+| `MalformedExport` | parser task 7 が現在の export statement boundary で継続できる export 内部の不正構文を見つけた | `export` 後または `,` 後の module path 欠落などで、export item を表現したまま継続する場合は設定する |
+| `MalformedVisibility` | parser task 7 が duplicate、dangling、または不正な top-level visibility marker を見つけた | visible item wrapper を表現したままにする場合は設定する。malformed tail token があれば、その内部で skip する |
 | `UnexpectedTopLevelToken` | parser task 5 が top-level item を開始できない source token を skip した | `SkippedToken` recovery node と skipped trivia range を生成する場合は設定する |
 | `UnrecoverableInput` | parser が入力に対して信頼できる `SurfaceAst` を構築できない | 任意。parser が source edit を提案できる場合は設定し、parse result は `ast = None` になり得る |
 

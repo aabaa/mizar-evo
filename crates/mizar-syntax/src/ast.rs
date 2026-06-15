@@ -48,6 +48,9 @@ pub enum SyntaxKind {
     ImportItem = 13,
     ImportAliasDecl = 14,
     ModuleBranchImport = 15,
+    ExportItem = 16,
+    VisibilityMarker = 17,
+    VisibleItem = 18,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -77,6 +80,9 @@ impl SyntaxKind {
             13 => Self::ImportItem,
             14 => Self::ImportAliasDecl,
             15 => Self::ModuleBranchImport,
+            16 => Self::ExportItem,
+            17 => Self::VisibilityMarker,
+            18 => Self::VisibleItem,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -108,6 +114,9 @@ impl SyntaxKind {
                 | Self::ImportItem
                 | Self::ImportAliasDecl
                 | Self::ModuleBranchImport
+                | Self::ExportItem
+                | Self::VisibilityMarker
+                | Self::VisibleItem
         )
     }
 
@@ -622,6 +631,9 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::ImportItem
             | SurfaceNodeKind::ImportAliasDecl
             | SurfaceNodeKind::ModuleBranchImport
+            | SurfaceNodeKind::ExportItem
+            | SurfaceNodeKind::VisibilityMarker
+            | SurfaceNodeKind::VisibleItem
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -642,6 +654,9 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::ImportItem
             | SurfaceNodeKind::ImportAliasDecl
             | SurfaceNodeKind::ModuleBranchImport
+            | SurfaceNodeKind::ExportItem
+            | SurfaceNodeKind::VisibilityMarker
+            | SurfaceNodeKind::VisibleItem
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -662,6 +677,9 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::ImportItem
             | SurfaceNodeKind::ImportAliasDecl
             | SurfaceNodeKind::ModuleBranchImport
+            | SurfaceNodeKind::ExportItem
+            | SurfaceNodeKind::VisibilityMarker
+            | SurfaceNodeKind::VisibleItem
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -710,6 +728,27 @@ impl<'a> SurfaceNodeView<'a> {
     pub fn as_module_branch_import(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::ModuleBranchImport => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_export_item(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ExportItem => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_visibility_marker(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::VisibilityMarker => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_visible_item(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::VisibleItem => Some(self),
             _ => None,
         }
     }
@@ -811,6 +850,9 @@ impl SurfaceNode {
             | SurfaceNodeKind::ImportItem
             | SurfaceNodeKind::ImportAliasDecl
             | SurfaceNodeKind::ModuleBranchImport
+            | SurfaceNodeKind::ExportItem
+            | SurfaceNodeKind::VisibilityMarker
+            | SurfaceNodeKind::VisibleItem
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -835,6 +877,9 @@ pub enum SurfaceNodeKind {
     ImportItem,
     ImportAliasDecl,
     ModuleBranchImport,
+    ExportItem,
+    VisibilityMarker,
+    VisibleItem,
     ModulePath,
     NamespacePath,
     QualifiedSymbol,
@@ -855,6 +900,9 @@ impl SurfaceNodeKind {
             Self::ImportItem => SyntaxKind::ImportItem,
             Self::ImportAliasDecl => SyntaxKind::ImportAliasDecl,
             Self::ModuleBranchImport => SyntaxKind::ModuleBranchImport,
+            Self::ExportItem => SyntaxKind::ExportItem,
+            Self::VisibilityMarker => SyntaxKind::VisibilityMarker,
+            Self::VisibleItem => SyntaxKind::VisibleItem,
             Self::ModulePath => SyntaxKind::ModulePath,
             Self::NamespacePath => SyntaxKind::NamespacePath,
             Self::QualifiedSymbol => SyntaxKind::QualifiedSymbol,
@@ -961,6 +1009,9 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::ImportItem => output.push_str("ImportItem"),
         SurfaceNodeKind::ImportAliasDecl => output.push_str("ImportAliasDecl"),
         SurfaceNodeKind::ModuleBranchImport => output.push_str("ModuleBranchImport"),
+        SurfaceNodeKind::ExportItem => output.push_str("ExportItem"),
+        SurfaceNodeKind::VisibilityMarker => output.push_str("VisibilityMarker"),
+        SurfaceNodeKind::VisibleItem => output.push_str("VisibleItem"),
         SurfaceNodeKind::ModulePath => output.push_str("ModulePath"),
         SurfaceNodeKind::NamespacePath => output.push_str("NamespacePath"),
         SurfaceNodeKind::QualifiedSymbol => output.push_str("QualifiedSymbol"),
@@ -1368,6 +1419,36 @@ mod tests {
             ";",
             range(source_id, 106, 107),
         );
+        let export_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "export",
+            range(source_id, 108, 114),
+        );
+        let export_path_std = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Std",
+            range(source_id, 115, 118),
+        );
+        let export_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 118, 119),
+        );
+        let visibility_public = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "public",
+            range(source_id, 120, 126),
+        );
+        let visible_theorem = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+            range(source_id, 127, 134),
+        );
+        let visible_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 134, 135),
+        );
         let recovery = builder.add_recovery(
             SyntaxRecoveryKind::ErrorToken,
             range(source_id, 9, 9),
@@ -1511,14 +1592,44 @@ mod tests {
                 import_semicolon,
             ],
         );
+        let export_path_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 115, 118),
+            vec![export_path_std],
+        );
+        let export_module_path = builder.add_node(
+            SurfaceNodeKind::ModulePath,
+            range(source_id, 115, 118),
+            vec![export_path_segment],
+        );
+        let export_item = builder.add_node(
+            SurfaceNodeKind::ExportItem,
+            range(source_id, 108, 119),
+            vec![export_keyword, export_module_path, export_semicolon],
+        );
+        let visibility_marker = builder.add_node(
+            SurfaceNodeKind::VisibilityMarker,
+            range(source_id, 120, 126),
+            vec![visibility_public],
+        );
+        let visible_placeholder = builder.add_node(
+            SurfaceNodeKind::PlaceholderItem,
+            range(source_id, 127, 135),
+            vec![visible_theorem, visible_semicolon],
+        );
+        let visible_item = builder.add_node(
+            SurfaceNodeKind::VisibleItem,
+            range(source_id, 120, 135),
+            vec![visibility_marker, visible_placeholder],
+        );
         let item_list = builder.add_node(
             SurfaceNodeKind::ItemList,
-            range(source_id, 66, 107),
-            vec![placeholder_item, import_item],
+            range(source_id, 66, 135),
+            vec![placeholder_item, import_item, export_item, visible_item],
         );
         let compilation_unit = builder.add_node(
             SurfaceNodeKind::CompilationUnit,
-            range(source_id, 66, 107),
+            range(source_id, 66, 135),
             vec![item_list],
         );
         let path_tokens = [
@@ -1546,6 +1657,14 @@ mod tests {
             import_alias,
             import_semicolon,
         ];
+        let task7_tokens = [
+            export_keyword,
+            export_path_std,
+            export_semicolon,
+            visibility_public,
+            visible_theorem,
+            visible_semicolon,
+        ];
         let root_children = token_ids
             .iter()
             .copied()
@@ -1553,6 +1672,7 @@ mod tests {
             .chain(path_tokens)
             .chain([item_keyword, item_semicolon])
             .chain(import_tokens)
+            .chain(task7_tokens)
             .chain([
                 infix,
                 module_path,
@@ -1564,7 +1684,7 @@ mod tests {
             .collect::<Vec<_>>();
         let root = builder.add_node(
             SurfaceNodeKind::Root,
-            range(source_id, 0, 107),
+            range(source_id, 0, 135),
             root_children.clone(),
         );
         let ast = builder.finish(Some(root), Some(infix));
@@ -1573,7 +1693,7 @@ mod tests {
         assert_eq!(root_view.id(), sid(root));
         assert_eq!(root_view.kind(), &SurfaceNodeKind::Root);
         assert_eq!(root_view.syntax_kind(), SyntaxKind::Root);
-        assert_eq!(root_view.range(), range(source_id, 0, 107));
+        assert_eq!(root_view.range(), range(source_id, 0, 135));
         assert!(!root_view.is_recovered());
         assert!(root_view.as_token().is_none());
         assert!(root_view.as_infix_expression().is_none());
@@ -1684,7 +1804,12 @@ mod tests {
         assert_eq!(item_list_view.syntax_kind(), SyntaxKind::ItemList);
         assert_eq!(
             item_list_view.as_item_list().unwrap().children(),
-            &[sid(placeholder_item), sid(import_item)]
+            &[
+                sid(placeholder_item),
+                sid(import_item),
+                sid(export_item),
+                sid(visible_item)
+            ]
         );
         let placeholder_item_view = ast.node_view(sid(placeholder_item)).unwrap();
         assert_eq!(
@@ -1736,6 +1861,34 @@ mod tests {
                 sid(import_as),
                 sid(import_alias_node)
             ]
+        );
+        let export_item_view = ast.node_view(sid(export_item)).unwrap();
+        assert_eq!(export_item_view.syntax_kind(), SyntaxKind::ExportItem);
+        assert_eq!(
+            export_item_view.as_export_item().unwrap().children(),
+            &[
+                sid(export_keyword),
+                sid(export_module_path),
+                sid(export_semicolon)
+            ]
+        );
+        let visibility_marker_view = ast.node_view(sid(visibility_marker)).unwrap();
+        assert_eq!(
+            visibility_marker_view.syntax_kind(),
+            SyntaxKind::VisibilityMarker
+        );
+        assert_eq!(
+            visibility_marker_view
+                .as_visibility_marker()
+                .unwrap()
+                .children(),
+            &[sid(visibility_public)]
+        );
+        let visible_item_view = ast.node_view(sid(visible_item)).unwrap();
+        assert_eq!(visible_item_view.syntax_kind(), SyntaxKind::VisibleItem);
+        assert_eq!(
+            visible_item_view.as_visible_item().unwrap().children(),
+            &[sid(visibility_marker), sid(visible_placeholder)]
         );
 
         let module_segment_view = ast.node_view(sid(module_path_segment_a)).unwrap();
@@ -1813,6 +1966,12 @@ mod tests {
                 SyntaxKind::TokenReservedWord,
                 SyntaxKind::TokenIdentifier,
                 SyntaxKind::TokenReservedSymbol,
+                SyntaxKind::TokenReservedWord,
+                SyntaxKind::TokenIdentifier,
+                SyntaxKind::TokenReservedSymbol,
+                SyntaxKind::TokenReservedWord,
+                SyntaxKind::TokenReservedWord,
+                SyntaxKind::TokenReservedSymbol,
             ]
         );
         for (index, token_view) in ast.token_views().take(token_kinds.len()).enumerate() {
@@ -1846,6 +2005,9 @@ mod tests {
             SyntaxKind::ImportItem,
             SyntaxKind::ImportAliasDecl,
             SyntaxKind::ModuleBranchImport,
+            SyntaxKind::ExportItem,
+            SyntaxKind::VisibilityMarker,
+            SyntaxKind::VisibleItem,
             SyntaxKind::ModulePath,
             SyntaxKind::NamespacePath,
             SyntaxKind::QualifiedSymbol,
@@ -2727,6 +2889,36 @@ mod tests {
             ";",
             range(source_id, 125, 126),
         );
+        let export_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "export",
+            range(source_id, 127, 133),
+        );
+        let export_path_std = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Std",
+            range(source_id, 134, 137),
+        );
+        let export_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 137, 138),
+        );
+        let visibility_public = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "public",
+            range(source_id, 139, 145),
+        );
+        let visible_theorem = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+            range(source_id, 146, 153),
+        );
+        let visible_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 153, 154),
+        );
         let expression = builder.add_node(
             SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
                 spelling: "++".into(),
@@ -2857,14 +3049,44 @@ mod tests {
                 import_semicolon,
             ],
         );
+        let export_path_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 134, 137),
+            vec![export_path_std],
+        );
+        let export_module_path = builder.add_node(
+            SurfaceNodeKind::ModulePath,
+            range(source_id, 134, 137),
+            vec![export_path_segment],
+        );
+        let export_item = builder.add_node(
+            SurfaceNodeKind::ExportItem,
+            range(source_id, 127, 138),
+            vec![export_keyword, export_module_path, export_semicolon],
+        );
+        let visibility_marker = builder.add_node(
+            SurfaceNodeKind::VisibilityMarker,
+            range(source_id, 139, 145),
+            vec![visibility_public],
+        );
+        let visible_placeholder = builder.add_node(
+            SurfaceNodeKind::PlaceholderItem,
+            range(source_id, 146, 154),
+            vec![visible_theorem, visible_semicolon],
+        );
+        let visible_item = builder.add_node(
+            SurfaceNodeKind::VisibleItem,
+            range(source_id, 139, 154),
+            vec![visibility_marker, visible_placeholder],
+        );
         let item_list = builder.add_node(
             SurfaceNodeKind::ItemList,
-            range(source_id, 81, 126),
-            vec![import_item, placeholder_item],
+            range(source_id, 81, 154),
+            vec![placeholder_item, import_item, export_item, visible_item],
         );
         let compilation_unit = builder.add_node(
             SurfaceNodeKind::CompilationUnit,
-            range(source_id, 81, 126),
+            range(source_id, 81, 154),
             vec![item_list],
         );
         let recovery = builder.add_recovery(
@@ -2874,7 +3096,7 @@ mod tests {
         );
         let root = builder.add_node(
             SurfaceNodeKind::Root,
-            range(source_id, 0, 126),
+            range(source_id, 0, 154),
             vec![
                 identifier,
                 reserved_word,
@@ -2909,6 +3131,12 @@ mod tests {
                 import_alias_as,
                 import_alias,
                 import_semicolon,
+                export_keyword,
+                export_path_std,
+                export_semicolon,
+                visibility_public,
+                visible_theorem,
+                visible_semicolon,
                 expression,
                 module_path,
                 namespace_path,

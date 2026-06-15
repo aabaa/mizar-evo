@@ -1,6 +1,6 @@
 surface-ast-snapshot-v1
 root:
-  Root range=0..126 recovered=false
+  Root range=0..154 recovered=false
     Token kind=Identifier text="id" range=0..2 recovered=false
     Token kind=ReservedWord text="theorem" range=3..10 recovered=false
     Token kind=ReservedSymbol text=";" range=10..11 recovered=false
@@ -34,6 +34,12 @@ root:
     Token kind=ReservedWord text="as" range=121..123 recovered=false
     Token kind=Identifier text="A" range=124..125 recovered=false
     Token kind=ReservedSymbol text=";" range=125..126 recovered=false
+    Token kind=ReservedWord text="export" range=127..133 recovered=false
+    Token kind=Identifier text="Std" range=134..137 recovered=false
+    Token kind=ReservedSymbol text=";" range=137..138 recovered=false
+    Token kind=ReservedWord text="public" range=139..145 recovered=false
+    Token kind=ReservedWord text="theorem" range=146..153 recovered=false
+    Token kind=ReservedSymbol text=";" range=153..154 recovered=false
     InfixExpression spelling="++" precedence=10 associativity=Right range=0..21 recovered=false
       Token kind=Identifier text="id" range=0..2 recovered=false
       Token kind=UserSymbol text="++" range=19..21 recovered=false
@@ -58,8 +64,11 @@ root:
       Token kind=ReservedSymbol text="." range=74..75 recovered=false
       PathSegment range=75..80 recovered=false
         Token kind=UserSymbol text="Space" range=75..80 recovered=false
-    CompilationUnit range=81..126 recovered=false
-      ItemList range=81..126 recovered=false
+    CompilationUnit range=81..154 recovered=false
+      ItemList range=81..154 recovered=false
+        PlaceholderItem range=81..89 recovered=false
+          Token kind=ReservedWord text="theorem" range=81..88 recovered=false
+          Token kind=ReservedSymbol text=";" range=88..89 recovered=false
         ImportItem range=90..126 recovered=false
           Token kind=ReservedWord text="import" range=90..96 recovered=false
           ModuleBranchImport range=97..111 recovered=false
@@ -81,9 +90,18 @@ root:
             PathSegment range=124..125 recovered=false
               Token kind=Identifier text="A" range=124..125 recovered=false
           Token kind=ReservedSymbol text=";" range=125..126 recovered=false
-        PlaceholderItem range=81..89 recovered=false
-          Token kind=ReservedWord text="theorem" range=81..88 recovered=false
-          Token kind=ReservedSymbol text=";" range=88..89 recovered=false
+        ExportItem range=127..138 recovered=false
+          Token kind=ReservedWord text="export" range=127..133 recovered=false
+          ModulePath range=134..137 recovered=false
+            PathSegment range=134..137 recovered=false
+              Token kind=Identifier text="Std" range=134..137 recovered=false
+          Token kind=ReservedSymbol text=";" range=137..138 recovered=false
+        VisibleItem range=139..154 recovered=false
+          VisibilityMarker range=139..145 recovered=false
+            Token kind=ReservedWord text="public" range=139..145 recovered=false
+          PlaceholderItem range=146..154 recovered=false
+            Token kind=ReservedWord text="theorem" range=146..153 recovered=false
+            Token kind=ReservedSymbol text=";" range=153..154 recovered=false
     ErrorRecovery kind=MissingEnd range=89..89 recovered=true
       Token kind=ReservedWord text="theorem" range=3..10 recovered=false
 expression_root:
@@ -125,3 +143,9 @@ token_nodes:
   Token kind=ReservedWord text="as" range=121..123 recovered=false
   Token kind=Identifier text="A" range=124..125 recovered=false
   Token kind=ReservedSymbol text=";" range=125..126 recovered=false
+  Token kind=ReservedWord text="export" range=127..133 recovered=false
+  Token kind=Identifier text="Std" range=134..137 recovered=false
+  Token kind=ReservedSymbol text=";" range=137..138 recovered=false
+  Token kind=ReservedWord text="public" range=139..145 recovered=false
+  Token kind=ReservedWord text="theorem" range=146..153 recovered=false
+  Token kind=ReservedSymbol text=";" range=153..154 recovered=false

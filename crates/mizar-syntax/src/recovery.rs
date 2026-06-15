@@ -65,6 +65,8 @@ pub enum SyntaxDiagnosticCode {
     MissingSemicolon,
     MissingStringLiteral,
     MalformedImport,
+    MalformedExport,
+    MalformedVisibility,
     UnexpectedTopLevelToken,
     UnrecoverableInput,
 }

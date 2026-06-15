@@ -291,9 +291,17 @@ older numeric syntax task references appear to disagree, prefer
    - Deps: 4, 5, `mizar-syntax` task 9 / S-009. Spec:
      [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
-7. **Export and visibility items.** [ ]
+7. **Export and visibility items.** [x]
    - Export forms and `public`/`private` visibility markers on items, per the
      module chapter.
+   - Result: task-7 production inventory is recorded in [grammar.md](./grammar.md).
+     The parser now emits `ExportItem`, `VisibilityMarker`, and `VisibleItem`
+     syntax nodes, keeps exports concrete only while the export prelude is
+     open, recovers late exports with `UnexpectedTopLevelToken`, diagnoses
+     malformed export path lists with `MalformedExport`, diagnoses duplicate or
+     invalid visibility prefixes with `MalformedVisibility`, preserves
+     annotation-prefix token order inside visible wrappers, and ships active
+     parse-only pass/fail corpus coverage with traceability.
    - Deps: 5, `mizar-syntax` task 9 / S-009. Spec:
      [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 

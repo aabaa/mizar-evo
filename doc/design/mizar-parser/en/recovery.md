@@ -1,8 +1,8 @@
 # mizar-parser: Recovery
 
 Status: minimal task-12 recovery, task-28 nested block-end recovery, task-5
-module-skeleton recovery, and task-6 import recovery are implemented; full
-grammar recovery planned.
+module-skeleton recovery, task-6 import recovery, and task-7 export/visibility
+recovery are implemented; full grammar recovery planned.
 
 ## Purpose
 
@@ -54,6 +54,13 @@ Current behavior:
   semicolons with `MissingSemicolon`, and diagnoses import-internal syntax that
   can continue at the current statement boundary, such as a missing alias after
   `as` or a missing branch-import `}`, with `MalformedImport`;
+- task-7 export parsing keeps late exports after the export prelude in the
+  task-5 skipped-token recovery path, diagnoses missing export statement
+  semicolons with `MissingSemicolon`, and diagnoses export-internal syntax that
+  can continue at the current statement boundary, such as a missing path after
+  `export` or after a comma, with `MalformedExport`. Task-7 visibility parsing
+  diagnoses duplicate markers, dangling markers, and visibility applied to a
+  non-theorem/non-notation top-level declaration with `MalformedVisibility`;
 - a stray `end` that has no matching block opener returns syntax diagnostics
   with `ast = None`.
 

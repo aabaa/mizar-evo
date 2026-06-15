@@ -748,6 +748,26 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.12.modules.export_visibility.parser"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.7 Complete Syntax (EBNF)"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_export_visibility_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_export_late_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_import_after_export_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_export_missing_path_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_export_trailing_comma_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_export_missing_semicolon_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_visibility_dangling_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_visibility_duplicate_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_visibility_invalid_target_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.syntax.parser_recovery.missing_end"
 source = "doc/design/mizar-parser/en/recovery.md"
 section = "Current behavior"

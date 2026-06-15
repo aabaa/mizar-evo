@@ -1,6 +1,6 @@
+export Demo;
 theorem T: thesis;
 lemma L: thesis;
-export Demo;
 open theorem O: thesis proof thus thesis; end;
 @[label("module")]
 public lemma P: thesis;

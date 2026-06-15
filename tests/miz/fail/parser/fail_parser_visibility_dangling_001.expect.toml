@@ -1,0 +1,19 @@
+schema_version = 1
+id = "fail_parser_visibility_dangling_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.export_visibility"
+source = "fail_parser_visibility_dangling_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "dangling_visibility_marker"
+stable_detail_key = "parser.export_visibility.dangling_marker"
+diagnostic_codes = [
+  "malformed_visibility",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = [
+  "spec.en.12.modules.export_visibility.parser",
+]
+notes = "Active parse-only runner coverage for parser task 7 malformed visibility recovery when a visibility marker has no visible item target."

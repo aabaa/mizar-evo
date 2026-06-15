@@ -56,6 +56,9 @@ green tree.
 | qualified symbol node | `SyntaxKind::QualifiedSymbol` |
 | path segment node | `SyntaxKind::PathSegment` |
 | relative import prefix node | `SyntaxKind::RelativePrefix` |
+| concrete export item node | `SyntaxKind::ExportItem` |
+| visibility marker node | `SyntaxKind::VisibilityMarker` |
+| visible item wrapper node | `SyntaxKind::VisibleItem` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | recovery node | `SyntaxKind::ErrorRecovery` |
 
@@ -86,6 +89,9 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 13 | `ImportItem` | task-6 concrete `import` item node |
 | 14 | `ImportAliasDecl` | task-6 simple import or alias declaration node |
 | 15 | `ModuleBranchImport` | task-6 branch import declaration node |
+| 16 | `ExportItem` | task-7 concrete `export` item node |
+| 17 | `VisibilityMarker` | task-7 `private` / `public` token wrapper |
+| 18 | `VisibleItem` | task-7 visible top-level item wrapper |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -99,10 +105,10 @@ The current raw discriminants are part of the rowan boundary for this phase:
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true only for `Root`, `Token`,
 `InfixExpression`, `ErrorRecovery`, the task-S-009 shared path node kinds, and
-the task-5/6 module and import node kinds listed above; `is_token_kind` is true
-only for the token leaf kinds. Future raw values should be appended or assigned
-into a documented reserved range so existing snapshots and rowan tests fail
-loudly when the raw vocabulary changes.
+the task-5/6/7 module, import, export, and visibility node kinds listed above;
+`is_token_kind` is true only for the token leaf kinds. Future raw values should
+be appended or assigned into a documented reserved range so existing snapshots
+and rowan tests fail loudly when the raw vocabulary changes.
 
 ### Current Surface Vocabulary
 
@@ -118,6 +124,9 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::ImportItem` | none | `SyntaxKind::ImportItem` | parser task-6 concrete `import_stmt`; owns the `import` token, import declaration nodes separated by comma tokens, optional malformed-tail recovery, and optional semicolon token |
 | `SurfaceNodeKind::ImportAliasDecl` | none | `SyntaxKind::ImportAliasDecl` | parser task-6 `module_path ["as" module_identifier]`; owns a `ModulePath`, optional `as` token, optional alias `PathSegment`, and optional malformed-tail recovery |
 | `SurfaceNodeKind::ModuleBranchImport` | none | `SyntaxKind::ModuleBranchImport` | parser task-6 `module_path ".{" module_identifier { "," module_identifier } "}"`; owns a base `ModulePath`, `.{` token, branch `PathSegment`s separated by comma tokens, optional malformed-tail recovery, and optional `}` |
+| `SurfaceNodeKind::ExportItem` | none | `SyntaxKind::ExportItem` | parser task-7 concrete `export_stmt`; owns the `export` token, exported `ModulePath` nodes separated by comma tokens, optional malformed-tail recovery, and optional semicolon token |
+| `SurfaceNodeKind::VisibilityMarker` | none | `SyntaxKind::VisibilityMarker` | parser task-7 wrapper for exactly one `private` or `public` token |
+| `SurfaceNodeKind::VisibleItem` | none | `SyntaxKind::VisibleItem` | parser task-7 top-level visibility wrapper; owns annotation-prefix tokens when present, one `VisibilityMarker`, and the current target item node |
 | `SurfaceNodeKind::ModulePath` | none | `SyntaxKind::ModulePath` | `module_path`; optional `RelativePrefix`, first `PathSegment`, then repeated `.` token plus `PathSegment`; only this path shape may contain `RelativePrefix` |
 | `SurfaceNodeKind::NamespacePath` | none | `SyntaxKind::NamespacePath` | `namespace_path`; first `PathSegment`, then repeated `.` token plus identifier `PathSegment`; relative prefixes are not allowed |
 | `SurfaceNodeKind::QualifiedSymbol` | none | `SyntaxKind::QualifiedSymbol` | `qualified_symbol`; zero or more namespace identifier `PathSegment` + `.` token pairs followed by final user-symbol `PathSegment` |
@@ -174,6 +183,26 @@ the close token and may contain a nested `SkippedToken` recovery while carrying
 they do not resolve modules, split branch imports into semantic imports, check
 export availability, or assign aliases. `SurfaceNodeView` exposes typed
 `as_import_item`, `as_import_alias_decl`, and `as_module_branch_import` helpers.
+
+Export and visibility nodes added for `mizar-parser` task 7 are syntax-only
+shapes. `ExportItem` represents one `export_stmt` while the export prelude is
+open. In well-formed input, its children are source ordered: the `export` token,
+one or more `ModulePath` nodes separated by comma tokens, and a semicolon token.
+Malformed recovery may leave an `ExportItem` with no path after `export`, a
+trailing comma without a following path, or a nested `SkippedToken` recovery
+child for malformed source consumed before the semicolon. `VisibilityMarker`
+wraps exactly one `private` or `public` token. `VisibleItem` represents a
+top-level visibility prefix on the theorem/notation forms allowed by Chapter
+12. While those target item grammars are still placeholders, its children are
+source ordered: annotation-prefix token nodes when present, one
+`VisibilityMarker`, and the target `PlaceholderItem`. Duplicate visibility
+markers, dangling markers, or visibility before a non-theorem/non-notation
+top-level declaration may instead contain a nested `SkippedToken` recovery
+child and an optional semicolon token while carrying `MalformedVisibility`.
+These nodes do not decide public/private semantics, export availability,
+symbol identities, theorem validity, or notation validity. `SurfaceNodeView`
+exposes typed `as_export_item`, `as_visibility_marker`, and `as_visible_item`
+helpers.
 
 ### Vocabulary Increment Contract
 

@@ -268,7 +268,7 @@ payloads, child roles, range rules, accessors, snapshots, and recovery/trivia
 interaction. Spec references are the normative grammar chapters under
 [doc/spec/en/](../../../spec/en/00.index.md).
 
-9. **Module, item, and shared path nodes.** [~] — paired with `mizar-parser`
+9. **Module, item, and shared path nodes.** [x] — paired with `mizar-parser`
    tasks 4-7.
    - Shared qualified-symbol/namespace-path nodes needed by parser task 4 before
      import parsing; module file shape, top-level item list and item kinds
@@ -284,7 +284,10 @@ interaction. Spec references are the normative grammar chapters under
      `ImportItem`, `ImportAliasDecl`, and `ModuleBranchImport`, import-specific
      typed accessors and snapshot coverage, `MalformedImport`, active
      import-item corpus coverage, and import-stub parse-only harness support.
-     The bucket remains open for export items and visibility in parser task 7.
+     Parser task 7 landed `ExportItem`, `VisibilityMarker`, and `VisibleItem`,
+     export/visibility typed accessors and snapshot coverage,
+     `MalformedExport` and `MalformedVisibility`, and active export/visibility
+     corpus coverage. The S-009 bucket is complete.
    - Spec: [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
 10. **Type expression nodes.** [ ] — paired with `mizar-parser` task 8.

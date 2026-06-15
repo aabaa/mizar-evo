@@ -566,6 +566,11 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
     assert_eq!(
         active_cases,
         vec![
+            "fail_parser_export_late_001",
+            "fail_parser_export_missing_path_001",
+            "fail_parser_export_missing_semicolon_001",
+            "fail_parser_export_trailing_comma_001",
+            "fail_parser_import_after_export_001",
             "fail_parser_import_late_001",
             "fail_parser_import_missing_alias_001",
             "fail_parser_import_missing_branch_close_001",
@@ -575,6 +580,10 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "fail_parser_missing_semicolon_001",
             "fail_parser_stray_end_001",
             "fail_parser_unexpected_top_level_token_001",
+            "fail_parser_visibility_dangling_001",
+            "fail_parser_visibility_duplicate_001",
+            "fail_parser_visibility_invalid_target_001",
+            "pass_parser_export_visibility_001",
             "pass_parser_import_items_001",
             "pass_parser_minimal_token_stream_001",
             "pass_parser_module_skeleton_001",
@@ -627,9 +636,45 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 12);
-    assert_eq!(report.passed_count(), 12);
+    assert_eq!(report.results.len(), 21);
+    assert_eq!(report.passed_count(), 21);
     assert_eq!(report.failed_count(), 0);
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_export_visibility_001"
+            && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_export_late_001"
+            && result.actual_diagnostic_codes == vec!["unexpected_top_level_token".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_import_after_export_001"
+            && result.actual_diagnostic_codes == vec!["unexpected_top_level_token".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_export_missing_path_001"
+            && result.actual_diagnostic_codes == vec!["malformed_export".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_export_trailing_comma_001"
+            && result.actual_diagnostic_codes == vec!["malformed_export".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_export_missing_semicolon_001"
+            && result.actual_diagnostic_codes == vec!["missing_semicolon".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_visibility_dangling_001"
+            && result.actual_diagnostic_codes == vec!["malformed_visibility".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_visibility_duplicate_001"
+            && result.actual_diagnostic_codes == vec!["malformed_visibility".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_visibility_invalid_target_001"
+            && result.actual_diagnostic_codes == vec!["malformed_visibility".to_owned()]
+    }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_import_items_001" && result.actual_diagnostic_codes.is_empty()
     }));
@@ -781,8 +826,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 12"));
-    assert!(stdout.contains("passed: 12"));
+    assert!(stdout.contains("parse-only cases: 21"));
+    assert!(stdout.contains("passed: 21"));
     assert!(stdout.contains("failed: 0"));
 }
 

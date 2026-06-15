@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_export_visibility_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.export_visibility"
+source = "pass_parser_export_visibility_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.12.modules.export_visibility.parser",
+]
+notes = "Active parse-only runner coverage for parser task 7 export prelude items and top-level visibility markers on theorem/notation placeholders."

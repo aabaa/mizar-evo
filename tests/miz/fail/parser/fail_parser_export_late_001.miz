@@ -1,0 +1,3 @@
+theorem T: thesis;
+export std.core;
+theorem U: thesis;
