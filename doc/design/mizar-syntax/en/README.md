@@ -10,6 +10,10 @@ syntax-owned trivia side tables. Recovery nodes sufficient for frontend
 parser-seam integration and the expanded recovery vocabulary are available;
 parser producers remain incremental.
 
+Autonomous crate-development kickoff plan:
+
+- [00.crate_plan.md](./00.crate_plan.md)
+
 Initial module specs:
 
 - `ast.md`

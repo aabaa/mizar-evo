@@ -11,6 +11,10 @@
 を所有している。frontend parser-seam 統合に十分な回復ノードと拡張済みの
 recovery 語彙は利用可能であり、parser producer は段階的に追加される。
 
+自律 crate 開発の kickoff plan:
+
+- [00.crate_plan.md](./00.crate_plan.md)
+
 初期のモジュール仕様:
 
 - `ast.md`
