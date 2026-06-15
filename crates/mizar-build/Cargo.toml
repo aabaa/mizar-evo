@@ -1,0 +1,16 @@
+[package]
+name = "mizar-build"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "mizar_build"
+path = "src/lib.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+mizar-session = { path = "../mizar-session" }

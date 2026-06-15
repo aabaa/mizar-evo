@@ -10,8 +10,10 @@
 
 ## Module Implementation
 
-Module specs do not exist yet; each is written by its own spec task (English
-and Japanese in the same change) before the implementation tasks that cite it.
+Full module specs do not exist yet; each is written by its own spec task
+(English and Japanese in the same change) before the implementation tasks that
+cite it. The initial `planner` source exists only for the bounded package-name
+validation slice required by the synchronized package manifest specification.
 Module names follow [internal 07](../../internal/en/07.crate_module_layout.md)
 (minimum: `task_graph`, `scheduler`, `failure_state`) plus the phase-0
 planning modules from architecture 00/03; the crate refines architecture 14
@@ -19,7 +21,7 @@ and 19 and internal 01.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| planner | `planner.md` (task 2) | `src/planner.rs` | [ ] |
+| planner | `planner.md` (task 2) | `src/planner.rs` | [~] |
 | module_index | `module_index.md` (task 5) | `src/module_index.rs` | [ ] |
 | task_graph | `task_graph.md` (task 7) | `src/task_graph.rs` | [ ] |
 | scheduler | `scheduler.md` (task 9) | `src/scheduler.rs` | [ ] |
@@ -81,7 +83,7 @@ Keep `cargo test -p mizar-build` green after each task (see
 
 ### Wave A: workspace planning (phase 0)
 
-1. **Crate scaffold and lint-policy guard.** [ ]
+1. **Crate scaffold and lint-policy guard.** [x]
    - Add the `mizar-build` workspace member depending on `mizar-session`;
      add `tests/lint_policy.rs` mirroring the `mizar-frontend` guard.
    - Tests: lint-policy guard passes; workspace builds.
@@ -96,9 +98,14 @@ Keep `cargo test -p mizar-build` green after each task (see
      [23.package_management_and_build_system.md](../../../spec/en/23.package_management_and_build_system.md),
      architecture 00 "Interface Definitions".
 
-3. **Manifest and lockfile parsing.** [ ]
+3. **Manifest and lockfile parsing.** [~]
    - Parse and validate package/workspace manifests and the lockfile with
      manifest-error diagnostics.
+   - Package manifest `name` spelling validation has landed as the first
+     bounded slice: package ids must be lowercase `snake_case`
+     (`[a-z][a-z0-9]*(?:_[a-z0-9]+)*`), hyphenated spellings are rejected, and
+     no hyphen-to-underscore normalization is performed. Full TOML parsing,
+     workspace manifest validation, and lockfile validation remain pending.
    - Tests: valid/invalid manifest fixtures; lockfile mismatch diagnostics;
      deterministic error order.
    - Deps: 2. Spec: `planner.md`.

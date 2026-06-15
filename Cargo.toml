@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "crates/mizar-build",
     "crates/mizar-frontend",
     "crates/mizar-lexer",
     "crates/mizar-lsp",
