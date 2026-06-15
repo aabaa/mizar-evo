@@ -13,9 +13,10 @@ This module defines the syntax representation of parser recovery.
 - preserve original source spans for diagnostics.
 
 The parser currently produces recovered token nodes for lexer error tokens and
-explicit recovered nodes for missing `end` and missing string literals. The
-remaining recovery kinds are constructible in `mizar-syntax` so future parser
-grammar tasks can add producers without changing the syntax snapshot vocabulary.
+explicit recovered nodes for missing `end`, missing string literals, and task-5
+top-level skipped tokens. The remaining recovery kinds are constructible in
+`mizar-syntax` so future parser grammar tasks can add producers without
+changing the syntax snapshot vocabulary.
 
 ## Public API
 
@@ -45,7 +46,9 @@ Current `SyntaxDiagnosticCode` values are:
 | `DanglingOperator` | Pratt expression parsing finds an operator without the required operand | optional; no recovery node is required |
 | `NonAssociativeOperatorChain` | parser sees a chain that violates a non-associative operator contract | optional; no recovery node is required |
 | `MissingEnd` | parser inserts a missing `end` at a synchronization point | set when parsing continues after insertion |
+| `MissingSemicolon` | parser reaches a top-level item boundary or EOF where `;` is required | set when parsing continues with the next item or EOF |
 | `MissingStringLiteral` | parser inserts a missing string literal in a string-required context | set when parsing continues after insertion |
+| `UnexpectedTopLevelToken` | parser task 5 skips source tokens that cannot start a top-level item | set when a `SkippedToken` recovery node and skipped trivia range are emitted |
 | `UnrecoverableInput` | parser cannot construct a trustworthy `SurfaceAst` for the input | optional; set when the parser can suggest a source edit, and the parse result may have `ast = None` |
 
 The diagnostic code vocabulary is syntax-level only. It must not encode name
@@ -70,7 +73,7 @@ producer.
 | `MissingStatement` | not produced yet; future statement parser expects a proof, algorithm, or block statement and synchronizes at the next statement boundary | inserted placeholder | zero-width range at insertion point; optional preceding keyword or block context child, allowed outside the insertion range | no dedicated diagnostic code yet; skipped source belongs to `SkippedTokenRange` when present | `MissingStatement` |
 | `MissingProofStep` | not produced yet; future proof parser expects a justification, inference step, case branch, or proof-closing step | inserted placeholder | zero-width range at insertion point; optional proof/block context child, allowed outside the insertion range | no dedicated diagnostic code yet; skipped source belongs to `SkippedTokenRange` when present | `MissingProofStep` |
 | `MissingAnnotationArgument` | not produced yet; future annotation parser expects an annotation argument such as a string literal or bracket argument | inserted placeholder | zero-width range at insertion point; optional annotation marker/list context child, allowed outside the insertion range | no dedicated diagnostic code yet; malformed or skipped source belongs to `SkippedTokenRange` with `MalformedAnnotation` or `Recovery` as appropriate | `MissingAnnotationArgument` |
-| `SkippedToken` | not produced yet; future parser skips one or more tokens to reach a synchronization point while retaining a visible recovery marker | marker for skipped input | range covers the skipped source span; no required children; optional synchronization owner child may be attached when it does not duplicate root-listed token leaves | no dedicated diagnostic code yet; the skipped span must also be recorded in `SurfaceTrivia::skipped_token_ranges` with `SkippedTokenReason::Recovery` | `SkippedToken` |
+| `SkippedToken` | parser task 5 skips one or more top-level tokens to reach an item boundary; future parser tasks may use the same marker at narrower grammar boundaries | marker for skipped input | range covers the skipped source span; no required children; optional synchronization owner child may be attached when it does not duplicate root-listed token leaves | `SyntaxDiagnosticCode::UnexpectedTopLevelToken` for task-5 top-level skips; the skipped span must also be recorded in `SurfaceTrivia::skipped_token_ranges` with `SkippedTokenReason::Recovery` | `SkippedToken` |
 | `UnmatchedOpeningDelimiter` | not produced yet; future parser sees an opener with no matching closer before synchronization or EOF | marker, usually paired with an inserted missing close | primary marker range is zero-width at the expected closer or synchronization point; opener/context child is expected and may be outside the marker range | no dedicated diagnostic code yet; opener span should be a secondary diagnostic anchor; skipped text, if any, belongs to trivia | `UnmatchedOpeningDelimiter` |
 | `UnmatchedClosingDelimiter` | not produced yet; future parser sees a closing delimiter with no matching opener | marker around source text | range covers the unmatched closer token; no required children | no dedicated diagnostic code yet; the closer token remains in the token stream, and skipped tokens beyond it belong to trivia | `UnmatchedClosingDelimiter` |
 | `MalformedAnnotation` | not produced yet; future annotation parser recognizes an annotation marker or body that cannot be parsed as a valid annotation | marker around source text | range covers the malformed annotation marker/body span; optional annotation owner child may be attached when available | no dedicated diagnostic code yet; malformed source must also be recorded in `SurfaceTrivia::skipped_token_ranges` with `SkippedTokenReason::MalformedAnnotation` | `MalformedAnnotation` |

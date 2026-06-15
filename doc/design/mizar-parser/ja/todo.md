@@ -246,12 +246,18 @@ resolver / build-system 依存を避ける。
      §12.7、[Appendix A](../../../spec/ja/appendix_a.grammar_summary.md) A.3/A.12/A.15、
      [第 2 章](../../../spec/ja/02.lexical_structure.md) §2.5.3 / §2.8。
 
-5. **モジュールスケルトンとトップレベル item ディスパッチ。** [ ]
+5. **モジュールスケルトンとトップレベル item ディスパッチ。** [x]
    - モジュールファイルの形と、item 境界での同期を備えたキーワードによる
      トップレベル item ディスパッチ。これにより、後続のすべてのカテゴリが
      安定したスケルトンに収まる。
    - recovery: 未知のトップレベルトークンは、スキップトークンノードを残して
      次の item キーワードまでスキップする。`;` の欠落は次の境界で診断する。
+   - 結果: task 5 の production inventory は [grammar.md](./grammar.md) に記録した。
+     parser は `CompilationUnit`、`ItemList`、`PlaceholderItem` syntax node を送出し、
+     item を含まない legacy token stream は空の item list で保持する。unexpected
+     top-level input では `SkippedToken` recovery と skipped-range trivia を生成し、
+     item semicolon 欠落を診断する。active parse-only の pass/fail corpus coverage と
+     traceability も追加済み。
    - 依存: 3、`mizar-syntax` task 9 / S-009。仕様:
      [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)。
 

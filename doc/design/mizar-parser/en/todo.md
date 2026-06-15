@@ -258,12 +258,18 @@ older numeric syntax task references appear to disagree, prefer
     §12.7, [Appendix A](../../../spec/en/appendix_a.grammar_summary.md) A.3/A.12/A.15,
     and [Chapter 2](../../../spec/en/02.lexical_structure.md) §2.5.3/§2.8.
 
-5. **Module skeleton and top-level item dispatch.** [ ]
+5. **Module skeleton and top-level item dispatch.** [x]
    - Module file shape and top-level item dispatch by keyword with
      synchronization at item boundaries, so every later category drops into a
      stable skeleton.
    - Recovery: unknown top-level token skips to the next item keyword with a
      skipped-tokens node; missing `;` diagnosed at the next boundary.
+   - Result: task-5 production inventory is recorded in [grammar.md](./grammar.md).
+     The parser now emits `CompilationUnit`, `ItemList`, and `PlaceholderItem`
+     syntax nodes, preserves legacy no-item token streams with an empty item
+     list, emits `SkippedToken` recovery plus skipped-range trivia for
+     unexpected top-level input, diagnoses missing item semicolons, and ships
+     active parse-only pass/fail corpus coverage with traceability.
    - Deps: 3, `mizar-syntax` task 9 / S-009. Spec:
      [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 

@@ -1,6 +1,6 @@
 surface-ast-snapshot-v1
 root:
-  Root range=0..80 recovered=false
+  Root range=0..89 recovered=false
     Token kind=Identifier text="id" range=0..2 recovered=false
     Token kind=ReservedWord text="theorem" range=3..10 recovered=false
     Token kind=ReservedSymbol text=";" range=10..11 recovered=false
@@ -21,6 +21,8 @@ root:
     Token kind=Identifier text="top" range=71..74 recovered=false
     Token kind=ReservedSymbol text="." range=74..75 recovered=false
     Token kind=UserSymbol text="Space" range=75..80 recovered=false
+    Token kind=ReservedWord text="theorem" range=81..88 recovered=false
+    Token kind=ReservedSymbol text=";" range=88..89 recovered=false
     InfixExpression spelling="++" precedence=10 associativity=Right range=0..21 recovered=false
       Token kind=Identifier text="id" range=0..2 recovered=false
       Token kind=UserSymbol text="++" range=19..21 recovered=false
@@ -45,7 +47,12 @@ root:
       Token kind=ReservedSymbol text="." range=74..75 recovered=false
       PathSegment range=75..80 recovered=false
         Token kind=UserSymbol text="Space" range=75..80 recovered=false
-    ErrorRecovery kind=MissingEnd range=80..80 recovered=true
+    CompilationUnit range=81..89 recovered=false
+      ItemList range=81..89 recovered=false
+        PlaceholderItem range=81..89 recovered=false
+          Token kind=ReservedWord text="theorem" range=81..88 recovered=false
+          Token kind=ReservedSymbol text=";" range=88..89 recovered=false
+    ErrorRecovery kind=MissingEnd range=89..89 recovered=true
       Token kind=ReservedWord text="theorem" range=3..10 recovered=false
 expression_root:
   InfixExpression spelling="++" precedence=10 associativity=Right range=0..21 recovered=false
@@ -73,3 +80,5 @@ token_nodes:
   Token kind=Identifier text="top" range=71..74 recovered=false
   Token kind=ReservedSymbol text="." range=74..75 recovered=false
   Token kind=UserSymbol text="Space" range=75..80 recovered=false
+  Token kind=ReservedWord text="theorem" range=81..88 recovered=false
+  Token kind=ReservedSymbol text=";" range=88..89 recovered=false

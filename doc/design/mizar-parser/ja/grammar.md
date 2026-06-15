@@ -2,9 +2,8 @@
 
 > 正本は英語です。英語版: [../en/grammar.md](../en/grammar.md)。
 
-状態: task 11 の最小 parser entry は実装済みで、task 1 の module split と
-task 2 の private cursor / event 基盤が内部 `grammar` module に配線済み。
-完全なモジュール／項目文法は計画中。
+状態: task 5 までの module skeleton と top-level placeholder dispatch は実装済み。
+具体的な import / export / item 文法は計画中。
 
 ## 目的
 
@@ -57,6 +56,55 @@ task 単独の corpus position は導入しない。helper は syntax-event sink
 `mizar-syntax` task S-009 の path node を送出し、dot separator を構文として保持する。
 module resolution、namespace shadowing、symbol identity 割り当て、citation lookup、
 validity checking は行わない。
+
+## Task 5: module skeleton と top-level dispatch
+
+Production inventory:
+
+```ebnf
+compilation_unit   ::= import_prelude export_prelude { annotated_declaration } ;
+import_prelude     ::= { import_stmt } ;
+export_prelude     ::= { export_stmt } ;
+declaration        ::= definition_block
+                     | reserve_decl
+                     | registration_block
+                     | claim_block
+                     | [ visibility ] theorem_item
+                     | [ visibility ] notation_decl ;
+visibility         ::= "private" | "public" ;
+theorem_status     ::= "open" | "assumed" | "conditional" ;
+theorem_role       ::= "theorem" | "lemma" ;
+notation_decl      ::= operator_decl | synonym_def | antonym_def ;
+```
+
+task 5 は、後続の item parser が concrete node に置き換える安定した surface
+skeleton を構築する。parser は `CompilationUnit` node を送出し、その child として
+`ItemList` を 1 つ持たせる。`ItemList` には、認識した top-level start に対応する
+source order の `PlaceholderItem` node と、skip された top-level input の
+`SkippedToken` recovery node が入る。認識する start は `import`、`export`、
+`definition`、`reserve`、`registration`、`claim`、`theorem`、`lemma`、
+theorem-status prefix の `open` / `assumed` / `conditional`、visibility prefix の
+`private` / `public`、notation start の `infix_operator`、`prefix_operator`、
+`postfix_operator`、`synonym`、`antonym` である。
+
+`@[` で始まる連続した library annotation prefix は、認識済み top-level start が
+後続する場合、同じ placeholder に保持する。malformed annotation parsing と
+concrete annotation node は annotation grammar task まで延期する。セミコロン型
+placeholder は nested `proof ... end` と文脈付き algorithm/proof block をまたいで
+scan するため、proof body 内のセミコロンで theorem / lemma item を分割しない。
+式レベルの `if` や `otherwise` のような文脈依存 formula keyword は placeholder の
+block depth に影響しない。
+
+この task は import alias、export path、theorem formula、visibility semantics、
+item validity、symbol identity を parse しない。`import` と `export` は task 6 と
+7 が concrete item node に置き換えるまで placeholder である。認識可能な top-level
+item start を含まない token stream は module skeleton に関して task 3 の互換
+behavior を保つ。つまり token は保持され、item list は空になる。このような stream
+が diagnostic-free のままになるのは、legacy minimal token-stream corpus case のように、
+先行する recovery pass でも指摘がない場合に限られる。最初の認識済み item keyword が先行する recovery
+block opener の内側にある合成 block-recovery stream も、この互換 behavior を保つ。
+一方、theorem item の前に裸の reserved word があるような通常の malformed prefix は
+`UnexpectedTopLevelToken` recovery を生成する。
 
 ## 公開 enum の互換性
 

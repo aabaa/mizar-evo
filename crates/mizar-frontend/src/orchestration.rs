@@ -616,7 +616,9 @@ fn syntax_code_key(code: &mizar_syntax::SyntaxDiagnosticCode) -> Arc<str> {
             "non_associative_operator_chain"
         }
         mizar_syntax::SyntaxDiagnosticCode::MissingEnd => "missing_end",
+        mizar_syntax::SyntaxDiagnosticCode::MissingSemicolon => "missing_semicolon",
         mizar_syntax::SyntaxDiagnosticCode::MissingStringLiteral => "missing_string_literal",
+        mizar_syntax::SyntaxDiagnosticCode::UnexpectedTopLevelToken => "unexpected_top_level_token",
         mizar_syntax::SyntaxDiagnosticCode::UnrecoverableInput => "unrecoverable_input",
         _ => "syntax_diagnostic",
     })
@@ -706,15 +708,36 @@ mod tests {
                 DiagnosticClass::Syntax,
             ]
         );
+        let syntax = output
+            .diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.class == DiagnosticClass::Syntax)
+            .collect::<Vec<_>>();
         assert!(
-            matches!(
-                &output.diagnostics.last().unwrap().code,
+            syntax.iter().any(|diagnostic| matches!(
+                &diagnostic.code,
                 DiagnosticCode::Syntax(code) if code.as_ref() == "missing_end"
-            ),
-            "real parser diagnostics should be represented by stable syntax keys"
+            )),
+            "missing end diagnostics should use stable syntax keys"
         );
+        assert!(
+            syntax.iter().any(|diagnostic| matches!(
+                &diagnostic.code,
+                DiagnosticCode::Syntax(code) if code.as_ref() == "missing_semicolon"
+            )),
+            "missing semicolon diagnostics should use stable syntax keys"
+        );
+        let missing_end = syntax
+            .iter()
+            .find(|diagnostic| {
+                matches!(
+                    &diagnostic.code,
+                    DiagnosticCode::Syntax(code) if code.as_ref() == "missing_end"
+                )
+            })
+            .expect("missing end diagnostic should be present");
         assert_eq!(
-            output.diagnostics.last().unwrap().recovery_note.as_deref(),
+            missing_end.recovery_note.as_deref(),
             Some("insert `end` before this synchronization point")
         );
     }
@@ -761,10 +784,7 @@ mod tests {
     #[test]
     fn real_parser_frontend_accepts_annotation_string_arguments_from_source() {
         let fixture = PackageFixture::new();
-        fixture.write(
-            "src/annotation_string.miz",
-            "@[label(\"α::β\")]\ndefinition\nend;\n",
-        );
+        fixture.write("src/annotation_string.miz", "@[label(\"α::β\")]\n");
         let frontend = frontend_for_fixture(&fixture, MizarParserSeam);
         let ids = InMemorySessionIdAllocator::new();
 

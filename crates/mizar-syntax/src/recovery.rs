@@ -62,6 +62,8 @@ pub enum SyntaxDiagnosticCode {
     DanglingOperator,
     NonAssociativeOperatorChain,
     MissingEnd,
+    MissingSemicolon,
     MissingStringLiteral,
+    UnexpectedTopLevelToken,
     UnrecoverableInput,
 }

@@ -13,7 +13,7 @@
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | ast | [ast.md](./ast.md) | `src/ast.rs` | [~] rowan storage boundary in place; vocabulary still growing |
-| trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [x] task-4 model implemented; item attachment fixture deferred |
+| trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [x] task-4 model implemented; task-5 item attachment fixture landed |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [x] task-5 recovery vocabulary implemented; parser producers remain incremental |
 
 `mizar-syntax` is a data-definition crate: it owns the `SurfaceAst` shape shared
@@ -277,10 +277,11 @@ interaction. Spec references are the normative grammar chapters under
      7).
    - Progress: parser task 4 landed the shared path-node increment:
      `ModulePath`, `NamespacePath`, `QualifiedSymbol`, `PathSegment`, and
-     `RelativePrefix`, plus parser helper unit coverage. The bucket remains
-     open for module skeleton, import/export items, visibility, corpus cases,
-     traceability entries, and doc-comment item attachment fixtures in parser
-     tasks 5-7.
+     `RelativePrefix`, plus parser helper unit coverage. Parser task 5 landed
+     `CompilationUnit`, `ItemList`, and `PlaceholderItem`, item-level
+     skipped-token recovery trivia, active module-skeleton corpus coverage, and
+     the first doc-comment-to-item attachment fixture. The bucket remains open
+     for concrete import/export items and visibility in parser tasks 6-7.
    - Spec: [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
 10. **Type expression nodes.** [ ] — paired with `mizar-parser` task 8.

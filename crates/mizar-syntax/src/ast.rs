@@ -42,6 +42,9 @@ pub enum SyntaxKind {
     QualifiedSymbol = 7,
     PathSegment = 8,
     RelativePrefix = 9,
+    CompilationUnit = 10,
+    ItemList = 11,
+    PlaceholderItem = 12,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -65,6 +68,9 @@ impl SyntaxKind {
             7 => Self::QualifiedSymbol,
             8 => Self::PathSegment,
             9 => Self::RelativePrefix,
+            10 => Self::CompilationUnit,
+            11 => Self::ItemList,
+            12 => Self::PlaceholderItem,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -90,6 +96,9 @@ impl SyntaxKind {
                 | Self::QualifiedSymbol
                 | Self::PathSegment
                 | Self::RelativePrefix
+                | Self::CompilationUnit
+                | Self::ItemList
+                | Self::PlaceholderItem
         )
     }
 
@@ -598,6 +607,9 @@ impl<'a> SurfaceNodeView<'a> {
         match &self.node.kind {
             SurfaceNodeKind::Token(token) => Some(token),
             SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::PlaceholderItem
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -612,6 +624,9 @@ impl<'a> SurfaceNodeView<'a> {
         match &self.node.kind {
             SurfaceNodeKind::InfixExpression(operator) => Some(operator),
             SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::PlaceholderItem
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -626,6 +641,9 @@ impl<'a> SurfaceNodeView<'a> {
         match self.node.kind {
             SurfaceNodeKind::ErrorRecovery(kind) => Some(kind),
             SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::PlaceholderItem
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -633,6 +651,27 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::RelativePrefix
             | SurfaceNodeKind::Token(_)
             | SurfaceNodeKind::InfixExpression(_) => None,
+        }
+    }
+
+    pub fn as_compilation_unit(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::CompilationUnit => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_item_list(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ItemList => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_placeholder_item(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::PlaceholderItem => Some(self),
+            _ => None,
         }
     }
 
@@ -727,6 +766,9 @@ impl SurfaceNode {
         match &self.kind {
             SurfaceNodeKind::Token(token) => Some(token.text.as_ref()),
             SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::PlaceholderItem
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -745,6 +787,9 @@ pub enum SurfaceNodeKind {
     Token(SurfaceToken),
     InfixExpression(SurfaceInfixOperator),
     ErrorRecovery(SyntaxRecoveryKind),
+    CompilationUnit,
+    ItemList,
+    PlaceholderItem,
     ModulePath,
     NamespacePath,
     QualifiedSymbol,
@@ -759,6 +804,9 @@ impl SurfaceNodeKind {
             Self::Token(_) => SyntaxKind::Token,
             Self::InfixExpression(_) => SyntaxKind::InfixExpression,
             Self::ErrorRecovery(_) => SyntaxKind::ErrorRecovery,
+            Self::CompilationUnit => SyntaxKind::CompilationUnit,
+            Self::ItemList => SyntaxKind::ItemList,
+            Self::PlaceholderItem => SyntaxKind::PlaceholderItem,
             Self::ModulePath => SyntaxKind::ModulePath,
             Self::NamespacePath => SyntaxKind::NamespacePath,
             Self::QualifiedSymbol => SyntaxKind::QualifiedSymbol,
@@ -859,6 +907,9 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
     write_snapshot_indent(output, indent);
     match view.kind() {
         SurfaceNodeKind::Root => output.push_str("Root"),
+        SurfaceNodeKind::CompilationUnit => output.push_str("CompilationUnit"),
+        SurfaceNodeKind::ItemList => output.push_str("ItemList"),
+        SurfaceNodeKind::PlaceholderItem => output.push_str("PlaceholderItem"),
         SurfaceNodeKind::ModulePath => output.push_str("ModulePath"),
         SurfaceNodeKind::NamespacePath => output.push_str("NamespacePath"),
         SurfaceNodeKind::QualifiedSymbol => output.push_str("QualifiedSymbol"),
@@ -1201,6 +1252,16 @@ mod tests {
             "Group",
             range(source_id, 60, 65),
         );
+        let item_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+            range(source_id, 66, 73),
+        );
+        let item_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 73, 74),
+        );
         let recovery = builder.add_recovery(
             SyntaxRecoveryKind::ErrorToken,
             range(source_id, 9, 9),
@@ -1278,6 +1339,21 @@ mod tests {
                 qualified_final_segment,
             ],
         );
+        let placeholder_item = builder.add_node(
+            SurfaceNodeKind::PlaceholderItem,
+            range(source_id, 66, 74),
+            vec![item_keyword, item_semicolon],
+        );
+        let item_list = builder.add_node(
+            SurfaceNodeKind::ItemList,
+            range(source_id, 66, 74),
+            vec![placeholder_item],
+        );
+        let compilation_unit = builder.add_node(
+            SurfaceNodeKind::CompilationUnit,
+            range(source_id, 66, 74),
+            vec![item_list],
+        );
         let path_tokens = [
             module_prefix_token,
             module_segment_a,
@@ -1295,17 +1371,19 @@ mod tests {
             .copied()
             .chain([recovered_token])
             .chain(path_tokens)
+            .chain([item_keyword, item_semicolon])
             .chain([
                 infix,
                 module_path,
                 namespace_path,
                 qualified_symbol,
+                compilation_unit,
                 recovery,
             ])
             .collect::<Vec<_>>();
         let root = builder.add_node(
             SurfaceNodeKind::Root,
-            range(source_id, 0, 65),
+            range(source_id, 0, 74),
             root_children.clone(),
         );
         let ast = builder.finish(Some(root), Some(infix));
@@ -1314,7 +1392,7 @@ mod tests {
         assert_eq!(root_view.id(), sid(root));
         assert_eq!(root_view.kind(), &SurfaceNodeKind::Root);
         assert_eq!(root_view.syntax_kind(), SyntaxKind::Root);
-        assert_eq!(root_view.range(), range(source_id, 0, 65));
+        assert_eq!(root_view.range(), range(source_id, 0, 74));
         assert!(!root_view.is_recovered());
         assert!(root_view.as_token().is_none());
         assert!(root_view.as_infix_expression().is_none());
@@ -1406,6 +1484,40 @@ mod tests {
             ]
         );
 
+        let compilation_unit_view = ast.node_view(sid(compilation_unit)).unwrap();
+        assert_eq!(
+            compilation_unit_view.syntax_kind(),
+            SyntaxKind::CompilationUnit
+        );
+        assert_eq!(
+            compilation_unit_view
+                .as_compilation_unit()
+                .unwrap()
+                .children(),
+            &[sid(item_list)]
+        );
+        assert!(compilation_unit_view.as_token().is_none());
+        assert!(compilation_unit_view.as_infix_expression().is_none());
+        assert!(compilation_unit_view.as_recovery().is_none());
+        let item_list_view = ast.node_view(sid(item_list)).unwrap();
+        assert_eq!(item_list_view.syntax_kind(), SyntaxKind::ItemList);
+        assert_eq!(
+            item_list_view.as_item_list().unwrap().children(),
+            &[sid(placeholder_item)]
+        );
+        let placeholder_item_view = ast.node_view(sid(placeholder_item)).unwrap();
+        assert_eq!(
+            placeholder_item_view.syntax_kind(),
+            SyntaxKind::PlaceholderItem
+        );
+        assert_eq!(
+            placeholder_item_view
+                .as_placeholder_item()
+                .unwrap()
+                .children(),
+            &[sid(item_keyword), sid(item_semicolon)]
+        );
+
         let module_segment_view = ast.node_view(sid(module_path_segment_a)).unwrap();
         assert_eq!(module_segment_view.syntax_kind(), SyntaxKind::PathSegment);
         assert_eq!(
@@ -1468,6 +1580,8 @@ mod tests {
                 SyntaxKind::TokenIdentifier,
                 SyntaxKind::TokenReservedSymbol,
                 SyntaxKind::TokenUserSymbol,
+                SyntaxKind::TokenReservedWord,
+                SyntaxKind::TokenReservedSymbol,
             ]
         );
         for (index, token_view) in ast.token_views().take(token_kinds.len()).enumerate() {
@@ -1486,7 +1600,7 @@ mod tests {
     }
 
     #[test]
-    fn path_node_raw_kinds_round_trip_through_rowan_boundary() {
+    fn surface_node_raw_kinds_round_trip_through_rowan_boundary() {
         let ast = current_vocabulary_snapshot_ast(source_id(21));
         let rowan_kinds = ast
             .rowan_root()
@@ -1495,6 +1609,9 @@ mod tests {
             .collect::<Vec<_>>();
 
         for kind in [
+            SyntaxKind::CompilationUnit,
+            SyntaxKind::ItemList,
+            SyntaxKind::PlaceholderItem,
             SyntaxKind::ModulePath,
             SyntaxKind::NamespacePath,
             SyntaxKind::QualifiedSymbol,
@@ -1506,7 +1623,7 @@ mod tests {
             assert!(!kind.is_token_kind());
             assert!(
                 rowan_kinds.contains(&kind),
-                "rowan tree should emit {kind:?} for shared path nodes"
+                "rowan tree should emit {kind:?} for current structural nodes"
             );
         }
     }
@@ -1669,7 +1786,7 @@ mod tests {
         let actual = ast.snapshot_text();
 
         assert_eq!(actual, EXPECTED);
-        assert!(actual.contains("ErrorRecovery kind=MissingEnd range=80..80 recovered=true"));
+        assert!(actual.contains("ErrorRecovery kind=MissingEnd range=89..89 recovered=true"));
         assert!(actual.contains("text=\"line\\nvalue\""));
         assert!(
             !actual.contains("SourceId"),
@@ -1775,6 +1892,56 @@ mod tests {
         assert!(
             !ast.snapshot_text().contains("trivia:"),
             "default snapshot rendering stays compatible with task-3 baselines"
+        );
+    }
+
+    #[test]
+    fn doc_comment_can_attach_to_following_placeholder_item_node() {
+        let source_id = source_id(22);
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let theorem = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+            range(source_id, 4, 11),
+        );
+        let semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 11, 12),
+        );
+        let item = builder.add_node(
+            SurfaceNodeKind::PlaceholderItem,
+            range(source_id, 4, 12),
+            vec![theorem, semicolon],
+        );
+        let item_list = builder.add_node(
+            SurfaceNodeKind::ItemList,
+            range(source_id, 4, 12),
+            vec![item],
+        );
+        let compilation_unit = builder.add_node(
+            SurfaceNodeKind::CompilationUnit,
+            range(source_id, 4, 12),
+            vec![item_list],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 4, 12),
+            vec![theorem, semicolon, compilation_unit],
+        );
+        let ast = builder.finish(Some(root), None);
+        let mut trivia = SurfaceTriviaBuilder::new(source_id);
+        trivia.add_doc_comment_attachment(
+            range(source_id, 0, 3),
+            TriviaAttachmentTarget::Node(TriviaNodeTarget::new(sid(item), range(source_id, 4, 12))),
+            TriviaPlacement::Leading,
+        );
+        let ast = ast.with_trivia(trivia.finish());
+
+        assert!(ast.snapshot_text().contains("PlaceholderItem range=4..12"));
+        assert!(
+            ast.snapshot_text_with_trivia()
+                .contains("DocComment range=0..3 placement=Leading target=node:range:4..12")
         );
     }
 
@@ -2261,6 +2428,16 @@ mod tests {
             "Space",
             range(source_id, 75, 80),
         );
+        let item_theorem = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+            range(source_id, 81, 88),
+        );
+        let item_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 88, 89),
+        );
         let expression = builder.add_node(
             SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
                 spelling: "++".into(),
@@ -2325,14 +2502,29 @@ mod tests {
             range(source_id, 71, 80),
             vec![qualified_top_node, qualified_dot, qualified_space_node],
         );
+        let placeholder_item = builder.add_node(
+            SurfaceNodeKind::PlaceholderItem,
+            range(source_id, 81, 89),
+            vec![item_theorem, item_semicolon],
+        );
+        let item_list = builder.add_node(
+            SurfaceNodeKind::ItemList,
+            range(source_id, 81, 89),
+            vec![placeholder_item],
+        );
+        let compilation_unit = builder.add_node(
+            SurfaceNodeKind::CompilationUnit,
+            range(source_id, 81, 89),
+            vec![item_list],
+        );
         let recovery = builder.add_recovery(
             SyntaxRecoveryKind::MissingEnd,
-            range(source_id, 80, 80),
+            range(source_id, 89, 89),
             vec![reserved_word],
         );
         let root = builder.add_node(
             SurfaceNodeKind::Root,
-            range(source_id, 0, 80),
+            range(source_id, 0, 89),
             vec![
                 identifier,
                 reserved_word,
@@ -2354,10 +2546,13 @@ mod tests {
                 qualified_top,
                 qualified_dot,
                 qualified_space,
+                item_theorem,
+                item_semicolon,
                 expression,
                 module_path,
                 namespace_path,
                 qualified_symbol,
+                compilation_unit,
                 recovery,
             ],
         );

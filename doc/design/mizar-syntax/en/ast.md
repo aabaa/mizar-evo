@@ -48,6 +48,9 @@ green tree.
 |---|---|
 | root node | `SyntaxKind::Root` |
 | compatibility token node | `SyntaxKind::Token` |
+| compilation unit node | `SyntaxKind::CompilationUnit` |
+| top-level item list node | `SyntaxKind::ItemList` |
+| parser task-5 placeholder item node | `SyntaxKind::PlaceholderItem` |
 | module path node | `SyntaxKind::ModulePath` |
 | namespace path node | `SyntaxKind::NamespacePath` |
 | qualified symbol node | `SyntaxKind::QualifiedSymbol` |
@@ -77,6 +80,9 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 7 | `QualifiedSymbol` | namespace-qualified active user symbol node |
 | 8 | `PathSegment` | single identifier or user-symbol segment wrapper |
 | 9 | `RelativePrefix` | `.` / `..` import-relative prefix wrapper |
+| 10 | `CompilationUnit` | module file skeleton node |
+| 11 | `ItemList` | top-level item list node |
+| 12 | `PlaceholderItem` | task-5 keyword-dispatched placeholder item node |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -89,10 +95,11 @@ The current raw discriminants are part of the rowan boundary for this phase:
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true only for `Root`, `Token`,
-`InfixExpression`, `ErrorRecovery`, and the task-S-009 shared path node kinds
-listed above; `is_token_kind` is true only for the token leaf kinds. Future raw
-values should be appended or assigned into a documented reserved range so
-existing snapshots and rowan tests fail loudly when the raw vocabulary changes.
+`InfixExpression`, `ErrorRecovery`, the task-S-009 shared path node kinds, and
+the task-5 module skeleton node kinds listed above; `is_token_kind` is true
+only for the token leaf kinds. Future raw values should be appended or assigned
+into a documented reserved range so existing snapshots and rowan tests fail
+loudly when the raw vocabulary changes.
 
 ### Current Surface Vocabulary
 
@@ -102,6 +109,9 @@ The current implemented surface node vocabulary is deliberately small:
 |---|---|---|---|
 | `SurfaceNodeKind::Root` | none | `SyntaxKind::Root` | top-level compatibility root |
 | `SurfaceNodeKind::Token(SurfaceToken)` | token kind and interned text | `SyntaxKind::Token` with one token leaf of the token raw kind | compatibility wrapper around a rowan token leaf |
+| `SurfaceNodeKind::CompilationUnit` | none | `SyntaxKind::CompilationUnit` | parser task-5 module file skeleton; one `ItemList` child and no semantic module identity |
+| `SurfaceNodeKind::ItemList` | none | `SyntaxKind::ItemList` | source-order list of top-level item placeholders and item-level recovery markers |
+| `SurfaceNodeKind::PlaceholderItem` | none | `SyntaxKind::PlaceholderItem` | keyword-dispatched top-level item placeholder used until later tasks replace it with concrete item nodes |
 | `SurfaceNodeKind::ModulePath` | none | `SyntaxKind::ModulePath` | `module_path`; optional `RelativePrefix`, first `PathSegment`, then repeated `.` token plus `PathSegment`; only this path shape may contain `RelativePrefix` |
 | `SurfaceNodeKind::NamespacePath` | none | `SyntaxKind::NamespacePath` | `namespace_path`; first `PathSegment`, then repeated `.` token plus identifier `PathSegment`; relative prefixes are not allowed |
 | `SurfaceNodeKind::QualifiedSymbol` | none | `SyntaxKind::QualifiedSymbol` | `qualified_symbol`; zero or more namespace identifier `PathSegment` + `.` token pairs followed by final user-symbol `PathSegment` |
@@ -126,6 +136,18 @@ missing-path diagnostics, skipped-token trivia, and doc-comment attachment.
 `SurfaceNodeView` exposes typed `as_module_path`, `as_namespace_path`,
 `as_qualified_symbol`, `as_path_segment`, and `as_relative_prefix` helpers so
 consumers do not need raw rowan traversal for these shared path shapes.
+
+Module skeleton nodes added for `mizar-parser` task 5 are syntax-only shapes.
+`CompilationUnit` represents the source file surface and owns exactly one
+`ItemList` child. `ItemList` children are source-ordered `PlaceholderItem`
+nodes and item-level recovery nodes such as `SkippedToken`. `PlaceholderItem`
+wraps the source tokens consumed for one top-level item boundary, including
+annotation prefixes and recovered items that are missing their terminating
+semicolon. The parser must not encode import resolution, visibility semantics,
+theorem validity, or symbol identity in these nodes. `SurfaceNodeView` exposes typed
+`as_compilation_unit`, `as_item_list`, and `as_placeholder_item` helpers.
+Leading doc-comment attachment to the following item is represented through
+`SurfaceTrivia`, not by copying comment text into item nodes.
 
 ### Vocabulary Increment Contract
 
@@ -233,6 +255,9 @@ Node lines are indented by two spaces per depth and use these current forms:
 ```text
 Root range=<start>..<end> recovered=<bool>
 Token kind=<SurfaceTokenKind> text="<escaped-text>" range=<start>..<end> recovered=<bool>
+CompilationUnit range=<start>..<end> recovered=<bool>
+ItemList range=<start>..<end> recovered=<bool>
+PlaceholderItem range=<start>..<end> recovered=<bool>
 ModulePath range=<start>..<end> recovered=<bool>
 NamespacePath range=<start>..<end> recovered=<bool>
 QualifiedSymbol range=<start>..<end> recovered=<bool>

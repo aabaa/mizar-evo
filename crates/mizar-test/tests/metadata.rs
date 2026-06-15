@@ -566,9 +566,13 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
     assert_eq!(
         active_cases,
         vec![
+            "fail_parser_missing_block_semicolon_001",
             "fail_parser_missing_definition_end_001",
+            "fail_parser_missing_semicolon_001",
             "fail_parser_stray_end_001",
+            "fail_parser_unexpected_top_level_token_001",
             "pass_parser_minimal_token_stream_001",
+            "pass_parser_module_skeleton_001",
         ]
     );
 
@@ -618,20 +622,37 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 3);
-    assert_eq!(report.passed_count(), 3);
+    assert_eq!(report.results.len(), 7);
+    assert_eq!(report.passed_count(), 7);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_minimal_token_stream_001"
             && result.actual_diagnostic_codes.is_empty()
     }));
     assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_missing_block_semicolon_001"
+            && result.actual_diagnostic_codes == vec!["missing_semicolon".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_parser_missing_definition_end_001"
-            && result.actual_diagnostic_codes == vec!["missing_end".to_owned()]
+            && result.actual_diagnostic_codes
+                == vec!["missing_end".to_owned(), "missing_semicolon".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_missing_semicolon_001"
+            && result.actual_diagnostic_codes == vec!["missing_semicolon".to_owned()]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_parser_stray_end_001"
             && result.actual_diagnostic_codes == vec!["unrecoverable_input".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_unexpected_top_level_token_001"
+            && result.actual_diagnostic_codes == vec!["unexpected_top_level_token".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_module_skeleton_001"
+            && result.actual_diagnostic_codes.is_empty()
     }));
 }
 
@@ -736,8 +757,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 3"));
-    assert!(stdout.contains("passed: 3"));
+    assert!(stdout.contains("parse-only cases: 7"));
+    assert!(stdout.contains("passed: 7"));
     assert!(stdout.contains("failed: 0"));
 }
 

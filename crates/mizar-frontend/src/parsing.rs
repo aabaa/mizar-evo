@@ -454,18 +454,63 @@ mod tests {
     }
 
     #[test]
+    fn real_parser_seam_exposes_module_skeleton_shape() {
+        let source_id = source_id(30);
+        let tokens = token_stream(
+            source_id,
+            vec![
+                token(source_id, TokenKind::ReservedWord, "theorem", 0, 7),
+                token(source_id, TokenKind::Identifier, "T", 8, 9),
+                token(source_id, TokenKind::ReservedSymbol, ";", 9, 10),
+            ],
+        );
+        let inputs = ParserInputs::new(
+            Edition::new("2026"),
+            OperatorFixityTable::empty(),
+            StringRequiredContext::None,
+        );
+        let seam = MizarParserSeam;
+
+        let output = seam.parse(ParseRequest::new(&tokens, inputs));
+
+        assert!(output.diagnostics.is_empty());
+        let ast = output
+            .ast
+            .expect("real parser seam should return SurfaceAst");
+        let compilation_unit = ast
+            .nodes()
+            .iter()
+            .find(|node| matches!(node.kind, SurfaceNodeKind::CompilationUnit))
+            .expect("module skeleton should include a compilation unit");
+        assert_eq!(compilation_unit.children.len(), 1);
+        let item_list = ast.node(compilation_unit.children[0]).unwrap();
+        assert!(matches!(item_list.kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 1);
+        let item = ast.node(item_list.children[0]).unwrap();
+        assert!(matches!(item.kind, SurfaceNodeKind::PlaceholderItem));
+        assert_eq!(
+            item.range,
+            SourceRange {
+                source_id,
+                start: 0,
+                end: 10,
+            }
+        );
+    }
+
+    #[test]
     fn real_parser_seam_preserves_token_kind_adaptation() {
         let source_id = source_id(3);
         let tokens = token_stream(
             source_id,
             vec![
                 token(source_id, TokenKind::Identifier, "alpha", 0, 5),
-                token(source_id, TokenKind::ReservedWord, "theorem", 6, 13),
-                token(source_id, TokenKind::ReservedSymbol, ";", 13, 14),
-                token(source_id, TokenKind::Numeral, "42", 15, 17),
-                token(source_id, TokenKind::LexemeRun, "raw", 18, 21),
-                token(source_id, TokenKind::UserSymbol, "++", 22, 24),
-                token(source_id, TokenKind::StringLiteral, "\"x\"", 25, 28),
+                token(source_id, TokenKind::ReservedWord, "and", 6, 9),
+                token(source_id, TokenKind::ReservedSymbol, ";", 9, 10),
+                token(source_id, TokenKind::Numeral, "42", 11, 13),
+                token(source_id, TokenKind::LexemeRun, "raw", 14, 17),
+                token(source_id, TokenKind::UserSymbol, "++", 18, 20),
+                token(source_id, TokenKind::StringLiteral, "\"x\"", 21, 24),
             ],
         );
         let inputs = ParserInputs::new(
@@ -572,7 +617,7 @@ mod tests {
 
         let output = seam.parse(ParseRequest::new(&tokens, inputs));
 
-        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(output.diagnostics.len(), 2);
         let diagnostic = &output.diagnostics[0];
         assert_eq!(diagnostic.code, SyntaxDiagnosticCode::MissingEnd);
         assert_eq!(
@@ -599,6 +644,16 @@ mod tests {
             diagnostic.recovery_note.as_deref(),
             Some("insert `end` before this synchronization point")
         );
+        let semicolon = &output.diagnostics[1];
+        assert_eq!(semicolon.code, SyntaxDiagnosticCode::MissingSemicolon);
+        assert_eq!(
+            semicolon.primary,
+            SourceRange {
+                source_id,
+                start: 18,
+                end: 18,
+            }
+        );
         let ast = output
             .ast
             .expect("real parser seam should preserve recovered AST");
@@ -622,7 +677,7 @@ mod tests {
                 end: 18,
             }
         );
-        assert_eq!(recovery_node.children, vec![ast.token_nodes()[0]]);
+        assert!(recovery_node.children.is_empty());
         let root = ast.root().expect("recovered AST should have a root");
         assert!(
             ast.node(root)
@@ -654,7 +709,7 @@ mod tests {
 
         let output = seam.parse(ParseRequest::new(&tokens, inputs));
 
-        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(output.diagnostics.len(), 2);
         let diagnostic = &output.diagnostics[0];
         assert_eq!(diagnostic.code, SyntaxDiagnosticCode::MissingEnd);
         assert_eq!(
@@ -676,6 +731,16 @@ mod tests {
         let ast = output
             .ast
             .expect("nested missing end recovery should preserve an AST");
+        let semicolon = &output.diagnostics[1];
+        assert_eq!(semicolon.code, SyntaxDiagnosticCode::MissingSemicolon);
+        assert_eq!(
+            semicolon.primary,
+            SourceRange {
+                source_id,
+                start: 24,
+                end: 24,
+            }
+        );
         let (recovery_index, recovery_node) = ast
             .nodes()
             .iter()
@@ -688,7 +753,7 @@ mod tests {
             })
             .expect("nested missing end recovery node should pass through unchanged");
         assert!(recovery_node.recovered);
-        assert_eq!(recovery_node.children, vec![ast.token_nodes()[0]]);
+        assert!(recovery_node.children.is_empty());
         let root = ast.root().expect("recovered AST should have a root");
         assert!(
             ast.node(root)

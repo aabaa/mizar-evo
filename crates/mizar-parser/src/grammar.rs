@@ -4,8 +4,8 @@ use crate::{
 };
 use mizar_session::SourceRange;
 use mizar_syntax::{
-    SurfaceBuilderNodeId, SurfaceNodeKind, SurfaceTokenKind, SyntaxDiagnostic,
-    SyntaxDiagnosticCode, SyntaxRecoveryKind,
+    SurfaceBuilderNodeId, SurfaceNodeKind, SurfaceTokenKind, SurfaceTriviaBuilder,
+    SyntaxDiagnostic, SyntaxDiagnosticCode, SyntaxRecoveryKind,
 };
 use std::{collections::BTreeMap, sync::Arc};
 
@@ -15,10 +15,12 @@ pub(crate) struct Parser {
     pub(super) token_node_ids: Vec<SurfaceBuilderNodeId>,
     pub(super) diagnostics: Vec<SyntaxDiagnostic>,
     pub(super) fixity: BTreeMap<Arc<str>, OperatorFixityEntry>,
+    pub(super) trivia: SurfaceTriviaBuilder,
 }
 
 impl Parser {
     pub(crate) fn new(request: ParseRequest) -> Self {
+        let source_id = request.source_id;
         let fixity = request
             .operator_fixity
             .iter()
@@ -31,6 +33,7 @@ impl Parser {
             token_node_ids: Vec::new(),
             diagnostics: Vec::new(),
             fixity,
+            trivia: SurfaceTriviaBuilder::new(source_id),
         }
     }
 
@@ -43,9 +46,16 @@ impl Parser {
             };
         }
         let expression_root = self.parse_expression();
-        let root = self.add_root(expression_root);
+        let module = self.parse_compilation_unit();
+        let root = self.add_root(expression_root, module.id, &module.recovery_nodes);
+        let events = self.events;
+        let trivia = self.trivia.finish();
         ParseOutput {
-            ast: Some(self.events.finish(Some(root), expression_root)),
+            ast: Some(
+                events
+                    .finish(Some(root), expression_root)
+                    .with_trivia(trivia),
+            ),
             diagnostics: self.diagnostics,
         }
     }
@@ -91,13 +101,25 @@ impl Parser {
         })
     }
 
-    fn add_root(&mut self, expression_root: Option<SurfaceBuilderNodeId>) -> SurfaceBuilderNodeId {
+    fn add_root(
+        &mut self,
+        expression_root: Option<SurfaceBuilderNodeId>,
+        compilation_unit: SurfaceBuilderNodeId,
+        module_recovery_nodes: &[SurfaceBuilderNodeId],
+    ) -> SurfaceBuilderNodeId {
         let children = self
             .token_node_ids
             .iter()
             .copied()
             .chain(expression_root)
-            .chain(self.events.recovery_node_ids().iter().copied())
+            .chain([compilation_unit])
+            .chain(
+                self.events
+                    .recovery_node_ids()
+                    .iter()
+                    .copied()
+                    .filter(|id| !module_recovery_nodes.contains(id)),
+            )
             .collect::<Vec<_>>();
         let range = self
             .request

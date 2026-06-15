@@ -2,6 +2,7 @@ mod cursor;
 mod diagnostic;
 mod event;
 mod grammar;
+mod module;
 mod path;
 mod pratt;
 mod recovery;
@@ -328,8 +329,12 @@ mod tests {
             Vec::new(),
         ));
 
-        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(output.diagnostics.len(), 2);
         assert_eq!(output.diagnostics[0].code, SyntaxDiagnosticCode::MissingEnd);
+        assert_eq!(
+            output.diagnostics[1].code,
+            SyntaxDiagnosticCode::MissingSemicolon
+        );
         assert_eq!(
             output.diagnostics[0].primary,
             SourceRange {
@@ -369,7 +374,7 @@ mod tests {
                 end: 18,
             }
         );
-        assert_eq!(recovery_node.1.children, vec![ast.token_nodes()[0]]);
+        assert!(recovery_node.1.children.is_empty());
         let root = ast.root().expect("recovered AST should have a root");
         assert!(
             ast.node(root)
@@ -394,6 +399,7 @@ mod tests {
             ),
             token(source_id, ParserTokenKind::ReservedWord, "func", 11, 15),
             token(source_id, ParserTokenKind::ReservedWord, "end", 16, 19),
+            token(source_id, ParserTokenKind::ReservedSymbol, ";", 19, 20),
         ];
 
         let output = parse(ParseRequest::new(
@@ -431,6 +437,7 @@ mod tests {
             token(source_id, ParserTokenKind::ReservedWord, "do", 21, 23),
             token(source_id, ParserTokenKind::ReservedWord, "end", 24, 27),
             token(source_id, ParserTokenKind::ReservedWord, "end", 28, 31),
+            token(source_id, ParserTokenKind::ReservedSymbol, ";", 31, 32),
         ];
 
         let output = parse(ParseRequest::new(
@@ -540,6 +547,7 @@ mod tests {
             token(source_id, ParserTokenKind::Identifier, "Nat", 31, 34),
             token(source_id, ParserTokenKind::ReservedWord, "holds", 35, 40),
             token(source_id, ParserTokenKind::ReservedWord, "end", 41, 44),
+            token(source_id, ParserTokenKind::ReservedSymbol, ";", 44, 45),
         ];
 
         let output = parse(ParseRequest::new(
@@ -564,16 +572,45 @@ mod tests {
             token(source_id, ParserTokenKind::ReservedWord, "match", 10, 15),
             token(source_id, ParserTokenKind::ReservedWord, "case", 20, 24),
             token(source_id, ParserTokenKind::ReservedWord, "end", 30, 33),
+            token(source_id, ParserTokenKind::ReservedSymbol, ";", 33, 34),
             token(
                 source_id,
                 ParserTokenKind::ReservedWord,
                 "otherwise",
-                34,
-                43,
+                35,
+                44,
             ),
             token(source_id, ParserTokenKind::ReservedWord, "end", 50, 53),
-            token(source_id, ParserTokenKind::ReservedWord, "end", 54, 57),
-            token(source_id, ParserTokenKind::ReservedWord, "end", 58, 61),
+            token(source_id, ParserTokenKind::ReservedSymbol, ";", 53, 54),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 55, 58),
+            token(source_id, ParserTokenKind::ReservedSymbol, ";", 58, 59),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 60, 63),
+        ];
+
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert!(output.diagnostics.is_empty());
+        assert!(output.ast.is_some());
+    }
+
+    #[test]
+    fn algorithm_if_after_statement_separator_matches_its_own_end() {
+        let source_id = source_id(21);
+        let tokens = vec![
+            token(source_id, ParserTokenKind::ReservedWord, "algorithm", 0, 9),
+            token(source_id, ParserTokenKind::Identifier, "x", 10, 11),
+            token(source_id, ParserTokenKind::ReservedSymbol, ";", 11, 12),
+            token(source_id, ParserTokenKind::ReservedWord, "if", 13, 15),
+            token(source_id, ParserTokenKind::Identifier, "P", 16, 17),
+            token(source_id, ParserTokenKind::ReservedWord, "do", 18, 20),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 21, 24),
+            token(source_id, ParserTokenKind::ReservedSymbol, ";", 24, 25),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 26, 29),
         ];
 
         let output = parse(ParseRequest::new(
@@ -638,8 +675,12 @@ mod tests {
             Vec::new(),
         ));
 
-        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(output.diagnostics.len(), 2);
         assert_eq!(output.diagnostics[0].code, SyntaxDiagnosticCode::MissingEnd);
+        assert_eq!(
+            output.diagnostics[1].code,
+            SyntaxDiagnosticCode::MissingSemicolon
+        );
         assert_eq!(
             output.diagnostics[0].primary,
             SourceRange {
@@ -669,7 +710,7 @@ mod tests {
                 )
             })
             .expect("outer missing end should create an explicit recovery node");
-        assert_eq!(recovery_node.children, vec![ast.token_nodes()[0]]);
+        assert!(recovery_node.children.is_empty());
     }
 
     #[test]

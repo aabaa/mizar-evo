@@ -5,17 +5,24 @@ use crate::{
 use mizar_session::SourceRange;
 
 const TOP_LEVEL_ITEM_KEYWORDS: &[&str] = &[
+    "import",
+    "export",
     "theorem",
+    "lemma",
+    "open",
+    "assumed",
+    "conditional",
+    "private",
+    "public",
     "definition",
     "registration",
-    "notation",
-    "scheme",
+    "claim",
     "reserve",
-    "begin",
-    "environ",
-    "vocabularies",
-    "constructors",
-    "requirements",
+    "infix_operator",
+    "prefix_operator",
+    "postfix_operator",
+    "synonym",
+    "antonym",
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -98,6 +105,101 @@ pub(super) fn is_top_level_item_keyword(token: &ParserToken) -> bool {
         && TOP_LEVEL_ITEM_KEYWORDS.contains(&token.text.as_ref())
 }
 
+pub(super) fn opens_recovery_block_at(tokens: &[ParserToken], position: usize) -> bool {
+    let Some(token) = tokens.get(position) else {
+        return false;
+    };
+    if token.kind != ParserTokenKind::ReservedWord {
+        return false;
+    }
+    let cursor = TokenCursor::at(token.span.source_id, tokens, position);
+
+    match token.text.as_ref() {
+        "algorithm" | "definition" | "registration" | "proof" | "now" | "hereby" | "case"
+        | "suppose" | "while" | "match" | "claim" => true,
+        "if" => looks_like_algorithm_if_block(&cursor),
+        "for" => looks_like_algorithm_for_loop(&cursor),
+        "otherwise" => follows_completed_match_case(&cursor),
+        _ => false,
+    }
+}
+
+fn looks_like_algorithm_if_block(cursor: &TokenCursor<'_>) -> bool {
+    let Some(previous) = cursor.previous() else {
+        return false;
+    };
+    if is_reserved_word_token(previous, "else") {
+        return false;
+    }
+    if previous.kind == ParserTokenKind::ReservedWord
+        && matches!(
+            previous.text.as_ref(),
+            "algorithm"
+                | "do"
+                | "then"
+                | "proof"
+                | "now"
+                | "hereby"
+                | "case"
+                | "suppose"
+                | "while"
+                | "for"
+                | "match"
+                | "claim"
+        )
+    {
+        return true;
+    }
+    has_statement_body_marker_before_boundary(cursor)
+}
+
+fn has_statement_body_marker_before_boundary(cursor: &TokenCursor<'_>) -> bool {
+    let mut lookahead = 1;
+    while let Some(token) = cursor.token_at(cursor.position() + lookahead) {
+        if is_reserved_word_token(token, "do") {
+            return true;
+        }
+        if is_reserved_word_token(token, "end")
+            || (token.kind == ParserTokenKind::ReservedSymbol && token.text.as_ref() == ";")
+            || is_top_level_item_keyword(token)
+        {
+            return false;
+        }
+        lookahead += 1;
+    }
+    false
+}
+
+fn looks_like_algorithm_for_loop(cursor: &TokenCursor<'_>) -> bool {
+    matches!(
+        (cursor.peek(1), cursor.peek(2)),
+        (
+            Some(ParserToken {
+                kind: ParserTokenKind::Identifier,
+                ..
+            }),
+            Some(next)
+        ) if is_reserved_word_token(next, "in")
+            || (next.kind == ParserTokenKind::ReservedSymbol && next.text.as_ref() == "=")
+    )
+}
+
+fn follows_completed_match_case(cursor: &TokenCursor<'_>) -> bool {
+    let Some(previous) = cursor.previous() else {
+        return false;
+    };
+    if is_reserved_word_token(previous, "end") {
+        return true;
+    }
+    previous.kind == ParserTokenKind::ReservedSymbol
+        && previous.text.as_ref() == ";"
+        && cursor
+            .position()
+            .checked_sub(2)
+            .and_then(|position| cursor.token_at(position))
+            .is_some_and(|token| is_reserved_word_token(token, "end"))
+}
+
 fn skipped_range(
     source_id: mizar_session::SourceId,
     start: Option<usize>,
@@ -170,6 +272,47 @@ mod tests {
             SynchronizationBoundary::Eof,
             Some((0, 4)),
         );
+    }
+
+    #[test]
+    fn block_openers_are_contextual_for_formula_keywords() {
+        let source_id = source_id();
+        let formula_if = vec![
+            token(ParserTokenKind::Identifier, "P", 0, 1),
+            token(ParserTokenKind::ReservedWord, "if", 2, 4),
+            token(ParserTokenKind::Identifier, "Q", 5, 6),
+        ];
+        assert!(!super::opens_recovery_block_at(&formula_if, 1));
+
+        let algorithm_if = vec![
+            token(ParserTokenKind::ReservedWord, "algorithm", 0, 9),
+            token(ParserTokenKind::ReservedWord, "if", 10, 12),
+        ];
+        assert!(super::opens_recovery_block_at(&algorithm_if, 1));
+
+        let statement_list_if = vec![
+            token(ParserTokenKind::Identifier, "x", 0, 1),
+            token(ParserTokenKind::ReservedSymbol, ";", 1, 2),
+            token(ParserTokenKind::ReservedWord, "if", 3, 5),
+            token(ParserTokenKind::Identifier, "P", 6, 7),
+            token(ParserTokenKind::ReservedWord, "do", 8, 10),
+        ];
+        assert!(super::opens_recovery_block_at(&statement_list_if, 2));
+
+        let formula_otherwise = vec![
+            token(ParserTokenKind::Identifier, "x", 0, 1),
+            token(ParserTokenKind::ReservedWord, "otherwise", 2, 11),
+        ];
+        assert!(!super::opens_recovery_block_at(&formula_otherwise, 1));
+
+        let match_otherwise = vec![
+            token(ParserTokenKind::ReservedWord, "end", 0, 3),
+            token(ParserTokenKind::ReservedSymbol, ";", 3, 4),
+            token(ParserTokenKind::ReservedWord, "otherwise", 5, 14),
+        ];
+        assert!(super::opens_recovery_block_at(&match_otherwise, 2));
+
+        assert_eq!(formula_if[0].span.source_id, source_id);
     }
 
     #[test]

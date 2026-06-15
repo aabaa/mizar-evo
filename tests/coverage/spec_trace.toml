@@ -716,6 +716,22 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.12.modules.compilation_unit_skeleton"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.7 Complete Syntax (EBNF)"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_module_skeleton_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_missing_block_semicolon_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_missing_definition_end_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_missing_semicolon_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_unexpected_top_level_token_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.syntax.parser_recovery.missing_end"
 source = "doc/design/mizar-parser/en/recovery.md"
 section = "Current behavior"

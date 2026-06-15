@@ -35,6 +35,10 @@ impl<'a> TokenCursor<'a> {
         self.tokens.get(self.position)
     }
 
+    pub(super) fn token_at(&self, position: usize) -> Option<&'a ParserToken> {
+        self.tokens.get(position)
+    }
+
     pub(super) fn peek(&self, lookahead: usize) -> Option<&'a ParserToken> {
         assert!(
             lookahead <= MAX_LOOKAHEAD,

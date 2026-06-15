@@ -1,7 +1,7 @@
 # mizar-syntax: Trivia
 
-Status: task-4 trivia model implemented; parser-produced item attachment
-fixtures are planned with the first item-node increment.
+Status: task-4 trivia model implemented; syntax-level item attachment fixture
+landed with the first task-S-009 item-node increment.
 
 ## Purpose
 
@@ -91,7 +91,9 @@ whose origin points back to a source range or point.
 `TriviaPlacement` records whether the attachment is leading or trailing. A doc
 comment attached to the following item node is a syntactic relationship; the
 documentation generator may interpret the comment body later, but that meaning
-does not enter `SurfaceAst`.
+does not enter `SurfaceAst`. The first item-node fixture attaches a leading doc
+comment to a task-5 `PlaceholderItem`; frontend-produced attachment hints remain
+a later integration step.
 
 ### Skipped Ranges
 

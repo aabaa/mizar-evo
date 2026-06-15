@@ -11,9 +11,11 @@ rejection_reason = "missing_definition_end"
 stable_detail_key = "parser.recovery.missing_definition_end"
 diagnostic_codes = [
   "missing_end",
+  "missing_semicolon",
 ]
 tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
 spec_refs = [
   "spec.en.syntax.parser_recovery.missing_end",
+  "spec.en.12.modules.compilation_unit_skeleton",
 ]
-notes = "Active parse-only runner seed for current missing-end recovery through the frontend seam."
+notes = "Active parse-only runner seed for missing definition-block `end` plus the task-5 module skeleton semicolon recovery required by Chapter 12."

@@ -14,7 +14,10 @@
 - リゾルバとチェッカが明示的にスキップまたは却下できるよう、回復ノードに印を付ける。
 - 診断のために元のソース範囲を保持する。
 
-parser は現在、lexer error token の recovered token node と、`end` 欠落および文字列リテラル欠落の明示的な recovered node を生成する。残りの recovery kind は、将来の parser grammar task が producer を追加するときに syntax snapshot 語彙を変更しなくてよいよう、`mizar-syntax` で構築可能にしておく。
+parser は現在、lexer error token の recovered token node と、`end` 欠落、文字列
+リテラル欠落、task 5 の top-level skipped token の明示的な recovered node を生成する。
+残りの recovery kind は、将来の parser grammar task が producer を追加するときに
+syntax snapshot 語彙を変更しなくてよいよう、`mizar-syntax` で構築可能にしておく。
 
 ## Public API
 
@@ -44,7 +47,9 @@ recover せず parsing を中止する diagnostic では未設定のままでよ
 | `DanglingOperator` | Pratt expression parsing が必要な operand を持たない operator を見つけた | 任意。recovery node は必須ではない |
 | `NonAssociativeOperatorChain` | parser が non-associative operator contract に反する chain を見つけた | 任意。recovery node は必須ではない |
 | `MissingEnd` | parser が同期点に欠落 `end` を挿入した | 挿入後に parsing を継続する場合は設定する |
+| `MissingSemicolon` | parser が `;` を必要とする top-level item boundary または EOF に到達した | 次の item または EOF へ継続する場合は設定する |
 | `MissingStringLiteral` | parser が string-required context で欠落 string literal を挿入した | 挿入後に parsing を継続する場合は設定する |
+| `UnexpectedTopLevelToken` | parser task 5 が top-level item を開始できない source token を skip した | `SkippedToken` recovery node と skipped trivia range を生成する場合は設定する |
 | `UnrecoverableInput` | parser が入力に対して信頼できる `SurfaceAst` を構築できない | 任意。parser が source edit を提案できる場合は設定し、parse result は `ast = None` になり得る |
 
 diagnostic code 語彙は syntax-level に限る。名前解決、型検査、証明義務、意味的事実を
@@ -68,7 +73,7 @@ encode してはならない。
 | `MissingStatement` | 未生成。将来の statement parser が proof、algorithm、block statement を期待し、次の statement boundary で同期する | 挿入 placeholder | insertion point の zero-width range。任意の preceding keyword または block context child を持て、range 外でもよい | 専用 diagnostic code はまだない。skip された source は存在する場合 `SkippedTokenRange` に属する | `MissingStatement` |
 | `MissingProofStep` | 未生成。将来の proof parser が justification、inference step、case branch、proof-closing step を期待する | 挿入 placeholder | insertion point の zero-width range。任意の proof / block context child を持て、range 外でもよい | 専用 diagnostic code はまだない。skip された source は存在する場合 `SkippedTokenRange` に属する | `MissingProofStep` |
 | `MissingAnnotationArgument` | 未生成。将来の annotation parser が string literal や bracket argument などの annotation argument を期待する | 挿入 placeholder | insertion point の zero-width range。任意の annotation marker / list context child を持て、range 外でもよい | 専用 diagnostic code はまだない。不正または skip された source は状況に応じて `MalformedAnnotation` または `Recovery` の `SkippedTokenRange` に属する | `MissingAnnotationArgument` |
-| `SkippedToken` | 未生成。将来の parser が同期点へ進むため 1 個以上の token を skip し、可視の recovery marker を残す | skipped input の marker | skip された source span を覆う range。必須 child はない。root-listed token leaf を重複させない場合だけ任意の synchronization owner child を付けてよい | 専用 diagnostic code はまだない。skip span は `SurfaceTrivia::skipped_token_ranges` に `SkippedTokenReason::Recovery` で必ず記録する | `SkippedToken` |
+| `SkippedToken` | parser task 5 が item boundary に到達するため 1 個以上の top-level token を skip する。将来の parser task はより狭い grammar boundary で同じ marker を使ってよい | skipped input の marker | skip された source span を覆う range。必須 child はない。root-listed token leaf を重複させない場合だけ任意の synchronization owner child を付けてよい | task 5 の top-level skip では `SyntaxDiagnosticCode::UnexpectedTopLevelToken`。skip span は `SurfaceTrivia::skipped_token_ranges` に `SkippedTokenReason::Recovery` で必ず記録する | `SkippedToken` |
 | `UnmatchedOpeningDelimiter` | 未生成。将来の parser が synchronization または EOF までに対応する closer を持たない opener を見つける | 通常は挿入された missing close と組になる marker | primary marker range は期待される closer または synchronization point の zero-width range。opener / context child が想定され、marker range 外でもよい | 専用 diagnostic code はまだない。opener span は secondary diagnostic anchor にするべきで、skip text があれば trivia に属する | `UnmatchedOpeningDelimiter` |
 | `UnmatchedClosingDelimiter` | 未生成。将来の parser が対応する opener を持たない closing delimiter を見つける | source text を囲む marker | unmatched closer token を覆う range。必須 child はない | 専用 diagnostic code はまだない。closer token は token stream に残し、それを超えて skip した token は trivia に属する | `UnmatchedClosingDelimiter` |
 | `MalformedAnnotation` | 未生成。将来の annotation parser が valid annotation として parse できない annotation marker または body を認識する | source text を囲む marker | 不正な annotation marker / body span を覆う range。利用できる場合、任意の annotation owner child を付けてよい | 専用 diagnostic code はまだない。不正 source は `SurfaceTrivia::skipped_token_ranges` に `SkippedTokenReason::MalformedAnnotation` で必ず記録する | `MalformedAnnotation` |

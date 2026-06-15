@@ -1,14 +1,12 @@
 use crate::{
-    ParserToken, ParserTokenKind, StringRequiredContext,
-    cursor::{TokenCursor, is_reserved_word_token},
+    ParserTokenKind, StringRequiredContext,
+    cursor::TokenCursor,
     diagnostic::{ExpectedToken, expected_token_diagnostic},
     grammar::Parser,
     sync::{self, SynchronizationBoundary, SynchronizationSet},
 };
 use mizar_session::{SourceAnchor, SourceRange};
-use mizar_syntax::{
-    SurfaceBuilderNodeId, SyntaxDiagnostic, SyntaxDiagnosticCode, SyntaxRecoveryKind,
-};
+use mizar_syntax::{SyntaxDiagnostic, SyntaxDiagnosticCode, SyntaxRecoveryKind};
 use std::sync::Arc;
 
 impl Parser {
@@ -75,11 +73,10 @@ impl Parser {
 
         while let Some(token) = cursor.current() {
             let boundary = sync::boundary_at(&cursor, sync_set);
-            if opens_recovery_block(&cursor) {
+            if sync::opens_recovery_block_at(&tokens, cursor.position()) {
                 stack.push(BlockStart {
                     keyword: token.text.clone(),
                     span: token.span,
-                    token_node_id: self.token_node_ids[cursor.position()],
                 });
             } else if boundary == Some(SynchronizationBoundary::EndKeyword) && stack.pop().is_none()
             {
@@ -122,11 +119,7 @@ impl Parser {
                 .with_secondary([SourceAnchor::Range(block.span)])
                 .with_recovery_note("insert `end` before this synchronization point"),
             );
-            self.add_recovery_node(
-                SyntaxRecoveryKind::MissingEnd,
-                span,
-                vec![block.token_node_id],
-            );
+            self.add_recovery_node(SyntaxRecoveryKind::MissingEnd, span, Vec::new());
         }
     }
 }
@@ -141,59 +134,4 @@ pub(super) enum RecoveryOutcome {
 struct BlockStart {
     keyword: Arc<str>,
     span: SourceRange,
-    token_node_id: SurfaceBuilderNodeId,
-}
-
-fn is_else_keyword(token: &ParserToken) -> bool {
-    is_reserved_word_token(token, "else")
-}
-
-fn opens_recovery_block(cursor: &TokenCursor<'_>) -> bool {
-    let Some(token) = cursor.current() else {
-        return false;
-    };
-    if !is_block_start_keyword(token) {
-        return false;
-    }
-
-    if is_reserved_word_token(token, "for") {
-        return looks_like_algorithm_for_loop(cursor);
-    }
-
-    !(is_reserved_word_token(token, "if") && cursor.previous().is_some_and(is_else_keyword))
-}
-
-fn looks_like_algorithm_for_loop(cursor: &TokenCursor<'_>) -> bool {
-    matches!(
-        (cursor.peek(1), cursor.peek(2)),
-        (
-            Some(ParserToken {
-                kind: ParserTokenKind::Identifier,
-                ..
-            }),
-            Some(next)
-        ) if is_reserved_word_token(next, "in")
-            || (next.kind == ParserTokenKind::ReservedSymbol && next.text.as_ref() == "=")
-    )
-}
-
-fn is_block_start_keyword(token: &ParserToken) -> bool {
-    token.kind == ParserTokenKind::ReservedWord
-        && matches!(
-            token.text.as_ref(),
-            "algorithm"
-                | "definition"
-                | "registration"
-                | "proof"
-                | "now"
-                | "hereby"
-                | "case"
-                | "suppose"
-                | "if"
-                | "while"
-                | "for"
-                | "match"
-                | "claim"
-                | "otherwise"
-        )
 }

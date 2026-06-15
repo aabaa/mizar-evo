@@ -2,9 +2,8 @@
 
 > 正本は英語です。英語版: [../en/recovery.md](../en/recovery.md)。
 
-状態: task 12 の最小回復と task 28 の入れ子 block-end 回復は実装済みで、task 1
-の module split と task 2 の cursor / diagnostic / synchronization helper が内部
-`recovery` module に配線済み。完全な文法回復は計画中。
+状態: task 12 の最小回復、task 28 の入れ子 block-end 回復、task 5 の
+module-skeleton recovery は実装済み。完全な文法回復は計画中。
 
 ## 目的
 
@@ -21,13 +20,32 @@
 - parser は private な有界先読み token cursor、既存の `SyntaxDiagnosticCode`
   variant を再利用する期待トークン診断 helper、同期集合、recovery node 送出
   helper を持つ。これらは内部基盤であり、crate root の公開 API を変更しない。
-- 初期同期集合は `;`、`end`、EOF、および task 2 の top-level item keyword
-  placeholder で停止する。この placeholder は `theorem`、`definition`、
-  `registration`、`notation`、`scheme`、`reserve`、`begin`、`environ`、
-  `vocabularies`、`constructors`、`requirements` である。後続の item 文法タスクが
-  実際の top-level dispatch を追加するときに、この集合を拡張または絞り込む。
-- 利用可能な `end` token を対応付けた後も parser の block stack が開いている場合、block 風キーワードに対する `end` 欠落を EOF で診断し、各欠落 close に明示的な recovered `MissingEnd` node を作る。現在の stack は top-level block と、それ自身の `end` を持つ algorithm control block を含む。`for` は formula quantifier が block end を消費しないように、`for <identifier> = ...` / `for <identifier> in ...` の loop 風 token shape の場合だけ開く。`else if` は nested block opener ではなく、1 つの conditional chain として扱う。
+- 同期集合は `;`、`end`、EOF、および [grammar.md](./grammar.md) で文書化した
+  task 5 の top-level dispatch start で停止する。具体的には `import`、`export`、
+  `definition`、`reserve`、`registration`、`claim`、`theorem`、`lemma`、`open`、
+  `assumed`、`conditional`、`private`、`public`、`infix_operator`、
+  `prefix_operator`、`postfix_operator`、`synonym`、`antonym` である。後続の item
+  文法タスクが concrete dispatch を追加するときに、この集合を拡張または絞り込む。
+- 利用可能な `end` token を対応付けた後も parser の block stack が開いている場合、
+  block 風キーワードに対する `end` 欠落を EOF で診断し、各欠落 close に明示的な
+  recovered `MissingEnd` node を作る。diagnostic は block opener を secondary anchor
+  として保持するが、recovery node 自体に必須の context child は持たせない。これにより
+  後続の module skeleton node が source token を所有しても non-root parent が重複しない。
+  現在の stack は top-level block と、それ自身の `end` を持つ algorithm control block を
+  含む。`for` は formula quantifier が block end を消費しないように、
+  `for <identifier> = ...` / `for <identifier> in ...` の loop 風 token shape の場合だけ
+  開く。concrete statement parser と match parser が着地するまでは、`if` は構文的
+  heuristic を使う。明らかな algorithm/proof control introducer の後、または次の境界
+  より前に `do` body marker が現れる場合に開く。`otherwise` も同様に、完了済み
+  match case の surface shape に合わせて `end` または `end;` の後に開く。その prefix
+  を持たない式レベルの `otherwise` は開かない。`else if` は nested block opener ではなく、
+  1 つの conditional chain として扱う。
 - 合成の文字列必須 parser context で文字列リテラルが欠落した場合に診断し、明示的な recovered `MissingStringLiteral` node を作る。
+- task 5 の module skeleton parsing は、top-level item semicolon 欠落を
+  `MissingSemicolon` で診断し、unexpected top-level token を
+  `UnexpectedTopLevelToken`、明示的な recovered `SkippedToken` node、および
+  `SkippedTokenReason::Recovery` の `SurfaceTrivia::skipped_token_ranges` entry で
+  表現する。
 - 対応する block opener を持たない裸の `end` は、構文診断とともに `ast = None` を返す。
 
 ## 公開 enum の互換性

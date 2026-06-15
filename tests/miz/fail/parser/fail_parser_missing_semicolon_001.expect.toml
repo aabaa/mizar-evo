@@ -1,0 +1,19 @@
+schema_version = 1
+id = "fail_parser_missing_semicolon_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.module_skeleton"
+source = "fail_parser_missing_semicolon_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "missing_semicolon"
+stable_detail_key = "parser.module_skeleton.missing_semicolon"
+diagnostic_codes = [
+  "missing_semicolon",
+]
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.12.modules.compilation_unit_skeleton",
+]
+notes = "Active parse-only runner coverage for parser task 5 missing top-level item semicolon recovery."
