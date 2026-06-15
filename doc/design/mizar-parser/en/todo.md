@@ -358,11 +358,28 @@ older numeric syntax task references appear to disagree, prefer
      pass/fail corpus coverage, and traceability entries. Standalone
      `p.x := t` remains assigned to later statement/algorithm hosts.
 
-11. **`qua` qualification.** [ ]
+11. **`qua` qualification.** [x]
     - `term qua type_expression` with precedence against selector and
-      application forms.
+      application forms. Parse selector/update/application shapes before `qua`,
+      fold `qua` chains left-associatively, preserve the
+      `x qua Element of S qua Magma` target-type argument binding, and replace
+      bracket `qua_arg` `TermPlaceholder` stubs with the task-11
+      `TermExpression` / `QuaExpression` surface while respecting the narrower
+      Appendix-A `qua_arg ::= identifier { "qua" radix_type }` shape.
+      Missing or malformed `qua` targets use `MalformedTypeExpression` plus
+      `MissingTypeExpression` or skipped-tail recovery under `QuaExpression`;
+      tests must include selector precedence, parenthesized
+      selector-after-`qua`, bracket `qua_arg` migration, left-associative
+      chains, target recovery, and active parse-only pass/fail traceability.
     - Deps: 8, 9, `mizar-syntax` task 11 / S-011. Spec:
       [13.term_expression.md](../../../spec/en/13.term_expression.md).
+   - Result: implemented syntax-only `QuaExpression` surfaces after
+     selector/update postfix parsing, left-associative `qua` chains, target
+     type-expression parsing with nested term-argument `qua` binding, bracket
+     `qua_arg` migration from `TermPlaceholder` to `TermExpression` /
+     `QuaExpression`, `MalformedTypeExpression` recovery with
+     `MissingTypeExpression` or skipped target tails, parser unit tests, active
+     parse-only pass/fail corpus coverage, and traceability entries.
 
 12. **Operator expressions (Pratt over the active lexicon).** [ ]
     - Generalize the task-11 explicit-fixity Pratt parser to user prefix,

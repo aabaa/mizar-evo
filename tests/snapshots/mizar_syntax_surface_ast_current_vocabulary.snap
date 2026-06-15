@@ -1,6 +1,6 @@
 surface-ast-snapshot-v1
 root:
-  Root range=0..265 recovered=false
+  Root range=0..273 recovered=false
     Token kind=Identifier text="id" range=0..2 recovered=false
     Token kind=ReservedWord text="theorem" range=3..10 recovered=false
     Token kind=ReservedSymbol text=";" range=10..11 recovered=false
@@ -93,6 +93,9 @@ root:
     Token kind=ReservedSymbol text=":=" range=260..262 recovered=false
     Token kind=Identifier text="y" range=263..264 recovered=false
     Token kind=ReservedSymbol text=")" range=264..265 recovered=false
+    Token kind=Identifier text="q" range=266..267 recovered=false
+    Token kind=ReservedWord text="qua" range=268..271 recovered=false
+    Token kind=UserSymbol text="T" range=272..273 recovered=false
     InfixExpression spelling="++" precedence=10 associativity=Right range=0..21 recovered=false
       Token kind=Identifier text="id" range=0..2 recovered=false
       Token kind=UserSymbol text="++" range=19..21 recovered=false
@@ -266,6 +269,16 @@ root:
             TermReference range=263..264 recovered=false
               Token kind=Identifier text="y" range=263..264 recovered=false
         Token kind=ReservedSymbol text=")" range=264..265 recovered=false
+    TermExpression range=266..273 recovered=false
+      QuaExpression range=266..273 recovered=false
+        TermReference range=266..267 recovered=false
+          Token kind=Identifier text="q" range=266..267 recovered=false
+        Token kind=ReservedWord text="qua" range=268..271 recovered=false
+        TypeExpression range=272..273 recovered=false
+          TypeHead range=272..273 recovered=false
+            QualifiedSymbol range=272..273 recovered=false
+              PathSegment range=272..273 recovered=false
+                Token kind=UserSymbol text="T" range=272..273 recovered=false
     ErrorRecovery kind=MissingEnd range=89..89 recovered=true
       Token kind=ReservedWord text="theorem" range=3..10 recovered=false
 expression_root:
@@ -366,3 +379,6 @@ token_nodes:
   Token kind=ReservedSymbol text=":=" range=260..262 recovered=false
   Token kind=Identifier text="y" range=263..264 recovered=false
   Token kind=ReservedSymbol text=")" range=264..265 recovered=false
+  Token kind=Identifier text="q" range=266..267 recovered=false
+  Token kind=ReservedWord text="qua" range=268..271 recovered=false
+  Token kind=UserSymbol text="T" range=272..273 recovered=false

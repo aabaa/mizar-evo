@@ -34,6 +34,12 @@ struct ParsedTypeNode {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum QuaTargetGrammar {
+    TypeExpression,
+    RadixType,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct AttributeRefPlan {
     start_position: usize,
     next_position: usize,
@@ -876,8 +882,9 @@ impl Parser {
                 recovery_nodes.extend(type_argument.recovery_nodes);
                 cursor = type_argument.next_position;
                 expecting_argument = false;
-            } else if let Some(term) = self.parse_qua_argument_placeholder_at(cursor) {
+            } else if let Some(term) = self.parse_bracket_qua_argument_at(cursor) {
                 children.push(term.id);
+                recovery_nodes.extend(term.recovery_nodes);
                 cursor = term.next_position;
                 expecting_argument = false;
             } else {
@@ -945,7 +952,8 @@ impl Parser {
         }
 
         let primary = self.parse_term_primary_at(position)?;
-        let term = self.parse_term_postfix_chain_at(position, primary);
+        let postfix = self.parse_term_postfix_chain_at(position, primary);
+        let term = self.parse_qua_chain_at(position, postfix, QuaTargetGrammar::TypeExpression);
         Some(self.wrap_term_expression(position, term))
     }
 
@@ -955,8 +963,9 @@ impl Parser {
     ) -> Option<ParsedTypeNode> {
         if self.is_identifier_at(position) && self.is_structure_field_list_opener_at(position + 1) {
             let primary = self.parse_identifier_reference_term_at(position);
-            let term =
+            let postfix =
                 self.parse_term_postfix_chain_before_structure_field_list_at(position, primary);
+            let term = self.parse_qua_chain_at(position, postfix, QuaTargetGrammar::TypeExpression);
             return Some(self.wrap_term_expression(position, term));
         }
 
@@ -964,8 +973,9 @@ impl Parser {
             && self.is_structure_field_list_opener_at(symbol_end)
         {
             let primary = self.parse_qualified_symbol_reference_term_at(position)?;
-            let term =
+            let postfix =
                 self.parse_term_postfix_chain_before_structure_field_list_at(position, primary);
+            let term = self.parse_qua_chain_at(position, postfix, QuaTargetGrammar::TypeExpression);
             return Some(self.wrap_term_expression(position, term));
         }
 
@@ -973,7 +983,9 @@ impl Parser {
             return None;
         }
         let primary = self.parse_term_primary_at(position)?;
-        let term = self.parse_term_postfix_chain_before_structure_field_list_at(position, primary);
+        let postfix =
+            self.parse_term_postfix_chain_before_structure_field_list_at(position, primary);
+        let term = self.parse_qua_chain_at(position, postfix, QuaTargetGrammar::TypeExpression);
         Some(self.wrap_term_expression(position, term))
     }
 
@@ -1033,6 +1045,97 @@ impl Parser {
             break;
         }
         term
+    }
+
+    fn parse_qua_chain_at(
+        &mut self,
+        start_position: usize,
+        mut term: ParsedTypeNode,
+        target_grammar: QuaTargetGrammar,
+    ) -> ParsedTypeNode {
+        while self.is_reserved_word_at(term.next_position, "qua") {
+            let qua_position = term.next_position;
+            term = self.parse_qua_expression_after_base(
+                start_position,
+                term,
+                qua_position,
+                target_grammar,
+            );
+        }
+        term
+    }
+
+    fn parse_qua_expression_after_base(
+        &mut self,
+        start_position: usize,
+        base: ParsedTypeNode,
+        qua_position: usize,
+        target_grammar: QuaTargetGrammar,
+    ) -> ParsedTypeNode {
+        let mut children = vec![base.id, self.token_node_ids[qua_position]];
+        let mut recovery_nodes = base.recovery_nodes;
+        let mut cursor = qua_position + 1;
+
+        match self.parse_qua_target_type_at(cursor, target_grammar) {
+            Some(target) => {
+                children.push(target.id);
+                recovery_nodes.extend(target.recovery_nodes);
+                cursor = target.next_position;
+            }
+            None => {
+                self.diagnose_malformed_type_expression(
+                    cursor,
+                    "expected type expression after `qua`",
+                );
+                let missing = self.add_missing_type_expression(cursor);
+                children.push(missing);
+                recovery_nodes.push(missing);
+                if let Some(recovery) = self.recover_malformed_type_tail(cursor) {
+                    children.push(recovery.id);
+                    recovery_nodes.extend(recovery.recovery_nodes);
+                    cursor = recovery.next_position;
+                }
+            }
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::QuaExpression,
+            range: self.covering_token_range(start_position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(qua_position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_qua_target_type_at(
+        &mut self,
+        position: usize,
+        target_grammar: QuaTargetGrammar,
+    ) -> Option<ParsedTypeNode> {
+        match target_grammar {
+            QuaTargetGrammar::TypeExpression => self.parse_type_expression_at(position),
+            QuaTargetGrammar::RadixType => self.parse_radix_type_expression_at(position),
+        }
+    }
+
+    fn parse_radix_type_expression_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        if self.is_type_expression_boundary_at(position) {
+            return None;
+        }
+        let head = self.parse_type_head_at(position)?;
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::TypeExpression,
+            range: self.covering_token_range(position, head.next_position),
+            children: vec![head.id],
+        });
+        Some(ParsedTypeNode {
+            id,
+            next_position: head.next_position.max(position + 1),
+            recovery_nodes: head.recovery_nodes,
+        })
     }
 
     fn parse_term_primary_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
@@ -1840,21 +1943,13 @@ impl Parser {
         cursor
     }
 
-    fn parse_qua_argument_placeholder_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+    fn parse_bracket_qua_argument_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
         if !self.is_identifier_at(position) {
             return None;
         }
-        let cursor = self.qua_argument_end_at(position);
-        let id = self.events.emit(SyntaxEvent::Node {
-            kind: SurfaceNodeKind::TermPlaceholder,
-            range: self.covering_token_range(position, cursor),
-            children: self.token_node_ids[position..cursor].to_vec(),
-        });
-        Some(ParsedTypeNode {
-            id,
-            next_position: cursor.max(position + 1),
-            recovery_nodes: Vec::new(),
-        })
+        let base = self.parse_identifier_reference_term_at(position);
+        let term = self.parse_qua_chain_at(position, base, QuaTargetGrammar::RadixType);
+        Some(self.wrap_term_expression(position, term))
     }
 
     fn parse_attribute_symbol_at(&mut self, position: usize) -> Option<ParsedPathNode> {
@@ -2515,6 +2610,15 @@ impl Parser {
             if at_top_level
                 && saw_argument
                 && !expecting_argument
+                && self.is_reserved_word_at(cursor, "qua")
+                && let Some(target_end) = self.type_expression_end_at(cursor + 1)
+            {
+                cursor = target_end;
+                continue;
+            }
+            if at_top_level
+                && saw_argument
+                && !expecting_argument
                 && self.can_start_type_head_at(cursor)
             {
                 return Some(cursor);
@@ -2680,24 +2784,6 @@ impl Parser {
             cursor += 1;
         }
         (cursor > position).then_some(cursor)
-    }
-
-    fn qua_argument_end_at(&self, position: usize) -> usize {
-        let mut cursor = position + 1;
-        while self.is_reserved_word_at(cursor, "qua") {
-            cursor += 1;
-            if self.is_builtin_type_word_at(cursor) {
-                cursor += 1;
-            } else if let Some(symbol_end) = self.qualified_symbol_next_at(cursor) {
-                cursor = symbol_end;
-                if let Some(arguments_end) = self.type_arguments_end_at(cursor) {
-                    cursor = arguments_end;
-                }
-            } else {
-                break;
-            }
-        }
-        cursor
     }
 
     fn type_arguments_end_at(&self, position: usize) -> Option<usize> {
@@ -5595,6 +5681,388 @@ mod tests {
     }
 
     #[test]
+    fn parser_parses_qua_qualification_chains_left_associatively() {
+        let source_id = source_id(132);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("a", ParserTokenKind::Identifier),
+                ("qua", ParserTokenKind::ReservedWord),
+                ("R", ParserTokenKind::UserSymbol),
+                ("qua", ParserTokenKind::ReservedWord),
+                ("S", ParserTokenKind::UserSymbol),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "unexpected diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output.ast.expect("qua chain should parse");
+        assert_eq!(
+            ast.nodes()
+                .iter()
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::QuaExpression))
+                .count(),
+            2
+        );
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(node.kind, SurfaceNodeKind::QuaExpression)
+                && node
+                    .children
+                    .iter()
+                    .any(|id| matches!(ast.node(*id).unwrap().kind, SurfaceNodeKind::QuaExpression))
+        }));
+    }
+
+    #[test]
+    fn parser_parses_qua_after_selector_application_and_parentheses() {
+        let source_id = source_id(133);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("p", ParserTokenKind::Identifier),
+                (".", ParserTokenKind::ReservedSymbol),
+                ("x", ParserTokenKind::Identifier),
+                ("qua", ParserTokenKind::ReservedWord),
+                ("R", ParserTokenKind::UserSymbol),
+                (",", ParserTokenKind::ReservedSymbol),
+                ("f", ParserTokenKind::Identifier),
+                ("(", ParserTokenKind::ReservedSymbol),
+                ("a", ParserTokenKind::Identifier),
+                (")", ParserTokenKind::ReservedSymbol),
+                ("qua", ParserTokenKind::ReservedWord),
+                ("R", ParserTokenKind::UserSymbol),
+                (",", ParserTokenKind::ReservedSymbol),
+                ("(", ParserTokenKind::ReservedSymbol),
+                ("p", ParserTokenKind::Identifier),
+                ("qua", ParserTokenKind::ReservedWord),
+                ("R", ParserTokenKind::UserSymbol),
+                (")", ParserTokenKind::ReservedSymbol),
+                (".", ParserTokenKind::ReservedSymbol),
+                ("x", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "unexpected diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output.ast.expect("qua precedence examples should parse");
+        assert_eq!(
+            ast.nodes()
+                .iter()
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::QuaExpression))
+                .count(),
+            3
+        );
+        assert_eq!(
+            ast.nodes()
+                .iter()
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::SelectorAccess))
+                .count(),
+            2
+        );
+        assert!(
+            ast.nodes()
+                .iter()
+                .any(|node| matches!(node.kind, SurfaceNodeKind::ApplicationTerm))
+        );
+        assert!(
+            ast.nodes()
+                .iter()
+                .any(|node| matches!(node.kind, SurfaceNodeKind::ParenthesizedTerm))
+        );
+
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(node.kind, SurfaceNodeKind::QuaExpression)
+                && direct_child_has_kind(&ast, node, |kind| {
+                    matches!(kind, SurfaceNodeKind::SelectorAccess)
+                })
+        }));
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(node.kind, SurfaceNodeKind::QuaExpression)
+                && direct_child_has_kind(&ast, node, |kind| {
+                    matches!(kind, SurfaceNodeKind::ApplicationTerm)
+                })
+        }));
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(node.kind, SurfaceNodeKind::SelectorAccess)
+                && direct_child_has_kind(&ast, node, |kind| {
+                    matches!(kind, SurfaceNodeKind::ParenthesizedTerm)
+                })
+        }));
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(node.kind, SurfaceNodeKind::ParenthesizedTerm)
+                && subtree_contains_kind(&ast, node.children[1], |kind| {
+                    matches!(kind, SurfaceNodeKind::QuaExpression)
+                })
+        }));
+    }
+
+    #[test]
+    fn parser_parses_qua_inside_target_type_arguments_before_outer_chain() {
+        let source_id = source_id(134);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("qua", ParserTokenKind::ReservedWord),
+                ("Element", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("S", ParserTokenKind::UserSymbol),
+                ("qua", ParserTokenKind::ReservedWord),
+                ("Magma", ParserTokenKind::UserSymbol),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "unexpected diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("qua inside target type argument should parse");
+        assert_eq!(
+            ast.nodes()
+                .iter()
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::QuaExpression))
+                .count(),
+            2
+        );
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(node.kind, SurfaceNodeKind::QuaExpression)
+                && node.children.iter().any(|id| {
+                    matches!(ast.node(*id).unwrap().kind, SurfaceNodeKind::TypeExpression)
+                        && subtree_contains_kind(&ast, *id, |kind| {
+                            matches!(kind, SurfaceNodeKind::QuaExpression)
+                        })
+                })
+        }));
+    }
+
+    #[test]
+    fn parser_recovers_missing_qua_target_type() {
+        let source_id = source_id(135);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("qua", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let semicolon_range = tokens[7].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedTypeExpression
+        );
+        assert_eq!(output.diagnostics[0].primary, semicolon_range);
+        let ast = output.ast.expect("missing qua target should recover");
+        let qua = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::QuaExpression));
+        assert!(qua.children.iter().any(|id| {
+            matches!(
+                ast.node(*id).unwrap().kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingTypeExpression)
+            )
+        }));
+    }
+
+    #[test]
+    fn parser_recovers_malformed_qua_target_tail() {
+        let source_id = source_id(136);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("qua", ParserTokenKind::ReservedWord),
+                ("bad", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let bad_range = tokens[7].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedTypeExpression
+        );
+        assert_eq!(output.diagnostics[0].primary, bad_range);
+        let ast = output.ast.expect("malformed qua target should recover");
+        let qua = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::QuaExpression));
+        assert!(qua.children.iter().any(|id| {
+            matches!(
+                ast.node(*id).unwrap().kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingTypeExpression)
+            )
+        }));
+        assert!(qua.children.iter().any(|id| {
+            matches!(
+                ast.node(*id).unwrap().kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+            )
+        }));
+    }
+
+    #[test]
+    fn parser_recovers_missing_bracket_qua_target_type() {
+        let source_id = source_id(137);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("[", ParserTokenKind::ReservedSymbol),
+                ("V", ParserTokenKind::Identifier),
+                ("qua", ParserTokenKind::ReservedWord),
+                ("]", ParserTokenKind::ReservedSymbol),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let close_range = tokens[7].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedTypeExpression
+        );
+        assert_eq!(output.diagnostics[0].primary, close_range);
+        let ast = output
+            .ast
+            .expect("missing bracket qua target should recover");
+        let qua = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::QuaExpression));
+        assert!(qua.children.iter().any(|id| {
+            matches!(
+                ast.node(*id).unwrap().kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingTypeExpression)
+            )
+        }));
+    }
+
+    #[test]
+    fn parser_rejects_attribute_bearing_bracket_qua_target_as_radix_only() {
+        let source_id = source_id(138);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("reserve", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("for", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::UserSymbol),
+                ("[", ParserTokenKind::ReservedSymbol),
+                ("V", ParserTokenKind::Identifier),
+                ("qua", ParserTokenKind::ReservedWord),
+                ("non", ParserTokenKind::ReservedWord),
+                ("empty", ParserTokenKind::UserSymbol),
+                ("R", ParserTokenKind::UserSymbol),
+                ("]", ParserTokenKind::ReservedSymbol),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let non_range = tokens[7].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedTypeExpression
+        );
+        assert_eq!(output.diagnostics[0].primary, non_range);
+        let ast = output
+            .ast
+            .expect("attribute-bearing bracket qua target should recover");
+        let qua = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::QuaExpression));
+        assert!(qua.children.iter().any(|id| {
+            matches!(
+                ast.node(*id).unwrap().kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingTypeExpression)
+            )
+        }));
+        assert!(qua.children.iter().any(|id| {
+            matches!(
+                ast.node(*id).unwrap().kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+            )
+        }));
+    }
+
+    #[test]
     fn parser_recovers_choice_terms_missing_type_expression() {
         let source_id = source_id(122);
         let tokens = token_sequence(
@@ -5707,6 +6175,8 @@ mod tests {
                 ("U", ParserTokenKind::UserSymbol),
                 (",", ParserTokenKind::ReservedSymbol),
                 ("V", ParserTokenKind::Identifier),
+                (",", ParserTokenKind::ReservedSymbol),
+                ("W", ParserTokenKind::Identifier),
                 ("qua", ParserTokenKind::ReservedWord),
                 ("R", ParserTokenKind::UserSymbol),
                 ("]", ParserTokenKind::ReservedSymbol),
@@ -5757,20 +6227,44 @@ mod tests {
                 .count(),
             2
         );
-        let qua_placeholder = type_arguments
-            .children
-            .iter()
-            .filter_map(|id| ast.node(*id))
-            .find(|node| matches!(node.kind, SurfaceNodeKind::TermPlaceholder))
-            .expect("bracket qua_arg should be a temporary term placeholder");
-        assert_eq!(
-            qua_placeholder
+        assert!(
+            !type_arguments
                 .children
                 .iter()
                 .filter_map(|id| ast.node(*id))
-                .filter_map(mizar_syntax::SurfaceNode::token_text)
-                .collect::<Vec<_>>(),
-            vec!["V", "qua", "R"]
+                .any(|node| matches!(node.kind, SurfaceNodeKind::TermPlaceholder)),
+            "bracket qua_arg should no longer use a temporary term placeholder"
+        );
+        let qua_term = type_arguments
+            .children
+            .iter()
+            .filter_map(|id| ast.node(*id))
+            .find(|node| {
+                matches!(node.kind, SurfaceNodeKind::TermExpression)
+                    && direct_child_has_kind(&ast, node, |kind| {
+                        matches!(kind, SurfaceNodeKind::QuaExpression)
+                    })
+            })
+            .expect("bracket qua_arg should be a term expression after task 11");
+        assert_eq!(
+            type_arguments
+                .children
+                .iter()
+                .filter_map(|id| ast.node(*id))
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::TermExpression))
+                .count(),
+            2
+        );
+        assert!(type_arguments.children.iter().any(|id| {
+            matches!(ast.node(*id).unwrap().kind, SurfaceNodeKind::TermExpression)
+                && direct_child_has_kind(&ast, ast.node(*id).unwrap(), |kind| {
+                    matches!(kind, SurfaceNodeKind::TermReference)
+                })
+        }));
+        assert!(
+            qua_term.children.iter().any(|id| {
+                matches!(ast.node(*id).unwrap().kind, SurfaceNodeKind::QuaExpression)
+            })
         );
     }
 
@@ -6462,6 +6956,32 @@ mod tests {
             .iter()
             .find(|node| predicate(&node.kind))
             .expect("expected exactly one matching node")
+    }
+
+    fn subtree_contains_kind(
+        ast: &mizar_syntax::SurfaceAst,
+        id: mizar_syntax::SurfaceNodeId,
+        predicate: impl Fn(&SurfaceNodeKind) -> bool + Copy,
+    ) -> bool {
+        let Some(node) = ast.node(id) else {
+            return false;
+        };
+        predicate(&node.kind)
+            || node
+                .children
+                .iter()
+                .any(|child| subtree_contains_kind(ast, *child, predicate))
+    }
+
+    fn direct_child_has_kind(
+        ast: &mizar_syntax::SurfaceAst,
+        node: &mizar_syntax::SurfaceNode,
+        predicate: impl Fn(&SurfaceNodeKind) -> bool,
+    ) -> bool {
+        node.children
+            .iter()
+            .filter_map(|child| ast.node(*child))
+            .any(|child| predicate(&child.kind))
     }
 
     fn rowan_token_texts(ast: &mizar_syntax::SurfaceAst) -> Vec<String> {

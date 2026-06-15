@@ -73,6 +73,7 @@ pub enum SyntaxKind {
     SelectorAccess = 38,
     StructureUpdate = 39,
     FieldUpdate = 40,
+    QuaExpression = 41,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -127,6 +128,7 @@ impl SyntaxKind {
             38 => Self::SelectorAccess,
             39 => Self::StructureUpdate,
             40 => Self::FieldUpdate,
+            41 => Self::QuaExpression,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -183,6 +185,7 @@ impl SyntaxKind {
                 | Self::SelectorAccess
                 | Self::StructureUpdate
                 | Self::FieldUpdate
+                | Self::QuaExpression
         )
     }
 
@@ -722,6 +725,7 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::SelectorAccess
             | SurfaceNodeKind::StructureUpdate
             | SurfaceNodeKind::FieldUpdate
+            | SurfaceNodeKind::QuaExpression
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -767,6 +771,7 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::SelectorAccess
             | SurfaceNodeKind::StructureUpdate
             | SurfaceNodeKind::FieldUpdate
+            | SurfaceNodeKind::QuaExpression
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -812,6 +817,7 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::SelectorAccess
             | SurfaceNodeKind::StructureUpdate
             | SurfaceNodeKind::FieldUpdate
+            | SurfaceNodeKind::QuaExpression
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -1039,6 +1045,13 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_qua_expression(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::QuaExpression => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_module_path(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::ModulePath => Some(self),
@@ -1161,6 +1174,7 @@ impl SurfaceNode {
             | SurfaceNodeKind::SelectorAccess
             | SurfaceNodeKind::StructureUpdate
             | SurfaceNodeKind::FieldUpdate
+            | SurfaceNodeKind::QuaExpression
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -1210,6 +1224,7 @@ pub enum SurfaceNodeKind {
     SelectorAccess,
     StructureUpdate,
     FieldUpdate,
+    QuaExpression,
     ModulePath,
     NamespacePath,
     QualifiedSymbol,
@@ -1255,6 +1270,7 @@ impl SurfaceNodeKind {
             Self::SelectorAccess => SyntaxKind::SelectorAccess,
             Self::StructureUpdate => SyntaxKind::StructureUpdate,
             Self::FieldUpdate => SyntaxKind::FieldUpdate,
+            Self::QuaExpression => SyntaxKind::QuaExpression,
             Self::ModulePath => SyntaxKind::ModulePath,
             Self::NamespacePath => SyntaxKind::NamespacePath,
             Self::QualifiedSymbol => SyntaxKind::QualifiedSymbol,
@@ -1386,6 +1402,7 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
+        SurfaceNodeKind::QuaExpression => output.push_str("QuaExpression"),
         SurfaceNodeKind::ModulePath => output.push_str("ModulePath"),
         SurfaceNodeKind::NamespacePath => output.push_str("NamespacePath"),
         SurfaceNodeKind::QualifiedSymbol => output.push_str("QualifiedSymbol"),
@@ -2404,6 +2421,7 @@ mod tests {
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
+            SyntaxKind::QuaExpression,
             SyntaxKind::ModulePath,
             SyntaxKind::NamespacePath,
             SyntaxKind::QualifiedSymbol,
@@ -2970,6 +2988,63 @@ mod tests {
             ast.node_view(sid(field_update))
                 .unwrap()
                 .as_field_update()
+                .is_some()
+        );
+    }
+
+    #[test]
+    fn task11_typed_accessor_covers_qua_expression() {
+        let source_id = source_id(26);
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let base = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+        let qua = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "qua",
+            range(source_id, 2, 5),
+        );
+        let target = builder.add_token(SurfaceTokenKind::UserSymbol, "T", range(source_id, 6, 7));
+
+        let base_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 0, 1),
+            vec![base],
+        );
+        let target_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 6, 7),
+            vec![target],
+        );
+        let target_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 6, 7),
+            vec![target_segment],
+        );
+        let target_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 6, 7),
+            vec![target_symbol],
+        );
+        let target_expression = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 6, 7),
+            vec![target_head],
+        );
+        let qua_expression = builder.add_node(
+            SurfaceNodeKind::QuaExpression,
+            range(source_id, 0, 7),
+            vec![base_reference, qua, target_expression],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 7),
+            vec![base, qua, target, qua_expression],
+        );
+        let ast = builder.finish(Some(root), None);
+
+        assert!(
+            ast.node_view(sid(qua_expression))
+                .unwrap()
+                .as_qua_expression()
                 .is_some()
         );
     }
@@ -4131,6 +4206,21 @@ mod tests {
             ")",
             range(source_id, 264, 265),
         );
+        let term_qua_base = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "q",
+            range(source_id, 266, 267),
+        );
+        let term_qua_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "qua",
+            range(source_id, 268, 271),
+        );
+        let term_qua_target = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "T",
+            range(source_id, 272, 273),
+        );
         let expression = builder.add_node(
             SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
                 spelling: "++".into(),
@@ -4621,6 +4711,41 @@ mod tests {
             range(source_id, 244, 265),
             vec![structure_update],
         );
+        let qua_base_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 266, 267),
+            vec![term_qua_base],
+        );
+        let qua_target_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 272, 273),
+            vec![term_qua_target],
+        );
+        let qua_target_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 272, 273),
+            vec![qua_target_segment],
+        );
+        let qua_target_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 272, 273),
+            vec![qua_target_symbol],
+        );
+        let qua_target_expression = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 272, 273),
+            vec![qua_target_head],
+        );
+        let qua_expression = builder.add_node(
+            SurfaceNodeKind::QuaExpression,
+            range(source_id, 266, 273),
+            vec![qua_base_reference, term_qua_keyword, qua_target_expression],
+        );
+        let qua_term_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 266, 273),
+            vec![qua_expression],
+        );
         let item_list = builder.add_node(
             SurfaceNodeKind::ItemList,
             range(source_id, 81, 154),
@@ -4638,7 +4763,7 @@ mod tests {
         );
         let root = builder.add_node(
             SurfaceNodeKind::Root,
-            range(source_id, 0, 265),
+            range(source_id, 0, 273),
             vec![
                 identifier,
                 reserved_word,
@@ -4732,6 +4857,9 @@ mod tests {
                 term_update_assign,
                 term_update_value,
                 term_update_close,
+                term_qua_base,
+                term_qua_keyword,
+                term_qua_target,
                 expression,
                 module_path,
                 namespace_path,
@@ -4749,6 +4877,7 @@ mod tests {
                 set_expression,
                 selector_expression,
                 structure_update_expression,
+                qua_term_expression,
                 recovery,
             ],
         );

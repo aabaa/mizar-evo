@@ -343,10 +343,27 @@ resolver / build-system 依存を避ける。
      coverage、traceability entry を追加した。standalone `p.x := t` は後続の
      statement / algorithm host の担当として残す。
 
-11. **`qua` 修飾。** [ ]
+11. **`qua` 修飾。** [x]
     - selector と適用形に対する優先順位を持つ `term qua type_expression`。
+      selector / update / application 形を `qua` より先に parse し、`qua` chain を
+      left-associative に畳み込む。`x qua Element of S qua Magma` の target-type
+      argument binding を保持し、bracket `qua_arg` の `TermPlaceholder` stub は
+      task 11 の `TermExpression` / `QuaExpression` surface に置き換える。ただし
+      Appendix A のより狭い `qua_arg ::= identifier { "qua" radix_type }` 形を尊重する。
+      `qua` target 欠落または malformed target は `MalformedTypeExpression` と
+      `QuaExpression` 下の `MissingTypeExpression` または skipped-tail recovery を使う。
+      test は selector precedence、parenthesized selector-after-`qua`、bracket `qua_arg`
+      migration、left-associative chain、target recovery、active parse-only pass/fail
+      traceability を含める。
     - 依存: 8、9、`mizar-syntax` task 11 / S-011。仕様:
       [13.term_expression.md](../../../spec/ja/13.term_expression.md)。
+   - 結果: selector/update postfix parsing の後に syntax-only `QuaExpression`
+     surface を実装した。left-associative `qua` chain、nested term-argument `qua`
+     binding を持つ target type-expression parsing、bracket `qua_arg` の
+     `TermPlaceholder` から `TermExpression` / `QuaExpression` への移行、
+     `MissingTypeExpression` または skipped target tail を伴う
+     `MalformedTypeExpression` recovery、parser unit test、active parse-only
+     pass/fail corpus coverage、traceability entry を追加した。
 
 12. **演算子式（アクティブレキシコン上の Pratt）。** [ ]
     - task 11 の明示 fixity の Pratt パーサーを、`ParserInputs` の fixity

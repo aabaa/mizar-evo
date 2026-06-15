@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_qua_terms_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.qua_terms"
+source = "pass_parser_qua_terms_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.13.qua_qualification.parser",
+]
+notes = "Active parse-only runner coverage for parser task 11 qua chains, selector/application precedence, parenthesized selector-after-qua, target-type argument binding, and bracket qua_arg parsing."

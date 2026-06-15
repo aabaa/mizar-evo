@@ -1,0 +1,3 @@
+import parser.type_fixtures;
+reserve x for T of p.x qua T, f(a) qua T, (p qua T).x, x qua T of r qua R;
+reserve y for T[V qua R];

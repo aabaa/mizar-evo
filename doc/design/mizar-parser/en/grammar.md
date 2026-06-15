@@ -2,7 +2,7 @@
 
 Status: module skeleton, top-level placeholder dispatch, concrete import
 items, export items, visibility wrappers, reserve-hosted type expressions, and
-reserve-hosted primary terms implemented through task 9; remaining concrete
+reserve-hosted term surfaces implemented through task 11; remaining concrete
 non-module item grammars planned.
 
 ## Purpose
@@ -28,8 +28,9 @@ Current behavior:
   not by depending on rowan storage layout or dense arena indices.
 - top-level `reserve` items are concrete enough to host syntax-only
   `TypeExpression` trees with attribute chains, generic type heads,
-  `of`/`over` `TermExpression` arguments, bracket nested type arguments, and bracket
-  `qua_arg` placeholders. Other non-module item grammars remain placeholders.
+  `of`/`over` `TermExpression` arguments, bracket nested type arguments, and
+  bracket `qua_arg` entries parsed as `TermExpression` / `QuaExpression`
+  surfaces. Other non-module item grammars remain placeholders.
 
 ## Task 4: Shared Paths
 
@@ -271,13 +272,16 @@ and active attribute suffixes.
 `TypeArguments` preserves `of` / `over` argument lists. After task 9 those
 lists own `TermExpression` children for primary terms rather than temporary
 term-entry placeholders. Bracket type arguments recursively parse nested
-`TypeExpression` children when possible. When a bracket argument instead matches `qua_arg`, task 8 stores it in a
-temporary `TermPlaceholder` child that owns the identifier and any `qua`
-radix-type tail tokens. Missing `]` is kept as `MalformedTypeExpression` plus
-`UnmatchedOpeningDelimiter` recovery. The task-8 `TermPlaceholder` node is a
-shallow token owner for one bracket `qua_arg` argument only after task 9; it
-must not encode term classification, operator facts, name resolution, or
-overload selection.
+`TypeExpression` children when possible. From task 11 onward, when a bracket
+argument instead matches Appendix-A `qua_arg`, the parser stores it as a
+`TermExpression` child whose term-shape is an identifier `TermReference` or a
+left-nested `QuaExpression` chain. This bracket fallback remains narrower than
+ordinary term parsing: it starts from an identifier-shaped `qua_arg`, and each
+`qua` target is parsed as a radix-type-shaped `TypeExpression`. Missing `]` is
+kept as `MalformedTypeExpression` plus `UnmatchedOpeningDelimiter` recovery.
+The task-8 `TermPlaceholder` node is retained only as legacy vocabulary after
+task 11 and must not encode term classification, operator facts, name
+resolution, or overload selection.
 
 Malformed type syntax that can continue at the current reserve statement
 boundary uses `MalformedTypeExpression`. Missing pure type expressions after
@@ -420,6 +424,60 @@ grammar. Unit coverage pins selector chains and calls, functional update lists,
 missing update values, missing update delimiters, and the structure-constructor
 field-list boundary after selector arguments. Active parse-only pass/fail
 fixtures cover the frontend seam and trace back to §2.5.3 and §13.3.2-13.3.3.
+
+## Task 11: `qua` Qualification
+
+Production inventory:
+
+```ebnf
+term_expression      ::= operator_expression { "qua" type_expression } ;
+qua_expression       ::= operator_expression "qua" type_expression
+                         { "qua" type_expression } ;
+```
+
+Task 11 parses `qua` as the lowest-precedence term-level operator currently
+implemented. The parser first forms primary terms and task-10 selector/update
+postfix chains, then folds any `qua` suffixes into left-nested
+`QuaExpression` nodes. `p.x qua T` therefore qualifies the selector result.
+Selectors after a qualified term require parentheses because selector/update
+postfixes bind before `qua`: `(p qua T).x` parses the selector on the
+parenthesized qualified term, while `p qua T.x` leaves any dot inside the
+target type only if the type parser can form that dotted type surface.
+
+The target of ordinary term-level `qua` is a `TypeExpression`. If that type
+contains `of` / `over` term arguments, those arguments are parsed with the full
+term parser before an outer `qua` chain can continue. Consequently
+`x qua Element of S qua Magma` is represented as `x qua Element of (S qua
+Magma)`, while `(x qua Element of S) qua Magma` is required to qualify the
+outer result again.
+
+Bracket `type_arg_list` entries that match Appendix-A `qua_arg` are no longer
+stored as task-8 `TermPlaceholder` nodes. They are parsed as `TermExpression`
+children with an identifier `TermReference` base and optional left-nested
+`QuaExpression` suffixes. This fallback is intentionally narrower than
+ordinary term parsing: it starts from an identifier and each target uses
+radix-type syntax, matching `qua_arg ::= identifier { "qua" radix_type }`.
+
+Missing ordinary `qua` target types emit `MalformedTypeExpression` and insert a
+`MissingTypeExpression` recovery child under the `QuaExpression`. Malformed
+target tails synchronize with the type-expression recovery boundary before the
+surrounding term parser continues. Bracket `qua_arg` recovery keeps using the
+`TypeArguments` bracket diagnostics for missing `]`; a missing type after
+bracket `qua` uses the same `MissingTypeExpression` child under the
+`QuaExpression`.
+
+Task 11 tests should pin at least: left-associative `qua` chains, selector and
+application precedence (`p.x qua T`, `f(a) qua T`, `(p qua T).x`), the
+`Element of S qua Magma` target-type argument binding, bracket `V qua R`
+surface migration away from `TermPlaceholder`, missing and malformed target
+diagnostics, and active parse-only pass/fail coverage traced to Chapter 13.
+
+Task 11 result: `qua` qualification parsing is implemented in the module
+grammar. Unit coverage pins left-associative chains, selector/application
+precedence, parenthesized selector-after-`qua`, target-type argument binding,
+bracket `qua_arg` migration away from `TermPlaceholder`, missing target
+recovery, and malformed target-tail recovery. Active parse-only pass/fail
+fixtures cover the frontend seam and trace back to §13.6.
 
 ## Public Enum Compatibility
 

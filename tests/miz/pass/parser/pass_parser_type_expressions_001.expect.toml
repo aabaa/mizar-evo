@@ -11,4 +11,4 @@ tags = ["active_parse_only"]
 spec_refs = [
   "spec.en.03.type_expressions.parser",
 ]
-notes = "Active parse-only runner coverage for parser task 8 reserve-hosted type expressions, attribute chains, of/over arguments, bracket type arguments, and qua_arg placeholders. Local parameter-prefix preservation is covered by parser unit tests because the current frontend lexer does not expose standalone hyphen-split tokens."
+notes = "Active parse-only runner coverage for parser task 8 reserve-hosted type expressions, attribute chains, of/over arguments, and bracket type arguments, including a qua_arg surface now parsed through task 11 term qualification. Local parameter-prefix preservation is covered by parser unit tests because the current frontend lexer does not expose standalone hyphen-split tokens."

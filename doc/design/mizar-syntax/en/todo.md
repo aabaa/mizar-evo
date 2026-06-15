@@ -321,8 +321,11 @@ interaction. Spec references are the normative grammar chapters under
      parse-only primary-term corpus cases. Parser task 10 has landed the
      syntax-only dot-role increment: `SelectorAccess`, `StructureUpdate`, and
      `FieldUpdate`, selector/update recovery coverage, and active parse-only
-     selector/update corpus cases. S-011 remains open for parser tasks 11, 12,
-     and 15.
+     selector/update corpus cases. Parser task 11 has landed the `qua`
+     increment: `QuaExpression`, bracket `qua_arg` migration away from
+     `TermPlaceholder`, `MissingTypeExpression` target recovery coverage, and
+     active parse-only `qua` corpus cases. S-011 remains open for parser tasks
+     12 and 15.
    - Spec: [13.term_expression.md](../../../spec/en/13.term_expression.md),
      [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md).
 

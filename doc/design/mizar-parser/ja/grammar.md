@@ -2,9 +2,9 @@
 
 > 正本は英語です。英語版: [../en/grammar.md](../en/grammar.md)。
 
-状態: task 9 までの module skeleton、top-level placeholder dispatch、concrete
+状態: task 11 までの module skeleton、top-level placeholder dispatch、concrete
 import item、export item、visibility wrapper、reserve-hosted type expression、および
-reserve-hosted primary term は実装済み。残りの具体的な非 module item 文法は計画中。
+reserve-hosted term surface は実装済み。残りの具体的な非 module item 文法は計画中。
 
 ## 目的
 
@@ -29,8 +29,9 @@ reserve-hosted primary term は実装済み。残りの具体的な非 module it
   storage layout や密な arena index に依存しない。
 - top-level `reserve` item は、syntax-only `TypeExpression` tree を host できる
   ところまで concrete である。attribute chain、generic type head、`of` / `over`
-  `TermExpression` argument、bracket nested type argument、bracket `qua_arg` placeholder を
-  保持する。その他の non-module item grammar は placeholder のままである。
+  `TermExpression` argument、bracket nested type argument、bracket `qua_arg` entry を
+  `TermExpression` / `QuaExpression` surface として保持する。その他の non-module item
+  grammar は placeholder のままである。
 
 ## Task 4: 共有 path
 
@@ -260,12 +261,14 @@ source drift として分類する。
 `TypeArguments` は `of` / `over` argument list を保持する。task 9 以降、これらの list は
 一時的な term-entry placeholder ではなく primary term の `TermExpression` child を所有する。
 bracket type argument は可能な範囲で nested `TypeExpression` child として再帰的に parse する。
-bracket argument が代わりに
-`qua_arg` に一致する場合、task 8 は identifier と任意の `qua` radix-type tail token を所有する
-一時的な `TermPlaceholder` child として保持する。`]` 欠落は `MalformedTypeExpression` と
+task 11 以降、bracket argument が代わりに Appendix A の `qua_arg` に一致する場合、parser は
+identifier の `TermReference` または left-nested `QuaExpression` chain を term-shape に持つ
+`TermExpression` child として保持する。この bracket fallback は通常の term parsing より狭く、
+identifier-shaped `qua_arg` からだけ始まり、各 `qua` target は radix-type 形の
+`TypeExpression` として parse する。`]` 欠落は `MalformedTypeExpression` と
 `UnmatchedOpeningDelimiter` recovery として保持する。task 8 の `TermPlaceholder` node は
-task 9 以降は bracket `qua_arg` argument の浅い token owner にすぎず、term classification、
-operator fact、name resolution、overload selection を encode してはならない。
+task 11 以降 legacy vocabulary としてのみ残り、term classification、operator fact、
+name resolution、overload selection を encode してはならない。
 
 現在の reserve statement boundary で継続できる malformed type syntax は
 `MalformedTypeExpression` を使う。`reserve ... for` の後、または bracket
@@ -398,6 +401,56 @@ unit coverage は selector chain と call、functional update list、update valu
 update delimiter 欠落、selector argument 後の structure-constructor field-list boundary を
 pin する。active parse-only pass/fail fixture は frontend seam を cover し、§2.5.3 と
 §13.3.2-13.3.3 に trace back する。
+
+## Task 11: `qua` Qualification
+
+Production inventory:
+
+```ebnf
+term_expression      ::= operator_expression { "qua" type_expression } ;
+qua_expression       ::= operator_expression "qua" type_expression
+                         { "qua" type_expression } ;
+```
+
+Task 11 は、現在実装されている term-level operator の中で最も低い precedence として
+`qua` を parse する。parser はまず primary term と task 10 の selector/update postfix
+chain を形成し、その後 `qua` suffix を left-nested `QuaExpression` node に畳み込む。
+そのため `p.x qua T` は selector result を修飾する。qualified term の後の selector は、
+selector/update postfix が `qua` より強く bind するため括弧が必要である。
+`(p qua T).x` は parenthesized qualified term への selector として parse される。
+一方、`p qua T.x` の dot は type parser がその dotted type surface を形成できる場合だけ
+target type の中に残る。
+
+通常の term-level `qua` の target は `TypeExpression` である。その type が `of` / `over`
+term argument を含む場合、outer `qua` chain が続く前に、それらの argument は full term parser
+で parse される。したがって `x qua Element of S qua Magma` は
+`x qua Element of (S qua Magma)` として表し、outer result を再度修飾するには
+`(x qua Element of S) qua Magma` と書く必要がある。
+
+Appendix A の `qua_arg` に一致する bracket `type_arg_list` entry は、task 8 の
+`TermPlaceholder` node としては保存しない。identifier の `TermReference` base と任意の
+left-nested `QuaExpression` suffix を持つ `TermExpression` child として parse する。
+この fallback は通常の term parsing より意図的に狭く、`qua_arg ::= identifier { "qua"
+radix_type }` に合わせて identifier から始まり、各 target は radix-type syntax を使う。
+
+通常の `qua` target type 欠落時は `MalformedTypeExpression` を出し、`QuaExpression` の下に
+`MissingTypeExpression` recovery child を挿入する。malformed target tail は周囲の term parser
+が続く前に type-expression recovery boundary で同期する。bracket `qua_arg` recovery は
+`]` 欠落に対して引き続き `TypeArguments` bracket diagnostics を使う。bracket `qua` 後の
+type 欠落は、同じく `QuaExpression` の下の `MissingTypeExpression` child を使う。
+
+Task 11 の test は少なくとも、left-associative `qua` chain、selector / application precedence
+（`p.x qua T`、`f(a) qua T`、`(p qua T).x`）、`Element of S qua Magma` の target-type argument
+binding、bracket `V qua R` surface が `TermPlaceholder` から移行したこと、target 欠落
+および malformed target diagnostic、Chapter 13 へ trace する active parse-only pass/fail
+coverage を pin する。
+
+Task 11 result: `qua` qualification parsing は module grammar に実装済みである。
+unit coverage は left-associative chain、selector / application precedence、
+parenthesized selector-after-`qua`、target-type argument binding、bracket `qua_arg` が
+`TermPlaceholder` から移行したこと、target 欠落 recovery、malformed target-tail recovery を
+pin する。active parse-only pass/fail fixture は frontend seam を cover し、§13.6 に
+trace back する。
 
 ## 公開 enum の互換性
 

@@ -886,6 +886,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.13.qua_qualification.parser"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.6 Type Qualification (qua)"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_qua_terms_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_qua_missing_type_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.syntax.parser_recovery.missing_end"
 source = "doc/design/mizar-parser/en/recovery.md"
 section = "Current behavior"
@@ -917,7 +930,7 @@ stage = "parse_only"
 status = "planned"
 required = true
 coverage = "pass_and_fail"
-deferred_reason = "Initial parse-only corpus metadata exists for template predicate/functor definitions and a chained-iff syntax rejection, but template productions and frontend-visible operator fixity are still deferred. Activate these seeds only after the owning parser tasks can satisfy their diagnostics through the frontend seam. Add runner-backed pass cases for let constraints with by references, take-with-witness, conditional definiens, Fraenkel generators, qua chains, and predicate chains; add runner-backed fail cases for non-associative operator chains, builtin/user predicate chain mixing, and incomplete term-headed formulas."
+deferred_reason = "Initial parse-only corpus metadata exists for template predicate/functor definitions and a chained-iff syntax rejection, but template productions and frontend-visible operator fixity are still deferred. Activate these seeds only after the owning parser tasks can satisfy their diagnostics through the frontend seam. Add runner-backed pass cases for let constraints with by references, take-with-witness, conditional definiens, Fraenkel generators, and predicate chains; add runner-backed fail cases for non-associative operator chains, builtin/user predicate chain mixing, and incomplete term-headed formulas."
 tests = [
   "tests/miz/pass/parser/pass_parser_template_arguments_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_template_arguments_chained_iff_001.expect.toml",
