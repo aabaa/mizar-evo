@@ -60,6 +60,16 @@ pub enum SyntaxKind {
     TypeHead = 25,
     TypeArguments = 26,
     TermPlaceholder = 27,
+    TermExpression = 28,
+    TermReference = 29,
+    NumeralTerm = 30,
+    ItTerm = 31,
+    ParenthesizedTerm = 32,
+    ChoiceTerm = 33,
+    ApplicationTerm = 34,
+    StructureConstructor = 35,
+    FieldArgument = 36,
+    SetEnumeration = 37,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -101,6 +111,16 @@ impl SyntaxKind {
             25 => Self::TypeHead,
             26 => Self::TypeArguments,
             27 => Self::TermPlaceholder,
+            28 => Self::TermExpression,
+            29 => Self::TermReference,
+            30 => Self::NumeralTerm,
+            31 => Self::ItTerm,
+            32 => Self::ParenthesizedTerm,
+            33 => Self::ChoiceTerm,
+            34 => Self::ApplicationTerm,
+            35 => Self::StructureConstructor,
+            36 => Self::FieldArgument,
+            37 => Self::SetEnumeration,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -144,6 +164,16 @@ impl SyntaxKind {
                 | Self::TypeHead
                 | Self::TypeArguments
                 | Self::TermPlaceholder
+                | Self::TermExpression
+                | Self::TermReference
+                | Self::NumeralTerm
+                | Self::ItTerm
+                | Self::ParenthesizedTerm
+                | Self::ChoiceTerm
+                | Self::ApplicationTerm
+                | Self::StructureConstructor
+                | Self::FieldArgument
+                | Self::SetEnumeration
         )
     }
 
@@ -670,6 +700,16 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::TypeHead
             | SurfaceNodeKind::TypeArguments
             | SurfaceNodeKind::TermPlaceholder
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::TermReference
+            | SurfaceNodeKind::NumeralTerm
+            | SurfaceNodeKind::ItTerm
+            | SurfaceNodeKind::ParenthesizedTerm
+            | SurfaceNodeKind::ChoiceTerm
+            | SurfaceNodeKind::ApplicationTerm
+            | SurfaceNodeKind::StructureConstructor
+            | SurfaceNodeKind::FieldArgument
+            | SurfaceNodeKind::SetEnumeration
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -702,6 +742,16 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::TypeHead
             | SurfaceNodeKind::TypeArguments
             | SurfaceNodeKind::TermPlaceholder
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::TermReference
+            | SurfaceNodeKind::NumeralTerm
+            | SurfaceNodeKind::ItTerm
+            | SurfaceNodeKind::ParenthesizedTerm
+            | SurfaceNodeKind::ChoiceTerm
+            | SurfaceNodeKind::ApplicationTerm
+            | SurfaceNodeKind::StructureConstructor
+            | SurfaceNodeKind::FieldArgument
+            | SurfaceNodeKind::SetEnumeration
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -734,6 +784,16 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::TypeHead
             | SurfaceNodeKind::TypeArguments
             | SurfaceNodeKind::TermPlaceholder
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::TermReference
+            | SurfaceNodeKind::NumeralTerm
+            | SurfaceNodeKind::ItTerm
+            | SurfaceNodeKind::ParenthesizedTerm
+            | SurfaceNodeKind::ChoiceTerm
+            | SurfaceNodeKind::ApplicationTerm
+            | SurfaceNodeKind::StructureConstructor
+            | SurfaceNodeKind::FieldArgument
+            | SurfaceNodeKind::SetEnumeration
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -870,6 +930,76 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_term_expression(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::TermExpression => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_term_reference(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::TermReference => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_numeral_term(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::NumeralTerm => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_it_term(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ItTerm => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_parenthesized_term(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ParenthesizedTerm => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_choice_term(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ChoiceTerm => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_application_term(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ApplicationTerm => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_structure_constructor(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::StructureConstructor => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_field_argument(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::FieldArgument => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_set_enumeration(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::SetEnumeration => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_module_path(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::ModulePath => Some(self),
@@ -979,6 +1109,16 @@ impl SurfaceNode {
             | SurfaceNodeKind::TypeHead
             | SurfaceNodeKind::TypeArguments
             | SurfaceNodeKind::TermPlaceholder
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::TermReference
+            | SurfaceNodeKind::NumeralTerm
+            | SurfaceNodeKind::ItTerm
+            | SurfaceNodeKind::ParenthesizedTerm
+            | SurfaceNodeKind::ChoiceTerm
+            | SurfaceNodeKind::ApplicationTerm
+            | SurfaceNodeKind::StructureConstructor
+            | SurfaceNodeKind::FieldArgument
+            | SurfaceNodeKind::SetEnumeration
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -1015,6 +1155,16 @@ pub enum SurfaceNodeKind {
     TypeHead,
     TypeArguments,
     TermPlaceholder,
+    TermExpression,
+    TermReference,
+    NumeralTerm,
+    ItTerm,
+    ParenthesizedTerm,
+    ChoiceTerm,
+    ApplicationTerm,
+    StructureConstructor,
+    FieldArgument,
+    SetEnumeration,
     ModulePath,
     NamespacePath,
     QualifiedSymbol,
@@ -1047,6 +1197,16 @@ impl SurfaceNodeKind {
             Self::TypeHead => SyntaxKind::TypeHead,
             Self::TypeArguments => SyntaxKind::TypeArguments,
             Self::TermPlaceholder => SyntaxKind::TermPlaceholder,
+            Self::TermExpression => SyntaxKind::TermExpression,
+            Self::TermReference => SyntaxKind::TermReference,
+            Self::NumeralTerm => SyntaxKind::NumeralTerm,
+            Self::ItTerm => SyntaxKind::ItTerm,
+            Self::ParenthesizedTerm => SyntaxKind::ParenthesizedTerm,
+            Self::ChoiceTerm => SyntaxKind::ChoiceTerm,
+            Self::ApplicationTerm => SyntaxKind::ApplicationTerm,
+            Self::StructureConstructor => SyntaxKind::StructureConstructor,
+            Self::FieldArgument => SyntaxKind::FieldArgument,
+            Self::SetEnumeration => SyntaxKind::SetEnumeration,
             Self::ModulePath => SyntaxKind::ModulePath,
             Self::NamespacePath => SyntaxKind::NamespacePath,
             Self::QualifiedSymbol => SyntaxKind::QualifiedSymbol,
@@ -1165,6 +1325,16 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::TypeHead => output.push_str("TypeHead"),
         SurfaceNodeKind::TypeArguments => output.push_str("TypeArguments"),
         SurfaceNodeKind::TermPlaceholder => output.push_str("TermPlaceholder"),
+        SurfaceNodeKind::TermExpression => output.push_str("TermExpression"),
+        SurfaceNodeKind::TermReference => output.push_str("TermReference"),
+        SurfaceNodeKind::NumeralTerm => output.push_str("NumeralTerm"),
+        SurfaceNodeKind::ItTerm => output.push_str("ItTerm"),
+        SurfaceNodeKind::ParenthesizedTerm => output.push_str("ParenthesizedTerm"),
+        SurfaceNodeKind::ChoiceTerm => output.push_str("ChoiceTerm"),
+        SurfaceNodeKind::ApplicationTerm => output.push_str("ApplicationTerm"),
+        SurfaceNodeKind::StructureConstructor => output.push_str("StructureConstructor"),
+        SurfaceNodeKind::FieldArgument => output.push_str("FieldArgument"),
+        SurfaceNodeKind::SetEnumeration => output.push_str("SetEnumeration"),
         SurfaceNodeKind::ModulePath => output.push_str("ModulePath"),
         SurfaceNodeKind::NamespacePath => output.push_str("NamespacePath"),
         SurfaceNodeKind::QualifiedSymbol => output.push_str("QualifiedSymbol"),
@@ -2170,6 +2340,16 @@ mod tests {
             SyntaxKind::TypeHead,
             SyntaxKind::TypeArguments,
             SyntaxKind::TermPlaceholder,
+            SyntaxKind::TermExpression,
+            SyntaxKind::TermReference,
+            SyntaxKind::NumeralTerm,
+            SyntaxKind::ItTerm,
+            SyntaxKind::ParenthesizedTerm,
+            SyntaxKind::ChoiceTerm,
+            SyntaxKind::ApplicationTerm,
+            SyntaxKind::StructureConstructor,
+            SyntaxKind::FieldArgument,
+            SyntaxKind::SetEnumeration,
             SyntaxKind::ModulePath,
             SyntaxKind::NamespacePath,
             SyntaxKind::QualifiedSymbol,
@@ -2369,6 +2549,271 @@ mod tests {
             ast.node_view(sid(term_placeholder))
                 .unwrap()
                 .as_term_placeholder()
+                .is_some()
+        );
+    }
+
+    #[test]
+    fn task9_typed_accessors_cover_primary_term_nodes() {
+        let source_id = source_id(24);
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let identifier =
+            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+        let numeral = builder.add_token(SurfaceTokenKind::Numeral, "42", range(source_id, 2, 4));
+        let it = builder.add_token(SurfaceTokenKind::ReservedWord, "it", range(source_id, 5, 7));
+        let open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 8, 9),
+        );
+        let paren_identifier =
+            builder.add_token(SurfaceTokenKind::Identifier, "p", range(source_id, 9, 10));
+        let close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 10, 11),
+        );
+        let the = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "the",
+            range(source_id, 12, 15),
+        );
+        let set = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 16, 19),
+        );
+        let function =
+            builder.add_token(SurfaceTokenKind::UserSymbol, "F", range(source_id, 20, 21));
+        let app_open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 21, 22),
+        );
+        let app_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 22, 23),
+        );
+        let structure =
+            builder.add_token(SurfaceTokenKind::UserSymbol, "S", range(source_id, 24, 25));
+        let struct_open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 25, 26),
+        );
+        let field = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 26, 27));
+        let colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 27, 28),
+        );
+        let value = builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 28, 29));
+        let struct_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 29, 30),
+        );
+        let set_open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "{",
+            range(source_id, 31, 32),
+        );
+        let set_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "}",
+            range(source_id, 32, 33),
+        );
+
+        let term_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 0, 1),
+            vec![identifier],
+        );
+        let term_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 0, 1),
+            vec![term_reference],
+        );
+        let numeral_term = builder.add_node(
+            SurfaceNodeKind::NumeralTerm,
+            range(source_id, 2, 4),
+            vec![numeral],
+        );
+        let it_term = builder.add_node(SurfaceNodeKind::ItTerm, range(source_id, 5, 7), vec![it]);
+        let paren_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 9, 10),
+            vec![paren_identifier],
+        );
+        let paren_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 9, 10),
+            vec![paren_reference],
+        );
+        let paren_term = builder.add_node(
+            SurfaceNodeKind::ParenthesizedTerm,
+            range(source_id, 8, 11),
+            vec![open, paren_expression, close],
+        );
+        let type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 16, 19),
+            vec![set],
+        );
+        let type_expression = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 16, 19),
+            vec![type_head],
+        );
+        let choice_term = builder.add_node(
+            SurfaceNodeKind::ChoiceTerm,
+            range(source_id, 12, 19),
+            vec![the, type_expression],
+        );
+        let function_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 20, 21),
+            vec![function],
+        );
+        let function_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 20, 21),
+            vec![function_segment],
+        );
+        let function_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 20, 21),
+            vec![function_symbol],
+        );
+        let application = builder.add_node(
+            SurfaceNodeKind::ApplicationTerm,
+            range(source_id, 20, 23),
+            vec![function_reference, app_open, app_close],
+        );
+        let structure_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 24, 25),
+            vec![structure],
+        );
+        let structure_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 24, 25),
+            vec![structure_segment],
+        );
+        let value_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 28, 29),
+            vec![value],
+        );
+        let value_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 28, 29),
+            vec![value_reference],
+        );
+        let field_argument = builder.add_node(
+            SurfaceNodeKind::FieldArgument,
+            range(source_id, 26, 29),
+            vec![field, colon, value_expression],
+        );
+        let structure_constructor = builder.add_node(
+            SurfaceNodeKind::StructureConstructor,
+            range(source_id, 24, 30),
+            vec![structure_symbol, struct_open, field_argument, struct_close],
+        );
+        let set_enumeration = builder.add_node(
+            SurfaceNodeKind::SetEnumeration,
+            range(source_id, 31, 33),
+            vec![set_open, set_close],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 33),
+            vec![
+                identifier,
+                numeral,
+                it,
+                open,
+                paren_identifier,
+                close,
+                the,
+                set,
+                function,
+                app_open,
+                app_close,
+                structure,
+                struct_open,
+                field,
+                colon,
+                value,
+                struct_close,
+                set_open,
+                set_close,
+                term_expression,
+                numeral_term,
+                it_term,
+                paren_term,
+                choice_term,
+                application,
+                structure_constructor,
+                set_enumeration,
+            ],
+        );
+        let ast = builder.finish(Some(root), None);
+
+        assert!(
+            ast.node_view(sid(term_expression))
+                .unwrap()
+                .as_term_expression()
+                .is_some()
+        );
+        assert!(
+            ast.node_view(sid(term_reference))
+                .unwrap()
+                .as_term_reference()
+                .is_some()
+        );
+        assert!(
+            ast.node_view(sid(numeral_term))
+                .unwrap()
+                .as_numeral_term()
+                .is_some()
+        );
+        assert!(ast.node_view(sid(it_term)).unwrap().as_it_term().is_some());
+        assert!(
+            ast.node_view(sid(paren_term))
+                .unwrap()
+                .as_parenthesized_term()
+                .is_some()
+        );
+        assert!(
+            ast.node_view(sid(choice_term))
+                .unwrap()
+                .as_choice_term()
+                .is_some()
+        );
+        assert!(
+            ast.node_view(sid(application))
+                .unwrap()
+                .as_application_term()
+                .is_some()
+        );
+        assert!(
+            ast.node_view(sid(structure_constructor))
+                .unwrap()
+                .as_structure_constructor()
+                .is_some()
+        );
+        assert!(
+            ast.node_view(sid(field_argument))
+                .unwrap()
+                .as_field_argument()
+                .is_some()
+        );
+        assert!(
+            ast.node_view(sid(set_enumeration))
+                .unwrap()
+                .as_set_enumeration()
                 .is_some()
         );
     }
@@ -3348,6 +3793,118 @@ mod tests {
             "-",
             range(source_id, 198, 199),
         );
+        let term_reference_token = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(source_id, 200, 201),
+        );
+        let term_numeral_token =
+            builder.add_token(SurfaceTokenKind::Numeral, "99", range(source_id, 202, 204));
+        let term_it_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "it",
+            range(source_id, 205, 207),
+        );
+        let term_paren_open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 208, 209),
+        );
+        let term_paren_identifier = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "p",
+            range(source_id, 209, 210),
+        );
+        let term_paren_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 210, 211),
+        );
+        let term_the = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "the",
+            range(source_id, 212, 215),
+        );
+        let term_choice_set = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 216, 219),
+        );
+        let term_apply_symbol = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "F",
+            range(source_id, 220, 221),
+        );
+        let term_apply_open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 221, 222),
+        );
+        let term_apply_arg = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "a",
+            range(source_id, 222, 223),
+        );
+        let term_apply_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 223, 224),
+        );
+        let term_struct_symbol = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "S",
+            range(source_id, 225, 226),
+        );
+        let term_struct_open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 226, 227),
+        );
+        let term_field_name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(source_id, 227, 228),
+        );
+        let term_field_colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 228, 229),
+        );
+        let term_field_value = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "y",
+            range(source_id, 229, 230),
+        );
+        let term_struct_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 230, 231),
+        );
+        let term_set_open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "{",
+            range(source_id, 232, 233),
+        );
+        let term_set_first = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "a",
+            range(source_id, 233, 234),
+        );
+        let term_set_comma = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ",",
+            range(source_id, 234, 235),
+        );
+        let term_set_second = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "b",
+            range(source_id, 235, 236),
+        );
+        let term_set_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "}",
+            range(source_id, 236, 237),
+        );
         let expression = builder.add_node(
             SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
                 spelling: "++".into(),
@@ -3589,6 +4146,192 @@ mod tests {
             range(source_id, 197, 199),
             vec![standalone_prefix_n, standalone_prefix_hyphen],
         );
+        let term_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 200, 201),
+            vec![term_reference_token],
+        );
+        let term_reference_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 200, 201),
+            vec![term_reference],
+        );
+        let numeral_term = builder.add_node(
+            SurfaceNodeKind::NumeralTerm,
+            range(source_id, 202, 204),
+            vec![term_numeral_token],
+        );
+        let numeral_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 202, 204),
+            vec![numeral_term],
+        );
+        let it_term = builder.add_node(
+            SurfaceNodeKind::ItTerm,
+            range(source_id, 205, 207),
+            vec![term_it_token],
+        );
+        let it_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 205, 207),
+            vec![it_term],
+        );
+        let paren_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 209, 210),
+            vec![term_paren_identifier],
+        );
+        let paren_inner_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 209, 210),
+            vec![paren_reference],
+        );
+        let parenthesized_term = builder.add_node(
+            SurfaceNodeKind::ParenthesizedTerm,
+            range(source_id, 208, 211),
+            vec![term_paren_open, paren_inner_expression, term_paren_close],
+        );
+        let parenthesized_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 208, 211),
+            vec![parenthesized_term],
+        );
+        let choice_set_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 216, 219),
+            vec![term_choice_set],
+        );
+        let choice_type_expression = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 216, 219),
+            vec![choice_set_head],
+        );
+        let choice_term = builder.add_node(
+            SurfaceNodeKind::ChoiceTerm,
+            range(source_id, 212, 219),
+            vec![term_the, choice_type_expression],
+        );
+        let choice_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 212, 219),
+            vec![choice_term],
+        );
+        let apply_symbol_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 220, 221),
+            vec![term_apply_symbol],
+        );
+        let apply_symbol_node = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 220, 221),
+            vec![apply_symbol_segment],
+        );
+        let apply_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 220, 221),
+            vec![apply_symbol_node],
+        );
+        let apply_argument_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 222, 223),
+            vec![term_apply_arg],
+        );
+        let apply_argument = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 222, 223),
+            vec![apply_argument_reference],
+        );
+        let application_term = builder.add_node(
+            SurfaceNodeKind::ApplicationTerm,
+            range(source_id, 220, 224),
+            vec![
+                apply_reference,
+                term_apply_open,
+                apply_argument,
+                term_apply_close,
+            ],
+        );
+        let application_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 220, 224),
+            vec![application_term],
+        );
+        let struct_symbol_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 225, 226),
+            vec![term_struct_symbol],
+        );
+        let struct_symbol_node = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 225, 226),
+            vec![struct_symbol_segment],
+        );
+        let field_value_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 229, 230),
+            vec![term_field_value],
+        );
+        let field_value_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 229, 230),
+            vec![field_value_reference],
+        );
+        let field_argument = builder.add_node(
+            SurfaceNodeKind::FieldArgument,
+            range(source_id, 227, 230),
+            vec![term_field_name, term_field_colon, field_value_expression],
+        );
+        let structure_constructor = builder.add_node(
+            SurfaceNodeKind::StructureConstructor,
+            range(source_id, 225, 231),
+            vec![
+                struct_symbol_node,
+                term_struct_open,
+                field_argument,
+                term_struct_close,
+            ],
+        );
+        let structure_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 225, 231),
+            vec![structure_constructor],
+        );
+        let set_first_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 233, 234),
+            vec![term_set_first],
+        );
+        let set_first_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 233, 234),
+            vec![set_first_reference],
+        );
+        let set_second_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 235, 236),
+            vec![term_set_second],
+        );
+        let set_second_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 235, 236),
+            vec![set_second_reference],
+        );
+        let set_enumeration = builder.add_node(
+            SurfaceNodeKind::SetEnumeration,
+            range(source_id, 232, 237),
+            vec![
+                term_set_open,
+                set_first_expression,
+                term_set_comma,
+                set_second_expression,
+                term_set_close,
+            ],
+        );
+        let set_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 232, 237),
+            vec![set_enumeration],
+        );
         let item_list = builder.add_node(
             SurfaceNodeKind::ItemList,
             range(source_id, 81, 154),
@@ -3606,7 +4349,7 @@ mod tests {
         );
         let root = builder.add_node(
             SurfaceNodeKind::Root,
-            range(source_id, 0, 199),
+            range(source_id, 0, 237),
             vec![
                 identifier,
                 reserved_word,
@@ -3663,6 +4406,29 @@ mod tests {
                 reserve_semicolon,
                 standalone_prefix_n,
                 standalone_prefix_hyphen,
+                term_reference_token,
+                term_numeral_token,
+                term_it_token,
+                term_paren_open,
+                term_paren_identifier,
+                term_paren_close,
+                term_the,
+                term_choice_set,
+                term_apply_symbol,
+                term_apply_open,
+                term_apply_arg,
+                term_apply_close,
+                term_struct_symbol,
+                term_struct_open,
+                term_field_name,
+                term_field_colon,
+                term_field_value,
+                term_struct_close,
+                term_set_open,
+                term_set_first,
+                term_set_comma,
+                term_set_second,
+                term_set_close,
                 expression,
                 module_path,
                 namespace_path,
@@ -3670,6 +4436,14 @@ mod tests {
                 compilation_unit,
                 reserve_item,
                 standalone_parameter_prefix,
+                term_reference_expression,
+                numeral_expression,
+                it_expression,
+                parenthesized_expression,
+                choice_expression,
+                application_expression,
+                structure_expression,
+                set_expression,
                 recovery,
             ],
         );

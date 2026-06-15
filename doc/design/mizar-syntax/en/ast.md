@@ -67,7 +67,17 @@ green tree.
 | parameter prefix node | `SyntaxKind::ParameterPrefix` |
 | generic type head node | `SyntaxKind::TypeHead` |
 | type arguments node | `SyntaxKind::TypeArguments` |
-| task-8 term placeholder node | `SyntaxKind::TermPlaceholder` |
+| temporary bracket `qua_arg` placeholder node | `SyntaxKind::TermPlaceholder` |
+| term expression node | `SyntaxKind::TermExpression` |
+| term reference node | `SyntaxKind::TermReference` |
+| numeral term node | `SyntaxKind::NumeralTerm` |
+| `it` term node | `SyntaxKind::ItTerm` |
+| parenthesized term node | `SyntaxKind::ParenthesizedTerm` |
+| choice term node | `SyntaxKind::ChoiceTerm` |
+| application term node | `SyntaxKind::ApplicationTerm` |
+| structure constructor node | `SyntaxKind::StructureConstructor` |
+| field argument node | `SyntaxKind::FieldArgument` |
+| set enumeration node | `SyntaxKind::SetEnumeration` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | recovery node | `SyntaxKind::ErrorRecovery` |
 
@@ -109,7 +119,17 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 24 | `ParameterPrefix` | task-8 attribute parameter-prefix wrapper |
 | 25 | `TypeHead` | task-8 generic radix-or-mode type head |
 | 26 | `TypeArguments` | task-8 `of` / `over` / bracket argument wrapper |
-| 27 | `TermPlaceholder` | task-8 temporary term-entry stub inside type or attribute arguments |
+| 27 | `TermPlaceholder` | temporary bracket `qua_arg` stub retained until task 11 |
+| 28 | `TermExpression` | task-9 current term-expression wrapper |
+| 29 | `TermReference` | task-9 identifier or qualified-symbol term reference |
+| 30 | `NumeralTerm` | task-9 numeral term |
+| 31 | `ItTerm` | task-9 `it` term |
+| 32 | `ParenthesizedTerm` | task-9 parenthesized term |
+| 33 | `ChoiceTerm` | task-9 `"the" type_expression` term |
+| 34 | `ApplicationTerm` | task-9 parenthesized or reserved-bracket application term |
+| 35 | `StructureConstructor` | task-9 named-field structure-constructor surface |
+| 36 | `FieldArgument` | task-9 structure-constructor field argument |
+| 37 | `SetEnumeration` | task-9 set-enumeration term |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -124,10 +144,10 @@ The current raw discriminants are part of the rowan boundary for this phase:
 `SyntaxKind::is_node_kind` is true only for `Root`, `Token`,
 `InfixExpression`, `ErrorRecovery`, the task-S-009 shared path node kinds, the
 task-5/6/7 module, import, export, and visibility node kinds, and the task-S-010
-reserve/type node kinds listed above; `is_token_kind` is true only for the
-token leaf kinds. Future raw values should be appended or assigned into a
-documented reserved range so existing snapshots and rowan tests fail loudly
-when the raw vocabulary changes.
+reserve/type node kinds plus the task-S-011 term node kinds listed above;
+`is_token_kind` is true only for the token leaf kinds. Future raw values should
+be appended or assigned into a documented reserved range so existing snapshots
+and rowan tests fail loudly when the raw vocabulary changes.
 
 ### Current Surface Vocabulary
 
@@ -150,11 +170,21 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::ReserveSegment` | none | `SyntaxKind::ReserveSegment` | parser task-8 `identifier_list "for" type_expression`; owns identifier tokens separated by comma tokens, the `for` token, and a `TypeExpression` or missing-type recovery |
 | `SurfaceNodeKind::TypeExpression` | none | `SyntaxKind::TypeExpression` | parser task-8 `attribute_chain type_head`; owns an optional non-empty `AttributeChain` followed by a generic `TypeHead` |
 | `SurfaceNodeKind::AttributeChain` | none | `SyntaxKind::AttributeChain` | parser task-8 non-empty source-ordered sequence of `AttributeRef` nodes |
-| `SurfaceNodeKind::AttributeRef` | none | `SyntaxKind::AttributeRef` | parser task-8 optional `non` token, optional `ParameterPrefix`, syntactic `QualifiedSymbol`, and optional parenthesized term-placeholder arguments |
+| `SurfaceNodeKind::AttributeRef` | none | `SyntaxKind::AttributeRef` | parser task-8 optional `non` token, optional `ParameterPrefix`, syntactic `QualifiedSymbol`, and optional parenthesized term arguments |
 | `SurfaceNodeKind::ParameterPrefix` | none | `SyntaxKind::ParameterPrefix` | parser task-8 attribute parameter prefix, either `parameter "-"` or `"(" parameter_list ")" "-"` |
 | `SurfaceNodeKind::TypeHead` | none | `SyntaxKind::TypeHead` | parser task-8 generic radix-or-mode head; owns builtin `object`/`set` token or `QualifiedSymbol`, plus optional `TypeArguments` |
-| `SurfaceNodeKind::TypeArguments` | none | `SyntaxKind::TypeArguments` | parser task-8 type argument wrapper for `of`, `over`, or bracket syntax; owns delimiter/keyword tokens and source-ordered argument placeholders |
-| `SurfaceNodeKind::TermPlaceholder` | none | `SyntaxKind::TermPlaceholder` | parser task-8 temporary syntax-only term-entry stub used inside `TypeArguments` and attribute argument lists until parser task 9 replaces it with concrete term nodes |
+| `SurfaceNodeKind::TypeArguments` | none | `SyntaxKind::TypeArguments` | parser task-8 type argument wrapper for `of`, `over`, or bracket syntax; task 9 replaces `of`/`over` placeholders with `TermExpression` arguments |
+| `SurfaceNodeKind::TermPlaceholder` | none | `SyntaxKind::TermPlaceholder` | parser task-8 temporary syntax-only term-entry stub retained only for bracket `qua_arg` forms until parser task 11 lands `qua` terms |
+| `SurfaceNodeKind::TermExpression` | none | `SyntaxKind::TermExpression` | parser task-9 current term-expression wrapper; owns exactly one primary-term child until postfix, `qua`, and operator tasks extend it |
+| `SurfaceNodeKind::TermReference` | none | `SyntaxKind::TermReference` | parser task-9 identifier token or shared `QualifiedSymbol` in term position, with no semantic classification |
+| `SurfaceNodeKind::NumeralTerm` | none | `SyntaxKind::NumeralTerm` | parser task-9 numeral term wrapper |
+| `SurfaceNodeKind::ItTerm` | none | `SyntaxKind::ItTerm` | parser task-9 `it` keyword term wrapper |
+| `SurfaceNodeKind::ParenthesizedTerm` | none | `SyntaxKind::ParenthesizedTerm` | parser task-9 parenthesized term; owns `(`, a `TermExpression` or `MissingTerm`, and optional `)` |
+| `SurfaceNodeKind::ChoiceTerm` | none | `SyntaxKind::ChoiceTerm` | parser task-9 `"the" TypeExpression` choice term; missing type operands use `MissingTypeExpression` recovery |
+| `SurfaceNodeKind::ApplicationTerm` | none | `SyntaxKind::ApplicationTerm` | parser task-9 ordinary parenthesized application or reserved-bracket functor application; owns delimiters and source-ordered term arguments |
+| `SurfaceNodeKind::StructureConstructor` | none | `SyntaxKind::StructureConstructor` | parser task-9 syntax-only structure-constructor surface when named field arguments are visible |
+| `SurfaceNodeKind::FieldArgument` | none | `SyntaxKind::FieldArgument` | parser task-9 `identifier ":" term_expression` field argument |
+| `SurfaceNodeKind::SetEnumeration` | none | `SyntaxKind::SetEnumeration` | parser task-9 set-enumeration term; Fraenkel/comprehension forms are parser task 15 |
 | `SurfaceNodeKind::ModulePath` | none | `SyntaxKind::ModulePath` | `module_path`; optional `RelativePrefix`, first `PathSegment`, then repeated `.` token plus `PathSegment`; only this path shape may contain `RelativePrefix` |
 | `SurfaceNodeKind::NamespacePath` | none | `SyntaxKind::NamespacePath` | `namespace_path`; first `PathSegment`, then repeated `.` token plus identifier `PathSegment`; relative prefixes are not allowed |
 | `SurfaceNodeKind::QualifiedSymbol` | none | `SyntaxKind::QualifiedSymbol` | `qualified_symbol`; zero or more identifier namespace `PathSegment` + `.` token pairs followed by a final user-symbol `PathSegment`, or the task-8 attribute-ref flattening where dotted prefix `PathSegment`s may also be user-symbol tokens before the final user-symbol |
@@ -247,7 +277,7 @@ type-head candidate as the `TypeHead`, not by semantic lookup.
 
 `AttributeRef` owns source-ordered syntax for one attribute occurrence:
 optional `non`, optional `ParameterPrefix`, one syntactic `QualifiedSymbol`,
-and optional parenthesized `TermPlaceholder` arguments. Struct-qualified
+and optional parenthesized term arguments. Struct-qualified
 attribute spellings are preserved as the same `QualifiedSymbol` dotted surface;
 in that attribute-ref context, prefix `PathSegment`s may wrap user-symbol
 tokens as well as namespace identifiers. The AST does not decide which prefix
@@ -260,22 +290,57 @@ and does not perform the full contextual whole-spelling split for names such as
 parameter-scope facts into lexing/parsing.
 
 `TypeArguments` owns either an `of`/`over` token followed by comma-separated
-`TermPlaceholder` arguments, or `[` followed by comma-separated type-template
-arguments and an optional `]`. A bracket argument that parses as a type
-expression is represented as a nested `TypeExpression`. A bracket argument that
-uses `qua_arg` syntax is represented by a temporary `TermPlaceholder` child
-that owns the identifier and any `qua`/radix-type tail tokens; it remains a
-syntax-only placeholder until term/template argument parsing lands. Missing
-bracket closers use
+term arguments, or `[` followed by comma-separated type-template arguments and
+an optional `]`. Starting in parser task 9, `of`/`over` and attribute argument
+lists use concrete `TermExpression` children instead of task-8
+`TermPlaceholder` children. A bracket argument that parses as a type expression
+is represented as a nested `TypeExpression`. A bracket argument that uses
+`qua_arg` syntax remains a temporary `TermPlaceholder` child until parser task
+11 lands `qua` terms. Missing bracket
+closers use
 `MalformedTypeExpression` plus `UnmatchedOpeningDelimiter` recovery under the
-`TypeArguments` node. `TermPlaceholder` is also reused for parenthesized
-attribute argument lists. It is a temporary syntactic stub for the mutual
-recursion between types and terms; it owns the shallow source tokens for one
-term argument and must not encode term classification, operator facts, or name
-resolution. `SurfaceNodeView` exposes typed `as_reserve_item`,
+`TypeArguments` node. `TermPlaceholder` remains a temporary syntactic stub for
+the mutual recursion between types and `qua` template arguments; it owns the
+shallow source tokens for one unresolved bracket `qua_arg` and must not encode
+term classification, operator facts, or name resolution. `SurfaceNodeView`
+exposes typed `as_reserve_item`,
 `as_reserve_segment`, `as_type_expression`, `as_attribute_chain`,
 `as_attribute_ref`, `as_parameter_prefix`, `as_type_head`,
 `as_type_arguments`, and `as_term_placeholder` helpers.
+
+Primary term nodes added for `mizar-parser` task 9 are syntax-only shapes.
+`TermExpression` is the current wrapper around one primary-term child; later
+tasks may add postfix, `qua`, and operator children without changing the
+wrapper role. `TermReference` owns either one identifier token or one shared
+`QualifiedSymbol`, preserving term-position references without deciding name
+resolution or functor classification. `NumeralTerm` and `ItTerm` wrap the
+corresponding single token. `ParenthesizedTerm` owns delimiter tokens plus a
+nested `TermExpression` or `MissingTerm` recovery. `ChoiceTerm` owns the `the`
+token and a nested `TypeExpression` or `MissingTypeExpression` recovery when
+the type operand is absent.
+
+`ApplicationTerm` is deliberately generic for task 9: it preserves ordinary
+parenthesized applications and the reserved `[` / `]` bracket functor form, but
+does not encode arity, overload selection, or active user-symbol bracket-pair
+metadata. Ordinary application child order is the callee `TermReference` or
+`QualifiedSymbol`, the `(` token, zero or more `TermExpression` arguments
+separated by comma tokens, then optional `)`. Reserved bracket application
+child order is `[`, zero or more `TermExpression` arguments separated by comma
+tokens, then optional `]`; it has no callee child because the delimiter pair is
+the syntax-only head. `StructureConstructor` is emitted only when named field
+arguments are visible syntactically; child order is the constructor
+`QualifiedSymbol`, optional `TypeArguments`, the `(` token, `FieldArgument`
+children separated by comma tokens, then optional `)`. Ambiguous zero-field
+forms remain generic `ApplicationTerm` nodes until a later semantic boundary
+supplies structure facts. `FieldArgument` owns a field identifier, the `:`
+token, and a `TermExpression` or `MissingTerm`. `SetEnumeration` owns `{`,
+source-ordered term arguments separated by comma tokens, and an optional `}`.
+It does not represent Fraenkel/set-comprehension forms, which remain owned by
+parser task 15. `SurfaceNodeView` exposes typed `as_term_expression`,
+`as_term_reference`, `as_numeral_term`, `as_it_term`,
+`as_parenthesized_term`, `as_choice_term`, `as_application_term`,
+`as_structure_constructor`, `as_field_argument`, and `as_set_enumeration`
+helpers.
 
 ### Vocabulary Increment Contract
 

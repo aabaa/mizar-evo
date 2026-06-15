@@ -1,9 +1,9 @@
 # mizar-parser: Grammar
 
 Status: module skeleton, top-level placeholder dispatch, concrete import
-items, export items, visibility wrappers, and reserve-hosted type expressions
-implemented through task 8; remaining concrete non-module item grammars
-planned.
+items, export items, visibility wrappers, reserve-hosted type expressions, and
+reserve-hosted primary terms implemented through task 9; remaining concrete
+non-module item grammars planned.
 
 ## Purpose
 
@@ -28,7 +28,7 @@ Current behavior:
   not by depending on rowan storage layout or dense arena indices.
 - top-level `reserve` items are concrete enough to host syntax-only
   `TypeExpression` trees with attribute chains, generic type heads,
-  `of`/`over` term placeholders, bracket nested type arguments, and bracket
+  `of`/`over` `TermExpression` arguments, bracket nested type arguments, and bracket
   `qua_arg` placeholders. Other non-module item grammars remain placeholders.
 
 ## Task 4: Shared Paths
@@ -268,25 +268,25 @@ one whole user-symbol spelling such as `n-dimensional`; that is classified as
 source drift until a later parser/lexer task can consume parameter-scope facts
 and active attribute suffixes.
 
-`TypeArguments` preserves `of` / `over` argument lists with temporary
-`TermPlaceholder` children because term parsing lands in task 9. Bracket type
-arguments recursively parse nested `TypeExpression` children when possible.
-When a bracket argument instead matches `qua_arg`, task 8 stores it in a
+`TypeArguments` preserves `of` / `over` argument lists. After task 9 those
+lists own `TermExpression` children for primary terms rather than temporary
+term-entry placeholders. Bracket type arguments recursively parse nested
+`TypeExpression` children when possible. When a bracket argument instead matches `qua_arg`, task 8 stores it in a
 temporary `TermPlaceholder` child that owns the identifier and any `qua`
 radix-type tail tokens. Missing `]` is kept as `MalformedTypeExpression` plus
 `UnmatchedOpeningDelimiter` recovery. The task-8 `TermPlaceholder` node is a
-shallow token owner for one term-entry or `qua_arg` argument only; it must not
-encode term classification, operator facts, name resolution, or overload
-selection.
+shallow token owner for one bracket `qua_arg` argument only after task 9; it
+must not encode term classification, operator facts, name resolution, or
+overload selection.
 
 Malformed type syntax that can continue at the current reserve statement
 boundary uses `MalformedTypeExpression`. Missing pure type expressions after
 `reserve ... for` or inside bracket `type_arg_list` may insert
-`MissingTypeExpression` recovery. Missing `of` / `over` term arguments remain
-`TermPlaceholder` recovery candidates for task 9 and must not be reported as
-missing type expressions in task 8. Malformed tails before `;`, `,`, `]`, or
-`)` may use nested `SkippedToken` recovery and skipped-range trivia owned by the
-nearest reserve/type node.
+`MissingTypeExpression` recovery. Missing `of` / `over` term arguments are
+task-9 term recovery (`MalformedTermExpression` plus `MissingTerm`) and must
+not be reported as missing type expressions. Malformed tails before `;`, `,`,
+`]`, or `)` may use nested `SkippedToken` recovery and skipped-range trivia
+owned by the nearest reserve/type node.
 
 Active parse-only corpus imports the syntax-only `parser.type_fixtures` module
 to make identifier-shaped mode/attribute/structure symbols visible. The
@@ -294,11 +294,98 @@ to make identifier-shaped mode/attribute/structure symbols visible. The
 symbols only for that fixture module; those symbols are test harness inputs only
 and do not imply resolver semantics or built-in library content. Task-8 tests
 pin at least: the rightmost attribute/type-head split for consecutive fixture
-symbols, positive `non` attribute chains, `of` / `over` term placeholders,
+symbols, positive `non` attribute chains, `of` / `over` argument lists,
 bracket nested `TypeExpression` arguments, bracket `qua_arg` placeholders,
 local `ParameterPrefix` preservation in parser unit tests where tokens expose
 the split, missing `]` diagnostics, and malformed type-expression insertion
 after `reserve ... for`.
+
+## Task 9: Primary Terms
+
+Production inventory:
+
+```ebnf
+term_expression      ::= operator_expression { "qua" type_expression } ;
+operator_expression  ::= postfix_expression | functor_application ;
+postfix_expression   ::= term_primary { term_postfix } ;
+
+term_primary         ::= variable_identifier
+                       | "it"
+                       | numeral
+                       | "(" term_expression ")"
+                       | struct_constructor
+                       | set_enumeration
+                       | choice_expression
+                       | inline_functor_application
+                       | bracket_functor_application ;
+variable_identifier ::= identifier ;
+numeral             ::= digit+ ;
+
+choice_expression   ::= "the" type_expression ;
+struct_constructor  ::= struct_ref_name [ type_args ]
+                         "(" [ named_arg { "," named_arg } ] ")" ;
+named_arg           ::= identifier ":" term_expression ;
+set_enumeration     ::= "{" [ term_list ] "}" ;
+term_list           ::= term_expression { "," term_expression } ;
+inline_functor_application ::= inline_func_name "(" [ term_list ] ")" ;
+bracket_functor_application ::= "[" term_list "]" ;
+```
+
+Task 9 introduces syntax-only primary term nodes and wires them into the
+task-8 type parser wherever the grammar says `argument_list` or `term_list`.
+`TypeArguments` for `of` / `over` and parenthesized `AttributeRef` arguments
+therefore own `TermExpression` children rather than task-8 `TermPlaceholder`
+children. Bracket `type_arg_list` behavior remains deterministic from task 8:
+arguments that parse as `type_expression` stay nested `TypeExpression` nodes,
+and entries that match `qua_arg` stay `TermPlaceholder` until task 11.
+Task 9 does not reinterpret bracket type arguments as term expressions.
+`template_functor_application` is a normative term primary, but it requires the
+template argument surface owned by parser task 31 / mizar-syntax S-016; task 9
+records that as deferred `source_drift` and does not parse template functor
+applications.
+
+The parser emits `TermExpression` as the current term wrapper. For task 9 it
+contains exactly one primary-term child because selector/update postfixes,
+`qua`, and active operator parsing are later parser tasks. `TermReference`
+wraps either an identifier token or a shared `QualifiedSymbol` in term
+position without deciding whether the symbol is a variable, inline functor,
+structure name, or other semantic entity. `NumeralTerm`, `ItTerm`,
+`ParenthesizedTerm`, `ChoiceTerm`, `ApplicationTerm`, `StructureConstructor`,
+`FieldArgument`, and `SetEnumeration` preserve the corresponding source
+delimiters and source-ordered children.
+
+Parenthesized application syntax is parsed as `ApplicationTerm` unless the
+argument list contains visible `identifier ":" term_expression` field
+assignments, in which case task 9 preserves it as `StructureConstructor`.
+This is a syntax-only split: zero-field constructors such as `S()` remain
+generic applications until a later semantic boundary supplies structure facts.
+Built-in bracket functor notation with reserved `[` and `]` is preserved as
+`ApplicationTerm`. Active user-symbol delimiter pairs from
+`user_symbol term_list user_symbol` require bracket-pair metadata that is not
+part of `ParserInputs` yet; parser task 12 owns that active-operator extension.
+
+Task 9 produces `MalformedTermExpression` diagnostics for missing or malformed
+primary terms inside term lists and may insert `MissingTerm` recovery at pure
+insertion points. Missing `)` / `}` / `]` delimiters use
+`MalformedTermExpression` with `UnmatchedOpeningDelimiter` recovery under the
+nearest term node. Malformed tails that can synchronize at `,`, `;`, `)`, `]`,
+`}`, or a top-level item boundary may use `SkippedToken` recovery with skipped
+range trivia.
+
+Active parse-only corpus should reach task-9 terms through reserve-hosted type
+argument lists and attribute argument lists until statement/formula hosts land.
+Tests should pin at least: identifiers and numerals in term position,
+parenthesized terms, `it`, choice terms using `the type_expression`, ordinary
+parenthesized application, named-field structure-constructor syntax, set
+enumeration literals, reserved bracket functor application, missing term
+arguments, and missing term delimiters.
+
+Result: task 9 is implemented. `of` / `over` and parenthesized `AttributeRef`
+argument lists now own syntax-only `TermExpression` children for primary
+terms; bracket `type_arg_list` still keeps nested `TypeExpression` children and
+`qua_arg` `TermPlaceholder` children. Parser unit tests and active parse-only
+pass/fail corpus cases cover the primary-term forms and recovery behavior
+listed above.
 
 ## Public Enum Compatibility
 

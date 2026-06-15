@@ -622,6 +622,7 @@ fn syntax_code_key(code: &mizar_syntax::SyntaxDiagnosticCode) -> Arc<str> {
         mizar_syntax::SyntaxDiagnosticCode::MalformedExport => "malformed_export",
         mizar_syntax::SyntaxDiagnosticCode::MalformedVisibility => "malformed_visibility",
         mizar_syntax::SyntaxDiagnosticCode::MalformedTypeExpression => "malformed_type_expression",
+        mizar_syntax::SyntaxDiagnosticCode::MalformedTermExpression => "malformed_term_expression",
         mizar_syntax::SyntaxDiagnosticCode::UnexpectedTopLevelToken => "unexpected_top_level_token",
         mizar_syntax::SyntaxDiagnosticCode::UnrecoverableInput => "unrecoverable_input",
         _ => "syntax_diagnostic",

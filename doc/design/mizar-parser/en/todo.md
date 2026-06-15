@@ -324,13 +324,19 @@ older numeric syntax task references appear to disagree, prefer
      unit coverage for local parameter-prefix token splits, and active
      parse-only pass/fail corpus coverage through `parser.type_fixtures`.
 
-9. **Primary terms.** [ ]
+9. **Primary terms.** [x]
    - Identifiers, numerals, qualified symbols in term position, parenthesized
      terms, `it`, choice expressions (`the type_expression`), structure
      constructors with named field arguments, set enumeration literals, and
      application forms; replace the task-8 term-entry stub.
    - Deps: 8, `mizar-syntax` task 11 / S-011. Spec:
      [13.term_expression.md](../../../spec/en/13.term_expression.md).
+   - Result: implemented syntax-only `TermExpression` primary terms reachable
+     through reserve-hosted `of` / `over` arguments and attribute argument
+     lists, replaced task-8 term placeholders in those positions, kept bracket
+     `type_arg_list` `qua_arg` placeholders for task 11, added
+     `MalformedTermExpression` / `MissingTerm` / term-delimiter recovery, and
+     shipped parser unit tests plus active parse-only pass/fail corpus coverage.
 
 10. **Selector access/update and the dot-role surface shape.** [ ]
     - Selector access and update chains (`p.x`, `line.end.y`, `p.x := t`) and

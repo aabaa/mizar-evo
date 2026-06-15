@@ -2,9 +2,9 @@
 
 > 正本は英語です。英語版: [../en/grammar.md](../en/grammar.md)。
 
-状態: task 8 までの module skeleton、top-level placeholder dispatch、concrete
-import item、export item、visibility wrapper、および reserve-hosted type expression は
-実装済み。残りの具体的な非 module item 文法は計画中。
+状態: task 9 までの module skeleton、top-level placeholder dispatch、concrete
+import item、export item、visibility wrapper、reserve-hosted type expression、および
+reserve-hosted primary term は実装済み。残りの具体的な非 module item 文法は計画中。
 
 ## 目的
 
@@ -29,7 +29,7 @@ import item、export item、visibility wrapper、および reserve-hosted type e
   storage layout や密な arena index に依存しない。
 - top-level `reserve` item は、syntax-only `TypeExpression` tree を host できる
   ところまで concrete である。attribute chain、generic type head、`of` / `over`
-  term placeholder、bracket nested type argument、bracket `qua_arg` placeholder を
+  `TermExpression` argument、bracket nested type argument、bracket `qua_arg` placeholder を
   保持する。その他の non-module item grammar は placeholder のままである。
 
 ## Task 4: 共有 path
@@ -257,23 +257,23 @@ parenthesized identifier / numeral list と `-` である。template-parameter s
 parameter-scope facts と active attribute suffix を扱える後続 parser / lexer task まで
 source drift として分類する。
 
-`TypeArguments` は task 9 で term parsing が着地するまで、`of` / `over` argument list を
-一時的な `TermPlaceholder` child として保持する。bracket type argument は可能な範囲で
-nested `TypeExpression` child として再帰的に parse する。bracket argument が代わりに
+`TypeArguments` は `of` / `over` argument list を保持する。task 9 以降、これらの list は
+一時的な term-entry placeholder ではなく primary term の `TermExpression` child を所有する。
+bracket type argument は可能な範囲で nested `TypeExpression` child として再帰的に parse する。
+bracket argument が代わりに
 `qua_arg` に一致する場合、task 8 は identifier と任意の `qua` radix-type tail token を所有する
 一時的な `TermPlaceholder` child として保持する。`]` 欠落は `MalformedTypeExpression` と
 `UnmatchedOpeningDelimiter` recovery として保持する。task 8 の `TermPlaceholder` node は
-1 個の term-entry または `qua_arg` argument の浅い token owner にすぎず、term classification、
+task 9 以降は bracket `qua_arg` argument の浅い token owner にすぎず、term classification、
 operator fact、name resolution、overload selection を encode してはならない。
 
 現在の reserve statement boundary で継続できる malformed type syntax は
 `MalformedTypeExpression` を使う。`reserve ... for` の後、または bracket
 `type_arg_list` 内で純粋に type expression が欠落した場合は `MissingTypeExpression`
-recovery を挿入してよい。`of` / `over` の term argument 欠落は task 9 向けの
-`TermPlaceholder` recovery candidate のままとし、task 8 では missing type expression として
+recovery を挿入してよい。`of` / `over` の term argument 欠落は task 9 の term recovery
+（`MalformedTermExpression` と `MissingTerm`）であり、missing type expression として
 報告してはならない。`;`、`,`、`]`、`)` の前にある malformed tail は、最も近い
-reserve/type node が所有する nested `SkippedToken` recovery と skipped-range trivia を
-使ってよい。
+reserve/type node が所有する nested `SkippedToken` recovery と skipped-range trivia を使ってよい。
 
 active parse-only corpus は、identifier-shaped mode / attribute / structure symbol を
 可視にするため syntax-only の `parser.type_fixtures` module を import する。
@@ -281,10 +281,92 @@ active parse-only corpus は、identifier-shaped mode / attribute / structure sy
 小さな固定 symbol set を export する。これらの symbol は test harness input に限られ、
 resolver semantics や built-in library content を意味しない。task 8 の test は少なくとも、
 連続する fixture symbol に対する右端の attribute / type-head split、positive `non`
-attribute chain、`of` / `over` term placeholder、bracket nested `TypeExpression`
+attribute chain、`of` / `over` argument list、bracket nested `TypeExpression`
 argument、bracket `qua_arg` placeholder、token が split を露出する場合の局所
 `ParameterPrefix` 保持（parser unit test）、`]` 欠落 diagnostic、`reserve ... for` 後の
 malformed type-expression insertion を pin する。
+
+## Task 9: Primary Terms
+
+Production inventory:
+
+```ebnf
+term_expression      ::= operator_expression { "qua" type_expression } ;
+operator_expression  ::= postfix_expression | functor_application ;
+postfix_expression   ::= term_primary { term_postfix } ;
+
+term_primary         ::= variable_identifier
+                       | "it"
+                       | numeral
+                       | "(" term_expression ")"
+                       | struct_constructor
+                       | set_enumeration
+                       | choice_expression
+                       | inline_functor_application
+                       | bracket_functor_application ;
+variable_identifier ::= identifier ;
+numeral             ::= digit+ ;
+
+choice_expression   ::= "the" type_expression ;
+struct_constructor  ::= struct_ref_name [ type_args ]
+                         "(" [ named_arg { "," named_arg } ] ")" ;
+named_arg           ::= identifier ":" term_expression ;
+set_enumeration     ::= "{" [ term_list ] "}" ;
+term_list           ::= term_expression { "," term_expression } ;
+inline_functor_application ::= inline_func_name "(" [ term_list ] ")" ;
+bracket_functor_application ::= "[" term_list "]" ;
+```
+
+Task 9 は syntax-only の primary term node を導入し、grammar が
+`argument_list` または `term_list` としている場所で task 8 の type parser に接続する。
+そのため `of` / `over` の `TypeArguments` と parenthesized `AttributeRef` argument は、
+task 8 の `TermPlaceholder` ではなく `TermExpression` child を所有する。実際に
+bracket `type_arg_list` behavior は task 8 から deterministic のまま維持する。
+`type_expression` として parse できる argument は nested `TypeExpression` node のままにし、
+`qua_arg` に一致する entry は task 11 まで `TermPlaceholder` として残す。task 9 は
+bracket type argument を term expression として再解釈しない。
+`template_functor_application` は normative な term primary だが、parser task 31 /
+mizar-syntax S-016 が所有する template argument surface を必要とする。task 9 ではこれを
+deferred `source_drift` として記録し、template functor application は parse しない。
+
+parser は現在の term wrapper として `TermExpression` を出力する。task 9 では
+selector/update postfix、`qua`、active operator parsing が後続 task であるため、
+`TermExpression` は primary-term child をちょうど 1 つ含む。`TermReference` は term
+position の identifier token または共有 `QualifiedSymbol` を包み、それが variable、
+inline functor、structure name、その他の semantic entity のどれであるかは判断しない。
+`NumeralTerm`、`ItTerm`、`ParenthesizedTerm`、`ChoiceTerm`、`ApplicationTerm`、
+`StructureConstructor`、`FieldArgument`、`SetEnumeration` は対応する source delimiter と
+source-order child を保持する。
+
+parenthesized application syntax は、argument list に目に見える
+`identifier ":" term_expression` field assignment が含まれる場合だけ
+`StructureConstructor` として parse し、それ以外は `ApplicationTerm` として保持する。
+これは syntax-only split である。`S()` のような zero-field constructor は、将来の semantic
+boundary が structure fact を渡すまで generic application のまま残す。reserved `[` と `]`
+による built-in bracket functor notation は `ApplicationTerm` として保持する。
+`user_symbol term_list user_symbol` の active user-symbol delimiter pair は、まだ
+`ParserInputs` に含まれていない bracket-pair metadata を必要とするため、その
+active-operator extension は parser task 12 が所有する。
+
+Task 9 は term list 内の欠落または malformed primary term に
+`MalformedTermExpression` diagnostic を出し、pure insertion point では `MissingTerm`
+recovery を挿入してよい。`)` / `}` / `]` delimiter が欠ける場合は、nearest term node の下で
+`MalformedTermExpression` と `UnmatchedOpeningDelimiter` recovery を使う。`,`, `;`,
+`)`, `]`, `}`、または top-level item boundary で同期できる malformed tail は、
+`SkippedToken` recovery と skipped-range trivia を使ってよい。
+
+active parse-only corpus は、statement/formula host が着地するまで reserve-hosted type
+argument list と attribute argument list から task 9 term に到達させる。テストは少なくとも
+term position の identifier と numeral、parenthesized term、`it`、`the type_expression`
+を使う choice term、通常の parenthesized application、named-field structure-constructor
+syntax、set enumeration literal、reserved bracket functor application、missing term
+argument、missing term delimiter を pin する。
+
+結果: task 9 は実装済みである。`of` / `over` と parenthesized `AttributeRef`
+argument list は、primary term の syntax-only `TermExpression` child を所有する。
+bracket `type_arg_list` は引き続き nested `TypeExpression` child と `qua_arg`
+`TermPlaceholder` child を保持する。parser unit test と active parse-only pass/fail
+corpus case は、上記の primary-term 形と recovery 挙動を cover する。
 
 ## 公開 enum の互換性
 

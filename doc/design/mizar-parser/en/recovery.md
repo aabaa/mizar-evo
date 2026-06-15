@@ -2,8 +2,8 @@
 
 Status: minimal task-12 recovery, task-28 nested block-end recovery, task-5
 module-skeleton recovery, task-6 import recovery, task-7 export/visibility
-recovery, and task-8 type-expression recovery are implemented; full grammar
-recovery planned.
+recovery, task-8 type-expression recovery, and task-9 primary-term recovery
+are implemented. Full grammar recovery remains planned.
 
 ## Purpose
 
@@ -70,6 +70,17 @@ Current behavior:
   reaches `;`, a top-level item boundary, or EOF before `]` gets
   `MalformedTypeExpression`, a secondary anchor on `[`, and an
   `UnmatchedOpeningDelimiter` recovery node under `TypeArguments`;
+- task-9 primary-term parsing diagnoses malformed term-list and primary-term
+  syntax with `MalformedTermExpression`. Pure missing term arguments insert
+  `MissingTerm`; malformed non-empty tails may use `SkippedToken` recovery
+  owned by the nearest term node. Parenthesized, application, set-enumeration,
+  and reserved bracket-functor delimiters that reach synchronization before the
+  expected closer get `MalformedTermExpression`, a secondary opener anchor, and
+  `UnmatchedOpeningDelimiter` recovery under the nearest term node. A
+  `ChoiceTerm` with `the` but no following type expression uses
+  type-expression recovery (`MalformedTypeExpression` plus
+  `MissingTypeExpression`) because the missing child is the choice term's type
+  operand;
 - a stray `end` that has no matching block opener returns syntax diagnostics
   with `ast = None`.
 

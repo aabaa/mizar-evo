@@ -1,0 +1,18 @@
+schema_version = 1
+id = "pass_parser_primary_terms_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.primary_terms"
+source = "pass_parser_primary_terms_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.13.primary_terms.parser",
+  "spec.en.13.functor_applications.parser",
+  "spec.en.13.structure_expressions.parser",
+  "spec.en.13.set_expressions.parser",
+  "spec.en.13.choice_operator.parser",
+]
+notes = "Active parse-only runner coverage for parser task 9 reserve-hosted primary terms, functor applications, structure constructors, set enumerations, choice terms, attribute arguments, and of/over argument lists."

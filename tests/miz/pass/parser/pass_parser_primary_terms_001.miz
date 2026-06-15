@@ -1,0 +1,3 @@
+import parser.type_fixtures;
+reserve x for empty(it, 7, (a), the set, f(a, 1), Ns.TypeCaseMode, TypeCaseStruct(x: a, y: {a, [b]}), [a, b]) T of {a, b};
+reserve y for T over a, b;

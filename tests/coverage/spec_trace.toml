@@ -782,6 +782,69 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.13.primary_terms.parser"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.1 Primary Expressions"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_primary_terms_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_primary_terms_missing_term_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_primary_terms_missing_delimiter_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.13.functor_applications.parser"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.2 Functor Applications"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_primary_terms_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_primary_terms_missing_delimiter_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.13.structure_expressions.parser"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.3 Structure Expressions"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/parser/pass_parser_primary_terms_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.13.set_expressions.parser"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.4 Set Expressions"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/parser/pass_parser_primary_terms_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.13.choice_operator.parser"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.5 The Choice Operator"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/parser/pass_parser_primary_terms_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.syntax.parser_recovery.missing_end"
 source = "doc/design/mizar-parser/en/recovery.md"
 section = "Current behavior"

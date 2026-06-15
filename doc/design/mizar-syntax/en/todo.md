@@ -310,6 +310,13 @@ interaction. Spec references are the normative grammar chapters under
      task 12), and Fraenkel/set-builder forms (parser task 15). Primary-term
      coverage includes `it`, choice expressions (`the type_expression`),
      structure constructors, set enumeration literals, and application forms.
+   - Progress: parser task 9 has landed the primary-term increment:
+     `TermExpression`, `TermReference`, `NumeralTerm`, `ItTerm`,
+     `ParenthesizedTerm`, `ChoiceTerm`, `ApplicationTerm`,
+     `StructureConstructor`, `FieldArgument`, and `SetEnumeration`, plus
+     `MalformedTermExpression`, `MissingTerm` recovery coverage, and active
+     parse-only primary-term corpus cases. S-011 remains open for parser tasks
+     10-12 and 15.
    - Spec: [13.term_expression.md](../../../spec/en/13.term_expression.md),
      [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md).
 

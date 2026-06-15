@@ -310,12 +310,18 @@ resolver / build-system 依存を避ける。
      `parser.type_fixtures` 経由の active parse-only pass/fail corpus coverage を
      追加した。
 
-9. **一次項。** [ ]
+9. **一次項。** [x]
    - 識別子、数値、項位置の修飾シンボル、括弧付き項、適用形。task 8 の項
      エントリスタブを置き換える。`it`、選択式（`the type_expression`）、
      名前付きフィールド引数を持つ構造体コンストラクタ、集合列挙リテラルも含む。
    - 依存: 8、`mizar-syntax` task 11 / S-011。仕様:
      [13.term_expression.md](../../../spec/ja/13.term_expression.md)。
+   - 結果: reserve-hosted の `of` / `over` 引数と attribute argument list から
+     到達できる syntax-only `TermExpression` primary term を実装し、それらの位置に
+     あった task 8 の term placeholder を置き換えた。bracket `type_arg_list` の
+     `qua_arg` placeholder は task 11 のために保持した。
+     `MalformedTermExpression` / `MissingTerm` / term delimiter recovery を追加し、
+     parser unit test と active parse-only pass/fail corpus coverage を追加した。
 
 10. **selector access / update とドットの役割の surface 形状。** [ ]
     - selector access / update の連鎖（`p.x`、`line.end.y`、`p.x := t`）と

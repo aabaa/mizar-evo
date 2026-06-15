@@ -1,0 +1,20 @@
+schema_version = 1
+id = "fail_parser_primary_terms_missing_delimiter_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.primary_terms"
+source = "fail_parser_primary_terms_missing_delimiter_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "missing_primary_term_delimiter"
+stable_detail_key = "parser.primary_terms.missing_delimiter"
+diagnostic_codes = [
+  "malformed_term_expression",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = [
+  "spec.en.13.primary_terms.parser",
+  "spec.en.13.functor_applications.parser",
+]
+notes = "Active parse-only runner coverage for parser task 9 UnmatchedOpeningDelimiter recovery in a reserved-bracket primary term."

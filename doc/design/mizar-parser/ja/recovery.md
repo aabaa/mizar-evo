@@ -4,7 +4,8 @@
 
 状態: task 12 の最小回復、task 28 の入れ子 block-end 回復、task 5 の
 module-skeleton recovery、task 6 の import recovery、task 7 の export/visibility
-recovery、task 8 の type-expression recovery は実装済み。完全な文法回復は計画中。
+recovery、task 8 の type-expression recovery、task 9 の primary-term recovery は
+実装済み。完全な文法回復は引き続き計画中。
 
 ## 目的
 
@@ -67,6 +68,15 @@ recovery、task 8 の type-expression recovery は実装済み。完全な文法
   top-level item boundary、または EOF に到達した場合、`MalformedTypeExpression`、
   `[` への secondary anchor、`TypeArguments` 下の `UnmatchedOpeningDelimiter`
   recovery node を作る。
+- task 9 の primary-term parsing は、malformed term-list と primary-term syntax を
+  `MalformedTermExpression` で診断する。純粋な term argument 欠落では `MissingTerm` を
+  挿入する。空でない malformed tail は、最も近い term node が所有する `SkippedToken`
+  recovery を使ってよい。parenthesized、application、set-enumeration、reserved
+  bracket-functor delimiter が期待する closer より前に synchronization に到達した場合、
+  `MalformedTermExpression`、opener への secondary anchor、nearest term node 下の
+  `UnmatchedOpeningDelimiter` recovery を作る。`the` の後に type expression を持たない
+  `ChoiceTerm` は、欠落している child が choice term の type operand であるため、
+  type-expression recovery（`MalformedTypeExpression` と `MissingTypeExpression`）を使う。
 - 対応する block opener を持たない裸の `end` は、構文診断とともに `ast = None` を返す。
 
 ## 公開 enum の互換性
