@@ -3,7 +3,7 @@
 > 正本は英語です。英語版: [../en/recovery.md](../en/recovery.md)。
 
 状態: task 12 の最小回復、task 28 の入れ子 block-end 回復、task 5 の
-module-skeleton recovery は実装済み。完全な文法回復は計画中。
+module-skeleton recovery、task 6 の import recovery は実装済み。完全な文法回復は計画中。
 
 ## 目的
 
@@ -46,6 +46,11 @@ module-skeleton recovery は実装済み。完全な文法回復は計画中。
   `UnexpectedTopLevelToken`、明示的な recovered `SkippedToken` node、および
   `SkippedTokenReason::Recovery` の `SurfaceTrivia::skipped_token_ranges` entry で
   表現する。
+- task 6 の import parsing は、import prelude の後に現れる遅れた import を task 5 の
+  skipped-token recovery path に乗せ、import statement の semicolon 欠落を
+  `MissingSemicolon` で診断する。`as` の後の alias 欠落や branch import の `}` 欠落
+  など、現在の statement boundary で継続できる import 内部の不正構文は
+  `MalformedImport` で診断する。
 - 対応する block opener を持たない裸の `end` は、構文診断とともに `ast = None` を返す。
 
 ## 公開 enum の互換性

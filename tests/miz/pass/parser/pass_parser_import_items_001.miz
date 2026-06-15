@@ -1,0 +1,3 @@
+import std.core, ..common as C, .utils;
+import algebra.linear.{eigen, jordan};
+theorem T: thesis;

@@ -1,7 +1,8 @@
 # mizar-parser: Recovery
 
-Status: minimal task-12 recovery, task-28 nested block-end recovery, and task-5
-module-skeleton recovery are implemented; full grammar recovery planned.
+Status: minimal task-12 recovery, task-28 nested block-end recovery, task-5
+module-skeleton recovery, and task-6 import recovery are implemented; full
+grammar recovery planned.
 
 ## Purpose
 
@@ -48,6 +49,11 @@ Current behavior:
   with `MissingSemicolon`, and skips unexpected top-level tokens with
   `UnexpectedTopLevelToken`, an explicit recovered `SkippedToken` node, and a
   `SurfaceTrivia::skipped_token_ranges` entry using `SkippedTokenReason::Recovery`;
+- task-6 import parsing keeps late imports after the import prelude in the
+  task-5 skipped-token recovery path, diagnoses missing import statement
+  semicolons with `MissingSemicolon`, and diagnoses import-internal syntax that
+  can continue at the current statement boundary, such as a missing alias after
+  `as` or a missing branch-import `}`, with `MalformedImport`;
 - a stray `end` that has no matching block opener returns syntax diagnostics
   with `ast = None`.
 

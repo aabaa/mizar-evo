@@ -1,0 +1,19 @@
+schema_version = 1
+id = "fail_parser_import_late_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.import_items"
+source = "fail_parser_import_late_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "late_import"
+stable_detail_key = "parser.import_items.late_import"
+diagnostic_codes = [
+  "unexpected_top_level_token",
+]
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.12.modules.import_items.parser",
+]
+notes = "Active parse-only runner coverage for parser task 6 import-prelude ordering: imports after a non-import item are recovered as unexpected top-level tokens."

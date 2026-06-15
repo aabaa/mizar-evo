@@ -48,6 +48,7 @@ Current `SyntaxDiagnosticCode` values are:
 | `MissingEnd` | parser inserts a missing `end` at a synchronization point | set when parsing continues after insertion |
 | `MissingSemicolon` | parser reaches a top-level item boundary or EOF where `;` is required | set when parsing continues with the next item or EOF |
 | `MissingStringLiteral` | parser inserts a missing string literal in a string-required context | set when parsing continues after insertion |
+| `MalformedImport` | parser task 6 finds import-internal syntax that can continue at the current import statement boundary | set when the import item remains represented, for example missing alias after `as` or missing `}` in a branch import |
 | `UnexpectedTopLevelToken` | parser task 5 skips source tokens that cannot start a top-level item | set when a `SkippedToken` recovery node and skipped trivia range are emitted |
 | `UnrecoverableInput` | parser cannot construct a trustworthy `SurfaceAst` for the input | optional; set when the parser can suggest a source edit, and the parse result may have `ast = None` |
 
@@ -103,7 +104,11 @@ consumers must notice. `SurfaceTrivia::skipped_token_ranges` describes skipped
 source spans and optional owners for diagnostics, formatting, and code actions.
 When a recovery strategy both inserts a placeholder and skips source text, the
 placeholder belongs in `SurfaceNodeKind::ErrorRecovery`, while the skipped span
-belongs in trivia. Do not encode raw skipped text in the recovery node.
+belongs in trivia. Do not encode raw skipped text as a string payload in the
+recovery node. A grammar task may additionally attach the skipped token nodes
+as in-range recovery children when it documents that ownership and nests the
+recovery under a non-recovery structural owner, so rowan rendering can keep the
+source tokens emitted once while trivia still records the skipped span.
 
 Parser tasks that start producing a currently unproduced recovery kind must
 update this table if they refine the producer condition, add a dedicated

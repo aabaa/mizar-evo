@@ -83,6 +83,9 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 10 | `CompilationUnit` | module file skeleton node |
 | 11 | `ItemList` | top-level item list node |
 | 12 | `PlaceholderItem` | task-5 keyword-dispatched placeholder item node |
+| 13 | `ImportItem` | task-6 concrete `import` item node |
+| 14 | `ImportAliasDecl` | task-6 simple import or alias declaration node |
+| 15 | `ModuleBranchImport` | task-6 branch import declaration node |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -96,7 +99,7 @@ The current raw discriminants are part of the rowan boundary for this phase:
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true only for `Root`, `Token`,
 `InfixExpression`, `ErrorRecovery`, the task-S-009 shared path node kinds, and
-the task-5 module skeleton node kinds listed above; `is_token_kind` is true
+the task-5/6 module and import node kinds listed above; `is_token_kind` is true
 only for the token leaf kinds. Future raw values should be appended or assigned
 into a documented reserved range so existing snapshots and rowan tests fail
 loudly when the raw vocabulary changes.
@@ -112,6 +115,9 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::CompilationUnit` | none | `SyntaxKind::CompilationUnit` | parser task-5 module file skeleton; one `ItemList` child and no semantic module identity |
 | `SurfaceNodeKind::ItemList` | none | `SyntaxKind::ItemList` | source-order list of top-level item placeholders and item-level recovery markers |
 | `SurfaceNodeKind::PlaceholderItem` | none | `SyntaxKind::PlaceholderItem` | keyword-dispatched top-level item placeholder used until later tasks replace it with concrete item nodes |
+| `SurfaceNodeKind::ImportItem` | none | `SyntaxKind::ImportItem` | parser task-6 concrete `import_stmt`; owns the `import` token, import declaration nodes separated by comma tokens, optional malformed-tail recovery, and optional semicolon token |
+| `SurfaceNodeKind::ImportAliasDecl` | none | `SyntaxKind::ImportAliasDecl` | parser task-6 `module_path ["as" module_identifier]`; owns a `ModulePath`, optional `as` token, optional alias `PathSegment`, and optional malformed-tail recovery |
+| `SurfaceNodeKind::ModuleBranchImport` | none | `SyntaxKind::ModuleBranchImport` | parser task-6 `module_path ".{" module_identifier { "," module_identifier } "}"`; owns a base `ModulePath`, `.{` token, branch `PathSegment`s separated by comma tokens, optional malformed-tail recovery, and optional `}` |
 | `SurfaceNodeKind::ModulePath` | none | `SyntaxKind::ModulePath` | `module_path`; optional `RelativePrefix`, first `PathSegment`, then repeated `.` token plus `PathSegment`; only this path shape may contain `RelativePrefix` |
 | `SurfaceNodeKind::NamespacePath` | none | `SyntaxKind::NamespacePath` | `namespace_path`; first `PathSegment`, then repeated `.` token plus identifier `PathSegment`; relative prefixes are not allowed |
 | `SurfaceNodeKind::QualifiedSymbol` | none | `SyntaxKind::QualifiedSymbol` | `qualified_symbol`; zero or more namespace identifier `PathSegment` + `.` token pairs followed by final user-symbol `PathSegment` |
@@ -139,15 +145,35 @@ consumers do not need raw rowan traversal for these shared path shapes.
 
 Module skeleton nodes added for `mizar-parser` task 5 are syntax-only shapes.
 `CompilationUnit` represents the source file surface and owns exactly one
-`ItemList` child. `ItemList` children are source-ordered `PlaceholderItem`
-nodes and item-level recovery nodes such as `SkippedToken`. `PlaceholderItem`
-wraps the source tokens consumed for one top-level item boundary, including
-annotation prefixes and recovered items that are missing their terminating
-semicolon. The parser must not encode import resolution, visibility semantics,
-theorem validity, or symbol identity in these nodes. `SurfaceNodeView` exposes typed
-`as_compilation_unit`, `as_item_list`, and `as_placeholder_item` helpers.
+`ItemList` child. `ItemList` children are source-ordered concrete item nodes,
+`PlaceholderItem` nodes, and item-level recovery nodes such as `SkippedToken`.
+`PlaceholderItem` wraps the source tokens consumed for one top-level item
+boundary, including annotation prefixes and recovered items that are missing
+their terminating semicolon. The parser must not encode import resolution,
+visibility semantics, theorem validity, or symbol identity in these nodes.
+`SurfaceNodeView` exposes typed `as_compilation_unit`, `as_item_list`, and
+`as_placeholder_item` helpers.
 Leading doc-comment attachment to the following item is represented through
 `SurfaceTrivia`, not by copying comment text into item nodes.
+
+Import nodes added for `mizar-parser` task 6 are syntax-only shapes.
+`ImportItem` represents one `import_stmt` while the import prelude is open. In
+well-formed input, its children are source ordered: the `import` token, one or
+more `ImportAliasDecl` or `ModuleBranchImport` nodes separated by comma tokens,
+and a semicolon token. Malformed recovery may leave an `ImportItem` with no
+declaration after `import`, a trailing comma without a following declaration,
+or a `SkippedToken` recovery child for malformed source consumed before the
+semicolon. `ImportAliasDecl` owns the imported `ModulePath`, an optional `as`
+token, and an optional alias `PathSegment`; malformed aliases may omit the
+alias segment and may contain a nested `SkippedToken` recovery while carrying a
+`MalformedImport` diagnostic. `ModuleBranchImport` owns the base `ModulePath`,
+the `.{` token, branch `PathSegment` children separated by comma tokens, and
+`}` in well-formed input; malformed branch imports may omit branch segments or
+the close token and may contain a nested `SkippedToken` recovery while carrying
+`MalformedImport`. These nodes may contain relative `ModulePath` prefixes, but
+they do not resolve modules, split branch imports into semantic imports, check
+export availability, or assign aliases. `SurfaceNodeView` exposes typed
+`as_import_item`, `as_import_alias_decl`, and `as_module_branch_import` helpers.
 
 ### Vocabulary Increment Contract
 
@@ -201,13 +227,16 @@ range in compatibility views; those out-of-range context children are not
 emitted under the recovery rowan node.
 
 Current rowan construction deduplicates root-listed token nodes only when they
-are also descendants of non-recovery structural root children. It does not
-deduplicate a token that is both listed at the compatibility root and included
-as an in-range child of a recovery node. Until a future builder check or rowan
-emission rule covers that case, parser producers must not create recovery nodes
-that wrap in-range token children also present in the root token listing. Use
-out-of-range context children for missing-construct recovery, or record skipped
-source spans in trivia instead of wrapping duplicated token leaves.
+are also descendants of non-recovery structural root children. That structural
+subtree may itself contain recovery nodes with in-range token children, as with
+malformed import-tail recovery: the token leaves are emitted once under the
+structural rowan subtree and omitted from the compatibility root's token pass.
+Recovery nodes that are listed directly at the compatibility root are not
+deduplication owners for root-listed tokens, so parser producers must not give
+such root-level recovery nodes in-range token children unless a later builder
+check or rowan emission rule documents that case. Use out-of-range context
+children for missing-construct recovery, or nest skipped-token recovery under a
+non-recovery structural owner and record the skipped source span in trivia.
 
 ### Accessor Conventions
 

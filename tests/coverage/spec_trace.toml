@@ -732,6 +732,22 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.12.modules.import_items.parser"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.7 Complete Syntax (EBNF)"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_import_items_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_import_late_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_import_missing_alias_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_import_missing_branch_close_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_import_missing_semicolon_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.syntax.parser_recovery.missing_end"
 source = "doc/design/mizar-parser/en/recovery.md"
 section = "Current behavior"

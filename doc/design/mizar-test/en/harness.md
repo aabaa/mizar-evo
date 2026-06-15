@@ -65,9 +65,14 @@ pub struct ParseOnlyRunReport {
 The current parse-only runner copies each active corpus file into a temporary
 `src/` package, runs the real frontend parser seam, requires pass cases to
 produce an AST with no assertion diagnostics, and compares fail cases against
-the expected bare syntax diagnostic keys. If parser syntax diagnostics and
-non-syntax frontend recovery diagnostics both appear, the runner reports all
-diagnostic codes unless the sidecar explicitly includes
+the expected bare syntax diagnostic keys. For this syntax-only mode, the runner
+uses a harness provider that resolves every frontend import stub to a
+`ResolvedImportEntry` with matching `stub_ordinal` and `stub_span`, plus one
+empty `ModuleLexicalSummary` per distinct module id. The summaries contain no
+exported symbols and exist only to keep import syntax cases from depending on
+semantic module availability. If parser syntax diagnostics and non-syntax
+frontend recovery diagnostics both appear, the runner reports all diagnostic
+codes unless the sidecar explicitly includes
 `allow_frontend_recovery_diagnostics`. AST snapshot assertion is deferred until
 the surface node vocabulary is expanded.
 

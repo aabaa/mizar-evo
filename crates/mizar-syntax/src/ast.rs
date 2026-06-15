@@ -45,6 +45,9 @@ pub enum SyntaxKind {
     CompilationUnit = 10,
     ItemList = 11,
     PlaceholderItem = 12,
+    ImportItem = 13,
+    ImportAliasDecl = 14,
+    ModuleBranchImport = 15,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -71,6 +74,9 @@ impl SyntaxKind {
             10 => Self::CompilationUnit,
             11 => Self::ItemList,
             12 => Self::PlaceholderItem,
+            13 => Self::ImportItem,
+            14 => Self::ImportAliasDecl,
+            15 => Self::ModuleBranchImport,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -99,6 +105,9 @@ impl SyntaxKind {
                 | Self::CompilationUnit
                 | Self::ItemList
                 | Self::PlaceholderItem
+                | Self::ImportItem
+                | Self::ImportAliasDecl
+                | Self::ModuleBranchImport
         )
     }
 
@@ -610,6 +619,9 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::CompilationUnit
             | SurfaceNodeKind::ItemList
             | SurfaceNodeKind::PlaceholderItem
+            | SurfaceNodeKind::ImportItem
+            | SurfaceNodeKind::ImportAliasDecl
+            | SurfaceNodeKind::ModuleBranchImport
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -627,6 +639,9 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::CompilationUnit
             | SurfaceNodeKind::ItemList
             | SurfaceNodeKind::PlaceholderItem
+            | SurfaceNodeKind::ImportItem
+            | SurfaceNodeKind::ImportAliasDecl
+            | SurfaceNodeKind::ModuleBranchImport
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -644,6 +659,9 @@ impl<'a> SurfaceNodeView<'a> {
             | SurfaceNodeKind::CompilationUnit
             | SurfaceNodeKind::ItemList
             | SurfaceNodeKind::PlaceholderItem
+            | SurfaceNodeKind::ImportItem
+            | SurfaceNodeKind::ImportAliasDecl
+            | SurfaceNodeKind::ModuleBranchImport
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -671,6 +689,27 @@ impl<'a> SurfaceNodeView<'a> {
     pub fn as_placeholder_item(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::PlaceholderItem => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_import_item(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ImportItem => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_import_alias_decl(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ImportAliasDecl => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_module_branch_import(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ModuleBranchImport => Some(self),
             _ => None,
         }
     }
@@ -769,6 +808,9 @@ impl SurfaceNode {
             | SurfaceNodeKind::CompilationUnit
             | SurfaceNodeKind::ItemList
             | SurfaceNodeKind::PlaceholderItem
+            | SurfaceNodeKind::ImportItem
+            | SurfaceNodeKind::ImportAliasDecl
+            | SurfaceNodeKind::ModuleBranchImport
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::NamespacePath
             | SurfaceNodeKind::QualifiedSymbol
@@ -790,6 +832,9 @@ pub enum SurfaceNodeKind {
     CompilationUnit,
     ItemList,
     PlaceholderItem,
+    ImportItem,
+    ImportAliasDecl,
+    ModuleBranchImport,
     ModulePath,
     NamespacePath,
     QualifiedSymbol,
@@ -807,6 +852,9 @@ impl SurfaceNodeKind {
             Self::CompilationUnit => SyntaxKind::CompilationUnit,
             Self::ItemList => SyntaxKind::ItemList,
             Self::PlaceholderItem => SyntaxKind::PlaceholderItem,
+            Self::ImportItem => SyntaxKind::ImportItem,
+            Self::ImportAliasDecl => SyntaxKind::ImportAliasDecl,
+            Self::ModuleBranchImport => SyntaxKind::ModuleBranchImport,
             Self::ModulePath => SyntaxKind::ModulePath,
             Self::NamespacePath => SyntaxKind::NamespacePath,
             Self::QualifiedSymbol => SyntaxKind::QualifiedSymbol,
@@ -910,6 +958,9 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::CompilationUnit => output.push_str("CompilationUnit"),
         SurfaceNodeKind::ItemList => output.push_str("ItemList"),
         SurfaceNodeKind::PlaceholderItem => output.push_str("PlaceholderItem"),
+        SurfaceNodeKind::ImportItem => output.push_str("ImportItem"),
+        SurfaceNodeKind::ImportAliasDecl => output.push_str("ImportAliasDecl"),
+        SurfaceNodeKind::ModuleBranchImport => output.push_str("ModuleBranchImport"),
         SurfaceNodeKind::ModulePath => output.push_str("ModulePath"),
         SurfaceNodeKind::NamespacePath => output.push_str("NamespacePath"),
         SurfaceNodeKind::QualifiedSymbol => output.push_str("QualifiedSymbol"),
@@ -1262,6 +1313,61 @@ mod tests {
             ";",
             range(source_id, 73, 74),
         );
+        let import_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "import",
+            range(source_id, 75, 81),
+        );
+        let import_path_prefix = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".",
+            range(source_id, 82, 83),
+        );
+        let import_path_tools = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Tools",
+            range(source_id, 83, 88),
+        );
+        let import_branch_opener = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".{",
+            range(source_id, 88, 90),
+        );
+        let import_branch_segment = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Group",
+            range(source_id, 90, 95),
+        );
+        let import_branch_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "}",
+            range(source_id, 95, 96),
+        );
+        let import_comma = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ",",
+            range(source_id, 96, 97),
+        );
+        let import_alias_path = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Std",
+            range(source_id, 98, 101),
+        );
+        let import_as = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "as",
+            range(source_id, 102, 104),
+        );
+        let import_alias = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "G",
+            range(source_id, 105, 106),
+        );
+        let import_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 106, 107),
+        );
         let recovery = builder.add_recovery(
             SyntaxRecoveryKind::ErrorToken,
             range(source_id, 9, 9),
@@ -1344,14 +1450,75 @@ mod tests {
             range(source_id, 66, 74),
             vec![item_keyword, item_semicolon],
         );
+        let import_path_prefix_node = builder.add_node(
+            SurfaceNodeKind::RelativePrefix,
+            range(source_id, 82, 83),
+            vec![import_path_prefix],
+        );
+        let import_path_tools_node = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 83, 88),
+            vec![import_path_tools],
+        );
+        let import_branch_path = builder.add_node(
+            SurfaceNodeKind::ModulePath,
+            range(source_id, 82, 88),
+            vec![import_path_prefix_node, import_path_tools_node],
+        );
+        let import_branch_segment_node = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 90, 95),
+            vec![import_branch_segment],
+        );
+        let module_branch_import = builder.add_node(
+            SurfaceNodeKind::ModuleBranchImport,
+            range(source_id, 82, 96),
+            vec![
+                import_branch_path,
+                import_branch_opener,
+                import_branch_segment_node,
+                import_branch_close,
+            ],
+        );
+        let import_alias_path_node = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 98, 101),
+            vec![import_alias_path],
+        );
+        let import_alias_module_path = builder.add_node(
+            SurfaceNodeKind::ModulePath,
+            range(source_id, 98, 101),
+            vec![import_alias_path_node],
+        );
+        let import_alias_node = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 105, 106),
+            vec![import_alias],
+        );
+        let import_alias_decl = builder.add_node(
+            SurfaceNodeKind::ImportAliasDecl,
+            range(source_id, 98, 106),
+            vec![import_alias_module_path, import_as, import_alias_node],
+        );
+        let import_item = builder.add_node(
+            SurfaceNodeKind::ImportItem,
+            range(source_id, 75, 107),
+            vec![
+                import_keyword,
+                module_branch_import,
+                import_comma,
+                import_alias_decl,
+                import_semicolon,
+            ],
+        );
         let item_list = builder.add_node(
             SurfaceNodeKind::ItemList,
-            range(source_id, 66, 74),
-            vec![placeholder_item],
+            range(source_id, 66, 107),
+            vec![placeholder_item, import_item],
         );
         let compilation_unit = builder.add_node(
             SurfaceNodeKind::CompilationUnit,
-            range(source_id, 66, 74),
+            range(source_id, 66, 107),
             vec![item_list],
         );
         let path_tokens = [
@@ -1366,12 +1533,26 @@ mod tests {
             qualified_dot_token,
             qualified_symbol_token,
         ];
+        let import_tokens = [
+            import_keyword,
+            import_path_prefix,
+            import_path_tools,
+            import_branch_opener,
+            import_branch_segment,
+            import_branch_close,
+            import_comma,
+            import_alias_path,
+            import_as,
+            import_alias,
+            import_semicolon,
+        ];
         let root_children = token_ids
             .iter()
             .copied()
             .chain([recovered_token])
             .chain(path_tokens)
             .chain([item_keyword, item_semicolon])
+            .chain(import_tokens)
             .chain([
                 infix,
                 module_path,
@@ -1383,7 +1564,7 @@ mod tests {
             .collect::<Vec<_>>();
         let root = builder.add_node(
             SurfaceNodeKind::Root,
-            range(source_id, 0, 74),
+            range(source_id, 0, 107),
             root_children.clone(),
         );
         let ast = builder.finish(Some(root), Some(infix));
@@ -1392,7 +1573,7 @@ mod tests {
         assert_eq!(root_view.id(), sid(root));
         assert_eq!(root_view.kind(), &SurfaceNodeKind::Root);
         assert_eq!(root_view.syntax_kind(), SyntaxKind::Root);
-        assert_eq!(root_view.range(), range(source_id, 0, 74));
+        assert_eq!(root_view.range(), range(source_id, 0, 107));
         assert!(!root_view.is_recovered());
         assert!(root_view.as_token().is_none());
         assert!(root_view.as_infix_expression().is_none());
@@ -1503,7 +1684,7 @@ mod tests {
         assert_eq!(item_list_view.syntax_kind(), SyntaxKind::ItemList);
         assert_eq!(
             item_list_view.as_item_list().unwrap().children(),
-            &[sid(placeholder_item)]
+            &[sid(placeholder_item), sid(import_item)]
         );
         let placeholder_item_view = ast.node_view(sid(placeholder_item)).unwrap();
         assert_eq!(
@@ -1516,6 +1697,45 @@ mod tests {
                 .unwrap()
                 .children(),
             &[sid(item_keyword), sid(item_semicolon)]
+        );
+        let import_item_view = ast.node_view(sid(import_item)).unwrap();
+        assert_eq!(import_item_view.syntax_kind(), SyntaxKind::ImportItem);
+        assert_eq!(
+            import_item_view.as_import_item().unwrap().children(),
+            &[
+                sid(import_keyword),
+                sid(module_branch_import),
+                sid(import_comma),
+                sid(import_alias_decl),
+                sid(import_semicolon),
+            ]
+        );
+        let branch_import_view = ast.node_view(sid(module_branch_import)).unwrap();
+        assert_eq!(
+            branch_import_view.syntax_kind(),
+            SyntaxKind::ModuleBranchImport
+        );
+        assert_eq!(
+            branch_import_view
+                .as_module_branch_import()
+                .unwrap()
+                .children(),
+            &[
+                sid(import_branch_path),
+                sid(import_branch_opener),
+                sid(import_branch_segment_node),
+                sid(import_branch_close),
+            ]
+        );
+        let import_alias_view = ast.node_view(sid(import_alias_decl)).unwrap();
+        assert_eq!(import_alias_view.syntax_kind(), SyntaxKind::ImportAliasDecl);
+        assert_eq!(
+            import_alias_view.as_import_alias_decl().unwrap().children(),
+            &[
+                sid(import_alias_module_path),
+                sid(import_as),
+                sid(import_alias_node)
+            ]
         );
 
         let module_segment_view = ast.node_view(sid(module_path_segment_a)).unwrap();
@@ -1582,6 +1802,17 @@ mod tests {
                 SyntaxKind::TokenUserSymbol,
                 SyntaxKind::TokenReservedWord,
                 SyntaxKind::TokenReservedSymbol,
+                SyntaxKind::TokenReservedWord,
+                SyntaxKind::TokenReservedSymbol,
+                SyntaxKind::TokenIdentifier,
+                SyntaxKind::TokenReservedSymbol,
+                SyntaxKind::TokenIdentifier,
+                SyntaxKind::TokenReservedSymbol,
+                SyntaxKind::TokenReservedSymbol,
+                SyntaxKind::TokenIdentifier,
+                SyntaxKind::TokenReservedWord,
+                SyntaxKind::TokenIdentifier,
+                SyntaxKind::TokenReservedSymbol,
             ]
         );
         for (index, token_view) in ast.token_views().take(token_kinds.len()).enumerate() {
@@ -1612,6 +1843,9 @@ mod tests {
             SyntaxKind::CompilationUnit,
             SyntaxKind::ItemList,
             SyntaxKind::PlaceholderItem,
+            SyntaxKind::ImportItem,
+            SyntaxKind::ImportAliasDecl,
+            SyntaxKind::ModuleBranchImport,
             SyntaxKind::ModulePath,
             SyntaxKind::NamespacePath,
             SyntaxKind::QualifiedSymbol,
@@ -2438,6 +2672,61 @@ mod tests {
             ";",
             range(source_id, 88, 89),
         );
+        let import_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "import",
+            range(source_id, 90, 96),
+        );
+        let import_path_prefix = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".",
+            range(source_id, 97, 98),
+        );
+        let import_path_core = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "core",
+            range(source_id, 98, 102),
+        );
+        let import_branch_opener = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".{",
+            range(source_id, 102, 104),
+        );
+        let import_branch_segment = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "linear",
+            range(source_id, 104, 110),
+        );
+        let import_branch_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "}",
+            range(source_id, 110, 111),
+        );
+        let import_comma = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ",",
+            range(source_id, 111, 112),
+        );
+        let import_alias_path = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "algebra",
+            range(source_id, 113, 120),
+        );
+        let import_alias_as = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "as",
+            range(source_id, 121, 123),
+        );
+        let import_alias = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "A",
+            range(source_id, 124, 125),
+        );
+        let import_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 125, 126),
+        );
         let expression = builder.add_node(
             SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
                 spelling: "++".into(),
@@ -2507,14 +2796,75 @@ mod tests {
             range(source_id, 81, 89),
             vec![item_theorem, item_semicolon],
         );
+        let import_path_prefix_node = builder.add_node(
+            SurfaceNodeKind::RelativePrefix,
+            range(source_id, 97, 98),
+            vec![import_path_prefix],
+        );
+        let import_path_core_node = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 98, 102),
+            vec![import_path_core],
+        );
+        let import_branch_path = builder.add_node(
+            SurfaceNodeKind::ModulePath,
+            range(source_id, 97, 102),
+            vec![import_path_prefix_node, import_path_core_node],
+        );
+        let import_branch_segment_node = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 104, 110),
+            vec![import_branch_segment],
+        );
+        let module_branch_import = builder.add_node(
+            SurfaceNodeKind::ModuleBranchImport,
+            range(source_id, 97, 111),
+            vec![
+                import_branch_path,
+                import_branch_opener,
+                import_branch_segment_node,
+                import_branch_close,
+            ],
+        );
+        let import_alias_path_node = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 113, 120),
+            vec![import_alias_path],
+        );
+        let import_alias_module_path = builder.add_node(
+            SurfaceNodeKind::ModulePath,
+            range(source_id, 113, 120),
+            vec![import_alias_path_node],
+        );
+        let import_alias_node = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 124, 125),
+            vec![import_alias],
+        );
+        let import_alias_decl = builder.add_node(
+            SurfaceNodeKind::ImportAliasDecl,
+            range(source_id, 113, 125),
+            vec![import_alias_module_path, import_alias_as, import_alias_node],
+        );
+        let import_item = builder.add_node(
+            SurfaceNodeKind::ImportItem,
+            range(source_id, 90, 126),
+            vec![
+                import_keyword,
+                module_branch_import,
+                import_comma,
+                import_alias_decl,
+                import_semicolon,
+            ],
+        );
         let item_list = builder.add_node(
             SurfaceNodeKind::ItemList,
-            range(source_id, 81, 89),
-            vec![placeholder_item],
+            range(source_id, 81, 126),
+            vec![import_item, placeholder_item],
         );
         let compilation_unit = builder.add_node(
             SurfaceNodeKind::CompilationUnit,
-            range(source_id, 81, 89),
+            range(source_id, 81, 126),
             vec![item_list],
         );
         let recovery = builder.add_recovery(
@@ -2524,7 +2874,7 @@ mod tests {
         );
         let root = builder.add_node(
             SurfaceNodeKind::Root,
-            range(source_id, 0, 89),
+            range(source_id, 0, 126),
             vec![
                 identifier,
                 reserved_word,
@@ -2548,6 +2898,17 @@ mod tests {
                 qualified_space,
                 item_theorem,
                 item_semicolon,
+                import_keyword,
+                import_path_prefix,
+                import_path_core,
+                import_branch_opener,
+                import_branch_segment,
+                import_branch_close,
+                import_comma,
+                import_alias_path,
+                import_alias_as,
+                import_alias,
+                import_semicolon,
                 expression,
                 module_path,
                 namespace_path,

@@ -261,10 +261,20 @@ resolver / build-system 依存を避ける。
    - 依存: 3、`mizar-syntax` task 9 / S-009。仕様:
      [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)。
 
-6. **import item。** [ ]
+6. **import item。** [x]
    - alias と相対 prefix（`.` / `..`）を持つ `import` item。形は frontend の
      import 事前走査 stub と整合させる。task 4 のパス形に対する繰り延べ
      コーパスケースを含む。
+   - 結果: task 6 の production inventory は [grammar.md](./grammar.md) に記録した。
+     parser は module `ItemList` 配下に `ImportItem`、`ImportAliasDecl`、
+     `ModuleBranchImport` syntax node を送出し、import path と alias には共有の
+     `ModulePath` / `RelativePrefix` / `PathSegment` node を使う。`import` prelude
+     が開いている間だけ import を concrete item として扱い、遅れた import は
+     `UnexpectedTopLevelToken` で回復する。alias / branch の不正構文は
+     `MalformedImport` で診断し、active parse-only の pass/fail corpus coverage と
+     traceability を追加済みである。`mizar-test` の parse-only run は import stub を
+     空の syntax-only summary に解決するため、意味的な module availability なしに
+     import 構文をテストできる。
    - 依存: 4、5、`mizar-syntax` task 9 / S-009。仕様:
      [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)。
 

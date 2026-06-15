@@ -4,6 +4,7 @@ use crate::{
     diagnostic::{ExpectedToken, expected_token_diagnostic},
     event::SyntaxEvent,
     grammar::Parser,
+    path::ParsedPathNode,
     sync::{self, is_top_level_item_keyword},
 };
 use mizar_session::SourceRange;
@@ -18,10 +19,11 @@ pub(super) struct ParsedCompilationUnit {
     pub(super) recovery_nodes: Vec<SurfaceBuilderNodeId>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct ParsedItem {
     id: SurfaceBuilderNodeId,
     next_position: usize,
+    recovery_nodes: Vec<SurfaceBuilderNodeId>,
 }
 
 impl Parser {
@@ -32,15 +34,31 @@ impl Parser {
 
         if self.should_parse_module_skeleton() {
             let mut position = 0;
+            let mut import_prelude_open = true;
             while position < self.request.tokens.len() {
                 if self.is_item_start_at(position) {
+                    if import_prelude_open && self.is_import_item_start_at(position) {
+                        let item = self.parse_import_item(position);
+                        item_children.push(item.id);
+                        recovery_nodes.extend(item.recovery_nodes);
+                        position = item.next_position;
+                        continue;
+                    }
+                    import_prelude_open = false;
+                    if self.is_import_item_start_at(position) {
+                        let recovery = self.recover_unexpected_top_level_tokens(position);
+                        item_children.push(recovery.id);
+                        recovery_nodes.extend(recovery.recovery_nodes);
+                        position = recovery.next_position;
+                        continue;
+                    }
                     let item = self.parse_placeholder_item(position);
                     item_children.push(item.id);
                     position = item.next_position;
                 } else {
                     let recovery = self.recover_unexpected_top_level_tokens(position);
                     item_children.push(recovery.id);
-                    recovery_nodes.push(recovery.id);
+                    recovery_nodes.extend(recovery.recovery_nodes);
                     position = recovery.next_position;
                 }
             }
@@ -58,6 +76,169 @@ impl Parser {
         });
         ParsedCompilationUnit {
             id: compilation_unit,
+            recovery_nodes,
+        }
+    }
+
+    fn parse_import_item(&mut self, position: usize) -> ParsedItem {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if let Some(decl) = self.parse_import_decl(cursor) {
+            children.push(decl.id);
+            recovery_nodes.extend(decl.recovery_nodes);
+            cursor = decl.next_position;
+
+            while self.is_reserved_symbol_at(cursor, ",") {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+                match self.parse_import_decl(cursor) {
+                    Some(decl) => {
+                        children.push(decl.id);
+                        recovery_nodes.extend(decl.recovery_nodes);
+                        cursor = decl.next_position;
+                    }
+                    None => {
+                        self.diagnose_malformed_import(
+                            cursor,
+                            "expected module path after `,` in import statement",
+                        );
+                        if let Some(recovery) = self.recover_malformed_import_tail(cursor) {
+                            children.push(recovery.id);
+                            recovery_nodes.extend(recovery.recovery_nodes);
+                            cursor = recovery.next_position;
+                        }
+                        break;
+                    }
+                }
+            }
+        } else {
+            self.diagnose_malformed_import(
+                cursor,
+                "expected module path after `import` in import statement",
+            );
+            if let Some(recovery) = self.recover_malformed_import_tail(cursor) {
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+                cursor = recovery.next_position;
+            }
+        }
+
+        if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::ImportItem,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedItem {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_import_decl(&mut self, position: usize) -> Option<ParsedItem> {
+        let path = self.parse_module_path_at(position)?;
+        if self.is_reserved_symbol_at(path.next_position, ".{") {
+            return Some(self.parse_module_branch_import(position, path));
+        }
+
+        let mut children = vec![path.id];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = path.next_position;
+        if self.is_reserved_word_at(cursor, "as") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            if self.is_identifier_at(cursor) {
+                children.push(self.emit_wrapped_token(SurfaceNodeKind::PathSegment, cursor));
+                cursor += 1;
+            } else {
+                self.diagnose_malformed_import(
+                    cursor,
+                    "expected module alias after `as` in import statement",
+                );
+                if let Some(recovery) = self.recover_malformed_import_tail(cursor) {
+                    children.push(recovery.id);
+                    recovery_nodes.extend(recovery.recovery_nodes);
+                    cursor = recovery.next_position;
+                }
+            }
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::ImportAliasDecl,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        Some(ParsedItem {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        })
+    }
+
+    fn parse_module_branch_import(&mut self, position: usize, path: ParsedPathNode) -> ParsedItem {
+        let mut children = vec![path.id, self.token_node_ids[path.next_position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = path.next_position + 1;
+        let mut malformed_tail = false;
+
+        loop {
+            if self.is_identifier_at(cursor) {
+                children.push(self.emit_wrapped_token(SurfaceNodeKind::PathSegment, cursor));
+                cursor += 1;
+            } else {
+                self.diagnose_malformed_import(
+                    cursor,
+                    "expected module identifier in branch import",
+                );
+                if let Some(recovery) = self.recover_malformed_import_tail(cursor) {
+                    children.push(recovery.id);
+                    recovery_nodes.extend(recovery.recovery_nodes);
+                    cursor = recovery.next_position;
+                }
+                malformed_tail = true;
+                break;
+            }
+
+            if self.is_reserved_symbol_at(cursor, ",") {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+                continue;
+            }
+            break;
+        }
+
+        if malformed_tail {
+            // A missing branch component already explains the malformed branch;
+            // avoid reporting a second import diagnostic at the same boundary.
+        } else if self.is_reserved_symbol_at(cursor, "}") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_import(cursor, "expected `}` to close branch import");
+            if let Some(recovery) = self.recover_malformed_import_tail(cursor) {
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+                cursor = recovery.next_position;
+            }
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::ModuleBranchImport,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedItem {
+            id,
+            next_position: cursor.max(position + 1),
             recovery_nodes,
         }
     }
@@ -137,12 +318,16 @@ impl Parser {
         ParsedItem {
             id,
             next_position: end_exclusive.max(start + 1),
+            recovery_nodes: Vec::new(),
         }
     }
 
     fn recover_unexpected_top_level_tokens(&mut self, position: usize) -> ParsedItem {
         let mut cursor = position;
-        while cursor < self.request.tokens.len() && !self.is_item_start_at(cursor) {
+        while cursor < self.request.tokens.len() {
+            if cursor > position && self.is_item_start_at(cursor) {
+                break;
+            }
             let is_synchronizing_token =
                 self.is_semicolon_at(cursor) || self.is_end_keyword_at(cursor);
             cursor += 1;
@@ -167,6 +352,7 @@ impl Parser {
         ParsedItem {
             id,
             next_position: end_exclusive,
+            recovery_nodes: vec![id],
         }
     }
 
@@ -183,6 +369,38 @@ impl Parser {
             )
             .with_recovery_note("insert `;` before continuing with the next item"),
         );
+    }
+
+    fn diagnose_malformed_import(&mut self, position: usize, message: &'static str) {
+        let tokens = &self.request.tokens;
+        let cursor = crate::cursor::TokenCursor::at(self.request.source_id, tokens, position);
+        let primary = cursor
+            .current()
+            .map_or(cursor.eof_range(), |token| token.span);
+        self.diagnostics.push(
+            SyntaxDiagnostic::new(SyntaxDiagnosticCode::MalformedImport, message, primary)
+                .with_recovery_note("repair the import syntax before continuing"),
+        );
+    }
+
+    fn recover_malformed_import_tail(&mut self, position: usize) -> Option<ParsedItem> {
+        let mut cursor = position;
+        while cursor < self.request.tokens.len() && !self.is_semicolon_at(cursor) {
+            cursor += 1;
+        }
+        if cursor == position {
+            return None;
+        }
+        let range = self.covering_token_range(position, cursor);
+        self.trivia
+            .add_skipped_token_range(range, None, SkippedTokenReason::Recovery);
+        let children = self.token_node_ids[position..cursor].to_vec();
+        let id = self.add_recovery_node(SyntaxRecoveryKind::SkippedToken, range, children);
+        Some(ParsedItem {
+            id,
+            next_position: cursor,
+            recovery_nodes: vec![id],
+        })
     }
 
     fn should_parse_module_skeleton(&self) -> bool {
@@ -207,6 +425,17 @@ impl Parser {
 
     fn is_item_start_at(&self, position: usize) -> bool {
         self.item_head_position(position).is_some()
+    }
+
+    fn is_import_item_start_at(&self, position: usize) -> bool {
+        self.is_reserved_word_at(position, "import")
+    }
+
+    fn is_identifier_at(&self, position: usize) -> bool {
+        self.request
+            .tokens
+            .get(position)
+            .is_some_and(|token| token.kind == ParserTokenKind::Identifier)
     }
 
     fn item_head_position(&self, position: usize) -> Option<usize> {
@@ -283,10 +512,14 @@ impl Parser {
     }
 
     fn is_end_keyword_at(&self, position: usize) -> bool {
+        self.is_reserved_word_at(position, "end")
+    }
+
+    fn is_reserved_word_at(&self, position: usize, spelling: &str) -> bool {
         self.request
             .tokens
             .get(position)
-            .is_some_and(|token| is_reserved_word_token(token, "end"))
+            .is_some_and(|token| is_reserved_word_token(token, spelling))
     }
 
     fn module_range(&self) -> SourceRange {
@@ -560,9 +793,155 @@ mod tests {
             let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
             assert_eq!(item_list.children.len(), 1, "{name} should make one item");
             let item = ast.node(item_list.children[0]).unwrap();
-            assert!(matches!(item.kind, SurfaceNodeKind::PlaceholderItem));
+            let expected_kind = if *name == "import" {
+                SurfaceNodeKind::ImportItem
+            } else {
+                SurfaceNodeKind::PlaceholderItem
+            };
+            assert_eq!(item.kind, expected_kind);
             assert_eq!(item.range, expected_range, "{name} placeholder range");
         }
+    }
+
+    #[test]
+    fn parser_parses_import_alias_relative_and_branch_items() {
+        let source_id = source_id(74);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("import", ParserTokenKind::ReservedWord),
+                ("..", ParserTokenKind::ReservedSymbol),
+                ("Core", ParserTokenKind::Identifier),
+                (".", ParserTokenKind::ReservedSymbol),
+                ("Algebra", ParserTokenKind::Identifier),
+                (".{", ParserTokenKind::ReservedSymbol),
+                ("Group", ParserTokenKind::Identifier),
+                (",", ParserTokenKind::ReservedSymbol),
+                ("Ring", ParserTokenKind::Identifier),
+                ("}", ParserTokenKind::ReservedSymbol),
+                (",", ParserTokenKind::ReservedSymbol),
+                (".", ParserTokenKind::ReservedSymbol),
+                ("Tools", ParserTokenKind::Identifier),
+                ("as", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::Identifier),
+                (",", ParserTokenKind::ReservedSymbol),
+                ("Std", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("A", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert!(output.diagnostics.is_empty());
+        let ast = output.ast.expect("import item should parse");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 2);
+        let import_item = ast.node(item_list.children[0]).unwrap();
+        assert!(matches!(import_item.kind, SurfaceNodeKind::ImportItem));
+        assert_eq!(import_item.children.len(), 7);
+        assert_eq!(
+            ast.node(import_item.children[0]).unwrap().token_text(),
+            Some("import")
+        );
+        assert!(matches!(
+            ast.node(import_item.children[1]).unwrap().kind,
+            SurfaceNodeKind::ModuleBranchImport
+        ));
+        assert_eq!(
+            ast.node(import_item.children[2]).unwrap().token_text(),
+            Some(",")
+        );
+        assert!(matches!(
+            ast.node(import_item.children[3]).unwrap().kind,
+            SurfaceNodeKind::ImportAliasDecl
+        ));
+        assert_eq!(
+            ast.node(import_item.children[4]).unwrap().token_text(),
+            Some(",")
+        );
+        assert!(matches!(
+            ast.node(import_item.children[5]).unwrap().kind,
+            SurfaceNodeKind::ImportAliasDecl
+        ));
+        assert_eq!(
+            ast.node(import_item.children[6]).unwrap().token_text(),
+            Some(";")
+        );
+        assert!(matches!(
+            ast.node(item_list.children[1]).unwrap().kind,
+            SurfaceNodeKind::PlaceholderItem
+        ));
+
+        let branch = import_item
+            .children
+            .iter()
+            .filter_map(|id| ast.node(*id))
+            .find(|node| matches!(node.kind, SurfaceNodeKind::ModuleBranchImport))
+            .expect("branch import decl should be a concrete child");
+        assert_eq!(branch.children.len(), 6);
+        assert!(matches!(
+            ast.node(branch.children[0]).unwrap().kind,
+            SurfaceNodeKind::ModulePath
+        ));
+        assert_eq!(
+            ast.node(branch.children[1]).unwrap().token_text(),
+            Some(".{")
+        );
+        assert!(matches!(
+            ast.node(branch.children[2]).unwrap().kind,
+            SurfaceNodeKind::PathSegment
+        ));
+        assert_eq!(
+            ast.node(branch.children[3]).unwrap().token_text(),
+            Some(",")
+        );
+        assert!(matches!(
+            ast.node(branch.children[4]).unwrap().kind,
+            SurfaceNodeKind::PathSegment
+        ));
+        assert_eq!(
+            ast.node(branch.children[5]).unwrap().token_text(),
+            Some("}")
+        );
+
+        let alias = import_item
+            .children
+            .iter()
+            .filter_map(|id| ast.node(*id))
+            .find(|node| matches!(node.kind, SurfaceNodeKind::ImportAliasDecl))
+            .expect("alias import decl should be a concrete child");
+        assert_eq!(alias.children.len(), 3);
+        assert!(matches!(
+            ast.node(alias.children[0]).unwrap().kind,
+            SurfaceNodeKind::ModulePath
+        ));
+        assert_eq!(
+            ast.node(alias.children[1]).unwrap().token_text(),
+            Some("as")
+        );
+        assert!(matches!(
+            ast.node(alias.children[2]).unwrap().kind,
+            SurfaceNodeKind::PathSegment
+        ));
+
+        let simple = import_item
+            .children
+            .iter()
+            .filter_map(|id| ast.node(*id))
+            .filter(|node| matches!(node.kind, SurfaceNodeKind::ImportAliasDecl))
+            .find(|node| node.children.len() == 1)
+            .expect("plain module-path import should be an alias decl without alias children");
+        assert!(matches!(
+            ast.node(simple.children[0]).unwrap().kind,
+            SurfaceNodeKind::ModulePath
+        ));
     }
 
     #[test]
@@ -620,6 +999,327 @@ mod tests {
             ast.trivia().skipped_token_ranges()[0].range,
             range(source_id, 0, 3)
         );
+    }
+
+    #[test]
+    fn parser_recovers_import_after_non_import_item() {
+        let source_id = source_id(75);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("import", ParserTokenKind::ReservedWord),
+                ("Late", ParserTokenKind::Identifier),
+                (".", ParserTokenKind::ReservedSymbol),
+                ("Module", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("U", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let import_token_range = tokens[3].span;
+        let skipped_range = range(source_id, tokens[3].span.start, tokens[7].span.end);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::UnexpectedTopLevelToken
+        );
+        assert_eq!(output.diagnostics[0].primary, import_token_range);
+        let ast = output
+            .ast
+            .expect("late import should recover as skipped tokens");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 3);
+        assert!(matches!(
+            ast.node(item_list.children[0]).unwrap().kind,
+            SurfaceNodeKind::PlaceholderItem
+        ));
+        let skipped = ast.node(item_list.children[1]).unwrap();
+        assert!(matches!(
+            skipped.kind,
+            SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+        ));
+        assert_eq!(skipped.range, skipped_range);
+        assert!(matches!(
+            ast.node(item_list.children[2]).unwrap().kind,
+            SurfaceNodeKind::PlaceholderItem
+        ));
+    }
+
+    #[test]
+    fn parser_diagnoses_missing_import_semicolon_before_next_item() {
+        let source_id = source_id(76);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("import", ParserTokenKind::ReservedWord),
+                ("Std", ParserTokenKind::Identifier),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let theorem_range = tokens[2].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MissingSemicolon
+        );
+        assert_eq!(output.diagnostics[0].primary, theorem_range);
+        let ast = output.ast.expect("missing import semicolon should recover");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 2);
+        assert!(matches!(
+            ast.node(item_list.children[0]).unwrap().kind,
+            SurfaceNodeKind::ImportItem
+        ));
+        assert!(matches!(
+            ast.node(item_list.children[1]).unwrap().kind,
+            SurfaceNodeKind::PlaceholderItem
+        ));
+    }
+
+    #[test]
+    fn parser_diagnoses_missing_import_alias_after_as() {
+        let source_id = source_id(77);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("import", ParserTokenKind::ReservedWord),
+                ("Std", ParserTokenKind::Identifier),
+                ("as", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let semicolon_range = tokens[3].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedImport
+        );
+        assert_eq!(output.diagnostics[0].primary, semicolon_range);
+        let ast = output.ast.expect("malformed import alias should recover");
+        let import_item = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ImportItem));
+        let alias = import_item
+            .children
+            .iter()
+            .filter_map(|id| ast.node(*id))
+            .find(|node| matches!(node.kind, SurfaceNodeKind::ImportAliasDecl))
+            .expect("malformed alias decl should still be represented");
+        assert_eq!(alias.children.len(), 2);
+        assert_eq!(
+            ast.node(alias.children[1]).unwrap().token_text(),
+            Some("as")
+        );
+    }
+
+    #[test]
+    fn parser_recovers_bad_import_path_tail_inside_import_item() {
+        let source_id = source_id(79);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("import", ParserTokenKind::ReservedWord),
+                ("123", ParserTokenKind::Numeral),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let bad_range = tokens[1].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedImport
+        );
+        assert_eq!(output.diagnostics[0].primary, bad_range);
+        let ast = output
+            .ast
+            .expect("bad import path should recover inside import item");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 2);
+        let import_item = ast.node(item_list.children[0]).unwrap();
+        assert!(matches!(import_item.kind, SurfaceNodeKind::ImportItem));
+        let recovery = import_item
+            .children
+            .iter()
+            .filter_map(|id| ast.node(*id))
+            .find(|node| {
+                matches!(
+                    node.kind,
+                    SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+                )
+            })
+            .expect("bad import path token should be owned by a recovery node");
+        assert_eq!(recovery.range, bad_range);
+        assert_eq!(ast.trivia().skipped_token_ranges().len(), 1);
+        assert_eq!(ast.trivia().skipped_token_ranges()[0].range, bad_range);
+        assert_eq!(
+            rowan_token_texts(&ast),
+            vec!["import", "123", ";", "theorem", "T", ";"]
+        );
+    }
+
+    #[test]
+    fn parser_recovers_bad_alias_tail_without_splitting_a_phantom_item() {
+        let source_id = source_id(80);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("import", ParserTokenKind::ReservedWord),
+                ("Std", ParserTokenKind::Identifier),
+                ("as", ParserTokenKind::ReservedWord),
+                ("theorem", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let bad_range = tokens[3].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedImport
+        );
+        assert_eq!(output.diagnostics[0].primary, bad_range);
+        let ast = output
+            .ast
+            .expect("bad alias tail should recover inside import item");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(
+            item_list.children.len(),
+            1,
+            "bad alias token must not become a phantom theorem item"
+        );
+        let import_item = ast.node(item_list.children[0]).unwrap();
+        let recovery = import_item
+            .children
+            .iter()
+            .filter_map(|id| ast.node(*id))
+            .flat_map(|node| node.children.iter().filter_map(|child| ast.node(*child)))
+            .find(|node| {
+                matches!(
+                    node.kind,
+                    SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+                )
+            })
+            .expect("bad alias token should be owned by a nested recovery node");
+        assert_eq!(recovery.range, bad_range);
+    }
+
+    #[test]
+    fn parser_diagnoses_missing_branch_import_close() {
+        let source_id = source_id(78);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("import", ParserTokenKind::ReservedWord),
+                ("Std", ParserTokenKind::Identifier),
+                (".{", ParserTokenKind::ReservedSymbol),
+                ("Branch", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("T", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let semicolon_range = tokens[4].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedImport
+        );
+        assert_eq!(output.diagnostics[0].primary, semicolon_range);
+        let ast = output
+            .ast
+            .expect("missing branch close should recover at semicolon");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 2);
+        assert!(matches!(
+            ast.node(item_list.children[0]).unwrap().kind,
+            SurfaceNodeKind::ImportItem
+        ));
+        assert!(matches!(
+            ast.node(item_list.children[1]).unwrap().kind,
+            SurfaceNodeKind::PlaceholderItem
+        ));
+    }
+
+    #[test]
+    fn parser_reports_empty_branch_import_once() {
+        let source_id = source_id(81);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("import", ParserTokenKind::ReservedWord),
+                ("Std", ParserTokenKind::Identifier),
+                (".{", ParserTokenKind::ReservedSymbol),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let semicolon_range = tokens[3].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].code,
+            SyntaxDiagnosticCode::MalformedImport
+        );
+        assert_eq!(output.diagnostics[0].primary, semicolon_range);
+        let ast = output.ast.expect("empty branch import should recover");
+        let branch = single_node(&ast, |kind| {
+            matches!(kind, SurfaceNodeKind::ModuleBranchImport)
+        });
+        assert_eq!(branch.children.len(), 2);
     }
 
     #[test]
@@ -939,6 +1639,14 @@ mod tests {
             .iter()
             .find(|node| predicate(&node.kind))
             .expect("expected exactly one matching node")
+    }
+
+    fn rowan_token_texts(ast: &mizar_syntax::SurfaceAst) -> Vec<String> {
+        ast.rowan_root()
+            .descendants_with_tokens()
+            .filter_map(|element| element.into_token())
+            .map(|token| token.text().to_owned())
+            .collect()
     }
 
     fn token(

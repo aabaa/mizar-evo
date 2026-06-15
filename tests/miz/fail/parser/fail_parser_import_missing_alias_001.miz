@@ -1,0 +1,2 @@
+import std.core as;
+theorem T: thesis;

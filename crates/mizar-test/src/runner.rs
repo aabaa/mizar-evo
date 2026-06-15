@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::fmt;
 use std::fs;
 use std::io;
@@ -5,7 +6,8 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use mizar_frontend::lexical_env::{
-    FrontendLexicalEnvironmentError, LexicalEnvironmentRequest, LexicalSummaryProvider,
+    FrontendLexicalEnvironmentError, LexicalEnvironmentRequest, LexicalSummaryFingerprint,
+    LexicalSummaryProvider, ModuleId, ModuleLexicalSummary, ResolvedImport, ResolvedImportEntry,
     ResolvedImports,
 };
 use mizar_frontend::orchestration::{DiagnosticCode, Frontend, FrontendDiagnostic};
@@ -186,7 +188,7 @@ fn run_frontend(
     let prepared = prepare_source_package(workspace_root, case, ordinal)?;
     let frontend = Frontend::new(
         FrontendSourceLoader::new(DiskSourceLoader::new(&prepared.package_root)),
-        EmptyProvider,
+        ParseOnlyImportProvider,
         MizarParserSeam,
     );
     let ids = InMemorySessionIdAllocator::new();
@@ -350,16 +352,39 @@ fn parse_only_failure_diagnostic(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct EmptyProvider;
+struct ParseOnlyImportProvider;
 
-impl LexicalSummaryProvider for EmptyProvider {
+impl LexicalSummaryProvider for ParseOnlyImportProvider {
     fn resolve_imports(
         &self,
-        _request: &LexicalEnvironmentRequest<'_>,
+        request: &LexicalEnvironmentRequest<'_>,
     ) -> Result<ResolvedImports, FrontendLexicalEnvironmentError> {
+        let mut imports = Vec::new();
+        let mut summaries = Vec::new();
+        let mut seen_modules = BTreeSet::new();
+
+        for (stub_ordinal, stub) in request.import_stubs.iter().enumerate() {
+            let module_id = ModuleId::new(stub.path.spelling.as_ref());
+            imports.push(ResolvedImportEntry {
+                stub_ordinal,
+                stub_span: stub.span,
+                import: ResolvedImport {
+                    module_id: module_id.clone(),
+                },
+            });
+
+            if seen_modules.insert(module_id.clone()) {
+                summaries.push(ModuleLexicalSummary {
+                    module_id,
+                    exported_symbols: Vec::new(),
+                    fingerprint: LexicalSummaryFingerprint::new((stub_ordinal as u64) + 1),
+                });
+            }
+        }
+
         Ok(ResolvedImports {
-            imports: Vec::new(),
-            summaries: Vec::new(),
+            imports,
+            summaries,
             diagnostics: Vec::new(),
         })
     }
@@ -371,5 +396,105 @@ impl fmt::Display for ParseOnlyCaseStatus {
             Self::Passed => "passed",
             Self::Failed => "failed",
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ParseOnlyImportProvider;
+    use mizar_frontend::lexical_env::{LexicalEnvironmentRequest, LexicalSummaryProvider};
+    use mizar_frontend::preprocess::{ImportStub, ImportStubPath};
+    use mizar_session::{
+        BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceId,
+        SourceRange,
+    };
+    use std::sync::Arc;
+
+    #[test]
+    fn parse_only_provider_resolves_every_stub_and_deduplicates_empty_summaries() {
+        let source_id = source_id(90);
+        let stubs = vec![
+            import_stub(source_id, "alpha", 0, 5),
+            import_stub(source_id, "alpha", 7, 12),
+            import_stub(source_id, "beta", 14, 18),
+        ];
+        let request = LexicalEnvironmentRequest {
+            source_id,
+            import_stubs: &stubs,
+            edition: Edition::new("2026"),
+        };
+
+        let resolved = ParseOnlyImportProvider
+            .resolve_imports(&request)
+            .expect("parse-only provider should not fail");
+
+        assert_eq!(resolved.imports.len(), 3);
+        assert_eq!(
+            resolved
+                .imports
+                .iter()
+                .map(|entry| (
+                    entry.stub_ordinal,
+                    entry.stub_span,
+                    entry.import.module_id.as_str()
+                ))
+                .collect::<Vec<_>>(),
+            vec![
+                (0, range(source_id, 0, 5), "alpha"),
+                (1, range(source_id, 7, 12), "alpha"),
+                (2, range(source_id, 14, 18), "beta"),
+            ]
+        );
+        assert_eq!(resolved.summaries.len(), 2);
+        assert_eq!(
+            resolved
+                .summaries
+                .iter()
+                .map(|summary| (
+                    summary.module_id.as_str(),
+                    summary.exported_symbols.len(),
+                    summary.fingerprint.get()
+                ))
+                .collect::<Vec<_>>(),
+            vec![("alpha", 0, 1), ("beta", 0, 3)]
+        );
+        assert!(resolved.diagnostics.is_empty());
+    }
+
+    fn import_stub(source_id: SourceId, spelling: &str, start: usize, end: usize) -> ImportStub {
+        let span = range(source_id, start, end);
+        ImportStub {
+            path: ImportStubPath {
+                spelling: Arc::from(spelling),
+                relative: None,
+                components: vec![Arc::from(spelling)],
+                source_segments: vec![span],
+                span,
+            },
+            alias: None,
+            span,
+        }
+    }
+
+    const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
+        SourceRange {
+            source_id,
+            start,
+            end,
+        }
+    }
+
+    fn source_id(byte: u8) -> SourceId {
+        InMemorySessionIdAllocator::new()
+            .next_source_id(snapshot_id(byte))
+            .unwrap()
+    }
+
+    fn snapshot_id(byte: u8) -> BuildSnapshotId {
+        let hex = format!("{byte:02x}").repeat(Hash::BYTE_LEN);
+        BuildSnapshotId::from_published_schema_str(&format!(
+            "mizar-session-build-snapshot-v1:{hex}"
+        ))
+        .unwrap()
     }
 }

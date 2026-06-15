@@ -65,8 +65,13 @@ pub struct ParseOnlyRunReport {
 現在の parse-only runner は、各 active corpus file を一時的な `src/` package に
 copy し、実際の frontend parser seam を実行する。pass case では AST が生成され、
 assertion 対象の diagnostics がないことを要求する。fail case では、期待値を bare
-syntax diagnostic key と比較する。parser syntax diagnostic と syntax 以外の
-frontend recovery diagnostic が同時に存在する場合、sidecar が明示的に
+syntax diagnostic key と比較する。この syntax-only mode では、runner は frontend の
+各 import stub を、一致する `stub_ordinal` と `stub_span` を持つ
+`ResolvedImportEntry` に解決する harness provider を使う。さらに distinct な
+module id ごとに空の `ModuleLexicalSummary` を 1 つ返す。summary は exported symbol
+を含まず、import 構文ケースが意味的な module availability に依存しないようにする
+ためだけに存在する。parser syntax diagnostic と syntax 以外の frontend recovery
+diagnostic が同時に存在する場合、sidecar が明示的に
 `allow_frontend_recovery_diagnostics` を含めていない限り、runner はすべての
 diagnostic code を report する。AST snapshot assertion は surface node vocabulary
 が拡張されるまで deferred とする。

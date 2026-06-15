@@ -1,4 +1,4 @@
-#![allow(dead_code)] // reason: task 4 path helpers are locked by unit tests before import/type/reference consumers land.
+#![allow(dead_code)] // reason: namespace and qualified path helpers are locked by unit tests before later consumers land.
 
 use crate::{ParserToken, ParserTokenKind, event::SyntaxEvent, grammar::Parser};
 use mizar_session::SourceRange;
@@ -81,7 +81,7 @@ impl Parser {
         })
     }
 
-    fn emit_wrapped_token(
+    pub(super) fn emit_wrapped_token(
         &mut self,
         kind: SurfaceNodeKind,
         token_position: usize,

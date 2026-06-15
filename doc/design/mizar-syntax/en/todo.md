@@ -280,8 +280,11 @@ interaction. Spec references are the normative grammar chapters under
      `RelativePrefix`, plus parser helper unit coverage. Parser task 5 landed
      `CompilationUnit`, `ItemList`, and `PlaceholderItem`, item-level
      skipped-token recovery trivia, active module-skeleton corpus coverage, and
-     the first doc-comment-to-item attachment fixture. The bucket remains open
-     for concrete import/export items and visibility in parser tasks 6-7.
+     the first doc-comment-to-item attachment fixture. Parser task 6 landed
+     `ImportItem`, `ImportAliasDecl`, and `ModuleBranchImport`, import-specific
+     typed accessors and snapshot coverage, `MalformedImport`, active
+     import-item corpus coverage, and import-stub parse-only harness support.
+     The bucket remains open for export items and visibility in parser task 7.
    - Spec: [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
 10. **Type expression nodes.** [ ] — paired with `mizar-parser` task 8.

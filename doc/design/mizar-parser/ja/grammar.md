@@ -2,8 +2,8 @@
 
 > 正本は英語です。英語版: [../en/grammar.md](../en/grammar.md)。
 
-状態: task 5 までの module skeleton と top-level placeholder dispatch は実装済み。
-具体的な import / export / item 文法は計画中。
+状態: task 6 までの module skeleton、top-level placeholder dispatch、concrete
+import item は実装済み。具体的な export / その他 item 文法は計画中。
 
 ## 目的
 
@@ -85,7 +85,9 @@ source order の `PlaceholderItem` node と、skip された top-level input の
 `definition`、`reserve`、`registration`、`claim`、`theorem`、`lemma`、
 theorem-status prefix の `open` / `assumed` / `conditional`、visibility prefix の
 `private` / `public`、notation start の `infix_operator`、`prefix_operator`、
-`postfix_operator`、`synonym`、`antonym` である。
+`postfix_operator`、`synonym`、`antonym` である。task 6 以降、`import` は import
+prelude がまだ開いている場合だけ concrete item になり、それより後の `import`
+token は位置が不正な top-level input として回復する。
 
 `@[` で始まる連続した library annotation prefix は、認識済み top-level start が
 後続する場合、同じ placeholder に保持する。malformed annotation parsing と
@@ -95,16 +97,55 @@ scan するため、proof body 内のセミコロンで theorem / lemma item を
 式レベルの `if` や `otherwise` のような文脈依存 formula keyword は placeholder の
 block depth に影響しない。
 
-この task は import alias、export path、theorem formula、visibility semantics、
-item validity、symbol identity を parse しない。`import` と `export` は task 6 と
-7 が concrete item node に置き換えるまで placeholder である。認識可能な top-level
-item start を含まない token stream は module skeleton に関して task 3 の互換
-behavior を保つ。つまり token は保持され、item list は空になる。このような stream
-が diagnostic-free のままになるのは、legacy minimal token-stream corpus case のように、
-先行する recovery pass でも指摘がない場合に限られる。最初の認識済み item keyword が先行する recovery
-block opener の内側にある合成 block-recovery stream も、この互換 behavior を保つ。
-一方、theorem item の前に裸の reserved word があるような通常の malformed prefix は
-`UnexpectedTopLevelToken` recovery を生成する。
+この task は export path、theorem formula、visibility semantics、item validity、
+symbol identity を parse しない。`export` は task 7 が concrete item node に
+置き換えるまで placeholder であり、import 以外の declaration は所有する文法 task が
+着地するまで placeholder item のままである。認識可能な top-level item start を
+含まない token stream は module skeleton に関して task 3 の互換 behavior を保つ。
+つまり token は保持され、item list は空になる。このような stream が diagnostic-free
+のままになるのは、legacy minimal token-stream corpus case のように、先行する
+recovery pass でも指摘がない場合に限られる。最初の認識済み item keyword が先行する
+recovery block opener の内側にある合成 block-recovery stream も、この互換 behavior
+を保つ。一方、theorem item の前に裸の reserved word があるような通常の malformed
+prefix は `UnexpectedTopLevelToken` recovery を生成する。
+
+## Task 6: import item
+
+Production inventory:
+
+```ebnf
+import_stmt          ::= "import" module_alias_decl
+                         { "," module_alias_decl } ";" ;
+module_alias_decl    ::= module_path [ "as" module_identifier ]
+                       | module_branch_import ;
+module_branch_import ::= module_path ".{"
+                         module_identifier { "," module_identifier } "}" ;
+```
+
+parser は import prelude が開いている間、`import_stmt` ごとに `ImportItem` を
+1 つ送出する。well-formed import では、item の child は `import` token、comma token
+で区切られた 1 個以上の import declaration node、終端 semicolon token である。
+単純 import と alias は `ModulePath` child、任意の `as` token、任意の alias
+`PathSegment` を持つ `ImportAliasDecl` を送出する。branch import は base
+`ModulePath`、`.{` token、comma token で区切られた branch identifier `PathSegment`、
+`}` を持つ `ModuleBranchImport` を送出する。
+
+import path は task 4 の共有 `ModulePath`、`RelativePrefix`、`PathSegment` node を
+使う。parser は relative prefix と branch component を構文的に保持するが、module
+resolution、alias collision 検査、export の検査、symbol identity 割り当て、
+visibility の判断は行わない。
+
+非 import の top-level item が parse されると import prelude は閉じる。それ以降の
+`import` token は `UnexpectedTopLevelToken`、`SkippedToken` recovery、skipped-range
+trivia により、semicolon または次の top-level boundary まで回復される。import の
+semicolon 欠落は `MissingSemicolon` を使う。`as` の後に alias がない、または branch
+import の `}` がないなど、現在の statement boundary で継続できる import 内部の不正
+構文は `MalformedImport` を使う。semicolon の前にある malformed source を消費する
+場合、parser は import item または不正 declaration の内部に `SkippedToken` recovery
+node と skipped-range trivia を持たせて所有する。そのため recovery shape では、
+`import` の後に declaration を持たない `ImportItem`、後続 declaration のない trailing
+comma、alias segment のない `ImportAliasDecl`、branch segment または `}` のない
+`ModuleBranchImport` が現れ得る。
 
 ## 公開 enum の互換性
 

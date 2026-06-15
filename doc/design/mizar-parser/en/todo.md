@@ -273,10 +273,21 @@ older numeric syntax task references appear to disagree, prefer
    - Deps: 3, `mizar-syntax` task 9 / S-009. Spec:
      [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
-6. **Import items.** [ ]
+6. **Import items.** [x]
    - `import` items with aliases and relative prefixes (`.`/`..`); shapes stay
      consistent with the frontend import-prescan stubs. Includes the deferred
      corpus cases for task 4 path shapes.
+   - Result: task-6 production inventory is recorded in
+     [grammar.md](./grammar.md). The parser now emits `ImportItem`,
+     `ImportAliasDecl`, and `ModuleBranchImport` syntax nodes under the module
+     `ItemList`, uses shared `ModulePath` / `RelativePrefix` / `PathSegment`
+     nodes for import paths and aliases, keeps imports concrete only while the
+     import prelude is open, recovers late imports with
+     `UnexpectedTopLevelToken`, diagnoses malformed alias/branch syntax with
+     `MalformedImport`, and ships active parse-only pass/fail corpus coverage
+     with traceability. `mizar-test` parse-only runs now resolve import stubs
+     to empty syntax-only summaries so import syntax can be tested without
+     semantic module availability.
    - Deps: 4, 5, `mizar-syntax` task 9 / S-009. Spec:
      [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
