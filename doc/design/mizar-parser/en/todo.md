@@ -516,14 +516,25 @@ older numeric syntax task references appear to disagree, prefer
       parser now accepts `thus`/`hence` conclusions, linkable `then`
       statements, iterative equality steps with simple per-step `by`
       justifications, label variants, and `then consider`/`then reconsider`.
-      `then per cases` remains a deferred block-statement placeholder for task
-      20. Parser unit tests, active pass/fail corpus fixtures, and
-      traceability metadata cover the new shapes and recovery cases.
+      At task-19 completion, `then per cases` was left as the task-20
+      block-statement placeholder. Parser unit tests, active pass/fail corpus
+      fixtures, and traceability metadata cover the new shapes and recovery
+      cases.
 
-20. **Block statements.** [ ]
+20. **Block statements.** [x]
     - `now`/`hereby` blocks and `per cases`/`suppose`/`case` blocks with their
       `end` synchronization.
     - Deps: 19, `mizar-syntax` task 13 / S-013. Spec: [15.statements.md](../../../spec/en/15.statements.md).
+    - Result: implemented `NowStatement`, `HerebyStatement`,
+      `CaseReasoningStatement`, `CaseItem`, and `SupposeItem` parsing with
+      optional labels on `now`, nested reasoning bodies, optional explicit
+      simple `by` justification for `per cases`, homogeneous `case` or
+      `suppose` branch lists, branch propositions and `that` condition-list
+      headers, `then per cases` linkability, and recovery for non-linkable
+      `then now` / `then hereby`, malformed justification tails, missing
+      branch-header semicolons, mixed branch lists, skipped tokens, and missing
+      `end`. Parser unit tests, active parse-only pass/fail corpus fixtures,
+      and traceability metadata cover the new shapes and recovery cases.
 
 21. **Local definitions.** [ ]
     - `deffunc`/`defpred` private local definitions.

@@ -11,4 +11,4 @@ tags = ["active_parse_only"]
 spec_refs = [
   "spec.en.15.statements.syntax",
 ]
-notes = "Active parse-only runner coverage for parser task 19 conclusion statements, then wrappers, compact-versus-iterative equality dispatch, iterative equality steps, current linkable statements, and deferred then-per-cases placeholder behavior."
+notes = "Active parse-only runner coverage for parser task 19 conclusion statements, then wrappers, compact-versus-iterative equality dispatch, iterative equality steps, current linkable statements, and the then-per-cases fragment that parser task 20 upgrades to a block statement."

@@ -1097,6 +1097,75 @@ missing iterative-equality terms, disallowed computation justifications inside
 iterative equality, active parse-only pass/fail corpus coverage, and
 traceability to Chapter 15 §15.4.1, §15.4.2, §15.7, §15.8, and §15.9.1.
 
+## Task 20: Block Statements
+
+Parser task 20 continues mizar-syntax S-013 with concrete syntax nodes for
+Chapter 15 reasoning blocks. It upgrades the task-19 deferred `then per cases`
+placeholder path to a `ThenStatement` that wraps `CaseReasoningStatement` when
+the case-reasoning body is otherwise parseable.
+
+```ebnf
+statement_item              ::= ... | now_statement | hereby_statement
+                              | case_reasoning_statement ;
+linkable_statement          ::= ... | case_reasoning_statement ;
+standalone_statement        ::= ... | now_statement | hereby_statement ;
+now_statement               ::= [ label_identifier ":" ] "now"
+                                reasoning_body "end" ";" ;
+hereby_statement            ::= "hereby" reasoning_body "end" ";" ;
+case_reasoning_statement    ::= "per" "cases"
+                                [ simple_justification ] ";"
+                                ( case_list | suppose_list | empty_branch_list ) ;
+case_list                   ::= case_item { case_item } ;
+suppose_list                ::= suppose_item { suppose_item } ;
+empty_branch_list           ::= /* accepted only for fragment recovery */ ;
+case_item                   ::= "case" ( proposition | conditions ) ";"
+                                reasoning_body "end" ";" ;
+suppose_item                ::= "suppose" ( proposition | conditions ) ";"
+                                reasoning_body "end" ";" ;
+reasoning_body              ::= { statement } ;
+```
+
+The parser keeps block reasoning syntax-only. `NowStatement` owns an optional
+label and colon, the `now` token, zero or more nested statement nodes, the
+closing `end`, optional recovery, and the closing semicolon when present.
+`HerebyStatement` has the same block-body shape without a label. `CaseItem` and
+`SupposeItem` own their branch keyword, either a `Proposition` or a
+`ConditionList` (selected by a leading `that`), the header semicolon, zero or
+more nested statement nodes, the branch-closing `end`, optional recovery, and
+the closing semicolon when present. `CaseReasoningStatement` owns `per`,
+`cases`, an optional simple citation `JustificationClause`, the header
+semicolon, and source-ordered homogeneous `CaseItem` children or homogeneous
+`SupposeItem` children. Once the first branch kind is visible, the other branch
+keyword is a statement boundary outside the current case-reasoning node; the
+parser must not silently mix `case` and `suppose` lists.
+
+Chapter 15's prose and examples include `per cases;`, while the complete EBNF
+summary prints an unbracketed `simple_justification`. Grammar audit
+G-AUD-011 records that nonblocking inconsistency. The parser surface accepts
+both `per cases;` and `per cases by A;`, and it does not diagnose a branchless
+`per cases;` fragment because active parse-only fixtures may exercise statement
+fragments outside a complete proof. The parser still preserves any following
+`case` or `suppose` branches when they are present.
+
+Task 20 recovery reuses existing diagnostics. Missing block `end` tokens use
+`MissingEnd` recovery plus `MissingEnd` diagnostics with the block opener as a
+secondary anchor. Missing semicolons after block `end` or after case headers
+use `MissingSemicolon`. Missing case/suppose propositions use
+`MalformedFormulaExpression` plus `MissingFormula`. Malformed block tails
+synchronize at semicolon, `end`, EOF, or the next statement/item boundary and
+preserve skipped source under `SkippedToken` recovery when tokens must be
+skipped.
+
+Task 20 tests must pin: labelled `now` blocks, `hereby` blocks, nested
+statements inside block bodies, `per cases` with `case` branches, `per cases`
+with `suppose` branches, rejection/recovery for mixed branch-list keywords,
+`then per cases`, rejection of `then now` / `then hereby`, optional simple `by`
+after `per cases`, rejection of `by computation(...)` after `per cases`, branch
+headers with proposition and condition-list forms, missing branch/body `end`
+recovery, missing branch-header semicolon recovery, active parse-only pass/fail
+corpus coverage, and traceability to Chapter 15 §15.4.3, §15.6.1, §15.6.2,
+§15.6.3, §15.8, and §15.9.1.
+
 ## Public Enum Compatibility
 
 `ParserTokenKind` is `#[non_exhaustive]` for downstream crates. The parser token

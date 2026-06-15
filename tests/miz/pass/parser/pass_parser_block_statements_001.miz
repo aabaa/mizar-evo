@@ -1,0 +1,27 @@
+A1: now
+  assume thesis;
+  hereby
+    thus thesis;
+  end;
+end;
+hereby
+  thus thesis;
+end;
+per cases by A;
+case C1: thesis;
+  thus thesis;
+end;
+case that thesis;
+  hence thesis;
+end;
+per cases;
+suppose S1: thesis;
+  thus thesis;
+end;
+suppose that thesis;
+  then thesis by A;
+end;
+then per cases;
+case thesis;
+  thus thesis;
+end;

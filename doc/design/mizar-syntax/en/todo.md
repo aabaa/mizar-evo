@@ -362,7 +362,7 @@ interaction. Spec references are the normative grammar chapters under
       dispatch (grammar audit G-AUD-010);
       `now`/`hereby` and `per cases`/`suppose` blocks (parser task 20);
       `deffunc`/`defpred` local definitions (parser task 21).
-    - Progress: parser tasks 16, 18, and 19 are implemented. `ConsiderStatement`,
+    - Progress: parser tasks 16, 18, 19, and 20 are implemented. `ConsiderStatement`,
       `ReconsiderStatement`, and `ReconsiderItem` now cover shared-type
       `consider` variables, condition lists, mandatory simple justifications,
       reconsider item lists, target types, task-18 recovery, scope-skeleton
@@ -372,7 +372,12 @@ interaction. Spec references are the normative grammar chapters under
       `IterativeEqualityStep` now cover `thus`/`hence`, linkable `then`
       statements, iterative equality `.=` steps, label and `then` variants,
       the G-AUD-010 dispatch boundary, parser unit tests, and active
-      parse-only pass/fail corpus coverage. Parser tasks 20-21 remain before
+      parse-only pass/fail corpus coverage. `NowStatement`, `HerebyStatement`,
+      `CaseReasoningStatement`, `CaseItem`, and `SupposeItem` now cover
+      `now` / `hereby` blocks, `per cases` branch blocks, optional explicit
+      `per cases by` justification, homogeneous `case` / `suppose` branches,
+      `then per cases`, block-end recovery, parser unit tests, and active
+      parse-only pass/fail corpus coverage. Parser task 21 remains before
       S-013 can be marked complete.
     - Spec: [15.statements.md](../../../spec/en/15.statements.md).
 

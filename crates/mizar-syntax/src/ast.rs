@@ -120,6 +120,11 @@ pub enum SyntaxKind {
     ThenStatement = 85,
     IterativeEqualityStatement = 86,
     IterativeEqualityStep = 87,
+    NowStatement = 88,
+    HerebyStatement = 89,
+    CaseReasoningStatement = 90,
+    CaseItem = 91,
+    SupposeItem = 92,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -221,6 +226,11 @@ impl SyntaxKind {
             85 => Self::ThenStatement,
             86 => Self::IterativeEqualityStatement,
             87 => Self::IterativeEqualityStep,
+            88 => Self::NowStatement,
+            89 => Self::HerebyStatement,
+            90 => Self::CaseReasoningStatement,
+            91 => Self::CaseItem,
+            92 => Self::SupposeItem,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -324,6 +334,11 @@ impl SyntaxKind {
                 | Self::ThenStatement
                 | Self::IterativeEqualityStatement
                 | Self::IterativeEqualityStep
+                | Self::NowStatement
+                | Self::HerebyStatement
+                | Self::CaseReasoningStatement
+                | Self::CaseItem
+                | Self::SupposeItem
         )
     }
 
@@ -1269,6 +1284,41 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_now_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::NowStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_hereby_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::HerebyStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_case_reasoning_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::CaseReasoningStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_case_item(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::CaseItem => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_suppose_item(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::SupposeItem => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_selector_access(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::SelectorAccess => Some(self),
@@ -1571,6 +1621,11 @@ pub enum SurfaceNodeKind {
     ThenStatement,
     IterativeEqualityStatement,
     IterativeEqualityStep,
+    NowStatement,
+    HerebyStatement,
+    CaseReasoningStatement,
+    CaseItem,
+    SupposeItem,
     SelectorAccess,
     StructureUpdate,
     FieldUpdate,
@@ -1663,6 +1718,11 @@ impl SurfaceNodeKind {
             Self::ThenStatement => SyntaxKind::ThenStatement,
             Self::IterativeEqualityStatement => SyntaxKind::IterativeEqualityStatement,
             Self::IterativeEqualityStep => SyntaxKind::IterativeEqualityStep,
+            Self::NowStatement => SyntaxKind::NowStatement,
+            Self::HerebyStatement => SyntaxKind::HerebyStatement,
+            Self::CaseReasoningStatement => SyntaxKind::CaseReasoningStatement,
+            Self::CaseItem => SyntaxKind::CaseItem,
+            Self::SupposeItem => SyntaxKind::SupposeItem,
             Self::SelectorAccess => SyntaxKind::SelectorAccess,
             Self::StructureUpdate => SyntaxKind::StructureUpdate,
             Self::FieldUpdate => SyntaxKind::FieldUpdate,
@@ -1913,6 +1973,13 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
             output.push_str("IterativeEqualityStatement");
         }
         SurfaceNodeKind::IterativeEqualityStep => output.push_str("IterativeEqualityStep"),
+        SurfaceNodeKind::NowStatement => output.push_str("NowStatement"),
+        SurfaceNodeKind::HerebyStatement => output.push_str("HerebyStatement"),
+        SurfaceNodeKind::CaseReasoningStatement => {
+            output.push_str("CaseReasoningStatement");
+        }
+        SurfaceNodeKind::CaseItem => output.push_str("CaseItem"),
+        SurfaceNodeKind::SupposeItem => output.push_str("SupposeItem"),
         SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
@@ -3006,6 +3073,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            task20_statement_nodes_ast(source_id(32))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -3066,6 +3139,11 @@ mod tests {
             SyntaxKind::ThenStatement,
             SyntaxKind::IterativeEqualityStatement,
             SyntaxKind::IterativeEqualityStep,
+            SyntaxKind::NowStatement,
+            SyntaxKind::HerebyStatement,
+            SyntaxKind::CaseReasoningStatement,
+            SyntaxKind::CaseItem,
+            SyntaxKind::SupposeItem,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -4419,6 +4497,60 @@ mod tests {
             assert!(
                 snapshot.contains(expected),
                 "snapshot should render task-19 line {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn task20_typed_accessors_cover_block_statement_nodes() {
+        let ast = task20_statement_nodes_ast(source_id(32));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task20_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task20_view!(
+            SurfaceNodeKind::NowStatement,
+            SyntaxKind::NowStatement,
+            as_now_statement
+        );
+        assert_task20_view!(
+            SurfaceNodeKind::HerebyStatement,
+            SyntaxKind::HerebyStatement,
+            as_hereby_statement
+        );
+        assert_task20_view!(
+            SurfaceNodeKind::CaseReasoningStatement,
+            SyntaxKind::CaseReasoningStatement,
+            as_case_reasoning_statement
+        );
+        assert_task20_view!(
+            SurfaceNodeKind::CaseItem,
+            SyntaxKind::CaseItem,
+            as_case_item
+        );
+        assert_task20_view!(
+            SurfaceNodeKind::SupposeItem,
+            SyntaxKind::SupposeItem,
+            as_suppose_item
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in [
+            "NowStatement",
+            "HerebyStatement",
+            "CaseReasoningStatement",
+            "CaseItem",
+            "SupposeItem",
+        ] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-20 line {expected}"
             );
         }
     }
@@ -6696,6 +6828,306 @@ mod tests {
             ],
         );
         builder.finish(Some(root), None)
+    }
+
+    fn task20_statement_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let a1 = builder.add_token(SurfaceTokenKind::Identifier, "A1", range(source_id, 0, 2));
+        let colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 2, 3),
+        );
+        let now = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "now",
+            range(source_id, 4, 7),
+        );
+        let first_end = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "end",
+            range(source_id, 8, 11),
+        );
+        let first_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 11, 12),
+        );
+        let hereby = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "hereby",
+            range(source_id, 13, 19),
+        );
+        let second_end = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "end",
+            range(source_id, 20, 23),
+        );
+        let second_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 23, 24),
+        );
+        let first_per = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "per",
+            range(source_id, 25, 28),
+        );
+        let first_cases = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "cases",
+            range(source_id, 29, 34),
+        );
+        let third_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 34, 35),
+        );
+        let case = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "case",
+            range(source_id, 36, 40),
+        );
+        let case_thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 41, 47),
+        );
+        let fourth_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 47, 48),
+        );
+        let third_end = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "end",
+            range(source_id, 49, 52),
+        );
+        let fifth_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 52, 53),
+        );
+        let second_per = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "per",
+            range(source_id, 54, 57),
+        );
+        let second_cases = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "cases",
+            range(source_id, 58, 63),
+        );
+        let by = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "by",
+            range(source_id, 64, 66),
+        );
+        let a = builder.add_token(SurfaceTokenKind::Identifier, "A", range(source_id, 67, 68));
+        let sixth_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 68, 69),
+        );
+        let suppose = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "suppose",
+            range(source_id, 70, 77),
+        );
+        let that = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "that",
+            range(source_id, 78, 82),
+        );
+        let suppose_thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 83, 89),
+        );
+        let seventh_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 89, 90),
+        );
+        let fourth_end = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "end",
+            range(source_id, 91, 94),
+        );
+        let eighth_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 94, 95),
+        );
+
+        let now_statement = builder.add_node(
+            SurfaceNodeKind::NowStatement,
+            range(source_id, 0, 12),
+            vec![a1, colon, now, first_end, first_semicolon],
+        );
+        let now_item = builder.add_node(
+            SurfaceNodeKind::StatementItem,
+            range(source_id, 0, 12),
+            vec![now_statement],
+        );
+        let hereby_statement = builder.add_node(
+            SurfaceNodeKind::HerebyStatement,
+            range(source_id, 13, 24),
+            vec![hereby, second_end, second_semicolon],
+        );
+        let hereby_item = builder.add_node(
+            SurfaceNodeKind::StatementItem,
+            range(source_id, 13, 24),
+            vec![hereby_statement],
+        );
+
+        let case_proposition =
+            thesis_proposition_node(&mut builder, source_id, case_thesis, 41, 47);
+        let case_item = builder.add_node(
+            SurfaceNodeKind::CaseItem,
+            range(source_id, 36, 53),
+            vec![
+                case,
+                case_proposition,
+                fourth_semicolon,
+                third_end,
+                fifth_semicolon,
+            ],
+        );
+        let case_reasoning = builder.add_node(
+            SurfaceNodeKind::CaseReasoningStatement,
+            range(source_id, 25, 53),
+            vec![first_per, first_cases, third_semicolon, case_item],
+        );
+        let case_reasoning_item = builder.add_node(
+            SurfaceNodeKind::StatementItem,
+            range(source_id, 25, 53),
+            vec![case_reasoning],
+        );
+
+        let reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 67, 68),
+            vec![a],
+        );
+        let reference_list = builder.add_node(
+            SurfaceNodeKind::ReferenceList,
+            range(source_id, 67, 68),
+            vec![reference],
+        );
+        let justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 64, 68),
+            vec![by, reference_list],
+        );
+        let suppose_proposition =
+            thesis_proposition_node(&mut builder, source_id, suppose_thesis, 83, 89);
+        let condition_list = builder.add_node(
+            SurfaceNodeKind::ConditionList,
+            range(source_id, 78, 89),
+            vec![that, suppose_proposition],
+        );
+        let suppose_item = builder.add_node(
+            SurfaceNodeKind::SupposeItem,
+            range(source_id, 70, 95),
+            vec![
+                suppose,
+                condition_list,
+                seventh_semicolon,
+                fourth_end,
+                eighth_semicolon,
+            ],
+        );
+        let suppose_reasoning = builder.add_node(
+            SurfaceNodeKind::CaseReasoningStatement,
+            range(source_id, 54, 95),
+            vec![
+                second_per,
+                second_cases,
+                justification,
+                sixth_semicolon,
+                suppose_item,
+            ],
+        );
+        let suppose_reasoning_item = builder.add_node(
+            SurfaceNodeKind::StatementItem,
+            range(source_id, 54, 95),
+            vec![suppose_reasoning],
+        );
+        let item_list = builder.add_node(
+            SurfaceNodeKind::ItemList,
+            range(source_id, 0, 95),
+            vec![
+                now_item,
+                hereby_item,
+                case_reasoning_item,
+                suppose_reasoning_item,
+            ],
+        );
+        let compilation_unit = builder.add_node(
+            SurfaceNodeKind::CompilationUnit,
+            range(source_id, 0, 95),
+            vec![item_list],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 95),
+            vec![
+                a1,
+                colon,
+                now,
+                first_end,
+                first_semicolon,
+                hereby,
+                second_end,
+                second_semicolon,
+                first_per,
+                first_cases,
+                third_semicolon,
+                case,
+                case_thesis,
+                fourth_semicolon,
+                third_end,
+                fifth_semicolon,
+                second_per,
+                second_cases,
+                by,
+                a,
+                sixth_semicolon,
+                suppose,
+                that,
+                suppose_thesis,
+                seventh_semicolon,
+                fourth_end,
+                eighth_semicolon,
+                compilation_unit,
+            ],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn thesis_proposition_node(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        token: super::SurfaceBuilderNodeId,
+        start: usize,
+        end: usize,
+    ) -> super::SurfaceBuilderNodeId {
+        let thesis_constant = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+            range(source_id, start, end),
+            vec![token],
+        );
+        let formula = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, start, end),
+            vec![thesis_constant],
+        );
+        builder.add_node(
+            SurfaceNodeKind::Proposition,
+            range(source_id, start, end),
+            vec![formula],
+        )
     }
 
     fn term_expression_node(

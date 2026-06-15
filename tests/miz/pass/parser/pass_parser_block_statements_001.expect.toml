@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_block_statements_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.statements"
+source = "pass_parser_block_statements_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.15.statements.syntax",
+]
+notes = "Active parse-only runner coverage for parser task 20 now/hereby blocks, per-cases case and suppose branch lists, optional simple justification, then-per-cases, and nested statement bodies."

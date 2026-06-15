@@ -1,0 +1,32 @@
+schema_version = 1
+id = "fail_parser_block_statements_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.statements"
+source = "fail_parser_block_statements_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_block_statements"
+stable_detail_key = "parser.statements.block_recovery"
+diagnostic_codes = [
+  "lexing:ScopeSkeleton(MissingEnd)",
+  "lexing:ScopeSkeleton(MissingEnd)",
+  "malformed_formula_expression",
+  "missing_semicolon",
+  "malformed_formula_expression",
+  "missing_semicolon",
+  "malformed_justification",
+  "missing_semicolon",
+  "malformed_formula_expression",
+  "missing_end",
+  "missing_semicolon",
+  "unexpected_top_level_token",
+  "missing_end",
+  "missing_end",
+]
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.15.statements.syntax",
+]
+notes = "Active parse-only runner coverage for parser task 20 block-statement recovery: non-linkable then-now/then-hereby, simple-justification boundary after per cases, missing case-header semicolon, mixed branch-list rejection, and missing branch end."

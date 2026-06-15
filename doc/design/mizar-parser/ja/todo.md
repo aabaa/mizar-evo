@@ -498,15 +498,25 @@ resolver / build-system 依存を避ける。
       `IterativeEqualityStatement` にする。parser は `thus` / `hence`
       conclusion、linkable な `then` statement、simple `by` justification を持つ
       iterative equality step、label variant、`then consider` / `then reconsider`
-      を受け付ける。`then per cases` は task 20 の block-statement placeholder
-      として deferred のままである。parser unit test、active pass/fail corpus
+      を受け付ける。task 19 完了時点では `then per cases` は task 20 の
+      block-statement placeholder として残した。parser unit test、active pass/fail corpus
       fixture、traceability metadata が新しい形状と recovery case を覆う。
 
-20. **ブロック文。** [ ]
+20. **ブロック文。** [x]
     - `now` / `hereby` ブロックと、`end` 同期を備えた
       `per cases` / `suppose` / `case` ブロック。
     - 依存: 19、`mizar-syntax` task 13 / S-013。仕様:
       [15.statements.md](../../../spec/ja/15.statements.md)。
+    - 結果: `NowStatement`、`HerebyStatement`、
+      `CaseReasoningStatement`、`CaseItem`、`SupposeItem` の parsing を実装した。
+      `now` の optional label、nested reasoning body、`per cases` の optional
+      explicit simple `by` justification、homogeneous な `case` または
+      `suppose` branch list、branch proposition と `that` condition-list
+      header、linkable な `then per cases`、non-linkable な `then now` /
+      `then hereby`、malformed justification tail、branch header semicolon 欠落、
+      mixed branch list、skipped token、`end` 欠落の recovery を覆う。parser unit
+      test、active parse-only pass/fail corpus fixture、traceability metadata が
+      新しい形状と recovery case を覆う。
 
 21. **ローカル定義。** [ ]
     - `deffunc` / `defpred` のプライベートなローカル定義。

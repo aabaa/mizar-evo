@@ -1025,6 +1025,71 @@ iterative-equality term 欠落、iterative equality 内の disallowed computatio
 justification、active parse-only pass/fail corpus coverage、Chapter 15 §15.4.1、
 §15.4.2、§15.7、§15.8、§15.9.1 への traceability を固定する必要がある。
 
+## Task 20: Block statement
+
+Parser task 20 は、Chapter 15 の reasoning block に concrete syntax node を追加して
+mizar-syntax S-013 を継続する。task 19 で deferred だった `then per cases`
+placeholder path は、case-reasoning body が parse 可能な場合、`CaseReasoningStatement`
+を wrap する `ThenStatement` に昇格する。
+
+```ebnf
+statement_item              ::= ... | now_statement | hereby_statement
+                              | case_reasoning_statement ;
+linkable_statement          ::= ... | case_reasoning_statement ;
+standalone_statement        ::= ... | now_statement | hereby_statement ;
+now_statement               ::= [ label_identifier ":" ] "now"
+                                reasoning_body "end" ";" ;
+hereby_statement            ::= "hereby" reasoning_body "end" ";" ;
+case_reasoning_statement    ::= "per" "cases"
+                                [ simple_justification ] ";"
+                                ( case_list | suppose_list | empty_branch_list ) ;
+case_list                   ::= case_item { case_item } ;
+suppose_list                ::= suppose_item { suppose_item } ;
+empty_branch_list           ::= /* fragment recovery 専用で受け入れる */ ;
+case_item                   ::= "case" ( proposition | conditions ) ";"
+                                reasoning_body "end" ";" ;
+suppose_item                ::= "suppose" ( proposition | conditions ) ";"
+                                reasoning_body "end" ";" ;
+reasoning_body              ::= { statement } ;
+```
+
+parser は block reasoning を syntax-only として保持する。`NowStatement` は任意の
+label と colon、`now` token、0 個以上の nested statement node、closing `end`、任意の
+recovery、存在する場合の closing semicolon を所有する。`HerebyStatement` は label
+を持たない同じ block-body 形状である。`CaseItem` と `SupposeItem` は branch keyword、
+leading `that` により選ばれる `Proposition` または `ConditionList`、header
+semicolon、0 個以上の nested statement node、branch-closing `end`、任意の recovery、
+存在する場合の closing semicolon を所有する。`CaseReasoningStatement` は `per`、
+`cases`、任意の simple citation `JustificationClause`、header semicolon、source order の
+`CaseItem` / `SupposeItem` child を所有する。
+branch child は homogeneous であり、source order の `CaseItem` だけ、または
+source order の `SupposeItem` だけで構成する。最初の branch kind が見えた後、もう一方の
+branch keyword は現在の case-reasoning node の外にある statement boundary とする。parser は
+`case` と `suppose` list を silent に混在させてはならない。
+
+Chapter 15 の prose と例は `per cases;` を含む一方、complete EBNF summary は
+bracket なしの `simple_justification` を表示する。grammar audit G-AUD-011 はこの
+nonblocking inconsistency を記録する。parser surface は `per cases;` と
+`per cases by A;` の両方を受け入れる。active parse-only fixture は complete proof の外で
+statement fragment を exercise し得るため、branch を持たない `per cases;` fragment も
+diagnose しない。ただし後続する `case` または `suppose` branch がある場合は保持する。
+
+Task 20 recovery は既存 diagnostic を再利用する。欠落 block `end` token は block opener
+を secondary anchor とする `MissingEnd` diagnostic と `MissingEnd` recovery を使う。
+block `end` 後または case header 後の semicolon 欠落は `MissingSemicolon` を使う。
+case / suppose proposition 欠落は `MalformedFormulaExpression` と `MissingFormula` を使う。
+malformed block tail は semicolon、`end`、EOF、または次の statement/item boundary で同期し、
+token を skip する必要がある場合は `SkippedToken` recovery として source を保持する。
+
+Task 20 の test は、labelled `now` block、`hereby` block、block body 内の nested
+statement、`case` branch を持つ `per cases`、`suppose` branch を持つ `per cases`、
+mixed branch-list keyword の rejection / recovery、`then per cases`、`then now` /
+`then hereby` の rejection、`per cases` 後の optional simple `by`、`per cases` 後の
+`by computation(...)` rejection、proposition 形と condition-list 形の branch header、
+branch/body `end` 欠落 recovery、branch-header semicolon 欠落 recovery、active
+parse-only pass/fail corpus coverage、Chapter 15 §15.4.3、§15.6.1、§15.6.2、§15.6.3、
+§15.8、§15.9.1 への traceability を固定する必要がある。
+
 ## 公開 enum の互換性
 
 `ParserTokenKind` は downstream crate 向けに `#[non_exhaustive]` とする。parser-facing

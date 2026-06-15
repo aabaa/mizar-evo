@@ -43,6 +43,12 @@ enum QuaTargetGrammar {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CaseBranchKind {
+    Case,
+    Suppose,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct AttributeRefPlan {
     start_position: usize,
     next_position: usize,
@@ -211,6 +217,9 @@ impl Parser {
     fn parse_statement_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
         self.parse_then_statement_at(position)
             .or_else(|| self.parse_conclusion_statement_at(position))
+            .or_else(|| self.parse_now_statement_at(position))
+            .or_else(|| self.parse_hereby_statement_at(position))
+            .or_else(|| self.parse_case_reasoning_statement_at(position))
             .or_else(|| self.parse_iterative_equality_statement_at(position))
             .or_else(|| self.parse_simple_statement_at(position))
             .or_else(|| self.parse_compact_statement_at(position))
@@ -218,6 +227,7 @@ impl Parser {
 
     fn parse_linkable_statement_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
         self.parse_conclusion_statement_at(position)
+            .or_else(|| self.parse_case_reasoning_statement_at(position))
             .or_else(|| self.parse_iterative_equality_statement_at(position))
             .or_else(|| {
                 self.is_reserved_word_at(position, "consider")
@@ -249,9 +259,6 @@ impl Parser {
 
     fn parse_then_statement_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
         if !self.is_reserved_word_at(position, "then") {
-            return None;
-        }
-        if self.is_deferred_case_reasoning_start_at(position + 1) {
             return None;
         }
 
@@ -291,6 +298,172 @@ impl Parser {
             recovery_nodes,
             "unexpected token in then statement",
         ))
+    }
+
+    fn parse_now_statement_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        let mut children = Vec::new();
+        let mut cursor = position;
+
+        if self.is_identifier_at(cursor) && self.is_reserved_symbol_at(cursor + 1, ":") {
+            if !self.is_reserved_word_at(cursor + 2, "now") {
+                return None;
+            }
+            children.push(self.token_node_ids[cursor]);
+            children.push(self.token_node_ids[cursor + 1]);
+            cursor += 2;
+        } else if !self.is_reserved_word_at(cursor, "now") {
+            return None;
+        }
+
+        let opener = cursor;
+        children.push(self.token_node_ids[cursor]);
+        cursor += 1;
+        let mut recovery_nodes = Vec::new();
+
+        cursor = self.parse_reasoning_body_at(cursor, &mut children, &mut recovery_nodes);
+        cursor =
+            self.parse_required_end_semicolon(opener, cursor, &mut children, &mut recovery_nodes);
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::NowStatement,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        Some(ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        })
+    }
+
+    fn parse_hereby_statement_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        if !self.is_reserved_word_at(position, "hereby") {
+            return None;
+        }
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        cursor = self.parse_reasoning_body_at(cursor, &mut children, &mut recovery_nodes);
+        cursor =
+            self.parse_required_end_semicolon(position, cursor, &mut children, &mut recovery_nodes);
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::HerebyStatement,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        Some(ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        })
+    }
+
+    fn parse_case_reasoning_statement_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        if !self.is_case_reasoning_start_at(position) {
+            return None;
+        }
+        let mut children = vec![
+            self.token_node_ids[position],
+            self.token_node_ids[position + 1],
+        ];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 2;
+
+        if self.is_reserved_word_at(cursor, "by") {
+            let justification = self.parse_justification_clause_at(cursor, false);
+            cursor = justification.next_position;
+            children.push(justification.id);
+            recovery_nodes.extend(justification.recovery_nodes);
+        }
+        cursor = self.parse_required_statement_semicolon(cursor, &mut children);
+
+        let mut branch_kind = None;
+        while cursor < self.request.tokens.len() {
+            if self.is_end_keyword_at(cursor) || self.is_item_start_at(cursor) {
+                break;
+            }
+            let current_kind = if self.is_reserved_word_at(cursor, "case") {
+                Some(CaseBranchKind::Case)
+            } else if self.is_reserved_word_at(cursor, "suppose") {
+                Some(CaseBranchKind::Suppose)
+            } else {
+                None
+            };
+
+            let Some(current_kind) = current_kind else {
+                break;
+            };
+            if let Some(expected_kind) = branch_kind {
+                if current_kind != expected_kind {
+                    self.diagnose_malformed_formula_expression(
+                        cursor,
+                        "case reasoning branches must not mix `case` and `suppose`",
+                    );
+                    break;
+                }
+            } else {
+                branch_kind = Some(current_kind);
+            }
+
+            let branch = self.parse_case_branch_item_at(cursor, current_kind);
+            cursor = branch.next_position;
+            children.push(branch.id);
+            recovery_nodes.extend(branch.recovery_nodes);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::CaseReasoningStatement,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        Some(ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        })
+    }
+
+    fn parse_case_branch_item_at(
+        &mut self,
+        position: usize,
+        branch_kind: CaseBranchKind,
+    ) -> ParsedTypeNode {
+        let surface_kind = match branch_kind {
+            CaseBranchKind::Case => SurfaceNodeKind::CaseItem,
+            CaseBranchKind::Suppose => SurfaceNodeKind::SupposeItem,
+        };
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if let Some(conditions) = self.parse_condition_list_at(cursor) {
+            cursor = conditions.next_position;
+            children.push(conditions.id);
+            recovery_nodes.extend(conditions.recovery_nodes);
+        } else {
+            let proposition = self.parse_proposition_at(cursor);
+            cursor = proposition.next_position;
+            children.push(proposition.id);
+            recovery_nodes.extend(proposition.recovery_nodes);
+        }
+
+        cursor = self.parse_required_statement_semicolon(cursor, &mut children);
+        cursor = self.parse_reasoning_body_at(cursor, &mut children, &mut recovery_nodes);
+        cursor =
+            self.parse_required_end_semicolon(position, cursor, &mut children, &mut recovery_nodes);
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: surface_kind,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
     }
 
     fn parse_conclusion_statement_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
@@ -1600,6 +1773,84 @@ impl Parser {
             next_position: cursor.max(position + 1),
             recovery_nodes,
         }
+    }
+
+    fn parse_reasoning_body_at(
+        &mut self,
+        mut cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) -> usize {
+        while cursor < self.request.tokens.len() {
+            if self.is_end_keyword_at(cursor)
+                || self.is_item_start_at(cursor)
+                || self.is_case_branch_keyword_at(cursor)
+            {
+                break;
+            }
+
+            if let Some(statement) = self.parse_statement_at(cursor) {
+                cursor = statement.next_position;
+                children.push(statement.id);
+                recovery_nodes.extend(statement.recovery_nodes);
+                continue;
+            }
+
+            if self.is_semicolon_at(cursor) {
+                self.diagnose_malformed_formula_expression(
+                    cursor,
+                    "expected statement before `;` in reasoning block",
+                );
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+                continue;
+            }
+
+            self.diagnose_malformed_formula_expression(
+                cursor,
+                "expected statement in reasoning block",
+            );
+            if let Some(recovery) = self.recover_malformed_statement_tail(cursor) {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            } else {
+                break;
+            }
+        }
+        cursor
+    }
+
+    fn parse_required_statement_semicolon(
+        &mut self,
+        mut cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+    ) -> usize {
+        if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+        }
+        cursor
+    }
+
+    fn parse_required_end_semicolon(
+        &mut self,
+        opener: usize,
+        mut cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) -> usize {
+        if self.is_end_keyword_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            let missing = self.add_missing_end(opener, cursor);
+            children.push(missing);
+            recovery_nodes.push(missing);
+        }
+        self.parse_required_statement_semicolon(cursor, children)
     }
 
     fn parse_deferred_statement_placeholder_item(&mut self, position: usize) -> ParsedItem {
@@ -5021,6 +5272,24 @@ impl Parser {
         );
     }
 
+    fn diagnose_missing_end(&mut self, opener: usize, position: usize) {
+        let tokens = &self.request.tokens;
+        let cursor = crate::cursor::TokenCursor::at(self.request.source_id, tokens, position);
+        let primary = cursor
+            .current()
+            .map_or(cursor.eof_range(), |token| token.span);
+        let opener_span = self.request.tokens[opener].span;
+        self.diagnostics.push(
+            SyntaxDiagnostic::new(
+                SyntaxDiagnosticCode::MissingEnd,
+                "expected `end` for block",
+                primary,
+            )
+            .with_secondary([SourceAnchor::Range(opener_span)])
+            .with_recovery_note("insert `end` before continuing"),
+        );
+    }
+
     fn diagnose_malformed_import(&mut self, position: usize, message: &'static str) {
         let tokens = &self.request.tokens;
         let cursor = crate::cursor::TokenCursor::at(self.request.source_id, tokens, position);
@@ -5248,6 +5517,15 @@ impl Parser {
         )
     }
 
+    fn add_missing_end(&mut self, opener: usize, position: usize) -> SurfaceBuilderNodeId {
+        self.diagnose_missing_end(opener, position);
+        self.add_recovery_node(
+            SyntaxRecoveryKind::MissingEnd,
+            self.zero_range_at(position),
+            Vec::new(),
+        )
+    }
+
     fn add_missing_term(&mut self, position: usize) -> SurfaceBuilderNodeId {
         self.add_recovery_node(
             SyntaxRecoveryKind::MissingTerm,
@@ -5406,6 +5684,7 @@ impl Parser {
             if top_level
                 && (self.is_semicolon_at(cursor)
                     || self.is_end_keyword_at(cursor)
+                    || self.is_case_branch_keyword_at(cursor)
                     || self.is_compilation_item_or_statement_start_at(cursor))
             {
                 break;
@@ -5669,6 +5948,9 @@ impl Parser {
     fn is_statement_start_at(&self, position: usize) -> bool {
         self.is_reserved_word_at(position, "then")
             || self.is_conclusion_keyword_at(position)
+            || self.is_now_statement_start_at(position)
+            || self.is_reserved_word_at(position, "hereby")
+            || self.is_case_reasoning_start_at(position)
             || self.is_iterative_equality_statement_start_at(position)
             || self.is_simple_statement_keyword_at(position)
             || self.is_compact_statement_start_at(position)
@@ -5682,6 +5964,9 @@ impl Parser {
                     "then"
                         | "thus"
                         | "hence"
+                        | "now"
+                        | "hereby"
+                        | "per"
                         | "let"
                         | "assume"
                         | "given"
@@ -5710,8 +5995,19 @@ impl Parser {
         })
     }
 
-    fn is_deferred_case_reasoning_start_at(&self, position: usize) -> bool {
+    fn is_case_reasoning_start_at(&self, position: usize) -> bool {
         self.is_reserved_word_at(position, "per") && self.is_reserved_word_at(position + 1, "cases")
+    }
+
+    fn is_now_statement_start_at(&self, position: usize) -> bool {
+        self.is_reserved_word_at(position, "now")
+            || (self.is_identifier_at(position)
+                && self.is_reserved_symbol_at(position + 1, ":")
+                && self.is_reserved_word_at(position + 2, "now"))
+    }
+
+    fn is_case_branch_keyword_at(&self, position: usize) -> bool {
+        self.is_reserved_word_at(position, "case") || self.is_reserved_word_at(position, "suppose")
     }
 
     fn is_iterative_equality_statement_start_at(&self, position: usize) -> bool {
@@ -5974,6 +6270,7 @@ impl Parser {
             || self.is_reserved_symbol_at(position, "}")
             || self.is_reserved_symbol_at(position, ".=")
             || self.is_item_start_at(position)
+            || self.is_case_branch_keyword_at(position)
             || self.is_statement_boundary_keyword_at(position)
     }
 
@@ -14392,15 +14689,15 @@ mod tests {
         assert_eq!(item_list.children.len(), 12);
         assert_eq!(
             count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::StatementItem)),
-            11
+            12
         );
         assert_eq!(
             count_nodes(&ast, |kind| matches!(
                 kind,
                 SurfaceNodeKind::PlaceholderItem
             )),
-            1,
-            "`then per cases` remains deferred until task 20"
+            0,
+            "`then per cases` is upgraded by task 20"
         );
         assert_eq!(
             count_nodes(&ast, |kind| matches!(
@@ -14411,7 +14708,7 @@ mod tests {
         );
         assert_eq!(
             count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::ThenStatement)),
-            6
+            7
         );
         assert_eq!(
             count_nodes(&ast, |kind| matches!(
@@ -14446,6 +14743,13 @@ mod tests {
             count_nodes(&ast, |kind| matches!(
                 kind,
                 SurfaceNodeKind::ReconsiderStatement
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::CaseReasoningStatement
             )),
             1
         );
@@ -14487,6 +14791,12 @@ mod tests {
                 .iter()
                 .any(|kind| matches!(kind, SurfaceNodeKind::ReconsiderStatement)),
             "`then` should wrap reconsider statements"
+        );
+        assert!(
+            then_child_kinds
+                .iter()
+                .any(|kind| matches!(kind, SurfaceNodeKind::CaseReasoningStatement)),
+            "`then` should wrap case reasoning statements"
         );
 
         let then_compact_token_texts = ast
@@ -14639,6 +14949,378 @@ mod tests {
             )),
             0,
             "`by computation` should recover as malformed simple citation syntax in iterative equality"
+        );
+    }
+
+    #[test]
+    fn parser_parses_task20_block_statement_nodes() {
+        let source_id = source_id(97);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("A1", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("now", ParserTokenKind::ReservedWord),
+                    ("assume", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("hereby", ParserTokenKind::ReservedWord),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("hereby", ParserTokenKind::ReservedWord),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("per", ParserTokenKind::ReservedWord),
+                    ("cases", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("A", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("case", ParserTokenKind::ReservedWord),
+                    ("C1", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("case", ParserTokenKind::ReservedWord),
+                    ("that", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("hence", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("per", ParserTokenKind::ReservedWord),
+                    ("cases", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("suppose", ParserTokenKind::ReservedWord),
+                    ("S1", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("suppose", ParserTokenKind::ReservedWord),
+                    ("that", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("then", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("A", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("then", ParserTokenKind::ReservedWord),
+                    ("per", ParserTokenKind::ReservedWord),
+                    ("cases", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("case", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "task-20 block statements should parse without diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("task-20 block statements should keep an AST");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 5);
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::NowStatement)),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::HerebyStatement
+            )),
+            2
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::CaseReasoningStatement
+            )),
+            3
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::CaseItem)),
+            3
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::SupposeItem)),
+            2
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::ThenStatement)),
+            2,
+            "`then thesis by A;` and `then per cases; ...` should both be represented"
+        );
+        assert!(
+            ast.nodes().iter().any(|node| {
+                matches!(node.kind, SurfaceNodeKind::CaseItem)
+                    && structural_children(&ast, node)
+                        .iter()
+                        .any(|child| matches!(child.kind, SurfaceNodeKind::ConditionList))
+            }),
+            "`case that thesis;` should preserve a condition list branch header"
+        );
+        assert!(
+            ast.nodes().iter().any(|node| {
+                matches!(node.kind, SurfaceNodeKind::SupposeItem)
+                    && structural_children(&ast, node)
+                        .iter()
+                        .any(|child| matches!(child.kind, SurfaceNodeKind::ConditionList))
+            }),
+            "`suppose that thesis;` should preserve a condition list branch header"
+        );
+        assert!(
+            ast.nodes().iter().any(|node| {
+                matches!(node.kind, SurfaceNodeKind::ThenStatement)
+                    && structural_children(&ast, node)
+                        .iter()
+                        .any(|child| matches!(child.kind, SurfaceNodeKind::CaseReasoningStatement))
+            }),
+            "`then per cases` should wrap case reasoning"
+        );
+    }
+
+    #[test]
+    fn parser_recovers_task20_block_statement_gaps() {
+        let source_id = source_id(98);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("then", ParserTokenKind::ReservedWord),
+                    ("now", ParserTokenKind::ReservedWord),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("then", ParserTokenKind::ReservedWord),
+                    ("hereby", ParserTokenKind::ReservedWord),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("per", ParserTokenKind::ReservedWord),
+                    ("cases", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("computation", ParserTokenKind::ReservedWord),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("steps", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("1", ParserTokenKind::Numeral),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("per", ParserTokenKind::ReservedWord),
+                    ("cases", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("A", ParserTokenKind::Identifier),
+                    ("case", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("per", ParserTokenKind::ReservedWord),
+                    ("cases", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("case", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("junk", ParserTokenKind::Identifier),
+                    ("case", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("per", ParserTokenKind::ReservedWord),
+                    ("cases", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("case", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("per", ParserTokenKind::ReservedWord),
+                    ("cases", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("case", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("suppose", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(output.diagnostics.iter().any(|diagnostic| {
+            diagnostic.code == SyntaxDiagnosticCode::MalformedFormulaExpression
+        }));
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MalformedJustification)
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MissingSemicolon)
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MissingEnd)
+        );
+        let ast = output
+            .ast
+            .expect("task-20 malformed blocks should recover an AST");
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingStatement)
+            )) >= 2,
+            "`then now` and `then hereby` should stay non-linkable"
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingProofStep)
+            )) >= 1,
+            "`per cases by computation(...)` should recover as malformed simple citation syntax"
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingEnd)
+            )) >= 1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ComputationJustification
+            )),
+            0,
+            "case reasoning uses simple justifications only"
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::CaseItem)) >= 5,
+            "`per cases by A` with a missing header semicolon should still preserve the following case branch"
+        );
+        assert!(
+            ast.nodes().iter().any(|node| {
+                matches!(node.kind, SurfaceNodeKind::CaseReasoningStatement)
+                    && structural_children(&ast, node)
+                        .iter()
+                        .filter(|child| matches!(child.kind, SurfaceNodeKind::CaseItem))
+                        .count()
+                        >= 2
+            }),
+            "malformed branch-body tokens should not swallow the following `case` header"
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::SupposeItem)),
+            0,
+            "mixed `suppose` branches should stay outside the existing case-list node"
+        );
+    }
+
+    #[test]
+    fn parser_recovers_task20_missing_now_hereby_ends() {
+        let source_id = source_id(167);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("now", ParserTokenKind::ReservedWord),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("hereby", ParserTokenKind::ReservedWord),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .filter(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MissingEnd)
+                .count()
+                >= 2,
+            "missing `end` diagnostics should be emitted for both `now` and nested `hereby`"
+        );
+        let ast = output
+            .ast
+            .expect("missing task-20 block ends should recover an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::NowStatement)),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::HerebyStatement
+            )),
+            1
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingEnd)
+            )) >= 2
         );
     }
 

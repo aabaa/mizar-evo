@@ -98,6 +98,11 @@ green tree.
 | sequential `then` wrapper node | `SyntaxKind::ThenStatement` |
 | iterative equality statement node | `SyntaxKind::IterativeEqualityStatement` |
 | iterative equality step node | `SyntaxKind::IterativeEqualityStep` |
+| now statement node | `SyntaxKind::NowStatement` |
+| hereby statement node | `SyntaxKind::HerebyStatement` |
+| case reasoning statement node | `SyntaxKind::CaseReasoningStatement` |
+| case item node | `SyntaxKind::CaseItem` |
+| suppose item node | `SyntaxKind::SupposeItem` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -217,6 +222,11 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 85 | `ThenStatement` | task-19 `then` modifier wrapper around a linkable statement |
 | 86 | `IterativeEqualityStatement` | task-19 equality chain with at least one `.=` continuation |
 | 87 | `IterativeEqualityStep` | task-19 `.=` equality-chain continuation step |
+| 88 | `NowStatement` | task-20 labelled reasoning block |
+| 89 | `HerebyStatement` | task-20 diffuse conclusion block |
+| 90 | `CaseReasoningStatement` | task-20 `per cases` reasoning block |
+| 91 | `CaseItem` | task-20 `case ... end;` branch |
+| 92 | `SupposeItem` | task-20 `suppose ... end;` branch |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -229,7 +239,7 @@ The current raw discriminants are part of the rowan boundary for this phase:
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
-above, currently `Root` through task-19 `IterativeEqualityStep` plus the compatibility
+above, currently `Root` through task-20 `SupposeItem` plus the compatibility
 `Token` wrapper and `ErrorRecovery`; `is_token_kind` is true
 only for token leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future
 raw values should be appended or assigned into a documented reserved range so
@@ -291,6 +301,11 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::ThenStatement` | none | `SyntaxKind::ThenStatement` | parser task-19 sequential modifier wrapper; owns the `then` token and exactly one linkable statement child or `MissingStatement` recovery |
 | `SurfaceNodeKind::IterativeEqualityStatement` | none | `SyntaxKind::IterativeEqualityStatement` | parser task-19 equality chain; owns optional label identifier/colon, first `TermExpression`, `=`, second `TermExpression`, optional simple `JustificationClause`, one or more `IterativeEqualityStep` children, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::IterativeEqualityStep` | none | `SyntaxKind::IterativeEqualityStep` | parser task-19 `.=` continuation; owns `.=` token, a `TermExpression` or `MissingTerm`, and optional simple `JustificationClause` |
+| `SurfaceNodeKind::NowStatement` | none | `SyntaxKind::NowStatement` | parser task-20 `now ... end;` reasoning block; owns optional label identifier/colon, `now`, nested statement nodes, optional recovery including `MissingEnd`, `end` when present, and optional semicolon |
+| `SurfaceNodeKind::HerebyStatement` | none | `SyntaxKind::HerebyStatement` | parser task-20 `hereby ... end;` diffuse conclusion block; owns `hereby`, nested statement nodes, optional recovery including `MissingEnd`, `end` when present, and optional semicolon |
+| `SurfaceNodeKind::CaseReasoningStatement` | none | `SyntaxKind::CaseReasoningStatement` | parser task-20 `per cases` block; owns `per`, `cases`, optional simple `JustificationClause`, header semicolon, and either source-ordered homogeneous `CaseItem` children or source-ordered homogeneous `SupposeItem` children |
+| `SurfaceNodeKind::CaseItem` | none | `SyntaxKind::CaseItem` | parser task-20 `case ... end;` branch; owns `case`, either `Proposition` or `ConditionList`, header semicolon, nested statement nodes, optional recovery including `MissingEnd`, `end` when present, and optional semicolon |
+| `SurfaceNodeKind::SupposeItem` | none | `SyntaxKind::SupposeItem` | parser task-20 `suppose ... end;` branch; owns `suppose`, either `Proposition` or `ConditionList`, header semicolon, nested statement nodes, optional recovery including `MissingEnd`, `end` when present, and optional semicolon |
 | `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host; owns one `Proposition`, one `JustificationClause`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
@@ -738,6 +753,25 @@ validity, or proof obligations. `SurfaceNodeView` exposes
 `as_iterative_equality_statement`, and `as_iterative_equality_step` helpers.
 Snapshot rendering prints the literal node names.
 
+Parser task 20 adds the reasoning-block portion of S-013. `NowStatement`
+owns optional label syntax, the `now` opener, zero or more nested statement
+nodes, optional recovery, and the block-closing `end` and semicolon when
+present. `HerebyStatement` owns the same block body shape without label syntax.
+`CaseReasoningStatement` owns `per`, `cases`, optional simple citation
+`JustificationClause`, the header semicolon, and zero or more source-ordered
+homogeneous `CaseItem` children or homogeneous `SupposeItem` children. `CaseItem`
+and `SupposeItem` own their
+keyword, either a `Proposition` or `ConditionList`, the header semicolon, zero
+or more nested statement nodes, optional recovery, and their block-closing
+`end` and semicolon when present. The parser surface accepts both `per cases;`
+and `per cases by A;` because Chapter 15 prose/examples and existing
+parse-only fixtures exercise the no-explicit-justification form; it does not
+classify exhaustiveness, branch coverage, label scope, witness leakage, or the
+formula exported by a `now` block. `SurfaceNodeView` exposes
+`as_now_statement`, `as_hereby_statement`, `as_case_reasoning_statement`,
+`as_case_item`, and `as_suppose_item` helpers. Snapshot rendering prints the
+literal node names.
+
 ### Vocabulary Increment Contract
 
 Node vocabulary grows only in the same change as the `mizar-parser` grammar task
@@ -882,6 +916,11 @@ ConclusionStatement range=<start>..<end> recovered=<bool>
 ThenStatement range=<start>..<end> recovered=<bool>
 IterativeEqualityStatement range=<start>..<end> recovered=<bool>
 IterativeEqualityStep range=<start>..<end> recovered=<bool>
+NowStatement range=<start>..<end> recovered=<bool>
+HerebyStatement range=<start>..<end> recovered=<bool>
+CaseReasoningStatement range=<start>..<end> recovered=<bool>
+CaseItem range=<start>..<end> recovered=<bool>
+SupposeItem range=<start>..<end> recovered=<bool>
 CompactStatement range=<start>..<end> recovered=<bool>
 JustificationClause range=<start>..<end> recovered=<bool>
 ReferenceList range=<start>..<end> recovered=<bool>
