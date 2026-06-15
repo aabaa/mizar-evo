@@ -40,17 +40,24 @@ Typical topics include:
 
 See [`internal/README.md`](./internal/README.md) for details and the document template.
 
-## 3. Module Specifications (`<crate-name>/`)
+## 3. Crate Design Specifications (`<crate-name>/`)
 
-Detailed specifications that map **1:1** to Rust source files.
+Crate design documents describe crate responsibilities, APIs, data structures,
+algorithms, and implementation boundaries. They are derived from `doc/spec/en/`
+and tests; they are not independent language authority.
 
 ```
-doc/design/<crate-name>/<language>/<module>.md  →  crates/<crate-name>/src/<module>.rs
+doc/design/<crate-name>/<language>/<topic>.md  relates to  crates/<crate-name>/src/...
 ```
 
-For module specifications, English documents are canonical and Japanese documents are companions when both are present.
+Some focused design documents may map directly to a Rust source module, but
+crate-wide autonomous work should be decomposed by specification requirement or
+test obligation first, then mapped to design and source files through the Crate
+Plan.
 
-Current module specification roots:
+For crate design specifications, English documents are canonical and Japanese documents are companions when both are present.
+
+Current crate design roots:
 
 - [`mizar-session/`](./mizar-session/README.md) - source identity, build snapshots, source maps, and snapshot retention
 - [`mizar-test/`](./mizar-test/README.md) - test corpus layout, `.miz` corpus strategy, fail/soundness tests, snapshots, and harness behavior
@@ -59,21 +66,26 @@ Current module specification roots:
 - [`mizar-parser/`](./mizar-parser/README.md) - grammar implementation, Pratt parsing, and syntax recovery
 - [`mizar-frontend/`](./mizar-frontend/README.md) - source loading and phase 1-3 orchestration across lexer and parser services
 
-### Module Specification Template
+### Focused Design Document Template
 
-Each module spec should follow this structure:
+For a focused design document, use this structure when it fits:
 
 ```markdown
-# Module: <module_name>
+# Design: <topic>
 
 ## Purpose
-Brief description of what this module does.
+Brief description of the responsibility this design covers.
+
+## Specification And Test Inputs
+- Relevant `doc/spec/en/` requirements
+- Relevant `.miz` tests and traceability records
 
 ## Public API
-List of public functions, structs, traits, and their signatures.
+List public functions, structs, traits, and signatures when the design owns an
+API surface.
 
 ## Dependencies
-- Internal: which other modules this depends on
+- Internal: which crates, modules, or design topics this depends on
 - External: crate dependencies
 
 ## Data Structures
@@ -97,11 +109,11 @@ doc/idea/                          Immature ideas, brainstorming
 doc/design/architecture/           Confirmed cross-cutting design decisions
    ↓  (refined)
 doc/design/internal/               Subsystem APIs, data structures, execution contracts
-   ↓  (decomposed into modules)
-doc/design/<crate>/<language>/<module>.md
-                                    Per-file implementation specifications
-   ↓  (implemented)
-crates/<crate>/src/<module>.rs     Rust source code
+   ↓  (refined into crate design)
+doc/design/<crate>/<language>/<topic>.md
+                                    Crate and focused implementation design
+   ↓  (mapped through crate plan)
+crates/<crate>/src/...             Rust source code
 ```
 
 ## Workflow
@@ -114,7 +126,7 @@ crate exit gates.
 1. Start with an idea in `doc/idea/`
 2. When a design decision is confirmed, promote it to `doc/design/architecture/`
 3. Refine cross-cutting designs into internal subsystem designs in `doc/design/internal/`
-4. Decompose into module-level specs in `doc/design/<crate>/<language>/`
-5. Implement (or ask AI to implement) the corresponding Rust source
+4. Refine into crate or focused design documents in `doc/design/<crate>/<language>/`
+5. Implement (or ask AI to implement) the corresponding Rust source changes
 6. Run tests to verify the implementation matches the spec
 7. Keep design specs and code in sync within the authority order above
