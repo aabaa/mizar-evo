@@ -1,7 +1,8 @@
 # mizar-parser: Pratt Parsing
 
 Status: task-12 term Pratt parsing is implemented for active-lexicon prefix,
-postfix, and infix operators; formula precedence remains planned.
+postfix, and infix operators; task-13 atomic formulas use the term Pratt
+boundary; formula connective precedence remains planned.
 
 ## Purpose
 
@@ -32,6 +33,11 @@ Term parsing uses the following order:
 3. User postfix and infix operators are folded by Pratt binding power.
 4. `qua` is parsed by the module grammar after Pratt as the fixed lowest
    term-level operator and remains left-associative.
+
+Atomic-formula parsing starts after the term Pratt boundary. Task 13 consumes
+built-in predicates, `is` assertions, inline predicate calls, and syntax-only
+user predicate segments around already parsed term operands. Task 14 owns the
+fixed formula connective Pratt table.
 
 For infix term operators, the binding powers match Appendix B:
 

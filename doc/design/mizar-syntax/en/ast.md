@@ -82,6 +82,14 @@ green tree.
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
 | postfix expression node | `SyntaxKind::PostfixExpression` |
+| formula expression node | `SyntaxKind::FormulaExpression` |
+| built-in predicate application node | `SyntaxKind::BuiltinPredicateApplication` |
+| generic `is` assertion node | `SyntaxKind::IsAssertion` |
+| attribute-test chain node | `SyntaxKind::AttributeTestChain` |
+| user predicate application node | `SyntaxKind::PredicateApplication` |
+| predicate segment node | `SyntaxKind::PredicateSegment` |
+| predicate head node | `SyntaxKind::PredicateHead` |
+| inline predicate application node | `SyntaxKind::InlinePredicateApplication` |
 | recovery node | `SyntaxKind::ErrorRecovery` |
 
 Token roles are separate raw kinds: identifier, reserved word, reserved symbol,
@@ -139,6 +147,14 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 41 | `QuaExpression` | task-11 `term "qua" type_expression` qualification surface |
 | 42 | `PrefixExpression` | task-12 prefix operator expression surface |
 | 43 | `PostfixExpression` | task-12 postfix operator expression surface |
+| 44 | `FormulaExpression` | task-13 formula wrapper for the current atomic formula increment |
+| 45 | `BuiltinPredicateApplication` | task-13 `term_expression builtin_pred term_expression` atomic formula |
+| 46 | `IsAssertion` | task-13 generic `term_expression "is" ...` assertion |
+| 47 | `AttributeTestChain` | task-13 attribute-only `is_assertion_body` chain |
+| 48 | `PredicateApplication` | task-13 syntax-only user predicate application or chain |
+| 49 | `PredicateSegment` | task-13 user predicate segment |
+| 50 | `PredicateHead` | task-13 predicate symbol wrapper |
+| 51 | `InlinePredicateApplication` | task-13 inline predicate call shape |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -151,7 +167,10 @@ The current raw discriminants are part of the rowan boundary for this phase:
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true only for `Root`, `Token`,
-`InfixExpression`, `PrefixExpression`, `PostfixExpression`, `ErrorRecovery`,
+`InfixExpression`, `PrefixExpression`, `PostfixExpression`, `FormulaExpression`,
+`BuiltinPredicateApplication`, `IsAssertion`, `AttributeTestChain`,
+`PredicateApplication`, `PredicateSegment`, `PredicateHead`,
+`InlinePredicateApplication`, `ErrorRecovery`,
 the task-S-009 shared path node kinds, the task-5/6/7 module, import, export,
 and visibility node kinds, and the task-S-010 reserve/type node kinds plus the
 task-S-011 term node kinds listed above; `is_token_kind` is true only for the
@@ -207,6 +226,14 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::InfixExpression(SurfaceInfixOperator)` | spelling, precedence, associativity | `SyntaxKind::InfixExpression` | task-12 infix Pratt expression shape |
 | `SurfaceNodeKind::PrefixExpression(SurfacePrefixOperator)` | spelling, precedence | `SyntaxKind::PrefixExpression` | task-12 prefix Pratt expression shape |
 | `SurfaceNodeKind::PostfixExpression(SurfacePostfixOperator)` | spelling, precedence | `SyntaxKind::PostfixExpression` | task-12 postfix Pratt expression shape |
+| `SurfaceNodeKind::FormulaExpression` | none | `SyntaxKind::FormulaExpression` | parser task-13 current formula wrapper; owns exactly one atomic-formula child until task 14 adds connectives and quantifiers |
+| `SurfaceNodeKind::BuiltinPredicateApplication` | none | `SyntaxKind::BuiltinPredicateApplication` | parser task-13 built-in `in`, `=`, or `<>` predicate; owns left term, predicate token, and right term or missing-term recovery |
+| `SurfaceNodeKind::IsAssertion` | none | `SyntaxKind::IsAssertion` | parser task-13 generic `is` assertion; owns subject term, `is`, optional `not`, and a type/body child without resolver classification |
+| `SurfaceNodeKind::AttributeTestChain` | none | `SyntaxKind::AttributeTestChain` | parser task-13 attribute-only assertion body; owns one or more task-8 `AttributeRef` children |
+| `SurfaceNodeKind::PredicateApplication` | none | `SyntaxKind::PredicateApplication` | parser task-13 syntax-only user predicate application; owns one or more predicate segments |
+| `SurfaceNodeKind::PredicateSegment` | none | `SyntaxKind::PredicateSegment` | parser task-13 user predicate segment; owns optional term-list children, optional negation tokens, one predicate head, and optional right term-list children |
+| `SurfaceNodeKind::PredicateHead` | none | `SyntaxKind::PredicateHead` | parser task-13 predicate symbol wrapper; template predicate arguments remain deferred |
+| `SurfaceNodeKind::InlinePredicateApplication` | none | `SyntaxKind::InlinePredicateApplication` | parser task-13 inline predicate call shape with identifier head and parenthesized term arguments |
 | `SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind)` | recovery kind | `SyntaxKind::ErrorRecovery` | builder-created recovery nodes are recovered |
 
 `SurfaceTokenKind` currently maps to the token raw kinds listed above:
@@ -408,6 +435,37 @@ operators keep the represented `PrefixExpression` recoverable by inserting a
 `as_postfix_expression`, and `as_infix_expression` payload accessors. Operator
 metadata is parser input, not semantic resolution: these nodes must not carry
 symbol ids, selected overloads, inferred types, or proof facts.
+
+Parser task 13 adds the first formula nodes. `FormulaExpression` is the current
+wrapper around one atomic-formula child; task 14 may place connective,
+quantifier, parenthesized, `thesis`, or `contradiction` formula shapes there
+without changing the wrapper role. The initial frontend-reachable host is a
+theorem/lemma `PlaceholderItem` that parses only the `label: formula;` payload
+while leaving theorem/proof item structure to task 22.
+
+`BuiltinPredicateApplication` owns a left `TermExpression`, the built-in
+predicate token (`in`, `=`, or `<>`), and a right `TermExpression` or
+`MissingTerm` recovery. `IsAssertion` owns a subject `TermExpression`, the `is`
+token, an optional formula-level `not` token, and either a `TypeExpression` or
+`AttributeTestChain` body. The node is deliberately generic: it does not decide
+whether the body is semantically a type assertion or an attribute assertion.
+`AttributeTestChain` owns one or more task-8 `AttributeRef` nodes and exists
+for attribute-only assertion bodies such as `non empty` that have no trailing
+type head.
+
+`PredicateApplication` owns source-ordered `PredicateSegment` children for
+syntax-only user predicate applications and chains. Each `PredicateSegment`
+may own left term operands, optional `does not` / `do not` negation tokens, one
+`PredicateHead`, and right term operands. `PredicateHead` wraps the predicate
+symbol token or qualified symbol; template arguments are deferred until
+template syntax exists. Built-in predicates are represented only by a single
+`BuiltinPredicateApplication` node and must not be mixed into
+`PredicateApplication` chains, preserving Appendix A's `a < b = c` syntax-error
+boundary. `InlinePredicateApplication` owns an identifier head, parentheses,
+and source-ordered term arguments. These formula nodes preserve predicate
+spelling and argument shape only; predicate overload resolution, chain
+adjacency validity, theorem validity, proof facts, and truth evaluation remain
+outside `mizar-syntax`.
 
 ### Vocabulary Increment Contract
 

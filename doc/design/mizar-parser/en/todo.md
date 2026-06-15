@@ -12,9 +12,9 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] minimal task-12 entry uses private task-2 cursor/event infrastructure |
-| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task-12 term Pratt over active prefix/postfix/infix operators is implemented; formula precedence remains planned |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task-12 recovery plus mizar-frontend task-28 nested block-end matching uses task-2 cursor/diagnostic/sync helpers |
+| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] task-13 atomic formula placeholder host uses private task-2 cursor/event infrastructure |
+| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task-12 term Pratt over active prefix/postfix/infix operators is implemented; task-13 atomic formulas use term Pratt boundaries; formula connective precedence remains planned |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task-13 atomic formula recovery plus mizar-frontend task-28 nested block-end matching uses task-2 cursor/diagnostic/sync helpers |
 
 `mizar-parser` implements the syntax grammar: frontend-adapted tokens in,
 `mizar_syntax::SurfaceAst` plus syntax diagnostics out. It is built as a thin
@@ -402,12 +402,21 @@ older numeric syntax task references appear to disagree, prefer
      active parse-only pass/fail corpus coverage, and traceability entry
      `spec.en.13.operator_precedence.parser`.
 
-13. **Atomic formulas.** [ ]
+13. **Atomic formulas.** [x]
     - Predicate application (symbolic and identifier forms), built-in
       membership/equality/inequality atoms, and generic `is_assertion` forms
       that resolution later classifies as type or attribute assertions.
     - Deps: 12, `mizar-syntax` task 12 / S-012. Spec:
       [14.formulas.md](../../../spec/en/14.formulas.md).
+   - Result: implemented task-13 `FormulaExpression`,
+     `BuiltinPredicateApplication`, generic `IsAssertion`,
+     `AttributeTestChain`, `PredicateApplication`/`PredicateSegment`/
+     `PredicateHead`, and `InlinePredicateApplication` surfaces; theorem/lemma
+     `label: formula;` placeholder hosting; term/type recovery for malformed
+     atomic formulas; parser unit tests; active parse-only pass/fail corpus
+     coverage; and traceability entry `spec.en.14.atomic_formula.parser`.
+     Built-in predicates remain single atoms and mixed user/built-in predicate
+     chains are rejected.
 
 14. **Connectives and quantifiers.** [ ]
     - The fixed connective table (`not`, `&`, `or`, `implies`, `iff`) with its

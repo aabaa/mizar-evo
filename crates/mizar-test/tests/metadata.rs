@@ -10,6 +10,7 @@ use mizar_test::{
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
 const TEMPLATE_ARGUMENTS_REQUIREMENT_ID: &str = "spec.en.syntax.template_arguments.parser";
 const OPERATOR_PRECEDENCE_REQUIREMENT_ID: &str = "spec.en.13.operator_precedence.parser";
+const ATOMIC_FORMULA_REQUIREMENT_ID: &str = "spec.en.14.atomic_formula.parser";
 
 #[test]
 fn empty_corpus_succeeds() {
@@ -606,12 +607,55 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             .any(|spec_ref| spec_ref.0 == OPERATOR_PRECEDENCE_REQUIREMENT_ID)
     );
 
+    let atomic_pass = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_parser_atomic_formulas_001")
+        .expect("atomic formula parse-only pass case should be discovered");
+    assert_eq!(atomic_pass.expectation.kind, TestKind::Pass);
+    assert_eq!(atomic_pass.expectation.stage, Stage::ParseOnly);
+    assert!(
+        atomic_pass
+            .expectation
+            .spec_refs
+            .iter()
+            .any(|spec_ref| spec_ref.0 == ATOMIC_FORMULA_REQUIREMENT_ID)
+    );
+    assert!(
+        atomic_pass
+            .expectation
+            .tags
+            .iter()
+            .any(|tag| tag == "active_parse_only")
+    );
+
+    let atomic_fail = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fail_parser_atomic_formula_mixed_chain_001")
+        .expect("atomic formula parse-only fail case should be discovered");
+    assert_eq!(atomic_fail.expectation.kind, TestKind::Fail);
+    assert_eq!(atomic_fail.expectation.stage, Stage::ParseOnly);
+    assert_eq!(
+        atomic_fail.expectation.diagnostic_codes,
+        vec!["malformed_term_expression".to_owned()]
+    );
+    assert!(
+        atomic_fail
+            .expectation
+            .spec_refs
+            .iter()
+            .any(|spec_ref| spec_ref.0 == ATOMIC_FORMULA_REQUIREMENT_ID)
+    );
+
     let active_cases = active_parse_only_cases(&plan)
         .map(|case| case.id.0.as_str())
         .collect::<Vec<_>>();
     assert_eq!(
         active_cases,
         vec![
+            "fail_parser_atomic_formula_missing_rhs_001",
+            "fail_parser_atomic_formula_mixed_chain_001",
             "fail_parser_export_late_001",
             "fail_parser_export_missing_path_001",
             "fail_parser_export_missing_semicolon_001",
@@ -640,6 +684,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "fail_parser_visibility_dangling_001",
             "fail_parser_visibility_duplicate_001",
             "fail_parser_visibility_invalid_target_001",
+            "pass_parser_atomic_formulas_001",
             "pass_parser_export_visibility_001",
             "pass_parser_import_items_001",
             "pass_parser_minimal_token_stream_001",
@@ -685,6 +730,26 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
         ]
     );
 
+    let atomic_requirement = plan
+        .manifest
+        .requirements
+        .iter()
+        .find(|requirement| requirement.id.0 == ATOMIC_FORMULA_REQUIREMENT_ID)
+        .expect("atomic formula parse-only requirement should exist");
+    assert_eq!(atomic_requirement.stage, Stage::ParseOnly);
+    assert_eq!(
+        atomic_requirement.tests,
+        vec![
+            PathBuf::from("tests/miz/pass/parser/pass_parser_atomic_formulas_001.expect.toml"),
+            PathBuf::from(
+                "tests/miz/fail/parser/fail_parser_atomic_formula_missing_rhs_001.expect.toml"
+            ),
+            PathBuf::from(
+                "tests/miz/fail/parser/fail_parser_atomic_formula_mixed_chain_001.expect.toml"
+            ),
+        ]
+    );
+
     for requirement_id in [
         "spec.en.elaboration.choice_comprehension.lowering",
         "spec.en.binding.substitution.capture_avoidance",
@@ -714,9 +779,21 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 37);
-    assert_eq!(report.passed_count(), 37);
+    assert_eq!(report.results.len(), 40);
+    assert_eq!(report.passed_count(), 40);
     assert_eq!(report.failed_count(), 0);
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_atomic_formulas_001"
+            && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_atomic_formula_missing_rhs_001"
+            && result.actual_diagnostic_codes == vec!["malformed_term_expression".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_atomic_formula_mixed_chain_001"
+            && result.actual_diagnostic_codes == vec!["malformed_term_expression".to_owned()]
+    }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_export_visibility_001"
             && result.actual_diagnostic_codes.is_empty()
@@ -965,8 +1042,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 37"));
-    assert!(stdout.contains("passed: 37"));
+    assert!(stdout.contains("parse-only cases: 40"));
+    assert!(stdout.contains("passed: 40"));
     assert!(stdout.contains("failed: 0"));
 }
 

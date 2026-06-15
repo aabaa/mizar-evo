@@ -12,9 +12,9 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] task 12 の最小エントリは private な task 2 cursor / event 基盤を使用 |
-| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task 12 の active prefix/postfix/infix operator に対する項 Pratt は実装済み。formula precedence は計画中 |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task 12 の recovery と mizar-frontend task 28 の nested block-end matching は task 2 cursor / diagnostic / sync helper を使用 |
+| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] task 13 の atomic formula placeholder host は private な task 2 cursor / event 基盤を使用 |
+| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task 12 の active prefix/postfix/infix operator に対する項 Pratt は実装済み。task 13 の atomic formula は項 Pratt boundary を使う。formula connective precedence は計画中 |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task 13 の atomic formula recovery と mizar-frontend task 28 の nested block-end matching は task 2 cursor / diagnostic / sync helper を使用 |
 
 `mizar-parser` は構文文法を実装する: frontend 適合済みトークンを入力とし、
 `mizar_syntax::SurfaceAst` と構文診断を出力する。薄い基盤層（cursor、同期、
@@ -382,12 +382,21 @@ resolver / build-system 依存を避ける。
      診断、parser unit test、active parse-only pass/fail corpus coverage、
      traceability entry `spec.en.13.operator_precedence.parser` を実装した。
 
-13. **原子論理式。** [ ]
+13. **原子論理式。** [x]
     - 述語適用（記号形と識別子形）、built-in membership / equality /
       inequality atom、および resolution が後で type assertion または
       attribute assertion に分類する generic `is_assertion` form。
     - 依存: 12、`mizar-syntax` task 12 / S-012。仕様:
       [14.formulas.md](../../../spec/ja/14.formulas.md)。
+   - 結果: task 13 の `FormulaExpression`、`BuiltinPredicateApplication`、
+     generic `IsAssertion`、`AttributeTestChain`、
+     `PredicateApplication` / `PredicateSegment` / `PredicateHead`、
+     `InlinePredicateApplication` surface、theorem/lemma `label: formula;`
+     placeholder host、malformed atomic formula 用の term/type recovery、
+     parser unit test、active parse-only pass/fail corpus coverage、
+     traceability entry `spec.en.14.atomic_formula.parser` を実装した。
+     built-in predicate は単独 atom のままであり、user/built-in predicate
+     mixed chain は reject する。
 
 14. **結合子と量化子。** [ ]
     - 固定結合子テーブル（`not`、`&`、`or`、`implies`、`iff`）とその論理式

@@ -76,6 +76,14 @@ pub enum SyntaxKind {
     QuaExpression = 41,
     PrefixExpression = 42,
     PostfixExpression = 43,
+    FormulaExpression = 44,
+    BuiltinPredicateApplication = 45,
+    IsAssertion = 46,
+    AttributeTestChain = 47,
+    PredicateApplication = 48,
+    PredicateSegment = 49,
+    PredicateHead = 50,
+    InlinePredicateApplication = 51,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -133,6 +141,14 @@ impl SyntaxKind {
             41 => Self::QuaExpression,
             42 => Self::PrefixExpression,
             43 => Self::PostfixExpression,
+            44 => Self::FormulaExpression,
+            45 => Self::BuiltinPredicateApplication,
+            46 => Self::IsAssertion,
+            47 => Self::AttributeTestChain,
+            48 => Self::PredicateApplication,
+            49 => Self::PredicateSegment,
+            50 => Self::PredicateHead,
+            51 => Self::InlinePredicateApplication,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -192,6 +208,14 @@ impl SyntaxKind {
                 | Self::QuaExpression
                 | Self::PrefixExpression
                 | Self::PostfixExpression
+                | Self::FormulaExpression
+                | Self::BuiltinPredicateApplication
+                | Self::IsAssertion
+                | Self::AttributeTestChain
+                | Self::PredicateApplication
+                | Self::PredicateSegment
+                | Self::PredicateHead
+                | Self::InlinePredicateApplication
         )
     }
 
@@ -699,240 +723,35 @@ impl<'a> SurfaceNodeView<'a> {
     pub const fn as_token(self) -> Option<&'a SurfaceToken> {
         match &self.node.kind {
             SurfaceNodeKind::Token(token) => Some(token),
-            SurfaceNodeKind::Root
-            | SurfaceNodeKind::CompilationUnit
-            | SurfaceNodeKind::ItemList
-            | SurfaceNodeKind::PlaceholderItem
-            | SurfaceNodeKind::ImportItem
-            | SurfaceNodeKind::ImportAliasDecl
-            | SurfaceNodeKind::ModuleBranchImport
-            | SurfaceNodeKind::ExportItem
-            | SurfaceNodeKind::VisibilityMarker
-            | SurfaceNodeKind::VisibleItem
-            | SurfaceNodeKind::ReserveItem
-            | SurfaceNodeKind::ReserveSegment
-            | SurfaceNodeKind::TypeExpression
-            | SurfaceNodeKind::AttributeChain
-            | SurfaceNodeKind::AttributeRef
-            | SurfaceNodeKind::ParameterPrefix
-            | SurfaceNodeKind::TypeHead
-            | SurfaceNodeKind::TypeArguments
-            | SurfaceNodeKind::TermPlaceholder
-            | SurfaceNodeKind::TermExpression
-            | SurfaceNodeKind::TermReference
-            | SurfaceNodeKind::NumeralTerm
-            | SurfaceNodeKind::ItTerm
-            | SurfaceNodeKind::ParenthesizedTerm
-            | SurfaceNodeKind::ChoiceTerm
-            | SurfaceNodeKind::ApplicationTerm
-            | SurfaceNodeKind::StructureConstructor
-            | SurfaceNodeKind::FieldArgument
-            | SurfaceNodeKind::SetEnumeration
-            | SurfaceNodeKind::SelectorAccess
-            | SurfaceNodeKind::StructureUpdate
-            | SurfaceNodeKind::FieldUpdate
-            | SurfaceNodeKind::QuaExpression
-            | SurfaceNodeKind::ModulePath
-            | SurfaceNodeKind::NamespacePath
-            | SurfaceNodeKind::QualifiedSymbol
-            | SurfaceNodeKind::PathSegment
-            | SurfaceNodeKind::RelativePrefix
-            | SurfaceNodeKind::InfixExpression(_)
-            | SurfaceNodeKind::PrefixExpression(_)
-            | SurfaceNodeKind::PostfixExpression(_)
-            | SurfaceNodeKind::ErrorRecovery(_) => None,
+            _ => None,
         }
     }
 
     pub const fn as_infix_expression(self) -> Option<&'a SurfaceInfixOperator> {
         match &self.node.kind {
             SurfaceNodeKind::InfixExpression(operator) => Some(operator),
-            SurfaceNodeKind::Root
-            | SurfaceNodeKind::CompilationUnit
-            | SurfaceNodeKind::ItemList
-            | SurfaceNodeKind::PlaceholderItem
-            | SurfaceNodeKind::ImportItem
-            | SurfaceNodeKind::ImportAliasDecl
-            | SurfaceNodeKind::ModuleBranchImport
-            | SurfaceNodeKind::ExportItem
-            | SurfaceNodeKind::VisibilityMarker
-            | SurfaceNodeKind::VisibleItem
-            | SurfaceNodeKind::ReserveItem
-            | SurfaceNodeKind::ReserveSegment
-            | SurfaceNodeKind::TypeExpression
-            | SurfaceNodeKind::AttributeChain
-            | SurfaceNodeKind::AttributeRef
-            | SurfaceNodeKind::ParameterPrefix
-            | SurfaceNodeKind::TypeHead
-            | SurfaceNodeKind::TypeArguments
-            | SurfaceNodeKind::TermPlaceholder
-            | SurfaceNodeKind::TermExpression
-            | SurfaceNodeKind::TermReference
-            | SurfaceNodeKind::NumeralTerm
-            | SurfaceNodeKind::ItTerm
-            | SurfaceNodeKind::ParenthesizedTerm
-            | SurfaceNodeKind::ChoiceTerm
-            | SurfaceNodeKind::ApplicationTerm
-            | SurfaceNodeKind::StructureConstructor
-            | SurfaceNodeKind::FieldArgument
-            | SurfaceNodeKind::SetEnumeration
-            | SurfaceNodeKind::SelectorAccess
-            | SurfaceNodeKind::StructureUpdate
-            | SurfaceNodeKind::FieldUpdate
-            | SurfaceNodeKind::QuaExpression
-            | SurfaceNodeKind::ModulePath
-            | SurfaceNodeKind::NamespacePath
-            | SurfaceNodeKind::QualifiedSymbol
-            | SurfaceNodeKind::PathSegment
-            | SurfaceNodeKind::RelativePrefix
-            | SurfaceNodeKind::Token(_)
-            | SurfaceNodeKind::PrefixExpression(_)
-            | SurfaceNodeKind::PostfixExpression(_)
-            | SurfaceNodeKind::ErrorRecovery(_) => None,
+            _ => None,
         }
     }
 
     pub const fn as_prefix_expression(self) -> Option<&'a SurfacePrefixOperator> {
         match &self.node.kind {
             SurfaceNodeKind::PrefixExpression(operator) => Some(operator),
-            SurfaceNodeKind::Root
-            | SurfaceNodeKind::CompilationUnit
-            | SurfaceNodeKind::ItemList
-            | SurfaceNodeKind::PlaceholderItem
-            | SurfaceNodeKind::ImportItem
-            | SurfaceNodeKind::ImportAliasDecl
-            | SurfaceNodeKind::ModuleBranchImport
-            | SurfaceNodeKind::ExportItem
-            | SurfaceNodeKind::VisibilityMarker
-            | SurfaceNodeKind::VisibleItem
-            | SurfaceNodeKind::ReserveItem
-            | SurfaceNodeKind::ReserveSegment
-            | SurfaceNodeKind::TypeExpression
-            | SurfaceNodeKind::AttributeChain
-            | SurfaceNodeKind::AttributeRef
-            | SurfaceNodeKind::ParameterPrefix
-            | SurfaceNodeKind::TypeHead
-            | SurfaceNodeKind::TypeArguments
-            | SurfaceNodeKind::TermPlaceholder
-            | SurfaceNodeKind::TermExpression
-            | SurfaceNodeKind::TermReference
-            | SurfaceNodeKind::NumeralTerm
-            | SurfaceNodeKind::ItTerm
-            | SurfaceNodeKind::ParenthesizedTerm
-            | SurfaceNodeKind::ChoiceTerm
-            | SurfaceNodeKind::ApplicationTerm
-            | SurfaceNodeKind::StructureConstructor
-            | SurfaceNodeKind::FieldArgument
-            | SurfaceNodeKind::SetEnumeration
-            | SurfaceNodeKind::SelectorAccess
-            | SurfaceNodeKind::StructureUpdate
-            | SurfaceNodeKind::FieldUpdate
-            | SurfaceNodeKind::QuaExpression
-            | SurfaceNodeKind::ModulePath
-            | SurfaceNodeKind::NamespacePath
-            | SurfaceNodeKind::QualifiedSymbol
-            | SurfaceNodeKind::PathSegment
-            | SurfaceNodeKind::RelativePrefix
-            | SurfaceNodeKind::Token(_)
-            | SurfaceNodeKind::InfixExpression(_)
-            | SurfaceNodeKind::PostfixExpression(_)
-            | SurfaceNodeKind::ErrorRecovery(_) => None,
+            _ => None,
         }
     }
 
     pub const fn as_postfix_expression(self) -> Option<&'a SurfacePostfixOperator> {
         match &self.node.kind {
             SurfaceNodeKind::PostfixExpression(operator) => Some(operator),
-            SurfaceNodeKind::Root
-            | SurfaceNodeKind::CompilationUnit
-            | SurfaceNodeKind::ItemList
-            | SurfaceNodeKind::PlaceholderItem
-            | SurfaceNodeKind::ImportItem
-            | SurfaceNodeKind::ImportAliasDecl
-            | SurfaceNodeKind::ModuleBranchImport
-            | SurfaceNodeKind::ExportItem
-            | SurfaceNodeKind::VisibilityMarker
-            | SurfaceNodeKind::VisibleItem
-            | SurfaceNodeKind::ReserveItem
-            | SurfaceNodeKind::ReserveSegment
-            | SurfaceNodeKind::TypeExpression
-            | SurfaceNodeKind::AttributeChain
-            | SurfaceNodeKind::AttributeRef
-            | SurfaceNodeKind::ParameterPrefix
-            | SurfaceNodeKind::TypeHead
-            | SurfaceNodeKind::TypeArguments
-            | SurfaceNodeKind::TermPlaceholder
-            | SurfaceNodeKind::TermExpression
-            | SurfaceNodeKind::TermReference
-            | SurfaceNodeKind::NumeralTerm
-            | SurfaceNodeKind::ItTerm
-            | SurfaceNodeKind::ParenthesizedTerm
-            | SurfaceNodeKind::ChoiceTerm
-            | SurfaceNodeKind::ApplicationTerm
-            | SurfaceNodeKind::StructureConstructor
-            | SurfaceNodeKind::FieldArgument
-            | SurfaceNodeKind::SetEnumeration
-            | SurfaceNodeKind::SelectorAccess
-            | SurfaceNodeKind::StructureUpdate
-            | SurfaceNodeKind::FieldUpdate
-            | SurfaceNodeKind::QuaExpression
-            | SurfaceNodeKind::ModulePath
-            | SurfaceNodeKind::NamespacePath
-            | SurfaceNodeKind::QualifiedSymbol
-            | SurfaceNodeKind::PathSegment
-            | SurfaceNodeKind::RelativePrefix
-            | SurfaceNodeKind::Token(_)
-            | SurfaceNodeKind::InfixExpression(_)
-            | SurfaceNodeKind::PrefixExpression(_)
-            | SurfaceNodeKind::ErrorRecovery(_) => None,
+            _ => None,
         }
     }
 
     pub const fn as_recovery(self) -> Option<SyntaxRecoveryKind> {
         match self.node.kind {
             SurfaceNodeKind::ErrorRecovery(kind) => Some(kind),
-            SurfaceNodeKind::Root
-            | SurfaceNodeKind::CompilationUnit
-            | SurfaceNodeKind::ItemList
-            | SurfaceNodeKind::PlaceholderItem
-            | SurfaceNodeKind::ImportItem
-            | SurfaceNodeKind::ImportAliasDecl
-            | SurfaceNodeKind::ModuleBranchImport
-            | SurfaceNodeKind::ExportItem
-            | SurfaceNodeKind::VisibilityMarker
-            | SurfaceNodeKind::VisibleItem
-            | SurfaceNodeKind::ReserveItem
-            | SurfaceNodeKind::ReserveSegment
-            | SurfaceNodeKind::TypeExpression
-            | SurfaceNodeKind::AttributeChain
-            | SurfaceNodeKind::AttributeRef
-            | SurfaceNodeKind::ParameterPrefix
-            | SurfaceNodeKind::TypeHead
-            | SurfaceNodeKind::TypeArguments
-            | SurfaceNodeKind::TermPlaceholder
-            | SurfaceNodeKind::TermExpression
-            | SurfaceNodeKind::TermReference
-            | SurfaceNodeKind::NumeralTerm
-            | SurfaceNodeKind::ItTerm
-            | SurfaceNodeKind::ParenthesizedTerm
-            | SurfaceNodeKind::ChoiceTerm
-            | SurfaceNodeKind::ApplicationTerm
-            | SurfaceNodeKind::StructureConstructor
-            | SurfaceNodeKind::FieldArgument
-            | SurfaceNodeKind::SetEnumeration
-            | SurfaceNodeKind::SelectorAccess
-            | SurfaceNodeKind::StructureUpdate
-            | SurfaceNodeKind::FieldUpdate
-            | SurfaceNodeKind::QuaExpression
-            | SurfaceNodeKind::ModulePath
-            | SurfaceNodeKind::NamespacePath
-            | SurfaceNodeKind::QualifiedSymbol
-            | SurfaceNodeKind::PathSegment
-            | SurfaceNodeKind::RelativePrefix
-            | SurfaceNodeKind::Token(_)
-            | SurfaceNodeKind::InfixExpression(_)
-            | SurfaceNodeKind::PrefixExpression(_)
-            | SurfaceNodeKind::PostfixExpression(_) => None,
+            _ => None,
         }
     }
 
@@ -1160,6 +979,62 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_formula_expression(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::FormulaExpression => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_builtin_predicate_application(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::BuiltinPredicateApplication => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_is_assertion(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::IsAssertion => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_attribute_test_chain(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AttributeTestChain => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_predicate_application(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::PredicateApplication => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_predicate_segment(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::PredicateSegment => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_predicate_head(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::PredicateHead => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_inline_predicate_application(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::InlinePredicateApplication => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_module_path(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::ModulePath => Some(self),
@@ -1250,48 +1125,7 @@ impl SurfaceNode {
     pub fn token_text(&self) -> Option<&str> {
         match &self.kind {
             SurfaceNodeKind::Token(token) => Some(token.text.as_ref()),
-            SurfaceNodeKind::Root
-            | SurfaceNodeKind::CompilationUnit
-            | SurfaceNodeKind::ItemList
-            | SurfaceNodeKind::PlaceholderItem
-            | SurfaceNodeKind::ImportItem
-            | SurfaceNodeKind::ImportAliasDecl
-            | SurfaceNodeKind::ModuleBranchImport
-            | SurfaceNodeKind::ExportItem
-            | SurfaceNodeKind::VisibilityMarker
-            | SurfaceNodeKind::VisibleItem
-            | SurfaceNodeKind::ReserveItem
-            | SurfaceNodeKind::ReserveSegment
-            | SurfaceNodeKind::TypeExpression
-            | SurfaceNodeKind::AttributeChain
-            | SurfaceNodeKind::AttributeRef
-            | SurfaceNodeKind::ParameterPrefix
-            | SurfaceNodeKind::TypeHead
-            | SurfaceNodeKind::TypeArguments
-            | SurfaceNodeKind::TermPlaceholder
-            | SurfaceNodeKind::TermExpression
-            | SurfaceNodeKind::TermReference
-            | SurfaceNodeKind::NumeralTerm
-            | SurfaceNodeKind::ItTerm
-            | SurfaceNodeKind::ParenthesizedTerm
-            | SurfaceNodeKind::ChoiceTerm
-            | SurfaceNodeKind::ApplicationTerm
-            | SurfaceNodeKind::StructureConstructor
-            | SurfaceNodeKind::FieldArgument
-            | SurfaceNodeKind::SetEnumeration
-            | SurfaceNodeKind::SelectorAccess
-            | SurfaceNodeKind::StructureUpdate
-            | SurfaceNodeKind::FieldUpdate
-            | SurfaceNodeKind::QuaExpression
-            | SurfaceNodeKind::ModulePath
-            | SurfaceNodeKind::NamespacePath
-            | SurfaceNodeKind::QualifiedSymbol
-            | SurfaceNodeKind::PathSegment
-            | SurfaceNodeKind::RelativePrefix
-            | SurfaceNodeKind::InfixExpression(_)
-            | SurfaceNodeKind::PrefixExpression(_)
-            | SurfaceNodeKind::PostfixExpression(_)
-            | SurfaceNodeKind::ErrorRecovery(_) => None,
+            _ => None,
         }
     }
 }
@@ -1304,6 +1138,14 @@ pub enum SurfaceNodeKind {
     InfixExpression(SurfaceInfixOperator),
     PrefixExpression(SurfacePrefixOperator),
     PostfixExpression(SurfacePostfixOperator),
+    FormulaExpression,
+    BuiltinPredicateApplication,
+    IsAssertion,
+    AttributeTestChain,
+    PredicateApplication,
+    PredicateSegment,
+    PredicateHead,
+    InlinePredicateApplication,
     ErrorRecovery(SyntaxRecoveryKind),
     CompilationUnit,
     ItemList,
@@ -1352,6 +1194,14 @@ impl SurfaceNodeKind {
             Self::InfixExpression(_) => SyntaxKind::InfixExpression,
             Self::PrefixExpression(_) => SyntaxKind::PrefixExpression,
             Self::PostfixExpression(_) => SyntaxKind::PostfixExpression,
+            Self::FormulaExpression => SyntaxKind::FormulaExpression,
+            Self::BuiltinPredicateApplication => SyntaxKind::BuiltinPredicateApplication,
+            Self::IsAssertion => SyntaxKind::IsAssertion,
+            Self::AttributeTestChain => SyntaxKind::AttributeTestChain,
+            Self::PredicateApplication => SyntaxKind::PredicateApplication,
+            Self::PredicateSegment => SyntaxKind::PredicateSegment,
+            Self::PredicateHead => SyntaxKind::PredicateHead,
+            Self::InlinePredicateApplication => SyntaxKind::InlinePredicateApplication,
             Self::ErrorRecovery(_) => SyntaxKind::ErrorRecovery,
             Self::CompilationUnit => SyntaxKind::CompilationUnit,
             Self::ItemList => SyntaxKind::ItemList,
@@ -1529,6 +1379,18 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
         SurfaceNodeKind::QuaExpression => output.push_str("QuaExpression"),
+        SurfaceNodeKind::FormulaExpression => output.push_str("FormulaExpression"),
+        SurfaceNodeKind::BuiltinPredicateApplication => {
+            output.push_str("BuiltinPredicateApplication");
+        }
+        SurfaceNodeKind::IsAssertion => output.push_str("IsAssertion"),
+        SurfaceNodeKind::AttributeTestChain => output.push_str("AttributeTestChain"),
+        SurfaceNodeKind::PredicateApplication => output.push_str("PredicateApplication"),
+        SurfaceNodeKind::PredicateSegment => output.push_str("PredicateSegment"),
+        SurfaceNodeKind::PredicateHead => output.push_str("PredicateHead"),
+        SurfaceNodeKind::InlinePredicateApplication => {
+            output.push_str("InlinePredicateApplication");
+        }
         SurfaceNodeKind::ModulePath => output.push_str("ModulePath"),
         SurfaceNodeKind::NamespacePath => output.push_str("NamespacePath"),
         SurfaceNodeKind::QualifiedSymbol => output.push_str("QualifiedSymbol"),
@@ -1746,8 +1608,9 @@ fn contains_range(parent: SourceRange, child: SourceRange) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{
-        SurfaceAstBuilder, SurfaceInfixOperator, SurfaceNodeKind, SurfaceOperatorAssociativity,
-        SurfacePostfixOperator, SurfacePrefixOperator, SurfaceTokenKind, SyntaxKind,
+        SurfaceAstBuilder, SurfaceInfixOperator, SurfaceNodeKind, SurfaceNodeView,
+        SurfaceOperatorAssociativity, SurfacePostfixOperator, SurfacePrefixOperator,
+        SurfaceTokenKind, SyntaxKind,
     };
     use crate::SyntaxRecoveryKind;
     use crate::{
@@ -2524,12 +2387,17 @@ mod tests {
 
     #[test]
     fn surface_node_raw_kinds_round_trip_through_rowan_boundary() {
-        let ast = current_vocabulary_snapshot_ast(source_id(21));
-        let rowan_kinds = ast
+        let mut rowan_kinds = current_vocabulary_snapshot_ast(source_id(21))
             .rowan_root()
             .descendants_with_tokens()
             .map(|element| element.kind())
             .collect::<Vec<_>>();
+        rowan_kinds.extend(
+            atomic_formula_nodes_ast(source_id(25))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -2564,6 +2432,14 @@ mod tests {
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
             SyntaxKind::QuaExpression,
+            SyntaxKind::FormulaExpression,
+            SyntaxKind::BuiltinPredicateApplication,
+            SyntaxKind::IsAssertion,
+            SyntaxKind::AttributeTestChain,
+            SyntaxKind::PredicateApplication,
+            SyntaxKind::PredicateSegment,
+            SyntaxKind::PredicateHead,
+            SyntaxKind::InlinePredicateApplication,
             SyntaxKind::ModulePath,
             SyntaxKind::NamespacePath,
             SyntaxKind::QualifiedSymbol,
@@ -3417,6 +3293,98 @@ mod tests {
     }
 
     #[test]
+    fn task13_typed_accessors_cover_atomic_formula_nodes() {
+        let ast = atomic_formula_nodes_ast(source_id(19));
+        let root = ast.root_view().unwrap();
+
+        let formula = ast.expression_view().unwrap();
+        assert_eq!(formula.syntax_kind(), SyntaxKind::FormulaExpression);
+        assert!(formula.as_formula_expression().is_some());
+        assert!(formula.as_term_expression().is_none());
+
+        for (kind, assertion) in [
+            (
+                SyntaxKind::BuiltinPredicateApplication,
+                first_view(root, |kind| {
+                    matches!(kind, SurfaceNodeKind::BuiltinPredicateApplication)
+                })
+                .unwrap()
+                .as_builtin_predicate_application()
+                .is_some(),
+            ),
+            (
+                SyntaxKind::IsAssertion,
+                first_view(root, |kind| matches!(kind, SurfaceNodeKind::IsAssertion))
+                    .unwrap()
+                    .as_is_assertion()
+                    .is_some(),
+            ),
+            (
+                SyntaxKind::AttributeTestChain,
+                first_view(root, |kind| {
+                    matches!(kind, SurfaceNodeKind::AttributeTestChain)
+                })
+                .unwrap()
+                .as_attribute_test_chain()
+                .is_some(),
+            ),
+            (
+                SyntaxKind::PredicateApplication,
+                first_view(root, |kind| {
+                    matches!(kind, SurfaceNodeKind::PredicateApplication)
+                })
+                .unwrap()
+                .as_predicate_application()
+                .is_some(),
+            ),
+            (
+                SyntaxKind::PredicateSegment,
+                first_view(root, |kind| {
+                    matches!(kind, SurfaceNodeKind::PredicateSegment)
+                })
+                .unwrap()
+                .as_predicate_segment()
+                .is_some(),
+            ),
+            (
+                SyntaxKind::PredicateHead,
+                first_view(root, |kind| matches!(kind, SurfaceNodeKind::PredicateHead))
+                    .unwrap()
+                    .as_predicate_head()
+                    .is_some(),
+            ),
+            (
+                SyntaxKind::InlinePredicateApplication,
+                first_view(root, |kind| {
+                    matches!(kind, SurfaceNodeKind::InlinePredicateApplication)
+                })
+                .unwrap()
+                .as_inline_predicate_application()
+                .is_some(),
+            ),
+        ] {
+            assert!(assertion, "{kind:?} should have a typed accessor");
+        }
+
+        let snapshot = ast.snapshot_text();
+        for name in [
+            "FormulaExpression",
+            "BuiltinPredicateApplication",
+            "IsAssertion",
+            "AttributeTestChain",
+            "PredicateApplication",
+            "PredicateSegment",
+            "PredicateHead",
+            "InlinePredicateApplication",
+        ] {
+            assert!(
+                snapshot.contains(name),
+                "snapshot should render task-13 node name {name}"
+            );
+        }
+    }
+
+    #[test]
     fn recovery_snapshot_names_are_unique_and_fully_fixture_backed() {
         let source_id = source_id(9);
         let fixtures = recovery_fixtures(source_id);
@@ -3849,6 +3817,191 @@ mod tests {
             vec![prefix_token, operand, postfix_token, postfix],
         );
         builder.finish(Some(root), Some(postfix))
+    }
+
+    fn atomic_formula_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let x = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+        let equals = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "=",
+            range(source_id, 2, 3),
+        );
+        let y = builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 4, 5));
+        let z = builder.add_token(SurfaceTokenKind::Identifier, "z", range(source_id, 6, 7));
+        let is = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "is",
+            range(source_id, 8, 10),
+        );
+        let non = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "non",
+            range(source_id, 11, 14),
+        );
+        let empty = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "empty",
+            range(source_id, 15, 20),
+        );
+        let a = builder.add_token(SurfaceTokenKind::Identifier, "a", range(source_id, 21, 22));
+        let divides = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "divides",
+            range(source_id, 23, 30),
+        );
+        let b = builder.add_token(SurfaceTokenKind::Identifier, "b", range(source_id, 31, 32));
+        let small = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Small",
+            range(source_id, 33, 38),
+        );
+        let open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 38, 39),
+        );
+        let c = builder.add_token(SurfaceTokenKind::Identifier, "c", range(source_id, 39, 40));
+        let close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 40, 41),
+        );
+
+        let x_term = term_expression_node(&mut builder, source_id, x, 0, 1);
+        let y_term = term_expression_node(&mut builder, source_id, y, 4, 5);
+        let builtin = builder.add_node(
+            SurfaceNodeKind::BuiltinPredicateApplication,
+            range(source_id, 0, 5),
+            vec![x_term, equals, y_term],
+        );
+        let builtin_formula = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 0, 5),
+            vec![builtin],
+        );
+
+        let z_term = term_expression_node(&mut builder, source_id, z, 6, 7);
+        let empty_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 15, 20),
+            vec![empty],
+        );
+        let empty_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 15, 20),
+            vec![empty_segment],
+        );
+        let attribute = builder.add_node(
+            SurfaceNodeKind::AttributeRef,
+            range(source_id, 11, 20),
+            vec![non, empty_symbol],
+        );
+        let attribute_chain = builder.add_node(
+            SurfaceNodeKind::AttributeTestChain,
+            range(source_id, 11, 20),
+            vec![attribute],
+        );
+        let is_assertion = builder.add_node(
+            SurfaceNodeKind::IsAssertion,
+            range(source_id, 6, 20),
+            vec![z_term, is, attribute_chain],
+        );
+        let is_formula = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 6, 20),
+            vec![is_assertion],
+        );
+
+        let a_term = term_expression_node(&mut builder, source_id, a, 21, 22);
+        let b_term = term_expression_node(&mut builder, source_id, b, 31, 32);
+        let predicate_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 23, 30),
+            vec![divides],
+        );
+        let predicate_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 23, 30),
+            vec![predicate_segment],
+        );
+        let predicate_head = builder.add_node(
+            SurfaceNodeKind::PredicateHead,
+            range(source_id, 23, 30),
+            vec![predicate_symbol],
+        );
+        let segment = builder.add_node(
+            SurfaceNodeKind::PredicateSegment,
+            range(source_id, 21, 32),
+            vec![a_term, predicate_head, b_term],
+        );
+        let predicate_application = builder.add_node(
+            SurfaceNodeKind::PredicateApplication,
+            range(source_id, 21, 32),
+            vec![segment],
+        );
+        let predicate_formula = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 21, 32),
+            vec![predicate_application],
+        );
+
+        let c_term = term_expression_node(&mut builder, source_id, c, 39, 40);
+        let inline = builder.add_node(
+            SurfaceNodeKind::InlinePredicateApplication,
+            range(source_id, 33, 41),
+            vec![small, open, c_term, close],
+        );
+        let inline_formula = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 33, 41),
+            vec![inline],
+        );
+
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 41),
+            vec![
+                x,
+                equals,
+                y,
+                z,
+                is,
+                non,
+                empty,
+                a,
+                divides,
+                b,
+                small,
+                open,
+                c,
+                close,
+                builtin_formula,
+                is_formula,
+                predicate_formula,
+                inline_formula,
+            ],
+        );
+        builder.finish(Some(root), Some(builtin_formula))
+    }
+
+    fn term_expression_node(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        token: super::SurfaceBuilderNodeId,
+        start: usize,
+        end: usize,
+    ) -> super::SurfaceBuilderNodeId {
+        let reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, start, end),
+            vec![token],
+        );
+        builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, start, end),
+            vec![reference],
+        )
     }
 
     fn recovery_ast(source_id: SourceId, recovery_kind: SyntaxRecoveryKind) -> crate::SurfaceAst {
@@ -4420,6 +4573,76 @@ mod tests {
             "T",
             range(source_id, 272, 273),
         );
+        let formula_left = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(source_id, 274, 275),
+        );
+        let formula_equals = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "=",
+            range(source_id, 276, 277),
+        );
+        let formula_right = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "y",
+            range(source_id, 278, 279),
+        );
+        let formula_subject = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "z",
+            range(source_id, 280, 281),
+        );
+        let formula_is = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "is",
+            range(source_id, 282, 284),
+        );
+        let formula_non = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "non",
+            range(source_id, 285, 288),
+        );
+        let formula_empty = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "empty",
+            range(source_id, 289, 294),
+        );
+        let predicate_left = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "a",
+            range(source_id, 295, 296),
+        );
+        let predicate_divides = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "divides",
+            range(source_id, 297, 304),
+        );
+        let predicate_right = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "b",
+            range(source_id, 305, 306),
+        );
+        let inline_predicate = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Small",
+            range(source_id, 307, 312),
+        );
+        let inline_open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 312, 313),
+        );
+        let inline_arg = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "c",
+            range(source_id, 313, 314),
+        );
+        let inline_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 314, 315),
+        );
         let expression = builder.add_node(
             SurfaceNodeKind::InfixExpression(SurfaceInfixOperator {
                 spelling: "++".into(),
@@ -4945,6 +5168,101 @@ mod tests {
             range(source_id, 266, 273),
             vec![qua_expression],
         );
+        let formula_left_term =
+            term_expression_node(&mut builder, source_id, formula_left, 274, 275);
+        let formula_right_term =
+            term_expression_node(&mut builder, source_id, formula_right, 278, 279);
+        let builtin_predicate_application = builder.add_node(
+            SurfaceNodeKind::BuiltinPredicateApplication,
+            range(source_id, 274, 279),
+            vec![formula_left_term, formula_equals, formula_right_term],
+        );
+        let builtin_formula_expression = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 274, 279),
+            vec![builtin_predicate_application],
+        );
+        let formula_subject_term =
+            term_expression_node(&mut builder, source_id, formula_subject, 280, 281);
+        let formula_empty_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 289, 294),
+            vec![formula_empty],
+        );
+        let formula_empty_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 289, 294),
+            vec![formula_empty_segment],
+        );
+        let formula_attribute = builder.add_node(
+            SurfaceNodeKind::AttributeRef,
+            range(source_id, 285, 294),
+            vec![formula_non, formula_empty_symbol],
+        );
+        let formula_attribute_test_chain = builder.add_node(
+            SurfaceNodeKind::AttributeTestChain,
+            range(source_id, 285, 294),
+            vec![formula_attribute],
+        );
+        let is_assertion = builder.add_node(
+            SurfaceNodeKind::IsAssertion,
+            range(source_id, 280, 294),
+            vec![
+                formula_subject_term,
+                formula_is,
+                formula_attribute_test_chain,
+            ],
+        );
+        let is_formula_expression = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 280, 294),
+            vec![is_assertion],
+        );
+        let predicate_left_term =
+            term_expression_node(&mut builder, source_id, predicate_left, 295, 296);
+        let predicate_right_term =
+            term_expression_node(&mut builder, source_id, predicate_right, 305, 306);
+        let predicate_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 297, 304),
+            vec![predicate_divides],
+        );
+        let predicate_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 297, 304),
+            vec![predicate_segment],
+        );
+        let predicate_head = builder.add_node(
+            SurfaceNodeKind::PredicateHead,
+            range(source_id, 297, 304),
+            vec![predicate_symbol],
+        );
+        let predicate_segment = builder.add_node(
+            SurfaceNodeKind::PredicateSegment,
+            range(source_id, 295, 306),
+            vec![predicate_left_term, predicate_head, predicate_right_term],
+        );
+        let predicate_application = builder.add_node(
+            SurfaceNodeKind::PredicateApplication,
+            range(source_id, 295, 306),
+            vec![predicate_segment],
+        );
+        let predicate_formula_expression = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 295, 306),
+            vec![predicate_application],
+        );
+        let inline_arg_term = term_expression_node(&mut builder, source_id, inline_arg, 313, 314);
+        let inline_predicate_application = builder.add_node(
+            SurfaceNodeKind::InlinePredicateApplication,
+            range(source_id, 307, 315),
+            vec![inline_predicate, inline_open, inline_arg_term, inline_close],
+        );
+        let inline_formula_expression = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 307, 315),
+            vec![inline_predicate_application],
+        );
         let item_list = builder.add_node(
             SurfaceNodeKind::ItemList,
             range(source_id, 81, 154),
@@ -4962,7 +5280,7 @@ mod tests {
         );
         let root = builder.add_node(
             SurfaceNodeKind::Root,
-            range(source_id, 0, 273),
+            range(source_id, 0, 315),
             vec![
                 identifier,
                 reserved_word,
@@ -5059,6 +5377,20 @@ mod tests {
                 term_qua_base,
                 term_qua_keyword,
                 term_qua_target,
+                formula_left,
+                formula_equals,
+                formula_right,
+                formula_subject,
+                formula_is,
+                formula_non,
+                formula_empty,
+                predicate_left,
+                predicate_divides,
+                predicate_right,
+                inline_predicate,
+                inline_open,
+                inline_arg,
+                inline_close,
                 expression,
                 module_path,
                 namespace_path,
@@ -5077,6 +5409,10 @@ mod tests {
                 selector_expression,
                 structure_update_expression,
                 qua_term_expression,
+                builtin_formula_expression,
+                is_formula_expression,
+                predicate_formula_expression,
+                inline_formula_expression,
                 recovery,
             ],
         );
@@ -5099,6 +5435,17 @@ mod tests {
 
     const fn sid(id: super::SurfaceBuilderNodeId) -> super::SurfaceNodeId {
         id.into_surface_node_id()
+    }
+
+    fn first_view<'a>(
+        view: SurfaceNodeView<'a>,
+        predicate: impl Fn(&SurfaceNodeKind) -> bool + Copy,
+    ) -> Option<SurfaceNodeView<'a>> {
+        if predicate(view.kind()) {
+            return Some(view);
+        }
+        view.child_views()
+            .find_map(|child| first_view(child, predicate))
     }
 
     fn snapshot_id(byte: u8) -> BuildSnapshotId {

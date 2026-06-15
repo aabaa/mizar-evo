@@ -504,6 +504,78 @@ diagnostic、selector/update、application、parentheses、`qua` との相互作
 `spec.en.13.operator_precedence.parser` により Chapter 13 / Appendix B に trace する
 active parse-only pass/fail corpus coverage を pin する。
 
+## Task 13: Atomic Formulas
+
+Production inventory:
+
+```ebnf
+formula              ::= atomic_formula ;
+atomic_formula       ::= predicate_application
+                       | inline_predicate_application
+                       | is_assertion ;
+
+predicate_application        ::= user_predicate_application
+                               | builtin_predicate_application ;
+user_predicate_application   ::= predicate_segment { predicate_chain_segment } ;
+predicate_segment            ::= [ term_list ] [ negation ] predicate_head
+                                  [ term_list ] ;
+predicate_chain_segment      ::= [ negation ] predicate_head term_list ;
+predicate_head               ::= predicate_symbol ;
+builtin_predicate_application ::= term_expression builtin_pred term_expression ;
+inline_predicate_application ::= inline_pred_name "(" [ term_list ] ")" ;
+is_assertion                 ::= term_expression "is" [ "not" ]
+                                  is_assertion_body ;
+is_assertion_body            ::= type_expression | attribute_test_chain ;
+attribute_test_chain         ::= [ "non" ] attribute_ref
+                                  { [ "non" ] attribute_ref } ;
+negation                     ::= "does" "not" | "do" "not" ;
+builtin_pred                 ::= "in" | "=" | "<>" ;
+```
+
+Task 13 は atomic-formula boundary だけを実装する。formula connective、quantifier、
+parenthesized formula、`thesis`、`contradiction` は、後続 task の host が placeholder として
+保持する場合を除き task 14 の責務である。現在 frontend から到達できる formula host は
+`theorem label: formula;` または `lemma label: formula;` 形の theorem/lemma placeholder
+item である。item 自体は task 22 が theorem/proof item node を追加するまで
+`PlaceholderItem` のままだが、formula payload は task-13 coverage のため concrete formula
+child として parse する。それ以外の theorem/lemma placeholder tail は既存の
+token-preserving placeholder behavior を保ち、この task では theorem status、proof nesting、
+label、validity を固定しない。
+
+`FormulaExpression` は atomic formula child を 1 つ包む。built-in predicate application は
+left `TermExpression`、builtin predicate token、right `TermExpression` を保持する。right
+operand 欠落は formula 専用 diagnostic ではなく term recovery を使う。`IsAssertion` は
+subject `TermExpression`、`is` token、任意の formula-level `not`、generic body child を
+保持する。body は `TypeExpression` または `AttributeTestChain` であり、parser は assertion
+が type assertion か attribute assertion かを判断しない。`AttributeTestChain` は task-8
+`AttributeRef` surface を再利用し、trailing type head を持たない `non empty` のような
+attribute-only body を表現できる。task 13 の active fixture では、`empty` のような bare
+lowercase attribute-like body も、trailing type head によって `TypeExpression` を形成できない
+場合は `AttributeTestChain` として保持する。`T` のような uppercase body や type argument を
+持つ body は `TypeExpression` surface のままである。これは syntactic preservation rule であり、
+resolver classification ではない。
+
+user predicate application は syntax-only である。`PredicateApplication` は 1 個以上の
+`PredicateSegment` child を所有する。segment は任意の left `TermExpression` list child、
+任意の `does not` / `do not` negation token、1 個の `PredicateHead`、任意の right
+term-list child を保持する。predicate-chain adjacency と overload validity は resolver の
+責務であり、parser は `a < b < c` のような chain が解決可能であることを証明せず、書かれた
+segment を保持する。built-in predicate は predicate-chain head ではない。`in`、`=`、`<>`
+は単独の `BuiltinPredicateApplication` atom だけを作るため、`a < b = c` のような mixed
+chain は user predicate chain として表現せず syntax error のままとする。template predicate
+argument は `template_args` がまだ表現されていないため task 31 / S-016 に延期する。
+
+theorem/lemma placeholder formula host は正確に `label: formula;` だけである。
+`label: x = y by A;` や `label: x = y proof ... end;` のように parse 可能な atomic formula
+prefix の後に theorem justification / proof tail が続く場合は、task 22 が theorem/proof item を
+所有するまで legacy token-preserving `PlaceholderItem` behavior を保つ。predicate-chain
+segment の right term 欠落は `MalformedTermExpression` を報告し、`MissingTerm` を挿入する。
+
+Task 13 の test は built-in `in`、`=`、`<>` atom、attribute-only `non` chain を含む generic
+`is` assertion、inline predicate call shape、active-lexicon user predicate segment、
+theorem-placeholder formula host、semantic classification を必要としない malformed atomic
+formula recovery を pin する。
+
 ## 公開 enum の互換性
 
 `ParserTokenKind` は downstream crate 向けに `#[non_exhaustive]` とする。parser-facing

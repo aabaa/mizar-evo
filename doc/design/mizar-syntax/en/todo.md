@@ -336,6 +336,11 @@ interaction. Spec references are the normative grammar chapters under
    - Atomic predicate application and generic `is` assertions that resolution
      later classifies as type or attribute assertions (parser task 13);
      connectives and quantifiers (`for`/`ex`/`st`/`holds`) (parser task 14).
+   - Progress: parser task 13 atomic formula nodes are implemented with
+     theorem/lemma placeholder formula hosting, term/type recovery, and active
+     parse-only pass/fail corpus coverage. S-012 remains open for parser task
+     14 connectives, quantifiers, parenthesized formulas, `thesis`, and
+     `contradiction`.
    - Spec: [14.formulas.md](../../../spec/en/14.formulas.md).
 
 13. **Statement nodes.** [ ] — paired with `mizar-parser` tasks 16 and 18-21.

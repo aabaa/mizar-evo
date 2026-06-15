@@ -4,8 +4,9 @@
 
 状態: task 12 の最小回復、task 28 の入れ子 block-end 回復、task 5 の
 module-skeleton recovery、task 6 の import recovery、task 7 の export/visibility
-recovery、task 8 の type-expression recovery、task 9 の primary-term recovery は
-実装済み。完全な文法回復は引き続き計画中。
+recovery、task 8 の type-expression recovery、task 9 の primary-term recovery、
+および task 13 の atomic-formula recovery は実装済み。完全な文法回復は
+引き続き計画中。
 
 ## 目的
 
@@ -88,6 +89,11 @@ recovery、task 8 の type-expression recovery、task 9 の primary-term recover
   `DanglingOperator` を報告し、operator を消費して partial left expression を表現したままにし、
   recovery node を必須とはしない。dangling prefix operator は `DanglingOperator` を報告し、
   `MissingTerm` operand を挿入して recoverable な `PrefixExpression` を保持する。
+- task 13 の atomic-formula parsing は malformed atomic operand に term/type recovery を再利用する。
+  built-in predicate application の right term 欠落は `MissingTerm` を挿入し、
+  `MalformedTermExpression` を報告する。`is` assertion の body 欠落は
+  `MissingTypeExpression` を挿入し、`MalformedTypeExpression` を報告する。whole formula 欠落は
+  task 14 の `MissingFormula` 作業として残す。
 - 対応する block opener を持たない裸の `end` は、構文診断とともに `ast = None` を返す。
 
 ## 公開 enum の互換性

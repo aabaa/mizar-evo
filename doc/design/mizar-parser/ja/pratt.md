@@ -3,7 +3,8 @@
 > 正本は英語です。英語版: [../en/pratt.md](../en/pratt.md)。
 
 状態: task 12 の項 Pratt 解析は、active lexicon 由来の prefix、postfix、infix
-演算子向けに実装済みである。論理式の優先順位解析は引き続き計画中である。
+演算子向けに実装済みである。task 13 の atomic formula は項 Pratt boundary を使う。
+formula connective の優先順位解析は引き続き計画中である。
 
 ## 目的
 
@@ -32,6 +33,10 @@ selector-versus-namespace role の解決は行わない。
 3. User postfix / infix operator は Pratt binding power で畳み込む。
 4. `qua` は Pratt の後、固定の最も低い term-level operator として module grammar が parse し、
    left-associative のままにする。
+
+atomic-formula parsing は項 Pratt boundary の後から始まる。Task 13 はすでに parse 済みの
+term operand の周辺で、built-in predicate、`is` assertion、inline predicate call、
+syntax-only user predicate segment を消費する。固定 formula connective Pratt table は task 14 が所有する。
 
 Infix term operator の binding power は Appendix B と一致する。
 

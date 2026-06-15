@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_atomic_formulas_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.atomic_formulas"
+source = "pass_parser_atomic_formulas_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.14.atomic_formula.parser",
+]
+notes = "Active parse-only runner coverage for parser task 13 built-in predicates, generic is assertions, attribute-only is bodies, user predicate segments, inline predicate calls, and theorem placeholder formula hosting."

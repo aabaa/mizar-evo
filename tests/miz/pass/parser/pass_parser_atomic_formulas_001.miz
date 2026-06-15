@@ -1,0 +1,12 @@
+import parser.type_fixtures;
+theorem BuiltinIn: x in X;
+theorem BuiltinEq: x = y;
+theorem BuiltinNe: x <> y;
+theorem IsType: x is T;
+theorem IsAttr: x is non empty;
+theorem IsBareAttr: x is empty;
+theorem IsNotType: x is not T;
+theorem UserPred: x divides y;
+theorem UserChain: x divides y does not divides z;
+lemma LemmaBuiltin: x = z;
+theorem InlinePred: IsSmall(x);

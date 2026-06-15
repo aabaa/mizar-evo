@@ -541,6 +541,86 @@ application, parentheses, and `qua`, plus active parse-only pass/fail corpus
 coverage traced to Chapter 13 and Appendix B by
 `spec.en.13.operator_precedence.parser`.
 
+## Task 13: Atomic Formulas
+
+Production inventory:
+
+```ebnf
+formula              ::= atomic_formula ;
+atomic_formula       ::= predicate_application
+                       | inline_predicate_application
+                       | is_assertion ;
+
+predicate_application        ::= user_predicate_application
+                               | builtin_predicate_application ;
+user_predicate_application   ::= predicate_segment { predicate_chain_segment } ;
+predicate_segment            ::= [ term_list ] [ negation ] predicate_head
+                                  [ term_list ] ;
+predicate_chain_segment      ::= [ negation ] predicate_head term_list ;
+predicate_head               ::= predicate_symbol ;
+builtin_predicate_application ::= term_expression builtin_pred term_expression ;
+inline_predicate_application ::= inline_pred_name "(" [ term_list ] ")" ;
+is_assertion                 ::= term_expression "is" [ "not" ]
+                                  is_assertion_body ;
+is_assertion_body            ::= type_expression | attribute_test_chain ;
+attribute_test_chain         ::= [ "non" ] attribute_ref
+                                  { [ "non" ] attribute_ref } ;
+negation                     ::= "does" "not" | "do" "not" ;
+builtin_pred                 ::= "in" | "=" | "<>" ;
+```
+
+Task 13 implements the atomic-formula boundary only. Formula connectives,
+quantifiers, parenthesized formulas, `thesis`, and `contradiction` stay with
+task 14 unless a later task's host preserves them as placeholders. The current
+frontend-reachable formula host is a theorem/lemma placeholder item of the
+shape `theorem label: formula;` or `lemma label: formula;`: the item remains
+`PlaceholderItem` until task 22 adds theorem/proof item nodes, but the formula
+payload is parsed into concrete formula children for task-13 coverage. Other
+theorem/lemma placeholder tails keep the existing token-preserving placeholder
+behavior so this task does not freeze theorem status, proof nesting, labels, or
+validity.
+
+`FormulaExpression` wraps one atomic formula child. Built-in predicate
+applications preserve the left `TermExpression`, builtin predicate token, and
+right `TermExpression`; missing right operands use term recovery rather than a
+formula-specific diagnostic. `IsAssertion` preserves the subject
+`TermExpression`, the `is` token, optional formula-level `not`, and a generic
+body child. The body is either a `TypeExpression` or `AttributeTestChain`; the
+parser does not decide whether the assertion is a type assertion or an
+attribute assertion. `AttributeTestChain` reuses task-8 `AttributeRef`
+surfaces and can represent attribute-only bodies such as `non empty` that do
+not have a trailing type head. For task-13 active fixtures, bare lowercase
+attribute-like bodies such as `empty` are also kept as `AttributeTestChain`
+when no trailing type head can form a `TypeExpression`; uppercase or
+type-argument-bearing bodies such as `T` remain `TypeExpression` surfaces.
+This is a syntactic preservation rule, not resolver classification.
+
+User predicate applications are syntax-only. `PredicateApplication` owns one
+or more `PredicateSegment` children. A segment preserves optional left
+`TermExpression` list children, optional `does not` / `do not` negation tokens,
+one `PredicateHead`, and optional right term-list children. Predicate-chain
+adjacency and overload validity are resolver-owned; the parser preserves the
+written segments without proving that a chain such as `a < b < c` can resolve.
+Built-in predicates are not predicate-chain heads: `in`, `=`, and `<>` form
+single `BuiltinPredicateApplication` atoms only, so mixed chains such as
+`a < b = c` remain syntax errors instead of being represented as user
+predicate chains. Template predicate arguments remain deferred to task 31 /
+S-016 because `template_args` is not represented yet.
+
+The theorem/lemma placeholder formula host is exact: only `label: formula;`
+emits `FormulaExpression`. Parseable atomic formula prefixes followed by
+theorem justification or proof tails, such as `label: x = y by A;` or
+`label: x = y proof ... end;`, keep the legacy token-preserving
+`PlaceholderItem` behavior until task 22 owns theorem/proof items. A missing
+right term in a predicate-chain segment reports `MalformedTermExpression` and
+inserts `MissingTerm`.
+
+Task 13 tests must pin built-in `in`, `=`, and `<>` atoms, generic `is`
+assertions including an attribute-only `non` chain, inline predicate call
+shape, active-lexicon user predicate segments, theorem-placeholder formula
+hosting, and malformed atomic formula recovery that does not require semantic
+classification.
+
 ## Public Enum Compatibility
 
 `ParserTokenKind` is `#[non_exhaustive]` for downstream crates. The parser token

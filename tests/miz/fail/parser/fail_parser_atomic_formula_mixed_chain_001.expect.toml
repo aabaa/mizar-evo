@@ -1,0 +1,19 @@
+schema_version = 1
+id = "fail_parser_atomic_formula_mixed_chain_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.atomic_formulas"
+source = "fail_parser_atomic_formula_mixed_chain_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "mixed_builtin_user_predicate_chain"
+stable_detail_key = "parser.atomic_formulas.mixed_chain"
+diagnostic_codes = [
+  "malformed_term_expression",
+]
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.14.atomic_formula.parser",
+]
+notes = "Active parse-only runner coverage for parser task 13 preserving Appendix A's mixed user/built-in predicate chain syntax-error boundary."

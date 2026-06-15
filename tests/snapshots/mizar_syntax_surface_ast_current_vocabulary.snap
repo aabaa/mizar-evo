@@ -1,6 +1,6 @@
 surface-ast-snapshot-v1
 root:
-  Root range=0..273 recovered=false
+  Root range=0..315 recovered=false
     Token kind=Identifier text="id" range=0..2 recovered=false
     Token kind=ReservedWord text="theorem" range=3..10 recovered=false
     Token kind=ReservedSymbol text=";" range=10..11 recovered=false
@@ -96,6 +96,20 @@ root:
     Token kind=Identifier text="q" range=266..267 recovered=false
     Token kind=ReservedWord text="qua" range=268..271 recovered=false
     Token kind=UserSymbol text="T" range=272..273 recovered=false
+    Token kind=Identifier text="x" range=274..275 recovered=false
+    Token kind=ReservedSymbol text="=" range=276..277 recovered=false
+    Token kind=Identifier text="y" range=278..279 recovered=false
+    Token kind=Identifier text="z" range=280..281 recovered=false
+    Token kind=ReservedWord text="is" range=282..284 recovered=false
+    Token kind=ReservedWord text="non" range=285..288 recovered=false
+    Token kind=UserSymbol text="empty" range=289..294 recovered=false
+    Token kind=Identifier text="a" range=295..296 recovered=false
+    Token kind=UserSymbol text="divides" range=297..304 recovered=false
+    Token kind=Identifier text="b" range=305..306 recovered=false
+    Token kind=Identifier text="Small" range=307..312 recovered=false
+    Token kind=ReservedSymbol text="(" range=312..313 recovered=false
+    Token kind=Identifier text="c" range=313..314 recovered=false
+    Token kind=ReservedSymbol text=")" range=314..315 recovered=false
     InfixExpression spelling="++" precedence=10 associativity=Right range=0..21 recovered=false
       Token kind=Identifier text="id" range=0..2 recovered=false
       Token kind=UserSymbol text="++" range=19..21 recovered=false
@@ -279,6 +293,48 @@ root:
             QualifiedSymbol range=272..273 recovered=false
               PathSegment range=272..273 recovered=false
                 Token kind=UserSymbol text="T" range=272..273 recovered=false
+    FormulaExpression range=274..279 recovered=false
+      BuiltinPredicateApplication range=274..279 recovered=false
+        TermExpression range=274..275 recovered=false
+          TermReference range=274..275 recovered=false
+            Token kind=Identifier text="x" range=274..275 recovered=false
+        Token kind=ReservedSymbol text="=" range=276..277 recovered=false
+        TermExpression range=278..279 recovered=false
+          TermReference range=278..279 recovered=false
+            Token kind=Identifier text="y" range=278..279 recovered=false
+    FormulaExpression range=280..294 recovered=false
+      IsAssertion range=280..294 recovered=false
+        TermExpression range=280..281 recovered=false
+          TermReference range=280..281 recovered=false
+            Token kind=Identifier text="z" range=280..281 recovered=false
+        Token kind=ReservedWord text="is" range=282..284 recovered=false
+        AttributeTestChain range=285..294 recovered=false
+          AttributeRef range=285..294 recovered=false
+            Token kind=ReservedWord text="non" range=285..288 recovered=false
+            QualifiedSymbol range=289..294 recovered=false
+              PathSegment range=289..294 recovered=false
+                Token kind=UserSymbol text="empty" range=289..294 recovered=false
+    FormulaExpression range=295..306 recovered=false
+      PredicateApplication range=295..306 recovered=false
+        PredicateSegment range=295..306 recovered=false
+          TermExpression range=295..296 recovered=false
+            TermReference range=295..296 recovered=false
+              Token kind=Identifier text="a" range=295..296 recovered=false
+          PredicateHead range=297..304 recovered=false
+            QualifiedSymbol range=297..304 recovered=false
+              PathSegment range=297..304 recovered=false
+                Token kind=UserSymbol text="divides" range=297..304 recovered=false
+          TermExpression range=305..306 recovered=false
+            TermReference range=305..306 recovered=false
+              Token kind=Identifier text="b" range=305..306 recovered=false
+    FormulaExpression range=307..315 recovered=false
+      InlinePredicateApplication range=307..315 recovered=false
+        Token kind=Identifier text="Small" range=307..312 recovered=false
+        Token kind=ReservedSymbol text="(" range=312..313 recovered=false
+        TermExpression range=313..314 recovered=false
+          TermReference range=313..314 recovered=false
+            Token kind=Identifier text="c" range=313..314 recovered=false
+        Token kind=ReservedSymbol text=")" range=314..315 recovered=false
     ErrorRecovery kind=MissingEnd range=89..89 recovered=true
       Token kind=ReservedWord text="theorem" range=3..10 recovered=false
 expression_root:
@@ -382,3 +438,17 @@ token_nodes:
   Token kind=Identifier text="q" range=266..267 recovered=false
   Token kind=ReservedWord text="qua" range=268..271 recovered=false
   Token kind=UserSymbol text="T" range=272..273 recovered=false
+  Token kind=Identifier text="x" range=274..275 recovered=false
+  Token kind=ReservedSymbol text="=" range=276..277 recovered=false
+  Token kind=Identifier text="y" range=278..279 recovered=false
+  Token kind=Identifier text="z" range=280..281 recovered=false
+  Token kind=ReservedWord text="is" range=282..284 recovered=false
+  Token kind=ReservedWord text="non" range=285..288 recovered=false
+  Token kind=UserSymbol text="empty" range=289..294 recovered=false
+  Token kind=Identifier text="a" range=295..296 recovered=false
+  Token kind=UserSymbol text="divides" range=297..304 recovered=false
+  Token kind=Identifier text="b" range=305..306 recovered=false
+  Token kind=Identifier text="Small" range=307..312 recovered=false
+  Token kind=ReservedSymbol text="(" range=312..313 recovered=false
+  Token kind=Identifier text="c" range=313..314 recovered=false
+  Token kind=ReservedSymbol text=")" range=314..315 recovered=false

@@ -2,8 +2,9 @@
 
 Status: minimal task-12 recovery, task-28 nested block-end recovery, task-5
 module-skeleton recovery, task-6 import recovery, task-7 export/visibility
-recovery, task-8 type-expression recovery, and task-9 primary-term recovery
-are implemented. Full grammar recovery remains planned.
+recovery, task-8 type-expression recovery, task-9 primary-term recovery, and
+task-13 atomic-formula recovery are implemented. Full grammar recovery remains
+planned.
 
 ## Purpose
 
@@ -94,6 +95,12 @@ Current behavior:
   expression represented without requiring a recovery node. A dangling prefix
   operator reports `DanglingOperator` and keeps a recoverable
   `PrefixExpression` by inserting a `MissingTerm` operand;
+- task-13 atomic-formula parsing reuses term/type recovery for malformed
+  atomic operands. Built-in predicate applications with a missing right term
+  insert `MissingTerm` and report `MalformedTermExpression`; `is` assertions
+  with a missing body insert `MissingTypeExpression` and report
+  `MalformedTypeExpression`. Missing whole formulas remain task-14
+  `MissingFormula` work;
 - a stray `end` that has no matching block opener returns syntax diagnostics
   with `ast = None`.
 
