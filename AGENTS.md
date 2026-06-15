@@ -32,7 +32,58 @@ For each task, complete these phases in order:
 10. If the source-documentation consistency review finds issues, fix them and repeat the consistency review until there are no findings.
 11. Run the relevant verification commands.
 12. Prepare a handoff prompt for the next task so it can be started in a separate chat. Include a recommended reasoning setting for the next task, a short rationale, and any conditions that would justify raising or lowering that setting.
-13. Prepare a commit message. Commit the completed change only when the user explicitly requested committing, for example by saying `commit`, `commitまで`, or `コミットまで`, unless the user asks not to commit.
+13. Inspect the worktree, prepare a commit message, and commit the completed change when the user invoked this full workflow or requested autonomous crate development, unless the user asks not to commit. For tasks outside this workflow, commit only when the user explicitly requested committing, for example by saying `commit`, `commitまで`, or `コミットまで`.
+
+## Specification-Driven Autonomous Crate Development
+
+For crate-wide autonomous development, follow the protocol in
+[`doc/design/autonomous_crate_development.md`](doc/design/autonomous_crate_development.md).
+That protocol constrains the workflow above when the task touches language
+behavior or crate-level implementation scope.
+
+For language behavior, the authority order is:
+
+1. `doc/spec/en/`
+2. `tests/**/*.miz`
+3. `tests/coverage/spec_trace.toml`
+4. `tests/**/*.expect.toml`
+5. `doc/design/`
+6. `crates/`
+
+`doc/spec/en/` and `.miz` tests are the primary human-reviewed artifacts.
+`doc/design/` and `crates/` are derived artifacts. Source behavior may be
+observed during inventory, but it is not normative. If derived artifacts
+disagree with the specification or tests, repair the derived artifacts toward
+the specification and tests.
+
+Agents must not modify `doc/spec`, existing `.miz` tests, or test expectations
+merely to match current implementation behavior. Test-first `.miz` additions
+are allowed only under the protocol rules when they are derived from existing
+`doc/spec/en/` requirements or close a classified `test_gap`; expectation and
+traceability metadata for those new tests may be added when they express the
+spec-derived test intent.
+
+Changes to syntax, static semantics, proof semantics, type behavior, name
+resolution, overload behavior, diagnostics, parser recovery, existing test
+expectations, or soundness-boundary behavior must be represented in `doc/spec`,
+tests, or traceability metadata as appropriate, and are allowed only when the
+task explicitly changes specification or test intent.
+
+Before crate-wide autonomous work starts, create or update
+`doc/design/<crate>/en/00.crate_plan.md`. The plan must cover crate
+responsibility, specification references, relevant tests, design/source
+inventory, known gaps and drift, task decomposition, and exit criteria. Do not
+begin implementation if the plan finds missing or contradictory specification
+that blocks the crate.
+
+Before editing, classify disagreements as `spec_gap`, `test_gap`,
+`design_drift`, `source_drift`, `source_undocumented_behavior`,
+`test_expectation_drift`, `boundary_violation`, or `repo_metadata_conflict`.
+Report `repo_metadata_conflict` only; do not repair it automatically.
+
+Crate-wide autonomous work is complete only when all hard gates in the protocol
+pass and a read-only review assigns a quality score of at least 90/100. A score
+is invalid if any hard gate fails.
 
 ## Agent Delegation
 
@@ -103,6 +154,12 @@ Follow the repository documentation policy:
 ## Commit Expectations
 
 Before committing, inspect the worktree and make sure only task-related changes are included. Do not revert unrelated user changes.
+
+When the user invokes the full AGENTS.md workflow or requests autonomous
+crate-level development, committing the completed change is permitted and is the
+default final step after required reviews and verification pass, unless the user
+asks not to commit. For smaller ad hoc tasks outside this workflow, commit only
+when the user explicitly requests it.
 
 Use a concise Conventional Commits-style subject, for example:
 

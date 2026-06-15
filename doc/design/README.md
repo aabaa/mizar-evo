@@ -1,6 +1,8 @@
 # Internal Design Specifications
 
 > Implementation order across crates: [todo.md](./todo.md).
+> Crate-wide autonomous development protocol:
+> [autonomous_crate_development.md](./autonomous_crate_development.md).
 
 This directory contains internal implementation specifications organized at two levels:
 
@@ -104,10 +106,15 @@ crates/<crate>/src/<module>.rs     Rust source code
 
 ## Workflow
 
+For crate-wide autonomous work, follow
+[autonomous_crate_development.md](./autonomous_crate_development.md) first. It
+defines the authority order for language behavior, the required Crate Plan, and
+crate exit gates.
+
 1. Start with an idea in `doc/idea/`
 2. When a design decision is confirmed, promote it to `doc/design/architecture/`
 3. Refine cross-cutting designs into internal subsystem designs in `doc/design/internal/`
 4. Decompose into module-level specs in `doc/design/<crate>/<language>/`
 5. Implement (or ask AI to implement) the corresponding Rust source
 6. Run tests to verify the implementation matches the spec
-7. Keep specs and code in sync — update both together
+7. Keep design specs and code in sync within the authority order above
