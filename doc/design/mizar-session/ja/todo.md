@@ -271,11 +271,13 @@
       パス/ソース同一性のハッシュ化前チェックを網羅する。source テストは
       source-id 割り当て前の生成ソースメタデータ拒否を維持し、
       予約語の名前空間要素を拒否する。
-    - フォローアップ: `doc/spec/en/23.package_management_and_build_system.md`
+    - 解決済みフォローアップ: `doc/spec/en/23.package_management_and_build_system.md`
       (`[a-z][a-z0-9-]*`) と `doc/spec/en/12.modules_and_namespaces.md` (`snake_case`)
-      の英語正典のパッケージ名綴りの矛盾を解決し、その後、日本語版を
-      同期する。`doc/spec/ja/23.package_management_and_build_system.md` の
-      パッケージ名テーブル行の不正なテキストも合わせて直す。
+      の英語正本のパッケージ名綴りの矛盾は、小文字の `snake_case`
+      (`[a-z][a-z0-9]*(?:_[a-z0-9]+)*`) を採用し、ハイフン正規化を行わない方針で
+      解決した。日本語 companion も同期済みであり、
+      `doc/spec/ja/23.package_management_and_build_system.md` の
+      パッケージ名テーブル行の不正なテキストも修正済み。
 
 27. **生成ソースの正規化方針。** [x]
     - 生成ソーステキストを UTF-8 検証後に 1 バイトもたがえず保持するのか、先頭

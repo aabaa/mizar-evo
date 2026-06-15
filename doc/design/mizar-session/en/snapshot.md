@@ -255,9 +255,11 @@ snapshots. It rejects a blank `WorkspaceRoot`, blank or whitespace-containing
 (including reserved words), blank `Edition` values, blank generated-source
 metadata in manually assembled `SourceVersion` records, duplicate source-version
 identities, and duplicate module paths before allocating a lease, registering the
-snapshot, or hashing accepted input. The exact nonblank package-name spelling
-rule is deferred to the upstream build-plan layer until the package-management
-and module-namespace specs are aligned.
+snapshot, or hashing accepted input. Exact nonblank package-name spelling is the
+upstream build-plan layer's responsibility: package ids supplied to
+`mizar-session` should already satisfy the aligned package-management and
+module-namespace rule, namely lowercase `snake_case`
+(`[a-z][a-z0-9]*(?:_[a-z0-9]+)*`) with no hyphen normalization.
 
 ### Snapshot Lease
 

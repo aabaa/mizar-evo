@@ -280,11 +280,14 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
       existing duplicate module path/source identity pre-hash checks; source tests
       keep the generated-source metadata rejection before source-id allocation
       and reject reserved-word namespace components.
-    - Follow-up: resolve the English canonical package-name spelling conflict
+    - Resolved follow-up: the English canonical package-name spelling conflict
       between `doc/spec/en/23.package_management_and_build_system.md`
       (`[a-z][a-z0-9-]*`) and `doc/spec/en/12.modules_and_namespaces.md`
-      (`snake_case`), then sync the Japanese companions, including the malformed
-      Japanese package-name table row in `doc/spec/ja/23.package_management_and_build_system.md`.
+      (`snake_case`) is resolved in favor of lowercase `snake_case`
+      (`[a-z][a-z0-9]*(?:_[a-z0-9]+)*`) with no hyphen normalization. The
+      Japanese companions are synchronized, including the malformed Japanese
+      package-name table row in
+      `doc/spec/ja/23.package_management_and_build_system.md`.
 
 27. **Generated-source normalization policy.** [x]
     - Decide and document whether generated source text is preserved byte-for-byte
