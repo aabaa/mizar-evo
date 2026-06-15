@@ -20,6 +20,7 @@
 
 | ドキュメント | 対応先 | 説明 | 状態 |
 |---|---|---|---|
+| [00.crate_plan.md](./00.crate_plan.md) | `doc/design/autonomous_crate_development.md` protocol evidence | retrospective autonomous crate-development plan、責務境界、gap 分類、task decomposition、exit criteria | Implemented |
 | [source.md](./source.md) | `crates/mizar-frontend/src/source.rs` | Step 1: `mizar-session` のソース同一性・line map・loading map を橋渡しする `SourceUnit` の読み込み | Implemented |
 | [preprocess.md](./preprocess.md) | `crates/mizar-frontend/src/preprocess.rs` | Step 2: `PreprocessedSource`、コメント／ドキュメントコメントの分離、注釈構文の保持、浅いインポート事前走査の統制 | Implemented |
 | [lexical_env.md](./lexical_env.md) | `crates/mizar-frontend/src/lexical_env.rs` | Step 3: インポートスタブと依存字句サマリからのアクティブ字句環境の構築 | Implemented through task 6 |
@@ -30,6 +31,7 @@
 | [orchestration.md](./orchestration.md) | `crates/mizar-frontend/src/orchestration.rs` | フェーズ 1〜3 のエンドツーエンド統制（Step 1〜5）、parser lexing-plan wiring、診断統合、`FrontendOutput` | Implemented through task 28 current parser growth |
 | [source_spec_correspondence.md](./source_spec_correspondence.md) | `crates/mizar-frontend` の仕様、ソース、ユニットテスト | task 16 の公開 API／エラー variant／タスク要件対応監査 | Implemented |
 | [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | `doc/design/mizar-frontend/en/` と `doc/design/mizar-frontend/ja/` | task 17 の二言語 API／状態／用語／リンク／挙動同期監査 | Implemented |
+| [crate_exit_report.md](./crate_exit_report.md) | `doc/design/autonomous_crate_development.md` protocol evidence | retrospective hard-gate status、quality score、deferred items、verification results、next-task handoff | Implemented |
 | [todo.md](./todo.md) | `crates/mizar-frontend` | モジュール実装順序、状態、残作業 | Living |
 
 ## crate 境界

@@ -28,6 +28,7 @@ coordinator paths and returns `ast = None`.
 
 | Document | Maps To | Description | Status |
 |---|---|---|---|
+| [00.crate_plan.md](./00.crate_plan.md) | `doc/design/autonomous_crate_development.md` protocol evidence | Retrospective autonomous crate-development plan, responsibility boundary, gap classification, task decomposition, and exit criteria | Implemented |
 | [source.md](./source.md) | `crates/mizar-frontend/src/source.rs` | Step 1: `SourceUnit` loading bridging `mizar-session` source identity, line maps, and loading maps | Implemented |
 | [preprocess.md](./preprocess.md) | `crates/mizar-frontend/src/preprocess.rs` | Step 2: `PreprocessedSource`, comment/doc-comment separation, annotation preservation, and shallow import pre-scan coordination | Implemented |
 | [lexical_env.md](./lexical_env.md) | `crates/mizar-frontend/src/lexical_env.rs` | Step 3: active lexical environment construction from import stubs and dependency lexical summaries | Implemented through task 6 |
@@ -38,6 +39,7 @@ coordinator paths and returns `ast = None`.
 | [orchestration.md](./orchestration.md) | `crates/mizar-frontend/src/orchestration.rs` | End-to-end phase 1-3 coordination (pipeline Steps 1-5), parser lexing-plan wiring, diagnostic merge, and `FrontendOutput` | Implemented through task 28 current parser growth |
 | [source_spec_correspondence.md](./source_spec_correspondence.md) | `crates/mizar-frontend` specs, sources, and unit tests | Task 16 public API / error variant / task requirement correspondence audit | Implemented |
 | [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | `doc/design/mizar-frontend/en/` and `doc/design/mizar-frontend/ja/` | Task 17 bilingual API/status/terminology/link/behavior synchronization audit | Implemented |
+| [crate_exit_report.md](./crate_exit_report.md) | `doc/design/autonomous_crate_development.md` protocol evidence | Retrospective hard-gate status, quality score, deferred items, verification results, and next-task handoff | Implemented |
 | [todo.md](./todo.md) | `crates/mizar-frontend` | Module implementation order, status, and remaining work | Living |
 
 ## Crate Boundary

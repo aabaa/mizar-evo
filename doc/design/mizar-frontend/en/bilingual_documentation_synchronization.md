@@ -50,7 +50,8 @@ readers.
   boundaries, task-21 durable lint-policy guards, task-22 raw-scan recovery
   boundaries, task-24 reserved diagnostic surface policy, task-26 public API
   rustdoc summary policy, task-28 parser-growth follow-through, and task-29
-  real-parser frontend fuzz coverage.
+  real-parser frontend fuzz coverage, plus the retrospective autonomous
+  crate-development plan and exit report.
 - No unsynchronized Japanese companion gap remains.
 
 ## Pair Checklist
@@ -58,6 +59,7 @@ readers.
 | English canonical | Japanese companion | Synchronization status |
 |---|---|---|
 | [README.md](./README.md) | [../ja/README.md](../ja/README.md) | Module index, crate boundary, status labels, and context links are synchronized. |
+| [00.crate_plan.md](./00.crate_plan.md) | [../ja/00.crate_plan.md](../ja/00.crate_plan.md) | Retrospective crate responsibility, specification/test references, gap classification, task decomposition, and exit criteria are synchronized. |
 | [span_bridge.md](./span_bridge.md) | [../ja/span_bridge.md](../ja/span_bridge.md) | Public API, identity-loading behavior, composite/degraded mappings, registry invariants, and error surfaces are synchronized. |
 | [source.md](./source.md) | [../ja/source.md](../ja/source.md) | Public API, diagnostic display path policy, loading-map preservation, error propagation, and constraints are synchronized. |
 | [preprocess.md](./preprocess.md) | [../ja/preprocess.md](../ja/preprocess.md) | Public API, comment/doc-comment handling, import stubs, precise recoverable raw import recovery, diagnostics, and parser-assisted string-argument handling are synchronized. |
@@ -67,6 +69,7 @@ readers.
 | [cache_key.md](./cache_key.md) | [../ja/cache_key.md](../ja/cache_key.md) | Frontend content cache-key APIs, parser lexing-plan content keys, storage boundary, invalidation rules, and tests are synchronized. |
 | [orchestration.md](./orchestration.md) | [../ja/orchestration.md](../ja/orchestration.md) | Frontend API, `FrontendOutput.cache_keys`, diagnostic classes, source-load locations, merge order, hard-error boundaries, syntax pass-through, and output constraints are synchronized. |
 | [source_spec_correspondence.md](./source_spec_correspondence.md) | [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md) | Task-16 audit text records task-19 cache-key wiring, task-20 parser-assisted lexing, task-21 durable lint enforcement, task-22 raw-scan recovery, task-23 resident-set guard status, task-24 reserved diagnostic surface coverage, task-26 rustdoc summary coverage, task-28 parser-growth follow-through, and task-29 real-parser frontend fuzz coverage. |
+| [crate_exit_report.md](./crate_exit_report.md) | [../ja/crate_exit_report.md](../ja/crate_exit_report.md) | Hard-gate status, quality score, deferred items, verification results, and next-task handoff are synchronized. |
 | [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Task statuses and follow-up records are synchronized through task 29. |
 
 ## Link Policy

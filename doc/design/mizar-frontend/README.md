@@ -10,6 +10,7 @@ The full module index, crate boundary, and implementation roadmap live in [en/RE
 
 ## Module Specs
 
+- [en/00.crate_plan.md](./en/00.crate_plan.md) - retrospective autonomous crate-development plan and gap classification
 - [en/span_bridge.md](./en/span_bridge.md) - lexer byte span → `mizar-session` `SourceRange` coordinate bridge
 - [en/source.md](./en/source.md) - Step 1: `SourceUnit` loading, UTF-8 validation, source hashes, and line maps
 - [en/preprocess.md](./en/preprocess.md) - Step 2: `PreprocessedSource`, comments/doc comments, annotations, and shallow import pre-scan
@@ -20,4 +21,5 @@ The full module index, crate boundary, and implementation roadmap live in [en/RE
 - [en/orchestration.md](./en/orchestration.md) - end-to-end frontend coordination, diagnostic merge, and `FrontendOutput`
 - [en/source_spec_correspondence.md](./en/source_spec_correspondence.md) - task 16 source/spec/test correspondence audit
 - [en/bilingual_documentation_synchronization.md](./en/bilingual_documentation_synchronization.md) - task 17 bilingual documentation synchronization audit
+- [en/crate_exit_report.md](./en/crate_exit_report.md) - retrospective autonomous crate-development exit report
 - [en/todo.md](./en/todo.md) - module implementation order, status, and remaining work
