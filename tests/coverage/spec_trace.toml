@@ -954,14 +954,42 @@ tests = [
 [[requirement]]
 id = "spec.en.15.statements.syntax"
 source = "doc/spec/en/15.statements.md"
-section = "15.2.1 Generalization Statement; 15.2.2 Constant Definition; 15.3.1 Single Assumption; 15.3.2 Collective Assumption; 15.3.3 Existential Assumption; 15.4.4 Witness Introduction"
+section = "15.2.1 Generalization Statement; 15.2.2 Constant Definition; 15.3.1 Single Assumption; 15.3.2 Collective Assumption; 15.3.3 Existential Assumption; 15.4.4 Witness Introduction; 15.8 Justification Forms"
 stage = "parse_only"
 status = "covered"
 required = true
 coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_simple_statements_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_justifications_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_simple_statements_recovery_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_justifications_recovery_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.16.proof_justification.parser"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.5 Proof Justification (`by`); 16.5.1 Simple Citation; 16.5.2 Grouped Citation; 16.5.3 Bulk Citation"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_justifications_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_justifications_recovery_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.20.computation_proof.parser"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.9.2 `by computation` Proof Step"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_justifications_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_justifications_recovery_001.expect.toml",
 ]
 
 [[requirement]]

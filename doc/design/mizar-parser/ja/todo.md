@@ -440,21 +440,36 @@ resolver / build-system 依存を避ける。
       [15.statements.md](../../../spec/ja/15.statements.md)。
     - `StatementItem` が host する simple statement として実装した。
       `QualifiedVariableSegment`、`ConditionList`、`Proposition`、`Witness`、
-      `Equating` child を持つ。`let ... by ...` は task 17 の placeholder
-      境界のままにした。正常系、複数 `set` equating、proposition label、
-      recovery node、skipped tail、semicolon-boundary 同期、および top-level
-      `ReserveItem` non-regression の unit test と active parse-only pass/fail
-      corpus coverage を追加済み。
+      `Equating` child を持つ。task 17 により、以前の `let ... by ...`
+      placeholder 境界は concrete な justification-aware 形状へ更新済み。
+      正常系、複数 `set` equating、proposition label、recovery node、skipped
+      tail、semicolon-boundary 同期、および top-level `ReserveItem`
+      non-regression の unit test と active parse-only pass/fail corpus
+      coverage を追加済み。
 
-17. **正当化と引用。** [ ]
-    - `by` / `from` の正当化句、引用リスト、`.{ … }` グループ引用、`.*`
-      一括引用、およびコンパクトな正当化付き文（`φ by A;`）。
-      algorithm 章の `by computation(...)` オプションも含む。
+17. **正当化と引用。** [x]
+    - `by` の正当化句、引用リスト、`.{ … }` グループ引用、`.*` 一括引用、
+      `let ... by references`、および `proposition by ...;` 用の最小の明示的
+      compact-statement host。algorithm 章の `by computation(...)` オプションも含む。
+      canonical Chapter 15 / 16 grammar は `from` を justification form として
+      定義していないため、以前の `from` 記述は実装対象の構文ではなく
+      derived-documentation drift として扱う。
     - 依存: 16、`mizar-syntax` task 14 / S-014（正当化ノードの増分）。仕様:
+      [15.statements.md](../../../spec/ja/15.statements.md) §15.2.1 / §15.8、
       [16.theorems_and_proofs.md](../../../spec/ja/16.theorems_and_proofs.md)
       §16.5、
       [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)
       §20.9.2。
+    - 結果: `JustificationClause`、`ReferenceList`、`Reference`、
+      `QualifiedReference`、`GroupedReference`、`GroupedReferenceItem`、
+      `BulkReference`、`ComputationJustification`、`ComputationOption`、および
+      最小の explicit-justification `CompactStatement` host を実装した。
+      `let ... by references` は concrete になり、`let ... by computation` は
+      malformed justification として recover する。local / qualified /
+      grouped / bulk / computation justification、missing proof step、skipped
+      malformed citation tail、deferred reference template argument、および
+      semicolon-boundary recovery を unit test と active parse-only pass/fail
+      corpus coverage で確認済み。
 
 18. **`consider` と `reconsider`。** [ ]
     - いずれも正当化を運ぶ `consider … such that … by …` と

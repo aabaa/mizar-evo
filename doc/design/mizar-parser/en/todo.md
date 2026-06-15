@@ -461,21 +461,36 @@ older numeric syntax task references appear to disagree, prefer
       [15.statements.md](../../../spec/en/15.statements.md).
     - Implemented as `StatementItem`-hosted simple statements with
       `QualifiedVariableSegment`, `ConditionList`, `Proposition`, `Witness`,
-      and `Equating` children; `let ... by ...` remains a task-17 placeholder
-      boundary. Unit tests and active parse-only pass/fail corpus coverage are
-      in place for happy paths, multiple set equatings, proposition labels,
-      recovery nodes, skipped tails, semicolon-boundary synchronization, and
-      the top-level `ReserveItem` non-regression.
+      and `Equating` children; task 17 now upgrades the former `let ... by ...`
+      placeholder boundary to a concrete justification-aware shape. Unit tests
+      and active parse-only pass/fail corpus coverage are in place for happy
+      paths, multiple set equatings, proposition labels, recovery nodes,
+      skipped tails, semicolon-boundary synchronization, and the top-level
+      `ReserveItem` non-regression.
 
-17. **Justifications and citations.** [ ]
-    - `by`/`from` justification clauses, citation lists, `.{ … }` grouped
-      citations, `.*` bulk citations, and the compact justified statement
-      (`φ by A;`), including `by computation(...)` options from the algorithm
-      chapter.
+17. **Justifications and citations.** [x]
+    - `by` justification clauses, citation lists, `.{ … }` grouped citations,
+      `.*` bulk citations, `let ... by references`, and a minimal explicit
+      compact-statement host for `proposition by ...;`, including
+      `by computation(...)` options from the algorithm chapter. The canonical
+      Chapter 15/16 grammar does not define `from` as a justification form, so
+      earlier `from` wording is treated as derived-documentation drift rather
+      than implemented syntax.
     - Deps: 16, `mizar-syntax` task 14 / S-014 (justification-node increment). Spec:
+      [15.statements.md](../../../spec/en/15.statements.md) §15.2.1/§15.8,
       [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md) §16.5,
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md)
       §20.9.2.
+    - Result: implemented `JustificationClause`, `ReferenceList`,
+      `Reference`, `QualifiedReference`, `GroupedReference`,
+      `GroupedReferenceItem`, `BulkReference`, `ComputationJustification`,
+      `ComputationOption`, and the minimal explicit-justification
+      `CompactStatement` host. `let ... by references` is concrete;
+      `let ... by computation` recovers as malformed justification. Unit tests
+      and active parse-only pass/fail corpus coverage exercise local,
+      qualified, grouped, bulk, and computation justifications, missing proof
+      steps, skipped malformed citation tails, deferred reference template
+      arguments, and semicolon-boundary recovery.
 
 18. **`consider` and `reconsider`.** [ ]
     - `consider … such that … by …` and `reconsider … as … by …`, both of

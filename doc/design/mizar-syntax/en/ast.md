@@ -193,6 +193,16 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 68 | `Witness` | task-16 named or unnamed witness item |
 | 69 | `SetStatement` | task-16 local constant-definition statement |
 | 70 | `Equating` | task-16 `set` equating item |
+| 71 | `CompactStatement` | task-17 minimal explicit-justification compact proposition host |
+| 72 | `JustificationClause` | task-17 `by` citation or computation proof clause |
+| 73 | `ReferenceList` | task-17 comma-separated citation list |
+| 74 | `Reference` | task-17 local reference citation |
+| 75 | `QualifiedReference` | task-17 namespace-qualified reference citation |
+| 76 | `GroupedReference` | task-17 `namespace_path ".{" ... "}"` grouped citation |
+| 77 | `GroupedReferenceItem` | task-17 grouped citation item |
+| 78 | `BulkReference` | task-17 `namespace_path ".*"` bulk citation |
+| 79 | `ComputationJustification` | task-17 `by computation(...)` justification payload |
+| 80 | `ComputationOption` | task-17 `steps` / `timeout` / `nest` computation option |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -205,7 +215,7 @@ The current raw discriminants are part of the rowan boundary for this phase:
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
-above, currently `Root` through task-16 `Equating` plus the compatibility
+above, currently `Root` through task-17 `ComputationOption` plus the compatibility
 `Token` wrapper and `ErrorRecovery`; `is_token_kind` is true
 only for token leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future
 raw values should be appended or assigned into a documented reserved range so
@@ -249,8 +259,8 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::SetEnumeration` | none | `SyntaxKind::SetEnumeration` | parser task-9 set-enumeration term |
 | `SurfaceNodeKind::SetComprehension` | none | `SyntaxKind::SetComprehension` | parser task-15 set-comprehension / Fraenkel term; owns `{`, a mapper `TermExpression`, `where`, generator segments, optional condition formula, and `}` or delimiter recovery |
 | `SurfaceNodeKind::ComprehensionVariableSegment` | none | `SyntaxKind::ComprehensionVariableSegment` | parser task-15 typed generator segment; owns identifier or `MissingTerm` recovery, optional `is`, and `TypeExpression` or `MissingTypeExpression` recovery when `is` is present |
-| `SurfaceNodeKind::StatementItem` | none | `SyntaxKind::StatementItem` | parser task-16 temporary module-level statement host; owns exactly one concrete simple statement node and no statement-level annotation payload |
-| `SurfaceNodeKind::LetStatement` | none | `SyntaxKind::LetStatement` | parser task-16 `let` generalization without a task-17 justification tail; owns `let`, qualified-variable segments with separator commas, optional `such` plus `ConditionList`, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::StatementItem` | none | `SyntaxKind::StatementItem` | parser task-16 temporary module-level statement host; owns exactly one concrete simple or explicit-justification compact statement node and no statement-level annotation payload |
+| `SurfaceNodeKind::LetStatement` | none | `SyntaxKind::LetStatement` | parser task-16/17 `let` generalization; owns `let`, qualified-variable segments with separator commas, optional `such` plus `ConditionList`, optional task-17 simple `JustificationClause`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::QualifiedVariableSegment` | none | `SyntaxKind::QualifiedVariableSegment` | parser task-16 statement-level variable segment; owns identifier tokens separated by comma tokens, optional `be` / `being`, and optional `TypeExpression` or `MissingTypeExpression` recovery |
 | `SurfaceNodeKind::AssumptionStatement` | none | `SyntaxKind::AssumptionStatement` | parser task-16 `assume` or `assume that`; owns `assume` plus either one `Proposition` or one `ConditionList`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::Proposition` | none | `SyntaxKind::Proposition` | parser task-16 proposition surface; owns optional label identifier plus colon and one `FormulaExpression` or `MissingFormula` recovery |
@@ -260,6 +270,16 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::Witness` | none | `SyntaxKind::Witness` | parser task-16 witness item; owns either one `TermExpression` or identifier, `=`, and a `TermExpression` / `MissingTerm` recovery |
 | `SurfaceNodeKind::SetStatement` | none | `SyntaxKind::SetStatement` | parser task-16 local constant definition; owns `set`, one or more `Equating` children separated by comma tokens, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::Equating` | none | `SyntaxKind::Equating` | parser task-16 equating item; owns identifier or `MissingTerm` recovery, `=` when present, and a `TermExpression` or `MissingTerm` recovery |
+| `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host; owns one `Proposition`, one `JustificationClause`, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
+| `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
+| `SurfaceNodeKind::Reference` | none | `SyntaxKind::Reference` | parser task-17 local citation; owns one identifier token and no template arguments in this increment |
+| `SurfaceNodeKind::QualifiedReference` | none | `SyntaxKind::QualifiedReference` | parser task-17 namespace-qualified citation; owns `NamespacePath`, the final dot token, and the final identifier token |
+| `SurfaceNodeKind::GroupedReference` | none | `SyntaxKind::GroupedReference` | parser task-17 grouped citation; owns `NamespacePath`, `.{`, grouped items separated by comma tokens, optional delimiter recovery, and optional `}` |
+| `SurfaceNodeKind::GroupedReferenceItem` | none | `SyntaxKind::GroupedReferenceItem` | parser task-17 grouped citation member; owns one identifier token and no template arguments in this increment |
+| `SurfaceNodeKind::BulkReference` | none | `SyntaxKind::BulkReference` | parser task-17 bulk citation; owns `NamespacePath` plus the compound `.*` token |
+| `SurfaceNodeKind::ComputationJustification` | none | `SyntaxKind::ComputationJustification` | parser task-17 computation proof payload; owns the `computation` token and optional parenthesized computation-option list |
+| `SurfaceNodeKind::ComputationOption` | none | `SyntaxKind::ComputationOption` | parser task-17 computation option; owns `steps`, `timeout`, or `nest`, a colon token, and a numeral token or `MissingProofStep` recovery |
 | `SurfaceNodeKind::SelectorAccess` | none | `SyntaxKind::SelectorAccess` | parser task-10 postfix selector access or selector-call surface; preserves syntax-only dot role |
 | `SurfaceNodeKind::StructureUpdate` | none | `SyntaxKind::StructureUpdate` | parser task-10 functional `term "with" "(" field_update_list ")"` update surface |
 | `SurfaceNodeKind::FieldUpdate` | none | `SyntaxKind::FieldUpdate` | parser task-10 `selector ":=" term_expression` field update inside `StructureUpdate` |
@@ -602,6 +622,48 @@ or proof obligations. `SurfaceNodeView` exposes typed `as_statement_item`,
 `as_take_statement`, `as_witness`, `as_set_statement`, and `as_equating`
 helpers.
 
+Parser task 17 starts S-014 justification vocabulary and adds a minimal
+explicit-justification compact statement host. `CompactStatement` owns one
+`Proposition`, one `JustificationClause`, optional recovery, and the semicolon
+token when present. It exists so the shared justification surface can be
+exercised before the later statement tasks complete conclusion and equality
+dispatch; compact statements without an explicit `by` tail remain later
+statement work. `LetStatement` may now own a trailing `JustificationClause`,
+but only in the ordinary `by references` shape defined by Chapter 15.
+
+`JustificationClause` owns the leading `by` token plus either a `ReferenceList`
+child for ordinary citations or a `ComputationJustification` child for
+`by computation(...)`. Task 17 deliberately represents only the non-template
+reference surface: template argument lists stay deferred to task 31 / S-016,
+and `from` is not a justification node because the canonical Chapter 15/16
+grammar does not define it as a justification form.
+
+`ReferenceList` owns source-ordered citation children separated by comma
+tokens. A local citation is `Reference` with one identifier token. A
+`QualifiedReference` owns a `NamespacePath`, the final dot token, and the final
+identifier token. A `GroupedReference` owns a `NamespacePath`, the compound
+`.{` token, one or more `GroupedReferenceItem` children separated by comma
+tokens, and the closing `}` token when present. `GroupedReferenceItem` owns one
+identifier token in this increment. A `BulkReference` owns a `NamespacePath`
+and the compound `.*` token. `ComputationJustification` owns the `computation`
+token and optional parenthesized `ComputationOption` children separated by
+comma tokens. Each `ComputationOption` owns one of `steps`, `timeout`, or
+`nest`, the colon token, and a numeral token.
+
+Justification nodes preserve citation spelling only. They do not resolve
+labels, expand grouped or bulk citations, validate theorem visibility, select
+ATP engines, validate computation-option values, or replay computation proofs.
+Ranges run from the first owned source token through the last owned source
+token. Missing references, grouped items, or computation option operands use
+`MissingProofStep` recovery with a zero-width insertion range under the
+owning justification node. Malformed tails may own `SkippedToken` recovery and
+skipped-token trivia. `SurfaceNodeView` exposes `as_compact_statement`,
+`as_justification_clause`, `as_reference_list`, `as_reference`,
+`as_qualified_reference`, `as_grouped_reference`,
+`as_grouped_reference_item`, `as_bulk_reference`,
+`as_computation_justification`, and `as_computation_option` helpers.
+Snapshot rendering prints the literal node names.
+
 ### Vocabulary Increment Contract
 
 Node vocabulary grows only in the same change as the `mizar-parser` grammar task
@@ -739,6 +801,16 @@ TakeStatement range=<start>..<end> recovered=<bool>
 Witness range=<start>..<end> recovered=<bool>
 SetStatement range=<start>..<end> recovered=<bool>
 Equating range=<start>..<end> recovered=<bool>
+CompactStatement range=<start>..<end> recovered=<bool>
+JustificationClause range=<start>..<end> recovered=<bool>
+ReferenceList range=<start>..<end> recovered=<bool>
+Reference range=<start>..<end> recovered=<bool>
+QualifiedReference range=<start>..<end> recovered=<bool>
+GroupedReference range=<start>..<end> recovered=<bool>
+GroupedReferenceItem range=<start>..<end> recovered=<bool>
+BulkReference range=<start>..<end> recovered=<bool>
+ComputationJustification range=<start>..<end> recovered=<bool>
+ComputationOption range=<start>..<end> recovered=<bool>
 ErrorRecovery kind=<SyntaxRecoveryKind> range=<start>..<end> recovered=<bool>
 ```
 

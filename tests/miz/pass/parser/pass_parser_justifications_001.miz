@@ -1,0 +1,4 @@
+let x be set by A;
+thesis by A, mml.foo.Th1, mml.foo.{G1, G2}, mml.foo.*;
+thesis by computation(steps: 10, timeout: 20, nest: 3);
+thesis by computation;

@@ -824,11 +824,11 @@ preserves either an ordinary term witness or the `identifier "=" term` named
 witness shape. `Equating` preserves `identifier "=" term_expression` for `set`
 abbreviations.
 
-The task-17 justification surface is still deferred. A `let` statement with a
-top-level `by` tail before its semicolon remains a legacy placeholder instead
-of a partially concrete `LetStatement`; task 17 replaces that boundary with a
-concrete justification-aware shape. The task-16 parser also does not validate
-labels, references, witness leakage, type well-formedness, or proof
+Task 16 originally deferred the justification surface: a `let` statement with
+a top-level `by` tail before its semicolon stayed a legacy placeholder rather
+than a partially concrete `LetStatement`. Task 17 now replaces that boundary
+with a concrete justification-aware shape. The task-16 parser also does not
+validate labels, references, witness leakage, type well-formedness, or proof
 obligations.
 
 Statement recovery reuses existing syntax-level diagnostics. Missing qualified
@@ -849,6 +849,100 @@ missing type, formula, term, equals, and
 semicolon boundaries. Active parse-only corpus coverage should use top-level
 statement hosts for non-`reserve` simple statements and keep top-level
 `reserve` coverage on the existing `ReserveItem` path.
+
+## Task 17: Justifications And Citations
+
+Task 17 starts S-014 proof-support syntax with justification clauses that can
+be consumed by already-concrete statement hosts. Canonical Chapter 15 and
+Chapter 16 define simple justifications as `by references`; Chapter 20 adds
+the computation proof form. The parser TODO's older `from` wording is derived
+documentation drift for this increment and is not implemented because no
+Chapter 15/16 justification production admits it.
+
+```ebnf
+justification_clause     ::= simple_justification | computation_proof ;
+simple_justification     ::= "by" references ;
+references               ::= reference { "," reference } ;
+reference                ::= identifier
+                           | qualified_reference
+                           | grouped_reference
+                           | bulk_reference ;
+qualified_reference      ::= namespace_path "." identifier ;
+grouped_reference        ::= namespace_path ".{" grouped_reference_item
+                              { "," grouped_reference_item } "}" ;
+grouped_reference_item   ::= identifier ;
+bulk_reference           ::= namespace_path ".*" ;
+computation_proof        ::= "by" "computation"
+                              [ "(" computation_option
+                                  { "," computation_option } ")" ] ;
+computation_option       ::= ( "steps" | "timeout" | "nest" )
+                              ":" numeral ;
+let_statement            ::= "let" qualified_variable_segment
+                              { "," qualified_variable_segment }
+                              [ "such" condition_list ]
+                              [ simple_justification ] ";" ;
+compact_statement        ::= proposition justification_clause ";" ;
+```
+
+Template arguments on references and grouped items remain deferred to task 31 /
+S-016, where template argument surfaces are introduced. In task 17, a reference
+followed by `[` before the next citation separator is recoverable malformed
+justification syntax rather than a partially represented template invocation.
+Full `proof ... end` blocks, theorem/lemma item nodes, and proof-body nesting
+remain task 22.
+
+The parser-facing `Numeral` token is the token-level representation used for
+the canonical Chapter 20 `nat_literal` in computation options. Numeric
+well-formedness beyond token category stays outside this syntax increment.
+The option names are matched by spelling: `steps` and `timeout` may arrive as
+identifier tokens in the current lexer table, while `nest` arrives as a
+reserved-word token.
+
+`JustificationClause` owns the leading `by` token plus either a `ReferenceList`
+or a `ComputationJustification`. `ReferenceList` owns source-ordered
+`Reference`, `QualifiedReference`, `GroupedReference`, or `BulkReference`
+children separated by comma tokens. `Reference` owns a local identifier token.
+`QualifiedReference` owns a `NamespacePath`, the final dot token, and the final
+identifier token; the earlier namespace path helper remains semantic-free.
+`GroupedReference` owns a `NamespacePath`, the compound `.{` token, one or
+more `GroupedReferenceItem` children separated by comma tokens, and `}` when
+present. `BulkReference` owns a `NamespacePath` plus the compound `.*` token.
+`ComputationJustification` owns the `computation` token and optional
+parenthesized `ComputationOption` list; each option owns its option keyword,
+colon token, and numeral token.
+
+Task 17 consumes justifications only at canonical hosts that are small enough
+for this increment. `let ... by refs;` is upgraded from task-16 placeholder
+behavior to `LetStatement`; this host accepts only `simple_justification`
+because Chapter 15 defines the generalization tail as `[ "by" references ]`.
+Task 17 also adds a minimal explicit-justification `CompactStatement` host so
+`proposition by refs;` and `proposition by computation(...);` can exercise the
+shared justification nodes. Compact statements without an explicit `by` tail,
+compact equality versus zero-step iterative equality dispatch, conclusions,
+`consider`, and `reconsider` remain with later statement tasks. `assume`,
+`given`, `take`, and `set` do not gain justification tails in this task because
+the canonical Chapter 15 productions do not define such tails. The parser also
+does not resolve references, validate computation options, select ATP engines,
+or replay computation proofs.
+
+Malformed justification syntax uses `SyntaxDiagnosticCode::MalformedJustification`.
+Missing references, grouped items, or computation option operands are
+represented with `MissingProofStep` recovery nodes under the relevant
+justification node. Unexpected top-level tokens inside a justification recover
+to comma, `}`, `)`, semicolon, the next statement/item boundary, or EOF, and
+preserve skipped source with `SkippedToken` recovery plus skipped-range trivia.
+
+Task 17 tests must pin: simple local references, qualified references,
+grouped citations, bulk citations, comma-separated mixed reference lists,
+`by computation` with and without options on explicit compact statements,
+upgrade of `let ... by ...` from placeholder to concrete `LetStatement`,
+rejection or recovery for non-canonical `assume` / `given` / `take` / `set`
+justification tails, malformed leading/trailing commas, missing grouped `}`,
+missing computation-option values, deferred template argument recovery, the
+derived-documentation-drift `from` tail staying outside task-17 justification
+nodes, and
+active parse-only pass/fail corpus coverage with traceability to Chapter 15
+§15.2.1/§15.8, Chapter 16 §16.5, and Chapter 20 §20.9.2.
 
 ## Public Enum Compatibility
 

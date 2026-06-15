@@ -366,10 +366,17 @@ interaction. Spec references are the normative grammar chapters under
 
 14. **Theorem, proof, and justification nodes.** [ ] — paired with
     `mizar-parser` tasks 17 and 22.
-    - Justification clauses (`by`, `from`), citation forms including `.{ … }`
-      and `.*`, plus `by computation(...)` option nodes (parser task 17);
+    - Justification clauses (`by`), citation forms including `.{ … }` and
+      `.*`, `let ... by references`, a minimal explicit compact-statement host,
+      plus `by computation(...)` option nodes (parser task 17);
       `theorem`/`lemma` items, labels, `proof … end` nesting (parser task 22).
-    - Spec: [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md),
+      The canonical Chapter 15/16 grammar does not define `from` as a
+      justification form, so earlier `from` wording is treated as
+      derived-documentation drift rather than implemented syntax.
+      Parser task 17's citation/computation subset is complete; parser task 22
+      remains before this bucket can be marked done.
+    - Spec: [15.statements.md](../../../spec/en/15.statements.md),
+      [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md),
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md)
       §20.9.2.
 

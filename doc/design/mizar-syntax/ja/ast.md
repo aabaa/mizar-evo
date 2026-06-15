@@ -192,6 +192,16 @@ token payload を保持してよいが、それによって rowan tree 内の to
 | 68 | `Witness` | task-16 の named / unnamed witness item |
 | 69 | `SetStatement` | task-16 の local constant-definition statement |
 | 70 | `Equating` | task-16 の `set` equating item |
+| 71 | `CompactStatement` | task-17 の最小の明示的 justification 付き proposition host |
+| 72 | `JustificationClause` | task-17 の `by` citation または computation proof clause |
+| 73 | `ReferenceList` | task-17 の comma-separated citation list |
+| 74 | `Reference` | task-17 の local reference citation |
+| 75 | `QualifiedReference` | task-17 の namespace-qualified reference citation |
+| 76 | `GroupedReference` | task-17 の `namespace_path ".{" ... "}"` grouped citation |
+| 77 | `GroupedReferenceItem` | task-17 の grouped citation item |
+| 78 | `BulkReference` | task-17 の `namespace_path ".*"` bulk citation |
+| 79 | `ComputationJustification` | task-17 の `by computation(...)` justification payload |
+| 80 | `ComputationOption` | task-17 の `steps` / `timeout` / `nest` computation option |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -204,7 +214,7 @@ token payload を保持してよいが、それによって rowan tree 内の to
 
 `SyntaxKind::from_raw` は未知の raw value をすべて `Unknown` に写像する。
 `SyntaxKind::is_node_kind` は上に列挙したすべての structural node raw kind、つまり現在は
-`Root` から task-16 `Equating` までに加えて compatibility `Token` wrapper と
+`Root` から task-17 `ComputationOption` までに加えて compatibility `Token` wrapper と
 `ErrorRecovery` に対して true である。`is_token_kind` は `TokenIdentifier` から
 `TokenUnknown` までの token leaf raw kind に対してのみ true である。
 将来の raw value は、既存 snapshot と rowan test が raw 語彙変更時に明確に失敗するよう、
@@ -248,8 +258,8 @@ token payload を保持してよいが、それによって rowan tree 内の to
 | `SurfaceNodeKind::SetEnumeration` | なし | `SyntaxKind::SetEnumeration` | parser task 9 の set-enumeration term |
 | `SurfaceNodeKind::SetComprehension` | なし | `SyntaxKind::SetComprehension` | parser task 15 の set-comprehension / Fraenkel term。`{`、mapper `TermExpression`、`where`、generator segment、任意の condition formula、`}` または delimiter recovery を所有する |
 | `SurfaceNodeKind::ComprehensionVariableSegment` | なし | `SyntaxKind::ComprehensionVariableSegment` | parser task 15 の typed generator segment。identifier または `MissingTerm` recovery、任意の `is`、および `is` が存在する場合の `TypeExpression` または `MissingTypeExpression` recovery を所有する |
-| `SurfaceNodeKind::StatementItem` | なし | `SyntaxKind::StatementItem` | parser task 16 の一時 module-level statement host。concrete simple statement node 1 個だけを所有し、statement-level annotation payload は所有しない |
-| `SurfaceNodeKind::LetStatement` | なし | `SyntaxKind::LetStatement` | task-17 justification tail を含まない parser task 16 の `let` generalization。`let`、separator comma 付き qualified-variable segment、任意の `such` と `ConditionList`、任意の recovery、任意の semicolon を所有する |
+| `SurfaceNodeKind::StatementItem` | なし | `SyntaxKind::StatementItem` | parser task 16 の一時 module-level statement host。concrete simple statement node または explicit-justification compact statement node 1 個だけを所有し、statement-level annotation payload は所有しない |
+| `SurfaceNodeKind::LetStatement` | なし | `SyntaxKind::LetStatement` | parser task 16/17 の `let` generalization。`let`、separator comma 付き qualified-variable segment、任意の `such` と `ConditionList`、任意の task-17 simple `JustificationClause`、任意の recovery、任意の semicolon を所有する |
 | `SurfaceNodeKind::QualifiedVariableSegment` | なし | `SyntaxKind::QualifiedVariableSegment` | parser task 16 の statement-level variable segment。comma token で区切られた identifier token、任意の `be` / `being`、任意の `TypeExpression` または `MissingTypeExpression` recovery を所有する |
 | `SurfaceNodeKind::AssumptionStatement` | なし | `SyntaxKind::AssumptionStatement` | parser task 16 の `assume` または `assume that`。`assume` と、1 個の `Proposition` または 1 個の `ConditionList`、任意の recovery、任意の semicolon を所有する |
 | `SurfaceNodeKind::Proposition` | なし | `SyntaxKind::Proposition` | parser task 16 の proposition surface。任意の label identifier と colon、および 1 個の `FormulaExpression` または `MissingFormula` recovery を所有する |
@@ -259,6 +269,16 @@ token payload を保持してよいが、それによって rowan tree 内の to
 | `SurfaceNodeKind::Witness` | なし | `SyntaxKind::Witness` | parser task 16 の witness item。1 個の `TermExpression`、または identifier、`=`、`TermExpression` / `MissingTerm` recovery を所有する |
 | `SurfaceNodeKind::SetStatement` | なし | `SyntaxKind::SetStatement` | parser task 16 の local constant definition。`set`、comma token で区切られた 1 個以上の `Equating` child、任意の recovery、任意の semicolon を所有する |
 | `SurfaceNodeKind::Equating` | なし | `SyntaxKind::Equating` | parser task 16 の equating item。identifier または `MissingTerm` recovery、存在する場合の `=`、`TermExpression` または `MissingTerm` recovery を所有する |
+| `SurfaceNodeKind::CompactStatement` | なし | `SyntaxKind::CompactStatement` | parser task 17 の最小の明示的 justification 付き compact statement host。1 個の `Proposition`、1 個の `JustificationClause`、任意の recovery、任意の semicolon を所有する |
+| `SurfaceNodeKind::JustificationClause` | なし | `SyntaxKind::JustificationClause` | parser task 17 の `by` clause。`by` token と、通常 citation 用の `ReferenceList` または `by computation(...)` 用の `ComputationJustification` を所有する |
+| `SurfaceNodeKind::ReferenceList` | なし | `SyntaxKind::ReferenceList` | parser task 17 の source-order citation list。comma token で区切られた citation node を所有する |
+| `SurfaceNodeKind::Reference` | なし | `SyntaxKind::Reference` | parser task 17 の local citation。1 個の identifier token を所有し、この増分では template argument を持たない |
+| `SurfaceNodeKind::QualifiedReference` | なし | `SyntaxKind::QualifiedReference` | parser task 17 の namespace-qualified citation。`NamespacePath`、最後の dot token、最後の identifier token を所有する |
+| `SurfaceNodeKind::GroupedReference` | なし | `SyntaxKind::GroupedReference` | parser task 17 の grouped citation。`NamespacePath`、`.{`、comma token で区切られた grouped item、任意の delimiter recovery、任意の `}` を所有する |
+| `SurfaceNodeKind::GroupedReferenceItem` | なし | `SyntaxKind::GroupedReferenceItem` | parser task 17 の grouped citation member。1 個の identifier token を所有し、この増分では template argument を持たない |
+| `SurfaceNodeKind::BulkReference` | なし | `SyntaxKind::BulkReference` | parser task 17 の bulk citation。`NamespacePath` と compound `.*` token を所有する |
+| `SurfaceNodeKind::ComputationJustification` | なし | `SyntaxKind::ComputationJustification` | parser task 17 の computation proof payload。`computation` token と任意の parenthesized computation-option list を所有する |
+| `SurfaceNodeKind::ComputationOption` | なし | `SyntaxKind::ComputationOption` | parser task 17 の computation option。`steps`、`timeout`、`nest` のいずれか、colon token、numeral token または `MissingProofStep` recovery を所有する |
 | `SurfaceNodeKind::SelectorAccess` | なし | `SyntaxKind::SelectorAccess` | parser task 10 の postfix selector access または selector-call surface。syntax-only dot role を保持する |
 | `SurfaceNodeKind::StructureUpdate` | なし | `SyntaxKind::StructureUpdate` | parser task 10 の functional `term "with" "(" field_update_list ")"` update surface |
 | `SurfaceNodeKind::FieldUpdate` | なし | `SyntaxKind::FieldUpdate` | parser task 10 の、`StructureUpdate` 内の `selector ":=" term_expression` field update |
@@ -569,6 +589,44 @@ well-formedness、witness leakage、proof obligation を検証しない。`Surfa
 `as_condition_list`、`as_given_statement`、`as_take_statement`、`as_witness`、
 `as_set_statement`、`as_equating` helper を公開する。
 
+Parser task 17 は S-014 justification vocabulary を開始し、最小の明示的 justification
+付き compact statement host を追加する。`CompactStatement` は 1 個の `Proposition`、
+1 個の `JustificationClause`、任意の recovery、存在する場合の semicolon token を所有する。
+これは後続 statement task が conclusion と equality dispatch を完了する前に、共有
+justification surface を exercise するために存在する。明示的 `by` tail を持たない
+compact statement は後続 statement work に残す。`LetStatement` は trailing
+`JustificationClause` を所有できるようになるが、Chapter 15 が定義する通常の
+`by references` 形に限る。
+
+`JustificationClause` は先頭の `by` token と、通常 citation 用の `ReferenceList` child
+または `by computation(...)` 用の `ComputationJustification` child を所有する。Task 17
+は template を伴わない reference surface だけを表現し、template argument list は task 31 /
+S-016 まで deferred のまま残す。また `from` は canonical Chapter 15 / 16 grammar が
+justification form として定義していないため、justification node ではない。
+
+`ReferenceList` は comma token で区切られた source-order の citation child を所有する。
+local citation は 1 個の identifier token を持つ `Reference` である。
+`QualifiedReference` は `NamespacePath`、最後の dot token、最後の identifier token を
+所有する。`GroupedReference` は `NamespacePath`、compound `.{` token、comma token で
+区切られた 1 個以上の `GroupedReferenceItem`、存在する場合の closing `}` token を
+所有する。`GroupedReferenceItem` はこの増分では 1 個の identifier token を所有する。
+`BulkReference` は `NamespacePath` と compound `.*` token を所有する。
+`ComputationJustification` は `computation` token と、comma token で区切られた任意の
+parenthesized `ComputationOption` child を所有する。各 `ComputationOption` は
+`steps`、`timeout`、`nest` のいずれか、colon token、numeral token を所有する。
+
+Justification node は citation spelling だけを保持する。label resolution、grouped /
+bulk citation expansion、theorem visibility validation、ATP engine selection、
+computation-option value validation、computation proof replay は行わない。range は最初の
+owned source token から最後の owned source token までである。欠落した reference、
+grouped item、computation option operand は、owning justification node 配下の
+zero-width insertion range を持つ `MissingProofStep` recovery を使う。malformed tail は
+`SkippedToken` recovery と skipped-token trivia を所有してよい。`SurfaceNodeView` は
+`as_compact_statement`、`as_justification_clause`、`as_reference_list`、`as_reference`、
+`as_qualified_reference`、`as_grouped_reference`、`as_grouped_reference_item`、
+`as_bulk_reference`、`as_computation_justification`、`as_computation_option` helper を
+公開する。snapshot rendering は literal node name を出力する。
+
 ### 語彙増分の契約
 
 node 語彙は、その形を構築する `mizar-parser` 文法タスクと同じ変更でのみ増やす。
@@ -700,6 +758,16 @@ TakeStatement range=<start>..<end> recovered=<bool>
 Witness range=<start>..<end> recovered=<bool>
 SetStatement range=<start>..<end> recovered=<bool>
 Equating range=<start>..<end> recovered=<bool>
+CompactStatement range=<start>..<end> recovered=<bool>
+JustificationClause range=<start>..<end> recovered=<bool>
+ReferenceList range=<start>..<end> recovered=<bool>
+Reference range=<start>..<end> recovered=<bool>
+QualifiedReference range=<start>..<end> recovered=<bool>
+GroupedReference range=<start>..<end> recovered=<bool>
+GroupedReferenceItem range=<start>..<end> recovered=<bool>
+BulkReference range=<start>..<end> recovered=<bool>
+ComputationJustification range=<start>..<end> recovered=<bool>
+ComputationOption range=<start>..<end> recovered=<bool>
 ErrorRecovery kind=<SyntaxRecoveryKind> range=<start>..<end> recovered=<bool>
 ```
 

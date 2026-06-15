@@ -103,6 +103,16 @@ pub enum SyntaxKind {
     Witness = 68,
     SetStatement = 69,
     Equating = 70,
+    CompactStatement = 71,
+    JustificationClause = 72,
+    ReferenceList = 73,
+    Reference = 74,
+    QualifiedReference = 75,
+    GroupedReference = 76,
+    GroupedReferenceItem = 77,
+    BulkReference = 78,
+    ComputationJustification = 79,
+    ComputationOption = 80,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -187,6 +197,16 @@ impl SyntaxKind {
             68 => Self::Witness,
             69 => Self::SetStatement,
             70 => Self::Equating,
+            71 => Self::CompactStatement,
+            72 => Self::JustificationClause,
+            73 => Self::ReferenceList,
+            74 => Self::Reference,
+            75 => Self::QualifiedReference,
+            76 => Self::GroupedReference,
+            77 => Self::GroupedReferenceItem,
+            78 => Self::BulkReference,
+            79 => Self::ComputationJustification,
+            80 => Self::ComputationOption,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -273,6 +293,16 @@ impl SyntaxKind {
                 | Self::Witness
                 | Self::SetStatement
                 | Self::Equating
+                | Self::CompactStatement
+                | Self::JustificationClause
+                | Self::ReferenceList
+                | Self::Reference
+                | Self::QualifiedReference
+                | Self::GroupedReference
+                | Self::GroupedReferenceItem
+                | Self::BulkReference
+                | Self::ComputationJustification
+                | Self::ComputationOption
         )
     }
 
@@ -1099,6 +1129,76 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_compact_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::CompactStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_justification_clause(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::JustificationClause => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_reference_list(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ReferenceList => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_reference(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::Reference => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_qualified_reference(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::QualifiedReference => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_grouped_reference(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::GroupedReference => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_grouped_reference_item(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::GroupedReferenceItem => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_bulk_reference(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::BulkReference => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_computation_justification(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ComputationJustification => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_computation_option(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ComputationOption => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_selector_access(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::SelectorAccess => Some(self),
@@ -1384,6 +1484,16 @@ pub enum SurfaceNodeKind {
     Witness,
     SetStatement,
     Equating,
+    CompactStatement,
+    JustificationClause,
+    ReferenceList,
+    Reference,
+    QualifiedReference,
+    GroupedReference,
+    GroupedReferenceItem,
+    BulkReference,
+    ComputationJustification,
+    ComputationOption,
     SelectorAccess,
     StructureUpdate,
     FieldUpdate,
@@ -1459,6 +1569,16 @@ impl SurfaceNodeKind {
             Self::Witness => SyntaxKind::Witness,
             Self::SetStatement => SyntaxKind::SetStatement,
             Self::Equating => SyntaxKind::Equating,
+            Self::CompactStatement => SyntaxKind::CompactStatement,
+            Self::JustificationClause => SyntaxKind::JustificationClause,
+            Self::ReferenceList => SyntaxKind::ReferenceList,
+            Self::Reference => SyntaxKind::Reference,
+            Self::QualifiedReference => SyntaxKind::QualifiedReference,
+            Self::GroupedReference => SyntaxKind::GroupedReference,
+            Self::GroupedReferenceItem => SyntaxKind::GroupedReferenceItem,
+            Self::BulkReference => SyntaxKind::BulkReference,
+            Self::ComputationJustification => SyntaxKind::ComputationJustification,
+            Self::ComputationOption => SyntaxKind::ComputationOption,
             Self::SelectorAccess => SyntaxKind::SelectorAccess,
             Self::StructureUpdate => SyntaxKind::StructureUpdate,
             Self::FieldUpdate => SyntaxKind::FieldUpdate,
@@ -1688,6 +1808,18 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::Witness => output.push_str("Witness"),
         SurfaceNodeKind::SetStatement => output.push_str("SetStatement"),
         SurfaceNodeKind::Equating => output.push_str("Equating"),
+        SurfaceNodeKind::CompactStatement => output.push_str("CompactStatement"),
+        SurfaceNodeKind::JustificationClause => output.push_str("JustificationClause"),
+        SurfaceNodeKind::ReferenceList => output.push_str("ReferenceList"),
+        SurfaceNodeKind::Reference => output.push_str("Reference"),
+        SurfaceNodeKind::QualifiedReference => output.push_str("QualifiedReference"),
+        SurfaceNodeKind::GroupedReference => output.push_str("GroupedReference"),
+        SurfaceNodeKind::GroupedReferenceItem => output.push_str("GroupedReferenceItem"),
+        SurfaceNodeKind::BulkReference => output.push_str("BulkReference"),
+        SurfaceNodeKind::ComputationJustification => {
+            output.push_str("ComputationJustification");
+        }
+        SurfaceNodeKind::ComputationOption => output.push_str("ComputationOption"),
         SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
@@ -2763,6 +2895,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            justification_nodes_ast(source_id(29))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -2806,6 +2944,16 @@ mod tests {
             SyntaxKind::Witness,
             SyntaxKind::SetStatement,
             SyntaxKind::Equating,
+            SyntaxKind::CompactStatement,
+            SyntaxKind::JustificationClause,
+            SyntaxKind::ReferenceList,
+            SyntaxKind::Reference,
+            SyntaxKind::QualifiedReference,
+            SyntaxKind::GroupedReference,
+            SyntaxKind::GroupedReferenceItem,
+            SyntaxKind::BulkReference,
+            SyntaxKind::ComputationJustification,
+            SyntaxKind::ComputationOption,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -3989,6 +4137,90 @@ mod tests {
             assert!(
                 snapshot.contains(expected),
                 "snapshot should render task-16 line {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn task17_typed_accessors_cover_justification_nodes() {
+        let ast = justification_nodes_ast(source_id(29));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task17_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task17_view!(
+            SurfaceNodeKind::CompactStatement,
+            SyntaxKind::CompactStatement,
+            as_compact_statement
+        );
+        assert_task17_view!(
+            SurfaceNodeKind::JustificationClause,
+            SyntaxKind::JustificationClause,
+            as_justification_clause
+        );
+        assert_task17_view!(
+            SurfaceNodeKind::ReferenceList,
+            SyntaxKind::ReferenceList,
+            as_reference_list
+        );
+        assert_task17_view!(
+            SurfaceNodeKind::Reference,
+            SyntaxKind::Reference,
+            as_reference
+        );
+        assert_task17_view!(
+            SurfaceNodeKind::QualifiedReference,
+            SyntaxKind::QualifiedReference,
+            as_qualified_reference
+        );
+        assert_task17_view!(
+            SurfaceNodeKind::GroupedReference,
+            SyntaxKind::GroupedReference,
+            as_grouped_reference
+        );
+        assert_task17_view!(
+            SurfaceNodeKind::GroupedReferenceItem,
+            SyntaxKind::GroupedReferenceItem,
+            as_grouped_reference_item
+        );
+        assert_task17_view!(
+            SurfaceNodeKind::BulkReference,
+            SyntaxKind::BulkReference,
+            as_bulk_reference
+        );
+        assert_task17_view!(
+            SurfaceNodeKind::ComputationJustification,
+            SyntaxKind::ComputationJustification,
+            as_computation_justification
+        );
+        assert_task17_view!(
+            SurfaceNodeKind::ComputationOption,
+            SyntaxKind::ComputationOption,
+            as_computation_option
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in [
+            "CompactStatement",
+            "JustificationClause",
+            "ReferenceList",
+            "Reference",
+            "QualifiedReference",
+            "GroupedReference",
+            "GroupedReferenceItem",
+            "BulkReference",
+            "ComputationJustification",
+            "ComputationOption",
+        ] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-17 line {expected}"
             );
         }
     }
@@ -5408,6 +5640,388 @@ mod tests {
                 equating_equals,
                 equating_value,
                 set_semicolon,
+                compilation_unit,
+            ],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn justification_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+
+        let first_thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 0, 6),
+        );
+        let first_by =
+            builder.add_token(SurfaceTokenKind::ReservedWord, "by", range(source_id, 7, 9));
+        let local_label =
+            builder.add_token(SurfaceTokenKind::Identifier, "A", range(source_id, 10, 11));
+        let first_comma = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ",",
+            range(source_id, 11, 12),
+        );
+        let qualified_namespace_a = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "mml",
+            range(source_id, 13, 16),
+        );
+        let qualified_namespace_dot = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".",
+            range(source_id, 16, 17),
+        );
+        let qualified_namespace_b = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "foo",
+            range(source_id, 17, 20),
+        );
+        let qualified_final_dot = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".",
+            range(source_id, 20, 21),
+        );
+        let qualified_label = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Th1",
+            range(source_id, 21, 24),
+        );
+        let second_comma = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ",",
+            range(source_id, 24, 25),
+        );
+        let grouped_namespace_a = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "mml",
+            range(source_id, 26, 29),
+        );
+        let grouped_namespace_dot = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".",
+            range(source_id, 29, 30),
+        );
+        let grouped_namespace_b = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "foo",
+            range(source_id, 30, 33),
+        );
+        let grouped_opener = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".{",
+            range(source_id, 33, 35),
+        );
+        let grouped_label_a =
+            builder.add_token(SurfaceTokenKind::Identifier, "G1", range(source_id, 35, 37));
+        let grouped_comma = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ",",
+            range(source_id, 37, 38),
+        );
+        let grouped_label_b =
+            builder.add_token(SurfaceTokenKind::Identifier, "G2", range(source_id, 39, 41));
+        let grouped_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "}",
+            range(source_id, 41, 42),
+        );
+        let third_comma = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ",",
+            range(source_id, 42, 43),
+        );
+        let bulk_namespace_a = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "mml",
+            range(source_id, 44, 47),
+        );
+        let bulk_namespace_dot = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".",
+            range(source_id, 47, 48),
+        );
+        let bulk_namespace_b = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "foo",
+            range(source_id, 48, 51),
+        );
+        let bulk_operator = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ".*",
+            range(source_id, 51, 53),
+        );
+        let first_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 53, 54),
+        );
+        let second_thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 55, 61),
+        );
+        let second_by = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "by",
+            range(source_id, 62, 64),
+        );
+        let computation = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "computation",
+            range(source_id, 65, 76),
+        );
+        let computation_open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 76, 77),
+        );
+        let steps = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "steps",
+            range(source_id, 77, 82),
+        );
+        let option_colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 82, 83),
+        );
+        let option_value =
+            builder.add_token(SurfaceTokenKind::Numeral, "10", range(source_id, 84, 86));
+        let computation_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 86, 87),
+        );
+        let second_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 87, 88),
+        );
+
+        let first_constant = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+            range(source_id, 0, 6),
+            vec![first_thesis],
+        );
+        let first_formula = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 0, 6),
+            vec![first_constant],
+        );
+        let first_proposition = builder.add_node(
+            SurfaceNodeKind::Proposition,
+            range(source_id, 0, 6),
+            vec![first_formula],
+        );
+        let local_reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 10, 11),
+            vec![local_label],
+        );
+        let qualified_segment_a = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 13, 16),
+            vec![qualified_namespace_a],
+        );
+        let qualified_segment_b = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 17, 20),
+            vec![qualified_namespace_b],
+        );
+        let qualified_namespace = builder.add_node(
+            SurfaceNodeKind::NamespacePath,
+            range(source_id, 13, 20),
+            vec![
+                qualified_segment_a,
+                qualified_namespace_dot,
+                qualified_segment_b,
+            ],
+        );
+        let qualified_reference = builder.add_node(
+            SurfaceNodeKind::QualifiedReference,
+            range(source_id, 13, 24),
+            vec![qualified_namespace, qualified_final_dot, qualified_label],
+        );
+        let grouped_segment_a = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 26, 29),
+            vec![grouped_namespace_a],
+        );
+        let grouped_segment_b = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 30, 33),
+            vec![grouped_namespace_b],
+        );
+        let grouped_namespace = builder.add_node(
+            SurfaceNodeKind::NamespacePath,
+            range(source_id, 26, 33),
+            vec![grouped_segment_a, grouped_namespace_dot, grouped_segment_b],
+        );
+        let grouped_item_a = builder.add_node(
+            SurfaceNodeKind::GroupedReferenceItem,
+            range(source_id, 35, 37),
+            vec![grouped_label_a],
+        );
+        let grouped_item_b = builder.add_node(
+            SurfaceNodeKind::GroupedReferenceItem,
+            range(source_id, 39, 41),
+            vec![grouped_label_b],
+        );
+        let grouped_reference = builder.add_node(
+            SurfaceNodeKind::GroupedReference,
+            range(source_id, 26, 42),
+            vec![
+                grouped_namespace,
+                grouped_opener,
+                grouped_item_a,
+                grouped_comma,
+                grouped_item_b,
+                grouped_close,
+            ],
+        );
+        let bulk_segment_a = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 44, 47),
+            vec![bulk_namespace_a],
+        );
+        let bulk_segment_b = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 48, 51),
+            vec![bulk_namespace_b],
+        );
+        let bulk_namespace = builder.add_node(
+            SurfaceNodeKind::NamespacePath,
+            range(source_id, 44, 51),
+            vec![bulk_segment_a, bulk_namespace_dot, bulk_segment_b],
+        );
+        let bulk_reference = builder.add_node(
+            SurfaceNodeKind::BulkReference,
+            range(source_id, 44, 53),
+            vec![bulk_namespace, bulk_operator],
+        );
+        let reference_list = builder.add_node(
+            SurfaceNodeKind::ReferenceList,
+            range(source_id, 10, 53),
+            vec![
+                local_reference,
+                first_comma,
+                qualified_reference,
+                second_comma,
+                grouped_reference,
+                third_comma,
+                bulk_reference,
+            ],
+        );
+        let reference_justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 7, 53),
+            vec![first_by, reference_list],
+        );
+        let reference_statement = builder.add_node(
+            SurfaceNodeKind::CompactStatement,
+            range(source_id, 0, 54),
+            vec![first_proposition, reference_justification, first_semicolon],
+        );
+        let reference_item = builder.add_node(
+            SurfaceNodeKind::StatementItem,
+            range(source_id, 0, 54),
+            vec![reference_statement],
+        );
+
+        let second_constant = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+            range(source_id, 55, 61),
+            vec![second_thesis],
+        );
+        let second_formula = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 55, 61),
+            vec![second_constant],
+        );
+        let second_proposition = builder.add_node(
+            SurfaceNodeKind::Proposition,
+            range(source_id, 55, 61),
+            vec![second_formula],
+        );
+        let computation_option = builder.add_node(
+            SurfaceNodeKind::ComputationOption,
+            range(source_id, 77, 86),
+            vec![steps, option_colon, option_value],
+        );
+        let computation_justification = builder.add_node(
+            SurfaceNodeKind::ComputationJustification,
+            range(source_id, 65, 87),
+            vec![
+                computation,
+                computation_open,
+                computation_option,
+                computation_close,
+            ],
+        );
+        let computation_clause = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 62, 87),
+            vec![second_by, computation_justification],
+        );
+        let computation_statement = builder.add_node(
+            SurfaceNodeKind::CompactStatement,
+            range(source_id, 55, 88),
+            vec![second_proposition, computation_clause, second_semicolon],
+        );
+        let computation_item = builder.add_node(
+            SurfaceNodeKind::StatementItem,
+            range(source_id, 55, 88),
+            vec![computation_statement],
+        );
+        let item_list = builder.add_node(
+            SurfaceNodeKind::ItemList,
+            range(source_id, 0, 88),
+            vec![reference_item, computation_item],
+        );
+        let compilation_unit = builder.add_node(
+            SurfaceNodeKind::CompilationUnit,
+            range(source_id, 0, 88),
+            vec![item_list],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 88),
+            vec![
+                first_thesis,
+                first_by,
+                local_label,
+                first_comma,
+                qualified_namespace_a,
+                qualified_namespace_dot,
+                qualified_namespace_b,
+                qualified_final_dot,
+                qualified_label,
+                second_comma,
+                grouped_namespace_a,
+                grouped_namespace_dot,
+                grouped_namespace_b,
+                grouped_opener,
+                grouped_label_a,
+                grouped_comma,
+                grouped_label_b,
+                grouped_close,
+                third_comma,
+                bulk_namespace_a,
+                bulk_namespace_dot,
+                bulk_namespace_b,
+                bulk_operator,
+                first_semicolon,
+                second_thesis,
+                second_by,
+                computation,
+                computation_open,
+                steps,
+                option_colon,
+                option_value,
+                computation_close,
+                second_semicolon,
                 compilation_unit,
             ],
         );
