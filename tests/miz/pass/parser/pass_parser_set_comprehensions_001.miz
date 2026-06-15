@@ -1,0 +1,5 @@
+theorem OmittedCondition: { f.x where x is set } = y;
+theorem Conditioned: { x where x is set : thesis } = y;
+theorem MultipleGenerators: { [x, y] where x is set, y is set : thesis } = p;
+theorem NestedComprehension: { { y where y is set : thesis } where x is set : thesis } = z;
+theorem EnumerationStillEnumeration: { x, y } = z;

@@ -1,0 +1,1 @@
+theorem MissingGeneratorType: { x where x is : thesis } = y;

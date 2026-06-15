@@ -2,8 +2,8 @@
 
 Status: task-12 term Pratt parsing is implemented for active-lexicon prefix,
 postfix, and infix operators; task-13 atomic formulas use the term Pratt
-boundary; task-14 fixed formula connective precedence is specified for
-implementation.
+boundary; task-14 fixed formula connective precedence is implemented; task-15
+set-comprehension primaries are implemented.
 
 ## Purpose
 
@@ -30,7 +30,9 @@ Term parsing uses the following order:
    operator precedence.
 2. Primary terms and the fixed selector/update postfix chain are parsed next.
    Selector/update/application syntax therefore binds tighter than user
-   operators.
+   operators. Set comprehensions added by task 15 are primary terms; their
+   mapper child is parsed through the same term Pratt boundary, and their
+   optional condition child is parsed through the fixed formula Pratt boundary.
 3. User postfix and infix operators are folded by Pratt binding power.
 4. `qua` is parsed by the module grammar after Pratt as the fixed lowest
    term-level operator and remains left-associative.

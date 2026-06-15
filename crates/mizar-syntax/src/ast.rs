@@ -90,6 +90,8 @@ pub enum SyntaxKind {
     QuantifiedFormula = 55,
     QuantifierVariableSegment = 56,
     FormulaConstant = 57,
+    SetComprehension = 58,
+    ComprehensionVariableSegment = 59,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -161,6 +163,8 @@ impl SyntaxKind {
             55 => Self::QuantifiedFormula,
             56 => Self::QuantifierVariableSegment,
             57 => Self::FormulaConstant,
+            58 => Self::SetComprehension,
+            59 => Self::ComprehensionVariableSegment,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -234,6 +238,8 @@ impl SyntaxKind {
                 | Self::QuantifiedFormula
                 | Self::QuantifierVariableSegment
                 | Self::FormulaConstant
+                | Self::SetComprehension
+                | Self::ComprehensionVariableSegment
         )
     }
 
@@ -969,6 +975,20 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_set_comprehension(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::SetComprehension => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_comprehension_variable_segment(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ComprehensionVariableSegment => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_selector_access(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::SelectorAccess => Some(self),
@@ -1241,6 +1261,8 @@ pub enum SurfaceNodeKind {
     StructureConstructor,
     FieldArgument,
     SetEnumeration,
+    SetComprehension,
+    ComprehensionVariableSegment,
     SelectorAccess,
     StructureUpdate,
     FieldUpdate,
@@ -1303,6 +1325,8 @@ impl SurfaceNodeKind {
             Self::StructureConstructor => SyntaxKind::StructureConstructor,
             Self::FieldArgument => SyntaxKind::FieldArgument,
             Self::SetEnumeration => SyntaxKind::SetEnumeration,
+            Self::SetComprehension => SyntaxKind::SetComprehension,
+            Self::ComprehensionVariableSegment => SyntaxKind::ComprehensionVariableSegment,
             Self::SelectorAccess => SyntaxKind::SelectorAccess,
             Self::StructureUpdate => SyntaxKind::StructureUpdate,
             Self::FieldUpdate => SyntaxKind::FieldUpdate,
@@ -1515,6 +1539,10 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::StructureConstructor => output.push_str("StructureConstructor"),
         SurfaceNodeKind::FieldArgument => output.push_str("FieldArgument"),
         SurfaceNodeKind::SetEnumeration => output.push_str("SetEnumeration"),
+        SurfaceNodeKind::SetComprehension => output.push_str("SetComprehension"),
+        SurfaceNodeKind::ComprehensionVariableSegment => {
+            output.push_str("ComprehensionVariableSegment");
+        }
         SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
@@ -2578,6 +2606,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            set_comprehension_nodes_ast(source_id(27))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -2608,6 +2642,8 @@ mod tests {
             SyntaxKind::StructureConstructor,
             SyntaxKind::FieldArgument,
             SyntaxKind::SetEnumeration,
+            SyntaxKind::SetComprehension,
+            SyntaxKind::ComprehensionVariableSegment,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -3669,6 +3705,42 @@ mod tests {
     }
 
     #[test]
+    fn task15_typed_accessors_cover_set_comprehension_nodes() {
+        let ast = set_comprehension_nodes_ast(source_id(27));
+        let root = ast.root_view().unwrap();
+
+        let comprehension_view = ast.expression_view().unwrap();
+        assert_eq!(
+            comprehension_view.syntax_kind(),
+            SyntaxKind::SetComprehension
+        );
+        assert!(comprehension_view.as_set_comprehension().is_some());
+
+        let segment_view = first_view(root, |kind| {
+            matches!(kind, SurfaceNodeKind::ComprehensionVariableSegment)
+        })
+        .unwrap();
+        assert_eq!(
+            segment_view.syntax_kind(),
+            SyntaxKind::ComprehensionVariableSegment
+        );
+        assert!(segment_view.as_comprehension_variable_segment().is_some());
+
+        let snapshot = ast.snapshot_text();
+        for expected in [
+            "SetComprehension",
+            "ComprehensionVariableSegment",
+            "FormulaExpression",
+            "FormulaConstant constant=Thesis",
+        ] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-15 line {expected}"
+            );
+        }
+    }
+
+    #[test]
     fn recovery_snapshot_names_are_unique_and_fully_fixture_backed() {
         let source_id = source_id(9);
         let fixtures = recovery_fixtures(source_id);
@@ -4615,6 +4687,109 @@ mod tests {
             ],
         );
         builder.finish(Some(root), Some(binary_and))
+    }
+
+    fn set_comprehension_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "{",
+            range(source_id, 0, 1),
+        );
+        let mapper = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 2, 3));
+        let where_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "where",
+            range(source_id, 4, 9),
+        );
+        let generator =
+            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 10, 11));
+        let is_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "is",
+            range(source_id, 12, 14),
+        );
+        let set_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 15, 18),
+        );
+        let colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 19, 20),
+        );
+        let thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 21, 27),
+        );
+        let close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "}",
+            range(source_id, 28, 29),
+        );
+        let mapper_expression = term_expression_node(&mut builder, source_id, mapper, 2, 3);
+        let type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 15, 18),
+            vec![set_token],
+        );
+        let type_expression = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 15, 18),
+            vec![type_head],
+        );
+        let segment = builder.add_node(
+            SurfaceNodeKind::ComprehensionVariableSegment,
+            range(source_id, 10, 18),
+            vec![generator, is_token, type_expression],
+        );
+        let thesis_constant = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+            range(source_id, 21, 27),
+            vec![thesis],
+        );
+        let formula_expression = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 21, 27),
+            vec![thesis_constant],
+        );
+        let comprehension = builder.add_node(
+            SurfaceNodeKind::SetComprehension,
+            range(source_id, 0, 29),
+            vec![
+                open,
+                mapper_expression,
+                where_token,
+                segment,
+                colon,
+                formula_expression,
+                close,
+            ],
+        );
+        let term_expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 0, 29),
+            vec![comprehension],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 29),
+            vec![
+                open,
+                mapper,
+                where_token,
+                generator,
+                is_token,
+                set_token,
+                colon,
+                thesis,
+                close,
+                term_expression,
+            ],
+        );
+        builder.finish(Some(root), Some(comprehension))
     }
 
     fn term_expression_node(

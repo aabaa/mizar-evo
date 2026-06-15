@@ -1,0 +1,1 @@
+theorem MissingClose: IsSmall({ x where x is set);

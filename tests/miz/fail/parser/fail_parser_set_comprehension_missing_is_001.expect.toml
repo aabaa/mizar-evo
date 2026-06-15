@@ -1,0 +1,19 @@
+schema_version = 1
+id = "fail_parser_set_comprehension_missing_is_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.set_comprehensions"
+source = "fail_parser_set_comprehension_missing_is_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "missing_set_comprehension_generator_is"
+stable_detail_key = "parser.set_comprehensions.missing_is"
+diagnostic_codes = [
+  "malformed_term_expression",
+]
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.13.set_expressions.parser",
+]
+notes = "Active parse-only runner coverage for parser task 15 recovery when a set-comprehension generator omits the required `is` before its type expression."

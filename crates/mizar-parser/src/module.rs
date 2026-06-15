@@ -2254,7 +2254,7 @@ impl Parser {
             return Some(self.parse_reserved_bracket_application_at(position));
         }
         if self.is_reserved_symbol_at(position, "{") {
-            return Some(self.parse_set_enumeration_at(position));
+            return Some(self.parse_set_expression_at(position));
         }
         None
     }
@@ -2605,6 +2605,66 @@ impl Parser {
         }
     }
 
+    fn parse_set_expression_at(&mut self, position: usize) -> ParsedTypeNode {
+        if self
+            .set_comprehension_where_before_first_separator_at(position)
+            .is_some()
+        {
+            self.parse_set_comprehension_at(position)
+        } else {
+            self.parse_set_enumeration_at(position)
+        }
+    }
+
+    fn set_comprehension_where_before_first_separator_at(&self, position: usize) -> Option<usize> {
+        let mut cursor = position + 1;
+        let mut paren_depth = 0_usize;
+        let mut bracket_depth = 0_usize;
+        let mut brace_depth = 0_usize;
+
+        while cursor < self.request.tokens.len() {
+            let top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            if top_level {
+                if self.is_reserved_word_at(cursor, "where") {
+                    return Some(cursor);
+                }
+                if self.is_reserved_symbol_at(cursor, ",")
+                    || self.is_reserved_symbol_at(cursor, "}")
+                    || self.is_semicolon_at(cursor)
+                    || self.is_item_start_at(cursor)
+                {
+                    return None;
+                }
+            }
+
+            if self.is_reserved_symbol_at(cursor, "(") {
+                paren_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                if paren_depth == 0 {
+                    return None;
+                }
+                paren_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                bracket_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                if bracket_depth == 0 {
+                    return None;
+                }
+                bracket_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                brace_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                if brace_depth == 0 {
+                    return None;
+                }
+                brace_depth -= 1;
+            }
+            cursor += 1;
+        }
+
+        None
+    }
+
     fn parse_set_enumeration_at(&mut self, position: usize) -> ParsedTypeNode {
         let mut children = vec![self.token_node_ids[position]];
         let mut recovery_nodes = Vec::new();
@@ -2639,6 +2699,199 @@ impl Parser {
             id,
             next_position: cursor.max(position + 1),
             recovery_nodes,
+        }
+    }
+
+    fn parse_set_comprehension_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if self.is_reserved_word_at(cursor, "where") {
+            self.diagnose_malformed_term_expression(cursor, "expected mapper term before `where`");
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        } else if let Some(mapper) = self.parse_term_expression_at(cursor) {
+            cursor = mapper.next_position;
+            children.push(mapper.id);
+            recovery_nodes.extend(mapper.recovery_nodes);
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected mapper term after `{`");
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+            if let Some(recovery) = self.recover_malformed_set_comprehension_mapper_tail(cursor) {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+        }
+
+        if self.is_reserved_word_at(cursor, "where") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "expected `where` in set comprehension",
+            );
+            if let Some(recovery) = self.recover_malformed_set_comprehension_mapper_tail(cursor) {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+            if self.is_reserved_word_at(cursor, "where") {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            }
+        }
+
+        if let Some(segment) = self.parse_comprehension_variable_segment_at(cursor) {
+            cursor = segment.next_position;
+            children.push(segment.id);
+            recovery_nodes.extend(segment.recovery_nodes);
+        } else {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "expected set-comprehension generator after `where`",
+            );
+            let segment = self.add_missing_comprehension_variable_segment(cursor);
+            children.push(segment.id);
+            recovery_nodes.extend(segment.recovery_nodes);
+        }
+
+        while self.is_reserved_symbol_at(cursor, ",") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            if let Some(segment) = self.parse_comprehension_variable_segment_at(cursor) {
+                cursor = segment.next_position;
+                children.push(segment.id);
+                recovery_nodes.extend(segment.recovery_nodes);
+            } else {
+                self.diagnose_malformed_term_expression(
+                    cursor,
+                    "expected set-comprehension generator after `,`",
+                );
+                let segment = self.add_missing_comprehension_variable_segment(cursor);
+                children.push(segment.id);
+                recovery_nodes.extend(segment.recovery_nodes);
+                break;
+            }
+        }
+
+        if self.is_reserved_symbol_at(cursor, ":") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            if let Some(condition) = self.parse_formula_expression_at(cursor) {
+                cursor = condition.next_position;
+                children.push(condition.id);
+                recovery_nodes.extend(condition.recovery_nodes);
+            } else {
+                self.diagnose_malformed_formula_expression(
+                    cursor,
+                    "expected formula after set-comprehension `:`",
+                );
+                let missing = self.add_missing_formula(cursor);
+                children.push(missing);
+                recovery_nodes.push(missing);
+            }
+        }
+
+        if self.is_reserved_symbol_at(cursor, "}") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_unmatched_term_delimiter(position, cursor, "}");
+            let recovery = self.add_recovery_node(
+                SyntaxRecoveryKind::UnmatchedOpeningDelimiter,
+                self.zero_range_at(cursor),
+                Vec::new(),
+            );
+            children.push(recovery);
+            recovery_nodes.push(recovery);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::SetComprehension,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_comprehension_variable_segment_at(
+        &mut self,
+        position: usize,
+    ) -> Option<ParsedTypeNode> {
+        let mut children = Vec::new();
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position;
+
+        if self.is_identifier_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else if self.is_reserved_word_at(cursor, "is") {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "expected set-comprehension generator before `is`",
+            );
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        } else {
+            return None;
+        }
+
+        if self.is_reserved_word_at(cursor, "is") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            if let Some(type_expression) = self.parse_type_expression_at(cursor) {
+                cursor = type_expression.next_position;
+                children.push(type_expression.id);
+                recovery_nodes.extend(type_expression.recovery_nodes);
+            } else {
+                self.diagnose_malformed_type_expression(
+                    cursor,
+                    "expected type after set-comprehension generator `is`",
+                );
+                let missing = self.add_missing_type_expression(cursor);
+                children.push(missing);
+                recovery_nodes.push(missing);
+            }
+        } else {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "expected `is` in set-comprehension generator",
+            );
+            if let Some(recovery) = self.recover_malformed_comprehension_generator_tail(cursor) {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::ComprehensionVariableSegment,
+            range: self.covering_token_range(position, cursor.max(position + 1)),
+            children,
+        });
+        Some(ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        })
+    }
+
+    fn add_missing_comprehension_variable_segment(&mut self, position: usize) -> ParsedTypeNode {
+        let missing = self.add_missing_term(position);
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::ComprehensionVariableSegment,
+            range: self.zero_range_at(position),
+            children: vec![missing],
+        });
+        ParsedTypeNode {
+            id,
+            next_position: position,
+            recovery_nodes: vec![missing],
         }
     }
 
@@ -3491,6 +3744,73 @@ impl Parser {
         self.emit_malformed_tail_recovery(position, cursor)
     }
 
+    fn recover_malformed_comprehension_generator_tail(
+        &mut self,
+        position: usize,
+    ) -> Option<ParsedItem> {
+        let mut cursor = position;
+        while cursor < self.request.tokens.len()
+            && !self.is_semicolon_at(cursor)
+            && !self.is_reserved_symbol_at(cursor, ",")
+            && !self.is_reserved_symbol_at(cursor, ":")
+            && !self.is_reserved_symbol_at(cursor, "}")
+            && !self.is_reserved_symbol_at(cursor, ")")
+            && !self.is_reserved_symbol_at(cursor, "]")
+            && !self.is_item_start_at(cursor)
+        {
+            cursor += 1;
+        }
+        self.emit_malformed_tail_recovery(position, cursor)
+    }
+
+    fn recover_malformed_set_comprehension_mapper_tail(
+        &mut self,
+        position: usize,
+    ) -> Option<ParsedItem> {
+        let mut cursor = position;
+        let mut paren_depth = 0_usize;
+        let mut bracket_depth = 0_usize;
+        let mut brace_depth = 0_usize;
+
+        while cursor < self.request.tokens.len() {
+            let top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            if top_level
+                && (self.is_reserved_word_at(cursor, "where")
+                    || self.is_reserved_symbol_at(cursor, "}")
+                    || self.is_semicolon_at(cursor)
+                    || self.is_item_start_at(cursor))
+            {
+                break;
+            }
+
+            if self.is_reserved_symbol_at(cursor, "(") {
+                paren_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                if paren_depth == 0 {
+                    break;
+                }
+                paren_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                bracket_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                if bracket_depth == 0 {
+                    break;
+                }
+                bracket_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                brace_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                if brace_depth == 0 {
+                    break;
+                }
+                brace_depth -= 1;
+            }
+            cursor += 1;
+        }
+
+        self.emit_malformed_tail_recovery(position, cursor)
+    }
+
     fn recover_malformed_tail(&mut self, position: usize) -> Option<ParsedItem> {
         let mut cursor = position;
         while cursor < self.request.tokens.len() && !self.is_semicolon_at(cursor) {
@@ -3767,6 +4087,12 @@ impl Parser {
         let mut brace_depth = 0_usize;
         let mut in_is_assertion_body = false;
         while cursor < self.request.tokens.len() && !self.is_semicolon_at(cursor) {
+            if let Some(condition_start) = self.set_comprehension_condition_start_at(cursor)
+                && self
+                    .formula_payload_contains_deferred_predicate_template_args_at(condition_start)
+            {
+                return true;
+            }
             let at_top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
             if at_top_level {
                 if self.formula_connective_at(cursor).is_some()
@@ -3813,6 +4139,60 @@ impl Parser {
             cursor += 1;
         }
         false
+    }
+
+    fn set_comprehension_condition_start_at(&self, position: usize) -> Option<usize> {
+        if !self.is_reserved_symbol_at(position, "{")
+            || self
+                .set_comprehension_where_before_first_separator_at(position)
+                .is_none()
+        {
+            return None;
+        }
+
+        let mut cursor = position + 1;
+        let mut paren_depth = 0_usize;
+        let mut bracket_depth = 0_usize;
+        let mut brace_depth = 1_usize;
+        while cursor < self.request.tokens.len() {
+            let at_comprehension_top = paren_depth == 0 && bracket_depth == 0 && brace_depth == 1;
+            if at_comprehension_top {
+                if self.is_reserved_symbol_at(cursor, ":") {
+                    return Some(cursor + 1);
+                }
+                if self.is_reserved_symbol_at(cursor, "}")
+                    || self.is_semicolon_at(cursor)
+                    || self.is_item_start_at(cursor)
+                {
+                    return None;
+                }
+            }
+
+            if self.is_reserved_symbol_at(cursor, "(") {
+                paren_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                if paren_depth == 0 {
+                    return None;
+                }
+                paren_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                bracket_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                if bracket_depth == 0 {
+                    return None;
+                }
+                bracket_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                brace_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                if brace_depth == 1 {
+                    return None;
+                }
+                brace_depth -= 1;
+            }
+            cursor += 1;
+        }
+        None
     }
 
     fn should_try_head_first_predicate_at(&self, position: usize) -> bool {
@@ -9470,6 +9850,454 @@ mod tests {
     }
 
     #[test]
+    fn parser_parses_set_comprehension_terms() {
+        let source_id = source_id(168);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("OmittedCondition", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("{", ParserTokenKind::ReservedSymbol),
+                    ("f", ParserTokenKind::Identifier),
+                    (".", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("is", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    ("}", ParserTokenKind::ReservedSymbol),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("Conditioned", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("{", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("is", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("}", ParserTokenKind::ReservedSymbol),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("MultipleGenerators", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("{", ParserTokenKind::ReservedSymbol),
+                    ("[", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    (",", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("]", ParserTokenKind::ReservedSymbol),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("is", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (",", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("is", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("}", ParserTokenKind::ReservedSymbol),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("p", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("OperatorMapper", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("{", ParserTokenKind::ReservedSymbol),
+                    ("a", ParserTokenKind::Identifier),
+                    ("++", ParserTokenKind::UserSymbol),
+                    ("b", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("is", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("}", ParserTokenKind::ReservedSymbol),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("q", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("Nested", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("{", ParserTokenKind::ReservedSymbol),
+                    ("{", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("y", ParserTokenKind::Identifier),
+                    ("is", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("}", ParserTokenKind::ReservedSymbol),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("is", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("}", ParserTokenKind::ReservedSymbol),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("z", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("Enumeration", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("{", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    (",", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("}", ParserTokenKind::ReservedSymbol),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("z", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            operator_fixture_fixities(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "set-comprehension terms should parse without diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("set-comprehension terms should keep an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::SetComprehension
+            )),
+            6
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ComprehensionVariableSegment
+            )),
+            7
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::SetEnumeration)),
+            1
+        );
+
+        let omitted = set_comprehension_term_for_label(&ast, "OmittedCondition");
+        assert_eq!(direct_token_texts(&ast, omitted), vec!["{", "where", "}"]);
+        assert!(
+            subtree_contains_kind(&ast, set_comprehension_mapper(&ast, omitted), |kind| {
+                matches!(kind, SurfaceNodeKind::SelectorAccess)
+            }),
+            "selector mapper should preserve the existing term surface"
+        );
+        assert_eq!(
+            structural_children(&ast, omitted)
+                .iter()
+                .filter(|child| matches!(child.kind, SurfaceNodeKind::ComprehensionVariableSegment))
+                .count(),
+            1
+        );
+
+        let conditioned = set_comprehension_term_for_label(&ast, "Conditioned");
+        assert_eq!(
+            direct_token_texts(&ast, conditioned),
+            vec!["{", "where", ":", "}"]
+        );
+        assert!(
+            structural_children(&ast, conditioned)
+                .iter()
+                .any(|child| matches!(child.kind, SurfaceNodeKind::FormulaExpression))
+        );
+
+        let multiple = set_comprehension_term_for_label(&ast, "MultipleGenerators");
+        assert_eq!(
+            structural_children(&ast, multiple)
+                .iter()
+                .filter(|child| matches!(child.kind, SurfaceNodeKind::ComprehensionVariableSegment))
+                .count(),
+            2
+        );
+        assert_eq!(
+            direct_token_texts(&ast, multiple),
+            vec!["{", "where", ",", ":", "}"]
+        );
+
+        let operator_mapper = set_comprehension_term_for_label(&ast, "OperatorMapper");
+        assert!(
+            subtree_contains_kind(
+                &ast,
+                set_comprehension_mapper(&ast, operator_mapper),
+                |kind| {
+                    matches!(
+                        kind,
+                        SurfaceNodeKind::InfixExpression(operator)
+                            if operator.spelling.as_ref() == "++"
+                    )
+                }
+            ),
+            "operator mapper should preserve Pratt grouping inside SetComprehension"
+        );
+
+        let nested = set_comprehension_term_for_label(&ast, "Nested");
+        assert!(
+            subtree_contains_kind(&ast, set_comprehension_mapper(&ast, nested), |kind| {
+                matches!(kind, SurfaceNodeKind::SetComprehension)
+            }),
+            "nested mapper should preserve the inner SetComprehension term"
+        );
+
+        let enumeration_formula = formula_root_for_label(&ast, "Enumeration");
+        let enumeration_left = builtin_predicate_left_term_payload(&ast, enumeration_formula);
+        assert!(matches!(
+            enumeration_left.kind,
+            SurfaceNodeKind::SetEnumeration
+        ));
+    }
+
+    #[test]
+    fn parser_recovers_malformed_set_comprehensions() {
+        let source_id = source_id(169);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("MissingGeneratorType", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("{", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("is", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("}", ParserTokenKind::ReservedSymbol),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("MissingCondition", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("{", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("is", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("}", ParserTokenKind::ReservedSymbol),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("MissingClose", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("IsSmall", ParserTokenKind::Identifier),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("{", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("is", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("MissingGenerator", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("{", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("is", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("}", ParserTokenKind::ReservedSymbol),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("MissingIs", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("{", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("}", ParserTokenKind::ReservedSymbol),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert_eq!(
+            output
+                .diagnostics
+                .iter()
+                .map(|diagnostic| &diagnostic.code)
+                .collect::<Vec<_>>(),
+            vec![
+                &SyntaxDiagnosticCode::MalformedTypeExpression,
+                &SyntaxDiagnosticCode::MalformedFormulaExpression,
+                &SyntaxDiagnosticCode::MalformedTermExpression,
+                &SyntaxDiagnosticCode::MalformedTermExpression,
+                &SyntaxDiagnosticCode::MalformedTermExpression,
+            ]
+        );
+        let ast = output
+            .ast
+            .expect("malformed set comprehensions should recover an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::SetComprehension
+            )),
+            5
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingTypeExpression)
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingFormula)
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingTerm)
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::UnmatchedOpeningDelimiter)
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+            )),
+            1
+        );
+    }
+
+    #[test]
+    fn parser_defers_template_predicate_args_inside_set_comprehension_conditions() {
+        let source_id = source_id(170);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("TemplateCondition", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("{", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("is", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("R", ParserTokenKind::UserSymbol),
+                    ("[", ParserTokenKind::ReservedSymbol),
+                    ("T", ParserTokenKind::UserSymbol),
+                    ("]", ParserTokenKind::ReservedSymbol),
+                    ("z", ParserTokenKind::Identifier),
+                    ("}", ParserTokenKind::ReservedSymbol),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("w", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("NestedTemplateCondition", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("IsSmall", ParserTokenKind::Identifier),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("{", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("is", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("R", ParserTokenKind::UserSymbol),
+                    ("[", ParserTokenKind::ReservedSymbol),
+                    ("T", ParserTokenKind::UserSymbol),
+                    ("]", ParserTokenKind::ReservedSymbol),
+                    ("z", ParserTokenKind::Identifier),
+                    ("}", ParserTokenKind::ReservedSymbol),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "template predicate args inside comprehension conditions remain deferred: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("deferred comprehension condition should keep an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::FormulaExpression
+            )),
+            0
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::SetComprehension
+            )),
+            0
+        );
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 2);
+        let item = single_node(&ast, |kind| {
+            matches!(kind, SurfaceNodeKind::PlaceholderItem)
+        });
+        assert!(!direct_child_has_kind(&ast, item, |kind| {
+            matches!(kind, SurfaceNodeKind::FormulaExpression)
+        }));
+    }
+
+    #[test]
     fn parser_keeps_template_predicate_args_deferred() {
         let source_id = source_id(72);
         let output = parse(ParseRequest::new(
@@ -10311,6 +11139,66 @@ mod tests {
         );
         ast.node(formula_expression.children[0])
             .unwrap_or_else(|| panic!("expected formula child for `{label}`"))
+    }
+
+    fn set_comprehension_term_for_label<'a>(
+        ast: &'a mizar_syntax::SurfaceAst,
+        label: &str,
+    ) -> &'a mizar_syntax::SurfaceNode {
+        let formula = formula_root_for_label(ast, label);
+        let term = builtin_predicate_left_term_payload(ast, formula);
+        assert!(
+            matches!(term.kind, SurfaceNodeKind::SetComprehension),
+            "expected left term for `{label}` to be SetComprehension, got {:?}",
+            term.kind
+        );
+        term
+    }
+
+    fn builtin_predicate_left_term_payload<'a>(
+        ast: &'a mizar_syntax::SurfaceAst,
+        formula: &mizar_syntax::SurfaceNode,
+    ) -> &'a mizar_syntax::SurfaceNode {
+        assert!(
+            matches!(formula.kind, SurfaceNodeKind::BuiltinPredicateApplication),
+            "expected builtin predicate application, got {:?}",
+            formula.kind
+        );
+        let terms = structural_children(ast, formula)
+            .into_iter()
+            .filter(|child| matches!(child.kind, SurfaceNodeKind::TermExpression))
+            .collect::<Vec<_>>();
+        assert!(
+            terms.len() >= 2,
+            "builtin predicate application should have left and right terms"
+        );
+        let left_children = structural_children(ast, terms[0]);
+        assert_eq!(
+            left_children.len(),
+            1,
+            "left TermExpression should wrap one concrete term"
+        );
+        left_children[0]
+    }
+
+    fn set_comprehension_mapper(
+        ast: &mizar_syntax::SurfaceAst,
+        comprehension: &mizar_syntax::SurfaceNode,
+    ) -> mizar_syntax::SurfaceNodeId {
+        assert!(
+            matches!(comprehension.kind, SurfaceNodeKind::SetComprehension),
+            "expected SetComprehension, got {:?}",
+            comprehension.kind
+        );
+        comprehension
+            .children
+            .iter()
+            .copied()
+            .find(|child| {
+                ast.node(*child)
+                    .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::TermExpression))
+            })
+            .expect("SetComprehension should own a mapper TermExpression")
     }
 
     fn structural_children<'a>(

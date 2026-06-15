@@ -1,10 +1,10 @@
 # mizar-parser: Grammar
 
 Status: module skeleton, top-level placeholder dispatch, concrete import
-items, export items, visibility wrappers, reserve-hosted type expressions, and
-reserve-hosted term surfaces implemented through task 12, including active
-prefix/postfix/infix operator expressions before `qua`; remaining concrete
-non-module item grammars planned.
+items, export items, visibility wrappers, reserve-hosted type expressions,
+task-15 term surfaces including set comprehensions, and task-14 formula
+surfaces are implemented; remaining concrete statement/proof item grammars are
+planned.
 
 ## Purpose
 
@@ -707,6 +707,74 @@ preservation, `thesis` / `contradiction`, universal and existential
 quantifiers with explicit and implicit variables, nested universal
 quantification without repeated `holds`, theorem-placeholder formula hosting,
 and missing-formula recovery.
+
+## Task 15: Fraenkel And Set-Builder Terms
+
+Production inventory:
+
+```ebnf
+set_expression       ::= set_enumeration | set_comprehension ;
+set_enumeration      ::= "{" [ term_list ] "}" ;
+set_comprehension    ::= "{" term_expression "where" typed_var_list
+                          [ ":" formula ] "}" ;
+typed_var_list       ::= typed_var { "," typed_var } ;
+typed_var            ::= identifier "is" type_expression ;
+```
+
+Task 15 completes the S-011 term surface by adding the set-comprehension
+primary term from Chapter 13. `SetEnumeration` remains the task-9 surface for
+`{}` and `{ term_list }`; `SetComprehension` is selected only when the first
+brace child parses as one mapper `TermExpression` followed by a top-level
+`where` before the brace closes. The mapper term is the already implemented
+task-12 term surface, so selector/update, `qua`, and active operator grouping
+are preserved inside it. Nested comprehensions are ordinary nested
+`SetComprehension` term children.
+
+`SetComprehension` child order is source order: `{`, mapper
+`TermExpression`, `where`, one or more `ComprehensionVariableSegment` children
+separated by comma tokens, optional `:` plus `FormulaExpression`, then `}` or
+delimiter recovery. `ComprehensionVariableSegment` owns the generator
+identifier or a `MissingTerm` recovery in the identifier position, the `is`
+token when present, and a `TypeExpression` or `MissingTypeExpression` recovery
+when the `is` token is present. The parser does not resolve binder identity, implicit domains,
+sethood, capture, mapper result type, or the elaborated Fraenkel symbol.
+
+The optional condition after `:` uses the task-14 formula parser. Template
+predicate arguments inside that formula remain deferred to task 31 / S-016;
+when a theorem/lemma formula host contains a comprehension payload with such a
+deferred predicate template surface, the host remains a legacy placeholder
+rather than partially parsing task-15 syntax. Condition omission is represented
+by the absence of both `:` and `FormulaExpression`, not by a synthetic `thesis`
+or implicit true formula.
+
+Missing mapper terms, missing generator identifiers, missing generator `is`,
+and malformed generator separators use `MalformedTermExpression`; pure mapper
+insertion points use `MissingTerm`, and generator segments may own `MissingTerm`
+in the identifier position until a future binder-specific recovery vocabulary
+exists. A missing generator type after `is` reuses `MalformedTypeExpression`
+plus `MissingTypeExpression`. A colon
+without a following condition formula reports `MalformedFormulaExpression` and
+inserts `MissingFormula`. Missing `}` uses `MalformedTermExpression` with
+`UnmatchedOpeningDelimiter` under the `SetComprehension` node.
+
+Task 15 tests must pin: a comprehension with an omitted condition, a
+conditioned comprehension, multiple generators with comma preservation, mapper
+term precedence and nested comprehension structure, active parse-only
+pass/fail fixtures, missing generator type recovery, missing condition formula
+recovery, missing generator `is` recovery, missing closing-brace recovery, and
+the distinction between set enumeration and set comprehension.
+
+Task 15 result: `SetComprehension` and `ComprehensionVariableSegment` are
+implemented as primary term surfaces. The parser selects comprehension syntax
+only when a top-level `where` appears before the first top-level separator,
+keeps enumeration syntax on the existing `SetEnumeration` path, reuses the
+task-14 formula parser for optional conditions, and emits the documented
+missing type, missing formula, missing term, and unmatched delimiter recovery
+nodes. Active parse-only pass/fail fixtures and
+`spec.en.13.set_expressions.parser` traceability cover the increment. The
+lexer scope skeleton also treats expression-level `is set` type words as type
+syntax rather than malformed `set name =` binder statements, so
+set-comprehension fixtures can run in the active parse-only corpus.
 
 ## Public Enum Compatibility
 

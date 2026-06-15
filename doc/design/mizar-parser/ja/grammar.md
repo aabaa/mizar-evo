@@ -2,10 +2,10 @@
 
 > 正本は英語です。英語版: [../en/grammar.md](../en/grammar.md)。
 
-状態: task 12 までの module skeleton、top-level placeholder dispatch、concrete
-import item、export item、visibility wrapper、reserve-hosted type expression、および
-reserve-hosted term surface（`qua` 前の active prefix/postfix/infix operator
-expression を含む）は実装済み。残りの具体的な非 module item 文法は計画中。
+状態: module skeleton、top-level placeholder dispatch、concrete import item、
+export item、visibility wrapper、reserve-hosted type expression、set comprehension
+を含む task 15 term surface、および task 14 formula surface は実装済み。残りの
+具体的な statement / proof item 文法は計画中。
 
 ## 目的
 
@@ -644,7 +644,7 @@ theorem/lemma placeholder formula host は atomic formula から task-14 formula
 proof tail が続く prefix は、task 22 が theorem/proof item node を所有するまで
 legacy token-preserving `PlaceholderItem` payload のままにする。template
 predicate argument は task 31 / S-016 に deferred のままである。formula を
-term syntax 内へ埋め込む Fraenkel / set-builder term は task 15 が所有する。
+term syntax 内へ埋め込む Fraenkel / set-builder term は task 15 で実装済みである。
 
 `not`、connective、quantifier `st`、`holds` の後で formula operand が malformed
 な場合は `MissingFormula` recovery を挿入し、`MalformedFormulaExpression` を
@@ -661,6 +661,71 @@ grouping、非結合 `iff` rejection、repetition token preservation、`thesis` 
 `contradiction`、explicit / implicit variable を持つ universal / existential
 quantifier、`holds` を繰り返さない nested universal quantification、
 theorem-placeholder formula hosting、および missing-formula recovery を固定しなければならない。
+
+## Task 15: Fraenkel / set-builder term
+
+Production inventory:
+
+```ebnf
+set_expression       ::= set_enumeration | set_comprehension ;
+set_enumeration      ::= "{" [ term_list ] "}" ;
+set_comprehension    ::= "{" term_expression "where" typed_var_list
+                          [ ":" formula ] "}" ;
+typed_var_list       ::= typed_var { "," typed_var } ;
+typed_var            ::= identifier "is" type_expression ;
+```
+
+Task 15 は Chapter 13 の set-comprehension primary term を追加して、S-011
+term surface を完了する。`SetEnumeration` は `{}` と `{ term_list }` を表す
+task 9 surface のまま残す。`SetComprehension` は、brace 内の先頭が 1 個の
+mapper `TermExpression` として parse され、その後に brace が閉じる前の
+top-level `where` が続く場合にだけ選択する。mapper term は既に実装済みの
+task-12 term surface なので、その内部の selector/update、`qua`、active operator
+grouping は保持される。nested comprehension は通常の nested `SetComprehension`
+term child として表す。
+
+`SetComprehension` の child order は source order で、`{`、mapper
+`TermExpression`、`where`、comma token で区切られた 1 個以上の
+`ComprehensionVariableSegment`、任意の `:` と `FormulaExpression`、最後に
+`}` または delimiter recovery である。`ComprehensionVariableSegment` は
+generator identifier、または identifier 位置の `MissingTerm` recovery、存在する場合の
+`is` token、そして `is` token が存在する場合の `TypeExpression` または
+`MissingTypeExpression` recovery を所有する。parser は binder identity、implicit
+domain、sethood、capture、mapper result type、elaborated Fraenkel symbol を解決しない。
+
+`:` 後の任意 condition は task-14 formula parser を使う。その formula 内の
+template predicate argument は task 31 / S-016 まで deferred のままである。
+theorem / lemma formula host がそのような deferred predicate template surface を含む
+comprehension payload を持つ場合、host は task-15 syntax を部分 parse せず
+legacy placeholder のままにする。
+condition omission は `:` と `FormulaExpression` の両方がないこととして表し、synthetic
+`thesis` や暗黙 true formula は作らない。
+
+mapper term 欠落、generator identifier 欠落、generator `is` 欠落、malformed
+generator separator は `MalformedTermExpression` を使う。純粋な mapper insertion
+point では `MissingTerm` を使い、generator segment は将来 binder-specific recovery
+vocabulary が追加されるまで identifier 位置に `MissingTerm` を所有してよい。`is` 後の
+generator type 欠落は `MalformedTypeExpression` と `MissingTypeExpression` を再利用する。`:` 後の
+condition formula 欠落は `MalformedFormulaExpression` を報告し、`MissingFormula`
+を挿入する。`}` 欠落は `SetComprehension` node 下の `UnmatchedOpeningDelimiter`
+と `MalformedTermExpression` を使う。
+
+Task 15 の test は condition omission を持つ comprehension、conditioned
+comprehension、comma preservation を含む multiple generator、mapper term precedence と
+nested comprehension structure、active parse-only pass/fail fixture、missing generator
+type recovery、missing condition formula recovery、generator `is` 欠落 recovery、
+closing brace 欠落 recovery、set enumeration と set comprehension の区別を固定しなければならない。
+
+Task 15 の結果: `SetComprehension` と `ComprehensionVariableSegment` は primary
+term surface として実装済みである。parser は最初の top-level separator より前に
+top-level `where` が現れる場合だけ comprehension syntax を選択し、enumeration
+syntax は既存の `SetEnumeration` path に残す。任意 condition には task 14 の
+formula parser を再利用し、仕様化された missing type、missing formula、
+missing term、unmatched delimiter recovery node を送出する。active parse-only
+pass/fail fixture と `spec.en.13.set_expressions.parser` traceability がこの増分を
+覆う。lexer scope skeleton も expression-level の `is set` type word を malformed
+`set name =` binder statement ではなく type syntax として扱うため、set-comprehension
+fixture は active parse-only corpus で実行できる。
 
 ## 公開 enum の互換性
 

@@ -254,7 +254,7 @@ impl ScopeSkeletonBuilder {
                         self.parse_binders(BindingShapeKind::Consider, token.span);
                         continue;
                     }
-                    "set" => {
+                    "set" if self.should_parse_set_named_equals_binder() => {
                         self.advance();
                         self.parse_named_equals_binder(BindingShapeKind::Set, token.span);
                         continue;
@@ -653,6 +653,27 @@ impl ScopeSkeletonBuilder {
             });
             self.extend_current_or_statement(keyword_span.start, statement_end, vec![binding]);
         }
+    }
+
+    fn should_parse_set_named_equals_binder(&self) -> bool {
+        self.named_equals_binder_shape_follows_keyword()
+            || self.cursor == 0
+            || self
+                .tokens
+                .get(self.cursor.saturating_sub(1))
+                .is_some_and(|token| {
+                    token.kind == ScopeSkeletonTokenKind::Semicolon
+                        || token_is_block_boundary(token)
+                })
+    }
+
+    fn named_equals_binder_shape_follows_keyword(&self) -> bool {
+        self.tokens
+            .get(self.cursor + 1)
+            .is_some_and(|token| token.kind == ScopeSkeletonTokenKind::Word)
+            && self.tokens.get(self.cursor + 2).is_some_and(|token| {
+                token.kind == ScopeSkeletonTokenKind::Other && token.lexeme == "="
+            })
     }
 
     fn tokens_until_stop_contain_word(&self, spelling: &str) -> bool {

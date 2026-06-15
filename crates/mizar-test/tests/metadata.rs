@@ -10,6 +10,7 @@ use mizar_test::{
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
 const TEMPLATE_ARGUMENTS_REQUIREMENT_ID: &str = "spec.en.syntax.template_arguments.parser";
 const OPERATOR_PRECEDENCE_REQUIREMENT_ID: &str = "spec.en.13.operator_precedence.parser";
+const SET_EXPRESSION_REQUIREMENT_ID: &str = "spec.en.13.set_expressions.parser";
 const ATOMIC_FORMULA_REQUIREMENT_ID: &str = "spec.en.14.atomic_formula.parser";
 const FORMULA_CONNECTIVES_REQUIREMENT_ID: &str =
     "spec.en.14.formula_connectives_quantifiers.parser";
@@ -609,6 +610,28 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             .any(|spec_ref| spec_ref.0 == OPERATOR_PRECEDENCE_REQUIREMENT_ID)
     );
 
+    let set_comprehension_pass = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_parser_set_comprehensions_001")
+        .expect("set-comprehension parse-only pass case should be discovered");
+    assert_eq!(set_comprehension_pass.expectation.kind, TestKind::Pass);
+    assert_eq!(set_comprehension_pass.expectation.stage, Stage::ParseOnly);
+    assert!(
+        set_comprehension_pass
+            .expectation
+            .spec_refs
+            .iter()
+            .any(|spec_ref| spec_ref.0 == SET_EXPRESSION_REQUIREMENT_ID)
+    );
+    assert!(
+        set_comprehension_pass
+            .expectation
+            .tags
+            .iter()
+            .any(|tag| tag == "active_parse_only")
+    );
+
     let atomic_pass = plan
         .cases
         .iter()
@@ -684,6 +707,11 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "fail_parser_qua_missing_type_001",
             "fail_parser_selector_call_missing_close_001",
             "fail_parser_selector_missing_name_001",
+            "fail_parser_set_comprehension_missing_close_001",
+            "fail_parser_set_comprehension_missing_condition_001",
+            "fail_parser_set_comprehension_missing_generator_001",
+            "fail_parser_set_comprehension_missing_is_001",
+            "fail_parser_set_comprehension_missing_type_001",
             "fail_parser_stray_end_001",
             "fail_parser_structure_update_missing_close_001",
             "fail_parser_structure_update_missing_value_001",
@@ -703,6 +731,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_primary_terms_001",
             "pass_parser_qua_terms_001",
             "pass_parser_selector_updates_001",
+            "pass_parser_set_comprehensions_001",
             "pass_parser_type_expressions_001",
         ]
     );
@@ -737,6 +766,36 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from("tests/miz/pass/parser/pass_parser_operator_terms_001.expect.toml"),
             PathBuf::from("tests/miz/fail/parser/fail_parser_operator_dangling_001.expect.toml"),
             PathBuf::from("tests/miz/fail/parser/fail_parser_operator_nonassoc_001.expect.toml"),
+        ]
+    );
+
+    let set_expression_requirement = plan
+        .manifest
+        .requirements
+        .iter()
+        .find(|requirement| requirement.id.0 == SET_EXPRESSION_REQUIREMENT_ID)
+        .expect("set-expression parse-only requirement should exist");
+    assert_eq!(set_expression_requirement.stage, Stage::ParseOnly);
+    assert_eq!(
+        set_expression_requirement.tests,
+        vec![
+            PathBuf::from("tests/miz/pass/parser/pass_parser_primary_terms_001.expect.toml"),
+            PathBuf::from("tests/miz/pass/parser/pass_parser_set_comprehensions_001.expect.toml"),
+            PathBuf::from(
+                "tests/miz/fail/parser/fail_parser_set_comprehension_missing_close_001.expect.toml"
+            ),
+            PathBuf::from(
+                "tests/miz/fail/parser/fail_parser_set_comprehension_missing_condition_001.expect.toml"
+            ),
+            PathBuf::from(
+                "tests/miz/fail/parser/fail_parser_set_comprehension_missing_generator_001.expect.toml"
+            ),
+            PathBuf::from(
+                "tests/miz/fail/parser/fail_parser_set_comprehension_missing_is_001.expect.toml"
+            ),
+            PathBuf::from(
+                "tests/miz/fail/parser/fail_parser_set_comprehension_missing_type_001.expect.toml"
+            ),
         ]
     );
 
@@ -818,8 +877,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 48);
-    assert_eq!(report.passed_count(), 48);
+    assert_eq!(report.results.len(), 54);
+    assert_eq!(report.passed_count(), 54);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_atomic_formulas_001"
@@ -966,6 +1025,26 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
             && result.actual_diagnostic_codes == vec!["malformed_term_expression".to_owned()]
     }));
     assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_set_comprehension_missing_close_001"
+            && result.actual_diagnostic_codes == vec!["malformed_term_expression".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_set_comprehension_missing_condition_001"
+            && result.actual_diagnostic_codes == vec!["malformed_formula_expression".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_set_comprehension_missing_generator_001"
+            && result.actual_diagnostic_codes == vec!["malformed_term_expression".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_set_comprehension_missing_is_001"
+            && result.actual_diagnostic_codes == vec!["malformed_term_expression".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_set_comprehension_missing_type_001"
+            && result.actual_diagnostic_codes == vec!["malformed_type_expression".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_parser_stray_end_001"
             && result.actual_diagnostic_codes == vec!["unrecoverable_input".to_owned()]
     }));
@@ -996,6 +1075,10 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_selector_updates_001"
+            && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_set_comprehensions_001"
             && result.actual_diagnostic_codes.is_empty()
     }));
     assert!(report.results.iter().any(|result| {
@@ -1113,8 +1196,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 48"));
-    assert!(stdout.contains("passed: 48"));
+    assert!(stdout.contains("parse-only cases: 54"));
+    assert!(stdout.contains("passed: 54"));
     assert!(stdout.contains("failed: 0"));
 }
 

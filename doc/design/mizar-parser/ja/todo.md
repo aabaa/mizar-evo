@@ -414,14 +414,22 @@ resolver / build-system 依存を避ける。
      parse-only pass/fail corpus coverage、traceability entry
      `spec.en.14.formula_connectives_quantifiers.parser` を実装した。template
      predicate argument は task 31 / S-016 に deferred のままであり、formula
-     を埋め込む Fraenkel / set-builder term は task 15 のままである。
+     を埋め込む Fraenkel / set-builder term は task 15 で実装済みである。
 
-15. **Fraenkel と集合内包の項。** [ ]
+15. **Fraenkel と集合内包の項。** [x]
     - `{ term where … : formula }` と関連する集合内包形（条件を省略する形を
       含む）。区切り句が論理式を埋め込むため、論理式の後に置く。集合列挙
       リテラルは task 9 で扱う。
     - 依存: 14、`mizar-syntax` task 11 / S-011（Fraenkel ノードの増分）。仕様:
       [13.term_expression.md](../../../spec/ja/13.term_expression.md)。
+    - 結果: task 15 の `SetComprehension` と
+      `ComprehensionVariableSegment` surface、`SetEnumeration` との top-level
+      `where` による分岐、task 14 の formula parser を使う任意 condition
+      formula、generator type recovery、condition 欠落 recovery、brace 欠落
+      recovery、parser unit test、active parse-only pass/fail corpus coverage、
+      `spec.en.13.set_expressions.parser` の traceability、および expression-level
+      の `is set` type word を malformed `set name =` binder statement として
+      報告しない scope-skeleton guard を実装した。
 
 16. **単純文。** [ ]
     - `reserve`、`let`、`assume`、`take`、`set`、`given` — 正当化句を運ばない

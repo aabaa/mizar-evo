@@ -304,7 +304,7 @@ interaction. Spec references are the normative grammar chapters under
      coverage, typed accessors, `MalformedTypeExpression`, and active
      parse-only corpus coverage with paired parser task 8.
 
-11. **Term nodes.** [ ] — paired with `mizar-parser` tasks 9-12 and 15.
+11. **Term nodes.** [x] — paired with `mizar-parser` tasks 9-12 and 15.
    - Consume the shared path vocabulary introduced by task 9. Then add primary
      terms (parser task 9), syntax-only dot-role and selector access/update
      surfaces (parser task 10), functional
@@ -327,8 +327,14 @@ interaction. Spec references are the normative grammar chapters under
      active parse-only `qua` corpus cases. Parser task 12 has landed the
      operator-expression increment: `PrefixExpression`, `PostfixExpression`,
      active prefix/postfix/infix Pratt grouping, non-associative and dangling
-     operator diagnostics, and active parse-only operator corpus cases. S-011
-     remains open for parser task 15.
+     operator diagnostics, and active parse-only operator corpus cases. Parser
+     task 15 has landed the Fraenkel/set-builder increment:
+     `SetComprehension`, `ComprehensionVariableSegment`, top-level `where`
+     disambiguation from `SetEnumeration`, missing generator/type/condition
+     and closing-brace recovery, active parse-only set-comprehension corpus
+     cases, and rowan/snapshot/typed-accessor coverage. S-011 is complete for
+     the documented parse-only term surface; binder identity, sethood, capture,
+     mapper typing, and elaboration remain later semantic work.
    - Spec: [13.term_expression.md](../../../spec/en/13.term_expression.md),
      [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md).
 
@@ -343,7 +349,7 @@ interaction. Spec references are the normative grammar chapters under
      hosting, syntax typed accessors, parser unit tests, and active parse-only
      pass/fail corpus coverage are in place. Template predicate arguments
      remain deferred to task 31 / S-016, and formula-embedding
-     Fraenkel/set-builder terms remain parser task 15.
+     Fraenkel/set-builder terms are implemented by parser task 15 / S-011.
    - Spec: [14.formulas.md](../../../spec/en/14.formulas.md).
 
 13. **Statement nodes.** [ ] — paired with `mizar-parser` tasks 16 and 18-21.

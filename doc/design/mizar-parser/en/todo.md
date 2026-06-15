@@ -435,13 +435,22 @@ older numeric syntax task references appear to disagree, prefer
      arguments remain deferred to task 31 / S-016, and Fraenkel/set-builder
      terms that embed formulas remain task 15.
 
-15. **Fraenkel and set-builder terms.** [ ]
+15. **Fraenkel and set-builder terms.** [x]
     - `{ term where … : formula }` and related set-builder/comprehension forms,
       including the omitted-condition form; placed after formulas because the
       separator clause embeds a formula. Set enumeration literals are covered by
       task 9.
     - Deps: 14, `mizar-syntax` task 11 / S-011 (Fraenkel-node increment). Spec:
       [13.term_expression.md](../../../spec/en/13.term_expression.md).
+    - Result: implemented task-15 `SetComprehension` and
+      `ComprehensionVariableSegment` surfaces, top-level `where`
+      disambiguation from `SetEnumeration`, optional condition formula parsing
+      through the task-14 formula parser, generator type recovery, missing
+      condition recovery, missing brace recovery, parser unit tests, active
+      parse-only pass/fail corpus coverage, traceability under
+      `spec.en.13.set_expressions.parser`, and the scope-skeleton guard that
+      keeps expression-level `is set` type words from being reported as
+      malformed `set name =` binder statements.
 
 16. **Simple statements.** [ ]
     - `reserve`, `let`, `assume`, `take`, `set`, `given` — the statement forms

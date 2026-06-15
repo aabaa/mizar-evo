@@ -1,0 +1,1 @@
+theorem MissingCondition: { x where x is set : } = y;

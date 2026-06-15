@@ -61,6 +61,24 @@ fn scope_skeleton_records_supported_for_reserve_and_given_binders() {
 }
 
 #[test]
+fn scope_skeleton_ignores_set_type_words_inside_set_comprehensions() {
+    let source = "\
+theorem T: { x where x is set : thesis } = y;
+set s = y;
+theorem U: IsSmall({ x where x is set);";
+    let raw = scan_raw(source).expect("source should raw scan");
+    let skeleton = build_scope_skeleton(&raw);
+
+    assert!(skeleton.diagnostics.is_empty());
+    assert!(
+        skeleton
+            .frames
+            .iter()
+            .any(|frame| { frame.bindings.iter().any(|binding| binding.spelling == "s") })
+    );
+}
+
+#[test]
 fn scope_skeleton_limits_for_and_given_binders_to_statement_ranges() {
     let source = "for x holds thesis;\nx;\ngiven y being object;\ny;";
     let raw = scan_raw(source).expect("source should raw scan");

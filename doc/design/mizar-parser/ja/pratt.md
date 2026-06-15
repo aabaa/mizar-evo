@@ -4,7 +4,8 @@
 
 状態: task 12 の項 Pratt 解析は、active lexicon 由来の prefix、postfix、infix
 演算子向けに実装済みである。task 13 の atomic formula は項 Pratt boundary を使う。
-task 14 の fixed formula connective precedence は実装用に指定済みである。
+task 14 の fixed formula connective precedence は実装済みである。task 15 の
+set-comprehension primary は実装済みである。
 
 ## 目的
 
@@ -29,7 +30,9 @@ selector-versus-namespace role の解決は行わない。
 
 1. Prefix operator は null denotation である。operand はその operator precedence で parse する。
 2. Primary term と固定の selector/update postfix chain を次に parse する。そのため
-   selector/update/application syntax は user operator より強く bind する。
+   selector/update/application syntax は user operator より強く bind する。task 15 で
+   追加する set comprehension は primary term であり、その mapper child は同じ term
+   Pratt boundary、任意の condition child は固定 formula Pratt boundary で parse する。
 3. User postfix / infix operator は Pratt binding power で畳み込む。
 4. `qua` は Pratt の後、固定の最も低い term-level operator として module grammar が parse し、
    left-associative のままにする。

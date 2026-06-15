@@ -78,6 +78,8 @@ green tree.
 | structure constructor node | `SyntaxKind::StructureConstructor` |
 | field argument node | `SyntaxKind::FieldArgument` |
 | set enumeration node | `SyntaxKind::SetEnumeration` |
+| set comprehension node | `SyntaxKind::SetComprehension` |
+| comprehension variable segment node | `SyntaxKind::ComprehensionVariableSegment` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -167,6 +169,8 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 55 | `QuantifiedFormula` | task-14 universal or existential formula |
 | 56 | `QuantifierVariableSegment` | task-14 quantified variable segment |
 | 57 | `FormulaConstant` | task-14 `thesis` or `contradiction` formula constant |
+| 58 | `SetComprehension` | task-15 set-comprehension / Fraenkel term |
+| 59 | `ComprehensionVariableSegment` | task-15 typed generator segment |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -179,7 +183,7 @@ The current raw discriminants are part of the rowan boundary for this phase:
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
-above, currently `Root` through task-14 `FormulaConstant` plus the
+above, currently `Root` through task-15 `ComprehensionVariableSegment` plus the
 compatibility `Token` wrapper and `ErrorRecovery`; `is_token_kind` is true
 only for token leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future
 raw values should be appended or assigned into a documented reserved range so
@@ -220,7 +224,9 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::ApplicationTerm` | none | `SyntaxKind::ApplicationTerm` | parser task-9 ordinary parenthesized application or reserved-bracket functor application; owns delimiters and source-ordered term arguments |
 | `SurfaceNodeKind::StructureConstructor` | none | `SyntaxKind::StructureConstructor` | parser task-9 syntax-only structure-constructor surface when named field arguments are visible |
 | `SurfaceNodeKind::FieldArgument` | none | `SyntaxKind::FieldArgument` | parser task-9 `identifier ":" term_expression` field argument |
-| `SurfaceNodeKind::SetEnumeration` | none | `SyntaxKind::SetEnumeration` | parser task-9 set-enumeration term; Fraenkel/comprehension forms are parser task 15 |
+| `SurfaceNodeKind::SetEnumeration` | none | `SyntaxKind::SetEnumeration` | parser task-9 set-enumeration term |
+| `SurfaceNodeKind::SetComprehension` | none | `SyntaxKind::SetComprehension` | parser task-15 set-comprehension / Fraenkel term; owns `{`, a mapper `TermExpression`, `where`, generator segments, optional condition formula, and `}` or delimiter recovery |
+| `SurfaceNodeKind::ComprehensionVariableSegment` | none | `SyntaxKind::ComprehensionVariableSegment` | parser task-15 typed generator segment; owns identifier or `MissingTerm` recovery, optional `is`, and `TypeExpression` or `MissingTypeExpression` recovery when `is` is present |
 | `SurfaceNodeKind::SelectorAccess` | none | `SyntaxKind::SelectorAccess` | parser task-10 postfix selector access or selector-call surface; preserves syntax-only dot role |
 | `SurfaceNodeKind::StructureUpdate` | none | `SyntaxKind::StructureUpdate` | parser task-10 functional `term "with" "(" field_update_list ")"` update surface |
 | `SurfaceNodeKind::FieldUpdate` | none | `SyntaxKind::FieldUpdate` | parser task-10 `selector ":=" term_expression` field update inside `StructureUpdate` |
@@ -395,12 +401,19 @@ forms remain generic `ApplicationTerm` nodes until a later semantic boundary
 supplies structure facts. `FieldArgument` owns a field identifier, the `:`
 token, and a `TermExpression` or `MissingTerm`. `SetEnumeration` owns `{`,
 source-ordered term arguments separated by comma tokens, and an optional `}`.
-It does not represent Fraenkel/set-comprehension forms, which remain owned by
-parser task 15. `SurfaceNodeView` exposes typed `as_term_expression`,
+`SetComprehension` owns `{`, a mapper `TermExpression`, `where`, one or more
+`ComprehensionVariableSegment` children separated by comma tokens, optional
+`:` plus `FormulaExpression`, and an optional `}`. Missing `}` may be
+represented by `UnmatchedOpeningDelimiter` recovery. A
+`ComprehensionVariableSegment` owns one generator identifier or a `MissingTerm`
+recovery in the identifier position, the `is` token when present, and a
+`TypeExpression` or `MissingTypeExpression` recovery when the `is` token is
+present. These comprehension nodes do not resolve binder identity, sethood,
+capture, or the elaborated Fraenkel symbol. `SurfaceNodeView` exposes typed `as_term_expression`,
 `as_term_reference`, `as_numeral_term`, `as_it_term`,
 `as_parenthesized_term`, `as_choice_term`, `as_application_term`,
-`as_structure_constructor`, `as_field_argument`, and `as_set_enumeration`
-helpers.
+`as_structure_constructor`, `as_field_argument`, `as_set_enumeration`,
+`as_set_comprehension`, and `as_comprehension_variable_segment` helpers.
 
 Parser task 10 keeps the dot-role surface syntax-only. `SelectorAccess` owns
 the base term-shape child, a `.` token, an identifier field token, and optional

@@ -868,9 +868,15 @@ section = "13.4 Set Expressions"
 stage = "parse_only"
 status = "covered"
 required = true
-coverage = "pass"
+coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_primary_terms_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_set_comprehensions_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_set_comprehension_missing_close_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_set_comprehension_missing_condition_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_set_comprehension_missing_generator_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_set_comprehension_missing_is_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_set_comprehension_missing_type_001.expect.toml",
 ]
 
 [[requirement]]
