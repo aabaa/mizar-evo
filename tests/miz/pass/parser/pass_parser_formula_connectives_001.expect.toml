@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_formula_connectives_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.formula_connectives"
+source = "pass_parser_formula_connectives_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.14.formula_connectives_quantifiers.parser",
+]
+notes = "Active parse-only runner coverage for parser task 14 formula constants, fixed formula connectives, repetition tokens, grouping, prefix not, universal and existential quantifiers, typed variable segments, implicit variable segments, and nested universal quantification without repeated holds."

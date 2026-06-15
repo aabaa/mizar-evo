@@ -1,0 +1,18 @@
+theorem ThesisFormula: thesis;
+theorem Conjunction: x = y & z = w;
+theorem RepeatedConjunction: x = y & ... & z = w;
+theorem RepeatedDisjunction: x = y or ... or z = w;
+theorem OrImplies: x = y or z = w implies thesis;
+theorem IffGrouping: (x = y) iff contradiction;
+theorem NegatedConjunction: not x = y & z = w;
+theorem AndBeforeOr: x = y & z = w or u = v;
+theorem ImpliesBeforeIff: thesis implies contradiction iff thesis;
+theorem ParenthesizedOverride: (x = y or z = w) & u = v;
+theorem ImpliesQuantifier: x = y implies for q being set holds thesis;
+theorem UniversalTyped: for x being set st thesis holds contradiction;
+theorem UniversalNested: for x for y holds thesis;
+theorem Existential: ex y st thesis;
+theorem ImplicitVariables: for x, y holds thesis;
+theorem ExplicitImplicitVariables: for x being set, y holds thesis;
+theorem UniversalRecursive: for x st x = y or thesis holds not contradiction;
+theorem ExistentialRecursive: ex x st x = y & thesis;

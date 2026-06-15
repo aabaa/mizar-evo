@@ -11,6 +11,8 @@ static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
 const TEMPLATE_ARGUMENTS_REQUIREMENT_ID: &str = "spec.en.syntax.template_arguments.parser";
 const OPERATOR_PRECEDENCE_REQUIREMENT_ID: &str = "spec.en.13.operator_precedence.parser";
 const ATOMIC_FORMULA_REQUIREMENT_ID: &str = "spec.en.14.atomic_formula.parser";
+const FORMULA_CONNECTIVES_REQUIREMENT_ID: &str =
+    "spec.en.14.formula_connectives_quantifiers.parser";
 
 #[test]
 fn empty_corpus_succeeds() {
@@ -660,6 +662,13 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "fail_parser_export_missing_path_001",
             "fail_parser_export_missing_semicolon_001",
             "fail_parser_export_trailing_comma_001",
+            "fail_parser_formula_missing_holds_001",
+            "fail_parser_formula_missing_not_001",
+            "fail_parser_formula_missing_operand_001",
+            "fail_parser_formula_missing_quantifier_type_001",
+            "fail_parser_formula_missing_st_001",
+            "fail_parser_formula_nonassoc_iff_001",
+            "fail_parser_formula_unmatched_grouping_001",
             "fail_parser_import_after_export_001",
             "fail_parser_import_late_001",
             "fail_parser_import_missing_alias_001",
@@ -686,6 +695,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "fail_parser_visibility_invalid_target_001",
             "pass_parser_atomic_formulas_001",
             "pass_parser_export_visibility_001",
+            "pass_parser_formula_connectives_001",
             "pass_parser_import_items_001",
             "pass_parser_minimal_token_stream_001",
             "pass_parser_module_skeleton_001",
@@ -750,6 +760,35 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
         ]
     );
 
+    let formula_connectives_requirement = plan
+        .manifest
+        .requirements
+        .iter()
+        .find(|requirement| requirement.id.0 == FORMULA_CONNECTIVES_REQUIREMENT_ID)
+        .expect("formula connective parse-only requirement should exist");
+    assert_eq!(formula_connectives_requirement.stage, Stage::ParseOnly);
+    assert_eq!(
+        formula_connectives_requirement.tests,
+        vec![
+            PathBuf::from("tests/miz/pass/parser/pass_parser_formula_connectives_001.expect.toml"),
+            PathBuf::from(
+                "tests/miz/fail/parser/fail_parser_formula_missing_holds_001.expect.toml"
+            ),
+            PathBuf::from("tests/miz/fail/parser/fail_parser_formula_missing_not_001.expect.toml"),
+            PathBuf::from(
+                "tests/miz/fail/parser/fail_parser_formula_missing_operand_001.expect.toml"
+            ),
+            PathBuf::from(
+                "tests/miz/fail/parser/fail_parser_formula_missing_quantifier_type_001.expect.toml"
+            ),
+            PathBuf::from("tests/miz/fail/parser/fail_parser_formula_missing_st_001.expect.toml"),
+            PathBuf::from("tests/miz/fail/parser/fail_parser_formula_nonassoc_iff_001.expect.toml"),
+            PathBuf::from(
+                "tests/miz/fail/parser/fail_parser_formula_unmatched_grouping_001.expect.toml"
+            ),
+        ]
+    );
+
     for requirement_id in [
         "spec.en.elaboration.choice_comprehension.lowering",
         "spec.en.binding.substitution.capture_avoidance",
@@ -779,11 +818,15 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 40);
-    assert_eq!(report.passed_count(), 40);
+    assert_eq!(report.results.len(), 48);
+    assert_eq!(report.passed_count(), 48);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_atomic_formulas_001"
+            && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_formula_connectives_001"
             && result.actual_diagnostic_codes.is_empty()
     }));
     assert!(report.results.iter().any(|result| {
@@ -793,6 +836,34 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_parser_atomic_formula_mixed_chain_001"
             && result.actual_diagnostic_codes == vec!["malformed_term_expression".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_formula_missing_operand_001"
+            && result.actual_diagnostic_codes == vec!["malformed_formula_expression".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_formula_missing_quantifier_type_001"
+            && result.actual_diagnostic_codes == vec!["malformed_type_expression".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_formula_missing_not_001"
+            && result.actual_diagnostic_codes == vec!["malformed_formula_expression".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_formula_missing_st_001"
+            && result.actual_diagnostic_codes == vec!["malformed_formula_expression".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_formula_missing_holds_001"
+            && result.actual_diagnostic_codes == vec!["malformed_formula_expression".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_formula_nonassoc_iff_001"
+            && result.actual_diagnostic_codes == vec!["non_associative_operator_chain".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_formula_unmatched_grouping_001"
+            && result.actual_diagnostic_codes == vec!["malformed_formula_expression".to_owned()]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_export_visibility_001"
@@ -1042,8 +1113,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 40"));
-    assert!(stdout.contains("passed: 40"));
+    assert!(stdout.contains("parse-only cases: 48"));
+    assert!(stdout.contains("passed: 48"));
     assert!(stdout.contains("failed: 0"));
 }
 

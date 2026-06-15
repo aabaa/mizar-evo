@@ -69,6 +69,7 @@ pub enum SyntaxDiagnosticCode {
     MalformedVisibility,
     MalformedTypeExpression,
     MalformedTermExpression,
+    MalformedFormulaExpression,
     UnexpectedTopLevelToken,
     UnrecoverableInput,
 }

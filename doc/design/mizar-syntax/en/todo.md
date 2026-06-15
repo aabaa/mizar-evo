@@ -332,15 +332,18 @@ interaction. Spec references are the normative grammar chapters under
    - Spec: [13.term_expression.md](../../../spec/en/13.term_expression.md),
      [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md).
 
-12. **Formula nodes.** [ ] — paired with `mizar-parser` tasks 13-14.
+12. **Formula nodes.** [x] — paired with `mizar-parser` tasks 13-14.
    - Atomic predicate application and generic `is` assertions that resolution
      later classifies as type or attribute assertions (parser task 13);
      connectives and quantifiers (`for`/`ex`/`st`/`holds`) (parser task 14).
-   - Progress: parser task 13 atomic formula nodes are implemented with
-     theorem/lemma placeholder formula hosting, term/type recovery, and active
-     parse-only pass/fail corpus coverage. S-012 remains open for parser task
-     14 connectives, quantifiers, parenthesized formulas, `thesis`, and
-     `contradiction`.
+   - Result: parser tasks 13-14 are implemented. Atomic formula nodes,
+     generic `is` assertions, formula constants, prefix/binary formula nodes,
+     parenthesized formulas, quantifier variable segments, quantified
+     formulas, missing-formula recovery, theorem/lemma placeholder formula
+     hosting, syntax typed accessors, parser unit tests, and active parse-only
+     pass/fail corpus coverage are in place. Template predicate arguments
+     remain deferred to task 31 / S-016, and formula-embedding
+     Fraenkel/set-builder terms remain parser task 15.
    - Spec: [14.formulas.md](../../../spec/en/14.formulas.md).
 
 13. **Statement nodes.** [ ] — paired with `mizar-parser` tasks 16 and 18-21.

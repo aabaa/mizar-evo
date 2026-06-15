@@ -1,0 +1,19 @@
+schema_version = 1
+id = "fail_parser_formula_missing_st_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.formula_connectives"
+source = "fail_parser_formula_missing_st_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_formula_expression"
+stable_detail_key = "parser.formula_connectives.missing_st"
+diagnostic_codes = [
+  "malformed_formula_expression",
+]
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.14.formula_connectives_quantifiers.parser",
+]
+notes = "Active parse-only runner coverage for parser task 14 MissingFormula recovery after quantifier st."

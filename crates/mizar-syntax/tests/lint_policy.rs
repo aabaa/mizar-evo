@@ -104,6 +104,26 @@ fn public_enum_exhaustiveness_exceptions_are_documented() {
             "../../../../doc/design/mizar-syntax/en/ast.md",
         ),
         (
+            "src/ast.rs",
+            "SurfaceFormulaPrefixOperator",
+            "../../../../doc/design/mizar-syntax/en/ast.md",
+        ),
+        (
+            "src/ast.rs",
+            "SurfaceFormulaConnective",
+            "../../../../doc/design/mizar-syntax/en/ast.md",
+        ),
+        (
+            "src/ast.rs",
+            "SurfaceQuantifierKind",
+            "../../../../doc/design/mizar-syntax/en/ast.md",
+        ),
+        (
+            "src/ast.rs",
+            "SurfaceFormulaConstant",
+            "../../../../doc/design/mizar-syntax/en/ast.md",
+        ),
+        (
             "src/trivia.rs",
             "TriviaPlacement",
             "../../../../doc/design/mizar-syntax/en/trivia.md",
@@ -152,7 +172,11 @@ fn every_public_enum_has_a_forward_compatibility_decision() {
     ];
     let exhaustive_exceptions = [
         "MizarLanguage",
+        "SurfaceFormulaConnective",
+        "SurfaceFormulaConstant",
+        "SurfaceFormulaPrefixOperator",
         "SurfaceOperatorAssociativity",
+        "SurfaceQuantifierKind",
         "TriviaPlacement",
     ];
     let mut classified = forward_compatible

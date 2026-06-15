@@ -2,7 +2,8 @@
 
 Status: task-12 term Pratt parsing is implemented for active-lexicon prefix,
 postfix, and infix operators; task-13 atomic formulas use the term Pratt
-boundary; formula connective precedence remains planned.
+boundary; task-14 fixed formula connective precedence is specified for
+implementation.
 
 ## Purpose
 
@@ -36,8 +37,7 @@ Term parsing uses the following order:
 
 Atomic-formula parsing starts after the term Pratt boundary. Task 13 consumes
 built-in predicates, `is` assertions, inline predicate calls, and syntax-only
-user predicate segments around already parsed term operands. Task 14 owns the
-fixed formula connective Pratt table.
+user predicate segments around already parsed term operands.
 
 For infix term operators, the binding powers match Appendix B:
 
@@ -58,6 +58,35 @@ right operand; otherwise an eligible postfix entry wins. A same-spelling
 operator conflict with incompatible metadata is a lexical-environment or link
 stage error; this parser stage assumes `ParserInputs` has already selected a
 deterministic visible table.
+
+## Formula Pratt Contract
+
+Task 14 uses a fixed formula parser, not import-dependent operator metadata.
+Atomic formulas, parenthesized formulas, `thesis`, and `contradiction` are
+primary formula operands. Prefix `not` parses one formula operand at the
+prefix binding level. Binary connectives use the fixed hierarchy from Appendix
+B:
+
+| Operator | Associativity | Relative binding |
+|---|---|---:|
+| `&` | left | 50 |
+| `or` | left | 40 |
+| `implies` | right | 30 |
+| `iff` | none | 20 |
+
+The numeric binding powers are local parser constants only; the relative order
+is the contract. `iff` emits `NonAssociativeOperatorChain` if another top-level
+`iff` continues the same unparenthesized chain. Repetition forms `& ... &` and
+`or ... or` keep the same precedence and associativity as their
+non-repetition connective and are represented by the same binary formula node
+with the additional `...` token preserved.
+
+Quantifiers are not user operators. `for` and `ex` parse as outermost formula
+forms before the Pratt binary table. A quantified formula may appear as the
+right operand where Chapter 14 permits `( ... | quantified_formula )`, so
+`P implies for x being T holds Q` groups as `P implies (for x being T holds
+Q)`. Quantifier variable typing is syntactic only; implicit variable typing
+from `reserve` belongs to later resolution.
 
 ## Public Enum Compatibility
 

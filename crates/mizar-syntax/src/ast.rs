@@ -84,6 +84,12 @@ pub enum SyntaxKind {
     PredicateSegment = 49,
     PredicateHead = 50,
     InlinePredicateApplication = 51,
+    PrefixFormula = 52,
+    BinaryFormula = 53,
+    ParenthesizedFormula = 54,
+    QuantifiedFormula = 55,
+    QuantifierVariableSegment = 56,
+    FormulaConstant = 57,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -149,6 +155,12 @@ impl SyntaxKind {
             49 => Self::PredicateSegment,
             50 => Self::PredicateHead,
             51 => Self::InlinePredicateApplication,
+            52 => Self::PrefixFormula,
+            53 => Self::BinaryFormula,
+            54 => Self::ParenthesizedFormula,
+            55 => Self::QuantifiedFormula,
+            56 => Self::QuantifierVariableSegment,
+            57 => Self::FormulaConstant,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -216,6 +228,12 @@ impl SyntaxKind {
                 | Self::PredicateSegment
                 | Self::PredicateHead
                 | Self::InlinePredicateApplication
+                | Self::PrefixFormula
+                | Self::BinaryFormula
+                | Self::ParenthesizedFormula
+                | Self::QuantifiedFormula
+                | Self::QuantifierVariableSegment
+                | Self::FormulaConstant
         )
     }
 
@@ -1035,6 +1053,48 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_prefix_formula(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::PrefixFormula(_) => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_binary_formula(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::BinaryFormula(_) => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_parenthesized_formula(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ParenthesizedFormula => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_quantified_formula(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::QuantifiedFormula(_) => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_quantifier_variable_segment(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::QuantifierVariableSegment => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_formula_constant(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::FormulaConstant(_) => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_module_path(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::ModulePath => Some(self),
@@ -1146,6 +1206,12 @@ pub enum SurfaceNodeKind {
     PredicateSegment,
     PredicateHead,
     InlinePredicateApplication,
+    PrefixFormula(SurfaceFormulaPrefixOperator),
+    BinaryFormula(SurfaceFormulaBinaryOperator),
+    ParenthesizedFormula,
+    QuantifiedFormula(SurfaceQuantifierKind),
+    QuantifierVariableSegment,
+    FormulaConstant(SurfaceFormulaConstant),
     ErrorRecovery(SyntaxRecoveryKind),
     CompilationUnit,
     ItemList,
@@ -1202,6 +1268,12 @@ impl SurfaceNodeKind {
             Self::PredicateSegment => SyntaxKind::PredicateSegment,
             Self::PredicateHead => SyntaxKind::PredicateHead,
             Self::InlinePredicateApplication => SyntaxKind::InlinePredicateApplication,
+            Self::PrefixFormula(_) => SyntaxKind::PrefixFormula,
+            Self::BinaryFormula(_) => SyntaxKind::BinaryFormula,
+            Self::ParenthesizedFormula => SyntaxKind::ParenthesizedFormula,
+            Self::QuantifiedFormula(_) => SyntaxKind::QuantifiedFormula,
+            Self::QuantifierVariableSegment => SyntaxKind::QuantifierVariableSegment,
+            Self::FormulaConstant(_) => SyntaxKind::FormulaConstant,
             Self::ErrorRecovery(_) => SyntaxKind::ErrorRecovery,
             Self::CompilationUnit => SyntaxKind::CompilationUnit,
             Self::ItemList => SyntaxKind::ItemList,
@@ -1343,6 +1415,74 @@ impl SurfaceOperatorAssociativity {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SurfaceFormulaPrefixOperator {
+    Not,
+}
+
+impl SurfaceFormulaPrefixOperator {
+    const fn snapshot_name(self) -> &'static str {
+        match self {
+            Self::Not => "Not",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SurfaceFormulaConnective {
+    And,
+    Or,
+    Implies,
+    Iff,
+}
+
+impl SurfaceFormulaConnective {
+    const fn snapshot_name(self) -> &'static str {
+        match self {
+            Self::And => "And",
+            Self::Or => "Or",
+            Self::Implies => "Implies",
+            Self::Iff => "Iff",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SurfaceFormulaBinaryOperator {
+    pub connective: SurfaceFormulaConnective,
+    pub repeated: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SurfaceQuantifierKind {
+    Universal,
+    Existential,
+}
+
+impl SurfaceQuantifierKind {
+    const fn snapshot_name(self) -> &'static str {
+        match self {
+            Self::Universal => "Universal",
+            Self::Existential => "Existential",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SurfaceFormulaConstant {
+    Thesis,
+    Contradiction,
+}
+
+impl SurfaceFormulaConstant {
+    const fn snapshot_name(self) -> &'static str {
+        match self {
+            Self::Thesis => "Thesis",
+            Self::Contradiction => "Contradiction",
+        }
+    }
+}
+
 fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: usize) {
     write_snapshot_indent(output, indent);
     match view.kind() {
@@ -1390,6 +1530,39 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::PredicateHead => output.push_str("PredicateHead"),
         SurfaceNodeKind::InlinePredicateApplication => {
             output.push_str("InlinePredicateApplication");
+        }
+        SurfaceNodeKind::PrefixFormula(operator) => {
+            let _ = write!(
+                output,
+                "PrefixFormula operator={}",
+                operator.snapshot_name()
+            );
+        }
+        SurfaceNodeKind::BinaryFormula(operator) => {
+            let _ = write!(
+                output,
+                "BinaryFormula connective={} repeated={}",
+                operator.connective.snapshot_name(),
+                operator.repeated
+            );
+        }
+        SurfaceNodeKind::ParenthesizedFormula => output.push_str("ParenthesizedFormula"),
+        SurfaceNodeKind::QuantifiedFormula(quantifier) => {
+            let _ = write!(
+                output,
+                "QuantifiedFormula quantifier={}",
+                quantifier.snapshot_name()
+            );
+        }
+        SurfaceNodeKind::QuantifierVariableSegment => {
+            output.push_str("QuantifierVariableSegment");
+        }
+        SurfaceNodeKind::FormulaConstant(constant) => {
+            let _ = write!(
+                output,
+                "FormulaConstant constant={}",
+                constant.snapshot_name()
+            );
         }
         SurfaceNodeKind::ModulePath => output.push_str("ModulePath"),
         SurfaceNodeKind::NamespacePath => output.push_str("NamespacePath"),
@@ -1608,9 +1781,10 @@ fn contains_range(parent: SourceRange, child: SourceRange) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{
-        SurfaceAstBuilder, SurfaceInfixOperator, SurfaceNodeKind, SurfaceNodeView,
-        SurfaceOperatorAssociativity, SurfacePostfixOperator, SurfacePrefixOperator,
-        SurfaceTokenKind, SyntaxKind,
+        SurfaceAstBuilder, SurfaceFormulaBinaryOperator, SurfaceFormulaConnective,
+        SurfaceFormulaConstant, SurfaceFormulaPrefixOperator, SurfaceInfixOperator,
+        SurfaceNodeKind, SurfaceNodeView, SurfaceOperatorAssociativity, SurfacePostfixOperator,
+        SurfacePrefixOperator, SurfaceQuantifierKind, SurfaceTokenKind, SyntaxKind,
     };
     use crate::SyntaxRecoveryKind;
     use crate::{
@@ -2398,6 +2572,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            formula_surface_nodes_ast(source_id(26))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -2440,6 +2620,12 @@ mod tests {
             SyntaxKind::PredicateSegment,
             SyntaxKind::PredicateHead,
             SyntaxKind::InlinePredicateApplication,
+            SyntaxKind::PrefixFormula,
+            SyntaxKind::BinaryFormula,
+            SyntaxKind::ParenthesizedFormula,
+            SyntaxKind::QuantifiedFormula,
+            SyntaxKind::QuantifierVariableSegment,
+            SyntaxKind::FormulaConstant,
             SyntaxKind::ModulePath,
             SyntaxKind::NamespacePath,
             SyntaxKind::QualifiedSymbol,
@@ -3385,6 +3571,104 @@ mod tests {
     }
 
     #[test]
+    fn task14_typed_accessors_cover_formula_connective_and_quantifier_nodes() {
+        let ast = formula_surface_nodes_ast(source_id(20));
+        let root = ast.root_view().unwrap();
+
+        let binary_view = ast.expression_view().unwrap();
+        assert_eq!(binary_view.syntax_kind(), SyntaxKind::BinaryFormula);
+        assert!(binary_view.as_binary_formula().is_some());
+        assert!(binary_view.as_formula_expression().is_none());
+        assert_eq!(
+            binary_view.kind(),
+            &SurfaceNodeKind::BinaryFormula(SurfaceFormulaBinaryOperator {
+                connective: SurfaceFormulaConnective::And,
+                repeated: true,
+            })
+        );
+
+        let prefix_view = first_view(root, |kind| {
+            matches!(kind, SurfaceNodeKind::PrefixFormula(_))
+        })
+        .unwrap();
+        assert_eq!(prefix_view.syntax_kind(), SyntaxKind::PrefixFormula);
+        assert!(prefix_view.as_prefix_formula().is_some());
+        assert_eq!(
+            prefix_view.kind(),
+            &SurfaceNodeKind::PrefixFormula(SurfaceFormulaPrefixOperator::Not)
+        );
+
+        let parenthesized_view = first_view(root, |kind| {
+            matches!(kind, SurfaceNodeKind::ParenthesizedFormula)
+        })
+        .unwrap();
+        assert_eq!(
+            parenthesized_view.syntax_kind(),
+            SyntaxKind::ParenthesizedFormula
+        );
+        assert!(parenthesized_view.as_parenthesized_formula().is_some());
+
+        let universal_view = first_view(root, |kind| {
+            matches!(
+                kind,
+                SurfaceNodeKind::QuantifiedFormula(SurfaceQuantifierKind::Universal)
+            )
+        })
+        .unwrap();
+        assert_eq!(universal_view.syntax_kind(), SyntaxKind::QuantifiedFormula);
+        assert!(universal_view.as_quantified_formula().is_some());
+
+        let existential_view = first_view(root, |kind| {
+            matches!(
+                kind,
+                SurfaceNodeKind::QuantifiedFormula(SurfaceQuantifierKind::Existential)
+            )
+        })
+        .unwrap();
+        assert!(existential_view.as_quantified_formula().is_some());
+
+        let segment_view = first_view(root, |kind| {
+            matches!(kind, SurfaceNodeKind::QuantifierVariableSegment)
+        })
+        .unwrap();
+        assert_eq!(
+            segment_view.syntax_kind(),
+            SyntaxKind::QuantifierVariableSegment
+        );
+        assert!(segment_view.as_quantifier_variable_segment().is_some());
+
+        let thesis_view = first_view(root, |kind| {
+            matches!(
+                kind,
+                SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis)
+            )
+        })
+        .unwrap();
+        assert_eq!(thesis_view.syntax_kind(), SyntaxKind::FormulaConstant);
+        assert!(thesis_view.as_formula_constant().is_some());
+
+        let snapshot = ast.snapshot_text();
+        for expected in [
+            "PrefixFormula operator=Not",
+            "BinaryFormula connective=And repeated=true",
+            "BinaryFormula connective=Or repeated=false",
+            "BinaryFormula connective=Implies repeated=false",
+            "BinaryFormula connective=Iff repeated=false",
+            "ParenthesizedFormula",
+            "QuantifiedFormula quantifier=Universal",
+            "QuantifiedFormula quantifier=Existential",
+            "QuantifierVariableSegment",
+            "FormulaConstant constant=Thesis",
+            "FormulaConstant constant=Contradiction",
+        ] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-14 payload line {expected}"
+            );
+        }
+    }
+
+    #[test]
     fn recovery_snapshot_names_are_unique_and_fully_fixture_backed() {
         let source_id = source_id(9);
         let fixtures = recovery_fixtures(source_id);
@@ -3983,6 +4267,354 @@ mod tests {
             ],
         );
         builder.finish(Some(root), Some(builtin_formula))
+    }
+
+    fn formula_surface_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let not = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "not",
+            range(source_id, 0, 3),
+        );
+        let x = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 4, 5));
+        let equals = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "=",
+            range(source_id, 6, 7),
+        );
+        let y = builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 8, 9));
+        let and = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "&",
+            range(source_id, 10, 11),
+        );
+        let ellipsis = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "...",
+            range(source_id, 12, 15),
+        );
+        let repeated_and = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "&",
+            range(source_id, 16, 17),
+        );
+        let thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 18, 24),
+        );
+        let open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 25, 26),
+        );
+        let contradiction = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "contradiction",
+            range(source_id, 26, 39),
+        );
+        let close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 39, 40),
+        );
+        let or = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "or",
+            range(source_id, 41, 43),
+        );
+        let contradiction_right = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "contradiction",
+            range(source_id, 44, 57),
+        );
+        let implies_left = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 58, 64),
+        );
+        let implies = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "implies",
+            range(source_id, 65, 72),
+        );
+        let implies_right = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "contradiction",
+            range(source_id, 73, 86),
+        );
+        let iff_left = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 87, 93),
+        );
+        let iff = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "iff",
+            range(source_id, 94, 97),
+        );
+        let iff_right = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "contradiction",
+            range(source_id, 98, 111),
+        );
+        let for_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "for",
+            range(source_id, 112, 115),
+        );
+        let qx = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "u",
+            range(source_id, 116, 117),
+        );
+        let being = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "being",
+            range(source_id, 118, 123),
+        );
+        let set = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 124, 127),
+        );
+        let st = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "st",
+            range(source_id, 128, 130),
+        );
+        let condition = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 131, 137),
+        );
+        let holds = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "holds",
+            range(source_id, 138, 143),
+        );
+        let universal_body = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "contradiction",
+            range(source_id, 144, 157),
+        );
+        let ex_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "ex",
+            range(source_id, 158, 160),
+        );
+        let ex_var = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "v",
+            range(source_id, 161, 162),
+        );
+        let ex_st = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "st",
+            range(source_id, 163, 165),
+        );
+        let ex_body = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 166, 172),
+        );
+
+        let x_term = term_expression_node(&mut builder, source_id, x, 4, 5);
+        let y_term = term_expression_node(&mut builder, source_id, y, 8, 9);
+        let builtin = builder.add_node(
+            SurfaceNodeKind::BuiltinPredicateApplication,
+            range(source_id, 4, 9),
+            vec![x_term, equals, y_term],
+        );
+        let prefix = builder.add_node(
+            SurfaceNodeKind::PrefixFormula(SurfaceFormulaPrefixOperator::Not),
+            range(source_id, 0, 9),
+            vec![not, builtin],
+        );
+        let thesis_formula = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+            range(source_id, 18, 24),
+            vec![thesis],
+        );
+        let binary_and = builder.add_node(
+            SurfaceNodeKind::BinaryFormula(SurfaceFormulaBinaryOperator {
+                connective: SurfaceFormulaConnective::And,
+                repeated: true,
+            }),
+            range(source_id, 0, 24),
+            vec![prefix, and, ellipsis, repeated_and, thesis_formula],
+        );
+
+        let contradiction_formula = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction),
+            range(source_id, 26, 39),
+            vec![contradiction],
+        );
+        let contradiction_expression = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 26, 39),
+            vec![contradiction_formula],
+        );
+        let parenthesized = builder.add_node(
+            SurfaceNodeKind::ParenthesizedFormula,
+            range(source_id, 25, 40),
+            vec![open, contradiction_expression, close],
+        );
+        let contradiction_right_formula = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction),
+            range(source_id, 44, 57),
+            vec![contradiction_right],
+        );
+        let binary_or = builder.add_node(
+            SurfaceNodeKind::BinaryFormula(SurfaceFormulaBinaryOperator {
+                connective: SurfaceFormulaConnective::Or,
+                repeated: false,
+            }),
+            range(source_id, 25, 57),
+            vec![parenthesized, or, contradiction_right_formula],
+        );
+
+        let implies_left_formula = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+            range(source_id, 58, 64),
+            vec![implies_left],
+        );
+        let implies_right_formula = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction),
+            range(source_id, 73, 86),
+            vec![implies_right],
+        );
+        let binary_implies = builder.add_node(
+            SurfaceNodeKind::BinaryFormula(SurfaceFormulaBinaryOperator {
+                connective: SurfaceFormulaConnective::Implies,
+                repeated: false,
+            }),
+            range(source_id, 58, 86),
+            vec![implies_left_formula, implies, implies_right_formula],
+        );
+
+        let iff_left_formula = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+            range(source_id, 87, 93),
+            vec![iff_left],
+        );
+        let iff_right_formula = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction),
+            range(source_id, 98, 111),
+            vec![iff_right],
+        );
+        let binary_iff = builder.add_node(
+            SurfaceNodeKind::BinaryFormula(SurfaceFormulaBinaryOperator {
+                connective: SurfaceFormulaConnective::Iff,
+                repeated: false,
+            }),
+            range(source_id, 87, 111),
+            vec![iff_left_formula, iff, iff_right_formula],
+        );
+
+        let quantifier_type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 124, 127),
+            vec![set],
+        );
+        let quantifier_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 124, 127),
+            vec![quantifier_type_head],
+        );
+        let universal_segment = builder.add_node(
+            SurfaceNodeKind::QuantifierVariableSegment,
+            range(source_id, 116, 127),
+            vec![qx, being, quantifier_type],
+        );
+        let condition_formula = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+            range(source_id, 131, 137),
+            vec![condition],
+        );
+        let universal_body_formula = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction),
+            range(source_id, 144, 157),
+            vec![universal_body],
+        );
+        let universal = builder.add_node(
+            SurfaceNodeKind::QuantifiedFormula(SurfaceQuantifierKind::Universal),
+            range(source_id, 112, 157),
+            vec![
+                for_keyword,
+                universal_segment,
+                st,
+                condition_formula,
+                holds,
+                universal_body_formula,
+            ],
+        );
+
+        let existential_segment = builder.add_node(
+            SurfaceNodeKind::QuantifierVariableSegment,
+            range(source_id, 161, 162),
+            vec![ex_var],
+        );
+        let existential_body_formula = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+            range(source_id, 166, 172),
+            vec![ex_body],
+        );
+        let existential = builder.add_node(
+            SurfaceNodeKind::QuantifiedFormula(SurfaceQuantifierKind::Existential),
+            range(source_id, 158, 172),
+            vec![
+                ex_keyword,
+                existential_segment,
+                ex_st,
+                existential_body_formula,
+            ],
+        );
+
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 172),
+            vec![
+                not,
+                x,
+                equals,
+                y,
+                and,
+                ellipsis,
+                repeated_and,
+                thesis,
+                open,
+                contradiction,
+                close,
+                or,
+                contradiction_right,
+                implies_left,
+                implies,
+                implies_right,
+                iff_left,
+                iff,
+                iff_right,
+                for_keyword,
+                qx,
+                being,
+                set,
+                st,
+                condition,
+                holds,
+                universal_body,
+                ex_keyword,
+                ex_var,
+                ex_st,
+                ex_body,
+                binary_and,
+                binary_or,
+                binary_implies,
+                binary_iff,
+                universal,
+                existential,
+            ],
+        );
+        builder.finish(Some(root), Some(binary_and))
     }
 
     fn term_expression_node(

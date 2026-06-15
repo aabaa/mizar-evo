@@ -927,6 +927,25 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.14.formula_connectives_quantifiers.parser"
+source = "doc/spec/en/14.formulas.md"
+section = "14.1 Formula Grammar; 14.3 Quantified Formulas; Appendix B.3 Formula Operators"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_formula_connectives_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_formula_missing_holds_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_formula_missing_not_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_formula_missing_operand_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_formula_missing_quantifier_type_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_formula_missing_st_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_formula_nonassoc_iff_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_formula_unmatched_grouping_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.syntax.parser_recovery.missing_end"
 source = "doc/design/mizar-parser/en/recovery.md"
 section = "Current behavior"

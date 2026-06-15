@@ -90,6 +90,12 @@ green tree.
 | predicate segment node | `SyntaxKind::PredicateSegment` |
 | predicate head node | `SyntaxKind::PredicateHead` |
 | inline predicate application node | `SyntaxKind::InlinePredicateApplication` |
+| prefix formula node | `SyntaxKind::PrefixFormula` |
+| binary formula node | `SyntaxKind::BinaryFormula` |
+| parenthesized formula node | `SyntaxKind::ParenthesizedFormula` |
+| quantified formula node | `SyntaxKind::QuantifiedFormula` |
+| quantifier variable segment node | `SyntaxKind::QuantifierVariableSegment` |
+| formula constant node | `SyntaxKind::FormulaConstant` |
 | recovery node | `SyntaxKind::ErrorRecovery` |
 
 Token roles are separate raw kinds: identifier, reserved word, reserved symbol,
@@ -147,7 +153,7 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 41 | `QuaExpression` | task-11 `term "qua" type_expression` qualification surface |
 | 42 | `PrefixExpression` | task-12 prefix operator expression surface |
 | 43 | `PostfixExpression` | task-12 postfix operator expression surface |
-| 44 | `FormulaExpression` | task-13 formula wrapper for the current atomic formula increment |
+| 44 | `FormulaExpression` | task-13/14 formula wrapper for one formula child |
 | 45 | `BuiltinPredicateApplication` | task-13 `term_expression builtin_pred term_expression` atomic formula |
 | 46 | `IsAssertion` | task-13 generic `term_expression "is" ...` assertion |
 | 47 | `AttributeTestChain` | task-13 attribute-only `is_assertion_body` chain |
@@ -155,6 +161,12 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 49 | `PredicateSegment` | task-13 user predicate segment |
 | 50 | `PredicateHead` | task-13 predicate symbol wrapper |
 | 51 | `InlinePredicateApplication` | task-13 inline predicate call shape |
+| 52 | `PrefixFormula` | task-14 fixed prefix formula shape |
+| 53 | `BinaryFormula` | task-14 fixed binary connective formula shape |
+| 54 | `ParenthesizedFormula` | task-14 parenthesized formula operand |
+| 55 | `QuantifiedFormula` | task-14 universal or existential formula |
+| 56 | `QuantifierVariableSegment` | task-14 quantified variable segment |
+| 57 | `FormulaConstant` | task-14 `thesis` or `contradiction` formula constant |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -166,17 +178,12 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 108 | `TokenUnknown` | unknown token leaf |
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
-`SyntaxKind::is_node_kind` is true only for `Root`, `Token`,
-`InfixExpression`, `PrefixExpression`, `PostfixExpression`, `FormulaExpression`,
-`BuiltinPredicateApplication`, `IsAssertion`, `AttributeTestChain`,
-`PredicateApplication`, `PredicateSegment`, `PredicateHead`,
-`InlinePredicateApplication`, `ErrorRecovery`,
-the task-S-009 shared path node kinds, the task-5/6/7 module, import, export,
-and visibility node kinds, and the task-S-010 reserve/type node kinds plus the
-task-S-011 term node kinds listed above; `is_token_kind` is true only for the
-token leaf kinds. Future raw values should be appended or assigned into a
-documented reserved range so existing snapshots and rowan tests fail loudly
-when the raw vocabulary changes.
+`SyntaxKind::is_node_kind` is true for every structural node raw kind listed
+above, currently `Root` through task-14 `FormulaConstant` plus the
+compatibility `Token` wrapper and `ErrorRecovery`; `is_token_kind` is true
+only for token leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future
+raw values should be appended or assigned into a documented reserved range so
+existing snapshots and rowan tests fail loudly when the raw vocabulary changes.
 
 ### Current Surface Vocabulary
 
@@ -226,7 +233,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::InfixExpression(SurfaceInfixOperator)` | spelling, precedence, associativity | `SyntaxKind::InfixExpression` | task-12 infix Pratt expression shape |
 | `SurfaceNodeKind::PrefixExpression(SurfacePrefixOperator)` | spelling, precedence | `SyntaxKind::PrefixExpression` | task-12 prefix Pratt expression shape |
 | `SurfaceNodeKind::PostfixExpression(SurfacePostfixOperator)` | spelling, precedence | `SyntaxKind::PostfixExpression` | task-12 postfix Pratt expression shape |
-| `SurfaceNodeKind::FormulaExpression` | none | `SyntaxKind::FormulaExpression` | parser task-13 current formula wrapper; owns exactly one atomic-formula child until task 14 adds connectives and quantifiers |
+| `SurfaceNodeKind::FormulaExpression` | none | `SyntaxKind::FormulaExpression` | parser task-13/14 formula wrapper; owns exactly one formula child, including atomic formulas, connectives, quantifiers, parenthesized formulas, and formula constants |
 | `SurfaceNodeKind::BuiltinPredicateApplication` | none | `SyntaxKind::BuiltinPredicateApplication` | parser task-13 built-in `in`, `=`, or `<>` predicate; owns left term, predicate token, and right term or missing-term recovery |
 | `SurfaceNodeKind::IsAssertion` | none | `SyntaxKind::IsAssertion` | parser task-13 generic `is` assertion; owns subject term, `is`, optional `not`, and a type/body child without resolver classification |
 | `SurfaceNodeKind::AttributeTestChain` | none | `SyntaxKind::AttributeTestChain` | parser task-13 attribute-only assertion body; owns one or more task-8 `AttributeRef` children |
@@ -234,6 +241,12 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::PredicateSegment` | none | `SyntaxKind::PredicateSegment` | parser task-13 user predicate segment; owns optional term-list children, optional negation tokens, one predicate head, and optional right term-list children |
 | `SurfaceNodeKind::PredicateHead` | none | `SyntaxKind::PredicateHead` | parser task-13 predicate symbol wrapper; template predicate arguments remain deferred |
 | `SurfaceNodeKind::InlinePredicateApplication` | none | `SyntaxKind::InlinePredicateApplication` | parser task-13 inline predicate call shape with identifier head and parenthesized term arguments |
+| `SurfaceNodeKind::PrefixFormula(SurfaceFormulaPrefixOperator)` | operator | `SyntaxKind::PrefixFormula` | parser task-14 fixed formula prefix, currently `not` |
+| `SurfaceNodeKind::BinaryFormula(SurfaceFormulaBinaryOperator)` | `connective: SurfaceFormulaConnective`, `repeated: bool` | `SyntaxKind::BinaryFormula` | parser task-14 fixed binary connective formula for `&`, `or`, `implies`, `iff`, including token-preserving repetition forms |
+| `SurfaceNodeKind::ParenthesizedFormula` | none | `SyntaxKind::ParenthesizedFormula` | parser task-14 formula grouping; owns `(`, one nested `FormulaExpression`, and `)` or delimiter recovery |
+| `SurfaceNodeKind::QuantifiedFormula(SurfaceQuantifierKind)` | quantifier | `SyntaxKind::QuantifiedFormula` | parser task-14 universal/existential quantifier surface; owns quantifier token, variable segments, optional condition/body separators, and formula body children |
+| `SurfaceNodeKind::QuantifierVariableSegment` | none | `SyntaxKind::QuantifierVariableSegment` | parser task-14 quantified variable segment; owns variable identifiers/comma tokens, optional `be`/`being`, and optional `TypeExpression` |
+| `SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant)` | constant | `SyntaxKind::FormulaConstant` | parser task-14 `thesis` or `contradiction` formula constant |
 | `SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind)` | recovery kind | `SyntaxKind::ErrorRecovery` | builder-created recovery nodes are recovered |
 
 `SurfaceTokenKind` currently maps to the token raw kinds listed above:
@@ -436,12 +449,12 @@ operators keep the represented `PrefixExpression` recoverable by inserting a
 metadata is parser input, not semantic resolution: these nodes must not carry
 symbol ids, selected overloads, inferred types, or proof facts.
 
-Parser task 13 adds the first formula nodes. `FormulaExpression` is the current
-wrapper around one atomic-formula child; task 14 may place connective,
-quantifier, parenthesized, `thesis`, or `contradiction` formula shapes there
-without changing the wrapper role. The initial frontend-reachable host is a
-theorem/lemma `PlaceholderItem` that parses only the `label: formula;` payload
-while leaving theorem/proof item structure to task 22.
+Parser tasks 13-14 define the current formula nodes. `FormulaExpression` wraps
+one formula child, whether that child is atomic, connective-bearing,
+quantified, parenthesized, `thesis`, or `contradiction`, without changing the
+wrapper role. The initial frontend-reachable host is a theorem/lemma
+`PlaceholderItem` that parses only the `label: formula;` payload while leaving
+theorem/proof item structure to task 22.
 
 `BuiltinPredicateApplication` owns a left `TermExpression`, the built-in
 predicate token (`in`, `=`, or `<>`), and a right `TermExpression` or
@@ -466,6 +479,43 @@ and source-ordered term arguments. These formula nodes preserve predicate
 spelling and argument shape only; predicate overload resolution, chain
 adjacency validity, theorem validity, proof facts, and truth evaluation remain
 outside `mizar-syntax`.
+
+Parser task 14 completes the current formula vocabulary. `PrefixFormula` owns
+the `not` token followed by one formula child or `MissingFormula` recovery.
+`BinaryFormula` owns the left formula child, the connective token, optional
+`...` plus repeated connective token for `& ... &` / `or ... or`, and the
+right formula child or `MissingFormula` recovery. Its payload records the
+fixed connective and whether the repetition form was written; it does not
+carry semantic expansion details. `ParenthesizedFormula` owns `(`, a nested
+`FormulaExpression`, and `)` or delimiter recovery. `FormulaConstant` wraps the
+single `thesis` or `contradiction` token and carries only that constant kind.
+
+`QuantifiedFormula` owns the `for` or `ex` token, source-ordered
+`QuantifierVariableSegment` children separated by comma tokens, optional `st`
+condition formula for universal quantification, required `st` body formula for
+existential quantification, and either a `holds` body formula or nested
+quantified-formula body for universal quantification. `QuantifierVariableSegment`
+owns the written variable identifiers and commas, an optional `be` / `being`
+token, and an optional `TypeExpression`. It does not resolve implicit variable
+types from `reserve`, does not classify bound variables semantically, and does
+not create proof obligations.
+
+`SurfaceNodeView` exposes `as_prefix_formula`, `as_binary_formula`,
+`as_parenthesized_formula`, `as_quantified_formula`,
+`as_quantifier_variable_segment`, and `as_formula_constant` helpers. Consumers
+inspect fixed formula payloads through `SurfaceNodeKind`: `PrefixFormula`
+carries `SurfaceFormulaPrefixOperator`, `BinaryFormula` carries
+`SurfaceFormulaBinaryOperator { connective: SurfaceFormulaConnective,
+repeated: bool }`, `QuantifiedFormula` carries `SurfaceQuantifierKind`, and
+`FormulaConstant` carries `SurfaceFormulaConstant`. Ranges for all task-14
+formula nodes run from the first owned source token through the last owned
+source token; inserted `MissingFormula` or `MissingTypeExpression` recovery is
+zero-width at the insertion point and must be contained by the parent range
+unless it is used only as out-of-range recovery context under the general
+recovery exception. Parenthesized formulas with a missing `)` range through
+the nested formula or insertion point; quantified formulas range through the
+condition/body formula or recovery insertion that completed the represented
+quantifier.
 
 ### Vocabulary Increment Contract
 
@@ -587,6 +637,12 @@ RelativePrefix range=<start>..<end> recovered=<bool>
 InfixExpression spelling="<escaped-text>" precedence=<u8> associativity=<SurfaceOperatorAssociativity> range=<start>..<end> recovered=<bool>
 PrefixExpression spelling="<escaped-text>" precedence=<u8> range=<start>..<end> recovered=<bool>
 PostfixExpression spelling="<escaped-text>" precedence=<u8> range=<start>..<end> recovered=<bool>
+PrefixFormula operator=<SurfaceFormulaPrefixOperator> range=<start>..<end> recovered=<bool>
+BinaryFormula connective=<SurfaceFormulaConnective> repeated=<bool> range=<start>..<end> recovered=<bool>
+ParenthesizedFormula range=<start>..<end> recovered=<bool>
+QuantifiedFormula quantifier=<SurfaceQuantifierKind> range=<start>..<end> recovered=<bool>
+QuantifierVariableSegment range=<start>..<end> recovered=<bool>
+FormulaConstant constant=<SurfaceFormulaConstant> range=<start>..<end> recovered=<bool>
 ErrorRecovery kind=<SyntaxRecoveryKind> range=<start>..<end> recovered=<bool>
 ```
 
@@ -625,7 +681,12 @@ attributes present. `MizarLanguage` remains deliberately exhaustive because it
 is an empty rowan marker enum rather than a downstream syntax category.
 `SurfaceOperatorAssociativity` is currently a closed three-way operator property
 (`Left`, `Right`, `NonAssociative`) and remains deliberately exhaustive unless a
-later operator-model task designs a new associativity category. Matches inside
-this crate should remain exhaustive so new variants cause local compile-time
-updates; downstream crates must include wildcard fallback arms where
-`#[non_exhaustive]` requires them.
+later operator-model task designs a new associativity category. The task-14
+formula payload enums (`SurfaceFormulaPrefixOperator`,
+`SurfaceFormulaConnective`, `SurfaceQuantifierKind`, and
+`SurfaceFormulaConstant`) are also deliberately exhaustive because they encode
+the current fixed grammar table; adding a new formula operator, quantifier, or
+constant must force local parser/syntax matches and documentation to update.
+Matches inside this crate should remain exhaustive so new variants cause local
+compile-time updates; downstream crates must include wildcard fallback arms
+where `#[non_exhaustive]` requires them.

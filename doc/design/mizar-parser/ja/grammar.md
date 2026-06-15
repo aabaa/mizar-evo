@@ -576,6 +576,92 @@ Task 13 の test は built-in `in`、`=`、`<>` atom、attribute-only `non` chai
 theorem-placeholder formula host、semantic classification を必要としない malformed atomic
 formula recovery を pin する。
 
+## Task 14: Connectives And Quantifiers
+
+Production inventory:
+
+```ebnf
+formula              ::= quantified_formula | iff_formula ;
+iff_formula          ::= implies_formula
+                         [ "iff" ( implies_formula | quantified_formula ) ] ;
+implies_formula      ::= or_formula
+                         [ "implies" ( implies_formula | quantified_formula ) ] ;
+or_formula           ::= and_formula
+                         { "or" ( and_formula | quantified_formula )
+                         | "or" "..." "or"
+                           ( and_formula | quantified_formula ) } ;
+and_formula          ::= not_formula
+                         { "&" ( not_formula | quantified_formula )
+                         | "&" "..." "&"
+                           ( not_formula | quantified_formula ) } ;
+not_formula          ::= "not" ( not_formula | quantified_formula )
+                       | atomic_formula
+                       | "(" formula ")"
+                       | "contradiction"
+                       | "thesis" ;
+
+quantified_formula   ::= universal_formula | existential_formula ;
+universal_formula    ::= "for" quantified_vars [ "st" formula ]
+                         ( "holds" formula | quantified_formula ) ;
+existential_formula  ::= "ex" quantified_vars "st" formula ;
+
+quantified_vars      ::= explicit_vars [ "," implicit_vars ] | implicit_vars ;
+explicit_vars        ::= qualified_segment { "," qualified_segment } ;
+qualified_segment    ::= var_list ( "being" | "be" ) type_expression ;
+implicit_vars        ::= var_list ;
+var_list             ::= identifier { "," identifier } ;
+```
+
+Task 14 は task-13 の atomic-only formula parser を fixed formula-precedence
+parser に置き換え、S-012 formula surface を完了する。formula precedence は
+term operator fixity と分離する。`not` は `&` より強く、次に `or`、右結合の
+`implies`、非結合の `iff` が続き、quantifier は outermost formula form として
+bind する。parentheses なしの `iff` chaining は `NonAssociativeOperatorChain`
+を報告する。atomic formula operand 内の user-defined functor precedence は
+引き続き term Pratt parser が所有する。
+
+`FormulaExpression` は引き続き formula child を 1 つだけ包む。Task 14 は
+`not` 用の `PrefixFormula`、`&` / `or` / `implies` / `iff` 用の
+`BinaryFormula`、`ParenthesizedFormula`、`QuantifiedFormula`、
+`QuantifierVariableSegment`、および `thesis` / `contradiction` 用の
+`FormulaConstant` を追加する。binary formula node は connective token を保持し、
+`& ... &` と `or ... or` は 2 つの connective token と `...` token を同じ
+binary node 上に保持する。repetition form の展開と alpha-equivalence check は
+semantic / checker work に残す。
+
+`QuantifiedFormula` は quantifier token（`for` または `ex`）、comma token で
+区切られた 1 個以上の `QuantifierVariableSegment` child、universal
+quantification 用の optional `st` condition formula、existential
+quantification 用の required `st` body formula、および universal quantification
+用の `holds` body formula または nested quantified-formula body を保持する。
+`QuantifierVariableSegment` は書かれた variable token list、optional `be` /
+`being` token、optional `TypeExpression` を保持し、`reserve` 由来の implicit
+variable type は解決しない。
+
+theorem/lemma placeholder formula host は atomic formula から task-14 formula
+全体へ広がるが、引き続き exact である。`label: formula;` だけが
+`FormulaExpression` を送出する。`by` や `proof` の theorem justification /
+proof tail が続く prefix は、task 22 が theorem/proof item node を所有するまで
+legacy token-preserving `PlaceholderItem` payload のままにする。template
+predicate argument は task 31 / S-016 に deferred のままである。formula を
+term syntax 内へ埋め込む Fraenkel / set-builder term は task 15 が所有する。
+
+`not`、connective、quantifier `st`、`holds` の後で formula operand が malformed
+な場合は `MissingFormula` recovery を挿入し、`MalformedFormulaExpression` を
+報告する。quantifier header は、少なくとも 1 個の variable segment を表現できる場合に
+保持する。`be` または `being` 後の explicit type 欠落は `MissingTypeExpression`
+recovery と `MalformedTypeExpression` を再利用する。malformed quantifier-header
+separator や tail は `MalformedFormulaExpression` を報告する。quantified variable
+list が完全に欠落している場合、task 14 は missing variable segment を合成しない。その入力は
+later binder-recovery task が専用 missing-binder vocabulary を追加するまで concrete formula
+host の外に残す。
+
+Task 14 の test は connective precedence と associativity、parenthesized formula
+grouping、非結合 `iff` rejection、repetition token preservation、`thesis` /
+`contradiction`、explicit / implicit variable を持つ universal / existential
+quantifier、`holds` を繰り返さない nested universal quantification、
+theorem-placeholder formula hosting、および missing-formula recovery を固定しなければならない。
+
 ## 公開 enum の互換性
 
 `ParserTokenKind` は downstream crate 向けに `#[non_exhaustive]` とする。parser-facing

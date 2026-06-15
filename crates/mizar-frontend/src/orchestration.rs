@@ -623,6 +623,9 @@ fn syntax_code_key(code: &mizar_syntax::SyntaxDiagnosticCode) -> Arc<str> {
         mizar_syntax::SyntaxDiagnosticCode::MalformedVisibility => "malformed_visibility",
         mizar_syntax::SyntaxDiagnosticCode::MalformedTypeExpression => "malformed_type_expression",
         mizar_syntax::SyntaxDiagnosticCode::MalformedTermExpression => "malformed_term_expression",
+        mizar_syntax::SyntaxDiagnosticCode::MalformedFormulaExpression => {
+            "malformed_formula_expression"
+        }
         mizar_syntax::SyntaxDiagnosticCode::UnexpectedTopLevelToken => "unexpected_top_level_token",
         mizar_syntax::SyntaxDiagnosticCode::UnrecoverableInput => "unrecoverable_input",
         _ => "syntax_diagnostic",
@@ -745,6 +748,24 @@ mod tests {
             missing_end.recovery_note.as_deref(),
             Some("insert `end` before this synchronization point")
         );
+    }
+
+    #[test]
+    fn real_parser_frontend_maps_malformed_formula_diagnostic_key() {
+        let fixture = PackageFixture::new();
+        fixture.write("src/formula_recovered.miz", "theorem T: x = y &;\n");
+        let frontend = frontend_for_fixture(&fixture, MizarParserSeam);
+        let ids = InMemorySessionIdAllocator::new();
+
+        let output = frontend
+            .run(fixture.request("src/formula_recovered.miz"), &ids)
+            .expect("formula recovery diagnostics should stay in FrontendOutput");
+
+        assert!(output.ast.is_some());
+        assert!(output.diagnostics.iter().any(|diagnostic| matches!(
+            &diagnostic.code,
+            DiagnosticCode::Syntax(code) if code.as_ref() == "malformed_formula_expression"
+        )));
     }
 
     #[test]

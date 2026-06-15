@@ -621,6 +621,93 @@ shape, active-lexicon user predicate segments, theorem-placeholder formula
 hosting, and malformed atomic formula recovery that does not require semantic
 classification.
 
+## Task 14: Connectives And Quantifiers
+
+Production inventory:
+
+```ebnf
+formula              ::= quantified_formula | iff_formula ;
+iff_formula          ::= implies_formula
+                         [ "iff" ( implies_formula | quantified_formula ) ] ;
+implies_formula      ::= or_formula
+                         [ "implies" ( implies_formula | quantified_formula ) ] ;
+or_formula           ::= and_formula
+                         { "or" ( and_formula | quantified_formula )
+                         | "or" "..." "or"
+                           ( and_formula | quantified_formula ) } ;
+and_formula          ::= not_formula
+                         { "&" ( not_formula | quantified_formula )
+                         | "&" "..." "&"
+                           ( not_formula | quantified_formula ) } ;
+not_formula          ::= "not" ( not_formula | quantified_formula )
+                       | atomic_formula
+                       | "(" formula ")"
+                       | "contradiction"
+                       | "thesis" ;
+
+quantified_formula   ::= universal_formula | existential_formula ;
+universal_formula    ::= "for" quantified_vars [ "st" formula ]
+                         ( "holds" formula | quantified_formula ) ;
+existential_formula  ::= "ex" quantified_vars "st" formula ;
+
+quantified_vars      ::= explicit_vars [ "," implicit_vars ] | implicit_vars ;
+explicit_vars        ::= qualified_segment { "," qualified_segment } ;
+qualified_segment    ::= var_list ( "being" | "be" ) type_expression ;
+implicit_vars        ::= var_list ;
+var_list             ::= identifier { "," identifier } ;
+```
+
+Task 14 completes the S-012 formula surface by replacing the task-13
+atomic-only formula parser with a fixed formula-precedence parser. Formula
+precedence is separate from term operator fixity: `not` binds tighter than
+`&`, then `or`, then right-associative `implies`, then non-associative `iff`,
+and quantifiers bind as the outermost formula forms. `iff` chaining without
+parentheses reports `NonAssociativeOperatorChain`. Term Pratt parsing still
+owns user-defined functor precedence inside atomic formula operands.
+
+`FormulaExpression` continues to wrap exactly one formula child. Task 14 adds
+`PrefixFormula` for `not`, `BinaryFormula` for `&`, `or`, `implies`, `iff`,
+`ParenthesizedFormula`, `QuantifiedFormula`, `QuantifierVariableSegment`, and
+`FormulaConstant` for `thesis` and `contradiction`. Binary formula nodes
+preserve the connective token; `& ... &` and `or ... or` preserve both
+connective tokens plus the `...` token on the same binary node. Expansion and
+alpha-equivalence checks for repetition forms remain semantic/checker work.
+
+`QuantifiedFormula` preserves the quantifier token (`for` or `ex`), one or
+more `QuantifierVariableSegment` children separated by comma tokens, optional
+`st` condition formula for universal quantification, required `st` body
+formula for existential quantification, and either a `holds` body formula or a
+nested quantified-formula body for universal quantification. A
+`QuantifierVariableSegment` preserves the written variable token list, optional
+`be` / `being` token, and optional `TypeExpression`; it does not resolve
+implicit variable types from `reserve`.
+
+The theorem/lemma placeholder formula host expands from atomic formulas to all
+task-14 formulas, but remains exact: only `label: formula;` emits a
+`FormulaExpression`. Prefixes followed by theorem justification or proof tails
+such as `by` or `proof` remain legacy token-preserving `PlaceholderItem`
+payloads until task 22 owns theorem/proof item nodes. Template predicate
+arguments remain deferred to task 31 / S-016. Task 15 owns Fraenkel and
+set-builder terms that embed formulas inside term syntax.
+
+Malformed formula operands after `not`, connectives, quantifier `st`, or
+`holds` insert `MissingFormula` recovery and report
+`MalformedFormulaExpression`. Quantifier headers are preserved when at least
+one variable segment can be represented. A missing explicit type after `be` or
+`being` reuses `MissingTypeExpression` recovery and
+`MalformedTypeExpression`; malformed quantifier-header separators or tails
+report `MalformedFormulaExpression`. Task 14 does not synthesize a missing
+variable segment when the quantified variable list is entirely absent; that
+input stays outside the concrete formula host until a later binder-recovery
+task adds dedicated missing-binder vocabulary.
+
+Task 14 tests must pin connective precedence and associativity, parenthesized
+formula grouping, non-associative `iff` rejection, repetition-token
+preservation, `thesis` / `contradiction`, universal and existential
+quantifiers with explicit and implicit variables, nested universal
+quantification without repeated `holds`, theorem-placeholder formula hosting,
+and missing-formula recovery.
+
 ## Public Enum Compatibility
 
 `ParserTokenKind` is `#[non_exhaustive]` for downstream crates. The parser token

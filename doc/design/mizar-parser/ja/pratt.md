@@ -4,7 +4,7 @@
 
 状態: task 12 の項 Pratt 解析は、active lexicon 由来の prefix、postfix、infix
 演算子向けに実装済みである。task 13 の atomic formula は項 Pratt boundary を使う。
-formula connective の優先順位解析は引き続き計画中である。
+task 14 の fixed formula connective precedence は実装用に指定済みである。
 
 ## 目的
 
@@ -36,7 +36,7 @@ selector-versus-namespace role の解決は行わない。
 
 atomic-formula parsing は項 Pratt boundary の後から始まる。Task 13 はすでに parse 済みの
 term operand の周辺で、built-in predicate、`is` assertion、inline predicate call、
-syntax-only user predicate segment を消費する。固定 formula connective Pratt table は task 14 が所有する。
+syntax-only user predicate segment を消費する。
 
 Infix term operator の binding power は Appendix B と一致する。
 
@@ -56,6 +56,33 @@ entry だけを使う。left operand の後で postfix entry と infix entry が
 operator の incompatible metadata conflict は lexical-environment または link stage の
 error である。この parser stage は `ParserInputs` が deterministic な visible table を
 すでに選んでいると仮定する。
+
+## Formula Pratt Contract
+
+Task 14 は import-dependent operator metadata ではなく fixed formula parser を使う。
+atomic formula、parenthesized formula、`thesis`、`contradiction` は primary formula
+operand である。prefix `not` は prefix binding level で formula operand を 1 つ parse する。
+binary connective は Appendix B の fixed hierarchy を使う。
+
+| Operator | Associativity | Relative binding |
+|---|---|---:|
+| `&` | left | 50 |
+| `or` | left | 40 |
+| `implies` | right | 30 |
+| `iff` | none | 20 |
+
+numeric binding power は parser-local constant であり、relative order が contract である。
+`iff` は同じ unparenthesized chain の top-level `iff` が続く場合に
+`NonAssociativeOperatorChain` を送出する。repetition form の `& ... &` と
+`or ... or` は non-repetition connective と同じ precedence / associativity を持ち、
+追加の `...` token を保持した同じ binary formula node で表す。
+
+Quantifier は user operator ではない。`for` と `ex` は Pratt binary table より前に
+outermost formula form として parse する。Chapter 14 が
+`( ... | quantified_formula )` を許す right operand では quantified formula が現れてよく、
+`P implies for x being T holds Q` は `P implies (for x being T holds Q)` と group する。
+quantifier variable typing は syntactic only であり、`reserve` 由来の implicit variable
+typing は後段の resolution に属する。
 
 ## 公開 enum の互換性
 

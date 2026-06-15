@@ -9,9 +9,11 @@ use crate::{
 };
 use mizar_session::{SourceAnchor, SourceRange};
 use mizar_syntax::{
-    SkippedTokenReason, SurfaceBuilderNodeId, SurfaceInfixOperator, SurfaceNodeKind,
-    SurfaceOperatorAssociativity, SurfacePostfixOperator, SurfacePrefixOperator, SyntaxDiagnostic,
-    SyntaxDiagnosticCode, SyntaxRecoveryKind,
+    SkippedTokenReason, SurfaceBuilderNodeId, SurfaceFormulaBinaryOperator,
+    SurfaceFormulaConnective, SurfaceFormulaConstant, SurfaceFormulaPrefixOperator,
+    SurfaceInfixOperator, SurfaceNodeKind, SurfaceOperatorAssociativity, SurfacePostfixOperator,
+    SurfacePrefixOperator, SurfaceQuantifierKind, SyntaxDiagnostic, SyntaxDiagnosticCode,
+    SyntaxRecoveryKind,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -59,6 +61,15 @@ impl AttributeSymbolPlan {
             .first()
             .map_or(self.final_symbol, |(segment, _)| *segment)
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct FormulaConnectiveToken {
+    connective: SurfaceFormulaConnective,
+    repeated: bool,
+    token_count: usize,
+    left_binding_power: u32,
+    right_binding_power: u32,
 }
 
 impl Parser {
@@ -724,21 +735,437 @@ impl Parser {
     }
 
     fn parse_formula_expression_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
-        if !self.looks_like_atomic_formula_at(position)
+        if !self.can_start_formula_at(position)
             || self.formula_payload_contains_deferred_predicate_template_args_at(position)
         {
             return None;
         }
-        let atomic = self.parse_atomic_formula_at(position)?;
+        let formula = self.parse_formula_at(position)?;
         let id = self.events.emit(SyntaxEvent::Node {
             kind: SurfaceNodeKind::FormulaExpression,
-            range: self.covering_token_range(position, atomic.next_position),
-            children: vec![atomic.id],
+            range: self.covering_token_range(position, formula.next_position),
+            children: vec![formula.id],
         });
         Some(ParsedTypeNode {
             id,
-            next_position: atomic.next_position.max(position + 1),
-            recovery_nodes: atomic.recovery_nodes,
+            next_position: formula.next_position.max(position + 1),
+            recovery_nodes: formula.recovery_nodes,
+        })
+    }
+
+    fn parse_formula_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        if self.is_formula_expression_boundary_at(position) {
+            return None;
+        }
+        if self.is_formula_quantifier_at(position) {
+            return self.parse_quantified_formula_at(position);
+        }
+        self.parse_formula_binary_at(position, 0)
+    }
+
+    fn parse_formula_binary_at(
+        &mut self,
+        position: usize,
+        minimum_binding_power: u32,
+    ) -> Option<ParsedTypeNode> {
+        let mut left = self.parse_formula_prefix_or_primary_at(position)?;
+        loop {
+            let cursor = left.next_position;
+            let Some(connective) = self.formula_connective_at(cursor) else {
+                break;
+            };
+            if connective.left_binding_power < minimum_binding_power {
+                break;
+            }
+
+            if connective.connective == SurfaceFormulaConnective::Iff
+                && self.left_is_iff_formula_chain(left.id)
+            {
+                let span = self.request.tokens[cursor].span;
+                self.diagnostics.push(SyntaxDiagnostic::new(
+                    SyntaxDiagnosticCode::NonAssociativeOperatorChain,
+                    "non-associative formula connective chain requires explicit grouping",
+                    span,
+                ));
+            }
+
+            let operator_end = cursor + connective.token_count;
+            let mut children = vec![left.id];
+            children.extend(self.token_node_ids[cursor..operator_end].iter().copied());
+            let mut recovery_nodes = left.recovery_nodes;
+            let (right_id, next_position) =
+                match self.parse_formula_right_operand_at(operator_end, connective) {
+                    Some(right) => {
+                        let next_position = right.next_position;
+                        recovery_nodes.extend(right.recovery_nodes);
+                        (right.id, next_position)
+                    }
+                    None => {
+                        self.diagnose_malformed_formula_expression(
+                            operator_end,
+                            "expected formula after connective",
+                        );
+                        let missing = self.add_missing_formula(operator_end);
+                        recovery_nodes.push(missing);
+                        (missing, operator_end)
+                    }
+                };
+            children.push(right_id);
+
+            let id = self.events.emit(SyntaxEvent::Node {
+                kind: SurfaceNodeKind::BinaryFormula(SurfaceFormulaBinaryOperator {
+                    connective: connective.connective,
+                    repeated: connective.repeated,
+                }),
+                range: self.covering_token_range(position, next_position.max(operator_end)),
+                children,
+            });
+            left = ParsedTypeNode {
+                id,
+                next_position: next_position.max(operator_end),
+                recovery_nodes,
+            };
+        }
+        Some(left)
+    }
+
+    fn parse_formula_right_operand_at(
+        &mut self,
+        position: usize,
+        connective: FormulaConnectiveToken,
+    ) -> Option<ParsedTypeNode> {
+        if self.is_formula_quantifier_at(position) {
+            self.parse_quantified_formula_at(position)
+        } else {
+            self.parse_formula_binary_at(position, connective.right_binding_power)
+        }
+    }
+
+    fn parse_formula_prefix_or_primary_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        if self.is_reserved_word_at(position, "not") {
+            return Some(self.parse_prefix_formula_at(position));
+        }
+        if let Some(parenthesized) = self.parse_parenthesized_formula_at(position) {
+            return Some(parenthesized);
+        }
+        if let Some(constant) = self.parse_formula_constant_at(position) {
+            return Some(constant);
+        }
+        self.parse_atomic_formula_at(position)
+    }
+
+    fn parse_prefix_formula_at(&mut self, position: usize) -> ParsedTypeNode {
+        let operand_position = position + 1;
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let (operand, cursor) = if self.is_formula_quantifier_at(operand_position) {
+            match self.parse_quantified_formula_at(operand_position) {
+                Some(operand) => {
+                    let cursor = operand.next_position;
+                    recovery_nodes.extend(operand.recovery_nodes);
+                    (operand.id, cursor)
+                }
+                None => {
+                    self.diagnose_malformed_formula_expression(
+                        operand_position,
+                        "expected formula after `not`",
+                    );
+                    let missing = self.add_missing_formula(operand_position);
+                    recovery_nodes.push(missing);
+                    (missing, operand_position)
+                }
+            }
+        } else {
+            match self.parse_formula_prefix_or_primary_at(operand_position) {
+                Some(operand) => {
+                    let cursor = operand.next_position;
+                    recovery_nodes.extend(operand.recovery_nodes);
+                    (operand.id, cursor)
+                }
+                None => {
+                    self.diagnose_malformed_formula_expression(
+                        operand_position,
+                        "expected formula after `not`",
+                    );
+                    let missing = self.add_missing_formula(operand_position);
+                    recovery_nodes.push(missing);
+                    (missing, operand_position)
+                }
+            }
+        };
+        children.push(operand);
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::PrefixFormula(SurfaceFormulaPrefixOperator::Not),
+            range: self.covering_token_range(position, cursor.max(position + 1)),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_parenthesized_formula_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        if !self.is_reserved_symbol_at(position, "(") {
+            return None;
+        }
+        let inner_position = position + 1;
+        let inner = self.parse_formula_expression_at(inner_position)?;
+        let mut children = vec![self.token_node_ids[position], inner.id];
+        let mut recovery_nodes = inner.recovery_nodes;
+        let mut cursor = inner.next_position;
+
+        if self.is_reserved_symbol_at(cursor, ")") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_unmatched_formula_delimiter(position, cursor, ")");
+            let recovery = self.add_recovery_node(
+                SyntaxRecoveryKind::UnmatchedOpeningDelimiter,
+                self.zero_range_at(cursor),
+                Vec::new(),
+            );
+            children.push(recovery);
+            recovery_nodes.push(recovery);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::ParenthesizedFormula,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        Some(ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        })
+    }
+
+    fn parse_formula_constant_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        let constant = if self.is_reserved_word_at(position, "thesis") {
+            SurfaceFormulaConstant::Thesis
+        } else if self.is_reserved_word_at(position, "contradiction") {
+            SurfaceFormulaConstant::Contradiction
+        } else {
+            return None;
+        };
+        let cursor = position + 1;
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::FormulaConstant(constant),
+            range: self.covering_token_range(position, cursor),
+            children: vec![self.token_node_ids[position]],
+        });
+        Some(ParsedTypeNode {
+            id,
+            next_position: cursor,
+            recovery_nodes: Vec::new(),
+        })
+    }
+
+    fn parse_quantified_formula_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        let quantifier = if self.is_reserved_word_at(position, "for") {
+            SurfaceQuantifierKind::Universal
+        } else if self.is_reserved_word_at(position, "ex") {
+            SurfaceQuantifierKind::Existential
+        } else {
+            return None;
+        };
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        let first_segment = self.parse_quantifier_variable_segment_at(cursor)?;
+        cursor = first_segment.next_position;
+        children.push(first_segment.id);
+        recovery_nodes.extend(first_segment.recovery_nodes);
+
+        while self.is_reserved_symbol_at(cursor, ",") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            if let Some(segment) = self.parse_quantifier_variable_segment_at(cursor) {
+                cursor = segment.next_position;
+                children.push(segment.id);
+                recovery_nodes.extend(segment.recovery_nodes);
+            } else {
+                self.diagnose_malformed_formula_expression(
+                    cursor,
+                    "expected quantified variable segment after `,`",
+                );
+                break;
+            }
+        }
+
+        match quantifier {
+            SurfaceQuantifierKind::Universal => {
+                self.parse_universal_formula_tail(&mut cursor, &mut children, &mut recovery_nodes);
+            }
+            SurfaceQuantifierKind::Existential => {
+                self.parse_existential_formula_tail(
+                    &mut cursor,
+                    &mut children,
+                    &mut recovery_nodes,
+                );
+            }
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::QuantifiedFormula(quantifier),
+            range: self.covering_token_range(position, cursor.max(position + 1)),
+            children,
+        });
+        Some(ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        })
+    }
+
+    fn parse_universal_formula_tail(
+        &mut self,
+        cursor: &mut usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) {
+        if self.is_reserved_word_at(*cursor, "st") {
+            children.push(self.token_node_ids[*cursor]);
+            *cursor += 1;
+            self.parse_required_formula_child(
+                cursor,
+                children,
+                recovery_nodes,
+                "expected formula after `st`",
+            );
+        }
+
+        if self.is_reserved_word_at(*cursor, "holds") {
+            children.push(self.token_node_ids[*cursor]);
+            *cursor += 1;
+            self.parse_required_formula_child(
+                cursor,
+                children,
+                recovery_nodes,
+                "expected formula after `holds`",
+            );
+        } else if self.is_formula_quantifier_at(*cursor) {
+            if let Some(body) = self.parse_quantified_formula_at(*cursor) {
+                *cursor = body.next_position;
+                children.push(body.id);
+                recovery_nodes.extend(body.recovery_nodes);
+            }
+        } else {
+            self.diagnose_malformed_formula_expression(
+                *cursor,
+                "expected `holds` formula or nested quantified formula",
+            );
+            let missing = self.add_missing_formula(*cursor);
+            children.push(missing);
+            recovery_nodes.push(missing);
+            self.consume_malformed_quantifier_tail_formula(cursor, children, recovery_nodes);
+        }
+    }
+
+    fn parse_existential_formula_tail(
+        &mut self,
+        cursor: &mut usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) {
+        if self.is_reserved_word_at(*cursor, "st") {
+            children.push(self.token_node_ids[*cursor]);
+            *cursor += 1;
+            self.parse_required_formula_child(
+                cursor,
+                children,
+                recovery_nodes,
+                "expected formula after `st`",
+            );
+        } else {
+            self.diagnose_malformed_formula_expression(
+                *cursor,
+                "expected `st` formula in existential quantifier",
+            );
+            let missing = self.add_missing_formula(*cursor);
+            children.push(missing);
+            recovery_nodes.push(missing);
+            self.consume_malformed_quantifier_tail_formula(cursor, children, recovery_nodes);
+        }
+    }
+
+    fn consume_malformed_quantifier_tail_formula(
+        &mut self,
+        cursor: &mut usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) {
+        if let Some(formula) = self.parse_formula_at(*cursor) {
+            *cursor = formula.next_position;
+            children.push(formula.id);
+            recovery_nodes.extend(formula.recovery_nodes);
+        }
+    }
+
+    fn parse_required_formula_child(
+        &mut self,
+        cursor: &mut usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+        message: &'static str,
+    ) {
+        if let Some(formula) = self.parse_formula_at(*cursor) {
+            *cursor = formula.next_position;
+            children.push(formula.id);
+            recovery_nodes.extend(formula.recovery_nodes);
+        } else {
+            self.diagnose_malformed_formula_expression(*cursor, message);
+            let missing = self.add_missing_formula(*cursor);
+            children.push(missing);
+            recovery_nodes.push(missing);
+        }
+    }
+
+    fn parse_quantifier_variable_segment_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        if !self.is_identifier_at(position) {
+            return None;
+        }
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        while self.is_reserved_symbol_at(cursor, ",") && self.is_identifier_at(cursor + 1) {
+            children.push(self.token_node_ids[cursor]);
+            children.push(self.token_node_ids[cursor + 1]);
+            cursor += 2;
+        }
+
+        if self.is_reserved_word_at(cursor, "be") || self.is_reserved_word_at(cursor, "being") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            if let Some(type_expression) = self.parse_type_expression_at(cursor) {
+                cursor = type_expression.next_position;
+                children.push(type_expression.id);
+                recovery_nodes.extend(type_expression.recovery_nodes);
+            } else {
+                self.diagnose_malformed_type_expression(
+                    cursor,
+                    "expected type after quantified variable binder",
+                );
+                let missing = self.add_missing_type_expression(cursor);
+                children.push(missing);
+                recovery_nodes.push(missing);
+            }
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::QuantifierVariableSegment,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        Some(ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
         })
     }
 
@@ -2689,8 +3116,8 @@ impl Parser {
             return None;
         }
         let formula_start = colon + 1;
-        if !self.looks_like_atomic_formula_at(formula_start)
-            || self.formula_payload_contains_deferred_task14_at(formula_start)
+        if !self.can_start_formula_at(formula_start)
+            || self.formula_payload_contains_deferred_predicate_template_args_at(formula_start)
             || self.formula_payload_contains_theorem_tail_at(formula_start)
         {
             return None;
@@ -2707,17 +3134,24 @@ impl Parser {
             children.push(self.token_node_ids[cursor]);
             cursor += 1;
         } else {
-            self.diagnose_malformed_term_expression(cursor, "unexpected token after formula");
-            if let Some(recovery) = self.recover_malformed_term_tail(cursor, "") {
-                children.push(recovery.id);
-                recovery_nodes.extend(recovery.recovery_nodes);
-                cursor = recovery.next_position;
-            }
-            if self.is_semicolon_at(cursor) {
-                children.push(self.token_node_ids[cursor]);
-                cursor += 1;
-            } else {
+            if cursor >= self.request.tokens.len()
+                || self.is_item_start_at(cursor)
+                || self.is_end_keyword_at(cursor)
+            {
                 self.diagnose_missing_semicolon(cursor);
+            } else {
+                self.diagnose_malformed_term_expression(cursor, "unexpected token after formula");
+                if let Some(recovery) = self.recover_malformed_term_tail(cursor, "") {
+                    children.push(recovery.id);
+                    recovery_nodes.extend(recovery.recovery_nodes);
+                    cursor = recovery.next_position;
+                }
+                if self.is_semicolon_at(cursor) {
+                    children.push(self.token_node_ids[cursor]);
+                    cursor += 1;
+                } else {
+                    self.diagnose_missing_semicolon(cursor);
+                }
             }
         }
 
@@ -2904,6 +3338,26 @@ impl Parser {
         );
     }
 
+    fn diagnose_malformed_formula_expression(
+        &mut self,
+        position: usize,
+        message: impl Into<std::sync::Arc<str>>,
+    ) {
+        let tokens = &self.request.tokens;
+        let cursor = crate::cursor::TokenCursor::at(self.request.source_id, tokens, position);
+        let primary = cursor
+            .current()
+            .map_or(cursor.eof_range(), |token| token.span);
+        self.diagnostics.push(
+            SyntaxDiagnostic::new(
+                SyntaxDiagnosticCode::MalformedFormulaExpression,
+                message,
+                primary,
+            )
+            .with_recovery_note("repair the formula expression before continuing"),
+        );
+    }
+
     fn diagnose_unmatched_type_argument_opener(&mut self, opener: usize, position: usize) {
         let tokens = &self.request.tokens;
         let cursor = crate::cursor::TokenCursor::at(self.request.source_id, tokens, position);
@@ -2945,9 +3399,40 @@ impl Parser {
         );
     }
 
+    fn diagnose_unmatched_formula_delimiter(
+        &mut self,
+        opener: usize,
+        position: usize,
+        close_symbol: &'static str,
+    ) {
+        let tokens = &self.request.tokens;
+        let cursor = crate::cursor::TokenCursor::at(self.request.source_id, tokens, position);
+        let primary = cursor
+            .current()
+            .map_or(cursor.eof_range(), |token| token.span);
+        let opener_span = self.request.tokens[opener].span;
+        self.diagnostics.push(
+            SyntaxDiagnostic::new(
+                SyntaxDiagnosticCode::MalformedFormulaExpression,
+                format!("expected `{close_symbol}` to close formula delimiter"),
+                primary,
+            )
+            .with_secondary([SourceAnchor::Range(opener_span)])
+            .with_recovery_note(format!("insert `{close_symbol}` before continuing")),
+        );
+    }
+
     fn add_missing_type_expression(&mut self, position: usize) -> SurfaceBuilderNodeId {
         self.add_recovery_node(
             SyntaxRecoveryKind::MissingTypeExpression,
+            self.zero_range_at(position),
+            Vec::new(),
+        )
+    }
+
+    fn add_missing_formula(&mut self, position: usize) -> SurfaceBuilderNodeId {
+        self.add_recovery_node(
+            SyntaxRecoveryKind::MissingFormula,
             self.zero_range_at(position),
             Vec::new(),
         )
@@ -3161,6 +3646,16 @@ impl Parser {
         false
     }
 
+    fn can_start_formula_at(&self, position: usize) -> bool {
+        !self.is_formula_expression_boundary_at(position)
+            && (self.is_reserved_word_at(position, "not")
+                || self.is_formula_quantifier_at(position)
+                || self.is_reserved_word_at(position, "thesis")
+                || self.is_reserved_word_at(position, "contradiction")
+                || self.is_reserved_symbol_at(position, "(")
+                || self.looks_like_atomic_formula_at(position))
+    }
+
     fn looks_like_atomic_formula_at(&self, position: usize) -> bool {
         if self.is_formula_expression_boundary_at(position) {
             return false;
@@ -3213,44 +3708,6 @@ impl Parser {
             } else if self.is_reserved_symbol_at(cursor, "}") {
                 if brace_depth == 0 {
                     return false;
-                }
-                brace_depth -= 1;
-            }
-            cursor += 1;
-        }
-        false
-    }
-
-    fn formula_payload_contains_deferred_task14_at(&self, position: usize) -> bool {
-        let mut cursor = position;
-        let mut paren_depth = 0_usize;
-        let mut bracket_depth = 0_usize;
-        let mut brace_depth = 0_usize;
-        while cursor < self.request.tokens.len() && !self.is_semicolon_at(cursor) {
-            let at_top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
-            if at_top_level && self.is_task14_formula_connective_at(cursor) {
-                return true;
-            }
-
-            if self.is_reserved_symbol_at(cursor, "(") {
-                paren_depth += 1;
-            } else if self.is_reserved_symbol_at(cursor, ")") {
-                if paren_depth == 0 {
-                    break;
-                }
-                paren_depth -= 1;
-            } else if self.is_reserved_symbol_at(cursor, "[") {
-                bracket_depth += 1;
-            } else if self.is_reserved_symbol_at(cursor, "]") {
-                if bracket_depth == 0 {
-                    break;
-                }
-                bracket_depth -= 1;
-            } else if self.is_reserved_symbol_at(cursor, "{") {
-                brace_depth += 1;
-            } else if self.is_reserved_symbol_at(cursor, "}") {
-                if brace_depth == 0 {
-                    break;
                 }
                 brace_depth -= 1;
             }
@@ -3312,7 +3769,12 @@ impl Parser {
         while cursor < self.request.tokens.len() && !self.is_semicolon_at(cursor) {
             let at_top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
             if at_top_level {
-                if self.is_reserved_word_at(cursor, "is") {
+                if self.formula_connective_at(cursor).is_some()
+                    || self.is_reserved_word_at(cursor, "st")
+                    || self.is_reserved_word_at(cursor, "holds")
+                {
+                    in_is_assertion_body = false;
+                } else if self.is_reserved_word_at(cursor, "is") {
                     in_is_assertion_body = true;
                 } else if !in_is_assertion_body
                     && self
@@ -3800,6 +4262,7 @@ impl Parser {
             || self.is_reserved_symbol_at(position, ")")
             || self.is_reserved_symbol_at(position, "]")
             || self.is_reserved_symbol_at(position, "}")
+            || self.is_formula_syntax_boundary_at(position)
             || self.is_item_start_at(position)
     }
 
@@ -3810,6 +4273,7 @@ impl Parser {
             || self.is_reserved_symbol_at(position, ")")
             || self.is_reserved_symbol_at(position, "]")
             || self.is_reserved_symbol_at(position, "}")
+            || self.is_formula_syntax_boundary_at(position)
             || self.is_item_start_at(position)
     }
 
@@ -3820,6 +4284,7 @@ impl Parser {
             || self.is_reserved_symbol_at(position, ")")
             || self.is_reserved_symbol_at(position, "]")
             || self.is_reserved_symbol_at(position, "}")
+            || self.is_formula_syntax_boundary_at(position)
             || self.is_item_start_at(position)
     }
 
@@ -3829,6 +4294,7 @@ impl Parser {
             || self.is_reserved_symbol_at(position, ")")
             || self.is_reserved_symbol_at(position, "]")
             || self.is_reserved_symbol_at(position, "}")
+            || self.is_formula_syntax_boundary_at(position)
     }
 
     fn is_term_argument_list_boundary_at(&self, position: usize) -> bool {
@@ -3920,11 +4386,66 @@ impl Parser {
             || self.is_reserved_symbol_at(position, "<>")
     }
 
-    fn is_task14_formula_connective_at(&self, position: usize) -> bool {
-        self.is_reserved_symbol_at(position, "&")
-            || self.is_reserved_word_at(position, "or")
-            || self.is_reserved_word_at(position, "implies")
-            || self.is_reserved_word_at(position, "iff")
+    fn formula_connective_at(&self, position: usize) -> Option<FormulaConnectiveToken> {
+        if self.is_reserved_symbol_at(position, "&") {
+            let repeated = self.is_reserved_symbol_at(position + 1, "...")
+                && self.is_reserved_symbol_at(position + 2, "&");
+            return Some(FormulaConnectiveToken {
+                connective: SurfaceFormulaConnective::And,
+                repeated,
+                token_count: if repeated { 3 } else { 1 },
+                left_binding_power: 50,
+                right_binding_power: 51,
+            });
+        }
+        if self.is_reserved_word_at(position, "or") {
+            let repeated = self.is_reserved_symbol_at(position + 1, "...")
+                && self.is_reserved_word_at(position + 2, "or");
+            return Some(FormulaConnectiveToken {
+                connective: SurfaceFormulaConnective::Or,
+                repeated,
+                token_count: if repeated { 3 } else { 1 },
+                left_binding_power: 40,
+                right_binding_power: 41,
+            });
+        }
+        if self.is_reserved_word_at(position, "implies") {
+            return Some(FormulaConnectiveToken {
+                connective: SurfaceFormulaConnective::Implies,
+                repeated: false,
+                token_count: 1,
+                left_binding_power: 30,
+                right_binding_power: 30,
+            });
+        }
+        if self.is_reserved_word_at(position, "iff") {
+            return Some(FormulaConnectiveToken {
+                connective: SurfaceFormulaConnective::Iff,
+                repeated: false,
+                token_count: 1,
+                left_binding_power: 20,
+                right_binding_power: 21,
+            });
+        }
+        None
+    }
+
+    fn is_formula_quantifier_at(&self, position: usize) -> bool {
+        self.is_reserved_word_at(position, "for") || self.is_reserved_word_at(position, "ex")
+    }
+
+    fn is_formula_syntax_boundary_at(&self, position: usize) -> bool {
+        self.formula_connective_at(position).is_some()
+            || self.is_reserved_word_at(position, "st")
+            || self.is_reserved_word_at(position, "holds")
+    }
+
+    fn left_is_iff_formula_chain(&self, left: SurfaceBuilderNodeId) -> bool {
+        matches!(
+            self.events.node_kind(left).unwrap(),
+            SurfaceNodeKind::BinaryFormula(left_operator)
+                if left_operator.connective == SurfaceFormulaConnective::Iff
+        )
     }
 
     fn is_reserved_symbol_at(&self, position: usize, spelling: &str) -> bool {
@@ -4042,7 +4563,8 @@ mod tests {
         SourceRange,
     };
     use mizar_syntax::{
-        SkippedTokenReason, SurfaceNodeKind, SurfaceOperatorAssociativity, SyntaxDiagnosticCode,
+        SkippedTokenReason, SurfaceFormulaConnective, SurfaceFormulaConstant, SurfaceNodeKind,
+        SurfaceOperatorAssociativity, SurfaceQuantifierKind, SyntaxDiagnosticCode,
         SyntaxRecoveryKind,
     };
 
@@ -8553,7 +9075,7 @@ mod tests {
     }
 
     #[test]
-    fn parser_keeps_task14_formula_forms_as_plain_placeholders() {
+    fn parser_parses_formula_connectives_constants_and_grouping() {
         let source_id = source_id(49);
         let output = parse(ParseRequest::new(
             source_id,
@@ -8564,17 +9086,7 @@ mod tests {
                     ("theorem", ParserTokenKind::ReservedWord),
                     ("Thesis", ParserTokenKind::Identifier),
                     (":", ParserTokenKind::ReservedSymbol),
-                    ("thesis", ParserTokenKind::Identifier),
-                    (";", ParserTokenKind::ReservedSymbol),
-                    ("theorem", ParserTokenKind::ReservedWord),
-                    ("TemplateArgs", ParserTokenKind::Identifier),
-                    (":", ParserTokenKind::ReservedSymbol),
-                    ("x", ParserTokenKind::Identifier),
-                    ("divides", ParserTokenKind::UserSymbol),
-                    ("[", ParserTokenKind::ReservedSymbol),
-                    ("T", ParserTokenKind::UserSymbol),
-                    ("]", ParserTokenKind::ReservedSymbol),
-                    ("y", ParserTokenKind::Identifier),
+                    ("thesis", ParserTokenKind::ReservedWord),
                     (";", ParserTokenKind::ReservedSymbol),
                     ("theorem", ParserTokenKind::ReservedWord),
                     ("Conj", ParserTokenKind::Identifier),
@@ -8587,6 +9099,166 @@ mod tests {
                     ("=", ParserTokenKind::ReservedSymbol),
                     ("w", ParserTokenKind::Identifier),
                     (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("Repeat", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("&", ParserTokenKind::ReservedSymbol),
+                    ("...", ParserTokenKind::ReservedSymbol),
+                    ("&", ParserTokenKind::ReservedSymbol),
+                    ("z", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("w", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("OrImplies", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("or", ParserTokenKind::ReservedWord),
+                    ("z", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("w", ParserTokenKind::Identifier),
+                    ("implies", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("IffGroup", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("iff", ParserTokenKind::ReservedWord),
+                    ("contradiction", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("NotAnd", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("not", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("&", ParserTokenKind::ReservedSymbol),
+                    ("z", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("w", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("RepeatOr", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("or", ParserTokenKind::ReservedWord),
+                    ("...", ParserTokenKind::ReservedSymbol),
+                    ("or", ParserTokenKind::ReservedWord),
+                    ("z", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("w", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("AndLeft", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("&", ParserTokenKind::ReservedSymbol),
+                    ("z", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("w", ParserTokenKind::Identifier),
+                    ("&", ParserTokenKind::ReservedSymbol),
+                    ("u", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("v", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("OrLeft", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("or", ParserTokenKind::ReservedWord),
+                    ("z", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("w", ParserTokenKind::Identifier),
+                    ("or", ParserTokenKind::ReservedWord),
+                    ("u", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("v", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("ImpliesRight", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("implies", ParserTokenKind::ReservedWord),
+                    ("z", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("w", ParserTokenKind::Identifier),
+                    ("implies", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("AndBeforeOr", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("&", ParserTokenKind::ReservedSymbol),
+                    ("z", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("w", ParserTokenKind::Identifier),
+                    ("or", ParserTokenKind::ReservedWord),
+                    ("u", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("v", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("ImpliesBeforeIff", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("implies", ParserTokenKind::ReservedWord),
+                    ("contradiction", ParserTokenKind::ReservedWord),
+                    ("iff", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("ParenOverride", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("or", ParserTokenKind::ReservedWord),
+                    ("z", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("w", ParserTokenKind::Identifier),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("&", ParserTokenKind::ReservedSymbol),
+                    ("u", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("v", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("ImpliesQuantifier", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("implies", ParserTokenKind::ReservedWord),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("q", ParserTokenKind::Identifier),
+                    ("being", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    ("holds", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
                 ],
             ),
             Vec::new(),
@@ -8594,10 +9266,309 @@ mod tests {
 
         assert!(
             output.diagnostics.is_empty(),
-            "deferred task-14 forms should keep legacy placeholder behavior: {:?}",
+            "task-14 formula forms should parse without diagnostics: {:?}",
             output.diagnostics
         );
-        let ast = output.ast.expect("deferred forms should keep an AST");
+        let ast = output.ast.expect("task-14 formulas should keep an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::FormulaExpression
+            )),
+            16
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::BinaryFormula(_)
+            )),
+            20
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::PrefixFormula(_)
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| {
+                matches!(kind, SurfaceNodeKind::ParenthesizedFormula)
+            }),
+            2
+        );
+        for connective in [
+            SurfaceFormulaConnective::And,
+            SurfaceFormulaConnective::Or,
+            SurfaceFormulaConnective::Implies,
+            SurfaceFormulaConnective::Iff,
+        ] {
+            assert!(
+                ast.nodes().iter().any(|node| {
+                    matches!(
+                        node.kind,
+                        SurfaceNodeKind::BinaryFormula(operator)
+                            if operator.connective == connective
+                    )
+                }),
+                "formula AST should contain {connective:?}"
+            );
+        }
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(
+                node.kind,
+                SurfaceNodeKind::BinaryFormula(operator)
+                    if operator.connective == SurfaceFormulaConnective::And && operator.repeated
+            )
+        }));
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(
+                node.kind,
+                SurfaceNodeKind::BinaryFormula(operator)
+                    if operator.connective == SurfaceFormulaConnective::Or && operator.repeated
+            )
+        }));
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(
+                node.kind,
+                SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis)
+            )
+        }));
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(
+                node.kind,
+                SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction)
+            )
+        }));
+
+        let or_implies = formula_root_for_label(&ast, "OrImplies");
+        assert_binary_formula(or_implies, SurfaceFormulaConnective::Implies, false);
+        let or_implies_children = structural_children(&ast, or_implies);
+        assert_binary_formula(or_implies_children[0], SurfaceFormulaConnective::Or, false);
+        assert_formula_constant(or_implies_children[1], SurfaceFormulaConstant::Thesis);
+
+        let not_and = formula_root_for_label(&ast, "NotAnd");
+        assert_binary_formula(not_and, SurfaceFormulaConnective::And, false);
+        let not_and_children = structural_children(&ast, not_and);
+        assert!(matches!(
+            not_and_children[0].kind,
+            SurfaceNodeKind::PrefixFormula(_)
+        ));
+        assert!(matches!(
+            structural_children(&ast, not_and_children[0])[0].kind,
+            SurfaceNodeKind::BuiltinPredicateApplication
+        ));
+
+        let iff_group = formula_root_for_label(&ast, "IffGroup");
+        assert_binary_formula(iff_group, SurfaceFormulaConnective::Iff, false);
+        let iff_children = structural_children(&ast, iff_group);
+        assert!(matches!(
+            iff_children[0].kind,
+            SurfaceNodeKind::ParenthesizedFormula
+        ));
+        assert_formula_constant(iff_children[1], SurfaceFormulaConstant::Contradiction);
+
+        let and_left = formula_root_for_label(&ast, "AndLeft");
+        assert_binary_formula(and_left, SurfaceFormulaConnective::And, false);
+        let and_children = structural_children(&ast, and_left);
+        assert_binary_formula(and_children[0], SurfaceFormulaConnective::And, false);
+        assert!(matches!(
+            and_children[1].kind,
+            SurfaceNodeKind::BuiltinPredicateApplication
+        ));
+
+        let or_left = formula_root_for_label(&ast, "OrLeft");
+        assert_binary_formula(or_left, SurfaceFormulaConnective::Or, false);
+        let or_children = structural_children(&ast, or_left);
+        assert_binary_formula(or_children[0], SurfaceFormulaConnective::Or, false);
+        assert!(matches!(
+            or_children[1].kind,
+            SurfaceNodeKind::BuiltinPredicateApplication
+        ));
+
+        let implies_right = formula_root_for_label(&ast, "ImpliesRight");
+        assert_binary_formula(implies_right, SurfaceFormulaConnective::Implies, false);
+        let implies_children = structural_children(&ast, implies_right);
+        assert!(matches!(
+            implies_children[0].kind,
+            SurfaceNodeKind::BuiltinPredicateApplication
+        ));
+        assert_binary_formula(
+            implies_children[1],
+            SurfaceFormulaConnective::Implies,
+            false,
+        );
+
+        let repeat = formula_root_for_label(&ast, "Repeat");
+        assert_binary_formula(repeat, SurfaceFormulaConnective::And, true);
+        assert_eq!(direct_token_texts(&ast, repeat), vec!["&", "...", "&"]);
+
+        let repeat_or = formula_root_for_label(&ast, "RepeatOr");
+        assert_binary_formula(repeat_or, SurfaceFormulaConnective::Or, true);
+        assert_eq!(direct_token_texts(&ast, repeat_or), vec!["or", "...", "or"]);
+
+        let and_before_or = formula_root_for_label(&ast, "AndBeforeOr");
+        assert_binary_formula(and_before_or, SurfaceFormulaConnective::Or, false);
+        let and_before_or_children = structural_children(&ast, and_before_or);
+        assert_binary_formula(
+            and_before_or_children[0],
+            SurfaceFormulaConnective::And,
+            false,
+        );
+        assert!(matches!(
+            and_before_or_children[1].kind,
+            SurfaceNodeKind::BuiltinPredicateApplication
+        ));
+
+        let implies_before_iff = formula_root_for_label(&ast, "ImpliesBeforeIff");
+        assert_binary_formula(implies_before_iff, SurfaceFormulaConnective::Iff, false);
+        let implies_before_iff_children = structural_children(&ast, implies_before_iff);
+        assert_binary_formula(
+            implies_before_iff_children[0],
+            SurfaceFormulaConnective::Implies,
+            false,
+        );
+        assert_formula_constant(
+            implies_before_iff_children[1],
+            SurfaceFormulaConstant::Thesis,
+        );
+
+        let paren_override = formula_root_for_label(&ast, "ParenOverride");
+        assert_binary_formula(paren_override, SurfaceFormulaConnective::And, false);
+        let paren_override_children = structural_children(&ast, paren_override);
+        assert!(matches!(
+            paren_override_children[0].kind,
+            SurfaceNodeKind::ParenthesizedFormula
+        ));
+        let parenthesized_children = structural_children(&ast, paren_override_children[0]);
+        assert_eq!(parenthesized_children.len(), 1);
+        assert!(matches!(
+            parenthesized_children[0].kind,
+            SurfaceNodeKind::FormulaExpression
+        ));
+        assert_binary_formula(
+            structural_children(&ast, parenthesized_children[0])[0],
+            SurfaceFormulaConnective::Or,
+            false,
+        );
+        assert!(matches!(
+            paren_override_children[1].kind,
+            SurfaceNodeKind::BuiltinPredicateApplication
+        ));
+
+        let implies_quantifier = formula_root_for_label(&ast, "ImpliesQuantifier");
+        assert_binary_formula(implies_quantifier, SurfaceFormulaConnective::Implies, false);
+        let implies_quantifier_children = structural_children(&ast, implies_quantifier);
+        assert!(matches!(
+            implies_quantifier_children[0].kind,
+            SurfaceNodeKind::BuiltinPredicateApplication
+        ));
+        assert_quantified_formula(
+            implies_quantifier_children[1],
+            SurfaceQuantifierKind::Universal,
+        );
+    }
+
+    #[test]
+    fn parser_keeps_template_predicate_args_deferred() {
+        let source_id = source_id(72);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("TemplateArgs", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("divides", ParserTokenKind::UserSymbol),
+                    ("[", ParserTokenKind::ReservedSymbol),
+                    ("T", ParserTokenKind::UserSymbol),
+                    ("]", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "template predicate args remain task-31/S-016 work: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("deferred template args should keep an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::FormulaExpression
+            )),
+            0
+        );
+        let item = single_node(&ast, |kind| {
+            matches!(kind, SurfaceNodeKind::PlaceholderItem)
+        });
+        assert!(!direct_child_has_kind(&ast, item, |kind| {
+            matches!(kind, SurfaceNodeKind::FormulaExpression)
+        }));
+    }
+
+    #[test]
+    fn parser_defers_template_predicate_args_after_formula_boundaries() {
+        let source_id = source_id(166);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("IsAssertionThenTemplate", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("is", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    ("&", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("R", ParserTokenKind::UserSymbol),
+                    ("[", ParserTokenKind::ReservedSymbol),
+                    ("T", ParserTokenKind::UserSymbol),
+                    ("]", ParserTokenKind::ReservedSymbol),
+                    ("z", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("QuantifierHoldsTemplate", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("st", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("is", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    ("holds", ParserTokenKind::ReservedWord),
+                    ("y", ParserTokenKind::Identifier),
+                    ("R", ParserTokenKind::UserSymbol),
+                    ("[", ParserTokenKind::ReservedSymbol),
+                    ("T", ParserTokenKind::UserSymbol),
+                    ("]", ParserTokenKind::ReservedSymbol),
+                    ("z", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "template predicate args past formula boundaries remain deferred: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("deferred template args should keep an AST");
         assert_eq!(
             count_nodes(&ast, |kind| matches!(
                 kind,
@@ -8606,15 +9577,417 @@ mod tests {
             0
         );
         let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
-        assert_eq!(item_list.children.len(), 3);
+        assert_eq!(item_list.children.len(), 2);
         assert!(item_list.children.iter().all(|item| {
             let item = ast.node(*item).unwrap();
             matches!(item.kind, SurfaceNodeKind::PlaceholderItem)
+                && !direct_child_has_kind(&ast, item, |kind| {
+                    matches!(kind, SurfaceNodeKind::FormulaExpression)
+                })
         }));
     }
 
     #[test]
-    fn parser_keeps_atomic_theorem_tails_as_plain_placeholders() {
+    fn parser_parses_formula_quantifiers_and_variable_segments() {
+        let source_id = source_id(73);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("U", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("being", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    ("st", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("holds", ParserTokenKind::ReservedWord),
+                    ("contradiction", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("Nested", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("y", ParserTokenKind::Identifier),
+                    ("holds", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("E", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("ex", ParserTokenKind::ReservedWord),
+                    ("y", ParserTokenKind::Identifier),
+                    ("st", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("Implicit", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    (",", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("holds", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("ExplicitImplicit", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("being", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (",", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("holds", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("Recursive", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("st", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("or", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("holds", ParserTokenKind::ReservedWord),
+                    ("not", ParserTokenKind::ReservedWord),
+                    ("contradiction", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("ExistentialRecursive", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("ex", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("st", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("&", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "quantified formulas should parse without diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output.ast.expect("quantified formulas should keep an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::QuantifiedFormula(_)
+            )),
+            8
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::QuantifierVariableSegment
+            )),
+            9
+        );
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(
+                node.kind,
+                SurfaceNodeKind::QuantifiedFormula(SurfaceQuantifierKind::Universal)
+            )
+        }));
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(
+                node.kind,
+                SurfaceNodeKind::QuantifiedFormula(SurfaceQuantifierKind::Existential)
+            )
+        }));
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::TypeExpression)),
+            2
+        );
+        assert!(
+            ast.nodes()
+                .iter()
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::QuantifierVariableSegment))
+                .any(|segment| {
+                    segment
+                        .children
+                        .iter()
+                        .filter_map(|id| ast.node(*id))
+                        .any(|child| child.token_text() == Some(","))
+                }),
+            "implicit variable segment should preserve comma-separated variables"
+        );
+
+        let universal = formula_root_for_label(&ast, "U");
+        assert_quantified_formula(universal, SurfaceQuantifierKind::Universal);
+        assert_eq!(
+            direct_token_texts(&ast, universal),
+            vec!["for", "st", "holds"]
+        );
+        let universal_children = structural_children(&ast, universal);
+        assert_eq!(universal_children.len(), 3);
+        assert!(matches!(
+            universal_children[0].kind,
+            SurfaceNodeKind::QuantifierVariableSegment
+        ));
+        assert_eq!(
+            direct_token_texts(&ast, universal_children[0]),
+            vec!["x", "being"]
+        );
+        assert!(
+            structural_children(&ast, universal_children[0])
+                .iter()
+                .any(|child| matches!(child.kind, SurfaceNodeKind::TypeExpression))
+        );
+        assert_formula_constant(universal_children[1], SurfaceFormulaConstant::Thesis);
+        assert_formula_constant(universal_children[2], SurfaceFormulaConstant::Contradiction);
+
+        let nested_outer = formula_root_for_label(&ast, "Nested");
+        assert_quantified_formula(nested_outer, SurfaceQuantifierKind::Universal);
+        assert_eq!(direct_token_texts(&ast, nested_outer), vec!["for"]);
+        let nested_outer_children = structural_children(&ast, nested_outer);
+        assert_eq!(nested_outer_children.len(), 2);
+        assert_quantified_formula(nested_outer_children[1], SurfaceQuantifierKind::Universal);
+        assert_eq!(
+            direct_token_texts(&ast, nested_outer_children[1]),
+            vec!["for", "holds"]
+        );
+
+        let existential = formula_root_for_label(&ast, "E");
+        assert_quantified_formula(existential, SurfaceQuantifierKind::Existential);
+        assert_eq!(direct_token_texts(&ast, existential), vec!["ex", "st"]);
+        let existential_children = structural_children(&ast, existential);
+        assert_eq!(existential_children.len(), 2);
+        assert!(matches!(
+            existential_children[0].kind,
+            SurfaceNodeKind::QuantifierVariableSegment
+        ));
+        assert_formula_constant(existential_children[1], SurfaceFormulaConstant::Thesis);
+
+        let implicit = formula_root_for_label(&ast, "Implicit");
+        assert_quantified_formula(implicit, SurfaceQuantifierKind::Universal);
+        assert_eq!(direct_token_texts(&ast, implicit), vec!["for", "holds"]);
+        let implicit_children = structural_children(&ast, implicit);
+        assert_eq!(
+            direct_token_texts(&ast, implicit_children[0]),
+            vec!["x", ",", "y"]
+        );
+
+        let explicit_implicit = formula_root_for_label(&ast, "ExplicitImplicit");
+        assert_quantified_formula(explicit_implicit, SurfaceQuantifierKind::Universal);
+        assert_eq!(
+            direct_token_texts(&ast, explicit_implicit),
+            vec!["for", ",", "holds"]
+        );
+        let explicit_implicit_children = structural_children(&ast, explicit_implicit);
+        assert_eq!(explicit_implicit_children.len(), 3);
+        assert_eq!(
+            direct_token_texts(&ast, explicit_implicit_children[0]),
+            vec!["x", "being"]
+        );
+        assert!(
+            structural_children(&ast, explicit_implicit_children[0])
+                .iter()
+                .any(|child| matches!(child.kind, SurfaceNodeKind::TypeExpression))
+        );
+        assert_eq!(
+            direct_token_texts(&ast, explicit_implicit_children[1]),
+            vec!["y"]
+        );
+        assert!(structural_children(&ast, explicit_implicit_children[1]).is_empty());
+        assert_formula_constant(
+            explicit_implicit_children[2],
+            SurfaceFormulaConstant::Thesis,
+        );
+
+        let recursive = formula_root_for_label(&ast, "Recursive");
+        assert_quantified_formula(recursive, SurfaceQuantifierKind::Universal);
+        assert_eq!(
+            direct_token_texts(&ast, recursive),
+            vec!["for", "st", "holds"]
+        );
+        let recursive_children = structural_children(&ast, recursive);
+        assert_eq!(recursive_children.len(), 3);
+        assert_binary_formula(recursive_children[1], SurfaceFormulaConnective::Or, false);
+        assert!(matches!(
+            recursive_children[2].kind,
+            SurfaceNodeKind::PrefixFormula(_)
+        ));
+
+        let existential_recursive = formula_root_for_label(&ast, "ExistentialRecursive");
+        assert_quantified_formula(existential_recursive, SurfaceQuantifierKind::Existential);
+        assert_eq!(
+            direct_token_texts(&ast, existential_recursive),
+            vec!["ex", "st"]
+        );
+        let existential_recursive_children = structural_children(&ast, existential_recursive);
+        assert_eq!(existential_recursive_children.len(), 2);
+        assert_binary_formula(
+            existential_recursive_children[1],
+            SurfaceFormulaConnective::And,
+            false,
+        );
+    }
+
+    #[test]
+    fn parser_diagnoses_non_associative_formula_iff_chain() {
+        let source_id = source_id(74);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("IffChain", ParserTokenKind::Identifier),
+                (":", ParserTokenKind::ReservedSymbol),
+                ("thesis", ParserTokenKind::ReservedWord),
+                ("iff", ParserTokenKind::ReservedWord),
+                ("contradiction", ParserTokenKind::ReservedWord),
+                ("iff", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let second_iff = tokens[6].span;
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            Vec::new(),
+        ));
+
+        assert_eq!(
+            output
+                .diagnostics
+                .iter()
+                .map(|diagnostic| &diagnostic.code)
+                .collect::<Vec<_>>(),
+            vec![&SyntaxDiagnosticCode::NonAssociativeOperatorChain]
+        );
+        assert_eq!(output.diagnostics[0].primary, second_iff);
+        let ast = output.ast.expect("iff chain should keep an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::BinaryFormula(operator)
+                    if operator.connective == SurfaceFormulaConnective::Iff
+            )),
+            2
+        );
+    }
+
+    #[test]
+    fn parser_recovers_missing_formula_operands_and_unmatched_formula_grouping() {
+        let source_id = source_id(75);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("MissingNot", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("not", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("MissingConnective", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("&", ParserTokenKind::ReservedSymbol),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("MissingSt", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("ex", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("st", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("MissingHolds", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("holds", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("MissingHoldsKeyword", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("MissingStKeyword", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("ex", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("MissingParen", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert_eq!(
+            output
+                .diagnostics
+                .iter()
+                .map(|diagnostic| &diagnostic.code)
+                .collect::<Vec<_>>(),
+            vec![
+                &SyntaxDiagnosticCode::MalformedFormulaExpression,
+                &SyntaxDiagnosticCode::MalformedFormulaExpression,
+                &SyntaxDiagnosticCode::MalformedFormulaExpression,
+                &SyntaxDiagnosticCode::MalformedFormulaExpression,
+                &SyntaxDiagnosticCode::MalformedFormulaExpression,
+                &SyntaxDiagnosticCode::MalformedFormulaExpression,
+                &SyntaxDiagnosticCode::MalformedFormulaExpression,
+            ]
+        );
+        let ast = output.ast.expect("formula recovery should keep an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| {
+                matches!(
+                    kind,
+                    SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingFormula)
+                )
+            }),
+            6
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| {
+                matches!(
+                    kind,
+                    SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::UnmatchedOpeningDelimiter)
+                )
+            }),
+            1
+        );
+    }
+
+    #[test]
+    fn parser_keeps_theorem_tails_after_formulas_as_plain_placeholders() {
         let source_id = source_id(50);
         let output = parse(ParseRequest::new(
             source_id,
@@ -8640,6 +10013,46 @@ mod tests {
                     ("proof", ParserTokenKind::ReservedWord),
                     ("end", ParserTokenKind::ReservedWord),
                     (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("ConnectiveByTail", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("&", ParserTokenKind::ReservedSymbol),
+                    ("z", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("w", ParserTokenKind::Identifier),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("A", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("PrefixByTail", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("not", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("A", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("QuantifierProofTail", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("holds", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("ConstantByTail", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("A", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
                 ],
             ),
             Vec::new(),
@@ -8659,7 +10072,7 @@ mod tests {
             0
         );
         let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
-        assert_eq!(item_list.children.len(), 2);
+        assert_eq!(item_list.children.len(), 6);
         assert!(item_list.children.iter().all(|item| {
             let item = ast.node(*item).unwrap();
             matches!(item.kind, SurfaceNodeKind::PlaceholderItem)
@@ -8867,6 +10280,89 @@ mod tests {
             .iter()
             .find(|node| predicate(&node.kind))
             .expect("expected exactly one matching node")
+    }
+
+    fn formula_root_for_label<'a>(
+        ast: &'a mizar_syntax::SurfaceAst,
+        label: &str,
+    ) -> &'a mizar_syntax::SurfaceNode {
+        let item = ast
+            .nodes()
+            .iter()
+            .find(|node| {
+                matches!(node.kind, SurfaceNodeKind::PlaceholderItem)
+                    && node.children.iter().any(|child| {
+                        ast.node(*child)
+                            .and_then(mizar_syntax::SurfaceNode::token_text)
+                            == Some(label)
+                    })
+            })
+            .unwrap_or_else(|| panic!("expected theorem placeholder labelled `{label}`"));
+        let formula_expression = item
+            .children
+            .iter()
+            .filter_map(|child| ast.node(*child))
+            .find(|child| matches!(child.kind, SurfaceNodeKind::FormulaExpression))
+            .unwrap_or_else(|| panic!("expected formula expression for `{label}`"));
+        assert_eq!(
+            formula_expression.children.len(),
+            1,
+            "FormulaExpression for `{label}` should wrap exactly one child"
+        );
+        ast.node(formula_expression.children[0])
+            .unwrap_or_else(|| panic!("expected formula child for `{label}`"))
+    }
+
+    fn structural_children<'a>(
+        ast: &'a mizar_syntax::SurfaceAst,
+        node: &mizar_syntax::SurfaceNode,
+    ) -> Vec<&'a mizar_syntax::SurfaceNode> {
+        node.children
+            .iter()
+            .filter_map(|child| ast.node(*child))
+            .filter(|child| !matches!(child.kind, SurfaceNodeKind::Token(_)))
+            .collect()
+    }
+
+    fn direct_token_texts(
+        ast: &mizar_syntax::SurfaceAst,
+        node: &mizar_syntax::SurfaceNode,
+    ) -> Vec<String> {
+        node.children
+            .iter()
+            .filter_map(|child| ast.node(*child))
+            .filter_map(mizar_syntax::SurfaceNode::token_text)
+            .map(str::to_owned)
+            .collect()
+    }
+
+    fn assert_binary_formula(
+        node: &mizar_syntax::SurfaceNode,
+        connective: SurfaceFormulaConnective,
+        repeated: bool,
+    ) {
+        let SurfaceNodeKind::BinaryFormula(operator) = &node.kind else {
+            panic!("expected BinaryFormula, got {:?}", node.kind);
+        };
+        assert_eq!(operator.connective, connective);
+        assert_eq!(operator.repeated, repeated);
+    }
+
+    fn assert_quantified_formula(
+        node: &mizar_syntax::SurfaceNode,
+        quantifier: SurfaceQuantifierKind,
+    ) {
+        let SurfaceNodeKind::QuantifiedFormula(actual) = &node.kind else {
+            panic!("expected QuantifiedFormula, got {:?}", node.kind);
+        };
+        assert_eq!(*actual, quantifier);
+    }
+
+    fn assert_formula_constant(node: &mizar_syntax::SurfaceNode, constant: SurfaceFormulaConstant) {
+        let SurfaceNodeKind::FormulaConstant(actual) = &node.kind else {
+            panic!("expected FormulaConstant, got {:?}", node.kind);
+        };
+        assert_eq!(*actual, constant);
     }
 
     fn count_nodes(

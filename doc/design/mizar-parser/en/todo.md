@@ -12,9 +12,9 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] task-13 atomic formula placeholder host uses private task-2 cursor/event infrastructure |
-| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task-12 term Pratt over active prefix/postfix/infix operators is implemented; task-13 atomic formulas use term Pratt boundaries; formula connective precedence remains planned |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task-13 atomic formula recovery plus mizar-frontend task-28 nested block-end matching uses task-2 cursor/diagnostic/sync helpers |
+| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] task-14 formula connectives and quantifiers use private task-2 cursor/event infrastructure |
+| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task-12 term Pratt over active prefix/postfix/infix operators is implemented; task-14 fixed formula Pratt is implemented separately from term fixity |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task-14 formula recovery plus mizar-frontend task-28 nested block-end matching uses task-2 cursor/diagnostic/sync helpers |
 
 `mizar-parser` implements the syntax grammar: frontend-adapted tokens in,
 `mizar_syntax::SurfaceAst` plus syntax diagnostics out. It is built as a thin
@@ -418,12 +418,22 @@ older numeric syntax task references appear to disagree, prefer
      Built-in predicates remain single atoms and mixed user/built-in predicate
      chains are rejected.
 
-14. **Connectives and quantifiers.** [ ]
+14. **Connectives and quantifiers.** [x]
     - The fixed connective table (`not`, `&`, `or`, `implies`, `iff`) with its
       formula-level precedence, kept separate from term-level fixity;
       quantifiers `for`/`ex` with `st`/`holds` bodies.
     - Deps: 13, `mizar-syntax` task 12 / S-012. Spec: [14.formulas.md](../../../spec/en/14.formulas.md),
       [appendix_b.operator_precedence.md](../../../spec/en/appendix_b.operator_precedence.md).
+   - Result: implemented task-14 `PrefixFormula`, `BinaryFormula`,
+     `ParenthesizedFormula`, `QuantifiedFormula`,
+     `QuantifierVariableSegment`, and `FormulaConstant` surfaces; fixed
+     formula connective precedence and `iff` non-associativity diagnostics;
+     `MissingFormula` / `MalformedFormulaExpression` recovery after formula
+     operators and quantifier bodies; parser unit tests; active parse-only
+     pass/fail corpus coverage; and traceability entry
+     `spec.en.14.formula_connectives_quantifiers.parser`. Template predicate
+     arguments remain deferred to task 31 / S-016, and Fraenkel/set-builder
+     terms that embed formulas remain task 15.
 
 15. **Fraenkel and set-builder terms.** [ ]
     - `{ term where … : formula }` and related set-builder/comprehension forms,

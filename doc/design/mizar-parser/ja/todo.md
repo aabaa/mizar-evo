@@ -12,9 +12,9 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] task 13 の atomic formula placeholder host は private な task 2 cursor / event 基盤を使用 |
-| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task 12 の active prefix/postfix/infix operator に対する項 Pratt は実装済み。task 13 の atomic formula は項 Pratt boundary を使う。formula connective precedence は計画中 |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task 13 の atomic formula recovery と mizar-frontend task 28 の nested block-end matching は task 2 cursor / diagnostic / sync helper を使用 |
+| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] task 14 の formula connective と quantifier は private な task 2 cursor / event 基盤を使用 |
+| pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task 12 の active prefix/postfix/infix operator に対する項 Pratt は実装済み。task 14 の固定 formula Pratt は項 fixity から分離して実装済み |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task 14 の formula recovery と mizar-frontend task 28 の nested block-end matching は task 2 cursor / diagnostic / sync helper を使用 |
 
 `mizar-parser` は構文文法を実装する: frontend 適合済みトークンを入力とし、
 `mizar_syntax::SurfaceAst` と構文診断を出力する。薄い基盤層（cursor、同期、
@@ -398,13 +398,23 @@ resolver / build-system 依存を避ける。
      built-in predicate は単独 atom のままであり、user/built-in predicate
      mixed chain は reject する。
 
-14. **結合子と量化子。** [ ]
+14. **結合子と量化子。** [x]
     - 固定結合子テーブル（`not`、`&`、`or`、`implies`、`iff`）とその論理式
       レベルの優先順位（項レベルの fixity から分離したまま保つ）。`st` /
       `holds` 本体を持つ量化子 `for` / `ex`。
     - 依存: 13、`mizar-syntax` task 12 / S-012。仕様:
       [14.formulas.md](../../../spec/ja/14.formulas.md)、
       [appendix_b.operator_precedence.md](../../../spec/ja/appendix_b.operator_precedence.md)。
+   - 結果: task 14 の `PrefixFormula`、`BinaryFormula`、
+     `ParenthesizedFormula`、`QuantifiedFormula`、
+     `QuantifierVariableSegment`、`FormulaConstant` surface、固定 formula
+     connective precedence、`iff` non-associativity 診断、formula operator と
+     quantifier body 後の `MissingFormula` /
+     `MalformedFormulaExpression` recovery、parser unit test、active
+     parse-only pass/fail corpus coverage、traceability entry
+     `spec.en.14.formula_connectives_quantifiers.parser` を実装した。template
+     predicate argument は task 31 / S-016 に deferred のままであり、formula
+     を埋め込む Fraenkel / set-builder term は task 15 のままである。
 
 15. **Fraenkel と集合内包の項。** [ ]
     - `{ term where … : formula }` と関連する集合内包形（条件を省略する形を

@@ -5,8 +5,8 @@
 状態: task 12 の最小回復、task 28 の入れ子 block-end 回復、task 5 の
 module-skeleton recovery、task 6 の import recovery、task 7 の export/visibility
 recovery、task 8 の type-expression recovery、task 9 の primary-term recovery、
-および task 13 の atomic-formula recovery は実装済み。完全な文法回復は
-引き続き計画中。
+task 13 の atomic-formula recovery、および task 14 の formula recovery は
+実装済み。完全な文法回復は引き続き計画中。
 
 ## 目的
 
@@ -92,8 +92,15 @@ recovery、task 8 の type-expression recovery、task 9 の primary-term recover
 - task 13 の atomic-formula parsing は malformed atomic operand に term/type recovery を再利用する。
   built-in predicate application の right term 欠落は `MissingTerm` を挿入し、
   `MalformedTermExpression` を報告する。`is` assertion の body 欠落は
-  `MissingTypeExpression` を挿入し、`MalformedTypeExpression` を報告する。whole formula 欠落は
-  task 14 の `MissingFormula` 作業として残す。
+  `MissingTypeExpression` を挿入し、`MalformedTypeExpression` を報告する。
+- task 14 の formula parsing は prefix `not`、binary connective、quantifier `st`、
+  `holds` の後で formula が必要な場合に `MissingFormula` を挿入し、
+  `MalformedFormulaExpression` を報告する。quantifier header は少なくとも 1 個の
+  variable segment を表現した後に保持する。`be` / `being` 後の explicit type 欠落は
+  `MissingTypeExpression` と `MalformedTypeExpression` を再利用し、malformed header
+  separator や tail は `MalformedFormulaExpression` を報告する。matching `)` が
+  synchronization 前にない parenthesized formula は `UnmatchedOpeningDelimiter` を送出し、
+  `MalformedFormulaExpression` を報告し、opener を secondary diagnostic anchor とする。
 - 対応する block opener を持たない裸の `end` は、構文診断とともに `ast = None` を返す。
 
 ## 公開 enum の互換性

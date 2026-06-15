@@ -3,8 +3,8 @@
 Status: minimal task-12 recovery, task-28 nested block-end recovery, task-5
 module-skeleton recovery, task-6 import recovery, task-7 export/visibility
 recovery, task-8 type-expression recovery, task-9 primary-term recovery, and
-task-13 atomic-formula recovery are implemented. Full grammar recovery remains
-planned.
+task-13 atomic-formula recovery, and task-14 formula recovery are implemented.
+Full grammar recovery remains planned.
 
 ## Purpose
 
@@ -99,8 +99,17 @@ Current behavior:
   atomic operands. Built-in predicate applications with a missing right term
   insert `MissingTerm` and report `MalformedTermExpression`; `is` assertions
   with a missing body insert `MissingTypeExpression` and report
-  `MalformedTypeExpression`. Missing whole formulas remain task-14
-  `MissingFormula` work;
+  `MalformedTypeExpression`;
+- task-14 formula parsing inserts `MissingFormula` and reports
+  `MalformedFormulaExpression` when a formula is required after prefix `not`,
+  a binary connective, quantifier `st`, or `holds`. Quantifier headers are
+  preserved after at least one variable segment is represented; missing
+  explicit types after `be` / `being` reuse `MissingTypeExpression` and
+  `MalformedTypeExpression`, while malformed header separators or tails report
+  `MalformedFormulaExpression`. A parenthesized formula with no matching `)`
+  before synchronization emits `UnmatchedOpeningDelimiter`, reports
+  `MalformedFormulaExpression`, and uses the opener as a secondary diagnostic
+  anchor;
 - a stray `end` that has no matching block opener returns syntax diagnostics
   with `ast = None`.
 
