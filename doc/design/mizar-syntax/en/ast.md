@@ -118,6 +118,10 @@ green tree.
 | correctness condition node | `SyntaxKind::CorrectnessCondition` |
 | predicate definition node | `SyntaxKind::PredicateDefinition` |
 | predicate pattern node | `SyntaxKind::PredicatePattern` |
+| functor definition node | `SyntaxKind::FunctorDefinition` |
+| functor pattern node | `SyntaxKind::FunctorPattern` |
+| term definiens node | `SyntaxKind::TermDefiniens` |
+| term case node | `SyntaxKind::TermCase` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -266,11 +270,15 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 115 | `CorrectnessCondition` | task-23 correctness-condition clause |
 | 116 | `PredicateDefinition` | task-24 `pred ... means ...;` definition |
 | 117 | `PredicatePattern` | task-24 raw predicate definition pattern |
+| 118 | `FunctorDefinition` | task-25 `func ... means|equals ...;` definition |
+| 119 | `FunctorPattern` | task-25 raw functor definition pattern |
+| 120 | `TermDefiniens` | task-25 term definiens body |
+| 121 | `TermCase` | task-25 conditional term definiens case |
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
 above, including `Root` through task-22 `ProofBlock`, task-23
-`DefinitionBlockItem` through task-24 `PredicatePattern`, the compatibility
+`DefinitionBlockItem` through task-25 `TermCase`, the compatibility
 `Token` wrapper, and `ErrorRecovery`; `is_token_kind` is true only for token
 leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future raw values should be
 appended or assigned into a documented reserved range so existing snapshots and
@@ -352,6 +360,10 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::CorrectnessCondition` | none | `SyntaxKind::CorrectnessCondition` | parser task-23 correctness condition; owns the condition keyword, optional general justification (`by`, `by computation`, or `proof`), optional recovery, and optional semicolon |
 | `SurfaceNodeKind::PredicateDefinition` | none | `SyntaxKind::PredicateDefinition` | parser task-24 `pred` definition; owns `pred`, a label identifier or `MissingTerm`, `:`, a raw `PredicatePattern`, `means`, a `FormulaDefiniens`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::PredicatePattern` | none | `SyntaxKind::PredicatePattern` | parser task-24 predicate definition pattern; owns source-ordered raw pattern tokens accepted by `pred_pattern` (`loci`, one `def_predicate_symbol`, optional `template_loci`, optional trailing `loci`) plus `MissingTerm` recovery when no grammar-shaped split exists; it does not encode which identifier is the predicate symbol |
+| `SurfaceNodeKind::FunctorDefinition` | none | `SyntaxKind::FunctorDefinition` | parser task-25 `func` definition; owns `func`, a label identifier or `MissingTerm`, `:`, a raw `FunctorPattern`, `->`, a return `TypeExpression` or `MissingTypeExpression`, `means` plus `FormulaDefiniens` or `equals` plus `TermDefiniens`, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::FunctorPattern` | none | `SyntaxKind::FunctorPattern` | parser task-25 functor definition pattern; owns source-ordered raw pattern tokens accepted by canonical single-symbol `func_pattern` or by the documented two-symbol circumfix surface shape, plus `MissingTerm` recovery when no grammar-shaped split exists; it does not encode which token is a functor symbol |
+| `SurfaceNodeKind::TermDefiniens` | none | `SyntaxKind::TermDefiniens` | parser task-25 term definiens; owns either one `TermExpression` or source-ordered `TermCase` children separated by comma tokens plus optional `otherwise TermExpression` |
+| `SurfaceNodeKind::TermCase` | none | `SyntaxKind::TermCase` | parser task-25 conditional term definiens case; owns the value `TermExpression`, `if`, and the condition `FormulaExpression`, with `MissingTerm` or `MissingFormula` recovery for absent value or condition |
 | `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host plus parser task-22 proof justification host; owns one `Proposition`, one `JustificationClause` or `ProofBlock`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
@@ -905,6 +917,31 @@ for S-016. `SurfaceNodeView` exposes `as_predicate_definition` and
 `as_predicate_pattern` helpers. Snapshot rendering prints the literal node
 names.
 
+Parser task 25 adds functor definitions as the next S-015 increment.
+`FunctorDefinition` owns `func`, the definition label, `:`, a
+`FunctorPattern`, `->`, a return `TypeExpression` or `MissingTypeExpression`,
+either `means FormulaDefiniens` or `equals TermDefiniens`, optional recovery,
+and the semicolon when present. Definition-local `public func` and
+`private func` are represented by the existing `VisibleItem` wrapper around the
+`FunctorDefinition`; correctness conditions following a functor remain
+separate `CorrectnessCondition` definition-content nodes.
+
+`FunctorPattern` preserves the pattern as raw source-ordered token children.
+The parser validates that the raw span can match the canonical
+`[ loci ] functor_symbol [ template_loci ] [ loci ]` shape under at least one
+syntactic split, or the documented Chapter 10 two-symbol circumfix shape with
+a non-empty loci list between functor-symbol tokens. The AST does not record
+which token is the functor symbol, whether a pattern is prefix/postfix/infix,
+or how a circumfix pair binds; those roles remain resolver-owned. Bracketed
+`template_loci` tokens may be preserved inside `FunctorPattern`, but task 25
+does not add template-specific nodes or classify `definition ... end;` blocks
+as template definitions; G-AUD-006 remains open for S-016.
+
+`TermDefiniens` and `TermCase` are the `equals`-body counterparts to
+`FormulaDefiniens` and `FormulaCase`. `SurfaceNodeView` exposes
+`as_functor_definition`, `as_functor_pattern`, `as_term_definiens`, and
+`as_term_case` helpers. Snapshot rendering prints the literal node names.
+
 ### Vocabulary Increment Contract
 
 Node vocabulary grows only in the same change as the `mizar-parser` grammar task
@@ -1069,6 +1106,10 @@ FormulaCase range=<start>..<end> recovered=<bool>
 CorrectnessCondition range=<start>..<end> recovered=<bool>
 PredicateDefinition range=<start>..<end> recovered=<bool>
 PredicatePattern range=<start>..<end> recovered=<bool>
+FunctorDefinition range=<start>..<end> recovered=<bool>
+FunctorPattern range=<start>..<end> recovered=<bool>
+TermDefiniens range=<start>..<end> recovered=<bool>
+TermCase range=<start>..<end> recovered=<bool>
 CompactStatement range=<start>..<end> recovered=<bool>
 JustificationClause range=<start>..<end> recovered=<bool>
 ReferenceList range=<start>..<end> recovered=<bool>

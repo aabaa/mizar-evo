@@ -1,0 +1,20 @@
+import parser.type_fixtures;
+
+definition
+  let x, y be set;
+  func CaseDef: x ++ y -> set equals x if thesis, y if contradiction otherwise x;
+  func PrefixDef: ~ x -> set equals x;
+  func PostfixDef: x ! -> set equals x;
+  func CallDef: f (x, y) -> set equals x;
+  func CircumfixDef: |. x .| -> set equals x;
+  func TemplateLociDef: op [t, u] x -> set equals x;
+  func MeansCaseDef: decide x -> set means thesis if thesis otherwise thesis;
+  func MeansDef: measure x -> set means thesis;
+  public func PublicDef: public_f x -> set equals x;
+  private func HiddenDef: hidden_f x -> set equals x;
+end;
+
+definition
+  let F be func(T) -> T;
+  func Deferred: f -> set equals x;
+end;

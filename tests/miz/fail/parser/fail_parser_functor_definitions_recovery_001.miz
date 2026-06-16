@@ -1,0 +1,15 @@
+definition
+  func : -> equals ;
+  func MalformedPattern: x = y -> set equals x;
+  func MissingColon f x -> set equals x;
+  func MissingArrow: f x set equals x;
+  func MissingReturn: f x -> equals x;
+  func MissingBodyFormula: f x -> set thesis;
+  func MissingBodyTerm: f x -> set x;
+  func MissingBodyEmpty: f x -> set;
+  func MissingMeansFormula: f x -> set means;
+  func MissingMeansOtherwiseFormula: f x -> set means thesis if thesis otherwise;
+  func MissingOtherwiseTerm: f x -> set equals x if thesis otherwise;
+  func MissingTermCaseCondition: f x -> set equals x if otherwise y;
+  func MissingTermCase: f x -> set equals x if thesis, if thesis otherwise x;
+end;

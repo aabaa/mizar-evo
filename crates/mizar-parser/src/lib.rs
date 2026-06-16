@@ -428,7 +428,7 @@ mod tests {
                 0,
                 10,
             ),
-            token(source_id, ParserTokenKind::ReservedWord, "func", 11, 15),
+            token(source_id, ParserTokenKind::ReservedWord, "mode", 11, 15),
             token(source_id, ParserTokenKind::ReservedWord, "end", 16, 19),
             token(source_id, ParserTokenKind::ReservedSymbol, ";", 19, 20),
         ];

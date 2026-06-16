@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_functor_definitions_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.definitions"
+source = "pass_parser_functor_definitions_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.10.functor_definitions.parser",
+]
+notes = "Active parse-only runner coverage for parser task 25 functor definitions: means/equals bodies, term-definiens cases with otherwise, raw identifier and imported symbolic functor patterns, prefix/postfix/infix/call/circumfix/template-loci surfaces, definition-local visibility, and deferred template-functor parameter placeholders."

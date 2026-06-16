@@ -1081,6 +1081,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.10.functor_definitions.parser"
+source = "doc/spec/en/10.functors.md"
+section = "10.1 Functor Definitions; 10.3 Definition Styles: `equals` vs `means`; 10.5 Conditional Functor Definitions; 10.6 Correctness Conditions for Functors; 10.8 Functor Patterns and Notation; 10.13 Grammar"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_functor_definitions_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_functor_definitions_recovery_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.syntax.template_arguments.parser"
 source = "doc/spec/en/appendix_a.grammar_summary.md"
 section = "A.9 Predicates; A.10 Functors; A.18 Templates"

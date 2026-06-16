@@ -1442,6 +1442,96 @@ predicate-symbol rejection, malformed pattern recovery, active parse-only
 pass/fail corpus coverage, and traceability to Chapter 9 §9.1 / §9.3 / §9.4 /
 §9.5 / §9.10.
 
+### Task 25: Functor Definitions
+
+Task 25 adds the `func ... -> ... means|equals ...;` definition forms inside
+the task-23 `DefinitionBlockItem` container. The parser remains syntax-only:
+it does not introduce functor symbols, resolve overloads, check return-type
+subtyping, prove existence/uniqueness, evaluate `it`, or classify template
+definitions.
+
+```ebnf
+definition_content     ::= ... | func_def | [ visibility ] func_def ;
+
+func_def               ::= "func" label ":" func_pattern
+                           "->" type_expression
+                           ( "means" formula_definiens
+                           | "equals" term_definiens ) ";" ;
+func_pattern           ::= [ loci ] functor_symbol
+                           [ template_loci ] [ loci ] ;
+loci                   ::= locus_list | "(" locus_list ")" ;
+locus_list             ::= locus { "," locus } ;
+locus                  ::= identifier ;
+template_loci          ::= "[" locus_list "]" ;
+functor_symbol         ::= identifier | symbolic_func ;
+symbolic_func          ::= symbol_char+ ;
+term_definiens         ::= term_expression
+                         | term_case { "," term_case }
+                           [ "otherwise" term_expression ] ;
+term_case              ::= term_expression "if" formula ;
+```
+
+`FunctorDefinition` owns the `func` keyword, label identifier or
+`MissingTerm`, colon, `FunctorPattern`, `->`, a return `TypeExpression` or
+`MissingTypeExpression`, the body keyword (`means` or `equals`), either a
+task-23 `FormulaDefiniens` or a task-25 `TermDefiniens`, optional recovery, and
+the semicolon when present. Definition-local `public func` and `private func`
+use the existing `VisibleItem` / `VisibilityMarker` wrapper around the concrete
+functor definition. Correctness-condition clauses following a functor remain
+separate definition-content nodes, as established by task 23.
+
+`FunctorPattern` preserves raw source-order pattern tokens instead of
+recording left-loci / functor-symbol / right-loci roles. The parser accepts a
+raw span when it can match the canonical single-symbol `func_pattern` under at
+least one syntactic split. It also accepts the documented Chapter 10 circumfix
+surface shape with two functor-symbol tokens bracketing a non-empty loci list,
+preserving the raw tokens without assigning semantic roles. `loci` must be a
+non-empty identifier comma-list, optionally parenthesized; `template_loci` is
+at most one bracketed non-empty identifier comma-list; and a functor-symbol
+token is exactly one identifier, active user-symbol, or lexeme-run token.
+Active parse-only source fixtures exercise imported symbolic functor tokens;
+the lexeme-run case keeps the parser-token boundary ready for fresh symbolic
+functor definitions once the frontend has a definition-symbol lexing context.
+Empty groups, dangling commas, adjacent loci groups, multiple bracket groups,
+and unsupported tokens recover as malformed functor patterns.
+
+`TermDefiniens` mirrors `FormulaDefiniens` for `equals` bodies. It owns either
+one `TermExpression` or source-ordered `TermCase` children separated by comma
+tokens plus an optional `otherwise TermExpression`. `TermCase` owns a value
+`TermExpression`, `if`, and a condition `FormulaExpression`.
+
+Template-loci tokens may be preserved in `FunctorPattern`, but task 25 does not
+activate template-definition fixtures, add template-specific AST nodes, parse
+schema functor parameters, or classify `definition ... end;` blocks as
+template definitions. After a canonical schema-functor parameter such as
+`let F be func(T) -> S;`, the definition block continues to preserve
+subsequent content as placeholders under G-AUD-006.
+
+Task 25 recovery reuses task-23 definition-content synchronization. Missing
+functor labels, malformed functor patterns, missing `equals` term bodies,
+missing term cases, and missing `equals ... otherwise` term bodies use
+`MalformedTermExpression` plus `MissingTerm`. Missing return types use
+`MalformedTypeExpression` plus `MissingTypeExpression`. Missing colons, `->`
+delimiters, body keywords, `means` formula bodies, formula cases,
+`means ... otherwise` formula bodies, and `TermCase` condition formulas use
+`MalformedFormulaExpression` plus `MissingFormula` where a formula child must
+be inserted. When the body keyword is missing, the parser preserves the next
+parseable branch by choosing `FormulaDefiniens` if the current token can start
+a formula and otherwise choosing `TermDefiniens` if the current token can start
+a term; if neither branch can start, it inserts a missing formula body as the
+canonical recovery child and synchronizes. Malformed functor definition tails
+may be skipped to semicolon, `end`, the next definition-content start, or EOF.
+
+Task 25 tests must pin: ordinary `means` and `equals` functor definitions, raw
+identifier, prefix, postfix, infix, parenthesized-argument, circumfix,
+imported symbolic, and parser-token lexeme-run symbolic functor patterns, term
+definiens cases with `otherwise`, formula definiens reuse for `means`,
+definition-local visibility, template-loci token preservation without
+template-definition classification, placeholder preservation after canonical
+schema-functor parameters, malformed pattern/colon/arrow/return/body-keyword/
+body recovery, active parse-only pass/fail corpus coverage, and traceability
+to Chapter 10 §10.1 / §10.3 / §10.5 / §10.6 / §10.8 / §10.13.
+
 ## Public Enum Compatibility
 
 `ParserTokenKind` is `#[non_exhaustive]` for downstream crates. The parser token

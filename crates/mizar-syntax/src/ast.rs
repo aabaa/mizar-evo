@@ -140,6 +140,10 @@ pub enum SyntaxKind {
     CorrectnessCondition = 115,
     PredicateDefinition = 116,
     PredicatePattern = 117,
+    FunctorDefinition = 118,
+    FunctorPattern = 119,
+    TermDefiniens = 120,
+    TermCase = 121,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -261,6 +265,10 @@ impl SyntaxKind {
             115 => Self::CorrectnessCondition,
             116 => Self::PredicateDefinition,
             117 => Self::PredicatePattern,
+            118 => Self::FunctorDefinition,
+            119 => Self::FunctorPattern,
+            120 => Self::TermDefiniens,
+            121 => Self::TermCase,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -384,6 +392,10 @@ impl SyntaxKind {
                 | Self::CorrectnessCondition
                 | Self::PredicateDefinition
                 | Self::PredicatePattern
+                | Self::FunctorDefinition
+                | Self::FunctorPattern
+                | Self::TermDefiniens
+                | Self::TermCase
         )
     }
 
@@ -1224,6 +1236,34 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_functor_definition(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::FunctorDefinition => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_functor_pattern(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::FunctorPattern => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_term_definiens(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::TermDefiniens => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_term_case(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::TermCase => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_let_statement(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::LetStatement => Some(self),
@@ -1791,6 +1831,10 @@ pub enum SurfaceNodeKind {
     CorrectnessCondition,
     PredicateDefinition,
     PredicatePattern,
+    FunctorDefinition,
+    FunctorPattern,
+    TermDefiniens,
+    TermCase,
     SelectorAccess,
     StructureUpdate,
     FieldUpdate,
@@ -1903,6 +1947,10 @@ impl SurfaceNodeKind {
             Self::CorrectnessCondition => SyntaxKind::CorrectnessCondition,
             Self::PredicateDefinition => SyntaxKind::PredicateDefinition,
             Self::PredicatePattern => SyntaxKind::PredicatePattern,
+            Self::FunctorDefinition => SyntaxKind::FunctorDefinition,
+            Self::FunctorPattern => SyntaxKind::FunctorPattern,
+            Self::TermDefiniens => SyntaxKind::TermDefiniens,
+            Self::TermCase => SyntaxKind::TermCase,
             Self::SelectorAccess => SyntaxKind::SelectorAccess,
             Self::StructureUpdate => SyntaxKind::StructureUpdate,
             Self::FieldUpdate => SyntaxKind::FieldUpdate,
@@ -2179,6 +2227,10 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::CorrectnessCondition => output.push_str("CorrectnessCondition"),
         SurfaceNodeKind::PredicateDefinition => output.push_str("PredicateDefinition"),
         SurfaceNodeKind::PredicatePattern => output.push_str("PredicatePattern"),
+        SurfaceNodeKind::FunctorDefinition => output.push_str("FunctorDefinition"),
+        SurfaceNodeKind::FunctorPattern => output.push_str("FunctorPattern"),
+        SurfaceNodeKind::TermDefiniens => output.push_str("TermDefiniens"),
+        SurfaceNodeKind::TermCase => output.push_str("TermCase"),
         SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
@@ -3296,6 +3348,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            task25_functor_definition_nodes_ast(source_id(36))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -3376,6 +3434,10 @@ mod tests {
             SyntaxKind::CorrectnessCondition,
             SyntaxKind::PredicateDefinition,
             SyntaxKind::PredicatePattern,
+            SyntaxKind::FunctorDefinition,
+            SyntaxKind::FunctorPattern,
+            SyntaxKind::TermDefiniens,
+            SyntaxKind::TermCase,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -4962,6 +5024,54 @@ mod tests {
             assert!(
                 snapshot.contains(expected),
                 "snapshot should render task-24 line {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn task25_typed_accessors_cover_functor_definition_nodes() {
+        let ast = task25_functor_definition_nodes_ast(source_id(37));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task25_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task25_view!(
+            SurfaceNodeKind::FunctorDefinition,
+            SyntaxKind::FunctorDefinition,
+            as_functor_definition
+        );
+        assert_task25_view!(
+            SurfaceNodeKind::FunctorPattern,
+            SyntaxKind::FunctorPattern,
+            as_functor_pattern
+        );
+        assert_task25_view!(
+            SurfaceNodeKind::TermDefiniens,
+            SyntaxKind::TermDefiniens,
+            as_term_definiens
+        );
+        assert_task25_view!(
+            SurfaceNodeKind::TermCase,
+            SyntaxKind::TermCase,
+            as_term_case
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in [
+            "FunctorDefinition",
+            "FunctorPattern",
+            "TermDefiniens",
+            "TermCase",
+        ] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-25 line {expected}"
             );
         }
     }
@@ -8110,6 +8220,133 @@ mod tests {
                 end,
                 block_semicolon,
                 compilation_unit,
+            ],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn task25_functor_definition_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let func = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "func",
+            range(source_id, 0, 4),
+        );
+        let label = builder.add_token(SurfaceTokenKind::Identifier, "F", range(source_id, 5, 6));
+        let colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 6, 7),
+        );
+        let left_locus =
+            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 8, 9));
+        let functor_symbol =
+            builder.add_token(SurfaceTokenKind::UserSymbol, "++", range(source_id, 10, 12));
+        let right_locus =
+            builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 13, 14));
+        let arrow = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "->",
+            range(source_id, 15, 17),
+        );
+        let set_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 18, 21),
+        );
+        let equals = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "equals",
+            range(source_id, 22, 28),
+        );
+        let first_value =
+            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 29, 30));
+        let if_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "if",
+            range(source_id, 31, 33),
+        );
+        let thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 34, 40),
+        );
+        let otherwise = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "otherwise",
+            range(source_id, 41, 50),
+        );
+        let fallback_value =
+            builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 51, 52));
+        let semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 52, 53),
+        );
+
+        let pattern = builder.add_node(
+            SurfaceNodeKind::FunctorPattern,
+            range(source_id, 8, 14),
+            vec![left_locus, functor_symbol, right_locus],
+        );
+        let type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 18, 21),
+            vec![set_keyword],
+        );
+        let return_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 18, 21),
+            vec![type_head],
+        );
+        let first_term = term_expression_node(&mut builder, source_id, first_value, 29, 30);
+        let condition = thesis_formula_node(&mut builder, source_id, thesis, 34, 40);
+        let term_case = builder.add_node(
+            SurfaceNodeKind::TermCase,
+            range(source_id, 29, 40),
+            vec![first_term, if_keyword, condition],
+        );
+        let fallback_term = term_expression_node(&mut builder, source_id, fallback_value, 51, 52);
+        let term_definiens = builder.add_node(
+            SurfaceNodeKind::TermDefiniens,
+            range(source_id, 29, 52),
+            vec![term_case, otherwise, fallback_term],
+        );
+        let functor = builder.add_node(
+            SurfaceNodeKind::FunctorDefinition,
+            range(source_id, 0, 53),
+            vec![
+                func,
+                label,
+                colon,
+                pattern,
+                arrow,
+                return_type,
+                equals,
+                term_definiens,
+                semicolon,
+            ],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 53),
+            vec![
+                func,
+                label,
+                colon,
+                left_locus,
+                functor_symbol,
+                right_locus,
+                arrow,
+                set_keyword,
+                equals,
+                first_value,
+                if_keyword,
+                thesis,
+                otherwise,
+                fallback_value,
+                semicolon,
+                functor,
             ],
         );
         builder.finish(Some(root), None)

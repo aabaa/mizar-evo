@@ -578,10 +578,26 @@ resolver / build-system 依存を避ける。
       template-loci token preservation、parser unit test、active parse-only
       pass/fail corpus fixture、traceability metadata を含む。
 
-25. **ファンクタ定義。** [ ]
+25. **ファンクタ定義。** [x]
     - `means` / `equals` 本体を持つ `func` 定義。
     - 依存: 23、`mizar-syntax` task 15 / S-015。仕様:
       [10.functors.md](../../../spec/ja/10.functors.md)。
+    - planned increment: definition block 内の `FunctorDefinition` と raw
+      `FunctorPattern` parsing、definition-local な `public` / `private` functor
+      visibility、return `TypeExpression` recovery、`means` 用の task-23
+      `FormulaDefiniens` 再利用、`equals` 用の task-25 `TermDefiniens` /
+      `TermCase` node、imported symbolic、parser-token symbolic、circumfix functor
+      pattern coverage、template definition 分類なしの template-loci preservation、
+      parser unit test、active parse-only pass/fail corpus fixture、traceability metadata を追加する。
+    - 結果: definition block 内の `FunctorDefinition`、raw
+      `FunctorPattern`、`TermDefiniens`、`TermCase` parsing を実装した。
+      `public func` / `private func` は既存の `VisibleItem` wrapper を再利用し、
+      `means` 本体は `FormulaDefiniens` を再利用する。`equals` 本体は term case と
+      `otherwise` term を保持する。label、pattern、return type、body keyword、term
+      body、term-case condition の不正形は文書化済み recovery vocabulary を使う。
+      parser unit test、active parse-only pass/fail corpus fixture、source-level
+      circumfix coverage、template-functor placeholder preservation、traceability
+      metadata が Chapter 10 の functor definition を覆う。
 
 26. **mode 定義。** [ ]
     - 正本の `is` 形を用いる `mode` 定義: 属性連鎖と radix 型、型パラメータ、

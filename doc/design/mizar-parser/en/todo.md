@@ -596,9 +596,27 @@ older numeric syntax task references appear to disagree, prefer
       tests, active parse-only pass/fail corpus fixtures, and traceability
       metadata.
 
-25. **Functor definitions.** [ ]
+25. **Functor definitions.** [x]
     - `func` definitions with `means`/`equals` bodies.
     - Deps: 23, `mizar-syntax` task 15 / S-015. Spec: [10.functors.md](../../../spec/en/10.functors.md).
+    - Planned increment: add `FunctorDefinition` and raw `FunctorPattern`
+      parsing inside definition blocks, definition-local `public` / `private`
+      functor visibility, return `TypeExpression` recovery, task-23
+      `FormulaDefiniens` reuse for `means`, task-25 `TermDefiniens` /
+      `TermCase` nodes for `equals`, imported symbolic, parser-token symbolic,
+      and circumfix functor pattern coverage, template-loci preservation
+      without template-definition classification, parser unit tests, active
+      parse-only pass/fail corpus fixtures, and traceability metadata.
+    - Result: implemented `FunctorDefinition`, raw `FunctorPattern`,
+      `TermDefiniens`, and `TermCase` parsing inside definition blocks.
+      `public func` / `private func` reuse the existing `VisibleItem` wrapper;
+      `means` bodies reuse `FormulaDefiniens`; `equals` bodies preserve term
+      cases and `otherwise` terms; malformed labels, patterns, return types,
+      body keywords, term bodies, and term-case conditions use the documented
+      recovery vocabulary. Parser unit tests, active parse-only pass/fail
+      corpus fixtures, source-level circumfix coverage, template-functor
+      placeholder preservation, and traceability metadata cover Chapter 10
+      functor definitions.
 
 26. **Mode definitions.** [ ]
     - `mode` definitions using the canonical `is` form: attribute-chain plus

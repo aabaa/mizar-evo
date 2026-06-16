@@ -424,8 +424,13 @@ interaction. Spec references are the normative grammar chapters under
       `PredicateDefinition` and raw `PredicatePattern` are implemented with
       typed accessors, definition-local visibility, formula-definiens bodies,
       grammar-shaped pattern validation, active parse-only pass/fail corpus
-      coverage, and traceability metadata. S-015 remains open for parser tasks
-      25-30.
+      coverage, and traceability metadata. Parser task 25 is complete for
+      functor definitions: `FunctorDefinition`, raw `FunctorPattern`,
+      `TermDefiniens`, and `TermCase` are implemented with typed accessors,
+      definition-local visibility, `means`/`equals` bodies, return-type and
+      term-definiens recovery, source-level circumfix coverage, template
+      placeholder preservation, active parse-only pass/fail corpus coverage,
+      and traceability metadata. S-015 remains open for parser tasks 26-30.
     - Spec: [06.attributes.md](../../../spec/en/06.attributes.md),
       [07.modes.md](../../../spec/en/07.modes.md),
       [09.predicates.md](../../../spec/en/09.predicates.md),
