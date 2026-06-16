@@ -248,7 +248,7 @@ final: UserSymbol("x*+y")
 
 認識の対象は、たとえば以下です。
 
-- `definition`, `proof`, `now`, `end` のような、字句スコープに影響するブロック区切り;
+- `definition`, `proof`, `now`, nested `struct`, explicit `inherit ... where`, `end` のような、字句スコープに影響するブロック区切り;
 - `let`, `for`, `reserve`, `given` のような、束縛子を導入する予約語と形式;
 - 予約構文から形状を復元できる、カンマ区切りの束縛リスト;
 - 式の全体をパースせずに束縛範囲を近似できる局所名.

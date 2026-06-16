@@ -1,0 +1,43 @@
+import parser.type_fixtures;
+
+definition
+  struct Simple where
+    field carrier -> set;
+    property size -> set;
+  end;
+
+  struct Polynomial[r] where
+    field coeffs -> set := x;
+  end;
+
+  struct OfStruct of r where
+    field base -> set;
+  end;
+
+  struct OverStruct over r where
+    field scalar -> set;
+  end;
+
+  inherit Polynomial[r] extends TypeCaseStruct over r;
+
+  inherit Derived extends set where
+    field carrier from it;
+    property size -> set from size;
+    coherence by Ref;
+  end;
+
+  inherit ProofChild extends ProofParent where
+    field carrier from carrier;
+    coherence proof
+      thus thesis;
+    end;
+  end;
+
+  public struct PublicStruct where
+    field p -> set;
+  end;
+
+  private inherit Hidden extends set where
+    field h from it;
+  end;
+end;

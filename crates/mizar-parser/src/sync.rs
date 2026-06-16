@@ -116,12 +116,27 @@ pub(super) fn opens_recovery_block_at(tokens: &[ParserToken], position: usize) -
 
     match token.text.as_ref() {
         "algorithm" | "definition" | "registration" | "proof" | "now" | "hereby" | "case"
-        | "suppose" | "while" | "match" | "claim" => true,
+        | "suppose" | "while" | "match" | "claim" | "struct" => true,
+        "inherit" => looks_like_inherit_where_block(&cursor),
         "if" => looks_like_algorithm_if_block(&cursor),
         "for" => looks_like_algorithm_for_loop(&cursor),
         "otherwise" => follows_completed_match_case(&cursor),
         _ => false,
     }
+}
+
+fn looks_like_inherit_where_block(cursor: &TokenCursor<'_>) -> bool {
+    let mut cursor = cursor.clone();
+    while let Some(token) = cursor.current() {
+        if is_reserved_word_token(token, "where") {
+            return true;
+        }
+        if is_reserved_symbol_token(token, ";") || is_reserved_word_token(token, "end") {
+            return false;
+        }
+        cursor.advance();
+    }
+    false
 }
 
 fn looks_like_algorithm_if_block(cursor: &TokenCursor<'_>) -> bool {

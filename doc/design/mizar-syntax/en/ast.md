@@ -132,6 +132,14 @@ green tree.
 | notation alias node | `SyntaxKind::NotationAlias` |
 | notation pattern node | `SyntaxKind::NotationPattern` |
 | property clause node | `SyntaxKind::PropertyClause` |
+| structure definition node | `SyntaxKind::StructureDefinition` |
+| structure pattern node | `SyntaxKind::StructurePattern` |
+| structure field node | `SyntaxKind::StructureField` |
+| structure property node | `SyntaxKind::StructureProperty` |
+| inheritance definition node | `SyntaxKind::InheritanceDefinition` |
+| inheritance target node | `SyntaxKind::InheritanceTarget` |
+| field redefinition node | `SyntaxKind::FieldRedefinition` |
+| property redefinition node | `SyntaxKind::PropertyRedefinition` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -294,11 +302,19 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 129 | `NotationAlias` | task-27 `synonym` / `antonym` notation alias declaration |
 | 130 | `NotationPattern` | task-27 raw notation alias pattern span |
 | 131 | `PropertyClause` | task-28 predicate/functor/standalone mode property clause |
+| 132 | `StructureDefinition` | task-29 `struct ... where ... end;` definition |
+| 133 | `StructurePattern` | task-29 raw structure definition name and parameters |
+| 134 | `StructureField` | task-29 structure `field` member |
+| 135 | `StructureProperty` | task-29 structure `property` member |
+| 136 | `InheritanceDefinition` | task-29 `inherit ... extends ...` definition |
+| 137 | `InheritanceTarget` | task-29 raw inheritance child/parent target |
+| 138 | `FieldRedefinition` | task-29 inherited field mapping |
+| 139 | `PropertyRedefinition` | task-29 inherited property mapping |
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
 above, including `Root` through task-22 `ProofBlock`, task-23
-`DefinitionBlockItem` through task-28 `PropertyClause`, the compatibility
+`DefinitionBlockItem` through task-29 `PropertyRedefinition`, the compatibility
 `Token` wrapper, and `ErrorRecovery`; `is_token_kind` is true only for token
 leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future raw values should be
 appended or assigned into a documented reserved range so existing snapshots and
@@ -394,6 +410,14 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::NotationAlias` | none | `SyntaxKind::NotationAlias` | parser task-27 `synonym` or `antonym` declaration; owns the alias keyword, an alternate `NotationPattern`, `for`, an original `NotationPattern`, optional recovery, and the final semicolon when present |
 | `SurfaceNodeKind::NotationPattern` | none | `SyntaxKind::NotationPattern` | parser task-27 raw notation alias pattern; owns source-ordered raw tokens from one side of `for` plus `MissingTerm` recovery when the side is empty or cannot be delimited; it does not classify the pattern as predicate, functor, mode, or attribute |
 | `SurfaceNodeKind::PropertyClause` | none | `SyntaxKind::PropertyClause` | parser task-28 property item; owns a canonical predicate/functor property keyword or standalone `sethood`, a required general justification (`JustificationClause` or `ProofBlock`) when present, optional recovery, and the property semicolon when present |
+| `SurfaceNodeKind::StructureDefinition` | none | `SyntaxKind::StructureDefinition` | parser task-29 `struct` definition; owns `struct`, a raw `StructurePattern`, `where`, one or more `StructureField` / `StructureProperty` members, `end`, and the final semicolon when present |
+| `SurfaceNodeKind::StructurePattern` | none | `SyntaxKind::StructurePattern` | parser task-29 structure definition pattern; owns source-ordered raw tokens for `struct_def_name [ type_params ]` plus `MissingTerm` recovery when the pattern is empty or malformed; it does not encode semantic structure identity |
+| `SurfaceNodeKind::StructureField` | none | `SyntaxKind::StructureField` | parser task-29 structure field member; owns `field`, a field identifier or `MissingTerm`, `->`, a `TypeExpression` or `MissingTypeExpression`, optional `:= TermExpression`, and the member semicolon when present |
+| `SurfaceNodeKind::StructureProperty` | none | `SyntaxKind::StructureProperty` | parser task-29 structure property member; owns `property`, a property identifier or `MissingTerm`, `->`, a `TypeExpression` or `MissingTypeExpression`, and the member semicolon when present |
+| `SurfaceNodeKind::InheritanceDefinition` | none | `SyntaxKind::InheritanceDefinition` | parser task-29 inheritance definition; owns `inherit`, child and parent `InheritanceTarget` nodes around `extends`, optional explicit `where ... end` member block, and the final semicolon when present |
+| `SurfaceNodeKind::InheritanceTarget` | none | `SyntaxKind::InheritanceTarget` | parser task-29 raw inheritance child/parent target; preserves source-order tokens for a structure-like reference plus optional raw type arguments, or the parent `set` token, without resolving semantic structure identity |
+| `SurfaceNodeKind::FieldRedefinition` | none | `SyntaxKind::FieldRedefinition` | parser task-29 explicit inheritance field mapping; owns `field`, a child field identifier or `MissingTerm`, optional narrowed `-> TypeExpression`, required `from`, an identifier or `it` source when present, and the member semicolon when present |
+| `SurfaceNodeKind::PropertyRedefinition` | none | `SyntaxKind::PropertyRedefinition` | parser task-29 explicit inheritance property mapping; owns `property`, a child property identifier or `MissingTerm`, optional narrowed `-> TypeExpression`, required `from`, an identifier source when present, and the member semicolon when present |
 | `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host plus parser task-22 proof justification host; owns one `Proposition`, one `JustificationClause` or `ProofBlock`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
@@ -1047,6 +1071,27 @@ AST does not validate predicate arity, functor arity, proof obligations, or
 which preceding definition a property annotates. `SurfaceNodeView` exposes
 `as_property_clause`. Snapshot rendering prints `PropertyClause`.
 
+Parser task 29 adds syntax-only structure definitions and inheritance
+definitions. `StructureDefinition` owns `struct`, a raw `StructurePattern`,
+`where`, one or more `StructureField` / `StructureProperty` members, `end`,
+and the final semicolon when present. `StructurePattern` preserves raw
+`struct_def_name [ type_params ]` tokens and does not decide semantic structure
+identity. Structure fields own `field`, the field name, `->`, a syntactic
+`TypeExpression`, an optional initializer `:= TermExpression`, and the member
+semicolon; structure properties own the same shape without an initializer.
+`InheritanceDefinition` owns `inherit`, child/parent `InheritanceTarget`
+nodes around `extends`, optional explicit `where ... end` inheritance members,
+and the final semicolon. `FieldRedefinition` and `PropertyRedefinition`
+preserve optional narrowed types and required `from` source tokens; inheritance
+coherence reuses `CoherenceCondition` with a mandatory general justification
+and without the redefinition-only `with` label branch. The AST does not check
+inheritance coverage, diamond consistency, selector compatibility, type
+specialization validity, constructor semantics, or proof obligations.
+`SurfaceNodeView` exposes `as_structure_definition`, `as_structure_pattern`,
+`as_structure_field`, `as_structure_property`, `as_inheritance_definition`,
+`as_inheritance_target`, `as_field_redefinition`, and
+`as_property_redefinition`. Snapshot rendering prints the literal node names.
+
 ### Vocabulary Increment Contract
 
 Node vocabulary grows only in the same change as the `mizar-parser` grammar task
@@ -1225,6 +1270,14 @@ CoherenceCondition range=<start>..<end> recovered=<bool>
 NotationAlias range=<start>..<end> recovered=<bool>
 NotationPattern range=<start>..<end> recovered=<bool>
 PropertyClause range=<start>..<end> recovered=<bool>
+StructureDefinition range=<start>..<end> recovered=<bool>
+StructurePattern range=<start>..<end> recovered=<bool>
+StructureField range=<start>..<end> recovered=<bool>
+StructureProperty range=<start>..<end> recovered=<bool>
+InheritanceDefinition range=<start>..<end> recovered=<bool>
+InheritanceTarget range=<start>..<end> recovered=<bool>
+FieldRedefinition range=<start>..<end> recovered=<bool>
+PropertyRedefinition range=<start>..<end> recovered=<bool>
 CompactStatement range=<start>..<end> recovered=<bool>
 JustificationClause range=<start>..<end> recovered=<bool>
 ReferenceList range=<start>..<end> recovered=<bool>

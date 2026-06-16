@@ -5,10 +5,10 @@
 状態: module skeleton、top-level placeholder dispatch、concrete import item、
 export item、visibility wrapper、reserve-hosted type expression、set comprehension
 を含む task 15 term surface、task 14 formula surface、S-013 statement node、
-task-22 theorem/proof item、task 23〜26 の definition block / attribute /
-predicate / functor / mode 増分は実装済み。残りの concrete redefinition、
-notation alias、property、structure、registration、template、algorithm、annotation、
-package-oriented item grammar は計画中。
+task-22 theorem/proof item、task 23〜29 の definition block / attribute /
+predicate / functor / mode / redefinition / notation alias / property /
+structure 増分は実装済み。残りの concrete registration、template、algorithm、
+annotation、package-oriented item grammar は計画中。
 
 ## 目的
 
@@ -1636,6 +1636,90 @@ Task 28 tests は、canonical predicate / functor property keyword 一式、stan
 直前の missing semicolon recovery、active parse-only pass/fail corpus coverage、Chapter 7
 §7.8.1、Chapter 9 §9.5.1、Chapter 10 §10.6.1、Appendix A.12 への traceability を
 固定する必要がある。
+
+### Task 29: Structures
+
+Task 29 は definition block 内の syntax-only な structure definition と inheritance
+definition を追加する。parser は structure name、type parameter、field / property
+declaration、inheritance target、explicit な field / property mapping を保持するが、
+structure identity の解決、inheritance coherence の証明、parent coverage の検査、
+type narrowing の妥当性確認、selector fact の作成、constructor 導出は行わない。
+
+```ebnf
+definition_content     ::= ... | [ visibility ] struct_def
+                         | [ visibility ] inherit_def ;
+
+struct_def             ::= "struct" struct_pattern "where"
+                           struct_member { struct_member } "end" ";" ;
+struct_pattern         ::= struct_def_name [ type_params ] ;
+struct_member          ::= field_decl | property_decl ;
+field_decl             ::= "field" identifier "->" type_expression
+                           [ ":=" term_expression ] ";" ;
+property_decl          ::= "property" identifier "->" type_expression ";" ;
+
+inherit_def            ::= "inherit" inherit_child "extends" parent_type
+                           ( ";"
+                           | "where" inherit_member { inherit_member }
+                             [ inheritance_coherence ] "end" ";" ) ;
+inherit_child          ::= struct_name [ type_args ] ;
+parent_type            ::= struct_name [ type_args ] | "set" ;
+inherit_member         ::= field_redef | property_redef ;
+field_redef            ::= "field" identifier [ "->" type_expression ]
+                           "from" ( identifier | "it" ) ";" ;
+property_redef         ::= "property" identifier [ "->" type_expression ]
+                           "from" identifier ";" ;
+inheritance_coherence  ::= "coherence" justification ";" ;
+```
+
+`StructureDefinition` は `struct`、raw `StructurePattern`、`where`、1 個以上の
+`StructureField` / `StructureProperty` member、`end`、存在する場合の final semicolon
+を所有する。`StructurePattern` は `of`、`over`、bracket parameter を含む
+source-order の raw structure definition name / parameter token を所有し、その name が
+valid structure symbol かどうかは判断しない。definition-local な `public` /
+`private` structure definition は既存の `VisibleItem` / `VisibilityMarker` wrapper を
+再利用する。
+
+`StructureField` は `field`、field identifier、`->`、`TypeExpression`、`:=` で始まる
+任意の `TermExpression` initializer、member semicolon を所有する。
+`StructureProperty` は initializer を持たない同じ member skeleton を所有する。parser は
+grammar shape だけを確認し、selector declaration の妥当性と field / property の一意性は
+後続 phase に残す。
+
+`InheritanceDefinition` は `inherit`、child `InheritanceTarget`、`extends`、parent
+`InheritanceTarget`、shorthand semicolon または explicit `where ... end;` block、および
+nested redefinition / coherence node を所有する。explicit `where` block には少なくとも
+1 個の `FieldRedefinition` または `PropertyRedefinition` が必要である。shorthand
+inheritance では synthetic mapping node を作らない。`InheritanceTarget` は child /
+parent の structure-like reference と任意の raw type argument、または parent 側の `set`
+token を保持し、structure / type identity は解決しない。`FieldRedefinition` と
+`PropertyRedefinition` は child member name、任意の narrowed `TypeExpression`、必須
+`from`、source member name（field だけ `from it` を許す）、member semicolon を所有する。
+任意の inheritance `coherence` は必須の general justification を所有し、task-27 の
+redefinition 専用 `with` label は受理しない。
+
+Task 29 recovery は `struct` と explicit `inherit` block 内の local member
+synchronization と、境界での definition-content synchronization を使う。空または
+malformed な structure pattern、field / property name、inheritance target、field /
+property redefinition name、malformed member tail は、inserted raw surface placeholder が
+必要な場合に `MalformedTermExpression` と `MissingTerm` を使う。member または
+redefinition type の欠落は `MalformedTypeExpression` と `MissingTypeExpression` を使う。
+inheritance coherence justification の欠落または malformed syntax は
+`MalformedJustification` と `MissingProofStep` を使う。`coherence with ...` は
+inheritance では受理せず recovered syntax として扱う。member semicolon と外側
+semicolon の欠落は `MissingSemicolon` を使い、block closer 欠落は `MissingEnd` を使う。
+malformed member tail は semicolon、`field`、`property`、`coherence`、`end`、次の
+definition-content start、top-level item boundary、EOF まで skip してよい。frontend の
+scope skeleton も nested `struct ... end` と explicit `inherit ... where ... end` range を
+認識し、parse-only fixture が parsing 前に spurious unmatched `end` diagnostic を出さない
+ようにする。
+
+Task 29 tests は、structure field / property、`of` / `over` / bracket parameter、
+field initializer、shorthand inheritance、`extends set` を含む explicit inheritance、
+field / property redefinition、citation と proof justification を伴う coherence、
+definition-local visibility wrapper、name / type / semicolon 欠落、空の explicit
+`where` recovery、malformed coherence recovery、active parse-only pass/fail corpus
+coverage、Chapter 5 §5.2、§5.3、§5.3.1、§5.3.2、§5.6、Appendix A.5 / A.12 への
+traceability を固定する必要がある。
 
 ## 公開 enum の互換性
 

@@ -15,7 +15,10 @@ through the frontend source path, and implements task-12 recovery passthrough
 plus task-28 nested missing-`end` matching, missing string literals, and
 unrecoverable `ast = None`. Task 2 parser infrastructure is in place as private
 cursor, syntax-event, expected-token diagnostic, synchronization, and recovery
-emission helpers. Full grammar coverage remains planned.
+emission helpers. Concrete grammar coverage has grown through parser task 29,
+including module/import/export, type/term/formula, statement/proof, definition
+content, property, and structure surfaces. Full grammar coverage remains
+planned.
 
 Initial module specs:
 

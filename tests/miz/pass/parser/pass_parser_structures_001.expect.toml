@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_structures_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.definitions"
+source = "pass_parser_structures_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.05.structures.parser",
+]
+notes = "Active parse-only runner coverage for parser task 29 structures: struct fields/properties, bracket, of, and over parameters, field initializers, shorthand and explicit inheritance, extends set, coherence citation/proof, and visibility-wrapped structure/inheritance items."

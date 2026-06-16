@@ -1,0 +1,28 @@
+definition
+  struct Empty where
+  end;
+
+  struct MissingSemi where
+    field carrier -> set
+    property size -> set;
+    field missing ->;
+  end;
+
+  inherit Memberless extends Base where
+  end;
+
+  inherit CoherenceOnly extends Base where
+    coherence by Ref;
+  end;
+
+  inherit Broken extends where
+    field from;
+    field typed -> from carrier;
+    property p -> set from;
+    coherence with C;
+  end;
+
+  struct Follows where
+    field ok -> set;
+  end;
+end;

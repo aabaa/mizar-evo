@@ -154,6 +154,14 @@ pub enum SyntaxKind {
     NotationAlias = 129,
     NotationPattern = 130,
     PropertyClause = 131,
+    StructureDefinition = 132,
+    StructurePattern = 133,
+    StructureField = 134,
+    StructureProperty = 135,
+    InheritanceDefinition = 136,
+    InheritanceTarget = 137,
+    FieldRedefinition = 138,
+    PropertyRedefinition = 139,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -289,6 +297,14 @@ impl SyntaxKind {
             129 => Self::NotationAlias,
             130 => Self::NotationPattern,
             131 => Self::PropertyClause,
+            132 => Self::StructureDefinition,
+            133 => Self::StructurePattern,
+            134 => Self::StructureField,
+            135 => Self::StructureProperty,
+            136 => Self::InheritanceDefinition,
+            137 => Self::InheritanceTarget,
+            138 => Self::FieldRedefinition,
+            139 => Self::PropertyRedefinition,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -426,6 +442,14 @@ impl SyntaxKind {
                 | Self::NotationAlias
                 | Self::NotationPattern
                 | Self::PropertyClause
+                | Self::StructureDefinition
+                | Self::StructurePattern
+                | Self::StructureField
+                | Self::StructureProperty
+                | Self::InheritanceDefinition
+                | Self::InheritanceTarget
+                | Self::FieldRedefinition
+                | Self::PropertyRedefinition
         )
     }
 
@@ -1364,6 +1388,62 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_structure_definition(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::StructureDefinition => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_structure_pattern(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::StructurePattern => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_structure_field(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::StructureField => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_structure_property(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::StructureProperty => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_inheritance_definition(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::InheritanceDefinition => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_inheritance_target(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::InheritanceTarget => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_field_redefinition(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::FieldRedefinition => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_property_redefinition(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::PropertyRedefinition => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_let_statement(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::LetStatement => Some(self),
@@ -1945,6 +2025,14 @@ pub enum SurfaceNodeKind {
     NotationAlias,
     NotationPattern,
     PropertyClause,
+    StructureDefinition,
+    StructurePattern,
+    StructureField,
+    StructureProperty,
+    InheritanceDefinition,
+    InheritanceTarget,
+    FieldRedefinition,
+    PropertyRedefinition,
     SelectorAccess,
     StructureUpdate,
     FieldUpdate,
@@ -2071,6 +2159,14 @@ impl SurfaceNodeKind {
             Self::NotationAlias => SyntaxKind::NotationAlias,
             Self::NotationPattern => SyntaxKind::NotationPattern,
             Self::PropertyClause => SyntaxKind::PropertyClause,
+            Self::StructureDefinition => SyntaxKind::StructureDefinition,
+            Self::StructurePattern => SyntaxKind::StructurePattern,
+            Self::StructureField => SyntaxKind::StructureField,
+            Self::StructureProperty => SyntaxKind::StructureProperty,
+            Self::InheritanceDefinition => SyntaxKind::InheritanceDefinition,
+            Self::InheritanceTarget => SyntaxKind::InheritanceTarget,
+            Self::FieldRedefinition => SyntaxKind::FieldRedefinition,
+            Self::PropertyRedefinition => SyntaxKind::PropertyRedefinition,
             Self::SelectorAccess => SyntaxKind::SelectorAccess,
             Self::StructureUpdate => SyntaxKind::StructureUpdate,
             Self::FieldUpdate => SyntaxKind::FieldUpdate,
@@ -2361,6 +2457,14 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::NotationAlias => output.push_str("NotationAlias"),
         SurfaceNodeKind::NotationPattern => output.push_str("NotationPattern"),
         SurfaceNodeKind::PropertyClause => output.push_str("PropertyClause"),
+        SurfaceNodeKind::StructureDefinition => output.push_str("StructureDefinition"),
+        SurfaceNodeKind::StructurePattern => output.push_str("StructurePattern"),
+        SurfaceNodeKind::StructureField => output.push_str("StructureField"),
+        SurfaceNodeKind::StructureProperty => output.push_str("StructureProperty"),
+        SurfaceNodeKind::InheritanceDefinition => output.push_str("InheritanceDefinition"),
+        SurfaceNodeKind::InheritanceTarget => output.push_str("InheritanceTarget"),
+        SurfaceNodeKind::FieldRedefinition => output.push_str("FieldRedefinition"),
+        SurfaceNodeKind::PropertyRedefinition => output.push_str("PropertyRedefinition"),
         SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
@@ -3502,6 +3606,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            task29_structure_nodes_ast(source_id(44))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -3596,6 +3706,14 @@ mod tests {
             SyntaxKind::NotationAlias,
             SyntaxKind::NotationPattern,
             SyntaxKind::PropertyClause,
+            SyntaxKind::StructureDefinition,
+            SyntaxKind::StructurePattern,
+            SyntaxKind::StructureField,
+            SyntaxKind::StructureProperty,
+            SyntaxKind::InheritanceDefinition,
+            SyntaxKind::InheritanceTarget,
+            SyntaxKind::FieldRedefinition,
+            SyntaxKind::PropertyRedefinition,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -5342,6 +5460,78 @@ mod tests {
         assert_eq!(view.syntax_kind(), SyntaxKind::PropertyClause);
         assert!(view.as_property_clause().is_some());
         assert!(ast.snapshot_text().contains("PropertyClause"));
+    }
+
+    #[test]
+    fn task29_typed_accessors_cover_structure_nodes() {
+        let ast = task29_structure_nodes_ast(source_id(45));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task29_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task29_view!(
+            SurfaceNodeKind::StructureDefinition,
+            SyntaxKind::StructureDefinition,
+            as_structure_definition
+        );
+        assert_task29_view!(
+            SurfaceNodeKind::StructurePattern,
+            SyntaxKind::StructurePattern,
+            as_structure_pattern
+        );
+        assert_task29_view!(
+            SurfaceNodeKind::StructureField,
+            SyntaxKind::StructureField,
+            as_structure_field
+        );
+        assert_task29_view!(
+            SurfaceNodeKind::StructureProperty,
+            SyntaxKind::StructureProperty,
+            as_structure_property
+        );
+        assert_task29_view!(
+            SurfaceNodeKind::InheritanceDefinition,
+            SyntaxKind::InheritanceDefinition,
+            as_inheritance_definition
+        );
+        assert_task29_view!(
+            SurfaceNodeKind::InheritanceTarget,
+            SyntaxKind::InheritanceTarget,
+            as_inheritance_target
+        );
+        assert_task29_view!(
+            SurfaceNodeKind::FieldRedefinition,
+            SyntaxKind::FieldRedefinition,
+            as_field_redefinition
+        );
+        assert_task29_view!(
+            SurfaceNodeKind::PropertyRedefinition,
+            SyntaxKind::PropertyRedefinition,
+            as_property_redefinition
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in [
+            "StructureDefinition",
+            "StructurePattern",
+            "StructureField",
+            "StructureProperty",
+            "InheritanceDefinition",
+            "InheritanceTarget",
+            "FieldRedefinition",
+            "PropertyRedefinition",
+        ] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-29 line {expected}"
+            );
+        }
     }
 
     #[test]
@@ -9292,6 +9482,390 @@ mod tests {
                 reference_name,
                 semicolon,
                 property_clause,
+            ],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn task29_structure_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let struct_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "struct",
+            range(source_id, 0, 6),
+        );
+        let struct_name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Carrier",
+            range(source_id, 7, 14),
+        );
+        let struct_where = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "where",
+            range(source_id, 15, 20),
+        );
+        let field_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "field",
+            range(source_id, 21, 26),
+        );
+        let field_name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "carrier",
+            range(source_id, 27, 34),
+        );
+        let field_arrow = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "->",
+            range(source_id, 35, 37),
+        );
+        let field_set = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 38, 41),
+        );
+        let field_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 41, 42),
+        );
+        let property_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "property",
+            range(source_id, 43, 51),
+        );
+        let property_name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "size",
+            range(source_id, 52, 56),
+        );
+        let property_arrow = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "->",
+            range(source_id, 57, 59),
+        );
+        let property_set = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 60, 63),
+        );
+        let property_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 63, 64),
+        );
+        let struct_end = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "end",
+            range(source_id, 65, 68),
+        );
+        let struct_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 68, 69),
+        );
+
+        let inherit_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "inherit",
+            range(source_id, 70, 77),
+        );
+        let child = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Child",
+            range(source_id, 78, 83),
+        );
+        let extends = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "extends",
+            range(source_id, 84, 91),
+        );
+        let parent = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Parent",
+            range(source_id, 92, 98),
+        );
+        let inherit_where = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "where",
+            range(source_id, 99, 104),
+        );
+        let redef_field_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "field",
+            range(source_id, 105, 110),
+        );
+        let redef_field_name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "carrier",
+            range(source_id, 111, 118),
+        );
+        let field_from = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "from",
+            range(source_id, 119, 123),
+        );
+        let it = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "it",
+            range(source_id, 124, 126),
+        );
+        let redef_field_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 126, 127),
+        );
+        let redef_property_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "property",
+            range(source_id, 128, 136),
+        );
+        let redef_property_name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "size",
+            range(source_id, 137, 141),
+        );
+        let redef_property_arrow = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "->",
+            range(source_id, 142, 144),
+        );
+        let redef_property_set = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 145, 148),
+        );
+        let property_from = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "from",
+            range(source_id, 149, 153),
+        );
+        let source_property = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "size",
+            range(source_id, 154, 158),
+        );
+        let redef_property_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 158, 159),
+        );
+        let coherence_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "coherence",
+            range(source_id, 160, 169),
+        );
+        let by = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "by",
+            range(source_id, 170, 172),
+        );
+        let ref_name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Ref",
+            range(source_id, 173, 176),
+        );
+        let coherence_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 176, 177),
+        );
+        let inherit_end = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "end",
+            range(source_id, 178, 181),
+        );
+        let inherit_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 181, 182),
+        );
+
+        let structure_pattern = builder.add_node(
+            SurfaceNodeKind::StructurePattern,
+            range(source_id, 7, 14),
+            vec![struct_name],
+        );
+        let field_type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 38, 41),
+            vec![field_set],
+        );
+        let field_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 38, 41),
+            vec![field_type_head],
+        );
+        let structure_field = builder.add_node(
+            SurfaceNodeKind::StructureField,
+            range(source_id, 21, 42),
+            vec![
+                field_kw,
+                field_name,
+                field_arrow,
+                field_type,
+                field_semicolon,
+            ],
+        );
+        let property_type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 60, 63),
+            vec![property_set],
+        );
+        let property_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 60, 63),
+            vec![property_type_head],
+        );
+        let structure_property = builder.add_node(
+            SurfaceNodeKind::StructureProperty,
+            range(source_id, 43, 64),
+            vec![
+                property_kw,
+                property_name,
+                property_arrow,
+                property_type,
+                property_semicolon,
+            ],
+        );
+        let structure_definition = builder.add_node(
+            SurfaceNodeKind::StructureDefinition,
+            range(source_id, 0, 69),
+            vec![
+                struct_kw,
+                structure_pattern,
+                struct_where,
+                structure_field,
+                structure_property,
+                struct_end,
+                struct_semicolon,
+            ],
+        );
+
+        let child_target = builder.add_node(
+            SurfaceNodeKind::InheritanceTarget,
+            range(source_id, 78, 83),
+            vec![child],
+        );
+        let parent_target = builder.add_node(
+            SurfaceNodeKind::InheritanceTarget,
+            range(source_id, 92, 98),
+            vec![parent],
+        );
+        let field_redefinition = builder.add_node(
+            SurfaceNodeKind::FieldRedefinition,
+            range(source_id, 105, 127),
+            vec![
+                redef_field_kw,
+                redef_field_name,
+                field_from,
+                it,
+                redef_field_semicolon,
+            ],
+        );
+        let redef_property_type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 145, 148),
+            vec![redef_property_set],
+        );
+        let redef_property_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 145, 148),
+            vec![redef_property_type_head],
+        );
+        let property_redefinition = builder.add_node(
+            SurfaceNodeKind::PropertyRedefinition,
+            range(source_id, 128, 159),
+            vec![
+                redef_property_kw,
+                redef_property_name,
+                redef_property_arrow,
+                redef_property_type,
+                property_from,
+                source_property,
+                redef_property_semicolon,
+            ],
+        );
+        let reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 173, 176),
+            vec![ref_name],
+        );
+        let references = builder.add_node(
+            SurfaceNodeKind::ReferenceList,
+            range(source_id, 173, 176),
+            vec![reference],
+        );
+        let justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 170, 176),
+            vec![by, references],
+        );
+        let coherence = builder.add_node(
+            SurfaceNodeKind::CoherenceCondition,
+            range(source_id, 160, 177),
+            vec![coherence_kw, justification, coherence_semicolon],
+        );
+        let inheritance_definition = builder.add_node(
+            SurfaceNodeKind::InheritanceDefinition,
+            range(source_id, 70, 182),
+            vec![
+                inherit_kw,
+                child_target,
+                extends,
+                parent_target,
+                inherit_where,
+                field_redefinition,
+                property_redefinition,
+                coherence,
+                inherit_end,
+                inherit_semicolon,
+            ],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 182),
+            vec![
+                struct_kw,
+                struct_name,
+                struct_where,
+                field_kw,
+                field_name,
+                field_arrow,
+                field_set,
+                field_semicolon,
+                property_kw,
+                property_name,
+                property_arrow,
+                property_set,
+                property_semicolon,
+                struct_end,
+                struct_semicolon,
+                inherit_kw,
+                child,
+                extends,
+                parent,
+                inherit_where,
+                redef_field_kw,
+                redef_field_name,
+                field_from,
+                it,
+                redef_field_semicolon,
+                redef_property_kw,
+                redef_property_name,
+                redef_property_arrow,
+                redef_property_set,
+                property_from,
+                source_property,
+                redef_property_semicolon,
+                coherence_kw,
+                by,
+                ref_name,
+                coherence_semicolon,
+                inherit_end,
+                inherit_semicolon,
+                structure_definition,
+                inheritance_definition,
             ],
         );
         builder.finish(Some(root), None)

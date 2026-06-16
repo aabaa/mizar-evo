@@ -12,9 +12,9 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] task 14 の formula connective と quantifier は private な task 2 cursor / event 基盤を使用 |
+| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] parser task 29 の structure は private な cursor / event 基盤を使用。grammar coverage は段階的に継続 |
 | pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task 12 の active prefix/postfix/infix operator に対する項 Pratt は実装済み。task 14 の固定 formula Pratt は項 fixity から分離して実装済み |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task 14 の formula recovery と mizar-frontend task 28 の nested block-end matching は task 2 cursor / diagnostic / sync helper を使用 |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] parser task 29 の structure / inheritance recovery と nested block-end matching は task 2 cursor / diagnostic / sync helper を使用 |
 
 `mizar-parser` は構文文法を実装する: frontend 適合済みトークンを入力とし、
 `mizar_syntax::SurfaceAst` と構文診断を出力する。薄い基盤層（cursor、同期、
@@ -652,10 +652,22 @@ resolver / build-system 依存を避ける。
       pass/fail corpus fixture、recovery coverage、traceability metadata が task-28
       surface を覆う。
 
-29. **構造体。** [ ]
+29. **構造体。** [x]
     - `struct` 定義: フィールド、継承／`extends`、selector 宣言。
     - 依存: 28、`mizar-syntax` task 15 / S-015。仕様:
       [05.structures.md](../../../spec/ja/05.structures.md)。
+    - 結果: definition block 内の `StructureDefinition`、raw
+      `StructurePattern`、`StructureField`、`StructureProperty`、
+      `InheritanceDefinition`、`InheritanceTarget`、`FieldRedefinition`、
+      `PropertyRedefinition` parsing を実装した。definition-local な
+      `public struct` / `private struct` と `public inherit` / `private inherit` は
+      `VisibleItem` を再利用する。parser は structure parameter、field initializer、
+      shorthand inheritance、explicit `where ... end` inheritance、`extends set`、
+      任意の type narrowing、任意の coherence proof を保持し、selector fact、parent
+      coverage、narrowing validity、constructor semantics、proof obligation は parse
+      phase の外に残す。parser unit test、active parse-only pass/fail corpus fixture、
+      recovery coverage、frontend scope-skeleton の nested-block follow-through、
+      traceability metadata が task-29 surface を覆う。
 
 30. **registration と cluster。** [ ]
     - `registration … end` ブロック、existential / conditional / functorial の

@@ -6,7 +6,7 @@
 module-skeleton recovery、task 6 の import recovery、task 7 の export/visibility
 recovery、task 8 の type-expression recovery、task 9 の primary-term recovery、
 task 13 の atomic-formula recovery、task 14 の formula recovery、S-013 / S-014 の
-statement/proof recovery、task 28 までの S-015 definition recovery は実装済み。
+statement/proof recovery、task 29 までの S-015 definition recovery は実装済み。
 完全な文法回復は引き続き計画中。
 
 ## 目的
@@ -118,6 +118,21 @@ statement/proof recovery、task 28 までの S-015 definition recovery は実装
   property tail は semicolon、`end`、次の definition-content start、top-level item
   boundary、または EOF まで skip する。property semicolon 欠落は `MissingSemicolon` を
   使い、別の property 句を含む後続 definition item を保持する。
+- task 29 の structure / inheritance parsing は、`struct ... end` と explicit
+  `inherit ... where ... end` block 内で local member synchronization を使い、block
+  boundary では definition-content synchronization へ戻る。空または malformed な
+  structure pattern、inheritance target、member name、redefinition name、malformed
+  member tail は、inserted placeholder が必要な場合に `MalformedTermExpression` と
+  `MissingTerm` を使う。member または redefinition type 欠落は
+  `MalformedTypeExpression` と `MissingTypeExpression` を使う。inheritance coherence
+  justification の欠落または malformed syntax は `MalformedJustification` と
+  `MissingProofStep` を使う。inheritance の `coherence with ...` は受理せず recovered
+  syntax として扱う。member semicolon と外側 semicolon の欠落は `MissingSemicolon` を
+  使い、block closer 欠落は `MissingEnd` を使う。malformed member tail は semicolon、
+  `field`、`property`、`coherence`、`end`、次の definition-content start、top-level item
+  boundary、EOF まで skip する。frontend-facing な scope skeleton は nested `struct`
+  block を認識し、`inherit` は statement semicolon または `end` より前に `where` がある
+  場合だけ block-like として扱う。
 - 対応する block opener を持たない裸の `end` は、構文診断とともに `ast = None` を返す。
 
 ## 公開 enum の互換性

@@ -68,6 +68,8 @@ the owning parser task can parse the surrounding construct.
 | Declarations | `PO-DECL-R01` | recovery-required | `definition func F -> set equals x end;` | `recover`: `missing_separator` for the missing semicolon before `end`. | `definition_block`, `func_def`, `term_definiens` | `mizar-parser` | A.10, A.12 |
 | Declarations | `PO-DECL-P02` | positive | `definition symmetry by A; commutativity proof thus thesis; end; sethood by computation(steps: 1); end;` | `accept` | `definition_block`, `property_item`, `pred_property`, `func_property`, `mode_property`, `justification` | `mizar-test` | A.7, A.9, A.10, A.12 |
 | Declarations | `PO-DECL-R02` | recovery-required | `definition symmetry; reflexivity proof end irreflexivity by A; end;` | `recover`: `incomplete_construct` for missing property justifications and `missing_separator` before a following property item. | `definition_block`, `property_item`, `justification` | `mizar-test` | A.7, A.9, A.10, A.12 |
+| Declarations | `PO-DECL-P03` | positive | `definition struct S[T] where field carrier -> set; property unit -> Element of carrier; end; inherit S[T] extends set where field carrier from it; coherence by A; end; end;` | `accept` | `definition_block`, `struct_def`, `field_decl`, `property_decl`, `inherit_def`, `field_redef`, `coherence_block` | `mizar-test` | A.5, A.12 |
+| Declarations | `PO-DECL-R03` | recovery-required | `definition struct Empty where end; inherit Child extends Parent where coherence with C; end; end;` | `recover`: `incomplete_construct` for empty structure/explicit inheritance members and malformed inheritance coherence justification. | `definition_block`, `struct_def`, `inherit_def`, `inherit_member`, `coherence_block` | `mizar-test` | A.5, A.12 |
 | Type expressions | `PO-TYPE-P01` | positive | `reserve x for non empty T of a, b;` | `accept` | `reserve_decl`, `type_expression`, `attribute_chain`, `type_args` | `mizar-test` | A.3, A.4 |
 | Type expressions | `PO-TYPE-N01` | negative | `reserve x for non;` | `reject`: `non` cannot terminate `attribute_chain` without `attribute_ref` and `type_head`. | `type_expression`, `attribute_chain`, `type_head` | `mizar-parser` | A.3 |
 | Type expressions | `PO-TYPE-A01` | ambiguous | `reserve x for Foo[T];` | `ambiguous-preserve-surface`: `type_head` may be radix or mode until symbol classification. | `type_head`, `radix_type`, `mode_type`, `type_args` | `pure-spec` | A.3 |
@@ -190,6 +192,7 @@ expectation is introduced.
 | A.2 Lexical Structure | Module dot roles, type parameter prefixes, term dot roles, algorithm lvalues |
 | A.3 Type Expressions | Type expressions, formulas through `is_assertion`, template `qua_arg` |
 | A.4 Variables and Constants | Declaration and statement bindings |
+| A.5 Structures | Structure definitions, structure members, inheritance mappings |
 | A.9 Predicates | Declarations and formulas, especially built-in predicate boundaries |
 | A.10 Functors and Operator Declarations | Function definitions and term/operator boundaries |
 | A.12 Modules and Namespaces | Module structure, declarations, annotations, algorithms inside definitions |

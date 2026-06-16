@@ -66,6 +66,8 @@ discovery の fixture ではない。
 | Declarations | `PO-DECL-R01` | recovery-required | `definition func F -> set equals x end;` | `recover`: `end` の前に欠けた semicolon に対する `missing_separator`。 | `definition_block`, `func_def`, `term_definiens` | `mizar-parser` | A.10, A.12 |
 | Declarations | `PO-DECL-P02` | positive | `definition symmetry by A; commutativity proof thus thesis; end; sethood by computation(steps: 1); end;` | `accept` | `definition_block`, `property_item`, `pred_property`, `func_property`, `mode_property`, `justification` | `mizar-test` | A.7, A.9, A.10, A.12 |
 | Declarations | `PO-DECL-R02` | recovery-required | `definition symmetry; reflexivity proof end irreflexivity by A; end;` | `recover`: property justification 欠落に対する `incomplete_construct` と、後続 property item の前に欠けた semicolon に対する `missing_separator`。 | `definition_block`, `property_item`, `justification` | `mizar-test` | A.7, A.9, A.10, A.12 |
+| Declarations | `PO-DECL-P03` | positive | `definition struct S[T] where field carrier -> set; property unit -> Element of carrier; end; inherit S[T] extends set where field carrier from it; coherence by A; end; end;` | `accept` | `definition_block`, `struct_def`, `field_decl`, `property_decl`, `inherit_def`, `field_redef`, `coherence_block` | `mizar-test` | A.5, A.12 |
+| Declarations | `PO-DECL-R03` | recovery-required | `definition struct Empty where end; inherit Child extends Parent where coherence with C; end; end;` | `recover`: 空の structure / explicit inheritance member と malformed inheritance coherence justification に対する `incomplete_construct`。 | `definition_block`, `struct_def`, `inherit_def`, `inherit_member`, `coherence_block` | `mizar-test` | A.5, A.12 |
 | Type expressions | `PO-TYPE-P01` | positive | `reserve x for non empty T of a, b;` | `accept` | `reserve_decl`, `type_expression`, `attribute_chain`, `type_args` | `mizar-test` | A.3, A.4 |
 | Type expressions | `PO-TYPE-N01` | negative | `reserve x for non;` | `reject`: `non` は `attribute_ref` と `type_head` なしに `attribute_chain` を終えられない。 | `type_expression`, `attribute_chain`, `type_head` | `mizar-parser` | A.3 |
 | Type expressions | `PO-TYPE-A01` | ambiguous | `reserve x for Foo[T];` | `ambiguous-preserve-surface`: `type_head` は symbol classification まで radix か mode かを決めない。 | `type_head`, `radix_type`, `mode_type`, `type_args` | `pure-spec` | A.3 |
@@ -185,6 +187,7 @@ Task 8 は初期 seed を [parse_only_fixture_seed.md](./parse_only_fixture_seed
 | A.2 Lexical Structure | Module dot role、type parameter prefix、term dot role、algorithm lvalue |
 | A.3 Type Expressions | Type expression、`is_assertion` 経由の formula、template `qua_arg` |
 | A.4 Variables and Constants | Declaration と statement binding |
+| A.5 Structures | Structure definition、structure member、inheritance mapping |
 | A.9 Predicates | Declaration と formula、特に built-in predicate boundary |
 | A.10 Functors and Operator Declarations | Function definition と term/operator boundary |
 | A.12 Modules and Namespaces | Module structure、declaration、annotation、definition 内 algorithm |

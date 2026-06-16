@@ -1133,6 +1133,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.05.structures.parser"
+source = "doc/spec/en/05.structures.md"
+section = "5.2 Syntax; 5.3 Inheritance; 5.3.1 Syntax (EBNF); 5.3.2 Coherence (Type Specialization); 5.6 Dependent Structures; 5.9 Complete Syntax (EBNF)"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_structures_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_structures_recovery_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.syntax.template_arguments.parser"
 source = "doc/spec/en/appendix_a.grammar_summary.md"
 section = "A.9 Predicates; A.10 Functors; A.18 Templates"

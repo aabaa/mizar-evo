@@ -248,7 +248,7 @@ The scope skeleton pre-scan reads raw lexer output and recognizes only the reser
 
 It may recognize constructs such as:
 
-- block delimiters that affect lexical scope, such as `definition`, `proof`, `now`, and `end`;
+- block delimiters that affect lexical scope, such as `definition`, `proof`, `now`, nested `struct`, explicit `inherit ... where`, and `end`;
 - binder-introducing reserved words and forms, such as `let`, `for`, `reserve`, and `given`;
 - comma-separated binding lists where their shape is recoverable from reserved syntax;
 - local names whose binding range can be approximated without full expression parsing.

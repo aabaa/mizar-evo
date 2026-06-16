@@ -449,7 +449,17 @@ interaction. Spec references are the normative grammar chapters under
       justification recovery, active parse-only pass/fail corpus coverage, and
       traceability metadata. `transitivity` remains unimplemented because the
       canonical property productions do not define it as a property clause.
-      S-015 remains open for parser tasks 29-30.
+      Parser task 29 is complete for structures and inheritance:
+      `StructureDefinition`, raw `StructurePattern`, `StructureField`,
+      `StructureProperty`, `InheritanceDefinition`, `InheritanceTarget`,
+      `FieldRedefinition`, and `PropertyRedefinition` are implemented with
+      typed accessors, definition-local visibility wrapping, structure
+      parameter preservation, field initializer preservation, shorthand and
+      explicit inheritance coverage including `extends set`, local member
+      recovery, active parse-only pass/fail corpus coverage, and traceability
+      metadata. Structure identity, selector facts, inheritance coverage,
+      coherence proof obligations, type narrowing validity, and constructors
+      remain outside `mizar-syntax`. S-015 remains open for parser task 30.
     - Spec: [06.attributes.md](../../../spec/en/06.attributes.md),
       [07.modes.md](../../../spec/en/07.modes.md),
       [09.predicates.md](../../../spec/en/09.predicates.md),

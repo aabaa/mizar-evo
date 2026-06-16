@@ -12,9 +12,9 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] task-14 formula connectives and quantifiers use private task-2 cursor/event infrastructure |
+| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] parser task 29 structures use private cursor/event infrastructure; grammar coverage remains incremental |
 | pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task-12 term Pratt over active prefix/postfix/infix operators is implemented; task-14 fixed formula Pratt is implemented separately from term fixity |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] task-14 formula recovery plus mizar-frontend task-28 nested block-end matching uses task-2 cursor/diagnostic/sync helpers |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] parser task 29 structure/inheritance recovery plus nested block-end matching uses task-2 cursor/diagnostic/sync helpers |
 
 `mizar-parser` implements the syntax grammar: frontend-adapted tokens in,
 `mizar_syntax::SurfaceAst` plus syntax diagnostics out. It is built as a thin
@@ -672,11 +672,24 @@ older numeric syntax task references appear to disagree, prefer
       parse-only pass/fail corpus fixtures, recovery coverage, and
       traceability metadata cover the task-28 surface.
 
-29. **Structures.** [ ]
+29. **Structures.** [x]
     - `struct` definitions: fields, inheritance/`extends`, selector
       declarations.
     - Deps: 28, `mizar-syntax` task 15 / S-015. Spec:
       [05.structures.md](../../../spec/en/05.structures.md).
+    - Result: implemented `StructureDefinition`, raw `StructurePattern`,
+      `StructureField`, `StructureProperty`, `InheritanceDefinition`,
+      `InheritanceTarget`, `FieldRedefinition`, and `PropertyRedefinition`
+      parsing inside definition blocks. Definition-local `public struct` /
+      `private struct` and `public inherit` / `private inherit` reuse
+      `VisibleItem`. The parser preserves structure parameters, field
+      initializers, shorthand inheritance, explicit `where ... end`
+      inheritance, `extends set`, optional type narrowing, and optional
+      coherence proofs while leaving selector facts, parent coverage,
+      narrowing validity, constructor semantics, and proof obligations outside
+      the parse phase. Parser unit tests, active parse-only pass/fail corpus
+      fixtures, recovery coverage, frontend scope-skeleton nested-block
+      follow-through, and traceability metadata cover the task-29 surface.
 
 30. **Registrations and clusters.** [ ]
     - `registration … end` blocks, existential/conditional/functorial cluster

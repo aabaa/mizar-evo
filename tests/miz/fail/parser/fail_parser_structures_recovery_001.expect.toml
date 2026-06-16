@@ -1,0 +1,29 @@
+schema_version = 1
+id = "fail_parser_structures_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.definitions"
+source = "fail_parser_structures_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_structure_definition_content"
+stable_detail_key = "parser.definitions.structures_recovery"
+diagnostic_codes = [
+  "malformed_term_expression",
+  "missing_semicolon",
+  "malformed_type_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_type_expression",
+  "malformed_term_expression",
+  "malformed_justification",
+]
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.05.structures.parser",
+]
+notes = "Active parse-only runner coverage for parser task 29 recovery: memberless structures, missing member semicolons, missing structure and inheritance member types, memberless explicit inheritance, missing parent targets, missing field/property sources, rejected inheritance coherence-with syntax, and preservation of following structure content."

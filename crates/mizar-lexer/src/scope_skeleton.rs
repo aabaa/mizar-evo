@@ -191,6 +191,18 @@ impl ScopeSkeletonBuilder {
                         self.open_frame(LexicalBlockKind::Definition, token.span.start);
                         continue;
                     }
+                    "struct" => {
+                        self.advance();
+                        self.open_frame(LexicalBlockKind::Definition, token.span.start);
+                        continue;
+                    }
+                    "inherit" => {
+                        self.advance();
+                        if self.tokens_until_stop_contain_word("where") {
+                            self.open_frame(LexicalBlockKind::Definition, token.span.start);
+                        }
+                        continue;
+                    }
                     "proof" => {
                         self.advance();
                         self.open_frame(LexicalBlockKind::Proof, token.span.start);
@@ -800,6 +812,8 @@ impl ScopeSkeletonBuilder {
                         token.lexeme.as_str(),
                         "algorithm"
                             | "definition"
+                            | "struct"
+                            | "inherit"
                             | "proof"
                             | "now"
                             | "case"
@@ -999,6 +1013,8 @@ fn token_is_block_boundary(token: &ScopeSkeletonToken) -> bool {
             token.lexeme.as_str(),
             "algorithm"
                 | "definition"
+                | "struct"
+                | "inherit"
                 | "proof"
                 | "now"
                 | "case"

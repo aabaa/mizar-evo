@@ -49,6 +49,12 @@ enum CaseBranchKind {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum InheritanceTargetBoundary {
+    Extends,
+    Tail,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct AttributeRefPlan {
     start_position: usize,
     next_position: usize,
@@ -2756,6 +2762,12 @@ impl Parser {
         if self.is_reserved_word_at(position, "mode") {
             return Some(self.parse_mode_definition_at(position));
         }
+        if self.is_reserved_word_at(position, "struct") {
+            return Some(self.parse_structure_definition_at(position));
+        }
+        if self.is_reserved_word_at(position, "inherit") {
+            return Some(self.parse_inheritance_definition_at(position));
+        }
         if self.is_supported_redefinition_start_at(position) {
             return Some(self.parse_redefinition_at(position));
         }
@@ -2776,6 +2788,16 @@ impl Parser {
         if self.is_visibility_marker_at(position) && self.is_reserved_word_at(position + 1, "mode")
         {
             return Some(self.parse_visible_mode_definition_at(position));
+        }
+        if self.is_visibility_marker_at(position)
+            && self.is_reserved_word_at(position + 1, "struct")
+        {
+            return Some(self.parse_visible_structure_definition_at(position));
+        }
+        if self.is_visibility_marker_at(position)
+            && self.is_reserved_word_at(position + 1, "inherit")
+        {
+            return Some(self.parse_visible_inheritance_definition_at(position));
         }
         if self.is_visibility_marker_at(position)
             && self.is_supported_redefinition_start_at(position + 1)
@@ -3098,6 +3120,16 @@ impl Parser {
             next_position: cursor.max(position + 1),
             recovery_nodes,
         }
+    }
+
+    fn parse_visible_structure_definition_at(&mut self, position: usize) -> ParsedTypeNode {
+        let structure = self.parse_structure_definition_at(position + 1);
+        self.wrap_visible_definition_content(position, structure)
+    }
+
+    fn parse_visible_inheritance_definition_at(&mut self, position: usize) -> ParsedTypeNode {
+        let inheritance = self.parse_inheritance_definition_at(position + 1);
+        self.wrap_visible_definition_content(position, inheritance)
     }
 
     fn parse_visible_redefinition_at(&mut self, position: usize) -> ParsedTypeNode {
@@ -3553,6 +3585,614 @@ impl Parser {
 
         let id = self.events.emit(SyntaxEvent::Node {
             kind: SurfaceNodeKind::PropertyClause,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_structure_definition_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        let pattern = self.parse_structure_pattern_at(cursor);
+        cursor = pattern.next_position;
+        children.push(pattern.id);
+        recovery_nodes.extend(pattern.recovery_nodes);
+
+        if self.is_reserved_word_at(cursor, "where") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_formula_expression(
+                cursor,
+                "expected `where` in structure definition",
+            );
+        }
+
+        let mut saw_member = false;
+        while cursor < self.request.tokens.len()
+            && !self.is_end_keyword_at(cursor)
+            && (!self.is_definition_content_start_at(cursor)
+                || self.is_structure_member_start_at(cursor))
+        {
+            if let Some(member) = self.parse_structure_member_at(cursor) {
+                saw_member = true;
+                cursor = member.next_position;
+                children.push(member.id);
+                recovery_nodes.extend(member.recovery_nodes);
+                continue;
+            }
+
+            self.diagnose_malformed_term_expression(cursor, "expected structure member");
+            if let Some(recovery) = self.recover_malformed_structure_member_tail(cursor) {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+                if self.is_semicolon_at(cursor) {
+                    children.push(self.token_node_ids[cursor]);
+                    cursor += 1;
+                }
+            } else {
+                break;
+            }
+        }
+
+        if !saw_member {
+            self.diagnose_malformed_term_expression(cursor, "expected structure member");
+        }
+
+        if self.is_end_keyword_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            let missing = self.add_missing_end(position, cursor);
+            children.push(missing);
+            recovery_nodes.push(missing);
+        }
+
+        if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::StructureDefinition,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_structure_pattern_at(&mut self, position: usize) -> ParsedTypeNode {
+        let cursor = self.structure_pattern_boundary_at(position);
+        let mut children = self.token_node_ids[position..cursor].to_vec();
+        let mut recovery_nodes = Vec::new();
+
+        if !self.structure_pattern_can_match(position, cursor) {
+            self.diagnose_malformed_term_expression(cursor, "expected structure pattern");
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        let range = if cursor > position {
+            self.covering_token_range(position, cursor)
+        } else {
+            self.zero_range_at(position)
+        };
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::StructurePattern,
+            range,
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_structure_member_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        if self.is_reserved_word_at(position, "field") {
+            Some(self.parse_structure_field_at(position))
+        } else if self.is_reserved_word_at(position, "property") {
+            Some(self.parse_structure_property_at(position))
+        } else {
+            None
+        }
+    }
+
+    fn parse_structure_field_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if self.is_identifier_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected structure field name");
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if self.is_reserved_symbol_at(cursor, "->") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_type_expression(cursor, "expected `->` after field name");
+        }
+
+        if let Some(field_type) = self.parse_type_expression_at(cursor) {
+            cursor = field_type.next_position;
+            children.push(field_type.id);
+            recovery_nodes.extend(field_type.recovery_nodes);
+        } else {
+            self.diagnose_malformed_type_expression(cursor, "expected structure field type");
+            let missing = self.add_missing_type_expression(cursor);
+            children.push(missing);
+            recovery_nodes.push(missing);
+        }
+
+        if self.is_reserved_symbol_at(cursor, ":=") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            if let Some(default) = self.parse_term_expression_at(cursor) {
+                cursor = default.next_position;
+                children.push(default.id);
+                recovery_nodes.extend(default.recovery_nodes);
+            } else {
+                self.diagnose_malformed_term_expression(
+                    cursor,
+                    "expected structure field initializer",
+                );
+                self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+            }
+        }
+
+        self.finish_structure_member_node(
+            position,
+            cursor,
+            SurfaceNodeKind::StructureField,
+            children,
+            recovery_nodes,
+            "unexpected token in structure field",
+        )
+    }
+
+    fn parse_structure_property_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if self.is_identifier_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected structure property name");
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if self.is_reserved_symbol_at(cursor, "->") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_type_expression(cursor, "expected `->` after property name");
+        }
+
+        if let Some(property_type) = self.parse_type_expression_at(cursor) {
+            cursor = property_type.next_position;
+            children.push(property_type.id);
+            recovery_nodes.extend(property_type.recovery_nodes);
+        } else {
+            self.diagnose_malformed_type_expression(cursor, "expected structure property type");
+            let missing = self.add_missing_type_expression(cursor);
+            children.push(missing);
+            recovery_nodes.push(missing);
+        }
+
+        self.finish_structure_member_node(
+            position,
+            cursor,
+            SurfaceNodeKind::StructureProperty,
+            children,
+            recovery_nodes,
+            "unexpected token in structure property",
+        )
+    }
+
+    fn finish_structure_member_node(
+        &mut self,
+        position: usize,
+        mut cursor: usize,
+        kind: SurfaceNodeKind,
+        mut children: Vec<SurfaceBuilderNodeId>,
+        mut recovery_nodes: Vec<SurfaceBuilderNodeId>,
+        unexpected_message: &'static str,
+    ) -> ParsedTypeNode {
+        if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else if cursor < self.request.tokens.len()
+            && !self.is_structure_member_boundary_at(cursor)
+        {
+            self.diagnose_malformed_term_expression(cursor, unexpected_message);
+            if let Some(recovery) = self.recover_malformed_structure_member_tail(cursor) {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+            if self.is_semicolon_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            } else {
+                self.diagnose_missing_semicolon(cursor);
+            }
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_inheritance_definition_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        let child = self.parse_inheritance_target_at(
+            cursor,
+            InheritanceTargetBoundary::Extends,
+            false,
+            "expected inherited structure name",
+        );
+        cursor = child.next_position;
+        children.push(child.id);
+        recovery_nodes.extend(child.recovery_nodes);
+
+        if self.is_reserved_word_at(cursor, "extends") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_formula_expression(
+                cursor,
+                "expected `extends` in inheritance definition",
+            );
+        }
+
+        let parent = self.parse_inheritance_target_at(
+            cursor,
+            InheritanceTargetBoundary::Tail,
+            true,
+            "expected parent structure type",
+        );
+        cursor = parent.next_position;
+        children.push(parent.id);
+        recovery_nodes.extend(parent.recovery_nodes);
+
+        if self.is_reserved_word_at(cursor, "where") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+
+            let mut saw_member = false;
+            while cursor < self.request.tokens.len()
+                && !self.is_end_keyword_at(cursor)
+                && !self.is_reserved_word_at(cursor, "coherence")
+                && (!self.is_definition_content_start_at(cursor)
+                    || self.is_inheritance_member_start_at(cursor))
+            {
+                if let Some(member) = self.parse_inheritance_member_at(cursor) {
+                    saw_member = true;
+                    cursor = member.next_position;
+                    children.push(member.id);
+                    recovery_nodes.extend(member.recovery_nodes);
+                    continue;
+                }
+
+                self.diagnose_malformed_term_expression(cursor, "expected inheritance member");
+                if let Some(recovery) = self.recover_malformed_inheritance_member_tail(cursor) {
+                    cursor = recovery.next_position;
+                    children.push(recovery.id);
+                    recovery_nodes.extend(recovery.recovery_nodes);
+                    if self.is_semicolon_at(cursor) {
+                        children.push(self.token_node_ids[cursor]);
+                        cursor += 1;
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            if !saw_member {
+                self.diagnose_malformed_term_expression(cursor, "expected inheritance member");
+            }
+
+            if self.is_reserved_word_at(cursor, "coherence") {
+                let coherence = self.parse_inheritance_coherence_condition_at(cursor);
+                cursor = coherence.next_position;
+                children.push(coherence.id);
+                recovery_nodes.extend(coherence.recovery_nodes);
+            }
+
+            if self.is_end_keyword_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            } else {
+                let missing = self.add_missing_end(position, cursor);
+                children.push(missing);
+                recovery_nodes.push(missing);
+            }
+        }
+
+        if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::InheritanceDefinition,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_inheritance_target_at(
+        &mut self,
+        position: usize,
+        boundary: InheritanceTargetBoundary,
+        allow_set: bool,
+        diagnostic_message: &'static str,
+    ) -> ParsedTypeNode {
+        let cursor = self.inheritance_target_boundary_at(position, boundary);
+        let mut children = self.token_node_ids[position..cursor].to_vec();
+        let mut recovery_nodes = Vec::new();
+
+        if !self.inheritance_target_can_match(position, cursor, allow_set) {
+            self.diagnose_malformed_term_expression(cursor, diagnostic_message);
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        let range = if cursor > position {
+            self.covering_token_range(position, cursor)
+        } else {
+            self.zero_range_at(position)
+        };
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::InheritanceTarget,
+            range,
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_inheritance_member_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        if self.is_reserved_word_at(position, "field") {
+            Some(self.parse_field_redefinition_at(position))
+        } else if self.is_reserved_word_at(position, "property") {
+            Some(self.parse_property_redefinition_at(position))
+        } else {
+            None
+        }
+    }
+
+    fn parse_field_redefinition_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if self.is_identifier_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected inherited field name");
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if self.is_reserved_symbol_at(cursor, "->") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            if let Some(field_type) = self.parse_type_expression_at(cursor) {
+                cursor = field_type.next_position;
+                children.push(field_type.id);
+                recovery_nodes.extend(field_type.recovery_nodes);
+            } else {
+                self.diagnose_malformed_type_expression(cursor, "expected inherited field type");
+                let missing = self.add_missing_type_expression(cursor);
+                children.push(missing);
+                recovery_nodes.push(missing);
+            }
+        }
+
+        if self.is_reserved_word_at(cursor, "from") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            if self.is_identifier_at(cursor) || self.is_reserved_word_at(cursor, "it") {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            } else {
+                self.diagnose_malformed_term_expression(cursor, "expected inherited field source");
+                self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+            }
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected `from` in field inheritance");
+        }
+
+        self.finish_inheritance_member_node(
+            position,
+            cursor,
+            SurfaceNodeKind::FieldRedefinition,
+            children,
+            recovery_nodes,
+            "unexpected token in field inheritance",
+        )
+    }
+
+    fn parse_property_redefinition_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if self.is_identifier_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected inherited property name");
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if self.is_reserved_symbol_at(cursor, "->") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            if let Some(property_type) = self.parse_type_expression_at(cursor) {
+                cursor = property_type.next_position;
+                children.push(property_type.id);
+                recovery_nodes.extend(property_type.recovery_nodes);
+            } else {
+                self.diagnose_malformed_type_expression(cursor, "expected inherited property type");
+                let missing = self.add_missing_type_expression(cursor);
+                children.push(missing);
+                recovery_nodes.push(missing);
+            }
+        }
+
+        if self.is_reserved_word_at(cursor, "from") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            if self.is_identifier_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            } else {
+                self.diagnose_malformed_term_expression(
+                    cursor,
+                    "expected inherited property source",
+                );
+                self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+            }
+        } else {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "expected `from` in property inheritance",
+            );
+        }
+
+        self.finish_inheritance_member_node(
+            position,
+            cursor,
+            SurfaceNodeKind::PropertyRedefinition,
+            children,
+            recovery_nodes,
+            "unexpected token in property inheritance",
+        )
+    }
+
+    fn finish_inheritance_member_node(
+        &mut self,
+        position: usize,
+        mut cursor: usize,
+        kind: SurfaceNodeKind,
+        mut children: Vec<SurfaceBuilderNodeId>,
+        mut recovery_nodes: Vec<SurfaceBuilderNodeId>,
+        unexpected_message: &'static str,
+    ) -> ParsedTypeNode {
+        if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else if cursor < self.request.tokens.len()
+            && !self.is_inheritance_member_boundary_at(cursor)
+        {
+            self.diagnose_malformed_term_expression(cursor, unexpected_message);
+            if let Some(recovery) = self.recover_malformed_inheritance_member_tail(cursor) {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+            if self.is_semicolon_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            } else {
+                self.diagnose_missing_semicolon(cursor);
+            }
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_inheritance_coherence_condition_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if let Some(justification) =
+            self.parse_definition_content_general_justification_at(cursor, true)
+        {
+            cursor = justification.next_position;
+            children.push(justification.id);
+            recovery_nodes.extend(justification.recovery_nodes);
+        } else {
+            self.diagnose_malformed_justification(
+                cursor,
+                "expected inheritance coherence justification",
+            );
+            self.push_missing_proof_step(cursor, &mut children, &mut recovery_nodes);
+            if !self.is_semicolon_at(cursor)
+                && !self.is_inheritance_member_boundary_at(cursor)
+                && let Some(recovery) = self.recover_malformed_inheritance_member_tail(cursor)
+            {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+        }
+
+        if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::CoherenceCondition,
             range: self.covering_token_range(position, cursor),
             children,
         });
@@ -8175,6 +8815,86 @@ impl Parser {
         self.emit_malformed_tail_recovery(position, cursor)
     }
 
+    fn recover_malformed_structure_member_tail(&mut self, position: usize) -> Option<ParsedItem> {
+        let mut cursor = position;
+        let mut paren_depth = 0_usize;
+        let mut bracket_depth = 0_usize;
+        let mut brace_depth = 0_usize;
+
+        while cursor < self.request.tokens.len() {
+            let top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            if top_level && self.is_structure_member_boundary_at(cursor) {
+                break;
+            }
+
+            if self.is_reserved_symbol_at(cursor, "(") {
+                paren_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                if paren_depth == 0 {
+                    break;
+                }
+                paren_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                bracket_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                if bracket_depth == 0 {
+                    break;
+                }
+                bracket_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                brace_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                if brace_depth == 0 {
+                    break;
+                }
+                brace_depth -= 1;
+            }
+            cursor += 1;
+        }
+
+        self.emit_malformed_tail_recovery(position, cursor)
+    }
+
+    fn recover_malformed_inheritance_member_tail(&mut self, position: usize) -> Option<ParsedItem> {
+        let mut cursor = position;
+        let mut paren_depth = 0_usize;
+        let mut bracket_depth = 0_usize;
+        let mut brace_depth = 0_usize;
+
+        while cursor < self.request.tokens.len() {
+            let top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            if top_level && self.is_inheritance_member_boundary_at(cursor) {
+                break;
+            }
+
+            if self.is_reserved_symbol_at(cursor, "(") {
+                paren_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                if paren_depth == 0 {
+                    break;
+                }
+                paren_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                bracket_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                if bracket_depth == 0 {
+                    break;
+                }
+                bracket_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                brace_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                if brace_depth == 0 {
+                    break;
+                }
+                brace_depth -= 1;
+            }
+            cursor += 1;
+        }
+
+        self.emit_malformed_tail_recovery(position, cursor)
+    }
+
     fn recover_malformed_inline_definition_tail(&mut self, position: usize) -> Option<ParsedItem> {
         let mut cursor = position;
         let mut paren_depth = 0_usize;
@@ -9093,6 +9813,8 @@ impl Parser {
             || self.is_reserved_word_at(position, "pred")
             || self.is_reserved_word_at(position, "func")
             || self.is_reserved_word_at(position, "mode")
+            || self.is_reserved_word_at(position, "struct")
+            || self.is_reserved_word_at(position, "inherit")
             || self.theorem_role_position_at(position).is_some()
             || self.is_property_clause_keyword_at(position)
             || (self.is_visibility_marker_at(position)
@@ -9101,6 +9823,10 @@ impl Parser {
                 && self.is_reserved_word_at(position + 1, "func"))
             || (self.is_visibility_marker_at(position)
                 && self.is_reserved_word_at(position + 1, "mode"))
+            || (self.is_visibility_marker_at(position)
+                && self.is_reserved_word_at(position + 1, "struct"))
+            || (self.is_visibility_marker_at(position)
+                && self.is_reserved_word_at(position + 1, "inherit"))
             || (self.is_visibility_marker_at(position)
                 && self.is_visible_theorem_target_start_at(position + 1))
         {
@@ -9125,6 +9851,7 @@ impl Parser {
                         | "involutiveness"
                         | "projectivity"
                         | "struct"
+                        | "inherit"
                         | "redefine"
                         | "property"
                         | "registration"
@@ -9138,6 +9865,33 @@ impl Parser {
                         | "public"
                 )
         })
+    }
+
+    fn is_structure_member_start_at(&self, position: usize) -> bool {
+        self.is_reserved_word_at(position, "field")
+            || self.is_reserved_word_at(position, "property")
+    }
+
+    fn is_structure_member_boundary_at(&self, position: usize) -> bool {
+        position >= self.request.tokens.len()
+            || self.is_semicolon_at(position)
+            || self.is_end_keyword_at(position)
+            || self.is_structure_member_start_at(position)
+            || self.is_definition_content_start_at(position)
+    }
+
+    fn is_inheritance_member_start_at(&self, position: usize) -> bool {
+        self.is_reserved_word_at(position, "field")
+            || self.is_reserved_word_at(position, "property")
+    }
+
+    fn is_inheritance_member_boundary_at(&self, position: usize) -> bool {
+        position >= self.request.tokens.len()
+            || self.is_semicolon_at(position)
+            || self.is_end_keyword_at(position)
+            || self.is_reserved_word_at(position, "coherence")
+            || self.is_inheritance_member_start_at(position)
+            || self.is_definition_content_start_at(position)
     }
 
     fn definition_content_placeholder_end(&self, position: usize) -> usize {
@@ -9186,6 +9940,191 @@ impl Parser {
     fn opens_definition_content_placeholder_block_at(&self, position: usize) -> bool {
         sync::opens_recovery_block_at(&self.request.tokens, position)
             || self.is_reserved_word_at(position, "struct")
+    }
+
+    fn structure_pattern_boundary_at(&self, position: usize) -> usize {
+        if !self.is_structure_definition_symbol_at(position) {
+            return self.structure_pattern_delimiter_at(position);
+        }
+
+        let cursor = position + 1;
+        if self.is_structure_type_params_start_at(cursor) {
+            let delimiter = self.structure_pattern_delimiter_at(cursor);
+            if let Some(params_end) = self.structure_type_params_end_at(cursor, delimiter)
+                && (params_end == delimiter
+                    || !self.structure_pattern_has_where_before_delimiter(params_end))
+            {
+                return params_end;
+            }
+            return delimiter;
+        }
+
+        if self.structure_pattern_has_where_before_delimiter(cursor) {
+            self.structure_pattern_delimiter_at(cursor)
+        } else {
+            cursor
+        }
+    }
+
+    fn structure_pattern_delimiter_at(&self, position: usize) -> usize {
+        let mut cursor = position;
+        while cursor < self.request.tokens.len() {
+            if self.is_reserved_word_at(cursor, "where")
+                || self.is_semicolon_at(cursor)
+                || self.is_end_keyword_at(cursor)
+                || self.is_structure_member_start_at(cursor)
+                || (cursor > position && self.is_definition_content_start_at(cursor))
+            {
+                break;
+            }
+            cursor += 1;
+        }
+        cursor
+    }
+
+    fn structure_pattern_has_where_before_delimiter(&self, position: usize) -> bool {
+        let mut cursor = position;
+        while cursor < self.request.tokens.len() {
+            if self.is_reserved_word_at(cursor, "where") {
+                return true;
+            }
+            if self.is_semicolon_at(cursor)
+                || self.is_end_keyword_at(cursor)
+                || self.is_structure_member_start_at(cursor)
+                || self.is_definition_content_start_at(cursor)
+            {
+                return false;
+            }
+            cursor += 1;
+        }
+        false
+    }
+
+    fn structure_pattern_can_match(&self, position: usize, end: usize) -> bool {
+        let Some(name_end) = self.structure_definition_symbol_end_at(position, end) else {
+            return false;
+        };
+        name_end == end || self.structure_type_params_end_at(name_end, end) == Some(end)
+    }
+
+    fn structure_definition_symbol_end_at(&self, position: usize, end: usize) -> Option<usize> {
+        (position < end && self.is_structure_definition_symbol_at(position)).then_some(position + 1)
+    }
+
+    fn is_structure_definition_symbol_at(&self, position: usize) -> bool {
+        self.request.tokens.get(position).is_some_and(|token| {
+            matches!(
+                token.kind,
+                ParserTokenKind::Identifier | ParserTokenKind::UserSymbol
+            )
+        })
+    }
+
+    fn is_structure_type_params_start_at(&self, position: usize) -> bool {
+        self.is_reserved_word_at(position, "of")
+            || self.is_reserved_word_at(position, "over")
+            || self.is_reserved_symbol_at(position, "[")
+    }
+
+    fn structure_type_params_end_at(&self, position: usize, end: usize) -> Option<usize> {
+        if position >= end {
+            return None;
+        }
+        if self.is_reserved_word_at(position, "of") || self.is_reserved_word_at(position, "over") {
+            let list_end = self.structure_type_parameter_list_end_at(position + 1, end)?;
+            return (list_end == end).then_some(list_end);
+        }
+        if self.is_reserved_symbol_at(position, "[") {
+            let list_end = self.structure_type_parameter_list_end_at(position + 1, end)?;
+            return (list_end + 1 == end && self.is_reserved_symbol_at(list_end, "]"))
+                .then_some(end);
+        }
+        None
+    }
+
+    fn structure_type_parameter_list_end_at(&self, position: usize, end: usize) -> Option<usize> {
+        if position >= end || !self.is_identifier_at(position) {
+            return None;
+        }
+        let mut cursor = position + 1;
+        while cursor + 1 < end
+            && self.is_reserved_symbol_at(cursor, ",")
+            && self.is_identifier_at(cursor + 1)
+        {
+            cursor += 2;
+        }
+        Some(cursor)
+    }
+
+    fn inheritance_target_boundary_at(
+        &self,
+        position: usize,
+        boundary: InheritanceTargetBoundary,
+    ) -> usize {
+        let mut cursor = position;
+        while cursor < self.request.tokens.len() {
+            if self.is_semicolon_at(cursor)
+                || self.is_end_keyword_at(cursor)
+                || self.is_definition_content_start_at(cursor)
+                || matches!(boundary, InheritanceTargetBoundary::Extends)
+                    && self.is_reserved_word_at(cursor, "extends")
+                || matches!(boundary, InheritanceTargetBoundary::Tail)
+                    && self.is_reserved_word_at(cursor, "where")
+            {
+                break;
+            }
+            cursor += 1;
+        }
+        cursor
+    }
+
+    fn inheritance_target_can_match(&self, position: usize, end: usize, allow_set: bool) -> bool {
+        if position >= end {
+            return false;
+        }
+        if allow_set && end == position + 1 && self.is_reserved_word_at(position, "set") {
+            return true;
+        }
+
+        let Some(name_end) = self.structure_reference_name_end_at(position, end) else {
+            return false;
+        };
+        name_end == end || self.raw_inheritance_type_args_can_match(name_end, end)
+    }
+
+    fn structure_reference_name_end_at(&self, position: usize, end: usize) -> Option<usize> {
+        if position >= end || !self.is_structure_reference_name_token_at(position) {
+            return None;
+        }
+        let mut cursor = position + 1;
+        while cursor + 1 < end
+            && self.is_reserved_symbol_at(cursor, ".")
+            && self.is_structure_reference_name_token_at(cursor + 1)
+        {
+            cursor += 2;
+        }
+        Some(cursor)
+    }
+
+    fn is_structure_reference_name_token_at(&self, position: usize) -> bool {
+        self.request.tokens.get(position).is_some_and(|token| {
+            matches!(
+                token.kind,
+                ParserTokenKind::Identifier | ParserTokenKind::UserSymbol
+            )
+        })
+    }
+
+    fn raw_inheritance_type_args_can_match(&self, position: usize, end: usize) -> bool {
+        if position >= end {
+            return false;
+        }
+        if self.is_reserved_word_at(position, "of") || self.is_reserved_word_at(position, "over") {
+            return position + 1 < end;
+        }
+        self.is_reserved_symbol_at(position, "[")
+            && position + 2 < end
+            && self.is_reserved_symbol_at(end - 1, "]")
     }
 
     fn predicate_pattern_boundary_at(&self, position: usize) -> usize {
@@ -14935,6 +15874,385 @@ mod tests {
                 "following property item {expected:?} should remain parseable"
             );
         }
+    }
+
+    #[test]
+    fn parser_parses_task29_structure_definitions_and_inheritance() {
+        let source_id = source_id(194);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("definition", ParserTokenKind::ReservedWord),
+                    ("struct", ParserTokenKind::ReservedWord),
+                    ("Simple", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("field", ParserTokenKind::ReservedWord),
+                    ("carrier", ParserTokenKind::Identifier),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("property", ParserTokenKind::ReservedWord),
+                    ("size", ParserTokenKind::Identifier),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("struct", ParserTokenKind::ReservedWord),
+                    ("Polynomial", ParserTokenKind::Identifier),
+                    ("[", ParserTokenKind::ReservedSymbol),
+                    ("R", ParserTokenKind::Identifier),
+                    ("]", ParserTokenKind::ReservedSymbol),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("field", ParserTokenKind::ReservedWord),
+                    ("coeffs", ParserTokenKind::Identifier),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (":=", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("struct", ParserTokenKind::ReservedWord),
+                    ("OfStruct", ParserTokenKind::Identifier),
+                    ("of", ParserTokenKind::ReservedWord),
+                    ("R", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("field", ParserTokenKind::ReservedWord),
+                    ("base", ParserTokenKind::Identifier),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("struct", ParserTokenKind::ReservedWord),
+                    ("OverStruct", ParserTokenKind::Identifier),
+                    ("over", ParserTokenKind::ReservedWord),
+                    ("R", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("field", ParserTokenKind::ReservedWord),
+                    ("scalar", ParserTokenKind::Identifier),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("inherit", ParserTokenKind::ReservedWord),
+                    ("Polynomial", ParserTokenKind::Identifier),
+                    ("[", ParserTokenKind::ReservedSymbol),
+                    ("R", ParserTokenKind::Identifier),
+                    ("]", ParserTokenKind::ReservedSymbol),
+                    ("extends", ParserTokenKind::ReservedWord),
+                    ("TypeCaseStruct", ParserTokenKind::Identifier),
+                    ("over", ParserTokenKind::ReservedWord),
+                    ("r", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("inherit", ParserTokenKind::ReservedWord),
+                    ("Derived", ParserTokenKind::Identifier),
+                    ("extends", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("field", ParserTokenKind::ReservedWord),
+                    ("carrier", ParserTokenKind::Identifier),
+                    ("from", ParserTokenKind::ReservedWord),
+                    ("it", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("property", ParserTokenKind::ReservedWord),
+                    ("size", ParserTokenKind::Identifier),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    ("from", ParserTokenKind::ReservedWord),
+                    ("size", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("coherence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("inherit", ParserTokenKind::ReservedWord),
+                    ("ProofChild", ParserTokenKind::Identifier),
+                    ("extends", ParserTokenKind::ReservedWord),
+                    ("ProofParent", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("field", ParserTokenKind::ReservedWord),
+                    ("carrier", ParserTokenKind::Identifier),
+                    ("from", ParserTokenKind::ReservedWord),
+                    ("carrier", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("coherence", ParserTokenKind::ReservedWord),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("public", ParserTokenKind::ReservedWord),
+                    ("struct", ParserTokenKind::ReservedWord),
+                    ("PublicStruct", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("field", ParserTokenKind::ReservedWord),
+                    ("p", ParserTokenKind::Identifier),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("private", ParserTokenKind::ReservedWord),
+                    ("inherit", ParserTokenKind::ReservedWord),
+                    ("Hidden", ParserTokenKind::Identifier),
+                    ("extends", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("field", ParserTokenKind::ReservedWord),
+                    ("h", ParserTokenKind::Identifier),
+                    ("from", ParserTokenKind::ReservedWord),
+                    ("it", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "task-29 structure syntax should parse without diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output.ast.expect("task-29 structures should keep an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::StructureDefinition
+            )),
+            5
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::StructurePattern
+            )),
+            5
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::StructureField)),
+            5
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::StructureProperty
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::InheritanceDefinition
+            )),
+            4
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::InheritanceTarget
+            )),
+            8
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::FieldRedefinition
+            )),
+            3
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::PropertyRedefinition
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::CoherenceCondition
+            )),
+            2
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::ProofBlock)),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::VisibleItem)),
+            2,
+            "definition-local visibility wraps struct and inherit definitions"
+        );
+    }
+
+    #[test]
+    fn parser_recovers_task29_structure_definition_gaps() {
+        let source_id = source_id(195);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("definition", ParserTokenKind::ReservedWord),
+                    ("struct", ParserTokenKind::ReservedWord),
+                    ("Empty", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("struct", ParserTokenKind::ReservedWord),
+                    ("MissingSemi", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("field", ParserTokenKind::ReservedWord),
+                    ("carrier", ParserTokenKind::Identifier),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    ("property", ParserTokenKind::ReservedWord),
+                    ("size", ParserTokenKind::Identifier),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("field", ParserTokenKind::ReservedWord),
+                    ("missing", ParserTokenKind::Identifier),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("inherit", ParserTokenKind::ReservedWord),
+                    ("Memberless", ParserTokenKind::Identifier),
+                    ("extends", ParserTokenKind::ReservedWord),
+                    ("Base", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("inherit", ParserTokenKind::ReservedWord),
+                    ("CoherenceOnly", ParserTokenKind::Identifier),
+                    ("extends", ParserTokenKind::ReservedWord),
+                    ("Base", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("coherence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("inherit", ParserTokenKind::ReservedWord),
+                    ("Broken", ParserTokenKind::Identifier),
+                    ("extends", ParserTokenKind::ReservedWord),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("field", ParserTokenKind::ReservedWord),
+                    ("from", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("field", ParserTokenKind::ReservedWord),
+                    ("typed", ParserTokenKind::Identifier),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("from", ParserTokenKind::ReservedWord),
+                    ("carrier", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("property", ParserTokenKind::ReservedWord),
+                    ("p", ParserTokenKind::Identifier),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    ("from", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("coherence", ParserTokenKind::ReservedWord),
+                    ("with", ParserTokenKind::ReservedWord),
+                    ("C", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("struct", ParserTokenKind::ReservedWord),
+                    ("Follows", ParserTokenKind::Identifier),
+                    ("where", ParserTokenKind::ReservedWord),
+                    ("field", ParserTokenKind::ReservedWord),
+                    ("ok", ParserTokenKind::Identifier),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MalformedTermExpression)
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MalformedTypeExpression)
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MalformedJustification)
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MissingSemicolon)
+        );
+        let ast = output
+            .ast
+            .expect("task-29 malformed structures should recover an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::StructureDefinition
+            )),
+            3
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::InheritanceDefinition
+            )),
+            3
+        );
+        assert!(
+            ast.nodes().iter().any(|node| {
+                matches!(node.kind, SurfaceNodeKind::StructureProperty)
+                    && subtree_token_texts(&ast, node)
+                        .iter()
+                        .map(String::as_str)
+                        .eq(["property", "size", "->", "set", ";"])
+            }),
+            "missing field semicolon must preserve following structure property"
+        );
+        assert!(
+            ast.nodes().iter().any(|node| {
+                matches!(node.kind, SurfaceNodeKind::StructureDefinition)
+                    && subtree_token_texts(&ast, node)
+                        .iter()
+                        .any(|text| text == "Follows")
+            }),
+            "malformed inheritance content must preserve following structure definitions"
+        );
     }
 
     #[test]

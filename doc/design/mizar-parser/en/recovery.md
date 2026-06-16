@@ -4,7 +4,7 @@ Status: minimal task-12 recovery, task-28 nested block-end recovery, task-5
 module-skeleton recovery, task-6 import recovery, task-7 export/visibility
 recovery, task-8 type-expression recovery, task-9 primary-term recovery,
 task-13 atomic-formula recovery, task-14 formula recovery, S-013/S-014
-statement/proof recovery, and S-015 definition recovery through task 28 are
+statement/proof recovery, and S-015 definition recovery through task 29 are
 implemented. Full grammar recovery remains planned.
 
 ## Purpose
@@ -129,6 +129,23 @@ Current behavior:
   the next definition-content start, a top-level item boundary, or EOF. Missing
   property semicolons use `MissingSemicolon` and preserve a following
   definition item, including another property clause;
+- task-29 structure and inheritance parsing uses local member synchronization
+  inside `struct ... end` and explicit `inherit ... where ... end` blocks, then
+  returns to definition-content synchronization at the block boundary. Empty or
+  malformed structure patterns, inheritance targets, member names, redefinition
+  names, and malformed member tails use `MalformedTermExpression` with
+  `MissingTerm` where an inserted placeholder is needed. Missing member or
+  redefinition types use `MalformedTypeExpression` plus
+  `MissingTypeExpression`. Missing or malformed inheritance coherence
+  justifications use `MalformedJustification` plus `MissingProofStep`;
+  inheritance `coherence with ...` is recovered rather than accepted. Missing
+  member semicolons and missing outer semicolons use `MissingSemicolon`;
+  missing block closers use `MissingEnd`. Malformed member tails skip to a
+  semicolon, `field`, `property`, `coherence`, `end`, the next
+  definition-content start, a top-level item boundary, or EOF. The
+  frontend-facing scope skeleton recognizes nested `struct` blocks and only
+  treats `inherit` as block-like when a `where` appears before the statement
+  semicolon or `end`;
 - a stray `end` that has no matching block opener returns syntax diagnostics
   with `ast = None`.
 

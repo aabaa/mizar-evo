@@ -4,10 +4,10 @@ Status: module skeleton, top-level placeholder dispatch, concrete import
 items, export items, visibility wrappers, reserve-hosted type expressions,
 task-15 term surfaces including set comprehensions, task-14 formula surfaces,
 S-013 statement nodes, task-22 theorem/proof items, and the task-23 through
-task-26 definition-block / attribute / predicate / functor / mode increments
-are implemented; remaining concrete redefinition, notation-alias, property,
-structure, registration, template, algorithm, annotation, and package-oriented
-item grammars are planned.
+task-29 definition-block / attribute / predicate / functor / mode /
+redefinition / notation-alias / property / structure increments are
+implemented; remaining concrete registration, template, algorithm, annotation,
+and package-oriented item grammars are planned.
 
 ## Purpose
 
@@ -1748,6 +1748,94 @@ of task-26 mode-attached `ModeProperty`, missing/malformed justification
 recovery, missing semicolon recovery before another property item, active
 parse-only pass/fail corpus coverage, and traceability to Chapter 7 §7.8.1,
 Chapter 9 §9.5.1, Chapter 10 §10.6.1, and Appendix A.12.
+
+### Task 29: Structures
+
+Task 29 adds syntax-only structure definitions and inheritance definitions
+inside definition blocks. The parser preserves structure names, type
+parameters, field/property declarations, inherited targets, and explicit
+field/property mappings, but it does not resolve structure identity, prove
+inheritance coherence, check parent coverage, validate type narrowing, create
+selector facts, or derive constructors.
+
+```ebnf
+definition_content     ::= ... | [ visibility ] struct_def
+                         | [ visibility ] inherit_def ;
+
+struct_def             ::= "struct" struct_pattern "where"
+                           struct_member { struct_member } "end" ";" ;
+struct_pattern         ::= struct_def_name [ type_params ] ;
+struct_member          ::= field_decl | property_decl ;
+field_decl             ::= "field" identifier "->" type_expression
+                           [ ":=" term_expression ] ";" ;
+property_decl          ::= "property" identifier "->" type_expression ";" ;
+
+inherit_def            ::= "inherit" inherit_child "extends" parent_type
+                           ( ";"
+                           | "where" inherit_member { inherit_member }
+                             [ inheritance_coherence ] "end" ";" ) ;
+inherit_child          ::= struct_name [ type_args ] ;
+parent_type            ::= struct_name [ type_args ] | "set" ;
+inherit_member         ::= field_redef | property_redef ;
+field_redef            ::= "field" identifier [ "->" type_expression ]
+                           "from" ( identifier | "it" ) ";" ;
+property_redef         ::= "property" identifier [ "->" type_expression ]
+                           "from" identifier ";" ;
+inheritance_coherence  ::= "coherence" justification ";" ;
+```
+
+`StructureDefinition` owns `struct`, a raw `StructurePattern`, `where`, one or
+more `StructureField` / `StructureProperty` members, `end`, and the final
+semicolon when present. `StructurePattern` owns source-ordered raw structure
+definition name and parameter tokens (`of`, `over`, or bracket parameters)
+without deciding whether the name is a valid structure symbol. Definition-local
+`public` / `private` structure definitions reuse the existing `VisibleItem` /
+`VisibilityMarker` wrapper.
+
+`StructureField` owns `field`, a field identifier, `->`, a `TypeExpression`,
+an optional initializer introduced by `:=` and parsed as `TermExpression`, and
+the member semicolon. `StructureProperty` owns the same member skeleton without
+an initializer. The parser only checks the grammar shape and leaves selector
+declaration validity and field/property uniqueness to later phases.
+
+`InheritanceDefinition` owns `inherit`, a child `InheritanceTarget`, `extends`,
+a parent `InheritanceTarget`, either the shorthand semicolon or an explicit
+`where ... end;` block, and any nested redefinition/coherence nodes. An
+explicit `where` block must contain at least one `FieldRedefinition` or
+`PropertyRedefinition`; shorthand inheritance owns no synthetic mapping nodes.
+`InheritanceTarget` preserves raw child/parent structure-like references plus
+optional raw type arguments, or the parent-side `set` token, without resolving
+structure/type identities. `FieldRedefinition` and `PropertyRedefinition` own
+the child member name, optional narrowed `TypeExpression`, mandatory `from`,
+source member name (`field ... from it` is allowed only for fields), and member
+semicolon. Optional inheritance `coherence` owns a required general
+justification and does not accept task-27's redefinition-only `with` label.
+
+Task 29 recovery uses local member synchronization inside `struct` and
+explicit `inherit` blocks, plus definition-content synchronization at their
+boundaries. Empty or malformed structure patterns, field/property names,
+inheritance targets, field/property redefinition names, and malformed member
+tails use `MalformedTermExpression` plus `MissingTerm` where an inserted raw
+surface placeholder is needed. Missing member or redefinition types use
+`MalformedTypeExpression` plus `MissingTypeExpression`. Missing or malformed
+inheritance coherence justifications use `MalformedJustification` plus
+`MissingProofStep`; `coherence with ...` is recovered rather than accepted for
+inheritance. Missing member semicolons and missing outer semicolons use
+`MissingSemicolon`; missing block closers use `MissingEnd`. Malformed member
+tails may skip to semicolon, `field`, `property`, `coherence`, `end`, the next
+definition-content start, top-level item boundary, or EOF. The frontend scope
+skeleton also recognizes nested `struct ... end` and explicit
+`inherit ... where ... end` ranges so parse-only fixtures do not report
+spurious unmatched `end` diagnostics before parsing.
+
+Task 29 tests must pin: structure fields and properties, `of` / `over` /
+bracket parameters, field initializers, shorthand inheritance, explicit
+inheritance including `extends set`, field/property redefinitions, coherence
+with citation and proof justifications, definition-local visibility wrappers,
+missing names/types/semicolons, empty explicit `where` recovery, malformed
+coherence recovery, active parse-only pass/fail corpus coverage, and
+traceability to Chapter 5 §5.2, §5.3, §5.3.1, §5.3.2, §5.6, and Appendix A.5 /
+A.12.
 
 ## Public Enum Compatibility
 
