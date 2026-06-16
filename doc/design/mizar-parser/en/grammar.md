@@ -1532,6 +1532,76 @@ schema-functor parameters, malformed pattern/colon/arrow/return/body-keyword/
 body recovery, active parse-only pass/fail corpus coverage, and traceability
 to Chapter 10 §10.1 / §10.3 / §10.5 / §10.6 / §10.8 / §10.13.
 
+### Task 26: Mode Definitions
+
+Task 26 adds canonical `mode ... is ...;` definitions inside the task-23
+`DefinitionBlockItem` container. The parser remains syntax-only: it does not
+introduce mode symbols, distinguish semantic radix types from mode or structure
+types, prove existence, prove sethood, validate dependent-mode parameters, or
+accept the legacy `means` mode-definition body.
+
+```ebnf
+definition_content     ::= ... | mode_def | [ visibility ] mode_def ;
+
+mode_def               ::= "mode" label ":" mode_pattern
+                           "is" type_expression ";"
+                           [ mode_property ] ;
+mode_pattern           ::= mode_def_name [ type_params ] ;
+mode_def_name          ::= def_symbol ;
+def_symbol             ::= identifier | user_symbol ;
+type_params            ::= ( "of" | "over" ) type_parameter_list
+                         | "[" type_parameter_list "]" ;
+type_parameter_list    ::= identifier { "," identifier } ;
+mode_property          ::= "sethood" justification ";" ;
+```
+
+`ModeDefinition` owns the `mode` keyword, label identifier or `MissingTerm`,
+colon, `ModePattern`, `is`, a body `TypeExpression` or
+`MissingTypeExpression`, the first semicolon when present, and an optional
+`ModeProperty` when a following `sethood` property immediately belongs to the
+mode definition. Definition-local `public mode` and `private mode` use the
+existing `VisibleItem` / `VisibilityMarker` wrapper around the concrete mode
+definition.
+
+`ModePattern` preserves raw source-order tokens for the
+`mode_def_name [ type_params ]` span. The mode definition name must be exactly
+one identifier or active user-symbol token. Type parameters are one optional
+non-empty identifier comma-list introduced by `of` or `over`, or one optional
+bracketed non-empty identifier comma-list. Empty parameter lists, dangling
+commas, multiple parameter groups, lexeme-run tokens, and unsupported tokens
+recover as malformed mode patterns. The AST does not record whether a parameter
+list is semantically dependent, over a structure, or otherwise valid.
+
+The mode body reuses task-8 `TypeExpression` for the Chapter 7
+attribute-chain plus radix-type surface. That representation preserves the
+attribute chain and type head syntactically; resolver and semantic phases own
+the distinction between radix, mode, and structure heads. A `mode_property`
+owns `sethood`, the required general justification (`by`,
+`by computation(...)`, or `proof ... end`), optional recovery, and the property
+semicolon. Standalone `sethood` or other property clauses that do not
+immediately follow a mode definition remain outside this task and are preserved
+as later property-content shapes.
+
+Task 26 recovery reuses task-23 definition-content synchronization. Missing
+mode labels and malformed mode patterns use `MalformedTermExpression` plus
+`MissingTerm`. Missing body types after `is` use `MalformedTypeExpression`
+plus `MissingTypeExpression`. Missing colons, missing `is` delimiters, and
+malformed definition tails use the existing formula/term recovery diagnostics
+for delimiter or tail preservation. Missing semicolons continue at `sethood`,
+the next definition-content start, `end`, or EOF. A `sethood` property without
+`by`/`proof` emits `MalformedJustification`; malformed property tails may be
+skipped to the property semicolon, the next definition-content start, `end`, or
+EOF.
+
+Task 26 tests must pin: ordinary canonical `is` mode definitions, attribute
+chains in mode bodies, `of`, `over`, and bracketed type-parameter lists,
+imported symbolic mode names, definition-local visibility, `sethood` clauses
+with citation, computation, and proof justifications, rejection of legacy
+`means` mode bodies as recovered syntax, malformed label/colon/pattern/`is`/
+body/semicolon/property-justification recovery, active parse-only pass/fail
+corpus coverage, and traceability to Chapter 7 §7.2 / §7.6 / §7.7 / §7.8 /
+§7.8.1.
+
 ## Public Enum Compatibility
 
 `ParserTokenKind` is `#[non_exhaustive]` for downstream crates. The parser token

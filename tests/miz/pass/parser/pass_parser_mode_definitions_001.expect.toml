@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_mode_definitions_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.definitions"
+source = "pass_parser_mode_definitions_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.07.mode_definitions.parser",
+]
+notes = "Active parse-only runner coverage for parser task 26 mode definitions: canonical is bodies, attribute chains, of/over/bracket type parameters, imported symbolic mode names, sethood citation/computation/proof justifications, and definition-local visibility."

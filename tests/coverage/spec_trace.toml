@@ -1094,6 +1094,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.07.mode_definitions.parser"
+source = "doc/spec/en/07.modes.md"
+section = "7.2 Syntax for Declaring and Using Modes; 7.6 Unified Mode Syntax; 7.7 Dependent Modes; 7.8 Correctness Conditions; 7.8.1 Mode Property: `sethood`; 7.10 Complete Syntax"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_mode_definitions_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_mode_definitions_recovery_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.syntax.template_arguments.parser"
 source = "doc/spec/en/appendix_a.grammar_summary.md"
 section = "A.9 Predicates; A.10 Functors; A.18 Templates"

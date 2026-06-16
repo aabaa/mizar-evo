@@ -618,10 +618,19 @@ older numeric syntax task references appear to disagree, prefer
       placeholder preservation, and traceability metadata cover Chapter 10
       functor definitions.
 
-26. **Mode definitions.** [ ]
+26. **Mode definitions.** [x]
     - `mode` definitions using the canonical `is` form: attribute-chain plus
       radix type, type parameters, and optional `sethood` property clauses.
     - Deps: 23, `mizar-syntax` task 15 / S-015. Spec: [07.modes.md](../../../spec/en/07.modes.md).
+    - Result: implemented `ModeDefinition`, raw `ModePattern`, and
+      `ModeProperty` parsing inside definition blocks. Definition-local
+      `public mode` / `private mode` reuse `VisibleItem`; mode bodies reuse
+      `TypeExpression`; type parameters are preserved in raw pattern order;
+      `sethood` consumes the required general justification. Semantic radix
+      validation, sethood proof obligations, dependent-mode checks, and legacy
+      `means` mode bodies remain outside the parser. Parser unit tests, active
+      parse-only pass/fail corpus fixtures, source-level symbolic mode-name
+      coverage, and traceability metadata cover Chapter 7 mode definitions.
 
 27. **`redefine`, `synonym`, and `antonym`.** [ ]
     - Redefinition and notation-aliasing forms across the definition kinds of

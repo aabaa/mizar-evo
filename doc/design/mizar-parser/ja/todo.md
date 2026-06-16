@@ -599,11 +599,20 @@ resolver / build-system 依存を避ける。
       circumfix coverage、template-functor placeholder preservation、traceability
       metadata が Chapter 10 の functor definition を覆う。
 
-26. **mode 定義。** [ ]
+26. **mode 定義。** [x]
     - 正本の `is` 形を用いる `mode` 定義: 属性連鎖と radix 型、型パラメータ、
       任意の `sethood` property 句。
     - 依存: 23、`mizar-syntax` task 15 / S-015。仕様:
       [07.modes.md](../../../spec/ja/07.modes.md)。
+    - 結果: definition block 内の `ModeDefinition`、raw `ModePattern`、
+      `ModeProperty` parsing を実装した。definition-local な `public mode` /
+      `private mode` は `VisibleItem` を再利用する。mode body は `TypeExpression`
+      を再利用し、type parameter は raw pattern order で保持し、`sethood` は必須の
+      general justification を消費する。semantic な radix validation、sethood proof
+      obligation、dependent-mode check、legacy な `means` mode body は parser の外に
+      残す。parser unit test、active parse-only pass/fail corpus fixture、
+      source-level symbolic mode-name coverage、traceability metadata が Chapter 7 の
+      mode definition を覆う。
 
 27. **`redefine`・`synonym`・`antonym`。** [ ]
     - task 23〜26 の定義種別にまたがる再定義と記法エイリアスの形。

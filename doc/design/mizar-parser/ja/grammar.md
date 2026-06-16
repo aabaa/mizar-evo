@@ -1434,6 +1434,71 @@ placeholder preservation、malformed pattern / colon / arrow / return / body-key
 body recovery、active parse-only pass/fail corpus coverage、Chapter 10 §10.1 / §10.3 /
 §10.5 / §10.6 / §10.8 / §10.13 への traceability を固定する必要がある。
 
+### Task 26: mode 定義
+
+Task 26 は、task-23 の `DefinitionBlockItem` container 内に canonical な
+`mode ... is ...;` definition を追加する。parser は syntax-only のままであり、
+mode symbol の導入、semantic な radix type と mode / structure type の区別、
+existence 証明、sethood 証明、dependent-mode parameter の妥当性確認、legacy な
+`means` mode-definition body の受理は行わない。
+
+```ebnf
+definition_content     ::= ... | mode_def | [ visibility ] mode_def ;
+
+mode_def               ::= "mode" label ":" mode_pattern
+                           "is" type_expression ";"
+                           [ mode_property ] ;
+mode_pattern           ::= mode_def_name [ type_params ] ;
+mode_def_name          ::= def_symbol ;
+def_symbol             ::= identifier | user_symbol ;
+type_params            ::= ( "of" | "over" ) type_parameter_list
+                         | "[" type_parameter_list "]" ;
+type_parameter_list    ::= identifier { "," identifier } ;
+mode_property          ::= "sethood" justification ";" ;
+```
+
+`ModeDefinition` は `mode` keyword、label identifier または `MissingTerm`、
+colon、`ModePattern`、`is`、body `TypeExpression` または
+`MissingTypeExpression`、存在する場合の最初の semicolon、直後の `sethood`
+property が mode definition に属する場合の任意の `ModeProperty` を所有する。
+definition-local な `public mode` と `private mode` は、concrete mode definition を
+既存の `VisibleItem` / `VisibilityMarker` wrapper で包んで表す。
+
+`ModePattern` は `mode_def_name [ type_params ]` span の source-order raw token を
+保持する。mode definition name はちょうど 1 個の identifier または active user-symbol
+token でなければならない。type parameter は、`of` または `over` が導入する
+non-empty identifier comma-list、または bracketed non-empty identifier comma-list の
+いずれか 1 個だけを任意で持てる。空の parameter list、dangling comma、複数の
+parameter group、lexeme-run token、unsupported token は malformed mode pattern として
+recover する。AST は parameter list が意味的に dependent か、structure 上のものか、
+その他に妥当かを記録しない。
+
+mode body は、Chapter 7 の attribute-chain plus radix-type surface に task-8 の
+`TypeExpression` を再利用する。この表現は attribute chain と type head を syntactic に
+保持する。radix / mode / structure head の区別は resolver と semantic phase が所有する。
+`mode_property` は `sethood`、必須の general justification（`by`、
+`by computation(...)`、または `proof ... end`）、任意の recovery、property semicolon
+を所有する。mode definition の直後にない standalone `sethood` や他の property clause は
+この task の対象外であり、後続の property-content shape として保持される。
+
+Task 26 recovery は task-23 の definition-content synchronization を再利用する。
+mode label 欠落と malformed mode pattern は `MalformedTermExpression` と
+`MissingTerm` を使う。`is` 後の body type 欠落は `MalformedTypeExpression` と
+`MissingTypeExpression` を使う。colon 欠落、`is` delimiter 欠落、malformed
+definition tail は、delimiter または tail preservation 用の既存 formula/term recovery
+diagnostic を使う。semicolon 欠落時は、`sethood`、次の definition-content start、
+`end`、または EOF で継続する。`by` / `proof` を持たない `sethood` property は
+`MalformedJustification` を出す。malformed property tail は property semicolon、
+次の definition-content start、`end`、または EOF まで skip してよい。
+
+Task 26 tests は、通常の canonical `is` mode definition、mode body 内の attribute
+chain、`of` / `over` / bracketed type-parameter list、imported symbolic mode name、
+definition-local visibility、citation / computation / proof justification を伴う
+`sethood` clause、legacy `means` mode body を recovered syntax として拒否すること、
+malformed label / colon / pattern / `is` / body / semicolon /
+property-justification recovery、active parse-only pass/fail corpus coverage、
+Chapter 7 §7.2 / §7.6 / §7.7 / §7.8 / §7.8.1 への traceability を固定する必要がある。
+
 ## 公開 enum の互換性
 
 `ParserTokenKind` は downstream crate 向けに `#[non_exhaustive]` とする。parser-facing

@@ -122,6 +122,9 @@ green tree.
 | functor pattern node | `SyntaxKind::FunctorPattern` |
 | term definiens node | `SyntaxKind::TermDefiniens` |
 | term case node | `SyntaxKind::TermCase` |
+| mode definition node | `SyntaxKind::ModeDefinition` |
+| mode pattern node | `SyntaxKind::ModePattern` |
+| mode property node | `SyntaxKind::ModeProperty` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -364,6 +367,9 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::FunctorPattern` | none | `SyntaxKind::FunctorPattern` | parser task-25 functor definition pattern; owns source-ordered raw pattern tokens accepted by canonical single-symbol `func_pattern` or by the documented two-symbol circumfix surface shape, plus `MissingTerm` recovery when no grammar-shaped split exists; it does not encode which token is a functor symbol |
 | `SurfaceNodeKind::TermDefiniens` | none | `SyntaxKind::TermDefiniens` | parser task-25 term definiens; owns either one `TermExpression` or source-ordered `TermCase` children separated by comma tokens plus optional `otherwise TermExpression` |
 | `SurfaceNodeKind::TermCase` | none | `SyntaxKind::TermCase` | parser task-25 conditional term definiens case; owns the value `TermExpression`, `if`, and the condition `FormulaExpression`, with `MissingTerm` or `MissingFormula` recovery for absent value or condition |
+| `SurfaceNodeKind::ModeDefinition` | none | `SyntaxKind::ModeDefinition` | parser task-26 `mode` definition; owns `mode`, a label identifier or `MissingTerm`, `:`, a raw `ModePattern`, `is`, a body `TypeExpression` or `MissingTypeExpression`, the first semicolon when present, and optional `ModeProperty` |
+| `SurfaceNodeKind::ModePattern` | none | `SyntaxKind::ModePattern` | parser task-26 mode definition pattern; owns source-ordered raw tokens accepted by `mode_def_name [ type_params ]` plus `MissingTerm` recovery when no grammar-shaped split exists; it does not encode semantic parameter roles |
+| `SurfaceNodeKind::ModeProperty` | none | `SyntaxKind::ModeProperty` | parser task-26 `sethood` property immediately following a mode definition; owns `sethood`, a required general justification (`JustificationClause` or `ProofBlock`) when present, optional recovery, and the property semicolon when present |
 | `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host plus parser task-22 proof justification host; owns one `Proposition`, one `JustificationClause` or `ProofBlock`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
@@ -942,6 +948,24 @@ as template definitions; G-AUD-006 remains open for S-016.
 `as_functor_definition`, `as_functor_pattern`, `as_term_definiens`, and
 `as_term_case` helpers. Snapshot rendering prints the literal node names.
 
+Parser task 26 adds mode definitions as the next S-015 increment.
+`ModeDefinition` owns `mode`, the definition label, `:`, a raw `ModePattern`,
+`is`, a body `TypeExpression` or `MissingTypeExpression`, the first semicolon
+when present, and an optional immediately-following `ModeProperty`.
+Definition-local `public mode` and `private mode` are represented by the
+existing `VisibleItem` wrapper around the `ModeDefinition`.
+
+`ModePattern` preserves the pattern as raw source-ordered token children. The
+parser validates that the raw span can match `mode_def_name [ type_params ]`
+with exactly one identifier or active user-symbol name and at most one
+non-empty type-parameter list introduced by `of`, `over`, or brackets. The AST
+does not record whether the body head is semantically a radix type, whether the
+parameter list is dependent, or whether the mode is inhabited. `ModeProperty`
+owns the `sethood` keyword plus a required syntax-level general justification;
+the sethood proof obligation remains outside the syntax crate.
+`SurfaceNodeView` exposes `as_mode_definition`, `as_mode_pattern`, and
+`as_mode_property` helpers. Snapshot rendering prints the literal node names.
+
 ### Vocabulary Increment Contract
 
 Node vocabulary grows only in the same change as the `mizar-parser` grammar task
@@ -1110,6 +1134,9 @@ FunctorDefinition range=<start>..<end> recovered=<bool>
 FunctorPattern range=<start>..<end> recovered=<bool>
 TermDefiniens range=<start>..<end> recovered=<bool>
 TermCase range=<start>..<end> recovered=<bool>
+ModeDefinition range=<start>..<end> recovered=<bool>
+ModePattern range=<start>..<end> recovered=<bool>
+ModeProperty range=<start>..<end> recovered=<bool>
 CompactStatement range=<start>..<end> recovered=<bool>
 JustificationClause range=<start>..<end> recovered=<bool>
 ReferenceList range=<start>..<end> recovered=<bool>

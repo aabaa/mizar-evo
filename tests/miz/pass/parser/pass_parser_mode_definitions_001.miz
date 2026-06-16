@@ -1,0 +1,20 @@
+import parser.type_fixtures;
+
+definition
+  mode SimpleDef: Simple is set;
+  mode AttrDef: NonEmpty is non empty set;
+  mode OfDef: Subset of x, y is set;
+  mode OverDef: Matrix over r is set;
+  mode BracketDef: Family [a, b] is set;
+  mode SymbolicDef: T is set;
+  mode SethoodCitationDef: Finite is set;
+  sethood by Ref;
+  mode SethoodComputationDef: Computable is set;
+  sethood by computation(steps: 1);
+  mode SethoodProofDef: Ordinal is set;
+  sethood proof
+    thus thesis;
+  end;
+  public mode PublicDef: PublicMode is set;
+  private mode HiddenDef: HiddenMode is set;
+end;

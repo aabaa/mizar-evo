@@ -1,0 +1,15 @@
+definition
+  mode : is;
+  mode MissingColon Simple is set;
+  mode EmptyParams: Bad [] is set;
+  mode DanglingParam: Bad of x, is set;
+  mode MultipleParamGroups: Bad of x over y is set;
+  mode BuiltinName: = is set;
+  mode MissingIs: Bad set;
+  mode MissingBody: Bad is;
+  mode MissingSemicolon: Bad is set
+  sethood by Ref;
+  mode MissingSethoodJustification: Bad is set;
+  sethood;
+  mode LegacyMeans: Bad means thesis;
+end;

@@ -428,9 +428,9 @@ mod tests {
                 0,
                 10,
             ),
-            token(source_id, ParserTokenKind::ReservedWord, "mode", 11, 15),
-            token(source_id, ParserTokenKind::ReservedWord, "end", 16, 19),
-            token(source_id, ParserTokenKind::ReservedSymbol, ";", 19, 20),
+            token(source_id, ParserTokenKind::ReservedWord, "property", 11, 19),
+            token(source_id, ParserTokenKind::ReservedWord, "end", 20, 23),
+            token(source_id, ParserTokenKind::ReservedSymbol, ";", 23, 24),
         ];
 
         let output = parse(ParseRequest::new(

@@ -144,6 +144,9 @@ pub enum SyntaxKind {
     FunctorPattern = 119,
     TermDefiniens = 120,
     TermCase = 121,
+    ModeDefinition = 122,
+    ModePattern = 123,
+    ModeProperty = 124,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -269,6 +272,9 @@ impl SyntaxKind {
             119 => Self::FunctorPattern,
             120 => Self::TermDefiniens,
             121 => Self::TermCase,
+            122 => Self::ModeDefinition,
+            123 => Self::ModePattern,
+            124 => Self::ModeProperty,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -396,6 +402,9 @@ impl SyntaxKind {
                 | Self::FunctorPattern
                 | Self::TermDefiniens
                 | Self::TermCase
+                | Self::ModeDefinition
+                | Self::ModePattern
+                | Self::ModeProperty
         )
     }
 
@@ -1264,6 +1273,27 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_mode_definition(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ModeDefinition => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_mode_pattern(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ModePattern => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_mode_property(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ModeProperty => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_let_statement(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::LetStatement => Some(self),
@@ -1835,6 +1865,9 @@ pub enum SurfaceNodeKind {
     FunctorPattern,
     TermDefiniens,
     TermCase,
+    ModeDefinition,
+    ModePattern,
+    ModeProperty,
     SelectorAccess,
     StructureUpdate,
     FieldUpdate,
@@ -1951,6 +1984,9 @@ impl SurfaceNodeKind {
             Self::FunctorPattern => SyntaxKind::FunctorPattern,
             Self::TermDefiniens => SyntaxKind::TermDefiniens,
             Self::TermCase => SyntaxKind::TermCase,
+            Self::ModeDefinition => SyntaxKind::ModeDefinition,
+            Self::ModePattern => SyntaxKind::ModePattern,
+            Self::ModeProperty => SyntaxKind::ModeProperty,
             Self::SelectorAccess => SyntaxKind::SelectorAccess,
             Self::StructureUpdate => SyntaxKind::StructureUpdate,
             Self::FieldUpdate => SyntaxKind::FieldUpdate,
@@ -2231,6 +2267,9 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::FunctorPattern => output.push_str("FunctorPattern"),
         SurfaceNodeKind::TermDefiniens => output.push_str("TermDefiniens"),
         SurfaceNodeKind::TermCase => output.push_str("TermCase"),
+        SurfaceNodeKind::ModeDefinition => output.push_str("ModeDefinition"),
+        SurfaceNodeKind::ModePattern => output.push_str("ModePattern"),
+        SurfaceNodeKind::ModeProperty => output.push_str("ModeProperty"),
         SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
@@ -3354,6 +3393,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            task26_mode_definition_nodes_ast(source_id(38))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -3438,6 +3483,9 @@ mod tests {
             SyntaxKind::FunctorPattern,
             SyntaxKind::TermDefiniens,
             SyntaxKind::TermCase,
+            SyntaxKind::ModeDefinition,
+            SyntaxKind::ModePattern,
+            SyntaxKind::ModeProperty,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -5072,6 +5120,44 @@ mod tests {
             assert!(
                 snapshot.contains(expected),
                 "snapshot should render task-25 line {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn task26_typed_accessors_cover_mode_definition_nodes() {
+        let ast = task26_mode_definition_nodes_ast(source_id(39));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task26_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task26_view!(
+            SurfaceNodeKind::ModeDefinition,
+            SyntaxKind::ModeDefinition,
+            as_mode_definition
+        );
+        assert_task26_view!(
+            SurfaceNodeKind::ModePattern,
+            SyntaxKind::ModePattern,
+            as_mode_pattern
+        );
+        assert_task26_view!(
+            SurfaceNodeKind::ModeProperty,
+            SyntaxKind::ModeProperty,
+            as_mode_property
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in ["ModeDefinition", "ModePattern", "ModeProperty"] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-26 line {expected}"
             );
         }
     }
@@ -8347,6 +8433,163 @@ mod tests {
                 fallback_value,
                 semicolon,
                 functor,
+            ],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn task26_mode_definition_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mode = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "mode",
+            range(source_id, 0, 4),
+        );
+        let label = builder.add_token(SurfaceTokenKind::Identifier, "M", range(source_id, 5, 6));
+        let colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 6, 7),
+        );
+        let mode_name =
+            builder.add_token(SurfaceTokenKind::UserSymbol, "T", range(source_id, 8, 9));
+        let of = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "of",
+            range(source_id, 10, 12),
+        );
+        let parameter =
+            builder.add_token(SurfaceTokenKind::Identifier, "X", range(source_id, 13, 14));
+        let is = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "is",
+            range(source_id, 15, 17),
+        );
+        let non = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "non",
+            range(source_id, 18, 21),
+        );
+        let empty = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "empty",
+            range(source_id, 22, 27),
+        );
+        let set = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 28, 31),
+        );
+        let body_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 31, 32),
+        );
+        let sethood = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "sethood",
+            range(source_id, 33, 40),
+        );
+        let by = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "by",
+            range(source_id, 41, 43),
+        );
+        let reference_name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Ref",
+            range(source_id, 44, 47),
+        );
+        let property_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 47, 48),
+        );
+
+        let pattern = builder.add_node(
+            SurfaceNodeKind::ModePattern,
+            range(source_id, 8, 14),
+            vec![mode_name, of, parameter],
+        );
+        let attribute_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 22, 27),
+            vec![empty],
+        );
+        let attribute = builder.add_node(
+            SurfaceNodeKind::AttributeRef,
+            range(source_id, 18, 27),
+            vec![non, attribute_symbol],
+        );
+        let attribute_chain = builder.add_node(
+            SurfaceNodeKind::AttributeChain,
+            range(source_id, 18, 27),
+            vec![attribute],
+        );
+        let type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 28, 31),
+            vec![set],
+        );
+        let body_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 18, 31),
+            vec![attribute_chain, type_head],
+        );
+        let reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 44, 47),
+            vec![reference_name],
+        );
+        let reference_list = builder.add_node(
+            SurfaceNodeKind::ReferenceList,
+            range(source_id, 44, 47),
+            vec![reference],
+        );
+        let justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 41, 47),
+            vec![by, reference_list],
+        );
+        let property = builder.add_node(
+            SurfaceNodeKind::ModeProperty,
+            range(source_id, 33, 48),
+            vec![sethood, justification, property_semicolon],
+        );
+        let mode_definition = builder.add_node(
+            SurfaceNodeKind::ModeDefinition,
+            range(source_id, 0, 48),
+            vec![
+                mode,
+                label,
+                colon,
+                pattern,
+                is,
+                body_type,
+                body_semicolon,
+                property,
+            ],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 48),
+            vec![
+                mode,
+                label,
+                colon,
+                mode_name,
+                of,
+                parameter,
+                is,
+                non,
+                empty,
+                set,
+                body_semicolon,
+                sethood,
+                by,
+                reference_name,
+                property_semicolon,
+                mode_definition,
             ],
         );
         builder.finish(Some(root), None)

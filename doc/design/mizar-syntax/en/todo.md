@@ -430,7 +430,12 @@ interaction. Spec references are the normative grammar chapters under
       definition-local visibility, `means`/`equals` bodies, return-type and
       term-definiens recovery, source-level circumfix coverage, template
       placeholder preservation, active parse-only pass/fail corpus coverage,
-      and traceability metadata. S-015 remains open for parser tasks 26-30.
+      and traceability metadata. Parser task 26 is complete for mode
+      definitions: `ModeDefinition`, raw `ModePattern`, and `ModeProperty` are
+      implemented with typed accessors, definition-local visibility, syntactic
+      `TypeExpression` bodies, mode-pattern parameter preservation, `sethood`
+      justification recovery, active parse-only pass/fail corpus coverage, and
+      traceability metadata. S-015 remains open for parser tasks 27-30.
     - Spec: [06.attributes.md](../../../spec/en/06.attributes.md),
       [07.modes.md](../../../spec/en/07.modes.md),
       [09.predicates.md](../../../spec/en/09.predicates.md),
