@@ -5,9 +5,9 @@ items, export items, visibility wrappers, reserve-hosted type expressions,
 task-15 term surfaces including set comprehensions, task-14 formula surfaces,
 S-013 statement nodes, task-22 theorem/proof items, and the task-23 through
 task-30 definition-block / attribute / predicate / functor / mode /
-redefinition / notation-alias / property / structure / registration increments
-are implemented; remaining concrete template, algorithm, annotation, and
-package-oriented item grammars are planned.
+redefinition / notation-alias / property / structure / registration increments,
+plus task-31 template surfaces are implemented; remaining algorithm,
+annotation, and package-oriented item grammars are planned.
 
 ## Purpose
 
@@ -201,9 +201,10 @@ it: theorem items and notation declarations. The parser emits a `VisibleItem`
 wrapper whose children are source ordered: any already-skipped library
 annotation prefix tokens, one `VisibilityMarker` wrapping the `private` or
 `public` token, and the following target item node. Represented theorem and
-lemma targets use concrete `TheoremItem` / `LemmaItem` nodes; notation targets,
-short legacy theorem fragments, and theorem payloads that contain deferred
-template predicate arguments remain `PlaceholderItem` targets. Legal target
+lemma targets use concrete `TheoremItem` / `LemmaItem` nodes; notation targets
+and short legacy theorem fragments remain `PlaceholderItem` targets. Task 31
+parses theorem payloads with template predicate arguments as concrete theorem
+targets when the surrounding theorem shape is represented. Legal target
 starts are `theorem`, `lemma`, theorem status plus theorem role (`open`,
 `assumed`, or `conditional` followed by `theorem` or `lemma`), and notation
 starts `infix_operator`, `prefix_operator`, `postfix_operator`, `synonym`, and
@@ -564,7 +565,8 @@ user_predicate_application   ::= predicate_segment { predicate_chain_segment } ;
 predicate_segment            ::= [ term_list ] [ negation ] predicate_head
                                   [ term_list ] ;
 predicate_chain_segment      ::= [ negation ] predicate_head term_list ;
-predicate_head               ::= predicate_symbol ;
+predicate_head               ::= predicate_symbol [ template_args ]
+                               | identifier template_args ;
 builtin_predicate_application ::= term_expression builtin_pred term_expression ;
 inline_predicate_application ::= inline_pred_name "(" [ term_list ] ")" ;
 is_assertion                 ::= term_expression "is" [ "not" ]
@@ -581,8 +583,9 @@ quantifiers, parenthesized formulas, `thesis`, and `contradiction` stay with
 task 14. Task 13 originally used theorem/lemma placeholder hosts for
 `label: formula;` coverage; after task 22, theorem/lemma items with represented
 formula payloads are concrete `TheoremItem` / `LemmaItem` nodes. Sources whose
-formula payload still contains deferred template predicate arguments remain on
-the legacy token-preserving `PlaceholderItem` path until task 31 / S-016.
+formula payload contained template predicate arguments stayed on the legacy
+token-preserving `PlaceholderItem` path until task 31 / S-016; task 31 now
+represents those heads when the surrounding theorem shape is concrete.
 
 `FormulaExpression` wraps one atomic formula child. Built-in predicate
 applications preserve the left `TermExpression`, builtin predicate token, and
@@ -608,8 +611,8 @@ written segments without proving that a chain such as `a < b < c` can resolve.
 Built-in predicates are not predicate-chain heads: `in`, `=`, and `<>` form
 single `BuiltinPredicateApplication` atoms only, so mixed chains such as
 `a < b = c` remain syntax errors instead of being represented as user
-predicate chains. Template predicate arguments remain deferred to task 31 /
-S-016 because `template_args` is not represented yet.
+predicate chains. Template predicate arguments were deferred to task 31 /
+S-016 in this increment; task 31 now represents `template_args`.
 
 The theorem/lemma formula host is exact for task-13 shapes: represented
 `label: formula;` payloads emit `FormulaExpression` under the later concrete
@@ -686,8 +689,9 @@ implicit variable types from `reserve`.
 The theorem/lemma formula host expands from atomic formulas to all task-14
 formulas. After task 22, prefixes followed by theorem justification or proof
 tails such as `by` or `proof` are concrete theorem items, while template
-predicate arguments remain deferred to task 31 / S-016. Task 15 owns Fraenkel
-and set-builder terms that embed formulas inside term syntax.
+predicate arguments were deferred to task 31 / S-016. Task 31 now represents
+them; task 15 owns Fraenkel and set-builder terms that embed formulas inside
+term syntax.
 
 Malformed formula operands after `not`, connectives, quantifier `st`, or
 `holds` insert `MissingFormula` recovery and report
@@ -739,12 +743,10 @@ when the `is` token is present. The parser does not resolve binder identity, imp
 sethood, capture, mapper result type, or the elaborated Fraenkel symbol.
 
 The optional condition after `:` uses the task-14 formula parser. Template
-predicate arguments inside that formula remain deferred to task 31 / S-016;
-when a theorem/lemma formula host contains a comprehension payload with such a
-deferred predicate template surface, the host remains a legacy placeholder
-rather than partially parsing task-15 syntax. Condition omission is represented
-by the absence of both `:` and `FormulaExpression`, not by a synthetic `thesis`
-or implicit true formula.
+predicate arguments inside that formula were deferred to task 31 / S-016; task
+31 now represents them without changing the task-15 comprehension shape.
+Condition omission is represented by the absence of both `:` and
+`FormulaExpression`, not by a synthetic `thesis` or implicit true formula.
 
 Missing mapper terms, missing generator identifiers, missing generator `is`,
 and malformed generator separators use `MalformedTermExpression`; pure mapper
@@ -882,10 +884,10 @@ let_statement            ::= "let" qualified_variable_segment
 compact_statement        ::= proposition justification_clause ";" ;
 ```
 
-Template arguments on references and grouped items remain deferred to task 31 /
-S-016, where template argument surfaces are introduced. In task 17, a reference
-followed by `[` before the next citation separator is recoverable malformed
-justification syntax rather than a partially represented template invocation.
+Before task 31 / S-016 introduced template argument surfaces for references and
+grouped items, a reference followed by `[` before the next citation separator was recoverable
+malformed justification syntax rather than a partially represented template
+invocation.
 Full `proof ... end` blocks, theorem/lemma item nodes, and proof-body nesting
 land in task 22.
 
@@ -1264,8 +1266,9 @@ The concrete theorem path intentionally keeps short legacy fragments such as
 `theorem T;` as token-preserving placeholders, because earlier parser skeleton
 tests use them as generic item boundaries. Represented theorem shapes begin
 with either a colon, a label-colon pair, or a missing-colon form where a formula
-start is visible after the label. Formula payloads containing deferred
-predicate template arguments also remain placeholders until task 31 / S-016.
+start is visible after the label. Formula payloads containing predicate
+template arguments stayed placeholders until task 31 / S-016, which now
+represents them when the theorem host is otherwise concrete.
 
 Task 22 recovery reuses existing diagnostics. Missing theorem labels use
 `MalformedTermExpression` plus `MissingTerm`. Missing colons and formulas use
@@ -1943,6 +1946,43 @@ registration block ends, active parse-only pass/fail corpus coverage, and
 traceability to Chapter 17 §17.2-17.6 plus Appendix A.17
 registration/cluster/reduction productions excluding annotation prefixes
 deferred to S-016/parser task 35.
+
+### Task 31: Templates
+
+Task 31 makes Chapter 18 template syntax parser-visible. Template-shaped
+definition blocks are detected from leading `let` declarations and
+template-only content such as theorem items, registration items, or
+parameterized predicate/functor patterns. In such blocks, leading `let`
+declarations become `TemplateParameter` nodes. The parser preserves ordinary
+value parameters, `type` parameters with optional `extends`, `pred(...)`
+parameters, `func(...) -> ...` parameters, and the same syntax-level
+constraint, proof, and `by` tails used by ordinary definition parameters.
+This section supersedes the earlier task-local deferred notes for template
+predicate arguments, reference template arguments, and template-ambiguous
+definition content; those older notes describe the state before task 31 landed.
+
+Pattern-side brackets are represented separately from call-site actuals:
+predicate and functor definition patterns own `TemplateLoci` /
+`TemplateLocus`, while predicate heads, template functor applications, local
+and qualified references, and grouped-reference items own `TemplateArguments`
+/ `TemplateArgument`. Template arguments accept parser-visible type
+expressions, term expressions, identifier actuals, and radix-type `qua`
+arguments; attribute-bearing `qua` targets remain malformed and recover with
+type diagnostics.
+
+The parser also accepts template-local identifier predicate heads such as
+`x matches[T]` when the active lexical environment has not exported the symbol
+yet, and parses `pick[T](x)` as a template functor application term before
+ordinary application arguments. Reference citations such as `Ref[T]`,
+`mml.foo.Th[T]`, and `mml.foo.{G[T]}` are concrete reference nodes rather than
+malformed justification tails. `nest` is already represented by the task-17
+`ComputationOption` surface and remains traceable for task 31.
+
+Task 31 does not instantiate templates, bind template parameters, validate
+predicate/functor actual kinds, or check template type constraints. The
+formerly inactive template pass/fail seed fixtures are now active parse-only
+coverage, and the chained-`iff` failure remains a formula fixity diagnostic
+after template predicate arguments become concrete syntax.
 
 ## Public Enum Compatibility
 

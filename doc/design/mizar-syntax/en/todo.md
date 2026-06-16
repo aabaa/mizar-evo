@@ -347,8 +347,8 @@ interaction. Spec references are the normative grammar chapters under
      parenthesized formulas, quantifier variable segments, quantified
      formulas, missing-formula recovery, theorem/lemma formula
      hosting, syntax typed accessors, parser unit tests, and active parse-only
-     pass/fail corpus coverage are in place. Template predicate arguments
-     remain deferred to task 31 / S-016, and formula-embedding
+     pass/fail corpus coverage are in place. Template predicate arguments were
+     deferred until task 31 / S-016 and are now represented; formula-embedding
      Fraenkel/set-builder terms are implemented by parser task 15 / S-011.
    - Spec: [14.formulas.md](../../../spec/en/14.formulas.md).
 
@@ -485,7 +485,10 @@ interaction. Spec references are the normative grammar chapters under
 
 16. **Template, algorithm, and annotation nodes.** [ ] — paired with
     `mizar-parser` tasks 31-35.
-    - Template parameters and bracket-form type arguments (parser task 31);
+    - Done for parser task 31: template parameters, pattern-side template loci,
+      call-site template arguments, reference/template-functor arguments, active
+      template parse-only seeds including reference citations, and `nest`
+      traceability. Remaining:
       algorithm blocks, assignment, declarations, ghost declarations/assignments,
       snapshots, top-level `claim` blocks, and returns (parser task 32);
       control flow including processed collection loops and match endings

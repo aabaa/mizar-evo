@@ -1,0 +1,2 @@
+theorem TemplateReferenceUse:
+  thesis by Ref[T], mml.foo.Th[T], mml.foo.{G[T]};

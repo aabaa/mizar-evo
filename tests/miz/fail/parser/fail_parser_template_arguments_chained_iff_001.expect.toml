@@ -6,6 +6,7 @@ domain = "parser.template_arguments"
 source = "fail_parser_template_arguments_chained_iff_001.miz"
 expected_outcome = "fail"
 expected_phase = "parse"
+tags = ["active_parse_only"]
 failure_category = "syntax_error"
 rejection_reason = "chained_iff_without_grouping"
 stable_detail_key = "parser.template_arguments.chained_iff"
@@ -15,4 +16,4 @@ diagnostic_codes = [
 spec_refs = [
   "spec.en.syntax.template_arguments.parser",
 ]
-notes = "Future grammar seed kept inactive until template productions and frontend-visible fixity can produce this parser diagnostic; active parse-only runner cases carry tags = [\"active_parse_only\"]."
+notes = "Active task-31 parse-only rejection for chained iff after template predicate arguments become parser-visible."

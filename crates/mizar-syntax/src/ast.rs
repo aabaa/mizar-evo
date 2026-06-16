@@ -168,6 +168,11 @@ pub enum SyntaxKind {
     ConditionalRegistration = 143,
     FunctorialRegistration = 144,
     ReductionRegistration = 145,
+    TemplateParameter = 146,
+    TemplateLoci = 147,
+    TemplateLocus = 148,
+    TemplateArguments = 149,
+    TemplateArgument = 150,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -317,6 +322,11 @@ impl SyntaxKind {
             143 => Self::ConditionalRegistration,
             144 => Self::FunctorialRegistration,
             145 => Self::ReductionRegistration,
+            146 => Self::TemplateParameter,
+            147 => Self::TemplateLoci,
+            148 => Self::TemplateLocus,
+            149 => Self::TemplateArguments,
+            150 => Self::TemplateArgument,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -468,6 +478,11 @@ impl SyntaxKind {
                 | Self::ConditionalRegistration
                 | Self::FunctorialRegistration
                 | Self::ReductionRegistration
+                | Self::TemplateParameter
+                | Self::TemplateLoci
+                | Self::TemplateLocus
+                | Self::TemplateArguments
+                | Self::TemplateArgument
         )
     }
 
@@ -1126,6 +1141,34 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_template_loci(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::TemplateLoci => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_template_locus(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::TemplateLocus => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_template_arguments(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::TemplateArguments => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_template_argument(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::TemplateArgument => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_term_placeholder(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::TermPlaceholder => Some(self),
@@ -1255,6 +1298,13 @@ impl<'a> SurfaceNodeView<'a> {
     pub fn as_definition_parameter(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::DefinitionParameter => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_template_parameter(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::TemplateParameter => Some(self),
             _ => None,
         }
     }
@@ -2010,6 +2060,10 @@ pub enum SurfaceNodeKind {
     ParameterPrefix,
     TypeHead,
     TypeArguments,
+    TemplateLoci,
+    TemplateLocus,
+    TemplateArguments,
+    TemplateArgument,
     TermPlaceholder,
     TermExpression,
     TermReference,
@@ -2064,6 +2118,7 @@ pub enum SurfaceNodeKind {
     ProofBlock,
     DefinitionBlockItem,
     DefinitionParameter,
+    TemplateParameter,
     AttributeDefinition,
     AttributePattern,
     FormulaDefiniens,
@@ -2150,6 +2205,10 @@ impl SurfaceNodeKind {
             Self::ParameterPrefix => SyntaxKind::ParameterPrefix,
             Self::TypeHead => SyntaxKind::TypeHead,
             Self::TypeArguments => SyntaxKind::TypeArguments,
+            Self::TemplateLoci => SyntaxKind::TemplateLoci,
+            Self::TemplateLocus => SyntaxKind::TemplateLocus,
+            Self::TemplateArguments => SyntaxKind::TemplateArguments,
+            Self::TemplateArgument => SyntaxKind::TemplateArgument,
             Self::TermPlaceholder => SyntaxKind::TermPlaceholder,
             Self::TermExpression => SyntaxKind::TermExpression,
             Self::TermReference => SyntaxKind::TermReference,
@@ -2204,6 +2263,7 @@ impl SurfaceNodeKind {
             Self::ProofBlock => SyntaxKind::ProofBlock,
             Self::DefinitionBlockItem => SyntaxKind::DefinitionBlockItem,
             Self::DefinitionParameter => SyntaxKind::DefinitionParameter,
+            Self::TemplateParameter => SyntaxKind::TemplateParameter,
             Self::AttributeDefinition => SyntaxKind::AttributeDefinition,
             Self::AttributePattern => SyntaxKind::AttributePattern,
             Self::FormulaDefiniens => SyntaxKind::FormulaDefiniens,
@@ -2440,6 +2500,10 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::ParameterPrefix => output.push_str("ParameterPrefix"),
         SurfaceNodeKind::TypeHead => output.push_str("TypeHead"),
         SurfaceNodeKind::TypeArguments => output.push_str("TypeArguments"),
+        SurfaceNodeKind::TemplateLoci => output.push_str("TemplateLoci"),
+        SurfaceNodeKind::TemplateLocus => output.push_str("TemplateLocus"),
+        SurfaceNodeKind::TemplateArguments => output.push_str("TemplateArguments"),
+        SurfaceNodeKind::TemplateArgument => output.push_str("TemplateArgument"),
         SurfaceNodeKind::TermPlaceholder => output.push_str("TermPlaceholder"),
         SurfaceNodeKind::TermExpression => output.push_str("TermExpression"),
         SurfaceNodeKind::TermReference => output.push_str("TermReference"),
@@ -2508,6 +2572,7 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::ProofBlock => output.push_str("ProofBlock"),
         SurfaceNodeKind::DefinitionBlockItem => output.push_str("DefinitionBlockItem"),
         SurfaceNodeKind::DefinitionParameter => output.push_str("DefinitionParameter"),
+        SurfaceNodeKind::TemplateParameter => output.push_str("TemplateParameter"),
         SurfaceNodeKind::AttributeDefinition => output.push_str("AttributeDefinition"),
         SurfaceNodeKind::AttributePattern => output.push_str("AttributePattern"),
         SurfaceNodeKind::FormulaDefiniens => output.push_str("FormulaDefiniens"),
@@ -3696,6 +3761,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            task31_template_nodes_ast(source_id(48))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -3804,6 +3875,11 @@ mod tests {
             SyntaxKind::ConditionalRegistration,
             SyntaxKind::FunctorialRegistration,
             SyntaxKind::ReductionRegistration,
+            SyntaxKind::TemplateParameter,
+            SyntaxKind::TemplateLoci,
+            SyntaxKind::TemplateLocus,
+            SyntaxKind::TemplateArguments,
+            SyntaxKind::TemplateArgument,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -5680,6 +5756,60 @@ mod tests {
             assert!(
                 snapshot.contains(expected),
                 "snapshot should render task-30 line {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn task31_typed_accessors_cover_template_nodes() {
+        let ast = task31_template_nodes_ast(source_id(48));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task31_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task31_view!(
+            SurfaceNodeKind::TemplateParameter,
+            SyntaxKind::TemplateParameter,
+            as_template_parameter
+        );
+        assert_task31_view!(
+            SurfaceNodeKind::TemplateLoci,
+            SyntaxKind::TemplateLoci,
+            as_template_loci
+        );
+        assert_task31_view!(
+            SurfaceNodeKind::TemplateLocus,
+            SyntaxKind::TemplateLocus,
+            as_template_locus
+        );
+        assert_task31_view!(
+            SurfaceNodeKind::TemplateArguments,
+            SyntaxKind::TemplateArguments,
+            as_template_arguments
+        );
+        assert_task31_view!(
+            SurfaceNodeKind::TemplateArgument,
+            SyntaxKind::TemplateArgument,
+            as_template_argument
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in [
+            "TemplateParameter",
+            "TemplateLoci",
+            "TemplateLocus",
+            "TemplateArguments",
+            "TemplateArgument",
+        ] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-31 line {expected}"
             );
         }
     }
@@ -10677,6 +10807,120 @@ mod tests {
                 registration_end,
                 registration_semicolon,
                 registration_block,
+            ],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn task31_template_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let let_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "let",
+            range(source_id, 0, 3),
+        );
+        let parameter_name =
+            builder.add_token(SurfaceTokenKind::Identifier, "T", range(source_id, 4, 5));
+        let be_kw = builder.add_token(SurfaceTokenKind::ReservedWord, "be", range(source_id, 6, 8));
+        let type_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "type",
+            range(source_id, 9, 13),
+        );
+        let parameter_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 13, 14),
+        );
+        let loci_open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "[",
+            range(source_id, 15, 16),
+        );
+        let locus_name =
+            builder.add_token(SurfaceTokenKind::Identifier, "L", range(source_id, 16, 17));
+        let loci_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "]",
+            range(source_id, 17, 18),
+        );
+        let reference_name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Ref",
+            range(source_id, 19, 22),
+        );
+        let arguments_open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "[",
+            range(source_id, 22, 23),
+        );
+        let argument_name =
+            builder.add_token(SurfaceTokenKind::UserSymbol, "T", range(source_id, 23, 24));
+        let arguments_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "]",
+            range(source_id, 24, 25),
+        );
+
+        let template_parameter = builder.add_node(
+            SurfaceNodeKind::TemplateParameter,
+            range(source_id, 0, 14),
+            vec![let_kw, parameter_name, be_kw, type_kw, parameter_semicolon],
+        );
+        let template_locus = builder.add_node(
+            SurfaceNodeKind::TemplateLocus,
+            range(source_id, 16, 17),
+            vec![locus_name],
+        );
+        let template_loci = builder.add_node(
+            SurfaceNodeKind::TemplateLoci,
+            range(source_id, 15, 18),
+            vec![loci_open, template_locus, loci_close],
+        );
+        let argument_type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 23, 24),
+            vec![argument_name],
+        );
+        let argument_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 23, 24),
+            vec![argument_type_head],
+        );
+        let template_argument = builder.add_node(
+            SurfaceNodeKind::TemplateArgument,
+            range(source_id, 23, 24),
+            vec![argument_type],
+        );
+        let template_arguments = builder.add_node(
+            SurfaceNodeKind::TemplateArguments,
+            range(source_id, 22, 25),
+            vec![arguments_open, template_argument, arguments_close],
+        );
+        let reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 19, 25),
+            vec![reference_name, template_arguments],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 25),
+            vec![
+                let_kw,
+                parameter_name,
+                be_kw,
+                type_kw,
+                parameter_semicolon,
+                loci_open,
+                locus_name,
+                loci_close,
+                reference_name,
+                arguments_open,
+                argument_name,
+                arguments_close,
+                template_parameter,
+                template_loci,
+                reference,
             ],
         );
         builder.finish(Some(root), None)

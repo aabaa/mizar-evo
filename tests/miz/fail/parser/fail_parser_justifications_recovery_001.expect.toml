@@ -21,7 +21,6 @@ diagnostic_codes = [
   "malformed_justification",
   "malformed_justification",
   "malformed_justification",
-  "malformed_justification",
 ]
 tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
 spec_refs = [
@@ -29,4 +28,4 @@ spec_refs = [
   "spec.en.16.proof_justification.parser",
   "spec.en.20.computation_proof.parser",
 ]
-notes = "Active parse-only runner coverage for parser task 17 missing citations, malformed reference-list commas, deferred citation template arguments, grouped citation gaps, missing grouped closes, malformed computation options, and disallowed computation justifications on let statements."
+notes = "Active parse-only runner coverage for parser task 17 missing citations, malformed reference-list commas, grouped citation gaps, missing grouped closes, malformed computation options, and disallowed computation justifications on let statements; task 31 makes citation template arguments parser-visible."

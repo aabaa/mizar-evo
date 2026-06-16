@@ -80,12 +80,11 @@ resolver / build-system 依存を避ける。
 が含まれている。parse-only ランナーと該当生成規則が存在する前に、これらを
 即時の coverage 義務として扱わない。
 
-- template 引数: definition、formula、predicate/functor、template の各生成規則
-  が parse 可能になったら、`pass_parser_template_arguments_001` と
-  `fail_parser_template_arguments_chained_iff_001` を実行可能にする。
+- template 引数: task 31 で完了。`pass_parser_template_arguments_001`、
+  `pass_parser_template_references_001`、
+  `fail_parser_template_arguments_chained_iff_001` は active parse-only case である。
 - まだ必要な受理ケース: `by` 参照付き `let` 制約、witness 付き `take`、
-  条件付き definiens、Fraenkel generator、`qua` 連鎖、述語連鎖、template
-  predicate/functor の use。
+  条件付き definiens、Fraenkel generator、`qua` 連鎖、述語連鎖。
 - まだ必要な拒否ケース: 非結合演算子の連鎖、builtin/user 述語連鎖の混在、
   不完全な項始まり論理式。
 
@@ -184,9 +183,10 @@ resolver / build-system 依存を避ける。
    - active seed coverage は、現在 frontend から到達できる parser behavior
      （token stream preservation、`end` 欠落、孤立した `end`）を含み、task 12 以降は
      fixture lexical summary から供給される source-path operator fixity も含む。
-   - コミット済みの template 引数 seed ケースは、task 14、23-25、31 が
-     それらの formula、definition、template 形を parse できるまで active
-     runner から外す。
+   - task 31 は、task 14 と 23-25 が必要な formula / definition host を
+     提供した後、コミット済みの template 引数 seed case を active runner に
+     promote する。active set には reference-citation template argument seed も
+     含まれる。
    - テスト: active / inactive discovery は決定的である。active tag の誤用は
      harness error になる。意図的に不一致にした sidecar は失敗する。seed した
      pass / fail case は diagnostics を強制する。`parse-only` CLI は active runner
@@ -413,8 +413,8 @@ resolver / build-system 依存を避ける。
      `MalformedFormulaExpression` recovery、parser unit test、active
      parse-only pass/fail corpus coverage、traceability entry
      `spec.en.14.formula_connectives_quantifiers.parser` を実装した。template
-     predicate argument は task 31 / S-016 に deferred のままであり、formula
-     を埋め込む Fraenkel / set-builder term は task 15 で実装済みである。
+     predicate argument は task 31 / S-016 まで deferred だったが現在は表現済みであり、
+     formula を埋め込む Fraenkel / set-builder term は task 15 で実装済みである。
 
 15. **Fraenkel と集合内包の項。** [x]
     - `{ term where … : formula }` と関連する集合内包形（条件を省略する形を
@@ -467,9 +467,10 @@ resolver / build-system 依存を避ける。
       `let ... by references` は concrete になり、`let ... by computation` は
       malformed justification として recover する。local / qualified /
       grouped / bulk / computation justification、missing proof step、skipped
-      malformed citation tail、deferred reference template argument、および
-      semicolon-boundary recovery を unit test と active parse-only pass/fail
-      corpus coverage で確認済み。
+      malformed citation tail、task 31 以前の reference template argument recovery
+      drift、および semicolon-boundary recovery を unit test と active parse-only
+      pass/fail corpus coverage で確認済み。task 31 以後、citation reference
+      template argument は concrete に表現される。
 
 18. **`consider` と `reconsider`。** [x]
     - いずれも正当化を運ぶ `consider … such that … by …` と
@@ -689,7 +690,7 @@ resolver / build-system 依存を避ける。
       registration block support、recovery coverage、traceability metadata が task-30
       surface を覆う。
 
-31. **テンプレート。** [ ]
+31. **テンプレート。** [x]
     - テンプレートパラメータ、task 8 の生成規則を拡張する bracket 形の型引数
       とパラメータ prefix、`nest` の形。
     - レビュー監査由来の seed ケース
@@ -697,6 +698,12 @@ resolver / build-system 依存を避ける。
       `tests/miz/fail/parser/fail_parser_template_arguments_chained_iff_001.*`
       を、traceability metadata から runner 実行済みの parse-only coverage へ
       昇格させる。
+    - 結果: `TemplateParameter`、`TemplateLoci` / `TemplateLocus`、
+      `TemplateArguments` / `TemplateArgument` surface を実装し、predicate /
+      functor / reference / template functor の引数、template-shaped
+      definition-block 分類、radix-only `qua` 引数 recovery、active parse-only
+      seed coverage、既存 computation-option parser による `nest` traceability
+      を追加した。
     - 依存: 30、`mizar-syntax` task 16 / S-016。仕様:
       [18.templates.md](../../../spec/ja/18.templates.md)。
 

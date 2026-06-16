@@ -81,13 +81,12 @@ parser-facing cases that should become executable as their owning grammar tasks
 land. Do not treat these as immediate coverage obligations before the
 parse-only runner and the relevant productions exist.
 
-- Template arguments: make
-  `pass_parser_template_arguments_001` and
-  `fail_parser_template_arguments_chained_iff_001` executable once definition,
-  formula, predicate/functor, and template productions can parse them.
+- Template arguments: completed by task 31. `pass_parser_template_arguments_001`,
+  `pass_parser_template_references_001`, and
+  `fail_parser_template_arguments_chained_iff_001` are active parse-only cases.
 - Accepted syntax cases still needed: `let` constraints with `by` references,
   take-with-witness examples, conditional definiens, Fraenkel generators,
-  `qua` chains, predicate chains, and template predicate/functor uses.
+  `qua` chains, and predicate chains.
 - Rejection cases still needed: non-associative operator chains,
   builtin/user predicate-chain mixing, and incomplete term-headed formulas.
 
@@ -193,9 +192,10 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
      behavior: token stream preservation, missing `end`, stray `end`, and,
      beginning with task 12, source-path operator fixity supplied by fixture
      lexical summaries.
-   - The committed template-argument seed cases stay out of the active runner
-     until tasks 14, 23-25, and 31 can parse their formula, definition, and
-     template forms.
+   - Task 31 promotes the committed template-argument seed cases into the active
+     runner once tasks 14 and 23-25 provide the needed formula and definition
+     hosts; the active set now also includes the reference-citation template
+     argument seed.
    - Tests: active/inactive discovery is deterministic; active-tag mistakes are
      harness errors; a deliberately mismatched sidecar fails; seeded pass and
      fail cases enforce diagnostics; the `parse-only` CLI reports the active
@@ -432,8 +432,8 @@ older numeric syntax task references appear to disagree, prefer
      operators and quantifier bodies; parser unit tests; active parse-only
      pass/fail corpus coverage; and traceability entry
      `spec.en.14.formula_connectives_quantifiers.parser`. Template predicate
-     arguments remain deferred to task 31 / S-016, and Fraenkel/set-builder
-     terms that embed formulas remain task 15.
+     arguments were deferred until task 31 / S-016 and are now represented;
+     Fraenkel/set-builder terms that embed formulas remain task 15.
 
 15. **Fraenkel and set-builder terms.** [x]
     - `{ term where … : formula }` and related set-builder/comprehension forms,
@@ -489,8 +489,9 @@ older numeric syntax task references appear to disagree, prefer
       `let ... by computation` recovers as malformed justification. Unit tests
       and active parse-only pass/fail corpus coverage exercise local,
       qualified, grouped, bulk, and computation justifications, missing proof
-      steps, skipped malformed citation tails, deferred reference template
-      arguments, and semicolon-boundary recovery.
+      steps, skipped malformed citation tails, pre-task-31 reference template
+      argument recovery drift, and semicolon-boundary recovery. Task 31 now
+      represents citation reference template arguments concretely.
 
 18. **`consider` and `reconsider`.** [x]
     - `consider … such that … by …` and `reconsider … as … by …`, both of
@@ -711,13 +712,19 @@ older numeric syntax task references appear to disagree, prefer
       registration block support, recovery coverage, and traceability metadata
       cover the task-30 surface.
 
-31. **Templates.** [ ]
+31. **Templates.** [x]
     - Template parameters, bracket-form type arguments and parameter prefixes
       extending the task-8 productions, `nest` forms.
     - Promote the review-audit seed cases
       `tests/miz/pass/parser/pass_parser_template_arguments_001.*` and
       `tests/miz/fail/parser/fail_parser_template_arguments_chained_iff_001.*`
       from traceability metadata into runner-executed parse-only coverage.
+    - Result: implemented `TemplateParameter`, `TemplateLoci` /
+      `TemplateLocus`, and `TemplateArguments` / `TemplateArgument` surfaces
+      with parser-visible predicate/functor/reference/template-functor
+      arguments, template-shaped definition-block classification, radix-only
+      `qua` argument recovery, active parse-only seed coverage, and `nest`
+      traceability through the existing computation-option parser.
     - Deps: 30, `mizar-syntax` task 16 / S-016. Spec:
       [18.templates.md](../../../spec/en/18.templates.md).
 

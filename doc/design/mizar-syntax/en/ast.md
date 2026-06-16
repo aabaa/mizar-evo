@@ -146,6 +146,11 @@ green tree.
 | conditional registration node | `SyntaxKind::ConditionalRegistration` |
 | functorial registration node | `SyntaxKind::FunctorialRegistration` |
 | reduction registration node | `SyntaxKind::ReductionRegistration` |
+| template parameter node | `SyntaxKind::TemplateParameter` |
+| template loci list node | `SyntaxKind::TemplateLoci` |
+| template locus node | `SyntaxKind::TemplateLocus` |
+| template arguments list node | `SyntaxKind::TemplateArguments` |
+| template argument node | `SyntaxKind::TemplateArgument` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -322,11 +327,16 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 143 | `ConditionalRegistration` | task-30 conditional `cluster ... -> ... coherence ...;` registration |
 | 144 | `FunctorialRegistration` | task-30 functorial `cluster term -> ... coherence ...;` registration |
 | 145 | `ReductionRegistration` | task-30 `reduce ... to ... reducibility ...;` registration |
+| 146 | `TemplateParameter` | task-31 template definition `let` parameter |
+| 147 | `TemplateLoci` | task-31 pattern-side `[` locus list `]` wrapper |
+| 148 | `TemplateLocus` | task-31 single pattern-side template locus |
+| 149 | `TemplateArguments` | task-31 call/reference-side template argument list |
+| 150 | `TemplateArgument` | task-31 single call/reference-side template argument |
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
 above, including `Root` through task-22 `ProofBlock`, task-23
-`DefinitionBlockItem` through task-30 `ReductionRegistration`, the compatibility
+`DefinitionBlockItem` through task-31 `TemplateArgument`, the compatibility
 `Token` wrapper, and `ErrorRecovery`; `is_token_kind` is true only for token
 leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future raw values should be
 appended or assigned into a documented reserved range so existing snapshots and
@@ -359,7 +369,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::TypeArguments` | none | `SyntaxKind::TypeArguments` | parser task-8 type argument wrapper for `of`, `over`, or bracket syntax; task 9 replaces `of`/`over` placeholders with `TermExpression` arguments, and task 11 replaces bracket `qua_arg` placeholders with `TermExpression` / `QuaExpression` surfaces |
 | `SurfaceNodeKind::TermPlaceholder` | none | `SyntaxKind::TermPlaceholder` | legacy parser task-8 syntax-only term-entry stub retained for raw-kind compatibility; the task-11 parser no longer emits it for bracket `qua_arg` forms |
 | `SurfaceNodeKind::TermExpression` | none | `SyntaxKind::TermExpression` | parser task-9 current term-expression wrapper; owns exactly one current term-shape child, which may be a primary term, postfix chain, `QuaExpression`, or later operator expression |
-| `SurfaceNodeKind::TermReference` | none | `SyntaxKind::TermReference` | parser task-9 identifier token or shared `QualifiedSymbol` in term position, with no semantic classification |
+| `SurfaceNodeKind::TermReference` | none | `SyntaxKind::TermReference` | parser task-9 identifier token or shared `QualifiedSymbol` in term position, with optional task-31 `TemplateArguments` before parenthesized application and no semantic classification |
 | `SurfaceNodeKind::NumeralTerm` | none | `SyntaxKind::NumeralTerm` | parser task-9 numeral term wrapper |
 | `SurfaceNodeKind::ItTerm` | none | `SyntaxKind::ItTerm` | parser task-9 `it` keyword term wrapper |
 | `SurfaceNodeKind::ParenthesizedTerm` | none | `SyntaxKind::ParenthesizedTerm` | parser task-9 parenthesized term; owns `(`, a `TermExpression` or `MissingTerm`, and optional `)` |
@@ -436,13 +446,18 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::ConditionalRegistration` | none | `SyntaxKind::ConditionalRegistration` | parser task-30 conditional cluster registration; owns antecedent registration adjectives, `->`, consequent registration adjectives, `for`, target `TypeExpression`, header semicolon, and a `coherence` correctness condition |
 | `SurfaceNodeKind::FunctorialRegistration` | none | `SyntaxKind::FunctorialRegistration` | parser task-30 functorial cluster registration; owns an unambiguous application/operator/bracket payload term, `->`, consequent registration adjectives, `for`, target `TypeExpression`, header semicolon, and a `coherence` correctness condition |
 | `SurfaceNodeKind::ReductionRegistration` | none | `SyntaxKind::ReductionRegistration` | parser task-30 reduction registration; owns `reduce`, label, colon, left `TermExpression`, `to`, right `TermExpression`, header semicolon, and a `reducibility` correctness condition |
+| `SurfaceNodeKind::TemplateParameter` | none | `SyntaxKind::TemplateParameter` | parser task-31 leading template-block `let` parameter; owns ordinary value/type/predicate/functor parameter tokens, optional constraints or `by`/proof tails, and the parameter semicolon when present |
+| `SurfaceNodeKind::TemplateLoci` | none | `SyntaxKind::TemplateLoci` | parser task-31 predicate/functor pattern-side `[` locus list `]`; owns delimiters, comma tokens, and `TemplateLocus` children or missing-locus recovery |
+| `SurfaceNodeKind::TemplateLocus` | none | `SyntaxKind::TemplateLocus` | parser task-31 single pattern-side template locus identifier or missing-term recovery |
+| `SurfaceNodeKind::TemplateArguments` | none | `SyntaxKind::TemplateArguments` | parser task-31 call/reference-side `[` template argument list `]`; owns delimiters, comma tokens, and `TemplateArgument` children or recovery |
+| `SurfaceNodeKind::TemplateArgument` | none | `SyntaxKind::TemplateArgument` | parser task-31 single template actual, wrapping a `TypeExpression`, `TermExpression` / `QuaExpression`, or missing-type recovery |
 | `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host plus parser task-22 proof justification host; owns one `Proposition`, one `JustificationClause` or `ProofBlock`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
-| `SurfaceNodeKind::Reference` | none | `SyntaxKind::Reference` | parser task-17 local citation; owns one identifier token and no template arguments in this increment |
-| `SurfaceNodeKind::QualifiedReference` | none | `SyntaxKind::QualifiedReference` | parser task-17 namespace-qualified citation; owns `NamespacePath`, the final dot token, and the final identifier token |
+| `SurfaceNodeKind::Reference` | none | `SyntaxKind::Reference` | parser task-17 local citation; owns one identifier token and optional task-31 `TemplateArguments` |
+| `SurfaceNodeKind::QualifiedReference` | none | `SyntaxKind::QualifiedReference` | parser task-17 namespace-qualified citation; owns `NamespacePath`, the final dot token, final identifier token, and optional task-31 `TemplateArguments` |
 | `SurfaceNodeKind::GroupedReference` | none | `SyntaxKind::GroupedReference` | parser task-17 grouped citation; owns `NamespacePath`, `.{`, grouped items separated by comma tokens, optional delimiter recovery, and optional `}` |
-| `SurfaceNodeKind::GroupedReferenceItem` | none | `SyntaxKind::GroupedReferenceItem` | parser task-17 grouped citation member; owns one identifier token and no template arguments in this increment |
+| `SurfaceNodeKind::GroupedReferenceItem` | none | `SyntaxKind::GroupedReferenceItem` | parser task-17 grouped citation member; owns one identifier token and optional task-31 `TemplateArguments` |
 | `SurfaceNodeKind::BulkReference` | none | `SyntaxKind::BulkReference` | parser task-17 bulk citation; owns `NamespacePath` plus the compound `.*` token |
 | `SurfaceNodeKind::ComputationJustification` | none | `SyntaxKind::ComputationJustification` | parser task-17 computation proof payload; owns the `computation` token and optional parenthesized computation-option list |
 | `SurfaceNodeKind::ComputationOption` | none | `SyntaxKind::ComputationOption` | parser task-17 computation option; owns `steps`, `timeout`, or `nest`, a colon token, and a numeral token or `MissingProofStep` recovery |
@@ -464,7 +479,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::AttributeTestChain` | none | `SyntaxKind::AttributeTestChain` | parser task-13 attribute-only assertion body; owns one or more task-8 `AttributeRef` children |
 | `SurfaceNodeKind::PredicateApplication` | none | `SyntaxKind::PredicateApplication` | parser task-13 syntax-only user predicate application; owns one or more predicate segments |
 | `SurfaceNodeKind::PredicateSegment` | none | `SyntaxKind::PredicateSegment` | parser task-13 user predicate segment; owns optional term-list children, optional negation tokens, one predicate head, and optional right term-list children |
-| `SurfaceNodeKind::PredicateHead` | none | `SyntaxKind::PredicateHead` | parser task-13 predicate symbol wrapper; template predicate arguments remain deferred |
+| `SurfaceNodeKind::PredicateHead` | none | `SyntaxKind::PredicateHead` | parser task-13 predicate symbol wrapper; owns an active `QualifiedSymbol` or template-local identifier plus optional task-31 `TemplateArguments` |
 | `SurfaceNodeKind::InlinePredicateApplication` | none | `SyntaxKind::InlinePredicateApplication` | parser task-13 inline predicate call shape with identifier head and parenthesized term arguments |
 | `SurfaceNodeKind::PrefixFormula(SurfaceFormulaPrefixOperator)` | operator | `SyntaxKind::PrefixFormula` | parser task-14 fixed formula prefix, currently `not` |
 | `SurfaceNodeKind::BinaryFormula(SurfaceFormulaBinaryOperator)` | `connective: SurfaceFormulaConnective`, `repeated: bool` | `SyntaxKind::BinaryFormula` | parser task-14 fixed binary connective formula for `&`, `or`, `implies`, `iff`, including token-preserving repetition forms |
@@ -535,8 +550,9 @@ top-level visibility prefix on the theorem/notation forms allowed by Chapter
 12. Its children are source ordered: annotation-prefix token nodes when
 present, one `VisibilityMarker`, and the target item node. Represented theorem
 and lemma targets use concrete `TheoremItem` / `LemmaItem` nodes; notation
-targets, short legacy theorem fragments, and theorem payloads that contain
-deferred template predicate arguments remain `PlaceholderItem` targets.
+targets and short legacy theorem fragments remain `PlaceholderItem` targets;
+task 31 parses theorem payloads with template predicate arguments as represented
+formula hosts when the surrounding theorem shape is otherwise supported.
 Duplicate visibility markers, dangling markers, or visibility before a
 non-theorem/non-notation top-level declaration may instead contain a nested
 `SkippedToken` recovery child and an optional semicolon token while carrying
@@ -690,9 +706,10 @@ wrapper role. Task 13 first exposed formula payloads through theorem/lemma
 placeholder hosts; task 22 promotes represented theorem declarations to
 concrete `TheoremItem` and `LemmaItem` hosts that own the optional status token,
 role token, label, colon, `FormulaExpression`, optional justification or
-`ProofBlock`, and enclosing semicolon. The parser may still keep theorem
-payloads that contain deferred template predicate arguments as
-`PlaceholderItem` until that syntax is implemented.
+`ProofBlock`, and enclosing semicolon. Task 31 makes template predicate
+arguments concrete syntax for represented theorem/lemma payloads, so those
+payloads no longer require a placeholder solely because the predicate head owns
+template arguments.
 
 `BuiltinPredicateApplication` owns a left `TermExpression`, the built-in
 predicate token (`in`, `=`, or `<>`), and a right `TermExpression` or
@@ -708,8 +725,8 @@ type head.
 syntax-only user predicate applications and chains. Each `PredicateSegment`
 may own left term operands, optional `does not` / `do not` negation tokens, one
 `PredicateHead`, and right term operands. `PredicateHead` wraps the predicate
-symbol token or qualified symbol; template arguments are deferred until
-template syntax exists. Built-in predicates are represented only by a single
+symbol token, qualified symbol, or template-local identifier, and may own
+optional task-31 `TemplateArguments`. Built-in predicates are represented only by a single
 `BuiltinPredicateApplication` node and must not be mixed into
 `PredicateApplication` chains, preserving Appendix A's `a < b = c` syntax-error
 boundary. `InlinePredicateApplication` owns an identifier head, parentheses,
@@ -809,9 +826,9 @@ but only in the ordinary `by references` shape defined by Chapter 15.
 
 `JustificationClause` owns the leading `by` token plus either a `ReferenceList`
 child for ordinary citations or a `ComputationJustification` child for
-`by computation(...)`. Task 17 deliberately represents only the non-template
-reference surface: template argument lists stay deferred to task 31 / S-016,
-and `from` is not a justification node because the canonical Chapter 15/16
+`by computation(...)`. Task 31 extends the task-17 citation surface so local
+references, qualified references, and grouped reference members may own
+`TemplateArguments`. `from` is not a justification node because the canonical Chapter 15/16
 grammar does not define it as a justification form.
 
 `ReferenceList` owns source-ordered citation children separated by comma

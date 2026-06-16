@@ -547,7 +547,43 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             .iter()
             .any(|spec_ref| spec_ref.0 == TEMPLATE_ARGUMENTS_REQUIREMENT_ID)
     );
-    assert!(pass_case.expectation.tags.is_empty());
+    assert!(
+        pass_case
+            .expectation
+            .tags
+            .iter()
+            .any(|tag| tag == "active_parse_only")
+    );
+
+    let reference_pass = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_parser_template_references_001")
+        .expect("parse-only template reference pass seed should be discovered");
+    assert_eq!(reference_pass.expectation.kind, TestKind::Pass);
+    assert_eq!(reference_pass.expectation.stage, Stage::ParseOnly);
+    assert_eq!(
+        reference_pass.expectation.expected_outcome,
+        ExpectedOutcome::Pass
+    );
+    assert_eq!(
+        reference_pass.expectation.expected_phase,
+        Some(PipelinePhase::Parse)
+    );
+    assert!(
+        reference_pass
+            .expectation
+            .spec_refs
+            .iter()
+            .any(|spec_ref| spec_ref.0 == TEMPLATE_ARGUMENTS_REQUIREMENT_ID)
+    );
+    assert!(
+        reference_pass
+            .expectation
+            .tags
+            .iter()
+            .any(|tag| tag == "active_parse_only")
+    );
 
     let fail_case = plan
         .cases
@@ -572,7 +608,13 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
         fail_case.expectation.diagnostic_codes,
         vec!["non_associative_operator_chain".to_owned()]
     );
-    assert!(fail_case.expectation.tags.is_empty());
+    assert!(
+        fail_case
+            .expectation
+            .tags
+            .iter()
+            .any(|tag| tag == "active_parse_only")
+    );
 
     let operator_pass = plan
         .cases
@@ -738,6 +780,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "fail_parser_structure_update_missing_close_001",
             "fail_parser_structure_update_missing_value_001",
             "fail_parser_structures_recovery_001",
+            "fail_parser_template_arguments_chained_iff_001",
             "fail_parser_theorems_proofs_recovery_001",
             "fail_parser_type_expression_malformed_001",
             "fail_parser_type_expression_missing_bracket_001",
@@ -770,6 +813,8 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_set_comprehensions_001",
             "pass_parser_simple_statements_001",
             "pass_parser_structures_001",
+            "pass_parser_template_arguments_001",
+            "pass_parser_template_references_001",
             "pass_parser_theorems_proofs_001",
             "pass_parser_type_expressions_001",
         ]
@@ -786,6 +831,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
         template_requirement.tests,
         vec![
             PathBuf::from("tests/miz/pass/parser/pass_parser_template_arguments_001.expect.toml"),
+            PathBuf::from("tests/miz/pass/parser/pass_parser_template_references_001.expect.toml"),
             PathBuf::from(
                 "tests/miz/fail/parser/fail_parser_template_arguments_chained_iff_001.expect.toml"
             ),
@@ -1075,8 +1121,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 84);
-    assert_eq!(report.passed_count(), 84);
+    assert_eq!(report.results.len(), 87);
+    assert_eq!(report.passed_count(), 87);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_atomic_formulas_001"
@@ -1127,6 +1173,14 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_structures_001" && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_template_arguments_001"
+            && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_template_references_001"
+            && result.actual_diagnostic_codes.is_empty()
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_simple_statements_001"
@@ -1187,6 +1241,7 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
                     "malformed_term_expression".to_owned(),
                     "malformed_term_expression".to_owned(),
                     "malformed_term_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
                     "malformed_formula_expression".to_owned(),
                     "malformed_formula_expression".to_owned(),
                     "malformed_term_expression".to_owned(),
@@ -1201,7 +1256,6 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
                     "malformed_type_expression".to_owned(),
                     "malformed_term_expression".to_owned(),
                     "malformed_term_expression".to_owned(),
-                    "malformed_formula_expression".to_owned(),
                     "malformed_formula_expression".to_owned(),
                     "malformed_term_expression".to_owned(),
                     "malformed_type_expression".to_owned(),
@@ -1413,11 +1467,14 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
                     "malformed_justification".to_owned(),
                     "malformed_justification".to_owned(),
                     "malformed_justification".to_owned(),
-                    "malformed_justification".to_owned(),
                 ]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_parser_formula_nonassoc_iff_001"
+            && result.actual_diagnostic_codes == vec!["non_associative_operator_chain".to_owned()]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_template_arguments_chained_iff_001"
             && result.actual_diagnostic_codes == vec!["non_associative_operator_chain".to_owned()]
     }));
     assert!(report.results.iter().any(|result| {
@@ -1696,8 +1753,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 84"));
-    assert!(stdout.contains("passed: 84"));
+    assert!(stdout.contains("parse-only cases: 87"));
+    assert!(stdout.contains("passed: 87"));
     assert!(stdout.contains("failed: 0"));
 }
 

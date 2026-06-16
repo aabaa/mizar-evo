@@ -1,9 +1,9 @@
 schema_version = 1
-id = "pass_parser_template_arguments_001"
+id = "pass_parser_template_references_001"
 kind = "pass"
 stage = "parse_only"
 domain = "parser.template_arguments"
-source = "pass_parser_template_arguments_001.miz"
+source = "pass_parser_template_references_001.miz"
 expected_outcome = "pass"
 expected_phase = "parse"
 tags = ["active_parse_only"]
@@ -11,4 +11,4 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.syntax.template_arguments.parser",
 ]
-notes = "Active task-31 parse-only coverage for template parameters, pattern loci, predicate template arguments, and template functor arguments."
+notes = "Active task-31 parse-only coverage for local, qualified, and grouped reference citations with template arguments."

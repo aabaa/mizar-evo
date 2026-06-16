@@ -16,7 +16,6 @@ diagnostic_codes = [
   "malformed_term_expression",
   "malformed_term_expression",
   "malformed_formula_expression",
-  "malformed_formula_expression",
   "malformed_term_expression",
   "malformed_type_expression",
   "malformed_type_expression",
