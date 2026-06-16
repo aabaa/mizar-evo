@@ -4,8 +4,9 @@ Status: minimal task-12 recovery, task-28 nested block-end recovery, task-5
 module-skeleton recovery, task-6 import recovery, task-7 export/visibility
 recovery, task-8 type-expression recovery, task-9 primary-term recovery,
 task-13 atomic-formula recovery, task-14 formula recovery, S-013/S-014
-statement/proof recovery, and S-015 definition recovery through task 29 are
-implemented. Full grammar recovery remains planned.
+statement/proof recovery, S-015 definition recovery through task 29, and
+task-33 algorithm control-flow recovery are implemented. Full grammar recovery
+remains planned.
 
 ## Purpose
 
@@ -36,15 +37,18 @@ Current behavior:
   node itself has no required context child so later module skeleton nodes can
   own the source tokens without duplicating non-root parents.
   The current stack includes top-level blocks plus algorithm control blocks
-  with their own `end`. `for` is opened only for loop-like
-  `for <identifier> = ...` / `for <identifier> in ...` token shapes so formula
-  quantifiers do not consume block ends. Until concrete statement and match
-  parsers land, `if` uses a syntactic heuristic: it opens after obvious
+  with their own `end`. Parser task 33 owns concrete statement-list recovery
+  for `if`, `while`, `for`, and `match`; the recovery prepass keeps a shallow
+  syntactic mirror for block-end matching. `for` is opened for loop-like
+  `for <identifier> = ...` / `for <identifier> in ...` token shapes and for
+  malformed-head shapes that still expose a `do` body marker before the next
+  boundary, so formula quantifiers do not consume block ends. `if` opens after obvious
   algorithm/proof control introducers or when a `do` body marker appears before
-  the next boundary. `otherwise` likewise opens after `end` or `end;`, matching
-  the surface shape of completed match cases; expression-level `otherwise`
-  without that prefix is not opened. `else if` is treated as one conditional
-  chain rather than a nested block opener;
+  the next boundary. `otherwise` opens only in an open algorithm block after
+  `end` or `end;`, matching the surface shape of completed match cases;
+  expression-level and definition-side `otherwise` without that algorithm
+  prefix is not opened. `else if` is treated as one conditional chain rather
+  than a nested block opener;
 - missing string literals in synthetic string-required parser contexts are
   diagnosed and represented with an explicit recovered `MissingStringLiteral`
   node;

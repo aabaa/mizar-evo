@@ -162,6 +162,15 @@ green tree.
 | snapshot statement node | `SyntaxKind::SnapshotStatement` |
 | return statement node | `SyntaxKind::ReturnStatement` |
 | claim block item node | `SyntaxKind::ClaimBlockItem` |
+| algorithm `if` statement node | `SyntaxKind::IfStatement` |
+| algorithm `while` statement node | `SyntaxKind::WhileStatement` |
+| algorithm range-loop statement node | `SyntaxKind::ForRangeStatement` |
+| algorithm collection-loop statement node | `SyntaxKind::ForCollectionStatement` |
+| algorithm `match` statement node | `SyntaxKind::MatchStatement` |
+| algorithm match-case node | `SyntaxKind::MatchCase` |
+| algorithm match-ending node | `SyntaxKind::MatchEnding` |
+| algorithm `break` statement node | `SyntaxKind::BreakStatement` |
+| algorithm `continue` statement node | `SyntaxKind::ContinueStatement` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -354,11 +363,20 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 159 | `SnapshotStatement` | task-32 `snapshot` statement |
 | 160 | `ReturnStatement` | task-32 `return` statement |
 | 161 | `ClaimBlockItem` | task-32 top-level `claim ... do ... end;` item |
+| 162 | `IfStatement` | task-33 algorithm `if ... do ... [else ...] end;` statement |
+| 163 | `WhileStatement` | task-33 algorithm `while ... do ... end;` statement |
+| 164 | `ForRangeStatement` | task-33 algorithm `for i = ... to|downto ... [step ...] do ... end;` statement |
+| 165 | `ForCollectionStatement` | task-33 algorithm `for x in S [processed V] do ... end;` statement |
+| 166 | `MatchStatement` | task-33 algorithm `match ... do ... end;` statement |
+| 167 | `MatchCase` | task-33 `case pattern do ... end;` branch inside algorithm `match` |
+| 168 | `MatchEnding` | task-33 `otherwise ... end;` or `exhaustive [justification];` match ending |
+| 169 | `BreakStatement` | task-33 algorithm `break;` statement |
+| 170 | `ContinueStatement` | task-33 algorithm `continue;` statement |
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
 above, including `Root` through task-22 `ProofBlock`, task-23
-`DefinitionBlockItem` through task-32 `ClaimBlockItem`, the compatibility
+`DefinitionBlockItem` through task-33 `ContinueStatement`, the compatibility
 `Token` wrapper, and `ErrorRecovery`; `is_token_kind` is true only for token
 leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future raw values should be
 appended or assigned into a documented reserved range so existing snapshots and
@@ -476,7 +494,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::AlgorithmDefinition` | none | `SyntaxKind::AlgorithmDefinition` | parser task-32 definition content for `algorithm name [template_loci] (parameters) [-> type] do ... end;`; owns the name, optional identifier-only `TemplateLoci`, `AlgorithmParameters`, optional return `TypeExpression`, `AlgorithmBody`, and trailing semicolon; header contracts remain task 34 |
 | `SurfaceNodeKind::AlgorithmParameters` | none | `SyntaxKind::AlgorithmParameters` | parser task-32 algorithm formal list; owns `(`, comma-separated identifier tokens or missing-term recovery, and `)` / delimiter recovery |
 | `SurfaceNodeKind::AlgorithmBody` | none | `SyntaxKind::AlgorithmBody` | parser task-32 `do ... end` algorithm body; owns the `do` token when present, an `AlgorithmStatementList`, and `end` / missing-end recovery |
-| `SurfaceNodeKind::AlgorithmStatementList` | none | `SyntaxKind::AlgorithmStatementList` | parser task-32 source-ordered body statements for declarations, assignments, snapshots, and returns; control flow, verification statements, and annotations remain parser tasks 33-35 |
+| `SurfaceNodeKind::AlgorithmStatementList` | none | `SyntaxKind::AlgorithmStatementList` | parser task-32 source-ordered body statements, extended by task 33 to include control-flow statements; verification statements and annotations remain parser tasks 34-35 |
 | `SurfaceNodeKind::VariableDeclaration` | none | `SyntaxKind::VariableDeclaration` | parser task-32 `var` / `const` declaration, optionally prefixed by `ghost`; owns one or more `VariableBinding` children, optional shared `as TypeExpression`, optional syntax-level justification, and the semicolon or recovery |
 | `SurfaceNodeKind::VariableBinding` | none | `SyntaxKind::VariableBinding` | parser task-32 declaration binding; owns a binding identifier plus optional `:= TermExpression` initializer or missing-term recovery |
 | `SurfaceNodeKind::AssignmentStatement` | none | `SyntaxKind::AssignmentStatement` | parser task-32 assignment statement, optionally prefixed by `ghost`; owns an `Lvalue`, `:=`, assigned `TermExpression` or recovery, and the semicolon or recovery |
@@ -484,6 +502,15 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::SnapshotStatement` | none | `SyntaxKind::SnapshotStatement` | parser task-32 `snapshot` statement; owns the snapshot identifier and semicolon or recovery |
 | `SurfaceNodeKind::ReturnStatement` | none | `SyntaxKind::ReturnStatement` | parser task-32 `return` statement; owns optional returned `TermExpression`, optional syntax-level justification, and semicolon or recovery |
 | `SurfaceNodeKind::ClaimBlockItem` | none | `SyntaxKind::ClaimBlockItem` | parser task-32 top-level `claim algorithm_name do ... end;` item; owns bare theorem/lemma children and defers claim-local annotations to task 35 |
+| `SurfaceNodeKind::IfStatement` | none | `SyntaxKind::IfStatement` | parser task-33 algorithm conditional; owns `if`, a `FormulaExpression` or missing-formula recovery, `do`, the then `AlgorithmStatementList`, and either `end;`, `else` plus nested `IfStatement`, or `else` plus an else `AlgorithmStatementList` and `end;` |
+| `SurfaceNodeKind::WhileStatement` | none | `SyntaxKind::WhileStatement` | parser task-33 algorithm while loop; owns `while`, condition `FormulaExpression` or recovery, `do`, task-34-deferred loop-clause recovery when present, body `AlgorithmStatementList`, and `end;` / missing-end recovery |
+| `SurfaceNodeKind::ForRangeStatement` | none | `SyntaxKind::ForRangeStatement` | parser task-33 algorithm range loop; owns `for`, loop identifier or recovery, `=`, lower `TermExpression`, `to` or `downto`, upper `TermExpression`, optional `step TermExpression`, task-34-deferred loop-clause recovery when present, body list, and `end;` / recovery |
+| `SurfaceNodeKind::ForCollectionStatement` | none | `SyntaxKind::ForCollectionStatement` | parser task-33 algorithm collection loop; owns `for`, loop identifier, `in`, collection `TermExpression`, optional `processed` identifier, task-34-deferred loop-clause recovery when present, body list, and `end;` / recovery |
+| `SurfaceNodeKind::MatchStatement` | none | `SyntaxKind::MatchStatement` | parser task-33 algorithm structural match; owns `match`, scrutinee `TermExpression`, `do`, one or more `MatchCase` nodes or missing-statement recovery, a `MatchEnding`, and final `end;` / recovery |
+| `SurfaceNodeKind::MatchCase` | none | `SyntaxKind::MatchCase` | parser task-33 `case term_pattern do ... end;` branch; owns the pattern as `TermExpression`, branch statement list, and branch `end;` / recovery |
+| `SurfaceNodeKind::MatchEnding` | none | `SyntaxKind::MatchEnding` | parser task-33 match ending; owns either `otherwise` plus a statement list and `end;`, or `exhaustive` plus optional syntax-level justification and semicolon |
+| `SurfaceNodeKind::BreakStatement` | none | `SyntaxKind::BreakStatement` | parser task-33 `break;` jump statement; loop-context validity is semantic and not encoded here |
+| `SurfaceNodeKind::ContinueStatement` | none | `SyntaxKind::ContinueStatement` | parser task-33 `continue;` jump statement; loop-context and termination obligations are semantic and not encoded here |
 | `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host plus parser task-22 proof justification host; owns one `Proposition`, one `JustificationClause` or `ProofBlock`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
@@ -1313,20 +1340,84 @@ Token kind=<SurfaceTokenKind> text="<escaped-text>" range=<start>..<end> recover
 CompilationUnit range=<start>..<end> recovered=<bool>
 ItemList range=<start>..<end> recovered=<bool>
 PlaceholderItem range=<start>..<end> recovered=<bool>
+ImportItem range=<start>..<end> recovered=<bool>
+ModuleBranchImport range=<start>..<end> recovered=<bool>
+ImportAliasDecl range=<start>..<end> recovered=<bool>
+ExportItem range=<start>..<end> recovered=<bool>
+VisibleItem range=<start>..<end> recovered=<bool>
+VisibilityMarker range=<start>..<end> recovered=<bool>
 ModulePath range=<start>..<end> recovered=<bool>
 NamespacePath range=<start>..<end> recovered=<bool>
 QualifiedSymbol range=<start>..<end> recovered=<bool>
 PathSegment range=<start>..<end> recovered=<bool>
 RelativePrefix range=<start>..<end> recovered=<bool>
+ReserveItem range=<start>..<end> recovered=<bool>
+ReserveSegment range=<start>..<end> recovered=<bool>
+TypeExpression range=<start>..<end> recovered=<bool>
+AttributeChain range=<start>..<end> recovered=<bool>
+AttributeRef range=<start>..<end> recovered=<bool>
+TypeHead range=<start>..<end> recovered=<bool>
+TypeArguments range=<start>..<end> recovered=<bool>
+TermPlaceholder range=<start>..<end> recovered=<bool>
+ParameterPrefix range=<start>..<end> recovered=<bool>
+TermExpression range=<start>..<end> recovered=<bool>
+TermReference range=<start>..<end> recovered=<bool>
+NumeralTerm range=<start>..<end> recovered=<bool>
+ItTerm range=<start>..<end> recovered=<bool>
+ParenthesizedTerm range=<start>..<end> recovered=<bool>
+ChoiceTerm range=<start>..<end> recovered=<bool>
+ApplicationTerm range=<start>..<end> recovered=<bool>
+StructureConstructor range=<start>..<end> recovered=<bool>
+FieldArgument range=<start>..<end> recovered=<bool>
+SetEnumeration range=<start>..<end> recovered=<bool>
+SetComprehension range=<start>..<end> recovered=<bool>
+ComprehensionVariableSegment range=<start>..<end> recovered=<bool>
+SelectorAccess range=<start>..<end> recovered=<bool>
+StructureUpdate range=<start>..<end> recovered=<bool>
+FieldUpdate range=<start>..<end> recovered=<bool>
+QuaExpression range=<start>..<end> recovered=<bool>
 InfixExpression spelling="<escaped-text>" precedence=<u8> associativity=<SurfaceOperatorAssociativity> range=<start>..<end> recovered=<bool>
 PrefixExpression spelling="<escaped-text>" precedence=<u8> range=<start>..<end> recovered=<bool>
 PostfixExpression spelling="<escaped-text>" precedence=<u8> range=<start>..<end> recovered=<bool>
+FormulaExpression range=<start>..<end> recovered=<bool>
+BuiltinPredicateApplication range=<start>..<end> recovered=<bool>
+IsAssertion range=<start>..<end> recovered=<bool>
+AttributeTestChain range=<start>..<end> recovered=<bool>
+PredicateApplication range=<start>..<end> recovered=<bool>
+PredicateSegment range=<start>..<end> recovered=<bool>
+PredicateHead range=<start>..<end> recovered=<bool>
+InlinePredicateApplication range=<start>..<end> recovered=<bool>
 PrefixFormula operator=<SurfaceFormulaPrefixOperator> range=<start>..<end> recovered=<bool>
 BinaryFormula connective=<SurfaceFormulaConnective> repeated=<bool> range=<start>..<end> recovered=<bool>
 ParenthesizedFormula range=<start>..<end> recovered=<bool>
 QuantifiedFormula quantifier=<SurfaceQuantifierKind> range=<start>..<end> recovered=<bool>
 QuantifierVariableSegment range=<start>..<end> recovered=<bool>
 FormulaConstant constant=<SurfaceFormulaConstant> range=<start>..<end> recovered=<bool>
+TemplateLoci range=<start>..<end> recovered=<bool>
+TemplateLocus range=<start>..<end> recovered=<bool>
+TemplateArguments range=<start>..<end> recovered=<bool>
+TemplateArgument range=<start>..<end> recovered=<bool>
+TemplateParameter range=<start>..<end> recovered=<bool>
+AlgorithmDefinition range=<start>..<end> recovered=<bool>
+AlgorithmParameters range=<start>..<end> recovered=<bool>
+AlgorithmBody range=<start>..<end> recovered=<bool>
+AlgorithmStatementList range=<start>..<end> recovered=<bool>
+VariableDeclaration range=<start>..<end> recovered=<bool>
+VariableBinding range=<start>..<end> recovered=<bool>
+AssignmentStatement range=<start>..<end> recovered=<bool>
+Lvalue range=<start>..<end> recovered=<bool>
+SnapshotStatement range=<start>..<end> recovered=<bool>
+ReturnStatement range=<start>..<end> recovered=<bool>
+ClaimBlockItem range=<start>..<end> recovered=<bool>
+IfStatement range=<start>..<end> recovered=<bool>
+WhileStatement range=<start>..<end> recovered=<bool>
+ForRangeStatement range=<start>..<end> recovered=<bool>
+ForCollectionStatement range=<start>..<end> recovered=<bool>
+MatchStatement range=<start>..<end> recovered=<bool>
+MatchCase range=<start>..<end> recovered=<bool>
+MatchEnding range=<start>..<end> recovered=<bool>
+BreakStatement range=<start>..<end> recovered=<bool>
+ContinueStatement range=<start>..<end> recovered=<bool>
 StatementItem range=<start>..<end> recovered=<bool>
 LetStatement range=<start>..<end> recovered=<bool>
 QualifiedVariableSegment range=<start>..<end> recovered=<bool>

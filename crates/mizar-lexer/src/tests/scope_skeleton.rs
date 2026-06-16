@@ -272,6 +272,14 @@ ghost gv := gc;
 case Choice do
 var branch;
 end;
+match Choice do
+case Pattern do
+var matched;
+end;
+otherwise
+var fallback;
+end;
+end;
 for i = 0 to 2 do
 var inner;
 end;
@@ -297,6 +305,9 @@ end;";
             LexicalBlockKind::Do,
             LexicalBlockKind::Do,
             LexicalBlockKind::Do,
+            LexicalBlockKind::Do,
+            LexicalBlockKind::Do,
+            LexicalBlockKind::Do,
         ]
     );
     assert!(skeleton.binding_overrides_symbol("g", nth_index(source, "object", 0)));
@@ -305,12 +316,46 @@ end;";
     assert!(skeleton.binding_overrides_symbol("F", nth_index(source, "defpred", 0)));
     assert!(skeleton.binding_overrides_symbol("a", nth_index(source, "const", 0)));
     assert!(skeleton.binding_overrides_symbol("gv", nth_index(source, "for i", 0)));
-    assert!(skeleton.binding_overrides_symbol("branch", nth_index(source, "end;\nfor i", 0)));
-    assert!(!skeleton.binding_overrides_symbol("branch", nth_index(source, "for i", 0)));
+    assert!(
+        skeleton.binding_overrides_symbol("branch", nth_index(source, "end;\nmatch Choice", 0))
+    );
+    assert!(!skeleton.binding_overrides_symbol("branch", nth_index(source, "match Choice", 0)));
+    assert!(skeleton.binding_overrides_symbol("matched", nth_index(source, "end;\notherwise", 0)));
+    assert!(!skeleton.binding_overrides_symbol("matched", nth_index(source, "otherwise", 0)));
+    assert!(
+        skeleton.binding_overrides_symbol("fallback", nth_index(source, "end;\nend;\nfor i", 0))
+    );
+    assert!(!skeleton.binding_overrides_symbol("fallback", nth_index(source, "for i", 0)));
     assert!(skeleton.binding_overrides_symbol("i", nth_index(source, "inner", 0)));
     assert!(!skeleton.binding_overrides_symbol("i", nth_index(source, "for item", 0)));
     assert!(skeleton.binding_overrides_symbol("Seen", nth_index(source, "consumed", 0)));
     assert!(!skeleton.binding_overrides_symbol("Seen", source.len()));
+    assert!(skeleton.diagnostics.is_empty());
+}
+
+#[test]
+fn scope_skeleton_does_not_open_definition_side_otherwise_blocks() {
+    let source = "\
+definition
+case
+let branch be set;
+end;
+otherwise
+let fallback be set;
+end;";
+    let raw = scan_raw(source).expect("source should raw scan");
+    let skeleton = build_scope_skeleton(&raw);
+
+    assert!(
+        !skeleton
+            .blocks
+            .iter()
+            .any(|block| block.kind == LexicalBlockKind::Do),
+        "definition-side `otherwise` must not open a conservative Do block"
+    );
+    assert!(skeleton.binding_overrides_symbol("branch", nth_index(source, "end;", 0)));
+    assert!(!skeleton.binding_overrides_symbol("branch", nth_index(source, "otherwise", 0)));
+    assert!(skeleton.binding_overrides_symbol("fallback", nth_index(source, "end;", 1)));
     assert!(skeleton.diagnostics.is_empty());
 }
 

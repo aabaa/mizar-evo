@@ -748,10 +748,21 @@ older numeric syntax task references appear to disagree, prefer
     - Deps: 31, `mizar-syntax` task 16 / S-016. Spec:
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 
-33. **Algorithm control flow.** [ ]
-    - `while`/`do` (with `to`/`downto`), `if`/`else`, `match`,
-      `for ... in ... processed ...`, `otherwise`/`exhaustive` match endings,
-      `break`/`continue`.
+33. **Algorithm control flow.** [x]
+    - `while ... do`, range `for ... = ... (to|downto) ... [step ...]`,
+      `if`/`else`, `match`, `for ... in ... [processed ...]`,
+      `otherwise`/`exhaustive` match endings, `break`/`continue`.
+    - Result: `IfStatement`, `WhileStatement`, `ForRangeStatement`,
+      `ForCollectionStatement`, `MatchStatement`, `MatchCase`, `MatchEnding`,
+      `BreakStatement`, and `ContinueStatement` surfaces are implemented with
+      parser-unit coverage for else-if chaining and recovery. Active
+      pass/fail parse-only coverage exercises ordinary if/else, while,
+      `to` / `downto` range loops with optional `step`, collection loops with
+      and without `processed`, multiple match cases, `otherwise` and
+      `exhaustive` endings with and without justification, and jump statements.
+      Loop `invariant` / `decreasing` clauses are still task 34: task 33
+      diagnoses and recovers them through the clause semicolon without creating
+      concrete verification-clause nodes.
     - Deps: 32, `mizar-syntax` task 16 / S-016. Spec:
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 

@@ -493,8 +493,13 @@ interaction. Spec references are the normative grammar chapters under
       ghost declarations/assignments, snapshots, top-level `claim` blocks,
       returns, active algorithm/claim parse-only seeds, and frontend
       scope-skeleton support for algorithm bodies and ghost assignments.
-      Remaining: control flow including processed collection loops and match endings
-      (parser task 33); verification clauses (parser task 34);
+    - Done for parser task 33: algorithm control flow including if/else,
+      else-if parser-unit coverage, while, `to` / `downto` range loops with
+      optional `step`, collection loops with and without `processed`, multiple
+      match cases, `otherwise` / `exhaustive` endings with and without
+      justification, `break`, `continue`, active control-flow parse-only seeds,
+      and frontend scope-skeleton support for match `otherwise` blocks.
+      Remaining: verification clauses (parser task 34);
       statement-level annotations, `@[...]` library annotations, and
       string-literal annotation arguments (parser task 35).
     - Spec: [18.templates.md](../../../spec/en/18.templates.md),

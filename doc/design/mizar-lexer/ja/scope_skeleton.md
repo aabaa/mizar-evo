@@ -52,7 +52,7 @@ pub fn build_scope_skeleton(raw: &RawTokenStream) -> ScopeSkeleton;
 
 スケルトンの事前スキャンは、字句スコープを近似するために必要な、予約キーワードの形をした構造だけを認識します。
 
-- `definition`, `proof`, `now`, `case`, `suppose`, `hereby`, `algorithm`、algorithm `for ... do`、nested `struct`、explicit `inherit ... where`、`end` などのブロック境界;
+- `definition`, `proof`, `now`, `case`, `suppose`, `hereby`, `algorithm`、algorithm `for ... do`、match `otherwise` branch、nested `struct`、explicit `inherit ... where`、`end` などのブロック境界;
 - `let`, `for`, `ex`, `reserve`, `given`, `consider`, `set`, `reconsider`, `take`, `deffunc`, `defpred`、アルゴリズムの `var` / `const` などの、束縛子(binder)を導入する形式;
 - 認識された束縛子の位置にある、カンマ区切りの束縛リスト;
 - 式をパースせずに束縛範囲を近似できる局所名.
@@ -68,6 +68,7 @@ pub fn build_scope_skeleton(raw: &RawTokenStream) -> ScopeSkeleton;
 - `for`, `ex`, `given` は、復元した文範囲にだけ束縛します。
 - `algorithm ... do ... end` は 1 つの algorithm lexical block です。header の `do` は別の `Do` frame を開きません。
 - アルゴリズムの `for ... do` の束縛子と、省略可能な `processed name` は、後続の `Do` ブロックに束縛します。それ以外の header ではない `do` token も、保守的な `Do` ブロックを開きます。
+- open algorithm block 内では、`end` または `end;` の直後に現れる `otherwise` が conservative な match-branch heuristic として `Do` block を開きます。これにより branch-local `end;` と final match `end;` の両方が対応できます。definition 側の `otherwise` clause と non-algorithm の `end; otherwise` 形は block を開きません。
 
 スケルトンの事前スキャンは、生スキャンに句読点(punctuation)を事前分割させることを要求してはいけません。束縛リストと item tail の復元に必要な `,`, `;`、括弧、角括弧、波括弧、ブロックを閉じる句読点などを認識するために、`LexemeRun` の内部を調べてよいです。
 
@@ -77,7 +78,7 @@ pub fn build_scope_skeleton(raw: &RawTokenStream) -> ScopeSkeleton;
 
 1. `RawTokenStream` を、スコープスケルトン専用のトークンに変換します。レイアウト(空白類)は無視します。`LexemeRun` は、識別子の形をした `Word`、カンマ、セミコロン、括弧、角括弧、波括弧、`Other` のランに分割します。それ以外の生トークンの種別は `Other` として扱います。
 2. バイト `0` から始まる合成のルートフレーム、空のブロックスタック、空の `pending_do_bindings` を初期化します。`pending_do_bindings` は、アルゴリズムの `for ... do` 形式の束縛子を後続の `do` ブロックに渡すための一時バッファです。
-3. トークンを左から右へ走査します。`algorithm`, `definition`, `proof`, `now`, `suppose`, `hereby`, `struct` は、ブロックを開く語として開いたフレームをプッシュします。`do` token は、pending loop binding がなく開いている algorithm body を始める header `do` でない限り `Do` frame を開きます。その header `do` は `Algorithm` frame に付着します。`inherit` は、statement semicolon または block `end` より前に `where` が現れる場合だけフレームをプッシュし、explicit inheritance block を表しつつ shorthand `inherit ...;` は statement 形の declaration として扱います。`case` は、その文の残りに `do` が含まれない場合だけ証明の分岐としてフレームを開きます。これにより、アルゴリズムの `case ... do` を証明の分岐と誤認しません。`end` はフレームを 1 つポップし、ブロック範囲と字句スコープフレームの両方を記録します。
+3. トークンを左から右へ走査します。`algorithm`, `definition`, `proof`, `now`, `suppose`, `hereby`, `struct` は、ブロックを開く語として開いたフレームをプッシュします。`do` token は、pending loop binding がなく開いている algorithm body を始める header `do` でない限り `Do` frame を開きます。その header `do` は `Algorithm` frame に付着します。`inherit` は、statement semicolon または block `end` より前に `where` が現れる場合だけフレームをプッシュし、explicit inheritance block を表しつつ shorthand `inherit ...;` は statement 形の declaration として扱います。`case` は、その文の残りに `do` が含まれない場合だけ証明の分岐としてフレームを開きます。これにより、アルゴリズムの `case ... do` を証明の分岐と誤認しません。`otherwise` は completed algorithm match case（`end; otherwise`）の後に現れる場合だけ conservative な `Do` frame を開き、definition 側の conditional definiens では開きません。`end` はフレームを 1 つポップし、ブロック範囲と字句スコープフレームの両方を記録します。
 4. 束縛子の語は、形状ごとのパーサーに委譲します。`let x, y be ...` のような単純な束縛子リストは、カンマ・セミコロン・停止語までの識別子の形をした名前を読みます。`set x = ...` と `take x = ...` のような名前付き等号の束縛子は、`name =` の形状を要求します。`reconsider` は `type_change_list` を保守的に走査し、各 item 先頭の識別子を記録し、任意の等号右辺を括弧・角括弧・波括弧の深さを追跡しながらトップレベルのカンマまたは `as` まで読み飛ばします。アルゴリズムの `var` / `const` は、括弧の深さを追跡しながらカンマ区切りの宣言ヘッドを読むため、初期化子のタプルが余計な束縛子を作ることはありません。
 5. `ghost var` と `ghost const` はアルゴリズムの束縛子として扱います。`ghost target := term;` は束縛しない assignment として扱い、scope diagnostic なしで読み飛ばします。それ以外の `ghost` 形式は、回復可能な診断を出し、束縛を捏造しません。
 6. 束縛の有効範囲は形状ごとに決めます。`reserve` は、入れ子のブロックの外でのみルートフレームに入ります。`for`, `ex`, `given` は文単位のフレームを作ります。`consider`、`reconsider`、ブロック内の `let`、名前付き等号の束縛子、`deffunc`、`defpred`、`var`、`const`、`processed` は、開いているブロックがあれば現在のブロックフレームを拡張し、なければ文単位のフレームにフォールバックします。アルゴリズムの `for ... do` は、束縛子と省略可能な `processed name` を、`pending_do_bindings` 経由で次の `do` ブロックに移します。
@@ -125,7 +126,7 @@ pub fn build_scope_skeleton(raw: &RawTokenStream) -> ScopeSkeleton;
 - カンマ区切りの束縛子;
 - 入れ子のブロック範囲;
 - 文単位の束縛子に対する文範囲;
-- `case`, `suppose`, `hereby`、algorithm block、algorithm `for ... do` 範囲、nested `struct` / explicit `inherit ... where` 範囲;
+- `case`, `suppose`, `hereby`、algorithm block、algorithm `for ... do` 範囲、algorithm match `otherwise` branch、nested `struct` / explicit `inherit ... where` 範囲;
 - `take`, `deffunc`, `defpred`、アルゴリズムの束縛子に由来する局所名;
 - 不正な束縛子では名前を捏造せず過小近似すること;
 - `ScopeLexView` が束縛範囲の内側でだけ真を返すこと;

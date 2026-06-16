@@ -6,8 +6,8 @@
 module-skeleton recovery、task 6 の import recovery、task 7 の export/visibility
 recovery、task 8 の type-expression recovery、task 9 の primary-term recovery、
 task 13 の atomic-formula recovery、task 14 の formula recovery、S-013 / S-014 の
-statement/proof recovery、task 29 までの S-015 definition recovery は実装済み。
-完全な文法回復は引き続き計画中。
+statement/proof recovery、task 29 までの S-015 definition recovery、および task 33 の
+algorithm control-flow recovery は実装済み。完全な文法回復は引き続き計画中。
 
 ## 目的
 
@@ -36,14 +36,16 @@ statement/proof recovery、task 29 までの S-015 definition recovery は実装
   として保持するが、recovery node 自体に必須の context child は持たせない。これにより
   後続の module skeleton node が source token を所有しても non-root parent が重複しない。
   現在の stack は top-level block と、それ自身の `end` を持つ algorithm control block を
-  含む。`for` は formula quantifier が block end を消費しないように、
-  `for <identifier> = ...` / `for <identifier> in ...` の loop 風 token shape の場合だけ
-  開く。concrete statement parser と match parser が着地するまでは、`if` は構文的
-  heuristic を使う。明らかな algorithm/proof control introducer の後、または次の境界
-  より前に `do` body marker が現れる場合に開く。`otherwise` も同様に、完了済み
-  match case の surface shape に合わせて `end` または `end;` の後に開く。その prefix
-  を持たない式レベルの `otherwise` は開かない。`else if` は nested block opener ではなく、
-  1 つの conditional chain として扱う。
+  含む。parser task 33 は `if`、`while`、`for`、`match` の concrete statement-list
+  recovery を所有し、recovery prepass は block-end matching 用の浅い構文 mirror を保つ。
+  `for` は `for <identifier> = ...` / `for <identifier> in ...` の loop 風 token shape と、
+  次の境界より前に `do` body marker が現れる malformed-head shape で開く。これにより
+  formula quantifier が block end を消費しないようにする。`if` は明らかな
+  algorithm/proof control introducer の後、または次の境界より前に
+  `do` body marker が現れる場合に開く。`otherwise` は open algorithm block 内で完了済み
+  match case の surface shape に合わせて `end` または `end;` の後にだけ開く。その
+  algorithm prefix を持たない式レベル・definition 側の `otherwise` は開かない。`else if`
+  は nested block opener ではなく、1 つの conditional chain として扱う。
 - 合成の文字列必須 parser context で文字列リテラルが欠落した場合に診断し、明示的な recovered `MissingStringLiteral` node を作る。
 - task 5 の module skeleton parsing は、top-level item semicolon 欠落を
   `MissingSemicolon` で診断し、unexpected top-level token を

@@ -228,6 +228,14 @@ impl ScopeSkeletonBuilder {
                         }
                         continue;
                     }
+                    "otherwise" => {
+                        let opens_match_branch = self.otherwise_opens_match_branch();
+                        self.advance();
+                        if opens_match_branch {
+                            self.open_frame(LexicalBlockKind::Do, token.span.start);
+                        }
+                        continue;
+                    }
                     "suppose" => {
                         self.advance();
                         self.open_frame(LexicalBlockKind::Suppose, token.span.start);
@@ -418,6 +426,32 @@ impl ScopeSkeletonBuilder {
         } else {
             false
         }
+    }
+
+    fn otherwise_opens_match_branch(&self) -> bool {
+        if !self
+            .stack
+            .iter()
+            .any(|frame| frame.kind == LexicalBlockKind::Algorithm)
+        {
+            return false;
+        }
+        let Some(previous_index) = self.cursor.checked_sub(1) else {
+            return false;
+        };
+        let Some(previous) = self.tokens.get(previous_index) else {
+            return false;
+        };
+        if previous.kind == ScopeSkeletonTokenKind::Word && previous.lexeme == "end" {
+            return true;
+        }
+        previous.kind == ScopeSkeletonTokenKind::Semicolon
+            && previous_index
+                .checked_sub(1)
+                .and_then(|index| self.tokens.get(index))
+                .is_some_and(|token| {
+                    token.kind == ScopeSkeletonTokenKind::Word && token.lexeme == "end"
+                })
     }
 
     fn close_frame(&mut self, end_span: SourceSpan) {

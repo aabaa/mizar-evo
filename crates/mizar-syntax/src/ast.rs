@@ -184,6 +184,15 @@ pub enum SyntaxKind {
     SnapshotStatement = 159,
     ReturnStatement = 160,
     ClaimBlockItem = 161,
+    IfStatement = 162,
+    WhileStatement = 163,
+    ForRangeStatement = 164,
+    ForCollectionStatement = 165,
+    MatchStatement = 166,
+    MatchCase = 167,
+    MatchEnding = 168,
+    BreakStatement = 169,
+    ContinueStatement = 170,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -349,6 +358,15 @@ impl SyntaxKind {
             159 => Self::SnapshotStatement,
             160 => Self::ReturnStatement,
             161 => Self::ClaimBlockItem,
+            162 => Self::IfStatement,
+            163 => Self::WhileStatement,
+            164 => Self::ForRangeStatement,
+            165 => Self::ForCollectionStatement,
+            166 => Self::MatchStatement,
+            167 => Self::MatchCase,
+            168 => Self::MatchEnding,
+            169 => Self::BreakStatement,
+            170 => Self::ContinueStatement,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -516,6 +534,15 @@ impl SyntaxKind {
                 | Self::SnapshotStatement
                 | Self::ReturnStatement
                 | Self::ClaimBlockItem
+                | Self::IfStatement
+                | Self::WhileStatement
+                | Self::ForRangeStatement
+                | Self::ForCollectionStatement
+                | Self::MatchStatement
+                | Self::MatchCase
+                | Self::MatchEnding
+                | Self::BreakStatement
+                | Self::ContinueStatement
         )
     }
 
@@ -1275,6 +1302,69 @@ impl<'a> SurfaceNodeView<'a> {
     pub fn as_claim_block_item(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::ClaimBlockItem => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_if_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::IfStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_while_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::WhileStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_for_range_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ForRangeStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_for_collection_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ForCollectionStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_match_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::MatchStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_match_case(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::MatchCase => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_match_ending(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::MatchEnding => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_break_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::BreakStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_continue_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ContinueStatement => Some(self),
             _ => None,
         }
     }
@@ -2185,6 +2275,15 @@ pub enum SurfaceNodeKind {
     SnapshotStatement,
     ReturnStatement,
     ClaimBlockItem,
+    IfStatement,
+    WhileStatement,
+    ForRangeStatement,
+    ForCollectionStatement,
+    MatchStatement,
+    MatchCase,
+    MatchEnding,
+    BreakStatement,
+    ContinueStatement,
     TermPlaceholder,
     TermExpression,
     TermReference,
@@ -2341,6 +2440,15 @@ impl SurfaceNodeKind {
             Self::SnapshotStatement => SyntaxKind::SnapshotStatement,
             Self::ReturnStatement => SyntaxKind::ReturnStatement,
             Self::ClaimBlockItem => SyntaxKind::ClaimBlockItem,
+            Self::IfStatement => SyntaxKind::IfStatement,
+            Self::WhileStatement => SyntaxKind::WhileStatement,
+            Self::ForRangeStatement => SyntaxKind::ForRangeStatement,
+            Self::ForCollectionStatement => SyntaxKind::ForCollectionStatement,
+            Self::MatchStatement => SyntaxKind::MatchStatement,
+            Self::MatchCase => SyntaxKind::MatchCase,
+            Self::MatchEnding => SyntaxKind::MatchEnding,
+            Self::BreakStatement => SyntaxKind::BreakStatement,
+            Self::ContinueStatement => SyntaxKind::ContinueStatement,
             Self::TermPlaceholder => SyntaxKind::TermPlaceholder,
             Self::TermExpression => SyntaxKind::TermExpression,
             Self::TermReference => SyntaxKind::TermReference,
@@ -2647,6 +2755,17 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::SnapshotStatement => output.push_str("SnapshotStatement"),
         SurfaceNodeKind::ReturnStatement => output.push_str("ReturnStatement"),
         SurfaceNodeKind::ClaimBlockItem => output.push_str("ClaimBlockItem"),
+        SurfaceNodeKind::IfStatement => output.push_str("IfStatement"),
+        SurfaceNodeKind::WhileStatement => output.push_str("WhileStatement"),
+        SurfaceNodeKind::ForRangeStatement => output.push_str("ForRangeStatement"),
+        SurfaceNodeKind::ForCollectionStatement => {
+            output.push_str("ForCollectionStatement");
+        }
+        SurfaceNodeKind::MatchStatement => output.push_str("MatchStatement"),
+        SurfaceNodeKind::MatchCase => output.push_str("MatchCase"),
+        SurfaceNodeKind::MatchEnding => output.push_str("MatchEnding"),
+        SurfaceNodeKind::BreakStatement => output.push_str("BreakStatement"),
+        SurfaceNodeKind::ContinueStatement => output.push_str("ContinueStatement"),
         SurfaceNodeKind::TermPlaceholder => output.push_str("TermPlaceholder"),
         SurfaceNodeKind::TermExpression => output.push_str("TermExpression"),
         SurfaceNodeKind::TermReference => output.push_str("TermReference"),
@@ -3916,6 +4035,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            task33_algorithm_control_flow_nodes_ast(source_id(52))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -4040,6 +4165,15 @@ mod tests {
             SyntaxKind::SnapshotStatement,
             SyntaxKind::ReturnStatement,
             SyntaxKind::ClaimBlockItem,
+            SyntaxKind::IfStatement,
+            SyntaxKind::WhileStatement,
+            SyntaxKind::ForRangeStatement,
+            SyntaxKind::ForCollectionStatement,
+            SyntaxKind::MatchStatement,
+            SyntaxKind::MatchCase,
+            SyntaxKind::MatchEnding,
+            SyntaxKind::BreakStatement,
+            SyntaxKind::ContinueStatement,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -6056,6 +6190,84 @@ mod tests {
             assert!(
                 snapshot.contains(expected),
                 "snapshot should render task-32 line {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn task33_typed_accessors_cover_algorithm_control_flow_nodes() {
+        let ast = task33_algorithm_control_flow_nodes_ast(source_id(52));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task33_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task33_view!(
+            SurfaceNodeKind::IfStatement,
+            SyntaxKind::IfStatement,
+            as_if_statement
+        );
+        assert_task33_view!(
+            SurfaceNodeKind::WhileStatement,
+            SyntaxKind::WhileStatement,
+            as_while_statement
+        );
+        assert_task33_view!(
+            SurfaceNodeKind::ForRangeStatement,
+            SyntaxKind::ForRangeStatement,
+            as_for_range_statement
+        );
+        assert_task33_view!(
+            SurfaceNodeKind::ForCollectionStatement,
+            SyntaxKind::ForCollectionStatement,
+            as_for_collection_statement
+        );
+        assert_task33_view!(
+            SurfaceNodeKind::MatchStatement,
+            SyntaxKind::MatchStatement,
+            as_match_statement
+        );
+        assert_task33_view!(
+            SurfaceNodeKind::MatchCase,
+            SyntaxKind::MatchCase,
+            as_match_case
+        );
+        assert_task33_view!(
+            SurfaceNodeKind::MatchEnding,
+            SyntaxKind::MatchEnding,
+            as_match_ending
+        );
+        assert_task33_view!(
+            SurfaceNodeKind::BreakStatement,
+            SyntaxKind::BreakStatement,
+            as_break_statement
+        );
+        assert_task33_view!(
+            SurfaceNodeKind::ContinueStatement,
+            SyntaxKind::ContinueStatement,
+            as_continue_statement
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in [
+            "IfStatement",
+            "WhileStatement",
+            "ForRangeStatement",
+            "ForCollectionStatement",
+            "MatchStatement",
+            "MatchCase",
+            "MatchEnding",
+            "BreakStatement",
+            "ContinueStatement",
+        ] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-33 line {expected}"
             );
         }
     }
@@ -11449,6 +11661,234 @@ mod tests {
             SurfaceNodeKind::Root,
             range(source_id, 0, 107),
             vec![algorithm, claim],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn task33_algorithm_control_flow_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+
+        macro_rules! token {
+            ($kind:expr, $text:expr, $start:expr, $end:expr) => {
+                builder.add_token($kind, $text, range(source_id, $start, $end))
+            };
+        }
+
+        let if_kw = token!(SurfaceTokenKind::ReservedWord, "if", 0, 2);
+        let if_cond_token = token!(SurfaceTokenKind::ReservedWord, "thesis", 3, 9);
+        let if_do = token!(SurfaceTokenKind::ReservedWord, "do", 10, 12);
+        let break_kw = token!(SurfaceTokenKind::ReservedWord, "break", 13, 18);
+        let break_semicolon = token!(SurfaceTokenKind::ReservedSymbol, ";", 18, 19);
+        let else_kw = token!(SurfaceTokenKind::ReservedWord, "else", 20, 24);
+        let continue_kw = token!(SurfaceTokenKind::ReservedWord, "continue", 25, 33);
+        let continue_semicolon = token!(SurfaceTokenKind::ReservedSymbol, ";", 33, 34);
+        let if_end = token!(SurfaceTokenKind::ReservedWord, "end", 35, 38);
+        let if_semicolon = token!(SurfaceTokenKind::ReservedSymbol, ";", 38, 39);
+
+        let if_condition = thesis_formula_node(&mut builder, source_id, if_cond_token, 3, 9);
+        let break_statement = builder.add_node(
+            SurfaceNodeKind::BreakStatement,
+            range(source_id, 13, 19),
+            vec![break_kw, break_semicolon],
+        );
+        let then_list = builder.add_node(
+            SurfaceNodeKind::AlgorithmStatementList,
+            range(source_id, 13, 19),
+            vec![break_statement],
+        );
+        let continue_statement = builder.add_node(
+            SurfaceNodeKind::ContinueStatement,
+            range(source_id, 25, 34),
+            vec![continue_kw, continue_semicolon],
+        );
+        let else_list = builder.add_node(
+            SurfaceNodeKind::AlgorithmStatementList,
+            range(source_id, 25, 34),
+            vec![continue_statement],
+        );
+        let if_statement = builder.add_node(
+            SurfaceNodeKind::IfStatement,
+            range(source_id, 0, 39),
+            vec![
+                if_kw,
+                if_condition,
+                if_do,
+                then_list,
+                else_kw,
+                else_list,
+                if_end,
+                if_semicolon,
+            ],
+        );
+
+        let while_kw = token!(SurfaceTokenKind::ReservedWord, "while", 40, 45);
+        let while_cond_token = token!(SurfaceTokenKind::ReservedWord, "thesis", 46, 52);
+        let while_do = token!(SurfaceTokenKind::ReservedWord, "do", 53, 55);
+        let while_end = token!(SurfaceTokenKind::ReservedWord, "end", 56, 59);
+        let while_semicolon = token!(SurfaceTokenKind::ReservedSymbol, ";", 59, 60);
+        let while_condition =
+            thesis_formula_node(&mut builder, source_id, while_cond_token, 46, 52);
+        let while_list = builder.add_node(
+            SurfaceNodeKind::AlgorithmStatementList,
+            range(source_id, 56, 56),
+            Vec::new(),
+        );
+        let while_statement = builder.add_node(
+            SurfaceNodeKind::WhileStatement,
+            range(source_id, 40, 60),
+            vec![
+                while_kw,
+                while_condition,
+                while_do,
+                while_list,
+                while_end,
+                while_semicolon,
+            ],
+        );
+
+        let range_for_kw = token!(SurfaceTokenKind::ReservedWord, "for", 61, 64);
+        let range_var = token!(SurfaceTokenKind::Identifier, "i", 65, 66);
+        let range_eq = token!(SurfaceTokenKind::ReservedSymbol, "=", 67, 68);
+        let range_start_token = token!(SurfaceTokenKind::Identifier, "a", 69, 70);
+        let range_to = token!(SurfaceTokenKind::ReservedWord, "to", 71, 73);
+        let range_end_token = token!(SurfaceTokenKind::Identifier, "b", 74, 75);
+        let range_step = token!(SurfaceTokenKind::ReservedWord, "step", 76, 80);
+        let range_step_token = token!(SurfaceTokenKind::Identifier, "s", 81, 82);
+        let range_do = token!(SurfaceTokenKind::ReservedWord, "do", 83, 85);
+        let range_block_end = token!(SurfaceTokenKind::ReservedWord, "end", 86, 89);
+        let range_semicolon = token!(SurfaceTokenKind::ReservedSymbol, ";", 89, 90);
+        let range_start = term_expression_node(&mut builder, source_id, range_start_token, 69, 70);
+        let range_end_term = term_expression_node(&mut builder, source_id, range_end_token, 74, 75);
+        let range_step_term =
+            term_expression_node(&mut builder, source_id, range_step_token, 81, 82);
+        let range_list = builder.add_node(
+            SurfaceNodeKind::AlgorithmStatementList,
+            range(source_id, 86, 86),
+            Vec::new(),
+        );
+        let for_range_statement = builder.add_node(
+            SurfaceNodeKind::ForRangeStatement,
+            range(source_id, 61, 90),
+            vec![
+                range_for_kw,
+                range_var,
+                range_eq,
+                range_start,
+                range_to,
+                range_end_term,
+                range_step,
+                range_step_term,
+                range_do,
+                range_list,
+                range_block_end,
+                range_semicolon,
+            ],
+        );
+
+        let collection_for_kw = token!(SurfaceTokenKind::ReservedWord, "for", 91, 94);
+        let collection_var = token!(SurfaceTokenKind::Identifier, "x", 95, 96);
+        let collection_in = token!(SurfaceTokenKind::ReservedWord, "in", 97, 99);
+        let collection_term_token = token!(SurfaceTokenKind::Identifier, "S", 100, 101);
+        let processed_kw = token!(SurfaceTokenKind::ReservedWord, "processed", 102, 111);
+        let processed_name = token!(SurfaceTokenKind::Identifier, "Seen", 112, 116);
+        let collection_do = token!(SurfaceTokenKind::ReservedWord, "do", 117, 119);
+        let collection_end = token!(SurfaceTokenKind::ReservedWord, "end", 120, 123);
+        let collection_semicolon = token!(SurfaceTokenKind::ReservedSymbol, ";", 123, 124);
+        let collection_term =
+            term_expression_node(&mut builder, source_id, collection_term_token, 100, 101);
+        let collection_list = builder.add_node(
+            SurfaceNodeKind::AlgorithmStatementList,
+            range(source_id, 120, 120),
+            Vec::new(),
+        );
+        let for_collection_statement = builder.add_node(
+            SurfaceNodeKind::ForCollectionStatement,
+            range(source_id, 91, 124),
+            vec![
+                collection_for_kw,
+                collection_var,
+                collection_in,
+                collection_term,
+                processed_kw,
+                processed_name,
+                collection_do,
+                collection_list,
+                collection_end,
+                collection_semicolon,
+            ],
+        );
+
+        let match_kw = token!(SurfaceTokenKind::ReservedWord, "match", 125, 130);
+        let scrutinee_token = token!(SurfaceTokenKind::Identifier, "t", 131, 132);
+        let match_do = token!(SurfaceTokenKind::ReservedWord, "do", 133, 135);
+        let case_kw = token!(SurfaceTokenKind::ReservedWord, "case", 136, 140);
+        let pattern_token = token!(SurfaceTokenKind::Identifier, "p", 141, 142);
+        let case_do = token!(SurfaceTokenKind::ReservedWord, "do", 143, 145);
+        let case_end = token!(SurfaceTokenKind::ReservedWord, "end", 146, 149);
+        let case_semicolon = token!(SurfaceTokenKind::ReservedSymbol, ";", 149, 150);
+        let otherwise_kw = token!(SurfaceTokenKind::ReservedWord, "otherwise", 151, 160);
+        let otherwise_end = token!(SurfaceTokenKind::ReservedWord, "end", 161, 164);
+        let otherwise_semicolon = token!(SurfaceTokenKind::ReservedSymbol, ";", 164, 165);
+        let match_end = token!(SurfaceTokenKind::ReservedWord, "end", 166, 169);
+        let match_semicolon = token!(SurfaceTokenKind::ReservedSymbol, ";", 169, 170);
+        let scrutinee = term_expression_node(&mut builder, source_id, scrutinee_token, 131, 132);
+        let pattern = term_expression_node(&mut builder, source_id, pattern_token, 141, 142);
+        let case_list = builder.add_node(
+            SurfaceNodeKind::AlgorithmStatementList,
+            range(source_id, 146, 146),
+            Vec::new(),
+        );
+        let match_case = builder.add_node(
+            SurfaceNodeKind::MatchCase,
+            range(source_id, 136, 150),
+            vec![
+                case_kw,
+                pattern,
+                case_do,
+                case_list,
+                case_end,
+                case_semicolon,
+            ],
+        );
+        let otherwise_list = builder.add_node(
+            SurfaceNodeKind::AlgorithmStatementList,
+            range(source_id, 161, 161),
+            Vec::new(),
+        );
+        let match_ending = builder.add_node(
+            SurfaceNodeKind::MatchEnding,
+            range(source_id, 151, 165),
+            vec![
+                otherwise_kw,
+                otherwise_list,
+                otherwise_end,
+                otherwise_semicolon,
+            ],
+        );
+        let match_statement = builder.add_node(
+            SurfaceNodeKind::MatchStatement,
+            range(source_id, 125, 170),
+            vec![
+                match_kw,
+                scrutinee,
+                match_do,
+                match_case,
+                match_ending,
+                match_end,
+                match_semicolon,
+            ],
+        );
+
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 170),
+            vec![
+                if_statement,
+                while_statement,
+                for_range_statement,
+                for_collection_statement,
+                match_statement,
+            ],
         );
         builder.finish(Some(root), None)
     }

@@ -7,9 +7,10 @@ export item、visibility wrapper、reserve-hosted type expression、set comprehe
 を含む task 15 term surface、task 14 formula surface、S-013 statement node、
 task-22 theorem/proof item、task 23〜30 の definition block / attribute /
 predicate / functor / mode / redefinition / notation alias / property /
-structure / registration 増分、task 31 template surface、および task 32 の
-basic algorithm / claim surface は実装済み。残りの algorithm control /
-verification clause、annotation、package-oriented item grammar は計画中。
+structure / registration 増分、task 31 template surface、task 32 の
+basic algorithm / claim surface、および task 33 の algorithm control-flow
+surface は実装済み。残りの algorithm verification clause、annotation、
+package-oriented item grammar は計画中。
 
 ## 目的
 
@@ -1882,14 +1883,71 @@ assignment、snapshot、return を含む。`VariableDeclaration` は `var`、`co
 return は任意で term と syntax-level justification を所有できる。
 
 Top-level `claim name do ... end;` は `ClaimBlockItem` で表され、bare theorem /
-lemma item を含められる。claim annotation は task 35 に残す。control-flow
-statement（`while`、`for`、`if`、`match`、`break`、`continue`）は task 33、
-algorithm header / loop verification clause（`terminating`、`requires`、
-`ensures`、`decreasing`、`invariant`、`assert`）は task 34 に残す。frontend
-scope skeleton は algorithm header を単一 lexical block として認識し、
-`ghost target := term;` を assignment として扱うため、active source-level
-parse-only fixture は frontend recovery diagnostic なしで task 32 syntax を
-行使できる。
+lemma item を含められる。claim annotation は task 35 に残す。algorithm header /
+loop verification clause（`terminating`、`requires`、`ensures`、`decreasing`、
+`invariant`、`assert`）は task 34 に残す。frontend scope skeleton は algorithm
+header を単一 lexical block として認識し、`ghost target := term;` を assignment
+として扱うため、active source-level parse-only fixture は frontend recovery
+diagnostic なしで task 32 syntax を行使できる。
+
+### Task 33: algorithm control flow
+
+Task 33 は Chapter 20 の control-flow subset を parser-visible にする。
+
+```ebnf
+if_stmt ::= "if" formula "do" algo_statement_list if_tail ;
+if_tail ::= "end" ";"
+          | "else" if_stmt
+          | "else" algo_statement_list "end" ";" ;
+
+while_stmt ::= "while" formula "do"
+                 { while_annotation ";" }
+                 algo_statement_list
+               "end" ";" ;
+
+for_range_stmt ::= "for" identifier "=" term_expression
+                   ( "to" | "downto" ) term_expression
+                   [ "step" term_expression ]
+                   "do" { for_annotation ";" }
+                   algo_statement_list "end" ";" ;
+
+for_collection_stmt ::= "for" identifier "in" term_expression
+                        [ "processed" identifier ] "do"
+                        { for_annotation ";" }
+                        algo_statement_list
+                        "end" ";" ;
+
+match_stmt ::= "match" term_expression "do"
+               match_case+
+               ( "otherwise" algo_statement_list "end" ";"
+               | "exhaustive" [ justification ] ";" )
+               "end" ";" ;
+match_case ::= "case" term_expression "do" algo_statement_list "end" ";" ;
+
+break_stmt    ::= "break" ";" ;
+continue_stmt ::= "continue" ";" ;
+```
+
+`IfStatement`、`WhileStatement`、`ForRangeStatement`、
+`ForCollectionStatement`、`MatchStatement`、`MatchCase`、`MatchEnding`、
+`BreakStatement`、`ContinueStatement` は control-flow の source shape を保持する。
+branch-local `AlgorithmStatementList` と malformed statement tail recovery は周囲の
+control-flow boundary（`else`、`case`、`otherwise`、`exhaustive`、`end`）で停止し、
+semicolon 欠落 / inner `end` 欠落の recovery が次の branch を飲み込まず所有元の構文へ
+戻れるようにする。
+
+Loop verification clause は task 34 に残す。task 33 loop body の先頭に
+`invariant` または `decreasing` が現れた場合、parser は task 34 deferred であることを
+診断し、その clause の semicolon まで skipped-token recovery として消費してから、
+後続の body statement の parse を再開する。この増分では concrete verification
+clause node を作らない。`assert` も同様に task 34 に残し、statement-level /
+library annotation は task 35 に残す。
+
+frontend scope skeleton は、completed match `case` branch の token shape である
+`end` または `end;` の直後に現れる algorithm-scope `otherwise` に対して
+conservative な `Do` frame を開き、`match ... otherwise ... end; end;` を対応する
+block shape として扱う。definition-side やその他 non-algorithm の通常の `otherwise`
+clause は scope frame を開かない。
 
 ## 公開 enum の互換性
 

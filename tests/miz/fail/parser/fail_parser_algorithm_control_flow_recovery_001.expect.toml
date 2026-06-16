@@ -1,0 +1,27 @@
+schema_version = 1
+id = "fail_parser_algorithm_control_flow_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.algorithm_control_flow"
+source = "fail_parser_algorithm_control_flow_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_algorithm_control_flow_surfaces"
+stable_detail_key = "parser.algorithm_control_flow.recovery"
+diagnostic_codes = [
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = [
+  "spec.en.20.algorithm_control_flow.parser",
+]
+notes = "Active task-33 parse-only recovery coverage for task34-deferred while/range/collection loop annotations, missing if conditions, malformed range loops, and match statements without a case. Concrete invariant/decreasing/assert nodes remain parser task34."

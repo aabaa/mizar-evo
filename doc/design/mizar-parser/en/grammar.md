@@ -6,9 +6,10 @@ task-15 term surfaces including set comprehensions, task-14 formula surfaces,
 S-013 statement nodes, task-22 theorem/proof items, and the task-23 through
 task-30 definition-block / attribute / predicate / functor / mode /
 redefinition / notation-alias / property / structure / registration increments,
-task-31 template surfaces, and task-32 basic algorithm/claim surfaces are
-implemented; remaining algorithm control/verification clauses, annotations,
-and package-oriented item grammars are planned.
+task-31 template surfaces, task-32 basic algorithm/claim surfaces, and task-33
+algorithm control-flow surfaces are implemented; remaining algorithm
+verification clauses, annotations, and package-oriented item grammars are
+planned.
 
 ## Purpose
 
@@ -2008,13 +2009,72 @@ justification.
 
 Top-level `claim name do ... end;` is represented by `ClaimBlockItem` and may
 contain bare theorem/lemma items. Claim annotations are deferred to task 35.
-Control-flow statements (`while`, `for`, `if`, `match`, `break`,
-`continue`) remain task 33, while algorithm header and loop verification
-clauses (`terminating`, `requires`, `ensures`, `decreasing`, `invariant`,
-`assert`) remain task 34. The frontend scope skeleton recognizes algorithm
-headers as a single lexical block and treats `ghost target := term;` as an
-assignment, so active source-level parse-only fixtures can exercise the
-task-32 syntax without frontend recovery diagnostics.
+Algorithm header and loop verification clauses (`terminating`, `requires`,
+`ensures`, `decreasing`, `invariant`, `assert`) remain task 34. The frontend
+scope skeleton recognizes algorithm headers as a single lexical block and
+treats `ghost target := term;` as an assignment, so active source-level
+parse-only fixtures can exercise the task-32 syntax without frontend recovery
+diagnostics.
+
+### Task 33: Algorithm Control Flow
+
+Task 33 adds parser-visible surfaces for the Chapter 20 control-flow subset:
+
+```ebnf
+if_stmt ::= "if" formula "do" algo_statement_list if_tail ;
+if_tail ::= "end" ";"
+          | "else" if_stmt
+          | "else" algo_statement_list "end" ";" ;
+
+while_stmt ::= "while" formula "do"
+                 { while_annotation ";" }
+                 algo_statement_list
+               "end" ";" ;
+
+for_range_stmt ::= "for" identifier "=" term_expression
+                   ( "to" | "downto" ) term_expression
+                   [ "step" term_expression ]
+                   "do" { for_annotation ";" }
+                   algo_statement_list "end" ";" ;
+
+for_collection_stmt ::= "for" identifier "in" term_expression
+                        [ "processed" identifier ] "do"
+                        { for_annotation ";" }
+                        algo_statement_list
+                        "end" ";" ;
+
+match_stmt ::= "match" term_expression "do"
+               match_case+
+               ( "otherwise" algo_statement_list "end" ";"
+               | "exhaustive" [ justification ] ";" )
+               "end" ";" ;
+match_case ::= "case" term_expression "do" algo_statement_list "end" ";" ;
+
+break_stmt    ::= "break" ";" ;
+continue_stmt ::= "continue" ";" ;
+```
+
+`IfStatement`, `WhileStatement`, `ForRangeStatement`,
+`ForCollectionStatement`, `MatchStatement`, `MatchCase`, `MatchEnding`,
+`BreakStatement`, and `ContinueStatement` preserve the control-flow source
+shape. Branch-local `AlgorithmStatementList` parsing and malformed statement
+tail recovery stop at the surrounding control-flow boundary (`else`, `case`,
+`otherwise`, `exhaustive`, or `end`) so missing semicolon / inner `end`
+recovery can return to the owning construct instead of swallowing the next
+branch.
+
+Loop verification clauses remain task 34. When `invariant` or `decreasing`
+appears at the top of a task-33 loop body, the parser diagnoses the task-34
+deferral, emits skipped-token recovery through the clause semicolon, and then
+resumes parsing later body statements. It does not create concrete verification
+clause nodes in this increment. `assert` is likewise deferred to task 34, and
+statement-level/library annotations remain task 35.
+
+The frontend scope skeleton treats `match ... otherwise ... end; end;` as a
+matched block shape by opening a conservative `Do` frame for an algorithm-scope
+`otherwise` that immediately follows `end` or `end;`, the token shape of a
+completed match `case` branch. Definition-side and other non-algorithm
+`otherwise` clauses do not open scope frames.
 
 ## Public Enum Compatibility
 

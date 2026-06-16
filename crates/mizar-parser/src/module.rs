@@ -49,6 +49,14 @@ enum CaseBranchKind {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AlgorithmStatementListBoundary {
+    Body,
+    NestedBlock,
+    IfThen,
+    MatchCase,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum InheritanceTargetBoundary {
     Extends,
     Tail,
@@ -4954,11 +4962,25 @@ impl Parser {
     }
 
     fn parse_algorithm_statement_list_at(&mut self, position: usize) -> ParsedTypeNode {
+        self.parse_algorithm_statement_list_with_boundary_at(
+            position,
+            AlgorithmStatementListBoundary::Body,
+        )
+    }
+
+    fn parse_algorithm_statement_list_with_boundary_at(
+        &mut self,
+        position: usize,
+        boundary: AlgorithmStatementListBoundary,
+    ) -> ParsedTypeNode {
         let mut children = Vec::new();
         let mut recovery_nodes = Vec::new();
         let mut cursor = position;
 
-        while cursor < self.request.tokens.len() && !self.is_end_keyword_at(cursor) {
+        while cursor < self.request.tokens.len()
+            && !self.is_end_keyword_at(cursor)
+            && !self.is_algorithm_statement_list_context_boundary_at(cursor, boundary)
+        {
             if self.is_item_start_at(cursor) {
                 self.diagnose_malformed_formula_expression(
                     cursor,
@@ -4978,11 +5000,11 @@ impl Parser {
                 break;
             }
 
-            if self.is_algorithm_statement_list_boundary_at(cursor) {
+            if self.is_algorithm_statement_list_boundary_for_at(cursor, boundary) {
                 break;
             }
 
-            if let Some(statement) = self.parse_algorithm_statement_at(cursor) {
+            if let Some(statement) = self.parse_algorithm_statement_at(cursor, boundary) {
                 let made_progress = statement.next_position > cursor;
                 cursor = statement.next_position;
                 children.push(statement.id);
@@ -4994,7 +5016,9 @@ impl Parser {
             }
 
             self.diagnose_malformed_formula_expression(cursor, "expected algorithm statement");
-            if let Some(recovery) = self.recover_malformed_algorithm_statement_tail(cursor) {
+            if let Some(recovery) =
+                self.recover_malformed_algorithm_statement_tail(cursor, boundary)
+            {
                 cursor = recovery.next_position;
                 children.push(recovery.id);
                 recovery_nodes.extend(recovery.recovery_nodes);
@@ -5024,35 +5048,61 @@ impl Parser {
         }
     }
 
-    fn parse_algorithm_statement_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+    fn parse_algorithm_statement_at(
+        &mut self,
+        position: usize,
+        boundary: AlgorithmStatementListBoundary,
+    ) -> Option<ParsedTypeNode> {
+        if self.is_reserved_word_at(position, "if") {
+            return Some(self.parse_if_statement_at(position));
+        }
+        if self.is_reserved_word_at(position, "while") {
+            return Some(self.parse_while_statement_at(position));
+        }
+        if self.is_reserved_word_at(position, "for") {
+            return Some(self.parse_for_statement_at(position, boundary));
+        }
+        if self.is_reserved_word_at(position, "match") {
+            return Some(self.parse_match_statement_at(position));
+        }
+        if self.is_reserved_word_at(position, "break") {
+            return Some(self.parse_break_statement_at(position, boundary));
+        }
+        if self.is_reserved_word_at(position, "continue") {
+            return Some(self.parse_continue_statement_at(position, boundary));
+        }
         if self.is_reserved_word_at(position, "ghost")
             && (self.is_reserved_word_at(position + 1, "var")
                 || self.is_reserved_word_at(position + 1, "const"))
         {
-            return Some(self.parse_variable_declaration_at(position));
+            return Some(self.parse_variable_declaration_at(position, boundary));
         }
         if self.is_reserved_word_at(position, "var") || self.is_reserved_word_at(position, "const")
         {
-            return Some(self.parse_variable_declaration_at(position));
+            return Some(self.parse_variable_declaration_at(position, boundary));
         }
         if self.is_reserved_word_at(position, "snapshot") {
-            return Some(self.parse_snapshot_statement_at(position));
+            return Some(self.parse_snapshot_statement_at(position, boundary));
         }
         if self.is_reserved_word_at(position, "return") {
-            return Some(self.parse_return_statement_at(position));
+            return Some(self.parse_return_statement_at(position, boundary));
         }
         if self.is_reserved_word_at(position, "ghost") {
-            return Some(self.parse_assignment_statement_at(position, true));
+            return Some(self.parse_assignment_statement_at(position, true, boundary));
         }
         if self.is_lvalue_start_at(position)
             && self.lvalue_assignment_operator_at(position).is_some()
         {
-            return Some(self.parse_assignment_statement_at(position, false));
+            return Some(self.parse_assignment_statement_at(position, false, boundary));
         }
         None
     }
 
-    fn parse_variable_declaration_at(&mut self, position: usize) -> ParsedTypeNode {
+    fn parse_variable_declaration_at(
+        &mut self,
+        position: usize,
+        boundary: AlgorithmStatementListBoundary,
+    ) -> ParsedTypeNode {
         let mut children = Vec::new();
         let mut recovery_nodes = Vec::new();
         let mut cursor = position;
@@ -5115,6 +5165,7 @@ impl Parser {
             cursor,
             &mut children,
             &mut recovery_nodes,
+            boundary,
             "unexpected token in variable declaration",
         );
 
@@ -5267,6 +5318,7 @@ impl Parser {
         &mut self,
         position: usize,
         ghost_prefix: bool,
+        boundary: AlgorithmStatementListBoundary,
     ) -> ParsedTypeNode {
         let mut children = Vec::new();
         let mut recovery_nodes = Vec::new();
@@ -5302,6 +5354,7 @@ impl Parser {
             cursor,
             &mut children,
             &mut recovery_nodes,
+            boundary,
             "unexpected token in assignment",
         );
 
@@ -5359,7 +5412,11 @@ impl Parser {
         }
     }
 
-    fn parse_snapshot_statement_at(&mut self, position: usize) -> ParsedTypeNode {
+    fn parse_snapshot_statement_at(
+        &mut self,
+        position: usize,
+        boundary: AlgorithmStatementListBoundary,
+    ) -> ParsedTypeNode {
         let mut children = vec![self.token_node_ids[position]];
         let mut recovery_nodes = Vec::new();
         let mut cursor = position + 1;
@@ -5376,6 +5433,7 @@ impl Parser {
             cursor,
             &mut children,
             &mut recovery_nodes,
+            boundary,
             "unexpected token in snapshot statement",
         );
 
@@ -5391,13 +5449,17 @@ impl Parser {
         }
     }
 
-    fn parse_return_statement_at(&mut self, position: usize) -> ParsedTypeNode {
+    fn parse_return_statement_at(
+        &mut self,
+        position: usize,
+        boundary: AlgorithmStatementListBoundary,
+    ) -> ParsedTypeNode {
         let mut children = vec![self.token_node_ids[position]];
         let mut recovery_nodes = Vec::new();
         let mut cursor = position + 1;
 
         if !self.is_semicolon_at(cursor)
-            && !self.is_algorithm_statement_list_boundary_at(cursor)
+            && !self.is_algorithm_statement_list_boundary_for_at(cursor, boundary)
             && let Some(term) = self.parse_term_expression_at(cursor)
         {
             cursor = term.next_position;
@@ -5416,6 +5478,7 @@ impl Parser {
             cursor,
             &mut children,
             &mut recovery_nodes,
+            boundary,
             "unexpected token in return statement",
         );
 
@@ -5431,11 +5494,580 @@ impl Parser {
         }
     }
 
+    fn parse_if_statement_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if let Some(condition) = self.parse_formula_expression_at(cursor) {
+            cursor = condition.next_position;
+            children.push(condition.id);
+            recovery_nodes.extend(condition.recovery_nodes);
+        } else {
+            self.diagnose_malformed_formula_expression(cursor, "expected `if` condition");
+            self.push_missing_formula(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        cursor = self.expect_algorithm_do_keyword(
+            cursor,
+            &mut children,
+            "expected `do` after `if` condition",
+        );
+
+        let then_statements = self.parse_algorithm_statement_list_with_boundary_at(
+            cursor,
+            AlgorithmStatementListBoundary::IfThen,
+        );
+        cursor = then_statements.next_position;
+        children.push(then_statements.id);
+        recovery_nodes.extend(then_statements.recovery_nodes);
+
+        if self.is_reserved_word_at(cursor, "else") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            if self.is_reserved_word_at(cursor, "if") {
+                let nested = self.parse_if_statement_at(cursor);
+                cursor = nested.next_position;
+                children.push(nested.id);
+                recovery_nodes.extend(nested.recovery_nodes);
+            } else {
+                let else_statements = self.parse_algorithm_statement_list_with_boundary_at(
+                    cursor,
+                    AlgorithmStatementListBoundary::NestedBlock,
+                );
+                cursor = else_statements.next_position;
+                children.push(else_statements.id);
+                recovery_nodes.extend(else_statements.recovery_nodes);
+                cursor = self.finish_algorithm_block_end_semicolon(
+                    position,
+                    cursor,
+                    &mut children,
+                    &mut recovery_nodes,
+                );
+            }
+        } else {
+            cursor = self.finish_algorithm_block_end_semicolon(
+                position,
+                cursor,
+                &mut children,
+                &mut recovery_nodes,
+            );
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::IfStatement,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_while_statement_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if let Some(condition) = self.parse_formula_expression_at(cursor) {
+            cursor = condition.next_position;
+            children.push(condition.id);
+            recovery_nodes.extend(condition.recovery_nodes);
+        } else {
+            self.diagnose_malformed_formula_expression(cursor, "expected `while` condition");
+            self.push_missing_formula(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        cursor = self.expect_algorithm_do_keyword(
+            cursor,
+            &mut children,
+            "expected `do` after `while` condition",
+        );
+        cursor =
+            self.recover_deferred_loop_annotations_at(cursor, &mut children, &mut recovery_nodes);
+
+        let statements = self.parse_algorithm_statement_list_with_boundary_at(
+            cursor,
+            AlgorithmStatementListBoundary::NestedBlock,
+        );
+        cursor = statements.next_position;
+        children.push(statements.id);
+        recovery_nodes.extend(statements.recovery_nodes);
+        cursor = self.finish_algorithm_block_end_semicolon(
+            position,
+            cursor,
+            &mut children,
+            &mut recovery_nodes,
+        );
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::WhileStatement,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_for_statement_at(
+        &mut self,
+        position: usize,
+        boundary: AlgorithmStatementListBoundary,
+    ) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if self.is_identifier_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected loop variable");
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        let kind = if self.is_reserved_symbol_at(cursor, "=") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            cursor = self.parse_required_algorithm_term(
+                cursor,
+                &mut children,
+                &mut recovery_nodes,
+                "expected range lower bound",
+            );
+
+            if self.is_reserved_word_at(cursor, "to") || self.is_reserved_word_at(cursor, "downto")
+            {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            } else {
+                self.diagnose_malformed_term_expression(
+                    cursor,
+                    "expected `to` or `downto` in range loop",
+                );
+            }
+
+            cursor = self.parse_required_algorithm_term(
+                cursor,
+                &mut children,
+                &mut recovery_nodes,
+                "expected range upper bound",
+            );
+
+            if self.is_reserved_word_at(cursor, "step") {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+                cursor = self.parse_required_algorithm_term(
+                    cursor,
+                    &mut children,
+                    &mut recovery_nodes,
+                    "expected step term",
+                );
+            }
+            SurfaceNodeKind::ForRangeStatement
+        } else if self.is_reserved_word_at(cursor, "in") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            cursor = self.parse_required_algorithm_term(
+                cursor,
+                &mut children,
+                &mut recovery_nodes,
+                "expected collection term",
+            );
+
+            if self.is_reserved_word_at(cursor, "processed") {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+                if self.is_identifier_at(cursor) {
+                    children.push(self.token_node_ids[cursor]);
+                    cursor += 1;
+                } else {
+                    self.diagnose_malformed_term_expression(
+                        cursor,
+                        "expected processed binding name",
+                    );
+                    self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+                }
+            }
+            SurfaceNodeKind::ForCollectionStatement
+        } else {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "expected `=` or `in` after loop variable",
+            );
+            if let Some(recovery) =
+                self.recover_malformed_algorithm_statement_tail(cursor, boundary)
+            {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+            SurfaceNodeKind::ForRangeStatement
+        };
+
+        cursor = self.expect_algorithm_do_keyword(
+            cursor,
+            &mut children,
+            "expected `do` in loop statement",
+        );
+        cursor =
+            self.recover_deferred_loop_annotations_at(cursor, &mut children, &mut recovery_nodes);
+
+        let statements = self.parse_algorithm_statement_list_with_boundary_at(
+            cursor,
+            AlgorithmStatementListBoundary::NestedBlock,
+        );
+        cursor = statements.next_position;
+        children.push(statements.id);
+        recovery_nodes.extend(statements.recovery_nodes);
+        cursor = self.finish_algorithm_block_end_semicolon(
+            position,
+            cursor,
+            &mut children,
+            &mut recovery_nodes,
+        );
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_match_statement_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        cursor = self.parse_required_algorithm_term(
+            cursor,
+            &mut children,
+            &mut recovery_nodes,
+            "expected match scrutinee",
+        );
+        cursor = self.expect_algorithm_do_keyword(
+            cursor,
+            &mut children,
+            "expected `do` after match scrutinee",
+        );
+
+        let mut saw_case = false;
+        while self.is_reserved_word_at(cursor, "case") {
+            let case = self.parse_match_case_at(cursor);
+            let made_progress = case.next_position > cursor;
+            cursor = case.next_position;
+            children.push(case.id);
+            recovery_nodes.extend(case.recovery_nodes);
+            saw_case = true;
+            if !made_progress {
+                break;
+            }
+        }
+        if !saw_case {
+            self.diagnose_malformed_term_expression(cursor, "expected match case");
+            let missing = self.add_missing_statement(cursor);
+            children.push(missing);
+            recovery_nodes.push(missing);
+        }
+
+        if self.is_reserved_word_at(cursor, "otherwise")
+            || self.is_reserved_word_at(cursor, "exhaustive")
+        {
+            let ending = self.parse_match_ending_at(cursor);
+            cursor = ending.next_position;
+            children.push(ending.id);
+            recovery_nodes.extend(ending.recovery_nodes);
+        } else {
+            self.diagnose_malformed_formula_expression(
+                cursor,
+                "expected `otherwise` or `exhaustive` match ending",
+            );
+            let missing = self.add_missing_statement(cursor);
+            let ending = self.events.emit(SyntaxEvent::Node {
+                kind: SurfaceNodeKind::MatchEnding,
+                range: self.zero_range_at(cursor),
+                children: vec![missing],
+            });
+            children.push(ending);
+            recovery_nodes.push(missing);
+        }
+
+        cursor = self.finish_algorithm_block_end_semicolon(
+            position,
+            cursor,
+            &mut children,
+            &mut recovery_nodes,
+        );
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::MatchStatement,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_match_case_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        cursor = self.parse_required_algorithm_term(
+            cursor,
+            &mut children,
+            &mut recovery_nodes,
+            "expected match case pattern",
+        );
+        cursor = self.expect_algorithm_do_keyword(
+            cursor,
+            &mut children,
+            "expected `do` after match case pattern",
+        );
+
+        let statements = self.parse_algorithm_statement_list_with_boundary_at(
+            cursor,
+            AlgorithmStatementListBoundary::MatchCase,
+        );
+        cursor = statements.next_position;
+        children.push(statements.id);
+        recovery_nodes.extend(statements.recovery_nodes);
+        cursor = self.finish_algorithm_block_end_semicolon(
+            position,
+            cursor,
+            &mut children,
+            &mut recovery_nodes,
+        );
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::MatchCase,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_match_ending_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if self.is_reserved_word_at(position, "otherwise") {
+            let statements = self.parse_algorithm_statement_list_with_boundary_at(
+                cursor,
+                AlgorithmStatementListBoundary::NestedBlock,
+            );
+            cursor = statements.next_position;
+            children.push(statements.id);
+            recovery_nodes.extend(statements.recovery_nodes);
+            cursor = self.finish_algorithm_block_end_semicolon(
+                position,
+                cursor,
+                &mut children,
+                &mut recovery_nodes,
+            );
+        } else if let Some(justification) =
+            self.parse_definition_content_general_justification_at(cursor, true)
+        {
+            cursor = justification.next_position;
+            children.push(justification.id);
+            recovery_nodes.extend(justification.recovery_nodes);
+            if self.is_semicolon_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            } else {
+                self.diagnose_missing_semicolon(cursor);
+            }
+        } else if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::MatchEnding,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_break_statement_at(
+        &mut self,
+        position: usize,
+        boundary: AlgorithmStatementListBoundary,
+    ) -> ParsedTypeNode {
+        self.parse_algorithm_keyword_semicolon_statement_at(
+            position,
+            SurfaceNodeKind::BreakStatement,
+            boundary,
+            "unexpected token in break statement",
+        )
+    }
+
+    fn parse_continue_statement_at(
+        &mut self,
+        position: usize,
+        boundary: AlgorithmStatementListBoundary,
+    ) -> ParsedTypeNode {
+        self.parse_algorithm_keyword_semicolon_statement_at(
+            position,
+            SurfaceNodeKind::ContinueStatement,
+            boundary,
+            "unexpected token in continue statement",
+        )
+    }
+
+    fn parse_algorithm_keyword_semicolon_statement_at(
+        &mut self,
+        position: usize,
+        kind: SurfaceNodeKind,
+        boundary: AlgorithmStatementListBoundary,
+        unexpected_message: &'static str,
+    ) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let cursor = self.finish_algorithm_statement_semicolon(
+            position + 1,
+            &mut children,
+            &mut recovery_nodes,
+            boundary,
+            unexpected_message,
+        );
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_required_algorithm_term(
+        &mut self,
+        cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+        message: &'static str,
+    ) -> usize {
+        if let Some(term) = self.parse_term_expression_at(cursor) {
+            let next_position = term.next_position;
+            children.push(term.id);
+            recovery_nodes.extend(term.recovery_nodes);
+            next_position
+        } else {
+            self.diagnose_malformed_term_expression(cursor, message);
+            self.push_missing_term(cursor, children, recovery_nodes);
+            cursor
+        }
+    }
+
+    fn expect_algorithm_do_keyword(
+        &mut self,
+        cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        message: &'static str,
+    ) -> usize {
+        if self.is_reserved_word_at(cursor, "do") {
+            children.push(self.token_node_ids[cursor]);
+            cursor + 1
+        } else {
+            self.diagnose_malformed_formula_expression(cursor, message);
+            cursor
+        }
+    }
+
+    fn finish_algorithm_block_end_semicolon(
+        &mut self,
+        opener: usize,
+        mut cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) -> usize {
+        if self.is_end_keyword_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            let missing = self.add_missing_end(opener, cursor);
+            children.push(missing);
+            recovery_nodes.push(missing);
+        }
+
+        if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+        }
+
+        cursor
+    }
+
+    fn recover_deferred_loop_annotations_at(
+        &mut self,
+        mut cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) -> usize {
+        while self.is_algorithm_loop_task34_clause_at(cursor) {
+            self.diagnose_malformed_formula_expression(
+                cursor,
+                "algorithm loop verification clauses are parsed by parser task 34",
+            );
+            let Some(recovery) = self.recover_malformed_algorithm_loop_annotation_tail(cursor)
+            else {
+                break;
+            };
+            let made_progress = recovery.next_position > cursor;
+            cursor = recovery.next_position;
+            children.push(recovery.id);
+            recovery_nodes.extend(recovery.recovery_nodes);
+
+            if self.is_semicolon_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            } else {
+                self.diagnose_missing_semicolon(cursor);
+            }
+
+            if !made_progress {
+                break;
+            }
+        }
+        cursor
+    }
+
     fn finish_algorithm_statement_semicolon(
         &mut self,
         mut cursor: usize,
         children: &mut Vec<SurfaceBuilderNodeId>,
         recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+        boundary: AlgorithmStatementListBoundary,
         unexpected_message: &'static str,
     ) -> usize {
         if self.is_semicolon_at(cursor) {
@@ -5443,10 +6075,12 @@ impl Parser {
             return cursor + 1;
         }
         if cursor < self.request.tokens.len()
-            && !self.is_algorithm_statement_list_boundary_at(cursor)
+            && !self.is_algorithm_statement_list_boundary_for_at(cursor, boundary)
         {
             self.diagnose_malformed_term_expression(cursor, unexpected_message);
-            if let Some(recovery) = self.recover_malformed_algorithm_statement_tail(cursor) {
+            if let Some(recovery) =
+                self.recover_malformed_algorithm_statement_tail(cursor, boundary)
+            {
                 cursor = recovery.next_position;
                 children.push(recovery.id);
                 recovery_nodes.extend(recovery.recovery_nodes);
@@ -11039,6 +11673,54 @@ impl Parser {
     fn recover_malformed_algorithm_statement_tail(
         &mut self,
         position: usize,
+        boundary: AlgorithmStatementListBoundary,
+    ) -> Option<ParsedItem> {
+        let mut cursor = position;
+        let mut paren_depth = 0_usize;
+        let mut bracket_depth = 0_usize;
+        let mut brace_depth = 0_usize;
+
+        while cursor < self.request.tokens.len() {
+            let top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            if top_level
+                && (self.is_algorithm_statement_list_boundary_for_at(cursor, boundary)
+                    || self.is_semicolon_at(cursor)
+                    || (cursor > position && self.is_algorithm_statement_start_at(cursor)))
+            {
+                break;
+            }
+
+            if self.is_reserved_symbol_at(cursor, "(") {
+                paren_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                if paren_depth == 0 {
+                    break;
+                }
+                paren_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                bracket_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                if bracket_depth == 0 {
+                    break;
+                }
+                bracket_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                brace_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                if brace_depth == 0 {
+                    break;
+                }
+                brace_depth -= 1;
+            }
+            cursor += 1;
+        }
+
+        self.emit_malformed_tail_recovery(position, cursor)
+    }
+
+    fn recover_malformed_algorithm_loop_annotation_tail(
+        &mut self,
+        position: usize,
     ) -> Option<ParsedItem> {
         let mut cursor = position;
         let mut paren_depth = 0_usize;
@@ -11049,8 +11731,10 @@ impl Parser {
             let top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
             if top_level
                 && (self.is_semicolon_at(cursor)
-                    || self.is_end_keyword_at(cursor)
-                    || self.is_item_start_at(cursor)
+                    || self.is_algorithm_statement_list_boundary_for_at(
+                        cursor,
+                        AlgorithmStatementListBoundary::NestedBlock,
+                    )
                     || (cursor > position && self.is_algorithm_statement_start_at(cursor)))
             {
                 break;
@@ -12435,7 +13119,13 @@ impl Parser {
     }
 
     fn is_algorithm_statement_start_at(&self, position: usize) -> bool {
-        self.is_reserved_word_at(position, "var")
+        self.is_reserved_word_at(position, "if")
+            || self.is_reserved_word_at(position, "while")
+            || self.is_reserved_word_at(position, "for")
+            || self.is_reserved_word_at(position, "match")
+            || self.is_reserved_word_at(position, "break")
+            || self.is_reserved_word_at(position, "continue")
+            || self.is_reserved_word_at(position, "var")
             || self.is_reserved_word_at(position, "const")
             || self.is_reserved_word_at(position, "snapshot")
             || self.is_reserved_word_at(position, "return")
@@ -12445,9 +13135,54 @@ impl Parser {
     }
 
     fn is_algorithm_statement_list_boundary_at(&self, position: usize) -> bool {
+        self.is_algorithm_statement_list_boundary_for_at(
+            position,
+            AlgorithmStatementListBoundary::Body,
+        )
+    }
+
+    fn is_algorithm_statement_list_boundary_for_at(
+        &self,
+        position: usize,
+        boundary: AlgorithmStatementListBoundary,
+    ) -> bool {
         position >= self.request.tokens.len()
             || self.is_end_keyword_at(position)
             || self.is_item_start_at(position)
+            || self.is_algorithm_statement_list_context_boundary_at(position, boundary)
+    }
+
+    fn is_algorithm_statement_list_context_boundary_at(
+        &self,
+        position: usize,
+        boundary: AlgorithmStatementListBoundary,
+    ) -> bool {
+        match boundary {
+            AlgorithmStatementListBoundary::Body => false,
+            AlgorithmStatementListBoundary::NestedBlock => {
+                self.is_algorithm_nested_control_boundary_at(position)
+            }
+            AlgorithmStatementListBoundary::IfThen => {
+                self.is_algorithm_nested_control_boundary_at(position)
+            }
+            AlgorithmStatementListBoundary::MatchCase => {
+                self.is_reserved_word_at(position, "case")
+                    || self.is_reserved_word_at(position, "otherwise")
+                    || self.is_reserved_word_at(position, "exhaustive")
+            }
+        }
+    }
+
+    fn is_algorithm_nested_control_boundary_at(&self, position: usize) -> bool {
+        self.is_reserved_word_at(position, "else")
+            || self.is_reserved_word_at(position, "case")
+            || self.is_reserved_word_at(position, "otherwise")
+            || self.is_reserved_word_at(position, "exhaustive")
+    }
+
+    fn is_algorithm_loop_task34_clause_at(&self, position: usize) -> bool {
+        self.is_reserved_word_at(position, "invariant")
+            || self.is_reserved_word_at(position, "decreasing")
     }
 
     fn is_algorithm_declaration_tail_boundary_at(&self, position: usize) -> bool {
@@ -24585,6 +25320,1094 @@ mod tests {
     }
 
     #[test]
+    fn parser_parses_task33_algorithm_control_flow_surfaces() {
+        let source_id = source_id(200);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("definition", ParserTokenKind::ReservedWord),
+                    ("algorithm", ParserTokenKind::ReservedWord),
+                    ("flow", ParserTokenKind::Identifier),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("if", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("break", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("else", ParserTokenKind::ReservedWord),
+                    ("if", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("continue", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("while", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("break", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("i", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("a", ParserTokenKind::Identifier),
+                    ("to", ParserTokenKind::ReservedWord),
+                    ("b", ParserTokenKind::Identifier),
+                    ("step", ParserTokenKind::ReservedWord),
+                    ("s", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("continue", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("j", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("b", ParserTokenKind::Identifier),
+                    ("downto", ParserTokenKind::ReservedWord),
+                    ("a", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("break", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("in", ParserTokenKind::ReservedWord),
+                    ("S", ParserTokenKind::Identifier),
+                    ("processed", ParserTokenKind::ReservedWord),
+                    ("Seen", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("break", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("plain", ParserTokenKind::Identifier),
+                    ("in", ParserTokenKind::ReservedWord),
+                    ("Items", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("continue", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("match", ParserTokenKind::ReservedWord),
+                    ("t", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("case", ParserTokenKind::ReservedWord),
+                    ("p", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("continue", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("case", ParserTokenKind::ReservedWord),
+                    ("p2", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("break", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("otherwise", ParserTokenKind::ReservedWord),
+                    ("break", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("match", ParserTokenKind::ReservedWord),
+                    ("u", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("case", ParserTokenKind::ReservedWord),
+                    ("q", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("break", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("exhaustive", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Exhaustive", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("match", ParserTokenKind::ReservedWord),
+                    ("v", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("case", ParserTokenKind::ReservedWord),
+                    ("r", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("continue", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("exhaustive", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "task-33 algorithm control flow should parse: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("task-33 algorithm control flow should keep an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::IfStatement)),
+            2,
+            "else-if should preserve a nested IfStatement"
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::WhileStatement)),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ForRangeStatement
+            )),
+            2
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ForCollectionStatement
+            )),
+            2
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::MatchStatement)),
+            3
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::MatchCase)),
+            4
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::MatchEnding)),
+            3
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::BreakStatement)),
+            7
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ContinueStatement
+            )),
+            5
+        );
+        assert_task33_control_flow_accessors_and_child_order(&ast);
+    }
+
+    #[test]
+    fn parser_recovers_task33_algorithm_control_flow_gaps() {
+        let source_id = source_id(201);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("definition", ParserTokenKind::ReservedWord),
+                    ("algorithm", ParserTokenKind::ReservedWord),
+                    ("broken_flow", ParserTokenKind::Identifier),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("while", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("invariant", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Inv", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("decreasing", ParserTokenKind::ReservedWord),
+                    ("m", ParserTokenKind::Identifier),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Dec", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("break", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("r", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("start", ParserTokenKind::Identifier),
+                    ("to", ParserTokenKind::ReservedWord),
+                    ("stop", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("invariant", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("RangeInv", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("break", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("item", ParserTokenKind::Identifier),
+                    ("in", ParserTokenKind::ReservedWord),
+                    ("Items", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("decreasing", ParserTokenKind::ReservedWord),
+                    ("measure", ParserTokenKind::Identifier),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("CollDec", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("continue", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("if", ParserTokenKind::ReservedWord),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("continue", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("else", ParserTokenKind::ReservedWord),
+                    ("break", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("i", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("break", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("match", ParserTokenKind::ReservedWord),
+                    ("t", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("exhaustive", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.iter().any(|diagnostic| {
+                diagnostic.code == SyntaxDiagnosticCode::MalformedFormulaExpression
+            }),
+            "task34 loop annotation deferral and malformed if condition should diagnose: {:?}",
+            output.diagnostics
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MalformedTermExpression),
+            "malformed for loop and missing match case should diagnose terms/statements"
+        );
+        let ast = output
+            .ast
+            .expect("malformed task-33 control flow should recover an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::WhileStatement)),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::IfStatement)),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ForRangeStatement
+            )),
+            2
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ForCollectionStatement
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::MatchStatement)),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::MatchEnding)),
+            1
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+            )) >= 2,
+            "deferred loop annotations should be recovered as skipped token nodes"
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingFormula)
+            )) >= 1,
+            "malformed if condition should insert MissingFormula"
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingStatement)
+            )) >= 1,
+            "match without a case should insert MissingStatement"
+        );
+    }
+
+    #[test]
+    fn parser_keeps_task33_branch_boundaries_during_recovery() {
+        let source_id = source_id(202);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("definition", ParserTokenKind::ReservedWord),
+                    ("algorithm", ParserTokenKind::ReservedWord),
+                    ("boundary_flow", ParserTokenKind::Identifier),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("if", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("break", ParserTokenKind::ReservedWord),
+                    ("else", ParserTokenKind::ReservedWord),
+                    ("continue", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("match", ParserTokenKind::ReservedWord),
+                    ("t", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("case", ParserTokenKind::ReservedWord),
+                    ("p", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("if", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("break", ParserTokenKind::ReservedWord),
+                    ("case", ParserTokenKind::ReservedWord),
+                    ("q", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("continue", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("otherwise", ParserTokenKind::ReservedWord),
+                    ("break", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MissingSemicolon),
+            "missing branch-local semicolons should diagnose: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("branch-boundary recovery should preserve an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::IfStatement)),
+            2,
+            "recovery inside nested if then-bodies must not swallow match branches"
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::MatchCase)),
+            2,
+            "recovery before the second `case` must not swallow the next branch"
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::MatchEnding)),
+            1,
+            "recovery before `otherwise` must return to the match ending"
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::BreakStatement)),
+            3
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ContinueStatement
+            )),
+            2
+        );
+    }
+
+    #[test]
+    fn parser_pins_task33_recovery_diagnostic_payloads() {
+        let source_id = source_id(203);
+        let tokens = token_sequence(
+            source_id,
+            &[
+                ("definition", ParserTokenKind::ReservedWord),
+                ("algorithm", ParserTokenKind::ReservedWord),
+                ("diagnostics_flow", ParserTokenKind::Identifier),
+                ("(", ParserTokenKind::ReservedSymbol),
+                (")", ParserTokenKind::ReservedSymbol),
+                ("do", ParserTokenKind::ReservedWord),
+                ("while", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                ("do", ParserTokenKind::ReservedWord),
+                ("invariant", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                ("by", ParserTokenKind::ReservedWord),
+                ("Inv", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("if", ParserTokenKind::ReservedWord),
+                ("do", ParserTokenKind::ReservedWord),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("match", ParserTokenKind::ReservedWord),
+                ("t", ParserTokenKind::Identifier),
+                ("do", ParserTokenKind::ReservedWord),
+                ("exhaustive", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        );
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens.clone(),
+            Vec::new(),
+        ));
+
+        let expected = [
+            (
+                SyntaxDiagnosticCode::MalformedFormulaExpression,
+                "algorithm loop verification clauses are parsed by parser task 34",
+                nth_token_range(&tokens, "invariant", 0),
+                "repair the formula expression before continuing",
+            ),
+            (
+                SyntaxDiagnosticCode::MalformedFormulaExpression,
+                "expected `if` condition",
+                nth_token_range(&tokens, "do", 2),
+                "repair the formula expression before continuing",
+            ),
+            (
+                SyntaxDiagnosticCode::MalformedTermExpression,
+                "expected match case",
+                nth_token_range(&tokens, "exhaustive", 0),
+                "repair the term expression before continuing",
+            ),
+        ];
+
+        assert_eq!(
+            output.diagnostics.len(),
+            expected.len(),
+            "{:#?}",
+            output.diagnostics
+        );
+        for (diagnostic, (code, message, primary, recovery_note)) in
+            output.diagnostics.iter().zip(expected)
+        {
+            assert_eq!(diagnostic.code, code);
+            assert_eq!(diagnostic.message.as_ref(), message);
+            assert_eq!(diagnostic.primary, primary);
+            assert_eq!(diagnostic.recovery_note.as_deref(), Some(recovery_note));
+        }
+    }
+
+    #[test]
+    fn parser_pins_task33_control_flow_diagnostic_matrix() {
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(210),
+            &[
+                ("for", ParserTokenKind::ReservedWord),
+                ("r", ParserTokenKind::Identifier),
+                ("=", ParserTokenKind::ReservedSymbol),
+                ("start", ParserTokenKind::Identifier),
+                ("to", ParserTokenKind::ReservedWord),
+                ("stop", ParserTokenKind::Identifier),
+                ("do", ParserTokenKind::ReservedWord),
+                ("invariant", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                ("by", ParserTokenKind::ReservedWord),
+                ("RangeInv", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::formula(
+                "algorithm loop verification clauses are parsed by parser task 34",
+                "invariant",
+                0,
+            )],
+        );
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(211),
+            &[
+                ("for", ParserTokenKind::ReservedWord),
+                ("item", ParserTokenKind::Identifier),
+                ("in", ParserTokenKind::ReservedWord),
+                ("Items", ParserTokenKind::Identifier),
+                ("do", ParserTokenKind::ReservedWord),
+                ("decreasing", ParserTokenKind::ReservedWord),
+                ("measure", ParserTokenKind::Identifier),
+                ("by", ParserTokenKind::ReservedWord),
+                ("CollDec", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("continue", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::formula(
+                "algorithm loop verification clauses are parsed by parser task 34",
+                "decreasing",
+                0,
+            )],
+        );
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(212),
+            &[
+                ("for", ParserTokenKind::ReservedWord),
+                ("i", ParserTokenKind::Identifier),
+                ("=", ParserTokenKind::ReservedSymbol),
+                ("to", ParserTokenKind::ReservedWord),
+                ("upper", ParserTokenKind::Identifier),
+                ("do", ParserTokenKind::ReservedWord),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::term(
+                "expected range lower bound",
+                "to",
+                0,
+            )],
+        );
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(213),
+            &[
+                ("for", ParserTokenKind::ReservedWord),
+                ("i", ParserTokenKind::Identifier),
+                ("=", ParserTokenKind::ReservedSymbol),
+                ("lower", ParserTokenKind::Identifier),
+                ("upper", ParserTokenKind::Identifier),
+                ("do", ParserTokenKind::ReservedWord),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::term(
+                "expected `to` or `downto` in range loop",
+                "upper",
+                0,
+            )],
+        );
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(214),
+            &[
+                ("for", ParserTokenKind::ReservedWord),
+                ("i", ParserTokenKind::Identifier),
+                ("=", ParserTokenKind::ReservedSymbol),
+                ("lower", ParserTokenKind::Identifier),
+                ("to", ParserTokenKind::ReservedWord),
+                ("do", ParserTokenKind::ReservedWord),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::term(
+                "expected range upper bound",
+                "do",
+                1,
+            )],
+        );
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(215),
+            &[
+                ("for", ParserTokenKind::ReservedWord),
+                ("item", ParserTokenKind::Identifier),
+                ("in", ParserTokenKind::ReservedWord),
+                ("do", ParserTokenKind::ReservedWord),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::term(
+                "expected collection term",
+                "do",
+                1,
+            )],
+        );
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(216),
+            &[
+                ("for", ParserTokenKind::ReservedWord),
+                ("item", ParserTokenKind::Identifier),
+                ("in", ParserTokenKind::ReservedWord),
+                ("Items", ParserTokenKind::Identifier),
+                ("processed", ParserTokenKind::ReservedWord),
+                ("do", ParserTokenKind::ReservedWord),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::term(
+                "expected processed binding name",
+                "do",
+                1,
+            )],
+        );
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(217),
+            &[
+                ("for", ParserTokenKind::ReservedWord),
+                ("i", ParserTokenKind::Identifier),
+                ("=", ParserTokenKind::ReservedSymbol),
+                ("lower", ParserTokenKind::Identifier),
+                ("to", ParserTokenKind::ReservedWord),
+                ("upper", ParserTokenKind::Identifier),
+                ("step", ParserTokenKind::ReservedWord),
+                ("do", ParserTokenKind::ReservedWord),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::term(
+                "expected step term",
+                "do",
+                1,
+            )],
+        );
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(221),
+            &[
+                ("for", ParserTokenKind::ReservedWord),
+                ("=", ParserTokenKind::ReservedSymbol),
+                ("lower", ParserTokenKind::Identifier),
+                ("to", ParserTokenKind::ReservedWord),
+                ("upper", ParserTokenKind::Identifier),
+                ("do", ParserTokenKind::ReservedWord),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::term(
+                "expected loop variable",
+                "=",
+                0,
+            )],
+        );
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(222),
+            &[
+                ("for", ParserTokenKind::ReservedWord),
+                ("item", ParserTokenKind::Identifier),
+                ("over", ParserTokenKind::Identifier),
+                ("Items", ParserTokenKind::Identifier),
+                ("do", ParserTokenKind::ReservedWord),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[
+                ExpectedParserDiagnostic::term(
+                    "expected `=` or `in` after loop variable",
+                    "over",
+                    0,
+                ),
+                ExpectedParserDiagnostic::formula("expected `do` in loop statement", "break", 0),
+            ],
+        );
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(223),
+            &[
+                ("while", ParserTokenKind::ReservedWord),
+                ("do", ParserTokenKind::ReservedWord),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::formula(
+                "expected `while` condition",
+                "do",
+                1,
+            )],
+        );
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(224),
+            &[
+                ("if", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::formula(
+                "expected `do` after `if` condition",
+                "end",
+                0,
+            )],
+        );
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(225),
+            &[
+                ("while", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::formula(
+                "expected `do` after `while` condition",
+                "end",
+                0,
+            )],
+        );
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(218),
+            &[
+                ("match", ParserTokenKind::ReservedWord),
+                ("do", ParserTokenKind::ReservedWord),
+                ("case", ParserTokenKind::ReservedWord),
+                ("p", ParserTokenKind::Identifier),
+                ("do", ParserTokenKind::ReservedWord),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("exhaustive", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::term(
+                "expected match scrutinee",
+                "do",
+                1,
+            )],
+        );
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(219),
+            &[
+                ("match", ParserTokenKind::ReservedWord),
+                ("t", ParserTokenKind::Identifier),
+                ("do", ParserTokenKind::ReservedWord),
+                ("case", ParserTokenKind::ReservedWord),
+                ("do", ParserTokenKind::ReservedWord),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("exhaustive", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::term(
+                "expected match case pattern",
+                "do",
+                2,
+            )],
+        );
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(220),
+            &[
+                ("match", ParserTokenKind::ReservedWord),
+                ("t", ParserTokenKind::Identifier),
+                ("do", ParserTokenKind::ReservedWord),
+                ("case", ParserTokenKind::ReservedWord),
+                ("p", ParserTokenKind::Identifier),
+                ("do", ParserTokenKind::ReservedWord),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::formula(
+                "expected `otherwise` or `exhaustive` match ending",
+                "end",
+                1,
+            )],
+        );
+    }
+
+    fn assert_task33_control_flow_accessors_and_child_order(ast: &mizar_syntax::SurfaceAst) {
+        let snapshot = ast.snapshot_text();
+        for node_name in [
+            "IfStatement",
+            "WhileStatement",
+            "ForRangeStatement",
+            "ForCollectionStatement",
+            "MatchStatement",
+            "MatchCase",
+            "MatchEnding",
+            "BreakStatement",
+            "ContinueStatement",
+        ] {
+            assert!(
+                snapshot.contains(node_name),
+                "parser-produced snapshot should include {node_name}"
+            );
+        }
+
+        let if_views = surface_views(ast, |kind| matches!(kind, SurfaceNodeKind::IfStatement));
+        assert!(
+            if_views
+                .iter()
+                .all(|view| (*view).as_if_statement().is_some())
+        );
+        let outer_if = if_views
+            .iter()
+            .copied()
+            .find(|view| direct_structural_child_kind_names(*view).contains(&"IfStatement"))
+            .expect("else-if should be owned as a nested IfStatement child");
+        assert_eq!(
+            direct_structural_child_kind_names(outer_if),
+            vec!["FormulaExpression", "AlgorithmStatementList", "IfStatement"]
+        );
+
+        let while_views =
+            surface_views(ast, |kind| matches!(kind, SurfaceNodeKind::WhileStatement));
+        assert!(
+            while_views
+                .iter()
+                .all(|view| (*view).as_while_statement().is_some())
+        );
+        let while_signatures = while_views
+            .into_iter()
+            .map(direct_child_signature)
+            .collect::<Vec<_>>();
+        assert_contains_signature(
+            &while_signatures,
+            &[
+                "while",
+                "FormulaExpression",
+                "do",
+                "AlgorithmStatementList",
+                "end",
+                ";",
+            ],
+        );
+
+        let range_views = surface_views(ast, |kind| {
+            matches!(kind, SurfaceNodeKind::ForRangeStatement)
+        });
+        assert!(
+            range_views
+                .iter()
+                .all(|view| (*view).as_for_range_statement().is_some())
+        );
+        let range_signatures = range_views
+            .into_iter()
+            .map(direct_child_signature)
+            .collect::<Vec<_>>();
+        assert_contains_signature(
+            &range_signatures,
+            &[
+                "for",
+                "i",
+                "=",
+                "TermExpression",
+                "to",
+                "TermExpression",
+                "step",
+                "TermExpression",
+                "do",
+                "AlgorithmStatementList",
+                "end",
+                ";",
+            ],
+        );
+        assert_contains_signature(
+            &range_signatures,
+            &[
+                "for",
+                "j",
+                "=",
+                "TermExpression",
+                "downto",
+                "TermExpression",
+                "do",
+                "AlgorithmStatementList",
+                "end",
+                ";",
+            ],
+        );
+
+        let collection_views = surface_views(ast, |kind| {
+            matches!(kind, SurfaceNodeKind::ForCollectionStatement)
+        });
+        assert!(
+            collection_views
+                .iter()
+                .all(|view| (*view).as_for_collection_statement().is_some())
+        );
+        let collection_signatures = collection_views
+            .into_iter()
+            .map(direct_child_signature)
+            .collect::<Vec<_>>();
+        assert_contains_signature(
+            &collection_signatures,
+            &[
+                "for",
+                "x",
+                "in",
+                "TermExpression",
+                "processed",
+                "Seen",
+                "do",
+                "AlgorithmStatementList",
+                "end",
+                ";",
+            ],
+        );
+        assert_contains_signature(
+            &collection_signatures,
+            &[
+                "for",
+                "plain",
+                "in",
+                "TermExpression",
+                "do",
+                "AlgorithmStatementList",
+                "end",
+                ";",
+            ],
+        );
+        assert!(
+            surface_views(ast, |kind| matches!(kind, SurfaceNodeKind::BreakStatement))
+                .iter()
+                .all(|view| (*view).as_break_statement().is_some())
+        );
+        assert!(
+            surface_views(ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ContinueStatement
+            ))
+            .iter()
+            .all(|view| (*view).as_continue_statement().is_some())
+        );
+
+        let match_views =
+            surface_views(ast, |kind| matches!(kind, SurfaceNodeKind::MatchStatement));
+        assert!(
+            match_views
+                .iter()
+                .all(|view| (*view).as_match_statement().is_some())
+        );
+        let multi_case_match = match_views
+            .iter()
+            .copied()
+            .find(|view| {
+                view.child_views()
+                    .filter(|child| child.as_match_case().is_some())
+                    .count()
+                    == 2
+            })
+            .expect("first match should own both case branches before its ending");
+        assert_eq!(
+            direct_structural_child_kind_names(multi_case_match),
+            vec!["TermExpression", "MatchCase", "MatchCase", "MatchEnding"]
+        );
+
+        let ending_views = surface_views(ast, |kind| matches!(kind, SurfaceNodeKind::MatchEnding));
+        assert!(
+            ending_views
+                .iter()
+                .all(|view| (*view).as_match_ending().is_some())
+        );
+        let otherwise_ending = ending_views
+            .iter()
+            .copied()
+            .find(|view| view_starts_with_token(*view, "otherwise"))
+            .expect("otherwise ending should be present");
+        assert_eq!(
+            direct_structural_child_kind_names(otherwise_ending),
+            vec!["AlgorithmStatementList"]
+        );
+
+        let exhaustive_endings = ending_views
+            .iter()
+            .copied()
+            .filter(|view| view_starts_with_token(*view, "exhaustive"))
+            .collect::<Vec<_>>();
+        assert_eq!(exhaustive_endings.len(), 2);
+        assert!(
+            exhaustive_endings.iter().any(
+                |view| direct_structural_child_kind_names(*view) == vec!["JustificationClause"]
+            )
+        );
+        assert!(
+            exhaustive_endings
+                .iter()
+                .any(|view| direct_structural_child_kind_names(*view).is_empty())
+        );
+    }
+
+    #[test]
     fn parser_preserves_task31_nest_computation_option_trace() {
         let source_id = source_id(184);
         let output = parse(ParseRequest::new(
@@ -27810,6 +29633,86 @@ mod tests {
             .collect()
     }
 
+    fn surface_views<'a>(
+        ast: &'a mizar_syntax::SurfaceAst,
+        predicate: impl Fn(&SurfaceNodeKind) -> bool + Copy,
+    ) -> Vec<mizar_syntax::SurfaceNodeView<'a>> {
+        let mut views = Vec::new();
+        if let Some(root) = ast.root_view() {
+            collect_surface_views(root, predicate, &mut views);
+        }
+        views
+    }
+
+    fn collect_surface_views<'a>(
+        view: mizar_syntax::SurfaceNodeView<'a>,
+        predicate: impl Fn(&SurfaceNodeKind) -> bool + Copy,
+        views: &mut Vec<mizar_syntax::SurfaceNodeView<'a>>,
+    ) {
+        if predicate(view.kind()) {
+            views.push(view);
+        }
+        for child in view.child_views() {
+            collect_surface_views(child, predicate, views);
+        }
+    }
+
+    fn direct_structural_child_kind_names(
+        view: mizar_syntax::SurfaceNodeView<'_>,
+    ) -> Vec<&'static str> {
+        view.child_views()
+            .filter(|child| !matches!(child.kind(), SurfaceNodeKind::Token(_)))
+            .filter_map(|child| task33_kind_name(child.kind()))
+            .collect()
+    }
+
+    fn direct_child_signature(view: mizar_syntax::SurfaceNodeView<'_>) -> Vec<String> {
+        view.child_views()
+            .filter_map(|child| {
+                view_token_text(child)
+                    .map(str::to_owned)
+                    .or_else(|| task33_kind_name(child.kind()).map(str::to_owned))
+            })
+            .collect()
+    }
+
+    fn assert_contains_signature(signatures: &[Vec<String>], expected: &[&str]) {
+        let expected = expected
+            .iter()
+            .copied()
+            .map(str::to_owned)
+            .collect::<Vec<_>>();
+        assert!(
+            signatures.iter().any(|signature| signature == &expected),
+            "expected signature {:?}, got {signatures:#?}",
+            expected
+        );
+    }
+
+    fn task33_kind_name(kind: &SurfaceNodeKind) -> Option<&'static str> {
+        match kind {
+            SurfaceNodeKind::FormulaExpression => Some("FormulaExpression"),
+            SurfaceNodeKind::TermExpression => Some("TermExpression"),
+            SurfaceNodeKind::AlgorithmStatementList => Some("AlgorithmStatementList"),
+            SurfaceNodeKind::IfStatement => Some("IfStatement"),
+            SurfaceNodeKind::MatchCase => Some("MatchCase"),
+            SurfaceNodeKind::MatchEnding => Some("MatchEnding"),
+            SurfaceNodeKind::JustificationClause => Some("JustificationClause"),
+            _ => None,
+        }
+    }
+
+    fn view_starts_with_token(view: mizar_syntax::SurfaceNodeView<'_>, expected: &str) -> bool {
+        view.child_views().find_map(view_token_text) == Some(expected)
+    }
+
+    fn view_token_text(view: mizar_syntax::SurfaceNodeView<'_>) -> Option<&str> {
+        match view.kind() {
+            SurfaceNodeKind::Token(token) => Some(token.text.as_ref()),
+            _ => None,
+        }
+    }
+
     fn direct_token_texts(
         ast: &mizar_syntax::SurfaceAst,
         node: &mizar_syntax::SurfaceNode,
@@ -27977,6 +29880,119 @@ mod tests {
                 token(source_id, *kind, text, start, end)
             })
             .collect()
+    }
+
+    #[derive(Debug)]
+    struct ExpectedParserDiagnostic {
+        code: SyntaxDiagnosticCode,
+        message: &'static str,
+        primary_text: &'static str,
+        primary_ordinal: usize,
+        recovery_note: &'static str,
+    }
+
+    impl ExpectedParserDiagnostic {
+        fn term(message: &'static str, primary_text: &'static str, primary_ordinal: usize) -> Self {
+            Self {
+                code: SyntaxDiagnosticCode::MalformedTermExpression,
+                message,
+                primary_text,
+                primary_ordinal,
+                recovery_note: "repair the term expression before continuing",
+            }
+        }
+
+        fn formula(
+            message: &'static str,
+            primary_text: &'static str,
+            primary_ordinal: usize,
+        ) -> Self {
+            Self {
+                code: SyntaxDiagnosticCode::MalformedFormulaExpression,
+                message,
+                primary_text,
+                primary_ordinal,
+                recovery_note: "repair the formula expression before continuing",
+            }
+        }
+    }
+
+    fn assert_task33_algorithm_body_diagnostics_exact(
+        source_id: SourceId,
+        body: &[(&str, ParserTokenKind)],
+        expected: &[ExpectedParserDiagnostic],
+    ) {
+        let tokens = task33_algorithm_body_tokens(source_id, body);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens.clone(),
+            Vec::new(),
+        ));
+
+        assert_eq!(
+            output.diagnostics.len(),
+            expected.len(),
+            "{:#?}",
+            output.diagnostics
+        );
+        for (diagnostic, expected) in output.diagnostics.iter().zip(expected) {
+            assert_matches_expected_diagnostic(diagnostic, &tokens, expected);
+        }
+    }
+
+    fn task33_algorithm_body_tokens(
+        source_id: SourceId,
+        body: &[(&str, ParserTokenKind)],
+    ) -> Vec<ParserToken> {
+        let mut entries = vec![
+            ("definition", ParserTokenKind::ReservedWord),
+            ("algorithm", ParserTokenKind::ReservedWord),
+            ("diagnostic_flow", ParserTokenKind::Identifier),
+            ("(", ParserTokenKind::ReservedSymbol),
+            (")", ParserTokenKind::ReservedSymbol),
+            ("do", ParserTokenKind::ReservedWord),
+        ];
+        entries.extend_from_slice(body);
+        entries.extend_from_slice(&[
+            ("end", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("end", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+        ]);
+        token_sequence(source_id, &entries)
+    }
+
+    fn assert_matches_expected_diagnostic(
+        diagnostic: &mizar_syntax::SyntaxDiagnostic,
+        tokens: &[ParserToken],
+        expected: &ExpectedParserDiagnostic,
+    ) {
+        assert!(
+            diagnostic_matches_expected(diagnostic, tokens, expected),
+            "expected {expected:?}, got {diagnostic:#?}"
+        );
+    }
+
+    fn diagnostic_matches_expected(
+        diagnostic: &mizar_syntax::SyntaxDiagnostic,
+        tokens: &[ParserToken],
+        expected: &ExpectedParserDiagnostic,
+    ) -> bool {
+        diagnostic.code == expected.code
+            && diagnostic.message.as_ref() == expected.message
+            && diagnostic.primary
+                == nth_token_range(tokens, expected.primary_text, expected.primary_ordinal)
+            && diagnostic.recovery_note.as_deref() == Some(expected.recovery_note)
+    }
+
+    fn nth_token_range(tokens: &[ParserToken], text: &str, nth: usize) -> SourceRange {
+        tokens
+            .iter()
+            .filter(|token| token.text.as_ref() == text)
+            .nth(nth)
+            .unwrap_or_else(|| panic!("expected token `{text}` at ordinal {nth}"))
+            .span
     }
 
     fn operator_fixture_fixities() -> Vec<OperatorFixityEntry> {

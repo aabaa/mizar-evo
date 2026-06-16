@@ -1,0 +1,29 @@
+definition
+  algorithm Broken()
+  do
+    while thesis do
+      invariant thesis by Inv;
+      decreasing m by Dec;
+      break;
+    end;
+    for r = start to stop do
+      invariant thesis by RangeInv;
+      break;
+    end;
+    for item in Items do
+      decreasing measure by CollDec;
+      continue;
+    end;
+    if do
+      continue;
+    else
+      break;
+    end;
+    for i = do
+      break;
+    end;
+    match t do
+      exhaustive;
+    end;
+  end;
+end;

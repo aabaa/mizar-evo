@@ -186,7 +186,7 @@ fn has_statement_body_marker_before_boundary(cursor: &TokenCursor<'_>) -> bool {
 }
 
 fn looks_like_algorithm_for_loop(cursor: &TokenCursor<'_>) -> bool {
-    matches!(
+    if matches!(
         (cursor.peek(1), cursor.peek(2)),
         (
             Some(ParserToken {
@@ -196,7 +196,11 @@ fn looks_like_algorithm_for_loop(cursor: &TokenCursor<'_>) -> bool {
             Some(next)
         ) if is_reserved_word_token(next, "in")
             || (next.kind == ParserTokenKind::ReservedSymbol && next.text.as_ref() == "=")
-    )
+    ) {
+        return true;
+    }
+
+    has_statement_body_marker_before_boundary(cursor)
 }
 
 fn follows_completed_match_case(cursor: &TokenCursor<'_>) -> bool {
@@ -313,6 +317,48 @@ mod tests {
             token(ParserTokenKind::ReservedWord, "do", 8, 10),
         ];
         assert!(super::opens_recovery_block_at(&statement_list_if, 2));
+
+        let range_for = vec![
+            token(ParserTokenKind::ReservedWord, "for", 0, 3),
+            token(ParserTokenKind::Identifier, "i", 4, 5),
+            token(ParserTokenKind::ReservedSymbol, "=", 6, 7),
+        ];
+        assert!(super::opens_recovery_block_at(&range_for, 0));
+
+        let collection_for = vec![
+            token(ParserTokenKind::ReservedWord, "for", 0, 3),
+            token(ParserTokenKind::Identifier, "x", 4, 5),
+            token(ParserTokenKind::ReservedWord, "in", 6, 8),
+        ];
+        assert!(super::opens_recovery_block_at(&collection_for, 0));
+
+        let malformed_head_for = vec![
+            token(ParserTokenKind::ReservedWord, "for", 0, 3),
+            token(ParserTokenKind::Identifier, "item", 4, 8),
+            token(ParserTokenKind::Identifier, "over", 9, 13),
+            token(ParserTokenKind::Identifier, "Items", 14, 19),
+            token(ParserTokenKind::ReservedWord, "do", 20, 22),
+        ];
+        assert!(super::opens_recovery_block_at(&malformed_head_for, 0));
+
+        let quantifier_for = vec![
+            token(ParserTokenKind::ReservedWord, "for", 0, 3),
+            token(ParserTokenKind::Identifier, "x", 4, 5),
+            token(ParserTokenKind::ReservedWord, "holds", 6, 11),
+        ];
+        assert!(!super::opens_recovery_block_at(&quantifier_for, 0));
+
+        let malformed_head_without_do = vec![
+            token(ParserTokenKind::ReservedWord, "for", 0, 3),
+            token(ParserTokenKind::Identifier, "item", 4, 8),
+            token(ParserTokenKind::Identifier, "over", 9, 13),
+            token(ParserTokenKind::Identifier, "Items", 14, 19),
+            token(ParserTokenKind::ReservedSymbol, ";", 19, 20),
+        ];
+        assert!(!super::opens_recovery_block_at(
+            &malformed_head_without_do,
+            0
+        ));
 
         let formula_otherwise = vec![
             token(ParserTokenKind::Identifier, "x", 0, 1),

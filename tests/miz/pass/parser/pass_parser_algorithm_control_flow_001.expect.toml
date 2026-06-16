@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_algorithm_control_flow_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.algorithm_control_flow"
+source = "pass_parser_algorithm_control_flow_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+tags = ["active_parse_only"]
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.20.algorithm_control_flow.parser",
+]
+notes = "Active task-33 parse-only coverage for algorithm if/else branches, while loops, range loops with to/downto and optional step, collection loops with and without processed bindings, multiple match cases, otherwise and exhaustive match endings with and without justification, break, and continue. Parser-unit coverage pins else-if chaining. Loop verification clauses remain task34."

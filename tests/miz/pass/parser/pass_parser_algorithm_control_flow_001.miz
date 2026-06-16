@@ -1,0 +1,50 @@
+definition
+  algorithm control(x) -> set
+  do
+    var acc := x;
+    if thesis do
+      break;
+    else
+      continue;
+    end;
+    while thesis do
+      break;
+    end;
+    for i = start to stop step stride do
+      continue;
+    end;
+    for j = stop downto start do
+      continue;
+    end;
+    for item in Items processed Seen do
+      break;
+    end;
+    for plain in Items do
+      break;
+    end;
+    match term do
+      case pattern do
+        continue;
+      end;
+      case alternate do
+        break;
+      end;
+      otherwise
+        break;
+      end;
+    end;
+    match other do
+      case fallback do
+        break;
+      end;
+      exhaustive by Exhaustive;
+    end;
+    match unchecked do
+      case fallback do
+        continue;
+      end;
+      exhaustive;
+    end;
+    return acc;
+  end;
+end;

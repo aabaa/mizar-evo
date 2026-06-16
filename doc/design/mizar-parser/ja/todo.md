@@ -726,10 +726,20 @@ resolver / build-system 依存を避ける。
     - 依存: 31、`mizar-syntax` task 16 / S-016。仕様:
       [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)。
 
-33. **algorithm の制御フロー。** [ ]
-    - `while` / `do`（`to` / `downto` を含む）、`if` / `else`、`match`、
-      `for ... in ... processed ...`、`otherwise` / `exhaustive` の match 終端、
-      `break` / `continue`。
+33. **algorithm の制御フロー。** [x]
+    - `while ... do`、range `for ... = ... (to|downto) ... [step ...]`、
+      `if` / `else`、`match`、`for ... in ... [processed ...]`、
+      `otherwise` / `exhaustive` の match 終端、`break` / `continue`。
+    - 結果: `IfStatement`、`WhileStatement`、`ForRangeStatement`、
+      `ForCollectionStatement`、`MatchStatement`、`MatchCase`、`MatchEnding`、
+      `BreakStatement`、`ContinueStatement` surface を実装し、else-if chain と
+      recovery の parser unit coverage を追加した。active pass/fail parse-only
+      coverage は通常の if/else、while、任意の `step` を持つ `to` / `downto`
+      range loop、`processed` の有無がある collection loop、複数 match case、
+      justification 有無の `otherwise` / `exhaustive` ending、および jump
+      statement を行使する。loop の `invariant` / `decreasing` clause は引き続き
+      task 34 であり、task 33 は concrete verification-clause node を作らず、
+      clause semicolon まで診断・回復する。
     - 依存: 32、`mizar-syntax` task 16 / S-016。仕様:
       [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)。
 

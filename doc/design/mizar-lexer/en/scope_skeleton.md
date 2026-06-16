@@ -52,7 +52,7 @@ pub fn build_scope_skeleton(raw: &RawTokenStream) -> ScopeSkeleton;
 
 The skeleton pre-scan recognizes only reserved-keyword-shaped structure needed to approximate lexical scopes:
 
-- block boundaries such as `definition`, `proof`, `now`, `case`, `suppose`, `hereby`, `algorithm`, algorithm `for ... do`, nested `struct`, explicit `inherit ... where`, and `end`;
+- block boundaries such as `definition`, `proof`, `now`, `case`, `suppose`, `hereby`, `algorithm`, algorithm `for ... do`, match `otherwise` branches, nested `struct`, explicit `inherit ... where`, and `end`;
 - binder-introducing forms such as `let`, `for`, `ex`, `reserve`, `given`, `consider`, `set`, `reconsider`, `take`, `deffunc`, `defpred`, and algorithm `var` / `const` forms;
 - comma-separated binding lists in recognized binder positions;
 - local names whose binding range can be approximated without parsing expressions.
@@ -68,6 +68,7 @@ Lexical lifetimes are conservative:
 - `for`, `ex`, and `given` bind only for the recovered statement range;
 - `algorithm ... do ... end` is one lexical algorithm block; the header `do` does not open a separate `Do` frame.
 - algorithm `for ... do` binders, including optional `processed name`, bind in the following `Do` block. Other non-header `do` tokens also open a conservative `Do` block.
+- In an open algorithm block, an `otherwise` immediately after `end` or `end;` uses a conservative match-branch heuristic and opens a `Do` block so branch-local `end;` and the final match `end;` can both pair. Definition-side `otherwise` clauses and non-algorithm `end; otherwise` shapes do not open blocks.
 
 The skeleton pre-scan must not require raw scan to split punctuation in advance. It may inspect inside `LexemeRun` spans to recognize delimiters such as `,`, `;`, parentheses, brackets, braces, and block-closing punctuation needed for binding-list and item-tail recovery.
 
@@ -77,7 +78,7 @@ The implementation is a conservative single pass over a reduced token stream.
 
 1. Convert `RawTokenStream` into scope-skeleton tokens. Layout is ignored. `LexemeRun` values are split into identifier-shaped `Word` pieces, comma, semicolon, parentheses, brackets, braces, and `Other` runs. Other raw token kinds become `Other`.
 2. Initialize a synthetic root frame starting at byte `0`, an empty block stack, and an empty `pending_do_bindings` buffer used by algorithm `for ... do` forms.
-3. Walk tokens from left to right. Recognized block-opening words (`algorithm`, `definition`, `proof`, `now`, `suppose`, `hereby`, and `struct`) push an open frame. A `do` token opens a `Do` frame unless it is the header `do` that begins an open algorithm body without pending loop bindings; that header `do` attaches to the `Algorithm` frame instead. `inherit` pushes a frame only when a `where` appears before the statement semicolon or a block `end`, matching the explicit inheritance-block surface while leaving shorthand `inherit ...;` as a statement-shaped declaration. `case` opens a frame only when the rest of the statement does not contain `do`, so algorithm `case ... do` does not look like a proof branch. `end` pops one frame and records both a block range and a lexical scope frame.
+3. Walk tokens from left to right. Recognized block-opening words (`algorithm`, `definition`, `proof`, `now`, `suppose`, `hereby`, and `struct`) push an open frame. A `do` token opens a `Do` frame unless it is the header `do` that begins an open algorithm body without pending loop bindings; that header `do` attaches to the `Algorithm` frame instead. `inherit` pushes a frame only when a `where` appears before the statement semicolon or a block `end`, matching the explicit inheritance-block surface while leaving shorthand `inherit ...;` as a statement-shaped declaration. `case` opens a frame only when the rest of the statement does not contain `do`, so algorithm `case ... do` does not look like a proof branch. `otherwise` opens a conservative `Do` frame only when it follows a completed algorithm match case (`end; otherwise`), not for definition-side conditional definiens. `end` pops one frame and records both a block range and a lexical scope frame.
 4. Recognized binder words delegate to shape-specific parsers. Plain binder lists such as `let x, y be ...` accept identifier-shaped names until a comma, semicolon, or stop word. Named-equals binders such as `set x = ...` and `take x = ...` require the `name =` shape. `reconsider` scans the `type_change_list` conservatively, records each item-head identifier, and skips optional equated right-hand sides until a top-level comma or `as` while tracking parenthesis, bracket, and brace depth. Algorithm `var` and `const` binders scan comma-separated declaration heads while tracking parenthesis depth so initializer tuples do not create extra binders.
 5. `ghost var` and `ghost const` are treated as algorithm binders. `ghost target := term;` is treated as a non-binding assignment and skipped without a scope diagnostic. Other `ghost` forms produce a recoverable diagnostic and do not invent bindings.
 6. Binder lifetimes are assigned by shape. `reserve` contributes to the root frame only outside nested blocks. `for`, `ex`, and `given` create statement-local frames. `consider`, `reconsider`, `let` inside a block, named-equals binders, `deffunc`, `defpred`, `var`, `const`, and `processed` extend the current block frame when one exists, otherwise fall back to a statement-local frame. Algorithm `for ... do` moves its binders, plus optional `processed name`, into the following `do` block via `pending_do_bindings`.
@@ -125,7 +126,7 @@ Tests should cover:
 - comma-separated binders;
 - nested block ranges;
 - statement ranges for statement-local binders;
-- proof branches (`case`, `suppose`, `hereby`), algorithm blocks, algorithm `for ... do` ranges, and nested `struct` / explicit `inherit ... where` ranges;
+- proof branches (`case`, `suppose`, `hereby`), algorithm blocks, algorithm `for ... do` ranges, algorithm match `otherwise` branches, and nested `struct` / explicit `inherit ... where` ranges;
 - local names from `take`, `deffunc`, `defpred`, and algorithm binders;
 - malformed binders under-approximate rather than inventing names;
 - `ScopeLexView` returns true only inside the binding range;
