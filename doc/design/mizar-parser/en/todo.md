@@ -632,7 +632,7 @@ older numeric syntax task references appear to disagree, prefer
       parse-only pass/fail corpus fixtures, source-level symbolic mode-name
       coverage, and traceability metadata cover Chapter 7 mode definitions.
 
-27. **`redefine`, `synonym`, and `antonym`.** [ ]
+27. **`redefine`, `synonym`, and `antonym`.** [x]
     - Redefinition and notation-aliasing forms across the definition kinds of
       tasks 23-26.
     - Deps: 24, 25, 26, `mizar-syntax` task 15 / S-015. Spec:
@@ -641,6 +641,16 @@ older numeric syntax task references appear to disagree, prefer
       [09.predicates.md](../../../spec/en/09.predicates.md),
       [10.functors.md](../../../spec/en/10.functors.md),
       [11.symbol_management.md](../../../spec/en/11.symbol_management.md).
+    - Result: implemented `AttributeRedefinition`, `PredicateRedefinition`,
+      `FunctorRedefinition`, nested `CoherenceCondition`, `NotationAlias`,
+      and raw `NotationPattern` parsing. Definition-local `public` / `private`
+      redefinitions and aliases reuse `VisibleItem`. `redefine mode` remains a
+      placeholder/recovery boundary because the canonical grammar does not
+      define a mode redefinition. Alias branch classification remains
+      resolver-owned. Parser unit tests, active parse-only pass/fail corpus
+      fixtures, visibility coverage, redefinition recovery, unsupported-mode
+      fallback preservation, and traceability metadata cover the task-27
+      surface.
 
 28. **Property clauses.** [ ]
     - Property clauses across definition kinds (`commutativity`,

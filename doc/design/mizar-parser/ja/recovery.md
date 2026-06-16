@@ -5,8 +5,10 @@
 状態: task 12 の最小回復、task 28 の入れ子 block-end 回復、task 5 の
 module-skeleton recovery、task 6 の import recovery、task 7 の export/visibility
 recovery、task 8 の type-expression recovery、task 9 の primary-term recovery、
-task 13 の atomic-formula recovery、および task 14 の formula recovery は
-実装済み。完全な文法回復は引き続き計画中。
+task 13 の atomic-formula recovery、task 14 の formula recovery、S-013 / S-014 の
+statement/proof recovery、task 26 までの S-015 definition recovery は実装済み。
+Task 27 redefinition と notation-alias recovery は次の増分として仕様化済みである。
+完全な文法回復は引き続き計画中。
 
 ## 目的
 
@@ -101,6 +103,16 @@ task 13 の atomic-formula recovery、および task 14 の formula recovery は
   separator や tail は `MalformedFormulaExpression` を報告する。matching `)` が
   synchronization 前にない parenthesized formula は `UnmatchedOpeningDelimiter` を送出し、
   `MalformedFormulaExpression` を報告し、opener を secondary diagnostic anchor とする。
+- task 27 の redefinition と notation-alias parsing は definition-content
+  synchronization を再利用する。redefinition label、subject、raw pattern、term body、
+  raw notation-pattern side の欠落は、挿入 child が必要な場合に
+  `MalformedTermExpression` と `MissingTerm` を使う。`redefine func` return type 欠落は
+  `MalformedTypeExpression` と `MissingTypeExpression` を使う。delimiter、formula body、
+  notation の `for`、必須 `coherence` keyword 欠落は `MalformedFormulaExpression` を
+  使う。mandatory coherence justification と任意の `with` label の malformed syntax は、
+  必要に応じて `MalformedJustification` と `MissingProofStep` を使う。malformed tail は
+  semicolon、`end`、次の definition-content start、top-level item boundary、または EOF まで
+  skip する。
 - 対応する block opener を持たない裸の `end` は、構文診断とともに `ast = None` を返す。
 
 ## 公開 enum の互換性

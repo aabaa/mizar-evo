@@ -125,6 +125,12 @@ green tree.
 | mode definition node | `SyntaxKind::ModeDefinition` |
 | mode pattern node | `SyntaxKind::ModePattern` |
 | mode property node | `SyntaxKind::ModeProperty` |
+| attribute redefinition node | `SyntaxKind::AttributeRedefinition` |
+| predicate redefinition node | `SyntaxKind::PredicateRedefinition` |
+| functor redefinition node | `SyntaxKind::FunctorRedefinition` |
+| coherence condition node | `SyntaxKind::CoherenceCondition` |
+| notation alias node | `SyntaxKind::NotationAlias` |
+| notation pattern node | `SyntaxKind::NotationPattern` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -277,11 +283,20 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 119 | `FunctorPattern` | task-25 raw functor definition pattern |
 | 120 | `TermDefiniens` | task-25 term definiens body |
 | 121 | `TermCase` | task-25 conditional term definiens case |
+| 122 | `ModeDefinition` | task-26 `mode ... is ...;` definition |
+| 123 | `ModePattern` | task-26 raw mode definition pattern |
+| 124 | `ModeProperty` | task-26 `sethood` property attached to a mode definition |
+| 125 | `AttributeRedefinition` | task-27 `redefine attr ... means ...; coherence ...;` definition |
+| 126 | `PredicateRedefinition` | task-27 `redefine pred ... means ...; coherence ...;` definition |
+| 127 | `FunctorRedefinition` | task-27 `redefine func ... -> ... means|equals ...; coherence ...;` definition |
+| 128 | `CoherenceCondition` | task-27 mandatory redefinition coherence proof tail |
+| 129 | `NotationAlias` | task-27 `synonym` / `antonym` notation alias declaration |
+| 130 | `NotationPattern` | task-27 raw notation alias pattern span |
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
 above, including `Root` through task-22 `ProofBlock`, task-23
-`DefinitionBlockItem` through task-25 `TermCase`, the compatibility
+`DefinitionBlockItem` through task-27 `NotationPattern`, the compatibility
 `Token` wrapper, and `ErrorRecovery`; `is_token_kind` is true only for token
 leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future raw values should be
 appended or assigned into a documented reserved range so existing snapshots and
@@ -370,6 +385,12 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::ModeDefinition` | none | `SyntaxKind::ModeDefinition` | parser task-26 `mode` definition; owns `mode`, a label identifier or `MissingTerm`, `:`, a raw `ModePattern`, `is`, a body `TypeExpression` or `MissingTypeExpression`, the first semicolon when present, and optional `ModeProperty` |
 | `SurfaceNodeKind::ModePattern` | none | `SyntaxKind::ModePattern` | parser task-26 mode definition pattern; owns source-ordered raw tokens accepted by `mode_def_name [ type_params ]` plus `MissingTerm` recovery when no grammar-shaped split exists; it does not encode semantic parameter roles |
 | `SurfaceNodeKind::ModeProperty` | none | `SyntaxKind::ModeProperty` | parser task-26 `sethood` property immediately following a mode definition; owns `sethood`, a required general justification (`JustificationClause` or `ProofBlock`) when present, optional recovery, and the property semicolon when present |
+| `SurfaceNodeKind::AttributeRedefinition` | none | `SyntaxKind::AttributeRedefinition` | parser task-27 `redefine attr`; owns `redefine`, `attr`, a label identifier or `MissingTerm`, `:`, a subject identifier or `MissingTerm`, `is`, an `AttributePattern`, `means`, a `FormulaDefiniens`, the first semicolon when present, and a mandatory `CoherenceCondition` |
+| `SurfaceNodeKind::PredicateRedefinition` | none | `SyntaxKind::PredicateRedefinition` | parser task-27 `redefine pred`; owns `redefine`, `pred`, a raw `PredicatePattern`, `means`, a `FormulaDefiniens`, the first semicolon when present, and a mandatory `CoherenceCondition` |
+| `SurfaceNodeKind::FunctorRedefinition` | none | `SyntaxKind::FunctorRedefinition` | parser task-27 `redefine func`; owns `redefine`, `func`, a label identifier or `MissingTerm`, `:`, a raw `FunctorPattern`, `->`, a return `TypeExpression` or `MissingTypeExpression`, `means FormulaDefiniens` or `equals TermDefiniens`, the first semicolon when present, and a mandatory `CoherenceCondition` |
+| `SurfaceNodeKind::CoherenceCondition` | none | `SyntaxKind::CoherenceCondition` | parser task-27 redefinition coherence tail; owns `coherence`, optional `with` plus a label identifier or `MissingProofStep`, a required general justification when present, optional recovery, and the coherence semicolon when present |
+| `SurfaceNodeKind::NotationAlias` | none | `SyntaxKind::NotationAlias` | parser task-27 `synonym` or `antonym` declaration; owns the alias keyword, an alternate `NotationPattern`, `for`, an original `NotationPattern`, optional recovery, and the final semicolon when present |
+| `SurfaceNodeKind::NotationPattern` | none | `SyntaxKind::NotationPattern` | parser task-27 raw notation alias pattern; owns source-ordered raw tokens from one side of `for` plus `MissingTerm` recovery when the side is empty or cannot be delimited; it does not classify the pattern as predicate, functor, mode, or attribute |
 | `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host plus parser task-22 proof justification host; owns one `Proposition`, one `JustificationClause` or `ProofBlock`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
@@ -966,6 +987,48 @@ the sethood proof obligation remains outside the syntax crate.
 `SurfaceNodeView` exposes `as_mode_definition`, `as_mode_pattern`, and
 `as_mode_property` helpers. Snapshot rendering prints the literal node names.
 
+Parser task 27 adds the redefinition and notation-alias portion of S-015.
+`AttributeRedefinition`, `PredicateRedefinition`, and `FunctorRedefinition`
+mirror the corresponding task-23 through task-25 definition bodies, but each
+owns the leading `redefine` token and a mandatory trailing
+`CoherenceCondition`. The spec defines redefinition productions only for
+attributes, predicates, and functors; there is no `redefine_mode` production in
+the canonical grammar. Mode syntax still participates in task-27 notation
+aliases through raw `NotationPattern` children, while any `redefine mode`
+source remains recovered/deferred rather than represented as invented language
+behavior.
+Definition-local `public` / `private` redefinitions use the existing
+`VisibleItem` / `VisibilityMarker` wrapper around the concrete redefinition
+node, matching Appendix A's `[ visibility ] definitional_item` shape.
+
+`CoherenceCondition` owns the `coherence` keyword, optional `with` plus a label
+identifier, a required syntax-level general justification (`JustificationClause`
+or `ProofBlock`) when present, optional recovery, and the coherence semicolon
+when present. It is separate from the general task-23 `CorrectnessCondition`
+because redefinition coherence is part of the redefinition item rather than a
+standalone definition-content clause. The AST does not check whether the
+coherence proof establishes equivalence, result-type agreement, or compatibility
+with the previous definition.
+
+`NotationAlias` represents both `synonym` and `antonym` declarations. Operator
+declarations remain a deferred branch of canonical `notation_decl`; this task
+adds only the alias surface. `NotationAlias` owns the alias keyword, one
+alternate `NotationPattern`, the `for` token, one original `NotationPattern`,
+optional recovery, and the terminating semicolon when present.
+`NotationPattern` preserves raw source-order tokens for one side of the alias.
+The node deliberately does not classify the pattern as predicate, functor,
+mode, or attribute and does not decide which token is the symbol being
+introduced or referenced. That ambiguity depends on the active symbol
+environment and remains resolver-owned.
+
+Top-level and definition-local notation aliases use the same `NotationAlias`
+surface; visibility is represented by the existing `VisibleItem` /
+`VisibilityMarker` wrapper where the grammar admits `[ visibility ]
+notation_decl`. `SurfaceNodeView` exposes `as_attribute_redefinition`,
+`as_predicate_redefinition`, `as_functor_redefinition`,
+`as_coherence_condition`, `as_notation_alias`, and `as_notation_pattern`
+helpers. Snapshot rendering prints the literal node names.
+
 ### Vocabulary Increment Contract
 
 Node vocabulary grows only in the same change as the `mizar-parser` grammar task
@@ -1137,6 +1200,12 @@ TermCase range=<start>..<end> recovered=<bool>
 ModeDefinition range=<start>..<end> recovered=<bool>
 ModePattern range=<start>..<end> recovered=<bool>
 ModeProperty range=<start>..<end> recovered=<bool>
+AttributeRedefinition range=<start>..<end> recovered=<bool>
+PredicateRedefinition range=<start>..<end> recovered=<bool>
+FunctorRedefinition range=<start>..<end> recovered=<bool>
+CoherenceCondition range=<start>..<end> recovered=<bool>
+NotationAlias range=<start>..<end> recovered=<bool>
+NotationPattern range=<start>..<end> recovered=<bool>
 CompactStatement range=<start>..<end> recovered=<bool>
 JustificationClause range=<start>..<end> recovered=<bool>
 ReferenceList range=<start>..<end> recovered=<bool>

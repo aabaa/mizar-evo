@@ -3,11 +3,11 @@
 Status: module skeleton, top-level placeholder dispatch, concrete import
 items, export items, visibility wrappers, reserve-hosted type expressions,
 task-15 term surfaces including set comprehensions, task-14 formula surfaces,
-S-013 statement nodes, task-22 theorem/proof items, and the task-23 definition
-block skeleton / attribute-definition / correctness-condition increment are
-implemented; remaining concrete predicate, functor, mode, structure,
-registration, template, algorithm, annotation, and package-oriented item
-grammars are planned.
+S-013 statement nodes, task-22 theorem/proof items, and the task-23 through
+task-26 definition-block / attribute / predicate / functor / mode increments
+are implemented; remaining concrete redefinition, notation-alias, property,
+structure, registration, template, algorithm, annotation, and package-oriented
+item grammars are planned.
 
 ## Purpose
 
@@ -1601,6 +1601,109 @@ with citation, computation, and proof justifications, rejection of legacy
 body/semicolon/property-justification recovery, active parse-only pass/fail
 corpus coverage, and traceability to Chapter 7 §7.2 / §7.6 / §7.7 / §7.8 /
 §7.8.1.
+
+### Task 27: Redefinitions And Notation Aliases
+
+Task 27 adds the spec-defined redefinition forms and the symbol-management
+alias forms. The parser remains syntax-only: it does not resolve the previous
+definition being redefined, prove coherence, decide overload membership,
+classify alias patterns by active symbol kind, or create synonym/antonym
+semantic facts.
+
+```ebnf
+definition_content     ::= ... | [ visibility ] redefine_attr
+                         | [ visibility ] redefine_pred
+                         | [ visibility ] redefine_func
+                         | [ visibility ] notation_alias_decl ;
+declaration            ::= ... | [ visibility ] notation_decl ;
+
+redefine_attr          ::= "redefine" "attr" label ":" subject "is"
+                           attr_pattern "means" formula_definiens ";"
+                           coherence_tail ;
+redefine_pred          ::= "redefine" "pred" pred_pattern
+                           "means" formula_definiens ";"
+                           coherence_tail ;
+redefine_func          ::= "redefine" "func" label ":" func_pattern
+                           "->" type_expression
+                           ( "means" formula_definiens
+                           | "equals" term_definiens ) ";"
+                           coherence_tail ;
+coherence_tail         ::= "coherence" [ "with" label ] justification ";" ;
+
+notation_decl          ::= operator_decl | notation_alias_decl ;
+notation_alias_decl    ::= synonym_def | antonym_def ;
+synonym_def            ::= "synonym" notation_pattern
+                           "for" notation_pattern ";" ;
+antonym_def            ::= "antonym" notation_pattern
+                           "for" notation_pattern ";" ;
+notation_pattern       ::= raw tokens accepted up to top-level "for",
+                           semicolon, definition boundary, or item boundary ;
+```
+
+`AttributeRedefinition`, `PredicateRedefinition`, and `FunctorRedefinition`
+reuse the task-23 through task-25 pattern and definiens parsers where the
+grammar is identical, then own a mandatory `CoherenceCondition` tail.
+`AttributeRedefinition` owns `redefine`, `attr`, label, `:`, subject, `is`,
+`AttributePattern`, `means`, `FormulaDefiniens`, the first semicolon when
+present, and `CoherenceCondition`. `PredicateRedefinition` owns `redefine`,
+`pred`, `PredicatePattern`, `means`, `FormulaDefiniens`, the first semicolon,
+and `CoherenceCondition`; the Chapter 9 production has no predicate label
+before the pattern. `FunctorRedefinition` owns `redefine`, `func`, label, `:`,
+`FunctorPattern`, `->`, return `TypeExpression`, the selected `means` /
+`equals` definiens branch, the first semicolon, and `CoherenceCondition`.
+Definition-local `public` / `private` redefinitions use the existing
+`VisibleItem` / `VisibilityMarker` wrapper around the concrete redefinition
+node, matching Appendix A's `[ visibility ] definitional_item` shape.
+
+`CoherenceCondition` owns `coherence`, optional `with` plus a label identifier,
+a required general justification (`by` references, `by computation(...)`, or
+`proof ... end`), optional recovery, and the coherence semicolon. It is nested
+under the owning redefinition rather than emitted as a standalone
+`CorrectnessCondition`.
+
+The canonical spec contains `redefine_attr`, `redefine_pred`, and
+`redefine_func` productions, but no `redefine_mode` production. Task 27 treats
+that absence as a local specification boundary: `redefine mode` is not
+invented as a concrete node. Mode syntax participates in `synonym` / `antonym`
+through raw notation patterns, and any `redefine mode` source remains
+placeholder/recovery unless a later human-reviewed spec change adds such a
+production.
+
+`NotationAlias` represents both `synonym` and `antonym`, at top level and
+inside definition blocks. Operator declarations remain a deferred branch of
+canonical `notation_decl`; this task implements only `notation_alias_decl`.
+`NotationAlias` owns the alias keyword, an alternate
+`NotationPattern`, the `for` token, an original `NotationPattern`, optional
+recovery, and the terminating semicolon. Definition-local and top-level
+`public` / `private` aliases use the existing `VisibleItem` wrapper.
+`NotationPattern` deliberately preserves each side as raw source-order tokens
+instead of choosing the predicate, functor, mode, or attribute branch of
+`alt_pattern` / `original_pattern`; that branch depends on symbol tables and
+remains resolver-owned.
+
+Task 27 recovery reuses task-23 through task-26 synchronization.
+Redefinition labels, subjects, malformed raw patterns, `equals` term bodies,
+and notation-pattern placeholders use `MalformedTermExpression` plus
+`MissingTerm` where an inserted child is needed. Missing `redefine func`
+return types use `MalformedTypeExpression` plus `MissingTypeExpression`.
+Missing colons, `is`, `->`, body keywords, `means` formula bodies, formula
+cases, term-case conditions, notation `for`, and the mandatory `coherence`
+keyword use `MalformedFormulaExpression` plus the relevant inserted formula
+when a formula child is required. Missing or malformed coherence
+justifications, including `coherence with` without a label, use
+`MalformedJustification` plus `MissingProofStep` when a placeholder proof step
+is required. Malformed tails may be skipped to semicolon, `end`, the next
+definition-content start, top-level item boundary, or EOF.
+
+Task 27 tests must pin: attribute, predicate, and functor redefinitions with
+`coherence by ...;`, `coherence with Label by ...;`, and proof-block
+coherence; predicate redefinitions without a label slot; functor redefinitions
+for both `means` and `equals`; top-level and definition-local `synonym` /
+`antonym` aliases, including mode-like and attribute-like raw patterns;
+visibility-wrapped redefinitions and aliases; absence of concrete
+`redefine mode`; malformed pattern/body/coherence/alias recovery; active
+parse-only pass/fail corpus coverage; and traceability to Chapter 6 §6.7,
+Chapter 9 §9.6, Chapter 10 §10.7, Chapter 11 §11.1 / §11.6, and Appendix A.11.
 
 ## Public Enum Compatibility
 

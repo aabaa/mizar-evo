@@ -1,0 +1,20 @@
+import parser.type_fixtures;
+
+synonym FinSeq of X for FinSequence of X;
+antonym Infinite for Finite;
+
+definition
+  redefine attr AttrR: x is empty means thesis;
+  coherence by Ref;
+  redefine pred x R y means thesis;
+  coherence with C by Ref;
+  redefine func FuncMeansR: g x -> set means thesis;
+  coherence by Ref;
+  public redefine func FuncR: f x -> set equals x;
+  coherence
+  proof
+    thus thesis;
+  end;
+  synonym finite for empty;
+  private antonym x <= y for x divides y;
+end;

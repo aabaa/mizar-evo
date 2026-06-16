@@ -435,7 +435,15 @@ interaction. Spec references are the normative grammar chapters under
       implemented with typed accessors, definition-local visibility, syntactic
       `TypeExpression` bodies, mode-pattern parameter preservation, `sethood`
       justification recovery, active parse-only pass/fail corpus coverage, and
-      traceability metadata. S-015 remains open for parser tasks 27-30.
+      traceability metadata. Parser task 27 is complete for redefinitions and
+      notation aliases: `AttributeRedefinition`, `PredicateRedefinition`,
+      `FunctorRedefinition`, `CoherenceCondition`, `NotationAlias`, and
+      `NotationPattern` are implemented with typed accessors, definition-local
+      visibility wrapping, raw alias-pattern preservation, redefinition
+      recovery, active parse-only pass/fail corpus coverage, and traceability
+      metadata. `redefine mode` remains a placeholder/recovery boundary rather
+      than a concrete node because the canonical grammar defines no mode
+      redefinition. S-015 remains open for parser tasks 28-30.
     - Spec: [06.attributes.md](../../../spec/en/06.attributes.md),
       [07.modes.md](../../../spec/en/07.modes.md),
       [09.predicates.md](../../../spec/en/09.predicates.md),

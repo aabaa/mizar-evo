@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_redefinition_notation_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.definitions"
+source = "pass_parser_redefinition_notation_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.syntax.redefinition_notation.parser",
+]
+notes = "Active parse-only runner coverage for parser task 27: top-level synonym/antonym notation aliases; definition-local attr/pred/func redefinitions with coherence citation/proof conditions; and visibility-wrapped redefine/alias items."

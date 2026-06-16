@@ -1,0 +1,12 @@
+definition
+  let x, y be set;
+  redefine attr : x is means thesis;
+  coherence;
+  redefine pred x c= means thesis;
+  coherence with by Ref;
+  redefine func Bad: f -> equals x;
+  coherence by;
+  synonym for x c= y;
+  antonym x excludes y x meets y;
+  redefine mode Bad: Bad is set;
+end;

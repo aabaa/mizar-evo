@@ -147,6 +147,12 @@ pub enum SyntaxKind {
     ModeDefinition = 122,
     ModePattern = 123,
     ModeProperty = 124,
+    AttributeRedefinition = 125,
+    PredicateRedefinition = 126,
+    FunctorRedefinition = 127,
+    CoherenceCondition = 128,
+    NotationAlias = 129,
+    NotationPattern = 130,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -275,6 +281,12 @@ impl SyntaxKind {
             122 => Self::ModeDefinition,
             123 => Self::ModePattern,
             124 => Self::ModeProperty,
+            125 => Self::AttributeRedefinition,
+            126 => Self::PredicateRedefinition,
+            127 => Self::FunctorRedefinition,
+            128 => Self::CoherenceCondition,
+            129 => Self::NotationAlias,
+            130 => Self::NotationPattern,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -405,6 +417,12 @@ impl SyntaxKind {
                 | Self::ModeDefinition
                 | Self::ModePattern
                 | Self::ModeProperty
+                | Self::AttributeRedefinition
+                | Self::PredicateRedefinition
+                | Self::FunctorRedefinition
+                | Self::CoherenceCondition
+                | Self::NotationAlias
+                | Self::NotationPattern
         )
     }
 
@@ -1294,6 +1312,48 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_attribute_redefinition(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AttributeRedefinition => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_predicate_redefinition(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::PredicateRedefinition => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_functor_redefinition(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::FunctorRedefinition => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_coherence_condition(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::CoherenceCondition => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_notation_alias(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::NotationAlias => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_notation_pattern(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::NotationPattern => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_let_statement(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::LetStatement => Some(self),
@@ -1868,6 +1928,12 @@ pub enum SurfaceNodeKind {
     ModeDefinition,
     ModePattern,
     ModeProperty,
+    AttributeRedefinition,
+    PredicateRedefinition,
+    FunctorRedefinition,
+    CoherenceCondition,
+    NotationAlias,
+    NotationPattern,
     SelectorAccess,
     StructureUpdate,
     FieldUpdate,
@@ -1987,6 +2053,12 @@ impl SurfaceNodeKind {
             Self::ModeDefinition => SyntaxKind::ModeDefinition,
             Self::ModePattern => SyntaxKind::ModePattern,
             Self::ModeProperty => SyntaxKind::ModeProperty,
+            Self::AttributeRedefinition => SyntaxKind::AttributeRedefinition,
+            Self::PredicateRedefinition => SyntaxKind::PredicateRedefinition,
+            Self::FunctorRedefinition => SyntaxKind::FunctorRedefinition,
+            Self::CoherenceCondition => SyntaxKind::CoherenceCondition,
+            Self::NotationAlias => SyntaxKind::NotationAlias,
+            Self::NotationPattern => SyntaxKind::NotationPattern,
             Self::SelectorAccess => SyntaxKind::SelectorAccess,
             Self::StructureUpdate => SyntaxKind::StructureUpdate,
             Self::FieldUpdate => SyntaxKind::FieldUpdate,
@@ -2270,6 +2342,12 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::ModeDefinition => output.push_str("ModeDefinition"),
         SurfaceNodeKind::ModePattern => output.push_str("ModePattern"),
         SurfaceNodeKind::ModeProperty => output.push_str("ModeProperty"),
+        SurfaceNodeKind::AttributeRedefinition => output.push_str("AttributeRedefinition"),
+        SurfaceNodeKind::PredicateRedefinition => output.push_str("PredicateRedefinition"),
+        SurfaceNodeKind::FunctorRedefinition => output.push_str("FunctorRedefinition"),
+        SurfaceNodeKind::CoherenceCondition => output.push_str("CoherenceCondition"),
+        SurfaceNodeKind::NotationAlias => output.push_str("NotationAlias"),
+        SurfaceNodeKind::NotationPattern => output.push_str("NotationPattern"),
         SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
@@ -3399,6 +3477,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            task27_redefinition_notation_nodes_ast(source_id(40))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -3486,6 +3570,12 @@ mod tests {
             SyntaxKind::ModeDefinition,
             SyntaxKind::ModePattern,
             SyntaxKind::ModeProperty,
+            SyntaxKind::AttributeRedefinition,
+            SyntaxKind::PredicateRedefinition,
+            SyntaxKind::FunctorRedefinition,
+            SyntaxKind::CoherenceCondition,
+            SyntaxKind::NotationAlias,
+            SyntaxKind::NotationPattern,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -5158,6 +5248,66 @@ mod tests {
             assert!(
                 snapshot.contains(expected),
                 "snapshot should render task-26 line {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn task27_typed_accessors_cover_redefinition_and_notation_nodes() {
+        let ast = task27_redefinition_notation_nodes_ast(source_id(41));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task27_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task27_view!(
+            SurfaceNodeKind::AttributeRedefinition,
+            SyntaxKind::AttributeRedefinition,
+            as_attribute_redefinition
+        );
+        assert_task27_view!(
+            SurfaceNodeKind::PredicateRedefinition,
+            SyntaxKind::PredicateRedefinition,
+            as_predicate_redefinition
+        );
+        assert_task27_view!(
+            SurfaceNodeKind::FunctorRedefinition,
+            SyntaxKind::FunctorRedefinition,
+            as_functor_redefinition
+        );
+        assert_task27_view!(
+            SurfaceNodeKind::CoherenceCondition,
+            SyntaxKind::CoherenceCondition,
+            as_coherence_condition
+        );
+        assert_task27_view!(
+            SurfaceNodeKind::NotationAlias,
+            SyntaxKind::NotationAlias,
+            as_notation_alias
+        );
+        assert_task27_view!(
+            SurfaceNodeKind::NotationPattern,
+            SyntaxKind::NotationPattern,
+            as_notation_pattern
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in [
+            "AttributeRedefinition",
+            "PredicateRedefinition",
+            "FunctorRedefinition",
+            "CoherenceCondition",
+            "NotationAlias",
+            "NotationPattern",
+        ] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-27 line {expected}"
             );
         }
     }
@@ -8590,6 +8740,469 @@ mod tests {
                 reference_name,
                 property_semicolon,
                 mode_definition,
+            ],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn task27_redefinition_notation_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let attr_redefine = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "redefine",
+            range(source_id, 0, 8),
+        );
+        let attr_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "attr",
+            range(source_id, 9, 13),
+        );
+        let attr_label =
+            builder.add_token(SurfaceTokenKind::Identifier, "A", range(source_id, 14, 15));
+        let attr_colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 15, 16),
+        );
+        let attr_subject =
+            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 17, 18));
+        let attr_is = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "is",
+            range(source_id, 19, 21),
+        );
+        let attr_name = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "empty",
+            range(source_id, 22, 27),
+        );
+        let attr_means = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "means",
+            range(source_id, 28, 33),
+        );
+        let attr_thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 34, 40),
+        );
+        let attr_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 40, 41),
+        );
+        let attr_coherence = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "coherence",
+            range(source_id, 42, 51),
+        );
+        let attr_by = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "by",
+            range(source_id, 52, 54),
+        );
+        let attr_reference_name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Ref",
+            range(source_id, 55, 58),
+        );
+        let attr_coherence_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 58, 59),
+        );
+
+        let pred_redefine = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "redefine",
+            range(source_id, 60, 68),
+        );
+        let pred_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "pred",
+            range(source_id, 69, 73),
+        );
+        let pred_left =
+            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 74, 75));
+        let pred_symbol =
+            builder.add_token(SurfaceTokenKind::UserSymbol, "P", range(source_id, 76, 77));
+        let pred_means = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "means",
+            range(source_id, 78, 83),
+        );
+        let pred_thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 84, 90),
+        );
+        let pred_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 90, 91),
+        );
+        let pred_coherence = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "coherence",
+            range(source_id, 92, 101),
+        );
+        let pred_with = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "with",
+            range(source_id, 102, 106),
+        );
+        let pred_label = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "C",
+            range(source_id, 107, 108),
+        );
+        let pred_by = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "by",
+            range(source_id, 109, 111),
+        );
+        let pred_reference_name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Ref",
+            range(source_id, 112, 115),
+        );
+        let pred_coherence_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 115, 116),
+        );
+
+        let func_redefine = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "redefine",
+            range(source_id, 120, 128),
+        );
+        let func_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "func",
+            range(source_id, 129, 133),
+        );
+        let func_label = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "F",
+            range(source_id, 134, 135),
+        );
+        let func_colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 135, 136),
+        );
+        let func_pattern_name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(source_id, 137, 138),
+        );
+        let func_arrow = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "->",
+            range(source_id, 139, 141),
+        );
+        let set_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 142, 145),
+        );
+        let func_equals = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "equals",
+            range(source_id, 146, 152),
+        );
+        let func_body_name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(source_id, 153, 154),
+        );
+        let func_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 154, 155),
+        );
+        let func_coherence = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "coherence",
+            range(source_id, 156, 165),
+        );
+        let proof = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "proof",
+            range(source_id, 166, 171),
+        );
+        let end = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "end",
+            range(source_id, 172, 175),
+        );
+        let func_coherence_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 175, 176),
+        );
+
+        let synonym = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "synonym",
+            range(source_id, 180, 187),
+        );
+        let alternate = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "infinite",
+            range(source_id, 188, 196),
+        );
+        let for_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "for",
+            range(source_id, 197, 200),
+        );
+        let original = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "finite",
+            range(source_id, 201, 207),
+        );
+        let alias_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 207, 208),
+        );
+
+        let attr_pattern = builder.add_node(
+            SurfaceNodeKind::AttributePattern,
+            range(source_id, 22, 27),
+            vec![attr_name],
+        );
+        let attr_formula = thesis_formula_node(&mut builder, source_id, attr_thesis, 34, 40);
+        let attr_definiens = builder.add_node(
+            SurfaceNodeKind::FormulaDefiniens,
+            range(source_id, 34, 40),
+            vec![attr_formula],
+        );
+        let attr_reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 55, 58),
+            vec![attr_reference_name],
+        );
+        let attr_references = builder.add_node(
+            SurfaceNodeKind::ReferenceList,
+            range(source_id, 55, 58),
+            vec![attr_reference],
+        );
+        let attr_justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 52, 58),
+            vec![attr_by, attr_references],
+        );
+        let attr_coherence_node = builder.add_node(
+            SurfaceNodeKind::CoherenceCondition,
+            range(source_id, 42, 59),
+            vec![attr_coherence, attr_justification, attr_coherence_semicolon],
+        );
+        let attribute_redefinition = builder.add_node(
+            SurfaceNodeKind::AttributeRedefinition,
+            range(source_id, 0, 59),
+            vec![
+                attr_redefine,
+                attr_keyword,
+                attr_label,
+                attr_colon,
+                attr_subject,
+                attr_is,
+                attr_pattern,
+                attr_means,
+                attr_definiens,
+                attr_semicolon,
+                attr_coherence_node,
+            ],
+        );
+
+        let predicate_pattern = builder.add_node(
+            SurfaceNodeKind::PredicatePattern,
+            range(source_id, 74, 77),
+            vec![pred_left, pred_symbol],
+        );
+        let pred_formula = thesis_formula_node(&mut builder, source_id, pred_thesis, 84, 90);
+        let pred_definiens = builder.add_node(
+            SurfaceNodeKind::FormulaDefiniens,
+            range(source_id, 84, 90),
+            vec![pred_formula],
+        );
+        let pred_reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 112, 115),
+            vec![pred_reference_name],
+        );
+        let pred_references = builder.add_node(
+            SurfaceNodeKind::ReferenceList,
+            range(source_id, 112, 115),
+            vec![pred_reference],
+        );
+        let pred_justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 109, 115),
+            vec![pred_by, pred_references],
+        );
+        let pred_coherence_node = builder.add_node(
+            SurfaceNodeKind::CoherenceCondition,
+            range(source_id, 92, 116),
+            vec![
+                pred_coherence,
+                pred_with,
+                pred_label,
+                pred_justification,
+                pred_coherence_semicolon,
+            ],
+        );
+        let predicate_redefinition = builder.add_node(
+            SurfaceNodeKind::PredicateRedefinition,
+            range(source_id, 60, 116),
+            vec![
+                pred_redefine,
+                pred_keyword,
+                predicate_pattern,
+                pred_means,
+                pred_definiens,
+                pred_semicolon,
+                pred_coherence_node,
+            ],
+        );
+
+        let functor_pattern = builder.add_node(
+            SurfaceNodeKind::FunctorPattern,
+            range(source_id, 137, 138),
+            vec![func_pattern_name],
+        );
+        let type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 142, 145),
+            vec![set_keyword],
+        );
+        let return_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 142, 145),
+            vec![type_head],
+        );
+        let term_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 153, 154),
+            vec![func_body_name],
+        );
+        let term = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 153, 154),
+            vec![term_reference],
+        );
+        let term_definiens = builder.add_node(
+            SurfaceNodeKind::TermDefiniens,
+            range(source_id, 153, 154),
+            vec![term],
+        );
+        let proof_block = builder.add_node(
+            SurfaceNodeKind::ProofBlock,
+            range(source_id, 166, 175),
+            vec![proof, end],
+        );
+        let func_coherence_node = builder.add_node(
+            SurfaceNodeKind::CoherenceCondition,
+            range(source_id, 156, 176),
+            vec![func_coherence, proof_block, func_coherence_semicolon],
+        );
+        let functor_redefinition = builder.add_node(
+            SurfaceNodeKind::FunctorRedefinition,
+            range(source_id, 120, 176),
+            vec![
+                func_redefine,
+                func_keyword,
+                func_label,
+                func_colon,
+                functor_pattern,
+                func_arrow,
+                return_type,
+                func_equals,
+                term_definiens,
+                func_semicolon,
+                func_coherence_node,
+            ],
+        );
+
+        let alternate_pattern = builder.add_node(
+            SurfaceNodeKind::NotationPattern,
+            range(source_id, 188, 196),
+            vec![alternate],
+        );
+        let original_pattern = builder.add_node(
+            SurfaceNodeKind::NotationPattern,
+            range(source_id, 201, 207),
+            vec![original],
+        );
+        let alias = builder.add_node(
+            SurfaceNodeKind::NotationAlias,
+            range(source_id, 180, 208),
+            vec![
+                synonym,
+                alternate_pattern,
+                for_keyword,
+                original_pattern,
+                alias_semicolon,
+            ],
+        );
+
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 208),
+            vec![
+                attr_redefine,
+                attr_keyword,
+                attr_label,
+                attr_colon,
+                attr_subject,
+                attr_is,
+                attr_name,
+                attr_means,
+                attr_thesis,
+                attr_semicolon,
+                attr_coherence,
+                attr_by,
+                attr_reference_name,
+                attr_coherence_semicolon,
+                pred_redefine,
+                pred_keyword,
+                pred_left,
+                pred_symbol,
+                pred_means,
+                pred_thesis,
+                pred_semicolon,
+                pred_coherence,
+                pred_with,
+                pred_label,
+                pred_by,
+                pred_reference_name,
+                pred_coherence_semicolon,
+                func_redefine,
+                func_keyword,
+                func_label,
+                func_colon,
+                func_pattern_name,
+                func_arrow,
+                set_keyword,
+                func_equals,
+                func_body_name,
+                func_semicolon,
+                func_coherence,
+                proof,
+                end,
+                func_coherence_semicolon,
+                synonym,
+                alternate,
+                for_keyword,
+                original,
+                alias_semicolon,
+                attribute_redefinition,
+                predicate_redefinition,
+                functor_redefinition,
+                alias,
             ],
         );
         builder.finish(Some(root), None)

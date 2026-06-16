@@ -1,0 +1,28 @@
+schema_version = 1
+id = "fail_parser_redefinition_notation_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.definitions"
+source = "fail_parser_redefinition_notation_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_redefinition_notation_content"
+stable_detail_key = "parser.definitions.redefinition_notation_recovery"
+diagnostic_codes = [
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_justification",
+  "malformed_term_expression",
+  "malformed_justification",
+  "malformed_type_expression",
+  "malformed_justification",
+  "malformed_term_expression",
+  "malformed_formula_expression",
+  "malformed_term_expression",
+]
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.syntax.redefinition_notation.parser",
+]
+notes = "Active parse-only runner coverage for parser task 27 recovery: malformed attr/pred/func redefinition patterns and coherence justifications, empty synonym sides, missing alias for-delimiter recovery, and unsupported redefine mode fallback."

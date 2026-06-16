@@ -614,7 +614,7 @@ resolver / build-system 依存を避ける。
       source-level symbolic mode-name coverage、traceability metadata が Chapter 7 の
       mode definition を覆う。
 
-27. **`redefine`・`synonym`・`antonym`。** [ ]
+27. **`redefine`・`synonym`・`antonym`。** [x]
     - task 23〜26 の定義種別にまたがる再定義と記法エイリアスの形。
     - 依存: 24、25、26、`mizar-syntax` task 15 / S-015。仕様:
       [06.attributes.md](../../../spec/ja/06.attributes.md)、
@@ -622,6 +622,15 @@ resolver / build-system 依存を避ける。
       [09.predicates.md](../../../spec/ja/09.predicates.md)、
       [10.functors.md](../../../spec/ja/10.functors.md)、
       [11.symbol_management.md](../../../spec/ja/11.symbol_management.md)。
+    - 結果: `AttributeRedefinition`、`PredicateRedefinition`、
+      `FunctorRedefinition`、入れ子の `CoherenceCondition`、`NotationAlias`、
+      raw `NotationPattern` parsing を実装した。definition-local な `public` /
+      `private` redefinition と alias は `VisibleItem` を再利用する。canonical
+      grammar は mode redefinition を定義しないため、`redefine mode` は
+      placeholder / recovery boundary のまま保持する。alias branch classification は
+      resolver-owned のままである。parser unit test、active parse-only pass/fail
+      corpus fixture、visibility coverage、redefinition recovery、unsupported-mode
+      fallback preservation、traceability metadata が task-27 surface を覆う。
 
 28. **property 句。** [ ]
     - 定義種別にまたがる property 句（`commutativity`、`idempotence`、

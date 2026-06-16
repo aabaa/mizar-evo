@@ -2,9 +2,11 @@
 
 Status: minimal task-12 recovery, task-28 nested block-end recovery, task-5
 module-skeleton recovery, task-6 import recovery, task-7 export/visibility
-recovery, task-8 type-expression recovery, task-9 primary-term recovery, and
-task-13 atomic-formula recovery, and task-14 formula recovery are implemented.
-Full grammar recovery remains planned.
+recovery, task-8 type-expression recovery, task-9 primary-term recovery,
+task-13 atomic-formula recovery, task-14 formula recovery, S-013/S-014
+statement/proof recovery, and S-015 definition recovery through task 26 are
+implemented. Task 27 redefinition and notation-alias recovery is specified for
+the next increment. Full grammar recovery remains planned.
 
 ## Purpose
 
@@ -110,6 +112,17 @@ Current behavior:
   before synchronization emits `UnmatchedOpeningDelimiter`, reports
   `MalformedFormulaExpression`, and uses the opener as a secondary diagnostic
   anchor;
+- task-27 redefinition and notation-alias parsing reuses definition-content
+  synchronization. Missing redefinition labels, subjects, raw patterns, term
+  bodies, or raw notation-pattern sides use `MalformedTermExpression` with
+  `MissingTerm` where an inserted child is needed. Missing `redefine func`
+  return types use `MalformedTypeExpression` plus `MissingTypeExpression`.
+  Missing delimiters, formula bodies, notation `for`, or the mandatory
+  `coherence` keyword use `MalformedFormulaExpression`; malformed mandatory
+  coherence justifications and optional `with` labels use
+  `MalformedJustification` plus `MissingProofStep` where appropriate. Malformed
+  tails skip to a semicolon, `end`, the next definition-content start, a
+  top-level item boundary, or EOF;
 - a stray `end` that has no matching block opener returns syntax diagnostics
   with `ast = None`.
 
