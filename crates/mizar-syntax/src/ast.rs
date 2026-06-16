@@ -128,6 +128,9 @@ pub enum SyntaxKind {
     InlineFunctorDefinition = 93,
     InlinePredicateDefinition = 94,
     TypedParameter = 95,
+    TheoremItem = 96,
+    LemmaItem = 97,
+    ProofBlock = 98,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -237,6 +240,9 @@ impl SyntaxKind {
             93 => Self::InlineFunctorDefinition,
             94 => Self::InlinePredicateDefinition,
             95 => Self::TypedParameter,
+            96 => Self::TheoremItem,
+            97 => Self::LemmaItem,
+            98 => Self::ProofBlock,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -348,6 +354,9 @@ impl SyntaxKind {
                 | Self::InlineFunctorDefinition
                 | Self::InlinePredicateDefinition
                 | Self::TypedParameter
+                | Self::TheoremItem
+                | Self::LemmaItem
+                | Self::ProofBlock
         )
     }
 
@@ -1104,6 +1113,27 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_theorem_item(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::TheoremItem => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_lemma_item(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::LemmaItem => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_proof_block(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ProofBlock => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_let_statement(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::LetStatement => Some(self),
@@ -1659,6 +1689,9 @@ pub enum SurfaceNodeKind {
     InlineFunctorDefinition,
     InlinePredicateDefinition,
     TypedParameter,
+    TheoremItem,
+    LemmaItem,
+    ProofBlock,
     SelectorAccess,
     StructureUpdate,
     FieldUpdate,
@@ -1759,6 +1792,9 @@ impl SurfaceNodeKind {
             Self::InlineFunctorDefinition => SyntaxKind::InlineFunctorDefinition,
             Self::InlinePredicateDefinition => SyntaxKind::InlinePredicateDefinition,
             Self::TypedParameter => SyntaxKind::TypedParameter,
+            Self::TheoremItem => SyntaxKind::TheoremItem,
+            Self::LemmaItem => SyntaxKind::LemmaItem,
+            Self::ProofBlock => SyntaxKind::ProofBlock,
             Self::SelectorAccess => SyntaxKind::SelectorAccess,
             Self::StructureUpdate => SyntaxKind::StructureUpdate,
             Self::FieldUpdate => SyntaxKind::FieldUpdate,
@@ -2023,6 +2059,9 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
             output.push_str("InlinePredicateDefinition");
         }
         SurfaceNodeKind::TypedParameter => output.push_str("TypedParameter"),
+        SurfaceNodeKind::TheoremItem => output.push_str("TheoremItem"),
+        SurfaceNodeKind::LemmaItem => output.push_str("LemmaItem"),
+        SurfaceNodeKind::ProofBlock => output.push_str("ProofBlock"),
         SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
@@ -4645,6 +4684,44 @@ mod tests {
             assert!(
                 snapshot.contains(expected),
                 "snapshot should render task-21 line {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn task22_typed_accessors_cover_theorem_and_proof_nodes() {
+        let ast = task22_theorem_nodes_ast(source_id(34));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task22_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task22_view!(
+            SurfaceNodeKind::TheoremItem,
+            SyntaxKind::TheoremItem,
+            as_theorem_item
+        );
+        assert_task22_view!(
+            SurfaceNodeKind::LemmaItem,
+            SyntaxKind::LemmaItem,
+            as_lemma_item
+        );
+        assert_task22_view!(
+            SurfaceNodeKind::ProofBlock,
+            SyntaxKind::ProofBlock,
+            as_proof_block
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in ["TheoremItem", "LemmaItem", "ProofBlock"] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-22 line {expected}"
             );
         }
     }
@@ -7372,6 +7449,117 @@ mod tests {
                 second_rparen,
                 means,
                 thesis,
+                second_semicolon,
+                compilation_unit,
+            ],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn task22_theorem_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let theorem = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+            range(source_id, 0, 7),
+        );
+        let t = builder.add_token(SurfaceTokenKind::Identifier, "T", range(source_id, 8, 9));
+        let first_colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 9, 10),
+        );
+        let first_thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 11, 17),
+        );
+        let proof = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "proof",
+            range(source_id, 18, 23),
+        );
+        let end = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "end",
+            range(source_id, 24, 27),
+        );
+        let first_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 27, 28),
+        );
+        let lemma = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "lemma",
+            range(source_id, 29, 34),
+        );
+        let l = builder.add_token(SurfaceTokenKind::Identifier, "L", range(source_id, 35, 36));
+        let second_colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 36, 37),
+        );
+        let second_thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 38, 44),
+        );
+        let second_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 44, 45),
+        );
+
+        let first_formula = thesis_formula_node(&mut builder, source_id, first_thesis, 11, 17);
+        let proof_block = builder.add_node(
+            SurfaceNodeKind::ProofBlock,
+            range(source_id, 18, 27),
+            vec![proof, end],
+        );
+        let theorem_item = builder.add_node(
+            SurfaceNodeKind::TheoremItem,
+            range(source_id, 0, 28),
+            vec![
+                theorem,
+                t,
+                first_colon,
+                first_formula,
+                proof_block,
+                first_semicolon,
+            ],
+        );
+        let second_formula = thesis_formula_node(&mut builder, source_id, second_thesis, 38, 44);
+        let lemma_item = builder.add_node(
+            SurfaceNodeKind::LemmaItem,
+            range(source_id, 29, 45),
+            vec![lemma, l, second_colon, second_formula, second_semicolon],
+        );
+        let item_list = builder.add_node(
+            SurfaceNodeKind::ItemList,
+            range(source_id, 0, 45),
+            vec![theorem_item, lemma_item],
+        );
+        let compilation_unit = builder.add_node(
+            SurfaceNodeKind::CompilationUnit,
+            range(source_id, 0, 45),
+            vec![item_list],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 45),
+            vec![
+                theorem,
+                t,
+                first_colon,
+                first_thesis,
+                proof,
+                end,
+                first_semicolon,
+                lemma,
+                l,
+                second_colon,
+                second_thesis,
                 second_semicolon,
                 compilation_unit,
             ],

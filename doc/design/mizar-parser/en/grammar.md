@@ -2,9 +2,10 @@
 
 Status: module skeleton, top-level placeholder dispatch, concrete import
 items, export items, visibility wrappers, reserve-hosted type expressions,
-task-15 term surfaces including set comprehensions, and task-14 formula
-surfaces are implemented; remaining concrete statement/proof item grammars are
-planned.
+task-15 term surfaces including set comprehensions, task-14 formula surfaces,
+S-013 statement nodes, and task-22 theorem/proof items are implemented;
+remaining concrete definition, registration, template, algorithm, annotation,
+and package-oriented item grammars are planned.
 
 ## Purpose
 
@@ -194,23 +195,26 @@ nested `SkippedToken` recovery node plus skipped-range trivia inside the
 `ExportItem`. Missing export semicolons use `MissingSemicolon`.
 
 Top-level visibility is represented only for the Chapter 12 forms that accept
-it: theorem items and notation declarations. While those concrete item grammars
-are still deferred, the parser emits a `VisibleItem` wrapper whose children are
-source ordered: any already-skipped library annotation prefix tokens, one
-`VisibilityMarker` wrapping the `private` or `public` token, and the following
-target `PlaceholderItem`. Legal target starts are `theorem`, `lemma`, theorem
-status plus theorem role (`open`, `assumed`, or `conditional` followed by
-`theorem` or `lemma`), and notation starts `infix_operator`, `prefix_operator`,
-`postfix_operator`, `synonym`, and `antonym`. Visibility on other top-level
-declarations, duplicate visibility markers, and a dangling marker use
-`MalformedVisibility`; any malformed tail tokens before the statement
-semicolon are skipped inside the single `VisibleItem`. A semicolon-only
-dangling marker keeps the semicolon as a direct `VisibleItem` child rather than
-creating an empty recovery node. If the invalid target is a block-like
-top-level declaration (`definition`, `registration`, or `claim`), the same
-recovery owns the malformed target through its matching `end`; the following
-semicolon remains the wrapper's statement terminator when present, which keeps
-the wrapper from cascading into additional top-level recovery nodes.
+it: theorem items and notation declarations. The parser emits a `VisibleItem`
+wrapper whose children are source ordered: any already-skipped library
+annotation prefix tokens, one `VisibilityMarker` wrapping the `private` or
+`public` token, and the following target item node. Represented theorem and
+lemma targets use concrete `TheoremItem` / `LemmaItem` nodes; notation targets,
+short legacy theorem fragments, and theorem payloads that contain deferred
+template predicate arguments remain `PlaceholderItem` targets. Legal target
+starts are `theorem`, `lemma`, theorem status plus theorem role (`open`,
+`assumed`, or `conditional` followed by `theorem` or `lemma`), and notation
+starts `infix_operator`, `prefix_operator`, `postfix_operator`, `synonym`, and
+`antonym`. Visibility on other top-level declarations, duplicate visibility
+markers, and a dangling marker use `MalformedVisibility`; any malformed tail
+tokens before the statement semicolon are skipped inside the single
+`VisibleItem`. A semicolon-only dangling marker keeps the semicolon as a direct
+`VisibleItem` child rather than creating an empty recovery node. If the invalid
+target is a block-like top-level declaration (`definition`, `registration`, or
+`claim`), the same recovery owns the malformed target through its matching
+`end`; the following semicolon remains the wrapper's statement terminator when
+present, which keeps the wrapper from cascading into additional top-level
+recovery nodes.
 
 ## Task 8: Type Expressions
 
@@ -572,14 +576,11 @@ builtin_pred                 ::= "in" | "=" | "<>" ;
 
 Task 13 implements the atomic-formula boundary only. Formula connectives,
 quantifiers, parenthesized formulas, `thesis`, and `contradiction` stay with
-task 14 unless a later task's host preserves them as placeholders. The current
-frontend-reachable formula host is a theorem/lemma placeholder item of the
-shape `theorem label: formula;` or `lemma label: formula;`: the item remains
-`PlaceholderItem` until task 22 adds theorem/proof item nodes, but the formula
-payload is parsed into concrete formula children for task-13 coverage. Other
-theorem/lemma placeholder tails keep the existing token-preserving placeholder
-behavior so this task does not freeze theorem status, proof nesting, labels, or
-validity.
+task 14. Task 13 originally used theorem/lemma placeholder hosts for
+`label: formula;` coverage; after task 22, theorem/lemma items with represented
+formula payloads are concrete `TheoremItem` / `LemmaItem` nodes. Sources whose
+formula payload still contains deferred template predicate arguments remain on
+the legacy token-preserving `PlaceholderItem` path until task 31 / S-016.
 
 `FormulaExpression` wraps one atomic formula child. Built-in predicate
 applications preserve the left `TermExpression`, builtin predicate token, and
@@ -608,17 +609,14 @@ single `BuiltinPredicateApplication` atoms only, so mixed chains such as
 predicate chains. Template predicate arguments remain deferred to task 31 /
 S-016 because `template_args` is not represented yet.
 
-The theorem/lemma placeholder formula host is exact: only `label: formula;`
-emits `FormulaExpression`. Parseable atomic formula prefixes followed by
-theorem justification or proof tails, such as `label: x = y by A;` or
-`label: x = y proof ... end;`, keep the legacy token-preserving
-`PlaceholderItem` behavior until task 22 owns theorem/proof items. A missing
-right term in a predicate-chain segment reports `MalformedTermExpression` and
-inserts `MissingTerm`.
+The theorem/lemma formula host is exact for task-13 shapes: represented
+`label: formula;` payloads emit `FormulaExpression` under the later concrete
+theorem item. A missing right term in a predicate-chain segment reports
+`MalformedTermExpression` and inserts `MissingTerm`.
 
 Task 13 tests must pin built-in `in`, `=`, and `<>` atoms, generic `is`
 assertions including an attribute-only `non` chain, inline predicate call
-shape, active-lexicon user predicate segments, theorem-placeholder formula
+shape, active-lexicon user predicate segments, theorem formula
 hosting, and malformed atomic formula recovery that does not require semantic
 classification.
 
@@ -683,13 +681,11 @@ nested quantified-formula body for universal quantification. A
 `be` / `being` token, and optional `TypeExpression`; it does not resolve
 implicit variable types from `reserve`.
 
-The theorem/lemma placeholder formula host expands from atomic formulas to all
-task-14 formulas, but remains exact: only `label: formula;` emits a
-`FormulaExpression`. Prefixes followed by theorem justification or proof tails
-such as `by` or `proof` remain legacy token-preserving `PlaceholderItem`
-payloads until task 22 owns theorem/proof item nodes. Template predicate
-arguments remain deferred to task 31 / S-016. Task 15 owns Fraenkel and
-set-builder terms that embed formulas inside term syntax.
+The theorem/lemma formula host expands from atomic formulas to all task-14
+formulas. After task 22, prefixes followed by theorem justification or proof
+tails such as `by` or `proof` are concrete theorem items, while template
+predicate arguments remain deferred to task 31 / S-016. Task 15 owns Fraenkel
+and set-builder terms that embed formulas inside term syntax.
 
 Malformed formula operands after `not`, connectives, quantifier `st`, or
 `holds` insert `MissingFormula` recovery and report
@@ -706,7 +702,7 @@ Task 14 tests must pin connective precedence and associativity, parenthesized
 formula grouping, non-associative `iff` rejection, repetition-token
 preservation, `thesis` / `contradiction`, universal and existential
 quantifiers with explicit and implicit variables, nested universal
-quantification without repeated `holds`, theorem-placeholder formula hosting,
+quantification without repeated `holds`, theorem formula hosting,
 and missing-formula recovery.
 
 ## Task 15: Fraenkel And Set-Builder Terms
@@ -805,9 +801,9 @@ equating           ::= identifier "=" term_expression ;
 ```
 
 `StatementItem` is a parser-owned temporary item host so active parse-only
-fixtures can exercise statement nodes before theorem/proof block items land in
-task 22. Later proof or block parsers may own the same concrete statement nodes
-directly without the `StatementItem` wrapper. Statement-level annotations are
+fixtures can exercise module-level statement fragments. Task 22 proof blocks
+own the same concrete statement nodes directly without the `StatementItem`
+wrapper. Statement-level annotations are
 not parsed in this task; annotated statement sources remain legacy placeholder
 or recovery input until task 35 / S-016. The canonical Chapter 4 specification
 classifies `reserve` as a top-level module declaration only, so task 16 treats
@@ -889,7 +885,7 @@ S-016, where template argument surfaces are introduced. In task 17, a reference
 followed by `[` before the next citation separator is recoverable malformed
 justification syntax rather than a partially represented template invocation.
 Full `proof ... end` blocks, theorem/lemma item nodes, and proof-body nesting
-remain task 22.
+land in task 22.
 
 The parser-facing `Numeral` token is the token-level representation used for
 the canonical Chapter 20 `nat_literal` in computation options. Numeric
@@ -1060,7 +1056,7 @@ conclusion without an explicit `by` tail remains syntactically accepted. If an
 explicit `by` tail is present, the conclusion uses the task-17 justification
 surface; computation justifications are accepted here because `conclusion`
 uses the general `justification` production rather than `simple_justification`.
-Full `proof ... end` justification blocks remain task 22.
+Full `proof ... end` justification blocks land in task 22.
 
 `IterativeEqualityStatement` owns an optional label and colon, the first left
 term, `=`, the first right term, an optional simple citation
@@ -1225,6 +1221,64 @@ definition names, missing parameter type binders or types, missing `)`, missing
 `->`, missing return type, missing `equals`, missing functor body, missing
 `means`, missing predicate body, missing semicolon, active parse-only pass/fail
 corpus coverage, and traceability to Chapter 15 §15.2.3, §15.2.4, and §15.9.1.
+
+### Task 22: Theorems And Proofs
+
+Task 22 completes the S-014 theorem/proof increment by replacing represented
+theorem/lemma formula and proof tails with concrete item nodes. The parser
+accepts the canonical Chapter 16 theorem item shape and remains syntax-only:
+status tokens are preserved but not validated, references are not resolved,
+and proof obligations or theorem validity are not checked.
+
+```ebnf
+theorem_item     ::= [ theorem_status ] theorem_role label_identifier ":"
+                     formula [ justification ] ";" ;
+theorem_status   ::= "open" | "assumed" | "conditional" ;
+theorem_role     ::= "theorem" | "lemma" ;
+justification    ::= justification_clause | proof_block ;
+proof_block      ::= "proof" reasoning "end" ;
+reasoning        ::= { statement } ;
+```
+
+`TheoremItem` and `LemmaItem` own optional status tokens, the role token, a
+label identifier or `MissingTerm`, the colon token when present, a
+`FormulaExpression` or `MissingFormula`, an optional `JustificationClause` or
+`ProofBlock`, optional recovery, and the final semicolon when present. A
+visibility wrapper (`public` / `private`) owns its `VisibilityMarker` and wraps
+the concrete theorem or lemma target; notation targets continue through the
+existing placeholder path until their own item grammar lands.
+
+`ProofBlock` owns `proof`, nested concrete statement nodes parsed by the
+reasoning-body parser, optional recovery including `MissingEnd`, and `end` when
+present. The following semicolon belongs to the enclosing theorem item or
+statement. Task 22 admits `ProofBlock` as a full justification tail on
+theorem/lemma items and on already-concrete statement hosts whose canonical
+grammar uses `justification`: `ConclusionStatement` and `CompactStatement`.
+Hosts whose grammar uses `simple_justification` (`let`, `consider`,
+`reconsider`, iterative equality steps, and `per cases`) continue to accept
+only task-17 `by` clauses.
+
+The concrete theorem path intentionally keeps short legacy fragments such as
+`theorem T;` as token-preserving placeholders, because earlier parser skeleton
+tests use them as generic item boundaries. Represented theorem shapes begin
+with either a colon, a label-colon pair, or a missing-colon form where a formula
+start is visible after the label. Formula payloads containing deferred
+predicate template arguments also remain placeholders until task 31 / S-016.
+
+Task 22 recovery reuses existing diagnostics. Missing theorem labels use
+`MalformedTermExpression` plus `MissingTerm`. Missing colons and formulas use
+`MalformedFormulaExpression`; missing formulas insert `MissingFormula`. Missing
+proof `end` tokens insert `MissingEnd` with `MissingEnd` diagnostics. The
+parser synchronizes theorem/proof tails at semicolons, `end`, the next
+statement or item boundary, case/suppose branch keywords, or EOF, and must not
+swallow the following theorem item after a missing proof end.
+
+Task 22 tests must pin: theorem and lemma items, status tokens, visibility
+wrapping of theorem targets, `by` and `by computation` theorem justifications,
+full theorem proof blocks, proof-body statement wiring, statement-level proof
+justifications on conclusions and compact statements, missing label / colon /
+formula / proof-end recovery, active parse-only pass/fail corpus coverage, and
+traceability to Chapter 16 §16.2, §16.4.1, §16.5, and Chapter 20 §20.9.2.
 
 ## Public Enum Compatibility
 

@@ -1,0 +1,16 @@
+schema_version = 1
+id = "pass_parser_theorems_proofs_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.theorems"
+source = "pass_parser_theorems_proofs_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.16.theorem_proof_items.parser",
+  "spec.en.16.proof_justification.parser",
+  "spec.en.20.computation_proof.parser",
+]
+notes = "Active parse-only runner coverage for parser task 22 theorem/lemma items, statuses, visibility-wrapped theorem targets, theorem-level proof blocks, and statement-level proof justifications."

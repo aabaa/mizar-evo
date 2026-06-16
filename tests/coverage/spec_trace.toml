@@ -975,6 +975,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.16.theorem_proof_items.parser"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.2 Syntax of Theorem Declarations; 16.4.1 Proof Blocks"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_theorems_proofs_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_theorems_proofs_recovery_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.16.proof_justification.parser"
 source = "doc/spec/en/16.theorems_and_proofs.md"
 section = "16.5 Proof Justification (`by`); 16.5.1 Simple Citation; 16.5.2 Grouped Citation; 16.5.3 Bulk Citation"
@@ -983,6 +996,7 @@ status = "covered"
 required = true
 coverage = "pass_and_fail"
 tests = [
+  "tests/miz/pass/parser/pass_parser_theorems_proofs_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_justifications_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_justifications_recovery_001.expect.toml",
 ]
@@ -996,6 +1010,7 @@ status = "covered"
 required = true
 coverage = "pass_and_fail"
 tests = [
+  "tests/miz/pass/parser/pass_parser_theorems_proofs_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_justifications_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_justifications_recovery_001.expect.toml",
 ]

@@ -530,11 +530,17 @@ resolver / build-system 依存を避ける。
       parser unit test、active parse-only pass/fail corpus fixture、traceability
       metadata を含む。
 
-22. **定理と証明。** [ ]
+22. **定理と証明。** [x]
     - `theorem` / `lemma` の item、ラベル、`proof … end` の入れ子、証明本体の
       文の配線。
     - 依存: 21、`mizar-syntax` task 14 / S-014。仕様:
       [16.theorems_and_proofs.md](../../../spec/ja/16.theorems_and_proofs.md)。
+    - 結果: `TheoremItem`、`LemmaItem`、`ProofBlock` を実装し、status token の保存、
+      visibility-wrapped theorem target、theorem-level の `by` / `by computation` /
+      full-proof justification tail、proof body の concrete statement wiring、conclusion
+      と compact statement host 上の statement-level proof justification、label / colon /
+      formula / proof-end 欠落 recovery、active parse-only pass/fail corpus fixture、
+      traceability metadata を追加した。
 
 23. **definition ブロック骨格・correctness 条件・属性定義。** [ ]
     - すべての定義種別が共有する `definition … end` ブロックの形、

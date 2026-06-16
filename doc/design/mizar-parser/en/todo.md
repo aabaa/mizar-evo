@@ -547,11 +547,18 @@ older numeric syntax task references appear to disagree, prefer
       tests, active parse-only pass/fail corpus fixtures, and traceability
       metadata.
 
-22. **Theorems and proofs.** [ ]
+22. **Theorems and proofs.** [x]
     - `theorem`/`lemma` items, labels, `proof … end` nesting, and proof-body
       statement wiring.
     - Deps: 21, `mizar-syntax` task 14 / S-014. Spec:
       [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md).
+    - Result: implemented `TheoremItem`, `LemmaItem`, and `ProofBlock`,
+      including status-token preservation, visibility-wrapped theorem targets,
+      theorem-level `by` / `by computation` / full-proof justification tails,
+      proof-body concrete statement wiring, statement-level proof
+      justifications on conclusion and compact statement hosts, missing
+      label/colon/formula/proof-end recovery, active parse-only pass/fail
+      corpus fixtures, and traceability metadata.
 
 23. **Definition block skeleton, correctness conditions, and attribute definitions.** [ ]
     - `definition … end` block shape shared by all definition kinds, the

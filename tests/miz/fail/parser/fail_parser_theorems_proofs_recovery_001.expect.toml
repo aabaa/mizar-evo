@@ -1,0 +1,29 @@
+schema_version = 1
+id = "fail_parser_theorems_proofs_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.theorems"
+source = "fail_parser_theorems_proofs_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_theorems_and_proofs"
+stable_detail_key = "parser.theorems.proof_recovery"
+diagnostic_codes = [
+  "lexing:ScopeSkeleton(MissingEnd)",
+  "lexing:ScopeSkeleton(MissingEnd)",
+  "malformed_term_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "missing_end",
+  "missing_semicolon",
+  "missing_end",
+  "missing_semicolon",
+  "missing_end",
+  "missing_end",
+]
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.16.theorem_proof_items.parser",
+]
+notes = "Active parse-only runner coverage for parser task 22 theorem/proof recovery: missing label, colon, formula, proof end, enclosing semicolon synchronization, and following theorem preservation."

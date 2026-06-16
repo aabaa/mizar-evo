@@ -1,0 +1,9 @@
+theorem : thesis;
+theorem MissingColon thesis;
+theorem MissingFormula: by Ref;
+theorem MissingProofEnd: thesis proof
+  thus thesis;
+theorem Next: thesis;
+thus thesis proof
+  thus thesis;
+theorem AfterStatementProof: thesis;

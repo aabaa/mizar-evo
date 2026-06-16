@@ -1,0 +1,17 @@
+theorem Auto: thesis;
+lemma LemmaBy: thesis by Auto;
+open theorem OpenGoal: thesis;
+assumed theorem Axiom: thesis;
+conditional theorem ConditionalGoal: thesis by OpenGoal;
+lemma Computed: thesis by computation(steps: 1);
+public theorem VisibleProof: thesis proof
+  thus thesis by Auto;
+end;
+theorem StatementProofs: thesis proof
+  A: thesis proof
+    thus thesis by Auto;
+  end;
+  thus thesis proof
+    thus thesis by A;
+  end;
+end;

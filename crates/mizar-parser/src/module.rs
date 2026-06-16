@@ -153,6 +153,12 @@ impl Parser {
                         position = item.next_position;
                         continue;
                     }
+                    if let Some(item) = self.parse_theorem_item(position) {
+                        item_children.push(item.id);
+                        recovery_nodes.extend(item.recovery_nodes);
+                        position = item.next_position;
+                        continue;
+                    }
                     if self.is_visibility_marker_at(item_head) {
                         let item = self.parse_visible_item(position);
                         item_children.push(item.id);
@@ -481,8 +487,7 @@ impl Parser {
         children.push(proposition.id);
         recovery_nodes.extend(proposition.recovery_nodes);
 
-        if self.is_reserved_word_at(cursor, "by") {
-            let justification = self.parse_justification_clause_at(cursor, true);
+        if let Some(justification) = self.parse_general_justification_at(cursor, true) {
             cursor = justification.next_position;
             children.push(justification.id);
             recovery_nodes.extend(justification.recovery_nodes);
@@ -1221,10 +1226,7 @@ impl Parser {
         children.push(proposition.id);
         recovery_nodes.extend(proposition.recovery_nodes);
 
-        if !self.is_reserved_word_at(cursor, "by") {
-            return None;
-        }
-        let justification = self.parse_justification_clause_at(cursor, true);
+        let justification = self.parse_general_justification_at(cursor, true)?;
         cursor = justification.next_position;
         children.push(justification.id);
         recovery_nodes.extend(justification.recovery_nodes);
@@ -1237,6 +1239,20 @@ impl Parser {
             recovery_nodes,
             "unexpected token in compact statement",
         ))
+    }
+
+    fn parse_general_justification_at(
+        &mut self,
+        position: usize,
+        allow_computation: bool,
+    ) -> Option<ParsedTypeNode> {
+        if self.is_reserved_word_at(position, "by") {
+            Some(self.parse_justification_clause_at(position, allow_computation))
+        } else if self.is_reserved_word_at(position, "proof") {
+            Some(self.parse_proof_block_at(position))
+        } else {
+            None
+        }
     }
 
     fn parse_justification_clause_at(
@@ -1681,6 +1697,33 @@ impl Parser {
             next_position: cursor.max(position + 1),
             recovery_nodes,
         })
+    }
+
+    fn parse_proof_block_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        cursor = self.parse_reasoning_body_at(cursor, &mut children, &mut recovery_nodes);
+        if self.is_end_keyword_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            let missing = self.add_missing_end(position, cursor);
+            children.push(missing);
+            recovery_nodes.push(missing);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::ProofBlock,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
     }
 
     fn emit_namespace_path_from_parts(
@@ -2357,7 +2400,9 @@ impl Parser {
 
         let target_position = marker_position + 1;
         let cursor = if self.is_visibility_target_start_at(target_position) {
-            let target = self.parse_placeholder_item(target_position);
+            let target = self
+                .parse_theorem_item(target_position)
+                .unwrap_or_else(|| self.parse_placeholder_item(target_position));
             children.push(target.id);
             recovery_nodes.extend(target.recovery_nodes);
             target.next_position
@@ -2386,6 +2431,97 @@ impl Parser {
             next_position: cursor.max(position + 1),
             recovery_nodes,
         }
+    }
+
+    fn parse_theorem_item(&mut self, position: usize) -> Option<ParsedItem> {
+        let head = self.item_head_position(position)?;
+        let role = self.theorem_role_position_at(head)?;
+        if !self.looks_like_theorem_item_after_role(role) {
+            return None;
+        }
+        if let Some(formula_start) = self.theorem_formula_start_after_role(role)
+            && self.formula_payload_contains_deferred_predicate_template_args_at(formula_start)
+        {
+            return None;
+        }
+        let surface_kind = if self.is_reserved_word_at(role, "lemma") {
+            SurfaceNodeKind::LemmaItem
+        } else {
+            SurfaceNodeKind::TheoremItem
+        };
+        let mut children = self.token_node_ids[position..=role].to_vec();
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = role + 1;
+
+        if self.is_identifier_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected theorem label");
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if self.is_reserved_symbol_at(cursor, ":") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_formula_expression(cursor, "expected `:` after theorem label");
+        }
+
+        if let Some(formula) = self.parse_formula_expression_at(cursor) {
+            cursor = formula.next_position;
+            children.push(formula.id);
+            recovery_nodes.extend(formula.recovery_nodes);
+        } else {
+            self.diagnose_malformed_formula_expression(cursor, "expected theorem formula");
+            self.push_missing_formula(cursor, &mut children, &mut recovery_nodes);
+            if !self.is_theorem_item_tail_boundary_at(cursor)
+                && let Some(recovery) = self.recover_malformed_statement_tail(cursor)
+            {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+        }
+
+        if let Some(justification) = self.parse_general_justification_at(cursor, true) {
+            cursor = justification.next_position;
+            children.push(justification.id);
+            recovery_nodes.extend(justification.recovery_nodes);
+        }
+
+        if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else if cursor < self.request.tokens.len()
+            && !self.is_statement_synchronization_boundary_at(cursor)
+        {
+            self.diagnose_malformed_term_expression(cursor, "unexpected token in theorem item");
+            if let Some(recovery) = self.recover_malformed_statement_tail(cursor) {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+            if self.is_semicolon_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            } else {
+                self.diagnose_missing_semicolon(cursor);
+            }
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: surface_kind,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        Some(ParsedItem {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        })
     }
 
     fn parse_reserve_item(&mut self, position: usize) -> ParsedItem {
@@ -6455,11 +6591,15 @@ impl Parser {
     }
 
     fn is_compact_statement_start_at(&self, position: usize) -> bool {
-        self.can_start_formula_at(position)
-            && self.top_level_by_before_statement_boundary_at(position)
+        let body_start = self.statement_label_body_start_at(position);
+        self.can_start_formula_at(body_start)
+            && self.top_level_general_justification_before_statement_boundary_at(body_start)
     }
 
-    fn top_level_by_before_statement_boundary_at(&self, position: usize) -> bool {
+    fn top_level_general_justification_before_statement_boundary_at(
+        &self,
+        position: usize,
+    ) -> bool {
         let mut cursor = position;
         let mut paren_depth = 0_usize;
         let mut bracket_depth = 0_usize;
@@ -6468,7 +6608,10 @@ impl Parser {
         while cursor < self.request.tokens.len() {
             let top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
             if top_level {
-                if cursor > position && self.is_reserved_word_at(cursor, "by") {
+                if cursor > position
+                    && (self.is_reserved_word_at(cursor, "by")
+                        || self.is_reserved_word_at(cursor, "proof"))
+                {
                     return true;
                 }
                 if self.is_semicolon_at(cursor)
@@ -6580,6 +6723,53 @@ impl Parser {
         self.request.tokens.get(position).is_some_and(|token| {
             token.kind == ParserTokenKind::ReservedWord
                 && matches!(token.text.as_ref(), "private" | "public")
+        })
+    }
+
+    fn theorem_role_position_at(&self, head: usize) -> Option<usize> {
+        if self.is_reserved_word_at(head, "theorem") || self.is_reserved_word_at(head, "lemma") {
+            Some(head)
+        } else if self.is_theorem_status_keyword_at(head)
+            && (self.is_reserved_word_at(head + 1, "theorem")
+                || self.is_reserved_word_at(head + 1, "lemma"))
+        {
+            Some(head + 1)
+        } else {
+            None
+        }
+    }
+
+    fn looks_like_theorem_item_after_role(&self, role: usize) -> bool {
+        let label_or_colon = role + 1;
+        if self.is_reserved_symbol_at(label_or_colon, ":")
+            || self.can_start_formula_at(label_or_colon)
+        {
+            return true;
+        }
+        self.is_identifier_at(label_or_colon)
+            && (self.is_reserved_symbol_at(label_or_colon + 1, ":")
+                || self.can_start_formula_at(label_or_colon + 1)
+                || self.is_reserved_word_at(label_or_colon + 1, "by")
+                || self.is_reserved_word_at(label_or_colon + 1, "proof"))
+    }
+
+    fn theorem_formula_start_after_role(&self, role: usize) -> Option<usize> {
+        let label_or_colon = role + 1;
+        if self.is_reserved_symbol_at(label_or_colon, ":") {
+            Some(label_or_colon + 1)
+        } else if self.is_identifier_at(label_or_colon)
+            && self.is_reserved_symbol_at(label_or_colon + 1, ":")
+        {
+            Some(label_or_colon + 2)
+        } else {
+            None
+        }
+    }
+
+    fn is_theorem_status_keyword_at(&self, position: usize) -> bool {
+        self.request.tokens.get(position).is_some_and(|token| {
+            token.kind == ParserTokenKind::ReservedWord
+                && matches!(token.text.as_ref(), "open" | "assumed" | "conditional")
         })
     }
 
@@ -6695,6 +6885,16 @@ impl Parser {
             || self.is_item_start_at(position)
             || self.is_case_branch_keyword_at(position)
             || self.is_statement_boundary_keyword_at(position)
+    }
+
+    fn is_theorem_item_tail_boundary_at(&self, position: usize) -> bool {
+        position >= self.request.tokens.len()
+            || self.is_semicolon_at(position)
+            || self.is_reserved_word_at(position, "by")
+            || self.is_reserved_word_at(position, "proof")
+            || self.is_end_keyword_at(position)
+            || self.is_compilation_item_or_statement_start_at(position)
+            || self.is_case_branch_keyword_at(position)
     }
 
     fn is_reconsider_item_boundary_at(&self, position: usize) -> bool {
@@ -7414,6 +7614,7 @@ impl Parser {
         position >= self.request.tokens.len()
             || self.is_semicolon_at(position)
             || self.is_reserved_word_at(position, "by")
+            || self.is_reserved_word_at(position, "proof")
             || self.is_reserved_symbol_at(position, ",")
             || self.is_reserved_symbol_at(position, ")")
             || self.is_reserved_symbol_at(position, "]")
@@ -7427,6 +7628,7 @@ impl Parser {
         position >= self.request.tokens.len()
             || self.is_semicolon_at(position)
             || self.is_reserved_word_at(position, "by")
+            || self.is_reserved_word_at(position, "proof")
             || self.is_reserved_symbol_at(position, ",")
             || self.is_reserved_symbol_at(position, ")")
             || self.is_reserved_symbol_at(position, "]")
@@ -7728,7 +7930,7 @@ mod tests {
                 token(source_id, ParserTokenKind::ReservedWord, "theorem", 0, 7),
                 token(source_id, ParserTokenKind::Identifier, "T", 8, 9),
                 token(source_id, ParserTokenKind::ReservedSymbol, ":", 9, 10),
-                token(source_id, ParserTokenKind::Identifier, "thesis", 11, 17),
+                token(source_id, ParserTokenKind::ReservedWord, "thesis", 11, 17),
                 token(source_id, ParserTokenKind::ReservedSymbol, ";", 17, 18),
                 token(source_id, ParserTokenKind::ReservedWord, "lemma", 19, 24),
                 token(source_id, ParserTokenKind::Identifier, "L", 25, 26),
@@ -7753,12 +7955,14 @@ mod tests {
         ));
         let items = &ast.node(item_list_id).unwrap().children;
         assert_eq!(items.len(), 2);
-        assert!(items.iter().all(|id| {
-            matches!(
-                ast.node(*id).unwrap().kind,
-                SurfaceNodeKind::PlaceholderItem
-            )
-        }));
+        assert!(matches!(
+            ast.node(items[0]).unwrap().kind,
+            SurfaceNodeKind::TheoremItem
+        ));
+        assert!(matches!(
+            ast.node(items[1]).unwrap().kind,
+            SurfaceNodeKind::PlaceholderItem
+        ));
         assert_eq!(ast.node(items[0]).unwrap().range, range(source_id, 0, 18));
         assert_eq!(ast.node(items[1]).unwrap().range, range(source_id, 19, 27));
         assert!(ast.snapshot_text().contains("CompilationUnit range=0..27"));
@@ -9419,7 +9623,7 @@ mod tests {
     }
 
     #[test]
-    fn proof_block_semicolons_stay_inside_the_theorem_placeholder() {
+    fn proof_block_semicolons_stay_inside_the_theorem_item() {
         let source_id = source_id(68);
         let tokens = token_sequence(
             source_id,
@@ -9427,10 +9631,10 @@ mod tests {
                 ("theorem", ParserTokenKind::ReservedWord),
                 ("T", ParserTokenKind::Identifier),
                 (":", ParserTokenKind::ReservedSymbol),
-                ("thesis", ParserTokenKind::Identifier),
+                ("thesis", ParserTokenKind::ReservedWord),
                 ("proof", ParserTokenKind::ReservedWord),
                 ("thus", ParserTokenKind::ReservedWord),
-                ("thesis", ParserTokenKind::Identifier),
+                ("thesis", ParserTokenKind::ReservedWord),
                 (";", ParserTokenKind::ReservedSymbol),
                 ("end", ParserTokenKind::ReservedWord),
                 (";", ParserTokenKind::ReservedSymbol),
@@ -9451,6 +9655,390 @@ mod tests {
         assert_eq!(
             ast.node(item_list.children[0]).unwrap().range,
             expected_range
+        );
+        assert!(matches!(
+            ast.node(item_list.children[0]).unwrap().kind,
+            SurfaceNodeKind::TheoremItem
+        ));
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::ProofBlock)),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ConclusionStatement
+            )),
+            1
+        );
+    }
+
+    #[test]
+    fn parser_wraps_visible_theorem_targets_and_preserves_status_tokens() {
+        let source_id = source_id(171);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("public", ParserTokenKind::ReservedWord),
+                    ("open", ParserTokenKind::ReservedWord),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("VisibleT", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("private", ParserTokenKind::ReservedWord),
+                    ("conditional", ParserTokenKind::ReservedWord),
+                    ("lemma", ParserTokenKind::ReservedWord),
+                    ("VisibleL", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("assumed", ParserTokenKind::ReservedWord),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("AssumedT", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "visible theorem targets should parse without diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("visible theorem targets should keep an AST");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(item_list.children.len(), 3);
+        let visible_items = item_list
+            .children
+            .iter()
+            .take(2)
+            .map(|item| ast.node(*item).unwrap())
+            .collect::<Vec<_>>();
+        assert!(
+            visible_items
+                .iter()
+                .all(|item| matches!(item.kind, SurfaceNodeKind::VisibleItem))
+        );
+
+        let assumed = ast.node(item_list.children[2]).unwrap();
+        assert!(matches!(assumed.kind, SurfaceNodeKind::TheoremItem));
+        assert_eq!(
+            direct_token_texts(&ast, assumed),
+            vec!["assumed", "theorem", "AssumedT", ":", ";"]
+        );
+        assert!(direct_child_has_kind(&ast, assumed, |kind| {
+            matches!(kind, SurfaceNodeKind::FormulaExpression)
+        }));
+
+        let theorem = structural_children(&ast, visible_items[0])
+            .into_iter()
+            .find(|child| matches!(child.kind, SurfaceNodeKind::TheoremItem))
+            .expect("public open theorem should be the visible target");
+        assert_eq!(
+            direct_token_texts(&ast, theorem),
+            vec!["open", "theorem", "VisibleT", ":", ";"]
+        );
+        assert!(direct_child_has_kind(&ast, theorem, |kind| {
+            matches!(kind, SurfaceNodeKind::FormulaExpression)
+        }));
+
+        let lemma = structural_children(&ast, visible_items[1])
+            .into_iter()
+            .find(|child| matches!(child.kind, SurfaceNodeKind::LemmaItem))
+            .expect("private conditional lemma should be the visible target");
+        assert_eq!(
+            direct_token_texts(&ast, lemma),
+            vec!["conditional", "lemma", "VisibleL", ":", ";"]
+        );
+        assert!(direct_child_has_kind(&ast, lemma, |kind| {
+            matches!(kind, SurfaceNodeKind::FormulaExpression)
+        }));
+    }
+
+    #[test]
+    fn statement_proof_blocks_are_owned_by_statement_hosts() {
+        let source_id = source_id(172);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("StatementProofs", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("A", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("A", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "statement-owned proof blocks should parse without diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("statement-owned proof blocks should keep an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::ProofBlock)),
+            3,
+            "the theorem proof and both statement proof tails should be represented"
+        );
+
+        let compact = single_node(&ast, |kind| {
+            matches!(kind, SurfaceNodeKind::CompactStatement)
+        });
+        let compact_children = structural_children(&ast, compact);
+        assert!(
+            compact_children
+                .iter()
+                .any(|child| matches!(child.kind, SurfaceNodeKind::ProofBlock))
+        );
+        assert_eq!(
+            direct_token_texts(&ast, compact),
+            vec![";"],
+            "the compact statement keeps its enclosing semicolon directly"
+        );
+        let compact_proposition = compact_children
+            .iter()
+            .find(|child| matches!(child.kind, SurfaceNodeKind::Proposition))
+            .expect("compact statement should own a proposition");
+        assert_eq!(
+            direct_token_texts(&ast, compact_proposition),
+            vec!["A", ":"],
+            "the compact statement label belongs to its proposition child"
+        );
+
+        let conclusions = ast
+            .nodes()
+            .iter()
+            .filter(|node| matches!(node.kind, SurfaceNodeKind::ConclusionStatement))
+            .collect::<Vec<_>>();
+        let proof_conclusion = conclusions
+            .iter()
+            .copied()
+            .find(|node| {
+                structural_children(&ast, node)
+                    .iter()
+                    .any(|child| matches!(child.kind, SurfaceNodeKind::ProofBlock))
+            })
+            .expect("one conclusion statement should own a proof block");
+        assert_eq!(
+            direct_token_texts(&ast, proof_conclusion),
+            vec!["thus", ";"],
+            "the conclusion statement keeps its enclosing semicolon directly"
+        );
+    }
+
+    #[test]
+    fn parser_recovers_task22_theorem_and_proof_shapes() {
+        let source_id = source_id(173);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("MissingColon", ParserTokenKind::Identifier),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("MissingFormula", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("MissingProofEnd", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("Next", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("AfterStatementProof", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MissingEnd)
+        );
+        assert!(output.diagnostics.iter().any(|diagnostic| {
+            diagnostic.code == SyntaxDiagnosticCode::MalformedTermExpression
+        }));
+        assert!(output.diagnostics.iter().any(|diagnostic| {
+            diagnostic.code == SyntaxDiagnosticCode::MalformedFormulaExpression
+        }));
+        let ast = output
+            .ast
+            .expect("task-22 malformed theorem/proof shapes should recover an AST");
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingTerm)
+            )) >= 1,
+            "missing theorem labels should insert MissingTerm"
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingFormula)
+            )) >= 1,
+            "missing theorem formulas should insert MissingFormula"
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingEnd)
+            )) >= 2,
+            "the theorem proof and statement proof should both report MissingEnd"
+        );
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(node.kind, SurfaceNodeKind::TheoremItem)
+                && direct_token_texts(&ast, node) == vec!["theorem", "MissingColon", ";"]
+                && direct_child_has_kind(&ast, node, |kind| {
+                    matches!(kind, SurfaceNodeKind::FormulaExpression)
+                })
+        }));
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(node.kind, SurfaceNodeKind::TheoremItem)
+                && direct_token_texts(&ast, node).contains(&"Next".to_owned())
+        }));
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(node.kind, SurfaceNodeKind::TheoremItem)
+                && direct_token_texts(&ast, node).contains(&"AfterStatementProof".to_owned())
+        }));
+    }
+
+    #[test]
+    fn proof_blocks_remain_rejected_for_simple_justification_only_hosts() {
+        let source_id = source_id(174);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("let", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("consider", ParserTokenKind::ReservedWord),
+                    ("y", ParserTokenKind::Identifier),
+                    ("being", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    ("such", ParserTokenKind::ReservedWord),
+                    ("that", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("reconsider", ParserTokenKind::ReservedWord),
+                    ("z", ParserTokenKind::Identifier),
+                    ("as", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    (".=", ParserTokenKind::ReservedSymbol),
+                    ("z", ParserTokenKind::Identifier),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("per", ParserTokenKind::ReservedWord),
+                    ("cases", ParserTokenKind::ReservedWord),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MalformedTermExpression),
+            "unexpected proof tails on simple hosts should be diagnosed: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("simple-host proof tails should recover an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::ProofBlock)),
+            0,
+            "simple-justification-only hosts must not accept proof blocks"
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+            )) >= 4,
+            "each non-proof host should recover unexpected proof syntax as skipped tokens"
         );
     }
 
@@ -12191,7 +12779,7 @@ mod tests {
 
         let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
         let first_item = ast.node(item_list.children[0]).unwrap();
-        assert!(matches!(first_item.kind, SurfaceNodeKind::PlaceholderItem));
+        assert!(matches!(first_item.kind, SurfaceNodeKind::TheoremItem));
         let formula_id = first_item
             .children
             .iter()
@@ -12200,7 +12788,7 @@ mod tests {
                 ast.node(*child)
                     .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::FormulaExpression))
             })
-            .expect("theorem placeholder should own a concrete FormulaExpression child");
+            .expect("theorem item should own a concrete FormulaExpression child");
         let formula = ast.node(formula_id).unwrap();
         assert_eq!(formula.children.len(), 1);
         assert!(matches!(
@@ -12220,7 +12808,7 @@ mod tests {
                     matches!(kind, SurfaceNodeKind::FormulaExpression)
                 })
             }),
-            "lemma placeholder should host a concrete formula payload"
+            "lemma item should host a concrete formula payload"
         );
     }
 
@@ -14366,7 +14954,7 @@ mod tests {
     }
 
     #[test]
-    fn parser_keeps_theorem_tails_after_formulas_as_plain_placeholders() {
+    fn parser_parses_theorem_tails_after_formulas_as_concrete_items() {
         let source_id = source_id(50);
         let output = parse(ParseRequest::new(
             source_id,
@@ -14439,23 +15027,31 @@ mod tests {
 
         assert!(
             output.diagnostics.is_empty(),
-            "theorem proof/justification tails should keep legacy placeholder behavior: {:?}",
+            "theorem proof/justification tails should parse as concrete items: {:?}",
             output.diagnostics
         );
-        let ast = output.ast.expect("legacy theorem tails should keep an AST");
+        let ast = output.ast.expect("theorem tails should keep an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::TheoremItem)),
+            6
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::ProofBlock)),
+            2
+        );
         assert_eq!(
             count_nodes(&ast, |kind| matches!(
                 kind,
-                SurfaceNodeKind::FormulaExpression
+                SurfaceNodeKind::JustificationClause
             )),
-            0
+            4
         );
         let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
         assert_eq!(item_list.children.len(), 6);
         assert!(item_list.children.iter().all(|item| {
             let item = ast.node(*item).unwrap();
-            matches!(item.kind, SurfaceNodeKind::PlaceholderItem)
-                && !direct_child_has_kind(&ast, item, |kind| {
+            matches!(item.kind, SurfaceNodeKind::TheoremItem)
+                && direct_child_has_kind(&ast, item, |kind| {
                     matches!(kind, SurfaceNodeKind::FormulaExpression)
                 })
         }));
@@ -16267,14 +16863,18 @@ mod tests {
             .nodes()
             .iter()
             .find(|node| {
-                matches!(node.kind, SurfaceNodeKind::PlaceholderItem)
-                    && node.children.iter().any(|child| {
-                        ast.node(*child)
-                            .and_then(mizar_syntax::SurfaceNode::token_text)
-                            == Some(label)
-                    })
+                matches!(
+                    node.kind,
+                    SurfaceNodeKind::TheoremItem
+                        | SurfaceNodeKind::LemmaItem
+                        | SurfaceNodeKind::PlaceholderItem
+                ) && node.children.iter().any(|child| {
+                    ast.node(*child)
+                        .and_then(mizar_syntax::SurfaceNode::token_text)
+                        == Some(label)
+                })
             })
-            .unwrap_or_else(|| panic!("expected theorem placeholder labelled `{label}`"));
+            .unwrap_or_else(|| panic!("expected theorem-like item labelled `{label}`"));
         let formula_expression = item
             .children
             .iter()

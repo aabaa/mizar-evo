@@ -345,7 +345,7 @@ interaction. Spec references are the normative grammar chapters under
    - Result: parser tasks 13-14 are implemented. Atomic formula nodes,
      generic `is` assertions, formula constants, prefix/binary formula nodes,
      parenthesized formulas, quantifier variable segments, quantified
-     formulas, missing-formula recovery, theorem/lemma placeholder formula
+     formulas, missing-formula recovery, theorem/lemma formula
      hosting, syntax typed accessors, parser unit tests, and active parse-only
      pass/fail corpus coverage are in place. Template predicate arguments
      remain deferred to task 31 / S-016, and formula-embedding
@@ -386,7 +386,7 @@ interaction. Spec references are the normative grammar chapters under
       complete.
     - Spec: [15.statements.md](../../../spec/en/15.statements.md).
 
-14. **Theorem, proof, and justification nodes.** [ ] — paired with
+14. **Theorem, proof, and justification nodes.** [x] — paired with
     `mizar-parser` tasks 17 and 22.
     - Justification clauses (`by`), citation forms including `.{ … }` and
       `.*`, `let ... by references`, a minimal explicit compact-statement host,
@@ -396,7 +396,11 @@ interaction. Spec references are the normative grammar chapters under
       justification form, so earlier `from` wording is treated as
       derived-documentation drift rather than implemented syntax.
       Parser task 17's citation/computation subset is complete; parser task 22
-      remains before this bucket can be marked done.
+      has added `TheoremItem`, `LemmaItem`, and `ProofBlock`, status-token
+      preservation, visibility-wrapped theorem targets, proof-body statement
+      wiring, statement-level proof justifications on conclusion and compact
+      statement hosts, theorem/proof recovery, typed accessors, and active
+      parse-only pass/fail corpus coverage. S-014 is complete.
     - Spec: [15.statements.md](../../../spec/en/15.statements.md),
       [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md),
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md)

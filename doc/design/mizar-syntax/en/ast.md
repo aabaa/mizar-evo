@@ -106,6 +106,9 @@ green tree.
 | inline functor definition node | `SyntaxKind::InlineFunctorDefinition` |
 | inline predicate definition node | `SyntaxKind::InlinePredicateDefinition` |
 | typed parameter node | `SyntaxKind::TypedParameter` |
+| theorem item node | `SyntaxKind::TheoremItem` |
+| lemma item node | `SyntaxKind::LemmaItem` |
+| proof block node | `SyntaxKind::ProofBlock` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -233,6 +236,9 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 93 | `InlineFunctorDefinition` | task-21 `deffunc ... equals ...;` local definition |
 | 94 | `InlinePredicateDefinition` | task-21 `defpred ... means ...;` local definition |
 | 95 | `TypedParameter` | task-21 inline-definition typed parameter |
+| 96 | `TheoremItem` | task-22 theorem declaration item |
+| 97 | `LemmaItem` | task-22 lemma declaration item |
+| 98 | `ProofBlock` | task-22 `proof ... end` justification block |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -303,7 +309,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::ConsiderStatement` | none | `SyntaxKind::ConsiderStatement` | parser task-18 choice statement; owns `consider`, qualified-variable segments with separator commas, `such`, `ConditionList` or condition recovery, simple `JustificationClause` or missing-justification recovery, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::ReconsiderStatement` | none | `SyntaxKind::ReconsiderStatement` | parser task-18 type-changing statement; owns `reconsider`, reconsider items with separator commas, `as`, `TypeExpression` or `MissingTypeExpression`, simple `JustificationClause` or missing-justification recovery, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::ReconsiderItem` | none | `SyntaxKind::ReconsiderItem` | parser task-18 reconsider item; owns either identifier or identifier, `=`, and `TermExpression` / `MissingTerm` recovery |
-| `SurfaceNodeKind::ConclusionStatement` | none | `SyntaxKind::ConclusionStatement` | parser task-19 conclusion statement; owns `thus` or `hence`, one `Proposition`, an optional explicit `JustificationClause`, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::ConclusionStatement` | none | `SyntaxKind::ConclusionStatement` | parser task-19 conclusion statement plus parser task-22 full proof justification; owns `thus` or `hence`, one `Proposition`, an optional explicit `JustificationClause` or `ProofBlock`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::ThenStatement` | none | `SyntaxKind::ThenStatement` | parser task-19 sequential modifier wrapper; owns the `then` token and exactly one linkable statement child or `MissingStatement` recovery |
 | `SurfaceNodeKind::IterativeEqualityStatement` | none | `SyntaxKind::IterativeEqualityStatement` | parser task-19 equality chain; owns optional label identifier/colon, first `TermExpression`, `=`, second `TermExpression`, optional simple `JustificationClause`, one or more `IterativeEqualityStep` children, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::IterativeEqualityStep` | none | `SyntaxKind::IterativeEqualityStep` | parser task-19 `.=` continuation; owns `.=` token, a `TermExpression` or `MissingTerm`, and optional simple `JustificationClause` |
@@ -315,7 +321,10 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::InlineFunctorDefinition` | none | `SyntaxKind::InlineFunctorDefinition` | parser task-21 standalone `deffunc` definition; owns `deffunc`, a name identifier or `MissingTerm` recovery, parameter parentheses, zero or more `TypedParameter` children separated by comma tokens, `->`, a return `TypeExpression` or `MissingTypeExpression`, `equals`, a body `TermExpression` or `MissingTerm`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::InlinePredicateDefinition` | none | `SyntaxKind::InlinePredicateDefinition` | parser task-21 standalone `defpred` definition; owns `defpred`, a name identifier or `MissingTerm` recovery, parameter parentheses, zero or more `TypedParameter` children separated by comma tokens, `means`, a body `FormulaExpression` or `MissingFormula`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::TypedParameter` | none | `SyntaxKind::TypedParameter` | parser task-21 inline-definition parameter; owns the parameter identifier when present, optional `be` or `being` when written, and a `TypeExpression` or `MissingTypeExpression` recovery |
-| `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host; owns one `Proposition`, one `JustificationClause`, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::TheoremItem` | none | `SyntaxKind::TheoremItem` | parser task-22 theorem declaration; owns optional status tokens preserved syntactically, `theorem`, a label identifier or `MissingTerm`, `:`, a `FormulaExpression` or `MissingFormula`, optional `JustificationClause` or `ProofBlock`, optional recovery, and the final semicolon when present |
+| `SurfaceNodeKind::LemmaItem` | none | `SyntaxKind::LemmaItem` | parser task-22 lemma declaration with the same source-order children as `TheoremItem`, selected by the `lemma` role token |
+| `SurfaceNodeKind::ProofBlock` | none | `SyntaxKind::ProofBlock` | parser task-22 full proof justification block; owns `proof`, nested statement nodes from the reasoning body, optional recovery including `MissingEnd`, and `end` when present; the enclosing theorem or statement owns the following semicolon |
+| `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host plus parser task-22 proof justification host; owns one `Proposition`, one `JustificationClause` or `ProofBlock`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
 | `SurfaceNodeKind::Reference` | none | `SyntaxKind::Reference` | parser task-17 local citation; owns one identifier token and no template arguments in this increment |
@@ -411,16 +420,18 @@ trailing comma without a following path, or a nested `SkippedToken` recovery
 child for malformed source consumed before the semicolon. `VisibilityMarker`
 wraps exactly one `private` or `public` token. `VisibleItem` represents a
 top-level visibility prefix on the theorem/notation forms allowed by Chapter
-12. While those target item grammars are still placeholders, its children are
-source ordered: annotation-prefix token nodes when present, one
-`VisibilityMarker`, and the target `PlaceholderItem`. Duplicate visibility
-markers, dangling markers, or visibility before a non-theorem/non-notation
-top-level declaration may instead contain a nested `SkippedToken` recovery
-child and an optional semicolon token while carrying `MalformedVisibility`.
-These nodes do not decide public/private semantics, export availability,
-symbol identities, theorem validity, or notation validity. `SurfaceNodeView`
-exposes typed `as_export_item`, `as_visibility_marker`, and `as_visible_item`
-helpers.
+12. Its children are source ordered: annotation-prefix token nodes when
+present, one `VisibilityMarker`, and the target item node. Represented theorem
+and lemma targets use concrete `TheoremItem` / `LemmaItem` nodes; notation
+targets, short legacy theorem fragments, and theorem payloads that contain
+deferred template predicate arguments remain `PlaceholderItem` targets.
+Duplicate visibility markers, dangling markers, or visibility before a
+non-theorem/non-notation top-level declaration may instead contain a nested
+`SkippedToken` recovery child and an optional semicolon token while carrying
+`MalformedVisibility`. These nodes do not decide public/private semantics,
+export availability, symbol identities, theorem validity, or notation
+validity. `SurfaceNodeView` exposes typed `as_export_item`,
+`as_visibility_marker`, and `as_visible_item` helpers.
 
 Type-expression nodes added for `mizar-parser` task 8 are syntax-only shapes.
 `ReserveItem` is the current frontend-reachable host for `TypeExpression` nodes;
@@ -563,9 +574,13 @@ symbol ids, selected overloads, inferred types, or proof facts.
 Parser tasks 13-14 define the current formula nodes. `FormulaExpression` wraps
 one formula child, whether that child is atomic, connective-bearing,
 quantified, parenthesized, `thesis`, or `contradiction`, without changing the
-wrapper role. The initial frontend-reachable host is a theorem/lemma
-`PlaceholderItem` that parses only the `label: formula;` payload while leaving
-theorem/proof item structure to task 22.
+wrapper role. Task 13 first exposed formula payloads through theorem/lemma
+placeholder hosts; task 22 promotes represented theorem declarations to
+concrete `TheoremItem` and `LemmaItem` hosts that own the optional status token,
+role token, label, colon, `FormulaExpression`, optional justification or
+`ProofBlock`, and enclosing semicolon. The parser may still keep theorem
+payloads that contain deferred template predicate arguments as
+`PlaceholderItem` until that syntax is implemented.
 
 `BuiltinPredicateApplication` owns a left `TermExpression`, the built-in
 predicate token (`in`, `=`, or `<>`), and a right `TermExpression` or
@@ -629,16 +644,17 @@ condition/body formula or recovery insertion that completed the represented
 quantifier.
 
 Parser task 16 starts S-013 statement vocabulary with simple statement nodes.
-`StatementItem` is a temporary module-level wrapper that lets the parse-only
-corpus exercise concrete statement syntax before theorem/proof block hosts are
-implemented. It owns exactly one concrete parser-owned statement node from the
-currently implemented statement vocabulary, including later S-013 / S-014
-increments such as compact, consider/reconsider, conclusion, `then`, and
-iterative-equality statements. Proof and block parsers may later own the same
-statement nodes directly. Statement-level annotations are deferred to task 35 /
-S-016, so `StatementItem` does not own annotation-prefix tokens. `reserve`
-remains the top-level task-8 `ReserveItem` only because Chapter 4 forbids
-block-local `reserve`-shaped statements.
+`StatementItem` remains the module-level wrapper used when a concrete statement
+appears at top level in the parse-only corpus. It owns exactly one concrete
+parser-owned statement node from the currently implemented statement
+vocabulary, including later S-013 / S-014 increments such as compact,
+consider/reconsider, conclusion, `then`, and iterative-equality statements.
+Task 22 also lets `ProofBlock`, `NowStatement`, `HerebyStatement`, and case
+branch bodies own the same concrete statement nodes directly through reasoning
+bodies. Statement-level annotations are deferred to task 35 / S-016, so
+`StatementItem` does not own annotation-prefix tokens. `reserve` remains the
+top-level task-8 `ReserveItem` only because Chapter 4 forbids block-local
+`reserve`-shaped statements.
 
 `LetStatement` owns `let`, one or more `QualifiedVariableSegment` children
 separated by comma tokens, optional `such` plus `ConditionList`, and `;` when
