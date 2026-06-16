@@ -131,6 +131,7 @@ green tree.
 | coherence condition node | `SyntaxKind::CoherenceCondition` |
 | notation alias node | `SyntaxKind::NotationAlias` |
 | notation pattern node | `SyntaxKind::NotationPattern` |
+| property clause node | `SyntaxKind::PropertyClause` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -292,11 +293,12 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 128 | `CoherenceCondition` | task-27 mandatory redefinition coherence proof tail |
 | 129 | `NotationAlias` | task-27 `synonym` / `antonym` notation alias declaration |
 | 130 | `NotationPattern` | task-27 raw notation alias pattern span |
+| 131 | `PropertyClause` | task-28 predicate/functor/standalone mode property clause |
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
 above, including `Root` through task-22 `ProofBlock`, task-23
-`DefinitionBlockItem` through task-27 `NotationPattern`, the compatibility
+`DefinitionBlockItem` through task-28 `PropertyClause`, the compatibility
 `Token` wrapper, and `ErrorRecovery`; `is_token_kind` is true only for token
 leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future raw values should be
 appended or assigned into a documented reserved range so existing snapshots and
@@ -391,6 +393,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::CoherenceCondition` | none | `SyntaxKind::CoherenceCondition` | parser task-27 redefinition coherence tail; owns `coherence`, optional `with` plus a label identifier or `MissingProofStep`, a required general justification when present, optional recovery, and the coherence semicolon when present |
 | `SurfaceNodeKind::NotationAlias` | none | `SyntaxKind::NotationAlias` | parser task-27 `synonym` or `antonym` declaration; owns the alias keyword, an alternate `NotationPattern`, `for`, an original `NotationPattern`, optional recovery, and the final semicolon when present |
 | `SurfaceNodeKind::NotationPattern` | none | `SyntaxKind::NotationPattern` | parser task-27 raw notation alias pattern; owns source-ordered raw tokens from one side of `for` plus `MissingTerm` recovery when the side is empty or cannot be delimited; it does not classify the pattern as predicate, functor, mode, or attribute |
+| `SurfaceNodeKind::PropertyClause` | none | `SyntaxKind::PropertyClause` | parser task-28 property item; owns a canonical predicate/functor property keyword or standalone `sethood`, a required general justification (`JustificationClause` or `ProofBlock`) when present, optional recovery, and the property semicolon when present |
 | `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host plus parser task-22 proof justification host; owns one `Proposition`, one `JustificationClause` or `ProofBlock`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
@@ -1029,6 +1032,21 @@ notation_decl`. `SurfaceNodeView` exposes `as_attribute_redefinition`,
 `as_coherence_condition`, `as_notation_alias`, and `as_notation_pattern`
 helpers. Snapshot rendering prints the literal node names.
 
+Parser task 28 adds syntax-only property item clauses. `PropertyClause` owns
+one canonical property keyword, a required syntax-level general justification
+(`JustificationClause` or `ProofBlock`) when present, optional recovery, and
+the property semicolon when present. The accepted keywords are the predicate
+properties `symmetry`, `asymmetry`, `connectedness`, `reflexivity`, and
+`irreflexivity`; the functor properties `commutativity`, `idempotence`,
+`involutiveness`, and `projectivity`; and standalone mode `sethood`.
+`transitivity` is a reserved word but is not a concrete property-clause
+keyword in the current canonical property productions. A `sethood` clause
+immediately following a `ModeDefinition` remains represented by task-26
+`ModeProperty`; standalone `sethood` property items use `PropertyClause`. The
+AST does not validate predicate arity, functor arity, proof obligations, or
+which preceding definition a property annotates. `SurfaceNodeView` exposes
+`as_property_clause`. Snapshot rendering prints `PropertyClause`.
+
 ### Vocabulary Increment Contract
 
 Node vocabulary grows only in the same change as the `mizar-parser` grammar task
@@ -1206,6 +1224,7 @@ FunctorRedefinition range=<start>..<end> recovered=<bool>
 CoherenceCondition range=<start>..<end> recovered=<bool>
 NotationAlias range=<start>..<end> recovered=<bool>
 NotationPattern range=<start>..<end> recovered=<bool>
+PropertyClause range=<start>..<end> recovered=<bool>
 CompactStatement range=<start>..<end> recovered=<bool>
 JustificationClause range=<start>..<end> recovered=<bool>
 ReferenceList range=<start>..<end> recovered=<bool>

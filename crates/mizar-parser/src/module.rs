@@ -1268,27 +1268,73 @@ impl Parser {
         }
     }
 
+    fn parse_definition_content_general_justification_at(
+        &mut self,
+        position: usize,
+        allow_computation: bool,
+    ) -> Option<ParsedTypeNode> {
+        if self.is_reserved_word_at(position, "by") {
+            Some(self.parse_definition_content_justification_clause_at(position, allow_computation))
+        } else if self.is_reserved_word_at(position, "proof") {
+            Some(self.parse_definition_content_proof_block_at(position))
+        } else {
+            None
+        }
+    }
+
     fn parse_justification_clause_at(
         &mut self,
         position: usize,
         allow_computation: bool,
+    ) -> ParsedTypeNode {
+        self.parse_justification_clause_with_definition_boundary_at(
+            position,
+            allow_computation,
+            false,
+        )
+    }
+
+    fn parse_definition_content_justification_clause_at(
+        &mut self,
+        position: usize,
+        allow_computation: bool,
+    ) -> ParsedTypeNode {
+        self.parse_justification_clause_with_definition_boundary_at(
+            position,
+            allow_computation,
+            true,
+        )
+    }
+
+    fn parse_justification_clause_with_definition_boundary_at(
+        &mut self,
+        position: usize,
+        allow_computation: bool,
+        stop_at_definition_content_start: bool,
     ) -> ParsedTypeNode {
         let mut children = vec![self.token_node_ids[position]];
         let mut recovery_nodes = Vec::new();
         let mut cursor = position + 1;
 
         if allow_computation && self.is_reserved_word_at(cursor, "computation") {
-            let computation = self.parse_computation_justification_at(cursor);
+            let computation = self.parse_computation_justification_with_definition_boundary_at(
+                cursor,
+                stop_at_definition_content_start,
+            );
             cursor = computation.next_position;
             children.push(computation.id);
             recovery_nodes.extend(computation.recovery_nodes);
-            cursor = self.recover_unexpected_justification_tail(
+            cursor = self.recover_unexpected_justification_tail_with_definition_boundary(
                 cursor,
                 &mut children,
                 &mut recovery_nodes,
+                stop_at_definition_content_start,
             );
         } else {
-            let references = self.parse_reference_list_at(cursor);
+            let references = self.parse_reference_list_with_definition_boundary_at(
+                cursor,
+                stop_at_definition_content_start,
+            );
             cursor = references.next_position;
             children.push(references.id);
             recovery_nodes.extend(references.recovery_nodes);
@@ -1306,7 +1352,11 @@ impl Parser {
         }
     }
 
-    fn parse_reference_list_at(&mut self, position: usize) -> ParsedTypeNode {
+    fn parse_reference_list_with_definition_boundary_at(
+        &mut self,
+        position: usize,
+        stop_at_definition_content_start: bool,
+    ) -> ParsedTypeNode {
         let mut children = Vec::new();
         let mut recovery_nodes = Vec::new();
         let mut cursor = position;
@@ -1324,7 +1374,8 @@ impl Parser {
                 continue;
             }
 
-            if self.is_justification_recovery_boundary_at(cursor) {
+            if self.is_justification_recovery_boundary_at(cursor, stop_at_definition_content_start)
+            {
                 if expecting_reference {
                     self.diagnose_malformed_justification(cursor, "expected reference after `by`");
                     self.push_missing_proof_step(cursor, &mut children, &mut recovery_nodes);
@@ -1332,7 +1383,10 @@ impl Parser {
                 break;
             }
 
-            if let Some(reference) = self.parse_reference_at(cursor) {
+            if let Some(reference) = self.parse_reference_with_definition_boundary_at(
+                cursor,
+                stop_at_definition_content_start,
+            ) {
                 cursor = reference.next_position;
                 children.push(reference.id);
                 recovery_nodes.extend(reference.recovery_nodes);
@@ -1344,7 +1398,12 @@ impl Parser {
             } else {
                 self.diagnose_malformed_justification(cursor, "expected reference after `by`");
                 self.push_missing_proof_step(cursor, &mut children, &mut recovery_nodes);
-                if let Some(recovery) = self.recover_malformed_justification_tail(cursor) {
+                if let Some(recovery) = self
+                    .recover_malformed_justification_tail_with_definition_boundary(
+                        cursor,
+                        stop_at_definition_content_start,
+                    )
+                {
                     cursor = recovery.next_position;
                     children.push(recovery.id);
                     recovery_nodes.extend(recovery.recovery_nodes);
@@ -1358,9 +1417,15 @@ impl Parser {
                 continue;
             }
 
-            if !self.is_justification_recovery_boundary_at(cursor) {
+            if !self.is_justification_recovery_boundary_at(cursor, stop_at_definition_content_start)
+            {
                 self.diagnose_malformed_justification(cursor, "unexpected token in reference list");
-                if let Some(recovery) = self.recover_malformed_justification_tail(cursor) {
+                if let Some(recovery) = self
+                    .recover_malformed_justification_tail_with_definition_boundary(
+                        cursor,
+                        stop_at_definition_content_start,
+                    )
+                {
                     cursor = recovery.next_position;
                     children.push(recovery.id);
                     recovery_nodes.extend(recovery.recovery_nodes);
@@ -1386,11 +1451,18 @@ impl Parser {
         }
     }
 
-    fn parse_reference_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
-        self.parse_grouped_reference_at(position)
-            .or_else(|| self.parse_bulk_reference_at(position))
-            .or_else(|| self.parse_qualified_reference_at(position))
-            .or_else(|| self.parse_local_reference_at(position))
+    fn parse_reference_with_definition_boundary_at(
+        &mut self,
+        position: usize,
+        stop_at_definition_content_start: bool,
+    ) -> Option<ParsedTypeNode> {
+        self.parse_grouped_reference_with_definition_boundary_at(
+            position,
+            stop_at_definition_content_start,
+        )
+        .or_else(|| self.parse_bulk_reference_at(position))
+        .or_else(|| self.parse_qualified_reference_at(position))
+        .or_else(|| self.parse_local_reference_at(position))
     }
 
     fn parse_local_reference_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
@@ -1430,7 +1502,11 @@ impl Parser {
         })
     }
 
-    fn parse_grouped_reference_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+    fn parse_grouped_reference_with_definition_boundary_at(
+        &mut self,
+        position: usize,
+        stop_at_definition_content_start: bool,
+    ) -> Option<ParsedTypeNode> {
         let plan = self.compound_reference_plan_at(position, ".{")?;
         let namespace = self
             .emit_namespace_path_from_parts(&plan.namespace_segments, &plan.namespace_separators);
@@ -1464,7 +1540,8 @@ impl Parser {
                 }
                 break;
             }
-            if self.is_justification_recovery_boundary_at(cursor) {
+            if self.is_justification_recovery_boundary_at(cursor, stop_at_definition_content_start)
+            {
                 if expecting_item {
                     self.diagnose_malformed_justification(
                         cursor,
@@ -1485,7 +1562,12 @@ impl Parser {
                     "expected reference label in grouped citation",
                 );
                 self.push_missing_proof_step(cursor, &mut children, &mut recovery_nodes);
-                if let Some(recovery) = self.recover_malformed_justification_tail(cursor) {
+                if let Some(recovery) = self
+                    .recover_malformed_justification_tail_with_definition_boundary(
+                        cursor,
+                        stop_at_definition_content_start,
+                    )
+                {
                     cursor = recovery.next_position;
                     children.push(recovery.id);
                     recovery_nodes.extend(recovery.recovery_nodes);
@@ -1560,7 +1642,11 @@ impl Parser {
         })
     }
 
-    fn parse_computation_justification_at(&mut self, position: usize) -> ParsedTypeNode {
+    fn parse_computation_justification_with_definition_boundary_at(
+        &mut self,
+        position: usize,
+        stop_at_definition_content_start: bool,
+    ) -> ParsedTypeNode {
         let mut children = vec![self.token_node_ids[position]];
         let mut recovery_nodes = Vec::new();
         let mut cursor = position + 1;
@@ -1596,7 +1682,9 @@ impl Parser {
                     }
                     break;
                 }
-                if self.is_justification_recovery_boundary_at(cursor) {
+                if self
+                    .is_justification_recovery_boundary_at(cursor, stop_at_definition_content_start)
+                {
                     if expecting_option {
                         self.diagnose_malformed_justification(
                             cursor,
@@ -1614,7 +1702,12 @@ impl Parser {
                 } else {
                     self.diagnose_malformed_justification(cursor, "expected computation option");
                     self.push_missing_proof_step(cursor, &mut children, &mut recovery_nodes);
-                    if let Some(recovery) = self.recover_malformed_justification_tail(cursor) {
+                    if let Some(recovery) = self
+                        .recover_malformed_justification_tail_with_definition_boundary(
+                            cursor,
+                            stop_at_definition_content_start,
+                        )
+                    {
                         cursor = recovery.next_position;
                         children.push(recovery.id);
                         recovery_nodes.extend(recovery.recovery_nodes);
@@ -1629,13 +1722,21 @@ impl Parser {
                 }
 
                 if !self.is_reserved_symbol_at(cursor, ")")
-                    && !self.is_justification_recovery_boundary_at(cursor)
+                    && !self.is_justification_recovery_boundary_at(
+                        cursor,
+                        stop_at_definition_content_start,
+                    )
                 {
                     self.diagnose_malformed_justification(
                         cursor,
                         "unexpected token in computation justification",
                     );
-                    if let Some(recovery) = self.recover_malformed_justification_tail(cursor) {
+                    if let Some(recovery) = self
+                        .recover_malformed_justification_tail_with_definition_boundary(
+                            cursor,
+                            stop_at_definition_content_start,
+                        )
+                    {
                         cursor = recovery.next_position;
                         children.push(recovery.id);
                         recovery_nodes.extend(recovery.recovery_nodes);
@@ -1713,11 +1814,28 @@ impl Parser {
     }
 
     fn parse_proof_block_at(&mut self, position: usize) -> ParsedTypeNode {
+        self.parse_proof_block_with_definition_boundary_at(position, false)
+    }
+
+    fn parse_definition_content_proof_block_at(&mut self, position: usize) -> ParsedTypeNode {
+        self.parse_proof_block_with_definition_boundary_at(position, true)
+    }
+
+    fn parse_proof_block_with_definition_boundary_at(
+        &mut self,
+        position: usize,
+        stop_at_definition_content_start: bool,
+    ) -> ParsedTypeNode {
         let mut children = vec![self.token_node_ids[position]];
         let mut recovery_nodes = Vec::new();
         let mut cursor = position + 1;
 
-        cursor = self.parse_reasoning_body_at(cursor, &mut children, &mut recovery_nodes);
+        cursor = self.parse_reasoning_body_with_definition_boundary_at(
+            cursor,
+            &mut children,
+            &mut recovery_nodes,
+            stop_at_definition_content_start,
+        );
         if self.is_end_keyword_at(cursor) {
             children.push(self.token_node_ids[cursor]);
             cursor += 1;
@@ -2188,14 +2306,30 @@ impl Parser {
 
     fn parse_reasoning_body_at(
         &mut self,
+        cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) -> usize {
+        self.parse_reasoning_body_with_definition_boundary_at(
+            cursor,
+            children,
+            recovery_nodes,
+            false,
+        )
+    }
+
+    fn parse_reasoning_body_with_definition_boundary_at(
+        &mut self,
         mut cursor: usize,
         children: &mut Vec<SurfaceBuilderNodeId>,
         recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+        stop_at_definition_content_start: bool,
     ) -> usize {
         while cursor < self.request.tokens.len() {
             if self.is_end_keyword_at(cursor)
                 || self.is_item_start_at(cursor)
                 || self.is_case_branch_keyword_at(cursor)
+                || (stop_at_definition_content_start && self.is_definition_content_start_at(cursor))
             {
                 break;
             }
@@ -2628,6 +2762,9 @@ impl Parser {
         if self.is_notation_alias_start_at(position) {
             return Some(self.parse_notation_alias_at(position));
         }
+        if self.is_property_clause_keyword_at(position) {
+            return Some(self.parse_property_clause_at(position));
+        }
         if self.is_visibility_marker_at(position) && self.is_reserved_word_at(position + 1, "pred")
         {
             return Some(self.parse_visible_predicate_definition_at(position));
@@ -2753,7 +2890,9 @@ impl Parser {
         let mut recovery_nodes = Vec::new();
         let mut cursor = position + 1;
 
-        if let Some(justification) = self.parse_general_justification_at(cursor, true) {
+        if let Some(justification) =
+            self.parse_definition_content_general_justification_at(cursor, true)
+        {
             cursor = justification.next_position;
             children.push(justification.id);
             recovery_nodes.extend(justification.recovery_nodes);
@@ -3344,7 +3483,9 @@ impl Parser {
         let mut recovery_nodes = Vec::new();
         let mut cursor = position + 1;
 
-        if let Some(justification) = self.parse_general_justification_at(cursor, true) {
+        if let Some(justification) =
+            self.parse_definition_content_general_justification_at(cursor, true)
+        {
             cursor = justification.next_position;
             children.push(justification.id);
             recovery_nodes.extend(justification.recovery_nodes);
@@ -3369,6 +3510,49 @@ impl Parser {
 
         let id = self.events.emit(SyntaxEvent::Node {
             kind: SurfaceNodeKind::ModeProperty,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_property_clause_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if let Some(justification) =
+            self.parse_definition_content_general_justification_at(cursor, true)
+        {
+            cursor = justification.next_position;
+            children.push(justification.id);
+            recovery_nodes.extend(justification.recovery_nodes);
+        } else {
+            self.diagnose_malformed_justification(cursor, "expected property justification");
+            self.push_missing_proof_step(cursor, &mut children, &mut recovery_nodes);
+            if !self.is_semicolon_at(cursor)
+                && !self.is_definition_content_synchronization_boundary_at(cursor)
+                && let Some(recovery) = self.recover_malformed_definition_content_tail(cursor)
+            {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+        }
+
+        if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::PropertyClause,
             range: self.covering_token_range(position, cursor),
             children,
         });
@@ -8072,6 +8256,14 @@ impl Parser {
     }
 
     fn recover_malformed_justification_tail(&mut self, position: usize) -> Option<ParsedItem> {
+        self.recover_malformed_justification_tail_with_definition_boundary(position, false)
+    }
+
+    fn recover_malformed_justification_tail_with_definition_boundary(
+        &mut self,
+        position: usize,
+        stop_at_definition_content_start: bool,
+    ) -> Option<ParsedItem> {
         let mut cursor = position;
         let mut paren_depth = 0_usize;
         let mut bracket_depth = 0_usize;
@@ -8079,7 +8271,10 @@ impl Parser {
 
         while cursor < self.request.tokens.len() {
             let top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
-            if top_level && self.is_justification_recovery_boundary_at(cursor) {
+            if top_level
+                && self
+                    .is_justification_recovery_boundary_at(cursor, stop_at_definition_content_start)
+            {
                 break;
             }
 
@@ -8134,17 +8329,21 @@ impl Parser {
         }
     }
 
-    fn recover_unexpected_justification_tail(
+    fn recover_unexpected_justification_tail_with_definition_boundary(
         &mut self,
         cursor: usize,
         children: &mut Vec<SurfaceBuilderNodeId>,
         recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+        stop_at_definition_content_start: bool,
     ) -> usize {
-        if self.is_justification_recovery_boundary_at(cursor) {
+        if self.is_justification_recovery_boundary_at(cursor, stop_at_definition_content_start) {
             return cursor;
         }
         self.diagnose_malformed_justification(cursor, "unexpected token in justification");
-        if let Some(recovery) = self.recover_malformed_justification_tail(cursor) {
+        if let Some(recovery) = self.recover_malformed_justification_tail_with_definition_boundary(
+            cursor,
+            stop_at_definition_content_start,
+        ) {
             let next_position = recovery.next_position;
             children.push(recovery.id);
             recovery_nodes.extend(recovery.recovery_nodes);
@@ -8658,6 +8857,25 @@ impl Parser {
             || self.is_reserved_word_at(position, "antonym")
     }
 
+    fn is_property_clause_keyword_at(&self, position: usize) -> bool {
+        self.request.tokens.get(position).is_some_and(|token| {
+            token.kind == ParserTokenKind::ReservedWord
+                && matches!(
+                    token.text.as_ref(),
+                    "symmetry"
+                        | "asymmetry"
+                        | "connectedness"
+                        | "reflexivity"
+                        | "irreflexivity"
+                        | "commutativity"
+                        | "idempotence"
+                        | "involutiveness"
+                        | "projectivity"
+                        | "sethood"
+                )
+        })
+    }
+
     fn is_visible_theorem_target_start_at(&self, position: usize) -> bool {
         self.is_reserved_word_at(position, "theorem")
             || self.is_reserved_word_at(position, "lemma")
@@ -8753,7 +8971,11 @@ impl Parser {
         }
     }
 
-    fn is_justification_recovery_boundary_at(&self, position: usize) -> bool {
+    fn is_justification_recovery_boundary_at(
+        &self,
+        position: usize,
+        stop_at_definition_content_start: bool,
+    ) -> bool {
         position >= self.request.tokens.len()
             || self.is_semicolon_at(position)
             || self.is_end_keyword_at(position)
@@ -8765,6 +8987,7 @@ impl Parser {
             || self.is_item_start_at(position)
             || self.is_case_branch_keyword_at(position)
             || self.is_statement_boundary_keyword_at(position)
+            || (stop_at_definition_content_start && self.is_definition_content_start_at(position))
     }
 
     fn is_theorem_item_tail_boundary_at(&self, position: usize) -> bool {
@@ -8871,6 +9094,7 @@ impl Parser {
             || self.is_reserved_word_at(position, "func")
             || self.is_reserved_word_at(position, "mode")
             || self.theorem_role_position_at(position).is_some()
+            || self.is_property_clause_keyword_at(position)
             || (self.is_visibility_marker_at(position)
                 && self.is_reserved_word_at(position + 1, "pred"))
             || (self.is_visibility_marker_at(position)
@@ -8891,6 +9115,15 @@ impl Parser {
                         | "func"
                         | "mode"
                         | "sethood"
+                        | "symmetry"
+                        | "asymmetry"
+                        | "connectedness"
+                        | "reflexivity"
+                        | "irreflexivity"
+                        | "commutativity"
+                        | "idempotence"
+                        | "involutiveness"
+                        | "projectivity"
                         | "struct"
                         | "redefine"
                         | "property"
@@ -14411,6 +14644,297 @@ mod tests {
             )) >= 2,
             "malformed coherence tails should insert MissingProofStep"
         );
+    }
+
+    #[test]
+    fn parser_parses_task28_property_clauses() {
+        let source_id = source_id(191);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("definition", ParserTokenKind::ReservedWord),
+                    ("symmetry", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("asymmetry", ParserTokenKind::ReservedWord),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("connectedness", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("computation", ParserTokenKind::ReservedWord),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("steps", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("1", ParserTokenKind::Numeral),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("reflexivity", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("irreflexivity", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("commutativity", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("idempotence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("involutiveness", ParserTokenKind::ReservedWord),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("projectivity", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("computation", ParserTokenKind::ReservedWord),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("steps", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("1", ParserTokenKind::Numeral),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("sethood", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "task-28 property clauses should parse without diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("task-28 property clauses should keep an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::PropertyClause)),
+            10
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::ModeProperty)),
+            0,
+            "standalone sethood property items use the generic task-28 node"
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::JustificationClause
+            )),
+            8
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ComputationJustification
+            )),
+            2
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::ProofBlock)),
+            2
+        );
+
+        let property_texts = ast
+            .nodes()
+            .iter()
+            .filter(|node| matches!(node.kind, SurfaceNodeKind::PropertyClause))
+            .map(|node| subtree_token_texts(&ast, node))
+            .collect::<Vec<_>>();
+        for expected_keyword in [
+            "symmetry",
+            "asymmetry",
+            "connectedness",
+            "reflexivity",
+            "irreflexivity",
+            "commutativity",
+            "idempotence",
+            "involutiveness",
+            "projectivity",
+            "sethood",
+        ] {
+            assert!(
+                property_texts.iter().any(|texts| texts
+                    .first()
+                    .is_some_and(|text| text.as_str() == expected_keyword)),
+                "property clause should preserve keyword {expected_keyword}"
+            );
+        }
+    }
+
+    #[test]
+    fn parser_recovers_task28_property_clause_gaps() {
+        let source_id = source_id(192);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("definition", ParserTokenKind::ReservedWord),
+                    ("symmetry", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("commutativity", ParserTokenKind::ReservedWord),
+                    ("junk", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("sethood", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("reflexivity", ParserTokenKind::ReservedWord),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("end", ParserTokenKind::ReservedWord),
+                    ("irreflexivity", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MalformedJustification)
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MissingSemicolon)
+        );
+        let ast = output
+            .ast
+            .expect("task-28 malformed property clauses should recover an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::PropertyClause)),
+            5
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingProofStep)
+            )) >= 3,
+            "missing property justifications should insert MissingProofStep recovery"
+        );
+        assert!(
+            ast.nodes().iter().any(|node| {
+                matches!(node.kind, SurfaceNodeKind::PropertyClause)
+                    && subtree_token_texts(&ast, node)
+                        .iter()
+                        .map(String::as_str)
+                        .eq(["irreflexivity", "by", "Ref", ";"])
+            }),
+            "missing semicolon after the preceding property must preserve the next property item"
+        );
+    }
+
+    #[test]
+    fn parser_preserves_property_items_after_malformed_property_justifications() {
+        let source_id = source_id(193);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("definition", ParserTokenKind::ReservedWord),
+                    ("symmetry", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("irreflexivity", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("asymmetry", ParserTokenKind::ReservedWord),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("connectedness", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("mode", ParserTokenKind::ReservedWord),
+                    ("Broken", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("Carrier", ParserTokenKind::Identifier),
+                    ("is", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("sethood", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("projectivity", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MalformedJustification)
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MissingSemicolon)
+        );
+        let ast = output
+            .ast
+            .expect("malformed property justifications should recover an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::PropertyClause)),
+            5,
+            "malformed property justifications must preserve following property items"
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::ModeProperty)),
+            1,
+            "the malformed immediate sethood property remains attached to the mode definition"
+        );
+        for expected in [
+            &["irreflexivity", "by", "Ref", ";"][..],
+            &["connectedness", "by", "Ref", ";"][..],
+            &["projectivity", "by", "Ref", ";"][..],
+        ] {
+            assert!(
+                ast.nodes().iter().any(|node| {
+                    matches!(node.kind, SurfaceNodeKind::PropertyClause)
+                        && subtree_token_texts(&ast, node)
+                            .iter()
+                            .map(String::as_str)
+                            .eq(expected.iter().copied())
+                }),
+                "following property item {expected:?} should remain parseable"
+            );
+        }
     }
 
     #[test]

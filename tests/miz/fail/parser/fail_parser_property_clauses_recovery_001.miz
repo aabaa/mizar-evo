@@ -1,0 +1,8 @@
+definition
+  symmetry;
+  commutativity junk;
+  sethood by;
+  reflexivity proof
+  end
+  irreflexivity by Ref;
+end;

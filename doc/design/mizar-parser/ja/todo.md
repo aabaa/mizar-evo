@@ -632,7 +632,7 @@ resolver / build-system 依存を避ける。
       corpus fixture、visibility coverage、redefinition recovery、unsupported-mode
       fallback preservation、traceability metadata が task-27 surface を覆う。
 
-28. **property 句。** [ ]
+28. **property 句。** [x]
     - 定義種別にまたがる property 句（`commutativity`、`idempotence`、
       `involutiveness`、`projectivity`、`reflexivity`、`irreflexivity`、
       `symmetry`、`asymmetry`、`connectedness`、`transitivity`、`sethood`
@@ -642,6 +642,15 @@ resolver / build-system 依存を避ける。
       [07.modes.md](../../../spec/ja/07.modes.md)、
       [09.predicates.md](../../../spec/ja/09.predicates.md)、
       [10.functors.md](../../../spec/ja/10.functors.md)。
+    - 結果: canonical な predicate property keyword（`symmetry`、`asymmetry`、
+      `connectedness`、`reflexivity`、`irreflexivity`）、functor property keyword
+      （`commutativity`、`idempotence`、`involutiveness`、`projectivity`）、および
+      standalone `sethood` property item の `PropertyClause` parsing を実装した。
+      `mode` definition 直後の `sethood` は task-26 の `ModeProperty` のまま保持する。
+      TODO 文言に含まれる `transitivity` は canonical property production との
+      design drift であり、実装していない。parser unit test、active parse-only
+      pass/fail corpus fixture、recovery coverage、traceability metadata が task-28
+      surface を覆う。
 
 29. **構造体。** [ ]
     - `struct` 定義: フィールド、継承／`extends`、selector 宣言。

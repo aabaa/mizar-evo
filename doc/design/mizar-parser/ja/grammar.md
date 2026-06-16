@@ -1596,6 +1596,47 @@ recovery、active parse-only pass/fail corpus coverage、Chapter 6 §6.7、Chapt
 §9.6、Chapter 10 §10.7、Chapter 11 §11.1 / §11.6、Appendix A.11 への traceability を
 固定する必要がある。
 
+### Task 28: Property Clauses
+
+Task 28 は syntax-only の definition-content property 句を追加する。parser は canonical
+grammar に列挙される property keyword だけを受理する。Chapter 9 の predicate property、
+Chapter 10 の functor property、Chapter 7 / Appendix A の standalone mode `sethood` である。
+現在の `doc/spec/en` の property production には `transitivity` がないため、これを property
+句として創作しない。また、形が曖昧な `property_impl` block surface もこの task では
+実装しない。
+
+```ebnf
+definition_content     ::= ... | property_item ;
+property_item          ::= pred_property | func_property | mode_property ;
+pred_property          ::= ( "symmetry" | "asymmetry" | "connectedness"
+                           | "reflexivity" | "irreflexivity" )
+                           justification ";" ;
+func_property          ::= ( "commutativity" | "idempotence"
+                           | "involutiveness" | "projectivity" )
+                           justification ";" ;
+mode_property          ::= "sethood" justification ";" ;
+```
+
+`PropertyClause` は property keyword、存在する場合の必須 general justification
+（`by` references、`by computation(...)`、または `proof ... end`）、任意の recovery、
+存在する場合の property semicolon を所有する。`mode` definition 直後の `sethood` 句は
+引き続き task-26 の `ModeProperty` として `ModeDefinition` に所有される。standalone の
+`sethood` property item は `PropertyClause` を使う。
+
+Task 28 recovery は definition-content synchronization を再利用する。property
+justification の欠落または malformed syntax は、proof placeholder が必要な場合に
+`MalformedJustification` と `MissingProofStep` を使う。malformed property tail は
+semicolon、`end`、次の definition-content start、top-level item boundary、または EOF まで
+skip してよい。property semicolon 欠落は `MissingSemicolon` を使い、別の property 句を
+含む後続 definition item を消費せずに継続する。
+
+Task 28 tests は、canonical predicate / functor property keyword 一式、standalone
+`sethood`、citation / computation / proof justification、task-26 の mode-attached
+`ModeProperty` の保持、missing / malformed justification recovery、別 property item
+直前の missing semicolon recovery、active parse-only pass/fail corpus coverage、Chapter 7
+§7.8.1、Chapter 9 §9.5.1、Chapter 10 §10.6.1、Appendix A.12 への traceability を
+固定する必要がある。
+
 ## 公開 enum の互換性
 
 `ParserTokenKind` は downstream crate 向けに `#[non_exhaustive]` とする。parser-facing

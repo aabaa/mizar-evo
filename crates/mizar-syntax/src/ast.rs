@@ -153,6 +153,7 @@ pub enum SyntaxKind {
     CoherenceCondition = 128,
     NotationAlias = 129,
     NotationPattern = 130,
+    PropertyClause = 131,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -287,6 +288,7 @@ impl SyntaxKind {
             128 => Self::CoherenceCondition,
             129 => Self::NotationAlias,
             130 => Self::NotationPattern,
+            131 => Self::PropertyClause,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -423,6 +425,7 @@ impl SyntaxKind {
                 | Self::CoherenceCondition
                 | Self::NotationAlias
                 | Self::NotationPattern
+                | Self::PropertyClause
         )
     }
 
@@ -1354,6 +1357,13 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_property_clause(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::PropertyClause => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_let_statement(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::LetStatement => Some(self),
@@ -1934,6 +1944,7 @@ pub enum SurfaceNodeKind {
     CoherenceCondition,
     NotationAlias,
     NotationPattern,
+    PropertyClause,
     SelectorAccess,
     StructureUpdate,
     FieldUpdate,
@@ -2059,6 +2070,7 @@ impl SurfaceNodeKind {
             Self::CoherenceCondition => SyntaxKind::CoherenceCondition,
             Self::NotationAlias => SyntaxKind::NotationAlias,
             Self::NotationPattern => SyntaxKind::NotationPattern,
+            Self::PropertyClause => SyntaxKind::PropertyClause,
             Self::SelectorAccess => SyntaxKind::SelectorAccess,
             Self::StructureUpdate => SyntaxKind::StructureUpdate,
             Self::FieldUpdate => SyntaxKind::FieldUpdate,
@@ -2348,6 +2360,7 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::CoherenceCondition => output.push_str("CoherenceCondition"),
         SurfaceNodeKind::NotationAlias => output.push_str("NotationAlias"),
         SurfaceNodeKind::NotationPattern => output.push_str("NotationPattern"),
+        SurfaceNodeKind::PropertyClause => output.push_str("PropertyClause"),
         SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
@@ -3483,6 +3496,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            task28_property_clause_nodes_ast(source_id(42))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -3576,6 +3595,7 @@ mod tests {
             SyntaxKind::CoherenceCondition,
             SyntaxKind::NotationAlias,
             SyntaxKind::NotationPattern,
+            SyntaxKind::PropertyClause,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -5310,6 +5330,18 @@ mod tests {
                 "snapshot should render task-27 line {expected}"
             );
         }
+    }
+
+    #[test]
+    fn task28_typed_accessors_cover_property_clause_nodes() {
+        let ast = task28_property_clause_nodes_ast(source_id(43));
+        let root = ast.root_view().unwrap();
+        let view = first_view(root, |kind| matches!(kind, SurfaceNodeKind::PropertyClause))
+            .expect("task-28 property clause fixture should contain PropertyClause");
+
+        assert_eq!(view.syntax_kind(), SyntaxKind::PropertyClause);
+        assert!(view.as_property_clause().is_some());
+        assert!(ast.snapshot_text().contains("PropertyClause"));
     }
 
     #[test]
@@ -9203,6 +9235,63 @@ mod tests {
                 predicate_redefinition,
                 functor_redefinition,
                 alias,
+            ],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn task28_property_clause_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let property_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "symmetry",
+            range(source_id, 0, 8),
+        );
+        let by = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "by",
+            range(source_id, 9, 11),
+        );
+        let reference_name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Ref",
+            range(source_id, 12, 15),
+        );
+        let semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 15, 16),
+        );
+
+        let reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 12, 15),
+            vec![reference_name],
+        );
+        let references = builder.add_node(
+            SurfaceNodeKind::ReferenceList,
+            range(source_id, 12, 15),
+            vec![reference],
+        );
+        let justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 9, 15),
+            vec![by, references],
+        );
+        let property_clause = builder.add_node(
+            SurfaceNodeKind::PropertyClause,
+            range(source_id, 0, 16),
+            vec![property_keyword, justification, semicolon],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 16),
+            vec![
+                property_keyword,
+                by,
+                reference_name,
+                semicolon,
+                property_clause,
             ],
         );
         builder.finish(Some(root), None)

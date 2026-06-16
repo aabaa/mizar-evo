@@ -1120,6 +1120,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.syntax.property_clauses.parser"
+source = "doc/spec/en/appendix_a.grammar_summary.md"
+section = "A.7 Modes; A.9 Predicates; A.10 Functors; A.12 Top-Level Items"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_property_clauses_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_property_clauses_recovery_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.syntax.template_arguments.parser"
 source = "doc/spec/en/appendix_a.grammar_summary.md"
 section = "A.9 Predicates; A.10 Functors; A.18 Templates"

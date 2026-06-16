@@ -652,7 +652,7 @@ older numeric syntax task references appear to disagree, prefer
       fallback preservation, and traceability metadata cover the task-27
       surface.
 
-28. **Property clauses.** [ ]
+28. **Property clauses.** [x]
     - Property clauses across definition kinds (`commutativity`,
       `idempotence`, `involutiveness`, `projectivity`, `reflexivity`,
       `irreflexivity`, `symmetry`, `asymmetry`, `connectedness`,
@@ -661,6 +661,16 @@ older numeric syntax task references appear to disagree, prefer
       [07.modes.md](../../../spec/en/07.modes.md),
       [09.predicates.md](../../../spec/en/09.predicates.md),
       [10.functors.md](../../../spec/en/10.functors.md).
+    - Result: implemented `PropertyClause` parsing for the canonical predicate
+      property keywords (`symmetry`, `asymmetry`, `connectedness`,
+      `reflexivity`, `irreflexivity`), functor property keywords
+      (`commutativity`, `idempotence`, `involutiveness`, `projectivity`), and
+      standalone `sethood` property items. Mode-attached `sethood` immediately
+      following a `mode` definition remains task-26 `ModeProperty`. The TODO
+      wording's `transitivity` entry is a design drift against the canonical
+      property productions and remains unimplemented. Parser unit tests, active
+      parse-only pass/fail corpus fixtures, recovery coverage, and
+      traceability metadata cover the task-28 surface.
 
 29. **Structures.** [ ]
     - `struct` definitions: fields, inheritance/`extends`, selector

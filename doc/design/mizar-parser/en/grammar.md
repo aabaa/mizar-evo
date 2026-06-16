@@ -1705,6 +1705,50 @@ visibility-wrapped redefinitions and aliases; absence of concrete
 parse-only pass/fail corpus coverage; and traceability to Chapter 6 §6.7,
 Chapter 9 §9.6, Chapter 10 §10.7, Chapter 11 §11.1 / §11.6, and Appendix A.11.
 
+### Task 28: Property Clauses
+
+Task 28 adds syntax-only definition-content property clauses. The parser
+accepts only the property keywords listed in the canonical grammar: predicate
+properties from Chapter 9, functor properties from Chapter 10, and standalone
+mode `sethood` from Chapter 7 / Appendix A. It does not invent `transitivity`
+as a property clause because the current `doc/spec/en` property productions do
+not list it, and it does not implement the ambiguous `property_impl` block
+surface.
+
+```ebnf
+definition_content     ::= ... | property_item ;
+property_item          ::= pred_property | func_property | mode_property ;
+pred_property          ::= ( "symmetry" | "asymmetry" | "connectedness"
+                           | "reflexivity" | "irreflexivity" )
+                           justification ";" ;
+func_property          ::= ( "commutativity" | "idempotence"
+                           | "involutiveness" | "projectivity" )
+                           justification ";" ;
+mode_property          ::= "sethood" justification ";" ;
+```
+
+`PropertyClause` owns the property keyword, a required general justification
+(`by` references, `by computation(...)`, or `proof ... end`) when present,
+optional recovery, and the property semicolon when present. A `sethood` clause
+immediately following a `mode` definition is still owned by the `ModeDefinition`
+as task-26 `ModeProperty`; standalone `sethood` property items use
+`PropertyClause`.
+
+Task 28 recovery reuses definition-content synchronization. Missing or
+malformed property justifications use `MalformedJustification` and
+`MissingProofStep` where an inserted proof placeholder is needed. Malformed
+property tails may skip to a semicolon, `end`, the next definition-content
+start, a top-level item boundary, or EOF. Missing property semicolons use
+`MissingSemicolon` and continue without consuming a following definition item,
+including another property clause.
+
+Task 28 tests must pin: all canonical predicate and functor property keywords,
+standalone `sethood`, citation/computation/proof justifications, preservation
+of task-26 mode-attached `ModeProperty`, missing/malformed justification
+recovery, missing semicolon recovery before another property item, active
+parse-only pass/fail corpus coverage, and traceability to Chapter 7 §7.8.1,
+Chapter 9 §9.5.1, Chapter 10 §10.6.1, and Appendix A.12.
+
 ## Public Enum Compatibility
 
 `ParserTokenKind` is `#[non_exhaustive]` for downstream crates. The parser token

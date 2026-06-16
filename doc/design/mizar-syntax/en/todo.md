@@ -443,7 +443,13 @@ interaction. Spec references are the normative grammar chapters under
       recovery, active parse-only pass/fail corpus coverage, and traceability
       metadata. `redefine mode` remains a placeholder/recovery boundary rather
       than a concrete node because the canonical grammar defines no mode
-      redefinition. S-015 remains open for parser tasks 28-30.
+      redefinition. Parser task 28 is complete for property clauses:
+      `PropertyClause` is implemented with a typed accessor, canonical
+      predicate/functor/standalone `sethood` keyword coverage, general
+      justification recovery, active parse-only pass/fail corpus coverage, and
+      traceability metadata. `transitivity` remains unimplemented because the
+      canonical property productions do not define it as a property clause.
+      S-015 remains open for parser tasks 29-30.
     - Spec: [06.attributes.md](../../../spec/en/06.attributes.md),
       [07.modes.md](../../../spec/en/07.modes.md),
       [09.predicates.md](../../../spec/en/09.predicates.md),

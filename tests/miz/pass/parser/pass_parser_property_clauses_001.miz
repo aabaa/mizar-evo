@@ -1,0 +1,18 @@
+import parser.type_fixtures;
+
+definition
+  symmetry by Ref;
+  asymmetry proof
+    thus thesis;
+  end;
+  connectedness by computation(steps: 1);
+  reflexivity by Ref;
+  irreflexivity by Ref;
+  commutativity by Ref;
+  idempotence by Ref;
+  involutiveness proof
+    thus thesis;
+  end;
+  projectivity by computation(steps: 1);
+  sethood by Ref;
+end;
