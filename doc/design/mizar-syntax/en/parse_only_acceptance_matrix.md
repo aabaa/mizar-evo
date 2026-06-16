@@ -101,7 +101,7 @@ the owning parser task can parse the surrounding construct.
 | Annotations | `PO-ANN-P03` | positive | `registration @custom(flag) cluster C: non empty set; existence by A; end;` | `accept` | `registration_block`, `registration_content`, `annotation`, `registration_item` | `mizar-test` | A.17, A.21 |
 | Annotations | `PO-ANN-P04` | positive | `theorem T: thesis proof @custom(flag) thus thesis; end;` | `accept` | `proof`, `annotated_statement`, `annotation`, `conclusion` | `mizar-test` | A.15, A.16, A.21 |
 | Annotations | `PO-ANN-P05` | positive | `definition algorithm f() do @custom(flag) return; end; end;` | `accept` | `algorithm_def`, `annotated_algo_statement`, `annotation`, `return_stmt` | `mizar-test` | A.20, A.21 |
-| Annotations | `PO-ANN-P06` | positive | `claim C do @custom(flag) theorem T: thesis; end;` | `accept` | `claim_block`, `annotated_theorem_item`, `annotation`, `theorem_item` | `mizar-test` | A.20, A.21 |
+| Annotations | `PO-ANN-P06` | positive | `claim C do @custom(flag) theorem T: thesis; end;` | `accept`: deferred until parser task 35; task 32 rejects claim-local annotation prefixes as recovery input. | `claim_block`, `annotated_theorem_item`, `annotation`, `theorem_item` | `mizar-test` | A.20, A.21 |
 | Annotations | `PO-ANN-N01` | negative | `@latex(123) theorem T: thesis;` | `reject`: fixed `@latex` annotations require a string literal argument. | `annotated_declaration`, `annotation`, `latex_annotation` | `mizar-parser` | A.12, A.21 |
 | Annotations | `PO-ANN-A01` | ambiguous | `@custom(flag, 3) theorem T: thesis;` | `ambiguous-preserve-surface`: generic annotation names and contextual argument validity are semantic or registry checks. | `annotated_declaration`, `annotation`, `statement_annotation`, `generic_annotation_name`, `annotation_args` | `mizar-test` | A.12, A.21 |
 | Annotations | `PO-ANN-R01` | recovery-required | `@proof_hint(max_axioms: ) theorem T: thesis;` | `recover`: `malformed_annotation` for a missing option value. | `proof_hint_annotation`, `proof_hint_option` | `mizar-parser` | A.21 |
@@ -115,7 +115,7 @@ the owning parser task can parse the surrounding construct.
 | Templates | `PO-TPL-N01` | negative | `definition let F be func(set); theorem T: thesis; end;` | `reject`: `func_param` requires `-> type_expression`. | `func_param`, `type_list` | `mizar-parser` | A.18 |
 | Templates | `PO-TPL-A01` | ambiguous | `theorem T: thesis proof thus thesis by Scheme[T, x qua R], A; end;` | `ambiguous-preserve-surface`: scheme application currently overlaps with `simple_justification` plus `reference [ template_args ]`; `param_name`, `type_arg_list`, `type_arg`, and `qua_arg` must stay explicit fixture-planning inputs until the helper is removed or repurposed. | `scheme_app`, `param_name`, `simple_justification`, `reference`, `template_args`, `template_arg`, `qua_arg` | `pure-spec` | A.3, A.15, A.18 |
 | Templates | `PO-TPL-R01` | recovery-required | `theorem T: thesis by P[set, x qua R;` | `recover`: `missing_delimiter` for unclosed `template_args`. | `reference`, `template_args`, `template_arg`, `qua_arg` | `mizar-parser` | A.3, A.15, A.18 |
-| Algorithms | `PO-ALG-P01` | positive | `definition algorithm f(x) -> set requires thesis do var y := x; return y; end; end;` | `accept` | `definition_block`, `algorithm_def`, `algorithm_body`, `var_decl`, `return_stmt` | `mizar-test` | A.12, A.20 |
+| Algorithms | `PO-ALG-P01` | positive | `definition algorithm f(x) -> set do var y := x; return y; end; end;` | `accept`: header contracts such as `requires` are a task-34 extension. | `definition_block`, `algorithm_def`, `algorithm_body`, `var_decl`, `return_stmt` | `mizar-test` | A.12, A.20 |
 | Algorithms | `PO-ALG-N01` | negative | `definition algorithm f() do claim C do theorem T: thesis; end; end; end;` | `reject`: `claim_block` is top-level declaration content, not `algo_statement`. | `algorithm_def`, `algo_statement`, `claim_block` | `mizar-parser` | A.12, A.20 |
 | Algorithms | `PO-ALG-A01` | ambiguous | `definition algorithm f() do x.y := z; snapshot S; end; end;` | `ambiguous-preserve-surface`: dotted `lvalue` stays syntactic until selector and namespace roles are resolved. | `assignment`, `lvalue`, `snapshot_stmt` | `pure-spec` | A.2, A.20 |
 | Algorithms | `PO-ALG-R01` | recovery-required | `definition algorithm f() do if thesis do return; end;` | `recover`: `missing_end` for the surrounding `algorithm_body` or `definition_block` after a nested control block. | `algorithm_def`, `if_stmt`, `algorithm_body` | `mizar-parser` | A.20 |
@@ -130,11 +130,15 @@ the owning parser task can parse the surrounding construct.
   `definition_block`, inside `registration_block`, inside proofs, inside
   algorithm bodies, and inside `claim_block` theorem lists. The matrix rows
   above select representative owners; later parser tasks should add the
-  remaining attachment sites when their enclosing productions land.
+  remaining attachment sites when their enclosing productions land. Claim-block
+  annotation attachment remains deferred until parser task 35.
 - Dot-chain coverage must include module paths, qualified symbols, qualified
   references, grouped references, bulk references, selector access/update,
   algorithm lvalues, and active `.` user-symbol cases. Parse-only expectations
-  must stay syntax-only.
+  must stay syntax-only. Active `.miz` coverage for dotted algorithm lvalues is
+  deferred until frontend dot-role disambiguation can carry that surface through
+  the parse-only corpus; parser-unit coverage may pin the task-32 `Lvalue`
+  surface earlier.
 - Term boundary coverage must include `the type_expression`, parenthesized and
   unparenthesized `qua`, chained `qua`, and `with (...)` update boundaries.
 - Statement coverage must include `x = y by A;`,

@@ -1,0 +1,34 @@
+schema_version = 1
+id = "fail_parser_algorithms_claims_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.algorithms_claims"
+source = "fail_parser_algorithms_claims_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_algorithm_claim_surfaces"
+stable_detail_key = "parser.algorithms_claims.recovery"
+diagnostic_codes = [
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_type_expression",
+  "malformed_formula_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "missing_semicolon",
+  "malformed_term_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "missing_semicolon",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = [
+  "spec.en.20.algorithms_claims.parser",
+]
+notes = "Active task-32 parse-only recovery coverage for malformed algorithm schema loci, parameter lists, missing return types, misplaced claim blocks inside algorithm bodies, declaration bindings, ghost assignments, snapshots, return tails, assignment terms, missing algorithm-definition semicolon recovery, malformed claim targets, malformed claim content, deferred claim annotations, and missing claim semicolon recovery."

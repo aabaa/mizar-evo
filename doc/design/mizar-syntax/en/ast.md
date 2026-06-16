@@ -151,6 +151,17 @@ green tree.
 | template locus node | `SyntaxKind::TemplateLocus` |
 | template arguments list node | `SyntaxKind::TemplateArguments` |
 | template argument node | `SyntaxKind::TemplateArgument` |
+| algorithm definition node | `SyntaxKind::AlgorithmDefinition` |
+| algorithm parameter list node | `SyntaxKind::AlgorithmParameters` |
+| algorithm body node | `SyntaxKind::AlgorithmBody` |
+| algorithm statement list node | `SyntaxKind::AlgorithmStatementList` |
+| variable declaration node | `SyntaxKind::VariableDeclaration` |
+| variable binding node | `SyntaxKind::VariableBinding` |
+| assignment statement node | `SyntaxKind::AssignmentStatement` |
+| lvalue node | `SyntaxKind::Lvalue` |
+| snapshot statement node | `SyntaxKind::SnapshotStatement` |
+| return statement node | `SyntaxKind::ReturnStatement` |
+| claim block item node | `SyntaxKind::ClaimBlockItem` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -332,11 +343,22 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 148 | `TemplateLocus` | task-31 single pattern-side template locus |
 | 149 | `TemplateArguments` | task-31 call/reference-side template argument list |
 | 150 | `TemplateArgument` | task-31 single call/reference-side template argument |
+| 151 | `AlgorithmDefinition` | task-32 `algorithm ... do ... end;` definition content |
+| 152 | `AlgorithmParameters` | task-32 algorithm formal parameter list |
+| 153 | `AlgorithmBody` | task-32 algorithm `do ... end` body |
+| 154 | `AlgorithmStatementList` | task-32 source-ordered algorithm statement list |
+| 155 | `VariableDeclaration` | task-32 `var` / `const` / ghost declaration statement |
+| 156 | `VariableBinding` | task-32 single declaration binding |
+| 157 | `AssignmentStatement` | task-32 assignment or ghost assignment statement |
+| 158 | `Lvalue` | task-32 syntactic assignment target |
+| 159 | `SnapshotStatement` | task-32 `snapshot` statement |
+| 160 | `ReturnStatement` | task-32 `return` statement |
+| 161 | `ClaimBlockItem` | task-32 top-level `claim ... do ... end;` item |
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
 above, including `Root` through task-22 `ProofBlock`, task-23
-`DefinitionBlockItem` through task-31 `TemplateArgument`, the compatibility
+`DefinitionBlockItem` through task-32 `ClaimBlockItem`, the compatibility
 `Token` wrapper, and `ErrorRecovery`; `is_token_kind` is true only for token
 leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future raw values should be
 appended or assigned into a documented reserved range so existing snapshots and
@@ -451,6 +473,17 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::TemplateLocus` | none | `SyntaxKind::TemplateLocus` | parser task-31 single pattern-side template locus identifier or missing-term recovery |
 | `SurfaceNodeKind::TemplateArguments` | none | `SyntaxKind::TemplateArguments` | parser task-31 call/reference-side `[` template argument list `]`; owns delimiters, comma tokens, and `TemplateArgument` children or recovery |
 | `SurfaceNodeKind::TemplateArgument` | none | `SyntaxKind::TemplateArgument` | parser task-31 single template actual, wrapping a `TypeExpression`, `TermExpression` / `QuaExpression`, or missing-type recovery |
+| `SurfaceNodeKind::AlgorithmDefinition` | none | `SyntaxKind::AlgorithmDefinition` | parser task-32 definition content for `algorithm name [template_loci] (parameters) [-> type] do ... end;`; owns the name, optional identifier-only `TemplateLoci`, `AlgorithmParameters`, optional return `TypeExpression`, `AlgorithmBody`, and trailing semicolon; header contracts remain task 34 |
+| `SurfaceNodeKind::AlgorithmParameters` | none | `SyntaxKind::AlgorithmParameters` | parser task-32 algorithm formal list; owns `(`, comma-separated identifier tokens or missing-term recovery, and `)` / delimiter recovery |
+| `SurfaceNodeKind::AlgorithmBody` | none | `SyntaxKind::AlgorithmBody` | parser task-32 `do ... end` algorithm body; owns the `do` token when present, an `AlgorithmStatementList`, and `end` / missing-end recovery |
+| `SurfaceNodeKind::AlgorithmStatementList` | none | `SyntaxKind::AlgorithmStatementList` | parser task-32 source-ordered body statements for declarations, assignments, snapshots, and returns; control flow, verification statements, and annotations remain parser tasks 33-35 |
+| `SurfaceNodeKind::VariableDeclaration` | none | `SyntaxKind::VariableDeclaration` | parser task-32 `var` / `const` declaration, optionally prefixed by `ghost`; owns one or more `VariableBinding` children, optional shared `as TypeExpression`, optional syntax-level justification, and the semicolon or recovery |
+| `SurfaceNodeKind::VariableBinding` | none | `SyntaxKind::VariableBinding` | parser task-32 declaration binding; owns a binding identifier plus optional `:= TermExpression` initializer or missing-term recovery |
+| `SurfaceNodeKind::AssignmentStatement` | none | `SyntaxKind::AssignmentStatement` | parser task-32 assignment statement, optionally prefixed by `ghost`; owns an `Lvalue`, `:=`, assigned `TermExpression` or recovery, and the semicolon or recovery |
+| `SurfaceNodeKind::Lvalue` | none | `SyntaxKind::Lvalue` | parser task-32 syntactic assignment target; owns an identifier and optional dotted identifier segments without resolving selector versus namespace roles |
+| `SurfaceNodeKind::SnapshotStatement` | none | `SyntaxKind::SnapshotStatement` | parser task-32 `snapshot` statement; owns the snapshot identifier and semicolon or recovery |
+| `SurfaceNodeKind::ReturnStatement` | none | `SyntaxKind::ReturnStatement` | parser task-32 `return` statement; owns optional returned `TermExpression`, optional syntax-level justification, and semicolon or recovery |
+| `SurfaceNodeKind::ClaimBlockItem` | none | `SyntaxKind::ClaimBlockItem` | parser task-32 top-level `claim algorithm_name do ... end;` item; owns bare theorem/lemma children and defers claim-local annotations to task 35 |
 | `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host plus parser task-22 proof justification host; owns one `Proposition`, one `JustificationClause` or `ProofBlock`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |

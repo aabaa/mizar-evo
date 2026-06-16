@@ -83,6 +83,9 @@ resolver / build-system 依存を避ける。
 - template 引数: task 31 で完了。`pass_parser_template_arguments_001`、
   `pass_parser_template_references_001`、
   `fail_parser_template_arguments_chained_iff_001` は active parse-only case である。
+- algorithm / claim basics: task 32 で完了。
+  `pass_parser_algorithms_claims_001` と
+  `fail_parser_algorithms_claims_recovery_001` は active parse-only case である。
 - まだ必要な受理ケース: `by` 参照付き `let` 制約、witness 付き `take`、
   条件付き definiens、Fraenkel generator、`qua` 連鎖、述語連鎖。
 - まだ必要な拒否ケース: 非結合演算子の連鎖、builtin/user 述語連鎖の混在、
@@ -187,6 +190,9 @@ resolver / build-system 依存を避ける。
      提供した後、コミット済みの template 引数 seed case を active runner に
      promote する。active set には reference-citation template argument seed も
      含まれる。
+   - task 32 は active algorithm/claim pass/fail case と、source-level の
+     algorithm body / ghost assignment coverage に必要な frontend scope-skeleton
+     support を追加した。
    - テスト: active / inactive discovery は決定的である。active tag の誤用は
      harness error になる。意図的に不一致にした sidecar は失敗する。seed した
      pass / fail case は diagnostics を強制する。`parse-only` CLI は active runner
@@ -707,10 +713,16 @@ resolver / build-system 依存を避ける。
     - 依存: 30、`mizar-syntax` task 16 / S-016。仕様:
       [18.templates.md](../../../spec/ja/18.templates.md)。
 
-32. **algorithm ブロック・代入・宣言・claim。** [ ]
+32. **algorithm ブロック・代入・宣言・claim。** [x]
     - `algorithm` ブロックの形、代入文、`var` / `const` 宣言、
       `ghost var` / `ghost const`、ghost 代入、`snapshot`、top-level `claim`
       block、任意の正当化を持つ `return` 文。
+    - 結果: `AlgorithmDefinition`、`AlgorithmParameters`、`AlgorithmBody`、
+      `AlgorithmStatementList`、`VariableDeclaration`、`VariableBinding`、
+      `AssignmentStatement`、`Lvalue`、`SnapshotStatement`、`ReturnStatement`、
+      `ClaimBlockItem` surface を実装し、active pass/fail parse-only coverage と
+      algorithm body / ghost assignment 用 frontend scope-skeleton support を
+      追加した。
     - 依存: 31、`mizar-syntax` task 16 / S-016。仕様:
       [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)。
 

@@ -1,0 +1,19 @@
+definition
+  algorithm Broken[](,) ->
+  do
+    claim Inside do
+      theorem BadPlace: thesis;
+    end;
+    const ;
+    ghost ;
+    snapshot ;
+    return by A;
+    x := ;
+  end
+end;
+
+claim do
+  Bad;
+  @[label]
+  theorem Deferred: thesis;
+end

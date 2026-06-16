@@ -142,6 +142,7 @@ struct OpenScopeFrame {
     kind: LexicalBlockKind,
     start: SourcePos,
     bindings: Vec<ScopedBindingShape>,
+    algorithm_header_do_attached: bool,
 }
 
 struct ScopeSkeletonBuilder {
@@ -167,6 +168,7 @@ impl ScopeSkeletonBuilder {
                 kind: LexicalBlockKind::Definition,
                 start: 0,
                 bindings: Vec::new(),
+                algorithm_header_do_attached: false,
             },
             stack: Vec::new(),
             pending_do_bindings: Vec::new(),
@@ -238,7 +240,9 @@ impl ScopeSkeletonBuilder {
                     }
                     "do" => {
                         self.advance();
-                        self.open_frame(LexicalBlockKind::Do, token.span.start);
+                        if !self.attach_algorithm_header_do() {
+                            self.open_frame(LexicalBlockKind::Do, token.span.start);
+                        }
                         continue;
                     }
                     "end" => {
@@ -397,7 +401,23 @@ impl ScopeSkeletonBuilder {
             kind,
             start,
             bindings,
+            algorithm_header_do_attached: false,
         });
+    }
+
+    fn attach_algorithm_header_do(&mut self) -> bool {
+        if !self.pending_do_bindings.is_empty() {
+            return false;
+        }
+        let Some(frame) = self.stack.last_mut() else {
+            return false;
+        };
+        if frame.kind == LexicalBlockKind::Algorithm && !frame.algorithm_header_do_attached {
+            frame.algorithm_header_do_attached = true;
+            true
+        } else {
+            false
+        }
     }
 
     fn close_frame(&mut self, end_span: SourceSpan) {
@@ -945,6 +965,9 @@ impl ScopeSkeletonBuilder {
                 self.advance();
                 self.parse_binders(BindingShapeKind::Const, token.span);
             }
+            _ if self.ghost_assignment_shape_follows() => {
+                self.recover_to_binder_statement_end();
+            }
             _ => {
                 self.diagnostic(
                     ScopeSkeletonDiagnosticCode::UnsupportedBinderShape,
@@ -953,6 +976,26 @@ impl ScopeSkeletonBuilder {
                 );
             }
         }
+    }
+
+    fn ghost_assignment_shape_follows(&self) -> bool {
+        self.peek()
+            .is_some_and(|token| token.kind == ScopeSkeletonTokenKind::Word)
+            && self.tokens_until_statement_end_contain_other(":=")
+    }
+
+    fn tokens_until_statement_end_contain_other(&self, spelling: &str) -> bool {
+        let mut cursor = self.cursor;
+        while let Some(token) = self.tokens.get(cursor) {
+            if token.kind == ScopeSkeletonTokenKind::Semicolon || token_is_block_boundary(token) {
+                return false;
+            }
+            if token.kind == ScopeSkeletonTokenKind::Other && token.lexeme == spelling {
+                return true;
+            }
+            cursor += 1;
+        }
+        false
     }
 
     fn recover_to_binder_statement_end(&mut self) -> SourcePos {

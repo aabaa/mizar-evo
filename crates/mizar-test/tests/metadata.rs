@@ -9,6 +9,7 @@ use mizar_test::{
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
 const TEMPLATE_ARGUMENTS_REQUIREMENT_ID: &str = "spec.en.syntax.template_arguments.parser";
+const ALGORITHMS_CLAIMS_REQUIREMENT_ID: &str = "spec.en.20.algorithms_claims.parser";
 const OPERATOR_PRECEDENCE_REQUIREMENT_ID: &str = "spec.en.13.operator_precedence.parser";
 const SET_EXPRESSION_REQUIREMENT_ID: &str = "spec.en.13.set_expressions.parser";
 const ATOMIC_FORMULA_REQUIREMENT_ID: &str = "spec.en.14.atomic_formula.parser";
@@ -730,6 +731,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
     assert_eq!(
         active_cases,
         vec![
+            "fail_parser_algorithms_claims_recovery_001",
             "fail_parser_atomic_formula_missing_rhs_001",
             "fail_parser_atomic_formula_mixed_chain_001",
             "fail_parser_block_statements_recovery_001",
@@ -788,6 +790,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "fail_parser_visibility_dangling_001",
             "fail_parser_visibility_duplicate_001",
             "fail_parser_visibility_invalid_target_001",
+            "pass_parser_algorithms_claims_001",
             "pass_parser_atomic_formulas_001",
             "pass_parser_block_statements_001",
             "pass_parser_conclusions_iterative_001",
@@ -1092,6 +1095,23 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
         ]
     );
 
+    let algorithms_claims_requirement = plan
+        .manifest
+        .requirements
+        .iter()
+        .find(|requirement| requirement.id.0 == ALGORITHMS_CLAIMS_REQUIREMENT_ID)
+        .expect("algorithm/claim parse-only requirement should exist");
+    assert_eq!(algorithms_claims_requirement.stage, Stage::ParseOnly);
+    assert_eq!(
+        algorithms_claims_requirement.tests,
+        vec![
+            PathBuf::from("tests/miz/pass/parser/pass_parser_algorithms_claims_001.expect.toml"),
+            PathBuf::from(
+                "tests/miz/fail/parser/fail_parser_algorithms_claims_recovery_001.expect.toml"
+            ),
+        ]
+    );
+
     for requirement_id in [
         "spec.en.elaboration.choice_comprehension.lowering",
         "spec.en.binding.substitution.capture_avoidance",
@@ -1121,9 +1141,13 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 87);
-    assert_eq!(report.passed_count(), 87);
+    assert_eq!(report.results.len(), 89);
+    assert_eq!(report.passed_count(), 89);
     assert_eq!(report.failed_count(), 0);
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_algorithms_claims_001"
+            && result.actual_diagnostic_codes.is_empty()
+    }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_atomic_formulas_001"
             && result.actual_diagnostic_codes.is_empty()
@@ -1470,6 +1494,28 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
                 ]
     }));
     assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_algorithms_claims_recovery_001"
+            && result.actual_diagnostic_codes
+                == vec![
+                    "malformed_term_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
+                    "malformed_type_expression".to_owned(),
+                    "malformed_formula_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
+                    "missing_semicolon".to_owned(),
+                    "malformed_term_expression".to_owned(),
+                    "malformed_formula_expression".to_owned(),
+                    "malformed_formula_expression".to_owned(),
+                    "missing_semicolon".to_owned(),
+                ]
+    }));
+    assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_parser_formula_nonassoc_iff_001"
             && result.actual_diagnostic_codes == vec!["non_associative_operator_chain".to_owned()]
     }));
@@ -1753,8 +1799,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 87"));
-    assert!(stdout.contains("passed: 87"));
+    assert!(stdout.contains("parse-only cases: 89"));
+    assert!(stdout.contains("passed: 89"));
     assert!(stdout.contains("failed: 0"));
 }
 

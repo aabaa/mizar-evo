@@ -6,8 +6,9 @@ task-15 term surfaces including set comprehensions, task-14 formula surfaces,
 S-013 statement nodes, task-22 theorem/proof items, and the task-23 through
 task-30 definition-block / attribute / predicate / functor / mode /
 redefinition / notation-alias / property / structure / registration increments,
-plus task-31 template surfaces are implemented; remaining algorithm,
-annotation, and package-oriented item grammars are planned.
+task-31 template surfaces, and task-32 basic algorithm/claim surfaces are
+implemented; remaining algorithm control/verification clauses, annotations,
+and package-oriented item grammars are planned.
 
 ## Purpose
 
@@ -1983,6 +1984,37 @@ predicate/functor actual kinds, or check template type constraints. The
 formerly inactive template pass/fail seed fixtures are now active parse-only
 coverage, and the chained-`iff` failure remains a formula fixity diagnostic
 after template predicate arguments become concrete syntax.
+
+### Task 32: Algorithm Blocks, Assignments, Declarations, and Claims
+
+Task 32 makes the non-contract Chapter 20 algorithm and claim syntax
+parser-visible. Definition blocks now accept `algorithm` content, including
+`public` / `private` visibility wrappers through `VisibleItem`. An algorithm
+definition owns the source name, optional identifier-only schema suffix as
+`TemplateLoci` / `TemplateLocus`, an `AlgorithmParameters` list, optional
+return `TypeExpression`, an `AlgorithmBody`, and the trailing semicolon. The
+schema suffix deliberately does not reuse call-site `TemplateArguments`.
+
+The implemented body subset is `do ... end` with an
+`AlgorithmStatementList` containing variable declarations, assignments,
+snapshots, and returns. `VariableDeclaration` represents `var`, `const`,
+`ghost var`, and `ghost const`, with `VariableBinding` children, optional
+shared `as TypeExpression`, and optional syntax-level justifications.
+`AssignmentStatement` represents ordinary and `ghost` assignment to a
+syntactic `Lvalue`, preserving dotted targets without resolving selector or
+namespace roles. `SnapshotStatement` and `ReturnStatement` cover `snapshot`
+and `return`, with returns optionally owning a term and a syntax-level
+justification.
+
+Top-level `claim name do ... end;` is represented by `ClaimBlockItem` and may
+contain bare theorem/lemma items. Claim annotations are deferred to task 35.
+Control-flow statements (`while`, `for`, `if`, `match`, `break`,
+`continue`) remain task 33, while algorithm header and loop verification
+clauses (`terminating`, `requires`, `ensures`, `decreasing`, `invariant`,
+`assert`) remain task 34. The frontend scope skeleton recognizes algorithm
+headers as a single lexical block and treats `ghost target := term;` as an
+assignment, so active source-level parse-only fixtures can exercise the
+task-32 syntax without frontend recovery diagnostics.
 
 ## Public Enum Compatibility
 

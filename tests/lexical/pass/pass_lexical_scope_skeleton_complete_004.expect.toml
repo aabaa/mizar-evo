@@ -42,14 +42,6 @@ kind = "scope_block_algorithm"
 lexeme = "scope_block"
 span_start_line = 10
 span_start_col = 1
-span_end_line = 17
-span_end_col = 4
-
-[[tokens]]
-kind = "scope_block_do"
-lexeme = "scope_block"
-span_start_line = 11
-span_start_col = 1
 span_end_line = 16
 span_end_col = 4
 

@@ -32,7 +32,6 @@ for item in Items processed Seen do
 var consumed;
 end;
 end;
-end;
 g;
 c;
 a;

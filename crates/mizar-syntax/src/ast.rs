@@ -173,6 +173,17 @@ pub enum SyntaxKind {
     TemplateLocus = 148,
     TemplateArguments = 149,
     TemplateArgument = 150,
+    AlgorithmDefinition = 151,
+    AlgorithmParameters = 152,
+    AlgorithmBody = 153,
+    AlgorithmStatementList = 154,
+    VariableDeclaration = 155,
+    VariableBinding = 156,
+    AssignmentStatement = 157,
+    Lvalue = 158,
+    SnapshotStatement = 159,
+    ReturnStatement = 160,
+    ClaimBlockItem = 161,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -327,6 +338,17 @@ impl SyntaxKind {
             148 => Self::TemplateLocus,
             149 => Self::TemplateArguments,
             150 => Self::TemplateArgument,
+            151 => Self::AlgorithmDefinition,
+            152 => Self::AlgorithmParameters,
+            153 => Self::AlgorithmBody,
+            154 => Self::AlgorithmStatementList,
+            155 => Self::VariableDeclaration,
+            156 => Self::VariableBinding,
+            157 => Self::AssignmentStatement,
+            158 => Self::Lvalue,
+            159 => Self::SnapshotStatement,
+            160 => Self::ReturnStatement,
+            161 => Self::ClaimBlockItem,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -483,6 +505,17 @@ impl SyntaxKind {
                 | Self::TemplateLocus
                 | Self::TemplateArguments
                 | Self::TemplateArgument
+                | Self::AlgorithmDefinition
+                | Self::AlgorithmParameters
+                | Self::AlgorithmBody
+                | Self::AlgorithmStatementList
+                | Self::VariableDeclaration
+                | Self::VariableBinding
+                | Self::AssignmentStatement
+                | Self::Lvalue
+                | Self::SnapshotStatement
+                | Self::ReturnStatement
+                | Self::ClaimBlockItem
         )
     }
 
@@ -1165,6 +1198,83 @@ impl<'a> SurfaceNodeView<'a> {
     pub fn as_template_argument(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::TemplateArgument => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_algorithm_definition(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AlgorithmDefinition => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_algorithm_parameters(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AlgorithmParameters => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_algorithm_body(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AlgorithmBody => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_algorithm_statement_list(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AlgorithmStatementList => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_variable_declaration(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::VariableDeclaration => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_variable_binding(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::VariableBinding => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_assignment_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AssignmentStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_lvalue(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::Lvalue => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_snapshot_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::SnapshotStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_return_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ReturnStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_claim_block_item(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ClaimBlockItem => Some(self),
             _ => None,
         }
     }
@@ -2064,6 +2174,17 @@ pub enum SurfaceNodeKind {
     TemplateLocus,
     TemplateArguments,
     TemplateArgument,
+    AlgorithmDefinition,
+    AlgorithmParameters,
+    AlgorithmBody,
+    AlgorithmStatementList,
+    VariableDeclaration,
+    VariableBinding,
+    AssignmentStatement,
+    Lvalue,
+    SnapshotStatement,
+    ReturnStatement,
+    ClaimBlockItem,
     TermPlaceholder,
     TermExpression,
     TermReference,
@@ -2209,6 +2330,17 @@ impl SurfaceNodeKind {
             Self::TemplateLocus => SyntaxKind::TemplateLocus,
             Self::TemplateArguments => SyntaxKind::TemplateArguments,
             Self::TemplateArgument => SyntaxKind::TemplateArgument,
+            Self::AlgorithmDefinition => SyntaxKind::AlgorithmDefinition,
+            Self::AlgorithmParameters => SyntaxKind::AlgorithmParameters,
+            Self::AlgorithmBody => SyntaxKind::AlgorithmBody,
+            Self::AlgorithmStatementList => SyntaxKind::AlgorithmStatementList,
+            Self::VariableDeclaration => SyntaxKind::VariableDeclaration,
+            Self::VariableBinding => SyntaxKind::VariableBinding,
+            Self::AssignmentStatement => SyntaxKind::AssignmentStatement,
+            Self::Lvalue => SyntaxKind::Lvalue,
+            Self::SnapshotStatement => SyntaxKind::SnapshotStatement,
+            Self::ReturnStatement => SyntaxKind::ReturnStatement,
+            Self::ClaimBlockItem => SyntaxKind::ClaimBlockItem,
             Self::TermPlaceholder => SyntaxKind::TermPlaceholder,
             Self::TermExpression => SyntaxKind::TermExpression,
             Self::TermReference => SyntaxKind::TermReference,
@@ -2504,6 +2636,17 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::TemplateLocus => output.push_str("TemplateLocus"),
         SurfaceNodeKind::TemplateArguments => output.push_str("TemplateArguments"),
         SurfaceNodeKind::TemplateArgument => output.push_str("TemplateArgument"),
+        SurfaceNodeKind::AlgorithmDefinition => output.push_str("AlgorithmDefinition"),
+        SurfaceNodeKind::AlgorithmParameters => output.push_str("AlgorithmParameters"),
+        SurfaceNodeKind::AlgorithmBody => output.push_str("AlgorithmBody"),
+        SurfaceNodeKind::AlgorithmStatementList => output.push_str("AlgorithmStatementList"),
+        SurfaceNodeKind::VariableDeclaration => output.push_str("VariableDeclaration"),
+        SurfaceNodeKind::VariableBinding => output.push_str("VariableBinding"),
+        SurfaceNodeKind::AssignmentStatement => output.push_str("AssignmentStatement"),
+        SurfaceNodeKind::Lvalue => output.push_str("Lvalue"),
+        SurfaceNodeKind::SnapshotStatement => output.push_str("SnapshotStatement"),
+        SurfaceNodeKind::ReturnStatement => output.push_str("ReturnStatement"),
+        SurfaceNodeKind::ClaimBlockItem => output.push_str("ClaimBlockItem"),
         SurfaceNodeKind::TermPlaceholder => output.push_str("TermPlaceholder"),
         SurfaceNodeKind::TermExpression => output.push_str("TermExpression"),
         SurfaceNodeKind::TermReference => output.push_str("TermReference"),
@@ -3767,6 +3910,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            task32_algorithm_nodes_ast(source_id(50))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -3880,6 +4029,17 @@ mod tests {
             SyntaxKind::TemplateLocus,
             SyntaxKind::TemplateArguments,
             SyntaxKind::TemplateArgument,
+            SyntaxKind::AlgorithmDefinition,
+            SyntaxKind::AlgorithmParameters,
+            SyntaxKind::AlgorithmBody,
+            SyntaxKind::AlgorithmStatementList,
+            SyntaxKind::VariableDeclaration,
+            SyntaxKind::VariableBinding,
+            SyntaxKind::AssignmentStatement,
+            SyntaxKind::Lvalue,
+            SyntaxKind::SnapshotStatement,
+            SyntaxKind::ReturnStatement,
+            SyntaxKind::ClaimBlockItem,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -5810,6 +5970,92 @@ mod tests {
             assert!(
                 snapshot.contains(expected),
                 "snapshot should render task-31 line {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn task32_typed_accessors_cover_algorithm_nodes() {
+        let ast = task32_algorithm_nodes_ast(source_id(50));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task32_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task32_view!(
+            SurfaceNodeKind::AlgorithmDefinition,
+            SyntaxKind::AlgorithmDefinition,
+            as_algorithm_definition
+        );
+        assert_task32_view!(
+            SurfaceNodeKind::AlgorithmParameters,
+            SyntaxKind::AlgorithmParameters,
+            as_algorithm_parameters
+        );
+        assert_task32_view!(
+            SurfaceNodeKind::AlgorithmBody,
+            SyntaxKind::AlgorithmBody,
+            as_algorithm_body
+        );
+        assert_task32_view!(
+            SurfaceNodeKind::AlgorithmStatementList,
+            SyntaxKind::AlgorithmStatementList,
+            as_algorithm_statement_list
+        );
+        assert_task32_view!(
+            SurfaceNodeKind::VariableDeclaration,
+            SyntaxKind::VariableDeclaration,
+            as_variable_declaration
+        );
+        assert_task32_view!(
+            SurfaceNodeKind::VariableBinding,
+            SyntaxKind::VariableBinding,
+            as_variable_binding
+        );
+        assert_task32_view!(
+            SurfaceNodeKind::AssignmentStatement,
+            SyntaxKind::AssignmentStatement,
+            as_assignment_statement
+        );
+        assert_task32_view!(SurfaceNodeKind::Lvalue, SyntaxKind::Lvalue, as_lvalue);
+        assert_task32_view!(
+            SurfaceNodeKind::SnapshotStatement,
+            SyntaxKind::SnapshotStatement,
+            as_snapshot_statement
+        );
+        assert_task32_view!(
+            SurfaceNodeKind::ReturnStatement,
+            SyntaxKind::ReturnStatement,
+            as_return_statement
+        );
+        assert_task32_view!(
+            SurfaceNodeKind::ClaimBlockItem,
+            SyntaxKind::ClaimBlockItem,
+            as_claim_block_item
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in [
+            "AlgorithmDefinition",
+            "AlgorithmParameters",
+            "AlgorithmBody",
+            "AlgorithmStatementList",
+            "VariableDeclaration",
+            "VariableBinding",
+            "AssignmentStatement",
+            "Lvalue",
+            "SnapshotStatement",
+            "ReturnStatement",
+            "ClaimBlockItem",
+        ] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-32 line {expected}"
             );
         }
     }
@@ -10922,6 +11168,287 @@ mod tests {
                 template_loci,
                 reference,
             ],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn task32_algorithm_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let algorithm_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "algorithm",
+            range(source_id, 0, 9),
+        );
+        let algorithm_name =
+            builder.add_token(SurfaceTokenKind::Identifier, "f", range(source_id, 10, 11));
+        let loci_open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "[",
+            range(source_id, 11, 12),
+        );
+        let locus_name =
+            builder.add_token(SurfaceTokenKind::Identifier, "T", range(source_id, 12, 13));
+        let loci_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "]",
+            range(source_id, 13, 14),
+        );
+        let params_open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 14, 15),
+        );
+        let param_name =
+            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 15, 16));
+        let params_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 16, 17),
+        );
+        let do_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "do",
+            range(source_id, 18, 20),
+        );
+        let var_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "var",
+            range(source_id, 21, 24),
+        );
+        let binding_name =
+            builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 25, 26));
+        let binding_assign = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":=",
+            range(source_id, 27, 29),
+        );
+        let binding_term_token =
+            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 30, 31));
+        let decl_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 31, 32),
+        );
+        let assign_target =
+            builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 33, 34));
+        let assign_colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":=",
+            range(source_id, 35, 37),
+        );
+        let assign_term_token =
+            builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 38, 39));
+        let assign_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 39, 40),
+        );
+        let snapshot_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "snapshot",
+            range(source_id, 41, 49),
+        );
+        let snapshot_name =
+            builder.add_token(SurfaceTokenKind::Identifier, "S", range(source_id, 50, 51));
+        let snapshot_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 51, 52),
+        );
+        let return_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "return",
+            range(source_id, 53, 59),
+        );
+        let return_term_token =
+            builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 60, 61));
+        let return_by = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "by",
+            range(source_id, 62, 64),
+        );
+        let return_ref_token =
+            builder.add_token(SurfaceTokenKind::Identifier, "A", range(source_id, 65, 66));
+        let return_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 66, 67),
+        );
+        let end_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "end",
+            range(source_id, 68, 71),
+        );
+        let algorithm_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 71, 72),
+        );
+        let claim_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "claim",
+            range(source_id, 73, 78),
+        );
+        let claim_name =
+            builder.add_token(SurfaceTokenKind::Identifier, "f", range(source_id, 79, 80));
+        let claim_do = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "do",
+            range(source_id, 81, 83),
+        );
+        let theorem_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+            range(source_id, 84, 91),
+        );
+        let theorem_label =
+            builder.add_token(SurfaceTokenKind::Identifier, "C", range(source_id, 92, 93));
+        let theorem_colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 93, 94),
+        );
+        let thesis_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 95, 101),
+        );
+        let theorem_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 101, 102),
+        );
+        let claim_end = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "end",
+            range(source_id, 103, 106),
+        );
+        let claim_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 106, 107),
+        );
+
+        let template_locus = builder.add_node(
+            SurfaceNodeKind::TemplateLocus,
+            range(source_id, 12, 13),
+            vec![locus_name],
+        );
+        let template_loci = builder.add_node(
+            SurfaceNodeKind::TemplateLoci,
+            range(source_id, 11, 14),
+            vec![loci_open, template_locus, loci_close],
+        );
+        let parameters = builder.add_node(
+            SurfaceNodeKind::AlgorithmParameters,
+            range(source_id, 14, 17),
+            vec![params_open, param_name, params_close],
+        );
+        let binding_term =
+            term_expression_node(&mut builder, source_id, binding_term_token, 30, 31);
+        let binding = builder.add_node(
+            SurfaceNodeKind::VariableBinding,
+            range(source_id, 25, 31),
+            vec![binding_name, binding_assign, binding_term],
+        );
+        let declaration = builder.add_node(
+            SurfaceNodeKind::VariableDeclaration,
+            range(source_id, 21, 32),
+            vec![var_kw, binding, decl_semicolon],
+        );
+        let lvalue = builder.add_node(
+            SurfaceNodeKind::Lvalue,
+            range(source_id, 33, 34),
+            vec![assign_target],
+        );
+        let assign_term = term_expression_node(&mut builder, source_id, assign_term_token, 38, 39);
+        let assignment = builder.add_node(
+            SurfaceNodeKind::AssignmentStatement,
+            range(source_id, 33, 40),
+            vec![lvalue, assign_colon, assign_term, assign_semicolon],
+        );
+        let snapshot = builder.add_node(
+            SurfaceNodeKind::SnapshotStatement,
+            range(source_id, 41, 52),
+            vec![snapshot_kw, snapshot_name, snapshot_semicolon],
+        );
+        let return_term = term_expression_node(&mut builder, source_id, return_term_token, 60, 61);
+        let return_reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 65, 66),
+            vec![return_ref_token],
+        );
+        let return_references = builder.add_node(
+            SurfaceNodeKind::ReferenceList,
+            range(source_id, 65, 66),
+            vec![return_reference],
+        );
+        let return_justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 62, 66),
+            vec![return_by, return_references],
+        );
+        let return_statement = builder.add_node(
+            SurfaceNodeKind::ReturnStatement,
+            range(source_id, 53, 67),
+            vec![
+                return_kw,
+                return_term,
+                return_justification,
+                return_semicolon,
+            ],
+        );
+        let statement_list = builder.add_node(
+            SurfaceNodeKind::AlgorithmStatementList,
+            range(source_id, 21, 67),
+            vec![declaration, assignment, snapshot, return_statement],
+        );
+        let body = builder.add_node(
+            SurfaceNodeKind::AlgorithmBody,
+            range(source_id, 18, 71),
+            vec![do_kw, statement_list, end_kw],
+        );
+        let algorithm = builder.add_node(
+            SurfaceNodeKind::AlgorithmDefinition,
+            range(source_id, 0, 72),
+            vec![
+                algorithm_kw,
+                algorithm_name,
+                template_loci,
+                parameters,
+                body,
+                algorithm_semicolon,
+            ],
+        );
+        let theorem_proposition =
+            thesis_proposition_node(&mut builder, source_id, thesis_kw, 95, 101);
+        let theorem = builder.add_node(
+            SurfaceNodeKind::TheoremItem,
+            range(source_id, 84, 102),
+            vec![
+                theorem_kw,
+                theorem_label,
+                theorem_colon,
+                theorem_proposition,
+                theorem_semicolon,
+            ],
+        );
+        let claim = builder.add_node(
+            SurfaceNodeKind::ClaimBlockItem,
+            range(source_id, 73, 107),
+            vec![
+                claim_kw,
+                claim_name,
+                claim_do,
+                theorem,
+                claim_end,
+                claim_semicolon,
+            ],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 107),
+            vec![algorithm, claim],
         );
         builder.finish(Some(root), None)
     }

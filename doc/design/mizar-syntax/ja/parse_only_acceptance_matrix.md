@@ -99,7 +99,7 @@ discovery の fixture ではない。
 | Annotations | `PO-ANN-P03` | positive | `registration @custom(flag) cluster C: non empty set; existence by A; end;` | `accept` | `registration_block`, `registration_content`, `annotation`, `registration_item` | `mizar-test` | A.17, A.21 |
 | Annotations | `PO-ANN-P04` | positive | `theorem T: thesis proof @custom(flag) thus thesis; end;` | `accept` | `proof`, `annotated_statement`, `annotation`, `conclusion` | `mizar-test` | A.15, A.16, A.21 |
 | Annotations | `PO-ANN-P05` | positive | `definition algorithm f() do @custom(flag) return; end; end;` | `accept` | `algorithm_def`, `annotated_algo_statement`, `annotation`, `return_stmt` | `mizar-test` | A.20, A.21 |
-| Annotations | `PO-ANN-P06` | positive | `claim C do @custom(flag) theorem T: thesis; end;` | `accept` | `claim_block`, `annotated_theorem_item`, `annotation`, `theorem_item` | `mizar-test` | A.20, A.21 |
+| Annotations | `PO-ANN-P06` | positive | `claim C do @custom(flag) theorem T: thesis; end;` | `accept`: parser task 35 まで deferred。task 32 は claim-local annotation prefix を recovery input として拒否する。 | `claim_block`, `annotated_theorem_item`, `annotation`, `theorem_item` | `mizar-test` | A.20, A.21 |
 | Annotations | `PO-ANN-N01` | negative | `@latex(123) theorem T: thesis;` | `reject`: 固定 `@latex` annotation には string literal argument が必要である。 | `annotated_declaration`, `annotation`, `latex_annotation` | `mizar-parser` | A.12, A.21 |
 | Annotations | `PO-ANN-A01` | ambiguous | `@custom(flag, 3) theorem T: thesis;` | `ambiguous-preserve-surface`: generic annotation name と context 上の argument 妥当性は semantic または registry check である。 | `annotated_declaration`, `annotation`, `statement_annotation`, `generic_annotation_name`, `annotation_args` | `mizar-test` | A.12, A.21 |
 | Annotations | `PO-ANN-R01` | recovery-required | `@proof_hint(max_axioms: ) theorem T: thesis;` | `recover`: option value 欠落に対する `malformed_annotation`。 | `proof_hint_annotation`, `proof_hint_option` | `mizar-parser` | A.21 |
@@ -113,7 +113,7 @@ discovery の fixture ではない。
 | Templates | `PO-TPL-N01` | negative | `definition let F be func(set); theorem T: thesis; end;` | `reject`: `func_param` には `-> type_expression` が必要である。 | `func_param`, `type_list` | `mizar-parser` | A.18 |
 | Templates | `PO-TPL-A01` | ambiguous | `theorem T: thesis proof thus thesis by Scheme[T, x qua R], A; end;` | `ambiguous-preserve-surface`: scheme application は現在 `simple_justification` と `reference [ template_args ]` に重なる。`param_name`、`type_arg_list`、`type_arg`、`qua_arg` は、helper を削除または再利用するまで fixture-planning input として明示的に残す。 | `scheme_app`, `param_name`, `simple_justification`, `reference`, `template_args`, `template_arg`, `qua_arg` | `pure-spec` | A.3, A.15, A.18 |
 | Templates | `PO-TPL-R01` | recovery-required | `theorem T: thesis by P[set, x qua R;` | `recover`: 閉じていない `template_args` に対する `missing_delimiter`。 | `reference`, `template_args`, `template_arg`, `qua_arg` | `mizar-parser` | A.3, A.15, A.18 |
-| Algorithms | `PO-ALG-P01` | positive | `definition algorithm f(x) -> set requires thesis do var y := x; return y; end; end;` | `accept` | `definition_block`, `algorithm_def`, `algorithm_body`, `var_decl`, `return_stmt` | `mizar-test` | A.12, A.20 |
+| Algorithms | `PO-ALG-P01` | positive | `definition algorithm f(x) -> set do var y := x; return y; end; end;` | `accept`: `requires` などの header contract は task 34 の拡張である。 | `definition_block`, `algorithm_def`, `algorithm_body`, `var_decl`, `return_stmt` | `mizar-test` | A.12, A.20 |
 | Algorithms | `PO-ALG-N01` | negative | `definition algorithm f() do claim C do theorem T: thesis; end; end; end;` | `reject`: `claim_block` は top-level declaration content であり、`algo_statement` ではない。 | `algorithm_def`, `algo_statement`, `claim_block` | `mizar-parser` | A.12, A.20 |
 | Algorithms | `PO-ALG-A01` | ambiguous | `definition algorithm f() do x.y := z; snapshot S; end; end;` | `ambiguous-preserve-surface`: dotted `lvalue` は selector と namespace の役割が解決されるまで syntactic のままにする。 | `assignment`, `lvalue`, `snapshot_stmt` | `pure-spec` | A.2, A.20 |
 | Algorithms | `PO-ALG-R01` | recovery-required | `definition algorithm f() do if thesis do return; end;` | `recover`: nested control block 後の外側 `algorithm_body` または `definition_block` に対する `missing_end`。 | `algorithm_def`, `if_stmt`, `algorithm_body` | `mizar-parser` | A.20 |
@@ -128,11 +128,15 @@ discovery の fixture ではない。
   `registration_block` 内、proof 内、algorithm body 内、`claim_block` の theorem
   list 内に現れなければならない。上の matrix 行は代表 owner を選ぶだけであり、
   残りの attachment site は、それを囲む production が着地する parser task で
-  追加する。
+  追加する。Claim-block annotation attachment は parser task 35 まで deferred
+  のままにする。
 - dot-chain coverage は、module path、qualified symbol、qualified reference、
   grouped reference、bulk reference、selector access/update、algorithm lvalue、
   active `.` user-symbol case を含める。parse-only expectation は syntax-only に
-  とどめる。
+  とどめる。Dotted algorithm lvalue の active `.miz` coverage は、その surface
+  を frontend の parse-only corpus まで運べる dot-role disambiguation が着地する
+  まで deferred とし、task32 の `Lvalue` surface はそれ以前に parser-unit coverage
+  で固定してよい。
 - term boundary coverage は、`the type_expression`、parenthesized / unparenthesized
   `qua`、chained `qua`、`with (...)` update boundary を含める。
 - statement coverage は、statement AST snapshot を導入する前に、

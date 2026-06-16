@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_algorithms_claims_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.algorithms_claims"
+source = "pass_parser_algorithms_claims_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+tags = ["active_parse_only"]
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.20.algorithms_claims.parser",
+]
+notes = "Active task-32 parse-only coverage for non-contract algorithm definitions, identifier-only algorithm schema loci, comma-separated parameters, optional return type, public/private visibility, var/const and ghost declarations, assignments including ghost assignment, snapshots, returns with optional justification, and top-level claim blocks containing bare theorem and lemma items. Dotted lvalue preservation is covered by parser unit tests until active source-level dot-role disambiguation can carry it through the frontend parse-only corpus."

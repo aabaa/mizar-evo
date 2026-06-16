@@ -262,18 +262,21 @@ let sp be set;
 end;
 end;
 end;
-algorithm
+algorithm f()
 do
 var a, b = (c, d);
 const n = 1;
 ghost var gv;
 ghost const gc = 2;
+ghost gv := gc;
+case Choice do
+var branch;
+end;
 for i = 0 to 2 do
 var inner;
 end;
 for item in Items processed Seen do
 var consumed;
-end;
 end;
 end;";
     let raw = scan_raw(source).expect("source should raw scan");
@@ -302,6 +305,8 @@ end;";
     assert!(skeleton.binding_overrides_symbol("F", nth_index(source, "defpred", 0)));
     assert!(skeleton.binding_overrides_symbol("a", nth_index(source, "const", 0)));
     assert!(skeleton.binding_overrides_symbol("gv", nth_index(source, "for i", 0)));
+    assert!(skeleton.binding_overrides_symbol("branch", nth_index(source, "end;\nfor i", 0)));
+    assert!(!skeleton.binding_overrides_symbol("branch", nth_index(source, "for i", 0)));
     assert!(skeleton.binding_overrides_symbol("i", nth_index(source, "inner", 0)));
     assert!(!skeleton.binding_overrides_symbol("i", nth_index(source, "for item", 0)));
     assert!(skeleton.binding_overrides_symbol("Seen", nth_index(source, "consumed", 0)));

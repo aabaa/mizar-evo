@@ -18,7 +18,7 @@ kind = "scope_frame"
 lexeme = "scope_frame"
 span_start_line = 1
 span_start_col = 1
-span_end_line = 39
+span_end_line = 38
 span_end_col = 3
 
 [[tokens]]
@@ -186,14 +186,6 @@ kind = "scope_frame"
 lexeme = "scope_frame"
 span_start_line = 22
 span_start_col = 1
-span_end_line = 35
-span_end_col = 4
-
-[[tokens]]
-kind = "scope_frame"
-lexeme = "scope_frame"
-span_start_line = 23
-span_start_col = 1
 span_end_line = 34
 span_end_col = 4
 
@@ -296,9 +288,9 @@ span_end_col = 13
 [[tokens]]
 kind = "scope_active"
 lexeme = "R"
-span_start_line = 39
+span_start_line = 38
 span_start_col = 1
-span_end_line = 39
+span_end_line = 38
 span_end_col = 1
 
 [[tokens]]
@@ -320,9 +312,9 @@ span_end_col = 21
 [[tokens]]
 kind = "scope_inactive"
 lexeme = "c"
-span_start_line = 37
+span_start_line = 36
 span_start_col = 1
-span_end_line = 37
+span_end_line = 36
 span_end_col = 1
 
 [[tokens]]
@@ -336,9 +328,9 @@ span_end_col = 9
 [[tokens]]
 kind = "scope_inactive"
 lexeme = "g"
-span_start_line = 36
+span_start_line = 35
 span_start_col = 1
-span_end_line = 36
+span_end_line = 35
 span_end_col = 1
 
 [[tokens]]
@@ -352,9 +344,9 @@ span_end_col = 1
 [[tokens]]
 kind = "scope_inactive"
 lexeme = "a"
-span_start_line = 38
+span_start_line = 37
 span_start_col = 1
-span_end_line = 38
+span_end_line = 37
 span_end_col = 1
 
 [[tokens]]

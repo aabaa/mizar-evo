@@ -84,6 +84,9 @@ parse-only runner and the relevant productions exist.
 - Template arguments: completed by task 31. `pass_parser_template_arguments_001`,
   `pass_parser_template_references_001`, and
   `fail_parser_template_arguments_chained_iff_001` are active parse-only cases.
+- Algorithm and claim basics: completed by task 32.
+  `pass_parser_algorithms_claims_001` and
+  `fail_parser_algorithms_claims_recovery_001` are active parse-only cases.
 - Accepted syntax cases still needed: `let` constraints with `by` references,
   take-with-witness examples, conditional definiens, Fraenkel generators,
   `qua` chains, and predicate chains.
@@ -196,6 +199,9 @@ Each task is sized to be implemented, tested, and committed on its own. Keep
      runner once tasks 14 and 23-25 provide the needed formula and definition
      hosts; the active set now also includes the reference-citation template
      argument seed.
+   - Task 32 adds active algorithm/claim pass/fail cases and the frontend
+     scope-skeleton support needed for source-level algorithm body and ghost
+     assignment coverage.
    - Tests: active/inactive discovery is deterministic; active-tag mistakes are
      harness errors; a deliberately mismatched sidecar fails; seeded pass and
      fail cases enforce diagnostics; the `parse-only` CLI reports the active
@@ -728,11 +734,17 @@ older numeric syntax task references appear to disagree, prefer
     - Deps: 30, `mizar-syntax` task 16 / S-016. Spec:
       [18.templates.md](../../../spec/en/18.templates.md).
 
-32. **Algorithm blocks, assignments, declarations, and claims.** [ ]
+32. **Algorithm blocks, assignments, declarations, and claims.** [x]
     - `algorithm` block shape, assignment statements, `var`/`const`
       declarations, `ghost var`/`ghost const`, ghost assignments, `snapshot`,
       top-level `claim` blocks, and `return` statements with optional
       justifications.
+    - Result: `AlgorithmDefinition`, `AlgorithmParameters`, `AlgorithmBody`,
+      `AlgorithmStatementList`, `VariableDeclaration`, `VariableBinding`,
+      `AssignmentStatement`, `Lvalue`, `SnapshotStatement`, `ReturnStatement`,
+      and `ClaimBlockItem` surfaces are implemented with active pass/fail
+      parse-only coverage and frontend scope-skeleton support for algorithm
+      bodies and ghost assignments.
     - Deps: 31, `mizar-syntax` task 16 / S-016. Spec:
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 

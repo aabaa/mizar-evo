@@ -488,10 +488,12 @@ interaction. Spec references are the normative grammar chapters under
     - Done for parser task 31: template parameters, pattern-side template loci,
       call-site template arguments, reference/template-functor arguments, active
       template parse-only seeds including reference citations, and `nest`
-      traceability. Remaining:
-      algorithm blocks, assignment, declarations, ghost declarations/assignments,
-      snapshots, top-level `claim` blocks, and returns (parser task 32);
-      control flow including processed collection loops and match endings
+      traceability.
+    - Done for parser task 32: algorithm blocks, assignment, declarations,
+      ghost declarations/assignments, snapshots, top-level `claim` blocks,
+      returns, active algorithm/claim parse-only seeds, and frontend
+      scope-skeleton support for algorithm bodies and ghost assignments.
+      Remaining: control flow including processed collection loops and match endings
       (parser task 33); verification clauses (parser task 34);
       statement-level annotations, `@[...]` library annotations, and
       string-literal annotation arguments (parser task 35).

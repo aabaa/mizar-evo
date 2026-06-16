@@ -1,0 +1,23 @@
+definition
+  public algorithm choose[t](x, seed) -> set
+  do
+    var y := x, z as set by TypeOk;
+    const c := y as set by ConstOk;
+    ghost var seen := c;
+    ghost const witness := seen;
+    y := c;
+    ghost seen := y;
+    snapshot Init;
+    return y by ReturnOk;
+  end;
+
+  private algorithm log()
+  do
+    return;
+  end;
+end;
+
+claim choose do
+  theorem InitState: thesis;
+  lemma Progress: thesis;
+end;
