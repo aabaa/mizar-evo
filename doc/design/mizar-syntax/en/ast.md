@@ -109,6 +109,13 @@ green tree.
 | theorem item node | `SyntaxKind::TheoremItem` |
 | lemma item node | `SyntaxKind::LemmaItem` |
 | proof block node | `SyntaxKind::ProofBlock` |
+| definition block item node | `SyntaxKind::DefinitionBlockItem` |
+| definition parameter node | `SyntaxKind::DefinitionParameter` |
+| attribute definition node | `SyntaxKind::AttributeDefinition` |
+| attribute pattern node | `SyntaxKind::AttributePattern` |
+| formula definiens node | `SyntaxKind::FormulaDefiniens` |
+| formula case node | `SyntaxKind::FormulaCase` |
+| correctness condition node | `SyntaxKind::CorrectnessCondition` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -248,14 +255,22 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 106 | `TokenStringLiteral` | string-literal token leaf |
 | 107 | `TokenErrorRecovery` | lexer recovery token leaf |
 | 108 | `TokenUnknown` | unknown token leaf |
+| 109 | `DefinitionBlockItem` | task-23 `definition ... end;` item |
+| 110 | `DefinitionParameter` | task-23 ordinary definition `let` parameter |
+| 111 | `AttributeDefinition` | task-23 `attr ... means ...;` definition |
+| 112 | `AttributePattern` | task-23 attribute pattern head |
+| 113 | `FormulaDefiniens` | task-23 formula definiens body |
+| 114 | `FormulaCase` | task-23 conditional formula definiens case |
+| 115 | `CorrectnessCondition` | task-23 correctness-condition clause |
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
-above, currently `Root` through task-21 `TypedParameter` plus the compatibility
-`Token` wrapper and `ErrorRecovery`; `is_token_kind` is true
-only for token leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future
-raw values should be appended or assigned into a documented reserved range so
-existing snapshots and rowan tests fail loudly when the raw vocabulary changes.
+above, including `Root` through task-22 `ProofBlock`, task-23
+`DefinitionBlockItem` through `CorrectnessCondition`, the compatibility `Token`
+wrapper, and `ErrorRecovery`; `is_token_kind` is true only for token leaf raw
+kinds `TokenIdentifier` through `TokenUnknown`. Future raw values should be
+appended or assigned into a documented reserved range so existing snapshots and
+rowan tests fail loudly when the raw vocabulary changes.
 
 ### Current Surface Vocabulary
 
@@ -324,6 +339,13 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::TheoremItem` | none | `SyntaxKind::TheoremItem` | parser task-22 theorem declaration; owns optional status tokens preserved syntactically, `theorem`, a label identifier or `MissingTerm`, `:`, a `FormulaExpression` or `MissingFormula`, optional `JustificationClause` or `ProofBlock`, optional recovery, and the final semicolon when present |
 | `SurfaceNodeKind::LemmaItem` | none | `SyntaxKind::LemmaItem` | parser task-22 lemma declaration with the same source-order children as `TheoremItem`, selected by the `lemma` role token |
 | `SurfaceNodeKind::ProofBlock` | none | `SyntaxKind::ProofBlock` | parser task-22 full proof justification block; owns `proof`, nested statement nodes from the reasoning body, optional recovery including `MissingEnd`, and `end` when present; the enclosing theorem or statement owns the following semicolon |
+| `SurfaceNodeKind::DefinitionBlockItem` | none | `SyntaxKind::DefinitionBlockItem` | parser task-23 `definition ... end;` block item; owns `definition`, source-ordered concrete definition content or placeholder content, optional `MissingEnd`, `end` when present, and the final semicolon when present |
+| `SurfaceNodeKind::DefinitionParameter` | none | `SyntaxKind::DefinitionParameter` | parser task-23 ordinary definition parameter; owns `let`, one or more qualified-variable segments, optional conditions or justification, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::AttributeDefinition` | none | `SyntaxKind::AttributeDefinition` | parser task-23 `attr` definition; owns `attr`, a label identifier or `MissingTerm`, `:`, a subject identifier or `MissingTerm`, `is`, an `AttributePattern`, `means`, a `FormulaDefiniens`, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::AttributePattern` | none | `SyntaxKind::AttributePattern` | parser task-23 attribute pattern head; owns an optional `ParameterPrefix` plus an identifier or user-symbol name, or `MissingTerm` when the name is absent |
+| `SurfaceNodeKind::FormulaDefiniens` | none | `SyntaxKind::FormulaDefiniens` | parser task-23 formula definiens; owns either one `FormulaExpression` or source-ordered `FormulaCase` children separated by comma tokens plus optional `otherwise FormulaExpression` |
+| `SurfaceNodeKind::FormulaCase` | none | `SyntaxKind::FormulaCase` | parser task-23 conditional formula definiens case; owns the value `FormulaExpression`, `if`, and the condition `FormulaExpression`, with `MissingFormula` recovery for absent value or condition formulas |
+| `SurfaceNodeKind::CorrectnessCondition` | none | `SyntaxKind::CorrectnessCondition` | parser task-23 correctness condition; owns the condition keyword, optional general justification (`by`, `by computation`, or `proof`), optional recovery, and optional semicolon |
 | `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host plus parser task-22 proof justification host; owns one `Proposition`, one `JustificationClause` or `ProofBlock`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
@@ -817,6 +839,43 @@ later inline-name application resolution. `SurfaceNodeView` exposes
 `as_inline_functor_definition`, `as_inline_predicate_definition`, and
 `as_typed_parameter` helpers. Snapshot rendering prints the literal node names.
 
+Parser task 23 starts S-015 definition-family vocabulary. `DefinitionBlockItem`
+owns the `definition` opener, source-ordered content, optional recovery, and the
+block-closing `end` plus semicolon when present. Concrete content in this
+increment is intentionally limited to ordinary `DefinitionParameter` nodes,
+`AssumptionStatement`, `AttributeDefinition`, `CorrectnessCondition`,
+`TheoremItem`, `LemmaItem`, and visibility-wrapped theorem/lemma content.
+Template-ambiguous
+parameters such as `let T be type;` and later definition-family forms such as
+predicate, functor, mode, redefinition, structure, property, registration,
+cluster, and reduction declarations remain source-preserving `PlaceholderItem`
+content until their paired parser tasks land.
+
+`DefinitionParameter` owns `let`, qualified-variable segments, optional
+condition-list or `such that` formula plus optional justification, optional
+recovery, and the semicolon when present. `AttributeDefinition` owns `attr`, the
+definition label, `:`, the subject identifier, `is`, an `AttributePattern`,
+`means`, a `FormulaDefiniens`, optional recovery, and the semicolon when
+present. `AttributePattern` owns an optional `ParameterPrefix` and an
+identifier or user-symbol name. `FormulaDefiniens` owns either a single
+`FormulaExpression` or conditional `FormulaCase` children with an optional
+`otherwise` formula. `CorrectnessCondition` owns the correctness keyword and an
+optional general justification, including `by`, `by computation(...)`, or a
+full `ProofBlock`.
+
+These nodes preserve definition syntax only. They do not check definitional
+correctness, attribute admissibility, existence/uniqueness obligations,
+cluster closure, notation resolution, type/proof semantics, or theorem
+visibility. Missing attribute labels, subjects, and pattern names use
+`MissingTerm`; missing formulas in definition parameters and formula definiens
+cases use `MissingFormula`; malformed justifications may use
+`MissingProofStep`; missing definition block closers use `MissingEnd`; malformed
+tails are skipped under the owning definition content node. `SurfaceNodeView`
+exposes `as_definition_block_item`, `as_definition_parameter`,
+`as_attribute_definition`, `as_attribute_pattern`, `as_formula_definiens`,
+`as_formula_case`, and `as_correctness_condition` helpers. Snapshot rendering
+prints the literal node names.
+
 ### Vocabulary Increment Contract
 
 Node vocabulary grows only in the same change as the `mizar-parser` grammar task
@@ -969,6 +1028,16 @@ SupposeItem range=<start>..<end> recovered=<bool>
 InlineFunctorDefinition range=<start>..<end> recovered=<bool>
 InlinePredicateDefinition range=<start>..<end> recovered=<bool>
 TypedParameter range=<start>..<end> recovered=<bool>
+TheoremItem range=<start>..<end> recovered=<bool>
+LemmaItem range=<start>..<end> recovered=<bool>
+ProofBlock range=<start>..<end> recovered=<bool>
+DefinitionBlockItem range=<start>..<end> recovered=<bool>
+DefinitionParameter range=<start>..<end> recovered=<bool>
+AttributeDefinition range=<start>..<end> recovered=<bool>
+AttributePattern range=<start>..<end> recovered=<bool>
+FormulaDefiniens range=<start>..<end> recovered=<bool>
+FormulaCase range=<start>..<end> recovered=<bool>
+CorrectnessCondition range=<start>..<end> recovered=<bool>
 CompactStatement range=<start>..<end> recovered=<bool>
 JustificationClause range=<start>..<end> recovered=<bool>
 ReferenceList range=<start>..<end> recovered=<bool>

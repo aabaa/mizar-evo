@@ -5,8 +5,10 @@
 状態: module skeleton、top-level placeholder dispatch、concrete import item、
 export item、visibility wrapper、reserve-hosted type expression、set comprehension
 を含む task 15 term surface、task 14 formula surface、S-013 statement node、
-task-22 theorem/proof item は実装済み。残りの concrete definition、registration、
-template、algorithm、annotation、package-oriented item grammar は計画中。
+task-22 theorem/proof item、task 23 の definition block skeleton / attribute definition /
+correctness-condition 増分は実装済み。残りの concrete predicate、functor、mode、
+structure、registration、template、algorithm、annotation、package-oriented item grammar
+は計画中。
 
 ## 目的
 
@@ -1195,6 +1197,90 @@ Task 22 tests は、theorem / lemma item、status token、theorem target の vis
 statement wiring、conclusion と compact statement 上の statement-level proof justification、
 label / colon / formula / proof-end 欠落 recovery、active parse-only pass/fail corpus coverage、
 Chapter 16 §16.2、§16.4.1、§16.5、Chapter 20 §20.9.2 への traceability を固定する必要がある。
+
+### Task 23: definition block と属性定義
+
+Task 23 は、共有 `definition ... end;` container を concrete にし、最初の concrete
+definition content を追加することで S-015 を開始する。parser は syntax-only のままであり、
+symbol 導入、attribute 解決、correctness obligation 検査、template declaration の意味的分類、
+既存の statement/proof 文法を超える proof body 検証は行わない。
+
+```ebnf
+definition_block       ::= "definition" { definition_content } "end" ";" ;
+definition_content     ::= definition_parameter_decl
+                         | assumption
+                         | correctness_condition
+                         | attr_def
+                         | [ visibility ] theorem_item
+                         | placeholder_definition_content ;
+
+definition_parameter_decl ::= "let" definition_qualified_vars
+                              [ definition_parameter_constraint ] ";" ;
+definition_parameter_constraint ::= "such" conditions
+                                  | "such" "that" formula
+                                    ( "by" references | proof_block )
+                                  | "by" references ;
+
+attr_def               ::= "attr" label ":" subject "is" attr_pattern
+                           "means" formula_definiens ";" ;
+attr_pattern           ::= [ param_prefix ] attribute_def_name ;
+formula_definiens      ::= formula
+                         | formula_case { "," formula_case }
+                           [ "otherwise" formula ] ;
+formula_case           ::= formula "if" formula ;
+
+correctness_condition  ::= ( "existence" | "uniqueness" | "coherence"
+                           | "compatibility" | "consistency"
+                           | "reducibility" )
+                           [ justification ] ";" ;
+```
+
+`DefinitionBlockItem` は `definition` token、source order の definition content node、
+closing `end` token または `MissingEnd`、存在する場合の final semicolon を所有する。
+この最初の増分で concrete にする content は意図的に狭い: 通常の
+`definition_qualified_vars` を持つ `let` parameter、assumption statement、
+correctness-condition clause、`attr` definition、theorem / lemma item（visibility-wrapped
+theorem target を含む）である。`let T be type;` のような template-like parameter、
+predicate / functor / mode definition、structure、registration、redefinition、property、
+notation alias、annotation は、対応する paired task が着地するまで source-preserving
+`PlaceholderItem` child のままにする。
+
+`DefinitionParameter` は、仕様が許す場所で `QualifiedVariableSegment`、
+`ConditionList`、`JustificationClause`、`ProofBlock` を再利用する。parser は
+未解決の definition/template ambiguity に対して AST 形を創作せず、template-ambiguous
+binder を placeholder として保持する。
+
+`AttributeDefinition` は `attr` keyword、label、colon、subject token、`is`、
+`AttributePattern`、`means`、`FormulaDefiniens`、recovery node、terminating semicolon を
+所有する。`AttributePattern` は任意の task-8 `ParameterPrefix` と、identifier または
+user-symbol 形の attribute name を保持する。`FormulaDefiniens` は単一の
+`FormulaExpression`、または comma で区切られた `FormulaCase` 列と任意の
+`otherwise` formula を所有する。`FormulaCase` は value formula、`if`、condition
+formula を所有する。
+
+`CorrectnessCondition` は correctness keyword のいずれかと、任意の general justification
+を所有する。`existence;` のような空の simple justification は有効であり、recovery node
+を作らない。仕様の `correctness_condition` tail は `justification` を使うため、
+通常の `by` reference、`by computation(...)`、full proof block を受け入れる。
+
+Task 23 recovery は既存 diagnostic を再利用する。attribute label、subject、pattern の
+欠落は `MalformedTermExpression` と `MissingTerm` を使う。`means` または formula
+definiens の欠落は `MalformedFormulaExpression` と `MissingFormula` を使う。malformed
+correctness-condition tail は `MalformedJustification` と skipped-token recovery を使う。
+definition `end` 欠落は `MissingEnd` を使う。concrete parser が対応する recovery node を
+挿入するとき、pre-pass の missing-end diagnostic との重複は抑制する。definition content
+recovery は semicolon、`end`、次の認識済み definition-content start、EOF で同期し、
+未対応 content の placeholder は top-level placeholder と同じ文脈付き block rule で
+nested block-like construct を scan する。
+
+Task 23 tests は、concrete definition block、ordinary definition parameter、
+template-ambiguous content の placeholder preservation、attribute definition、
+single-formula body と `otherwise` 付き formula-definiens case、空 / reference /
+computation / proof justification を持つ correctness condition、assumption content、
+direct theorem / lemma content、definition 内の visible theorem / lemma content、
+malformed attribute / correctness recovery、active parse-only pass/fail corpus coverage、
+Chapter 6 §6.2 / Appendix A.6、Chapter 16 §16.2 / §16.6 / Appendix A.16、
+Chapter 20 §20.9.2 への traceability を固定する必要がある。
 
 ## 公開 enum の互換性
 

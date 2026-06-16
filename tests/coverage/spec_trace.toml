@@ -952,6 +952,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.06.attribute_definitions.parser"
+source = "doc/spec/en/06.attributes.md"
+section = "6.2 Syntax; 6.9 Complete Syntax; Appendix A.6 Attributes"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_definition_attributes_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_definition_attributes_recovery_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.15.statements.syntax"
 source = "doc/spec/en/15.statements.md"
 section = "15.2.1 Generalization Statement; 15.2.2 Constant Definition; 15.2.3 Inline Function Definition (`deffunc`); 15.2.4 Inline Predicate Definition (`defpred`); 15.3.1 Single Assumption; 15.3.2 Collective Assumption; 15.3.3 Existential Assumption; 15.3.4 Choice Statement (`consider`); 15.4.1 Conclusion Statement (`thus`/`hence`); 15.4.2 Hence Statement; 15.4.3 Block Conclusion (`hereby`); 15.4.4 Witness Introduction; 15.5.1 Type Reconsideration (`reconsider`); 15.6.1 Labeled Reasoning Block (`now`); 15.6.2 Case Analysis (`case`); 15.6.3 Supposition (`suppose`); 15.7 Iterative Equality; 15.8 Justification Forms; 15.9.1 Sequential Link (`then`)"
@@ -983,8 +996,22 @@ status = "covered"
 required = true
 coverage = "pass_and_fail"
 tests = [
+  "tests/miz/pass/parser/pass_parser_definition_attributes_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_theorems_proofs_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_theorems_proofs_recovery_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.16.correctness_conditions.parser"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.6 Correctness Conditions; Appendix A.16 Theorems and Correctness Blocks"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_definition_attributes_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_definition_attributes_recovery_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1010,6 +1037,7 @@ status = "covered"
 required = true
 coverage = "pass_and_fail"
 tests = [
+  "tests/miz/pass/parser/pass_parser_definition_attributes_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_theorems_proofs_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_justifications_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_justifications_recovery_001.expect.toml",

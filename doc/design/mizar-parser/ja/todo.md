@@ -542,13 +542,27 @@ resolver / build-system 依存を避ける。
       formula / proof-end 欠落 recovery、active parse-only pass/fail corpus fixture、
       traceability metadata を追加した。
 
-23. **definition ブロック骨格・correctness 条件・属性定義。** [ ]
+23. **definition ブロック骨格・correctness 条件・属性定義。** [x]
     - すべての定義種別が共有する `definition … end` ブロックの形、
       correctness 条件句の形（`existence`、`uniqueness`、`coherence`、
       `consistency`、`compatibility` など、正当化付き）、および最初の具体
       種別としての `attr` 定義。
     - 依存: 22、`mizar-syntax` task 15 / S-015。仕様:
-      [06.attributes.md](../../../spec/ja/06.attributes.md)。
+      [06.attributes.md](../../../spec/ja/06.attributes.md)、
+      [16.theorems_and_proofs.md](../../../spec/ja/16.theorems_and_proofs.md)、
+      [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)
+      §20.9.2。
+    - 結果: 最初の S-015 増分として `DefinitionBlockItem`、
+      `DefinitionParameter`、`AttributeDefinition`、`AttributePattern`、
+      `FormulaDefiniens`、`FormulaCase`、`CorrectnessCondition` の解析を
+      実装した。通常の definition parameter、assumption、attr definition、
+      空 / reference / computation / proof correctness condition、theorem / lemma
+      content、visible theorem / lemma content は concrete である。
+      template-ambiguous parameter
+      （`let T be type;`）と後続の definition-family form は G-AUD-006 のもとで
+      source-preserving placeholder のまま保持する。parser unit test、active
+      parse-only pass/fail corpus fixture、traceability metadata が新しい形と
+      recovery case を網羅する。
 
 24. **述語定義。** [ ]
     - `means` 本体を持つ `pred` 定義。

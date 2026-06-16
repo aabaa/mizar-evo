@@ -1,0 +1,17 @@
+schema_version = 1
+id = "pass_parser_definition_attributes_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.definitions"
+source = "pass_parser_definition_attributes_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.06.attribute_definitions.parser",
+  "spec.en.16.correctness_conditions.parser",
+  "spec.en.16.theorem_proof_items.parser",
+  "spec.en.20.computation_proof.parser",
+]
+notes = "Active parse-only runner coverage for parser task 23 definition blocks, ordinary definition parameters, assumption/theorem/lemma definition content, attribute definitions with formula definiens cases and single-formula bodies, all task-23 correctness condition keywords, and placeholder-preserved template-ambiguous definition content."

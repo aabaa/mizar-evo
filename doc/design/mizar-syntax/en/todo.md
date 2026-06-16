@@ -414,11 +414,19 @@ interaction. Spec references are the normative grammar chapters under
       clauses (parser task 28); `struct` definitions with fields and
       inheritance (parser task 29); registration and cluster forms and
       `reduce` (parser task 30).
+      Parser task 23 is complete for the first S-015 increment:
+      `DefinitionBlockItem`, `DefinitionParameter`, `AttributeDefinition`,
+      `AttributePattern`, `FormulaDefiniens`, `FormulaCase`, and
+      `CorrectnessCondition` are implemented with typed accessors, definition
+      block recovery, active parse-only pass/fail corpus coverage, and
+      traceability metadata for attribute definitions and correctness
+      conditions. S-015 remains open for parser tasks 24-30.
     - Spec: [06.attributes.md](../../../spec/en/06.attributes.md),
       [07.modes.md](../../../spec/en/07.modes.md),
       [09.predicates.md](../../../spec/en/09.predicates.md),
       [10.functors.md](../../../spec/en/10.functors.md),
       [11.symbol_management.md](../../../spec/en/11.symbol_management.md),
+      [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md),
       [05.structures.md](../../../spec/en/05.structures.md),
       [17.clusters_and_registrations.md](../../../spec/en/17.clusters_and_registrations.md).
 

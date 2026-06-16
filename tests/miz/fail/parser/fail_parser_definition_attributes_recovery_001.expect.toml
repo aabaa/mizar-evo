@@ -1,0 +1,27 @@
+schema_version = 1
+id = "fail_parser_definition_attributes_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.definitions"
+source = "fail_parser_definition_attributes_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_definition_attribute_content"
+stable_detail_key = "parser.definitions.attribute_recovery"
+diagnostic_codes = [
+  "lexing:ScopeSkeleton(MissingEnd)",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_formula_expression",
+  "malformed_justification",
+  "missing_end",
+  "missing_semicolon",
+]
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.06.attribute_definitions.parser",
+  "spec.en.16.correctness_conditions.parser",
+]
+notes = "Active parse-only runner coverage for parser task 23 recovery: missing attribute label, subject, pattern, formula definiens, malformed correctness-condition tail, and missing definition end."

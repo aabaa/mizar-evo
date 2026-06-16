@@ -3,9 +3,11 @@
 Status: module skeleton, top-level placeholder dispatch, concrete import
 items, export items, visibility wrappers, reserve-hosted type expressions,
 task-15 term surfaces including set comprehensions, task-14 formula surfaces,
-S-013 statement nodes, and task-22 theorem/proof items are implemented;
-remaining concrete definition, registration, template, algorithm, annotation,
-and package-oriented item grammars are planned.
+S-013 statement nodes, task-22 theorem/proof items, and the task-23 definition
+block skeleton / attribute-definition / correctness-condition increment are
+implemented; remaining concrete predicate, functor, mode, structure,
+registration, template, algorithm, annotation, and package-oriented item
+grammars are planned.
 
 ## Purpose
 
@@ -1279,6 +1281,96 @@ full theorem proof blocks, proof-body statement wiring, statement-level proof
 justifications on conclusions and compact statements, missing label / colon /
 formula / proof-end recovery, active parse-only pass/fail corpus coverage, and
 traceability to Chapter 16 §16.2, §16.4.1, §16.5, and Chapter 20 §20.9.2.
+
+### Task 23: Definition Blocks And Attribute Definitions
+
+Task 23 starts S-015 by making the shared `definition ... end;` container
+concrete and adding the first concrete definition content kinds. The parser
+stays syntax-only: it does not introduce symbols, resolve attributes, check
+correctness obligations, classify template declarations semantically, or
+validate proof bodies beyond the already-concrete statement/proof grammar.
+
+```ebnf
+definition_block       ::= "definition" { definition_content } "end" ";" ;
+definition_content     ::= definition_parameter_decl
+                         | assumption
+                         | correctness_condition
+                         | attr_def
+                         | [ visibility ] theorem_item
+                         | placeholder_definition_content ;
+
+definition_parameter_decl ::= "let" definition_qualified_vars
+                              [ definition_parameter_constraint ] ";" ;
+definition_parameter_constraint ::= "such" conditions
+                                  | "such" "that" formula
+                                    ( "by" references | proof_block )
+                                  | "by" references ;
+
+attr_def               ::= "attr" label ":" subject "is" attr_pattern
+                           "means" formula_definiens ";" ;
+attr_pattern           ::= [ param_prefix ] attribute_def_name ;
+formula_definiens      ::= formula
+                         | formula_case { "," formula_case }
+                           [ "otherwise" formula ] ;
+formula_case           ::= formula "if" formula ;
+
+correctness_condition  ::= ( "existence" | "uniqueness" | "coherence"
+                           | "compatibility" | "consistency"
+                           | "reducibility" )
+                           [ justification ] ";" ;
+```
+
+`DefinitionBlockItem` owns the `definition` token, source-ordered definition
+content nodes, the closing `end` token or `MissingEnd`, and the final semicolon
+when present. Supported concrete content is intentionally narrow in this first
+increment: ordinary `let` parameters with `definition_qualified_vars`,
+assumption statements, correctness-condition clauses, `attr` definitions, and
+theorem/lemma items including visibility-wrapped theorem targets. Template-like
+parameters such as `let T be type;`, predicate/functor/mode definitions,
+structures, registrations, redefinitions, properties, notation aliases, and
+annotations remain source-preserving `PlaceholderItem` children until their
+paired tasks land.
+
+`DefinitionParameter` reuses `QualifiedVariableSegment`, `ConditionList`,
+`JustificationClause`, and `ProofBlock` where the specification permits them.
+The parser deliberately keeps template-ambiguous binders as placeholders
+instead of inventing AST shape for the open definition/template ambiguity.
+
+`AttributeDefinition` owns the `attr` keyword, label, colon, subject token,
+`is`, an `AttributePattern`, `means`, a `FormulaDefiniens`, recovery nodes, and
+the terminating semicolon. `AttributePattern` preserves an optional task-8
+`ParameterPrefix` and an identifier- or user-symbol-shaped attribute name.
+`FormulaDefiniens` owns either one `FormulaExpression` or a list of
+`FormulaCase` nodes separated by commas, plus an optional `otherwise` formula.
+`FormulaCase` owns the value formula, `if`, and the condition formula.
+
+`CorrectnessCondition` owns one of the correctness keywords and an optional
+general justification. Empty simple justifications such as `existence;` are
+valid and do not create a recovery node. Ordinary `by` references,
+`by computation(...)`, and full proof blocks are accepted because the
+specification's `correctness_condition` tail uses `justification`.
+
+Task 23 recovery reuses existing diagnostics. Missing attribute labels,
+subjects, and patterns use `MalformedTermExpression` plus `MissingTerm`.
+Missing `means` or formula definiens uses `MalformedFormulaExpression` plus
+`MissingFormula`. Malformed correctness-condition tails use
+`MalformedJustification` and skipped-token recovery. Missing definition `end`
+uses `MissingEnd`; duplicate pre-pass missing-end diagnostics are suppressed
+when the concrete parser inserts the corresponding recovery node. Definition
+content recovery synchronizes at semicolons, `end`, the next recognized
+definition-content start, or EOF, and unsupported content placeholders scan
+through nested block-like constructs with the same contextual block rules as
+top-level placeholders.
+
+Task 23 tests must pin: concrete definition blocks, ordinary definition
+parameters, placeholder preservation for template-ambiguous content, attribute
+definitions with single-formula bodies and formula-definiens cases with
+`otherwise`, correctness conditions with empty / reference / computation /
+proof justifications, assumption content, direct theorem/lemma content, visible
+theorem/lemma content inside definitions, malformed attribute/correctness
+recovery, active parse-only pass/fail corpus coverage, and traceability to
+Chapter 6 §6.2 / Appendix A.6, Chapter 16 §16.2 / §16.6 / Appendix A.16, and
+Chapter 20 §20.9.2.
 
 ## Public Enum Compatibility
 

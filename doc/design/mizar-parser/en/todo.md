@@ -560,13 +560,27 @@ older numeric syntax task references appear to disagree, prefer
       label/colon/formula/proof-end recovery, active parse-only pass/fail
       corpus fixtures, and traceability metadata.
 
-23. **Definition block skeleton, correctness conditions, and attribute definitions.** [ ]
+23. **Definition block skeleton, correctness conditions, and attribute definitions.** [x]
     - `definition … end` block shape shared by all definition kinds, the
       correctness-condition clause shape (`existence`, `uniqueness`,
       `coherence`, `consistency`, `compatibility`, … with justifications), and
       `attr` definitions as the first concrete kind.
     - Deps: 22, `mizar-syntax` task 15 / S-015. Spec:
-      [06.attributes.md](../../../spec/en/06.attributes.md).
+      [06.attributes.md](../../../spec/en/06.attributes.md),
+      [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md),
+      [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md)
+      §20.9.2.
+    - Result: implemented `DefinitionBlockItem`, `DefinitionParameter`,
+      `AttributeDefinition`, `AttributePattern`, `FormulaDefiniens`,
+      `FormulaCase`, and `CorrectnessCondition` parsing for the first S-015
+      increment. Ordinary definition parameters, assumptions, attr definitions,
+      empty/reference/computation/proof correctness conditions, theorem/lemma
+      content, and visible theorem/lemma content are concrete.
+      Template-ambiguous parameters
+      (`let T be type;`) and later definition-family forms remain
+      source-preserving placeholders under G-AUD-006. Parser unit tests, active
+      parse-only pass/fail corpus fixtures, and traceability metadata cover the
+      new shapes and recovery cases.
 
 24. **Predicate definitions.** [ ]
     - `pred` definitions with `means` bodies.

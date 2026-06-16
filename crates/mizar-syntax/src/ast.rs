@@ -131,6 +131,13 @@ pub enum SyntaxKind {
     TheoremItem = 96,
     LemmaItem = 97,
     ProofBlock = 98,
+    DefinitionBlockItem = 109,
+    DefinitionParameter = 110,
+    AttributeDefinition = 111,
+    AttributePattern = 112,
+    FormulaDefiniens = 113,
+    FormulaCase = 114,
+    CorrectnessCondition = 115,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -243,6 +250,13 @@ impl SyntaxKind {
             96 => Self::TheoremItem,
             97 => Self::LemmaItem,
             98 => Self::ProofBlock,
+            109 => Self::DefinitionBlockItem,
+            110 => Self::DefinitionParameter,
+            111 => Self::AttributeDefinition,
+            112 => Self::AttributePattern,
+            113 => Self::FormulaDefiniens,
+            114 => Self::FormulaCase,
+            115 => Self::CorrectnessCondition,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -357,6 +371,13 @@ impl SyntaxKind {
                 | Self::TheoremItem
                 | Self::LemmaItem
                 | Self::ProofBlock
+                | Self::DefinitionBlockItem
+                | Self::DefinitionParameter
+                | Self::AttributeDefinition
+                | Self::AttributePattern
+                | Self::FormulaDefiniens
+                | Self::FormulaCase
+                | Self::CorrectnessCondition
         )
     }
 
@@ -1134,6 +1155,55 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_definition_block_item(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::DefinitionBlockItem => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_definition_parameter(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::DefinitionParameter => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_attribute_definition(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AttributeDefinition => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_attribute_pattern(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AttributePattern => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_formula_definiens(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::FormulaDefiniens => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_formula_case(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::FormulaCase => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_correctness_condition(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::CorrectnessCondition => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_let_statement(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::LetStatement => Some(self),
@@ -1692,6 +1762,13 @@ pub enum SurfaceNodeKind {
     TheoremItem,
     LemmaItem,
     ProofBlock,
+    DefinitionBlockItem,
+    DefinitionParameter,
+    AttributeDefinition,
+    AttributePattern,
+    FormulaDefiniens,
+    FormulaCase,
+    CorrectnessCondition,
     SelectorAccess,
     StructureUpdate,
     FieldUpdate,
@@ -1795,6 +1872,13 @@ impl SurfaceNodeKind {
             Self::TheoremItem => SyntaxKind::TheoremItem,
             Self::LemmaItem => SyntaxKind::LemmaItem,
             Self::ProofBlock => SyntaxKind::ProofBlock,
+            Self::DefinitionBlockItem => SyntaxKind::DefinitionBlockItem,
+            Self::DefinitionParameter => SyntaxKind::DefinitionParameter,
+            Self::AttributeDefinition => SyntaxKind::AttributeDefinition,
+            Self::AttributePattern => SyntaxKind::AttributePattern,
+            Self::FormulaDefiniens => SyntaxKind::FormulaDefiniens,
+            Self::FormulaCase => SyntaxKind::FormulaCase,
+            Self::CorrectnessCondition => SyntaxKind::CorrectnessCondition,
             Self::SelectorAccess => SyntaxKind::SelectorAccess,
             Self::StructureUpdate => SyntaxKind::StructureUpdate,
             Self::FieldUpdate => SyntaxKind::FieldUpdate,
@@ -2062,6 +2146,13 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::TheoremItem => output.push_str("TheoremItem"),
         SurfaceNodeKind::LemmaItem => output.push_str("LemmaItem"),
         SurfaceNodeKind::ProofBlock => output.push_str("ProofBlock"),
+        SurfaceNodeKind::DefinitionBlockItem => output.push_str("DefinitionBlockItem"),
+        SurfaceNodeKind::DefinitionParameter => output.push_str("DefinitionParameter"),
+        SurfaceNodeKind::AttributeDefinition => output.push_str("AttributeDefinition"),
+        SurfaceNodeKind::AttributePattern => output.push_str("AttributePattern"),
+        SurfaceNodeKind::FormulaDefiniens => output.push_str("FormulaDefiniens"),
+        SurfaceNodeKind::FormulaCase => output.push_str("FormulaCase"),
+        SurfaceNodeKind::CorrectnessCondition => output.push_str("CorrectnessCondition"),
         SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
@@ -3167,6 +3258,18 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            task22_theorem_nodes_ast(source_id(34))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
+        rowan_kinds.extend(
+            task23_definition_nodes_ast(source_id(35))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -3235,6 +3338,16 @@ mod tests {
             SyntaxKind::InlineFunctorDefinition,
             SyntaxKind::InlinePredicateDefinition,
             SyntaxKind::TypedParameter,
+            SyntaxKind::TheoremItem,
+            SyntaxKind::LemmaItem,
+            SyntaxKind::ProofBlock,
+            SyntaxKind::DefinitionBlockItem,
+            SyntaxKind::DefinitionParameter,
+            SyntaxKind::AttributeDefinition,
+            SyntaxKind::AttributePattern,
+            SyntaxKind::FormulaDefiniens,
+            SyntaxKind::FormulaCase,
+            SyntaxKind::CorrectnessCondition,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -4722,6 +4835,72 @@ mod tests {
             assert!(
                 snapshot.contains(expected),
                 "snapshot should render task-22 line {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn task23_typed_accessors_cover_definition_nodes() {
+        let ast = task23_definition_nodes_ast(source_id(35));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task23_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task23_view!(
+            SurfaceNodeKind::DefinitionBlockItem,
+            SyntaxKind::DefinitionBlockItem,
+            as_definition_block_item
+        );
+        assert_task23_view!(
+            SurfaceNodeKind::DefinitionParameter,
+            SyntaxKind::DefinitionParameter,
+            as_definition_parameter
+        );
+        assert_task23_view!(
+            SurfaceNodeKind::AttributeDefinition,
+            SyntaxKind::AttributeDefinition,
+            as_attribute_definition
+        );
+        assert_task23_view!(
+            SurfaceNodeKind::AttributePattern,
+            SyntaxKind::AttributePattern,
+            as_attribute_pattern
+        );
+        assert_task23_view!(
+            SurfaceNodeKind::FormulaDefiniens,
+            SyntaxKind::FormulaDefiniens,
+            as_formula_definiens
+        );
+        assert_task23_view!(
+            SurfaceNodeKind::FormulaCase,
+            SyntaxKind::FormulaCase,
+            as_formula_case
+        );
+        assert_task23_view!(
+            SurfaceNodeKind::CorrectnessCondition,
+            SyntaxKind::CorrectnessCondition,
+            as_correctness_condition
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in [
+            "DefinitionBlockItem",
+            "DefinitionParameter",
+            "AttributeDefinition",
+            "AttributePattern",
+            "FormulaDefiniens",
+            "FormulaCase",
+            "CorrectnessCondition",
+        ] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-23 line {expected}"
             );
         }
     }
@@ -7561,6 +7740,235 @@ mod tests {
                 second_colon,
                 second_thesis,
                 second_semicolon,
+                compilation_unit,
+            ],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn task23_definition_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let definition = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "definition",
+            range(source_id, 0, 10),
+        );
+        let let_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "let",
+            range(source_id, 11, 14),
+        );
+        let x_decl = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 15, 16));
+        let be_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "be",
+            range(source_id, 17, 19),
+        );
+        let set_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 20, 23),
+        );
+        let first_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 23, 24),
+        );
+        let attr = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "attr",
+            range(source_id, 25, 29),
+        );
+        let label = builder.add_token(SurfaceTokenKind::Identifier, "A", range(source_id, 30, 31));
+        let colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 31, 32),
+        );
+        let subject =
+            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 33, 34));
+        let is_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "is",
+            range(source_id, 35, 37),
+        );
+        let odd = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "odd",
+            range(source_id, 38, 41),
+        );
+        let means = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "means",
+            range(source_id, 42, 47),
+        );
+        let first_thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 48, 54),
+        );
+        let if_keyword = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "if",
+            range(source_id, 55, 57),
+        );
+        let contradiction = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "contradiction",
+            range(source_id, 58, 71),
+        );
+        let otherwise = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "otherwise",
+            range(source_id, 72, 81),
+        );
+        let second_thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 82, 88),
+        );
+        let attr_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 88, 89),
+        );
+        let existence = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "existence",
+            range(source_id, 90, 99),
+        );
+        let existence_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 99, 100),
+        );
+        let end = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "end",
+            range(source_id, 101, 104),
+        );
+        let block_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 104, 105),
+        );
+
+        let type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 20, 23),
+            vec![set_keyword],
+        );
+        let type_expression = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 20, 23),
+            vec![type_head],
+        );
+        let segment = builder.add_node(
+            SurfaceNodeKind::QualifiedVariableSegment,
+            range(source_id, 15, 23),
+            vec![x_decl, be_keyword, type_expression],
+        );
+        let parameter = builder.add_node(
+            SurfaceNodeKind::DefinitionParameter,
+            range(source_id, 11, 24),
+            vec![let_keyword, segment, first_semicolon],
+        );
+        let pattern = builder.add_node(
+            SurfaceNodeKind::AttributePattern,
+            range(source_id, 38, 41),
+            vec![odd],
+        );
+        let first_formula = thesis_formula_node(&mut builder, source_id, first_thesis, 48, 54);
+        let contradiction_constant = builder.add_node(
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction),
+            range(source_id, 58, 71),
+            vec![contradiction],
+        );
+        let condition_formula = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, 58, 71),
+            vec![contradiction_constant],
+        );
+        let formula_case = builder.add_node(
+            SurfaceNodeKind::FormulaCase,
+            range(source_id, 48, 71),
+            vec![first_formula, if_keyword, condition_formula],
+        );
+        let otherwise_formula = thesis_formula_node(&mut builder, source_id, second_thesis, 82, 88);
+        let definiens = builder.add_node(
+            SurfaceNodeKind::FormulaDefiniens,
+            range(source_id, 48, 88),
+            vec![formula_case, otherwise, otherwise_formula],
+        );
+        let attribute = builder.add_node(
+            SurfaceNodeKind::AttributeDefinition,
+            range(source_id, 25, 89),
+            vec![
+                attr,
+                label,
+                colon,
+                subject,
+                is_keyword,
+                pattern,
+                means,
+                definiens,
+                attr_semicolon,
+            ],
+        );
+        let correctness = builder.add_node(
+            SurfaceNodeKind::CorrectnessCondition,
+            range(source_id, 90, 100),
+            vec![existence, existence_semicolon],
+        );
+        let definition_item = builder.add_node(
+            SurfaceNodeKind::DefinitionBlockItem,
+            range(source_id, 0, 105),
+            vec![
+                definition,
+                parameter,
+                attribute,
+                correctness,
+                end,
+                block_semicolon,
+            ],
+        );
+        let item_list = builder.add_node(
+            SurfaceNodeKind::ItemList,
+            range(source_id, 0, 105),
+            vec![definition_item],
+        );
+        let compilation_unit = builder.add_node(
+            SurfaceNodeKind::CompilationUnit,
+            range(source_id, 0, 105),
+            vec![item_list],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 105),
+            vec![
+                definition,
+                let_keyword,
+                x_decl,
+                be_keyword,
+                set_keyword,
+                first_semicolon,
+                attr,
+                label,
+                colon,
+                subject,
+                is_keyword,
+                odd,
+                means,
+                first_thesis,
+                if_keyword,
+                contradiction,
+                otherwise,
+                second_thesis,
+                attr_semicolon,
+                existence,
+                existence_semicolon,
+                end,
+                block_semicolon,
                 compilation_unit,
             ],
         );

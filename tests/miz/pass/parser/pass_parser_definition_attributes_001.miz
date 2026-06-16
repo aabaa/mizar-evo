@@ -1,0 +1,22 @@
+definition
+  let x be set;
+  attr AttrDef: x is odd means thesis if thesis, contradiction if thesis otherwise thesis;
+  attr SingleDef: x is odd means thesis;
+  assume thesis;
+  existence;
+  uniqueness by Ref;
+  coherence by Ref;
+  compatibility by computation(steps: 1);
+  reducibility by Ref;
+  consistency proof
+    thus thesis;
+  end;
+  theorem Plain: thesis;
+  lemma InnerLemma: thesis;
+  public theorem Inner: thesis;
+end;
+
+definition
+  let T be type;
+  pred Deferred means thesis;
+end;
