@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_predicate_definitions_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.definitions"
+source = "pass_parser_predicate_definitions_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.09.predicate_definitions.parser",
+]
+notes = "Active parse-only runner coverage for parser task 24 predicate definitions: raw phrase/infix/multi-loci predicate patterns, imported symbolic predicate tokens, bracketed template-loci preservation, formula-definiens cases, and definition-local public/private visibility."

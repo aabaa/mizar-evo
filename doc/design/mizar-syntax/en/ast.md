@@ -116,6 +116,8 @@ green tree.
 | formula definiens node | `SyntaxKind::FormulaDefiniens` |
 | formula case node | `SyntaxKind::FormulaCase` |
 | correctness condition node | `SyntaxKind::CorrectnessCondition` |
+| predicate definition node | `SyntaxKind::PredicateDefinition` |
+| predicate pattern node | `SyntaxKind::PredicatePattern` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -262,13 +264,15 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 113 | `FormulaDefiniens` | task-23 formula definiens body |
 | 114 | `FormulaCase` | task-23 conditional formula definiens case |
 | 115 | `CorrectnessCondition` | task-23 correctness-condition clause |
+| 116 | `PredicateDefinition` | task-24 `pred ... means ...;` definition |
+| 117 | `PredicatePattern` | task-24 raw predicate definition pattern |
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
 above, including `Root` through task-22 `ProofBlock`, task-23
-`DefinitionBlockItem` through `CorrectnessCondition`, the compatibility `Token`
-wrapper, and `ErrorRecovery`; `is_token_kind` is true only for token leaf raw
-kinds `TokenIdentifier` through `TokenUnknown`. Future raw values should be
+`DefinitionBlockItem` through task-24 `PredicatePattern`, the compatibility
+`Token` wrapper, and `ErrorRecovery`; `is_token_kind` is true only for token
+leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future raw values should be
 appended or assigned into a documented reserved range so existing snapshots and
 rowan tests fail loudly when the raw vocabulary changes.
 
@@ -346,6 +350,8 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::FormulaDefiniens` | none | `SyntaxKind::FormulaDefiniens` | parser task-23 formula definiens; owns either one `FormulaExpression` or source-ordered `FormulaCase` children separated by comma tokens plus optional `otherwise FormulaExpression` |
 | `SurfaceNodeKind::FormulaCase` | none | `SyntaxKind::FormulaCase` | parser task-23 conditional formula definiens case; owns the value `FormulaExpression`, `if`, and the condition `FormulaExpression`, with `MissingFormula` recovery for absent value or condition formulas |
 | `SurfaceNodeKind::CorrectnessCondition` | none | `SyntaxKind::CorrectnessCondition` | parser task-23 correctness condition; owns the condition keyword, optional general justification (`by`, `by computation`, or `proof`), optional recovery, and optional semicolon |
+| `SurfaceNodeKind::PredicateDefinition` | none | `SyntaxKind::PredicateDefinition` | parser task-24 `pred` definition; owns `pred`, a label identifier or `MissingTerm`, `:`, a raw `PredicatePattern`, `means`, a `FormulaDefiniens`, optional recovery, and optional semicolon |
+| `SurfaceNodeKind::PredicatePattern` | none | `SyntaxKind::PredicatePattern` | parser task-24 predicate definition pattern; owns source-ordered raw pattern tokens accepted by `pred_pattern` (`loci`, one `def_predicate_symbol`, optional `template_loci`, optional trailing `loci`) plus `MissingTerm` recovery when no grammar-shaped split exists; it does not encode which identifier is the predicate symbol |
 | `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host plus parser task-22 proof justification host; owns one `Proposition`, one `JustificationClause` or `ProofBlock`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
@@ -876,6 +882,29 @@ exposes `as_definition_block_item`, `as_definition_parameter`,
 `as_formula_case`, and `as_correctness_condition` helpers. Snapshot rendering
 prints the literal node names.
 
+Parser task 24 adds predicate definitions as the next S-015 increment.
+`PredicateDefinition` owns `pred`, the definition label, `:`, a
+`PredicatePattern`, `means`, a task-23 `FormulaDefiniens`, optional recovery,
+and the semicolon when present. Definition-local `public pred` and
+`private pred` are represented by the existing `VisibleItem` wrapper around the
+`PredicateDefinition`; other visible definition kinds remain with their owning
+parser tasks.
+
+`PredicatePattern` preserves the pattern as raw source-ordered token children.
+The parser validates that the raw span can match
+`[ loci ] def_predicate_symbol [ template_loci ] [ loci ]` under at least one
+syntactic split, but the AST does not record which identifier is the predicate
+symbol. This keeps phrase-pattern ambiguity, such as prefix-like and
+postfix-like two-identifier patterns, resolver-owned. Primitive built-in
+predicate tokens `in`, `=`, and `<>` cannot satisfy `def_predicate_symbol` and
+are represented as malformed predicate patterns with `MissingTerm` recovery.
+Bracketed `template_loci` tokens may be preserved inside `PredicatePattern`,
+but task 24 does not add template-specific nodes or classify
+`definition ... end;` blocks as template definitions; G-AUD-006 remains open
+for S-016. `SurfaceNodeView` exposes `as_predicate_definition` and
+`as_predicate_pattern` helpers. Snapshot rendering prints the literal node
+names.
+
 ### Vocabulary Increment Contract
 
 Node vocabulary grows only in the same change as the `mizar-parser` grammar task
@@ -1038,6 +1067,8 @@ AttributePattern range=<start>..<end> recovered=<bool>
 FormulaDefiniens range=<start>..<end> recovered=<bool>
 FormulaCase range=<start>..<end> recovered=<bool>
 CorrectnessCondition range=<start>..<end> recovered=<bool>
+PredicateDefinition range=<start>..<end> recovered=<bool>
+PredicatePattern range=<start>..<end> recovered=<bool>
 CompactStatement range=<start>..<end> recovered=<bool>
 JustificationClause range=<start>..<end> recovered=<bool>
 ReferenceList range=<start>..<end> recovered=<bool>

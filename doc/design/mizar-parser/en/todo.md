@@ -582,9 +582,19 @@ older numeric syntax task references appear to disagree, prefer
       parse-only pass/fail corpus fixtures, and traceability metadata cover the
       new shapes and recovery cases.
 
-24. **Predicate definitions.** [ ]
+24. **Predicate definitions.** [x]
     - `pred` definitions with `means` bodies.
     - Deps: 23, `mizar-syntax` task 15 / S-015. Spec: [09.predicates.md](../../../spec/en/09.predicates.md).
+    - Result: implemented `PredicateDefinition` and raw `PredicatePattern`
+      parsing inside definition blocks, including ordinary and
+      definition-local `public` / `private` predicate definitions, task-23
+      `FormulaDefiniens` bodies, grammar-shaped validation of ambiguous phrase
+      patterns without recording semantic symbol-role splits, built-in
+      predicate-token rejection, imported symbolic predicate-token coverage,
+      parser-token lexeme-run symbolic pattern coverage, template-loci token
+      preservation without template-definition classification, parser unit
+      tests, active parse-only pass/fail corpus fixtures, and traceability
+      metadata.
 
 25. **Functor definitions.** [ ]
     - `func` definitions with `means`/`equals` bodies.

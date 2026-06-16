@@ -420,7 +420,12 @@ interaction. Spec references are the normative grammar chapters under
       `CorrectnessCondition` are implemented with typed accessors, definition
       block recovery, active parse-only pass/fail corpus coverage, and
       traceability metadata for attribute definitions and correctness
-      conditions. S-015 remains open for parser tasks 24-30.
+      conditions. Parser task 24 is complete for predicate definitions:
+      `PredicateDefinition` and raw `PredicatePattern` are implemented with
+      typed accessors, definition-local visibility, formula-definiens bodies,
+      grammar-shaped pattern validation, active parse-only pass/fail corpus
+      coverage, and traceability metadata. S-015 remains open for parser tasks
+      25-30.
     - Spec: [06.attributes.md](../../../spec/en/06.attributes.md),
       [07.modes.md](../../../spec/en/07.modes.md),
       [09.predicates.md](../../../spec/en/09.predicates.md),

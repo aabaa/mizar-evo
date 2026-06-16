@@ -1282,6 +1282,71 @@ malformed attribute / correctness recovery、active parse-only pass/fail corpus 
 Chapter 6 §6.2 / Appendix A.6、Chapter 16 §16.2 / §16.6 / Appendix A.16、
 Chapter 20 §20.9.2 への traceability を固定する必要がある。
 
+### Task 24: 述語定義
+
+Task 24 は、task-23 の `DefinitionBlockItem` container 内に
+`pred ... means ...;` definition form を追加する。parser は syntax-only のままで、
+predicate symbol の導入、overload 解決、phrase-pattern role の決定、parameter typing、
+predicate property の証明、template definition の分類は行わない。
+
+```ebnf
+definition_content     ::= ... | pred_def | [ visibility ] pred_def ;
+
+pred_def               ::= "pred" label ":" pred_pattern
+                           "means" formula_definiens ";" ;
+pred_pattern           ::= [ loci ] def_predicate_symbol
+                           [ template_loci ] [ loci ] ;
+loci                   ::= locus_list | "(" locus_list ")" ;
+locus_list             ::= locus { "," locus } ;
+locus                  ::= identifier ;
+template_loci          ::= "[" locus_list "]" ;
+def_predicate_symbol   ::= identifier | symbolic_pred ;
+symbolic_pred          ::= symbol_char+ ;
+```
+
+`PredicateDefinition` は `pred` keyword、label identifier または `MissingTerm`、
+colon、`PredicatePattern`、`means`、task-23 の `FormulaDefiniens`、任意の
+recovery、存在する場合の semicolon を所有する。definition-local な
+`public pred` と `private pred` は、既存の `VisibleItem` と `VisibilityMarker`
+wrapper で concrete predicate definition を包んで表す。他の visible definition kind は、
+それぞれの owning task に残す。
+
+`PredicatePattern` は、left-loci / predicate-symbol / right-loci role を記録せず、
+source-order の raw pattern token を保持する。任意の balanced token を受理しないため、
+parser は raw span が少なくとも 1 通りの syntactic split で `pred_pattern` に
+一致できる場合だけ受理する。`loci` は non-empty identifier comma-list であり、
+parenthesized でもよい。`template_loci` は最大 1 個の bracketed non-empty
+identifier comma-list である。`def_predicate_symbol` はちょうど 1 個の identifier、
+active user-symbol、または lexeme-run token である。active parse-only source fixture は
+imported symbolic predicate token を扱う。lexeme-run case は、frontend が
+definition-symbol lexing context を持った時に fresh symbolic predicate definition を
+parser-token boundary で受け取れるようにするためのものである。空 group、dangling comma、
+隣接 loci group、複数 bracket group、
+unsupported token は malformed predicate pattern として recover する。primitive
+built-in predicate token の `in`、`=`、`<>` は definition symbol ではないため、
+predicate definition pattern を形成せず recover する。
+
+template-loci token は `PredicatePattern` に保持してよいが、task 24 は
+template-definition fixture を有効化せず、template-specific AST node を追加せず、
+`definition ... end;` block を template definition として分類しない。
+`let T be type;` のような template-ambiguous parameter の後では、definition block は
+G-AUD-006 のもとで後続 content も placeholder として保持し続ける。
+
+Task 24 recovery は task-23 の definition-content synchronization を再利用する。
+predicate label 欠落と malformed predicate pattern は `MalformedTermExpression` と
+`MissingTerm` を使う。`means` 欠落、formula-definiens body 欠落、formula case 欠落、
+`otherwise` body 欠落は `MalformedFormulaExpression` と `MissingFormula` を使う。
+malformed predicate definition tail は semicolon、`end`、次の definition-content
+start、または EOF まで skip してよい。
+
+Task 24 tests は、通常 predicate definition、raw phrase / infix / multi-loci pattern、
+imported symbolic predicate token、parser-token lexeme-run symbolic predicate pattern、
+formula definiens case、definition-local visibility、template definition 分類なしの
+template-loci token preservation、template-ambiguous parameter 後の placeholder
+preservation、built-in predicate-symbol rejection、malformed pattern recovery、active
+parse-only pass/fail corpus coverage、Chapter 9 §9.1 / §9.3 / §9.4 / §9.5 / §9.10 への
+traceability を固定する必要がある。
+
 ## 公開 enum の互換性
 
 `ParserTokenKind` は downstream crate 向けに `#[non_exhaustive]` とする。parser-facing

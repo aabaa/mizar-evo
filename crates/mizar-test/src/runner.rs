@@ -440,6 +440,12 @@ fn parse_only_fixture_symbols(module_id: &ModuleId) -> Vec<ExportedSymbolShape> 
             None,
         ),
         (
+            "<=",
+            UserSymbolKind::Predicate,
+            UserSymbolArity::exact(2),
+            None,
+        ),
+        (
             "~",
             UserSymbolKind::Functor,
             UserSymbolArity::exact(1),
@@ -572,7 +578,7 @@ mod tests {
                     summary.fingerprint.get()
                 ))
                 .collect::<Vec<_>>(),
-            vec![("alpha", 0, 1), ("parser.type_fixtures", 12, 3)]
+            vec![("alpha", 0, 1), ("parser.type_fixtures", 13, 3)]
         );
         assert_eq!(
             resolved.summaries[1]
@@ -588,6 +594,7 @@ mod tests {
                 ("TypeCaseMode", UserSymbolKind::Mode, None),
                 ("TypeCaseStruct", UserSymbolKind::Structure, None),
                 ("divides", UserSymbolKind::Predicate, None),
+                ("<=", UserSymbolKind::Predicate, None),
                 (
                     "~",
                     UserSymbolKind::Functor,

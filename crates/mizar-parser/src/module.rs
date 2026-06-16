@@ -2539,11 +2539,18 @@ impl Parser {
         let mut children = self.token_node_ids[position..=head].to_vec();
         let mut recovery_nodes = Vec::new();
         let mut cursor = head + 1;
+        let mut template_ambiguous_content_seen = false;
 
         while cursor < self.request.tokens.len() && !self.is_end_keyword_at(cursor) {
-            let content = self
-                .parse_definition_content_at(cursor)
-                .unwrap_or_else(|| self.parse_definition_content_placeholder(cursor));
+            if self.definition_parameter_starts_template_ambiguous_at(cursor) {
+                template_ambiguous_content_seen = true;
+            }
+            let content = if template_ambiguous_content_seen {
+                self.parse_definition_content_placeholder(cursor)
+            } else {
+                self.parse_definition_content_at(cursor)
+                    .unwrap_or_else(|| self.parse_definition_content_placeholder(cursor))
+            };
             let made_progress = content.next_position > cursor;
             cursor = content.next_position;
             children.push(content.id);
@@ -2590,6 +2597,13 @@ impl Parser {
         }
         if self.is_reserved_word_at(position, "attr") {
             return Some(self.parse_attribute_definition_at(position));
+        }
+        if self.is_reserved_word_at(position, "pred") {
+            return Some(self.parse_predicate_definition_at(position));
+        }
+        if self.is_visibility_marker_at(position) && self.is_reserved_word_at(position + 1, "pred")
+        {
+            return Some(self.parse_visible_predicate_definition_at(position));
         }
         if let Some(item) = self.parse_theorem_item(position) {
             return Some(ParsedTypeNode {
@@ -2825,6 +2839,109 @@ impl Parser {
         };
         let id = self.events.emit(SyntaxEvent::Node {
             kind: SurfaceNodeKind::AttributePattern,
+            range,
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_visible_predicate_definition_at(&mut self, position: usize) -> ParsedTypeNode {
+        let marker = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::VisibilityMarker,
+            range: self.request.tokens[position].span,
+            children: vec![self.token_node_ids[position]],
+        });
+        let predicate = self.parse_predicate_definition_at(position + 1);
+        let cursor = predicate.next_position;
+        let children = vec![marker, predicate.id];
+        let recovery_nodes = predicate.recovery_nodes;
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::VisibleItem,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_predicate_definition_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if self.is_identifier_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected predicate definition label");
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if self.is_reserved_symbol_at(cursor, ":") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_formula_expression(
+                cursor,
+                "expected `:` after predicate definition label",
+            );
+        }
+
+        let pattern = self.parse_predicate_pattern_at(cursor);
+        cursor = pattern.next_position;
+        children.push(pattern.id);
+        recovery_nodes.extend(pattern.recovery_nodes);
+
+        if self.is_reserved_word_at(cursor, "means") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_formula_expression(
+                cursor,
+                "expected `means` in predicate definition",
+            );
+        }
+
+        let definiens = self.parse_formula_definiens_at(cursor);
+        cursor = definiens.next_position;
+        children.push(definiens.id);
+        recovery_nodes.extend(definiens.recovery_nodes);
+
+        self.finish_definition_content_node(
+            position,
+            cursor,
+            SurfaceNodeKind::PredicateDefinition,
+            children,
+            recovery_nodes,
+            "unexpected token in predicate definition",
+        )
+    }
+
+    fn parse_predicate_pattern_at(&mut self, position: usize) -> ParsedTypeNode {
+        let cursor = self.predicate_pattern_boundary_at(position);
+        let mut children = self.token_node_ids[position..cursor].to_vec();
+        let mut recovery_nodes = Vec::new();
+
+        if !self.predicate_pattern_can_match(position, cursor) {
+            self.diagnose_malformed_term_expression(cursor, "expected predicate pattern");
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        let range = if cursor > position {
+            self.covering_token_range(position, cursor)
+        } else {
+            self.zero_range_at(position)
+        };
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::PredicatePattern,
             range,
             children,
         });
@@ -3836,7 +3953,9 @@ impl Parser {
         children: &mut Vec<SurfaceBuilderNodeId>,
         recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
     ) {
-        if let Some(formula) = self.parse_formula_at(*cursor) {
+        if self.can_start_formula_at(*cursor)
+            && let Some(formula) = self.parse_formula_at(*cursor)
+        {
             *cursor = formula.next_position;
             children.push(formula.id);
             recovery_nodes.extend(formula.recovery_nodes);
@@ -3850,7 +3969,9 @@ impl Parser {
         recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
         message: &'static str,
     ) {
-        if let Some(formula) = self.parse_formula_at(*cursor) {
+        if self.can_start_formula_at(*cursor)
+            && let Some(formula) = self.parse_formula_at(*cursor)
+        {
             *cursor = formula.next_position;
             children.push(formula.id);
             recovery_nodes.extend(formula.recovery_nodes);
@@ -7654,7 +7775,10 @@ impl Parser {
             || self.is_reserved_word_at(position, "assume")
             || self.is_correctness_condition_keyword_at(position)
             || self.is_reserved_word_at(position, "attr")
+            || self.is_reserved_word_at(position, "pred")
             || self.theorem_role_position_at(position).is_some()
+            || (self.is_visibility_marker_at(position)
+                && self.is_reserved_word_at(position + 1, "pred"))
             || (self.is_visibility_marker_at(position)
                 && self.is_visible_theorem_target_start_at(position + 1))
         {
@@ -7727,6 +7851,123 @@ impl Parser {
     fn opens_definition_content_placeholder_block_at(&self, position: usize) -> bool {
         sync::opens_recovery_block_at(&self.request.tokens, position)
             || self.is_reserved_word_at(position, "struct")
+    }
+
+    fn predicate_pattern_boundary_at(&self, position: usize) -> usize {
+        let mut cursor = position;
+        while cursor < self.request.tokens.len() {
+            if self.is_reserved_word_at(cursor, "means")
+                || self.is_semicolon_at(cursor)
+                || self.is_end_keyword_at(cursor)
+                || (cursor > position && self.is_definition_content_start_at(cursor))
+            {
+                break;
+            }
+            cursor += 1;
+        }
+        cursor
+    }
+
+    fn predicate_pattern_can_match(&self, position: usize, end: usize) -> bool {
+        if position >= end {
+            return false;
+        }
+
+        let mut left_loci_ends = vec![position];
+        left_loci_ends.extend(self.predicate_loci_ends_at(position, end));
+
+        for left_end in left_loci_ends {
+            let Some(symbol_end) = self.predicate_symbol_end_at(left_end, end) else {
+                continue;
+            };
+            if self.predicate_pattern_tail_can_match(symbol_end, end) {
+                return true;
+            }
+            if let Some(template_end) = self.predicate_template_loci_end_at(symbol_end, end)
+                && self.predicate_pattern_tail_can_match(template_end, end)
+            {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    fn predicate_pattern_tail_can_match(&self, position: usize, end: usize) -> bool {
+        position == end || self.predicate_loci_ends_at(position, end).contains(&end)
+    }
+
+    fn predicate_symbol_end_at(&self, position: usize, end: usize) -> Option<usize> {
+        if position < end && self.is_predicate_definition_symbol_at(position) {
+            Some(position + 1)
+        } else {
+            None
+        }
+    }
+
+    fn is_predicate_definition_symbol_at(&self, position: usize) -> bool {
+        self.request.tokens.get(position).is_some_and(|token| {
+            matches!(
+                token.kind,
+                ParserTokenKind::Identifier
+                    | ParserTokenKind::UserSymbol
+                    | ParserTokenKind::LexemeRun
+            )
+        })
+    }
+
+    fn predicate_loci_ends_at(&self, position: usize, end: usize) -> Vec<usize> {
+        if position >= end {
+            return Vec::new();
+        }
+
+        if self.is_reserved_symbol_at(position, "(") {
+            let Some(close) = self.predicate_locus_list_end_at(position + 1, end) else {
+                return Vec::new();
+            };
+            if close < end && self.is_reserved_symbol_at(close, ")") {
+                return vec![close + 1];
+            }
+            return Vec::new();
+        }
+
+        let mut ends = Vec::new();
+        if !self.is_identifier_at(position) {
+            return ends;
+        }
+
+        let mut cursor = position + 1;
+        ends.push(cursor);
+        while cursor + 1 < end
+            && self.is_reserved_symbol_at(cursor, ",")
+            && self.is_identifier_at(cursor + 1)
+        {
+            cursor += 2;
+            ends.push(cursor);
+        }
+        ends
+    }
+
+    fn predicate_template_loci_end_at(&self, position: usize, end: usize) -> Option<usize> {
+        if position >= end || !self.is_reserved_symbol_at(position, "[") {
+            return None;
+        }
+        let close = self.predicate_locus_list_end_at(position + 1, end)?;
+        (close < end && self.is_reserved_symbol_at(close, "]")).then_some(close + 1)
+    }
+
+    fn predicate_locus_list_end_at(&self, position: usize, end: usize) -> Option<usize> {
+        if position >= end || !self.is_identifier_at(position) {
+            return None;
+        }
+        let mut cursor = position + 1;
+        while cursor + 1 < end
+            && self.is_reserved_symbol_at(cursor, ",")
+            && self.is_identifier_at(cursor + 1)
+        {
+            cursor += 2;
+        }
+        Some(cursor)
     }
 
     fn is_reconsider_item_boundary_at(&self, position: usize) -> bool {
@@ -11299,6 +11540,274 @@ mod tests {
                 SurfaceNodeKind::CorrectnessCondition
             )),
             1
+        );
+    }
+
+    #[test]
+    fn parser_parses_task24_predicate_definitions() {
+        let source_id = source_id(180);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("definition", ParserTokenKind::ReservedWord),
+                    ("let", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    (",", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("be", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("pred", ParserTokenKind::ReservedWord),
+                    ("RelDef", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("R", ParserTokenKind::Identifier),
+                    ("y", ParserTokenKind::Identifier),
+                    ("means", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("pred", ParserTokenKind::ReservedWord),
+                    ("PrefixDef", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("R", ParserTokenKind::Identifier),
+                    ("x", ParserTokenKind::Identifier),
+                    ("means", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("if", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (",", ParserTokenKind::ReservedSymbol),
+                    ("contradiction", ParserTokenKind::ReservedWord),
+                    ("if", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("otherwise", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("pred", ParserTokenKind::ReservedWord),
+                    ("MultiDef", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    (",", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("partition", ParserTokenKind::Identifier),
+                    ("z", ParserTokenKind::Identifier),
+                    ("means", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("pred", ParserTokenKind::ReservedWord),
+                    ("LessOrEqualDef", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("<=", ParserTokenKind::LexemeRun),
+                    ("y", ParserTokenKind::Identifier),
+                    ("means", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("pred", ParserTokenKind::ReservedWord),
+                    ("TemplateLociDef", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("Rel", ParserTokenKind::Identifier),
+                    ("[", ParserTokenKind::ReservedSymbol),
+                    ("T", ParserTokenKind::Identifier),
+                    (",", ParserTokenKind::ReservedSymbol),
+                    ("U", ParserTokenKind::Identifier),
+                    ("]", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("means", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("public", ParserTokenKind::ReservedWord),
+                    ("pred", ParserTokenKind::ReservedWord),
+                    ("PublicDef", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("public_rel", ParserTokenKind::Identifier),
+                    ("x", ParserTokenKind::Identifier),
+                    ("means", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("private", ParserTokenKind::ReservedWord),
+                    ("pred", ParserTokenKind::ReservedWord),
+                    ("HiddenDef", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("hidden", ParserTokenKind::Identifier),
+                    ("x", ParserTokenKind::Identifier),
+                    ("means", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "task-24 predicate definitions should parse without diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("task-24 predicate definitions should keep an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::PredicateDefinition
+            )),
+            7
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::PredicatePattern
+            )),
+            7
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::FormulaDefiniens
+            )),
+            7
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::FormulaCase)),
+            2
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::VisibleItem)),
+            2,
+            "definition-local visibility wraps concrete predicate definitions"
+        );
+        let pattern_token_texts = ast
+            .nodes()
+            .iter()
+            .filter(|node| matches!(node.kind, SurfaceNodeKind::PredicatePattern))
+            .map(|node| direct_token_texts(&ast, node))
+            .collect::<Vec<_>>();
+        assert!(
+            pattern_token_texts
+                .iter()
+                .any(|texts| texts.iter().map(String::as_str).eq(["x", "<=", "y"])),
+            "fresh symbolic predicate definitions should preserve LexemeRun symbols"
+        );
+        assert!(
+            pattern_token_texts.iter().any(|texts| texts
+                .iter()
+                .map(String::as_str)
+                .eq(["x", "Rel", "[", "T", ",", "U", "]", "y"])),
+            "template-loci tokens should remain direct raw PredicatePattern children"
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::PlaceholderItem
+            )),
+            0
+        );
+    }
+
+    #[test]
+    fn parser_recovers_task24_predicate_definition_gaps() {
+        let source_id = source_id(181);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("definition", ParserTokenKind::ReservedWord),
+                    ("pred", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("means", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("pred", ParserTokenKind::ReservedWord),
+                    ("BuiltinIn", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("in", ParserTokenKind::ReservedWord),
+                    ("y", ParserTokenKind::Identifier),
+                    ("means", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("pred", ParserTokenKind::ReservedWord),
+                    ("BuiltinNe", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("<>", ParserTokenKind::ReservedSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("means", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("pred", ParserTokenKind::ReservedWord),
+                    ("EmptyTemplate", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("R", ParserTokenKind::Identifier),
+                    ("[", ParserTokenKind::ReservedSymbol),
+                    ("]", ParserTokenKind::ReservedSymbol),
+                    ("means", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("pred", ParserTokenKind::ReservedWord),
+                    ("MissingMeans", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("R", ParserTokenKind::Identifier),
+                    ("y", ParserTokenKind::Identifier),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MalformedTermExpression)
+        );
+        assert!(output.diagnostics.iter().any(|diagnostic| {
+            diagnostic.code == SyntaxDiagnosticCode::MalformedFormulaExpression
+        }));
+        let ast = output
+            .ast
+            .expect("task-24 malformed predicate definitions should recover an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::PredicateDefinition
+            )),
+            5
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::PredicatePattern
+            )),
+            5
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingTerm)
+            )) >= 5,
+            "label and malformed predicate patterns should insert missing-term recovery"
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingFormula)
+            )) >= 2,
+            "missing definiens bodies and missing means recovery should insert missing formulas"
         );
     }
 

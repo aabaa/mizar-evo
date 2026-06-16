@@ -15,6 +15,7 @@ const ATOMIC_FORMULA_REQUIREMENT_ID: &str = "spec.en.14.atomic_formula.parser";
 const FORMULA_CONNECTIVES_REQUIREMENT_ID: &str =
     "spec.en.14.formula_connectives_quantifiers.parser";
 const ATTRIBUTE_DEFINITIONS_REQUIREMENT_ID: &str = "spec.en.06.attribute_definitions.parser";
+const PREDICATE_DEFINITIONS_REQUIREMENT_ID: &str = "spec.en.09.predicate_definitions.parser";
 const CORRECTNESS_CONDITIONS_REQUIREMENT_ID: &str = "spec.en.16.correctness_conditions.parser";
 
 #[test]
@@ -710,6 +711,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "fail_parser_missing_semicolon_001",
             "fail_parser_operator_dangling_001",
             "fail_parser_operator_nonassoc_001",
+            "fail_parser_predicate_definitions_recovery_001",
             "fail_parser_primary_terms_missing_delimiter_001",
             "fail_parser_primary_terms_missing_term_001",
             "fail_parser_qua_missing_type_001",
@@ -744,6 +746,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_minimal_token_stream_001",
             "pass_parser_module_skeleton_001",
             "pass_parser_operator_terms_001",
+            "pass_parser_predicate_definitions_001",
             "pass_parser_primary_terms_001",
             "pass_parser_qua_terms_001",
             "pass_parser_selector_updates_001",
@@ -885,6 +888,25 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
         ]
     );
 
+    let predicate_definitions_requirement = plan
+        .manifest
+        .requirements
+        .iter()
+        .find(|requirement| requirement.id.0 == PREDICATE_DEFINITIONS_REQUIREMENT_ID)
+        .expect("predicate-definition parse-only requirement should exist");
+    assert_eq!(predicate_definitions_requirement.stage, Stage::ParseOnly);
+    assert_eq!(
+        predicate_definitions_requirement.tests,
+        vec![
+            PathBuf::from(
+                "tests/miz/pass/parser/pass_parser_predicate_definitions_001.expect.toml"
+            ),
+            PathBuf::from(
+                "tests/miz/fail/parser/fail_parser_predicate_definitions_recovery_001.expect.toml"
+            ),
+        ]
+    );
+
     let correctness_conditions_requirement = plan
         .manifest
         .requirements
@@ -933,8 +955,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 70);
-    assert_eq!(report.passed_count(), 70);
+    assert_eq!(report.results.len(), 72);
+    assert_eq!(report.passed_count(), 72);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_atomic_formulas_001"
@@ -950,6 +972,10 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_definition_attributes_001"
+            && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_predicate_definitions_001"
             && result.actual_diagnostic_codes.is_empty()
     }));
     assert!(report.results.iter().any(|result| {
@@ -1007,6 +1033,21 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
                     "malformed_justification".to_owned(),
                     "missing_end".to_owned(),
                     "missing_semicolon".to_owned(),
+                ]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_parser_predicate_definitions_recovery_001"
+            && result.actual_diagnostic_codes
+                == vec![
+                    "malformed_term_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
+                    "malformed_formula_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
+                    "malformed_formula_expression".to_owned(),
+                    "malformed_formula_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
                 ]
     }));
     assert!(report.results.iter().any(|result| {
@@ -1420,8 +1461,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 70"));
-    assert!(stdout.contains("passed: 70"));
+    assert!(stdout.contains("parse-only cases: 72"));
+    assert!(stdout.contains("passed: 72"));
     assert!(stdout.contains("failed: 0"));
 }
 

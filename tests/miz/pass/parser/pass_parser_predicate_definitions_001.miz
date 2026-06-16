@@ -1,0 +1,12 @@
+import parser.type_fixtures;
+
+definition
+  let x, y be set;
+  pred RelDef: x R y means thesis;
+  pred PrefixDef: R x means thesis if thesis, contradiction if thesis otherwise thesis;
+  pred MultiDef: x, y partition z means thesis;
+  pred LessOrEqualDef: x <= y means thesis;
+  pred TemplateLociDef: x Rel [t, u] y means thesis;
+  public pred PublicDef: public_rel x means thesis;
+  private pred HiddenDef: hidden x means thesis;
+end;

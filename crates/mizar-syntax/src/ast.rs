@@ -138,6 +138,8 @@ pub enum SyntaxKind {
     FormulaDefiniens = 113,
     FormulaCase = 114,
     CorrectnessCondition = 115,
+    PredicateDefinition = 116,
+    PredicatePattern = 117,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -257,6 +259,8 @@ impl SyntaxKind {
             113 => Self::FormulaDefiniens,
             114 => Self::FormulaCase,
             115 => Self::CorrectnessCondition,
+            116 => Self::PredicateDefinition,
+            117 => Self::PredicatePattern,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -378,6 +382,8 @@ impl SyntaxKind {
                 | Self::FormulaDefiniens
                 | Self::FormulaCase
                 | Self::CorrectnessCondition
+                | Self::PredicateDefinition
+                | Self::PredicatePattern
         )
     }
 
@@ -1204,6 +1210,20 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_predicate_definition(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::PredicateDefinition => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_predicate_pattern(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::PredicatePattern => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_let_statement(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::LetStatement => Some(self),
@@ -1769,6 +1789,8 @@ pub enum SurfaceNodeKind {
     FormulaDefiniens,
     FormulaCase,
     CorrectnessCondition,
+    PredicateDefinition,
+    PredicatePattern,
     SelectorAccess,
     StructureUpdate,
     FieldUpdate,
@@ -1879,6 +1901,8 @@ impl SurfaceNodeKind {
             Self::FormulaDefiniens => SyntaxKind::FormulaDefiniens,
             Self::FormulaCase => SyntaxKind::FormulaCase,
             Self::CorrectnessCondition => SyntaxKind::CorrectnessCondition,
+            Self::PredicateDefinition => SyntaxKind::PredicateDefinition,
+            Self::PredicatePattern => SyntaxKind::PredicatePattern,
             Self::SelectorAccess => SyntaxKind::SelectorAccess,
             Self::StructureUpdate => SyntaxKind::StructureUpdate,
             Self::FieldUpdate => SyntaxKind::FieldUpdate,
@@ -2153,6 +2177,8 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::FormulaDefiniens => output.push_str("FormulaDefiniens"),
         SurfaceNodeKind::FormulaCase => output.push_str("FormulaCase"),
         SurfaceNodeKind::CorrectnessCondition => output.push_str("CorrectnessCondition"),
+        SurfaceNodeKind::PredicateDefinition => output.push_str("PredicateDefinition"),
+        SurfaceNodeKind::PredicatePattern => output.push_str("PredicatePattern"),
         SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
@@ -3348,6 +3374,8 @@ mod tests {
             SyntaxKind::FormulaDefiniens,
             SyntaxKind::FormulaCase,
             SyntaxKind::CorrectnessCondition,
+            SyntaxKind::PredicateDefinition,
+            SyntaxKind::PredicatePattern,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -4901,6 +4929,39 @@ mod tests {
             assert!(
                 snapshot.contains(expected),
                 "snapshot should render task-23 line {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn task24_typed_accessors_cover_predicate_definition_nodes() {
+        let ast = task23_definition_nodes_ast(source_id(36));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task24_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task24_view!(
+            SurfaceNodeKind::PredicateDefinition,
+            SyntaxKind::PredicateDefinition,
+            as_predicate_definition
+        );
+        assert_task24_view!(
+            SurfaceNodeKind::PredicatePattern,
+            SyntaxKind::PredicatePattern,
+            as_predicate_pattern
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in ["PredicateDefinition", "PredicatePattern"] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-24 line {expected}"
             );
         }
     }
@@ -7842,15 +7903,60 @@ mod tests {
             ";",
             range(source_id, 99, 100),
         );
+        let pred = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "pred",
+            range(source_id, 101, 105),
+        );
+        let pred_label = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "P",
+            range(source_id, 106, 107),
+        );
+        let pred_colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 107, 108),
+        );
+        let left_locus = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(source_id, 109, 110),
+        );
+        let pred_symbol = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "R",
+            range(source_id, 111, 112),
+        );
+        let right_locus = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "y",
+            range(source_id, 113, 114),
+        );
+        let pred_means = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "means",
+            range(source_id, 115, 120),
+        );
+        let pred_thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 121, 127),
+        );
+        let pred_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 127, 128),
+        );
         let end = builder.add_token(
             SurfaceTokenKind::ReservedWord,
             "end",
-            range(source_id, 101, 104),
+            range(source_id, 129, 132),
         );
         let block_semicolon = builder.add_token(
             SurfaceTokenKind::ReservedSymbol,
             ";",
-            range(source_id, 104, 105),
+            range(source_id, 132, 133),
         );
 
         let type_head = builder.add_node(
@@ -7920,31 +8026,56 @@ mod tests {
             range(source_id, 90, 100),
             vec![existence, existence_semicolon],
         );
+        let predicate_pattern = builder.add_node(
+            SurfaceNodeKind::PredicatePattern,
+            range(source_id, 109, 114),
+            vec![left_locus, pred_symbol, right_locus],
+        );
+        let predicate_formula = thesis_formula_node(&mut builder, source_id, pred_thesis, 121, 127);
+        let predicate_definiens = builder.add_node(
+            SurfaceNodeKind::FormulaDefiniens,
+            range(source_id, 121, 127),
+            vec![predicate_formula],
+        );
+        let predicate = builder.add_node(
+            SurfaceNodeKind::PredicateDefinition,
+            range(source_id, 101, 128),
+            vec![
+                pred,
+                pred_label,
+                pred_colon,
+                predicate_pattern,
+                pred_means,
+                predicate_definiens,
+                pred_semicolon,
+            ],
+        );
         let definition_item = builder.add_node(
             SurfaceNodeKind::DefinitionBlockItem,
-            range(source_id, 0, 105),
+            range(source_id, 0, 133),
             vec![
                 definition,
                 parameter,
                 attribute,
                 correctness,
+                predicate,
                 end,
                 block_semicolon,
             ],
         );
         let item_list = builder.add_node(
             SurfaceNodeKind::ItemList,
-            range(source_id, 0, 105),
+            range(source_id, 0, 133),
             vec![definition_item],
         );
         let compilation_unit = builder.add_node(
             SurfaceNodeKind::CompilationUnit,
-            range(source_id, 0, 105),
+            range(source_id, 0, 133),
             vec![item_list],
         );
         let root = builder.add_node(
             SurfaceNodeKind::Root,
-            range(source_id, 0, 105),
+            range(source_id, 0, 133),
             vec![
                 definition,
                 let_keyword,
@@ -7967,6 +8098,15 @@ mod tests {
                 attr_semicolon,
                 existence,
                 existence_semicolon,
+                pred,
+                pred_label,
+                pred_colon,
+                left_locus,
+                pred_symbol,
+                right_locus,
+                pred_means,
+                pred_thesis,
+                pred_semicolon,
                 end,
                 block_semicolon,
                 compilation_unit,

@@ -1,0 +1,7 @@
+definition
+  pred : x = y means ;
+  pred BuiltinIn: x in y means thesis;
+  pred BuiltinNe: x <> y means thesis;
+  pred EmptyTemplate: R [] means thesis;
+  pred MissingMeans: x R y thesis;
+end;

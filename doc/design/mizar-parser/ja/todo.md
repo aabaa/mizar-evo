@@ -564,10 +564,19 @@ resolver / build-system 依存を避ける。
       parse-only pass/fail corpus fixture、traceability metadata が新しい形と
       recovery case を網羅する。
 
-24. **述語定義。** [ ]
+24. **述語定義。** [x]
     - `means` 本体を持つ `pred` 定義。
     - 依存: 23、`mizar-syntax` task 15 / S-015。仕様:
       [09.predicates.md](../../../spec/ja/09.predicates.md)。
+    - 結果: definition block 内の `PredicateDefinition` と raw
+      `PredicatePattern` 解析を実装した。通常の predicate definition と
+      definition-local な `public` / `private` predicate definition、task-23 の
+      `FormulaDefiniens` body、意味的な symbol-role split を記録しない
+      ambiguous phrase pattern の grammar-shaped validation、built-in predicate-token
+      rejection、imported symbolic predicate-token coverage、parser-token
+      lexeme-run symbolic pattern coverage、template definition 分類なしの
+      template-loci token preservation、parser unit test、active parse-only
+      pass/fail corpus fixture、traceability metadata を含む。
 
 25. **ファンクタ定義。** [ ]
     - `means` / `equals` 本体を持つ `func` 定義。

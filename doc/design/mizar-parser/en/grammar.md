@@ -1372,6 +1372,76 @@ recovery, active parse-only pass/fail corpus coverage, and traceability to
 Chapter 6 §6.2 / Appendix A.6, Chapter 16 §16.2 / §16.6 / Appendix A.16, and
 Chapter 20 §20.9.2.
 
+### Task 24: Predicate Definitions
+
+Task 24 adds the `pred ... means ...;` definition form inside the task-23
+`DefinitionBlockItem` container. The parser stays syntax-only: it does not
+introduce predicate symbols, resolve overloads, decide phrase-pattern roles,
+check parameter typing, prove predicate properties, or classify template
+definitions.
+
+```ebnf
+definition_content     ::= ... | pred_def | [ visibility ] pred_def ;
+
+pred_def               ::= "pred" label ":" pred_pattern
+                           "means" formula_definiens ";" ;
+pred_pattern           ::= [ loci ] def_predicate_symbol
+                           [ template_loci ] [ loci ] ;
+loci                   ::= locus_list | "(" locus_list ")" ;
+locus_list             ::= locus { "," locus } ;
+locus                  ::= identifier ;
+template_loci          ::= "[" locus_list "]" ;
+def_predicate_symbol   ::= identifier | symbolic_pred ;
+symbolic_pred          ::= symbol_char+ ;
+```
+
+`PredicateDefinition` owns the `pred` keyword, label identifier or
+`MissingTerm`, colon, `PredicatePattern`, `means`, task-23 `FormulaDefiniens`,
+optional recovery, and the semicolon when present. Definition-local
+`public pred` and `private pred` are represented with the existing `VisibleItem`
+and `VisibilityMarker` wrapper around the concrete predicate definition. Other
+visible definition kinds remain with their owning tasks.
+
+`PredicatePattern` preserves raw source-order pattern tokens instead of
+recording left-loci / predicate-symbol / right-loci roles. To avoid accepting
+arbitrary balanced tokens, the parser accepts the raw span only when it can
+match `pred_pattern` under at least one syntactic split: `loci` must be a
+non-empty identifier comma-list, optionally parenthesized; `template_loci` is
+at most one bracketed non-empty identifier comma-list; and the
+`def_predicate_symbol` is exactly one identifier, active user-symbol, or
+lexeme-run token. Active parse-only source fixtures exercise imported symbolic
+predicate tokens; the lexeme-run case keeps the parser-token boundary ready for
+fresh symbolic predicate definitions once the frontend has a definition-symbol
+lexing context for them.
+Empty groups, dangling commas, adjacent loci groups, multiple bracket groups,
+and unsupported tokens recover as malformed predicate patterns. Primitive
+built-in predicate tokens `in`, `=`, and `<>` are not definition symbols and
+therefore recover rather than forming a predicate definition pattern.
+
+Template-loci tokens may be preserved in `PredicatePattern`, but task 24 does
+not activate template-definition fixtures, add template-specific AST nodes, or
+classify `definition ... end;` blocks as template definitions. After a
+template-ambiguous parameter such as `let T be type;`, the definition block
+continues to preserve subsequent content as placeholders under G-AUD-006.
+
+Task 24 recovery reuses task-23 definition-content synchronization. Missing
+predicate labels and malformed predicate patterns use `MalformedTermExpression`
+plus `MissingTerm`; missing `means`, missing formula-definiens bodies, missing
+formula cases, and missing `otherwise` bodies use
+`MalformedFormulaExpression` plus `MissingFormula`; malformed predicate
+definition tails may be skipped to semicolon, `end`, the next definition-content
+start, or EOF.
+
+Task 24 tests must pin: ordinary predicate definitions, raw phrase/infix and
+multi-loci patterns, imported symbolic predicate tokens, parser-token
+lexeme-run symbolic predicate patterns, formula definiens cases,
+definition-local visibility,
+template-loci token preservation without template-definition classification,
+placeholder preservation after template-ambiguous parameters, built-in
+predicate-symbol rejection, malformed pattern recovery, active parse-only
+pass/fail corpus coverage, and traceability to Chapter 9 §9.1 / §9.3 / §9.4 /
+§9.5 / §9.10.
+
 ## Public Enum Compatibility
 
 `ParserTokenKind` is `#[non_exhaustive]` for downstream crates. The parser token
