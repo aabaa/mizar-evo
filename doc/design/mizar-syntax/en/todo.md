@@ -406,7 +406,7 @@ interaction. Spec references are the normative grammar chapters under
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md)
       §20.9.2.
 
-15. **Definition, structure, and registration nodes.** [ ] — paired with
+15. **Definition, structure, and registration nodes.** [x] — paired with
     `mizar-parser` tasks 23-30.
     - Definition block skeleton, correctness-condition clauses, and `attr`
       definitions (parser task 23); `pred`/`func`/`mode` bodies (parser tasks
@@ -459,7 +459,21 @@ interaction. Spec references are the normative grammar chapters under
       recovery, active parse-only pass/fail corpus coverage, and traceability
       metadata. Structure identity, selector facts, inheritance coverage,
       coherence proof obligations, type narrowing validity, and constructors
-      remain outside `mizar-syntax`. S-015 remains open for parser task 30.
+      remain outside `mizar-syntax`. Parser task 30 is complete for
+      registrations and clusters: `RegistrationBlockItem`,
+      `RegistrationParameter`, `ExistentialRegistration`,
+      `ConditionalRegistration`, `FunctorialRegistration`, and
+      `ReductionRegistration` are implemented with typed accessors,
+      definition-local visibility wrapping for cluster and reduction items,
+      registration-adjective boundary preservation, parameterized registered
+      and target type preservation, restricted functorial payload parsing,
+      compound reduction term preservation, registration-local parameter
+      parsing, correctness-condition recovery, frontend
+      scope-skeleton registration block support, active parse-only pass/fail
+      corpus coverage, and traceability metadata. Cluster closure,
+      existence/coherence/reducibility proof obligations, reduced normal
+      forms, and nullary functorial disambiguation remain outside
+      `mizar-syntax`. The S-015 bucket is complete.
     - Spec: [06.attributes.md](../../../spec/en/06.attributes.md),
       [07.modes.md](../../../spec/en/07.modes.md),
       [09.predicates.md](../../../spec/en/09.predicates.md),

@@ -164,6 +164,41 @@ R;";
 }
 
 #[test]
+fn scope_skeleton_records_registration_blocks_without_binding_target_for_types() {
+    let source = "\
+registration
+let x be set;
+cluster C: empty -> empty for set;
+coherence
+proof
+  thus thesis;
+end;
+cluster D: empty -> empty for T;
+coherence by Ref;
+reduce R: x to x;
+reducibility by Ref;
+T;
+end;
+x;";
+    let raw = scan_raw(source).expect("source should raw scan");
+    let skeleton = build_scope_skeleton(&raw);
+
+    assert_eq!(
+        skeleton
+            .blocks
+            .iter()
+            .map(|block| block.kind)
+            .collect::<Vec<_>>(),
+        vec![LexicalBlockKind::Registration, LexicalBlockKind::Proof]
+    );
+    assert!(skeleton.binding_overrides_symbol("x", nth_index(source, "x to x", 0)));
+    assert!(!skeleton.binding_overrides_symbol("x", source.len() - 1));
+    assert!(!skeleton.binding_overrides_symbol("set", nth_index(source, "coherence", 0)));
+    assert!(!skeleton.binding_overrides_symbol("T", nth_index(source, "T;\nend", 0)));
+    assert!(skeleton.diagnostics.is_empty());
+}
+
+#[test]
 fn scope_skeleton_under_approximates_block_local_reserve() {
     let source = "definition\nreserve R for set;\nR;\nend;\nR;";
     let raw = scan_raw(source).expect("source should raw scan");

@@ -162,6 +162,12 @@ pub enum SyntaxKind {
     InheritanceTarget = 137,
     FieldRedefinition = 138,
     PropertyRedefinition = 139,
+    RegistrationBlockItem = 140,
+    RegistrationParameter = 141,
+    ExistentialRegistration = 142,
+    ConditionalRegistration = 143,
+    FunctorialRegistration = 144,
+    ReductionRegistration = 145,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -305,6 +311,12 @@ impl SyntaxKind {
             137 => Self::InheritanceTarget,
             138 => Self::FieldRedefinition,
             139 => Self::PropertyRedefinition,
+            140 => Self::RegistrationBlockItem,
+            141 => Self::RegistrationParameter,
+            142 => Self::ExistentialRegistration,
+            143 => Self::ConditionalRegistration,
+            144 => Self::FunctorialRegistration,
+            145 => Self::ReductionRegistration,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -450,6 +462,12 @@ impl SyntaxKind {
                 | Self::InheritanceTarget
                 | Self::FieldRedefinition
                 | Self::PropertyRedefinition
+                | Self::RegistrationBlockItem
+                | Self::RegistrationParameter
+                | Self::ExistentialRegistration
+                | Self::ConditionalRegistration
+                | Self::FunctorialRegistration
+                | Self::ReductionRegistration
         )
     }
 
@@ -1444,6 +1462,48 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_registration_block_item(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::RegistrationBlockItem => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_registration_parameter(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::RegistrationParameter => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_existential_registration(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ExistentialRegistration => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_conditional_registration(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ConditionalRegistration => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_functorial_registration(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::FunctorialRegistration => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_reduction_registration(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ReductionRegistration => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_let_statement(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::LetStatement => Some(self),
@@ -2033,6 +2093,12 @@ pub enum SurfaceNodeKind {
     InheritanceTarget,
     FieldRedefinition,
     PropertyRedefinition,
+    RegistrationBlockItem,
+    RegistrationParameter,
+    ExistentialRegistration,
+    ConditionalRegistration,
+    FunctorialRegistration,
+    ReductionRegistration,
     SelectorAccess,
     StructureUpdate,
     FieldUpdate,
@@ -2167,6 +2233,12 @@ impl SurfaceNodeKind {
             Self::InheritanceTarget => SyntaxKind::InheritanceTarget,
             Self::FieldRedefinition => SyntaxKind::FieldRedefinition,
             Self::PropertyRedefinition => SyntaxKind::PropertyRedefinition,
+            Self::RegistrationBlockItem => SyntaxKind::RegistrationBlockItem,
+            Self::RegistrationParameter => SyntaxKind::RegistrationParameter,
+            Self::ExistentialRegistration => SyntaxKind::ExistentialRegistration,
+            Self::ConditionalRegistration => SyntaxKind::ConditionalRegistration,
+            Self::FunctorialRegistration => SyntaxKind::FunctorialRegistration,
+            Self::ReductionRegistration => SyntaxKind::ReductionRegistration,
             Self::SelectorAccess => SyntaxKind::SelectorAccess,
             Self::StructureUpdate => SyntaxKind::StructureUpdate,
             Self::FieldUpdate => SyntaxKind::FieldUpdate,
@@ -2465,6 +2537,12 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::InheritanceTarget => output.push_str("InheritanceTarget"),
         SurfaceNodeKind::FieldRedefinition => output.push_str("FieldRedefinition"),
         SurfaceNodeKind::PropertyRedefinition => output.push_str("PropertyRedefinition"),
+        SurfaceNodeKind::RegistrationBlockItem => output.push_str("RegistrationBlockItem"),
+        SurfaceNodeKind::RegistrationParameter => output.push_str("RegistrationParameter"),
+        SurfaceNodeKind::ExistentialRegistration => output.push_str("ExistentialRegistration"),
+        SurfaceNodeKind::ConditionalRegistration => output.push_str("ConditionalRegistration"),
+        SurfaceNodeKind::FunctorialRegistration => output.push_str("FunctorialRegistration"),
+        SurfaceNodeKind::ReductionRegistration => output.push_str("ReductionRegistration"),
         SurfaceNodeKind::SelectorAccess => output.push_str("SelectorAccess"),
         SurfaceNodeKind::StructureUpdate => output.push_str("StructureUpdate"),
         SurfaceNodeKind::FieldUpdate => output.push_str("FieldUpdate"),
@@ -3612,6 +3690,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            task30_registration_nodes_ast(source_id(46))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -3714,6 +3798,12 @@ mod tests {
             SyntaxKind::InheritanceTarget,
             SyntaxKind::FieldRedefinition,
             SyntaxKind::PropertyRedefinition,
+            SyntaxKind::RegistrationBlockItem,
+            SyntaxKind::RegistrationParameter,
+            SyntaxKind::ExistentialRegistration,
+            SyntaxKind::ConditionalRegistration,
+            SyntaxKind::FunctorialRegistration,
+            SyntaxKind::ReductionRegistration,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -5530,6 +5620,66 @@ mod tests {
             assert!(
                 snapshot.contains(expected),
                 "snapshot should render task-29 line {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn task30_typed_accessors_cover_registration_nodes() {
+        let ast = task30_registration_nodes_ast(source_id(46));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task30_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task30_view!(
+            SurfaceNodeKind::RegistrationBlockItem,
+            SyntaxKind::RegistrationBlockItem,
+            as_registration_block_item
+        );
+        assert_task30_view!(
+            SurfaceNodeKind::RegistrationParameter,
+            SyntaxKind::RegistrationParameter,
+            as_registration_parameter
+        );
+        assert_task30_view!(
+            SurfaceNodeKind::ExistentialRegistration,
+            SyntaxKind::ExistentialRegistration,
+            as_existential_registration
+        );
+        assert_task30_view!(
+            SurfaceNodeKind::ConditionalRegistration,
+            SyntaxKind::ConditionalRegistration,
+            as_conditional_registration
+        );
+        assert_task30_view!(
+            SurfaceNodeKind::FunctorialRegistration,
+            SyntaxKind::FunctorialRegistration,
+            as_functorial_registration
+        );
+        assert_task30_view!(
+            SurfaceNodeKind::ReductionRegistration,
+            SyntaxKind::ReductionRegistration,
+            as_reduction_registration
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in [
+            "RegistrationBlockItem",
+            "RegistrationParameter",
+            "ExistentialRegistration",
+            "ConditionalRegistration",
+            "FunctorialRegistration",
+            "ReductionRegistration",
+        ] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-30 line {expected}"
             );
         }
     }
@@ -9866,6 +10016,667 @@ mod tests {
                 inherit_semicolon,
                 structure_definition,
                 inheritance_definition,
+            ],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn task30_registration_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let registration_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "registration",
+            range(source_id, 0, 12),
+        );
+        let let_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "let",
+            range(source_id, 13, 16),
+        );
+        let variable =
+            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 17, 18));
+        let be_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "be",
+            range(source_id, 19, 21),
+        );
+        let parameter_set = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 22, 25),
+        );
+        let parameter_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 25, 26),
+        );
+        let cluster_exists = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "cluster",
+            range(source_id, 27, 34),
+        );
+        let exists_label =
+            builder.add_token(SurfaceTokenKind::Identifier, "E", range(source_id, 35, 36));
+        let exists_colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 36, 37),
+        );
+        let non_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "non",
+            range(source_id, 38, 41),
+        );
+        let empty_attr = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "empty",
+            range(source_id, 42, 47),
+        );
+        let exists_set = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 48, 51),
+        );
+        let exists_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 51, 52),
+        );
+        let existence_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "existence",
+            range(source_id, 53, 62),
+        );
+        let exists_by = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "by",
+            range(source_id, 63, 65),
+        );
+        let exists_ref = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Ref",
+            range(source_id, 66, 69),
+        );
+        let existence_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 69, 70),
+        );
+        let cluster_conditional = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "cluster",
+            range(source_id, 71, 78),
+        );
+        let conditional_label =
+            builder.add_token(SurfaceTokenKind::Identifier, "C", range(source_id, 79, 80));
+        let conditional_colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 80, 81),
+        );
+        let antecedent = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "empty",
+            range(source_id, 82, 87),
+        );
+        let conditional_arrow = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "->",
+            range(source_id, 88, 90),
+        );
+        let consequent = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "finite",
+            range(source_id, 91, 97),
+        );
+        let conditional_for = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "for",
+            range(source_id, 98, 101),
+        );
+        let conditional_set = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 102, 105),
+        );
+        let conditional_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 105, 106),
+        );
+        let coherence_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "coherence",
+            range(source_id, 107, 116),
+        );
+        let coherence_by = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "by",
+            range(source_id, 117, 119),
+        );
+        let coherence_ref = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Ref",
+            range(source_id, 120, 123),
+        );
+        let coherence_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 123, 124),
+        );
+        let cluster_functorial = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "cluster",
+            range(source_id, 125, 132),
+        );
+        let functorial_label = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "F",
+            range(source_id, 133, 134),
+        );
+        let functorial_colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 134, 135),
+        );
+        let functor = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "f",
+            range(source_id, 136, 137),
+        );
+        let open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 137, 138),
+        );
+        let arg = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(source_id, 138, 139),
+        );
+        let close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 139, 140),
+        );
+        let functorial_arrow = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "->",
+            range(source_id, 141, 143),
+        );
+        let functorial_attr = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "finite",
+            range(source_id, 144, 150),
+        );
+        let functorial_for = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "for",
+            range(source_id, 151, 154),
+        );
+        let functorial_set = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 155, 158),
+        );
+        let functorial_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 158, 159),
+        );
+        let functorial_coherence = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "coherence",
+            range(source_id, 160, 169),
+        );
+        let functorial_by = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "by",
+            range(source_id, 170, 172),
+        );
+        let functorial_ref = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Ref",
+            range(source_id, 173, 176),
+        );
+        let functorial_coherence_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 176, 177),
+        );
+        let reduce_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "reduce",
+            range(source_id, 178, 184),
+        );
+        let reduce_label = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "R",
+            range(source_id, 185, 186),
+        );
+        let reduce_colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 186, 187),
+        );
+        let reduce_left = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(source_id, 188, 189),
+        );
+        let to_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "to",
+            range(source_id, 190, 192),
+        );
+        let reduce_right = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(source_id, 193, 194),
+        );
+        let reduce_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 194, 195),
+        );
+        let reducibility_kw = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "reducibility",
+            range(source_id, 196, 208),
+        );
+        let reducibility_by = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "by",
+            range(source_id, 209, 211),
+        );
+        let reducibility_ref = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Ref",
+            range(source_id, 212, 215),
+        );
+        let reducibility_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 215, 216),
+        );
+        let registration_end = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "end",
+            range(source_id, 217, 220),
+        );
+        let registration_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 220, 221),
+        );
+
+        let parameter_type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 22, 25),
+            vec![parameter_set],
+        );
+        let parameter_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 22, 25),
+            vec![parameter_type_head],
+        );
+        let parameter_segment = builder.add_node(
+            SurfaceNodeKind::QualifiedVariableSegment,
+            range(source_id, 17, 25),
+            vec![variable, be_kw, parameter_type],
+        );
+        let registration_parameter = builder.add_node(
+            SurfaceNodeKind::RegistrationParameter,
+            range(source_id, 13, 26),
+            vec![let_kw, parameter_segment, parameter_semicolon],
+        );
+        let empty_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 42, 47),
+            vec![empty_attr],
+        );
+        let empty_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 42, 47),
+            vec![empty_segment],
+        );
+        let exists_attribute = builder.add_node(
+            SurfaceNodeKind::AttributeRef,
+            range(source_id, 38, 47),
+            vec![non_kw, empty_symbol],
+        );
+        let exists_attribute_chain = builder.add_node(
+            SurfaceNodeKind::AttributeChain,
+            range(source_id, 38, 47),
+            vec![exists_attribute],
+        );
+        let exists_type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 48, 51),
+            vec![exists_set],
+        );
+        let exists_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 38, 51),
+            vec![exists_attribute_chain, exists_type_head],
+        );
+        let exists_reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 66, 69),
+            vec![exists_ref],
+        );
+        let exists_references = builder.add_node(
+            SurfaceNodeKind::ReferenceList,
+            range(source_id, 66, 69),
+            vec![exists_reference],
+        );
+        let exists_justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 63, 69),
+            vec![exists_by, exists_references],
+        );
+        let existential = builder.add_node(
+            SurfaceNodeKind::ExistentialRegistration,
+            range(source_id, 27, 70),
+            vec![
+                cluster_exists,
+                exists_label,
+                exists_colon,
+                exists_type,
+                exists_semicolon,
+                existence_kw,
+                exists_justification,
+                existence_semicolon,
+            ],
+        );
+
+        let antecedent_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 82, 87),
+            vec![antecedent],
+        );
+        let antecedent_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 82, 87),
+            vec![antecedent_segment],
+        );
+        let antecedent_node = builder.add_node(
+            SurfaceNodeKind::AttributeRef,
+            range(source_id, 82, 87),
+            vec![antecedent_symbol],
+        );
+        let consequent_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 91, 97),
+            vec![consequent],
+        );
+        let consequent_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 91, 97),
+            vec![consequent_segment],
+        );
+        let consequent_node = builder.add_node(
+            SurfaceNodeKind::AttributeRef,
+            range(source_id, 91, 97),
+            vec![consequent_symbol],
+        );
+        let conditional_type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 102, 105),
+            vec![conditional_set],
+        );
+        let conditional_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 102, 105),
+            vec![conditional_type_head],
+        );
+        let coherence_reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 120, 123),
+            vec![coherence_ref],
+        );
+        let coherence_references = builder.add_node(
+            SurfaceNodeKind::ReferenceList,
+            range(source_id, 120, 123),
+            vec![coherence_reference],
+        );
+        let coherence_justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 117, 123),
+            vec![coherence_by, coherence_references],
+        );
+        let conditional = builder.add_node(
+            SurfaceNodeKind::ConditionalRegistration,
+            range(source_id, 71, 124),
+            vec![
+                cluster_conditional,
+                conditional_label,
+                conditional_colon,
+                antecedent_node,
+                conditional_arrow,
+                consequent_node,
+                conditional_for,
+                conditional_type,
+                conditional_semicolon,
+                coherence_kw,
+                coherence_justification,
+                coherence_semicolon,
+            ],
+        );
+
+        let callee = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 136, 137),
+            vec![functor],
+        );
+        let argument_ref = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 138, 139),
+            vec![arg],
+        );
+        let argument = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 138, 139),
+            vec![argument_ref],
+        );
+        let application = builder.add_node(
+            SurfaceNodeKind::ApplicationTerm,
+            range(source_id, 136, 140),
+            vec![callee, open, argument, close],
+        );
+        let functorial_payload = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 136, 140),
+            vec![application],
+        );
+        let functorial_attr_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 144, 150),
+            vec![functorial_attr],
+        );
+        let functorial_attr_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 144, 150),
+            vec![functorial_attr_segment],
+        );
+        let functorial_attr_node = builder.add_node(
+            SurfaceNodeKind::AttributeRef,
+            range(source_id, 144, 150),
+            vec![functorial_attr_symbol],
+        );
+        let functorial_type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 155, 158),
+            vec![functorial_set],
+        );
+        let functorial_type = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 155, 158),
+            vec![functorial_type_head],
+        );
+        let functorial_reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 173, 176),
+            vec![functorial_ref],
+        );
+        let functorial_references = builder.add_node(
+            SurfaceNodeKind::ReferenceList,
+            range(source_id, 173, 176),
+            vec![functorial_reference],
+        );
+        let functorial_justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 170, 176),
+            vec![functorial_by, functorial_references],
+        );
+        let functorial = builder.add_node(
+            SurfaceNodeKind::FunctorialRegistration,
+            range(source_id, 125, 177),
+            vec![
+                cluster_functorial,
+                functorial_label,
+                functorial_colon,
+                functorial_payload,
+                functorial_arrow,
+                functorial_attr_node,
+                functorial_for,
+                functorial_type,
+                functorial_semicolon,
+                functorial_coherence,
+                functorial_justification,
+                functorial_coherence_semicolon,
+            ],
+        );
+
+        let reduce_left_ref = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 188, 189),
+            vec![reduce_left],
+        );
+        let reduce_left_term = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 188, 189),
+            vec![reduce_left_ref],
+        );
+        let reduce_right_ref = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 193, 194),
+            vec![reduce_right],
+        );
+        let reduce_right_term = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 193, 194),
+            vec![reduce_right_ref],
+        );
+        let reducibility_reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 212, 215),
+            vec![reducibility_ref],
+        );
+        let reducibility_references = builder.add_node(
+            SurfaceNodeKind::ReferenceList,
+            range(source_id, 212, 215),
+            vec![reducibility_reference],
+        );
+        let reducibility_justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 209, 215),
+            vec![reducibility_by, reducibility_references],
+        );
+        let reduction = builder.add_node(
+            SurfaceNodeKind::ReductionRegistration,
+            range(source_id, 178, 216),
+            vec![
+                reduce_kw,
+                reduce_label,
+                reduce_colon,
+                reduce_left_term,
+                to_kw,
+                reduce_right_term,
+                reduce_semicolon,
+                reducibility_kw,
+                reducibility_justification,
+                reducibility_semicolon,
+            ],
+        );
+        let registration_block = builder.add_node(
+            SurfaceNodeKind::RegistrationBlockItem,
+            range(source_id, 0, 221),
+            vec![
+                registration_kw,
+                registration_parameter,
+                existential,
+                conditional,
+                functorial,
+                reduction,
+                registration_end,
+                registration_semicolon,
+            ],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 221),
+            vec![
+                registration_kw,
+                let_kw,
+                variable,
+                be_kw,
+                parameter_set,
+                parameter_semicolon,
+                cluster_exists,
+                exists_label,
+                exists_colon,
+                non_kw,
+                empty_attr,
+                exists_set,
+                exists_semicolon,
+                existence_kw,
+                exists_by,
+                exists_ref,
+                existence_semicolon,
+                cluster_conditional,
+                conditional_label,
+                conditional_colon,
+                antecedent,
+                conditional_arrow,
+                consequent,
+                conditional_for,
+                conditional_set,
+                conditional_semicolon,
+                coherence_kw,
+                coherence_by,
+                coherence_ref,
+                coherence_semicolon,
+                cluster_functorial,
+                functorial_label,
+                functorial_colon,
+                functor,
+                open,
+                arg,
+                close,
+                functorial_arrow,
+                functorial_attr,
+                functorial_for,
+                functorial_set,
+                functorial_semicolon,
+                functorial_coherence,
+                functorial_by,
+                functorial_ref,
+                functorial_coherence_semicolon,
+                reduce_kw,
+                reduce_label,
+                reduce_colon,
+                reduce_left,
+                to_kw,
+                reduce_right,
+                reduce_semicolon,
+                reducibility_kw,
+                reducibility_by,
+                reducibility_ref,
+                reducibility_semicolon,
+                registration_end,
+                registration_semicolon,
+                registration_block,
             ],
         );
         builder.finish(Some(root), None)

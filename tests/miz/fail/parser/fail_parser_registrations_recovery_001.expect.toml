@@ -1,0 +1,37 @@
+schema_version = 1
+id = "fail_parser_registrations_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.definitions"
+source = "fail_parser_registrations_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_registration_content"
+stable_detail_key = "parser.definitions.registrations_recovery"
+diagnostic_codes = [
+  "malformed_term_expression",
+  "malformed_type_expression",
+  "malformed_term_expression",
+  "malformed_justification",
+  "malformed_justification",
+  "malformed_type_expression",
+  "missing_semicolon",
+  "malformed_justification",
+  "malformed_justification",
+  "missing_semicolon",
+  "malformed_type_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_type_expression",
+  "malformed_type_expression",
+  "malformed_term_expression",
+  "malformed_justification",
+  "missing_end",
+  "missing_semicolon",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = [
+  "spec.en.17.clusters_and_registrations.parser",
+]
+notes = "Active parse-only runner coverage for parser task 30 recovery: rejected definition-only registration parameters, missing registration labels, missing antecedents, malformed functorial payloads including qua payloads, argument-bearing registration adjectives in existential clusters and consequents, missing correctness conditions, missing reducibility justifications, and missing registration block end recovery."

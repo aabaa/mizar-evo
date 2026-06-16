@@ -1,0 +1,30 @@
+import parser.type_fixtures;
+
+registration
+  let T be type;
+
+  cluster : non empty set;
+  existence by Ref;
+
+  cluster BadExistentialArg: non empty bad(2) set;
+  existence by Ref;
+
+  cluster MissingCorrectness: empty -> empty for set;
+
+  cluster AfterMissingCorrectness: non empty set;
+  existence by Ref;
+
+  cluster MissingAntecedent: -> non empty for set;
+  coherence by Ref;
+
+  cluster BadQua: x qua T -> empty for set;
+  coherence by Ref;
+
+  cluster BadFunctor: 0 -> empty for set;
+  coherence by Ref;
+
+  cluster BadConsequent: empty -> empty(2) for set;
+  coherence by Ref;
+
+  reduce : x to x;
+  reducibility;

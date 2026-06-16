@@ -5,9 +5,9 @@
 状態: module skeleton、top-level placeholder dispatch、concrete import item、
 export item、visibility wrapper、reserve-hosted type expression、set comprehension
 を含む task 15 term surface、task 14 formula surface、S-013 statement node、
-task-22 theorem/proof item、task 23〜29 の definition block / attribute /
+task-22 theorem/proof item、task 23〜30 の definition block / attribute /
 predicate / functor / mode / redefinition / notation alias / property /
-structure 増分は実装済み。残りの concrete registration、template、algorithm、
+structure / registration 増分は実装済み。残りの concrete template、algorithm、
 annotation、package-oriented item grammar は計画中。
 
 ## 目的
@@ -1720,6 +1720,106 @@ definition-local visibility wrapper、name / type / semicolon 欠落、空の ex
 `where` recovery、malformed coherence recovery、active parse-only pass/fail corpus
 coverage、Chapter 5 §5.2、§5.3、§5.3.1、§5.3.2、§5.6、Appendix A.5 / A.12 への
 traceability を固定する必要がある。
+
+### Task 30: Registration と Cluster
+
+Task 30 は Chapter 17 の registration block と definition-local registration item を
+syntax-only に追加する。parser は registration-local parameter、existential /
+conditional / functorial cluster registration、reduction registration、および
+syntax-level correctness condition を保持する。cluster closure、reduced normal form の
+推論、reducibility validation、proof obligation check は行わない。
+
+Production inventory:
+
+```ebnf
+declaration             ::= ... | registration_block ;
+definition_content      ::= ... | [ visibility ] registration_item ;
+
+registration_block      ::= "registration" { registration_content } "end" ";" ;
+registration_content    ::= registration_parameter | registration_item ;
+registration_parameter  ::= "let" qualified_variable_segments
+                             [ "such" condition_list ]
+                             [ "by" references ] ";" ;
+registration_item       ::= cluster_registration | reduction_registration ;
+
+cluster_registration    ::= "cluster" label ":"
+                             ( existential_cluster
+                             | conditional_cluster
+                             | functorial_cluster ) ;
+existential_cluster     ::= attributed_type ";" "existence" justification ";" ;
+conditional_cluster     ::= registration_adjectives "->"
+                             registration_consequent ";"
+                             "coherence" justification ";" ;
+functorial_cluster      ::= functorial_payload "->"
+                             registration_consequent ";"
+                             "coherence" justification ";" ;
+registration_consequent ::= registration_adjectives "for" type_expression ;
+registration_adjectives ::= registration_adjective { registration_adjective } ;
+registration_adjective  ::= [ "non" ] [ param_prefix ] attribute_ref_name ;
+functorial_payload      ::= application_term | operator_term
+                           | bracket_functor_application ;
+
+reduction_registration  ::= "reduce" label ":" term_expression "to"
+                             term_expression ";"
+                             "reducibility" justification ";" ;
+```
+
+`RegistrationBlockItem` は `registration`、source order の
+`RegistrationParameter` / registration-item child、任意の recovery、存在する場合の
+closing `end` と semicolon を所有する。registration parameter は通常の
+qualified-variable segment と condition-list surface を再利用するが、この位置で
+syntax-local な `by` reference だけを受け付ける。definition-only の proof-bearing
+constraint は malformed として扱う。
+
+`ExistentialRegistration` は `cluster` keyword、label、colon、1 個の attributed
+`TypeExpression`、header semicolon、`existence` の `CorrectnessCondition` を所有する。
+parser は type expression が少なくとも 1 個の Chapter 17 registration adjective で
+始まることを要求する。registration adjective は optional `non`、optional parameter
+prefix、parenthesized argument を持たない attribute name である。type が inhabitable か
+どうかの semantic check は parser の外に残る。
+
+`ConditionalRegistration` は `->` の前の 1 個以上の registration adjective、
+consequent の 1 個以上の registration adjective、`for`、target `TypeExpression`、
+header semicolon、`coherence` の `CorrectnessCondition` を所有する。`->` の前に
+antecedent がない場合は malformed とし、antecedent slot に `MissingTypeExpression`
+placeholder を入れた conditional registration として recover する。
+
+`FunctorialRegistration` は `->` の前に syntactically unambiguous な term payload を
+所有する。受理するのは application term、operator expression surface、または bracket
+functor application である。bare identifier / reference、numeral、`it`、choice term、
+set enumeration、structure constructor、selector/update chain、`qua` expression は
+functorial registration payload として受理しない。nullary functorial registration は、
+syntax だけでは single-adjective conditional registration と判別できないため deferred
+のままである。
+
+`ReductionRegistration` は `reduce`、label、colon、left `TermExpression`、`to`、
+right `TermExpression`、header semicolon、`reducibility` の
+`CorrectnessCondition` を所有する。reducibility proof replay と normal form equality は
+semantic / proof work に残る。
+
+definition-local な `public cluster`、`private cluster`、`public reduce`、
+`private reduce` は、concrete registration item を既存の `VisibleItem` /
+`VisibilityMarker` wrapper で包む。top-level の bare `cluster` / `reduce` item は引き続き
+invalid であり、top-level registration は `registration ... end;` block の中に置く。
+
+Task 30 recovery は registration-content synchronization を使う。malformed
+registration parameter、label / colon 欠落、antecedent / consequent adjective 欠落、
+unsupported functorial payload、argument-bearing registration adjective、target type
+欠落、correctness justification 欠落、header semicolon 欠落、registration block `end`
+欠落は、可能な限り後続の registration content を保持して recover する。frontend scope
+skeleton は `registration ... end` を認識し、target type の `for set` や `for T` を
+binder candidate として扱わないため、active parse-only case が spurious lexical scope
+diagnostic を出さない。
+
+Task 30 tests は、registration-local `let`、parameterized registered type を含む
+existential cluster、conditional cluster、functorial application/operator/bracket
+cluster、compound reduction、proof / citation correctness condition、registration item の
+definition-local visibility wrapper、malformed な definition-only `let T be type`
+parameter、label 欠落、antecedent 欠落、unsupported functorial payload、argument-bearing
+registration adjective、reducibility justification 欠落、registration block end 欠落、
+active parse-only pass/fail corpus coverage、Chapter 17 §17.2〜17.6 と、annotation
+prefix を S-016/parser task 35 に defer した Appendix A.17 registration/cluster/reduction
+production への traceability を固定する必要がある。
 
 ## 公開 enum の互換性
 

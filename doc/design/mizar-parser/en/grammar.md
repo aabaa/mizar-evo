@@ -4,10 +4,10 @@ Status: module skeleton, top-level placeholder dispatch, concrete import
 items, export items, visibility wrappers, reserve-hosted type expressions,
 task-15 term surfaces including set comprehensions, task-14 formula surfaces,
 S-013 statement nodes, task-22 theorem/proof items, and the task-23 through
-task-29 definition-block / attribute / predicate / functor / mode /
-redefinition / notation-alias / property / structure increments are
-implemented; remaining concrete registration, template, algorithm, annotation,
-and package-oriented item grammars are planned.
+task-30 definition-block / attribute / predicate / functor / mode /
+redefinition / notation-alias / property / structure / registration increments
+are implemented; remaining concrete template, algorithm, annotation, and
+package-oriented item grammars are planned.
 
 ## Purpose
 
@@ -1836,6 +1836,113 @@ missing names/types/semicolons, empty explicit `where` recovery, malformed
 coherence recovery, active parse-only pass/fail corpus coverage, and
 traceability to Chapter 5 §5.2, §5.3, §5.3.1, §5.3.2, §5.6, and Appendix A.5 /
 A.12.
+
+### Task 30: Registrations And Clusters
+
+Task 30 adds syntax-only Chapter 17 registration blocks and definition-local
+registration items. The parser preserves registration-local parameters,
+existential, conditional, and functorial cluster registrations, reduction
+registrations, and their syntax-level correctness conditions. It does not
+compute cluster closure, infer reduced normal forms, validate reducibility, or
+check proof obligations.
+
+Production inventory:
+
+```ebnf
+declaration             ::= ... | registration_block ;
+definition_content      ::= ... | [ visibility ] registration_item ;
+
+registration_block      ::= "registration" { registration_content } "end" ";" ;
+registration_content    ::= registration_parameter | registration_item ;
+registration_parameter  ::= "let" qualified_variable_segments
+                             [ "such" condition_list ]
+                             [ "by" references ] ";" ;
+registration_item       ::= cluster_registration | reduction_registration ;
+
+cluster_registration    ::= "cluster" label ":"
+                             ( existential_cluster
+                             | conditional_cluster
+                             | functorial_cluster ) ;
+existential_cluster     ::= attributed_type ";" "existence" justification ";" ;
+conditional_cluster     ::= registration_adjectives "->"
+                             registration_consequent ";"
+                             "coherence" justification ";" ;
+functorial_cluster      ::= functorial_payload "->"
+                             registration_consequent ";"
+                             "coherence" justification ";" ;
+registration_consequent ::= registration_adjectives "for" type_expression ;
+registration_adjectives ::= registration_adjective { registration_adjective } ;
+registration_adjective  ::= [ "non" ] [ param_prefix ] attribute_ref_name ;
+functorial_payload      ::= application_term | operator_term
+                           | bracket_functor_application ;
+
+reduction_registration  ::= "reduce" label ":" term_expression "to"
+                             term_expression ";"
+                             "reducibility" justification ";" ;
+```
+
+`RegistrationBlockItem` owns `registration`, source-ordered
+`RegistrationParameter` and registration-item children, optional recovery, and
+the closing `end` plus semicolon when present. Registration parameters reuse
+the ordinary qualified-variable segment and condition-list surfaces but only
+accept syntax-local `by` references; definition-only proof-bearing constraints
+remain malformed in this position.
+
+`ExistentialRegistration` owns the `cluster` keyword, label, colon, one
+attributed `TypeExpression`, the header semicolon, and an `existence`
+`CorrectnessCondition`. The parser requires the type expression to start with
+at least one Chapter 17 registration adjective: optional `non`, optional
+parameter prefix, and an attribute name without parenthesized arguments.
+Semantic checks that the type is inhabitable stay outside the parser.
+
+`ConditionalRegistration` owns one or more registration adjectives before
+`->`, one or more consequent registration adjectives, `for`, a target
+`TypeExpression`, the header semicolon, and a `coherence`
+`CorrectnessCondition`. A missing antecedent before `->` is malformed and
+recovers as a conditional registration with a `MissingTypeExpression`
+placeholder in the antecedent slot.
+
+`FunctorialRegistration` owns a syntactically unambiguous term payload before
+`->`: an application term, an operator expression surface, or a bracket
+functor application. Bare identifiers/references, numerals, `it`, choice
+terms, set enumerations, structure constructors, selector/update chains, and
+`qua` expressions are not accepted as functorial registration payloads.
+Nullary functorial registrations remain deferred because the syntax alone
+cannot disambiguate them from single-adjective conditional registrations.
+
+`ReductionRegistration` owns `reduce`, the label, colon, left
+`TermExpression`, `to`, right `TermExpression`, the header semicolon, and a
+`reducibility` `CorrectnessCondition`. Reducibility proof replay and equality
+of normal forms remain semantic/proof work.
+
+Definition-local `public cluster`, `private cluster`, `public reduce`, and
+`private reduce` use the existing `VisibleItem` / `VisibilityMarker` wrapper
+around the concrete registration item. Top-level bare `cluster` / `reduce`
+items remain invalid; top-level registrations must appear inside a
+`registration ... end;` block.
+
+Task 30 recovery uses registration-content synchronization. Malformed
+registration parameters, missing labels or colons, missing antecedent or
+consequent adjectives, unsupported functorial payloads, argument-bearing
+registration adjectives, missing target types, missing correctness
+justifications, missing header semicolons, and missing block `end` delimiters
+recover while preserving following registration content where possible. The
+frontend scope skeleton recognizes `registration ... end` and skips `for set`
+and identifier-shaped target-type occurrences such as `for T` as binder
+candidates so active parse-only cases do not report spurious lexical scope
+diagnostics.
+
+Task 30 tests pin: registration-local `let`, existential clusters including
+parameterized registered types, conditional clusters, functorial
+application/operator/bracket clusters, compound reductions, proof and citation
+correctness conditions, definition-local visibility wrappers for registration
+items, malformed definition-only `let T be type` parameters, missing labels,
+missing antecedents, unsupported functorial payloads, argument-bearing
+registration adjectives, missing reducibility justifications, missing
+registration block ends, active parse-only pass/fail corpus coverage, and
+traceability to Chapter 17 §17.2-17.6 plus Appendix A.17
+registration/cluster/reduction productions excluding annotation prefixes
+deferred to S-016/parser task 35.
 
 ## Public Enum Compatibility
 

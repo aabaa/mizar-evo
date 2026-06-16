@@ -140,6 +140,12 @@ green tree.
 | inheritance target node | `SyntaxKind::InheritanceTarget` |
 | field redefinition node | `SyntaxKind::FieldRedefinition` |
 | property redefinition node | `SyntaxKind::PropertyRedefinition` |
+| registration block item node | `SyntaxKind::RegistrationBlockItem` |
+| registration parameter node | `SyntaxKind::RegistrationParameter` |
+| existential registration node | `SyntaxKind::ExistentialRegistration` |
+| conditional registration node | `SyntaxKind::ConditionalRegistration` |
+| functorial registration node | `SyntaxKind::FunctorialRegistration` |
+| reduction registration node | `SyntaxKind::ReductionRegistration` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -310,11 +316,17 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 137 | `InheritanceTarget` | task-29 raw inheritance child/parent target |
 | 138 | `FieldRedefinition` | task-29 inherited field mapping |
 | 139 | `PropertyRedefinition` | task-29 inherited property mapping |
+| 140 | `RegistrationBlockItem` | task-30 `registration ... end;` block item |
+| 141 | `RegistrationParameter` | task-30 registration-local `let` parameter |
+| 142 | `ExistentialRegistration` | task-30 existential `cluster ... existence ...;` registration |
+| 143 | `ConditionalRegistration` | task-30 conditional `cluster ... -> ... coherence ...;` registration |
+| 144 | `FunctorialRegistration` | task-30 functorial `cluster term -> ... coherence ...;` registration |
+| 145 | `ReductionRegistration` | task-30 `reduce ... to ... reducibility ...;` registration |
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
 above, including `Root` through task-22 `ProofBlock`, task-23
-`DefinitionBlockItem` through task-29 `PropertyRedefinition`, the compatibility
+`DefinitionBlockItem` through task-30 `ReductionRegistration`, the compatibility
 `Token` wrapper, and `ErrorRecovery`; `is_token_kind` is true only for token
 leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future raw values should be
 appended or assigned into a documented reserved range so existing snapshots and
@@ -418,6 +430,12 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::InheritanceTarget` | none | `SyntaxKind::InheritanceTarget` | parser task-29 raw inheritance child/parent target; preserves source-order tokens for a structure-like reference plus optional raw type arguments, or the parent `set` token, without resolving semantic structure identity |
 | `SurfaceNodeKind::FieldRedefinition` | none | `SyntaxKind::FieldRedefinition` | parser task-29 explicit inheritance field mapping; owns `field`, a child field identifier or `MissingTerm`, optional narrowed `-> TypeExpression`, required `from`, an identifier or `it` source when present, and the member semicolon when present |
 | `SurfaceNodeKind::PropertyRedefinition` | none | `SyntaxKind::PropertyRedefinition` | parser task-29 explicit inheritance property mapping; owns `property`, a child property identifier or `MissingTerm`, optional narrowed `-> TypeExpression`, required `from`, an identifier source when present, and the member semicolon when present |
+| `SurfaceNodeKind::RegistrationBlockItem` | none | `SyntaxKind::RegistrationBlockItem` | parser task-30 `registration ... end;` block item; owns `registration`, source-ordered registration content, optional recovery, `MissingEnd` or `end` when present, and the final semicolon when present |
+| `SurfaceNodeKind::RegistrationParameter` | none | `SyntaxKind::RegistrationParameter` | parser task-30 registration-local `let` parameter; owns qualified variable segments, a `TypeExpression` or recovery, optional condition list and syntax-level `by` references, and the parameter semicolon when present |
+| `SurfaceNodeKind::ExistentialRegistration` | none | `SyntaxKind::ExistentialRegistration` | parser task-30 existential cluster registration; owns `cluster`, label, colon, attributed `TypeExpression`, header semicolon, and an `existence` correctness condition |
+| `SurfaceNodeKind::ConditionalRegistration` | none | `SyntaxKind::ConditionalRegistration` | parser task-30 conditional cluster registration; owns antecedent registration adjectives, `->`, consequent registration adjectives, `for`, target `TypeExpression`, header semicolon, and a `coherence` correctness condition |
+| `SurfaceNodeKind::FunctorialRegistration` | none | `SyntaxKind::FunctorialRegistration` | parser task-30 functorial cluster registration; owns an unambiguous application/operator/bracket payload term, `->`, consequent registration adjectives, `for`, target `TypeExpression`, header semicolon, and a `coherence` correctness condition |
+| `SurfaceNodeKind::ReductionRegistration` | none | `SyntaxKind::ReductionRegistration` | parser task-30 reduction registration; owns `reduce`, label, colon, left `TermExpression`, `to`, right `TermExpression`, header semicolon, and a `reducibility` correctness condition |
 | `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host plus parser task-22 proof justification host; owns one `Proposition`, one `JustificationClause` or `ProofBlock`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
@@ -1092,6 +1110,47 @@ specialization validity, constructor semantics, or proof obligations.
 `as_inheritance_target`, `as_field_redefinition`, and
 `as_property_redefinition`. Snapshot rendering prints the literal node names.
 
+Parser task 30 completes the S-015 registration-family vocabulary.
+`RegistrationBlockItem` owns the `registration` opener, source-ordered
+registration content, optional recovery, and the block-closing `end` plus
+semicolon when present. `RegistrationParameter` owns `let`, ordinary
+qualified-variable segments, optional `such` condition-list children, optional
+syntax-level `by` references, optional recovery, and the semicolon when
+present. It does not own proof-bearing definition constraints or
+template-definition parameter semantics.
+
+`ExistentialRegistration`, `ConditionalRegistration`, and
+`FunctorialRegistration` represent the three `cluster` branches.
+`ExistentialRegistration` owns the `cluster` keyword, label, colon, one
+attributed `TypeExpression`, the header semicolon, and an `existence`
+`CorrectnessCondition`. `ConditionalRegistration` owns registration-adjective
+`AttributeRef` children before `->`, consequent registration-adjective
+`AttributeRef` children, `for`, a target `TypeExpression`, the header
+semicolon, and a `coherence` `CorrectnessCondition`. `FunctorialRegistration`
+owns a syntactically unambiguous functorial payload term, `->`, consequent
+registration adjectives, `for`, the target type, the header semicolon, and a
+`coherence` `CorrectnessCondition`. Registration adjective refs are restricted
+to optional `non`, optional `ParameterPrefix`, and an attribute name without
+parenthesized arguments; argument-bearing adjective spellings are recovered as
+malformed syntax.
+
+`ReductionRegistration` owns `reduce`, the label, colon, left
+`TermExpression`, `to`, right `TermExpression`, the header semicolon, and a
+`reducibility` `CorrectnessCondition`. Definition-local `public` / `private`
+registration items reuse `VisibleItem` around the concrete registration item.
+These nodes preserve registration syntax only. They do not compute cluster
+closure, infer reduced forms, replay reducibility proofs, validate target
+types, decide nullary functorial ambiguity, or check any proof obligation.
+Missing labels and unsupported functorial payloads use `MissingTerm`; missing
+antecedent/consequent adjectives and target types use `MissingTypeExpression`;
+missing correctness justifications may use `MissingProofStep`; missing
+registration block closers use `MissingEnd`; malformed tails are skipped under
+the owning registration content node. `SurfaceNodeView` exposes
+`as_registration_block_item`, `as_registration_parameter`,
+`as_existential_registration`, `as_conditional_registration`,
+`as_functorial_registration`, and `as_reduction_registration`. Snapshot
+rendering prints the literal node names.
+
 ### Vocabulary Increment Contract
 
 Node vocabulary grows only in the same change as the `mizar-parser` grammar task
@@ -1278,6 +1337,12 @@ InheritanceDefinition range=<start>..<end> recovered=<bool>
 InheritanceTarget range=<start>..<end> recovered=<bool>
 FieldRedefinition range=<start>..<end> recovered=<bool>
 PropertyRedefinition range=<start>..<end> recovered=<bool>
+RegistrationBlockItem range=<start>..<end> recovered=<bool>
+RegistrationParameter range=<start>..<end> recovered=<bool>
+ExistentialRegistration range=<start>..<end> recovered=<bool>
+ConditionalRegistration range=<start>..<end> recovered=<bool>
+FunctorialRegistration range=<start>..<end> recovered=<bool>
+ReductionRegistration range=<start>..<end> recovered=<bool>
 CompactStatement range=<start>..<end> recovered=<bool>
 JustificationClause range=<start>..<end> recovered=<bool>
 ReferenceList range=<start>..<end> recovered=<bool>

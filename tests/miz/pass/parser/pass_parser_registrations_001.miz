@@ -1,0 +1,38 @@
+import parser.type_fixtures;
+
+registration
+  let x be set;
+  let y be set such that thesis by Ref;
+
+  cluster ExistsNonEmpty: non empty set;
+  existence by Ref;
+
+  cluster ParametricExists: non empty T of x;
+  existence by Ref;
+
+  cluster EmptyImpliesEmpty: empty -> empty for T of x;
+  coherence by Ref;
+
+  cluster FunctorResultEmpty: f(x) -> empty for set;
+  coherence
+  proof
+    thus thesis;
+  end;
+
+  cluster OperatorResultEmpty: x ++ x -> empty for set;
+  coherence by Ref;
+
+  cluster BracketResultEmpty: [x] -> empty for set;
+  coherence by Ref;
+
+  reduce CompoundReduce: f(x) to [x];
+  reducibility by Ref;
+end;
+
+definition
+  public cluster VisibleCluster: empty -> empty for set;
+  coherence by Ref;
+
+  private reduce VisibleReduce: x to x;
+  reducibility by Ref;
+end;

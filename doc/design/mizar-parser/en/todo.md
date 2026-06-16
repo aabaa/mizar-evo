@@ -12,9 +12,9 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] parser task 29 structures use private cursor/event infrastructure; grammar coverage remains incremental |
+| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] parser task 30 registrations use private cursor/event infrastructure; grammar coverage remains incremental |
 | pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task-12 term Pratt over active prefix/postfix/infix operators is implemented; task-14 fixed formula Pratt is implemented separately from term fixity |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] parser task 29 structure/inheritance recovery plus nested block-end matching uses task-2 cursor/diagnostic/sync helpers |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] parser task 30 registration recovery plus nested block-end matching uses task-2 cursor/diagnostic/sync helpers |
 
 `mizar-parser` implements the syntax grammar: frontend-adapted tokens in,
 `mizar_syntax::SurfaceAst` plus syntax diagnostics out. It is built as a thin
@@ -691,11 +691,25 @@ older numeric syntax task references appear to disagree, prefer
       fixtures, recovery coverage, frontend scope-skeleton nested-block
       follow-through, and traceability metadata cover the task-29 surface.
 
-30. **Registrations and clusters.** [ ]
+30. **Registrations and clusters.** [x]
     - `registration … end` blocks, existential/conditional/functorial cluster
       forms, `reduce`, and their correctness conditions.
     - Deps: 29, `mizar-syntax` task 15 / S-015. Spec:
       [17.clusters_and_registrations.md](../../../spec/en/17.clusters_and_registrations.md).
+    - Result: implemented `RegistrationBlockItem`, `RegistrationParameter`,
+      `ExistentialRegistration`, `ConditionalRegistration`,
+      `FunctorialRegistration`, and `ReductionRegistration` parsing. Top-level
+      `registration ... end;` blocks own registration-local `let` parameters,
+      cluster registrations, reductions, and missing-end recovery.
+      Definition-local `public` / `private` cluster and reduction items reuse
+      `VisibleItem`. The parser preserves registration adjectives without
+      semantic cluster facts, accepts only syntactically unambiguous
+      application/operator/bracket-functor functorial payloads, leaves nullary
+      functorial ambiguity deferred, and keeps correctness conditions as
+      syntax-level citation/proof obligations. Parser unit tests, active
+      parse-only pass/fail corpus fixtures, frontend scope-skeleton
+      registration block support, recovery coverage, and traceability metadata
+      cover the task-30 surface.
 
 31. **Templates.** [ ]
     - Template parameters, bracket-form type arguments and parameter prefixes

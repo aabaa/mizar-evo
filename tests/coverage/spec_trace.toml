@@ -1146,6 +1146,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.17.clusters_and_registrations.parser"
+source = "doc/spec/en/17.clusters_and_registrations.md"
+section = "17.2 Registration Blocks; 17.3 Existential Clusters; 17.4 Conditional Clusters; 17.5 Functorial Clusters; 17.6 Reduction Registrations; 17.10 Complete Syntax (EBNF); Appendix A.17 registration/cluster/reduction productions excluding annotation prefixes deferred to S-016/parser task 35"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_registrations_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_registrations_recovery_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.syntax.template_arguments.parser"
 source = "doc/spec/en/appendix_a.grammar_summary.md"
 section = "A.9 Predicates; A.10 Functors; A.18 Templates"

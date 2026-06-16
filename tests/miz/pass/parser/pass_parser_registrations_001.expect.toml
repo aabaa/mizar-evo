@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_registrations_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.definitions"
+source = "pass_parser_registrations_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.17.clusters_and_registrations.parser",
+]
+notes = "Active parse-only runner coverage for parser task 30 registrations: registration-local let parameters with guards, existential/conditional/functorial clusters including parameterized registered and target types plus operator and bracket payloads, compound reductions, proof and citation correctness conditions, and definition-local visible cluster and reduce items."

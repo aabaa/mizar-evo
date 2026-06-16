@@ -165,6 +165,12 @@ impl Parser {
                         position = item.next_position;
                         continue;
                     }
+                    if let Some(item) = self.parse_registration_block_item(position) {
+                        item_children.push(item.id);
+                        recovery_nodes.extend(item.recovery_nodes);
+                        position = item.next_position;
+                        continue;
+                    }
                     if let Some(item) = self.parse_theorem_item(position) {
                         item_children.push(item.id);
                         recovery_nodes.extend(item.recovery_nodes);
@@ -2737,6 +2743,687 @@ impl Parser {
         })
     }
 
+    fn parse_registration_block_item(&mut self, position: usize) -> Option<ParsedItem> {
+        let head = self.item_head_position(position)?;
+        if !self.is_reserved_word_at(head, "registration") {
+            return None;
+        }
+
+        let mut children = self.token_node_ids[position..=head].to_vec();
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = head + 1;
+
+        while cursor < self.request.tokens.len() && !self.is_end_keyword_at(cursor) {
+            let content_start = self.skip_annotations(cursor);
+            if self.is_registration_block_outer_content_boundary_at(content_start) {
+                break;
+            }
+            if content_start > cursor {
+                let annotations = self.emit_placeholder_item(cursor, content_start);
+                cursor = annotations.next_position;
+                children.push(annotations.id);
+                recovery_nodes.extend(annotations.recovery_nodes);
+                if self.is_end_keyword_at(cursor) {
+                    break;
+                }
+            }
+
+            let content = self
+                .parse_registration_content_at(cursor)
+                .unwrap_or_else(|| self.parse_registration_content_placeholder(cursor));
+            let made_progress = content.next_position > cursor;
+            cursor = content.next_position;
+            children.push(content.id);
+            recovery_nodes.extend(content.recovery_nodes);
+            if !made_progress {
+                break;
+            }
+        }
+
+        if self.is_end_keyword_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            let missing = self.add_missing_end(head, cursor);
+            children.push(missing);
+            recovery_nodes.push(missing);
+        }
+        cursor = self.parse_required_statement_semicolon(cursor, &mut children);
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::RegistrationBlockItem,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        Some(ParsedItem {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        })
+    }
+
+    fn parse_registration_content_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        if self.is_reserved_word_at(position, "let") {
+            return Some(self.parse_registration_parameter_at(position));
+        }
+        if self.is_registration_item_start_at(position) {
+            return Some(self.parse_registration_item_at(position));
+        }
+        None
+    }
+
+    fn is_registration_block_outer_content_boundary_at(&self, position: usize) -> bool {
+        self.is_item_start_at(position) && !self.is_registration_content_start_at(position)
+    }
+
+    fn parse_registration_parameter_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        cursor = self.parse_qualified_variable_segments(
+            cursor,
+            &mut children,
+            &mut recovery_nodes,
+            "expected variable segment after registration `let`",
+            "expected variable segment after `,` in registration parameter",
+        );
+        cursor =
+            self.parse_optional_such_condition_list(cursor, &mut children, &mut recovery_nodes);
+        if self.is_reserved_word_at(cursor, "by") {
+            let justification = self.parse_justification_clause_at(cursor, false);
+            cursor = justification.next_position;
+            children.push(justification.id);
+            recovery_nodes.extend(justification.recovery_nodes);
+        }
+
+        self.finish_registration_content_node(
+            position,
+            cursor,
+            SurfaceNodeKind::RegistrationParameter,
+            children,
+            recovery_nodes,
+            "unexpected token in registration parameter",
+        )
+    }
+
+    fn parse_registration_item_at(&mut self, position: usize) -> ParsedTypeNode {
+        if self.is_reserved_word_at(position, "reduce") {
+            self.parse_reduction_registration_at(position)
+        } else {
+            self.parse_cluster_registration_at(position)
+        }
+    }
+
+    fn parse_cluster_registration_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if self.is_identifier_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected registration label");
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if self.is_reserved_symbol_at(cursor, ":") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_formula_expression(
+                cursor,
+                "expected `:` after registration label",
+            );
+        }
+
+        let arrow = self.top_level_symbol_before_statement_boundary_at(cursor, "->");
+        if let Some(arrow) = arrow {
+            if arrow == cursor || self.registration_adjective_list_can_match(cursor, arrow) {
+                return self.parse_conditional_registration_tail(
+                    position,
+                    cursor,
+                    arrow,
+                    children,
+                    recovery_nodes,
+                );
+            }
+            return self.parse_functorial_registration_tail(
+                position,
+                cursor,
+                arrow,
+                children,
+                recovery_nodes,
+            );
+        }
+
+        self.parse_existential_registration_tail(position, cursor, children, recovery_nodes)
+    }
+
+    fn parse_existential_registration_tail(
+        &mut self,
+        position: usize,
+        mut cursor: usize,
+        mut children: Vec<SurfaceBuilderNodeId>,
+        mut recovery_nodes: Vec<SurfaceBuilderNodeId>,
+    ) -> ParsedTypeNode {
+        if self.registration_adjective_ref_plan_at(cursor).is_none() {
+            self.diagnose_malformed_type_expression(
+                cursor,
+                "expected existential registration adjective before type",
+            );
+        }
+        if let Some(argument_position) = self.first_argument_bearing_registration_adjective_before(
+            cursor,
+            self.registration_header_boundary_at(cursor),
+        ) {
+            self.diagnose_malformed_type_expression(
+                argument_position,
+                "registration adjectives cannot have arguments",
+            );
+        }
+
+        if let Some(type_expression) = self.parse_type_expression_at(cursor) {
+            cursor = type_expression.next_position;
+            children.push(type_expression.id);
+            recovery_nodes.extend(type_expression.recovery_nodes);
+        } else {
+            self.diagnose_malformed_type_expression(
+                cursor,
+                "expected existential registration type",
+            );
+            let missing = self.add_missing_type_expression(cursor);
+            children.push(missing);
+            recovery_nodes.push(missing);
+        }
+
+        cursor = self.parse_required_registration_header_semicolon(cursor, &mut children);
+        let correctness = self.parse_registration_correctness_condition_at(cursor, "existence");
+        cursor = correctness.next_position;
+        children.push(correctness.id);
+        recovery_nodes.extend(correctness.recovery_nodes);
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::ExistentialRegistration,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_conditional_registration_tail(
+        &mut self,
+        position: usize,
+        mut cursor: usize,
+        arrow: usize,
+        mut children: Vec<SurfaceBuilderNodeId>,
+        mut recovery_nodes: Vec<SurfaceBuilderNodeId>,
+    ) -> ParsedTypeNode {
+        self.parse_registration_adjective_list_until(
+            cursor,
+            arrow,
+            &mut children,
+            &mut recovery_nodes,
+            "expected conditional registration antecedent",
+            "malformed conditional registration antecedent",
+        );
+        cursor = arrow;
+
+        children.push(self.token_node_ids[cursor]);
+        cursor += 1;
+
+        cursor = self.parse_registration_consequent_and_type(
+            cursor,
+            &mut children,
+            &mut recovery_nodes,
+            "expected conditional registration consequent",
+        );
+        cursor = self.parse_required_registration_header_semicolon(cursor, &mut children);
+        let correctness = self.parse_registration_correctness_condition_at(cursor, "coherence");
+        cursor = correctness.next_position;
+        children.push(correctness.id);
+        recovery_nodes.extend(correctness.recovery_nodes);
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::ConditionalRegistration,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_functorial_registration_tail(
+        &mut self,
+        position: usize,
+        mut cursor: usize,
+        arrow: usize,
+        mut children: Vec<SurfaceBuilderNodeId>,
+        mut recovery_nodes: Vec<SurfaceBuilderNodeId>,
+    ) -> ParsedTypeNode {
+        if self.registration_functorial_payload_can_match(cursor, arrow) {
+            if let Some(term) = self.parse_term_expression_at(cursor) {
+                if term.next_position == arrow {
+                    cursor = term.next_position;
+                    children.push(term.id);
+                    recovery_nodes.extend(term.recovery_nodes);
+                } else {
+                    self.diagnose_malformed_term_expression(
+                        term.next_position,
+                        "unexpected token in functorial registration payload",
+                    );
+                    children.push(term.id);
+                    recovery_nodes.extend(term.recovery_nodes);
+                    if let Some(recovery) =
+                        self.emit_malformed_tail_recovery(term.next_position, arrow)
+                    {
+                        children.push(recovery.id);
+                        recovery_nodes.extend(recovery.recovery_nodes);
+                    }
+                    cursor = arrow;
+                }
+            } else {
+                self.diagnose_malformed_term_expression(
+                    cursor,
+                    "expected functorial registration payload",
+                );
+                self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+                if let Some(recovery) = self.emit_malformed_tail_recovery(cursor, arrow) {
+                    children.push(recovery.id);
+                    recovery_nodes.extend(recovery.recovery_nodes);
+                }
+                cursor = arrow;
+            }
+        } else {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "expected functorial registration application payload",
+            );
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+            if let Some(recovery) = self.emit_malformed_tail_recovery(cursor, arrow) {
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+            cursor = arrow;
+        }
+
+        children.push(self.token_node_ids[cursor]);
+        cursor += 1;
+
+        cursor = self.parse_registration_consequent_and_type(
+            cursor,
+            &mut children,
+            &mut recovery_nodes,
+            "expected functorial registration consequent",
+        );
+        cursor = self.parse_required_registration_header_semicolon(cursor, &mut children);
+        let correctness = self.parse_registration_correctness_condition_at(cursor, "coherence");
+        cursor = correctness.next_position;
+        children.push(correctness.id);
+        recovery_nodes.extend(correctness.recovery_nodes);
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::FunctorialRegistration,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_reduction_registration_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if self.is_identifier_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "expected reduction registration label",
+            );
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if self.is_reserved_symbol_at(cursor, ":") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_formula_expression(
+                cursor,
+                "expected `:` after reduction registration label",
+            );
+        }
+
+        if let Some(left) = self.parse_term_expression_at(cursor) {
+            cursor = left.next_position;
+            children.push(left.id);
+            recovery_nodes.extend(left.recovery_nodes);
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected reduction left-hand term");
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if self.is_reserved_word_at(cursor, "to") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected `to` in reduction");
+        }
+
+        if let Some(right) = self.parse_term_expression_at(cursor) {
+            cursor = right.next_position;
+            children.push(right.id);
+            recovery_nodes.extend(right.recovery_nodes);
+        } else {
+            self.diagnose_malformed_term_expression(cursor, "expected reduction right-hand term");
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        cursor = self.parse_required_registration_header_semicolon(cursor, &mut children);
+        let correctness = self.parse_registration_correctness_condition_at(cursor, "reducibility");
+        cursor = correctness.next_position;
+        children.push(correctness.id);
+        recovery_nodes.extend(correctness.recovery_nodes);
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::ReductionRegistration,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_registration_consequent_and_type(
+        &mut self,
+        mut cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+        missing_message: &'static str,
+    ) -> usize {
+        let Some(for_position) =
+            self.top_level_reserved_word_before_statement_boundary_at(cursor, "for")
+        else {
+            let boundary = self.registration_header_boundary_at(cursor);
+            self.parse_registration_adjective_list_until(
+                cursor,
+                boundary,
+                children,
+                recovery_nodes,
+                missing_message,
+                "malformed registration consequent",
+            );
+            self.diagnose_malformed_type_expression(boundary, "expected `for` in registration");
+            let missing = self.add_missing_type_expression(boundary);
+            children.push(missing);
+            recovery_nodes.push(missing);
+            return boundary;
+        };
+
+        self.parse_registration_adjective_list_until(
+            cursor,
+            for_position,
+            children,
+            recovery_nodes,
+            missing_message,
+            "malformed registration consequent",
+        );
+        cursor = for_position;
+        children.push(self.token_node_ids[cursor]);
+        cursor += 1;
+
+        if let Some(type_expression) = self.parse_type_expression_at(cursor) {
+            cursor = type_expression.next_position;
+            children.push(type_expression.id);
+            recovery_nodes.extend(type_expression.recovery_nodes);
+        } else {
+            self.diagnose_malformed_type_expression(cursor, "expected registration target type");
+            let missing = self.add_missing_type_expression(cursor);
+            children.push(missing);
+            recovery_nodes.push(missing);
+        }
+        cursor
+    }
+
+    fn parse_registration_correctness_condition_at(
+        &mut self,
+        position: usize,
+        expected_keyword: &'static str,
+    ) -> ParsedTypeNode {
+        let mut children = Vec::new();
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position;
+
+        if self.is_reserved_word_at(cursor, expected_keyword) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_justification(
+                cursor,
+                format!("expected `{expected_keyword}` registration correctness condition"),
+            );
+            if self.is_correctness_condition_keyword_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            }
+        }
+
+        if let Some(justification) =
+            self.parse_definition_content_general_justification_at(cursor, true)
+        {
+            cursor = justification.next_position;
+            children.push(justification.id);
+            recovery_nodes.extend(justification.recovery_nodes);
+        } else if !self.is_semicolon_at(cursor)
+            && !self.is_registration_content_synchronization_boundary_at(cursor)
+        {
+            self.diagnose_malformed_justification(
+                cursor,
+                "expected registration correctness-condition justification",
+            );
+            if let Some(recovery) = self.recover_malformed_registration_content_tail(cursor) {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+        } else {
+            self.diagnose_malformed_justification(
+                cursor,
+                "expected registration correctness-condition justification",
+            );
+            self.push_missing_proof_step(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+        }
+
+        let range = if cursor > position {
+            self.covering_token_range(position, cursor)
+        } else {
+            self.zero_range_at(position)
+        };
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::CorrectnessCondition,
+            range,
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor,
+            recovery_nodes,
+        }
+    }
+
+    fn parse_registration_adjective_list_until(
+        &mut self,
+        position: usize,
+        end: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+        missing_message: &'static str,
+        malformed_message: &'static str,
+    ) {
+        let mut cursor = position;
+        let mut saw_adjective = false;
+        while cursor < end {
+            let Some(plan) = self.registration_adjective_ref_plan_at(cursor) else {
+                break;
+            };
+            if plan.next_position > end {
+                break;
+            }
+            let adjective = self.parse_registration_adjective_ref_from_plan(plan);
+            cursor = adjective.next_position;
+            children.push(adjective.id);
+            recovery_nodes.extend(adjective.recovery_nodes);
+            saw_adjective = true;
+        }
+
+        if !saw_adjective {
+            self.diagnose_malformed_type_expression(position, missing_message);
+            let missing = self.add_missing_type_expression(position);
+            children.push(missing);
+            recovery_nodes.push(missing);
+        }
+
+        if cursor < end {
+            self.diagnose_malformed_type_expression(cursor, malformed_message);
+            if let Some(recovery) = self.emit_malformed_tail_recovery(cursor, end) {
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+        }
+    }
+
+    fn parse_registration_adjective_ref_from_plan(
+        &mut self,
+        plan: AttributeRefPlan,
+    ) -> ParsedTypeNode {
+        let mut children = Vec::new();
+        let recovery_nodes = Vec::new();
+        let mut cursor = plan.start_position;
+
+        if self.is_reserved_word_at(cursor, "non") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        }
+        if let Some(prefix_end) = self.parameter_prefix_next_at(cursor) {
+            let prefix_children = self.token_node_ids[cursor..prefix_end].to_vec();
+            let prefix = self.events.emit(SyntaxEvent::Node {
+                kind: SurfaceNodeKind::ParameterPrefix,
+                range: self.covering_token_range(cursor, prefix_end),
+                children: prefix_children,
+            });
+            children.push(prefix);
+            cursor = prefix_end;
+        }
+
+        let symbol = self
+            .parse_attribute_symbol_at(cursor)
+            .expect("planned registration adjective should contain an attribute symbol");
+        children.push(symbol.id);
+        cursor = symbol.next_position;
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::AttributeRef,
+            range: self.covering_token_range(plan.start_position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(plan.start_position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn finish_registration_content_node(
+        &mut self,
+        position: usize,
+        mut cursor: usize,
+        kind: SurfaceNodeKind,
+        mut children: Vec<SurfaceBuilderNodeId>,
+        mut recovery_nodes: Vec<SurfaceBuilderNodeId>,
+        unexpected_message: &'static str,
+    ) -> ParsedTypeNode {
+        if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else if cursor < self.request.tokens.len()
+            && !self.is_registration_content_synchronization_boundary_at(cursor)
+        {
+            self.diagnose_malformed_term_expression(cursor, unexpected_message);
+            if let Some(recovery) = self.recover_malformed_registration_content_tail(cursor) {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+            if self.is_semicolon_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            } else {
+                self.diagnose_missing_semicolon(cursor);
+            }
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_required_registration_header_semicolon(
+        &mut self,
+        mut cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+    ) -> usize {
+        if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+        }
+        cursor
+    }
+
+    fn parse_registration_content_placeholder(&mut self, position: usize) -> ParsedTypeNode {
+        let end = self.registration_content_placeholder_end(position);
+        let item = self.emit_placeholder_item(position, end);
+        ParsedTypeNode {
+            id: item.id,
+            next_position: item.next_position,
+            recovery_nodes: item.recovery_nodes,
+        }
+    }
+
     fn parse_definition_content_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
         if self.definition_parameter_starts_template_ambiguous_at(position) {
             return None;
@@ -2768,6 +3455,9 @@ impl Parser {
         if self.is_reserved_word_at(position, "inherit") {
             return Some(self.parse_inheritance_definition_at(position));
         }
+        if self.is_registration_item_start_at(position) {
+            return Some(self.parse_registration_item_at(position));
+        }
         if self.is_supported_redefinition_start_at(position) {
             return Some(self.parse_redefinition_at(position));
         }
@@ -2798,6 +3488,11 @@ impl Parser {
             && self.is_reserved_word_at(position + 1, "inherit")
         {
             return Some(self.parse_visible_inheritance_definition_at(position));
+        }
+        if self.is_visibility_marker_at(position)
+            && self.is_registration_item_start_at(position + 1)
+        {
+            return Some(self.parse_visible_registration_item_at(position));
         }
         if self.is_visibility_marker_at(position)
             && self.is_supported_redefinition_start_at(position + 1)
@@ -3130,6 +3825,11 @@ impl Parser {
     fn parse_visible_inheritance_definition_at(&mut self, position: usize) -> ParsedTypeNode {
         let inheritance = self.parse_inheritance_definition_at(position + 1);
         self.wrap_visible_definition_content(position, inheritance)
+    }
+
+    fn parse_visible_registration_item_at(&mut self, position: usize) -> ParsedTypeNode {
+        let registration = self.parse_registration_item_at(position + 1);
+        self.wrap_visible_definition_content(position, registration)
     }
 
     fn parse_visible_redefinition_at(&mut self, position: usize) -> ParsedTypeNode {
@@ -8815,6 +9515,49 @@ impl Parser {
         self.emit_malformed_tail_recovery(position, cursor)
     }
 
+    fn recover_malformed_registration_content_tail(
+        &mut self,
+        position: usize,
+    ) -> Option<ParsedItem> {
+        let mut cursor = position;
+        let mut paren_depth = 0_usize;
+        let mut bracket_depth = 0_usize;
+        let mut brace_depth = 0_usize;
+
+        while cursor < self.request.tokens.len() {
+            let top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            if top_level && self.is_registration_content_synchronization_boundary_at(cursor) {
+                break;
+            }
+
+            if self.is_reserved_symbol_at(cursor, "(") {
+                paren_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                if paren_depth == 0 {
+                    break;
+                }
+                paren_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                bracket_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                if bracket_depth == 0 {
+                    break;
+                }
+                bracket_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                brace_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                if brace_depth == 0 {
+                    break;
+                }
+                brace_depth -= 1;
+            }
+            cursor += 1;
+        }
+
+        self.emit_malformed_tail_recovery(position, cursor)
+    }
+
     fn recover_malformed_structure_member_tail(&mut self, position: usize) -> Option<ParsedItem> {
         let mut cursor = position;
         let mut paren_depth = 0_usize;
@@ -9475,6 +10218,59 @@ impl Parser {
         None
     }
 
+    fn top_level_reserved_word_before_statement_boundary_at(
+        &self,
+        position: usize,
+        word: &str,
+    ) -> Option<usize> {
+        let mut cursor = position;
+        let mut paren_depth = 0_usize;
+        let mut bracket_depth = 0_usize;
+        let mut brace_depth = 0_usize;
+
+        while cursor < self.request.tokens.len() {
+            let top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            if top_level {
+                if self.is_reserved_word_at(cursor, word) {
+                    return Some(cursor);
+                }
+                if cursor > position
+                    && (self.is_semicolon_at(cursor)
+                        || self.is_end_keyword_at(cursor)
+                        || self.is_item_start_at(cursor)
+                        || self.is_statement_boundary_keyword_at(cursor))
+                {
+                    return None;
+                }
+            }
+
+            if self.is_reserved_symbol_at(cursor, "(") {
+                paren_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                if paren_depth == 0 {
+                    return None;
+                }
+                paren_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                bracket_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                if bracket_depth == 0 {
+                    return None;
+                }
+                bracket_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                brace_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                if brace_depth == 0 {
+                    return None;
+                }
+                brace_depth -= 1;
+            }
+            cursor += 1;
+        }
+        None
+    }
+
     fn is_let_type_set_keyword_at(&self, let_position: usize, position: usize) -> bool {
         if !self.is_reserved_word_at(position, "set") || position <= let_position {
             return false;
@@ -9804,6 +10600,23 @@ impl Parser {
             || self.is_definition_content_start_at(position)
     }
 
+    fn is_registration_content_synchronization_boundary_at(&self, position: usize) -> bool {
+        position >= self.request.tokens.len()
+            || self.is_semicolon_at(position)
+            || self.is_end_keyword_at(position)
+            || self.is_registration_content_start_at(position)
+            || self.is_item_start_at(position)
+    }
+
+    fn is_registration_content_start_at(&self, position: usize) -> bool {
+        self.is_reserved_word_at(position, "let") || self.is_registration_item_start_at(position)
+    }
+
+    fn is_registration_item_start_at(&self, position: usize) -> bool {
+        self.is_reserved_word_at(position, "cluster")
+            || self.is_reserved_word_at(position, "reduce")
+    }
+
     fn is_definition_content_start_at(&self, position: usize) -> bool {
         if self.definition_parameter_starts_template_ambiguous_at(position)
             || self.is_reserved_word_at(position, "let")
@@ -9929,6 +10742,52 @@ impl Parser {
             }
 
             if self.opens_definition_content_placeholder_block_at(cursor) {
+                block_depth += 1;
+            }
+            cursor += 1;
+        }
+
+        cursor.max(position + 1)
+    }
+
+    fn registration_content_placeholder_end(&self, position: usize) -> usize {
+        let mut cursor = position;
+        let mut block_depth = 0_usize;
+
+        while cursor < self.request.tokens.len() {
+            let top_level = block_depth == 0;
+            if top_level
+                && cursor > position
+                && (self.is_end_keyword_at(cursor) || self.is_registration_content_start_at(cursor))
+            {
+                break;
+            }
+            if top_level
+                && cursor > position
+                && self.is_registration_block_outer_content_boundary_at(cursor)
+            {
+                break;
+            }
+            if top_level && self.is_semicolon_at(cursor) {
+                return cursor + 1;
+            }
+
+            if self.is_end_keyword_at(cursor) {
+                if block_depth == 0 {
+                    break;
+                }
+                block_depth -= 1;
+                cursor += 1;
+                if block_depth == 0 {
+                    if self.is_semicolon_at(cursor) {
+                        cursor += 1;
+                    }
+                    break;
+                }
+                continue;
+            }
+
+            if sync::opens_recovery_block_at(&self.request.tokens, cursor) {
                 block_depth += 1;
             }
             cursor += 1;
@@ -10072,6 +10931,50 @@ impl Parser {
                     && self.is_reserved_word_at(cursor, "where")
             {
                 break;
+            }
+            cursor += 1;
+        }
+        cursor
+    }
+
+    fn registration_header_boundary_at(&self, position: usize) -> usize {
+        let mut cursor = position;
+        let mut paren_depth = 0_usize;
+        let mut bracket_depth = 0_usize;
+        let mut brace_depth = 0_usize;
+
+        while cursor < self.request.tokens.len() {
+            let top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            if top_level
+                && (self.is_semicolon_at(cursor)
+                    || self.is_end_keyword_at(cursor)
+                    || self.is_registration_content_start_at(cursor)
+                    || self.is_item_start_at(cursor))
+            {
+                break;
+            }
+
+            if self.is_reserved_symbol_at(cursor, "(") {
+                paren_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                if paren_depth == 0 {
+                    break;
+                }
+                paren_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                bracket_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                if bracket_depth == 0 {
+                    break;
+                }
+                bracket_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                brace_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                if brace_depth == 0 {
+                    break;
+                }
+                brace_depth -= 1;
             }
             cursor += 1;
         }
@@ -10417,6 +11320,220 @@ impl Parser {
             if self.is_type_expression_boundary_at(cursor) {
                 return false;
             }
+        }
+        false
+    }
+
+    fn registration_adjective_ref_plan_at(&self, position: usize) -> Option<AttributeRefPlan> {
+        let mut cursor = position;
+        if self.is_reserved_word_at(cursor, "non") {
+            cursor += 1;
+        }
+        if let Some(prefix_end) = self.parameter_prefix_next_at(cursor) {
+            cursor = prefix_end;
+        }
+        cursor = self.attribute_symbol_next_at(cursor)?;
+        if self.is_reserved_symbol_at(cursor, "(") {
+            return None;
+        }
+        Some(AttributeRefPlan {
+            start_position: position,
+            next_position: cursor,
+        })
+    }
+
+    fn first_argument_bearing_registration_adjective_before(
+        &self,
+        position: usize,
+        end: usize,
+    ) -> Option<usize> {
+        let mut cursor = position;
+        let mut paren_depth = 0_usize;
+        let mut bracket_depth = 0_usize;
+        let mut brace_depth = 0_usize;
+
+        while cursor < end {
+            let top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            if top_level {
+                if let Some(argument_position) =
+                    self.argument_bearing_registration_adjective_at(cursor)
+                    && argument_position < end
+                {
+                    return Some(argument_position);
+                }
+                if let Some(plan) = self.registration_adjective_ref_plan_at(cursor)
+                    && plan.next_position <= end
+                {
+                    cursor = plan.next_position;
+                    continue;
+                }
+            }
+
+            if self.is_reserved_symbol_at(cursor, "(") {
+                paren_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                if paren_depth == 0 {
+                    return None;
+                }
+                paren_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                bracket_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                if bracket_depth == 0 {
+                    return None;
+                }
+                bracket_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                brace_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                if brace_depth == 0 {
+                    return None;
+                }
+                brace_depth -= 1;
+            }
+            cursor += 1;
+        }
+        None
+    }
+
+    fn argument_bearing_registration_adjective_at(&self, position: usize) -> Option<usize> {
+        let mut cursor = position;
+        if self.is_reserved_word_at(cursor, "non") {
+            cursor += 1;
+        }
+        if let Some(prefix_end) = self.parameter_prefix_next_at(cursor) {
+            cursor = prefix_end;
+        }
+        cursor = self.attribute_symbol_next_at(cursor)?;
+        self.is_reserved_symbol_at(cursor, "(").then_some(cursor)
+    }
+
+    fn registration_adjective_list_can_match(&self, position: usize, end: usize) -> bool {
+        let mut cursor = position;
+        let mut saw_adjective = false;
+        while cursor < end {
+            let Some(plan) = self.registration_adjective_ref_plan_at(cursor) else {
+                return false;
+            };
+            if plan.next_position > end {
+                return false;
+            }
+            cursor = plan.next_position;
+            saw_adjective = true;
+        }
+        saw_adjective && cursor == end
+    }
+
+    fn registration_functorial_payload_can_match(&self, position: usize, end: usize) -> bool {
+        if position >= end {
+            return false;
+        }
+        if self.payload_contains_top_level_word(position, end, "qua")
+            || self.payload_contains_top_level_word(position, end, "with")
+        {
+            return false;
+        }
+        if self.is_identifier_at(position)
+            && self.is_reserved_symbol_at(position + 1, ".")
+            && self.qualified_symbol_next_at(position).is_none()
+        {
+            return false;
+        }
+        if self.prefix_operator_at(position).is_some()
+            || self.payload_contains_top_level_term_operator(position, end)
+            || self.is_reserved_symbol_at(position, "[")
+        {
+            return true;
+        }
+        if let Some(symbol_end) = self.qualified_symbol_next_at(position) {
+            if self.can_parse_structure_constructor_after_symbol(symbol_end) {
+                return false;
+            }
+            return symbol_end < end && self.is_reserved_symbol_at(symbol_end, "(");
+        }
+        if self.is_identifier_at(position) {
+            return position + 1 < end && self.is_reserved_symbol_at(position + 1, "(");
+        }
+        false
+    }
+
+    fn payload_contains_top_level_word(&self, position: usize, end: usize, word: &str) -> bool {
+        let mut cursor = position;
+        let mut paren_depth = 0_usize;
+        let mut bracket_depth = 0_usize;
+        let mut brace_depth = 0_usize;
+
+        while cursor < end {
+            let top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            if top_level && self.is_reserved_word_at(cursor, word) {
+                return true;
+            }
+
+            if self.is_reserved_symbol_at(cursor, "(") {
+                paren_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                if paren_depth == 0 {
+                    return false;
+                }
+                paren_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                bracket_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                if bracket_depth == 0 {
+                    return false;
+                }
+                bracket_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                brace_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                if brace_depth == 0 {
+                    return false;
+                }
+                brace_depth -= 1;
+            }
+            cursor += 1;
+        }
+        false
+    }
+
+    fn payload_contains_top_level_term_operator(&self, position: usize, end: usize) -> bool {
+        let mut cursor = position + 1;
+        let mut paren_depth = 0_usize;
+        let mut bracket_depth = 0_usize;
+        let mut brace_depth = 0_usize;
+
+        while cursor < end {
+            let top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            if top_level
+                && (self.infix_operator_at(cursor).is_some()
+                    || self.postfix_operator_at(cursor).is_some())
+            {
+                return true;
+            }
+
+            if self.is_reserved_symbol_at(cursor, "(") {
+                paren_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                if paren_depth == 0 {
+                    return false;
+                }
+                paren_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                bracket_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                if bracket_depth == 0 {
+                    return false;
+                }
+                bracket_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                brace_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                if brace_depth == 0 {
+                    return false;
+                }
+                brace_depth -= 1;
+            }
+            cursor += 1;
         }
         false
     }
@@ -11646,6 +12763,7 @@ mod tests {
                 "private" | "public" => SurfaceNodeKind::VisibleItem,
                 "reserve" => SurfaceNodeKind::ReserveItem,
                 "definition" => SurfaceNodeKind::DefinitionBlockItem,
+                "registration" => SurfaceNodeKind::RegistrationBlockItem,
                 "synonym" | "antonym" => SurfaceNodeKind::NotationAlias,
                 _ => SurfaceNodeKind::PlaceholderItem,
             };
@@ -16252,6 +17370,618 @@ mod tests {
                         .any(|text| text == "Follows")
             }),
             "malformed inheritance content must preserve following structure definitions"
+        );
+    }
+
+    #[test]
+    fn parser_parses_task30_registration_blocks_and_items() {
+        let source_id = source_id(196);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("registration", ParserTokenKind::ReservedWord),
+                    ("let", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("be", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("let", ParserTokenKind::ReservedWord),
+                    ("y", ParserTokenKind::Identifier),
+                    ("be", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    ("such", ParserTokenKind::ReservedWord),
+                    ("that", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    ("E", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("non", ParserTokenKind::ReservedWord),
+                    ("empty", ParserTokenKind::UserSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("existence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    ("Parametric", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("non", ParserTokenKind::ReservedWord),
+                    ("empty", ParserTokenKind::UserSymbol),
+                    ("T", ParserTokenKind::UserSymbol),
+                    ("of", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("existence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    ("C", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("empty", ParserTokenKind::UserSymbol),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("finite", ParserTokenKind::UserSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("T", ParserTokenKind::UserSymbol),
+                    ("of", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("coherence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    ("P", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("-", ParserTokenKind::ReservedSymbol),
+                    ("empty", ParserTokenKind::UserSymbol),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("finite", ParserTokenKind::UserSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("coherence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    ("F", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("f", ParserTokenKind::Identifier),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("finite", ParserTokenKind::UserSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("coherence", ParserTokenKind::ReservedWord),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    ("Op", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("++", ParserTokenKind::UserSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("finite", ParserTokenKind::UserSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("coherence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    ("Bracket", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("[", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("]", ParserTokenKind::ReservedSymbol),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("finite", ParserTokenKind::UserSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("coherence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("reduce", ParserTokenKind::ReservedWord),
+                    ("R", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("f", ParserTokenKind::Identifier),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("to", ParserTokenKind::ReservedWord),
+                    ("[", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("]", ParserTokenKind::ReservedSymbol),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("reducibility", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("definition", ParserTokenKind::ReservedWord),
+                    ("public", ParserTokenKind::ReservedWord),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    ("DC", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("empty", ParserTokenKind::UserSymbol),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("finite", ParserTokenKind::UserSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("coherence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("private", ParserTokenKind::ReservedWord),
+                    ("reduce", ParserTokenKind::ReservedWord),
+                    ("DR", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("to", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("reducibility", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            operator_fixture_fixities(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "task-30 registration syntax should parse without diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("task-30 registration syntax should keep an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::RegistrationBlockItem
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::RegistrationParameter
+            )),
+            2
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ExistentialRegistration
+            )),
+            2
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ConditionalRegistration
+            )),
+            3,
+            "top-level and definition-local conditional registrations parse"
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::FunctorialRegistration
+            )),
+            3
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ReductionRegistration
+            )),
+            2
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::VisibleItem)),
+            2,
+            "definition-local visibility wraps registration items"
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::ProofBlock)),
+            1
+        );
+
+        let guarded_parameter = ast
+            .nodes()
+            .iter()
+            .find(|node| {
+                matches!(node.kind, SurfaceNodeKind::RegistrationParameter)
+                    && subtree_token_texts(&ast, node)
+                        .iter()
+                        .any(|text| text == "such")
+            })
+            .expect("registration parameter should preserve `such that` guards");
+        assert!(node_subtree_contains_kind(
+            &ast,
+            guarded_parameter,
+            |kind| { matches!(kind, SurfaceNodeKind::ConditionList) }
+        ));
+        assert!(node_subtree_contains_kind(
+            &ast,
+            guarded_parameter,
+            |kind| { matches!(kind, SurfaceNodeKind::JustificationClause) }
+        ));
+        assert!(
+            ast.nodes().iter().any(|node| {
+                matches!(node.kind, SurfaceNodeKind::ConditionalRegistration)
+                    && node_subtree_contains_kind(&ast, node, |kind| {
+                        matches!(kind, SurfaceNodeKind::ParameterPrefix)
+                    })
+            }),
+            "registration adjective prefixes should be preserved"
+        );
+        assert!(
+            ast.nodes().iter().any(|node| {
+                matches!(node.kind, SurfaceNodeKind::FunctorialRegistration)
+                    && node_subtree_contains_kind(&ast, node, |kind| {
+                        matches!(kind, SurfaceNodeKind::InfixExpression(_))
+                    })
+            }),
+            "operator functorial payloads should parse as functorial registrations"
+        );
+        assert!(
+            ast.nodes().iter().any(|node| {
+                matches!(node.kind, SurfaceNodeKind::FunctorialRegistration)
+                    && node_subtree_contains_kind(&ast, node, |kind| {
+                        matches!(kind, SurfaceNodeKind::ApplicationTerm)
+                    })
+                    && subtree_token_texts(&ast, node)
+                        .iter()
+                        .any(|text| text == "[")
+            }),
+            "bracket functorial payloads should parse as functorial registrations"
+        );
+        assert!(
+            ast.nodes().iter().any(|node| {
+                matches!(node.kind, SurfaceNodeKind::ExistentialRegistration)
+                    && subtree_token_texts(&ast, node).windows(3).any(|window| {
+                        window[0].as_str() == "T"
+                            && window[1].as_str() == "of"
+                            && window[2].as_str() == "x"
+                    })
+            }),
+            "existential registrations should preserve parameterized registered types"
+        );
+        assert!(
+            ast.nodes().iter().any(|node| {
+                matches!(node.kind, SurfaceNodeKind::ConditionalRegistration)
+                    && subtree_token_texts(&ast, node).windows(3).any(|window| {
+                        window[0].as_str() == "T"
+                            && window[1].as_str() == "of"
+                            && window[2].as_str() == "x"
+                    })
+            }),
+            "conditional registrations should preserve parameterized target types"
+        );
+        let compound_reduction = ast
+            .nodes()
+            .iter()
+            .find(|node| {
+                matches!(node.kind, SurfaceNodeKind::ReductionRegistration)
+                    && subtree_token_texts(&ast, node)
+                        .iter()
+                        .any(|text| text == "f")
+            })
+            .expect("compound reduction should parse");
+        assert_eq!(
+            compound_reduction
+                .children
+                .iter()
+                .filter_map(|child| ast.node(*child))
+                .filter(|child| matches!(child.kind, SurfaceNodeKind::TermExpression))
+                .count(),
+            2,
+            "reduction registrations should preserve left and right term expressions"
+        );
+        assert!(node_subtree_contains_kind(
+            &ast,
+            compound_reduction,
+            |kind| { matches!(kind, SurfaceNodeKind::ApplicationTerm) }
+        ));
+        assert!(
+            subtree_token_texts(&ast, compound_reduction)
+                .iter()
+                .any(|text| text == "["),
+            "compound reduction terms should preserve bracket syntax"
+        );
+    }
+
+    #[test]
+    fn parser_recovers_task30_registration_gaps() {
+        let source_id = source_id(197);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("registration", ParserTokenKind::ReservedWord),
+                    ("let", ParserTokenKind::ReservedWord),
+                    ("T", ParserTokenKind::Identifier),
+                    ("be", ParserTokenKind::ReservedWord),
+                    ("type", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("non", ParserTokenKind::ReservedWord),
+                    ("empty", ParserTokenKind::UserSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("existence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    ("BadExistentialArg", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("non", ParserTokenKind::ReservedWord),
+                    ("empty", ParserTokenKind::UserSymbol),
+                    ("bad", ParserTokenKind::UserSymbol),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("2", ParserTokenKind::Numeral),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("existence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    ("MissingCorrectness", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("empty", ParserTokenKind::UserSymbol),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("empty", ParserTokenKind::UserSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    ("AfterMissingCorrectness", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("non", ParserTokenKind::ReservedWord),
+                    ("empty", ParserTokenKind::UserSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("existence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    ("C", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("non", ParserTokenKind::ReservedWord),
+                    ("empty", ParserTokenKind::UserSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("coherence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    ("BadQua", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("qua", ParserTokenKind::ReservedWord),
+                    ("T", ParserTokenKind::Identifier),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("finite", ParserTokenKind::UserSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("coherence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    ("BadFunctor", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("0", ParserTokenKind::Numeral),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("finite", ParserTokenKind::UserSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("coherence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    ("Args", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("empty", ParserTokenKind::UserSymbol),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("divisible", ParserTokenKind::UserSymbol),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("2", ParserTokenKind::Numeral),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("coherence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("reduce", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("to", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("reducibility", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MalformedTermExpression)
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MalformedTypeExpression)
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MalformedJustification)
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MissingEnd)
+        );
+        let ast = output
+            .ast
+            .expect("task-30 malformed registrations should recover an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::RegistrationBlockItem
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ExistentialRegistration
+            )),
+            3
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ConditionalRegistration
+            )),
+            3,
+            "missing antecedents, missing correctness, and malformed consequents recover as conditional registrations"
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::FunctorialRegistration
+            )),
+            2
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ReductionRegistration
+            )),
+            1
+        );
+    }
+
+    #[test]
+    fn parser_preserves_following_items_when_registration_end_is_missing() {
+        let source_id = source_id(198);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("registration", ParserTokenKind::ReservedWord),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    ("E", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("non", ParserTokenKind::ReservedWord),
+                    ("empty", ParserTokenKind::UserSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("existence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("T", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("definition", ParserTokenKind::ReservedWord),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MissingEnd),
+            "missing registration end should be diagnosed: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("missing registration end should preserve an AST");
+        let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
+        assert_eq!(
+            item_list.children.len(),
+            3,
+            "the following theorem and definition should remain top-level items"
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::RegistrationBlockItem
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::TheoremItem)),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::DefinitionBlockItem
+            )),
+            1
         );
     }
 
@@ -23333,6 +25063,18 @@ mod tests {
         let Some(node) = ast.node(id) else {
             return false;
         };
+        predicate(&node.kind)
+            || node
+                .children
+                .iter()
+                .any(|child| subtree_contains_kind(ast, *child, predicate))
+    }
+
+    fn node_subtree_contains_kind(
+        ast: &mizar_syntax::SurfaceAst,
+        node: &mizar_syntax::SurfaceNode,
+        predicate: impl Fn(&SurfaceNodeKind) -> bool + Copy,
+    ) -> bool {
         predicate(&node.kind)
             || node
                 .children

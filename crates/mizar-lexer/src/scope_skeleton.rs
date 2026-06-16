@@ -56,6 +56,7 @@ pub struct LexicalBlockRange {
 pub enum LexicalBlockKind {
     Algorithm,
     Definition,
+    Registration,
     Proof,
     Now,
     Case,
@@ -191,6 +192,11 @@ impl ScopeSkeletonBuilder {
                         self.open_frame(LexicalBlockKind::Definition, token.span.start);
                         continue;
                     }
+                    "registration" => {
+                        self.advance();
+                        self.open_frame(LexicalBlockKind::Registration, token.span.start);
+                        continue;
+                    }
                     "struct" => {
                         self.advance();
                         self.open_frame(LexicalBlockKind::Definition, token.span.start);
@@ -247,7 +253,9 @@ impl ScopeSkeletonBuilder {
                     }
                     "for" => {
                         self.advance();
-                        self.parse_binders(BindingShapeKind::For, token.span);
+                        if self.should_parse_for_binder() {
+                            self.parse_binders(BindingShapeKind::For, token.span);
+                        }
                         continue;
                     }
                     "ex" => {
@@ -803,6 +811,10 @@ impl ScopeSkeletonBuilder {
             })
     }
 
+    fn should_parse_for_binder(&self) -> bool {
+        self.tokens_until_stop_contain_word("holds") || self.tokens_until_stop_contain_word("do")
+    }
+
     fn tokens_until_stop_contain_word(&self, spelling: &str) -> bool {
         let mut cursor = self.cursor;
         while let Some(token) = self.tokens.get(cursor) {
@@ -812,6 +824,7 @@ impl ScopeSkeletonBuilder {
                         token.lexeme.as_str(),
                         "algorithm"
                             | "definition"
+                            | "registration"
                             | "struct"
                             | "inherit"
                             | "proof"
@@ -1013,6 +1026,7 @@ fn token_is_block_boundary(token: &ScopeSkeletonToken) -> bool {
             token.lexeme.as_str(),
             "algorithm"
                 | "definition"
+                | "registration"
                 | "struct"
                 | "inherit"
                 | "proof"

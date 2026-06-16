@@ -12,9 +12,9 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] parser task 29 の structure は private な cursor / event 基盤を使用。grammar coverage は段階的に継続 |
+| grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] parser task 30 の registration は private な cursor / event 基盤を使用。grammar coverage は段階的に継続 |
 | pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task 12 の active prefix/postfix/infix operator に対する項 Pratt は実装済み。task 14 の固定 formula Pratt は項 fixity から分離して実装済み |
-| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] parser task 29 の structure / inheritance recovery と nested block-end matching は task 2 cursor / diagnostic / sync helper を使用 |
+| recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] parser task 30 の registration recovery と nested block-end matching は task 2 cursor / diagnostic / sync helper を使用 |
 
 `mizar-parser` は構文文法を実装する: frontend 適合済みトークンを入力とし、
 `mizar_syntax::SurfaceAst` と構文診断を出力する。薄い基盤層（cursor、同期、
@@ -669,11 +669,25 @@ resolver / build-system 依存を避ける。
       recovery coverage、frontend scope-skeleton の nested-block follow-through、
       traceability metadata が task-29 surface を覆う。
 
-30. **registration と cluster。** [ ]
+30. **registration と cluster。** [x]
     - `registration … end` ブロック、existential / conditional / functorial の
       cluster の形、`reduce`、およびそれらの correctness 条件。
     - 依存: 29、`mizar-syntax` task 15 / S-015。仕様:
       [17.clusters_and_registrations.md](../../../spec/ja/17.clusters_and_registrations.md)。
+    - 結果: `RegistrationBlockItem`、`RegistrationParameter`、
+      `ExistentialRegistration`、`ConditionalRegistration`、
+      `FunctorialRegistration`、`ReductionRegistration` parsing を実装した。
+      top-level の `registration ... end;` block は registration-local な `let`
+      parameter、cluster registration、reduction、missing-end recovery を所有する。
+      definition-local な `public` / `private` cluster と reduction item は
+      `VisibleItem` を再利用する。parser は semantic cluster fact を作らずに
+      registration adjective を保持し、functorial payload は syntactically
+      unambiguous な application / operator / bracket-functor surface だけを受理する。
+      nullary functorial ambiguity は deferred のまま残し、correctness condition は
+      syntax-level citation / proof obligation として保持する。parser unit test、
+      active parse-only pass/fail corpus fixture、frontend scope-skeleton の
+      registration block support、recovery coverage、traceability metadata が task-30
+      surface を覆う。
 
 31. **テンプレート。** [ ]
     - テンプレートパラメータ、task 8 の生成規則を拡張する bracket 形の型引数
