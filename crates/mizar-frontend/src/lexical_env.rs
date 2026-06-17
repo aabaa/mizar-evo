@@ -12,11 +12,11 @@ use std::sync::Arc;
 
 /// Re-exported lexer lexical-environment types used by frontend consumers.
 pub use mizar_lexer::{
-    ActiveLexicalEnvironment, ExportRank, ExportedOperatorAssociativity, ExportedOperatorFixity,
-    ExportedOperatorMetadata, ExportedSymbolShape, LexicalEnvironmentError,
-    LexicalEnvironmentFingerprint, LexicalSummaryFingerprint, ModuleId, ModuleLexicalSummary,
-    ResolvedImport, SymbolId, UserSymbolArity, UserSymbolCandidate, UserSymbolIndex,
-    UserSymbolKind, UserSymbolKindSet,
+    ActiveLexicalEnvironment, ActiveOperatorMetadata, ExportRank, ExportedOperatorAssociativity,
+    ExportedOperatorFixity, ExportedOperatorMetadata, ExportedSymbolShape, LexicalEnvironmentError,
+    LexicalEnvironmentFingerprint, LexicalSummaryFingerprint, LocalLexicalDeclarations, ModuleId,
+    ModuleLexicalSummary, ResolvedImport, SymbolId, UserSymbolArity, UserSymbolCandidate,
+    UserSymbolIndex, UserSymbolKind, UserSymbolKindSet,
 };
 
 /// Request passed to a lexical summary provider for one source.

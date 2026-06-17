@@ -2,7 +2,8 @@
 
 > Canonical language: English. Japanese companion: [../ja/cache_key.md](../ja/cache_key.md).
 
-Status: implemented by task 19 and updated for the task-20 parser lexing plan.
+Status: implemented by task 19, updated for the task-20 parser lexing plan, and
+updated for source-position-aware operator metadata.
 
 ## Purpose
 
@@ -161,9 +162,11 @@ source-map identity when exact source ranges matter.
 version, parser-input hash, and edition. Parser seams expose their version
 through `ParserSeam::cache_key_version`. `parser_inputs_hash` includes edition,
 string-required context, and operator fixity entries because those inputs can
-change AST shape even when the token stream is unchanged. Each fixity entry
-hash includes symbol id, spelling, fixity kind, precedence, and infix
-associativity when the fixity kind is infix.
+change AST shape even when the token stream is unchanged. Each fixity entry hash
+includes spelling, fixity kind, precedence, the source byte offset where the
+metadata becomes active, and infix associativity when the fixity kind is infix.
+It does not hash a symbol id because parser-facing operator metadata is attached
+to spelling-level notation rather than a selected overload root.
 
 Stable encodings for lexer-owned non-exhaustive context enums include explicit
 keys for known variants plus debug fallback text for future variants. This keeps
@@ -193,7 +196,7 @@ Key scenarios:
 - import edits and dependency lexical-environment fingerprint changes invalidate
   token keys;
 - parser context / parser-assisted lexing-plan changes invalidate token keys;
-- parser version, parser inputs, token stream hash, and edition changes
-  invalidate AST keys;
+- parser version, parser inputs, token stream hash, edition, and operator-fixity
+  activation offset changes invalidate AST keys;
 - crate-level determinism tests verify `FrontendOutput.cache_keys` for
   comment-equivalent frontend runs and end-to-end import/dependency invalidation.

@@ -488,8 +488,9 @@ term_expression     ::= operator_expression { "qua" type_expression } ;
 実 parser は、上の模式的な production を直接再帰するのではなく、
 [pratt.md](./pratt.md) の Pratt 契約を使う。Operator metadata は frontend が
 `ParserInputs` から導出した `ParseRequest::operator_fixity` としてこの crate に届く。
-各 entry は source spelling、fixity kind、precedence、infix の場合の associativity を記録する。
-parser はこの table を使って source token を `PrefixExpression`、`PostfixExpression`,
+各 entry は source spelling、fixity kind、precedence、source-coordinate activation offset、
+infix の場合の associativity を記録する。parser は各 operator token span でこの metadata を
+filter し、その後 source token を `PrefixExpression`、`PostfixExpression`,
 `InfixExpression` syntax node に group 化する。overload 解決、result type validation、
 table に存在しない visible symbol の default fixity 創作は行わない。Chapter 10 /
 Appendix B の default precedence / associativity は、frontend が parser `ParseRequest` を

@@ -520,8 +520,9 @@ The concrete parser uses the Pratt contract in [pratt.md](./pratt.md) rather
 than directly recursing through the schematic productions above. Operator
 metadata reaches this crate as `ParseRequest::operator_fixity`, derived by the
 frontend from `ParserInputs`: each entry records the source spelling, fixity
-kind, precedence, and infix associativity when applicable. The parser uses this
-table to group source tokens into `PrefixExpression`,
+kind, precedence, source-coordinate activation offset, and infix associativity
+when applicable. The parser filters this metadata at each operator token span
+and then groups source tokens into `PrefixExpression`,
 `PostfixExpression`, and `InfixExpression` syntax nodes. It does not resolve
 overloads, validate result types, or invent default fixity for visible symbols
 that are not present in the table. Default precedence and associativity from

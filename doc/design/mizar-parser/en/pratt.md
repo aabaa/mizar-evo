@@ -18,17 +18,23 @@ This module defines the precedence parser for term and formula expressions.
 
 ## Term Pratt Contract
 
-`ParseRequest::operator_fixity` currently carries parser-facing operator
-metadata derived from `ParserInputs`: spelling, fixity kind, precedence, and,
-for infix operators, associativity. The parser consumes this metadata only as
-grammar configuration. It does not choose overload roots, infer result types,
-evaluate cluster facts, or resolve selector-versus-namespace roles.
+`ParseRequest::operator_fixity` carries parser-facing operator metadata derived
+from `ParserInputs`: spelling, fixity kind, precedence, source-coordinate
+`active_from`, and, for infix operators, associativity. The parser consumes
+this metadata only as grammar configuration. It does not choose overload roots,
+infer result types, evaluate cluster facts, or resolve selector-versus-namespace
+roles.
 
-After the declaration-range specification update, this table must become
-source-position aware. `infix_operator`, `prefix_operator`, and
-`postfix_operator` declarations affect only later tokens, so Pratt lookup must
-ask for operator metadata active at the operator token span rather than using a
-single file-wide table.
+`infix_operator`, `prefix_operator`, and `postfix_operator` declarations affect
+only later tokens, so Pratt lookup filters operator metadata by the operator
+token's source span. Entries with `active_from > token.span.start` are ignored.
+Operator metadata is spelling-level. For a token spelling, Pratt lookup first
+selects the newest active metadata entry, regardless of fixity, and then checks
+whether that selected entry is valid for the current prefix/postfix/infix
+context. A newer prefix declaration for a spelling therefore shadows an older
+infix declaration for later tokens instead of letting the older infix remain
+available. Same-activation ties are kept deterministic and are assumed to have
+been checked for link-time conflicts before this parser stage.
 
 Term parsing uses the following order:
 
@@ -57,16 +63,13 @@ For infix term operators, the binding powers match Appendix B:
 
 Prefix and postfix operators use the supplied precedence as binding power; the
 supplied metadata may come from an explicit declaration or from the
-spec-defaulted summary-side metadata. When a token has several visible operator
-entries for different fixities, the parser uses prefix entries only where a
-term operand may start, and postfix / infix entries only after a left operand
-has been parsed. When postfix and infix entries share the same spelling after a
-left operand, an eligible infix entry wins if the following token can start a
-right operand; otherwise an eligible postfix entry wins. A same-spelling
-operator conflict with incompatible metadata is a lexical-environment or link
-stage error; this parser stage assumes `ParserInputs` or its range-aware
-successor has already selected a deterministic visible set for the token
-position being parsed.
+spec-defaulted summary-side metadata. After the newest active spelling entry is
+selected, the parser uses it only in contexts where its fixity is syntactically
+eligible: prefix entries where a term operand may start, and postfix / infix
+entries after a left operand has been parsed. A same-spelling operator conflict
+with incompatible metadata is a lexical-environment or link stage error; this
+parser stage assumes `ParserInputs` has already selected a deterministic visible
+entry order for the token position being parsed.
 
 ## Formula Pratt Contract
 

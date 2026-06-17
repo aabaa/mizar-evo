@@ -3,7 +3,7 @@
 //! Canonical behavior is specified in the
 //! [lexing design spec](../../../../doc/design/mizar-frontend/en/lexing.md).
 
-use crate::lexical_env::ActiveLexicalEnvironment;
+use crate::lexical_env::{ActiveLexicalEnvironment, LocalLexicalDeclarations, ModuleId};
 use crate::preprocess::PreprocessedSource;
 use crate::span_bridge::{LexerByteSpan, SpanBridge, SpanBridgeError};
 use mizar_lexer::{
@@ -11,7 +11,8 @@ use mizar_lexer::{
     RawScanDiagnostic, RawScanDiagnosticCode, RawToken, RawTokenStream, RecoverableRawTokenStream,
     RejectedTokenCandidate as LexerRejectedTokenCandidate, ScopeSkeleton, ScopeSkeletonDiagnostic,
     SourceSpan as LexerSourceSpan, Token as LexerToken, TokenStream as LexerTokenStream,
-    build_scope_skeleton, disambiguate, scan_raw_recoverable,
+    build_scope_skeleton, collect_local_lexical_declarations, disambiguate_with_local_declarations,
+    scan_raw_recoverable,
 };
 use mizar_session::{MappedSourceRange, SourceAnchor, SourceId, SourceRange};
 use std::sync::Arc;
@@ -33,6 +34,8 @@ pub struct TokenizeRequest<'a> {
     pub preprocessed: &'a PreprocessedSource,
     /// Active lexical environment for disambiguation.
     pub environment: &'a ActiveLexicalEnvironment,
+    /// Current module id used for local declaration provenance.
+    pub current_module: ModuleId,
     /// Default parser lexing context.
     pub parser_context: ParserLexContext,
     /// Position-sensitive parser lexing plan.
@@ -49,6 +52,7 @@ impl<'a> TokenizeRequest<'a> {
         Self {
             preprocessed,
             environment,
+            current_module: fallback_current_module(preprocessed.source_id),
             parser_context,
             parser_lexing_plan: ParserLexingPlan::uniform(parser_context),
         }
@@ -63,9 +67,16 @@ impl<'a> TokenizeRequest<'a> {
         Self {
             preprocessed,
             environment,
+            current_module: fallback_current_module(preprocessed.source_id),
             parser_context: parser_lexing_plan.default_context,
             parser_lexing_plan,
         }
+    }
+
+    /// Sets the current module id used by local declaration collection.
+    pub fn with_current_module(mut self, current_module: ModuleId) -> Self {
+        self.current_module = current_module;
+        self
     }
 }
 
@@ -182,6 +193,8 @@ pub struct TokenStream {
     pub tokens: Vec<Token>,
     /// Scope skeleton view derived during lexing.
     pub scope_view: ScopeView,
+    /// Current-module lexical declarations collected during tokenization.
+    pub local_declarations: LocalLexicalDeclarations,
     /// Recoverable lexing diagnostics.
     pub diagnostics: Vec<LexingDiagnostic>,
 }
@@ -200,6 +213,11 @@ impl TokenStream {
     /// Returns the scope skeleton view.
     pub fn scope_view(&self) -> &ScopeView {
         &self.scope_view
+    }
+
+    /// Returns local lexical declarations collected from the raw token stream.
+    pub fn local_declarations(&self) -> &LocalLexicalDeclarations {
+        &self.local_declarations
     }
 
     /// Splits the stream into tokens, scope view, and diagnostics.
@@ -399,6 +417,7 @@ pub fn tokenize(
                 parser_lexing_plan: request.parser_lexing_plan,
                 tokens: vec![token],
                 scope_view: ScopeView::empty(source_id),
+                local_declarations: LocalLexicalDeclarations::empty(),
                 diagnostics: vec![diagnostic],
             });
         }
@@ -416,6 +435,7 @@ pub fn tokenize(
         request.parser_lexing_plan,
         &raw,
         request.environment,
+        request.current_module,
         bridge,
     )?;
     let (mut recovery_tokens, mut raw_diagnostics) =
@@ -437,10 +457,16 @@ fn token_stream_from_raw(
     parser_lexing_plan: ParserLexingPlan,
     raw: &RawTokenStream,
     environment: &ActiveLexicalEnvironment,
+    current_module: ModuleId,
     bridge: &SpanBridge,
 ) -> Result<TokenStream, SpanBridgeError> {
-    let (lexer_stream, scope_skeleton) =
-        disambiguate_with_contextual_scope(raw, environment, &parser_lexing_plan);
+    let local_declarations = collect_local_lexical_declarations(raw, current_module);
+    let (lexer_stream, scope_skeleton) = disambiguate_with_contextual_scope(
+        raw,
+        environment,
+        &local_declarations,
+        &parser_lexing_plan,
+    );
     let tokens = lexer_stream
         .tokens()
         .iter()
@@ -466,6 +492,7 @@ fn token_stream_from_raw(
         parser_lexing_plan,
         tokens,
         scope_view,
+        local_declarations,
         diagnostics,
     })
 }
@@ -473,16 +500,23 @@ fn token_stream_from_raw(
 fn disambiguate_with_contextual_scope(
     raw: &RawTokenStream,
     environment: &ActiveLexicalEnvironment,
+    local_declarations: &LocalLexicalDeclarations,
     parser_lexing_plan: &ParserLexingPlan,
 ) -> (LexerTokenStream, ScopeSkeleton) {
     let raw_scope_skeleton = build_scope_skeleton(raw);
-    let first_stream =
-        disambiguate_with_plan(raw, environment, parser_lexing_plan, &raw_scope_skeleton);
+    let first_stream = disambiguate_with_plan(
+        raw,
+        environment,
+        local_declarations,
+        parser_lexing_plan,
+        &raw_scope_skeleton,
+    );
     let contextual_scope_skeleton =
         build_scope_skeleton(&scope_raw_stream_from_tokens(first_stream.tokens()));
     let final_stream = disambiguate_with_plan(
         raw,
         environment,
+        local_declarations,
         parser_lexing_plan,
         &contextual_scope_skeleton,
     );
@@ -494,13 +528,15 @@ fn disambiguate_with_contextual_scope(
 fn disambiguate_with_plan(
     raw: &RawTokenStream,
     environment: &ActiveLexicalEnvironment,
+    local_declarations: &LocalLexicalDeclarations,
     parser_lexing_plan: &ParserLexingPlan,
     scope_view: &dyn mizar_lexer::ScopeLexView,
 ) -> LexerTokenStream {
     if parser_lexing_plan.is_uniform() {
-        return disambiguate(
+        return disambiguate_with_local_declarations(
             raw,
             environment,
+            local_declarations,
             &parser_lexing_plan.default_context,
             scope_view,
         );
@@ -510,9 +546,10 @@ fn disambiguate_with_plan(
     let mut diagnostics = Vec::new();
     for raw_token in raw.tokens() {
         let context = parser_lexing_plan.context_at(raw_token.span.start);
-        let stream = disambiguate(
+        let stream = disambiguate_with_local_declarations(
             &RawTokenStream::new(vec![raw_token.clone()]),
             environment,
+            local_declarations,
             &context,
             scope_view,
         );
@@ -522,6 +559,10 @@ fn disambiguate_with_plan(
     }
 
     LexerTokenStream::new(tokens, diagnostics)
+}
+
+fn fallback_current_module(source_id: SourceId) -> ModuleId {
+    ModuleId::new(format!("source:{source_id:?}"))
 }
 
 fn scan_raw_with_plan(
@@ -1000,7 +1041,7 @@ mod tests {
     };
     use crate::preprocess::preprocess;
     use crate::source::{SourceUnit, register_source_unit};
-    use crate::span_bridge::SpanBridge;
+    use crate::span_bridge::{LexerByteSpan, SpanBridge};
     use mizar_session::{
         BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, LineMap, ModulePath, PackageId,
         SessionIdAllocator, SourceAnchor, SourceOrigin, SourceRange, hash_text, normalize_path,
@@ -2103,9 +2144,55 @@ x;";
             parser_lexing_plan: _,
             tokens: _,
             scope_view: _,
+            local_declarations: _,
             diagnostics,
         } = stream;
         let _: Vec<super::LexingDiagnostic> = diagnostics;
+    }
+
+    #[test]
+    fn tokenization_collects_local_declarations_across_preprocessed_comments() {
+        let text = concat!(
+            "func Plus: x + y -> set; :: comment before operator\n",
+            "infix_operator(\"+\", left, 80); :: comment before use\n",
+            "a + b;\n"
+        );
+        let (source, preprocessed, bridge) = preprocessed_source(text);
+        let environment = empty_environment();
+
+        let stream = tokenize(
+            TokenizeRequest::new(&preprocessed, &environment, ParserLexContext::general())
+                .with_current_module(mizar_lexer::ModuleId::new("current")),
+            &bridge,
+        )
+        .unwrap();
+
+        let operator = stream
+            .local_declarations
+            .operator_declarations
+            .first()
+            .expect("operator declaration should be collected");
+        let mapped_activation = bridge
+            .lexical_span(
+                source.source_id,
+                LexerByteSpan {
+                    start: operator.activation_start,
+                    end: operator.activation_start,
+                },
+            )
+            .expect("activation point should map to source coordinates");
+        assert!(
+            mapped_activation.primary.start > operator.activation_start,
+            "removed comments before the use should make source and lexical offsets differ"
+        );
+        assert!(
+            stream.tokens.iter().any(|token| {
+                token.kind == TokenKind::UserSymbol
+                    && token.text.as_ref() == "+"
+                    && token.span.start == nth_index(text, "+", 2)
+            }),
+            "local functor spelling should be active at the later use"
+        );
     }
 
     #[test]

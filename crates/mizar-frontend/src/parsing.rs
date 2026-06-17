@@ -4,10 +4,12 @@
 //! [parsing design spec](../../../../doc/design/mizar-frontend/en/parsing.md).
 
 use crate::lexical_env::{
-    ActiveLexicalEnvironment, ExportedOperatorAssociativity, ExportedOperatorFixity, SymbolId,
+    ActiveLexicalEnvironment, ExportedOperatorAssociativity, ExportedOperatorFixity,
+    LocalLexicalDeclarations,
 };
 use crate::lexing::{ParserLexContext, ParserLexingPlan, TokenKind, TokenStream};
 use mizar_session::Edition;
+use std::convert::Infallible;
 use std::sync::Arc;
 
 /// Default cache-key version for custom parser seam implementations.
@@ -66,11 +68,47 @@ impl ParserInputs {
         edition: Edition,
         environment: &ActiveLexicalEnvironment,
     ) -> Self {
-        Self {
+        Self::from_active_environment_and_local_declarations(
             edition,
-            operator_fixity: OperatorFixityTable::from_active_environment(environment),
-            string_required_positions: StringRequiredContext::PositionSensitive,
+            environment,
+            &LocalLexicalDeclarations::empty(),
+        )
+    }
+
+    /// Derives parser inputs from the active lexical environment and local declarations.
+    pub fn from_active_environment_and_local_declarations(
+        edition: Edition,
+        environment: &ActiveLexicalEnvironment,
+        local_declarations: &LocalLexicalDeclarations,
+    ) -> Self {
+        match Self::try_from_active_environment_and_local_declarations(
+            edition,
+            environment,
+            local_declarations,
+            Ok::<usize, Infallible>,
+        ) {
+            Ok(inputs) => inputs,
+            Err(error) => match error {},
         }
+    }
+
+    /// Derives parser inputs while mapping lexer activation offsets to parser coordinates.
+    pub fn try_from_active_environment_and_local_declarations<E>(
+        edition: Edition,
+        environment: &ActiveLexicalEnvironment,
+        local_declarations: &LocalLexicalDeclarations,
+        map_active_from: impl FnMut(usize) -> Result<usize, E>,
+    ) -> Result<Self, E> {
+        Ok(Self {
+            edition,
+            operator_fixity:
+                OperatorFixityTable::try_from_active_environment_and_local_declarations(
+                    environment,
+                    local_declarations,
+                    map_active_from,
+                )?,
+            string_required_positions: StringRequiredContext::PositionSensitive,
+        })
     }
 }
 
@@ -92,35 +130,42 @@ impl OperatorFixityTable {
         self.entries.is_empty()
     }
 
-    fn from_active_environment(environment: &ActiveLexicalEnvironment) -> Self {
-        let entries = environment
-            .visible_user_symbols()
-            .into_iter()
-            .filter_map(|symbol| {
-                let operator = symbol.operator?;
-                Some(OperatorFixityEntry {
-                    symbol_id: symbol.symbol_id.clone(),
-                    spelling: Arc::from(symbol.spelling.as_str()),
-                    fixity: frontend_operator_fixity(operator.fixity),
-                    precedence: operator.precedence,
-                })
-            })
-            .collect();
-        Self { entries }
+    /// Builds fixity entries from imported and local lexer metadata.
+    ///
+    /// `map_active_from` converts lexer lexical-text byte offsets into the
+    /// source-coordinate byte offsets carried by parser tokens.
+    pub fn try_from_active_environment_and_local_declarations<E>(
+        environment: &ActiveLexicalEnvironment,
+        local_declarations: &LocalLexicalDeclarations,
+        mut map_active_from: impl FnMut(usize) -> Result<usize, E>,
+    ) -> Result<Self, E> {
+        let mut entries = Vec::new();
+        for metadata in environment.visible_operator_metadata_at(usize::MAX, local_declarations) {
+            let active_from = map_active_from(metadata.activation_start)?;
+            entries.push(OperatorFixityEntry {
+                spelling: Arc::from(metadata.spelling.as_str()),
+                fixity: frontend_operator_fixity(metadata.operator.fixity),
+                precedence: metadata.operator.precedence,
+                active_from,
+            });
+        }
+        sort_operator_fixity_entries(&mut entries);
+        dedup_operator_fixity_entries(&mut entries);
+        Ok(Self { entries })
     }
 }
 
 /// One operator fixity entry supplied to the parser.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OperatorFixityEntry {
-    /// Symbol id of the operator.
-    pub symbol_id: SymbolId,
     /// Operator spelling.
     pub spelling: Arc<str>,
     /// Operator fixity kind.
     pub fixity: OperatorFixity,
     /// Pratt precedence assigned to the operator.
     pub precedence: u8,
+    /// Source-coordinate byte offset where this metadata becomes active.
+    pub active_from: usize,
 }
 
 /// Operator fixity used by parser fixity entries.
@@ -317,6 +362,45 @@ fn parser_fixity(entry: OperatorFixityEntry) -> mizar_parser::OperatorFixityEntr
         spelling: entry.spelling,
         fixity,
         precedence: entry.precedence,
+        active_from: entry.active_from,
+    }
+}
+
+fn sort_operator_fixity_entries(entries: &mut [OperatorFixityEntry]) {
+    entries.sort_by(|left, right| {
+        right
+            .active_from
+            .cmp(&left.active_from)
+            .then_with(|| left.spelling.cmp(&right.spelling))
+            .then_with(|| {
+                operator_fixity_sort_key(left.fixity).cmp(&operator_fixity_sort_key(right.fixity))
+            })
+            .then_with(|| left.precedence.cmp(&right.precedence))
+    });
+}
+
+fn dedup_operator_fixity_entries(entries: &mut Vec<OperatorFixityEntry>) {
+    entries.dedup_by(|left, right| {
+        left.spelling == right.spelling
+            && left.fixity == right.fixity
+            && left.precedence == right.precedence
+            && left.active_from == right.active_from
+    });
+}
+
+fn operator_fixity_sort_key(fixity: OperatorFixity) -> (u8, u8) {
+    match fixity {
+        OperatorFixity::Prefix => (0, 0),
+        OperatorFixity::Infix(associativity) => (1, operator_associativity_sort_key(associativity)),
+        OperatorFixity::Postfix => (2, 0),
+    }
+}
+
+fn operator_associativity_sort_key(associativity: OperatorAssociativity) -> u8 {
+    match associativity {
+        OperatorAssociativity::Left => 0,
+        OperatorAssociativity::Right => 1,
+        OperatorAssociativity::NonAssociative => 2,
     }
 }
 
@@ -376,8 +460,8 @@ mod tests {
         ExportedOperatorFixity, ExportedOperatorMetadata, ExportedSymbolShape,
     };
     use crate::lexical_env::{
-        LexicalSummaryFingerprint, ModuleId, ModuleLexicalSummary, ResolvedImport, SymbolId,
-        UserSymbolArity, UserSymbolKind,
+        LexicalSummaryFingerprint, LocalLexicalDeclarations, ModuleId, ModuleLexicalSummary,
+        ResolvedImport, SymbolId, UserSymbolArity, UserSymbolKind,
     };
     use crate::lexing::{
         ParserLexContext, ParserLexingPlan, ScopeView, Token, TokenKind, TokenStream,
@@ -455,24 +539,56 @@ mod tests {
             inputs.operator_fixity.entries,
             vec![
                 OperatorFixityEntry {
-                    symbol_id: SymbolId::new("fixture.factorial"),
                     spelling: Arc::<str>::from("!"),
                     fixity: OperatorFixity::Postfix,
                     precedence: 90,
+                    active_from: 0,
                 },
                 OperatorFixityEntry {
-                    symbol_id: SymbolId::new("fixture.plus"),
                     spelling: Arc::<str>::from("++"),
                     fixity: OperatorFixity::Infix(OperatorAssociativity::Left),
                     precedence: 50,
+                    active_from: 0,
                 },
                 OperatorFixityEntry {
-                    symbol_id: SymbolId::new("fixture.neg"),
                     spelling: Arc::<str>::from("~"),
                     fixity: OperatorFixity::Prefix,
                     precedence: 70,
+                    active_from: 0,
                 },
             ]
+        );
+    }
+
+    #[test]
+    fn parser_inputs_copy_local_operator_fixity_with_mapped_activation() {
+        let source = concat!(
+            "func Plus: x + y -> set;\n",
+            "infix_operator(\"+\", left, 80);\n",
+            "a + b;\n"
+        );
+        let raw = mizar_lexer::scan_raw(source).expect("source should raw scan");
+        let locals =
+            mizar_lexer::collect_local_lexical_declarations(&raw, ModuleId::new("fixture.current"));
+        let environment = environment_without_imports();
+        let lexical_activation = locals.operator_declarations[0].activation_start;
+
+        let inputs = ParserInputs::try_from_active_environment_and_local_declarations(
+            Edition::new("2026"),
+            &environment,
+            &locals,
+            |position| Ok::<usize, ()>(position + 100),
+        )
+        .expect("activation mapping should succeed");
+
+        assert_eq!(
+            inputs.operator_fixity.entries,
+            vec![OperatorFixityEntry {
+                spelling: Arc::<str>::from("+"),
+                fixity: OperatorFixity::Infix(OperatorAssociativity::Left),
+                precedence: 80,
+                active_from: lexical_activation + 100,
+            }]
         );
     }
 
@@ -1007,16 +1123,16 @@ mod tests {
             OperatorFixityTable {
                 entries: vec![
                     OperatorFixityEntry {
-                        symbol_id: SymbolId::new("fixture.plus"),
                         spelling: Arc::<str>::from("++"),
                         fixity: OperatorFixity::Infix(OperatorAssociativity::Left),
                         precedence: 10,
+                        active_from: 0,
                     },
                     OperatorFixityEntry {
-                        symbol_id: SymbolId::new("fixture.pow"),
                         spelling: Arc::<str>::from("**"),
                         fixity: OperatorFixity::Infix(OperatorAssociativity::Right),
                         precedence: 20,
+                        active_from: 0,
                     },
                 ],
             },
@@ -1056,6 +1172,42 @@ mod tests {
     }
 
     #[test]
+    fn real_parser_seam_forwards_operator_fixity_activation() {
+        let source_id = source_id(31);
+        let tokens = token_stream(
+            source_id,
+            vec![
+                token(source_id, TokenKind::Identifier, "a", 0, 1),
+                token(source_id, TokenKind::UserSymbol, "++", 2, 4),
+                token(source_id, TokenKind::Identifier, "b", 5, 6),
+            ],
+        );
+        let inputs = ParserInputs::new(
+            Edition::new("2026"),
+            OperatorFixityTable {
+                entries: vec![OperatorFixityEntry {
+                    spelling: Arc::<str>::from("++"),
+                    fixity: OperatorFixity::Infix(OperatorAssociativity::Left),
+                    precedence: 10,
+                    active_from: 5,
+                }],
+            },
+            StringRequiredContext::None,
+        );
+        let seam = MizarParserSeam;
+
+        let output = seam.parse(ParseRequest::new(&tokens, inputs));
+
+        let ast = output
+            .ast
+            .expect("real parser seam should return SurfaceAst");
+        assert!(
+            ast.expression_root().is_none(),
+            "future operator metadata must not affect an earlier token"
+        );
+    }
+
+    #[test]
     fn real_parser_seam_forwards_right_associativity() {
         let source_id = source_id(6);
         let tokens = token_stream(
@@ -1072,10 +1224,10 @@ mod tests {
             Edition::new("2026"),
             OperatorFixityTable {
                 entries: vec![OperatorFixityEntry {
-                    symbol_id: SymbolId::new("fixture.pow"),
                     spelling: Arc::<str>::from("**"),
                     fixity: OperatorFixity::Infix(OperatorAssociativity::Right),
                     precedence: 20,
+                    active_from: 0,
                 }],
             },
             StringRequiredContext::None,
@@ -1130,10 +1282,10 @@ mod tests {
             Edition::new("2026"),
             OperatorFixityTable {
                 entries: vec![OperatorFixityEntry {
-                    symbol_id: SymbolId::new("fixture.equals"),
                     spelling: Arc::<str>::from("="),
                     fixity: OperatorFixity::Infix(OperatorAssociativity::NonAssociative),
                     precedence: 10,
+                    active_from: 0,
                 }],
             },
             StringRequiredContext::None,
@@ -1186,10 +1338,10 @@ mod tests {
             Edition::new("2026"),
             OperatorFixityTable {
                 entries: vec![OperatorFixityEntry {
-                    symbol_id: SymbolId::new("fixture.plus"),
                     spelling: Arc::<str>::from("++"),
                     fixity: OperatorFixity::Infix(OperatorAssociativity::Left),
                     precedence: 10,
+                    active_from: 0,
                 }],
             },
             StringRequiredContext::None,
@@ -1274,6 +1426,7 @@ mod tests {
             parser_lexing_plan: ParserLexingPlan::uniform(ParserLexContext::general()),
             tokens,
             scope_view: ScopeView::empty(source_id),
+            local_declarations: LocalLexicalDeclarations::empty(),
             diagnostics: Vec::new(),
         }
     }

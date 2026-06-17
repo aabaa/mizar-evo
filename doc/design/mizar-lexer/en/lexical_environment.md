@@ -67,6 +67,14 @@ pub struct LocalOperatorDeclaration {
     pub operator: Option<ExportedOperatorMetadata>,
 }
 
+pub struct ActiveOperatorMetadata {
+    pub spelling: String,
+    pub source_module: ModuleId,
+    pub declared_at: SourceSpan,
+    pub activation_start: SourcePos,
+    pub operator: ExportedOperatorMetadata,
+}
+
 pub fn collect_local_lexical_declarations(
     raw: &RawTokenStream,
     current_module: ModuleId,
@@ -101,6 +109,17 @@ impl ActiveLexicalEnvironment {
         position: SourcePos,
         local_declarations: &LocalLexicalDeclarations,
     ) -> Vec<UserSymbolCandidate>;
+    pub fn operator_metadata_at(
+        &self,
+        spelling: &str,
+        position: SourcePos,
+        local_declarations: &LocalLexicalDeclarations,
+    ) -> Vec<ActiveOperatorMetadata>;
+    pub fn visible_operator_metadata_at(
+        &self,
+        position: SourcePos,
+        local_declarations: &LocalLexicalDeclarations,
+    ) -> Vec<ActiveOperatorMetadata>;
 }
 ```
 
@@ -248,15 +267,20 @@ Current implementation notes:
   `redefine`, inline `deffunc`, inline `defpred`, structure selectors, and
   field/property names do not introduce local lexer user-symbol dictionary
   entries.
-- Operator declarations are recorded separately as activation events, but they
-  do not introduce user-symbol candidates. The parser-facing fixity query is
-  completed by the source-position-aware operator metadata task.
-
-Remaining extension after the constructor-name specification update:
-
-1. Expose the source-position-aware parser fixity query so disambiguation and
-   parser integration can ask which operator metadata is active at a token's
-   byte span.
+- Operator declarations are recorded separately as activation events and do
+  not introduce user-symbol candidates. Imported operator metadata is exposed
+  as active from lexical byte offset `0`. Local operator metadata is exposed
+  only when the declaration has parsed metadata, the declaration is active at
+  the query position, and the declared spelling already had at least one
+  active functor candidate with the matching arity at the operator declaration
+  spelling. This implements the no-forward-reference rule without producing
+  lexer diagnostics for invalid operator declarations.
+- Parser-facing operator metadata is spelling-level metadata, not an overload
+  root selection. Same-spelling imported and local functor candidates remain
+  overload candidates for downstream resolution, while `operator_metadata_at`
+  returns deterministic spelling/fixity/precedence entries sorted so later
+  activation points are considered before earlier ones. Link-time conflict
+  diagnostics for incompatible same-spelling metadata remain outside the lexer.
 
 ## Non-Goals
 
@@ -312,5 +336,9 @@ Tests should cover:
 - `private`/`public` do not affect local lexical activation;
 - operator declarations, `deffunc`, `defpred`, `algorithm`, and `redefine` do
   not introduce local user-symbol entries;
+- parser-facing operator metadata queries include imported metadata, local
+  before-use metadata, declaration-after-use non-activation, private/public
+  no-op visibility, no-forward-reference rejection, and same-spelling overload
+  preservation;
 - synonym/antonym prepass activation is derived from the alias pattern before
   `for`, not from the original pattern after `for`.

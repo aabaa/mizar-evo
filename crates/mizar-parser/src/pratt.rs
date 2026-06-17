@@ -74,7 +74,7 @@ impl ExpressionParser<'_> {
 
     fn next_operand(&mut self) -> Option<SurfaceBuilderNodeId> {
         let token = self.parser.request.tokens.get(self.position)?;
-        if self.parser.fixities_for_token(token).is_some() || !is_operand_token(token.kind) {
+        if self.parser.has_active_fixity_for_token(token) || !is_operand_token(token.kind) {
             return None;
         }
         let id = self.parser.token_node_ids[self.position];

@@ -9,7 +9,7 @@ use crate::cache_key::{
 };
 use crate::lexical_env::{
     FrontendLexicalEnvironmentError, LexicalEnvironmentDiagnostic,
-    LexicalEnvironmentDiagnosticCode, LexicalEnvironmentRequest, LexicalSummaryProvider,
+    LexicalEnvironmentDiagnosticCode, LexicalEnvironmentRequest, LexicalSummaryProvider, ModuleId,
     build_active_lexical_environment,
 };
 use crate::lexing::{
@@ -19,10 +19,10 @@ use crate::lexing::{
 use crate::parsing::{ParseRequest, ParserInputs, ParserSeam};
 use crate::preprocess::{PreprocessDiagnostic, PreprocessDiagnosticKind, PreprocessedSource};
 use crate::source::{SourceUnit, SourceUnitLoader, SourceUnitRequest, register_source_unit};
-use crate::span_bridge::{SpanBridge, SpanBridgeError};
+use crate::span_bridge::{LexerByteSpan, SpanBridge, SpanBridgeError};
 use mizar_session::{
-    DocumentUri, NormalizedPath, SessionIdAllocator, SourceAnchor, SourceInput, SourceLoadError,
-    SourceOriginInput, SourceRange,
+    DocumentUri, NormalizedPath, SessionIdAllocator, SourceAnchor, SourceId, SourceInput,
+    SourceLoadError, SourceOriginInput, SourceRange,
 };
 use std::cmp::Ordering;
 use std::error::Error;
@@ -106,11 +106,11 @@ where
         )
         .map_err(|source| FrontendError::LexicalEnvironment { source })?;
 
-        let parser_inputs = ParserInputs::from_active_environment(
+        let parser_input_policy = ParserInputs::from_active_environment(
             source.edition.clone(),
             &lexical_environment.environment,
         );
-        let parser_lexing_plan = parser_inputs
+        let parser_lexing_plan = parser_input_policy
             .string_required_positions
             .parser_lexing_plan(preprocessed.lexical_text.as_str());
         let tokens = tokenize(
@@ -118,7 +118,8 @@ where
                 &preprocessed,
                 &lexical_environment.environment,
                 parser_lexing_plan,
-            ),
+            )
+            .with_current_module(ModuleId::new(source.module_path.as_str())),
             &bridge,
         )
         .map_err(|source| FrontendError::SpanBridge { source })?;
@@ -129,6 +130,13 @@ where
             ParserLexingPlanCacheKey::from_plan(&tokens.parser_lexing_plan),
         );
         let token_stream_hash = token_cache_key.stable_hash();
+        let parser_inputs = ParserInputs::try_from_active_environment_and_local_declarations(
+            source.edition.clone(),
+            &lexical_environment.environment,
+            tokens.local_declarations(),
+            |position| lexical_activation_source_offset(source.source_id, &bridge, position),
+        )
+        .map_err(|source| FrontendError::SpanBridge { source })?;
         let parser_cache_key_version = self.parser.cache_key_version();
         let parser_inputs_for_cache = parser_inputs.clone();
         let parser_output = self.parser.parse(ParseRequest::new(&tokens, parser_inputs));
@@ -339,6 +347,25 @@ impl Error for FrontendError {
 struct CollectedDiagnostic {
     diagnostic: FrontendDiagnostic,
     emission_ordinal: usize,
+}
+
+fn lexical_activation_source_offset(
+    source_id: SourceId,
+    bridge: &SpanBridge,
+    position: usize,
+) -> Result<usize, SpanBridgeError> {
+    if position == 0 {
+        return Ok(0);
+    }
+    bridge
+        .lexical_span(
+            source_id,
+            LexerByteSpan {
+                start: position,
+                end: position,
+            },
+        )
+        .map(|mapped| mapped.primary.start)
 }
 
 fn merge_phase_diagnostics<D>(
@@ -641,6 +668,7 @@ mod tests {
         FrontendDiagnostic, FrontendError, SourceLoadLocation, compare_collected_diagnostics,
         sort_collected_diagnostics,
     };
+    use crate::cache_key::parser_inputs_hash;
     use crate::lexical_env::{
         LexicalEnvironmentDiagnostic, LexicalEnvironmentDiagnosticCode, LexicalEnvironmentRequest,
         LexicalSummaryProvider, ResolvedImports,
@@ -650,8 +678,8 @@ mod tests {
         ParserLexMode, TokenKind,
     };
     use crate::parsing::{
-        MIZAR_PARSER_CACHE_KEY_VERSION, MizarParserSeam, ParseOutput, ParseRequest, ParserSeam,
-        StubParserSeam,
+        MIZAR_PARSER_CACHE_KEY_VERSION, MizarParserSeam, OperatorAssociativity, OperatorFixity,
+        ParseOutput, ParseRequest, ParserInputs, ParserSeam, StubParserSeam,
     };
     use crate::source::{FrontendSourceLoader, SourceUnit, SourceUnitLoader, SourceUnitRequest};
     use crate::span_bridge::SpanBridgeError;
@@ -665,8 +693,8 @@ mod tests {
     use std::fs;
     use std::io;
     use std::path::{Path, PathBuf};
-    use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::{Arc, Mutex};
 
     static NEXT_FIXTURE_ID: AtomicUsize = AtomicUsize::new(0);
 
@@ -834,6 +862,69 @@ mod tests {
                 .context
                 .mode(),
             ParserLexMode::StringRequired
+        );
+    }
+
+    #[test]
+    fn orchestration_maps_local_operator_activation_and_current_module() {
+        let fixture = PackageFixture::new();
+        let text = concat!(
+            "func Plus: x + y -> set; :: comment before operator\n",
+            "infix_operator(\"+\", left, 80); :: comment before use\n",
+            "a + b;\n"
+        );
+        fixture.write("src/operators/local_ops.miz", text);
+        let parser = RecordingParserSeam::default();
+        let recorded_inputs = Arc::clone(&parser.inputs);
+        let frontend = frontend_for_fixture(&fixture, parser);
+        let ids = InMemorySessionIdAllocator::new();
+
+        let output = frontend
+            .run(fixture.request("src/operators/local_ops.miz"), &ids)
+            .expect("source with local operator declaration should run");
+
+        let local_declarations = output.tokens.local_declarations();
+        let local_functor = local_declarations
+            .user_symbols
+            .iter()
+            .find(|declaration| declaration.spelling == "+")
+            .expect("local functor declaration should be collected");
+        assert_eq!(local_functor.source_module.as_str(), "operators.local_ops");
+        assert_eq!(
+            local_functor.symbol_id.as_str(),
+            "operators.local_ops#local:0:+"
+        );
+        let local_operator = local_declarations
+            .operator_declarations
+            .iter()
+            .find(|declaration| declaration.spelling == "+")
+            .expect("local operator declaration should be collected");
+        assert_eq!(local_operator.source_module.as_str(), "operators.local_ops");
+
+        let captured = recorded_inputs.lock().unwrap();
+        assert_eq!(captured.len(), 1);
+        let parser_inputs = &captured[0];
+        assert_eq!(parser_inputs.operator_fixity.entries.len(), 1);
+        let entry = &parser_inputs.operator_fixity.entries[0];
+        assert_eq!(entry.spelling.as_ref(), "+");
+        assert_eq!(
+            entry.fixity,
+            OperatorFixity::Infix(OperatorAssociativity::Left)
+        );
+        assert_eq!(entry.precedence, 80);
+        assert_eq!(entry.active_from, nth_index(text, ";", 1) + 1);
+        assert!(
+            entry.active_from > local_operator.activation_start,
+            "removed comments before the operator declaration should make parser source offsets exceed lexer lexical offsets"
+        );
+        assert_eq!(
+            output
+                .cache_keys
+                .ast
+                .as_ref()
+                .expect("recording parser returns an AST")
+                .parser_inputs_hash,
+            parser_inputs_hash(parser_inputs)
         );
     }
 
@@ -1408,6 +1499,24 @@ mod tests {
         }
     }
 
+    #[derive(Debug, Clone, Default)]
+    struct RecordingParserSeam {
+        inputs: Arc<Mutex<Vec<ParserInputs>>>,
+    }
+
+    impl ParserSeam for RecordingParserSeam {
+        type Ast = ();
+        type Diagnostic = ();
+
+        fn parse(&self, request: ParseRequest<'_>) -> ParseOutput<Self::Ast, Self::Diagnostic> {
+            self.inputs
+                .lock()
+                .expect("recording parser mutex should not be poisoned")
+                .push(request.parser_inputs);
+            ParseOutput::new(Some(()), Vec::new())
+        }
+    }
+
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     enum BrokenLineMapMode {
         WrongSourceId,
@@ -1734,5 +1843,13 @@ mod tests {
             .strip_suffix(".miz")
             .unwrap_or(relative)
             .replace('/', ".")
+    }
+
+    fn nth_index(haystack: &str, needle: &str, nth: usize) -> usize {
+        haystack
+            .match_indices(needle)
+            .nth(nth)
+            .map(|(index, _)| index)
+            .unwrap_or_else(|| panic!("needle {needle:?} occurrence {nth} should exist"))
     }
 }

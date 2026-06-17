@@ -87,16 +87,19 @@ pub enum LexicalEnvironmentDiagnosticCode {
 }
 ```
 
-`ActiveLexicalEnvironment`, `ExportRank`, `ExportedOperatorAssociativity`,
-`ExportedOperatorFixity`, `ExportedOperatorMetadata`, `ExportedSymbolShape`,
-`LexicalEnvironmentError`, `LexicalEnvironmentFingerprint`,
-`LexicalSummaryFingerprint`, `ModuleId`, `ModuleLexicalSummary`,
+`ActiveLexicalEnvironment`, `ActiveOperatorMetadata`, `ExportRank`,
+`ExportedOperatorAssociativity`, `ExportedOperatorFixity`,
+`ExportedOperatorMetadata`, `ExportedSymbolShape`, `LexicalEnvironmentError`,
+`LexicalEnvironmentFingerprint`, `LexicalSummaryFingerprint`,
+`LocalLexicalDeclarations`, `ModuleId`, `ModuleLexicalSummary`,
 `ResolvedImport`, `SymbolId`, `UserSymbolArity`, `UserSymbolCandidate`,
 `UserSymbolIndex`, `UserSymbolKind`, and `UserSymbolKindSet` are re-exported
 from `mizar-lexer`. Dependency summaries and active candidates carry optional
-`ExportedOperatorMetadata`; lexer summary validation accepts it only for
-symbolic functors whose exact arity matches the prefix/postfix/infix fixity, and
-the frontend later copies the validated metadata into parser inputs.
+`ExportedOperatorMetadata`; current-module local declarations expose
+`ActiveOperatorMetadata` through `LocalLexicalDeclarations`. Lexer summary and
+local-declaration validation accept operator metadata only for symbolic functors
+whose exact arity matches the prefix/postfix/infix fixity, and the frontend later
+copies the validated metadata into parser inputs.
 `ResolvedImportEntry` is frontend-owned
 provenance: it wraps the lexer `ResolvedImport` with the source span and ordinal
 of the `ImportStub` that produced it, so later diagnostics can point back to the

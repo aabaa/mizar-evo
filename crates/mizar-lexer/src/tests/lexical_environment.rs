@@ -1102,6 +1102,210 @@ fn local_operator_declarations_record_metadata_and_activation_ranges() {
 }
 
 #[test]
+fn imported_operator_metadata_is_active_from_start() {
+    let env = build_lexical_environment(
+        &[resolved_import("ops")],
+        &[summary(
+            "ops",
+            41,
+            &[exported_with_operator_metadata(
+                "+",
+                "ops#plus",
+                "ops",
+                0,
+                ExportedOperatorMetadata {
+                    fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+                    precedence: 50,
+                },
+            )],
+        )],
+    )
+    .expect("operator metadata environment should build");
+    let locals = crate::LocalLexicalDeclarations::empty();
+
+    let metadata = env.operator_metadata_at("+", 0, &locals);
+
+    assert_eq!(metadata.len(), 1);
+    assert_eq!(metadata[0].spelling, "+");
+    assert_eq!(metadata[0].activation_start, 0);
+    assert_eq!(
+        metadata[0].operator,
+        ExportedOperatorMetadata {
+            fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+            precedence: 50,
+        }
+    );
+}
+
+#[test]
+fn local_operator_metadata_is_active_only_after_declaration_completion() {
+    let source = concat!(
+        "func Plus: x + y -> set;\n",
+        "a + b;\n",
+        "infix_operator(\"+\", left, 80);\n",
+        "a + b;\n"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+    let before_operator_use = nth_index(source, "+", 1);
+    let after_operator_use = nth_index(source, "+", 3);
+    let activation_start = nth_index(source, ";", 2) + 1;
+
+    assert!(
+        env.operator_metadata_at("+", before_operator_use, &locals)
+            .is_empty()
+    );
+    let metadata = env.operator_metadata_at("+", after_operator_use, &locals);
+
+    assert_eq!(metadata.len(), 1);
+    assert_eq!(metadata[0].activation_start, activation_start);
+    assert_eq!(
+        metadata[0].operator,
+        ExportedOperatorMetadata {
+            fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+            precedence: 80,
+        }
+    );
+}
+
+#[test]
+fn local_operator_metadata_does_not_forward_reference_later_functors() {
+    let source = concat!(
+        "infix_operator(\"+\", left, 80);\n",
+        "func Plus: x + y -> set;\n",
+        "a + b;\n"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+    let after_functor_use = nth_index(source, "+", 2);
+
+    assert!(
+        env.operator_metadata_at("+", after_functor_use, &locals)
+            .is_empty(),
+        "operator metadata declared before its functor spelling is active is not a forward declaration"
+    );
+}
+
+#[test]
+fn local_operator_metadata_requires_active_functor_with_matching_arity() {
+    let source = concat!(
+        "func Unary: + x -> set;\n",
+        "infix_operator(\"+\", left, 80);\n",
+        "a + b;\n"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+    let after_operator_use = nth_index(source, "+", 2);
+
+    let candidates = env.user_symbols_at("+", after_operator_use, &locals);
+
+    assert_eq!(
+        candidates
+            .iter()
+            .map(|candidate| candidate.arity)
+            .collect::<Vec<_>>(),
+        vec![UserSymbolArity::exact(1)],
+        "the same spelling is active, but only as a unary functor"
+    );
+    assert!(
+        env.operator_metadata_at("+", after_operator_use, &locals)
+            .is_empty(),
+        "infix operator metadata must require an already-active binary functor"
+    );
+}
+
+#[test]
+fn local_operator_metadata_ignores_visibility_keywords_for_lexing() {
+    let source = concat!(
+        "private func Plus: x + y -> set;\n",
+        "public infix_operator(\"+\", left, 80);\n",
+        "a + b;\n"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+    let after_operator_use = nth_index(source, "+", 2);
+
+    let metadata = env.operator_metadata_at("+", after_operator_use, &locals);
+
+    assert_eq!(metadata.len(), 1);
+    assert_eq!(metadata[0].operator.precedence, 80);
+}
+
+#[test]
+fn local_operator_metadata_preserves_same_spelling_overload_candidates() {
+    let env = build_lexical_environment(
+        &[resolved_import("imported")],
+        &[summary(
+            "imported",
+            42,
+            &[exported("+", "imported#plus", "imported", 0)],
+        )],
+    )
+    .expect("environment should build");
+    let source = concat!(
+        "func Plus: x + y -> set;\n",
+        "infix_operator(\"+\", left, 80);\n",
+        "a + b;\n"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let after_operator_use = nth_index(source, "+", 2);
+
+    let candidates = env.user_symbols_at("+", after_operator_use, &locals);
+    let metadata = env.operator_metadata_at("+", after_operator_use, &locals);
+
+    assert_eq!(
+        candidates
+            .iter()
+            .map(|candidate| candidate.source_module.as_str())
+            .collect::<Vec<_>>(),
+        vec!["imported", "current"]
+    );
+    assert_eq!(metadata.len(), 1);
+    assert_eq!(metadata[0].operator.precedence, 80);
+}
+
+#[test]
+fn latest_active_operator_metadata_is_returned_before_imported_metadata() {
+    let env = build_lexical_environment(
+        &[resolved_import("imported")],
+        &[summary(
+            "imported",
+            43,
+            &[exported_with_operator_metadata(
+                "+",
+                "imported#plus",
+                "imported",
+                0,
+                ExportedOperatorMetadata {
+                    fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+                    precedence: 50,
+                },
+            )],
+        )],
+    )
+    .expect("environment should build");
+    let source = "infix_operator(\"+\", left, 80);\na + b;\n";
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let after_operator_use = nth_index(source, "+", 1);
+
+    let metadata = env.operator_metadata_at("+", after_operator_use, &locals);
+
+    assert_eq!(
+        metadata
+            .iter()
+            .map(|metadata| metadata.operator.precedence)
+            .collect::<Vec<_>>(),
+        vec![80, 50]
+    );
+}
+
+#[test]
 fn lexical_environment_fingerprint_changes_with_symbol_metadata() {
     let imports = vec![resolved_import("metadata")];
     let functor_env = build_lexical_environment(

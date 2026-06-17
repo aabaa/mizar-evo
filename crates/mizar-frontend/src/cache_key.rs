@@ -341,10 +341,10 @@ pub fn parser_inputs_hash(inputs: &ParserInputs) -> Hash {
     write_string_required_context(&mut hasher, inputs.string_required_positions);
     write_u64(&mut hasher, inputs.operator_fixity.entries.len() as u64);
     for entry in &inputs.operator_fixity.entries {
-        write_str(&mut hasher, entry.symbol_id.as_str());
         write_str(&mut hasher, entry.spelling.as_ref());
         write_operator_fixity(&mut hasher, entry.fixity);
         hasher.update(&[entry.precedence]);
+        write_u64(&mut hasher, entry.active_from as u64);
     }
     finish_hash(hasher)
 }
@@ -669,33 +669,22 @@ mod tests {
 
     #[test]
     fn parser_inputs_hash_changes_with_operator_fixity_kind() {
-        let prefix = parser_inputs_with_operator_fixity(
-            Edition::new("2026"),
-            "fixture.op",
-            "op",
-            OperatorFixity::Prefix,
-        );
-        let postfix = parser_inputs_with_operator_fixity(
-            Edition::new("2026"),
-            "fixture.op",
-            "op",
-            OperatorFixity::Postfix,
-        );
+        let prefix =
+            parser_inputs_with_operator_fixity(Edition::new("2026"), "op", OperatorFixity::Prefix);
+        let postfix =
+            parser_inputs_with_operator_fixity(Edition::new("2026"), "op", OperatorFixity::Postfix);
         let left_infix = parser_inputs_with_operator_fixity(
             Edition::new("2026"),
-            "fixture.op",
             "op",
             OperatorFixity::Infix(OperatorAssociativity::Left),
         );
         let right_infix = parser_inputs_with_operator_fixity(
             Edition::new("2026"),
-            "fixture.op",
             "op",
             OperatorFixity::Infix(OperatorAssociativity::Right),
         );
         let left_infix_higher_precedence = parser_inputs_with_operator_fixity_and_precedence(
             Edition::new("2026"),
-            "fixture.op",
             "op",
             OperatorFixity::Infix(OperatorAssociativity::Left),
             51,
@@ -710,6 +699,17 @@ mod tests {
         assert_ne!(
             parser_inputs_hash(&left_infix),
             parser_inputs_hash(&left_infix_higher_precedence)
+        );
+    }
+
+    #[test]
+    fn parser_inputs_hash_changes_with_operator_fixity_activation() {
+        let mut later = parser_inputs_with_fixity(Edition::new("2026"));
+        later.operator_fixity.entries[0].active_from = 128;
+
+        assert_ne!(
+            parser_inputs_hash(&parser_inputs_with_fixity(Edition::new("2026"))),
+            parser_inputs_hash(&later)
         );
     }
 
@@ -801,7 +801,6 @@ mod tests {
     fn parser_inputs_with_fixity(edition: Edition) -> ParserInputs {
         parser_inputs_with_operator_fixity(
             edition,
-            "fixture.plus",
             "+",
             OperatorFixity::Infix(OperatorAssociativity::Left),
         )
@@ -809,16 +808,14 @@ mod tests {
 
     fn parser_inputs_with_operator_fixity(
         edition: Edition,
-        symbol_id: &str,
         spelling: &str,
         fixity: OperatorFixity,
     ) -> ParserInputs {
-        parser_inputs_with_operator_fixity_and_precedence(edition, symbol_id, spelling, fixity, 50)
+        parser_inputs_with_operator_fixity_and_precedence(edition, spelling, fixity, 50)
     }
 
     fn parser_inputs_with_operator_fixity_and_precedence(
         edition: Edition,
-        symbol_id: &str,
         spelling: &str,
         fixity: OperatorFixity,
         precedence: u8,
@@ -827,10 +824,10 @@ mod tests {
             edition,
             OperatorFixityTable {
                 entries: vec![OperatorFixityEntry {
-                    symbol_id: crate::lexical_env::SymbolId::new(symbol_id),
                     spelling: Arc::from(spelling),
                     fixity,
                     precedence,
+                    active_from: 0,
                 }],
             },
             StringRequiredContext::None,

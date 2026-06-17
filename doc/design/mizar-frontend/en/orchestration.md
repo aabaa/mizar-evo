@@ -3,8 +3,8 @@
 > Canonical language: English. Japanese companion: [../ja/orchestration.md](../ja/orchestration.md).
 
 Status: implemented through task 20, including unrecoverable-failure coverage,
-end-to-end failure assertions, cache-key output wiring, and parser lexing-plan
-wiring.
+end-to-end failure assertions, cache-key output wiring, parser lexing-plan
+wiring, and source-position-aware operator metadata assembly.
 
 ## Purpose
 
@@ -228,15 +228,20 @@ attached when a later diagnostic may be affected by an earlier recovery.
 4. Build the `ActiveLexicalEnvironment` (`lexical_env`) from the import stubs.
    Recoverable import/provider issues become `LexicalEnvironmentDiagnostic`s;
    `FrontendLexicalEnvironmentError` becomes `FrontendError`.
-5. Derive `ParserInputs` from the active lexical environment and source edition,
-   then derive the position-sensitive `ParserLexingPlan` from the preprocessed
-   lexical text.
-6. Tokenize (`lexing`) into a `TokenStream` with `TokenizeRequest::with_plan`,
-   retaining the plan on the token stream. Propagate a `SpanBridgeError` as
-   `FrontendError`.
-7. Parse (`parsing`) through the configured `ParserSeam` into an optional AST.
-8. Compute the frontend content cache-key bundle for the phase artifacts.
-9. Map every phase diagnostic into `FrontendDiagnostic`, merge in the
+5. Derive a pre-tokenization parser-input policy from the active lexical
+   environment and source edition, then derive the position-sensitive
+   `ParserLexingPlan` from the preprocessed lexical text.
+6. Tokenize (`lexing`) into a `TokenStream` with `TokenizeRequest::with_plan`
+   and `TokenizeRequest::with_current_module`, retaining the plan and current
+   module local declarations on the token stream. Propagate a `SpanBridgeError`
+   as `FrontendError`.
+7. Build the final `ParserInputs` from the active lexical environment and the
+   token stream's local declarations. Local operator metadata activation offsets
+   are mapped through `SpanBridge` so the parser entries use the same source byte
+   coordinate space as token spans.
+8. Parse (`parsing`) through the configured `ParserSeam` into an optional AST.
+9. Compute the frontend content cache-key bundle for the phase artifacts.
+10. Map every phase diagnostic into `FrontendDiagnostic`, merge in the
    deterministic order above, and assemble `FrontendOutput`.
 
 Phases 2-5 do not abort on recoverable problems: they record diagnostics and
@@ -277,6 +282,8 @@ Key scenarios:
   `FrontendOutput` with `ast = None` and no parser diagnostics;
 - with the real parser seam, a well-formed source runs all phases and returns
   `FrontendOutput` with `ast = Some` and no diagnostics;
+- local operator declarations collected during tokenization are included in the
+  final parser inputs with source-coordinate activation offsets;
 - with the real parser seam, a source with lexical-precondition, import-pre-scan,
   lexical-environment, scope-skeleton, tokenization, and syntax errors reports
   them in the deterministic merge order;

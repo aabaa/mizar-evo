@@ -28,6 +28,9 @@ impl Parser {
                 .or_default()
                 .push(entry);
         }
+        for entries in fixity.values_mut() {
+            sort_operator_fixity_entries(entries);
+        }
         Self {
             events: SyntaxEventSink::new(request.source_id),
             request,
@@ -156,31 +159,71 @@ impl Parser {
         self.fixity.get(&token.text).map(Vec::as_slice)
     }
 
+    pub(super) fn has_active_fixity_for_token(&self, token: &ParserToken) -> bool {
+        self.active_fixity_for_token(token).is_some()
+    }
+
     pub(super) fn infix_fixity_for_token(
         &self,
         token: &ParserToken,
     ) -> Option<&OperatorFixityEntry> {
-        self.fixities_for_token(token)?
-            .iter()
-            .find(|entry| matches!(entry.fixity, OperatorFixity::Infix(_)))
+        self.active_fixity_for_token(token)
+            .filter(|entry| matches!(entry.fixity, OperatorFixity::Infix(_)))
     }
 
     pub(super) fn prefix_fixity_for_token(
         &self,
         token: &ParserToken,
     ) -> Option<&OperatorFixityEntry> {
-        self.fixities_for_token(token)?
-            .iter()
-            .find(|entry| matches!(entry.fixity, OperatorFixity::Prefix))
+        self.active_fixity_for_token(token)
+            .filter(|entry| matches!(entry.fixity, OperatorFixity::Prefix))
     }
 
     pub(super) fn postfix_fixity_for_token(
         &self,
         token: &ParserToken,
     ) -> Option<&OperatorFixityEntry> {
+        self.active_fixity_for_token(token)
+            .filter(|entry| matches!(entry.fixity, OperatorFixity::Postfix))
+    }
+
+    fn active_fixity_for_token(&self, token: &ParserToken) -> Option<&OperatorFixityEntry> {
         self.fixities_for_token(token)?
             .iter()
-            .find(|entry| matches!(entry.fixity, OperatorFixity::Postfix))
+            .find(|entry| operator_fixity_active_at(entry, token))
+    }
+}
+
+fn operator_fixity_active_at(entry: &OperatorFixityEntry, token: &ParserToken) -> bool {
+    entry.active_from <= token.span.start
+}
+
+fn sort_operator_fixity_entries(entries: &mut [OperatorFixityEntry]) {
+    entries.sort_by(|left, right| {
+        right
+            .active_from
+            .cmp(&left.active_from)
+            .then_with(|| left.spelling.cmp(&right.spelling))
+            .then_with(|| {
+                operator_fixity_sort_key(left.fixity).cmp(&operator_fixity_sort_key(right.fixity))
+            })
+            .then_with(|| left.precedence.cmp(&right.precedence))
+    });
+}
+
+fn operator_fixity_sort_key(fixity: OperatorFixity) -> (u8, u8) {
+    match fixity {
+        OperatorFixity::Prefix => (0, 0),
+        OperatorFixity::Infix(associativity) => (1, operator_associativity_sort_key(associativity)),
+        OperatorFixity::Postfix => (2, 0),
+    }
+}
+
+fn operator_associativity_sort_key(associativity: crate::OperatorAssociativity) -> u8 {
+    match associativity {
+        crate::OperatorAssociativity::Left => 0,
+        crate::OperatorAssociativity::Right => 1,
+        crate::OperatorAssociativity::NonAssociative => 2,
     }
 }
 

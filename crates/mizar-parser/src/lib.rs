@@ -80,6 +80,7 @@ pub struct OperatorFixityEntry {
     pub spelling: Arc<str>,
     pub fixity: OperatorFixity,
     pub precedence: u8,
+    pub active_from: usize,
 }
 
 impl OperatorFixityEntry {
@@ -96,6 +97,7 @@ impl OperatorFixityEntry {
             spelling: spelling.into(),
             fixity: OperatorFixity::Prefix,
             precedence,
+            active_from: 0,
         }
     }
 
@@ -108,6 +110,7 @@ impl OperatorFixityEntry {
             spelling: spelling.into(),
             fixity: OperatorFixity::Infix(associativity),
             precedence,
+            active_from: 0,
         }
     }
 
@@ -116,7 +119,13 @@ impl OperatorFixityEntry {
             spelling: spelling.into(),
             fixity: OperatorFixity::Postfix,
             precedence,
+            active_from: 0,
         }
+    }
+
+    pub fn with_active_from(mut self, active_from: usize) -> Self {
+        self.active_from = active_from;
+        self
     }
 }
 
@@ -263,6 +272,90 @@ mod tests {
         assert_eq!(
             right_operator.associativity,
             SurfaceOperatorAssociativity::Right
+        );
+    }
+
+    #[test]
+    fn operator_fixity_is_ignored_before_active_from() {
+        let source_id = source_id(2);
+        let tokens = vec![
+            token(source_id, ParserTokenKind::Identifier, "a", 0, 1),
+            token(source_id, ParserTokenKind::UserSymbol, "++", 2, 4),
+            token(source_id, ParserTokenKind::Identifier, "b", 5, 6),
+        ];
+
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            vec![
+                OperatorFixityEntry::new("++", 10, OperatorAssociativity::Left).with_active_from(5),
+            ],
+        ));
+
+        let ast = output.ast.expect("parser should still return an AST");
+        assert!(
+            ast.expression_root().is_none(),
+            "future operator metadata must not parse an earlier token as infix"
+        );
+    }
+
+    #[test]
+    fn latest_active_operator_fixity_wins_for_same_spelling() {
+        let source_id = source_id(2);
+        let tokens = vec![
+            token(source_id, ParserTokenKind::Identifier, "a", 0, 1),
+            token(source_id, ParserTokenKind::UserSymbol, "++", 2, 4),
+            token(source_id, ParserTokenKind::Identifier, "b", 5, 6),
+        ];
+
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            vec![
+                OperatorFixityEntry::new("++", 10, OperatorAssociativity::Left),
+                OperatorFixityEntry::new("++", 80, OperatorAssociativity::Right)
+                    .with_active_from(2),
+            ],
+        ));
+
+        let ast = output.ast.expect("expression should parse");
+        let root = ast.expression_root().expect("expression should have root");
+        let SurfaceNodeKind::InfixExpression(root_operator) = &ast.node(root).unwrap().kind else {
+            panic!("expected infix expression root");
+        };
+        assert_eq!(root_operator.precedence, 80);
+        assert_eq!(
+            root_operator.associativity,
+            SurfaceOperatorAssociativity::Right
+        );
+    }
+
+    #[test]
+    fn latest_active_operator_fixity_shadows_older_different_fixity() {
+        let source_id = source_id(2);
+        let tokens = vec![
+            token(source_id, ParserTokenKind::Identifier, "a", 0, 1),
+            token(source_id, ParserTokenKind::UserSymbol, "++", 2, 4),
+            token(source_id, ParserTokenKind::Identifier, "b", 5, 6),
+        ];
+
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            tokens,
+            vec![
+                OperatorFixityEntry::new("++", 10, OperatorAssociativity::Left),
+                OperatorFixityEntry::prefix("++", 80).with_active_from(2),
+            ],
+        ));
+
+        let ast = output.ast.expect("parser should still return an AST");
+        assert_eq!(
+            ast.expression_root(),
+            None,
+            "newer prefix metadata should prevent older infix metadata from parsing the token"
         );
     }
 

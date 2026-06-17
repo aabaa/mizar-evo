@@ -2,10 +2,10 @@
 
 > Canonical language: English. Japanese companion: [../ja/parsing.md](../ja/parsing.md).
 
-Status: parser-input assembly, the stub parser seam, a minimal real
-`mizar-parser` seam, task-12 parser recovery passthrough, task-20
-position-sensitive parser lexing-plan integration, and task-28 nested
-block-end recovery follow-through are implemented.
+Status: parser-input assembly, source-position-aware operator metadata, the
+stub parser seam, a minimal real `mizar-parser` seam, task-12 parser recovery
+passthrough, task-20 position-sensitive parser lexing-plan integration, and
+task-28 nested block-end recovery follow-through are implemented.
 
 ## Purpose
 
@@ -59,6 +59,19 @@ impl ParserInputs {
         edition: Edition,
         environment: &ActiveLexicalEnvironment,
     ) -> Self;
+
+    pub fn from_active_environment_and_local_declarations(
+        edition: Edition,
+        environment: &ActiveLexicalEnvironment,
+        local_declarations: &LocalLexicalDeclarations,
+    ) -> Self;
+
+    pub fn try_from_active_environment_and_local_declarations<E>(
+        edition: Edition,
+        environment: &ActiveLexicalEnvironment,
+        local_declarations: &LocalLexicalDeclarations,
+        map_active_from: impl FnMut(usize) -> Result<usize, E>,
+    ) -> Result<Self, E>;
 }
 
 pub struct OperatorFixityTable {
@@ -68,13 +81,18 @@ pub struct OperatorFixityTable {
 impl OperatorFixityTable {
     pub fn empty() -> Self;
     pub fn is_empty(&self) -> bool;
+    pub fn try_from_active_environment_and_local_declarations<E>(
+        environment: &ActiveLexicalEnvironment,
+        local_declarations: &LocalLexicalDeclarations,
+        map_active_from: impl FnMut(usize) -> Result<usize, E>,
+    ) -> Result<Self, E>;
 }
 
 pub struct OperatorFixityEntry {
-    pub symbol_id: SymbolId,
     pub spelling: Arc<str>,
     pub fixity: OperatorFixity,
     pub precedence: u8,
+    pub active_from: usize,
 }
 
 pub enum OperatorFixity {
@@ -150,15 +168,18 @@ operator model that adds a fixity or associativity class must update this API,
 `mizar-parser`, cache-key hashing, and the public enum lint-policy guard
 together rather than silently falling through a non-exhaustive match.
 
-`operator_fixity` is populated only from data present in dependency lexical
-summaries, including task-12 prefix, infix, and postfix operator metadata. For
-any visible symbolic functor whose notation is
-operator-shaped, the summary producer is responsible for exposing either the
-declared metadata or the Chapter 10 / Appendix B default (`64`,
-non-associative for infix forms with no declaration). `ParserInputs` copies
-only those grammar-affecting facts into deterministic parser entries; it does
-not infer missing notation forms or synthesize default precedence after the
-summary boundary. Symbols with no exposed operator metadata are omitted, and
+`operator_fixity` is populated from dependency lexical summaries and
+current-module local declarations. For any visible symbolic functor whose
+notation is operator-shaped, the summary producer is responsible for exposing
+either the declared metadata or the Chapter 10 / Appendix B default (`64`,
+non-associative for infix forms with no declaration). The lexer exposes local
+operator declarations in lexical-text byte coordinates; orchestration maps each
+activation point through the `SpanBridge` so `OperatorFixityEntry.active_from`
+is in the same source-coordinate byte space as parser token spans.
+`ParserInputs` copies only those grammar-affecting spelling-level facts into
+deterministic parser entries. It does not infer missing notation forms,
+synthesize default precedence after the summary boundary, or choose an
+overload root. Symbols with no exposed operator metadata are omitted, and
 callers may still provide explicit synthetic parser inputs for bounded seam
 tests.
 `StringRequiredContext::PositionSensitive` is the normal source-to-token mode:
@@ -192,12 +213,14 @@ This module is consumed by orchestration to assemble `FrontendOutput`.
 ### Parser Inputs
 
 `ParserInputs` is the frontend-assembled bundle of grammar-affecting
-configuration: language edition, operator fixity derived from the active lexical
-environment, and the registry of string-required argument positions. Fixity
-entries contain only spelling, symbol id, fixity kind, precedence, and infix
-associativity when applicable. It is the
-parser-facing counterpart to the lexer's `ParserLexContext`: it never carries
-arbitrary scope or resolver state.
+configuration: language edition, operator fixity derived from the active
+lexical environment plus local declarations, and the registry of
+string-required argument positions. Fixity entries contain spelling, fixity
+kind, precedence, infix associativity when applicable, and the source byte
+offset from which the metadata is active. They intentionally do not carry a
+symbol id because operator metadata attaches to a spelling, not a selected
+overload root. It is the parser-facing counterpart to the lexer's
+`ParserLexContext`: it never carries arbitrary scope or resolver state.
 
 ### Parser Seam and Surface AST Handoff
 
@@ -214,15 +237,21 @@ it does not rewrite, prune, or interpret nodes.
 
 ### Parse a token stream
 
-1. Build `ParserInputs` from the active lexical environment and edition.
-2. Invoke the configured `ParserSeam` with the `TokenStream` and inputs. The
+1. Use `StringRequiredContext::PositionSensitive` to build the
+   `ParserLexingPlan` before tokenization.
+2. Tokenization collects current-module local lexical declarations and returns
+   them on `TokenStream`.
+3. Build final `ParserInputs` from the active lexical environment, local
+   declarations, and edition. Local operator activation offsets are mapped from
+   lexical-text bytes to source bytes before reaching the parser.
+4. Invoke the configured `ParserSeam` with the `TokenStream` and inputs. The
    stub seam returns `ast = None` with no syntax diagnostics.
-3. The parser preserves token nodes in source order, builds operator
+5. The parser preserves token nodes in source order, builds operator
    expression nodes when operator fixity is supplied, and preserves recovery
    markers for missing `end` after block-stack matching and expected string
    literals. Later parser tasks add full module/item parsing,
    annotation and doc-comment attachment, and broader synchronization coverage.
-4. Return the `SurfaceAst` plus syntax diagnostics, or `ast = None` when the
+6. Return the `SurfaceAst` plus syntax diagnostics, or `ast = None` when the
    parser reports unrecoverable input.
 
 Parser-assisted disambiguation uses a precomputed, position-sensitive plan rather
@@ -252,8 +281,9 @@ Key scenarios:
 
 - the stub seam returns `ast = None` and no diagnostics;
 - `ParserInputs` derives deterministic operator-fixity entries from active
-  lexical environment summaries that expose declared or spec-defaulted fixity,
-  omits symbols without operator metadata, and uses
+  lexical environment summaries and local declarations that expose declared or
+  spec-defaulted fixity, maps local activation offsets into parser source
+  coordinates, omits symbols without operator metadata, and uses
   `StringRequiredContext::PositionSensitive` for normal source-to-token paths;
 - the real seam parses a well-formed token stream to a `SurfaceAst` with
   preserved source order and `SourceRange`s;
@@ -261,6 +291,8 @@ Key scenarios:
   unchanged;
 - explicit and summary-derived operator fixity drive Pratt precedence and
   associativity/fixity for supported prefix, infix, and postfix operators;
+- `active_from` reaches the real parser seam, and future operator metadata
+  does not affect an earlier token;
 - recovered and unknown tokens are preserved but do not become infix operators;
 - non-associative chains of the same operator are diagnosed while different
   operators at the same precedence remain distinct;

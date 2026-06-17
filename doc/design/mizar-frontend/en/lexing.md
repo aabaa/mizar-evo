@@ -33,6 +33,7 @@ pub struct TokenStream {
     pub parser_lexing_plan: ParserLexingPlan,
     pub tokens: Vec<Token>,
     pub scope_view: ScopeView,
+    pub local_declarations: LocalLexicalDeclarations,
     pub diagnostics: Vec<LexingDiagnostic>,
 }
 
@@ -47,6 +48,7 @@ pub type InternedText = Arc<str>;
 pub struct TokenizeRequest<'a> {
     pub preprocessed: &'a PreprocessedSource,
     pub environment: &'a ActiveLexicalEnvironment,
+    pub current_module: ModuleId,
     pub parser_context: ParserLexContext,
     pub parser_lexing_plan: ParserLexingPlan,
 }
@@ -63,6 +65,8 @@ impl<'a> TokenizeRequest<'a> {
         environment: &'a ActiveLexicalEnvironment,
         parser_lexing_plan: ParserLexingPlan,
     ) -> Self;
+
+    pub fn with_current_module(self, current_module: ModuleId) -> Self;
 }
 
 pub struct ParserLexingPlan {
@@ -159,6 +163,7 @@ impl TokenStream {
     pub fn tokens(&self) -> &[Token];
     pub fn diagnostics(&self) -> &[LexingDiagnostic];
     pub fn scope_view(&self) -> &ScopeView;
+    pub fn local_declarations(&self) -> &LocalLexicalDeclarations;
     pub fn into_parts(self) -> (Vec<Token>, ScopeView, Vec<LexingDiagnostic>);
 }
 
@@ -221,9 +226,12 @@ tokenization, then calls the lexer with only the `ParserLexContext` for the raw
 unit being disambiguated. The lexer never receives arbitrary parser state and
 the parser does not interleave with lexing. `TokenizeRequest::new` remains a
 uniform-context convenience wrapper; source-to-token coordinator paths use
-`TokenizeRequest::with_plan`. `environment` provides the active user-symbol
-index. Imported symbols participate in token classification but are not mixed
-into the public lexical `ScopeView`.
+`TokenizeRequest::with_plan` and set `current_module` from the loaded source's
+module path. `environment` provides the imported active user-symbol index.
+Tokenization also collects current-module local lexical declarations from the
+raw token stream, uses them for range-aware disambiguation, and returns them on
+`TokenStream` for parser input assembly. Imported symbols participate in token
+classification but are not mixed into the public lexical `ScopeView`.
 Planned string-required ranges are single-line lexical byte spans; a plan that
 would cross `\n` or `\r` is rejected before it can be injected as a protected raw
 lexeme run.
@@ -293,22 +301,25 @@ view records lexical shape only — never resolved bindings.
    construction and disambiguation. Only internal parser-plan defects, such as
    non-UTF-8 ranges or line-crossing planned string spans, fall back to the
    older whole-lexical-text recovery.
-3. Build an initial `ScopeSkeleton` / `ScopeLexView` from the raw tokens and run
-   disambiguation once with the raw token stream, active lexical environment, and
-   the `ParserLexContext` selected by the plan for each raw unit.
-4. Rebuild the scope skeleton from the first final token shapes, treating
+3. Collect current-module local lexical declarations from the raw token stream
+   using `TokenizeRequest.current_module`.
+4. Build an initial `ScopeSkeleton` / `ScopeLexView` from the raw tokens and run
+   disambiguation once with the raw token stream, active lexical environment,
+   local declarations, and the `ParserLexContext` selected by the plan for each
+   raw unit.
+5. Rebuild the scope skeleton from the first final token shapes, treating
    `StringLiteral`, `ErrorRecovery`, numerals, and non-identifier user symbols as
    scope-inert. Run `disambiguate` again with that contextual skeleton so scoped
    identifier overrides are available without treating string contents or
    user-symbol spellings as scope syntax. Build the public scope skeleton from
    the final token shapes.
-5. The disambiguator applies longest match against, in order: active user
+6. The disambiguator applies longest match against, in order: active user
    symbols, reserved special symbols, reserved words, identifier/numeral rules,
    and parser expectation / scoped override where the language requires it.
-6. Map every final lexer token through `span_bridge.lexical_span` into a
+7. Map every final lexer token through `span_bridge.lexical_span` into a
    session-spanned frontend `Token`. Map the scope-skeleton frames, blocks,
    statements, and binding shapes into the public `ScopeView`.
-7. Collect lexer diagnostics as `LexingDiagnostic`s, copy non-span payload data,
+8. Collect lexer diagnostics as `LexingDiagnostic`s, copy non-span payload data,
    and map nested rejected-candidate spans into frontend payload structures.
 
 Compound reserved tokens (`..`, `.{`, `.*`, `.=`, `...`) are recognized by the lexer;
@@ -365,6 +376,9 @@ Implemented task-7/8/9 and task-20 scenarios:
   Unicode and comment-marker contents;
 - position-sensitive user-symbol kind filters can classify the same spelling
   differently at different lexical byte ranges;
+- local current-module declarations are collected during tokenization, used for
+  range-aware disambiguation, retained on `TokenStream`, and have activation
+  offsets that can be mapped through removed comments;
 - real source-to-token-to-parser orchestration carries planned annotation string
   tokens through `MizarParserSeam`.
 

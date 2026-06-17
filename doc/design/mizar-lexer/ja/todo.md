@@ -7,13 +7,24 @@
 
 ## Ordered Task List
 
-1. パーサー向けの演算子メタデータを、ソース位置対応にする。
-   - ファイル全体の `OperatorFixityTable` の受け渡しを、トークンの範囲でアクティブな
-     prefix / postfix / infix のメタデータを返せる問い合わせに置き換える。
-   - 使用前の宣言、使用後の宣言、private / public が字句解析に影響しないこと、
-     同じ綴りのオーバーロード候補をカバーする。
+deferred と明記されていない ordered task はすべて完了しています。
 
 ## Completed Tasks
+
+1. パーサー向けの演算子メタデータを、ソース位置対応にした。
+   - インポート由来の演算子メタデータと現在のモジュールのローカル演算子宣言イベントを
+     結合し、字句バイト位置でどの metadata がアクティブかを答える lexer query を追加した。
+   - 演算子メタデータは overload root 単位ではなく spelling 単位のままとし、同じ綴りの
+     imported / local functor candidate は後続 overload resolution 用に保持した。
+   - ローカル演算子宣言は、宣言位置で対応 arity の functor spelling がすでに active
+     である場合にだけ有効にし、後続 functor 宣言を forward reference にしないようにした。
+   - lexer の lexical offset を span bridge で写像した source-coordinate の
+     `active_from` offset を、frontend の parser input と parser cache key に運んだ。
+   - `mizar-parser` の Pratt lookup を更新し、未来の metadata は過去の token に影響せず、
+     後から有効になった metadata が決定的に勝つようにした。
+   - imported metadata、使用前 / 使用後の宣言、private / public の no-op visibility、
+     同綴り overload の保持、preprocess coordinate mapping、parser seam forwarding を
+     lexer / frontend / parser / cache-key tests でカバーした。
 
 1. 記法シンボルと読みやすいコンストラクタ名を、レクサーのメタデータで分離した。
    - 通常の識別子と読みやすいハイフン区切り名に対する constructor-name spelling

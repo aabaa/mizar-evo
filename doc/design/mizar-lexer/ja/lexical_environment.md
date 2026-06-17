@@ -66,6 +66,14 @@ pub struct LocalOperatorDeclaration {
     pub operator: Option<ExportedOperatorMetadata>,
 }
 
+pub struct ActiveOperatorMetadata {
+    pub spelling: String,
+    pub source_module: ModuleId,
+    pub declared_at: SourceSpan,
+    pub activation_start: SourcePos,
+    pub operator: ExportedOperatorMetadata,
+}
+
 pub fn collect_local_lexical_declarations(
     raw: &RawTokenStream,
     current_module: ModuleId,
@@ -100,6 +108,17 @@ impl ActiveLexicalEnvironment {
         position: SourcePos,
         local_declarations: &LocalLexicalDeclarations,
     ) -> Vec<UserSymbolCandidate>;
+    pub fn operator_metadata_at(
+        &self,
+        spelling: &str,
+        position: SourcePos,
+        local_declarations: &LocalLexicalDeclarations,
+    ) -> Vec<ActiveOperatorMetadata>;
+    pub fn visible_operator_metadata_at(
+        &self,
+        position: SourcePos,
+        local_declarations: &LocalLexicalDeclarations,
+    ) -> Vec<ActiveOperatorMetadata>;
 }
 ```
 
@@ -230,13 +249,17 @@ pub struct UserSymbolCandidate {
 - `private` と `public` はローカル字句 prepass では無視されます。`algorithm`、
   `redefine`、inline `deffunc`、inline `defpred`、構造体 selector、および
   field/property 名は、ローカル lexer user-symbol 辞書エントリを導入しません。
-- 演算子宣言は有効化イベントとして別に記録されますが、user-symbol 候補は導入しません。
-  parser 向け fixity query は、ソース位置対応の演算子メタデータタスクで完了します。
-
-コンストラクタ名の仕様更新後に残っている拡張:
-
-1. 曖昧性解消と parser integration が、トークンのバイト範囲でアクティブな
-   演算子メタデータを問い合わせられるよう、ソース位置対応の parser fixity query を公開する。
+- 演算子宣言は有効化イベントとして別に記録され、user-symbol 候補は導入しません。
+  インポート由来の演算子メタデータは lexical byte offset `0` から有効として公開します。
+  ローカルの演算子メタデータは、metadata を解析でき、query 位置で宣言が有効であり、
+  かつ演算子宣言の spelling 位置で同じ spelling と対応 arity の active functor
+  candidate が少なくとも 1 つ存在した場合にだけ公開します。これにより、不正な演算子宣言に
+  lexer 診断を追加せずに forward reference 禁止を実装します。
+- parser-facing な演算子メタデータは overload root の選択ではなく、spelling 単位の
+  metadata です。同じ spelling の imported / local functor candidate は後続 resolver
+  用の overload candidate として残し、`operator_metadata_at` は spelling / fixity /
+  precedence entry を決定的に返します。後から有効になる activation point が先に考慮される順に
+  並べます。互換しない same-spelling metadata の link-time conflict 診断は lexer の外に残ります。
 
 ## Non-Goals
 
@@ -291,5 +314,8 @@ active な環境は、インポートされたモジュールの圧縮された 
 - `private` / `public` がローカル字句有効化に影響しないこと;
 - 演算子宣言、`deffunc`、`defpred`、`algorithm`、`redefine` がローカル
   user-symbol エントリを導入しないこと;
+- parser-facing な演算子メタデータ query が、import 由来 metadata、local の before-use
+  metadata、宣言後の使用だけでの有効化、`private` / `public` の no-op visibility、
+  forward reference の拒否、および同綴り overload candidate の保持をカバーすること;
 - synonym / antonym の prepass 有効化は `for` より前の alias pattern から派生し、
   `for` より後の original pattern からは派生しないこと。

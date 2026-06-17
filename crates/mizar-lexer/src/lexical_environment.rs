@@ -155,6 +155,15 @@ pub struct LocalOperatorDeclaration {
     pub operator: Option<ExportedOperatorMetadata>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActiveOperatorMetadata {
+    pub spelling: String,
+    pub source_module: ModuleId,
+    pub declared_at: SourceSpan,
+    pub activation_start: SourcePos,
+    pub operator: ExportedOperatorMetadata,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct UserSymbolIndex {
     symbols_by_spelling: BTreeMap<String, Vec<UserSymbolCandidate>>,
@@ -559,6 +568,40 @@ impl ActiveLexicalEnvironment {
         symbols
     }
 
+    pub fn operator_metadata_at(
+        &self,
+        spelling: &str,
+        position: SourcePos,
+        local_declarations: &LocalLexicalDeclarations,
+    ) -> Vec<ActiveOperatorMetadata> {
+        let mut metadata = self
+            .visible_user_symbols()
+            .into_iter()
+            .filter(|candidate| candidate.spelling == spelling)
+            .filter_map(imported_operator_metadata)
+            .collect::<Vec<_>>();
+        metadata.extend(local_declarations.operator_metadata(self, spelling, position));
+        sort_operator_metadata(&mut metadata);
+        dedup_operator_metadata(&mut metadata);
+        metadata
+    }
+
+    pub fn visible_operator_metadata_at(
+        &self,
+        position: SourcePos,
+        local_declarations: &LocalLexicalDeclarations,
+    ) -> Vec<ActiveOperatorMetadata> {
+        let mut metadata = self
+            .visible_user_symbols()
+            .into_iter()
+            .filter_map(imported_operator_metadata)
+            .collect::<Vec<_>>();
+        metadata.extend(local_declarations.visible_operator_metadata(self, position));
+        sort_operator_metadata(&mut metadata);
+        dedup_operator_metadata(&mut metadata);
+        metadata
+    }
+
     pub fn longest_user_symbol_at(&self, input: &str, start: usize) -> Vec<UserSymbolCandidate> {
         self.user_symbols.longest_at(input, start)
     }
@@ -654,6 +697,41 @@ impl LocalLexicalDeclarations {
         sort_user_symbol_candidates(&mut candidates);
         candidates
     }
+
+    pub fn operator_metadata(
+        &self,
+        environment: &ActiveLexicalEnvironment,
+        spelling: &str,
+        position: SourcePos,
+    ) -> Vec<ActiveOperatorMetadata> {
+        let mut metadata = self
+            .operator_declarations
+            .iter()
+            .filter(|declaration| {
+                declaration.spelling == spelling && declaration.activation_start <= position
+            })
+            .filter_map(|declaration| declaration.active_metadata(environment, self))
+            .collect::<Vec<_>>();
+        sort_operator_metadata(&mut metadata);
+        dedup_operator_metadata(&mut metadata);
+        metadata
+    }
+
+    pub fn visible_operator_metadata(
+        &self,
+        environment: &ActiveLexicalEnvironment,
+        position: SourcePos,
+    ) -> Vec<ActiveOperatorMetadata> {
+        let mut metadata = self
+            .operator_declarations
+            .iter()
+            .filter(|declaration| declaration.activation_start <= position)
+            .filter_map(|declaration| declaration.active_metadata(environment, self))
+            .collect::<Vec<_>>();
+        sort_operator_metadata(&mut metadata);
+        dedup_operator_metadata(&mut metadata);
+        metadata
+    }
 }
 
 impl LocalUserSymbolDeclaration {
@@ -669,6 +747,53 @@ impl LocalUserSymbolDeclaration {
             arity: self.arity,
             operator: None,
         }
+    }
+}
+
+impl LocalOperatorDeclaration {
+    fn active_metadata(
+        &self,
+        environment: &ActiveLexicalEnvironment,
+        local_declarations: &LocalLexicalDeclarations,
+    ) -> Option<ActiveOperatorMetadata> {
+        let operator = self.operator?;
+        let expected_arity = operator_arity(operator.fixity);
+        let has_active_functor = environment
+            .user_symbols_at(&self.spelling, self.declared_at.start, local_declarations)
+            .into_iter()
+            .any(|candidate| {
+                candidate.kind == UserSymbolKind::Functor && candidate.arity == expected_arity
+            });
+        if !has_active_functor {
+            return None;
+        }
+
+        Some(ActiveOperatorMetadata {
+            spelling: self.spelling.clone(),
+            source_module: self.source_module.clone(),
+            declared_at: self.declared_at,
+            activation_start: self.activation_start,
+            operator,
+        })
+    }
+}
+
+fn imported_operator_metadata(candidate: &UserSymbolCandidate) -> Option<ActiveOperatorMetadata> {
+    Some(ActiveOperatorMetadata {
+        spelling: candidate.spelling.clone(),
+        source_module: candidate.source_module.clone(),
+        declared_at: SourceSpan::new(0, 0),
+        activation_start: 0,
+        operator: candidate.operator?,
+    })
+}
+
+fn operator_arity(fixity: ExportedOperatorFixity) -> UserSymbolArity {
+    match fixity {
+        ExportedOperatorFixity::Prefix | ExportedOperatorFixity::Postfix => {
+            UserSymbolArity::exact(1)
+        }
+        ExportedOperatorFixity::Infix(_) => UserSymbolArity::exact(2),
     }
 }
 
@@ -798,6 +923,42 @@ fn sort_user_symbol_candidates(candidates: &mut [UserSymbolCandidate]) {
             .then_with(|| left.source_module.cmp(&right.source_module))
             .then_with(|| left.symbol_id.cmp(&right.symbol_id))
     });
+}
+
+fn sort_operator_metadata(metadata: &mut [ActiveOperatorMetadata]) {
+    metadata.sort_by(|left, right| {
+        right
+            .activation_start
+            .cmp(&left.activation_start)
+            .then_with(|| left.spelling.cmp(&right.spelling))
+            .then_with(|| {
+                operator_fixity_tag(left.operator.fixity)
+                    .cmp(&operator_fixity_tag(right.operator.fixity))
+            })
+            .then_with(|| {
+                operator_associativity_sort_key(left.operator.fixity)
+                    .cmp(&operator_associativity_sort_key(right.operator.fixity))
+            })
+            .then_with(|| left.operator.precedence.cmp(&right.operator.precedence))
+            .then_with(|| left.source_module.cmp(&right.source_module))
+            .then_with(|| left.declared_at.start.cmp(&right.declared_at.start))
+            .then_with(|| left.declared_at.end.cmp(&right.declared_at.end))
+    });
+}
+
+fn dedup_operator_metadata(metadata: &mut Vec<ActiveOperatorMetadata>) {
+    metadata.dedup_by(|left, right| {
+        left.spelling == right.spelling
+            && left.activation_start == right.activation_start
+            && left.operator == right.operator
+    });
+}
+
+fn operator_associativity_sort_key(fixity: ExportedOperatorFixity) -> u8 {
+    match fixity {
+        ExportedOperatorFixity::Infix(associativity) => operator_associativity_tag(associativity),
+        ExportedOperatorFixity::Prefix | ExportedOperatorFixity::Postfix => 0,
+    }
 }
 
 fn operator_fixity_tag(fixity: ExportedOperatorFixity) -> u8 {

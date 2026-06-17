@@ -20,16 +20,21 @@ set-comprehension primary は実装済みである。
 
 ## 項 Pratt 契約
 
-`ParseRequest::operator_fixity` は現在、`ParserInputs` から導出された parser-facing
-operator metadata を運ぶ。内容は spelling、fixity kind、precedence、そして infix
-operator については associativity である。parser はこの metadata を文法設定としてのみ
-消費する。overload root の選択、result type 推論、cluster fact の評価、
-selector-versus-namespace role の解決は行わない。
+`ParseRequest::operator_fixity` は、`ParserInputs` から導出された parser-facing
+operator metadata を運ぶ。内容は spelling、fixity kind、precedence、source-coordinate
+の `active_from`、そして infix operator については associativity である。parser はこの
+metadata を文法設定としてのみ消費する。overload root の選択、result type 推論、
+cluster fact の評価、selector-versus-namespace role の解決は行わない。
 
-宣言範囲の仕様更新後、このテーブルはソース位置を意識する必要がある。
 `infix_operator`、`prefix_operator`、`postfix_operator` の宣言は後続のトークンにだけ
-影響するため、Pratt の検索はファイル全体のテーブルではなく、演算子トークンの範囲で
-アクティブな演算子メタデータを問い合わせなければならない。
+影響するため、Pratt の検索は演算子トークンの source span で metadata を filter する。
+`active_from > token.span.start` の entry は無視する。operator metadata は spelling
+単位である。ある token spelling について、Pratt lookup は fixity に関係なく最も新しく
+アクティブな metadata entry を先に選び、その entry が現在の prefix/postfix/infix
+context で有効かを後で確認する。そのため、同じ spelling に対する新しい prefix 宣言は、
+後続 token について古い infix 宣言を shadow し、古い infix を引き続き利用可能にはしない。
+同じ activation point の tie は決定的に保ち、この parser stage の前に link-time conflict
+が検査されていると仮定する。
 
 項 parsing は次の順序を使う。
 
@@ -55,15 +60,13 @@ Infix term operator の binding power は Appendix B と一致する。
 | None | `N` | `N + 1`、加えて同一 operator chain を診断する |
 
 Prefix / postfix operator は、供給された precedence を binding power として使う。この
-metadata は明示宣言または spec-defaulted summary-side metadata から来てよい。1 つの
-token に異なる fixity の visible operator entry が複数ある場合、parser は term operand
-開始位置では prefix entry だけを使い、left operand を parse した後は postfix / infix
-entry だけを使う。left operand の後で postfix entry と infix entry が同じ spelling を
-共有する場合、eligible な infix entry は後続 token が right operand を開始できるなら
-優先される。そうでなければ eligible な postfix entry が優先される。同一 spelling
-operator の incompatible metadata conflict は lexical-environment または link stage の
-error である。この parser stage は、`ParserInputs` またはその範囲対応の後継が、
-parse 中のトークン位置に対する決定的な可視集合をすでに選んでいると仮定する。
+metadata は明示宣言または spec-defaulted summary-side metadata から来てよい。最も新しく
+アクティブな spelling entry を選んだ後、parser はその fixity が構文上 eligible な context
+でだけそれを使う。prefix entry は term operand の開始位置、postfix / infix entry は left
+operand を parse した後だけである。同一 spelling operator の incompatible metadata
+conflict は lexical-environment または link stage の error である。この parser stage は、
+`ParserInputs` が parse 中のトークン位置に対する決定的な visible entry order をすでに
+選んでいると仮定する。
 
 ## Formula Pratt Contract
 

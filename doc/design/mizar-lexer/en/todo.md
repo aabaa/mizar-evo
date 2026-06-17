@@ -7,13 +7,29 @@ language-spec synchronization.
 
 ## Ordered Task List
 
-1. Make parser-facing operator metadata source-position aware.
-   - Replace the file-wide `OperatorFixityTable` handoff with a query that can
-     answer which prefix/postfix/infix metadata is active at a token span.
-   - Cover declarations after use, declarations before use, private/public
-     no-op visibility for lexing, and same-spelling overload candidates.
+All non-deferred ordered tasks are complete.
 
 ## Completed Tasks
+
+1. Made parser-facing operator metadata source-position aware.
+   - Added lexer queries that combine imported operator metadata with
+     current-module local operator declaration events and answer which metadata
+     is active at a lexical byte position.
+   - Kept operator metadata spelling-level rather than overload-root-level,
+     while preserving same-spelling imported and local functor candidates for
+     downstream overload resolution.
+   - Required local operator declarations to reference an already active
+     matching-arity functor spelling at the declaration position, so later
+     functor declarations are not forward references.
+   - Carried source-coordinate `active_from` offsets through frontend parser
+     inputs and parser cache keys, after mapping lexer lexical offsets through
+     the span bridge.
+   - Updated `mizar-parser` Pratt lookup so future metadata is ignored for
+     earlier tokens and later active metadata wins deterministically.
+   - Added lexer, frontend, parser, and cache-key tests for imported metadata,
+     declarations before/after use, private/public no-op visibility, same
+     spelling overload preservation, preprocessing coordinate mapping, and
+     parser seam forwarding.
 
 1. Split notation symbols from readable constructor names in lexer metadata.
    - Added constructor-name spelling recognition for ordinary identifiers and
