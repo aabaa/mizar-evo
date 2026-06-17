@@ -568,10 +568,16 @@ interaction. Spec references are the normative grammar chapters under
       classified in the audit note.
     - Deps: 18. Spec: all module specs and this TODO.
 
-20. **Bilingual documentation sync audit.** [ ]
+20. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under
       `doc/design/mizar-syntax/en/` with its Japanese companion and synchronize
       API lists, statuses, terminology, links, and behavior promises.
+    - Result: [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md)
+      records that README, crate plan, module specs, grammar-gate notes,
+      source/spec audit, and TODO companions agree on statuses, public API
+      names, enum/diagnostic surfaces, task follow-up records, terminology,
+      links, and behavior promises through S-020. The audit found only
+      documentation `design_drift`, now closed without source changes.
     - Deps: 19. Spec: repository documentation policy.
 
 21. **Rustdoc summaries.** [ ] Deferred.

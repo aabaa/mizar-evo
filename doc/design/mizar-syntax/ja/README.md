@@ -30,5 +30,6 @@ vocabulary を所有している。S-019 source/spec audit では、module spec 
 横断的な監査ノート:
 
 - `source_spec_correspondence.md`
+- `bilingual_documentation_synchronization.md`
 
 実装ロードマップ: [todo.md](./todo.md)。

@@ -20,7 +20,9 @@ crate plan、[todo.md](./todo.md)）へ照合し、public API と implementation
 
 この監査で追加した日本語 companion は、下記の public API 名と behavior boundary
 を英語正本と対応させる。より広い wording、terminology、status、link の
-bilingual audit は S-020 に残す。
+bilingual audit は
+[bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md)
+に別途記録する。
 
 ## 結果
 
@@ -38,7 +40,7 @@ bilingual audit は S-020 に残す。
   `boundary_violation`、`repo_metadata_conflict` は見つからなかった。
 - 既存の follow-up record は下記の分類のまま残る: parser fixture seed activation、
   vocabulary-only future recovery producer、dotted algorithm `Lvalue` の active
-  `.miz` coverage gap、S-020 bilingual sync、S-021 deferred rustdoc summary。
+  `.miz` coverage gap、S-021 deferred rustdoc summary。
 
 ## Public API 対応
 
@@ -105,6 +107,9 @@ bilingual audit は S-020 に残す。
 - `MSYN-GAP-013` (`test_gap`): dotted algorithm `Lvalue` は parser unit tests で
   覆われているが、active `.miz` coverage は、その surface を unrelated diagnostic
   なしに運べる owning frontend/parser dot-role increment を待つ。
-- S-020 はより広い bilingual documentation synchronization audit として残る。
+- S-020 は
+  [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md)
+  により完了済みである。見つかったのは documentation `design_drift` のみであり、
+  source/test mismatch はなかった。
 - S-021 は re-entry trigger が満たされるまで rustdoc summary について明示的に
   deferred のまま残る。

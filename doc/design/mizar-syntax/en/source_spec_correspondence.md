@@ -23,7 +23,8 @@ behavior.
 
 The Japanese companion added with this audit mirrors the public API names and
 behavior boundaries below. The broader bilingual wording, terminology, status,
-and link audit remains task S-020.
+and link audit is recorded separately in
+[bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md).
 
 ## Result
 
@@ -42,8 +43,7 @@ and link audit remains task S-020.
   `boundary_violation`, or `repo_metadata_conflict` was found.
 - Existing follow-up records remain classified below: parser fixture seed
   activation, vocabulary-only future recovery producers, the dotted algorithm
-  `Lvalue` active `.miz` coverage gap, S-020 bilingual sync, and S-021
-  deferred rustdoc summaries.
+  `Lvalue` active `.miz` coverage gap, and S-021 deferred rustdoc summaries.
 
 ## Public API Correspondence
 
@@ -110,6 +110,8 @@ This audit did not add a new follow-up task. Existing classified records remain:
 - `MSYN-GAP-013` (`test_gap`): dotted algorithm `Lvalue` is covered by parser
   unit tests, while active `.miz` coverage waits for the owning frontend/parser
   dot-role increment that can carry the surface without unrelated diagnostics.
-- S-020 remains the broader bilingual documentation synchronization audit.
+- S-020 is now closed by
+  [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md);
+  it found only documentation `design_drift` and no source/test mismatch.
 - S-021 remains explicitly deferred for rustdoc summaries until its re-entry
   trigger is met.
