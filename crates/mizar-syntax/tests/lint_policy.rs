@@ -83,7 +83,7 @@ fn public_forward_compatible_enums_are_marked_non_exhaustive() {
 
     assert!(
         violations.is_empty(),
-        "pre-consumer public enum forward-compatibility policy requires \
+        "public enum forward-compatibility policy requires \
          #[non_exhaustive] on:\n{}",
         violations.join("\n")
     );

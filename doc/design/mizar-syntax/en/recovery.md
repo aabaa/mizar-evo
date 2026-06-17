@@ -127,10 +127,11 @@ update this table if they refine the producer condition, add a dedicated
 ### Public Enum Compatibility
 
 `SyntaxRecoveryKind` and `SyntaxDiagnosticCode` promise future variants as
-grammar recovery grows. The pre-consumer gate in [todo.md](./todo.md) marks them
+grammar recovery grows. The S-017 final public-enum audit keeps them
 `#[non_exhaustive]` for downstream crates, and the lint-policy gate keeps those
 attributes present unless a later task records a deliberate exhaustive decision.
 Matches inside `mizar-syntax` should remain exhaustive so adding a recovery kind
 forces local snapshot and diagnostic updates; downstream crates, including
 `mizar-parser`, must include wildcard fallback arms where `#[non_exhaustive]`
-requires them.
+requires them. Any future public enum in this module must be added to exactly
+one lint-policy classification before it lands.

@@ -1616,14 +1616,13 @@ by resolver/checker layers.
 
 ### Public Enum Compatibility
 
-The current public syntax enums are not yet the long-lived resolver/LSP surface.
-Before parser tasks 5-7 make them plausible downstream inputs, apply the
-pre-consumer gate in [todo.md](./todo.md): enums that promise future vocabulary
-growth (`SyntaxKind`, `SurfaceNodeKind`, and `SurfaceTokenKind`) are marked
-`#[non_exhaustive]` for downstream crates, and the lint-policy gate keeps those
+The S-017 final public-enum audit classifies every public enum in this module.
+Enums that promise future syntax vocabulary growth (`SyntaxKind`,
+`SurfaceNodeKind`, and `SurfaceTokenKind`) are `#[non_exhaustive]` for
+downstream crates, and `crates/mizar-syntax/tests/lint_policy.rs` keeps those
 attributes present. `MizarLanguage` remains deliberately exhaustive because it
 is an empty rowan marker enum rather than a downstream syntax category.
-`SurfaceOperatorAssociativity` is currently a closed three-way operator property
+`SurfaceOperatorAssociativity` is a closed three-way operator property
 (`Left`, `Right`, `NonAssociative`) and remains deliberately exhaustive unless a
 later operator-model task designs a new associativity category. The task-14
 formula payload enums (`SurfaceFormulaPrefixOperator`,
@@ -1633,4 +1632,5 @@ the current fixed grammar table; adding a new formula operator, quantifier, or
 constant must force local parser/syntax matches and documentation to update.
 Matches inside this crate should remain exhaustive so new variants cause local
 compile-time updates; downstream crates must include wildcard fallback arms
-where `#[non_exhaustive]` requires them.
+where `#[non_exhaustive]` requires them. Any future public enum in this module
+must be added to exactly one lint-policy classification before it lands.

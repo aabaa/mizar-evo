@@ -72,11 +72,13 @@ every change here must keep `cargo test -p mizar-parser` and
   registered at the top level ([../../todo.md](../../todo.md) "Resolved And
   Open Decisions"); tracked in
   [../../mizar-parser/en/todo.md](../../mizar-parser/en/todo.md).
-- **Public enum forward compatibility: open, initially resolved by the
-  pre-consumer gate.** Apply the same per-enum `#[non_exhaustive]`-versus-
-  exhaustive decision procedure that `mizar-frontend` task 25 established
-  before `mizar-syntax` becomes a resolver/LSP input, and revisit it as new
-  vocabulary enums are added.
+- **Public enum forward compatibility: resolved by S-017.** The final
+  node-vocabulary audit classifies every public enum in `ast`, `recovery`, and
+  `trivia`: vocabulary/recovery/trivia enums that can grow remain
+  `#[non_exhaustive]`, and the small grammar-marker/payload enums listed in
+  the owning module specs remain documented exhaustive exceptions. Future
+  public enums must be added to exactly one side of the lint-policy
+  classification before landing.
 
 ## Ordered Task List
 
@@ -170,11 +172,14 @@ lands. Keep `cargo test -p mizar-syntax` green after each change (see
   `mizar-frontend` task-25 procedure.
 - Record each decision next to the enum in the owning module spec and apply the
   attributes before parser tasks 5-7 can make resolver/LSP consumers plausible.
-- Result: `SyntaxKind`, `SurfaceNodeKind`, `SurfaceTokenKind`,
+- Result: this initial gate was superseded by the S-017 final audit for the
+  current policy. `SyntaxKind`, `SurfaceNodeKind`, `SurfaceTokenKind`,
   `SyntaxRecoveryKind`, `SyntaxDiagnosticCode`, `TriviaAttachmentTarget`,
   `SkippedTokenReason`, and `WhitespaceHintKind` are guarded as
-  `#[non_exhaustive]`. `MizarLanguage`, `SurfaceOperatorAssociativity`, and
-  `TriviaPlacement` are documented deliberate exhaustive exceptions.
+  `#[non_exhaustive]`. `MizarLanguage`, `SurfaceOperatorAssociativity`,
+  `SurfaceFormulaPrefixOperator`, `SurfaceFormulaConnective`,
+  `SurfaceQuantifierKind`, `SurfaceFormulaConstant`, and `TriviaPlacement` are
+  documented deliberate exhaustive exceptions.
 - Deps: 4, 5. Spec: [ast.md](./ast.md), [trivia.md](./trivia.md),
   [recovery.md](./recovery.md).
 
@@ -518,12 +523,17 @@ interaction. Spec references are the normative grammar chapters under
 
 ### Cross-cutting follow-ups
 
-17. **Public enum forward-compatibility policy.** [ ]
+17. **Public enum forward-compatibility policy.** [x]
     - Revisit the initial public-enum gate once the vocabulary is complete and
       decide `#[non_exhaustive]` versus deliberate exhaustiveness for any public
       enums added by later node-vocabulary increments.
     - Record final decisions next to the enum in the owning module spec and
       apply any remaining attributes.
+    - Result: no new public enum type was added after the initial gate, but the
+      final audit confirmed every current public enum is classified by
+      `crates/mizar-syntax/tests/lint_policy.rs`. The owning module specs now
+      describe these as final current API decisions rather than pre-consumer
+      placeholders.
     - Deps: 16. Spec: all module specs.
 
 18. **Incremental syntax reuse audit.** [ ]

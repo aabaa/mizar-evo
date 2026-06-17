@@ -141,9 +141,11 @@ snapshot が生成される前に `SurfaceAst::with_trivia` がそのような t
 
 `TriviaAttachmentTarget`、`TriviaPlacement`、`SkippedTokenReason`、
 `WhitespaceHintKind` は、parser、frontend、formatter、LSP 層が trivia ownership を
-共有するため公開されている。[todo.md](./todo.md) の consumer 前ゲートでは、成長し得る
+共有するため公開されている。S-017 の最終 public-enum audit では、成長し得る
 enum（`TriviaAttachmentTarget`、`SkippedTokenReason`、`WhitespaceHintKind`）を、
 下流 crate 向けに `#[non_exhaustive]` とし、lint-policy gate がこれらの属性を
 固定する。`TriviaPlacement` は、leading / trailing placement が閉じた二分の
 構文関係であるため、意図的に exhaustive のままとする。具体的な middle / detached
 placement が設計された場合だけ、この判断を見直す。内部 match は exhaustive のままにする。
+今後この module に public enum を追加する場合は、着地前に lint-policy classification
+のどちらか一方へ追加しなければならない。
