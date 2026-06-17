@@ -72,6 +72,18 @@ attachment target only. This keeps comment-only edit cache behavior available:
 an unchanged token stream may reuse parser output while a later attachment
 step can rebuild trivia hints from the frontend-owned `PreprocessedSource`.
 
+### Incremental Reuse Boundary
+
+The S-018 audit treats `SurfaceTrivia` as a range-attached side table, not as a
+rowan identity surface. Later query layers may reuse a `SurfaceAst` green tree
+for an unchanged token stream and rebuild or reattach trivia from
+frontend-owned preprocessing output, provided `SurfaceAst::with_trivia`
+validates that every node or token target still exists with the recorded range.
+Trivia target keys, snapshot rendering, and sorting rules therefore avoid raw
+rowan identity, file paths, and `SourceId` debug output. If a localized edit
+changes the token stream, trivia owners must be recomputed against the new
+syntax tree rather than carried forward by `SurfaceNodeId` alone.
+
 ### Attachment Targets
 
 `TriviaAttachmentTarget` has three forms:

@@ -125,6 +125,17 @@ trivia は skipped span を記録する。
 condition を精密化する、専用 `SyntaxDiagnosticCode` を追加する、または trivia
 ownership rule をより具体化するなら、この表を更新しなければならない。
 
+### Incremental reuse boundary
+
+S-018 audit では、recovery node を cache と LSP 用の通常の syntax-tree content として
+扱う。これらは rowan-backed tree 内の `SyntaxKind::ErrorRecovery` node または
+recovered token leaf として表され、skip された source span と任意の owner は
+`SurfaceTrivia` に残る。そのため局所編集では recovery marker を含む不変 green subtree
+を再利用できる場合があるが、diagnostic と code action は dense な `SurfaceNodeId`
+ではなく `SourceRange` と diagnostic code で再検証しなければならない。range 外の
+recovery context child は compatibility view の詳細であり、安定した rowan subtree
+identity として使ってはならない。
+
 ### 公開 enum の互換性
 
 `SyntaxRecoveryKind` と `SyntaxDiagnosticCode` は、文法 recovery の成長に伴う将来の

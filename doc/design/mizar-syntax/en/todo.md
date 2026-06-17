@@ -536,7 +536,7 @@ interaction. Spec references are the normative grammar chapters under
       placeholders.
     - Deps: 16. Spec: all module specs.
 
-18. **Incremental syntax reuse audit.** [ ]
+18. **Incremental syntax reuse audit.** [x]
     - Audit the completed rowan-backed syntax tree for fine-grained incremental
       parsing and LSP reuse readiness: stable syntax-kind numbering policy,
       trivia/recovery placement, range attachment, node-role accessors, and
@@ -544,6 +544,13 @@ interaction. Spec references are the normative grammar chapters under
     - This task does not introduce `salsa`; it verifies that `SurfaceAst` can
       be produced and cached by later query layers without exposing unstable
       arena ids or parser internals.
+    - Result: S-018 records the reuse contract in `ast.md`, `trivia.md`, and
+      `recovery.md`: raw `SyntaxKind` values are append-only for this phase;
+      `SurfaceNodeId` remains deterministic but not persistent identity;
+      trivia and recovery are range-attached surfaces; and later query layers
+      may cache `SurfaceAst` behind frontend-owned content keys without moving
+      incremental state into `mizar-syntax`. The audit found and fixed
+      annotation `SurfaceNodeView` helper and rowan/raw-kind coverage gaps.
     - Deps: 16, 17. Spec: [ast.md](./ast.md), [trivia.md](./trivia.md),
       [recovery.md](./recovery.md).
 

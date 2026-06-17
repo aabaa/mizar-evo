@@ -1,6 +1,7 @@
 # mizar-syntax: Surface AST
 
-Status: rowan-backed storage boundary and task-12 compatibility views implemented; full AST coverage planned.
+Status: rowan-backed storage boundary, task-35 surface vocabulary, typed
+compatibility views, and S-018 incremental reuse contract implemented.
 
 ## Purpose
 
@@ -566,7 +567,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::Annotation` | none | `SyntaxKind::Annotation` | parser task-35 attachable annotation prefix; owns either one fixed `@identifier` marker with optional `AnnotationArgumentList` / `ProofHintOptionList`, or one nested `LibraryAnnotation` |
 | `SurfaceNodeKind::LibraryAnnotation` | none | `SyntaxKind::LibraryAnnotation` | parser task-35 `@[ annotation_label_list ]` prefix, with delimiter recovery for missing `]` |
 | `SurfaceNodeKind::AnnotationLabelList` | none | `SyntaxKind::AnnotationLabelList` | parser task-35 comma-separated library annotation labels, preserving malformed slots as annotation recovery |
-| `SurfaceNodeKind::AnnotationLabel` | none | `SyntaxKind::AnnotationLabel` | parser task-35 single library annotation label; owns an identifier marker and optional `AnnotationArgumentList` |
+| `SurfaceNodeKind::AnnotationLabel` | none | `SyntaxKind::AnnotationLabel` | parser task-35 single library annotation label; owns an identifier token and optional `AnnotationArgumentList` |
 | `SurfaceNodeKind::AnnotationArgumentList` | none | `SyntaxKind::AnnotationArgumentList` | parser task-35 parenthesized annotation argument list with comma tokens, missing-argument recovery, and delimiter recovery |
 | `SurfaceNodeKind::AnnotationArgument` | none | `SyntaxKind::AnnotationArgument` | parser task-35 single annotation argument; preserves identifier, numeral, string-literal, or recovered malformed source without semantic evaluation |
 | `SurfaceNodeKind::ProofHintOptionList` | none | `SyntaxKind::ProofHintOptionList` | parser task-35 `@proof_hint(...)` option list; owns comma-separated `ProofHintOption` children |
@@ -1300,6 +1301,28 @@ the owning registration content node. `SurfaceNodeView` exposes
 `as_functorial_registration`, and `as_reduction_registration`. Snapshot
 rendering prints the literal node names.
 
+Parser task 35 completes the current annotation vocabulary. `Annotation` owns
+either one fixed annotation marker plus optional argument/option list, or a
+nested `LibraryAnnotation` for `@[ ... ]`. `LibraryAnnotation` owns an
+`AnnotationLabelList`, whose `AnnotationLabel` children may themselves own
+`AnnotationArgumentList`; `AnnotationArgument` preserves identifier, numeral,
+or string-literal payloads as syntax only. `ProofHintOptionList` and
+`ProofHintOption` preserve the fixed proof-hint option names and value tokens
+without validating ATP availability. `StandaloneDiagnosticAnnotation` preserves
+`@show_type` / `@eval` directive syntax without attaching it to the following
+statement. `AnnotatedStatement`, `AnnotatedAlgorithmStatement`,
+`AnnotatedDefinitionContent`, and `AnnotatedRegistrationContent` wrap one or
+more leading `Annotation` nodes plus the owned concrete syntax node. These
+nodes do not evaluate annotations, validate annotation registries, or influence
+proof search. `SurfaceNodeView` exposes `as_annotation`,
+`as_library_annotation`, `as_annotation_label_list`, `as_annotation_label`,
+`as_annotation_argument_list`, `as_annotation_argument`,
+`as_proof_hint_option_list`, `as_proof_hint_option`,
+`as_standalone_diagnostic_annotation`, `as_annotated_statement`,
+`as_annotated_algorithm_statement`, `as_annotated_definition_content`, and
+`as_annotated_registration_content`. Snapshot rendering prints the literal node
+names.
+
 ### Vocabulary Increment Contract
 
 Node vocabulary grows only in the same change as the `mizar-parser` grammar task
@@ -1613,6 +1636,46 @@ constructed `SurfaceAst`, but they are not stable artifact ids and must not be
 serialized as cross-run identities. Stable consumers should key on deterministic
 snapshots, content cache keys, source ids/ranges, and later semantic ids owned
 by resolver/checker layers.
+
+### Incremental Reuse Contract
+
+The S-018 audit records the current reuse boundary for later parser-query and
+LSP work. `mizar-syntax` supplies immutable rowan-backed syntax output; it does
+not own an incremental query engine, `salsa` database, build-system state, or
+cross-file cache invalidation policy. `mizar-frontend::SurfaceAstCacheKey`
+already keys parser output by token-stream content, parser version, parser
+inputs, and edition; later query layers may cache `SurfaceAst` values behind
+that key without exposing parser arenas or dense compatibility ids.
+
+`SyntaxKind` raw discriminants are the rowan storage vocabulary. Existing raw
+values are append-only for this phase, and any future insertion into a reserved
+or reused range must update this table, the rowan round-trip tests, and snapshot
+expectations in the same change. Unknown raw rowan values continue to map to
+`SyntaxKind::Unknown` so infrastructure can degrade safely when reading
+unrecognized storage.
+
+Localized edits should be observed through content keys, source ranges, stable
+snapshot text, and rowan green-node equality, not through `SurfaceNodeId`
+equality. A localized edit may produce equal green subtrees for unaffected
+source-shaped regions, but `SurfaceNodeId` values are rebuilt with the
+compatibility vector and can shift when earlier siblings change. Consumers that
+need persistent semantic identity must wait for resolver/checker ids; syntax
+consumers may cache by range and validate by snapshot or green-node equality.
+
+Trivia and recovery are part of the reusable syntax boundary but remain
+range-attached. `SurfaceTrivia` can be rebuilt or reattached after
+comment-only edits when the token stream is unchanged, and `SurfaceAst` verifies
+that node/token trivia targets still exist with matching ranges. Recovery nodes
+remain visible syntax nodes or recovered token leaves; skipped source spans live
+in trivia. This keeps rowan token leaves source-shaped and lets LSP clients map
+diagnostics, formatting hints, and code actions by `SourceRange` without
+depending on parser internals.
+
+The current audit found one source/test drift in the task-35 annotation
+vocabulary: annotation nodes existed in `SurfaceNodeKind`/`SyntaxKind`, but
+their typed `SurfaceNodeView` helpers and rowan/raw-kind unit coverage were
+missing. S-018 closes that drift in `crates/mizar-syntax/src/ast.rs`; no
+additional storage abstraction is introduced.
 
 ### Public Enum Compatibility
 

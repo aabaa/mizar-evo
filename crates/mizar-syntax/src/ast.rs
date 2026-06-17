@@ -1491,6 +1491,97 @@ impl<'a> SurfaceNodeView<'a> {
         }
     }
 
+    pub fn as_annotation(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::Annotation => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_library_annotation(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::LibraryAnnotation => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_annotation_label_list(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AnnotationLabelList => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_annotation_label(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AnnotationLabel => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_annotation_argument_list(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AnnotationArgumentList => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_annotation_argument(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AnnotationArgument => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_proof_hint_option_list(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ProofHintOptionList => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_proof_hint_option(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::ProofHintOption => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_standalone_diagnostic_annotation(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::StandaloneDiagnosticAnnotation => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_annotated_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AnnotatedStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_annotated_algorithm_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AnnotatedAlgorithmStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_annotated_definition_content(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AnnotatedDefinitionContent => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_annotated_registration_content(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AnnotatedRegistrationContent => Some(self),
+            _ => None,
+        }
+    }
+
     pub fn as_term_placeholder(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::TermPlaceholder => Some(self),
@@ -3412,6 +3503,7 @@ mod tests {
             SurfaceTokenKind::Numeral,
             SurfaceTokenKind::LexemeRun,
             SurfaceTokenKind::UserSymbol,
+            SurfaceTokenKind::AnnotationMarker,
             SurfaceTokenKind::StringLiteral,
             SurfaceTokenKind::ErrorRecovery,
             SurfaceTokenKind::Unknown,
@@ -4064,6 +4156,7 @@ mod tests {
                 SyntaxKind::TokenNumeral,
                 SyntaxKind::TokenLexemeRun,
                 SyntaxKind::TokenUserSymbol,
+                SyntaxKind::TokenAnnotationMarker,
                 SyntaxKind::TokenStringLiteral,
                 SyntaxKind::TokenErrorRecovery,
                 SyntaxKind::TokenUnknown,
@@ -4247,6 +4340,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            task35_annotation_nodes_ast(source_id(56))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -4388,6 +4487,19 @@ mod tests {
             SyntaxKind::LoopDecreasingClause,
             SyntaxKind::AssertStatement,
             SyntaxKind::TermList,
+            SyntaxKind::Annotation,
+            SyntaxKind::LibraryAnnotation,
+            SyntaxKind::AnnotationLabelList,
+            SyntaxKind::AnnotationLabel,
+            SyntaxKind::AnnotationArgumentList,
+            SyntaxKind::AnnotationArgument,
+            SyntaxKind::ProofHintOptionList,
+            SyntaxKind::ProofHintOption,
+            SyntaxKind::StandaloneDiagnosticAnnotation,
+            SyntaxKind::AnnotatedStatement,
+            SyntaxKind::AnnotatedAlgorithmStatement,
+            SyntaxKind::AnnotatedDefinitionContent,
+            SyntaxKind::AnnotatedRegistrationContent,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -4418,6 +4530,27 @@ mod tests {
             assert!(
                 rowan_kinds.contains(&kind),
                 "rowan tree should emit {kind:?} for current structural nodes"
+            );
+        }
+
+        for kind in [
+            SyntaxKind::TokenAnnotationMarker,
+            SyntaxKind::TokenIdentifier,
+            SyntaxKind::TokenReservedWord,
+            SyntaxKind::TokenReservedSymbol,
+            SyntaxKind::TokenNumeral,
+            SyntaxKind::TokenLexemeRun,
+            SyntaxKind::TokenUserSymbol,
+            SyntaxKind::TokenStringLiteral,
+            SyntaxKind::TokenErrorRecovery,
+            SyntaxKind::TokenUnknown,
+        ] {
+            assert_eq!(SyntaxKind::from_raw(kind as u16), kind);
+            assert!(!kind.is_node_kind());
+            assert!(kind.is_token_kind());
+            assert!(
+                rowan_kinds.contains(&kind),
+                "rowan tree should emit {kind:?} for current token leaves"
             );
         }
     }
@@ -6554,6 +6687,127 @@ mod tests {
             assert!(
                 snapshot.contains(expected),
                 "snapshot should render task-34 line {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn task35_typed_accessors_cover_annotation_nodes() {
+        let ast = task35_annotation_nodes_ast(source_id(56));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task35_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task35_view!(
+            SurfaceNodeKind::Annotation,
+            SyntaxKind::Annotation,
+            as_annotation
+        );
+        assert_task35_view!(
+            SurfaceNodeKind::LibraryAnnotation,
+            SyntaxKind::LibraryAnnotation,
+            as_library_annotation
+        );
+        assert_task35_view!(
+            SurfaceNodeKind::AnnotationLabelList,
+            SyntaxKind::AnnotationLabelList,
+            as_annotation_label_list
+        );
+        assert_task35_view!(
+            SurfaceNodeKind::AnnotationLabel,
+            SyntaxKind::AnnotationLabel,
+            as_annotation_label
+        );
+        assert_task35_view!(
+            SurfaceNodeKind::AnnotationArgumentList,
+            SyntaxKind::AnnotationArgumentList,
+            as_annotation_argument_list
+        );
+        assert_task35_view!(
+            SurfaceNodeKind::AnnotationArgument,
+            SyntaxKind::AnnotationArgument,
+            as_annotation_argument
+        );
+        assert_task35_view!(
+            SurfaceNodeKind::ProofHintOptionList,
+            SyntaxKind::ProofHintOptionList,
+            as_proof_hint_option_list
+        );
+        assert_task35_view!(
+            SurfaceNodeKind::ProofHintOption,
+            SyntaxKind::ProofHintOption,
+            as_proof_hint_option
+        );
+        assert_task35_view!(
+            SurfaceNodeKind::StandaloneDiagnosticAnnotation,
+            SyntaxKind::StandaloneDiagnosticAnnotation,
+            as_standalone_diagnostic_annotation
+        );
+        assert_task35_view!(
+            SurfaceNodeKind::AnnotatedStatement,
+            SyntaxKind::AnnotatedStatement,
+            as_annotated_statement
+        );
+        assert_task35_view!(
+            SurfaceNodeKind::AnnotatedAlgorithmStatement,
+            SyntaxKind::AnnotatedAlgorithmStatement,
+            as_annotated_algorithm_statement
+        );
+        assert_task35_view!(
+            SurfaceNodeKind::AnnotatedDefinitionContent,
+            SyntaxKind::AnnotatedDefinitionContent,
+            as_annotated_definition_content
+        );
+        assert_task35_view!(
+            SurfaceNodeKind::AnnotatedRegistrationContent,
+            SyntaxKind::AnnotatedRegistrationContent,
+            as_annotated_registration_content
+        );
+
+        let annotation_marker = ast
+            .token_views()
+            .find(|view| {
+                view.as_token()
+                    .is_some_and(|token| token.kind == SurfaceTokenKind::AnnotationMarker)
+            })
+            .unwrap();
+        assert_eq!(annotation_marker.syntax_kind(), SyntaxKind::Token);
+        assert_eq!(
+            annotation_marker.as_token().unwrap().kind.syntax_kind(),
+            SyntaxKind::TokenAnnotationMarker
+        );
+        assert!(
+            ast.rowan_root()
+                .descendants_with_tokens()
+                .any(|element| element.kind() == SyntaxKind::TokenAnnotationMarker),
+            "rowan tree should preserve annotation-marker token leaves"
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in [
+            "Annotation",
+            "LibraryAnnotation",
+            "AnnotationLabelList",
+            "AnnotationLabel",
+            "AnnotationArgumentList",
+            "AnnotationArgument",
+            "ProofHintOptionList",
+            "ProofHintOption",
+            "StandaloneDiagnosticAnnotation",
+            "AnnotatedStatement",
+            "AnnotatedAlgorithmStatement",
+            "AnnotatedDefinitionContent",
+            "AnnotatedRegistrationContent",
+        ] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-35 line {expected}"
             );
         }
     }
@@ -12345,6 +12599,191 @@ mod tests {
             SurfaceNodeKind::Root,
             range(source_id, 0, 158),
             vec![algorithm],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn task35_annotation_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+
+        macro_rules! token {
+            ($kind:expr, $text:expr, $start:expr, $end:expr) => {
+                builder.add_token($kind, $text, range(source_id, $start, $end))
+            };
+        }
+
+        let latex_marker = token!(SurfaceTokenKind::AnnotationMarker, "@latex", 0, 6);
+        let latex_open = token!(SurfaceTokenKind::ReservedSymbol, "(", 6, 7);
+        let latex_string = token!(SurfaceTokenKind::StringLiteral, "\"x\"", 7, 10);
+        let latex_close = token!(SurfaceTokenKind::ReservedSymbol, ")", 10, 11);
+        let annotation_argument = builder.add_node(
+            SurfaceNodeKind::AnnotationArgument,
+            range(source_id, 7, 10),
+            vec![latex_string],
+        );
+        let annotation_argument_list = builder.add_node(
+            SurfaceNodeKind::AnnotationArgumentList,
+            range(source_id, 6, 11),
+            vec![latex_open, annotation_argument, latex_close],
+        );
+        let annotation = builder.add_node(
+            SurfaceNodeKind::Annotation,
+            range(source_id, 0, 11),
+            vec![latex_marker, annotation_argument_list],
+        );
+
+        let library_marker = token!(SurfaceTokenKind::ReservedSymbol, "@[", 12, 14);
+        let library_label_name = token!(SurfaceTokenKind::Identifier, "foo", 14, 17);
+        let library_close = token!(SurfaceTokenKind::ReservedSymbol, "]", 17, 18);
+        let annotation_label = builder.add_node(
+            SurfaceNodeKind::AnnotationLabel,
+            range(source_id, 14, 17),
+            vec![library_label_name],
+        );
+        let annotation_label_list = builder.add_node(
+            SurfaceNodeKind::AnnotationLabelList,
+            range(source_id, 14, 17),
+            vec![annotation_label],
+        );
+        let library_annotation = builder.add_node(
+            SurfaceNodeKind::LibraryAnnotation,
+            range(source_id, 12, 18),
+            vec![library_marker, annotation_label_list, library_close],
+        );
+        let library_wrapper = builder.add_node(
+            SurfaceNodeKind::Annotation,
+            range(source_id, 12, 18),
+            vec![library_annotation],
+        );
+
+        let proof_marker = token!(SurfaceTokenKind::AnnotationMarker, "@proof_hint", 20, 31);
+        let proof_open = token!(SurfaceTokenKind::ReservedSymbol, "(", 31, 32);
+        let proof_option_name = token!(SurfaceTokenKind::Identifier, "steps", 32, 37);
+        let proof_colon = token!(SurfaceTokenKind::ReservedSymbol, ":", 37, 38);
+        let proof_value = token!(SurfaceTokenKind::Numeral, "3", 38, 39);
+        let proof_close = token!(SurfaceTokenKind::ReservedSymbol, ")", 39, 40);
+        let proof_hint_option = builder.add_node(
+            SurfaceNodeKind::ProofHintOption,
+            range(source_id, 32, 39),
+            vec![proof_option_name, proof_colon, proof_value],
+        );
+        let proof_hint_options = builder.add_node(
+            SurfaceNodeKind::ProofHintOptionList,
+            range(source_id, 31, 40),
+            vec![proof_open, proof_hint_option, proof_close],
+        );
+        let proof_annotation = builder.add_node(
+            SurfaceNodeKind::Annotation,
+            range(source_id, 20, 40),
+            vec![proof_marker, proof_hint_options],
+        );
+
+        let diagnostic_marker = token!(SurfaceTokenKind::AnnotationMarker, "@show_type", 41, 51);
+        let diagnostic_open = token!(SurfaceTokenKind::ReservedSymbol, "(", 51, 52);
+        let diagnostic_argument = token!(SurfaceTokenKind::Identifier, "x", 52, 53);
+        let diagnostic_close = token!(SurfaceTokenKind::ReservedSymbol, ")", 53, 54);
+        let standalone_diagnostic = builder.add_node(
+            SurfaceNodeKind::StandaloneDiagnosticAnnotation,
+            range(source_id, 41, 54),
+            vec![
+                diagnostic_marker,
+                diagnostic_open,
+                diagnostic_argument,
+                diagnostic_close,
+            ],
+        );
+
+        let statement_annotation_marker =
+            token!(SurfaceTokenKind::AnnotationMarker, "@suppress", 55, 64);
+        let statement_annotation = builder.add_node(
+            SurfaceNodeKind::Annotation,
+            range(source_id, 55, 64),
+            vec![statement_annotation_marker],
+        );
+        let let_keyword = token!(SurfaceTokenKind::ReservedWord, "let", 65, 68);
+        let let_semicolon = token!(SurfaceTokenKind::ReservedSymbol, ";", 68, 69);
+        let let_statement = builder.add_node(
+            SurfaceNodeKind::LetStatement,
+            range(source_id, 65, 69),
+            vec![let_keyword, let_semicolon],
+        );
+        let annotated_statement = builder.add_node(
+            SurfaceNodeKind::AnnotatedStatement,
+            range(source_id, 55, 69),
+            vec![statement_annotation, let_statement],
+        );
+
+        let algorithm_annotation_marker =
+            token!(SurfaceTokenKind::AnnotationMarker, "@trace", 70, 76);
+        let algorithm_annotation = builder.add_node(
+            SurfaceNodeKind::Annotation,
+            range(source_id, 70, 76),
+            vec![algorithm_annotation_marker],
+        );
+        let return_keyword = token!(SurfaceTokenKind::ReservedWord, "return", 77, 83);
+        let return_semicolon = token!(SurfaceTokenKind::ReservedSymbol, ";", 83, 84);
+        let return_statement = builder.add_node(
+            SurfaceNodeKind::ReturnStatement,
+            range(source_id, 77, 84),
+            vec![return_keyword, return_semicolon],
+        );
+        let annotated_algorithm_statement = builder.add_node(
+            SurfaceNodeKind::AnnotatedAlgorithmStatement,
+            range(source_id, 70, 84),
+            vec![algorithm_annotation, return_statement],
+        );
+
+        let definition_annotation_marker =
+            token!(SurfaceTokenKind::AnnotationMarker, "@def", 85, 89);
+        let definition_annotation = builder.add_node(
+            SurfaceNodeKind::Annotation,
+            range(source_id, 85, 89),
+            vec![definition_annotation_marker],
+        );
+        let attr_keyword = token!(SurfaceTokenKind::ReservedWord, "attr", 90, 94);
+        let attribute_definition = builder.add_node(
+            SurfaceNodeKind::AttributeDefinition,
+            range(source_id, 90, 94),
+            vec![attr_keyword],
+        );
+        let annotated_definition_content = builder.add_node(
+            SurfaceNodeKind::AnnotatedDefinitionContent,
+            range(source_id, 85, 94),
+            vec![definition_annotation, attribute_definition],
+        );
+
+        let registration_annotation_marker =
+            token!(SurfaceTokenKind::AnnotationMarker, "@reg", 95, 99);
+        let registration_annotation = builder.add_node(
+            SurfaceNodeKind::Annotation,
+            range(source_id, 95, 99),
+            vec![registration_annotation_marker],
+        );
+        let reduce_keyword = token!(SurfaceTokenKind::ReservedWord, "reduce", 100, 106);
+        let reduction_registration = builder.add_node(
+            SurfaceNodeKind::ReductionRegistration,
+            range(source_id, 100, 106),
+            vec![reduce_keyword],
+        );
+        let annotated_registration_content = builder.add_node(
+            SurfaceNodeKind::AnnotatedRegistrationContent,
+            range(source_id, 95, 106),
+            vec![registration_annotation, reduction_registration],
+        );
+
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 106),
+            vec![
+                annotation,
+                library_wrapper,
+                proof_annotation,
+                standalone_diagnostic,
+                annotated_statement,
+                annotated_algorithm_statement,
+                annotated_definition_content,
+                annotated_registration_content,
+            ],
         );
         builder.finish(Some(root), None)
     }

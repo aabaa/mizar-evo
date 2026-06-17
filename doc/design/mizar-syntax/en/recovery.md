@@ -124,6 +124,17 @@ Parser tasks that start producing a currently unproduced recovery kind must
 update this table if they refine the producer condition, add a dedicated
 `SyntaxDiagnosticCode`, or require a more specific trivia ownership rule.
 
+### Incremental Reuse Boundary
+
+The S-018 audit treats recovery nodes as ordinary syntax-tree content for cache
+and LSP purposes. They are represented by `SyntaxKind::ErrorRecovery` nodes or
+recovered token leaves in the rowan-backed tree, while skipped source spans and
+optional owners stay in `SurfaceTrivia`. Localized edits may therefore reuse
+unchanged green subtrees that contain recovery markers, but diagnostics and
+code actions must revalidate by `SourceRange` and diagnostic code rather than
+by dense `SurfaceNodeId`. Out-of-range recovery context children remain a
+compatibility-view detail and must not be used as stable rowan subtree identity.
+
 ### Public Enum Compatibility
 
 `SyntaxRecoveryKind` and `SyntaxDiagnosticCode` promise future variants as
