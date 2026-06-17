@@ -1,0 +1,32 @@
+schema_version = 1
+id = "fail_parser_annotations_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.annotations"
+source = "fail_parser_annotations_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_annotation_surfaces"
+stable_detail_key = "parser.annotations.recovery"
+diagnostic_codes = [
+  "malformed_annotation",
+  "malformed_annotation",
+  "malformed_annotation",
+  "malformed_annotation",
+  "malformed_annotation",
+  "malformed_term_expression",
+  "malformed_annotation",
+  "malformed_annotation",
+  "malformed_annotation",
+  "malformed_annotation",
+  "malformed_annotation",
+  "malformed_annotation",
+  "malformed_annotation",
+  "malformed_annotation",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = [
+  "spec.en.21.annotations.parser",
+]
+notes = "Active task-35 parse-only recovery coverage for @latex non-string arguments, empty and comma-malformed generic annotation arguments, malformed @proof_hint option names and value forms, empty standalone diagnostic terms, malformed library annotation labels/trailing commas, and unmatched annotation delimiters."

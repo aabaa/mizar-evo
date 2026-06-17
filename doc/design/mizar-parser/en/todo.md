@@ -779,10 +779,16 @@ older numeric syntax task references appear to disagree, prefer
     - Deps: 33, `mizar-syntax` task 16 / S-016. Spec:
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 
-35. **Annotations.** [ ]
+35. **Annotations.** [x]
     - Statement-level annotations, `@[...]` library annotations, and
       string-literal annotation arguments (the string-required positions are
       already covered by the frontend lexing plan).
+    - Result: parser task 35 accepts parser-facing `@identifier` annotation
+      markers, represents library/fixed/generic annotation forms as concrete
+      syntax nodes, keeps standalone `@show_type` / `@eval` as diagnostic
+      annotation nodes, attaches annotation wrappers at module, definition,
+      registration, proof/algorithm, and claim theorem positions, and covers
+      malformed annotation recovery in active parse-only fixtures.
     - Deps: 34, `mizar-syntax` task 16 / S-016. Spec:
       [21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md).
 

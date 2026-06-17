@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_annotations_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.annotations"
+source = "pass_parser_annotations_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+tags = ["active_parse_only"]
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.21.annotations.parser",
+]
+notes = "Active task-35 parse-only coverage for library annotations, string-literal annotation arguments, fixed @latex/@proof_hint/@show_thesis/@show_resolution/@suppress forms, generic statement/declaration annotations, standalone @show_type/@eval diagnostics, and annotation hosts at top-level declaration, definition, ordinary proof statement, algorithm, registration, and claim positions."

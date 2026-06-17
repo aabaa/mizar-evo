@@ -1,0 +1,52 @@
+import parser.type_fixtures;
+
+@[module_note("top")]
+theorem AnnotatedTop: thesis
+proof
+  @custom(flag)
+  @show_thesis
+  thus thesis;
+end;
+
+@proof_hint(max_axioms: 10, solver: vampire)
+theorem HintedTop: thesis;
+
+@show_type(x)
+@eval(f(x))
+
+@definition_block("defs")
+definition
+  let x, y be set;
+
+  @latex("P(x)")
+  pred LatexDef: x R y means thesis;
+
+  @proof_hint(max_axioms: 32, timeout: 10, solver: vampire)
+  theorem DefinitionHint: thesis;
+
+  algorithm annotated()
+  do
+    @trace("entry", 1)
+    assert thesis;
+    @show_resolution
+    while thesis do
+      invariant thesis;
+      @suppress(checker)
+      break;
+      @show_type(x)
+      continue;
+    end;
+  end;
+end;
+
+@registration_block(reg)
+registration
+  @[registration_note("param")]
+  let x be set;
+end;
+
+@claim_block(claims)
+claim annotated do
+  @claim_note("init")
+  theorem ClaimAnnotated: thesis;
+end;

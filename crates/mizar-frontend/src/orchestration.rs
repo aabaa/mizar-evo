@@ -627,6 +627,7 @@ fn syntax_code_key(code: &mizar_syntax::SyntaxDiagnosticCode) -> Arc<str> {
             "malformed_formula_expression"
         }
         mizar_syntax::SyntaxDiagnosticCode::MalformedJustification => "malformed_justification",
+        mizar_syntax::SyntaxDiagnosticCode::MalformedAnnotation => "malformed_annotation",
         mizar_syntax::SyntaxDiagnosticCode::UnexpectedTopLevelToken => "unexpected_top_level_token",
         mizar_syntax::SyntaxDiagnosticCode::UnrecoverableInput => "unrecoverable_input",
         _ => "syntax_diagnostic",

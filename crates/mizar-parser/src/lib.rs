@@ -69,6 +69,7 @@ pub enum ParserTokenKind {
     Numeral,
     LexemeRun,
     UserSymbol,
+    AnnotationMarker,
     StringLiteral,
     ErrorRecovery,
     Unknown,

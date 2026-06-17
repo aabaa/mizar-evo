@@ -1,0 +1,32 @@
+definition
+  @latex(123)
+  pred BadLatex: x R y means thesis;
+
+  @proof_hint(max_axioms:, solver)
+  theorem BadHint: thesis;
+
+  algorithm bad()
+  do
+    @trace(, "late")
+    assert thesis;
+    @eval()
+    break;
+  end;
+end;
+
+@custom()
+theorem EmptyGeneric: thesis;
+
+@custom(a b)
+theorem MissingComma: thesis;
+
+@[tag,]
+theorem TrailingLabel: thesis;
+
+@proof_hint(foo: 1, max_axioms: vampire, solver: 10)
+theorem BadOptions: thesis;
+
+claim bad do
+  @[ , broken("x" ]
+  theorem BadClaim: thesis;
+end;

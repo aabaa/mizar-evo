@@ -36,6 +36,25 @@ struct ParsedTypeNode {
     recovery_nodes: Vec<SurfaceBuilderNodeId>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ParsedAnnotationPrefix {
+    children: Vec<SurfaceBuilderNodeId>,
+    next_position: usize,
+    recovery_nodes: Vec<SurfaceBuilderNodeId>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AnnotationArgumentRequirement {
+    Identifier,
+    StringLiteral,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ProofHintOptionValueKind {
+    NatLiteral,
+    SolverName,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum QuaTargetGrammar {
     TypeExpression,
@@ -132,9 +151,20 @@ impl Parser {
             let mut export_prelude_open = true;
             while position < self.request.tokens.len() {
                 if let Some(item_head) = self.item_head_position(position) {
-                    let direct_item_head = item_head == position;
+                    if item_head > position
+                        && (self.is_reserved_word_at(item_head, "import")
+                            || self.is_reserved_word_at(item_head, "export"))
+                    {
+                        import_prelude_open = false;
+                        export_prelude_open = false;
+                        let recovery = self.recover_unexpected_top_level_tokens(position);
+                        item_children.push(recovery.id);
+                        recovery_nodes.extend(recovery.recovery_nodes);
+                        position = recovery.next_position;
+                        continue;
+                    }
                     if self.is_reserved_word_at(item_head, "import") {
-                        if import_prelude_open && direct_item_head {
+                        if import_prelude_open {
                             let item = self.parse_import_item(position);
                             item_children.push(item.id);
                             recovery_nodes.extend(item.recovery_nodes);
@@ -151,7 +181,7 @@ impl Parser {
                     }
                     import_prelude_open = false;
                     if self.is_reserved_word_at(item_head, "export") {
-                        if export_prelude_open && direct_item_head {
+                        if export_prelude_open {
                             let item = self.parse_export_item(position);
                             item_children.push(item.id);
                             recovery_nodes.extend(item.recovery_nodes);
@@ -266,6 +296,26 @@ impl Parser {
     }
 
     fn parse_statement_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        if let Some(annotation) = self.parse_standalone_diagnostic_annotation_at(position) {
+            return Some(annotation);
+        }
+
+        let prefix = self.parse_leading_annotations_at(position);
+        if prefix.next_position > position {
+            let statement = self.parse_statement_core_at(prefix.next_position);
+            return Some(self.finish_annotated_type_node(
+                position,
+                prefix,
+                statement,
+                SurfaceNodeKind::AnnotatedStatement,
+                "expected statement after annotation",
+            ));
+        }
+
+        self.parse_statement_core_at(position)
+    }
+
+    fn parse_statement_core_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
         self.parse_then_statement_at(position)
             .or_else(|| self.parse_conclusion_statement_at(position))
             .or_else(|| self.parse_now_statement_at(position))
@@ -2452,6 +2502,666 @@ impl Parser {
         self.parse_required_statement_semicolon(cursor, children)
     }
 
+    fn parse_leading_annotations_at(&mut self, position: usize) -> ParsedAnnotationPrefix {
+        let mut children = Vec::new();
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position;
+
+        while let Some(annotation) = self.parse_annotation_at(cursor) {
+            let made_progress = annotation.next_position > cursor;
+            cursor = annotation.next_position;
+            children.push(annotation.id);
+            recovery_nodes.extend(annotation.recovery_nodes);
+            if !made_progress {
+                break;
+            }
+        }
+
+        ParsedAnnotationPrefix {
+            children,
+            next_position: cursor,
+            recovery_nodes,
+        }
+    }
+
+    fn parse_annotation_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        if self.is_reserved_symbol_at(position, "@[") {
+            return Some(self.parse_library_annotation_at(position));
+        }
+
+        let marker = self.annotation_marker_text_at(position)?.to_owned();
+        if is_standalone_diagnostic_annotation_marker(marker.as_str()) {
+            return None;
+        }
+
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        match marker.as_str() {
+            "@proof_hint" => {
+                if self.is_reserved_symbol_at(cursor, "(") {
+                    let options = self.parse_proof_hint_option_list_at(cursor);
+                    cursor = options.next_position;
+                    children.push(options.id);
+                    recovery_nodes.extend(options.recovery_nodes);
+                } else {
+                    self.diagnose_malformed_annotation(cursor, "expected `(` after `@proof_hint`");
+                    self.push_malformed_annotation(cursor, &mut children, &mut recovery_nodes);
+                }
+            }
+            "@latex" => {
+                if self.is_reserved_symbol_at(cursor, "(") {
+                    let arguments = self.parse_required_annotation_argument_list_at(
+                        cursor,
+                        AnnotationArgumentRequirement::StringLiteral,
+                        "expected string literal in `@latex` annotation",
+                    );
+                    cursor = arguments.next_position;
+                    children.push(arguments.id);
+                    recovery_nodes.extend(arguments.recovery_nodes);
+                } else {
+                    self.diagnose_malformed_annotation(cursor, "expected annotation argument list");
+                    self.push_missing_annotation_argument(
+                        cursor,
+                        &mut children,
+                        &mut recovery_nodes,
+                    );
+                }
+            }
+            "@suppress" => {
+                if self.is_reserved_symbol_at(cursor, "(") {
+                    let arguments = self.parse_required_annotation_argument_list_at(
+                        cursor,
+                        AnnotationArgumentRequirement::Identifier,
+                        "expected identifier in `@suppress` annotation",
+                    );
+                    cursor = arguments.next_position;
+                    children.push(arguments.id);
+                    recovery_nodes.extend(arguments.recovery_nodes);
+                } else {
+                    self.diagnose_malformed_annotation(cursor, "expected annotation argument list");
+                    self.push_missing_annotation_argument(
+                        cursor,
+                        &mut children,
+                        &mut recovery_nodes,
+                    );
+                }
+            }
+            "@show_thesis" | "@show_resolution" => {
+                if self.is_reserved_symbol_at(cursor, "(") {
+                    self.diagnose_malformed_annotation(
+                        cursor,
+                        "unexpected argument list for diagnostic annotation",
+                    );
+                    let arguments = self.parse_annotation_argument_list_at(cursor);
+                    cursor = arguments.next_position;
+                    children.push(arguments.id);
+                    recovery_nodes.extend(arguments.recovery_nodes);
+                }
+            }
+            _ => {
+                if self.is_reserved_symbol_at(cursor, "(") {
+                    let arguments = self.parse_annotation_argument_list_at(cursor);
+                    cursor = arguments.next_position;
+                    children.push(arguments.id);
+                    recovery_nodes.extend(arguments.recovery_nodes);
+                }
+            }
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::Annotation,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        Some(ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        })
+    }
+
+    fn parse_library_annotation_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut library_children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        let labels = self.parse_annotation_label_list_at(cursor);
+        cursor = labels.next_position;
+        library_children.push(labels.id);
+        recovery_nodes.extend(labels.recovery_nodes);
+
+        if self.is_reserved_symbol_at(cursor, "]") {
+            library_children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_unmatched_annotation_delimiter(position, cursor, "]");
+            let recovery = self.add_recovery_node(
+                SyntaxRecoveryKind::UnmatchedOpeningDelimiter,
+                self.zero_range_at(cursor),
+                Vec::new(),
+            );
+            library_children.push(recovery);
+            recovery_nodes.push(recovery);
+        }
+
+        let library = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::LibraryAnnotation,
+            range: self.covering_token_range(position, cursor),
+            children: library_children,
+        });
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::Annotation,
+            range: self.covering_token_range(position, cursor),
+            children: vec![library],
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_annotation_label_list_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = Vec::new();
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position;
+        let mut expecting_label = true;
+
+        while cursor < self.request.tokens.len() && !self.is_reserved_symbol_at(cursor, "]") {
+            if self.is_reserved_symbol_at(cursor, ",") {
+                if expecting_label {
+                    self.diagnose_malformed_annotation(cursor, "expected annotation label");
+                    self.push_malformed_annotation(cursor, &mut children, &mut recovery_nodes);
+                }
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+                expecting_label = true;
+                continue;
+            }
+
+            if !expecting_label {
+                self.diagnose_malformed_annotation(cursor, "expected `,` between labels");
+            }
+
+            let label = self.parse_annotation_label_at(cursor);
+            let made_progress = label.next_position > cursor;
+            cursor = label.next_position;
+            children.push(label.id);
+            recovery_nodes.extend(label.recovery_nodes);
+            expecting_label = false;
+            if !made_progress {
+                break;
+            }
+
+            if self.is_reserved_symbol_at(cursor, ",") {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+                expecting_label = true;
+            }
+        }
+
+        if expecting_label {
+            self.diagnose_malformed_annotation(cursor, "expected annotation label");
+            self.push_malformed_annotation(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        let range = if cursor > position {
+            self.covering_token_range(position, cursor)
+        } else {
+            self.zero_range_at(position)
+        };
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::AnnotationLabelList,
+            range,
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor,
+            recovery_nodes,
+        }
+    }
+
+    fn parse_annotation_label_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = Vec::new();
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position;
+
+        if self.is_identifier_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_annotation(cursor, "expected annotation label name");
+            self.push_malformed_annotation(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if self.is_reserved_symbol_at(cursor, "(") {
+            let arguments = self.parse_annotation_argument_list_at(cursor);
+            cursor = arguments.next_position;
+            children.push(arguments.id);
+            recovery_nodes.extend(arguments.recovery_nodes);
+        }
+
+        let range = if cursor > position {
+            self.covering_token_range(position, cursor)
+        } else {
+            self.zero_range_at(position)
+        };
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::AnnotationLabel,
+            range,
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_required_annotation_argument_list_at(
+        &mut self,
+        position: usize,
+        requirement: AnnotationArgumentRequirement,
+        missing_message: &'static str,
+    ) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        let argument =
+            self.parse_required_annotation_argument_at(cursor, requirement, missing_message);
+        let made_progress = argument.next_position > cursor;
+        cursor = argument.next_position;
+        children.push(argument.id);
+        recovery_nodes.extend(argument.recovery_nodes);
+
+        while made_progress && self.is_reserved_symbol_at(cursor, ",") {
+            self.diagnose_malformed_annotation(cursor, "unexpected extra annotation argument");
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            let extra = self.parse_annotation_argument_at(cursor);
+            let extra_progress = extra.next_position > cursor;
+            cursor = extra.next_position;
+            children.push(extra.id);
+            recovery_nodes.extend(extra.recovery_nodes);
+            if !extra_progress {
+                break;
+            }
+        }
+
+        if self.is_reserved_symbol_at(cursor, ")") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_unmatched_annotation_delimiter(position, cursor, ")");
+            let recovery = self.add_recovery_node(
+                SyntaxRecoveryKind::UnmatchedOpeningDelimiter,
+                self.zero_range_at(cursor),
+                Vec::new(),
+            );
+            children.push(recovery);
+            recovery_nodes.push(recovery);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::AnnotationArgumentList,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_required_annotation_argument_at(
+        &mut self,
+        position: usize,
+        requirement: AnnotationArgumentRequirement,
+        missing_message: &'static str,
+    ) -> ParsedTypeNode {
+        let mut children = Vec::new();
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position;
+
+        if self.annotation_argument_requirement_matches(position, requirement) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_annotation(cursor, missing_message);
+            self.push_missing_annotation_argument(cursor, &mut children, &mut recovery_nodes);
+            if self.is_annotation_argument_token_at(cursor) {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            }
+        }
+
+        let range = if cursor > position {
+            self.covering_token_range(position, cursor)
+        } else {
+            self.zero_range_at(position)
+        };
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::AnnotationArgument,
+            range,
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_annotation_argument_list_at(&mut self, position: usize) -> ParsedTypeNode {
+        self.parse_delimited_annotation_items_at(
+            position,
+            SurfaceNodeKind::AnnotationArgumentList,
+            "expected annotation argument",
+            Parser::parse_annotation_argument_at,
+        )
+    }
+
+    fn parse_proof_hint_option_list_at(&mut self, position: usize) -> ParsedTypeNode {
+        self.parse_delimited_annotation_items_at(
+            position,
+            SurfaceNodeKind::ProofHintOptionList,
+            "expected proof-hint option",
+            Parser::parse_proof_hint_option_at,
+        )
+    }
+
+    fn parse_delimited_annotation_items_at(
+        &mut self,
+        position: usize,
+        kind: SurfaceNodeKind,
+        missing_message: &'static str,
+        mut parse_item: impl FnMut(&mut Self, usize) -> ParsedTypeNode,
+    ) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+        let mut expecting_item = true;
+
+        while cursor < self.request.tokens.len()
+            && !self.is_annotation_argument_list_boundary_at(cursor)
+        {
+            if self.is_reserved_symbol_at(cursor, ",") {
+                if expecting_item {
+                    self.diagnose_malformed_annotation(cursor, missing_message);
+                    self.push_missing_annotation_argument(
+                        cursor,
+                        &mut children,
+                        &mut recovery_nodes,
+                    );
+                }
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+                expecting_item = true;
+                continue;
+            }
+
+            if !expecting_item {
+                self.diagnose_malformed_annotation(cursor, "expected `,` between annotation items");
+            }
+
+            let item = parse_item(self, cursor);
+            let made_progress = item.next_position > cursor;
+            cursor = item.next_position;
+            children.push(item.id);
+            recovery_nodes.extend(item.recovery_nodes);
+            expecting_item = false;
+            if !made_progress {
+                break;
+            }
+
+            if self.is_reserved_symbol_at(cursor, ",") {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+                expecting_item = true;
+            }
+        }
+
+        if expecting_item {
+            self.diagnose_malformed_annotation(cursor, missing_message);
+            self.push_missing_annotation_argument(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if self.is_reserved_symbol_at(cursor, ")") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_unmatched_annotation_delimiter(position, cursor, ")");
+            let recovery = self.add_recovery_node(
+                SyntaxRecoveryKind::UnmatchedOpeningDelimiter,
+                self.zero_range_at(cursor),
+                Vec::new(),
+            );
+            children.push(recovery);
+            recovery_nodes.push(recovery);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_annotation_argument_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = Vec::new();
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position;
+
+        if self.is_annotation_argument_token_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_annotation(cursor, "expected annotation argument");
+            self.push_missing_annotation_argument(cursor, &mut children, &mut recovery_nodes);
+            if cursor < self.request.tokens.len()
+                && !self.is_reserved_symbol_at(cursor, ",")
+                && !self.is_annotation_argument_list_boundary_at(cursor)
+            {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            }
+        }
+
+        let range = if cursor > position {
+            self.covering_token_range(position, cursor)
+        } else {
+            self.zero_range_at(position)
+        };
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::AnnotationArgument,
+            range,
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_proof_hint_option_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = Vec::new();
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position;
+
+        let value_kind = if self.is_identifier_at(cursor) {
+            let value_kind = match self.request.tokens[cursor].text.as_ref() {
+                "max_axioms" | "timeout" => Some(ProofHintOptionValueKind::NatLiteral),
+                "solver" => Some(ProofHintOptionValueKind::SolverName),
+                _ => {
+                    self.diagnose_malformed_annotation(cursor, "unknown proof-hint option name");
+                    None
+                }
+            };
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+            value_kind
+        } else {
+            self.diagnose_malformed_annotation(cursor, "expected proof-hint option name");
+            self.push_missing_annotation_argument(cursor, &mut children, &mut recovery_nodes);
+            None
+        };
+
+        if self.is_reserved_symbol_at(cursor, ":") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_annotation(cursor, "expected `:` in proof-hint option");
+        }
+
+        let value_matches = match value_kind {
+            Some(ProofHintOptionValueKind::NatLiteral) => self.is_numeral_at(cursor),
+            Some(ProofHintOptionValueKind::SolverName) => self.is_solver_name_at(cursor),
+            None => self.is_identifier_at(cursor) || self.is_numeral_at(cursor),
+        };
+        if value_matches {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            let message = match value_kind {
+                Some(ProofHintOptionValueKind::NatLiteral) => {
+                    "expected numeric proof-hint option value"
+                }
+                Some(ProofHintOptionValueKind::SolverName) => {
+                    "expected solver proof-hint option value"
+                }
+                None => "expected proof-hint option value",
+            };
+            self.diagnose_malformed_annotation(cursor, message);
+            self.push_missing_annotation_argument(cursor, &mut children, &mut recovery_nodes);
+            if cursor < self.request.tokens.len()
+                && !self.is_reserved_symbol_at(cursor, ",")
+                && !self.is_annotation_argument_list_boundary_at(cursor)
+            {
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+            }
+        }
+
+        let range = if cursor > position {
+            self.covering_token_range(position, cursor)
+        } else {
+            self.zero_range_at(position)
+        };
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::ProofHintOption,
+            range,
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_standalone_diagnostic_annotation_at(
+        &mut self,
+        position: usize,
+    ) -> Option<ParsedTypeNode> {
+        if !self.is_standalone_diagnostic_annotation_start_at(position) {
+            return None;
+        }
+
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        if self.is_reserved_symbol_at(cursor, "(") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_annotation(cursor, "expected `(` after diagnostic annotation");
+        }
+
+        if let Some(term) = self.parse_term_expression_at(cursor) {
+            cursor = term.next_position;
+            children.push(term.id);
+            recovery_nodes.extend(term.recovery_nodes);
+        } else {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "expected term expression in diagnostic annotation",
+            );
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if self.is_reserved_symbol_at(cursor, ")") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_unmatched_annotation_delimiter(position, cursor, ")");
+            let recovery = self.add_recovery_node(
+                SyntaxRecoveryKind::UnmatchedOpeningDelimiter,
+                self.zero_range_at(cursor),
+                Vec::new(),
+            );
+            children.push(recovery);
+            recovery_nodes.push(recovery);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::StandaloneDiagnosticAnnotation,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        Some(ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        })
+    }
+
+    fn finish_annotated_type_node(
+        &mut self,
+        position: usize,
+        prefix: ParsedAnnotationPrefix,
+        node: Option<ParsedTypeNode>,
+        kind: SurfaceNodeKind,
+        missing_message: &'static str,
+    ) -> ParsedTypeNode {
+        let mut children = prefix.children;
+        let mut recovery_nodes = prefix.recovery_nodes;
+        let mut cursor = prefix.next_position;
+
+        if let Some(node) = node {
+            cursor = node.next_position;
+            children.push(node.id);
+            recovery_nodes.extend(node.recovery_nodes);
+        } else {
+            self.diagnose_malformed_annotation(cursor, missing_message);
+            let recovery = self.add_missing_statement(cursor);
+            children.push(recovery);
+            recovery_nodes.push(recovery);
+        }
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
     fn parse_deferred_statement_placeholder_item(&mut self, position: usize) -> ParsedItem {
         let end_exclusive = self.deferred_statement_placeholder_end(position);
         self.emit_placeholder_item(position, end_exclusive)
@@ -2514,9 +3224,10 @@ impl Parser {
     }
 
     fn parse_export_item(&mut self, position: usize) -> ParsedItem {
-        let mut children = vec![self.token_node_ids[position]];
+        let head = position;
+        let mut children = vec![self.token_node_ids[head]];
         let mut recovery_nodes = Vec::new();
-        let mut cursor = position + 1;
+        let mut cursor = head + 1;
 
         if let Some(path) = self.parse_module_path_at(cursor) {
             children.push(path.id);
@@ -2590,8 +3301,14 @@ impl Parser {
         let marker_position = self
             .item_head_position(position)
             .expect("visible item parsing starts at an item boundary");
-        let mut children = self.token_node_ids[position..marker_position].to_vec();
-        let mut recovery_nodes = Vec::new();
+        let prefix = self.parse_leading_annotations_at(position);
+        let mut children = prefix.children;
+        let mut recovery_nodes = prefix.recovery_nodes;
+        children.extend(
+            self.token_node_ids[prefix.next_position..marker_position]
+                .iter()
+                .copied(),
+        );
         let marker = self.events.emit(SyntaxEvent::Node {
             kind: SurfaceNodeKind::VisibilityMarker,
             range: self.request.tokens[marker_position].span,
@@ -2653,8 +3370,14 @@ impl Parser {
         } else {
             SurfaceNodeKind::TheoremItem
         };
-        let mut children = self.token_node_ids[position..=role].to_vec();
-        let mut recovery_nodes = Vec::new();
+        let prefix = self.parse_leading_annotations_at(position);
+        let mut children = prefix.children;
+        let mut recovery_nodes = prefix.recovery_nodes;
+        children.extend(
+            self.token_node_ids[prefix.next_position..=role]
+                .iter()
+                .copied(),
+        );
         let mut cursor = role + 1;
 
         if self.is_identifier_at(cursor) {
@@ -2734,8 +3457,14 @@ impl Parser {
             return None;
         }
 
-        let mut children = self.token_node_ids[position..=head].to_vec();
-        let mut recovery_nodes = Vec::new();
+        let prefix = self.parse_leading_annotations_at(position);
+        let mut children = prefix.children;
+        let mut recovery_nodes = prefix.recovery_nodes;
+        children.extend(
+            self.token_node_ids[prefix.next_position..=head]
+                .iter()
+                .copied(),
+        );
         let mut cursor = head + 1;
         let template_definition = self.definition_block_is_template_shaped_at(cursor);
         let mut parsing_leading_template_parameters = template_definition;
@@ -2786,23 +3515,20 @@ impl Parser {
             return None;
         }
 
-        let mut children = self.token_node_ids[position..=head].to_vec();
-        let mut recovery_nodes = Vec::new();
+        let prefix = self.parse_leading_annotations_at(position);
+        let mut children = prefix.children;
+        let mut recovery_nodes = prefix.recovery_nodes;
+        children.extend(
+            self.token_node_ids[prefix.next_position..=head]
+                .iter()
+                .copied(),
+        );
         let mut cursor = head + 1;
 
         while cursor < self.request.tokens.len() && !self.is_end_keyword_at(cursor) {
             let content_start = self.skip_annotations(cursor);
             if self.is_registration_block_outer_content_boundary_at(content_start) {
                 break;
-            }
-            if content_start > cursor {
-                let annotations = self.emit_placeholder_item(cursor, content_start);
-                cursor = annotations.next_position;
-                children.push(annotations.id);
-                recovery_nodes.extend(annotations.recovery_nodes);
-                if self.is_end_keyword_at(cursor) {
-                    break;
-                }
             }
 
             let content = self
@@ -2840,6 +3566,26 @@ impl Parser {
     }
 
     fn parse_registration_content_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        if let Some(annotation) = self.parse_standalone_diagnostic_annotation_at(position) {
+            return Some(annotation);
+        }
+
+        let prefix = self.parse_leading_annotations_at(position);
+        if prefix.next_position > position {
+            let content = self.parse_registration_content_core_at(prefix.next_position);
+            return Some(self.finish_annotated_type_node(
+                position,
+                prefix,
+                content,
+                SurfaceNodeKind::AnnotatedRegistrationContent,
+                "expected registration content after annotation",
+            ));
+        }
+
+        self.parse_registration_content_core_at(position)
+    }
+
+    fn parse_registration_content_core_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
         if self.is_reserved_word_at(position, "let") {
             return Some(self.parse_registration_parameter_at(position));
         }
@@ -2859,8 +3605,14 @@ impl Parser {
             return None;
         }
 
-        let mut children = self.token_node_ids[position..=head].to_vec();
-        let mut recovery_nodes = Vec::new();
+        let prefix = self.parse_leading_annotations_at(position);
+        let mut children = prefix.children;
+        let mut recovery_nodes = prefix.recovery_nodes;
+        children.extend(
+            self.token_node_ids[prefix.next_position..=head]
+                .iter()
+                .copied(),
+        );
         let mut cursor = head + 1;
 
         if self.is_identifier_at(cursor) {
@@ -2879,24 +3631,6 @@ impl Parser {
         }
 
         while cursor < self.request.tokens.len() && !self.is_end_keyword_at(cursor) {
-            if self.skip_annotations(cursor) > cursor {
-                self.diagnose_malformed_formula_expression(
-                    cursor,
-                    "claim theorem annotations are parsed by parser task 35",
-                );
-                if let Some(recovery) = self.recover_malformed_claim_annotation_tail(cursor) {
-                    cursor = recovery.next_position;
-                    children.push(recovery.id);
-                    recovery_nodes.extend(recovery.recovery_nodes);
-                    if self.is_semicolon_at(cursor) {
-                        children.push(self.token_node_ids[cursor]);
-                        cursor += 1;
-                    }
-                    continue;
-                }
-                break;
-            }
-
             if let Some(item) = self.parse_theorem_item(cursor) {
                 let made_progress = item.next_position > cursor;
                 cursor = item.next_position;
@@ -3556,6 +4290,26 @@ impl Parser {
     }
 
     fn parse_definition_content_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        if let Some(annotation) = self.parse_standalone_diagnostic_annotation_at(position) {
+            return Some(annotation);
+        }
+
+        let prefix = self.parse_leading_annotations_at(position);
+        if prefix.next_position > position {
+            let content = self.parse_definition_content_core_at(prefix.next_position);
+            return Some(self.finish_annotated_type_node(
+                position,
+                prefix,
+                content,
+                SurfaceNodeKind::AnnotatedDefinitionContent,
+                "expected definition content after annotation",
+            ));
+        }
+
+        self.parse_definition_content_core_at(position)
+    }
+
+    fn parse_definition_content_core_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
         if self.definition_parameter_starts_template_ambiguous_at(position) {
             return Some(self.parse_template_parameter_at(position));
         }
@@ -5172,6 +5926,30 @@ impl Parser {
     }
 
     fn parse_algorithm_statement_at(
+        &mut self,
+        position: usize,
+        boundary: AlgorithmStatementListBoundary,
+    ) -> Option<ParsedTypeNode> {
+        if let Some(annotation) = self.parse_standalone_diagnostic_annotation_at(position) {
+            return Some(annotation);
+        }
+
+        let prefix = self.parse_leading_annotations_at(position);
+        if prefix.next_position > position {
+            let statement = self.parse_algorithm_statement_core_at(prefix.next_position, boundary);
+            return Some(self.finish_annotated_type_node(
+                position,
+                prefix,
+                statement,
+                SurfaceNodeKind::AnnotatedAlgorithmStatement,
+                "expected algorithm statement after annotation",
+            ));
+        }
+
+        self.parse_algorithm_statement_core_at(position, boundary)
+    }
+
+    fn parse_algorithm_statement_core_at(
         &mut self,
         position: usize,
         boundary: AlgorithmStatementListBoundary,
@@ -7468,8 +8246,14 @@ impl Parser {
 
     fn parse_notation_alias_at(&mut self, position: usize) -> ParsedTypeNode {
         let head = self.item_head_position(position).unwrap_or(position);
-        let mut children = self.token_node_ids[position..=head].to_vec();
-        let mut recovery_nodes = Vec::new();
+        let prefix = self.parse_leading_annotations_at(position);
+        let mut children = prefix.children;
+        let mut recovery_nodes = prefix.recovery_nodes;
+        children.extend(
+            self.token_node_ids[prefix.next_position..=head]
+                .iter()
+                .copied(),
+        );
         let mut cursor = head + 1;
 
         let alternate = self.parse_notation_pattern_at(cursor, true);
@@ -7916,8 +8700,14 @@ impl Parser {
         let head = self
             .item_head_position(position)
             .expect("reserve parsing starts at an item boundary");
-        let mut children = self.token_node_ids[position..=head].to_vec();
-        let mut recovery_nodes = Vec::new();
+        let prefix = self.parse_leading_annotations_at(position);
+        let mut children = prefix.children;
+        let mut recovery_nodes = prefix.recovery_nodes;
+        children.extend(
+            self.token_node_ids[prefix.next_position..=head]
+                .iter()
+                .copied(),
+        );
         let mut cursor = head + 1;
 
         if let Some(segment) = self.parse_reserve_segment(cursor) {
@@ -8054,9 +8844,10 @@ impl Parser {
     }
 
     fn parse_import_item(&mut self, position: usize) -> ParsedItem {
-        let mut children = vec![self.token_node_ids[position]];
+        let head = position;
+        let mut children = vec![self.token_node_ids[head]];
         let mut recovery_nodes = Vec::new();
-        let mut cursor = position + 1;
+        let mut cursor = head + 1;
 
         if let Some(decl) = self.parse_import_decl(cursor) {
             children.push(decl.id);
@@ -11324,8 +12115,14 @@ impl Parser {
             return None;
         }
 
-        let mut children = self.token_node_ids[position..=colon].to_vec();
-        let mut recovery_nodes = Vec::new();
+        let prefix = self.parse_leading_annotations_at(position);
+        let mut children = prefix.children;
+        let mut recovery_nodes = prefix.recovery_nodes;
+        children.extend(
+            self.token_node_ids[prefix.next_position..=colon]
+                .iter()
+                .copied(),
+        );
         let formula = self.parse_formula_expression_at(formula_start)?;
         children.push(formula.id);
         recovery_nodes.extend(formula.recovery_nodes);
@@ -11600,6 +12397,22 @@ impl Parser {
         );
     }
 
+    fn diagnose_malformed_annotation(
+        &mut self,
+        position: usize,
+        message: impl Into<std::sync::Arc<str>>,
+    ) {
+        let tokens = &self.request.tokens;
+        let cursor = crate::cursor::TokenCursor::at(self.request.source_id, tokens, position);
+        let primary = cursor
+            .current()
+            .map_or(cursor.eof_range(), |token| token.span);
+        self.diagnostics.push(
+            SyntaxDiagnostic::new(SyntaxDiagnosticCode::MalformedAnnotation, message, primary)
+                .with_recovery_note("repair the annotation syntax before continuing"),
+        );
+    }
+
     fn diagnose_unmatched_type_argument_opener(&mut self, opener: usize, position: usize) {
         let tokens = &self.request.tokens;
         let cursor = crate::cursor::TokenCursor::at(self.request.source_id, tokens, position);
@@ -11687,6 +12500,29 @@ impl Parser {
         );
     }
 
+    fn diagnose_unmatched_annotation_delimiter(
+        &mut self,
+        opener: usize,
+        position: usize,
+        close_symbol: &'static str,
+    ) {
+        let tokens = &self.request.tokens;
+        let cursor = crate::cursor::TokenCursor::at(self.request.source_id, tokens, position);
+        let primary = cursor
+            .current()
+            .map_or(cursor.eof_range(), |token| token.span);
+        let opener_span = self.request.tokens[opener].span;
+        self.diagnostics.push(
+            SyntaxDiagnostic::new(
+                SyntaxDiagnosticCode::MalformedAnnotation,
+                format!("expected `{close_symbol}` to close annotation delimiter"),
+                primary,
+            )
+            .with_secondary([SourceAnchor::Range(opener_span)])
+            .with_recovery_note(format!("insert `{close_symbol}` before continuing")),
+        );
+    }
+
     fn add_missing_type_expression(&mut self, position: usize) -> SurfaceBuilderNodeId {
         self.add_recovery_node(
             SyntaxRecoveryKind::MissingTypeExpression,
@@ -11750,6 +12586,22 @@ impl Parser {
         )
     }
 
+    fn add_missing_annotation_argument(&mut self, position: usize) -> SurfaceBuilderNodeId {
+        self.add_recovery_node(
+            SyntaxRecoveryKind::MissingAnnotationArgument,
+            self.zero_range_at(position),
+            Vec::new(),
+        )
+    }
+
+    fn add_malformed_annotation(&mut self, position: usize) -> SurfaceBuilderNodeId {
+        self.add_recovery_node(
+            SyntaxRecoveryKind::MalformedAnnotation,
+            self.zero_range_at(position),
+            Vec::new(),
+        )
+    }
+
     fn push_missing_term(
         &mut self,
         position: usize,
@@ -11768,6 +12620,28 @@ impl Parser {
         recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
     ) {
         let recovery = self.add_missing_proof_step(position);
+        children.push(recovery);
+        recovery_nodes.push(recovery);
+    }
+
+    fn push_missing_annotation_argument(
+        &mut self,
+        position: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) {
+        let recovery = self.add_missing_annotation_argument(position);
+        children.push(recovery);
+        recovery_nodes.push(recovery);
+    }
+
+    fn push_malformed_annotation(
+        &mut self,
+        position: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) {
+        let recovery = self.add_malformed_annotation(position);
         children.push(recovery);
         recovery_nodes.push(recovery);
     }
@@ -12270,56 +13144,6 @@ impl Parser {
         self.emit_malformed_tail_recovery(position, cursor)
     }
 
-    fn recover_malformed_claim_annotation_tail(&mut self, position: usize) -> Option<ParsedItem> {
-        let deferred_head = self.skip_annotations(position);
-        let mut cursor = position;
-        let mut paren_depth = 0_usize;
-        let mut bracket_depth = 0_usize;
-        let mut brace_depth = 0_usize;
-
-        while cursor < self.request.tokens.len() {
-            let top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
-            let deferred_theorem_head =
-                cursor == deferred_head && self.theorem_role_position_at(cursor).is_some();
-            if top_level
-                && !deferred_theorem_head
-                && (self.is_semicolon_at(cursor)
-                    || self.is_end_keyword_at(cursor)
-                    || (cursor > position && self.is_item_start_at(cursor)))
-            {
-                break;
-            }
-
-            if self.is_reserved_symbol_at(cursor, "(") {
-                paren_depth += 1;
-            } else if self.is_reserved_symbol_at(cursor, ")") {
-                if paren_depth == 0 {
-                    break;
-                }
-                paren_depth -= 1;
-            } else if self.is_reserved_symbol_at(cursor, "@[")
-                || self.is_reserved_symbol_at(cursor, "[")
-            {
-                bracket_depth += 1;
-            } else if self.is_reserved_symbol_at(cursor, "]") {
-                if bracket_depth == 0 {
-                    break;
-                }
-                bracket_depth -= 1;
-            } else if self.is_reserved_symbol_at(cursor, "{") {
-                brace_depth += 1;
-            } else if self.is_reserved_symbol_at(cursor, "}") {
-                if brace_depth == 0 {
-                    break;
-                }
-                brace_depth -= 1;
-            }
-            cursor += 1;
-        }
-
-        self.emit_malformed_tail_recovery(position, cursor)
-    }
-
     fn recover_malformed_registration_content_tail(
         &mut self,
         position: usize,
@@ -12718,6 +13542,17 @@ impl Parser {
     }
 
     fn is_statement_start_at(&self, position: usize) -> bool {
+        if self.is_standalone_diagnostic_annotation_start_at(position) {
+            return true;
+        }
+        let head = self.skip_annotations(position);
+        if head > position {
+            return self.is_statement_core_start_at(head);
+        }
+        self.is_statement_core_start_at(position)
+    }
+
+    fn is_statement_core_start_at(&self, position: usize) -> bool {
         self.is_reserved_word_at(position, "then")
             || self.is_conclusion_keyword_at(position)
             || self.is_now_statement_start_at(position)
@@ -13186,6 +14021,61 @@ impl Parser {
             .is_some_and(|token| token.kind == ParserTokenKind::Numeral)
     }
 
+    fn is_string_literal_at(&self, position: usize) -> bool {
+        self.request
+            .tokens
+            .get(position)
+            .is_some_and(|token| token.kind == ParserTokenKind::StringLiteral)
+    }
+
+    fn annotation_marker_text_at(&self, position: usize) -> Option<&str> {
+        self.request.tokens.get(position).and_then(|token| {
+            (token.kind == ParserTokenKind::AnnotationMarker).then_some(token.text.as_ref())
+        })
+    }
+
+    fn is_standalone_diagnostic_annotation_start_at(&self, position: usize) -> bool {
+        self.annotation_marker_text_at(position)
+            .is_some_and(is_standalone_diagnostic_annotation_marker)
+    }
+
+    fn is_annotation_argument_token_at(&self, position: usize) -> bool {
+        self.is_identifier_at(position)
+            || self.is_numeral_at(position)
+            || self.is_string_literal_at(position)
+    }
+
+    fn is_annotation_argument_list_boundary_at(&self, position: usize) -> bool {
+        position >= self.request.tokens.len()
+            || self.is_reserved_symbol_at(position, ")")
+            || self.is_reserved_symbol_at(position, "]")
+            || self.is_semicolon_at(position)
+            || self.is_end_keyword_at(position)
+    }
+
+    fn annotation_argument_requirement_matches(
+        &self,
+        position: usize,
+        requirement: AnnotationArgumentRequirement,
+    ) -> bool {
+        match requirement {
+            AnnotationArgumentRequirement::Identifier => self.is_identifier_at(position),
+            AnnotationArgumentRequirement::StringLiteral => self.is_string_literal_at(position),
+        }
+    }
+
+    fn is_solver_name_at(&self, position: usize) -> bool {
+        self.request.tokens.get(position).is_some_and(|token| {
+            matches!(
+                token.kind,
+                ParserTokenKind::Identifier | ParserTokenKind::ReservedWord
+            ) && matches!(
+                token.text.as_ref(),
+                "vampire" | "e" | "cvc5" | "z3" | "auto"
+            )
+        })
+    }
+
     fn is_computation_option_keyword_at(&self, position: usize) -> bool {
         self.request.tokens.get(position).is_some_and(|token| {
             matches!(
@@ -13488,6 +14378,17 @@ impl Parser {
     }
 
     fn is_registration_content_start_at(&self, position: usize) -> bool {
+        if self.is_standalone_diagnostic_annotation_start_at(position) {
+            return true;
+        }
+        let head = self.skip_annotations(position);
+        if head > position {
+            return self.is_registration_content_core_start_at(head);
+        }
+        self.is_registration_content_core_start_at(position)
+    }
+
+    fn is_registration_content_core_start_at(&self, position: usize) -> bool {
         self.is_reserved_word_at(position, "let") || self.is_registration_item_start_at(position)
     }
 
@@ -13565,6 +14466,17 @@ impl Parser {
     }
 
     fn is_algorithm_statement_start_at(&self, position: usize) -> bool {
+        if self.is_standalone_diagnostic_annotation_start_at(position) {
+            return true;
+        }
+        let head = self.skip_annotations(position);
+        if head > position {
+            return self.is_algorithm_statement_core_start_at(head);
+        }
+        self.is_algorithm_statement_core_start_at(position)
+    }
+
+    fn is_algorithm_statement_core_start_at(&self, position: usize) -> bool {
         self.is_reserved_word_at(position, "if")
             || self.is_reserved_word_at(position, "while")
             || self.is_reserved_word_at(position, "for")
@@ -13685,6 +14597,17 @@ impl Parser {
     }
 
     fn is_definition_content_start_at(&self, position: usize) -> bool {
+        if self.is_standalone_diagnostic_annotation_start_at(position) {
+            return true;
+        }
+        let head = self.skip_annotations(position);
+        if head > position {
+            return self.is_definition_content_core_start_at(head);
+        }
+        self.is_definition_content_core_start_at(position)
+    }
+
+    fn is_definition_content_core_start_at(&self, position: usize) -> bool {
         if self.definition_parameter_starts_template_ambiguous_at(position)
             || self.is_reserved_word_at(position, "let")
             || self.is_reserved_word_at(position, "assume")
@@ -15297,22 +16220,42 @@ impl Parser {
     }
 
     fn skip_annotations(&self, mut position: usize) -> usize {
-        while let Some(next) = self.after_library_annotation(position) {
+        while let Some(next) = self.after_annotation(position) {
             position = next;
         }
         position
     }
 
-    fn after_library_annotation(&self, position: usize) -> Option<usize> {
-        if !self.is_reserved_symbol_at(position, "@[") {
+    fn after_annotation(&self, position: usize) -> Option<usize> {
+        if self.is_reserved_symbol_at(position, "@[") {
+            return self.after_balanced_annotation_delimiter(position, "@[", "]");
+        }
+
+        let marker = self.annotation_marker_text_at(position)?;
+        if is_standalone_diagnostic_annotation_marker(marker) {
             return None;
         }
+
+        let cursor = position + 1;
+        if self.is_reserved_symbol_at(cursor, "(") {
+            self.after_balanced_annotation_delimiter(cursor, "(", ")")
+        } else {
+            Some(cursor)
+        }
+    }
+
+    fn after_balanced_annotation_delimiter(
+        &self,
+        position: usize,
+        open: &str,
+        close: &str,
+    ) -> Option<usize> {
         let mut cursor = position + 1;
         let mut depth = 1_usize;
         while cursor < self.request.tokens.len() {
-            if self.is_reserved_symbol_at(cursor, "@[") {
+            if self.is_reserved_symbol_at(cursor, open) {
                 depth += 1;
-            } else if self.is_reserved_symbol_at(cursor, "]") {
+            } else if self.is_reserved_symbol_at(cursor, close) {
                 depth -= 1;
                 if depth == 0 {
                     return Some(cursor + 1);
@@ -15493,6 +16436,10 @@ fn is_block_like_top_level_start(token: &ParserToken) -> bool {
 
 fn is_reserved_symbol_token(token: &ParserToken, spelling: &str) -> bool {
     token.kind == ParserTokenKind::ReservedSymbol && token.text.as_ref() == spelling
+}
+
+fn is_standalone_diagnostic_annotation_marker(marker: &str) -> bool {
+    matches!(marker, "@show_type" | "@eval")
 }
 
 fn infix_binding_powers(operator: &OperatorFixityEntry) -> (u32, u32) {
@@ -16381,26 +17328,20 @@ mod tests {
         let ast = output.ast.expect("annotated visible item should parse");
         let visible = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::VisibleItem));
         assert_eq!(visible.range, expected_range);
-        assert_eq!(visible.children.len(), 5);
+        assert_eq!(visible.children.len(), 3);
+        let annotation = ast.node(visible.children[0]).unwrap();
+        assert!(matches!(annotation.kind, SurfaceNodeKind::Annotation));
         assert_eq!(
-            ast.node(visible.children[0]).unwrap().token_text(),
-            Some("@[")
+            subtree_token_texts(&ast, annotation),
+            vec!["@[".to_owned(), "label".to_owned(), "]".to_owned()]
         );
-        assert_eq!(
-            ast.node(visible.children[1]).unwrap().token_text(),
-            Some("label")
-        );
-        assert_eq!(
-            ast.node(visible.children[2]).unwrap().token_text(),
-            Some("]")
-        );
-        let marker = ast.node(visible.children[3]).unwrap();
+        let marker = ast.node(visible.children[1]).unwrap();
         assert!(matches!(marker.kind, SurfaceNodeKind::VisibilityMarker));
         assert_eq!(
             ast.node(marker.children[0]).unwrap().token_text(),
             Some("private")
         );
-        let item = ast.node(visible.children[4]).unwrap();
+        let item = ast.node(visible.children[2]).unwrap();
         assert!(matches!(item.kind, SurfaceNodeKind::PlaceholderItem));
         assert_eq!(item.range, target_range);
     }
@@ -17311,6 +18252,234 @@ mod tests {
             )),
             1
         );
+    }
+
+    #[test]
+    fn parser_emits_task35_annotation_nodes_and_wrappers() {
+        let source_id = source_id(229);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("@[", ParserTokenKind::ReservedSymbol),
+                    ("module_note", ParserTokenKind::Identifier),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("top", ParserTokenKind::Identifier),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("]", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("AnnotatedTop", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("proof", ParserTokenKind::ReservedWord),
+                    ("@custom", ParserTokenKind::AnnotationMarker),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("flag", ParserTokenKind::Identifier),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("@show_thesis", ParserTokenKind::AnnotationMarker),
+                    ("thus", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("@show_type", ParserTokenKind::AnnotationMarker),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("@definition_block", ParserTokenKind::AnnotationMarker),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("defs", ParserTokenKind::Identifier),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("definition", ParserTokenKind::ReservedWord),
+                    ("@latex", ParserTokenKind::AnnotationMarker),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("\"P\"", ParserTokenKind::StringLiteral),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("LatexDef", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("@proof_hint", ParserTokenKind::AnnotationMarker),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("max_axioms", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("10", ParserTokenKind::Numeral),
+                    (",", ParserTokenKind::ReservedSymbol),
+                    ("solver", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("vampire", ParserTokenKind::Identifier),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("Hinted", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("@algo_note", ParserTokenKind::AnnotationMarker),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("flag", ParserTokenKind::Identifier),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("algorithm", ParserTokenKind::ReservedWord),
+                    ("annotated", ParserTokenKind::Identifier),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("@trace", ParserTokenKind::AnnotationMarker),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("\"entry\"", ParserTokenKind::StringLiteral),
+                    (",", ParserTokenKind::ReservedSymbol),
+                    ("1", ParserTokenKind::Numeral),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("assert", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("@registration_block", ParserTokenKind::AnnotationMarker),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("regs", ParserTokenKind::Identifier),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("registration", ParserTokenKind::ReservedWord),
+                    ("@[", ParserTokenKind::ReservedSymbol),
+                    ("registration_note", ParserTokenKind::Identifier),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("param", ParserTokenKind::Identifier),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("]", ParserTokenKind::ReservedSymbol),
+                    ("let", ParserTokenKind::ReservedWord),
+                    ("x", ParserTokenKind::Identifier),
+                    ("be", ParserTokenKind::ReservedWord),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("@claim_block", ParserTokenKind::AnnotationMarker),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("claims", ParserTokenKind::Identifier),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("claim", ParserTokenKind::ReservedWord),
+                    ("annotated", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("@claim_note", ParserTokenKind::AnnotationMarker),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("init", ParserTokenKind::Identifier),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("theorem", ParserTokenKind::ReservedWord),
+                    ("ClaimAnnotated", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "task-35 annotation surfaces should parse without diagnostics: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("task-35 annotation surfaces should keep an AST");
+        assert!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::Annotation)) >= 8,
+            "annotation prefixes should be preserved as concrete nodes"
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::LibraryAnnotation
+            )),
+            2
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AnnotationLabelList
+            )),
+            2
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AnnotationLabel
+            )),
+            2
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AnnotationArgumentList
+            )) >= 6
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AnnotationArgument
+            )) >= 6
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::StandaloneDiagnosticAnnotation
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ProofHintOptionList
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ProofHintOption
+            )),
+            2
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AnnotatedStatement
+            )),
+            1,
+            "ordinary proof statements should accept annotation prefixes"
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AnnotatedAlgorithmStatement
+            )),
+            1
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AnnotatedDefinitionContent
+            )) >= 3
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AnnotatedRegistrationContent
+            )),
+            1
+        );
+        assert!(ast.nodes().iter().any(|node| {
+            matches!(node.kind, SurfaceNodeKind::AnnotatedStatement)
+                && subtree_token_texts(&ast, node)
+                    .iter()
+                    .any(|text| text == "@show_thesis")
+        }));
     }
 
     #[test]
@@ -20625,6 +21794,21 @@ mod tests {
                     ("by", ParserTokenKind::ReservedWord),
                     ("Ref", ParserTokenKind::Identifier),
                     (";", ParserTokenKind::ReservedSymbol),
+                    ("@custom", ParserTokenKind::AnnotationMarker),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("flag", ParserTokenKind::Identifier),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("cluster", ParserTokenKind::ReservedWord),
+                    ("Annotated", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("non", ParserTokenKind::ReservedWord),
+                    ("empty", ParserTokenKind::UserSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("existence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
                     ("cluster", ParserTokenKind::ReservedWord),
                     ("E", ParserTokenKind::Identifier),
                     (":", ParserTokenKind::ReservedSymbol),
@@ -20807,7 +21991,15 @@ mod tests {
                 kind,
                 SurfaceNodeKind::ExistentialRegistration
             )),
-            2
+            3
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AnnotatedRegistrationContent
+            )),
+            1,
+            "registration items should accept task-35 annotation wrappers"
         );
         assert_eq!(
             count_nodes(&ast, |kind| matches!(
@@ -25736,8 +26928,8 @@ mod tests {
         );
         assert_eq!(
             count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::TheoremItem)),
-            0,
-            "claim-local theorem annotations are deferred and should not parse as theorem nodes"
+            1,
+            "task-35 claim-local theorem annotations should preserve theorem nodes"
         );
         assert!(
             count_nodes(&ast, |kind| matches!(

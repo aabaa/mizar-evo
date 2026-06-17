@@ -71,6 +71,7 @@ pub enum SyntaxDiagnosticCode {
     MalformedTermExpression,
     MalformedFormulaExpression,
     MalformedJustification,
+    MalformedAnnotation,
     UnexpectedTopLevelToken,
     UnrecoverableInput,
 }

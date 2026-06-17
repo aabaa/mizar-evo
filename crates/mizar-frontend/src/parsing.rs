@@ -298,6 +298,7 @@ fn parser_token_kind(kind: TokenKind) -> mizar_parser::ParserTokenKind {
         TokenKind::Numeral => mizar_parser::ParserTokenKind::Numeral,
         TokenKind::LexemeRun => mizar_parser::ParserTokenKind::LexemeRun,
         TokenKind::UserSymbol => mizar_parser::ParserTokenKind::UserSymbol,
+        TokenKind::AnnotationMarker => mizar_parser::ParserTokenKind::AnnotationMarker,
         TokenKind::StringLiteral => mizar_parser::ParserTokenKind::StringLiteral,
         TokenKind::ErrorRecovery => mizar_parser::ParserTokenKind::ErrorRecovery,
         _ => mizar_parser::ParserTokenKind::Unknown,

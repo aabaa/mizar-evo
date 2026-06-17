@@ -7,8 +7,9 @@ S-013 statement nodes, task-22 theorem/proof items, and the task-23 through
 task-30 definition-block / attribute / predicate / functor / mode /
 redefinition / notation-alias / property / structure / registration increments,
 task-31 template surfaces, task-32 basic algorithm/claim surfaces, task-33
-algorithm control-flow surfaces, and task-34 algorithm verification clauses
-are implemented; annotations and package-oriented item grammars remain planned.
+algorithm control-flow surfaces, task-34 algorithm verification clauses, and
+task-35 annotation surfaces are implemented; package-oriented item grammars
+remain planned.
 
 ## Purpose
 
@@ -103,13 +104,16 @@ and notation starts `infix_operator`, `prefix_operator`, `postfix_operator`,
 the import prelude is still open; later `import` tokens are recovered as
 misplaced top-level input.
 
-Consecutive library annotation prefixes beginning with `@[` are retained in the
-same placeholder when they are followed by a recognized annotated-declaration
-start. They do not make `import` or `export` eligible for annotation; an
-annotation prefix before an import/export prelude item is recovered as
-unexpected top-level input together with that statement. Malformed annotation
-parsing and concrete annotation nodes remain deferred to the annotation grammar
-tasks. Semicolon-style placeholders scan through nested `proof ... end` and
+Consecutive annotation prefixes beginning with `@[` or `@identifier` are
+parser-visible after task 35. Eligible represented declaration and top-level
+block starts, ordinary statement, algorithm-statement, definition-content,
+registration-content, and claim-local item starts own concrete `Annotation` /
+`LibraryAnnotation` children instead of placeholder-only prefix tokens.
+Import/export prelude items remain outside `annotated_declaration` and do not
+accept annotation prefixes.
+Malformed annotation argument, option, and delimiter surfaces recover with
+`MalformedAnnotation` while preserving the following eligible item when
+possible. Semicolon-style placeholders scan through nested `proof ... end` and
 contextual algorithm/proof blocks, so semicolons inside a proof body do not
 split a theorem or lemma item. Contextual formula keywords such as
 expression-level `if` and `otherwise` do not affect placeholder block depth.
@@ -200,8 +204,8 @@ nested `SkippedToken` recovery node plus skipped-range trivia inside the
 Top-level visibility is represented only for the Chapter 12 forms that accept
 it: theorem items and notation declarations. The parser emits a `VisibleItem`
 wrapper whose children are source ordered: any already-skipped library
-annotation prefix tokens, one `VisibilityMarker` wrapping the `private` or
-`public` token, and the following target item node. Represented theorem and
+parsed `Annotation` prefix nodes, one `VisibilityMarker` wrapping the `private`
+or `public` token, and the following target item node. Represented theorem and
 lemma targets use concrete `TheoremItem` / `LemmaItem` nodes; notation targets
 and short legacy theorem fragments remain `PlaceholderItem` targets. Task 31
 parses theorem payloads with template predicate arguments as concrete theorem
@@ -808,9 +812,9 @@ equating           ::= identifier "=" term_expression ;
 `StatementItem` is a parser-owned temporary item host so active parse-only
 fixtures can exercise module-level statement fragments. Task 22 proof blocks
 own the same concrete statement nodes directly without the `StatementItem`
-wrapper. Statement-level annotations are
-not parsed in this task; annotated statement sources remain legacy placeholder
-or recovery input until task 35 / S-016. The canonical Chapter 4 specification
+wrapper. Task 35 adds `AnnotatedStatement` wrappers around ordinary statement
+positions when attachable annotation prefixes are present. The canonical
+Chapter 4 specification
 classifies `reserve` as a top-level module declaration only, so task 16 treats
 `reserve` coverage as a non-regression of the existing task-8 `ReserveItem`
 path and does not add a block-local `ReserveStatement` node.
@@ -1326,14 +1330,13 @@ correctness_condition  ::= ( "existence" | "uniqueness" | "coherence"
 
 `DefinitionBlockItem` owns the `definition` token, source-ordered definition
 content nodes, the closing `end` token or `MissingEnd`, and the final semicolon
-when present. Supported concrete content is intentionally narrow in this first
-increment: ordinary `let` parameters with `definition_qualified_vars`,
-assumption statements, correctness-condition clauses, `attr` definitions, and
-theorem/lemma items including visibility-wrapped theorem targets. Template-like
-parameters such as `let T be type;`, predicate/functor/mode definitions,
-structures, registrations, redefinitions, properties, notation aliases, and
-annotations remain source-preserving `PlaceholderItem` children until their
-paired tasks land.
+when present. Supported concrete content has grown across the paired parser
+tasks: ordinary `let` parameters with `definition_qualified_vars`, assumption
+statements, correctness-condition clauses, attribute/predicate/functor/mode
+definitions, redefinitions, property clauses, structures, registrations,
+notation aliases, theorem/lemma items, visibility-wrapped theorem targets, and
+task-35 annotation wrappers. Template-like parameters such as `let T be type;`
+use the task-31 template surface where applicable.
 
 `DefinitionParameter` reuses `QualifiedVariableSegment`, `ConditionList`,
 `JustificationClause`, and `ProofBlock` where the specification permits them.
@@ -1945,8 +1948,8 @@ missing antecedents, unsupported functorial payloads, argument-bearing
 registration adjectives, missing reducibility justifications, missing
 registration block ends, active parse-only pass/fail corpus coverage, and
 traceability to Chapter 17 §17.2-17.6 plus Appendix A.17
-registration/cluster/reduction productions excluding annotation prefixes
-deferred to S-016/parser task 35.
+registration/cluster/reduction productions, with annotation prefixes covered
+separately by S-016/parser task 35.
 
 ### Task 31: Templates
 
@@ -2007,9 +2010,10 @@ and `return`, with returns optionally owning a term and a syntax-level
 justification.
 
 Top-level `claim name do ... end;` is represented by `ClaimBlockItem` and may
-contain bare theorem/lemma items. Claim annotations are deferred to task 35.
+contain theorem/lemma items directly or through task-35 annotation wrappers.
 Algorithm header and loop verification clauses are implemented by task 34, and
-statement-level/library annotations remain task 35. The frontend scope skeleton
+statement-level, algorithm-body, definition-content, registration-content, and
+claim-local annotation prefixes are implemented by task 35. The frontend scope skeleton
 recognizes algorithm headers as a single lexical block and treats
 `ghost target := term;` as an assignment, so active source-level parse-only
 fixtures can exercise the task-32 syntax without frontend recovery diagnostics.
@@ -2058,8 +2062,8 @@ branch.
 
 Concrete loop verification clauses and `assert` statements are implemented by
 task 34. Task 33 recovery is now limited to malformed control-flow statements
-and statement-list boundaries; statement-level/library annotations remain task
-35.
+and statement-list boundaries; task 35 handles annotation prefixes before
+algorithm statements.
 
 The frontend scope skeleton treats `match ... otherwise ... end; end;` as a
 matched block shape by opening a conservative `Do` frame for an algorithm-scope
@@ -2116,6 +2120,55 @@ remains a syntax recovery case. A later `invariant` or `decreasing` after an
 ordinary body statement is parsed as a misplaced algorithm statement and
 recovered at the clause semicolon. Empty or dangling `decreasing` term lists
 insert `MissingTerm` recovery inside the `TermList`.
+
+### Task 35: Annotations
+
+Task 35 makes Appendix A.21 annotation syntax parser-visible:
+
+```ebnf
+annotation_prefix      ::= library_annotation | fixed_annotation | generic_annotation ;
+library_annotation     ::= "@[" annotation_label { "," annotation_label } "]" ;
+annotation_label       ::= identifier [ annotation_args ] ;
+fixed_annotation       ::= "@latex" "(" string_literal ")"
+                         | "@suppress" "(" identifier ")"
+                         | "@proof_hint" "(" proof_hint_option { "," proof_hint_option } ")"
+                         | "@show_thesis"
+                         | "@show_resolution" ;
+generic_annotation     ::= "@" identifier [ annotation_args ] ;
+annotation_args        ::= "(" annotation_arg { "," annotation_arg } ")" ;
+annotation_arg         ::= identifier | numeral | string_literal ;
+proof_hint_option      ::= ( "max_axioms" | "timeout" ) ":" numeral
+                         | "solver" ":" ( "vampire" | "e" | "cvc5" | "z3" | "auto" ) ;
+standalone_diagnostic  ::= ( "@show_type" | "@eval" ) "(" term_expression ")" ;
+```
+
+Attachable prefixes are represented by `Annotation`, `LibraryAnnotation`,
+`AnnotationLabelList`, `AnnotationLabel`, `AnnotationArgumentList`,
+`AnnotationArgument`, `ProofHintOptionList`, and `ProofHintOption` nodes.
+The parser accepts them before visible and bare theorem/lemma items, top-level
+definition/registration/claim block items, definition content, registration
+content, ordinary proof statements, algorithm statements, and claim-local
+theorem/lemma items. Import/export prelude items are not annotation hosts
+because Appendix A.12 keeps them outside
+`annotated_declaration`. When a host already has a concrete syntax node, task
+35 wraps the host in `AnnotatedStatement`, `AnnotatedAlgorithmStatement`,
+`AnnotatedDefinitionContent`, or `AnnotatedRegistrationContent` as appropriate.
+
+`@show_type(...)` and `@eval(...)` are standalone diagnostic annotations. They
+produce `StandaloneDiagnosticAnnotation` nodes and do not attach to the next
+statement. `@show_thesis` and `@show_resolution` are argumentless; an argument
+list on either marker is parsed only for source-preserving recovery and reports
+`MalformedAnnotation`. `@latex` requires a string-literal argument, `@suppress`
+requires an identifier argument, and `@proof_hint` requires the fixed
+`max_axioms`, `timeout`, and `solver` option names with their Appendix A.21
+value forms. Generic annotation names and registry-specific argument meaning
+remain semantic or tooling concerns.
+
+Malformed annotation arguments, proof-hint options, empty slots, and unmatched
+annotation delimiters recover with `MalformedAnnotation`. Recovery is
+source-preserving and synchronizes at the surrounding item, statement, or block
+boundary so a bad annotation prefix does not consume the following concrete
+host.
 
 ## Public Enum Compatibility
 

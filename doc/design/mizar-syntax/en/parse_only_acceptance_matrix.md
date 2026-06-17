@@ -98,10 +98,10 @@ the owning parser task can parse the surrounding construct.
 | Statements/proofs | `PO-STMT-R01` | recovery-required | `theorem T: thesis proof assume A: thesis;` | `recover`: `missing_end` for an unterminated `proof`. | `proof`, `reasoning` | `mizar-parser` | A.15, A.16 |
 | Annotations | `PO-ANN-P01` | positive | `@proof_hint(max_axioms: 10, solver: vampire) theorem T: thesis;` | `accept` | `annotated_declaration`, `annotation`, `proof_hint_annotation` | `mizar-test` | A.12, A.21 |
 | Annotations | `PO-ANN-P02` | positive | `definition @custom(flag) theorem T: thesis; end;` | `accept` | `definition_block`, `definition_content`, `annotation`, `theorem_item` | `mizar-test` | A.12, A.16, A.21 |
-| Annotations | `PO-ANN-P03` | positive | `registration @custom(flag) cluster C: non empty set; existence by A; end;` | `accept` | `registration_block`, `registration_content`, `annotation`, `registration_item` | `mizar-test` | A.17, A.21 |
+| Annotations | `PO-ANN-P03` | positive | `registration @custom(flag) cluster C: non empty set; existence by A; end;` | `accept`: parser-unit coverage pins annotation wrappers around registration items; active source coverage also covers registration-content annotation hosts. | `registration_block`, `registration_content`, `annotation`, `registration_item` | `mizar-parser` | A.17, A.21 |
 | Annotations | `PO-ANN-P04` | positive | `theorem T: thesis proof @custom(flag) thus thesis; end;` | `accept` | `proof`, `annotated_statement`, `annotation`, `conclusion` | `mizar-test` | A.15, A.16, A.21 |
 | Annotations | `PO-ANN-P05` | positive | `definition algorithm f() do @custom(flag) return; end; end;` | `accept` | `algorithm_def`, `annotated_algo_statement`, `annotation`, `return_stmt` | `mizar-test` | A.20, A.21 |
-| Annotations | `PO-ANN-P06` | positive | `claim C do @custom(flag) theorem T: thesis; end;` | `accept`: deferred until parser task 35; task 32 rejects claim-local annotation prefixes as recovery input. | `claim_block`, `annotated_theorem_item`, `annotation`, `theorem_item` | `mizar-test` | A.20, A.21 |
+| Annotations | `PO-ANN-P06` | positive | `claim C do @custom(flag) theorem T: thesis; end;` | `accept`: parser task 35 parses claim-local annotation prefixes around theorem/lemma items. | `claim_block`, `annotated_theorem_item`, `annotation`, `theorem_item` | `mizar-test` | A.20, A.21 |
 | Annotations | `PO-ANN-N01` | negative | `@latex(123) theorem T: thesis;` | `reject`: fixed `@latex` annotations require a string literal argument. | `annotated_declaration`, `annotation`, `latex_annotation` | `mizar-parser` | A.12, A.21 |
 | Annotations | `PO-ANN-A01` | ambiguous | `@custom(flag, 3) theorem T: thesis;` | `ambiguous-preserve-surface`: generic annotation names and contextual argument validity are semantic or registry checks. | `annotated_declaration`, `annotation`, `statement_annotation`, `generic_annotation_name`, `annotation_args` | `mizar-test` | A.12, A.21 |
 | Annotations | `PO-ANN-R01` | recovery-required | `@proof_hint(max_axioms: ) theorem T: thesis;` | `recover`: `malformed_annotation` for a missing option value. | `proof_hint_annotation`, `proof_hint_option` | `mizar-parser` | A.21 |
@@ -132,9 +132,9 @@ the owning parser task can parse the surrounding construct.
 - Annotation attachment coverage must appear at module level, inside
   `definition_block`, inside `registration_block`, inside proofs, inside
   algorithm bodies, and inside `claim_block` theorem lists. The matrix rows
-  above select representative owners; later parser tasks should add the
-  remaining attachment sites when their enclosing productions land. Claim-block
-  annotation attachment remains deferred until parser task 35.
+  above select representative owners; parser task 35 covers the currently
+  concrete attachment sites, while later parser tasks should add new hosts when
+  additional enclosing productions land.
 - Dot-chain coverage must include module paths, qualified symbols, qualified
   references, grouped references, bulk references, selector access/update,
   algorithm lvalues, and active `.` user-symbol cases. Parse-only expectations

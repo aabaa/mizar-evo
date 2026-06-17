@@ -201,6 +201,20 @@ pub enum SyntaxKind {
     LoopDecreasingClause = 176,
     AssertStatement = 177,
     TermList = 178,
+    Annotation = 179,
+    LibraryAnnotation = 180,
+    AnnotationLabelList = 181,
+    AnnotationLabel = 182,
+    AnnotationArgumentList = 183,
+    AnnotationArgument = 184,
+    ProofHintOptionList = 185,
+    ProofHintOption = 186,
+    StandaloneDiagnosticAnnotation = 187,
+    AnnotatedStatement = 188,
+    AnnotatedAlgorithmStatement = 189,
+    AnnotatedDefinitionContent = 190,
+    AnnotatedRegistrationContent = 191,
+    TokenAnnotationMarker = 99,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -383,6 +397,20 @@ impl SyntaxKind {
             176 => Self::LoopDecreasingClause,
             177 => Self::AssertStatement,
             178 => Self::TermList,
+            179 => Self::Annotation,
+            180 => Self::LibraryAnnotation,
+            181 => Self::AnnotationLabelList,
+            182 => Self::AnnotationLabel,
+            183 => Self::AnnotationArgumentList,
+            184 => Self::AnnotationArgument,
+            185 => Self::ProofHintOptionList,
+            186 => Self::ProofHintOption,
+            187 => Self::StandaloneDiagnosticAnnotation,
+            188 => Self::AnnotatedStatement,
+            189 => Self::AnnotatedAlgorithmStatement,
+            190 => Self::AnnotatedDefinitionContent,
+            191 => Self::AnnotatedRegistrationContent,
+            99 => Self::TokenAnnotationMarker,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -567,13 +595,27 @@ impl SyntaxKind {
                 | Self::LoopDecreasingClause
                 | Self::AssertStatement
                 | Self::TermList
+                | Self::Annotation
+                | Self::LibraryAnnotation
+                | Self::AnnotationLabelList
+                | Self::AnnotationLabel
+                | Self::AnnotationArgumentList
+                | Self::AnnotationArgument
+                | Self::ProofHintOptionList
+                | Self::ProofHintOption
+                | Self::StandaloneDiagnosticAnnotation
+                | Self::AnnotatedStatement
+                | Self::AnnotatedAlgorithmStatement
+                | Self::AnnotatedDefinitionContent
+                | Self::AnnotatedRegistrationContent
         )
     }
 
     pub const fn is_token_kind(self) -> bool {
         matches!(
             self,
-            Self::TokenIdentifier
+            Self::TokenAnnotationMarker
+                | Self::TokenIdentifier
                 | Self::TokenReservedWord
                 | Self::TokenReservedSymbol
                 | Self::TokenNumeral
@@ -2372,6 +2414,19 @@ pub enum SurfaceNodeKind {
     LoopDecreasingClause,
     AssertStatement,
     TermList,
+    Annotation,
+    LibraryAnnotation,
+    AnnotationLabelList,
+    AnnotationLabel,
+    AnnotationArgumentList,
+    AnnotationArgument,
+    ProofHintOptionList,
+    ProofHintOption,
+    StandaloneDiagnosticAnnotation,
+    AnnotatedStatement,
+    AnnotatedAlgorithmStatement,
+    AnnotatedDefinitionContent,
+    AnnotatedRegistrationContent,
     TermPlaceholder,
     TermExpression,
     TermReference,
@@ -2545,6 +2600,19 @@ impl SurfaceNodeKind {
             Self::LoopDecreasingClause => SyntaxKind::LoopDecreasingClause,
             Self::AssertStatement => SyntaxKind::AssertStatement,
             Self::TermList => SyntaxKind::TermList,
+            Self::Annotation => SyntaxKind::Annotation,
+            Self::LibraryAnnotation => SyntaxKind::LibraryAnnotation,
+            Self::AnnotationLabelList => SyntaxKind::AnnotationLabelList,
+            Self::AnnotationLabel => SyntaxKind::AnnotationLabel,
+            Self::AnnotationArgumentList => SyntaxKind::AnnotationArgumentList,
+            Self::AnnotationArgument => SyntaxKind::AnnotationArgument,
+            Self::ProofHintOptionList => SyntaxKind::ProofHintOptionList,
+            Self::ProofHintOption => SyntaxKind::ProofHintOption,
+            Self::StandaloneDiagnosticAnnotation => SyntaxKind::StandaloneDiagnosticAnnotation,
+            Self::AnnotatedStatement => SyntaxKind::AnnotatedStatement,
+            Self::AnnotatedAlgorithmStatement => SyntaxKind::AnnotatedAlgorithmStatement,
+            Self::AnnotatedDefinitionContent => SyntaxKind::AnnotatedDefinitionContent,
+            Self::AnnotatedRegistrationContent => SyntaxKind::AnnotatedRegistrationContent,
             Self::TermPlaceholder => SyntaxKind::TermPlaceholder,
             Self::TermExpression => SyntaxKind::TermExpression,
             Self::TermReference => SyntaxKind::TermReference,
@@ -2676,6 +2744,7 @@ pub enum SurfaceTokenKind {
     Numeral,
     LexemeRun,
     UserSymbol,
+    AnnotationMarker,
     StringLiteral,
     ErrorRecovery,
     Unknown,
@@ -2690,6 +2759,7 @@ impl SurfaceTokenKind {
             Self::Numeral => SyntaxKind::TokenNumeral,
             Self::LexemeRun => SyntaxKind::TokenLexemeRun,
             Self::UserSymbol => SyntaxKind::TokenUserSymbol,
+            Self::AnnotationMarker => SyntaxKind::TokenAnnotationMarker,
             Self::StringLiteral => SyntaxKind::TokenStringLiteral,
             Self::ErrorRecovery => SyntaxKind::TokenErrorRecovery,
             Self::Unknown => SyntaxKind::TokenUnknown,
@@ -2704,6 +2774,7 @@ impl SurfaceTokenKind {
             Self::Numeral => "Numeral",
             Self::LexemeRun => "LexemeRun",
             Self::UserSymbol => "UserSymbol",
+            Self::AnnotationMarker => "AnnotationMarker",
             Self::StringLiteral => "StringLiteral",
             Self::ErrorRecovery => "ErrorRecovery",
             Self::Unknown => "Unknown",
@@ -2874,6 +2945,27 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::LoopDecreasingClause => output.push_str("LoopDecreasingClause"),
         SurfaceNodeKind::AssertStatement => output.push_str("AssertStatement"),
         SurfaceNodeKind::TermList => output.push_str("TermList"),
+        SurfaceNodeKind::Annotation => output.push_str("Annotation"),
+        SurfaceNodeKind::LibraryAnnotation => output.push_str("LibraryAnnotation"),
+        SurfaceNodeKind::AnnotationLabelList => output.push_str("AnnotationLabelList"),
+        SurfaceNodeKind::AnnotationLabel => output.push_str("AnnotationLabel"),
+        SurfaceNodeKind::AnnotationArgumentList => output.push_str("AnnotationArgumentList"),
+        SurfaceNodeKind::AnnotationArgument => output.push_str("AnnotationArgument"),
+        SurfaceNodeKind::ProofHintOptionList => output.push_str("ProofHintOptionList"),
+        SurfaceNodeKind::ProofHintOption => output.push_str("ProofHintOption"),
+        SurfaceNodeKind::StandaloneDiagnosticAnnotation => {
+            output.push_str("StandaloneDiagnosticAnnotation");
+        }
+        SurfaceNodeKind::AnnotatedStatement => output.push_str("AnnotatedStatement"),
+        SurfaceNodeKind::AnnotatedAlgorithmStatement => {
+            output.push_str("AnnotatedAlgorithmStatement");
+        }
+        SurfaceNodeKind::AnnotatedDefinitionContent => {
+            output.push_str("AnnotatedDefinitionContent");
+        }
+        SurfaceNodeKind::AnnotatedRegistrationContent => {
+            output.push_str("AnnotatedRegistrationContent");
+        }
         SurfaceNodeKind::TermPlaceholder => output.push_str("TermPlaceholder"),
         SurfaceNodeKind::TermExpression => output.push_str("TermExpression"),
         SurfaceNodeKind::TermReference => output.push_str("TermReference"),

@@ -96,10 +96,10 @@ discovery の fixture ではない。
 | Statements/proofs | `PO-STMT-R01` | recovery-required | `theorem T: thesis proof assume A: thesis;` | `recover`: 終端していない `proof` に対する `missing_end`。 | `proof`, `reasoning` | `mizar-parser` | A.15, A.16 |
 | Annotations | `PO-ANN-P01` | positive | `@proof_hint(max_axioms: 10, solver: vampire) theorem T: thesis;` | `accept` | `annotated_declaration`, `annotation`, `proof_hint_annotation` | `mizar-test` | A.12, A.21 |
 | Annotations | `PO-ANN-P02` | positive | `definition @custom(flag) theorem T: thesis; end;` | `accept` | `definition_block`, `definition_content`, `annotation`, `theorem_item` | `mizar-test` | A.12, A.16, A.21 |
-| Annotations | `PO-ANN-P03` | positive | `registration @custom(flag) cluster C: non empty set; existence by A; end;` | `accept` | `registration_block`, `registration_content`, `annotation`, `registration_item` | `mizar-test` | A.17, A.21 |
+| Annotations | `PO-ANN-P03` | positive | `registration @custom(flag) cluster C: non empty set; existence by A; end;` | `accept`: parser-unit coverage が registration item 周りの annotation wrapper を固定し、active source coverage も registration-content annotation host を覆う。 | `registration_block`, `registration_content`, `annotation`, `registration_item` | `mizar-parser` | A.17, A.21 |
 | Annotations | `PO-ANN-P04` | positive | `theorem T: thesis proof @custom(flag) thus thesis; end;` | `accept` | `proof`, `annotated_statement`, `annotation`, `conclusion` | `mizar-test` | A.15, A.16, A.21 |
 | Annotations | `PO-ANN-P05` | positive | `definition algorithm f() do @custom(flag) return; end; end;` | `accept` | `algorithm_def`, `annotated_algo_statement`, `annotation`, `return_stmt` | `mizar-test` | A.20, A.21 |
-| Annotations | `PO-ANN-P06` | positive | `claim C do @custom(flag) theorem T: thesis; end;` | `accept`: parser task 35 まで deferred。task 32 は claim-local annotation prefix を recovery input として拒否する。 | `claim_block`, `annotated_theorem_item`, `annotation`, `theorem_item` | `mizar-test` | A.20, A.21 |
+| Annotations | `PO-ANN-P06` | positive | `claim C do @custom(flag) theorem T: thesis; end;` | `accept`: parser task 35 は theorem / lemma item 周りの claim-local annotation prefix を parse する。 | `claim_block`, `annotated_theorem_item`, `annotation`, `theorem_item` | `mizar-test` | A.20, A.21 |
 | Annotations | `PO-ANN-N01` | negative | `@latex(123) theorem T: thesis;` | `reject`: 固定 `@latex` annotation には string literal argument が必要である。 | `annotated_declaration`, `annotation`, `latex_annotation` | `mizar-parser` | A.12, A.21 |
 | Annotations | `PO-ANN-A01` | ambiguous | `@custom(flag, 3) theorem T: thesis;` | `ambiguous-preserve-surface`: generic annotation name と context 上の argument 妥当性は semantic または registry check である。 | `annotated_declaration`, `annotation`, `statement_annotation`, `generic_annotation_name`, `annotation_args` | `mizar-test` | A.12, A.21 |
 | Annotations | `PO-ANN-R01` | recovery-required | `@proof_hint(max_axioms: ) theorem T: thesis;` | `recover`: option value 欠落に対する `malformed_annotation`。 | `proof_hint_annotation`, `proof_hint_option` | `mizar-parser` | A.21 |
@@ -130,9 +130,8 @@ discovery の fixture ではない。
 - annotation attachment coverage は、module level、`definition_block` 内、
   `registration_block` 内、proof 内、algorithm body 内、`claim_block` の theorem
   list 内に現れなければならない。上の matrix 行は代表 owner を選ぶだけであり、
-  残りの attachment site は、それを囲む production が着地する parser task で
-  追加する。Claim-block annotation attachment は parser task 35 まで deferred
-  のままにする。
+  parser task 35 は現在 concrete な attachment site を覆う。残りの attachment site は、
+  追加の enclosing production が着地する parser task で追加する。
 - dot-chain coverage は、module path、qualified symbol、qualified reference、
   grouped reference、bulk reference、selector access/update、algorithm lvalue、
   active `.` user-symbol case を含める。parse-only expectation は syntax-only に

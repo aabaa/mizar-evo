@@ -192,6 +192,7 @@ fn surface_token_kind(kind: ParserTokenKind) -> SurfaceTokenKind {
         ParserTokenKind::Numeral => SurfaceTokenKind::Numeral,
         ParserTokenKind::LexemeRun => SurfaceTokenKind::LexemeRun,
         ParserTokenKind::UserSymbol => SurfaceTokenKind::UserSymbol,
+        ParserTokenKind::AnnotationMarker => SurfaceTokenKind::AnnotationMarker,
         ParserTokenKind::StringLiteral => SurfaceTokenKind::StringLiteral,
         ParserTokenKind::ErrorRecovery => SurfaceTokenKind::ErrorRecovery,
         ParserTokenKind::Unknown => SurfaceTokenKind::Unknown,

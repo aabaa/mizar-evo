@@ -734,6 +734,7 @@ fn scope_raw_kind(token: &LexerToken) -> RawTokenKind {
         }
         TokenKind::LexemeRun => RawTokenKind::LexemeRun,
         TokenKind::Numeral => RawTokenKind::NumeralLike,
+        TokenKind::AnnotationMarker => RawTokenKind::AnnotationMarker,
         TokenKind::StringLiteral | TokenKind::UserSymbol | TokenKind::ErrorRecovery => {
             RawTokenKind::Error
         }
@@ -994,9 +995,8 @@ mod tests {
         BindingShapeKind, LexDiagnosticCode, LexRecoveryHint, LexicalBlockKind, LexicalByteRange,
         LexicalStatementKind, LexingDiagnosticKind, LexingDiagnosticPayload,
         LexingRejectedTokenCandidate, MalformedStringLiteralReason, ParserLexContext,
-        ParserLexMode, ParserLexingPlan, ParserLexingPlanContext, RawTokenKind, ScopeBlock,
-        ScopeFrame, ScopeSkeletonDiagnosticCode, ScopeStatement, TokenKind, TokenizeRequest,
-        tokenize,
+        ParserLexMode, ParserLexingPlan, ParserLexingPlanContext, ScopeBlock, ScopeFrame,
+        ScopeSkeletonDiagnosticCode, ScopeStatement, TokenKind, TokenizeRequest, tokenize,
     };
     use crate::preprocess::preprocess;
     use crate::source::{SourceUnit, register_source_unit};
@@ -1650,13 +1650,92 @@ mod tests {
     }
 
     #[test]
-    fn unsupported_raw_token_recovery_preserves_payload_and_resumes() {
+    fn annotation_marker_tokenizes_in_general_context() {
         let text = "@latex alpha";
         let (source, preprocessed, bridge) = preprocessed_source(text);
         let environment = empty_environment();
 
         let stream = tokenize(
             TokenizeRequest::new(&preprocessed, &environment, ParserLexContext::general()),
+            &bridge,
+        )
+        .unwrap();
+
+        assert_eq!(
+            token_kinds_texts_and_spans(&stream),
+            vec![
+                (
+                    TokenKind::AnnotationMarker,
+                    "@latex",
+                    range(source.source_id, 0, 6)
+                ),
+                (
+                    TokenKind::Identifier,
+                    "alpha",
+                    range(source.source_id, 7, 12)
+                ),
+            ]
+        );
+        assert_eq!(stream.diagnostics, Vec::new());
+    }
+
+    #[test]
+    fn annotation_prefixed_registration_cluster_keeps_symbolic_attribute_tokens() {
+        let text = "registration\n  @custom(flag)\n  cluster E: non empty set;\n  existence by Ref;\nend;\n";
+        let (source, preprocessed, bridge) = preprocessed_source(text);
+        let environment = environment_with_imported_symbol("empty");
+
+        let stream = tokenize(
+            TokenizeRequest::with_plan(
+                &preprocessed,
+                &environment,
+                ParserLexingPlan::for_lexical_text(preprocessed.lexical_text.as_str()),
+            ),
+            &bridge,
+        )
+        .unwrap();
+
+        assert_eq!(stream.diagnostics, Vec::new());
+        assert!(
+            token_kinds_texts_and_spans(&stream)
+                .windows(4)
+                .any(|window| {
+                    matches!(
+                        window,
+                        [
+                            (TokenKind::ReservedWord, "non", _),
+                            (TokenKind::UserSymbol, "empty", _),
+                            (TokenKind::ReservedWord, "set", _),
+                            (TokenKind::ReservedSymbol, ";", _),
+                        ]
+                    )
+                }),
+            "annotation-prefixed registration clusters must keep attribute tokens symbolic: {:?}",
+            token_kinds_texts_and_spans(&stream)
+        );
+        assert!(
+            token_kinds_texts_and_spans(&stream)
+                .iter()
+                .any(|(kind, text, span)| {
+                    *kind == TokenKind::AnnotationMarker
+                        && *text == "@custom"
+                        && *span == range(source.source_id, 15, 22)
+                })
+        );
+    }
+
+    #[test]
+    fn parser_context_rejected_annotation_marker_recovery_preserves_candidate_and_resumes() {
+        let text = "@latex alpha";
+        let (source, preprocessed, bridge) = preprocessed_source(text);
+        let environment = empty_environment();
+
+        let stream = tokenize(
+            TokenizeRequest::new(
+                &preprocessed,
+                &environment,
+                ParserLexContext::identifier_required(),
+            ),
             &bridge,
         )
         .unwrap();
@@ -1679,14 +1758,20 @@ mod tests {
         assert_eq!(stream.diagnostics.len(), 1);
         assert_eq!(
             stream.diagnostics[0].kind,
-            LexingDiagnosticKind::Lexer(LexDiagnosticCode::UnsupportedRawToken)
+            LexingDiagnosticKind::Lexer(LexDiagnosticCode::ParserContextRejectedCandidate)
         );
         assert_eq!(stream.diagnostics[0].primary, range(source.source_id, 0, 6));
         assert_eq!(
             stream.diagnostics[0].payload,
-            LexingDiagnosticPayload::UnsupportedRawToken {
-                raw_kind: RawTokenKind::AnnotationMarker,
-                raw_lexeme: Arc::from("@latex"),
+            LexingDiagnosticPayload::ParserContextRejectedCandidate {
+                mode: ParserLexMode::IdentifierRequired,
+                rejected_lexeme: Arc::from("@latex"),
+                candidates: vec![LexingRejectedTokenCandidate {
+                    kind: TokenKind::AnnotationMarker,
+                    text: Arc::from("@latex"),
+                    span: range(source.source_id, 0, 6),
+                    secondary: Vec::new(),
+                }],
                 recovery: LexRecoveryHint::EmitErrorRecoveryToken,
             }
         );

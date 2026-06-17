@@ -1,0 +1,24 @@
+schema_version = 1
+id = "pass_lexical_disambiguator_annotation_marker_001"
+kind = "pass"
+stage = "lexical"
+domain = "disambiguator"
+source = "pass_lexical_disambiguator_annotation_marker_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.02.lexical.annotations.markers",
+]
+
+[[tokens]]
+kind = "annotation_marker"
+lexeme = "@latex"
+span_start = 0
+span_end = 6
+
+[[tokens]]
+kind = "identifier"
+lexeme = "alpha"
+span_start = 7
+span_end = 12

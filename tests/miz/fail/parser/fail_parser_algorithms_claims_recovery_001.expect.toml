@@ -24,11 +24,10 @@ diagnostic_codes = [
   "missing_semicolon",
   "malformed_term_expression",
   "malformed_formula_expression",
-  "malformed_formula_expression",
   "missing_semicolon",
 ]
 tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
 spec_refs = [
   "spec.en.20.algorithms_claims.parser",
 ]
-notes = "Active task-32 parse-only recovery coverage for malformed algorithm schema loci, parameter lists, missing return types, misplaced claim blocks inside algorithm bodies, declaration bindings, ghost assignments, snapshots, return tails, assignment terms, missing algorithm-definition semicolon recovery, malformed claim targets, malformed claim content, deferred claim annotations, and missing claim semicolon recovery."
+notes = "Active task-32 parse-only recovery coverage for malformed algorithm schema loci, parameter lists, missing return types, misplaced claim blocks inside algorithm bodies, declaration bindings, ghost assignments, snapshots, return tails, assignment terms, missing algorithm-definition semicolon recovery, malformed claim targets, malformed claim content, and missing claim semicolon recovery. Claim annotation prefixes are parsed by parser task 35."

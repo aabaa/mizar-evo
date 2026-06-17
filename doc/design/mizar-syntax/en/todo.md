@@ -483,7 +483,7 @@ interaction. Spec references are the normative grammar chapters under
       [05.structures.md](../../../spec/en/05.structures.md),
       [17.clusters_and_registrations.md](../../../spec/en/17.clusters_and_registrations.md).
 
-16. **Template, algorithm, and annotation nodes.** [ ] — paired with
+16. **Template, algorithm, and annotation nodes.** [x] — paired with
     `mizar-parser` tasks 31-35.
     - Done for parser task 31: template parameters, pattern-side template loci,
       call-site template arguments, reference/template-functor arguments, active
@@ -505,8 +505,13 @@ interaction. Spec references are the normative grammar chapters under
       active verification parse-only seeds, and recovery for duplicate or
       out-of-order header clauses, forbidden `for decreasing`, misplaced loop
       clauses, and malformed `TermList` measures.
-      Remaining: statement-level annotations, `@[...]` library annotations,
-      and string-literal annotation arguments (parser task 35).
+    - Done for parser task 35: `@identifier` annotation-marker lexing handoff,
+      `@[...]` library annotations, fixed `@latex`, `@proof_hint`,
+      `@show_thesis`, `@show_resolution`, and `@suppress` forms, generic
+      annotation arguments including string literals, standalone `@show_type`
+      / `@eval` diagnostics, annotation wrappers for statement, algorithm,
+      definition, registration, and claim/theorem hosts, active annotation
+      pass/fail parse-only seeds, and `malformed_annotation` diagnostics.
     - Spec: [18.templates.md](../../../spec/en/18.templates.md),
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md),
       [21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md).

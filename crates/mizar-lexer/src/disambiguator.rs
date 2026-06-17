@@ -192,6 +192,7 @@ pub enum TokenKind {
     Numeral,
     LexemeRun,
     UserSymbol,
+    AnnotationMarker,
     StringLiteral,
     ErrorRecovery,
 }
@@ -322,6 +323,13 @@ impl ParserLexContext {
         }
     }
 
+    fn admits_annotation_marker(self) -> bool {
+        matches!(
+            self.mode,
+            ParserLexMode::General | ParserLexMode::Symbolic | ParserLexMode::Recovery
+        )
+    }
+
     fn admits_user_symbol(self, candidates: &[UserSymbolCandidate]) -> bool {
         match self.mode {
             ParserLexMode::General | ParserLexMode::Symbolic | ParserLexMode::Recovery => {
@@ -429,7 +437,34 @@ impl<'a> Disambiguator<'a> {
                         );
                     }
                 }
-                RawTokenKind::AnnotationMarker | RawTokenKind::Error => {
+                RawTokenKind::AnnotationMarker => {
+                    if self.parser_context.admits_annotation_marker() {
+                        self.push_token(
+                            TokenKind::AnnotationMarker,
+                            &raw_token.lexeme,
+                            raw_token.span,
+                        );
+                    } else {
+                        let candidates = vec![RejectedTokenCandidate {
+                            kind: TokenKind::AnnotationMarker,
+                            lexeme: raw_token.lexeme.clone(),
+                            span: raw_token.span,
+                        }];
+                        self.push_error(
+                            LexDiagnosticCode::ParserContextRejectedCandidate,
+                            "parser context rejected annotation marker",
+                            raw_token.span,
+                            &raw_token.lexeme,
+                            LexDiagnosticPayload::ParserContextRejectedCandidate {
+                                mode: self.parser_context.mode(),
+                                rejected_lexeme: raw_token.lexeme.clone(),
+                                candidates,
+                                recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+                            },
+                        );
+                    }
+                }
+                RawTokenKind::Error => {
                     self.push_error(
                         LexDiagnosticCode::UnsupportedRawToken,
                         "raw token cannot be disambiguated",

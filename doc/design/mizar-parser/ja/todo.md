@@ -756,9 +756,15 @@ resolver / build-system 依存を避ける。
     - 依存: 33、`mizar-syntax` task 16 / S-016。仕様:
       [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)。
 
-35. **注釈。** [ ]
+35. **注釈。** [x]
     - 文レベル注釈、`@[...]` ライブラリ注釈、文字列リテラル注釈引数
       （string-required 位置は frontend の lexing plan がすでに網羅する）。
+    - 結果: parser task 35 は parser-facing `@identifier` annotation marker を
+      受理し、library / fixed / generic annotation 形式を concrete syntax node
+      として表現し、standalone `@show_type` / `@eval` を diagnostic annotation
+      node として保持し、module / definition / registration / proof/algorithm /
+      claim theorem 位置に annotation wrapper を付け、active parse-only fixture
+      で malformed annotation recovery を網羅する。
     - 依存: 34、`mizar-syntax` task 16 / S-016。仕様:
       [21.source_code_annotation_and_atp.md](../../../spec/ja/21.source_code_annotation_and_atp.md)。
 

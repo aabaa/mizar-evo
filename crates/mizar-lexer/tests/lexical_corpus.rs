@@ -458,7 +458,7 @@ fn lexical_corpus_matches_token_expectations() {
     assert_eq!(import_prescan_checked, 12);
     assert_eq!(scope_skeleton_checked, 7);
     assert_eq!(disambiguator_checked, 24);
-    assert_eq!(fail_checked, 12);
+    assert_eq!(fail_checked, 11);
 }
 
 fn token_kind_name(kind: TokenKind) -> &'static str {
@@ -470,6 +470,7 @@ fn token_kind_name(kind: TokenKind) -> &'static str {
         TokenKind::LexemeRun => "lexeme_run",
         TokenKind::UserSymbol => "user_symbol",
         TokenKind::StringLiteral => "string_literal",
+        TokenKind::AnnotationMarker => "annotation_marker",
         TokenKind::ErrorRecovery => "error_recovery",
         _ => panic!("unsupported token kind: {kind:?}"),
     }

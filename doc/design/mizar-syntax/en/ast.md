@@ -171,6 +171,27 @@ green tree.
 | algorithm match-ending node | `SyntaxKind::MatchEnding` |
 | algorithm `break` statement node | `SyntaxKind::BreakStatement` |
 | algorithm `continue` statement node | `SyntaxKind::ContinueStatement` |
+| algorithm termination clause node | `SyntaxKind::AlgorithmTerminationClause` |
+| algorithm requires clause node | `SyntaxKind::AlgorithmRequiresClause` |
+| algorithm ensures clause node | `SyntaxKind::AlgorithmEnsuresClause` |
+| algorithm decreasing clause node | `SyntaxKind::AlgorithmDecreasingClause` |
+| loop invariant clause node | `SyntaxKind::LoopInvariantClause` |
+| loop decreasing clause node | `SyntaxKind::LoopDecreasingClause` |
+| algorithm assert statement node | `SyntaxKind::AssertStatement` |
+| term list node | `SyntaxKind::TermList` |
+| annotation node | `SyntaxKind::Annotation` |
+| library annotation node | `SyntaxKind::LibraryAnnotation` |
+| annotation label list node | `SyntaxKind::AnnotationLabelList` |
+| annotation label node | `SyntaxKind::AnnotationLabel` |
+| annotation argument list node | `SyntaxKind::AnnotationArgumentList` |
+| annotation argument node | `SyntaxKind::AnnotationArgument` |
+| proof-hint option list node | `SyntaxKind::ProofHintOptionList` |
+| proof-hint option node | `SyntaxKind::ProofHintOption` |
+| standalone diagnostic annotation node | `SyntaxKind::StandaloneDiagnosticAnnotation` |
+| annotated statement wrapper node | `SyntaxKind::AnnotatedStatement` |
+| annotated algorithm-statement wrapper node | `SyntaxKind::AnnotatedAlgorithmStatement` |
+| annotated definition-content wrapper node | `SyntaxKind::AnnotatedDefinitionContent` |
+| annotated registration-content wrapper node | `SyntaxKind::AnnotatedRegistrationContent` |
 | `qua` expression node | `SyntaxKind::QuaExpression` |
 | infix expression node | `SyntaxKind::InfixExpression` |
 | prefix expression node | `SyntaxKind::PrefixExpression` |
@@ -192,8 +213,9 @@ green tree.
 | recovery node | `SyntaxKind::ErrorRecovery` |
 
 Token roles are separate raw kinds: identifier, reserved word, reserved symbol,
-numeral, lexeme run, user symbol, string literal, error-recovery token, and
-unknown token. The rowan tree is source-shaped: each token appears once as a
+numeral, lexeme run, user symbol, annotation marker, string literal,
+error-recovery token, and unknown token. The rowan tree is source-shaped:
+each token appears once as a
 rowan token leaf in source order. Compatibility side tables may retain token
 payloads for the task-12 API, but they must not cause duplicated token leaves
 or repeated text in the rowan tree.
@@ -301,6 +323,7 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 96 | `TheoremItem` | task-22 theorem declaration item |
 | 97 | `LemmaItem` | task-22 lemma declaration item |
 | 98 | `ProofBlock` | task-22 `proof ... end` justification block |
+| 99 | `TokenAnnotationMarker` | `@identifier` annotation marker token leaf |
 | 100 | `TokenIdentifier` | identifier token leaf |
 | 101 | `TokenReservedWord` | reserved-word token leaf |
 | 102 | `TokenReservedSymbol` | reserved-symbol token leaf |
@@ -380,13 +403,26 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 176 | `LoopDecreasingClause` | task-34 leading while-loop `decreasing term_list [justification];` clause |
 | 177 | `AssertStatement` | task-34 algorithm `assert formula [justification];` statement |
 | 178 | `TermList` | task-34 comma-separated decreasing-measure term list |
+| 179 | `Annotation` | task-35 attachable annotation prefix |
+| 180 | `LibraryAnnotation` | task-35 `@[ ... ]` annotation prefix |
+| 181 | `AnnotationLabelList` | task-35 comma-separated library annotation labels |
+| 182 | `AnnotationLabel` | task-35 library annotation label |
+| 183 | `AnnotationArgumentList` | task-35 parenthesized annotation argument list |
+| 184 | `AnnotationArgument` | task-35 single annotation argument |
+| 185 | `ProofHintOptionList` | task-35 `@proof_hint(...)` option list |
+| 186 | `ProofHintOption` | task-35 single proof-hint option |
+| 187 | `StandaloneDiagnosticAnnotation` | task-35 `@show_type` / `@eval` standalone diagnostic annotation |
+| 188 | `AnnotatedStatement` | task-35 annotation wrapper for ordinary statements |
+| 189 | `AnnotatedAlgorithmStatement` | task-35 annotation wrapper for algorithm statements |
+| 190 | `AnnotatedDefinitionContent` | task-35 annotation wrapper for definition content |
+| 191 | `AnnotatedRegistrationContent` | task-35 annotation wrapper for registration content |
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
 above, including `Root` through task-22 `ProofBlock`, task-23
-`DefinitionBlockItem` through task-34 `TermList`, the compatibility
+`DefinitionBlockItem` through task-35 `AnnotatedRegistrationContent`, the compatibility
 `Token` wrapper, and `ErrorRecovery`; `is_token_kind` is true only for token
-leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future raw values should be
+leaf raw kinds `TokenAnnotationMarker` through `TokenUnknown`. Future raw values should be
 appended or assigned into a documented reserved range so existing snapshots and
 rowan tests fail loudly when the raw vocabulary changes.
 
@@ -406,7 +442,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::ModuleBranchImport` | none | `SyntaxKind::ModuleBranchImport` | parser task-6 `module_path ".{" module_identifier { "," module_identifier } "}"`; owns a base `ModulePath`, `.{` token, branch `PathSegment`s separated by comma tokens, optional malformed-tail recovery, and optional `}` |
 | `SurfaceNodeKind::ExportItem` | none | `SyntaxKind::ExportItem` | parser task-7 concrete `export_stmt`; owns the `export` token, exported `ModulePath` nodes separated by comma tokens, optional malformed-tail recovery, and optional semicolon token |
 | `SurfaceNodeKind::VisibilityMarker` | none | `SyntaxKind::VisibilityMarker` | parser task-7 wrapper for exactly one `private` or `public` token |
-| `SurfaceNodeKind::VisibleItem` | none | `SyntaxKind::VisibleItem` | parser task-7 top-level visibility wrapper; owns annotation-prefix tokens when present, one `VisibilityMarker`, and the current target item node |
+| `SurfaceNodeKind::VisibleItem` | none | `SyntaxKind::VisibleItem` | parser task-7 top-level visibility wrapper; owns parsed `Annotation` prefix nodes when present, one `VisibilityMarker`, and the current target item node |
 | `SurfaceNodeKind::ReserveItem` | none | `SyntaxKind::ReserveItem` | parser task-8 concrete top-level `reserve_decl` host item; owns the `reserve` token, one `ReserveSegment`, optional malformed-tail recovery, and optional semicolon token |
 | `SurfaceNodeKind::ReserveSegment` | none | `SyntaxKind::ReserveSegment` | parser task-8 `identifier_list "for" type_expression`; owns identifier tokens separated by comma tokens, the `for` token, and a `TypeExpression` or missing-type recovery |
 | `SurfaceNodeKind::TypeExpression` | none | `SyntaxKind::TypeExpression` | parser task-8 `attribute_chain type_head`; owns an optional non-empty `AttributeChain` followed by a generic `TypeHead` |
@@ -428,7 +464,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::SetEnumeration` | none | `SyntaxKind::SetEnumeration` | parser task-9 set-enumeration term |
 | `SurfaceNodeKind::SetComprehension` | none | `SyntaxKind::SetComprehension` | parser task-15 set-comprehension / Fraenkel term; owns `{`, a mapper `TermExpression`, `where`, generator segments, optional condition formula, and `}` or delimiter recovery |
 | `SurfaceNodeKind::ComprehensionVariableSegment` | none | `SyntaxKind::ComprehensionVariableSegment` | parser task-15 typed generator segment; owns identifier or `MissingTerm` recovery, optional `is`, and `TypeExpression` or `MissingTypeExpression` recovery when `is` is present |
-| `SurfaceNodeKind::StatementItem` | none | `SyntaxKind::StatementItem` | parser task-16 temporary module-level statement host; owns exactly one concrete parser-owned statement node from the currently implemented S-013 / S-014 statement vocabulary and no statement-level annotation payload |
+| `SurfaceNodeKind::StatementItem` | none | `SyntaxKind::StatementItem` | parser task-16 temporary module-level statement host; owns exactly one concrete parser-owned statement node from the currently implemented S-013 / S-014 statement vocabulary, either directly or through task-35 `AnnotatedStatement` |
 | `SurfaceNodeKind::LetStatement` | none | `SyntaxKind::LetStatement` | parser task-16/17 `let` generalization; owns `let`, qualified-variable segments with separator commas, optional `such` plus `ConditionList`, optional task-17 simple `JustificationClause`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::QualifiedVariableSegment` | none | `SyntaxKind::QualifiedVariableSegment` | parser task-16 statement-level variable segment; owns identifier tokens separated by comma tokens, optional `be` / `being`, and optional `TypeExpression` or `MissingTypeExpression` recovery |
 | `SurfaceNodeKind::AssumptionStatement` | none | `SyntaxKind::AssumptionStatement` | parser task-16 `assume` or `assume that`; owns `assume` plus either one `Proposition` or one `ConditionList`, optional recovery, and optional semicolon |
@@ -454,10 +490,10 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::InlineFunctorDefinition` | none | `SyntaxKind::InlineFunctorDefinition` | parser task-21 standalone `deffunc` definition; owns `deffunc`, a name identifier or `MissingTerm` recovery, parameter parentheses, zero or more `TypedParameter` children separated by comma tokens, `->`, a return `TypeExpression` or `MissingTypeExpression`, `equals`, a body `TermExpression` or `MissingTerm`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::InlinePredicateDefinition` | none | `SyntaxKind::InlinePredicateDefinition` | parser task-21 standalone `defpred` definition; owns `defpred`, a name identifier or `MissingTerm` recovery, parameter parentheses, zero or more `TypedParameter` children separated by comma tokens, `means`, a body `FormulaExpression` or `MissingFormula`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::TypedParameter` | none | `SyntaxKind::TypedParameter` | parser task-21 inline-definition parameter; owns the parameter identifier when present, optional `be` or `being` when written, and a `TypeExpression` or `MissingTypeExpression` recovery |
-| `SurfaceNodeKind::TheoremItem` | none | `SyntaxKind::TheoremItem` | parser task-22 theorem declaration; owns optional status tokens preserved syntactically, `theorem`, a label identifier or `MissingTerm`, `:`, a `FormulaExpression` or `MissingFormula`, optional `JustificationClause` or `ProofBlock`, optional recovery, and the final semicolon when present |
+| `SurfaceNodeKind::TheoremItem` | none | `SyntaxKind::TheoremItem` | parser task-22 theorem declaration; owns optional leading `Annotation` nodes, optional status tokens preserved syntactically, `theorem`, a label identifier or `MissingTerm`, `:`, a `FormulaExpression` or `MissingFormula`, optional `JustificationClause` or `ProofBlock`, optional recovery, and the final semicolon when present |
 | `SurfaceNodeKind::LemmaItem` | none | `SyntaxKind::LemmaItem` | parser task-22 lemma declaration with the same source-order children as `TheoremItem`, selected by the `lemma` role token |
 | `SurfaceNodeKind::ProofBlock` | none | `SyntaxKind::ProofBlock` | parser task-22 full proof justification block; owns `proof`, nested statement nodes from the reasoning body, optional recovery including `MissingEnd`, and `end` when present; the enclosing theorem or statement owns the following semicolon |
-| `SurfaceNodeKind::DefinitionBlockItem` | none | `SyntaxKind::DefinitionBlockItem` | parser task-23 `definition ... end;` block item; owns `definition`, source-ordered concrete definition content or placeholder content, optional `MissingEnd`, `end` when present, and the final semicolon when present |
+| `SurfaceNodeKind::DefinitionBlockItem` | none | `SyntaxKind::DefinitionBlockItem` | parser task-23 `definition ... end;` block item; owns optional leading `Annotation` nodes, `definition`, source-ordered concrete definition content or placeholder content, optional `MissingEnd`, `end` when present, and the final semicolon when present |
 | `SurfaceNodeKind::DefinitionParameter` | none | `SyntaxKind::DefinitionParameter` | parser task-23 ordinary definition parameter; owns `let`, one or more qualified-variable segments, optional conditions or justification, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::AttributeDefinition` | none | `SyntaxKind::AttributeDefinition` | parser task-23 `attr` definition; owns `attr`, a label identifier or `MissingTerm`, `:`, a subject identifier or `MissingTerm`, `is`, an `AttributePattern`, `means`, a `FormulaDefiniens`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::AttributePattern` | none | `SyntaxKind::AttributePattern` | parser task-23 attribute pattern head; owns an optional `ParameterPrefix` plus an identifier or user-symbol name, or `MissingTerm` when the name is absent |
@@ -488,7 +524,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::InheritanceTarget` | none | `SyntaxKind::InheritanceTarget` | parser task-29 raw inheritance child/parent target; preserves source-order tokens for a structure-like reference plus optional raw type arguments, or the parent `set` token, without resolving semantic structure identity |
 | `SurfaceNodeKind::FieldRedefinition` | none | `SyntaxKind::FieldRedefinition` | parser task-29 explicit inheritance field mapping; owns `field`, a child field identifier or `MissingTerm`, optional narrowed `-> TypeExpression`, required `from`, an identifier or `it` source when present, and the member semicolon when present |
 | `SurfaceNodeKind::PropertyRedefinition` | none | `SyntaxKind::PropertyRedefinition` | parser task-29 explicit inheritance property mapping; owns `property`, a child property identifier or `MissingTerm`, optional narrowed `-> TypeExpression`, required `from`, an identifier source when present, and the member semicolon when present |
-| `SurfaceNodeKind::RegistrationBlockItem` | none | `SyntaxKind::RegistrationBlockItem` | parser task-30 `registration ... end;` block item; owns `registration`, source-ordered registration content, optional recovery, `MissingEnd` or `end` when present, and the final semicolon when present |
+| `SurfaceNodeKind::RegistrationBlockItem` | none | `SyntaxKind::RegistrationBlockItem` | parser task-30 `registration ... end;` block item; owns optional leading `Annotation` nodes, `registration`, source-ordered registration content, optional recovery, `MissingEnd` or `end` when present, and the final semicolon when present |
 | `SurfaceNodeKind::RegistrationParameter` | none | `SyntaxKind::RegistrationParameter` | parser task-30 registration-local `let` parameter; owns qualified variable segments, a `TypeExpression` or recovery, optional condition list and syntax-level `by` references, and the parameter semicolon when present |
 | `SurfaceNodeKind::ExistentialRegistration` | none | `SyntaxKind::ExistentialRegistration` | parser task-30 existential cluster registration; owns `cluster`, label, colon, attributed `TypeExpression`, header semicolon, and an `existence` correctness condition |
 | `SurfaceNodeKind::ConditionalRegistration` | none | `SyntaxKind::ConditionalRegistration` | parser task-30 conditional cluster registration; owns antecedent registration adjectives, `->`, consequent registration adjectives, `for`, target `TypeExpression`, header semicolon, and a `coherence` correctness condition |
@@ -502,14 +538,14 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::AlgorithmDefinition` | none | `SyntaxKind::AlgorithmDefinition` | parser task-32 definition content for `algorithm name [template_loci] (parameters) [-> type_expression] do ... end;`, extended by task 34 to accept an optional leading `AlgorithmTerminationClause` and ordered header verification clauses before `AlgorithmBody` |
 | `SurfaceNodeKind::AlgorithmParameters` | none | `SyntaxKind::AlgorithmParameters` | parser task-32 algorithm formal list; owns `(`, comma-separated identifier tokens or missing-term recovery, and `)` / delimiter recovery |
 | `SurfaceNodeKind::AlgorithmBody` | none | `SyntaxKind::AlgorithmBody` | parser task-32 `do ... end` algorithm body; owns the `do` token when present, an `AlgorithmStatementList`, and `end` / missing-end recovery |
-| `SurfaceNodeKind::AlgorithmStatementList` | none | `SyntaxKind::AlgorithmStatementList` | parser task-32 source-ordered body statements, extended by task 33 to include control-flow statements and by task 34 to include `AssertStatement`; annotations remain parser task 35 |
+| `SurfaceNodeKind::AlgorithmStatementList` | none | `SyntaxKind::AlgorithmStatementList` | parser task-32 source-ordered body statements, extended by task 33 to include control-flow statements, task 34 to include `AssertStatement`, and task 35 to include `AnnotatedAlgorithmStatement` wrappers |
 | `SurfaceNodeKind::VariableDeclaration` | none | `SyntaxKind::VariableDeclaration` | parser task-32 `var` / `const` declaration, optionally prefixed by `ghost`; owns one or more `VariableBinding` children, optional shared `as TypeExpression`, optional syntax-level justification, and the semicolon or recovery |
 | `SurfaceNodeKind::VariableBinding` | none | `SyntaxKind::VariableBinding` | parser task-32 declaration binding; owns a binding identifier plus optional `:= TermExpression` initializer or missing-term recovery |
 | `SurfaceNodeKind::AssignmentStatement` | none | `SyntaxKind::AssignmentStatement` | parser task-32 assignment statement, optionally prefixed by `ghost`; owns an `Lvalue`, `:=`, assigned `TermExpression` or recovery, and the semicolon or recovery |
 | `SurfaceNodeKind::Lvalue` | none | `SyntaxKind::Lvalue` | parser task-32 syntactic assignment target; owns an identifier and optional dotted identifier segments without resolving selector versus namespace roles |
 | `SurfaceNodeKind::SnapshotStatement` | none | `SyntaxKind::SnapshotStatement` | parser task-32 `snapshot` statement; owns the snapshot identifier and semicolon or recovery |
 | `SurfaceNodeKind::ReturnStatement` | none | `SyntaxKind::ReturnStatement` | parser task-32 `return` statement; owns optional returned `TermExpression`, optional syntax-level justification, and semicolon or recovery |
-| `SurfaceNodeKind::ClaimBlockItem` | none | `SyntaxKind::ClaimBlockItem` | parser task-32 top-level `claim algorithm_name do ... end;` item; owns bare theorem/lemma children and defers claim-local annotations to task 35 |
+| `SurfaceNodeKind::ClaimBlockItem` | none | `SyntaxKind::ClaimBlockItem` | parser task-32 top-level `claim algorithm_name do ... end;` item; owns optional leading `Annotation` nodes before `claim` and theorem/lemma children directly or through task-35 `Annotation` / `LibraryAnnotation` prefixes |
 | `SurfaceNodeKind::IfStatement` | none | `SyntaxKind::IfStatement` | parser task-33 algorithm conditional; owns `if`, a `FormulaExpression` or missing-formula recovery, `do`, the then `AlgorithmStatementList`, and either `end;`, `else` plus nested `IfStatement`, or `else` plus an else `AlgorithmStatementList` and `end;` |
 | `SurfaceNodeKind::WhileStatement` | none | `SyntaxKind::WhileStatement` | parser task-33 algorithm while loop, extended by task 34 to own leading `LoopInvariantClause` and `LoopDecreasingClause` children between `do` and the body list |
 | `SurfaceNodeKind::ForRangeStatement` | none | `SyntaxKind::ForRangeStatement` | parser task-33 algorithm range loop, extended by task 34 to own leading `LoopInvariantClause` children between `do` and the body list; `decreasing` is still rejected for `for` loops |
@@ -527,6 +563,19 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::LoopDecreasingClause` | none | `SyntaxKind::LoopDecreasingClause` | parser task-34 leading while-loop `decreasing TermList [JustificationClause];` clause |
 | `SurfaceNodeKind::AssertStatement` | none | `SyntaxKind::AssertStatement` | parser task-34 algorithm assertion statement; owns `assert`, a `FormulaExpression` or missing-formula recovery, optional syntax-level justification, and semicolon/recovery |
 | `SurfaceNodeKind::TermList` | none | `SyntaxKind::TermList` | parser task-34 comma-separated list of one or more decreasing-measure `TermExpression` children with comma tokens and missing-term recovery for empty slots |
+| `SurfaceNodeKind::Annotation` | none | `SyntaxKind::Annotation` | parser task-35 attachable annotation prefix; owns either one fixed `@identifier` marker with optional `AnnotationArgumentList` / `ProofHintOptionList`, or one nested `LibraryAnnotation` |
+| `SurfaceNodeKind::LibraryAnnotation` | none | `SyntaxKind::LibraryAnnotation` | parser task-35 `@[ annotation_label_list ]` prefix, with delimiter recovery for missing `]` |
+| `SurfaceNodeKind::AnnotationLabelList` | none | `SyntaxKind::AnnotationLabelList` | parser task-35 comma-separated library annotation labels, preserving malformed slots as annotation recovery |
+| `SurfaceNodeKind::AnnotationLabel` | none | `SyntaxKind::AnnotationLabel` | parser task-35 single library annotation label; owns an identifier marker and optional `AnnotationArgumentList` |
+| `SurfaceNodeKind::AnnotationArgumentList` | none | `SyntaxKind::AnnotationArgumentList` | parser task-35 parenthesized annotation argument list with comma tokens, missing-argument recovery, and delimiter recovery |
+| `SurfaceNodeKind::AnnotationArgument` | none | `SyntaxKind::AnnotationArgument` | parser task-35 single annotation argument; preserves identifier, numeral, string-literal, or recovered malformed source without semantic evaluation |
+| `SurfaceNodeKind::ProofHintOptionList` | none | `SyntaxKind::ProofHintOptionList` | parser task-35 `@proof_hint(...)` option list; owns comma-separated `ProofHintOption` children |
+| `SurfaceNodeKind::ProofHintOption` | none | `SyntaxKind::ProofHintOption` | parser task-35 proof-hint option; owns an Appendix A.21 option name, colon, and the required numeral or solver-name value with malformed-option recovery |
+| `SurfaceNodeKind::StandaloneDiagnosticAnnotation` | none | `SyntaxKind::StandaloneDiagnosticAnnotation` | parser task-35 standalone `@show_type(...)` or `@eval(...)` diagnostic directive; it is parsed as source syntax and does not attach to the following statement |
+| `SurfaceNodeKind::AnnotatedStatement` | none | `SyntaxKind::AnnotatedStatement` | parser task-35 ordinary statement wrapper; owns one or more leading `Annotation` nodes followed by one concrete statement node |
+| `SurfaceNodeKind::AnnotatedAlgorithmStatement` | none | `SyntaxKind::AnnotatedAlgorithmStatement` | parser task-35 algorithm statement wrapper; owns one or more leading `Annotation` nodes followed by one concrete algorithm statement node |
+| `SurfaceNodeKind::AnnotatedDefinitionContent` | none | `SyntaxKind::AnnotatedDefinitionContent` | parser task-35 definition-content wrapper; owns one or more leading `Annotation` nodes followed by one concrete definition content node |
+| `SurfaceNodeKind::AnnotatedRegistrationContent` | none | `SyntaxKind::AnnotatedRegistrationContent` | parser task-35 registration-content wrapper; owns one or more leading `Annotation` nodes followed by one concrete registration content node |
 | `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host plus parser task-22 proof justification host; owns one `Proposition`, one `JustificationClause` or `ProofBlock`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
@@ -567,7 +616,8 @@ The current implemented surface node vocabulary is deliberately small:
 
 `SurfaceTokenKind` currently maps to the token raw kinds listed above:
 `Identifier`, `ReservedWord`, `ReservedSymbol`, `Numeral`, `LexemeRun`,
-`UserSymbol`, `StringLiteral`, `ErrorRecovery`, and `Unknown`.
+`UserSymbol`, `AnnotationMarker`, `StringLiteral`, `ErrorRecovery`, and
+`Unknown`.
 `SurfaceOperatorAssociativity` currently has `Left`, `Right`, and
 `NonAssociative`.
 
@@ -623,7 +673,7 @@ trailing comma without a following path, or a nested `SkippedToken` recovery
 child for malformed source consumed before the semicolon. `VisibilityMarker`
 wraps exactly one `private` or `public` token. `VisibleItem` represents a
 top-level visibility prefix on the theorem/notation forms allowed by Chapter
-12. Its children are source ordered: annotation-prefix token nodes when
+12. Its children are source ordered: parsed `Annotation` prefix nodes when
 present, one `VisibilityMarker`, and the target item node. Represented theorem
 and lemma targets use concrete `TheoremItem` / `LemmaItem` nodes; notation
 targets and short legacy theorem fragments remain `PlaceholderItem` targets;
@@ -856,8 +906,11 @@ vocabulary, including later S-013 / S-014 increments such as compact,
 consider/reconsider, conclusion, `then`, and iterative-equality statements.
 Task 22 also lets `ProofBlock`, `NowStatement`, `HerebyStatement`, and case
 branch bodies own the same concrete statement nodes directly through reasoning
-bodies. Statement-level annotations are deferred to task 35 / S-016, so
-`StatementItem` does not own annotation-prefix tokens. `reserve` remains the
+bodies. Task 35 lets ordinary statement positions own `AnnotatedStatement`
+wrappers when one or more attachable annotation prefixes precede the statement;
+standalone diagnostic annotations such as `@show_type` and `@eval` are parsed
+as statement-position syntax without attaching to the following statement.
+`reserve` remains the
 top-level task-8 `ReserveItem` only because Chapter 4 forbids block-local
 `reserve`-shaped statements.
 
@@ -1023,8 +1076,9 @@ later inline-name application resolution. `SurfaceNodeView` exposes
 `as_typed_parameter` helpers. Snapshot rendering prints the literal node names.
 
 Parser task 23 starts S-015 definition-family vocabulary. `DefinitionBlockItem`
-owns the `definition` opener, source-ordered content, optional recovery, and the
-block-closing `end` plus semicolon when present. Concrete content in this
+owns optional leading `Annotation` nodes, the `definition` opener,
+source-ordered content, optional recovery, and the block-closing `end` plus
+semicolon when present. Concrete content in this
 increment is intentionally limited to ordinary `DefinitionParameter` nodes,
 `AssumptionStatement`, `AttributeDefinition`, `CorrectnessCondition`,
 `TheoremItem`, `LemmaItem`, and visibility-wrapped theorem/lemma content.
@@ -1231,6 +1285,8 @@ malformed syntax.
 `TermExpression`, `to`, right `TermExpression`, the header semicolon, and a
 `reducibility` `CorrectnessCondition`. Definition-local `public` / `private`
 registration items reuse `VisibleItem` around the concrete registration item.
+`RegistrationBlockItem` owns optional leading `Annotation` nodes before the
+`registration` opener.
 These nodes preserve registration syntax only. They do not compute cluster
 closure, infer reduced forms, replay reducibility proofs, validate target
 types, decide nullary functorial ambiguity, or check any proof obligation.
@@ -1440,6 +1496,19 @@ LoopInvariantClause range=<start>..<end> recovered=<bool>
 LoopDecreasingClause range=<start>..<end> recovered=<bool>
 AssertStatement range=<start>..<end> recovered=<bool>
 TermList range=<start>..<end> recovered=<bool>
+Annotation range=<start>..<end> recovered=<bool>
+LibraryAnnotation range=<start>..<end> recovered=<bool>
+AnnotationLabelList range=<start>..<end> recovered=<bool>
+AnnotationLabel range=<start>..<end> recovered=<bool>
+AnnotationArgumentList range=<start>..<end> recovered=<bool>
+AnnotationArgument range=<start>..<end> recovered=<bool>
+ProofHintOptionList range=<start>..<end> recovered=<bool>
+ProofHintOption range=<start>..<end> recovered=<bool>
+StandaloneDiagnosticAnnotation range=<start>..<end> recovered=<bool>
+AnnotatedStatement range=<start>..<end> recovered=<bool>
+AnnotatedAlgorithmStatement range=<start>..<end> recovered=<bool>
+AnnotatedDefinitionContent range=<start>..<end> recovered=<bool>
+AnnotatedRegistrationContent range=<start>..<end> recovered=<bool>
 BreakStatement range=<start>..<end> recovered=<bool>
 ContinueStatement range=<start>..<end> recovered=<bool>
 StatementItem range=<start>..<end> recovered=<bool>
