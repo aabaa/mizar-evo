@@ -27,9 +27,10 @@ proof_block        ::= proof ;
 
 symbol_name        ::= identifier | user_symbol ;
 def_symbol         ::= identifier | user_symbol ;
-attribute_def_name ::= def_symbol ;
-mode_def_name      ::= def_symbol ;
-struct_def_name    ::= def_symbol ;
+constructor_name   ::= identifier | readable_constructor_name ;
+attribute_def_name ::= constructor_name ;
+mode_def_name      ::= constructor_name ;
+struct_def_name    ::= constructor_name ;
 field_name         ::= identifier ;
 selector           ::= field_name { "." field_name } ;
 inline_func_name   ::= identifier ;
@@ -73,13 +74,20 @@ escape_seq       ::= "\" ( '"' | "'" | "\" ) ;
 
 symbol_char      ::= ? any ASCII graphic character except "@" and whitespace ? ;
 user_symbol      ::= symbol_char { symbol_char } ;
+constructor_segment ::= ( letter | digit | "_" | "'" )
+                        { letter | digit | "_" | "'" } ;
+readable_constructor_name ::= constructor_segment "-"
+                              constructor_segment
+                              { "-" constructor_segment } ;
+constructor_name ::= identifier | readable_constructor_name ;
 
 line_comment     ::= "::"  { character - newline } newline ;
 block_comment    ::= "::=" { character } "=::" ;
 doc_comment      ::= ":::" { character - newline } newline ;
 ```
 
-予約語は大文字小文字を区別し、識別子またはユーザーシンボルとして使えません。
+予約語は大文字小文字を区別し、identifier、user symbol、constructor name として
+使えません。
 
 ```text
 algorithm and antonym as assert assume assumed asymmetry attr
@@ -172,17 +180,22 @@ builtin_type      ::= "object" | "set" ;
 attribute_name    ::= attribute_ref_name ;
 mode_name         ::= mode_ref_name ;
 struct_name       ::= struct_ref_name ;
-attribute_ref_name ::= qualified_symbol ;
-mode_ref_name     ::= qualified_symbol ;
-struct_ref_name   ::= qualified_symbol ;
+attribute_ref_name ::= qualified_constructor_name ;
+mode_ref_name     ::= qualified_constructor_name ;
+struct_ref_name   ::= qualified_constructor_name ;
 
 parameter_list    ::= parameter { "," parameter } ;
 parameter         ::= identifier | numeral ;
-qualified_symbol  ::= { namespace_segment "." } user_symbol ;
-namespace_segment ::= identifier ;
+qualified_symbol            ::= { namespace_segment "." } user_symbol ;
+qualified_constructor_name  ::= { namespace_segment "." } constructor_name ;
+namespace_segment           ::= identifier ;
 ```
 
-`qualified_symbol` の最後の token は active lexicon にある user symbol です。そのため、識別子形の symbol は、その lexicon で利用可能な場合に限って symbol として解析されます。
+`qualified_symbol` の最後の token は active lexicon にある functor / predicate
+notation symbol です。`qualified_constructor_name` の最後の token は mode、
+structure、attribute constructor name です。そのため、identifier-shaped symbol は、
+active lexicon で利用可能で、現在の grammar position がその kind を許す場合にだけ
+symbol として解析されます。
 
 ## A.4 変数と定数
 

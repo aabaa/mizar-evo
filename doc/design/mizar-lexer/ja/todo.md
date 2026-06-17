@@ -7,7 +7,35 @@
 
 ## Ordered Task List
 
-未完了の ordered task はありません。
+1. range-aware local lexical declaration support を追加する。
+   - Spec refs: `spec.en.02.lexical.user_symbols.active_ranges`,
+     `spec.en.10.functors.operator_declarations.range_activation`,
+     `spec.en.11.symbol_management.scope_visibility.lexical_candidates`。
+   - 実装前に、現在の import-only active environment を更新後仕様に対する
+     `source_drift` として分類する。
+   - current-module の `pred`、`func`、`mode`、`attr`、`struct`、`synonym`、
+     `antonym`、`infix_operator`、`prefix_operator`、`postfix_operator`
+     activation event を、type resolution や full semantic IR construction なしで
+     収集する shallow declaration prepass を追加する。
+   - 各 event は declaring item 完了後にだけ active にする。forward reference は
+     lexer が挙動を創作せず、parser/resolver diagnostic または recovery で扱う。
+   - same-spelling local/import entry は downstream resolver phase の overload
+     candidate として保持する。
+
+2. notation symbol と readable constructor name を lexer metadata で分離する。
+   - 任意の `user_symbol` spelling は predicate/functor notation と
+     predicate/functor alias にだけ許す。
+   - `constructor_name` spelling は mode、attribute、structure name に許す。
+     selector は identifier のままにする。
+   - `UserSymbolKind` / summary metadata と fixtures を更新し、legacy の
+     selector-symbol および arbitrary symbolic mode/attribute/structure behavior を
+     削除するか、明示的な compatibility gate に置く。
+
+3. parser-facing operator metadata を source-position aware にする。
+   - file-wide `OperatorFixityTable` handoff を、token span で active な
+     prefix/postfix/infix metadata を返せる query に置き換える。
+   - use 前の declaration、use 後の declaration、private/public が lexing に影響しないこと、
+     same-spelling overload candidate を cover する。
 
 ## Completed Tasks
 

@@ -239,8 +239,9 @@ resolver / build-system 依存を避ける。
 見える場合は、`doc/design/mizar-syntax/ja/00.crate_plan.md` を優先する。
 
 4. **修飾シンボルと namespace パス。** [x]
-   - `qualified_symbol = { namespace_segment "." } user_symbol` とドット
-     区切りモジュールパスの共有ヘルパー。後続の import、型ヘッド、項、引用が
+   - `qualified_symbol = { namespace_segment "." } user_symbol`、
+     `qualified_constructor_name = { namespace_segment "." } constructor_name`、および
+     ドット区切りモジュールパスの共有ヘルパー。後続の import、型ヘッド、項、引用が
      使う。パスの形だけを扱い、変数 shadowing は resolver 側に残す。
    - 結果: task 4 の production inventory は [grammar.md](./grammar.md) に記録済み。
      共有 helper は `ModulePath`、`NamespacePath`、`QualifiedSymbol`、
@@ -618,7 +619,7 @@ resolver / build-system 依存を避ける。
       general justification を消費する。semantic な radix validation、sethood proof
       obligation、dependent-mode check、legacy な `means` mode body は parser の外に
       残す。parser unit test、active parse-only pass/fail corpus fixture、
-      source-level symbolic mode-name coverage、traceability metadata が Chapter 7 の
+      readable constructor-name mode coverage、traceability metadata が Chapter 7 の
       mode definition を覆う。
 
 27. **`redefine`・`synonym`・`antonym`。** [x]
@@ -666,7 +667,9 @@ resolver / build-system 依存を避ける。
     - 結果: definition block 内の `StructureDefinition`、raw
       `StructurePattern`、`StructureField`、`StructureProperty`、
       `InheritanceDefinition`、`InheritanceTarget`、`FieldRedefinition`、
-      `PropertyRedefinition` parsing を実装した。definition-local な
+      `PropertyRedefinition` parsing を実装した。structure name は ordinary identifier
+      または readable hyphenated constructor name に制限され、selector は identifier のままにする。
+      definition-local な
       `public struct` / `private struct` と `public inherit` / `private inherit` は
       `VisibleItem` を再利用する。parser は structure parameter、field initializer、
       shorthand inheritance、explicit `where ... end` inheritance、`extends set`、

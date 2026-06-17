@@ -45,7 +45,11 @@ postfix_operator("!", 95);
 | `prefix_operator("sym", N);` | Prefix operator at precedence `N` |
 | `postfix_operator("sym", N);` | Postfix operator at precedence `N` |
 
-Precedence values range from `0` to `255`; higher values bind more tightly. The default precedence for a symbolic functor with no declaration is `64`, non-associative.
+Precedence values range from `0` to `255`; higher values bind more tightly.
+The default precedence for a symbolic functor with no declaration is `64`,
+non-associative. Operator declarations are source-position dependent: a
+declaration affects only later tokens, and it must target a functor spelling
+that is already active at the declaration point.
 
 Built-in predicate symbols such as `=`, `<>`, and `in` are declared in the implicitly imported core module. They cannot be overridden by user declarations.
 
@@ -124,18 +128,24 @@ for x being Nat holds x > 0 implies x >= 1
 
 ## B.5 Recommended Parsing Algorithm
 
-A Pratt parser, also called precedence climbing with null and left denotations, is recommended for term expressions and formula expressions. It fits the language well because the active lexicon is import-dependent and operator declarations are table-driven.
+A Pratt parser, also called precedence climbing with null and left denotations,
+is recommended for term expressions and formula expressions. It fits the
+language well because the active lexicon is import-seeded, current-module
+operator declarations are source-position dependent, and operator metadata is
+table-driven at each query point.
 
 Recommended implementation outline:
 
-1. Preprocess imports and build the active lexicon, including each visible operator's fixity, precedence, associativity, arity, and defining module.
-2. Tokenize using the longest-match rule from Chapter 2. String-literal recognition remains enabled only in grammar positions that require a string argument.
-3. Parse primary term forms: variables, numerals, parenthesized terms, structure constructors, set expressions, and `the` expressions.
-4. Parse term-level prefix and postfix operators using their declared binding powers.
-5. Parse term-level infix operators by comparing the next operator's left binding power against the current minimum binding power.
-6. Parse `qua` as the lowest-precedence term-level type qualification.
-7. Complete an atomic formula by parsing predicate notation, equality, membership, type assertions, or attribute assertions around the parsed term operands. If a parenthesized group at this point contains formula-only syntax, classify it as a parenthesized formula instead of a parenthesized term.
-8. Parse formula-level prefix, infix, and quantifier forms using a separate fixed binding-power table.
+1. Preprocess imports and build the imported base lexicon.
+2. Collect current-module declaration and operator-metadata activation events,
+   then expose range-aware queries for the candidates active at a token span.
+3. Tokenize using the longest-match rule from Chapter 2. String-literal recognition remains enabled only in grammar positions that require a string argument.
+4. Parse primary term forms: variables, numerals, parenthesized terms, structure constructors, set expressions, and `the` expressions.
+5. Parse term-level prefix and postfix operators using their declared binding powers active at the operator token span.
+6. Parse term-level infix operators by comparing the next operator's active left binding power against the current minimum binding power.
+7. Parse `qua` as the lowest-precedence term-level type qualification.
+8. Complete an atomic formula by parsing predicate notation, equality, membership, type assertions, or attribute assertions around the parsed term operands. If a parenthesized group at this point contains formula-only syntax, classify it as a parenthesized formula instead of a parenthesized term.
+9. Parse formula-level prefix, infix, and quantifier forms using a separate fixed binding-power table.
 
 For infix term operators, use the following binding-power convention:
 

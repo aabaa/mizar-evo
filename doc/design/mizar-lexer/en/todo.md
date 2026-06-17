@@ -7,7 +7,36 @@ language-spec synchronization.
 
 ## Ordered Task List
 
-No open ordered tasks.
+1. Add range-aware local lexical declaration support.
+   - Spec refs: `spec.en.02.lexical.user_symbols.active_ranges`,
+     `spec.en.10.functors.operator_declarations.range_activation`,
+     `spec.en.11.symbol_management.scope_visibility.lexical_candidates`.
+   - Classify current import-only active environment as `source_drift` against
+     the updated specification before implementation.
+   - Add a shallow declaration prepass that collects current-module
+     `pred`, `func`, `mode`, `attr`, `struct`, `synonym`, `antonym`,
+     `infix_operator`, `prefix_operator`, and `postfix_operator` activation
+     events without resolving types or constructing full semantic IR.
+   - Activate each event only after the declaring item is complete; reject or
+     recover forward references through parser/resolver diagnostics rather than
+     by inventing behavior in the lexer.
+   - Preserve same-spelling local/import entries as overload candidates for
+     downstream resolver phases.
+
+2. Split notation symbols from readable constructor names in lexer metadata.
+   - Admit arbitrary `user_symbol` spellings only for predicate/functor
+     notation and predicate/functor aliases.
+   - Admit `constructor_name` spellings for mode, attribute, and structure
+     names; selectors remain identifiers.
+   - Update `UserSymbolKind` / summary metadata and fixtures so legacy
+     selector-symbol and arbitrary symbolic mode/attribute/structure behavior
+     is removed or explicitly compatibility-gated.
+
+3. Make parser-facing operator metadata source-position aware.
+   - Replace the file-wide `OperatorFixityTable` handoff with a query that can
+     answer which prefix/postfix/infix metadata is active at a token span.
+   - Cover declarations after use, declarations before use, private/public
+     no-op visibility for lexing, and same-spelling overload candidates.
 
 ## Completed Tasks
 

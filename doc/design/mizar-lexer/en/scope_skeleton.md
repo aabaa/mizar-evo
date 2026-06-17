@@ -59,6 +59,13 @@ The skeleton pre-scan recognizes only reserved-keyword-shaped structure needed t
 
 It is intentionally not a parser. It may under-approximate bindings when source is malformed or when a binding form is not yet implemented.
 
+The skeleton tracks identifier bindings only. Inline `deffunc`, `defpred`, and
+algorithm names are identifier-only local declarations and do not add
+user-symbol dictionary entries. Current-module predicate/functor notation,
+constructor names, aliases, and operator metadata are owned by the
+range-aware lexical declaration prepass described in
+`lexical_environment.md`.
+
 The skeleton is suitable as a pre-parser handoff object: the parser may consume final tokens together with block and statement ranges from `ScopeSkeleton`. It must not treat the skeleton as the authoritative AST. In particular, expression grammar, type checking, semantic name resolution, and syntax acceptance remain parser/resolver responsibilities.
 
 Lexical lifetimes are conservative:

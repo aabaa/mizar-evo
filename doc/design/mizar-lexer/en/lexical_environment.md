@@ -4,9 +4,14 @@
 
 ## Purpose
 
-This module builds the file-scoped active lexical environment consumed by token disambiguation.
+This module builds the active lexical environment consumed by token
+disambiguation.
 
-The environment combines built-in reserved tables with exported lexical symbol summaries from modules named by the import prelude. It is stable for the whole source file body because imports are restricted to the top-of-file prelude.
+The implemented environment combines built-in reserved tables with exported
+lexical symbol summaries from modules named by the import prelude. After the
+constructor-name and declaration-range specification update, this design must
+grow a source-position-sensitive layer: current-module lexical declarations
+extend the imported environment only after their declaration item is complete.
 
 ## Public API
 
@@ -76,10 +81,15 @@ pub struct UserSymbolCandidate {
 }
 ```
 
-`UserSymbolKind` records the parser/resolver category of a visible symbol: functor, predicate,
-mode, attribute, structure, selector, or constructor. `UserSymbolArity` records the argument-count
-shape as an exact count, bounded range, or lower-bounded range. These are parser/resolver-facing
-summaries, not full type signatures.
+`UserSymbolKind` records the parser/resolver category of a visible lexical
+entry. Under the current language specification, arbitrary user-symbol
+notation is admitted directly for functors and predicates. Mode, attribute,
+and structure names use `constructor_name` spellings, which may still require
+active-environment metadata when they are hyphenated rather than ordinary
+identifiers. Structure selectors are identifiers and should not be exported as
+user-symbol lexical entries. `UserSymbolArity` records the argument-count shape
+as an exact count, bounded range, or lower-bounded range. These are
+parser/resolver-facing summaries, not full type signatures.
 
 The active environment should support:
 
@@ -88,7 +98,8 @@ The active environment should support:
 - symbols containing `.`;
 - import conflict detection for equal-spelling imported candidates;
 - stable provenance for diagnostics.
-- symbol kind and arity metadata for downstream parser and resolver phases.
+- symbol kind and arity metadata for downstream parser and resolver phases;
+- range-sensitive activation for current-module declarations.
 
 `ModuleLexicalSummary` is a canonical producer-side artifact. The component that creates a
 summary must normalize `exported_symbols` into deterministic order before handing it to the lexer
@@ -111,7 +122,8 @@ diagnostic stability by import ordinal, export rank, kind, arity, source module,
 
 ## Algorithm
 
-The implemented builder constructs a deterministic lookup object from already-resolved imports.
+The implemented builder constructs a deterministic lookup object from
+already-resolved imports.
 
 1. Index `ModuleLexicalSummary` values by `ModuleId`. Duplicate summaries are accepted only if they are byte-for-byte equivalent as Rust values; inconsistent duplicates fail construction.
 2. Seed a stable FNV-style fingerprint with a version string and the built-in reserved word and reserved symbol tables in their declared order.
@@ -133,6 +145,31 @@ Current implementation notes:
 - equal-spelling imported user symbols from different imports are rejected as environment construction conflicts.
 - fingerprints use an internal stable byte hasher rather than process-randomized hashing, and include symbol kind and arity metadata.
 - the trie is an internal acceleration structure; it does not affect fingerprinting or summary canonicalization.
+
+Required extension after the constructor-name specification update:
+
+1. Build an import-seeded base environment exactly as today.
+2. Run a shallow lexical declaration prepass over the current source after raw
+   scanning/import pre-scan and before final disambiguation. The prepass may
+   inspect definition/notation headers, but it must not perform semantic
+   resolution, type checking, proof checking, or full AST construction.
+3. Collect source-ordered activation events for `pred`, `func`, `mode`,
+   `attr`, `struct`, `synonym`, `antonym`, `infix_operator`,
+   `prefix_operator`, and `postfix_operator`.
+4. Admit arbitrary `user_symbol` spellings only for predicate/functor notation
+   and predicate/functor aliases. Admit `constructor_name` spellings for mode,
+   attribute, and structure names. Keep structure selectors as identifiers.
+5. Activate each collected spelling or operator metadata entry only after the
+   declaring item is complete. A declaration's own header and definiens cannot
+   use the spelling it is currently introducing, and later declarations are not
+   visible by forward reference.
+6. Preserve local/import same-spelling entries as overload candidates for
+   downstream resolver phases. Do not lexically shadow imported candidates.
+7. Keep `private` and `public` out of tokenization decisions; visibility
+   affects producer-side export summaries only.
+8. Expose a source-position query API so disambiguation and the parser-facing
+   operator table can ask which candidates and fixity metadata are active at a
+   token's byte span.
 
 ## Non-Goals
 

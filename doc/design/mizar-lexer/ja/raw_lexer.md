@@ -310,14 +310,19 @@ pub trait ScopeLexView {
 
 `LexemeRun` 内の各位置で、曖昧性解消器は以下の候補を検討します。
 
-1. アクティブなユーザーシンボル
+1. source 位置で active な lexical entry。imported entry と、既に完了した
+   current-module declaration を含む
 2. 予約複合記号
 3. 予約語
 4. 識別子構文
 5. 数字から始まる場合の数字構文
 6. フォールバックのエラー回復
 
-選択される候補は、現在のパーサーの期待と上書き環境の下で有効な、最長の候補です。異なるインポートから来た同綴りのシンボルは、字句環境の構築時点ですでに拒否されています。同じインポート内の同綴りオーバーロードは、種別とアリティのメタデータ付きで、後続の意味論的な解決のために保持されますが、字句解析器が選ぶトークンの綴りは変わりません。
+選択される候補は、現在のパーサーの期待と上書き環境の下で有効な、最長の候補です。
+lexical environment は same-spelling local/import overload candidate を、種別と
+arity metadata 付きで後続の意味論的な解決のために保持します。これらは
+字句解析器が選ぶ token spelling を変えません。incompatible な same-spelling import は
+import 順で選ばず、import/link diagnostic として扱います。
 
 パーサーの期待は、単体では有効な候補を排除できます。たとえば、束縛子の識別子を期待する文法位置では識別子としての解釈を優先し、式の位置では記号としての解釈を許可できます。
 

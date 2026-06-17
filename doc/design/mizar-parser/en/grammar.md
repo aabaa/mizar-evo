@@ -52,16 +52,18 @@ module_identifier ::= identifier ;
 
 namespace_path    ::= identifier { "." identifier } ;
 
-qualified_symbol  ::= { namespace_segment "." } user_symbol ;
-namespace_segment ::= identifier ;
+qualified_symbol            ::= { namespace_segment "." } user_symbol ;
+qualified_constructor_name  ::= { namespace_segment "." } constructor_name ;
+namespace_segment           ::= identifier ;
 ```
 
 `module_path` is the import/export path shape from Chapter 12. It is the only
 shared path helper that accepts `relative_prefix`; `namespace_path` is reserved
 for citation/reference prefixes and must not accept relative import prefixes.
 `qualified_symbol` ends in a parser-facing `user_symbol` token supplied by the
-active lexicon, with any preceding namespace segments represented as identifier
-segments.
+active lexicon for functor and predicate notation. Type heads and attribute
+references use `qualified_constructor_name`, whose final component is an
+ordinary identifier or readable hyphenated constructor name.
 
 Parser task 4 provides shared helper methods and unit coverage only. It does
 not introduce a standalone corpus position because these path forms become
@@ -251,9 +253,9 @@ qua_arg           ::= identifier { "qua" radix_type } ;
 argument_list     ::= term_expression { "," term_expression } ;
 
 builtin_type      ::= "object" | "set" ;
-attribute_ref_name ::= qualified_symbol ;
-mode_ref_name     ::= qualified_symbol ;
-struct_ref_name   ::= qualified_symbol ;
+attribute_ref_name ::= qualified_constructor_name ;
+mode_ref_name     ::= qualified_constructor_name ;
+struct_ref_name   ::= qualified_constructor_name ;
 ```
 
 Task 8 makes type expressions executable through top-level `reserve`
@@ -269,15 +271,18 @@ The parser emits `TypeExpression` with an optional non-empty `AttributeChain`
 and a required generic `TypeHead`. It does not decide whether a syntactic head
 is a radix type, structure, or mode, and it does not decide whether a dotted
 attribute spelling contains a structure qualifier or only namespace segments.
-When a sequence of user-symbol-shaped references could be split multiple ways,
+When a sequence of constructor-name-shaped references could be split multiple ways,
 the parser keeps the rightmost available syntactic type-head candidate as the
 `TypeHead` and treats preceding references as attributes. This is a syntax-only
 boundary rule, not semantic classification.
 
 `AttributeRef` preserves optional `non`, optional parameter prefixes, a
-`QualifiedSymbol`, and optional parenthesized term arguments. `TypeHead`
-preserves builtin `object` / `set` tokens or `QualifiedSymbol` heads plus
-optional `TypeArguments`. Task 8 preserves `ParameterPrefix` only when the
+constructor-qualified reference surface, and optional parenthesized term
+arguments. `TypeHead` preserves builtin `object` / `set` tokens or
+constructor-qualified heads plus optional `TypeArguments`. Existing syntax-node
+names may still use `QualifiedSymbol` as a storage shape, but the accepted
+type/attribute spelling class is `qualified_constructor_name`, not arbitrary
+predicate/functor `user_symbol`. Task 8 preserves `ParameterPrefix` only when the
 incoming tokens already expose a local prefix split before an attribute
 reference: identifier or numeral plus `-`, or a parenthesized identifier/numeral
 list plus `-`. It does not validate template-parameter scope and does not split
@@ -1346,7 +1351,8 @@ instead of inventing AST shape for the open definition/template ambiguity.
 `AttributeDefinition` owns the `attr` keyword, label, colon, subject token,
 `is`, an `AttributePattern`, `means`, a `FormulaDefiniens`, recovery nodes, and
 the terminating semicolon. `AttributePattern` preserves an optional task-8
-`ParameterPrefix` and an identifier- or user-symbol-shaped attribute name.
+`ParameterPrefix` and a constructor-name-shaped attribute name; arbitrary
+operator-like user-symbol spellings are not attribute names.
 `FormulaDefiniens` owns either one `FormulaExpression` or a list of
 `FormulaCase` nodes separated by commas, plus an optional `otherwise` formula.
 `FormulaCase` owns the value formula, `if`, and the condition formula.
@@ -1398,8 +1404,7 @@ loci                   ::= locus_list | "(" locus_list ")" ;
 locus_list             ::= locus { "," locus } ;
 locus                  ::= identifier ;
 template_loci          ::= "[" locus_list "]" ;
-def_predicate_symbol   ::= identifier | symbolic_pred ;
-symbolic_pred          ::= symbol_char+ ;
+def_predicate_symbol   ::= identifier | user_symbol ;
 ```
 
 `PredicateDefinition` owns the `pred` keyword, label identifier or
@@ -1470,8 +1475,7 @@ loci                   ::= locus_list | "(" locus_list ")" ;
 locus_list             ::= locus { "," locus } ;
 locus                  ::= identifier ;
 template_loci          ::= "[" locus_list "]" ;
-functor_symbol         ::= identifier | symbolic_func ;
-symbolic_func          ::= symbol_char+ ;
+functor_symbol         ::= identifier | user_symbol ;
 term_definiens         ::= term_expression
                          | term_case { "," term_case }
                            [ "otherwise" term_expression ] ;
@@ -1554,8 +1558,7 @@ mode_def               ::= "mode" label ":" mode_pattern
                            "is" type_expression ";"
                            [ mode_property ] ;
 mode_pattern           ::= mode_def_name [ type_params ] ;
-mode_def_name          ::= def_symbol ;
-def_symbol             ::= identifier | user_symbol ;
+mode_def_name          ::= constructor_name ;
 type_params            ::= ( "of" | "over" ) type_parameter_list
                          | "[" type_parameter_list "]" ;
 type_parameter_list    ::= identifier { "," identifier } ;
@@ -1572,12 +1575,13 @@ definition.
 
 `ModePattern` preserves raw source-order tokens for the
 `mode_def_name [ type_params ]` span. The mode definition name must be exactly
-one identifier or active user-symbol token. Type parameters are one optional
-non-empty identifier comma-list introduced by `of` or `over`, or one optional
-bracketed non-empty identifier comma-list. Empty parameter lists, dangling
-commas, multiple parameter groups, lexeme-run tokens, and unsupported tokens
-recover as malformed mode patterns. The AST does not record whether a parameter
-list is semantically dependent, over a structure, or otherwise valid.
+one ordinary identifier or readable hyphenated constructor-name token. Type
+parameters are one optional non-empty identifier comma-list introduced by `of`
+or `over`, or one optional bracketed non-empty identifier comma-list. Empty
+parameter lists, dangling commas, multiple parameter groups, arbitrary
+user-symbol / lexeme-run tokens, and unsupported tokens recover as malformed
+mode patterns. The AST does not record whether a parameter list is semantically
+dependent, over a structure, or otherwise valid.
 
 The mode body reuses task-8 `TypeExpression` for the Chapter 7
 attribute-chain plus radix-type surface. That representation preserves the
@@ -1600,10 +1604,10 @@ the next definition-content start, `end`, or EOF. A `sethood` property without
 skipped to the property semicolon, the next definition-content start, `end`, or
 EOF.
 
-Task 26 tests must pin: ordinary canonical `is` mode definitions, attribute
-chains in mode bodies, `of`, `over`, and bracketed type-parameter lists,
-imported symbolic mode names, definition-local visibility, `sethood` clauses
-with citation, computation, and proof justifications, rejection of legacy
+Task 26 tests must pin: ordinary canonical `is` mode definitions, readable
+hyphenated constructor-name mode definitions, attribute chains in mode bodies,
+`of`, `over`, and bracketed type-parameter lists, definition-local visibility,
+`sethood` clauses with citation, computation, and proof justifications, rejection of legacy
 `means` mode bodies as recovered syntax, malformed label/colon/pattern/`is`/
 body/semicolon/property-justification recovery, active parse-only pass/fail
 corpus coverage, and traceability to Chapter 7 §7.2 / §7.6 / §7.7 / §7.8 /
@@ -1686,7 +1690,10 @@ recovery, and the terminating semicolon. Definition-local and top-level
 `NotationPattern` deliberately preserves each side as raw source-order tokens
 instead of choosing the predicate, functor, mode, or attribute branch of
 `alt_pattern` / `original_pattern`; that branch depends on symbol tables and
-remains resolver-owned.
+remains resolver-owned. The raw preservation does not relax the language
+restriction: predicate and functor alias branches may contain arbitrary
+user-symbol notation, while mode and attribute alias branches use
+constructor-name spellings.
 
 Task 27 recovery reuses task-23 through task-26 synchronization.
 Redefinition labels, subjects, malformed raw patterns, `equals` term bodies,
@@ -1793,11 +1800,12 @@ inheritance_coherence  ::= "coherence" justification ";" ;
 
 `StructureDefinition` owns `struct`, a raw `StructurePattern`, `where`, one or
 more `StructureField` / `StructureProperty` members, `end`, and the final
-semicolon when present. `StructurePattern` owns source-ordered raw structure
-definition name and parameter tokens (`of`, `over`, or bracket parameters)
-without deciding whether the name is a valid structure symbol. Definition-local
-`public` / `private` structure definitions reuse the existing `VisibleItem` /
-`VisibilityMarker` wrapper.
+semicolon when present. `StructurePattern` owns source-ordered structure
+definition name and parameter tokens (`of`, `over`, or bracket parameters).
+The structure name is constrained to an ordinary identifier or readable
+hyphenated constructor name, not an arbitrary user-symbol token.
+Definition-local `public` / `private` structure definitions reuse the existing
+`VisibleItem` / `VisibilityMarker` wrapper.
 
 `StructureField` owns `field`, a field identifier, `->`, a `TypeExpression`,
 an optional initializer introduced by `:=` and parsed as `TermExpression`, and

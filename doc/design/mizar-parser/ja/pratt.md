@@ -20,11 +20,16 @@ set-comprehension primary は実装済みである。
 
 ## 項 Pratt 契約
 
-`ParseRequest::operator_fixity` は、`ParserInputs` から導出された parser-facing
+`ParseRequest::operator_fixity` は現在、`ParserInputs` から導出された parser-facing
 operator metadata を運ぶ。内容は spelling、fixity kind、precedence、そして infix
 operator については associativity である。parser はこの metadata を文法設定としてのみ
 消費する。overload root の選択、result type 推論、cluster fact の評価、
 selector-versus-namespace role の解決は行わない。
+
+declaration-range 仕様更新後、この table は source-position aware になる必要がある。
+`infix_operator`、`prefix_operator`、`postfix_operator` declaration は後続 token にだけ
+影響するため、Pratt lookup は file-wide table ではなく、operator token span で active な
+operator metadata を問い合わせなければならない。
 
 項 parsing は次の順序を使う。
 
@@ -57,8 +62,8 @@ entry だけを使う。left operand の後で postfix entry と infix entry が
 共有する場合、eligible な infix entry は後続 token が right operand を開始できるなら
 優先される。そうでなければ eligible な postfix entry が優先される。同一 spelling
 operator の incompatible metadata conflict は lexical-environment または link stage の
-error である。この parser stage は `ParserInputs` が deterministic な visible table を
-すでに選んでいると仮定する。
+error である。この parser stage は `ParserInputs` またはその range-aware successor が、
+parse 中の token position に対する deterministic な visible set をすでに選んでいると仮定する。
 
 ## Formula Pratt Contract
 

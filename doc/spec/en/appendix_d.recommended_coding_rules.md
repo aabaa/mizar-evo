@@ -36,7 +36,7 @@ Names should make exported APIs easy to cite, document, and diagnose.
 | Definition labels | Use stable labels for exported definitions; changing a label is a public API change for citations and documentation links. |
 | Theorem and lemma labels | Use names that describe the statement, such as `Union_empty_right` or `Subgroup_card_nonzero`, rather than proof-local numbering for exported results. |
 | Local proof labels | Short labels such as `A1`, `A2`, or `Step1` are acceptable inside a small proof, but avoid exporting or documenting them as public references. |
-| Symbolic type names | Use symbolic structure and mode names only when they match established mathematical vocabulary, such as `1-sorted`, `R-module`, or `C*-algebra`. Avoid delimiter-like or operator-like names when an ordinary identifier would be clearer. |
+| Constructor names | Use ordinary identifiers for modes, structures, and attributes unless a readable hyphenated constructor name such as `1-sorted`, `R-module`, or `C-star-algebra` is clearer. Keep operator-like notation for functors and predicates. |
 | Namespace aliases | Use aliases to shorten long imports when they improve readability, but avoid aliases that hide the mathematical origin of a symbol. |
 | Qualified names | Use qualified names when two imports provide similar notation or when a proof depends on a specific library result. |
 

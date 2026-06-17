@@ -310,14 +310,20 @@ Longest-match is applied by the disambiguator, not by early raw token splitting.
 
 At each position inside a `LexemeRun`, the disambiguator considers candidates from:
 
-1. active user symbols;
+1. active lexical entries at the source position, including imported entries
+   and already-completed current-module declarations;
 2. reserved compound symbols;
 3. reserved words;
 4. identifier syntax;
 5. numeral syntax when the raw unit starts with a digit;
 6. fallback error recovery.
 
-The selected candidate is the longest valid candidate for the current parser expectation and override environment. The lexical environment has already rejected equal-spelling symbols imported from different modules. Same-import overload candidates with the same spelling remain representable, with kind and arity metadata, for later semantic resolution; they do not change the final token spelling chosen by the lexer.
+The selected candidate is the longest valid candidate for the current parser
+expectation and override environment. The lexical environment keeps
+same-spelling local/import overload candidates representable, with kind and
+arity metadata, for later semantic resolution; they do not change the final
+token spelling chosen by the lexer. Incompatible same-spelling imports remain
+an import/link diagnostic rather than an import-order choice.
 
 Parser expectation may rule out otherwise valid candidates. For example, a grammar position expecting a binder identifier may prefer an identifier interpretation, while an expression position may admit symbol interpretations.
 

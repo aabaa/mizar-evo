@@ -31,9 +31,10 @@ proof_block        ::= proof ;
 
 symbol_name        ::= identifier | user_symbol ;
 def_symbol         ::= identifier | user_symbol ;
-attribute_def_name ::= def_symbol ;
-mode_def_name      ::= def_symbol ;
-struct_def_name    ::= def_symbol ;
+constructor_name   ::= identifier | readable_constructor_name ;
+attribute_def_name ::= constructor_name ;
+mode_def_name      ::= constructor_name ;
+struct_def_name    ::= constructor_name ;
 field_name         ::= identifier ;
 selector           ::= field_name { "." field_name } ;
 inline_func_name   ::= identifier ;
@@ -81,13 +82,20 @@ escape_seq       ::= "\" ( '"' | "'" | "\" ) ;
 
 symbol_char      ::= ? any ASCII graphic character except "@" and whitespace ? ;
 user_symbol      ::= symbol_char { symbol_char } ;
+constructor_segment ::= ( letter | digit | "_" | "'" )
+                        { letter | digit | "_" | "'" } ;
+readable_constructor_name ::= constructor_segment "-"
+                              constructor_segment
+                              { "-" constructor_segment } ;
+constructor_name ::= identifier | readable_constructor_name ;
 
 line_comment     ::= "::"  { character - newline } newline ;
 block_comment    ::= "::=" { character } "=::" ;
 doc_comment      ::= ":::" { character - newline } newline ;
 ```
 
-Reserved words are case-sensitive and cannot be identifiers or user symbols.
+Reserved words are case-sensitive and cannot be identifiers, user symbols, or
+constructor names.
 
 ```text
 algorithm and antonym as assert assume assumed asymmetry attr
@@ -185,19 +193,22 @@ builtin_type      ::= "object" | "set" ;
 attribute_name    ::= attribute_ref_name ;
 mode_name         ::= mode_ref_name ;
 struct_name       ::= struct_ref_name ;
-attribute_ref_name ::= qualified_symbol ;
-mode_ref_name     ::= qualified_symbol ;
-struct_ref_name   ::= qualified_symbol ;
+attribute_ref_name ::= qualified_constructor_name ;
+mode_ref_name     ::= qualified_constructor_name ;
+struct_ref_name   ::= qualified_constructor_name ;
 
 parameter_list    ::= parameter { "," parameter } ;
 parameter         ::= identifier | numeral ;
-qualified_symbol  ::= { namespace_segment "." } user_symbol ;
-namespace_segment ::= identifier ;
+qualified_symbol            ::= { namespace_segment "." } user_symbol ;
+qualified_constructor_name  ::= { namespace_segment "." } constructor_name ;
+namespace_segment           ::= identifier ;
 ```
 
-The final token of `qualified_symbol` is a user symbol in the active lexicon.
-Identifier-shaped symbols are therefore parsed as symbols only when they are
-available in that lexicon.
+The final token of `qualified_symbol` is a functor/predicate notation symbol
+in the active lexicon. The final token of `qualified_constructor_name` is a
+mode, structure, or attribute constructor name. Identifier-shaped symbols are
+therefore parsed as symbols only when they are available in the active lexicon
+and admitted by the current grammar position.
 
 ## A.4 Variables and Constants
 

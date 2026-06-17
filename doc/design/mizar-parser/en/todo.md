@@ -252,8 +252,9 @@ older numeric syntax task references appear to disagree, prefer
 
 4. **Qualified symbols and namespace paths.** [x]
    - A shared helper for `qualified_symbol = { namespace_segment "." }
-     user_symbol` and dotted module paths, used later by imports, type heads,
-     terms, and citations. Path shapes only; variable shadowing stays
+     user_symbol`, `qualified_constructor_name = { namespace_segment "." }
+     constructor_name`, and dotted module paths, used later by imports, type
+     heads, terms, and citations. Path shapes only; variable shadowing stays
      resolver-side.
    - Result: task-4 production inventory is recorded in [grammar.md](./grammar.md),
      and shared helpers now emit `ModulePath`, `NamespacePath`,
@@ -636,7 +637,7 @@ older numeric syntax task references appear to disagree, prefer
       `sethood` consumes the required general justification. Semantic radix
       validation, sethood proof obligations, dependent-mode checks, and legacy
       `means` mode bodies remain outside the parser. Parser unit tests, active
-      parse-only pass/fail corpus fixtures, source-level symbolic mode-name
+      parse-only pass/fail corpus fixtures, readable constructor-name mode
       coverage, and traceability metadata cover Chapter 7 mode definitions.
 
 27. **`redefine`, `synonym`, and `antonym`.** [x]
@@ -687,7 +688,9 @@ older numeric syntax task references appear to disagree, prefer
     - Result: implemented `StructureDefinition`, raw `StructurePattern`,
       `StructureField`, `StructureProperty`, `InheritanceDefinition`,
       `InheritanceTarget`, `FieldRedefinition`, and `PropertyRedefinition`
-      parsing inside definition blocks. Definition-local `public struct` /
+      parsing inside definition blocks. Structure names are constrained to
+      ordinary identifiers or readable hyphenated constructor names; selectors
+      remain identifiers. Definition-local `public struct` /
       `private struct` and `public inherit` / `private inherit` reuse
       `VisibleItem`. The parser preserves structure parameters, field
       initializers, shorthand inheritance, explicit `where ... end`
