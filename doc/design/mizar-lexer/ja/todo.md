@@ -7,35 +7,35 @@
 
 ## Ordered Task List
 
-1. range-aware local lexical declaration support を追加する。
-   - Spec refs: `spec.en.02.lexical.user_symbols.active_ranges`,
+1. 範囲対応のローカル字句宣言サポートを追加する。
+   - 仕様参照: `spec.en.02.lexical.user_symbols.active_ranges`,
      `spec.en.10.functors.operator_declarations.range_activation`,
      `spec.en.11.symbol_management.scope_visibility.lexical_candidates`。
-   - 実装前に、現在の import-only active environment を更新後仕様に対する
+   - 実装前に、現在のインポートのみのアクティブ環境を、更新後の仕様に対する
      `source_drift` として分類する。
-   - current-module の `pred`、`func`、`mode`、`attr`、`struct`、`synonym`、
-     `antonym`、`infix_operator`、`prefix_operator`、`postfix_operator`
-     activation event を、type resolution や full semantic IR construction なしで
-     収集する shallow declaration prepass を追加する。
-   - 各 event は declaring item 完了後にだけ active にする。forward reference は
-     lexer が挙動を創作せず、parser/resolver diagnostic または recovery で扱う。
-   - same-spelling local/import entry は downstream resolver phase の overload
-     candidate として保持する。
+   - 現在のモジュールの `pred`、`func`、`mode`、`attr`、`struct`、`synonym`、
+     `antonym`、`infix_operator`、`prefix_operator`、`postfix_operator` の
+     有効化イベントを、型解決や完全な意味 IR の構築なしで収集する、浅い宣言の
+     事前パスを追加する。
+   - 各イベントは、宣言する項目の完了後にだけアクティブにする。前方参照については、
+     レクサーが挙動を創作せず、パーサー / リゾルバの診断または回復で扱う。
+   - 同じ綴りのローカル / インポートのエントリは、下流のリゾルバフェーズの
+     オーバーロード候補として保持する。
 
-2. notation symbol と readable constructor name を lexer metadata で分離する。
-   - 任意の `user_symbol` spelling は predicate/functor notation と
-     predicate/functor alias にだけ許す。
-   - `constructor_name` spelling は mode、attribute、structure name に許す。
-     selector は identifier のままにする。
-   - `UserSymbolKind` / summary metadata と fixtures を更新し、legacy の
-     selector-symbol および arbitrary symbolic mode/attribute/structure behavior を
-     削除するか、明示的な compatibility gate に置く。
+2. 記法シンボルと読みやすいコンストラクタ名を、レクサーのメタデータで分離する。
+   - 任意の `user_symbol` 綴りは、述語 / functor の記法と、述語 / functor の別名に
+     だけ許す。
+   - `constructor_name` の綴りは、モード・属性・構造体の名前に許す。セレクタは
+     識別子のままにする。
+   - `UserSymbolKind` / サマリーメタデータと fixtures を更新し、従来のセレクタ
+     シンボルおよび任意の記号的なモード / 属性 / 構造体の挙動を削除するか、明示的な
+     互換性ゲートに置く。
 
-3. parser-facing operator metadata を source-position aware にする。
-   - file-wide `OperatorFixityTable` handoff を、token span で active な
-     prefix/postfix/infix metadata を返せる query に置き換える。
-   - use 前の declaration、use 後の declaration、private/public が lexing に影響しないこと、
-     same-spelling overload candidate を cover する。
+3. パーサー向けの演算子メタデータを、ソース位置対応にする。
+   - ファイル全体の `OperatorFixityTable` の受け渡しを、トークンの範囲でアクティブな
+     prefix / postfix / infix のメタデータを返せる問い合わせに置き換える。
+   - 使用前の宣言、使用後の宣言、private / public が字句解析に影響しないこと、
+     同じ綴りのオーバーロード候補をカバーする。
 
 ## Completed Tasks
 

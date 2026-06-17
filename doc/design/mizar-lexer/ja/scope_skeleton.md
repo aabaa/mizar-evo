@@ -59,11 +59,11 @@ pub fn build_scope_skeleton(raw: &RawTokenStream) -> ScopeSkeleton;
 
 これは意図的にパーサーではありません。ソースが不正な場合や束縛の形式が未実装の場合は、束縛を過小近似(under-approximate)してよいです。
 
-この skeleton は identifier binding だけを追跡します。inline `deffunc`、
-`defpred`、algorithm name は identifier-only local declaration であり、user-symbol
-dictionary entry を追加しません。current-module predicate/functor notation、
-constructor name、alias、operator metadata は `lexical_environment.md` で説明する
-range-aware lexical declaration prepass の責務です。
+このスケルトンは識別子の束縛だけを追跡します。インライン `deffunc`、`defpred`、
+アルゴリズム名は識別子のみのローカル宣言であり、ユーザーシンボルの辞書エントリを
+追加しません。現在のモジュールの述語 / functor 記法、コンストラクタ名、別名、
+演算子メタデータは、`lexical_environment.md` で説明する、範囲対応の字句宣言事前パスの
+責務です。
 
 このスケルトンは、パーサー前段の受け渡しオブジェクトとして扱えます。パーサーは、最終トークンとともに `ScopeSkeleton` のブロック範囲・文範囲を参照してよいですが、スケルトンを正規の AST として扱ってはいけません。特に、式の文法、型検査、意味論的な名前解決、構文の受理は、引き続きパーサー/リゾルバの責務として残します。
 

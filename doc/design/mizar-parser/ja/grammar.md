@@ -59,10 +59,10 @@ namespace_segment           ::= identifier ;
 `module_path` は第 12 章の import / export path 形である。共有 path helper の中で
 `relative_prefix` を受け入れるのは `module_path` だけであり、citation / reference
 prefix 用の `namespace_path` は相対 import prefix を受け入れてはならない。
-`qualified_symbol` は、functor / predicate notation 用に active lexicon から渡された
-parser-facing `user_symbol` token で終わる。type head と attribute reference は
-`qualified_constructor_name` を使い、その最後の component は通常の identifier または
-読みやすい hyphenated constructor name である。
+`qualified_symbol` は、functor / 述語の記法用にアクティブなレキシコンから渡される
+パーサー向けの `user_symbol` トークンで終わる。type head と属性参照は
+`qualified_constructor_name` を使い、その最後の構成要素は、通常の識別子または
+読みやすいハイフン区切りのコンストラクタ名である。
 
 parser task 4 は共有 helper method と unit coverage だけを提供する。これらの path
 形は後続の消費側文法タスク、つまり import item（task 6）、型 head（task 8）、
@@ -258,16 +258,16 @@ block-local `reserve` shaped statement を syntax error として分類する。
 parser は、任意の non-empty `AttributeChain` と必須の generic `TypeHead` を持つ
 `TypeExpression` を送出する。syntactic head が radix type、structure、mode のいずれか、
 また dotted attribute spelling が structure qualifier を含むか namespace segment だけを
-含むかは判断しない。constructor-name-shaped reference の列を複数の方法で分割できる場合、
+含むかは判断しない。コンストラクタ名形の参照の列を複数の方法で分割できる場合、
 parser は右端に残る syntactic type-head candidate を `TypeHead` として確保し、それより
 前の reference を attribute として扱う。これは syntax-only の boundary rule であり、
 semantic classification ではない。
 
-`AttributeRef` は任意の `non`、任意の parameter prefix、constructor-qualified reference
-surface、任意の parenthesized term argument を保持する。`TypeHead` は builtin
-`object` / `set` token または constructor-qualified head と任意の `TypeArguments` を
+`AttributeRef` は、任意の `non`、任意の parameter prefix、コンストラクタで修飾された
+参照の表層、任意の parenthesized term argument を保持する。`TypeHead` は、builtin
+`object` / `set` token、またはコンストラクタで修飾された head と任意の `TypeArguments` を
 保持する。既存の syntax-node name は storage shape として `QualifiedSymbol` を使い続けても
-よいが、type / attribute spelling class は任意の predicate/functor `user_symbol` ではなく
+よいが、type / attribute の綴りクラスは、任意の述語 / functor の `user_symbol` ではなく
 `qualified_constructor_name` である。task 8 は、
 incoming token が attribute reference の前で局所的な prefix split をすでに露出している場合に
 限って `ParameterPrefix` を保持する。つまり identifier または numeral と `-`、または
@@ -1266,8 +1266,8 @@ binder を placeholder として保持する。
 `AttributeDefinition` は `attr` keyword、label、colon、subject token、`is`、
 `AttributePattern`、`means`、`FormulaDefiniens`、recovery node、terminating semicolon を
 所有する。`AttributePattern` は任意の task-8 `ParameterPrefix` と、
-constructor-name-shaped attribute name を保持する。任意の operator-like user-symbol
-spelling は attribute name ではない。`FormulaDefiniens` は単一の
+コンストラクタ名形の属性名を保持する。任意の演算子風のユーザーシンボル綴りは
+属性名ではない。`FormulaDefiniens` は単一の
 `FormulaExpression`、または comma で区切られた `FormulaCase` 列と任意の
 `otherwise` formula を所有する。`FormulaCase` は value formula、`if`、condition
 formula を所有する。
@@ -1476,11 +1476,11 @@ definition-local な `public mode` と `private mode` は、concrete mode defini
 既存の `VisibleItem` / `VisibilityMarker` wrapper で包んで表す。
 
 `ModePattern` は `mode_def_name [ type_params ]` span の source-order raw token を
-保持する。mode definition name はちょうど 1 個の ordinary identifier または
-読みやすい hyphenated constructor-name token でなければならない。type parameter は、
+保持する。mode definition name はちょうど 1 個の通常の識別子、または読みやすい
+ハイフン区切りのコンストラクタ名トークンでなければならない。type parameter は、
 `of` または `over` が導入する non-empty identifier comma-list、または bracketed
 non-empty identifier comma-list のいずれか 1 個だけを任意で持てる。空の parameter
-list、dangling comma、複数の parameter group、arbitrary user-symbol / lexeme-run
+list、dangling comma、複数の parameter group、任意のユーザーシンボル / lexeme-run
 token、unsupported token は malformed mode pattern として recover する。AST は
 parameter list が意味的に dependent か、structure 上のものか、その他に妥当かを記録しない。
 
@@ -1502,8 +1502,8 @@ diagnostic を使う。semicolon 欠落時は、`sethood`、次の definition-co
 `MalformedJustification` を出す。malformed property tail は property semicolon、
 次の definition-content start、`end`、または EOF まで skip してよい。
 
-Task 26 tests は、通常の canonical `is` mode definition、readable hyphenated
-constructor-name mode definition、mode body 内の attribute chain、`of` / `over` /
+Task 26 tests は、通常の canonical `is` mode definition、読みやすいハイフン区切りの
+コンストラクタ名による mode definition、mode body 内の attribute chain、`of` / `over` /
 bracketed type-parameter list、definition-local visibility、citation / computation / proof justification を伴う
 `sethood` clause、legacy `means` mode body を recovered syntax として拒否すること、
 malformed label / colon / pattern / `is` / body / semicolon /
@@ -1582,10 +1582,10 @@ terminating semicolon を所有する。
 definition-local と top-level の `public` / `private` alias は既存の `VisibleItem`
 wrapper を使う。`NotationPattern` は、`alt_pattern` / `original_pattern` の predicate、
 functor、mode、attribute branch を選ばず、各側を source-order raw token として保持する。
-その branch は symbol table に依存するため resolver-owned のまま残る。この raw
-preservation は language restriction を緩和しない。predicate / functor alias branch は
-任意の user-symbol notation を含められるが、mode / attribute alias branch は
-constructor-name spelling を使う。
+その branch は symbol table に依存するため resolver-owned のまま残る。この生の
+保持は言語上の制約を緩和しない。述語 / functor の alias branch は任意のユーザー
+シンボル記法を含められるが、モード / 属性の alias branch はコンストラクタ名の
+綴りを使う。
 
 Task 27 recovery は task 23〜26 の definition-content synchronization を再利用する。
 redefinition label、subject、malformed raw pattern、`equals` term body、
@@ -1689,8 +1689,8 @@ inheritance_coherence  ::= "coherence" justification ";" ;
 `StructureField` / `StructureProperty` member、`end`、存在する場合の final semicolon
 を所有する。`StructurePattern` は `of`、`over`、bracket parameter を含む
 source-order の structure definition name / parameter token を所有する。structure name は
-ordinary identifier または readable hyphenated constructor name に制限され、任意の
-user-symbol token ではない。definition-local な `public` / `private` structure definition は
+通常の識別子、または読みやすいハイフン区切りのコンストラクタ名に制限され、任意の
+ユーザーシンボルトークンではない。definition-local な `public` / `private` structure definition は
 既存の `VisibleItem` / `VisibilityMarker` wrapper を再利用する。
 
 `StructureField` は `field`、field identifier、`->`、`TypeExpression`、`:=` で始まる

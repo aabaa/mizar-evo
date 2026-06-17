@@ -86,7 +86,7 @@ block_comment    ::= "::=" { character } "=::" ;
 doc_comment      ::= ":::" { character - newline } newline ;
 ```
 
-予約語は大文字小文字を区別し、identifier、user symbol、constructor name として
+予約語は大文字小文字を区別し、識別子、ユーザーシンボル、コンストラクタ名として
 使えません。
 
 ```text
@@ -191,11 +191,11 @@ qualified_constructor_name  ::= { namespace_segment "." } constructor_name ;
 namespace_segment           ::= identifier ;
 ```
 
-`qualified_symbol` の最後の token は active lexicon にある functor / predicate
-notation symbol です。`qualified_constructor_name` の最後の token は mode、
-structure、attribute constructor name です。そのため、identifier-shaped symbol は、
-active lexicon で利用可能で、現在の grammar position がその kind を許す場合にだけ
-symbol として解析されます。
+`qualified_symbol` の最後のトークンは、アクティブなレキシコンにある functor / 述語の
+記法シンボルです。`qualified_constructor_name` の最後のトークンは、モード・構造体・
+属性のコンストラクタ名です。そのため、識別子形のシンボルは、アクティブなレキシコンで
+利用可能であり、かつ現在の文法位置がその種別を許す場合にだけ、シンボルとして
+解析されます。
 
 ## A.4 変数と定数
 

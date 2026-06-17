@@ -47,8 +47,8 @@ postfix_operator("!", 95);
 
 優先順位の値の範囲は `0` から `255` です。値が大きいほど、結合がより強くなります。
 宣言のないシンボリックfunctorのデフォルトの優先順位は、非結合の `64` です。
-operator declaration は source-position dependent です。宣言は後続 token にだけ影響し、
-その宣言位置で既に active な functor spelling を target にしなければなりません。
+演算子宣言はソース位置に依存します。宣言は後続のトークンにだけ影響し、その宣言位置で
+既にアクティブな functor 綴りを対象にしなければなりません。
 
 `=`、`<>`、`in` などの組み込み述語シンボルは、暗黙的にインポートされたコア moduleで宣言されます。ユーザー宣言によってこれらをオーバーライドすることはできません。
 
@@ -125,16 +125,16 @@ for x being Nat holds x > 0 implies x >= 1
 
 ## B.5 推奨される解析アルゴリズム
 
-Pratt parserは、null と left の表記による優先クライミングとも呼ばれ、用語式と数式に推奨されます。active lexicon は import-seeded であり、current-module operator declaration は source-position dependent で、operator metadata は各 query point で table-driven なので、この言語によく適合します。
+Pratt parserは、null と left の表記による優先クライミングとも呼ばれ、用語式と数式に推奨されます。アクティブなレキシコンはインポートを起点として構築され、現在のモジュールの演算子宣言はソース位置に依存し、演算子メタデータは各問い合わせ地点でテーブル駆動なので、この言語によく適合します。
 
 推奨される実装概要:
 
-1. import を前処理し、imported base lexicon を構築します。
-2. current-module declaration と operator-metadata activation event を収集し、token span で active な candidate を返す range-aware query を公開します。
+1. インポートを前処理し、インポート済みの基本レキシコンを構築します。
+2. 現在のモジュールの宣言と演算子メタデータの有効化イベントを収集し、トークンの範囲でアクティブな候補を返す範囲対応の問い合わせを公開します。
 3. 第 2 章の最長一致ルールを使用してtoken化します。文字列リテラル認識は、文字列引数を必要とする文法の位置でのみ有効のままです。
 4. 主な用語形式を解析します: 変数、数値、括弧で囲まれた用語、構造コンストラクター、集合式、および `the` 式。
-5. operator token span で active な宣言済み binding power を使用して、用語レベルの接頭辞および後置演算子を解析します。
-6. 次の演算子の active な left binding power と現在の minimum binding power を比較して、用語レベルの中置演算子を解析します。
+5. 演算子トークンの範囲でアクティブな、宣言済みの結合力を使用して、用語レベルの接頭辞および後置演算子を解析します。
+6. 次の演算子のアクティブな左結合力と現在の最小結合力を比較して、用語レベルの中置演算子を解析します。
 7. `qua` を最も優先順位の低い用語レベルの型修飾として解析します。
 8. 解析された用語オペランドの周囲の述語表記、等価性、メンバーシップ、型アサーション、または属性アサーションを解析することにより、アトミック式を完成させます。この位置の括弧 group が formula 専用構文を含む場合、括弧付き term ではなく括弧付き formula として分類します。
 9. 別の固定結合力テーブルを使用して、数式レベルの接頭語、中置語、および数量詞の形式を解析します。

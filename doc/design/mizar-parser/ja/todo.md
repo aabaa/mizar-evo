@@ -619,8 +619,8 @@ resolver / build-system 依存を避ける。
       general justification を消費する。semantic な radix validation、sethood proof
       obligation、dependent-mode check、legacy な `means` mode body は parser の外に
       残す。parser unit test、active parse-only pass/fail corpus fixture、
-      readable constructor-name mode coverage、traceability metadata が Chapter 7 の
-      mode definition を覆う。
+      読みやすいコンストラクタ名によるモードのカバレッジ、traceability metadata が
+      Chapter 7 の mode definition を覆う。
 
 27. **`redefine`・`synonym`・`antonym`。** [x]
     - task 23〜26 の定義種別にまたがる再定義と記法エイリアスの形。
@@ -667,9 +667,9 @@ resolver / build-system 依存を避ける。
     - 結果: definition block 内の `StructureDefinition`、raw
       `StructurePattern`、`StructureField`、`StructureProperty`、
       `InheritanceDefinition`、`InheritanceTarget`、`FieldRedefinition`、
-      `PropertyRedefinition` parsing を実装した。structure name は ordinary identifier
-      または readable hyphenated constructor name に制限され、selector は identifier のままにする。
-      definition-local な
+      `PropertyRedefinition` parsing を実装した。structure name は通常の識別子、
+      または読みやすいハイフン区切りのコンストラクタ名に制限され、selector は識別子の
+      ままにする。definition-local な
       `public struct` / `private struct` と `public inherit` / `private inherit` は
       `VisibleItem` を再利用する。parser は structure parameter、field initializer、
       shorthand inheritance、explicit `where ... end` inheritance、`extends set`、

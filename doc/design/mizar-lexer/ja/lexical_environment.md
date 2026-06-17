@@ -4,14 +4,14 @@
 
 ## Purpose
 
-このモジュールは、トークンの曖昧性解消(disambiguation)が参照する
-active lexical environment を構築します。
+このモジュールは、トークンの曖昧性解消(disambiguation)が参照する、アクティブ字句環境
+(active lexical environment)を構築します。
 
-現在の実装は、組み込みの予約テーブルと、import prelude で指定された module が
-export する lexical symbol summary とを結合します。constructor-name と
-declaration-range の仕様更新後、この design は source-position-sensitive layer を
-追加する必要があります。current module の lexical declaration は、その declaration
-item が完了した後にだけ imported environment を拡張します。
+現在の実装は、組み込みの予約テーブルと、インポートプレリュード(import prelude)で
+指定されたモジュールがエクスポートする字句シンボルのサマリーとを結合します。
+コンストラクタ名と宣言範囲(declaration range)の仕様更新後、この設計はソース位置に
+依存するレイヤーを追加する必要があります。現在のモジュールの字句宣言は、その宣言項目が
+完了した後にだけ、インポート由来の環境を拡張します。
 
 ## Public API
 
@@ -81,14 +81,14 @@ pub struct UserSymbolCandidate {
 }
 ```
 
-`UserSymbolKind` は、可視な lexical entry のパーサー/リゾルバ上のカテゴリを記録します。
-現在の言語仕様では、任意の user-symbol notation は functor と predicate に直接
-許されます。mode、attribute、structure name は `constructor_name` spelling を使い、
-通常の identifier ではない hyphenated name では active-environment metadata が必要に
-なる場合があります。structure selector は identifier であり、user-symbol lexical
-entry として export すべきではありません。`UserSymbolArity` は引数の個数の形状を、
-正確な個数・上下限のある範囲・下限のみの範囲として記録します。これらは
-パーサー/リゾルバ向けのサマリーであり、完全な型シグネチャではありません。
+`UserSymbolKind` は、可視な字句エントリのパーサー/リゾルバ上のカテゴリを記録します。
+現在の言語仕様では、任意のユーザーシンボル記法は functor と述語に直接許されます。
+モード・属性・構造体の名前は `constructor_name` の綴りを使い、通常の識別子ではない
+ハイフン区切りの名前では、アクティブ環境のメタデータが必要になる場合があります。
+構造体のセレクタは識別子であり、ユーザーシンボルの字句エントリとしてエクスポート
+すべきではありません。`UserSymbolArity` は引数の個数の形状を、正確な個数・上下限の
+ある範囲・下限のみの範囲として記録します。これらはパーサー/リゾルバ向けのサマリーで
+あり、完全な型シグネチャではありません。
 
 アクティブ環境は以下を扱います。
 
@@ -98,7 +98,7 @@ entry として export すべきではありません。`UserSymbolArity` は引
 - 同綴りでインポートされた候補に対する、インポート衝突(conflict)の検出;
 - 診断のための安定した由来(provenance);
 - 下流のパーサー/リゾルバフェーズのための、シンボル種別とアリティのメタデータ;
-- current-module declaration の range-sensitive activation.
+- 現在のモジュールの宣言の、範囲に依存した有効化(activation).
 
 `ModuleLexicalSummary` は、生成側で正規化された生成物です。サマリーを作る構成要素は、字句環境ビルダーに渡す前に `exported_symbols` を決定的な順序に正規化しておく必要があります。正準順序は、少なくとも以下の字句上の同一性と由来に基づきます。
 
@@ -138,28 +138,28 @@ entry として export すべきではありません。`UserSymbolArity` は引
 - フィンガープリントは、プロセスごとに乱数化されるハッシュではなく内部の安定したバイトハッシャーを使い、シンボル種別とアリティのメタデータも含めます。
 - トライは内部の高速化構造であり、フィンガープリントの計算やサマリーの正規化には影響しません。
 
-constructor-name 仕様更新後に必要な拡張:
+コンストラクタ名の仕様更新後に必要な拡張:
 
-1. 現在と同じように import-seeded base environment を構築する。
-2. raw scanning / import pre-scan の後、final disambiguation の前に、current source に
-   対する shallow lexical declaration prepass を実行する。この prepass は
-   definition / notation header を見てもよいが、semantic resolution、type checking、
-   proof checking、full AST construction は行わない。
+1. 現在と同じように、インポートを起点とする基本環境を構築する。
+2. 生スキャン / インポートの事前スキャンの後、最終的な曖昧性解消の前に、現在の
+   ソースに対する浅い字句宣言の事前パスを実行する。この事前パスは、定義 / 記法の
+   ヘッダーを見てもよいが、意味解決、型検査、証明検査、完全な AST 構築は行わない。
 3. `pred`、`func`、`mode`、`attr`、`struct`、`synonym`、`antonym`、
-   `infix_operator`、`prefix_operator`、`postfix_operator` の source-ordered
-   activation event を収集する。
-4. 任意の `user_symbol` spelling は predicate/functor notation と
-   predicate/functor alias にだけ許す。`constructor_name` spelling は mode、
-   attribute、structure name に許す。structure selector は identifier のままにする。
-5. 各 spelling または operator metadata は、宣言 item が完了した後にだけ active にする。
-   宣言自身の header / definiens は、その宣言が導入中の spelling を使用できず、
-   後続宣言は forward reference できない。
-6. same-spelling local/import entry は downstream resolver phase の overload candidate として
-   保持する。imported candidate を lexically shadow しない。
-7. `private` / `public` は tokenization decision から外す。visibility は producer-side
-   export summary にだけ影響する。
-8. disambiguation と parser-facing operator table が、token の byte span で active な
-   candidate / fixity metadata を問い合わせられる source-position query API を公開する。
+   `infix_operator`、`prefix_operator`、`postfix_operator` の、ソース順の
+   有効化イベントを収集する。
+4. 任意の `user_symbol` 綴りは、述語 / functor の記法と、述語 / functor の別名に
+   だけ許す。`constructor_name` の綴りは、モード・属性・構造体の名前に許す。
+   構造体のセレクタは識別子のままにする。
+5. 各綴りまたは演算子メタデータは、宣言項目が完了した後にだけアクティブにする。
+   宣言自身のヘッダー / 定義項は、その宣言が導入中の綴りを使用できず、後続宣言は
+   前方参照できない。
+6. 同じ綴りのローカル / インポートのエントリは、下流のリゾルバフェーズの
+   オーバーロード候補として保持する。インポート済み候補を字句的にシャドウしない。
+7. `private` / `public` はトークン化の判断から外す。可視性は、生成側の
+   エクスポートサマリーにだけ影響する。
+8. 曖昧性解消とパーサー向けの演算子テーブルが、トークンのバイト範囲でアクティブな
+   候補 / 結合性(fixity)メタデータを問い合わせられる、ソース位置の問い合わせ API を
+   公開する。
 
 ## Non-Goals
 

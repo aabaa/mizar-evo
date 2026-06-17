@@ -26,10 +26,10 @@ operator については associativity である。parser はこの metadata を
 消費する。overload root の選択、result type 推論、cluster fact の評価、
 selector-versus-namespace role の解決は行わない。
 
-declaration-range 仕様更新後、この table は source-position aware になる必要がある。
-`infix_operator`、`prefix_operator`、`postfix_operator` declaration は後続 token にだけ
-影響するため、Pratt lookup は file-wide table ではなく、operator token span で active な
-operator metadata を問い合わせなければならない。
+宣言範囲の仕様更新後、このテーブルはソース位置を意識する必要がある。
+`infix_operator`、`prefix_operator`、`postfix_operator` の宣言は後続のトークンにだけ
+影響するため、Pratt の検索はファイル全体のテーブルではなく、演算子トークンの範囲で
+アクティブな演算子メタデータを問い合わせなければならない。
 
 項 parsing は次の順序を使う。
 
@@ -62,8 +62,8 @@ entry だけを使う。left operand の後で postfix entry と infix entry が
 共有する場合、eligible な infix entry は後続 token が right operand を開始できるなら
 優先される。そうでなければ eligible な postfix entry が優先される。同一 spelling
 operator の incompatible metadata conflict は lexical-environment または link stage の
-error である。この parser stage は `ParserInputs` またはその range-aware successor が、
-parse 中の token position に対する deterministic な visible set をすでに選んでいると仮定する。
+error である。この parser stage は、`ParserInputs` またはその範囲対応の後継が、
+parse 中のトークン位置に対する決定的な可視集合をすでに選んでいると仮定する。
 
 ## Formula Pratt Contract
 
