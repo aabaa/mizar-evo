@@ -337,6 +337,469 @@ fn lexical_environment_preserves_symbol_kind_and_arity_metadata() {
 }
 
 #[test]
+fn local_declaration_prepass_activates_symbols_only_after_declaring_item() {
+    let source = "a + b;\nfunc PlusDef: a + b -> set equals a;\na + b;";
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+
+    let first_use = nth_index(source, "+", 0);
+    let declaration_header = nth_index(source, "+", 1);
+    let later_use = nth_index(source, "+", 2);
+    assert!(
+        env.longest_user_symbol_at_position(source, first_use, first_use, &locals)
+            .is_empty(),
+        "local declaration must not be visible before its item"
+    );
+    assert!(
+        env.longest_user_symbol_at_position(
+            source,
+            declaration_header,
+            declaration_header,
+            &locals
+        )
+        .is_empty(),
+        "declaration header/definiens must not see the introduced spelling"
+    );
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, later_use, later_use, &locals)
+            .iter()
+            .map(|candidate| (candidate.spelling.as_str(), candidate.kind, candidate.arity))
+            .collect::<Vec<_>>(),
+        vec![("+", UserSymbolKind::Functor, UserSymbolArity::exact(2))]
+    );
+
+    let skeleton = build_scope_skeleton(&raw);
+    let stream = disambiguate_with_local_declarations(
+        &raw,
+        &env,
+        &locals,
+        &ParserLexContext::general(),
+        &skeleton,
+    );
+    assert_eq!(
+        stream
+            .tokens
+            .iter()
+            .filter(|token| token.lexeme == "+")
+            .map(|token| token.kind)
+            .collect::<Vec<_>>(),
+        vec![
+            TokenKind::ErrorRecovery,
+            TokenKind::ErrorRecovery,
+            TokenKind::UserSymbol
+        ]
+    );
+}
+
+#[test]
+fn local_declarations_preserve_same_spelling_import_candidates() {
+    let env = build_lexical_environment(
+        &[resolved_import("std.imported")],
+        &[summary(
+            "std.imported",
+            81,
+            &[exported("+", "std.imported#plus", "std.imported", 0)],
+        )],
+    )
+    .expect("imported plus should build");
+    let source = "func LocalPlus: a + b -> set equals a;\na + b;";
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let later_use = nth_index(source, "+", 1);
+
+    let candidates = env.longest_user_symbol_at_position(source, later_use, later_use, &locals);
+    assert_eq!(
+        candidates
+            .iter()
+            .map(|candidate| candidate.symbol_id.as_str().to_owned())
+            .collect::<Vec<_>>(),
+        vec![
+            "std.imported#plus".to_owned(),
+            "current#local:0:+".to_owned()
+        ]
+    );
+}
+
+#[test]
+fn local_declaration_prepass_keeps_visibility_out_of_lexing_and_operators_separate() {
+    let source = concat!(
+        "private func PrivatePlus: a + b -> set equals a;\n",
+        "public pred LessDef: a < b means a = b;\n",
+        "infix_operator(\"++\", left, 70);\n",
+        "a + b; a < b; a ++ b;"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+
+    let later_plus = nth_index(source, "+", 3);
+    let later_less = nth_index(source, "<", 1);
+    let later_operator = nth_index(source, "++", 1);
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, later_plus, later_plus, &locals)[0].spelling,
+        "+"
+    );
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, later_less, later_less, &locals)[0].spelling,
+        "<"
+    );
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, later_operator, later_operator, &locals)[0]
+            .spelling,
+        "+",
+        "the existing `+` declaration may match; `++` itself is not introduced"
+    );
+    assert!(
+        locals.user_symbols("++", later_operator).is_empty(),
+        "operator declarations attach metadata later; they do not introduce user-symbol entries"
+    );
+    assert_eq!(locals.operator_declarations.len(), 1);
+    assert_eq!(locals.operator_declarations[0].spelling, "++");
+}
+
+#[test]
+fn local_declaration_prepass_collects_constructor_declarations_without_selectors() {
+    let source = concat!(
+        "mode ModeLabel: LocalMode is set;\n",
+        "attr AttrLabel: x is local_attr means x = x;\n",
+        "struct LocalStruct where ",
+        "field local_field -> set; ",
+        "property local_prop -> set; ",
+        "end;\n",
+        "LocalMode local_attr LocalStruct local_field local_prop;"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+
+    let mode_decl = nth_index(source, "LocalMode", 0);
+    let mode_use = nth_index(source, "LocalMode", 1);
+    assert!(
+        env.longest_user_symbol_at_position(source, mode_decl, mode_decl, &locals)
+            .is_empty()
+    );
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, mode_use, mode_use, &locals)
+            .iter()
+            .map(|candidate| (candidate.spelling.as_str(), candidate.kind, candidate.arity))
+            .collect::<Vec<_>>(),
+        vec![("LocalMode", UserSymbolKind::Mode, UserSymbolArity::exact(0))]
+    );
+
+    let attr_use = nth_index(source, "local_attr", 1);
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, attr_use, attr_use, &locals)
+            .iter()
+            .map(|candidate| (candidate.spelling.as_str(), candidate.kind, candidate.arity))
+            .collect::<Vec<_>>(),
+        vec![(
+            "local_attr",
+            UserSymbolKind::Attribute,
+            UserSymbolArity::exact(1)
+        )]
+    );
+
+    let struct_decl = nth_index(source, "LocalStruct", 0);
+    let struct_use = nth_index(source, "LocalStruct", 1);
+    assert!(
+        env.longest_user_symbol_at_position(source, struct_decl, struct_decl, &locals)
+            .is_empty(),
+        "struct declaration name is active only after its closing end;"
+    );
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, struct_use, struct_use, &locals)
+            .iter()
+            .map(|candidate| (candidate.spelling.as_str(), candidate.kind, candidate.arity))
+            .collect::<Vec<_>>(),
+        vec![(
+            "LocalStruct",
+            UserSymbolKind::Structure,
+            UserSymbolArity::exact(0)
+        )]
+    );
+
+    let field_use = nth_index(source, "local_field", 1);
+    let property_use = nth_index(source, "local_prop", 1);
+    assert!(
+        env.longest_user_symbol_at_position(source, field_use, field_use, &locals)
+            .is_empty()
+    );
+    assert!(
+        env.longest_user_symbol_at_position(source, property_use, property_use, &locals)
+            .is_empty()
+    );
+}
+
+#[test]
+fn local_declaration_prepass_handles_identifier_shaped_prefix_and_call_symbols() {
+    let source = concat!(
+        "func CallDef: f(x, y) -> set equals x;\n",
+        "pred PrefixDef: R x means x = x;\n",
+        "pred RelDef: x R y means x = y;\n",
+        "f(a, b); R a; x R y;"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+
+    let call_use = nth_index(source, "f", 3);
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, call_use, call_use, &locals)
+            .iter()
+            .map(|candidate| (candidate.spelling.as_str(), candidate.kind))
+            .collect::<Vec<_>>(),
+        vec![("f", UserSymbolKind::Functor)]
+    );
+    assert!(
+        locals.user_symbols("x", source.len()).is_empty(),
+        "call parameters must not be registered as the functor spelling"
+    );
+
+    let prefix_use = nth_index(source, "R", 1);
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, prefix_use, prefix_use, &locals)
+            .iter()
+            .map(|candidate| (candidate.spelling.as_str(), candidate.kind))
+            .collect::<Vec<_>>(),
+        vec![("R", UserSymbolKind::Predicate)]
+    );
+    let infix_use = nth_index(source, "R", 3);
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, infix_use, infix_use, &locals)
+            .iter()
+            .map(|candidate| (candidate.spelling.as_str(), candidate.kind))
+            .collect::<Vec<_>>(),
+        vec![
+            ("R", UserSymbolKind::Predicate),
+            ("R", UserSymbolKind::Predicate)
+        ]
+    );
+}
+
+#[test]
+fn local_declaration_prepass_handles_identifier_shaped_postfix_symbols() {
+    let source = "pred PostfixDef: x R means x = x;\nx R;";
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+
+    let postfix_use = nth_index(source, "R", 1);
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, postfix_use, postfix_use, &locals)
+            .iter()
+            .map(|candidate| (candidate.spelling.as_str(), candidate.kind))
+            .collect::<Vec<_>>(),
+        vec![("R", UserSymbolKind::Predicate)]
+    );
+    assert!(locals.user_symbols("x", source.len()).is_empty());
+}
+
+#[test]
+fn local_declaration_prepass_collects_circumfix_symbol_parts() {
+    let source = concat!(
+        "func AbsDef: |. x .| -> set equals x;\n",
+        "func PairDef: [: X, Y :] -> set equals X;\n",
+        "|. y .|; [: A, B :];"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+
+    for (spelling, ordinal) in [("|.", 1), (".|", 1), ("[:", 1), (":]", 1)] {
+        let position = nth_index(source, spelling, ordinal);
+        assert_eq!(
+            env.longest_user_symbol_at_position(source, position, position, &locals)[0].spelling,
+            spelling,
+            "{spelling:?} should be active after the circumfix declaration"
+        );
+    }
+}
+
+#[test]
+fn local_declaration_prepass_collects_parameterized_alias_heads() {
+    let source = "synonym FinSeq of G for FinSequence of G;\nFinSeq of G;";
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+
+    let alias_use = nth_index(source, "FinSeq", 2);
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, alias_use, alias_use, &locals)[0].spelling,
+        "FinSeq"
+    );
+    assert!(
+        locals.user_symbols("of", source.len()).is_empty(),
+        "parameter separator words must not be registered as alias spellings"
+    );
+}
+
+#[test]
+fn local_declaration_prepass_delays_activation_through_correctness_trail() {
+    let source = concat!(
+        "func FDef: u -> set means x = x;\n",
+        "existence proof now u; end; u; end;\n",
+        "u;"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+
+    let trail_use = nth_index(source, "u", 2);
+    let after_nested_end_use = nth_index(source, "u", 3);
+    let later_use = nth_index(source, "u", 4);
+    assert!(
+        env.longest_user_symbol_at_position(source, trail_use, trail_use, &locals)
+            .is_empty(),
+        "functor spelling is inactive inside declaration-owned correctness trail"
+    );
+    assert!(
+        env.longest_user_symbol_at_position(
+            source,
+            after_nested_end_use,
+            after_nested_end_use,
+            &locals
+        )
+        .is_empty(),
+        "nested proof blocks must not end the declaration-owned correctness trail early"
+    );
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, later_use, later_use, &locals)[0].spelling,
+        "u"
+    );
+    assert_eq!(
+        locals.user_symbols("u", later_use)[0].symbol_id.as_str(),
+        "current#local:0:u"
+    );
+}
+
+#[test]
+fn local_declaration_prepass_ignores_deffunc_defpred_and_redefinitions() {
+    let source = concat!(
+        "deffunc F(x) = x;\n",
+        "defpred P[x] means x = x;\n",
+        "redefine func OldPlus: x + y -> set equals x;\n",
+        "x + y;"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+    let later_plus = nth_index(source, "+", 1);
+
+    assert!(locals.user_symbols.is_empty());
+    assert!(
+        env.longest_user_symbol_at_position(source, later_plus, later_plus, &locals)
+            .is_empty()
+    );
+}
+
+#[test]
+fn local_alias_declarations_activate_only_the_alias_pattern() {
+    let source = "synonym b > a for a < b;\nb > a; a < b;";
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+
+    let alias_use = nth_index(source, ">", 1);
+    let original_use = nth_index(source, "<", 1);
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, alias_use, alias_use, &locals)[0].spelling,
+        ">"
+    );
+    assert!(
+        env.longest_user_symbol_at_position(source, original_use, original_use, &locals)
+            .is_empty(),
+        "the original pattern after `for` is not a newly introduced alias"
+    );
+}
+
+#[test]
+fn local_antonym_declarations_activate_only_the_alias_pattern() {
+    let source = "antonym a >= b for a < b;\na >= b; a < b;";
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+
+    let alias_use = nth_index(source, ">=", 1);
+    let original_use = nth_index(source, "<", 1);
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, alias_use, alias_use, &locals)[0].spelling,
+        ">="
+    );
+    assert!(
+        env.longest_user_symbol_at_position(source, original_use, original_use, &locals)
+            .is_empty()
+    );
+}
+
+#[test]
+fn local_operator_declarations_record_metadata_and_activation_ranges() {
+    let source = concat!(
+        "prefix_operator(\"~\", 70);\n",
+        "postfix_operator(\"!\", 95);\n",
+        "infix_operator(\"**\", right, 80);\n",
+        "infix_operator(\"%%\", none, 40);\n"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+
+    assert_eq!(locals.operator_declarations.len(), 4);
+    assert_eq!(
+        locals
+            .operator_declarations
+            .iter()
+            .map(|declaration| (
+                declaration.spelling.as_str(),
+                declaration.operator,
+                declaration.activation_start
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            (
+                "~",
+                Some(ExportedOperatorMetadata {
+                    fixity: ExportedOperatorFixity::Prefix,
+                    precedence: 70,
+                }),
+                nth_index(source, ";", 0) + 1,
+            ),
+            (
+                "!",
+                Some(ExportedOperatorMetadata {
+                    fixity: ExportedOperatorFixity::Postfix,
+                    precedence: 95,
+                }),
+                nth_index(source, ";", 1) + 1,
+            ),
+            (
+                "**",
+                Some(ExportedOperatorMetadata {
+                    fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Right),
+                    precedence: 80,
+                }),
+                nth_index(source, ";", 2) + 1,
+            ),
+            (
+                "%%",
+                Some(ExportedOperatorMetadata {
+                    fixity: ExportedOperatorFixity::Infix(
+                        ExportedOperatorAssociativity::NonAssociative
+                    ),
+                    precedence: 40,
+                }),
+                nth_index(source, ";", 3) + 1,
+            ),
+        ]
+    );
+    for spelling in ["~", "!", "**", "%%"] {
+        assert!(
+            locals.user_symbols(spelling, source.len()).is_empty(),
+            "operator metadata for {spelling:?} must not introduce a user symbol"
+        );
+    }
+}
+
+#[test]
 fn lexical_environment_fingerprint_changes_with_symbol_metadata() {
     let imports = vec![resolved_import("metadata")];
     let functor_env = build_lexical_environment(

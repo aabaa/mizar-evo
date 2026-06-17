@@ -8,10 +8,10 @@ This module builds the active lexical environment consumed by token
 disambiguation.
 
 The implemented environment combines built-in reserved tables with exported
-lexical symbol summaries from modules named by the import prelude. After the
-constructor-name and declaration-range specification update, this design must
-grow a source-position-sensitive layer: current-module lexical declarations
-extend the imported environment only after their declaration item is complete.
+lexical symbol summaries from modules named by the import prelude. It also
+provides a source-position-sensitive layer for current-module lexical
+declarations: local declarations extend the imported environment only after
+their declaration item is complete.
 
 ## Public API
 
@@ -42,6 +42,35 @@ pub fn build_lexical_environment(
     imports: &[ResolvedImport],
     summaries: &[ModuleLexicalSummary],
 ) -> Result<ActiveLexicalEnvironment, LexicalEnvironmentError>;
+
+pub struct LocalLexicalDeclarations {
+    pub user_symbols: Vec<LocalUserSymbolDeclaration>,
+    pub operator_declarations: Vec<LocalOperatorDeclaration>,
+}
+
+pub struct LocalUserSymbolDeclaration {
+    pub spelling: String,
+    pub symbol_id: SymbolId,
+    pub source_module: ModuleId,
+    pub export_rank: ExportRank,
+    pub kind: UserSymbolKind,
+    pub arity: UserSymbolArity,
+    pub declared_at: SourceSpan,
+    pub activation_start: SourcePos,
+}
+
+pub struct LocalOperatorDeclaration {
+    pub spelling: String,
+    pub source_module: ModuleId,
+    pub declared_at: SourceSpan,
+    pub activation_start: SourcePos,
+    pub operator: Option<ExportedOperatorMetadata>,
+}
+
+pub fn collect_local_lexical_declarations(
+    raw: &RawTokenStream,
+    current_module: ModuleId,
+) -> LocalLexicalDeclarations;
 ```
 
 The module exposes lookup helpers used by longest-match disambiguation:
@@ -51,7 +80,25 @@ impl ActiveLexicalEnvironment {
     pub fn reserved_word(&self, spelling: &str) -> Option<&'static str>;
     pub fn reserved_symbol(&self, spelling: &str) -> Option<&'static str>;
     pub fn user_symbol(&self, spelling: &str) -> Option<&UserSymbolCandidate>;
+    pub fn visible_user_symbols_at(
+        &self,
+        position: SourcePos,
+        local_declarations: &LocalLexicalDeclarations,
+    ) -> Vec<UserSymbolCandidate>;
     pub fn longest_user_symbol_at(&self, input: &str, start: usize) -> Vec<UserSymbolCandidate>;
+    pub fn user_symbols_at(
+        &self,
+        spelling: &str,
+        position: SourcePos,
+        local_declarations: &LocalLexicalDeclarations,
+    ) -> Vec<UserSymbolCandidate>;
+    pub fn longest_user_symbol_at_position(
+        &self,
+        input: &str,
+        start: usize,
+        position: SourcePos,
+        local_declarations: &LocalLexicalDeclarations,
+    ) -> Vec<UserSymbolCandidate>;
 }
 ```
 
@@ -145,31 +192,41 @@ Current implementation notes:
 - equal-spelling imported user symbols from different imports are rejected as environment construction conflicts.
 - fingerprints use an internal stable byte hasher rather than process-randomized hashing, and include symbol kind and arity metadata.
 - the trie is an internal acceleration structure; it does not affect fingerprinting or summary canonicalization.
+- `collect_local_lexical_declarations` performs a shallow raw-token prepass
+  and records source-ordered current-module activation events for `pred`,
+  `func`, `mode`, `attr`, `struct`, `synonym`, `antonym`, and operator
+  declarations. It does not parse expressions, types, proofs, or full
+  declaration bodies.
+- For local `pred` and `func` declarations, the prepass records direct
+  notation spellings from identifier-shaped call, prefix, infix, and postfix
+  patterns, and records each non-delimiter symbolic piece of a symbolic or
+  circumfix notation pattern.
+- Local user-symbol candidates are visible to
+  `longest_user_symbol_at_position` only when the queried source position is
+  greater than or equal to the activation offset at the end of the declaring
+  item. For definitions with declaration-owned correctness/property clauses,
+  that completion boundary includes the trailing clause and its proof block.
+  The declaration's own header/definiens, its correctness trail, and all earlier
+  text therefore cannot see the introduced spelling.
+- Same-spelling local and imported entries are combined as overload candidates
+  for downstream resolver phases. Local entries do not lexically shadow
+  imported entries.
+- `private` and `public` are ignored by the local lexical prepass. `redefine`
+  declarations, inline `deffunc`, inline `defpred`, structure selectors, and
+  field/property names do not introduce local lexer user-symbol dictionary
+  entries.
+- Operator declarations are recorded separately as activation events, but they
+  do not introduce user-symbol candidates. The parser-facing fixity query is
+  completed by the source-position-aware operator metadata task.
 
-Required extension after the constructor-name specification update:
+Remaining extensions after the constructor-name specification update:
 
-1. Build an import-seeded base environment exactly as today.
-2. Run a shallow lexical declaration prepass over the current source after raw
-   scanning/import pre-scan and before final disambiguation. The prepass may
-   inspect definition/notation headers, but it must not perform semantic
-   resolution, type checking, proof checking, or full AST construction.
-3. Collect source-ordered activation events for `pred`, `func`, `mode`,
-   `attr`, `struct`, `synonym`, `antonym`, `infix_operator`,
-   `prefix_operator`, and `postfix_operator`.
-4. Admit arbitrary `user_symbol` spellings only for predicate/functor notation
+1. Admit arbitrary `user_symbol` spellings only for predicate/functor notation
    and predicate/functor aliases. Admit `constructor_name` spellings for mode,
    attribute, and structure names. Keep structure selectors as identifiers.
-5. Activate each collected spelling or operator metadata entry only after the
-   declaring item is complete. A declaration's own header and definiens cannot
-   use the spelling it is currently introducing, and later declarations are not
-   visible by forward reference.
-6. Preserve local/import same-spelling entries as overload candidates for
-   downstream resolver phases. Do not lexically shadow imported candidates.
-7. Keep `private` and `public` out of tokenization decisions; visibility
-   affects producer-side export summaries only.
-8. Expose a source-position query API so disambiguation and the parser-facing
-   operator table can ask which candidates and fixity metadata are active at a
-   token's byte span.
+2. Expose the source-position-aware parser fixity query so disambiguation and
+   parser integration can ask which operator metadata is active at a token's
+   byte span.
 
 ## Non-Goals
 
@@ -210,3 +267,12 @@ Tests should cover:
 - trie-backed lookup preserves longest-match behavior with many imported symbols and overlapping spellings.
 - kind and arity metadata are preserved for same-spelling overload candidates.
 - environment fingerprints change when kind or arity metadata changes.
+- local current-module declarations are inactive before their declaring item,
+  inactive in their own header/definiens, and active at later source
+  positions;
+- same-spelling local/import candidates are both retained;
+- `private`/`public` do not affect local lexical activation;
+- operator declarations, `deffunc`, `defpred`, and `redefine` do not introduce
+  local user-symbol entries;
+- synonym/antonym prepass activation is derived from the alias pattern before
+  `for`, not from the original pattern after `for`.

@@ -7,23 +7,7 @@ language-spec synchronization.
 
 ## Ordered Task List
 
-1. Add range-aware local lexical declaration support.
-   - Spec refs: `spec.en.02.lexical.user_symbols.active_ranges`,
-     `spec.en.10.functors.operator_declarations.range_activation`,
-     `spec.en.11.symbol_management.scope_visibility.lexical_candidates`.
-   - Classify current import-only active environment as `source_drift` against
-     the updated specification before implementation.
-   - Add a shallow declaration prepass that collects current-module
-     `pred`, `func`, `mode`, `attr`, `struct`, `synonym`, `antonym`,
-     `infix_operator`, `prefix_operator`, and `postfix_operator` activation
-     events without resolving types or constructing full semantic IR.
-   - Activate each event only after the declaring item is complete; reject or
-     recover forward references through parser/resolver diagnostics rather than
-     by inventing behavior in the lexer.
-   - Preserve same-spelling local/import entries as overload candidates for
-     downstream resolver phases.
-
-2. Split notation symbols from readable constructor names in lexer metadata.
+1. Split notation symbols from readable constructor names in lexer metadata.
    - Admit arbitrary `user_symbol` spellings only for predicate/functor
      notation and predicate/functor aliases.
    - Admit `constructor_name` spellings for mode, attribute, and structure
@@ -32,7 +16,7 @@ language-spec synchronization.
      selector-symbol and arbitrary symbolic mode/attribute/structure behavior
      is removed or explicitly compatibility-gated.
 
-3. Make parser-facing operator metadata source-position aware.
+2. Make parser-facing operator metadata source-position aware.
    - Replace the file-wide `OperatorFixityTable` handoff with a query that can
      answer which prefix/postfix/infix metadata is active at a token span.
    - Cover declarations after use, declarations before use, private/public
@@ -40,7 +24,30 @@ language-spec synchronization.
 
 ## Completed Tasks
 
-1. Hardened `SourceLineIndex` offset validation.
+1. Added range-aware local lexical declaration support.
+   - Classified the previous import-only active environment as `source_drift`
+     against the updated active-range specification.
+   - Added a shallow raw-token declaration prepass for current-module `pred`,
+     `func`, `mode`, `attr`, `struct`, `synonym`, `antonym`, and operator
+     declaration activation events without resolving types or constructing full
+     semantic IR.
+   - Added source-position-aware user-symbol queries and disambiguator entry
+     points that activate local candidates only after the declaring item is
+     complete, including declaration-owned correctness/property trails.
+   - Preserved same-spelling local/import entries as overload candidates for
+     downstream resolver phases.
+   - Kept `private` / `public` visibility out of lexing, kept operator
+     declarations separate from user-symbol introduction, and confirmed
+     `deffunc`, `defpred`, and `redefine` do not introduce local lexer
+     user-symbol entries.
+   - Added tests for declaration-before-use, declaration-after-use, declaration
+     self-non-activation, local/import overload preservation, identifier-shaped
+     and circumfix notation spellings, mode/attribute/structure activation,
+     selector non-introduction, synonym/antonym alias-only activation, operator
+     metadata recording, visibility no-op behavior, and non-introducing local
+     forms.
+
+2. Hardened `SourceLineIndex` offset validation.
    - `location` and `range` now reject byte offsets that are not UTF-8 character boundaries by returning `None`.
    - Unit tests cover multi-byte UTF-8 text while preserving the documented zero-based line and zero-based byte-column convention.
 

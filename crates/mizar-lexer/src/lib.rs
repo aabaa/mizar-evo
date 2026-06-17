@@ -100,7 +100,8 @@ mod tables;
 pub use disambiguator::{
     LexDiagnostic, LexDiagnosticCode, LexDiagnosticPayload, LexRecoveryHint,
     MalformedStringLiteralReason, ParserLexContext, ParserLexMode, RejectedTokenCandidate, Token,
-    TokenKind, TokenStream, disambiguate, disambiguate_reserved_shell, lex,
+    TokenKind, TokenStream, disambiguate, disambiguate_reserved_shell,
+    disambiguate_with_local_declarations, lex,
 };
 pub use import_prescan::{
     ImportPrelude, ImportPrescanDiagnostic, ImportPrescanDiagnosticCode, ImportStub,
@@ -110,9 +111,11 @@ pub use import_prescan::{
 pub use lexical_environment::{
     ActiveLexicalEnvironment, ExportRank, ExportedOperatorAssociativity, ExportedOperatorFixity,
     ExportedOperatorMetadata, ExportedSymbolShape, LexicalEnvironmentError,
-    LexicalEnvironmentFingerprint, LexicalSummaryFingerprint, ModuleId, ModuleLexicalSummary,
+    LexicalEnvironmentFingerprint, LexicalSummaryFingerprint, LocalLexicalDeclarations,
+    LocalOperatorDeclaration, LocalUserSymbolDeclaration, ModuleId, ModuleLexicalSummary,
     ResolvedImport, SymbolId, UserSymbolArity, UserSymbolCandidate, UserSymbolIndex,
     UserSymbolKind, UserSymbolKindSet, build_lexical_environment,
+    collect_local_lexical_declarations,
 };
 pub use raw_lexer::{
     LexError, RawScanDiagnostic, RawScanDiagnosticCode, RawToken, RawTokenKind, RawTokenStream,

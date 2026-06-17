@@ -1,5 +1,5 @@
 use crate::lexical_environment::{
-    ActiveLexicalEnvironment, UserSymbolCandidate, UserSymbolKindSet,
+    ActiveLexicalEnvironment, LocalLexicalDeclarations, UserSymbolCandidate, UserSymbolKindSet,
 };
 use crate::raw_lexer::{
     LexError, RawToken, RawTokenKind, RawTokenStream, is_identifier, is_identifier_continue,
@@ -239,7 +239,30 @@ pub fn disambiguate(
     parser_context: &ParserLexContext,
     scope_view: &dyn ScopeLexView,
 ) -> TokenStream {
-    Disambiguator::new(raw, lexical_env, *parser_context, scope_view).run()
+    Disambiguator::new(
+        raw,
+        lexical_env,
+        &LocalLexicalDeclarations::empty(),
+        *parser_context,
+        scope_view,
+    )
+    .run()
+}
+pub fn disambiguate_with_local_declarations(
+    raw: &RawTokenStream,
+    lexical_env: &ActiveLexicalEnvironment,
+    local_declarations: &LocalLexicalDeclarations,
+    parser_context: &ParserLexContext,
+    scope_view: &dyn ScopeLexView,
+) -> TokenStream {
+    Disambiguator::new(
+        raw,
+        lexical_env,
+        local_declarations,
+        *parser_context,
+        scope_view,
+    )
+    .run()
 }
 impl ParserLexContext {
     pub fn general() -> Self {
@@ -374,6 +397,7 @@ fn classify_lexeme_run_shell(raw_token: &RawToken) -> Token {
 struct Disambiguator<'a> {
     raw: &'a RawTokenStream,
     lexical_env: &'a ActiveLexicalEnvironment,
+    local_declarations: &'a LocalLexicalDeclarations,
     parser_context: ParserLexContext,
     scope_view: &'a dyn ScopeLexView,
     tokens: Vec<Token>,
@@ -391,12 +415,14 @@ impl<'a> Disambiguator<'a> {
     fn new(
         raw: &'a RawTokenStream,
         lexical_env: &'a ActiveLexicalEnvironment,
+        local_declarations: &'a LocalLexicalDeclarations,
         parser_context: ParserLexContext,
         scope_view: &'a dyn ScopeLexView,
     ) -> Self {
         Self {
             raw,
             lexical_env,
+            local_declarations,
             parser_context,
             scope_view,
             tokens: Vec::new(),
@@ -618,9 +644,12 @@ impl<'a> Disambiguator<'a> {
         cursor: usize,
         candidates: &mut Vec<DisambiguationCandidate>,
     ) {
-        let user_symbols = self
-            .lexical_env
-            .longest_user_symbol_at(&raw_token.lexeme, cursor);
+        let user_symbols = self.lexical_env.longest_user_symbol_at_position(
+            &raw_token.lexeme,
+            cursor,
+            raw_token.span.start + cursor,
+            self.local_declarations,
+        );
         if user_symbols.is_empty() {
             return;
         }
@@ -721,7 +750,12 @@ impl<'a> Disambiguator<'a> {
             || string_literal_prefix_len(&raw_token.lexeme[cursor..]).is_some()
             || !self
                 .lexical_env
-                .longest_user_symbol_at(&raw_token.lexeme, cursor)
+                .longest_user_symbol_at_position(
+                    &raw_token.lexeme,
+                    cursor,
+                    raw_token.span.start + cursor,
+                    self.local_declarations,
+                )
                 .is_empty()
     }
 
@@ -791,7 +825,12 @@ impl<'a> Disambiguator<'a> {
         }
         if let Some(symbol) = self
             .lexical_env
-            .longest_user_symbol_at(&raw_token.lexeme, cursor)
+            .longest_user_symbol_at_position(
+                &raw_token.lexeme,
+                cursor,
+                raw_token.span.start + cursor,
+                self.local_declarations,
+            )
             .first()
             .map(|candidate| candidate.spelling.as_str())
         {

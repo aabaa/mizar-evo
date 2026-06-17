@@ -49,11 +49,19 @@ pub fn disambiguate(
     parser_context: &ParserLexContext,
     scope_view: &dyn ScopeLexView,
 ) -> TokenStream;
+
+pub fn disambiguate_with_local_declarations(
+    raw: &RawTokenStream,
+    lexical_env: &ActiveLexicalEnvironment,
+    local_declarations: &LocalLexicalDeclarations,
+    parser_context: &ParserLexContext,
+    scope_view: &dyn ScopeLexView,
+) -> TokenStream;
 ```
 
 ## Candidate Selection
 
-現在の `disambiguate` は生トークンを順に処理し、最終トークンと回復可能(recoverable)な診断(diagnostic)を持つ `TokenStream` を返します。
+現在の `disambiguate` は生トークンを順に処理し、最終トークンと回復可能(recoverable)な診断(diagnostic)を持つ `TokenStream` を返します。`disambiguate_with_local_declarations` は同じアルゴリズムを、ソース位置対応の現在モジュール宣言レイヤーとともに使います。`disambiguate` は、ローカル宣言イベントを持たない import-seeded environment 向けの互換 entry point です。
 
 1. レイアウト(空白類)は捨てます。
 2. `NumeralLike` は、パーサーコンテキストが数字を許可する場合だけ `Numeral` になります。許可されない場合は元の綴り(spelling)を `ErrorRecovery` として出力し、`ParserContextRejectedCandidate` を報告します。

@@ -7,22 +7,7 @@
 
 ## Ordered Task List
 
-1. 範囲対応のローカル字句宣言サポートを追加する。
-   - 仕様参照: `spec.en.02.lexical.user_symbols.active_ranges`,
-     `spec.en.10.functors.operator_declarations.range_activation`,
-     `spec.en.11.symbol_management.scope_visibility.lexical_candidates`。
-   - 実装前に、現在のインポートのみのアクティブ環境を、更新後の仕様に対する
-     `source_drift` として分類する。
-   - 現在のモジュールの `pred`、`func`、`mode`、`attr`、`struct`、`synonym`、
-     `antonym`、`infix_operator`、`prefix_operator`、`postfix_operator` の
-     有効化イベントを、型解決や完全な意味 IR の構築なしで収集する、浅い宣言の
-     事前パスを追加する。
-   - 各イベントは、宣言する項目の完了後にだけアクティブにする。前方参照については、
-     レクサーが挙動を創作せず、パーサー / リゾルバの診断または回復で扱う。
-   - 同じ綴りのローカル / インポートのエントリは、下流のリゾルバフェーズの
-     オーバーロード候補として保持する。
-
-2. 記法シンボルと読みやすいコンストラクタ名を、レクサーのメタデータで分離する。
+1. 記法シンボルと読みやすいコンストラクタ名を、レクサーのメタデータで分離する。
    - 任意の `user_symbol` 綴りは、述語 / functor の記法と、述語 / functor の別名に
      だけ許す。
    - `constructor_name` の綴りは、モード・属性・構造体の名前に許す。セレクタは
@@ -31,7 +16,7 @@
      シンボルおよび任意の記号的なモード / 属性 / 構造体の挙動を削除するか、明示的な
      互換性ゲートに置く。
 
-3. パーサー向けの演算子メタデータを、ソース位置対応にする。
+2. パーサー向けの演算子メタデータを、ソース位置対応にする。
    - ファイル全体の `OperatorFixityTable` の受け渡しを、トークンの範囲でアクティブな
      prefix / postfix / infix のメタデータを返せる問い合わせに置き換える。
    - 使用前の宣言、使用後の宣言、private / public が字句解析に影響しないこと、
@@ -39,7 +24,26 @@
 
 ## Completed Tasks
 
-1. `SourceLineIndex` のオフセット検証を強化した。
+1. 範囲対応のローカル字句宣言サポートを追加した。
+   - 以前のインポートのみのアクティブ環境を、更新後の active-range 仕様に対する
+     `source_drift` として分類した。
+   - 型解決や完全な意味 IR の構築なしで、現在のモジュールの `pred`、`func`、
+     `mode`、`attr`、`struct`、`synonym`、`antonym`、および演算子宣言の
+     有効化イベントを収集する、浅い raw-token 宣言 prepass を追加した。
+   - 宣言項目の完了後にだけローカル候補をアクティブにする、ソース位置対応の
+     user-symbol query と disambiguator entry point を追加した。この完了には、
+     宣言所有の correctness/property trail も含める。
+   - 同じ綴りのローカル / インポートエントリを、下流の resolver フェーズの
+     overload candidate として保持した。
+   - `private` / `public` visibility は字句解析に影響させず、演算子宣言は
+     user-symbol の導入から分離し、`deffunc`、`defpred`、`redefine` がローカル
+     lexer user-symbol entry を導入しないことを確認した。
+   - 宣言前の使用、宣言後の使用、宣言自身の非アクティブ化、ローカル / インポートの
+     overload 保持、識別子形および circumfix の記法綴り、mode / attribute /
+     structure の有効化、selector の非導入、synonym / antonym の alias のみの有効化、
+     演算子メタデータ記録、visibility no-op、導入しないローカル形をテストした。
+
+2. `SourceLineIndex` のオフセット検証を強化した。
    - `location` と `range` は、UTF-8 文字境界ではないバイトオフセットに対して `None` を返すようにした。
    - 文書化された規約である 0 始まりの行と 0 始まりのバイト列を保ったまま、マルチバイト UTF-8 テキストのユニットテストを追加した。
 

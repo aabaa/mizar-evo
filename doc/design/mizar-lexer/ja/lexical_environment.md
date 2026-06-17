@@ -9,9 +9,8 @@
 
 現在の実装は、組み込みの予約テーブルと、インポートプレリュード(import prelude)で
 指定されたモジュールがエクスポートする字句シンボルのサマリーとを結合します。
-コンストラクタ名と宣言範囲(declaration range)の仕様更新後、この設計はソース位置に
-依存するレイヤーを追加する必要があります。現在のモジュールの字句宣言は、その宣言項目が
-完了した後にだけ、インポート由来の環境を拡張します。
+また、現在のモジュールの字句宣言のために、ソース位置に依存するレイヤーも提供します。
+ローカル宣言は、その宣言項目が完了した後にだけ、インポート由来の環境を拡張します。
 
 ## Public API
 
@@ -42,6 +41,35 @@ pub fn build_lexical_environment(
     imports: &[ResolvedImport],
     summaries: &[ModuleLexicalSummary],
 ) -> Result<ActiveLexicalEnvironment, LexicalEnvironmentError>;
+
+pub struct LocalLexicalDeclarations {
+    pub user_symbols: Vec<LocalUserSymbolDeclaration>,
+    pub operator_declarations: Vec<LocalOperatorDeclaration>,
+}
+
+pub struct LocalUserSymbolDeclaration {
+    pub spelling: String,
+    pub symbol_id: SymbolId,
+    pub source_module: ModuleId,
+    pub export_rank: ExportRank,
+    pub kind: UserSymbolKind,
+    pub arity: UserSymbolArity,
+    pub declared_at: SourceSpan,
+    pub activation_start: SourcePos,
+}
+
+pub struct LocalOperatorDeclaration {
+    pub spelling: String,
+    pub source_module: ModuleId,
+    pub declared_at: SourceSpan,
+    pub activation_start: SourcePos,
+    pub operator: Option<ExportedOperatorMetadata>,
+}
+
+pub fn collect_local_lexical_declarations(
+    raw: &RawTokenStream,
+    current_module: ModuleId,
+) -> LocalLexicalDeclarations;
 ```
 
 このモジュールは、最長一致(longest-match)の曖昧性解消で使う探索ヘルパーを公開します。
@@ -51,7 +79,25 @@ impl ActiveLexicalEnvironment {
     pub fn reserved_word(&self, spelling: &str) -> Option<&'static str>;
     pub fn reserved_symbol(&self, spelling: &str) -> Option<&'static str>;
     pub fn user_symbol(&self, spelling: &str) -> Option<&UserSymbolCandidate>;
+    pub fn visible_user_symbols_at(
+        &self,
+        position: SourcePos,
+        local_declarations: &LocalLexicalDeclarations,
+    ) -> Vec<UserSymbolCandidate>;
     pub fn longest_user_symbol_at(&self, input: &str, start: usize) -> Vec<UserSymbolCandidate>;
+    pub fn user_symbols_at(
+        &self,
+        spelling: &str,
+        position: SourcePos,
+        local_declarations: &LocalLexicalDeclarations,
+    ) -> Vec<UserSymbolCandidate>;
+    pub fn longest_user_symbol_at_position(
+        &self,
+        input: &str,
+        start: usize,
+        position: SourcePos,
+        local_declarations: &LocalLexicalDeclarations,
+    ) -> Vec<UserSymbolCandidate>;
 }
 ```
 
@@ -137,29 +183,34 @@ pub struct UserSymbolCandidate {
 - 異なるインポートから来た同綴りのユーザーシンボルは、環境構築上の衝突として拒否します。
 - フィンガープリントは、プロセスごとに乱数化されるハッシュではなく内部の安定したバイトハッシャーを使い、シンボル種別とアリティのメタデータも含めます。
 - トライは内部の高速化構造であり、フィンガープリントの計算やサマリーの正規化には影響しません。
+- `collect_local_lexical_declarations` は浅い raw-token prepass を実行し、
+  `pred`、`func`、`mode`、`attr`、`struct`、`synonym`、`antonym`、
+  および演算子宣言について、現在のモジュールの有効化イベントをソース順に記録します。
+  式、型、証明、完全な宣言本体はパースしません。
+- ローカルの `pred` と `func` 宣言について、この prepass は、識別子形の呼び出し・前置・
+  中置・後置パターンから直接の記法綴りを記録し、記号形または circumfix 記法パターンでは、
+  区切りではない各記号片を記録します。
+- ローカルのユーザーシンボル候補は、問い合わせ位置が宣言項目末尾の有効化オフセット以上の
+  場合にだけ `longest_user_symbol_at_position` から見えます。定義に宣言所有の
+  correctness/property clause が続く場合、この完了境界にはその trailing clause と
+  その proof block も含まれます。そのため、宣言自身のヘッダー / 定義項、correctness
+  trail、およびそれ以前のテキストは、その宣言が導入する綴りを見ることができません。
+- 同じ綴りのローカル / インポートのエントリは、下流の resolver フェーズの
+  overload candidate として結合されます。ローカルエントリは、インポート済みエントリを
+  字句的にシャドウしません。
+- `private` と `public` はローカル字句 prepass では無視されます。`redefine` 宣言、
+  inline `deffunc`、inline `defpred`、構造体 selector、および field/property 名は、
+  ローカル lexer user-symbol 辞書エントリを導入しません。
+- 演算子宣言は有効化イベントとして別に記録されますが、user-symbol 候補は導入しません。
+  parser 向け fixity query は、ソース位置対応の演算子メタデータタスクで完了します。
 
-コンストラクタ名の仕様更新後に必要な拡張:
+コンストラクタ名の仕様更新後に残っている拡張:
 
-1. 現在と同じように、インポートを起点とする基本環境を構築する。
-2. 生スキャン / インポートの事前スキャンの後、最終的な曖昧性解消の前に、現在の
-   ソースに対する浅い字句宣言の事前パスを実行する。この事前パスは、定義 / 記法の
-   ヘッダーを見てもよいが、意味解決、型検査、証明検査、完全な AST 構築は行わない。
-3. `pred`、`func`、`mode`、`attr`、`struct`、`synonym`、`antonym`、
-   `infix_operator`、`prefix_operator`、`postfix_operator` の、ソース順の
-   有効化イベントを収集する。
-4. 任意の `user_symbol` 綴りは、述語 / functor の記法と、述語 / functor の別名に
+1. 任意の `user_symbol` 綴りは、述語 / functor の記法と、述語 / functor の別名に
    だけ許す。`constructor_name` の綴りは、モード・属性・構造体の名前に許す。
    構造体のセレクタは識別子のままにする。
-5. 各綴りまたは演算子メタデータは、宣言項目が完了した後にだけアクティブにする。
-   宣言自身のヘッダー / 定義項は、その宣言が導入中の綴りを使用できず、後続宣言は
-   前方参照できない。
-6. 同じ綴りのローカル / インポートのエントリは、下流のリゾルバフェーズの
-   オーバーロード候補として保持する。インポート済み候補を字句的にシャドウしない。
-7. `private` / `public` はトークン化の判断から外す。可視性は、生成側の
-   エクスポートサマリーにだけ影響する。
-8. 曖昧性解消とパーサー向けの演算子テーブルが、トークンのバイト範囲でアクティブな
-   候補 / 結合性(fixity)メタデータを問い合わせられる、ソース位置の問い合わせ API を
-   公開する。
+2. 曖昧性解消と parser integration が、トークンのバイト範囲でアクティブな
+   演算子メタデータを問い合わせられるよう、ソース位置対応の parser fixity query を公開する。
 
 ## Non-Goals
 
@@ -200,3 +251,11 @@ active な環境は、インポートされたモジュールの圧縮された 
 - 多数のインポートシンボルと綴りの重なりがあっても、トライに基づく探索が最長一致の動作を保つこと;
 - 同綴りのオーバーロード候補について、種別/アリティのメタデータが保持されること;
 - 種別またはアリティのメタデータが変わると、環境のフィンガープリントが変わること。
+- 現在のモジュールのローカル宣言は、宣言項目より前では非アクティブであり、
+  自身のヘッダー / 定義項でも非アクティブで、後続のソース位置でだけアクティブになること;
+- 同じ綴りのローカル / インポート候補がどちらも保持されること;
+- `private` / `public` がローカル字句有効化に影響しないこと;
+- 演算子宣言、`deffunc`、`defpred`、`redefine` がローカル user-symbol エントリを
+  導入しないこと;
+- synonym / antonym の prepass 有効化は `for` より前の alias pattern から派生し、
+  `for` より後の original pattern からは派生しないこと。

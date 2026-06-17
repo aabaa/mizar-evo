@@ -49,11 +49,19 @@ pub fn disambiguate(
     parser_context: &ParserLexContext,
     scope_view: &dyn ScopeLexView,
 ) -> TokenStream;
+
+pub fn disambiguate_with_local_declarations(
+    raw: &RawTokenStream,
+    lexical_env: &ActiveLexicalEnvironment,
+    local_declarations: &LocalLexicalDeclarations,
+    parser_context: &ParserLexContext,
+    scope_view: &dyn ScopeLexView,
+) -> TokenStream;
 ```
 
 ## Candidate Selection
 
-The implemented `disambiguate` algorithm processes raw tokens in order and emits a `TokenStream` containing final tokens plus recoverable diagnostics.
+The implemented `disambiguate` algorithm processes raw tokens in order and emits a `TokenStream` containing final tokens plus recoverable diagnostics. `disambiguate_with_local_declarations` uses the same algorithm with a source-position-aware current-module declaration layer; `disambiguate` is the compatibility entry point for import-seeded environments without local declaration events.
 
 1. Layout is skipped.
 2. `NumeralLike` becomes `Numeral` only when the parser context admits numerals; otherwise the original spelling becomes `ErrorRecovery` with `ParserContextRejectedCandidate`.
