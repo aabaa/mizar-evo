@@ -12,7 +12,7 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| ast | [ast.md](./ast.md) | `src/ast.rs` | [~] rowan storage boundary in place; vocabulary still growing |
+| ast | [ast.md](./ast.md) | `src/ast.rs` | [x] rowan storage boundary and task-35 vocabulary complete; S-019 source/spec audit found no missing implementation |
 | trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [x] task-4 model implemented; task-5 item attachment fixture landed |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [x] task-5 recovery vocabulary implemented; parser producers remain incremental |
 
@@ -554,11 +554,18 @@ interaction. Spec references are the normative grammar chapters under
     - Deps: 16, 17. Spec: [ast.md](./ast.md), [trivia.md](./trivia.md),
       [recovery.md](./recovery.md).
 
-19. **Source/spec correspondence audit.** [ ]
+19. **Source/spec correspondence audit.** [x]
     - Mirror the `mizar-frontend` task-16 audit: trace every public API and
       promised behavior in [ast.md](./ast.md), [trivia.md](./trivia.md), and
       [recovery.md](./recovery.md) to implementation and tests, and record
       gaps as follow-up tasks.
+    - Result: [source_spec_correspondence.md](./source_spec_correspondence.md)
+      records the public API, enum/diagnostic, task requirement, source, and
+      test correspondence through parser task 35. The audit found no new
+      unimplemented promised behavior, no undocumented public behavior, no
+      remaining missing targeted tests, no expectation drift, no boundary
+      violation, and no metadata conflict. Existing follow-ups remain
+      classified in the audit note.
     - Deps: 18. Spec: all module specs and this TODO.
 
 20. **Bilingual documentation sync audit.** [ ]

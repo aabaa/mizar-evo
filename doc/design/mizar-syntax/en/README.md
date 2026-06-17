@@ -4,11 +4,11 @@
 
 The crate should provide syntax data structures that are stable enough for the parser, resolver, LSP, formatter, and tests to share, while still remaining internal compiler data rather than a stable public artifact schema.
 
-Status: the representation foundation owns a rowan-backed `SurfaceAst`, typed
-compatibility views, deterministic snapshot rendering, syntax diagnostics, and
-syntax-owned trivia side tables. Recovery nodes sufficient for frontend
-parser-seam integration and the expanded recovery vocabulary are available;
-parser producers remain incremental.
+Status: the crate owns a rowan-backed `SurfaceAst`, typed compatibility views,
+deterministic snapshot rendering, syntax diagnostics, syntax-owned trivia side
+tables, and the task-35 surface vocabulary. The S-019 source/spec audit found
+no missing implementation for the public API and behavior promises in the
+module specs.
 
 Autonomous crate-development kickoff plan:
 
@@ -25,5 +25,9 @@ Grammar-gate planning notes:
 - `grammar_audit.md`
 - `parse_only_acceptance_matrix.md`
 - `parse_only_fixture_seed.md`
+
+Cross-cutting audit notes:
+
+- `source_spec_correspondence.md`
 
 Implementation roadmap: [todo.md](./todo.md).
