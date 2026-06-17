@@ -30,5 +30,6 @@ Cross-cutting audit notes:
 
 - `source_spec_correspondence.md`
 - `bilingual_documentation_synchronization.md`
+- `crate_exit_report.md`
 
 Implementation roadmap: [todo.md](./todo.md).

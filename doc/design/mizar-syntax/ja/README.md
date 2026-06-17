@@ -31,5 +31,6 @@ vocabulary を所有している。S-019 source/spec audit では、module spec 
 
 - `source_spec_correspondence.md`
 - `bilingual_documentation_synchronization.md`
+- `crate_exit_report.md`
 
 実装ロードマップ: [todo.md](./todo.md)。

@@ -80,6 +80,7 @@ English and Japanese readers.
 | [parse_only_fixture_seed.md](./parse_only_fixture_seed.md) | [../ja/parse_only_fixture_seed.md](../ja/parse_only_fixture_seed.md) | Seed fixture intent, activation rules, deferred rows, and parser ownership references are synchronized. |
 | [source_spec_correspondence.md](./source_spec_correspondence.md) | [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md) | S-019 source/spec/test correspondence, public API and method traceability, follow-up records, and the handoff to this S-020 audit are synchronized. |
 | [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md) | This S-020 audit records the bilingual synchronization result in both languages. |
+| [crate_exit_report.md](./crate_exit_report.md) | [../ja/crate_exit_report.md](../ja/crate_exit_report.md) | Final hard-gate status, quality score, deferred items, verification results, and next-task handoff are synchronized. |
 | [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Task statuses and follow-up records are synchronized through S-020; S-021 remains deferred in both languages. |
 
 ## Link Policy
@@ -100,3 +101,7 @@ The only change was to close the documentation `design_drift` recorded above.
 S-021 remains explicitly deferred for rustdoc summaries until a long-lived
 consumer outside the frontend pipeline starts coding against `mizar-syntax` or
 the workspace adopts a rustdoc policy, whichever comes first.
+
+The final crate exit task later added synchronized
+[crate_exit_report.md](./crate_exit_report.md) companions without changing the
+S-020 audit result.
