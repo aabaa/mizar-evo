@@ -49,7 +49,11 @@ Precedence values range from `0` to `255`; higher values bind more tightly.
 The default precedence for a symbolic functor with no declaration is `64`,
 non-associative. Operator declarations are source-position dependent: a
 declaration affects only later tokens, and it must target a functor spelling
-that is already active at the declaration point.
+that is already active at the declaration point. They are not forward
+declarations and do not choose overload roots. Later same-spelling `func`
+declarations are ordinary overload candidates after their own declaration
+items are complete, and identical argument-type signatures remain definition
+conflicts under Chapter 19.
 
 Built-in predicate symbols such as `=`, `<>`, and `in` are declared in the implicitly imported core module. They cannot be overridden by user declarations.
 
