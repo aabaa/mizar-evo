@@ -1,13 +1,13 @@
 use crate::raw_lexer::{
-    RawTokenKind, RawTokenStream, is_identifier_continue, is_identifier_start,
-    is_user_symbol_spelling,
+    RawTokenKind, RawTokenStream, is_constructor_name_spelling, is_identifier,
+    is_identifier_continue, is_identifier_start, is_user_symbol_spelling,
 };
 use crate::source::{SourcePos, SourceSpan};
 use crate::tables::{
     RESERVED_SYMBOLS, RESERVED_WORDS, ReservedSymbolTable, ReservedWordTable, is_reserved_symbol,
     is_reserved_word,
 };
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fmt;
 
@@ -213,6 +213,11 @@ pub enum LexicalEnvironmentError {
         spelling: String,
         module_id: ModuleId,
     },
+    InvalidConstructorNameSpelling {
+        spelling: String,
+        module_id: ModuleId,
+        kind: UserSymbolKind,
+    },
     InvalidUserSymbolArity {
         spelling: String,
         module_id: ModuleId,
@@ -224,6 +229,11 @@ pub enum LexicalEnvironmentError {
         kind: UserSymbolKind,
         arity: UserSymbolArity,
         operator: ExportedOperatorMetadata,
+    },
+    UnsupportedLexicalEntryKind {
+        spelling: String,
+        module_id: ModuleId,
+        kind: UserSymbolKind,
     },
     ReservedWordCollision {
         spelling: String,
@@ -261,6 +271,15 @@ impl fmt::Display for LexicalEnvironmentError {
                 "invalid user symbol spelling `{spelling}` exported by module `{}`",
                 module_id.0
             ),
+            Self::InvalidConstructorNameSpelling {
+                spelling,
+                module_id,
+                kind,
+            } => write!(
+                f,
+                "invalid constructor name spelling `{spelling}` for {:?} exported by module `{}`",
+                kind, module_id.0
+            ),
             Self::InvalidUserSymbolArity {
                 spelling,
                 module_id,
@@ -280,6 +299,15 @@ impl fmt::Display for LexicalEnvironmentError {
                 f,
                 "invalid operator metadata {:?} for {:?} symbol `{spelling}` with arity {:?} exported by module `{}`",
                 operator, kind, arity, module_id.0
+            ),
+            Self::UnsupportedLexicalEntryKind {
+                spelling,
+                module_id,
+                kind,
+            } => write!(
+                f,
+                "unsupported lexical entry kind {:?} for `{spelling}` exported by module `{}`",
+                kind, module_id.0
             ),
             Self::ReservedWordCollision {
                 spelling,
@@ -822,29 +850,12 @@ fn index_module_lexical_summaries(
 fn validate_exported_symbol_shape(
     exported: &ExportedSymbolShape,
 ) -> Result<(), LexicalEnvironmentError> {
-    if !is_user_symbol_spelling(&exported.spelling) {
-        return Err(LexicalEnvironmentError::InvalidUserSymbolSpelling {
-            spelling: exported.spelling.clone(),
-            module_id: exported.source_module.clone(),
-        });
-    }
+    validate_exported_symbol_spelling(exported)?;
     if !exported.arity.is_valid() {
         return Err(LexicalEnvironmentError::InvalidUserSymbolArity {
             spelling: exported.spelling.clone(),
             module_id: exported.source_module.clone(),
             arity: exported.arity,
-        });
-    }
-    if is_reserved_word(&exported.spelling) {
-        return Err(LexicalEnvironmentError::ReservedWordCollision {
-            spelling: exported.spelling.clone(),
-            module_id: exported.source_module.clone(),
-        });
-    }
-    if is_reserved_symbol(&exported.spelling) && exported.spelling != "." {
-        return Err(LexicalEnvironmentError::ReservedSymbolCollision {
-            spelling: exported.spelling.clone(),
-            module_id: exported.source_module.clone(),
         });
     }
     if let Some(operator) = exported.operator {
@@ -865,6 +876,75 @@ fn validate_exported_symbol_shape(
         }
     }
     Ok(())
+}
+
+fn validate_exported_symbol_spelling(
+    exported: &ExportedSymbolShape,
+) -> Result<(), LexicalEnvironmentError> {
+    if matches!(
+        exported.kind,
+        UserSymbolKind::Selector | UserSymbolKind::Constructor
+    ) {
+        return Err(LexicalEnvironmentError::UnsupportedLexicalEntryKind {
+            spelling: exported.spelling.clone(),
+            module_id: exported.source_module.clone(),
+            kind: exported.kind,
+        });
+    }
+    if is_reserved_word(&exported.spelling) {
+        return Err(LexicalEnvironmentError::ReservedWordCollision {
+            spelling: exported.spelling.clone(),
+            module_id: exported.source_module.clone(),
+        });
+    }
+    if is_reserved_symbol(&exported.spelling)
+        && !(exported.kind == UserSymbolKind::Functor && exported.spelling == ".")
+    {
+        return Err(LexicalEnvironmentError::ReservedSymbolCollision {
+            spelling: exported.spelling.clone(),
+            module_id: exported.source_module.clone(),
+        });
+    }
+
+    match exported.kind {
+        UserSymbolKind::Functor | UserSymbolKind::Predicate => {
+            if !is_user_symbol_spelling(&exported.spelling) {
+                return Err(LexicalEnvironmentError::InvalidUserSymbolSpelling {
+                    spelling: exported.spelling.clone(),
+                    module_id: exported.source_module.clone(),
+                });
+            }
+        }
+        UserSymbolKind::Mode | UserSymbolKind::Attribute | UserSymbolKind::Structure => {
+            if !is_constructor_name_spelling(&exported.spelling) {
+                return Err(LexicalEnvironmentError::InvalidConstructorNameSpelling {
+                    spelling: exported.spelling.clone(),
+                    module_id: exported.source_module.clone(),
+                    kind: exported.kind,
+                });
+            }
+        }
+        UserSymbolKind::Selector | UserSymbolKind::Constructor => {
+            unreachable!("selector and constructor kinds are rejected above")
+        }
+    }
+    Ok(())
+}
+
+fn is_local_lexical_entry_spelling(kind: UserSymbolKind, spelling: &str) -> bool {
+    if is_reserved_word(spelling) {
+        return false;
+    }
+    if is_reserved_symbol(spelling) && !(kind == UserSymbolKind::Functor && spelling == ".") {
+        return false;
+    }
+    match kind {
+        UserSymbolKind::Functor | UserSymbolKind::Predicate => is_user_symbol_spelling(spelling),
+        UserSymbolKind::Mode | UserSymbolKind::Attribute | UserSymbolKind::Structure => {
+            is_constructor_name_spelling(spelling)
+        }
+        UserSymbolKind::Selector | UserSymbolKind::Constructor => false,
+    }
 }
 
 struct LocalDeclarationCollector {
@@ -955,6 +1035,21 @@ impl LocalDeclarationCollector {
             return;
         };
         let pattern = &self.pieces[colon + 1..pattern_end];
+        if let Some(selection) = select_hyphenated_notation_spelling(pattern) {
+            let arity = pattern_arity_excluding_range(
+                pattern,
+                selection.relative_start,
+                selection.relative_end,
+            );
+            self.push_user_symbol_shape(
+                selection.spelling,
+                selection.span,
+                kind,
+                arity,
+                completion.activation_start,
+            );
+            return;
+        }
         let symbol_selections = select_symbol_spelling_pieces(pattern);
         if symbol_selections.is_empty() {
             let Some(selection) = select_notation_spelling(pattern) else {
@@ -985,8 +1080,9 @@ impl LocalDeclarationCollector {
         let Some(selection) = select_constructor_spelling(&self.pieces[colon + 1..name_end]) else {
             return;
         };
-        self.push_user_symbol(
-            colon + 1 + selection.relative_index,
+        self.push_user_symbol_shape(
+            selection.spelling,
+            selection.span,
             UserSymbolKind::Mode,
             UserSymbolArity::exact(0),
             completion.activation_start,
@@ -1006,12 +1102,16 @@ impl LocalDeclarationCollector {
         let name_end = self
             .find_word(is_index + 1, completion.piece_index, "means")
             .unwrap_or(completion.piece_index);
-        let Some(selection) = select_constructor_spelling(&self.pieces[is_index + 1..name_end])
-        else {
+        let parameter_names = self.attribute_parameter_names_before(keyword_index);
+        let Some(selection) = select_attribute_constructor_spelling(
+            &self.pieces[is_index + 1..name_end],
+            &parameter_names,
+        ) else {
             return;
         };
-        self.push_user_symbol(
-            is_index + 1 + selection.relative_index,
+        self.push_user_symbol_shape(
+            selection.spelling,
+            selection.span,
             UserSymbolKind::Attribute,
             UserSymbolArity::exact(1),
             completion.activation_start,
@@ -1030,8 +1130,9 @@ impl LocalDeclarationCollector {
         else {
             return;
         };
-        self.push_user_symbol(
-            keyword_index + 1 + selection.relative_index,
+        self.push_user_symbol_shape(
+            selection.spelling,
+            selection.span,
             UserSymbolKind::Structure,
             UserSymbolArity::exact(0),
             completion.activation_start,
@@ -1047,32 +1148,63 @@ impl LocalDeclarationCollector {
             return;
         };
         let pattern = &self.pieces[keyword_index + 1..for_index];
-        let symbol_selections = select_symbol_spelling_pieces(pattern);
-        let kind = if !symbol_selections.is_empty() {
+        let original = &self.pieces[for_index + 1..completion.piece_index];
+        let kind = if pattern_has_operator_like_notation(pattern)
+            || pattern_has_operator_like_notation(original)
+        {
             UserSymbolKind::Functor
         } else {
             UserSymbolKind::Mode
         };
-        if symbol_selections.is_empty() {
-            let Some(selection) = select_notation_spelling(pattern) else {
+        if kind == UserSymbolKind::Mode {
+            let Some(selection) = select_constructor_spelling(pattern) else {
                 return;
             };
-            let arity = pattern_arity(pattern, selection.relative_index);
-            self.push_user_symbol(
-                keyword_index + 1 + selection.relative_index,
+            self.push_user_symbol_shape(
+                selection.spelling,
+                selection.span,
                 kind,
-                arity,
+                UserSymbolArity::exact(0),
                 completion.activation_start,
             );
         } else {
-            let arity = pattern_arity_without_symbol_pieces(pattern);
-            for selection in symbol_selections {
+            if let Some(selection) = select_hyphenated_notation_spelling(pattern) {
+                let arity = pattern_arity_excluding_range(
+                    pattern,
+                    selection.relative_start,
+                    selection.relative_end,
+                );
+                self.push_user_symbol_shape(
+                    selection.spelling,
+                    selection.span,
+                    kind,
+                    arity,
+                    completion.activation_start,
+                );
+                return;
+            }
+            let symbol_selections = select_symbol_spelling_pieces(pattern);
+            if symbol_selections.is_empty() {
+                let Some(selection) = select_notation_spelling(pattern) else {
+                    return;
+                };
+                let arity = pattern_arity(pattern, selection.relative_index);
                 self.push_user_symbol(
                     keyword_index + 1 + selection.relative_index,
                     kind,
                     arity,
                     completion.activation_start,
                 );
+            } else {
+                let arity = pattern_arity_without_symbol_pieces(pattern);
+                for selection in symbol_selections {
+                    self.push_user_symbol(
+                        keyword_index + 1 + selection.relative_index,
+                        kind,
+                        arity,
+                        completion.activation_start,
+                    );
+                }
             }
         }
     }
@@ -1138,31 +1270,67 @@ impl LocalDeclarationCollector {
         activation_start: SourcePos,
     ) {
         let piece = &self.pieces[piece_index];
-        if !is_user_symbol_spelling(&piece.text)
-            || is_reserved_word(&piece.text)
-            || (is_reserved_symbol(&piece.text) && piece.text != ".")
-            || !arity.is_valid()
-        {
+        self.push_user_symbol_shape(
+            piece.text.clone(),
+            piece.span,
+            kind,
+            arity,
+            activation_start,
+        );
+    }
+
+    fn push_user_symbol_shape(
+        &mut self,
+        spelling: String,
+        span: SourceSpan,
+        kind: UserSymbolKind,
+        arity: UserSymbolArity,
+        activation_start: SourcePos,
+    ) {
+        if !is_local_lexical_entry_spelling(kind, &spelling) || !arity.is_valid() {
             return;
         }
 
         let rank = ExportRank(self.next_rank);
         self.next_rank += 1;
         self.user_symbols.push(LocalUserSymbolDeclaration {
-            spelling: piece.text.clone(),
+            spelling: spelling.clone(),
             symbol_id: SymbolId::new(format!(
                 "{}#local:{}:{}",
                 self.current_module.as_str(),
                 rank.get(),
-                piece.text
+                spelling
             )),
             source_module: self.current_module.clone(),
             export_rank: rank,
             kind,
             arity,
-            declared_at: piece.span,
+            declared_at: span,
             activation_start,
         });
+    }
+
+    fn attribute_parameter_names_before(&self, keyword_index: usize) -> BTreeSet<String> {
+        let mut names = BTreeSet::new();
+        let block_start = self
+            .pieces
+            .get(..keyword_index)
+            .and_then(|pieces| pieces.iter().rposition(|piece| piece.text == "definition"))
+            .map_or(0, |index| index + 1);
+
+        let mut cursor = block_start;
+        while cursor < keyword_index {
+            if self.pieces[cursor].text != "let" {
+                cursor += 1;
+                continue;
+            }
+            let Some(end) = self.find_symbol(cursor + 1, keyword_index, ";") else {
+                break;
+            };
+            collect_let_parameter_names(&self.pieces[cursor + 1..end], &mut names);
+            cursor = end + 1;
+        }
+        names
     }
 
     fn item_completion(&self, keyword_index: usize) -> Option<ItemCompletion> {
@@ -1312,6 +1480,20 @@ struct SpellingSelection {
     relative_index: usize,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ConstructorSelection {
+    spelling: String,
+    span: SourceSpan,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct MultiPieceSelection {
+    relative_start: usize,
+    relative_end: usize,
+    spelling: String,
+    span: SourceSpan,
+}
+
 fn select_notation_spelling(pieces: &[DeclarationPiece]) -> Option<SpellingSelection> {
     if pieces
         .first()
@@ -1378,6 +1560,98 @@ fn select_symbol_spelling_pieces(pieces: &[DeclarationPiece]) -> Vec<SpellingSel
         .collect()
 }
 
+fn select_hyphenated_notation_spelling(pieces: &[DeclarationPiece]) -> Option<MultiPieceSelection> {
+    for index in 1..pieces.len().saturating_sub(1) {
+        let hyphen = &pieces[index];
+        if hyphen.kind != DeclarationPieceKind::Symbol || hyphen.text != "-" {
+            continue;
+        }
+        if !is_constructor_segment_piece(&pieces[index - 1])
+            || !is_constructor_segment_piece(&pieces[index + 1])
+            || pieces[index - 1].span.end != hyphen.span.start
+            || pieces[index + 1].span.start != hyphen.span.end
+        {
+            continue;
+        }
+        if is_likely_locus_word(&pieces[index - 1].text)
+            && is_likely_locus_word(&pieces[index + 1].text)
+        {
+            continue;
+        }
+
+        let mut start = index - 1;
+        while start >= 2
+            && pieces[start - 1].kind == DeclarationPieceKind::Symbol
+            && pieces[start - 1].text == "-"
+            && pieces[start - 2].span.end == pieces[start - 1].span.start
+            && pieces[start].span.start == pieces[start - 1].span.end
+            && is_constructor_segment_piece(&pieces[start - 2])
+        {
+            start -= 2;
+        }
+
+        let mut end = index + 2;
+        while end + 1 < pieces.len()
+            && pieces[end].kind == DeclarationPieceKind::Symbol
+            && pieces[end].text == "-"
+            && pieces[end - 1].span.end == pieces[end].span.start
+            && pieces[end + 1].span.start == pieces[end].span.end
+            && is_constructor_segment_piece(&pieces[end + 1])
+        {
+            end += 2;
+        }
+
+        let span = SourceSpan::new(pieces[start].span.start, pieces[end - 1].span.end);
+        let mut spelling = String::new();
+        for piece in &pieces[start..end] {
+            spelling.push_str(&piece.text);
+        }
+        if is_user_symbol_spelling(&spelling) {
+            return Some(MultiPieceSelection {
+                relative_start: start,
+                relative_end: end,
+                spelling,
+                span,
+            });
+        }
+    }
+    None
+}
+
+fn pattern_has_operator_like_notation(pieces: &[DeclarationPiece]) -> bool {
+    pieces.iter().enumerate().any(|(index, piece)| {
+        matches!(
+            piece.kind,
+            DeclarationPieceKind::Symbol | DeclarationPieceKind::StringLiteral
+        ) && !is_declaration_delimiter(&piece.text)
+            && !is_constructor_hyphen_at(pieces, index)
+    })
+}
+
+fn is_constructor_hyphen_at(pieces: &[DeclarationPiece], index: usize) -> bool {
+    let Some(piece) = pieces.get(index) else {
+        return false;
+    };
+    piece.kind == DeclarationPieceKind::Symbol
+        && piece.text == "-"
+        && pieces
+            .get(index.wrapping_sub(1))
+            .is_some_and(is_constructor_segment_piece)
+        && pieces
+            .get(index + 1)
+            .is_some_and(is_constructor_segment_piece)
+        && pieces[index - 1].span.end == piece.span.start
+        && pieces[index + 1].span.start == piece.span.end
+}
+
+fn is_likely_locus_word(value: &str) -> bool {
+    value.len() == 1
+        && value
+            .chars()
+            .next()
+            .is_some_and(|ch| ch.is_ascii_lowercase() || ch == '_')
+}
+
 fn second_word_is_likely_infix_notation(
     first: &DeclarationPiece,
     second: &DeclarationPiece,
@@ -1400,20 +1674,289 @@ fn second_word_is_likely_infix_notation(
                 .is_some_and(|ch| ch.is_ascii_uppercase()))
 }
 
-fn select_constructor_spelling(pieces: &[DeclarationPiece]) -> Option<SpellingSelection> {
-    pieces
-        .iter()
-        .position(|piece| {
-            matches!(
-                piece.kind,
-                DeclarationPieceKind::Word | DeclarationPieceKind::Symbol
-            ) && !is_declaration_delimiter(&piece.text)
-                && !matches!(
-                    piece.text.as_str(),
-                    "of" | "over" | "where" | "is" | "means"
-                )
-        })
-        .map(|relative_index| SpellingSelection { relative_index })
+fn select_constructor_spelling(pieces: &[DeclarationPiece]) -> Option<ConstructorSelection> {
+    let mut index = 0;
+    while index < pieces.len() {
+        let piece = &pieces[index];
+        if is_constructor_boundary_word(&piece.text) || piece.kind == DeclarationPieceKind::Symbol {
+            index += 1;
+            continue;
+        }
+        if let Some(selection) = readable_constructor_spelling_at(pieces, index) {
+            return Some(selection);
+        }
+        if piece.kind == DeclarationPieceKind::Word && is_constructor_name_spelling(&piece.text) {
+            return Some(ConstructorSelection {
+                spelling: piece.text.clone(),
+                span: piece.span,
+            });
+        }
+        index += 1;
+    }
+    None
+}
+
+fn select_attribute_constructor_spelling(
+    pieces: &[DeclarationPiece],
+    parameter_names: &BTreeSet<String>,
+) -> Option<ConstructorSelection> {
+    select_attribute_name_after_param_prefix(pieces, parameter_names)
+        .or_else(|| select_constructor_spelling(pieces))
+}
+
+fn select_attribute_name_after_param_prefix(
+    pieces: &[DeclarationPiece],
+    parameter_names: &BTreeSet<String>,
+) -> Option<ConstructorSelection> {
+    match pieces.first()? {
+        first
+            if is_attribute_param_piece(first, parameter_names)
+                && pieces.get(1).is_some_and(|piece| {
+                    piece.kind == DeclarationPieceKind::Symbol
+                        && piece.text == "-"
+                        && first.span.end == piece.span.start
+                }) =>
+        {
+            let hyphen = &pieces[1];
+            let name = select_constructor_spelling_at(pieces, 2)?;
+            (pieces[name.relative_start].span.start == hyphen.span.end).then_some(name.selection)
+        }
+        first if first.kind == DeclarationPieceKind::Symbol && first.text == "(" => {
+            let close_index = pieces.iter().position(|piece| {
+                piece.kind == DeclarationPieceKind::Symbol && piece.text == ")"
+            })?;
+            let hyphen = pieces.get(close_index + 1)?;
+            if hyphen.kind != DeclarationPieceKind::Symbol
+                || hyphen.text != "-"
+                || pieces[close_index].span.end != hyphen.span.start
+                || !is_attribute_param_list(&pieces[1..close_index], parameter_names)
+            {
+                return None;
+            }
+            let name = select_constructor_spelling_at(pieces, close_index + 2)?;
+            (pieces[name.relative_start].span.start == hyphen.span.end).then_some(name.selection)
+        }
+        _ => None,
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RelativeConstructorSelection {
+    relative_start: usize,
+    selection: ConstructorSelection,
+}
+
+fn select_constructor_spelling_at(
+    pieces: &[DeclarationPiece],
+    index: usize,
+) -> Option<RelativeConstructorSelection> {
+    let piece = pieces.get(index)?;
+    if let Some(selection) = readable_constructor_spelling_at(pieces, index) {
+        return Some(RelativeConstructorSelection {
+            relative_start: index,
+            selection,
+        });
+    }
+    if piece.kind == DeclarationPieceKind::Word && is_constructor_name_spelling(&piece.text) {
+        return Some(RelativeConstructorSelection {
+            relative_start: index,
+            selection: ConstructorSelection {
+                spelling: piece.text.clone(),
+                span: piece.span,
+            },
+        });
+    }
+    None
+}
+
+fn readable_constructor_spelling_at(
+    pieces: &[DeclarationPiece],
+    start: usize,
+) -> Option<ConstructorSelection> {
+    let first = pieces.get(start)?;
+    if !is_constructor_segment_piece(first) {
+        return None;
+    }
+
+    let mut cursor = start;
+    let mut spelling = first.text.clone();
+    let mut span = first.span;
+    let mut saw_hyphen = false;
+    while let (Some(hyphen), Some(next)) = (pieces.get(cursor + 1), pieces.get(cursor + 2)) {
+        if hyphen.text != "-"
+            || hyphen.kind != DeclarationPieceKind::Symbol
+            || hyphen.span.start != span.end
+            || !is_constructor_segment_piece(next)
+            || next.span.start != hyphen.span.end
+        {
+            break;
+        }
+        spelling.push('-');
+        spelling.push_str(&next.text);
+        span = SourceSpan::new(span.start, next.span.end);
+        cursor += 2;
+        saw_hyphen = true;
+    }
+
+    (saw_hyphen && is_constructor_name_spelling(&spelling))
+        .then_some(ConstructorSelection { spelling, span })
+}
+
+fn is_constructor_segment_piece(piece: &DeclarationPiece) -> bool {
+    matches!(
+        piece.kind,
+        DeclarationPieceKind::Word | DeclarationPieceKind::Numeral
+    ) && piece
+        .text
+        .chars()
+        .all(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '\'')
+}
+
+fn is_constructor_boundary_word(value: &str) -> bool {
+    matches!(value, "of" | "over" | "where" | "is" | "means")
+}
+
+fn is_attribute_param_piece(piece: &DeclarationPiece, parameter_names: &BTreeSet<String>) -> bool {
+    match piece.kind {
+        DeclarationPieceKind::Numeral => true,
+        DeclarationPieceKind::Word => parameter_names.contains(&piece.text),
+        DeclarationPieceKind::StringLiteral | DeclarationPieceKind::Symbol => false,
+    }
+}
+
+fn is_attribute_param_list(
+    pieces: &[DeclarationPiece],
+    parameter_names: &BTreeSet<String>,
+) -> bool {
+    if pieces.is_empty() {
+        return false;
+    }
+    let mut expect_param = true;
+    for piece in pieces {
+        if expect_param {
+            if !is_attribute_param_piece(piece, parameter_names) {
+                return false;
+            }
+            expect_param = false;
+        } else {
+            if piece.kind != DeclarationPieceKind::Symbol || piece.text != "," {
+                return false;
+            }
+            expect_param = true;
+        }
+    }
+    !expect_param
+}
+
+fn collect_let_parameter_names(pieces: &[DeclarationPiece], names: &mut BTreeSet<String>) {
+    let mut pending_names = Vec::new();
+    let mut scanning_type = false;
+    let mut type_has_parameter_separator = false;
+    let mut depth = 0usize;
+    for (index, piece) in pieces.iter().enumerate() {
+        match piece.text.as_str() {
+            "(" | "[" | "{" => {
+                if scanning_type {
+                    depth += 1;
+                }
+                continue;
+            }
+            ")" | "]" | "}" => {
+                if scanning_type {
+                    depth = depth.saturating_sub(1);
+                }
+                continue;
+            }
+            _ => {}
+        }
+        if depth == 0 && matches!(piece.text.as_str(), "such" | "by") {
+            break;
+        }
+        if depth == 0 && matches!(piece.text.as_str(), "be" | "being") {
+            names.extend(pending_names.drain(..));
+            scanning_type = true;
+            type_has_parameter_separator = false;
+            continue;
+        }
+        if depth == 0 && scanning_type && matches!(piece.text.as_str(), "of" | "over") {
+            type_has_parameter_separator = true;
+            continue;
+        }
+        if depth == 0 && piece.kind == DeclarationPieceKind::Symbol && piece.text == "," {
+            if scanning_type {
+                let starts_explicit_segment = !type_has_parameter_separator
+                    || likely_explicit_let_segment_starts_at(&pieces[index + 1..], true);
+                if starts_explicit_segment {
+                    pending_names.clear();
+                    scanning_type = false;
+                }
+            }
+            continue;
+        }
+        if !scanning_type && piece.kind == DeclarationPieceKind::Word && is_identifier(&piece.text)
+        {
+            pending_names.push(piece.text.clone());
+        }
+    }
+    names.extend(pending_names);
+}
+
+fn likely_explicit_let_segment_starts_at(
+    pieces: &[DeclarationPiece],
+    allow_comma_separated_names: bool,
+) -> bool {
+    let mut expect_name = true;
+    let mut name_count = 0usize;
+    let mut first_name_is_lowerish = false;
+    let mut all_names_are_likely_values = true;
+    for piece in pieces {
+        if matches!(piece.text.as_str(), "be" | "being") {
+            return all_names_are_likely_values
+                && match name_count {
+                    0 => false,
+                    1 => true,
+                    _ => first_name_is_lowerish,
+                };
+        }
+        if expect_name {
+            if piece.kind == DeclarationPieceKind::Word && is_identifier(&piece.text) {
+                if name_count == 0 {
+                    first_name_is_lowerish = is_lowerish_value_binding_name(&piece.text);
+                }
+                name_count += 1;
+                all_names_are_likely_values &= is_likely_value_binding_name(&piece.text);
+                expect_name = false;
+                continue;
+            }
+            return false;
+        }
+        if piece.kind == DeclarationPieceKind::Symbol && piece.text == "," {
+            if !allow_comma_separated_names {
+                return false;
+            }
+            expect_name = true;
+            continue;
+        }
+        return false;
+    }
+    false
+}
+
+fn is_likely_value_binding_name(value: &str) -> bool {
+    let mut chars = value.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    first.is_ascii_lowercase()
+        || first == '_'
+        || (first.is_ascii_uppercase() && chars.next().is_none())
+}
+
+fn is_lowerish_value_binding_name(value: &str) -> bool {
+    value
+        .chars()
+        .next()
+        .is_some_and(|ch| ch.is_ascii_lowercase() || ch == '_')
 }
 
 fn pattern_arity(pieces: &[DeclarationPiece], spelling_index: usize) -> UserSymbolArity {
@@ -1422,6 +1965,23 @@ fn pattern_arity(pieces: &[DeclarationPiece], spelling_index: usize) -> UserSymb
         .enumerate()
         .filter(|(index, piece)| {
             *index != spelling_index
+                && piece.kind == DeclarationPieceKind::Word
+                && !is_reserved_word(&piece.text)
+        })
+        .count();
+    UserSymbolArity::exact(arity.min(u16::MAX as usize) as u16)
+}
+
+fn pattern_arity_excluding_range(
+    pieces: &[DeclarationPiece],
+    spelling_start: usize,
+    spelling_end: usize,
+) -> UserSymbolArity {
+    let arity = pieces
+        .iter()
+        .enumerate()
+        .filter(|(index, piece)| {
+            (*index < spelling_start || *index >= spelling_end)
                 && piece.kind == DeclarationPieceKind::Word
                 && !is_reserved_word(&piece.text)
         })

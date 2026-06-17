@@ -119,9 +119,9 @@ pub use lexical_environment::{
 };
 pub use raw_lexer::{
     LexError, RawScanDiagnostic, RawScanDiagnosticCode, RawToken, RawTokenKind, RawTokenStream,
-    RecoverableRawTokenStream, is_identifier, is_identifier_continue, is_identifier_start,
-    is_layout, is_lexeme_run_char, is_numeral, is_string_literal_spelling, is_user_symbol_spelling,
-    scan_raw, scan_raw_recoverable,
+    RecoverableRawTokenStream, is_constructor_name_spelling, is_identifier, is_identifier_continue,
+    is_identifier_start, is_layout, is_lexeme_run_char, is_numeral, is_string_literal_spelling,
+    is_user_symbol_spelling, scan_raw, scan_raw_recoverable,
 };
 pub use scope_skeleton::{
     BindingShapeKind, LexicalBlockKind, LexicalBlockRange, LexicalScopeFrame, LexicalStatementKind,

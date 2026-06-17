@@ -7,16 +7,7 @@
 
 ## Ordered Task List
 
-1. 記法シンボルと読みやすいコンストラクタ名を、レクサーのメタデータで分離する。
-   - 任意の `user_symbol` 綴りは、述語 / functor の記法と、述語 / functor の別名に
-     だけ許す。
-   - `constructor_name` の綴りは、モード・属性・構造体の名前に許す。セレクタは
-     識別子のままにする。
-   - `UserSymbolKind` / サマリーメタデータと fixtures を更新し、従来のセレクタ
-     シンボルおよび任意の記号的なモード / 属性 / 構造体の挙動を削除するか、明示的な
-     互換性ゲートに置く。
-
-2. パーサー向けの演算子メタデータを、ソース位置対応にする。
+1. パーサー向けの演算子メタデータを、ソース位置対応にする。
    - ファイル全体の `OperatorFixityTable` の受け渡しを、トークンの範囲でアクティブな
      prefix / postfix / infix のメタデータを返せる問い合わせに置き換える。
    - 使用前の宣言、使用後の宣言、private / public が字句解析に影響しないこと、
@@ -24,7 +15,26 @@
 
 ## Completed Tasks
 
-1. 範囲対応のローカル字句宣言サポートを追加した。
+1. 記法シンボルと読みやすいコンストラクタ名を、レクサーのメタデータで分離した。
+   - 通常の識別子と読みやすいハイフン区切り名に対する constructor-name spelling
+     recognition を追加した。
+   - エクスポートサマリーを種別ごとに検証した。functor / predicate エントリは
+     自由な `user_symbol` 綴りを使い、mode / attribute / structure エントリは
+     `constructor_name` を使い、selector / 汎用 constructor のサマリーエントリは
+     拒否する。
+   - 予約済み `.` 例外を functor エントリに限定した。
+   - ローカル宣言 prepass で、読みやすいハイフン区切りの mode / attribute /
+     structure 名を 1 つの constructor 綴りとして記録し、記号的な constructor 宣言は
+     導入しないようにした。
+   - 保守的なローカル alias 分類を文書化し、テストした。明確な operator-like な
+     alias / original pattern は記法 alias とし、曖昧な word-only alias は浅い
+     prepass では constructor-name 形のままにする。
+   - constructor-name helper、インポート済み summary validation、functor 専用の
+     dot behavior、未対応の legacy summary kind、ローカルのハイフン区切り constructor
+     宣言と alias、直接のハイフン区切り predicate / functor 記法、パラメータ付き属性の
+     prefix 分割、および導入しない `algorithm` 形のテストを追加した。
+
+2. 範囲対応のローカル字句宣言サポートを追加した。
    - 以前のインポートのみのアクティブ環境を、更新後の active-range 仕様に対する
      `source_drift` として分類した。
    - 型解決や完全な意味 IR の構築なしで、現在のモジュールの `pred`、`func`、
@@ -43,7 +53,7 @@
      structure の有効化、selector の非導入、synonym / antonym の alias のみの有効化、
      演算子メタデータ記録、visibility no-op、導入しないローカル形をテストした。
 
-2. `SourceLineIndex` のオフセット検証を強化した。
+3. `SourceLineIndex` のオフセット検証を強化した。
    - `location` と `range` は、UTF-8 文字境界ではないバイトオフセットに対して `None` を返すようにした。
    - 文書化された規約である 0 始まりの行と 0 始まりのバイト列を保ったまま、マルチバイト UTF-8 テキストのユニットテストを追加した。
 

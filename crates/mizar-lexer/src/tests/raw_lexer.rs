@@ -53,6 +53,37 @@ fn helpers_recognize_layout_symbol_shapes_and_string_shells() {
         );
     }
 
+    for spelling in [
+        "Simple",
+        "_hidden",
+        "C-star-algebra",
+        "R-module",
+        "1-sorted",
+        "a'-b2",
+    ] {
+        assert!(
+            is_constructor_name_spelling(spelling),
+            "{spelling:?} should be a constructor name"
+        );
+    }
+    for spelling in [
+        "",
+        "1sorted",
+        "set",
+        "has spaces",
+        "C--algebra",
+        "-prefix",
+        "suffix-",
+        "a+b",
+        "[:",
+        "@name",
+    ] {
+        assert!(
+            !is_constructor_name_spelling(spelling),
+            "{spelling:?} should not be a constructor name"
+        );
+    }
+
     assert!(is_string_literal_spelling("\"say \\\"hi\\\"\""));
     assert!(is_string_literal_spelling("'say \"hi\"'"));
     assert!(is_string_literal_spelling("\"slash\\\\path\""));

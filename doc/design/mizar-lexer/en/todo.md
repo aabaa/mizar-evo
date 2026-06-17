@@ -7,16 +7,7 @@ language-spec synchronization.
 
 ## Ordered Task List
 
-1. Split notation symbols from readable constructor names in lexer metadata.
-   - Admit arbitrary `user_symbol` spellings only for predicate/functor
-     notation and predicate/functor aliases.
-   - Admit `constructor_name` spellings for mode, attribute, and structure
-     names; selectors remain identifiers.
-   - Update `UserSymbolKind` / summary metadata and fixtures so legacy
-     selector-symbol and arbitrary symbolic mode/attribute/structure behavior
-     is removed or explicitly compatibility-gated.
-
-2. Make parser-facing operator metadata source-position aware.
+1. Make parser-facing operator metadata source-position aware.
    - Replace the file-wide `OperatorFixityTable` handoff with a query that can
      answer which prefix/postfix/infix metadata is active at a token span.
    - Cover declarations after use, declarations before use, private/public
@@ -24,7 +15,28 @@ language-spec synchronization.
 
 ## Completed Tasks
 
-1. Added range-aware local lexical declaration support.
+1. Split notation symbols from readable constructor names in lexer metadata.
+   - Added constructor-name spelling recognition for ordinary identifiers and
+     readable hyphenated names.
+   - Validated exported summaries by kind: functor/predicate entries use
+     free-form `user_symbol` spellings, mode/attribute/structure entries use
+     `constructor_name`, and selector/generic constructor summary entries are
+     rejected.
+   - Restricted the reserved `.` exception to functor entries.
+   - Updated the local declaration prepass so readable hyphenated mode,
+     attribute, and structure names are recorded as whole constructor
+     spellings, while symbolic constructor declarations are not introduced.
+   - Documented and tested conservative local alias classification: clear
+     operator-like alias/original patterns are notation aliases, while
+     ambiguous word-only aliases remain constructor-name shaped for the shallow
+     prepass.
+   - Added tests for constructor-name helpers, imported summary validation,
+     functor-only dot behavior, unsupported legacy summary kinds, and local
+     hyphenated constructor declarations and aliases, plus direct hyphenated
+     predicate/functor notation, parameterized attribute prefix splitting, and
+     non-introducing `algorithm` forms.
+
+2. Added range-aware local lexical declaration support.
    - Classified the previous import-only active environment as `source_drift`
      against the updated active-range specification.
    - Added a shallow raw-token declaration prepass for current-module `pred`,
@@ -47,7 +59,7 @@ language-spec synchronization.
      metadata recording, visibility no-op behavior, and non-introducing local
      forms.
 
-2. Hardened `SourceLineIndex` offset validation.
+3. Hardened `SourceLineIndex` offset validation.
    - `location` and `range` now reject byte offsets that are not UTF-8 character boundaries by returning `None`.
    - Unit tests cover multi-byte UTF-8 text while preserving the documented zero-based line and zero-based byte-column convention.
 

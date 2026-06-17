@@ -532,6 +532,221 @@ fn local_declaration_prepass_collects_constructor_declarations_without_selectors
 }
 
 #[test]
+fn local_declaration_prepass_collects_readable_constructor_names_as_whole_spellings() {
+    let source = concat!(
+        "mode OneSortedDef: 1-sorted is set;\n",
+        "attr CStarDef: x is C-star-algebraic means x = x;\n",
+        "struct R-module where field carrier -> set; end;\n",
+        "1-sorted C-star-algebraic R-module;"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+
+    for (spelling, kind) in [
+        ("1-sorted", UserSymbolKind::Mode),
+        ("C-star-algebraic", UserSymbolKind::Attribute),
+        ("R-module", UserSymbolKind::Structure),
+    ] {
+        let use_position = nth_index(source, spelling, 1);
+        assert_eq!(
+            env.longest_user_symbol_at_position(source, use_position, use_position, &locals)
+                .iter()
+                .map(|candidate| (candidate.spelling.as_str(), candidate.kind))
+                .collect::<Vec<_>>(),
+            vec![(spelling, kind)]
+        );
+    }
+    assert!(
+        locals.user_symbols("-", source.len()).is_empty(),
+        "hyphens inside constructor names must not be introduced as notation symbols"
+    );
+}
+
+#[test]
+fn local_attribute_prepass_splits_parameter_prefix_from_constructor_name() {
+    let source = concat!(
+        "definition\n",
+        "let n be Nat, row, col be Nat, implicit;\n",
+        "let f be Function of REAL, REAL;\n",
+        "let fnc be Function[REAL, REAL], X be set;\n",
+        "let h be Function of X, Y, g, k be set;\n",
+        "let ref_bound be T by A, B;\n",
+        "attr NDimDef: V is n-dimensional means V = V;\n",
+        "attr RowColSizeDef: A is (row,col)-size means A = A;\n",
+        "attr TwoRankedDef: W is 2-ranked means W = W;\n",
+        "attr ImplicitShapeDef: U is implicit-shaped means U = U;\n",
+        "attr RealLinearDef: X is REAL-linear means X = X;\n",
+        "attr XGradedDef: Y is X-graded means Y = Y;\n",
+        "attr RealBracketedDef: Z is REAL-bracketed means Z = Z;\n",
+        "attr YStableDef: P is Y-stable means P = P;\n",
+        "attr GMetricDef: P is g-metric means P = P;\n",
+        "attr KValuedDef: P is k-valued means P = P;\n",
+        "attr BReferenceDef: P is B-reference means P = P;\n",
+        "end;\n",
+        "dimensional size ranked shaped graded metric valued REAL-linear REAL-bracketed ",
+        "Y-stable B-reference linear bracketed stable reference ",
+        "n-dimensional (row,col)-size 2-ranked implicit-shaped X-graded g-metric k-valued;"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+
+    for spelling in [
+        "dimensional",
+        "size",
+        "ranked",
+        "shaped",
+        "graded",
+        "metric",
+        "valued",
+    ] {
+        let use_position = nth_index(source, spelling, 1);
+        assert_eq!(
+            env.longest_user_symbol_at_position(source, use_position, use_position, &locals)
+                .iter()
+                .map(|candidate| (candidate.spelling.as_str(), candidate.kind, candidate.arity))
+                .collect::<Vec<_>>(),
+            vec![(
+                spelling,
+                UserSymbolKind::Attribute,
+                UserSymbolArity::exact(1)
+            )]
+        );
+    }
+
+    assert!(
+        locals
+            .user_symbols("n-dimensional", source.len())
+            .is_empty(),
+        "the param-prefix spelling must not be registered as the attribute name"
+    );
+    assert!(
+        locals
+            .user_symbols("(row,col)-size", source.len())
+            .is_empty(),
+        "the parenthesized param-prefix spelling must not be registered as a user symbol"
+    );
+    assert!(
+        locals.user_symbols("2-ranked", source.len()).is_empty(),
+        "the numeral param-prefix spelling must not be registered as the attribute name"
+    );
+    assert!(
+        locals
+            .user_symbols("implicit-shaped", source.len())
+            .is_empty(),
+        "the implicit let param-prefix spelling must not be registered as the attribute name"
+    );
+    assert!(
+        locals.user_symbols("X-graded", source.len()).is_empty(),
+        "the uppercase explicit let segment after a parameterized type should split as a param-prefix"
+    );
+    assert!(
+        locals.user_symbols("g-metric", source.len()).is_empty(),
+        "the explicit let segment after an of-type argument list should split as a param-prefix"
+    );
+    assert!(
+        locals.user_symbols("k-valued", source.len()).is_empty(),
+        "comma-separated names in the explicit segment after an of-type argument list should split"
+    );
+    let real_linear_use = nth_index(source, "REAL-linear", 1);
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, real_linear_use, real_linear_use, &locals)
+            .iter()
+            .map(|candidate| (candidate.spelling.as_str(), candidate.kind, candidate.arity))
+            .collect::<Vec<_>>(),
+        vec![(
+            "REAL-linear",
+            UserSymbolKind::Attribute,
+            UserSymbolArity::exact(1)
+        )],
+        "commas inside a parameterized type expression must not introduce fake let parameters"
+    );
+    assert!(
+        locals.user_symbols("linear", source.len()).is_empty(),
+        "a type-expression comma must not cause REAL-linear to split as an attribute param-prefix"
+    );
+    let real_bracketed_use = nth_index(source, "REAL-bracketed", 1);
+    assert_eq!(
+        env.longest_user_symbol_at_position(
+            source,
+            real_bracketed_use,
+            real_bracketed_use,
+            &locals
+        )
+        .iter()
+        .map(|candidate| (candidate.spelling.as_str(), candidate.kind, candidate.arity))
+        .collect::<Vec<_>>(),
+        vec![(
+            "REAL-bracketed",
+            UserSymbolKind::Attribute,
+            UserSymbolArity::exact(1)
+        )],
+        "commas inside bracketed type arguments must not introduce fake let parameters"
+    );
+    assert!(
+        locals.user_symbols("bracketed", source.len()).is_empty(),
+        "a bracketed type-argument comma must not cause REAL-bracketed to split"
+    );
+    let y_stable_use = nth_index(source, "Y-stable", 1);
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, y_stable_use, y_stable_use, &locals)
+            .iter()
+            .map(|candidate| (candidate.spelling.as_str(), candidate.kind, candidate.arity))
+            .collect::<Vec<_>>(),
+        vec![(
+            "Y-stable",
+            UserSymbolKind::Attribute,
+            UserSymbolArity::exact(1)
+        )],
+        "earlier of-type arguments must not be collected as fake let parameters"
+    );
+    assert!(
+        locals.user_symbols("stable", source.len()).is_empty(),
+        "an of-type argument comma before a later let segment must not split Y-stable"
+    );
+    let b_reference_use = nth_index(source, "B-reference", 1);
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, b_reference_use, b_reference_use, &locals)
+            .iter()
+            .map(|candidate| (candidate.spelling.as_str(), candidate.kind, candidate.arity))
+            .collect::<Vec<_>>(),
+        vec![(
+            "B-reference",
+            UserSymbolKind::Attribute,
+            UserSymbolArity::exact(1)
+        )],
+        "commas in a trailing by-reference list must not introduce fake let parameters"
+    );
+    assert!(
+        locals.user_symbols("reference", source.len()).is_empty(),
+        "a trailing by-reference must not cause B-reference to split"
+    );
+}
+
+#[test]
+fn local_declaration_prepass_rejects_symbolic_constructor_declaration_names() {
+    let source = concat!(
+        "mode BadMode: + is set;\n",
+        "attr BadAttr: x is * means x = x;\n",
+        "struct [: where end;\n",
+        "+ * [:;"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+
+    for spelling in ["+", "*", "[:"] {
+        let use_position = nth_index(source, spelling, 1);
+        assert!(
+            env.longest_user_symbol_at_position(source, use_position, use_position, &locals)
+                .is_empty(),
+            "{spelling:?} must not become a local constructor lexical entry"
+        );
+    }
+}
+
+#[test]
 fn local_declaration_prepass_handles_identifier_shaped_prefix_and_call_symbols() {
     let source = concat!(
         "func CallDef: f(x, y) -> set equals x;\n",
@@ -596,6 +811,36 @@ fn local_declaration_prepass_handles_identifier_shaped_postfix_symbols() {
 }
 
 #[test]
+fn local_declaration_prepass_collects_hyphenated_functor_notation_as_one_symbol() {
+    let source = concat!(
+        "func HyphenDef: x foo-bar y -> set equals x;\n",
+        "pred HyphenPred: x rel-to y means x = y;\n",
+        "x foo-bar y; x rel-to y;"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+
+    for (spelling, kind) in [
+        ("foo-bar", UserSymbolKind::Functor),
+        ("rel-to", UserSymbolKind::Predicate),
+    ] {
+        let use_position = nth_index(source, spelling, 1);
+        assert_eq!(
+            env.longest_user_symbol_at_position(source, use_position, use_position, &locals)
+                .iter()
+                .map(|candidate| (candidate.spelling.as_str(), candidate.kind))
+                .collect::<Vec<_>>(),
+            vec![(spelling, kind)]
+        );
+    }
+    assert!(
+        locals.user_symbols("-", source.len()).is_empty(),
+        "hyphenated notation must not be reduced to the hyphen token"
+    );
+}
+
+#[test]
 fn local_declaration_prepass_collects_circumfix_symbol_parts() {
     let source = concat!(
         "func AbsDef: |. x .| -> set equals x;\n",
@@ -631,6 +876,56 @@ fn local_declaration_prepass_collects_parameterized_alias_heads() {
     assert!(
         locals.user_symbols("of", source.len()).is_empty(),
         "parameter separator words must not be registered as alias spellings"
+    );
+}
+
+#[test]
+fn local_alias_prepass_classifies_identifier_alias_from_operator_like_original() {
+    let source = "synonym Inv x for x\";\nInv y;";
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+
+    let alias_use = nth_index(source, "Inv", 1);
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, alias_use, alias_use, &locals)
+            .iter()
+            .map(|candidate| (candidate.spelling.as_str(), candidate.kind, candidate.arity))
+            .collect::<Vec<_>>(),
+        vec![("Inv", UserSymbolKind::Functor, UserSymbolArity::exact(1))]
+    );
+}
+
+#[test]
+fn local_alias_prepass_keeps_constructor_alias_hyphens_inside_the_name() {
+    let source = "synonym Fin-Seq for FinSequence;\nFin-Seq;";
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+
+    let alias_use = nth_index(source, "Fin-Seq", 1);
+    assert_eq!(
+        env.longest_user_symbol_at_position(source, alias_use, alias_use, &locals)
+            .iter()
+            .map(|candidate| (candidate.spelling.as_str(), candidate.kind))
+            .collect::<Vec<_>>(),
+        vec![("Fin-Seq", UserSymbolKind::Mode)]
+    );
+    assert!(
+        locals.user_symbols("-", source.len()).is_empty(),
+        "constructor alias hyphen must not be introduced as a notation symbol"
+    );
+}
+
+#[test]
+fn local_alias_prepass_ignores_reserved_word_alias_heads_without_notation_evidence() {
+    let source = "synonym theorem for FinSequence;\ntheorem;";
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+
+    assert!(
+        locals.user_symbols("theorem", source.len()).is_empty(),
+        "word-only aliases without operator-like evidence still need constructor-name spelling"
     );
 }
 
@@ -674,19 +969,26 @@ fn local_declaration_prepass_delays_activation_through_correctness_trail() {
 }
 
 #[test]
-fn local_declaration_prepass_ignores_deffunc_defpred_and_redefinitions() {
+fn local_declaration_prepass_ignores_deffunc_defpred_algorithm_and_redefinitions() {
     let source = concat!(
         "deffunc F(x) = x;\n",
         "defpred P[x] means x = x;\n",
         "redefine func OldPlus: x + y -> set equals x;\n",
+        "algorithm AlgoName(acc) -> set do acc := acc + y; end;\n",
         "x + y;"
     );
     let raw = scan_raw(source).expect("source should raw scan");
     let locals = collect_local_lexical_declarations(&raw, module_id("current"));
     let env = build_lexical_environment(&[], &[]).expect("environment should build");
-    let later_plus = nth_index(source, "+", 1);
+    let later_plus = nth_index(source, "+", 2);
 
     assert!(locals.user_symbols.is_empty());
+    for spelling in ["AlgoName", "acc", "+", "y"] {
+        assert!(
+            locals.user_symbols(spelling, source.len()).is_empty(),
+            "algorithm spelling {spelling:?} must remain identifier/body text, not a user symbol"
+        );
+    }
     assert!(
         env.longest_user_symbol_at_position(source, later_plus, later_plus, &locals)
             .is_empty()
@@ -1042,12 +1344,150 @@ fn lexical_environment_rejects_operator_metadata_with_incompatible_arity() {
 }
 
 #[test]
+fn lexical_environment_admits_constructor_name_entries_for_type_like_kinds() {
+    let env = build_lexical_environment(
+        &[resolved_import("constructors")],
+        &[summary(
+            "constructors",
+            31,
+            &[
+                exported_with_metadata(
+                    "1-sorted",
+                    "constructors#one_sorted",
+                    "constructors",
+                    0,
+                    UserSymbolKind::Mode,
+                    UserSymbolArity::exact(0),
+                ),
+                exported_with_metadata(
+                    "C-star-algebraic",
+                    "constructors#c_star",
+                    "constructors",
+                    1,
+                    UserSymbolKind::Attribute,
+                    UserSymbolArity::exact(1),
+                ),
+                exported_with_metadata(
+                    "R-module",
+                    "constructors#r_module",
+                    "constructors",
+                    2,
+                    UserSymbolKind::Structure,
+                    UserSymbolArity::exact(0),
+                ),
+            ],
+        )],
+    )
+    .expect("readable constructor names should be accepted for type-like kinds");
+
+    assert_eq!(
+        env.user_symbol("1-sorted")
+            .map(|candidate| (candidate.kind, candidate.arity)),
+        Some((UserSymbolKind::Mode, UserSymbolArity::exact(0)))
+    );
+    assert_eq!(
+        env.user_symbol("C-star-algebraic")
+            .map(|candidate| (candidate.kind, candidate.arity)),
+        Some((UserSymbolKind::Attribute, UserSymbolArity::exact(1)))
+    );
+    assert_eq!(
+        env.user_symbol("R-module")
+            .map(|candidate| (candidate.kind, candidate.arity)),
+        Some((UserSymbolKind::Structure, UserSymbolArity::exact(0)))
+    );
+}
+
+#[test]
+fn lexical_environment_admits_predicate_free_form_punctuation_entries() {
+    let env = build_lexical_environment(
+        &[resolved_import("predicates")],
+        &[summary(
+            "predicates",
+            38,
+            &[exported_with_metadata(
+                "<~>",
+                "predicates#relation",
+                "predicates",
+                0,
+                UserSymbolKind::Predicate,
+                UserSymbolArity::exact(2),
+            )],
+        )],
+    )
+    .expect("predicate notation may use free-form punctuation");
+
+    assert_eq!(
+        env.user_symbol("<~>")
+            .map(|candidate| (candidate.kind, candidate.arity)),
+        Some((UserSymbolKind::Predicate, UserSymbolArity::exact(2)))
+    );
+}
+
+#[test]
+fn lexical_environment_rejects_symbolic_constructor_name_entries() {
+    for (spelling, kind) in [
+        ("+", UserSymbolKind::Mode),
+        ("[:", UserSymbolKind::Attribute),
+        ("C star", UserSymbolKind::Structure),
+    ] {
+        let error = build_lexical_environment(
+            &[resolved_import("bad.constructors")],
+            &[summary(
+                "bad.constructors",
+                32,
+                &[exported_with_metadata(
+                    spelling,
+                    "bad.constructors#symbolic",
+                    "bad.constructors",
+                    0,
+                    kind,
+                    UserSymbolArity::exact(0),
+                )],
+            )],
+        )
+        .expect_err("type-like entries require constructor names");
+
+        assert!(matches!(
+            error,
+            LexicalEnvironmentError::InvalidConstructorNameSpelling { .. }
+        ));
+    }
+}
+
+#[test]
+fn lexical_environment_rejects_selector_and_generic_constructor_summary_entries() {
+    for kind in [UserSymbolKind::Selector, UserSymbolKind::Constructor] {
+        let error = build_lexical_environment(
+            &[resolved_import("bad.legacy_kinds")],
+            &[summary(
+                "bad.legacy_kinds",
+                33,
+                &[exported_with_metadata(
+                    "legacy_name",
+                    "bad.legacy_kinds#legacy",
+                    "bad.legacy_kinds",
+                    0,
+                    kind,
+                    UserSymbolArity::exact(0),
+                )],
+            )],
+        )
+        .expect_err("selectors and generic constructors are not lexer entries");
+
+        assert!(matches!(
+            error,
+            LexicalEnvironmentError::UnsupportedLexicalEntryKind { .. }
+        ));
+    }
+}
+
+#[test]
 fn lexical_environment_rejects_illegal_reserved_collisions() {
     let word_error = build_lexical_environment(
         &[resolved_import("bad.words")],
         &[summary(
             "bad.words",
-            31,
+            34,
             &[exported("theorem", "bad.words#theorem", "bad.words", 0)],
         )],
     )
@@ -1061,7 +1501,7 @@ fn lexical_environment_rejects_illegal_reserved_collisions() {
         &[resolved_import("bad.symbols")],
         &[summary(
             "bad.symbols",
-            32,
+            35,
             &[exported(":=", "bad.symbols#assign", "bad.symbols", 0)],
         )],
     )
@@ -1078,7 +1518,7 @@ fn lexical_environment_rejects_invalid_user_symbol_spelling() {
         &[resolved_import("bad.annotations")],
         &[summary(
             "bad.annotations",
-            34,
+            36,
             &[exported(
                 "@bad",
                 "bad.annotations#bad",
@@ -1111,6 +1551,62 @@ fn lexical_environment_allows_dot_user_symbol_exception() {
         env.user_symbol(".").expect("dot user symbol").symbol_id,
         symbol_id("std.application#dot")
     );
+}
+
+#[test]
+fn lexical_environment_restricts_dot_exception_to_functors() {
+    let error = build_lexical_environment(
+        &[resolved_import("bad.dot_predicate")],
+        &[summary(
+            "bad.dot_predicate",
+            37,
+            &[exported_with_metadata(
+                ".",
+                "bad.dot_predicate#dot",
+                "bad.dot_predicate",
+                0,
+                UserSymbolKind::Predicate,
+                UserSymbolArity::exact(2),
+            )],
+        )],
+    )
+    .expect_err("only functors may use the reserved dot exception");
+
+    assert!(matches!(
+        error,
+        LexicalEnvironmentError::ReservedSymbolCollision { .. }
+    ));
+}
+
+#[test]
+fn lexical_environment_rejects_dot_exception_for_type_like_kinds() {
+    for kind in [
+        UserSymbolKind::Mode,
+        UserSymbolKind::Attribute,
+        UserSymbolKind::Structure,
+    ] {
+        let error = build_lexical_environment(
+            &[resolved_import("bad.dot_type_like")],
+            &[summary(
+                "bad.dot_type_like",
+                39,
+                &[exported_with_metadata(
+                    ".",
+                    "bad.dot_type_like#dot",
+                    "bad.dot_type_like",
+                    0,
+                    kind,
+                    UserSymbolArity::exact(0),
+                )],
+            )],
+        )
+        .expect_err("dot exception is functor-only");
+
+        assert!(matches!(
+            error,
+            LexicalEnvironmentError::ReservedSymbolCollision { .. }
+        ));
+    }
 }
 
 #[test]

@@ -328,6 +328,23 @@ pub fn is_identifier(value: &str) -> bool {
     is_identifier_start(first) && chars.all(is_identifier_continue) && !is_reserved_word(value)
 }
 
+pub fn is_constructor_name_spelling(value: &str) -> bool {
+    if is_identifier(value) {
+        return true;
+    }
+    if value.is_empty() || is_reserved_word(value) || !value.contains('-') {
+        return false;
+    }
+    value.split('-').all(is_constructor_segment)
+}
+
+fn is_constructor_segment(value: &str) -> bool {
+    !value.is_empty()
+        && value
+            .chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '\'')
+}
+
 pub fn is_identifier_start(ch: char) -> bool {
     ch.is_ascii_alphabetic() || ch == '_'
 }

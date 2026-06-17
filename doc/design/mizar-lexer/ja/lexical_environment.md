@@ -70,6 +70,8 @@ pub fn collect_local_lexical_declarations(
     raw: &RawTokenStream,
     current_module: ModuleId,
 ) -> LocalLexicalDeclarations;
+
+pub fn is_constructor_name_spelling(value: &str) -> bool;
 ```
 
 このモジュールは、最長一致(longest-match)の曖昧性解消で使う探索ヘルパーを公開します。
@@ -128,18 +130,20 @@ pub struct UserSymbolCandidate {
 ```
 
 `UserSymbolKind` は、可視な字句エントリのパーサー/リゾルバ上のカテゴリを記録します。
-現在の言語仕様では、任意のユーザーシンボル記法は functor と述語に直接許されます。
-モード・属性・構造体の名前は `constructor_name` の綴りを使い、通常の識別子ではない
-ハイフン区切りの名前では、アクティブ環境のメタデータが必要になる場合があります。
-構造体のセレクタは識別子であり、ユーザーシンボルの字句エントリとしてエクスポート
-すべきではありません。`UserSymbolArity` は引数の個数の形状を、正確な個数・上下限の
-ある範囲・下限のみの範囲として記録します。これらはパーサー/リゾルバ向けのサマリーで
-あり、完全な型シグネチャではありません。
+現在の言語仕様では、任意の `user_symbol` 記法は functor と述語にだけ直接許されます。
+モード・属性・構造体のエントリは、通常の識別子、または `1-sorted`、`R-module`、
+`C-star-algebraic` のような読みやすいハイフン区切り名である `constructor_name` の
+綴りでなければなりません。構造体のセレクタは識別子であり、エクスポートされた
+字句サマリーエントリとしては受け入れません。従来の汎用 `Constructor` 種別も
+サマリー境界で拒否します。constructor-like な字句エントリは、`Mode`、`Attribute`、
+`Structure` のいずれかの意味カテゴリで分類する必要があります。`UserSymbolArity` は
+引数の個数の形状を、正確な個数・上下限のある範囲・下限のみの範囲として記録します。
+これらはパーサー/リゾルバ向けのサマリーであり、完全な型シグネチャではありません。
 
 アクティブ環境は以下を扱います。
 
-- 識別子の形をしたシンボル;
-- 記号の形をしたシンボル;
+- 識別子の形をした functor / predicate シンボルと constructor 名;
+- 記号の形をした functor / predicate シンボル;
 - `.` を含むシンボル;
 - 同綴りでインポートされた候補に対する、インポート衝突(conflict)の検出;
 - 診断のための安定した由来(provenance);
@@ -166,7 +170,7 @@ pub struct UserSymbolCandidate {
 1. `ModuleLexicalSummary` を `ModuleId` でインデックス化します。同じモジュール ID のサマリーが複数渡された場合、Rust の値として完全に同一なら受け入れます。内容が異なる重複サマリーは構築エラーです。
 2. 安定した FNV 方式のフィンガープリントに、バージョン文字列と、組み込みの予約語テーブル・予約記号テーブルを宣言順で書き込みます。
 3. `ResolvedImport` をインポートプレリュード順で走査します。各インポートについて、対応する字句サマリーを必須とし、インポート序数・モジュール ID・サマリーのフィンガープリントをアクティブ環境のフィンガープリントに加えます。
-4. サマリー内のエクスポートシンボルの形状は、インデックス化する前に綴りとアリティを検証します。綴りはユーザーシンボルの綴りでなければならず、予約語と衝突してはいけません。予約特殊記号との完全一致も原則として禁止しますが、仕様上の例外である `.` だけは許可します。アリティの形状は、最大値が最小値より小さくてはいけません。
+4. サマリー内のエクスポートシンボルの形状は、インデックス化する前に綴りとアリティを検証します。functor と述語の綴りは有効な `user_symbol` でなければなりません。モード・属性・構造体の綴りは有効な `constructor_name` でなければなりません。セレクタと汎用 constructor のサマリーエントリは、セレクタが識別子のままであり、constructor-like なエントリは意味カテゴリで分類する必要があるため拒否します。すべてのエクスポート綴りは予約語と衝突してはいけません。予約特殊記号との完全一致も禁止しますが、仕様上の `.` 例外は functor にだけ許可します。アリティの形状は、最大値が最小値より小さくてはいけません。
 5. エクスポートされた形状を `UserSymbolCandidate` に変換します。このとき、シンボルを定義・エクスポートした `source_module` と、現在のファイルがインポートした `imported_module` の両方に加えて、シンボル種別とアリティのメタデータを保持します。前者は由来に、後者はインポート衝突の診断に効きます。
 6. 候補を `UserSymbolIndex` に挿入します。異なるインポートから同じ綴りが来た場合は `UserSymbolImportConflict` として拒否します。同じインポート内の同じ綴りはオーバーロード(overload)候補として保持でき、上記のアクティブ候補順序で安定化します。
 7. 借用した予約テーブル、完成したユーザーシンボルインデックス、決定的なフィンガープリントを持つ `ActiveLexicalEnvironment` を返します。
@@ -179,7 +183,7 @@ pub struct UserSymbolCandidate {
 - `ModuleLexicalSummary.exported_symbols` は、生成側で正規化済みであることを前提とします。整列とサマリーのフィンガープリントの安定性はサマリー生成側の責務であり、環境構築側の責務ではありません。
 - `UserSymbolCandidate.source_module` は、字句サマリー由来の定義/エクスポートの由来を保持します。`imported_module` は、インポート衝突の診断のために、現在のファイルの解決済みインポートで指定されたモジュールを記録します。
 - `UserSymbolCandidate.kind` と `UserSymbolCandidate.arity` は、アクティブ候補ごとに保持します。これにより後続のパーサー/リゾルバフェーズは、モジュールサマリーを作り直さずに、同綴りのオーバーロードを絞り込んだり区別したりできます。
-- `.` は、予約特殊記号の衝突規則に対する仕様上の例外です。それ以外の予約記号綴りとの完全一致は拒否します。
+- `.` は、予約特殊記号の衝突規則に対する仕様上の functor 専用の例外です。それ以外の予約記号綴りとの完全一致は拒否します。
 - 異なるインポートから来た同綴りのユーザーシンボルは、環境構築上の衝突として拒否します。
 - フィンガープリントは、プロセスごとに乱数化されるハッシュではなく内部の安定したバイトハッシャーを使い、シンボル種別とアリティのメタデータも含めます。
 - トライは内部の高速化構造であり、フィンガープリントの計算やサマリーの正規化には影響しません。
@@ -189,7 +193,32 @@ pub struct UserSymbolCandidate {
   式、型、証明、完全な宣言本体はパースしません。
 - ローカルの `pred` と `func` 宣言について、この prepass は、識別子形の呼び出し・前置・
   中置・後置パターンから直接の記法綴りを記録し、記号形または circumfix 記法パターンでは、
-  区切りではない各記号片を記録します。
+  区切りではない各記号片を記録します。`foo-bar` のような連続したハイフン区切りの
+  predicate / functor 記法は、隣接部分が単純な 1 文字 locus の `x-y` operator 形で
+  ない場合、1 つの user-symbol 綴りとして記録します。
+- ローカルの `mode`、`attr`、`struct` 宣言について、この prepass は
+  constructor-name 綴りだけを記録します。連続した読みやすいハイフン区切りの
+  constructor 名は 1 つの綴りとして記録し、operator-like な記号名はローカルの
+  constructor エントリとして導入しません。ローカルの `attr` 宣言では、
+  prefix が数値、または浅い先行 `let` パラメータ scan で見つかった名前である場合に、
+  先に属性の `param_prefix` 分割を適用します。この scan には、同じ `let`
+  宣言内の後続 qualified segment と implicit 名も含めます。`n-dimensional`、
+  `(row,col)-size`、`implicit-shaped` のような形では、constructor-name suffix
+  (`dimensional`、`size`、`shaped`) だけを属性の綴りとして記録します。
+  `Function of REAL, REAL` や `Function[REAL, REAL]` のような parameterized type
+  expression 内の comma は、追加の属性パラメータ宣言として扱いません。一方で、
+  後続の `X be set` のような explicit segment は、1 文字 uppercase の
+  パラメータ名として寄与できます。`of` / `over` の型引数リストの後に別の
+  explicit segment が続く場合、この scan は前方の型引数をパラメータとして扱わず、
+  `g, k be set` のような comma-separated value-name list を含め、識別できる
+  segment 境界からだけ再開します。この scan は `such` と `by` で停止するため、
+  後続の条件や参照リストから偽の属性パラメータを導入しません。
+- ローカルの `synonym` と `antonym` 宣言は、保守的な浅い分類を使います。alias 側
+  または original 側に明確な operator-like 記法の手掛かりがある場合、その alias は
+  述語 / functor 形式の記法として記録します。それ以外では、alias head が
+  constructor-name 綴りである場合にだけ記録します。完全な意味論的 alias-family 分類は
+  resolver の責務であり、この prepass は型情報を使って曖昧な word-only alias を任意の
+  記号記法として解釈しません。
 - ローカルのユーザーシンボル候補は、問い合わせ位置が宣言項目末尾の有効化オフセット以上の
   場合にだけ `longest_user_symbol_at_position` から見えます。定義に宣言所有の
   correctness/property clause が続く場合、この完了境界にはその trailing clause と
@@ -198,18 +227,15 @@ pub struct UserSymbolCandidate {
 - 同じ綴りのローカル / インポートのエントリは、下流の resolver フェーズの
   overload candidate として結合されます。ローカルエントリは、インポート済みエントリを
   字句的にシャドウしません。
-- `private` と `public` はローカル字句 prepass では無視されます。`redefine` 宣言、
-  inline `deffunc`、inline `defpred`、構造体 selector、および field/property 名は、
-  ローカル lexer user-symbol 辞書エントリを導入しません。
+- `private` と `public` はローカル字句 prepass では無視されます。`algorithm`、
+  `redefine`、inline `deffunc`、inline `defpred`、構造体 selector、および
+  field/property 名は、ローカル lexer user-symbol 辞書エントリを導入しません。
 - 演算子宣言は有効化イベントとして別に記録されますが、user-symbol 候補は導入しません。
   parser 向け fixity query は、ソース位置対応の演算子メタデータタスクで完了します。
 
 コンストラクタ名の仕様更新後に残っている拡張:
 
-1. 任意の `user_symbol` 綴りは、述語 / functor の記法と、述語 / functor の別名に
-   だけ許す。`constructor_name` の綴りは、モード・属性・構造体の名前に許す。
-   構造体のセレクタは識別子のままにする。
-2. 曖昧性解消と parser integration が、トークンのバイト範囲でアクティブな
+1. 曖昧性解消と parser integration が、トークンのバイト範囲でアクティブな
    演算子メタデータを問い合わせられるよう、ソース位置対応の parser fixity query を公開する。
 
 ## Non-Goals
@@ -234,7 +260,9 @@ active な環境は、インポートされたモジュールの圧縮された 
 - エクスポートシンボルが、予約語または予約特殊記号と不正に衝突する;
 - 異なるインポートがエクスポートする同綴りのユーザーシンボルが衝突する;
 - ユーザーシンボルの綴りが不正;
+- モード・属性・構造体エントリの constructor-name 綴りが不正;
 - ユーザーシンボルのアリティ形状が不正。
+- サポートされないセレクタまたは汎用 constructor の字句サマリー種別。
 
 同じインポート元モジュール内の同綴りユーザーシンボルは、決定的な候補として表現できます。一方、異なるインポートから来た同綴りシンボルは衝突として拒否します。インポート順序とサマリー順序はエラーとして診断しませんが、決定的な入力規約の一部であり、環境のフィンガープリントに反映されます。
 
@@ -246,6 +274,12 @@ active な環境は、インポートされたモジュールの圧縮された 
 - インポートしたシンボルが可視になること;
 - 異なるインポートから来た同綴りユーザーシンボルが決定的に拒否されること;
 - 予約語との衝突が拒否されること;
+- functor / predicate エントリは自由な記法を受け入れ、mode / attribute / structure
+  エントリは constructor name を要求すること;
+- selector と汎用 constructor のサマリーエントリが拒否されること;
+- ローカルの読みやすいハイフン区切り constructor 名が 1 つの綴りとして記録されること;
+- ローカルのパラメータ付き属性宣言は、`param_prefix` を含む綴りではなく
+  constructor-name suffix を記録すること;
 - 決定的な入力順序の下で環境のフィンガープリントが安定すること;
 - 識別子の形・記号の形をしたシンボルに対する最長一致クエリに答えられること;
 - 多数のインポートシンボルと綴りの重なりがあっても、トライに基づく探索が最長一致の動作を保つこと;
@@ -255,7 +289,7 @@ active な環境は、インポートされたモジュールの圧縮された 
   自身のヘッダー / 定義項でも非アクティブで、後続のソース位置でだけアクティブになること;
 - 同じ綴りのローカル / インポート候補がどちらも保持されること;
 - `private` / `public` がローカル字句有効化に影響しないこと;
-- 演算子宣言、`deffunc`、`defpred`、`redefine` がローカル user-symbol エントリを
-  導入しないこと;
+- 演算子宣言、`deffunc`、`defpred`、`algorithm`、`redefine` がローカル
+  user-symbol エントリを導入しないこと;
 - synonym / antonym の prepass 有効化は `for` より前の alias pattern から派生し、
   `for` より後の original pattern からは派生しないこと。

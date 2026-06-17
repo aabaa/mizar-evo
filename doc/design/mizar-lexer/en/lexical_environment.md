@@ -71,6 +71,8 @@ pub fn collect_local_lexical_declarations(
     raw: &RawTokenStream,
     current_module: ModuleId,
 ) -> LocalLexicalDeclarations;
+
+pub fn is_constructor_name_spelling(value: &str) -> bool;
 ```
 
 The module exposes lookup helpers used by longest-match disambiguation:
@@ -129,19 +131,22 @@ pub struct UserSymbolCandidate {
 ```
 
 `UserSymbolKind` records the parser/resolver category of a visible lexical
-entry. Under the current language specification, arbitrary user-symbol
-notation is admitted directly for functors and predicates. Mode, attribute,
-and structure names use `constructor_name` spellings, which may still require
-active-environment metadata when they are hyphenated rather than ordinary
-identifiers. Structure selectors are identifiers and should not be exported as
-user-symbol lexical entries. `UserSymbolArity` records the argument-count shape
-as an exact count, bounded range, or lower-bounded range. These are
-parser/resolver-facing summaries, not full type signatures.
+entry. Under the current language specification, arbitrary `user_symbol`
+notation is admitted directly only for functors and predicates. Mode,
+attribute, and structure entries must use `constructor_name` spellings:
+ordinary identifiers or readable hyphenated names such as `1-sorted`,
+`R-module`, or `C-star-algebraic`. Structure selectors are identifiers and are
+not accepted as exported lexical-summary entries. The legacy generic
+`Constructor` kind is also rejected at the summary boundary; constructor-like
+lexical entries must be classified as `Mode`, `Attribute`, or `Structure`.
+`UserSymbolArity` records the argument-count shape as an exact count, bounded
+range, or lower-bounded range. These are parser/resolver-facing summaries, not
+full type signatures.
 
 The active environment should support:
 
-- identifier-shaped symbols;
-- punctuation-shaped symbols;
+- identifier-shaped functor/predicate symbols and constructor names;
+- punctuation-shaped functor/predicate symbols;
 - symbols containing `.`;
 - import conflict detection for equal-spelling imported candidates;
 - stable provenance for diagnostics.
@@ -175,7 +180,7 @@ already-resolved imports.
 1. Index `ModuleLexicalSummary` values by `ModuleId`. Duplicate summaries are accepted only if they are byte-for-byte equivalent as Rust values; inconsistent duplicates fail construction.
 2. Seed a stable FNV-style fingerprint with a version string and the built-in reserved word and reserved symbol tables in their declared order.
 3. Walk `ResolvedImport` values in import-prelude order. For each import, require a matching lexical summary and add the import ordinal, module id, and summary fingerprint to the active-environment fingerprint.
-4. For every exported symbol shape in that summary, validate the spelling and arity before indexing it. The spelling must be a user-symbol spelling, must not collide with a reserved word, and must not collide with a reserved special symbol except for the spec-defined `.` exception. The arity shape must not have a maximum lower than its minimum.
+4. For every exported symbol shape in that summary, validate the spelling and arity before indexing it. Functor and predicate spellings must be valid `user_symbol` spellings. Mode, attribute, and structure spellings must be valid `constructor_name` spellings. Selector and generic constructor summary entries are rejected because selectors remain identifiers and constructor-like entries must be typed by their semantic category. Every exported spelling must avoid reserved-word collisions and reserved-special-symbol collisions; the spec-defined `.` exception is accepted only for functors. The arity shape must not have a maximum lower than its minimum.
 5. Convert the exported shape into a `UserSymbolCandidate`, preserving both the source module that exported the symbol and the imported module through which the current file sees it, plus the symbol kind and arity metadata.
 6. Insert the candidate into `UserSymbolIndex`. Equal spellings from different imports are rejected as `UserSymbolImportConflict`. Equal spellings from the same import remain representable as overload candidates and are stored in the active-candidate order described above.
 7. Return `ActiveLexicalEnvironment` containing borrowed reserved tables, the completed user-symbol index, and the deterministic fingerprint.
@@ -188,7 +193,7 @@ Current implementation notes:
 - `ModuleLexicalSummary.exported_symbols` is assumed to be canonicalized by its producer; summary construction, not environment construction, owns sorting and summary fingerprint stability.
 - `UserSymbolCandidate.source_module` preserves the defining/exporting provenance from the lexical summary, while `imported_module` records the module named by the current file's resolved import for conflict diagnostics.
 - `UserSymbolCandidate.kind` and `UserSymbolCandidate.arity` are retained on every active candidate so later parser and resolver phases can filter or distinguish same-spelling overloads without rebuilding module summaries.
-- `.` remains the spec-defined exception to the reserved-special-symbol collision rule; other exact reserved symbol spellings are rejected.
+- `.` remains the spec-defined functor-only exception to the reserved-special-symbol collision rule; other exact reserved symbol spellings are rejected.
 - equal-spelling imported user symbols from different imports are rejected as environment construction conflicts.
 - fingerprints use an internal stable byte hasher rather than process-randomized hashing, and include symbol kind and arity metadata.
 - the trie is an internal acceleration structure; it does not affect fingerprinting or summary canonicalization.
@@ -200,7 +205,35 @@ Current implementation notes:
 - For local `pred` and `func` declarations, the prepass records direct
   notation spellings from identifier-shaped call, prefix, infix, and postfix
   patterns, and records each non-delimiter symbolic piece of a symbolic or
-  circumfix notation pattern.
+  circumfix notation pattern. Contiguous hyphenated predicate/functor notation
+  such as `foo-bar` is recorded as one user-symbol spelling when the adjacent
+  pieces are not the simple single-locus `x-y` operator shape.
+- For local `mode`, `attr`, and `struct` declarations, the prepass records
+  only constructor-name spellings. Contiguous readable hyphenated constructor
+  names are recorded as whole spellings, and operator-like symbolic names are
+  not introduced as local constructor entries. In local `attr` declarations,
+  the prepass first applies the attribute `param_prefix` split when the prefix
+  is a numeral or a name found by its shallow preceding-`let` parameter scan,
+  including later qualified segments and implicit names in the same `let`
+  declaration. For shapes such as `n-dimensional`, `(row,col)-size`, and
+  `implicit-shaped`, it records only the constructor-name suffix
+  (`dimensional`, `size`, `shaped`) as the attribute spelling. Commas inside a
+  parameterized type expression such as `Function of REAL, REAL` or
+  `Function[REAL, REAL]` are not treated as declaring additional attribute
+  parameters, while later explicit segments such as `X be set` can still
+  contribute an uppercase one-letter parameter name. For `of`/`over` type
+  argument lists followed by another explicit segment, the scan avoids treating
+  earlier type arguments as parameters and only resumes at the segment boundary
+  it can identify, including comma-separated value-name lists such as
+  `g, k be set`. The scan stops at `such` and `by` so trailing condition or
+  reference lists do not introduce fake attribute parameters.
+- Local `synonym` and `antonym` declarations use a conservative shallow
+  classification. If the alias side or original side contains clear
+  operator-like notation evidence, the alias is recorded as predicate/functor
+  style notation. Otherwise the alias head is recorded only if it is a
+  constructor-name spelling. Full semantic alias-family classification remains
+  resolver-owned; this prepass does not use type information to reinterpret an
+  ambiguous word-only alias as arbitrary symbolic notation.
 - Local user-symbol candidates are visible to
   `longest_user_symbol_at_position` only when the queried source position is
   greater than or equal to the activation offset at the end of the declaring
@@ -211,20 +244,17 @@ Current implementation notes:
 - Same-spelling local and imported entries are combined as overload candidates
   for downstream resolver phases. Local entries do not lexically shadow
   imported entries.
-- `private` and `public` are ignored by the local lexical prepass. `redefine`
-  declarations, inline `deffunc`, inline `defpred`, structure selectors, and
+- `private` and `public` are ignored by the local lexical prepass. `algorithm`,
+  `redefine`, inline `deffunc`, inline `defpred`, structure selectors, and
   field/property names do not introduce local lexer user-symbol dictionary
   entries.
 - Operator declarations are recorded separately as activation events, but they
   do not introduce user-symbol candidates. The parser-facing fixity query is
   completed by the source-position-aware operator metadata task.
 
-Remaining extensions after the constructor-name specification update:
+Remaining extension after the constructor-name specification update:
 
-1. Admit arbitrary `user_symbol` spellings only for predicate/functor notation
-   and predicate/functor aliases. Admit `constructor_name` spellings for mode,
-   attribute, and structure names. Keep structure selectors as identifiers.
-2. Expose the source-position-aware parser fixity query so disambiguation and
+1. Expose the source-position-aware parser fixity query so disambiguation and
    parser integration can ask which operator metadata is active at a token's
    byte span.
 
@@ -250,7 +280,9 @@ Errors are environment construction failures, not tokenization failures:
 - exported symbol collides illegally with a reserved word or reserved special symbol;
 - equal-spelling user symbols exported by different imports conflict;
 - invalid user-symbol spelling.
+- invalid constructor-name spelling for mode, attribute, or structure entries;
 - invalid user-symbol arity shape.
+- unsupported selector or generic constructor lexical-summary entry kind.
 
 Ambiguous same-spelling user symbols from the same imported module remain representable as deterministic candidates; same-spelling symbols from different imports are rejected as conflicts. Import order and summary order are not diagnosed as errors, but they are part of the deterministic input contract and are reflected in the environment fingerprint.
 
@@ -262,6 +294,12 @@ Tests should cover:
 - imported symbols are visible;
 - equal-spelling user symbols from different imports are rejected deterministically;
 - reserved collisions are rejected;
+- functor/predicate entries accept free-form notation while mode/attribute/
+  structure entries require constructor names;
+- selector and generic constructor summary entries are rejected;
+- local readable hyphenated constructor names are recorded as whole spellings;
+- local parameterized attribute declarations record the constructor-name suffix,
+  not the `param_prefix` spelling;
 - environment fingerprints are stable under deterministic input ordering;
 - the environment can answer longest-match queries for identifier-shaped and punctuation-shaped symbols.
 - trie-backed lookup preserves longest-match behavior with many imported symbols and overlapping spellings.
@@ -272,7 +310,7 @@ Tests should cover:
   positions;
 - same-spelling local/import candidates are both retained;
 - `private`/`public` do not affect local lexical activation;
-- operator declarations, `deffunc`, `defpred`, and `redefine` do not introduce
-  local user-symbol entries;
+- operator declarations, `deffunc`, `defpred`, `algorithm`, and `redefine` do
+  not introduce local user-symbol entries;
 - synonym/antonym prepass activation is derived from the alias pattern before
   `for`, not from the original pattern after `for`.
