@@ -193,6 +193,14 @@ pub enum SyntaxKind {
     MatchEnding = 168,
     BreakStatement = 169,
     ContinueStatement = 170,
+    AlgorithmTerminationClause = 171,
+    AlgorithmRequiresClause = 172,
+    AlgorithmEnsuresClause = 173,
+    AlgorithmDecreasingClause = 174,
+    LoopInvariantClause = 175,
+    LoopDecreasingClause = 176,
+    AssertStatement = 177,
+    TermList = 178,
     TokenIdentifier = 100,
     TokenReservedWord = 101,
     TokenReservedSymbol = 102,
@@ -367,6 +375,14 @@ impl SyntaxKind {
             168 => Self::MatchEnding,
             169 => Self::BreakStatement,
             170 => Self::ContinueStatement,
+            171 => Self::AlgorithmTerminationClause,
+            172 => Self::AlgorithmRequiresClause,
+            173 => Self::AlgorithmEnsuresClause,
+            174 => Self::AlgorithmDecreasingClause,
+            175 => Self::LoopInvariantClause,
+            176 => Self::LoopDecreasingClause,
+            177 => Self::AssertStatement,
+            178 => Self::TermList,
             100 => Self::TokenIdentifier,
             101 => Self::TokenReservedWord,
             102 => Self::TokenReservedSymbol,
@@ -543,6 +559,14 @@ impl SyntaxKind {
                 | Self::MatchEnding
                 | Self::BreakStatement
                 | Self::ContinueStatement
+                | Self::AlgorithmTerminationClause
+                | Self::AlgorithmRequiresClause
+                | Self::AlgorithmEnsuresClause
+                | Self::AlgorithmDecreasingClause
+                | Self::LoopInvariantClause
+                | Self::LoopDecreasingClause
+                | Self::AssertStatement
+                | Self::TermList
         )
     }
 
@@ -1365,6 +1389,62 @@ impl<'a> SurfaceNodeView<'a> {
     pub fn as_continue_statement(self) -> Option<Self> {
         match &self.node.kind {
             SurfaceNodeKind::ContinueStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_algorithm_termination_clause(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AlgorithmTerminationClause => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_algorithm_requires_clause(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AlgorithmRequiresClause => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_algorithm_ensures_clause(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AlgorithmEnsuresClause => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_algorithm_decreasing_clause(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AlgorithmDecreasingClause => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_loop_invariant_clause(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::LoopInvariantClause => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_loop_decreasing_clause(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::LoopDecreasingClause => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_assert_statement(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::AssertStatement => Some(self),
+            _ => None,
+        }
+    }
+
+    pub fn as_term_list(self) -> Option<Self> {
+        match &self.node.kind {
+            SurfaceNodeKind::TermList => Some(self),
             _ => None,
         }
     }
@@ -2284,6 +2364,14 @@ pub enum SurfaceNodeKind {
     MatchEnding,
     BreakStatement,
     ContinueStatement,
+    AlgorithmTerminationClause,
+    AlgorithmRequiresClause,
+    AlgorithmEnsuresClause,
+    AlgorithmDecreasingClause,
+    LoopInvariantClause,
+    LoopDecreasingClause,
+    AssertStatement,
+    TermList,
     TermPlaceholder,
     TermExpression,
     TermReference,
@@ -2449,6 +2537,14 @@ impl SurfaceNodeKind {
             Self::MatchEnding => SyntaxKind::MatchEnding,
             Self::BreakStatement => SyntaxKind::BreakStatement,
             Self::ContinueStatement => SyntaxKind::ContinueStatement,
+            Self::AlgorithmTerminationClause => SyntaxKind::AlgorithmTerminationClause,
+            Self::AlgorithmRequiresClause => SyntaxKind::AlgorithmRequiresClause,
+            Self::AlgorithmEnsuresClause => SyntaxKind::AlgorithmEnsuresClause,
+            Self::AlgorithmDecreasingClause => SyntaxKind::AlgorithmDecreasingClause,
+            Self::LoopInvariantClause => SyntaxKind::LoopInvariantClause,
+            Self::LoopDecreasingClause => SyntaxKind::LoopDecreasingClause,
+            Self::AssertStatement => SyntaxKind::AssertStatement,
+            Self::TermList => SyntaxKind::TermList,
             Self::TermPlaceholder => SyntaxKind::TermPlaceholder,
             Self::TermExpression => SyntaxKind::TermExpression,
             Self::TermReference => SyntaxKind::TermReference,
@@ -2766,6 +2862,18 @@ fn write_snapshot_node(output: &mut String, view: SurfaceNodeView<'_>, indent: u
         SurfaceNodeKind::MatchEnding => output.push_str("MatchEnding"),
         SurfaceNodeKind::BreakStatement => output.push_str("BreakStatement"),
         SurfaceNodeKind::ContinueStatement => output.push_str("ContinueStatement"),
+        SurfaceNodeKind::AlgorithmTerminationClause => {
+            output.push_str("AlgorithmTerminationClause");
+        }
+        SurfaceNodeKind::AlgorithmRequiresClause => output.push_str("AlgorithmRequiresClause"),
+        SurfaceNodeKind::AlgorithmEnsuresClause => output.push_str("AlgorithmEnsuresClause"),
+        SurfaceNodeKind::AlgorithmDecreasingClause => {
+            output.push_str("AlgorithmDecreasingClause");
+        }
+        SurfaceNodeKind::LoopInvariantClause => output.push_str("LoopInvariantClause"),
+        SurfaceNodeKind::LoopDecreasingClause => output.push_str("LoopDecreasingClause"),
+        SurfaceNodeKind::AssertStatement => output.push_str("AssertStatement"),
+        SurfaceNodeKind::TermList => output.push_str("TermList"),
         SurfaceNodeKind::TermPlaceholder => output.push_str("TermPlaceholder"),
         SurfaceNodeKind::TermExpression => output.push_str("TermExpression"),
         SurfaceNodeKind::TermReference => output.push_str("TermReference"),
@@ -4041,6 +4149,12 @@ mod tests {
                 .descendants_with_tokens()
                 .map(|element| element.kind()),
         );
+        rowan_kinds.extend(
+            task34_algorithm_verification_nodes_ast(source_id(54))
+                .rowan_root()
+                .descendants_with_tokens()
+                .map(|element| element.kind()),
+        );
 
         for kind in [
             SyntaxKind::CompilationUnit,
@@ -4174,6 +4288,14 @@ mod tests {
             SyntaxKind::MatchEnding,
             SyntaxKind::BreakStatement,
             SyntaxKind::ContinueStatement,
+            SyntaxKind::AlgorithmTerminationClause,
+            SyntaxKind::AlgorithmRequiresClause,
+            SyntaxKind::AlgorithmEnsuresClause,
+            SyntaxKind::AlgorithmDecreasingClause,
+            SyntaxKind::LoopInvariantClause,
+            SyntaxKind::LoopDecreasingClause,
+            SyntaxKind::AssertStatement,
+            SyntaxKind::TermList,
             SyntaxKind::SelectorAccess,
             SyntaxKind::StructureUpdate,
             SyntaxKind::FieldUpdate,
@@ -6268,6 +6390,78 @@ mod tests {
             assert!(
                 snapshot.contains(expected),
                 "snapshot should render task-33 line {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn task34_typed_accessors_cover_algorithm_verification_nodes() {
+        let ast = task34_algorithm_verification_nodes_ast(source_id(54));
+        let root = ast.root_view().unwrap();
+
+        macro_rules! assert_task34_view {
+            ($pattern:pat, $syntax_kind:expr, $accessor:ident) => {{
+                let view = first_view(root, |kind| matches!(kind, $pattern)).unwrap();
+                assert_eq!(view.syntax_kind(), $syntax_kind);
+                assert!(view.$accessor().is_some());
+            }};
+        }
+
+        assert_task34_view!(
+            SurfaceNodeKind::AlgorithmTerminationClause,
+            SyntaxKind::AlgorithmTerminationClause,
+            as_algorithm_termination_clause
+        );
+        assert_task34_view!(
+            SurfaceNodeKind::AlgorithmRequiresClause,
+            SyntaxKind::AlgorithmRequiresClause,
+            as_algorithm_requires_clause
+        );
+        assert_task34_view!(
+            SurfaceNodeKind::AlgorithmEnsuresClause,
+            SyntaxKind::AlgorithmEnsuresClause,
+            as_algorithm_ensures_clause
+        );
+        assert_task34_view!(
+            SurfaceNodeKind::AlgorithmDecreasingClause,
+            SyntaxKind::AlgorithmDecreasingClause,
+            as_algorithm_decreasing_clause
+        );
+        assert_task34_view!(
+            SurfaceNodeKind::LoopInvariantClause,
+            SyntaxKind::LoopInvariantClause,
+            as_loop_invariant_clause
+        );
+        assert_task34_view!(
+            SurfaceNodeKind::LoopDecreasingClause,
+            SyntaxKind::LoopDecreasingClause,
+            as_loop_decreasing_clause
+        );
+        assert_task34_view!(
+            SurfaceNodeKind::AssertStatement,
+            SyntaxKind::AssertStatement,
+            as_assert_statement
+        );
+        assert_task34_view!(
+            SurfaceNodeKind::TermList,
+            SyntaxKind::TermList,
+            as_term_list
+        );
+
+        let snapshot = ast.snapshot_text();
+        for expected in [
+            "AlgorithmTerminationClause",
+            "AlgorithmRequiresClause",
+            "AlgorithmEnsuresClause",
+            "AlgorithmDecreasingClause",
+            "LoopInvariantClause",
+            "LoopDecreasingClause",
+            "AssertStatement",
+            "TermList",
+        ] {
+            assert!(
+                snapshot.contains(expected),
+                "snapshot should render task-34 line {expected}"
             );
         }
     }
@@ -11889,6 +12083,176 @@ mod tests {
                 for_collection_statement,
                 match_statement,
             ],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn task34_algorithm_verification_nodes_ast(source_id: SourceId) -> crate::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+
+        macro_rules! token {
+            ($kind:expr, $text:expr, $start:expr, $end:expr) => {
+                builder.add_token($kind, $text, range(source_id, $start, $end))
+            };
+        }
+
+        let terminating_kw = token!(SurfaceTokenKind::ReservedWord, "terminating", 0, 11);
+        let algorithm_kw = token!(SurfaceTokenKind::ReservedWord, "algorithm", 12, 21);
+        let algorithm_name = token!(SurfaceTokenKind::Identifier, "verified", 22, 30);
+        let params_open = token!(SurfaceTokenKind::ReservedSymbol, "(", 30, 31);
+        let params_close = token!(SurfaceTokenKind::ReservedSymbol, ")", 31, 32);
+        let requires_kw = token!(SurfaceTokenKind::ReservedWord, "requires", 33, 41);
+        let requires_token = token!(SurfaceTokenKind::ReservedWord, "thesis", 42, 48);
+        let ensures_kw = token!(SurfaceTokenKind::ReservedWord, "ensures", 49, 56);
+        let ensures_token = token!(SurfaceTokenKind::ReservedWord, "thesis", 57, 63);
+        let header_decreasing_kw = token!(SurfaceTokenKind::ReservedWord, "decreasing", 64, 74);
+        let header_measure = token!(SurfaceTokenKind::Identifier, "m", 75, 76);
+        let header_comma = token!(SurfaceTokenKind::ReservedSymbol, ",", 76, 77);
+        let header_next_measure = token!(SurfaceTokenKind::Identifier, "n", 78, 79);
+        let algorithm_do = token!(SurfaceTokenKind::ReservedWord, "do", 80, 82);
+
+        let while_kw = token!(SurfaceTokenKind::ReservedWord, "while", 83, 88);
+        let while_condition_token = token!(SurfaceTokenKind::ReservedWord, "thesis", 89, 95);
+        let while_do = token!(SurfaceTokenKind::ReservedWord, "do", 96, 98);
+        let invariant_kw = token!(SurfaceTokenKind::ReservedWord, "invariant", 99, 108);
+        let invariant_token = token!(SurfaceTokenKind::ReservedWord, "thesis", 109, 115);
+        let invariant_semicolon = token!(SurfaceTokenKind::ReservedSymbol, ";", 115, 116);
+        let loop_decreasing_kw = token!(SurfaceTokenKind::ReservedWord, "decreasing", 117, 127);
+        let loop_measure = token!(SurfaceTokenKind::Identifier, "m", 128, 129);
+        let loop_comma = token!(SurfaceTokenKind::ReservedSymbol, ",", 129, 130);
+        let loop_next_measure = token!(SurfaceTokenKind::Identifier, "n", 131, 132);
+        let loop_decreasing_semicolon = token!(SurfaceTokenKind::ReservedSymbol, ";", 132, 133);
+        let assert_kw = token!(SurfaceTokenKind::ReservedWord, "assert", 134, 140);
+        let assert_token = token!(SurfaceTokenKind::ReservedWord, "thesis", 141, 147);
+        let assert_semicolon = token!(SurfaceTokenKind::ReservedSymbol, ";", 147, 148);
+        let while_end = token!(SurfaceTokenKind::ReservedWord, "end", 149, 152);
+        let while_semicolon = token!(SurfaceTokenKind::ReservedSymbol, ";", 152, 153);
+        let algorithm_end = token!(SurfaceTokenKind::ReservedWord, "end", 154, 157);
+        let algorithm_semicolon = token!(SurfaceTokenKind::ReservedSymbol, ";", 157, 158);
+
+        let termination = builder.add_node(
+            SurfaceNodeKind::AlgorithmTerminationClause,
+            range(source_id, 0, 11),
+            vec![terminating_kw],
+        );
+        let parameters = builder.add_node(
+            SurfaceNodeKind::AlgorithmParameters,
+            range(source_id, 30, 32),
+            vec![params_open, params_close],
+        );
+
+        let requires_formula = thesis_formula_node(&mut builder, source_id, requires_token, 42, 48);
+        let requires_clause = builder.add_node(
+            SurfaceNodeKind::AlgorithmRequiresClause,
+            range(source_id, 33, 48),
+            vec![requires_kw, requires_formula],
+        );
+        let ensures_formula = thesis_formula_node(&mut builder, source_id, ensures_token, 57, 63);
+        let ensures_clause = builder.add_node(
+            SurfaceNodeKind::AlgorithmEnsuresClause,
+            range(source_id, 49, 63),
+            vec![ensures_kw, ensures_formula],
+        );
+
+        let header_measure_term =
+            term_expression_node(&mut builder, source_id, header_measure, 75, 76);
+        let header_next_measure_term =
+            term_expression_node(&mut builder, source_id, header_next_measure, 78, 79);
+        let header_term_list = builder.add_node(
+            SurfaceNodeKind::TermList,
+            range(source_id, 75, 79),
+            vec![header_measure_term, header_comma, header_next_measure_term],
+        );
+        let header_decreasing_clause = builder.add_node(
+            SurfaceNodeKind::AlgorithmDecreasingClause,
+            range(source_id, 64, 79),
+            vec![header_decreasing_kw, header_term_list],
+        );
+
+        let while_condition =
+            thesis_formula_node(&mut builder, source_id, while_condition_token, 89, 95);
+        let invariant_formula =
+            thesis_formula_node(&mut builder, source_id, invariant_token, 109, 115);
+        let loop_invariant_clause = builder.add_node(
+            SurfaceNodeKind::LoopInvariantClause,
+            range(source_id, 99, 116),
+            vec![invariant_kw, invariant_formula, invariant_semicolon],
+        );
+
+        let loop_measure_term =
+            term_expression_node(&mut builder, source_id, loop_measure, 128, 129);
+        let loop_next_measure_term =
+            term_expression_node(&mut builder, source_id, loop_next_measure, 131, 132);
+        let loop_term_list = builder.add_node(
+            SurfaceNodeKind::TermList,
+            range(source_id, 128, 132),
+            vec![loop_measure_term, loop_comma, loop_next_measure_term],
+        );
+        let loop_decreasing_clause = builder.add_node(
+            SurfaceNodeKind::LoopDecreasingClause,
+            range(source_id, 117, 133),
+            vec![
+                loop_decreasing_kw,
+                loop_term_list,
+                loop_decreasing_semicolon,
+            ],
+        );
+
+        let assert_formula = thesis_formula_node(&mut builder, source_id, assert_token, 141, 147);
+        let assert_statement = builder.add_node(
+            SurfaceNodeKind::AssertStatement,
+            range(source_id, 134, 148),
+            vec![assert_kw, assert_formula, assert_semicolon],
+        );
+        let while_body_list = builder.add_node(
+            SurfaceNodeKind::AlgorithmStatementList,
+            range(source_id, 134, 148),
+            vec![assert_statement],
+        );
+        let while_statement = builder.add_node(
+            SurfaceNodeKind::WhileStatement,
+            range(source_id, 83, 153),
+            vec![
+                while_kw,
+                while_condition,
+                while_do,
+                loop_invariant_clause,
+                loop_decreasing_clause,
+                while_body_list,
+                while_end,
+                while_semicolon,
+            ],
+        );
+
+        let algorithm_statement_list = builder.add_node(
+            SurfaceNodeKind::AlgorithmStatementList,
+            range(source_id, 83, 153),
+            vec![while_statement],
+        );
+        let body = builder.add_node(
+            SurfaceNodeKind::AlgorithmBody,
+            range(source_id, 80, 157),
+            vec![algorithm_do, algorithm_statement_list, algorithm_end],
+        );
+        let algorithm = builder.add_node(
+            SurfaceNodeKind::AlgorithmDefinition,
+            range(source_id, 0, 158),
+            vec![
+                termination,
+                algorithm_kw,
+                algorithm_name,
+                parameters,
+                requires_clause,
+                ensures_clause,
+                header_decreasing_clause,
+                body,
+                algorithm_semicolon,
+            ],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 158),
+            vec![algorithm],
         );
         builder.finish(Some(root), None)
     }

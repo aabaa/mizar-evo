@@ -1175,7 +1175,7 @@ tests = [
 [[requirement]]
 id = "spec.en.20.algorithms_claims.parser"
 source = "doc/spec/en/20.algorithm_and_verification.md"
-section = "20.1 Algorithm Syntax; 20.1.1 Algorithm Definition Block; 20.1.2 Parameters and Return Type; 20.1.3 Variable Declarations; 20.1.4 Assignment; 20.2.6 return statements; 20.6 Snapshot and Claim; 20.11 Complete Syntax (EBNF) excluding control-flow statements covered separately by parser task 33 and verification clauses / annotation prefixes deferred to parser tasks 34-35"
+section = "20.1 Algorithm Syntax; 20.1.1 Algorithm Definition Block; 20.1.2 Parameters and Return Type; 20.1.3 Variable Declarations; 20.1.4 Assignment; 20.2.6 return statements; 20.6 Snapshot and Claim; 20.11 Complete Syntax (EBNF) excluding control-flow statements covered separately by parser task 33, verification clauses covered by parser task 34, and annotation prefixes deferred to parser task 35"
 stage = "parse_only"
 status = "covered"
 required = true
@@ -1188,7 +1188,7 @@ tests = [
 [[requirement]]
 id = "spec.en.20.algorithm_control_flow.parser"
 source = "doc/spec/en/20.algorithm_and_verification.md"
-section = "20.2 Control Flow; 20.2.1 Conditional; 20.2.2 Bounded Loop excluding concrete loop verification clauses deferred to parser task 34; 20.2.3 Range Loop excluding concrete loop verification clauses deferred to parser task 34; 20.2.4 Collection Loop excluding concrete loop verification clauses deferred to parser task 34; 20.2.5 AST Pattern Match; 20.2.6 break and continue statements; 20.11 Complete Syntax (EBNF) control-flow subset"
+section = "20.2 Control Flow; 20.2.1 Conditional; 20.2.2 Bounded Loop statement shell; 20.2.3 Range Loop statement shell; 20.2.4 Collection Loop statement shell; 20.2.5 AST Pattern Match; 20.2.6 break and continue statements; 20.11 Complete Syntax (EBNF) control-flow subset, with concrete loop verification clauses covered separately by parser task 34"
 stage = "parse_only"
 status = "covered"
 required = true
@@ -1196,6 +1196,19 @@ coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_algorithm_control_flow_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_algorithm_control_flow_recovery_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.20.algorithm_verification.parser"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.1 Algorithm Syntax terminating algorithm modifier; 20.2.2 Bounded Loop invariant/decreasing clauses; 20.2.3 Range Loop invariant clauses; 20.2.4 Collection Loop invariant clauses; 20.4 Contracts (`requires`, `ensures`, `assert`); 20.5 Loop Verification; 20.7 Termination Proofs; 20.11 Complete Syntax (EBNF) verification-clause subset"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_algorithm_verification_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_algorithm_verification_recovery_001.expect.toml",
 ]
 
 [[requirement]]

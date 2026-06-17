@@ -1,0 +1,32 @@
+definition
+  public terminating algorithm verified(n) -> set
+  requires thesis
+  ensures thesis
+  decreasing n, measure
+  do
+    while thesis do
+      invariant thesis by Inv;
+      decreasing n, measure by Dec;
+      assert thesis by AssertRef;
+      break;
+    end;
+    for i = lower to upper do
+      invariant thesis by RangeInv;
+      continue;
+    end;
+    for item in Items do
+      invariant thesis;
+      break;
+    end;
+  end;
+
+  private terminating algorithm hidden()
+  do
+    assert thesis;
+  end;
+
+  terminating algorithm bare()
+  do
+    assert thesis;
+  end;
+end;

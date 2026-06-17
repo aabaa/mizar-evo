@@ -737,15 +737,22 @@ resolver / build-system 依存を避ける。
       coverage は通常の if/else、while、任意の `step` を持つ `to` / `downto`
       range loop、`processed` の有無がある collection loop、複数 match case、
       justification 有無の `otherwise` / `exhaustive` ending、および jump
-      statement を行使する。loop の `invariant` / `decreasing` clause は引き続き
-      task 34 であり、task 33 は concrete verification-clause node を作らず、
-      clause semicolon まで診断・回復する。
+      statement を行使する。concrete loop verification clause は task 34 で覆う。
     - 依存: 32、`mizar-syntax` task 16 / S-016。仕様:
       [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)。
 
-34. **algorithm の検証句。** [ ]
+34. **algorithm の検証句。** [x]
     - ヘッダーおよび loop の検証句: `requires` / `ensures`、`decreasing`、
-      `terminating`、`invariant`、`assert`、およびそれらの正当化。
+      `terminating`、`invariant`、`assert`、および loop clause / assertion 上の
+      syntax-level justification。
+    - 結果: `AlgorithmTerminationClause`、`AlgorithmRequiresClause`、
+      `AlgorithmEnsuresClause`、`AlgorithmDecreasingClause`、
+      `LoopInvariantClause`、`LoopDecreasingClause`、`AssertStatement`、
+      `TermList` surface を実装した。active pass/fail parse-only coverage は
+      terminating visible algorithm、header contract、while / range / collection
+      loop clause、assertion、重複 / 順序違反 header recovery、禁止される
+      `for decreasing`、misplaced loop clause、空または dangling decreasing term
+      list を行使する。
     - 依存: 33、`mizar-syntax` task 16 / S-016。仕様:
       [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)。
 

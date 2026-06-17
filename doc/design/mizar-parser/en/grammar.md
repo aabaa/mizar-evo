@@ -6,10 +6,9 @@ task-15 term surfaces including set comprehensions, task-14 formula surfaces,
 S-013 statement nodes, task-22 theorem/proof items, and the task-23 through
 task-30 definition-block / attribute / predicate / functor / mode /
 redefinition / notation-alias / property / structure / registration increments,
-task-31 template surfaces, task-32 basic algorithm/claim surfaces, and task-33
-algorithm control-flow surfaces are implemented; remaining algorithm
-verification clauses, annotations, and package-oriented item grammars are
-planned.
+task-31 template surfaces, task-32 basic algorithm/claim surfaces, task-33
+algorithm control-flow surfaces, and task-34 algorithm verification clauses
+are implemented; annotations and package-oriented item grammars remain planned.
 
 ## Purpose
 
@@ -2009,12 +2008,11 @@ justification.
 
 Top-level `claim name do ... end;` is represented by `ClaimBlockItem` and may
 contain bare theorem/lemma items. Claim annotations are deferred to task 35.
-Algorithm header and loop verification clauses (`terminating`, `requires`,
-`ensures`, `decreasing`, `invariant`, `assert`) remain task 34. The frontend
-scope skeleton recognizes algorithm headers as a single lexical block and
-treats `ghost target := term;` as an assignment, so active source-level
-parse-only fixtures can exercise the task-32 syntax without frontend recovery
-diagnostics.
+Algorithm header and loop verification clauses are implemented by task 34, and
+statement-level/library annotations remain task 35. The frontend scope skeleton
+recognizes algorithm headers as a single lexical block and treats
+`ghost target := term;` as an assignment, so active source-level parse-only
+fixtures can exercise the task-32 syntax without frontend recovery diagnostics.
 
 ### Task 33: Algorithm Control Flow
 
@@ -2026,20 +2024,15 @@ if_tail ::= "end" ";"
           | "else" if_stmt
           | "else" algo_statement_list "end" ";" ;
 
-while_stmt ::= "while" formula "do"
-                 { while_annotation ";" }
-                 algo_statement_list
-               "end" ";" ;
+while_stmt ::= "while" formula "do" algo_statement_list "end" ";" ;
 
 for_range_stmt ::= "for" identifier "=" term_expression
                    ( "to" | "downto" ) term_expression
                    [ "step" term_expression ]
-                   "do" { for_annotation ";" }
-                   algo_statement_list "end" ";" ;
+                   "do" algo_statement_list "end" ";" ;
 
 for_collection_stmt ::= "for" identifier "in" term_expression
                         [ "processed" identifier ] "do"
-                        { for_annotation ";" }
                         algo_statement_list
                         "end" ";" ;
 
@@ -2063,18 +2056,66 @@ tail recovery stop at the surrounding control-flow boundary (`else`, `case`,
 recovery can return to the owning construct instead of swallowing the next
 branch.
 
-Loop verification clauses remain task 34. When `invariant` or `decreasing`
-appears at the top of a task-33 loop body, the parser diagnoses the task-34
-deferral, emits skipped-token recovery through the clause semicolon, and then
-resumes parsing later body statements. It does not create concrete verification
-clause nodes in this increment. `assert` is likewise deferred to task 34, and
-statement-level/library annotations remain task 35.
+Concrete loop verification clauses and `assert` statements are implemented by
+task 34. Task 33 recovery is now limited to malformed control-flow statements
+and statement-list boundaries; statement-level/library annotations remain task
+35.
 
 The frontend scope skeleton treats `match ... otherwise ... end; end;` as a
 matched block shape by opening a conservative `Do` frame for an algorithm-scope
 `otherwise` that immediately follows `end` or `end;`, the token shape of a
 completed match `case` branch. Definition-side and other non-algorithm
 `otherwise` clauses do not open scope frames.
+
+### Task 34: Algorithm Verification Clauses
+
+Task 34 adds parser-visible syntax for Chapter 20 verification clauses:
+
+```ebnf
+algorithm_def ::= [ "terminating" ] "algorithm" identifier
+                  [ template_loci ] algorithm_parameters [ "->" type_expression ]
+                  [ requires_clause ] [ ensures_clause ] [ decreasing_clause ]
+                  algorithm_body ";" ;
+requires_clause  ::= "requires" formula ;
+ensures_clause   ::= "ensures" formula ;
+decreasing_clause ::= "decreasing" term_list ;
+
+while_stmt ::= "while" formula "do"
+                 { loop_invariant_clause | loop_decreasing_clause }
+                 algo_statement_list
+               "end" ";" ;
+for_range_stmt ::= "for" identifier "=" term_expression
+                   ( "to" | "downto" ) term_expression
+                   [ "step" term_expression ]
+                   "do" { loop_invariant_clause }
+                   algo_statement_list "end" ";" ;
+for_collection_stmt ::= "for" identifier "in" term_expression
+                        [ "processed" identifier ] "do"
+                        { loop_invariant_clause }
+                        algo_statement_list "end" ";" ;
+loop_invariant_clause  ::= "invariant" formula [ justification ] ";" ;
+loop_decreasing_clause ::= "decreasing" term_list [ justification ] ";" ;
+assert_stmt ::= "assert" formula [ justification ] ";" ;
+term_list ::= term_expression { "," term_expression } ;
+```
+
+`AlgorithmTerminationClause`, `AlgorithmRequiresClause`,
+`AlgorithmEnsuresClause`, `AlgorithmDecreasingClause`, `LoopInvariantClause`,
+`LoopDecreasingClause`, `AssertStatement`, and `TermList` preserve the clause
+source shape without generating verification conditions or checking
+termination. Header clauses are accepted in fixed order (`requires`, `ensures`,
+then header `decreasing`) with at most one instance each; duplicate or
+out-of-order header verification keywords are diagnosed and recovered to the
+algorithm body boundary. `terminating algorithm` is accepted both directly and
+through `public` / `private` visible definition wrappers.
+
+Loop verification clauses are accepted only as the leading clause block after a
+loop `do`. `while` accepts both `invariant` and `decreasing`; range and
+collection `for` loops accept `invariant` only, so `for ... do decreasing ...;`
+remains a syntax recovery case. A later `invariant` or `decreasing` after an
+ordinary body statement is parsed as a misplaced algorithm statement and
+recovered at the clause semicolon. Empty or dangling `decreasing` term lists
+insert `MissingTerm` recovery inside the `TermList`.
 
 ## Public Enum Compatibility
 

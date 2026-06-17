@@ -57,6 +57,12 @@ enum AlgorithmStatementListBoundary {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AlgorithmTermListBoundary {
+    HeaderClause,
+    ClauseStatement,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum InheritanceTargetBoundary {
     Extends,
     Tail,
@@ -4744,9 +4750,23 @@ impl Parser {
     }
 
     fn parse_algorithm_definition_at(&mut self, position: usize) -> ParsedTypeNode {
-        let mut children = vec![self.token_node_ids[position]];
+        let mut children = Vec::new();
         let mut recovery_nodes = Vec::new();
-        let mut cursor = position + 1;
+        let mut cursor = position;
+
+        if self.is_reserved_word_at(cursor, "terminating") {
+            let termination = self.parse_algorithm_termination_clause_at(cursor);
+            cursor = termination.next_position;
+            children.push(termination.id);
+            recovery_nodes.extend(termination.recovery_nodes);
+        }
+
+        if self.is_reserved_word_at(cursor, "algorithm") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_formula_expression(cursor, "expected `algorithm` keyword");
+        }
 
         if self.is_identifier_at(cursor) {
             children.push(self.token_node_ids[cursor]);
@@ -4783,17 +4803,7 @@ impl Parser {
             }
         }
 
-        if self.is_algorithm_header_task34_keyword_at(cursor) {
-            self.diagnose_malformed_formula_expression(
-                cursor,
-                "algorithm verification clauses are parsed by parser task 34",
-            );
-            if let Some(recovery) = self.recover_malformed_algorithm_header_tail(cursor) {
-                cursor = recovery.next_position;
-                children.push(recovery.id);
-                recovery_nodes.extend(recovery.recovery_nodes);
-            }
-        }
+        cursor = self.parse_algorithm_header_clauses_at(cursor, &mut children, &mut recovery_nodes);
 
         let body = self.parse_algorithm_body_at(cursor);
         cursor = body.next_position;
@@ -4810,6 +4820,119 @@ impl Parser {
         let id = self.events.emit(SyntaxEvent::Node {
             kind: SurfaceNodeKind::AlgorithmDefinition,
             range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_algorithm_termination_clause_at(&mut self, position: usize) -> ParsedTypeNode {
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::AlgorithmTerminationClause,
+            range: self.covering_token_range(position, position + 1),
+            children: vec![self.token_node_ids[position]],
+        });
+        ParsedTypeNode {
+            id,
+            next_position: position + 1,
+            recovery_nodes: Vec::new(),
+        }
+    }
+
+    fn parse_algorithm_header_clauses_at(
+        &mut self,
+        mut cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+    ) -> usize {
+        if self.is_reserved_word_at(cursor, "requires") {
+            let clause = self.parse_algorithm_formula_clause_at(
+                cursor,
+                SurfaceNodeKind::AlgorithmRequiresClause,
+                "expected formula after `requires`",
+            );
+            cursor = clause.next_position;
+            children.push(clause.id);
+            recovery_nodes.extend(clause.recovery_nodes);
+        }
+
+        if self.is_reserved_word_at(cursor, "ensures") {
+            let clause = self.parse_algorithm_formula_clause_at(
+                cursor,
+                SurfaceNodeKind::AlgorithmEnsuresClause,
+                "expected formula after `ensures`",
+            );
+            cursor = clause.next_position;
+            children.push(clause.id);
+            recovery_nodes.extend(clause.recovery_nodes);
+        }
+
+        if self.is_reserved_word_at(cursor, "decreasing") {
+            let clause = self.parse_algorithm_decreasing_clause_at(cursor);
+            cursor = clause.next_position;
+            children.push(clause.id);
+            recovery_nodes.extend(clause.recovery_nodes);
+        }
+
+        if self.is_algorithm_header_verification_keyword_at(cursor) {
+            self.diagnose_malformed_formula_expression(
+                cursor,
+                "duplicate or out-of-order algorithm verification clause",
+            );
+            if let Some(recovery) = self.recover_malformed_algorithm_header_tail(cursor) {
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
+            }
+        }
+
+        cursor
+    }
+
+    fn parse_algorithm_formula_clause_at(
+        &mut self,
+        position: usize,
+        kind: SurfaceNodeKind,
+        missing_message: &'static str,
+    ) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+        cursor = self.parse_required_algorithm_formula(
+            cursor,
+            &mut children,
+            &mut recovery_nodes,
+            missing_message,
+        );
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind,
+            range: self.covering_token_range(position, cursor.max(position + 1)),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_algorithm_decreasing_clause_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let term_list = self.parse_algorithm_term_list_at(
+            position + 1,
+            AlgorithmTermListBoundary::HeaderClause,
+            "expected decreasing measure",
+        );
+        let cursor = term_list.next_position;
+        children.push(term_list.id);
+        recovery_nodes.extend(term_list.recovery_nodes);
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::AlgorithmDecreasingClause,
+            range: self.covering_token_range(position, cursor.max(position + 1)),
             children,
         });
         ParsedTypeNode {
@@ -5070,6 +5193,9 @@ impl Parser {
         }
         if self.is_reserved_word_at(position, "continue") {
             return Some(self.parse_continue_statement_at(position, boundary));
+        }
+        if self.is_reserved_word_at(position, "assert") {
+            return Some(self.parse_assert_statement_at(position, boundary));
         }
         if self.is_reserved_word_at(position, "ghost")
             && (self.is_reserved_word_at(position + 1, "var")
@@ -5585,8 +5711,12 @@ impl Parser {
             &mut children,
             "expected `do` after `while` condition",
         );
-        cursor =
-            self.recover_deferred_loop_annotations_at(cursor, &mut children, &mut recovery_nodes);
+        cursor = self.parse_loop_verification_clauses_at(
+            cursor,
+            true,
+            &mut children,
+            &mut recovery_nodes,
+        );
 
         let statements = self.parse_algorithm_statement_list_with_boundary_at(
             cursor,
@@ -5715,8 +5845,12 @@ impl Parser {
             &mut children,
             "expected `do` in loop statement",
         );
-        cursor =
-            self.recover_deferred_loop_annotations_at(cursor, &mut children, &mut recovery_nodes);
+        cursor = self.parse_loop_verification_clauses_at(
+            cursor,
+            false,
+            &mut children,
+            &mut recovery_nodes,
+        );
 
         let statements = self.parse_algorithm_statement_list_with_boundary_at(
             cursor,
@@ -5940,6 +6074,50 @@ impl Parser {
         )
     }
 
+    fn parse_assert_statement_at(
+        &mut self,
+        position: usize,
+        boundary: AlgorithmStatementListBoundary,
+    ) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+
+        cursor = self.parse_required_algorithm_formula(
+            cursor,
+            &mut children,
+            &mut recovery_nodes,
+            "expected assertion formula",
+        );
+
+        if let Some(justification) =
+            self.parse_definition_content_general_justification_at(cursor, true)
+        {
+            cursor = justification.next_position;
+            children.push(justification.id);
+            recovery_nodes.extend(justification.recovery_nodes);
+        }
+
+        cursor = self.finish_algorithm_statement_semicolon(
+            cursor,
+            &mut children,
+            &mut recovery_nodes,
+            boundary,
+            "unexpected token in assert statement",
+        );
+
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::AssertStatement,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
     fn parse_algorithm_keyword_semicolon_statement_at(
         &mut self,
         position: usize,
@@ -5987,6 +6165,118 @@ impl Parser {
         }
     }
 
+    fn parse_required_algorithm_formula(
+        &mut self,
+        cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+        recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
+        message: &'static str,
+    ) -> usize {
+        if let Some(formula) = self.parse_formula_expression_at(cursor) {
+            let next_position = formula.next_position;
+            children.push(formula.id);
+            recovery_nodes.extend(formula.recovery_nodes);
+            next_position
+        } else {
+            self.diagnose_malformed_formula_expression(cursor, message);
+            self.push_missing_formula(cursor, children, recovery_nodes);
+            cursor
+        }
+    }
+
+    fn parse_algorithm_term_list_at(
+        &mut self,
+        position: usize,
+        boundary: AlgorithmTermListBoundary,
+        missing_message: &'static str,
+    ) -> ParsedTypeNode {
+        let mut children = Vec::new();
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position;
+        let mut saw_term = false;
+        let mut expecting_term = true;
+
+        loop {
+            if self.is_algorithm_term_list_boundary_at(cursor, boundary) {
+                if expecting_term {
+                    let message = if saw_term {
+                        "expected term after `,`"
+                    } else {
+                        missing_message
+                    };
+                    self.diagnose_malformed_term_expression(cursor, message);
+                    self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+                }
+                break;
+            }
+
+            if self.is_reserved_symbol_at(cursor, ",") {
+                if expecting_term {
+                    self.diagnose_malformed_term_expression(
+                        cursor,
+                        "expected decreasing measure before `,`",
+                    );
+                    self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+                }
+                children.push(self.token_node_ids[cursor]);
+                cursor += 1;
+                expecting_term = true;
+                continue;
+            }
+
+            if expecting_term {
+                if let Some(term) = self.parse_term_expression_at(cursor) {
+                    let made_progress = term.next_position > cursor;
+                    cursor = term.next_position;
+                    children.push(term.id);
+                    recovery_nodes.extend(term.recovery_nodes);
+                    saw_term = true;
+                    expecting_term = false;
+                    if !made_progress {
+                        break;
+                    }
+                    continue;
+                }
+
+                self.diagnose_malformed_term_expression(cursor, missing_message);
+                self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+            } else {
+                self.diagnose_malformed_term_expression(
+                    cursor,
+                    "expected `,` between decreasing measures",
+                );
+            }
+
+            let Some(recovery) = self.recover_malformed_algorithm_term_list_tail(cursor, boundary)
+            else {
+                break;
+            };
+            let made_progress = recovery.next_position > cursor;
+            cursor = recovery.next_position;
+            children.push(recovery.id);
+            recovery_nodes.extend(recovery.recovery_nodes);
+            if !made_progress {
+                break;
+            }
+        }
+
+        let range = if cursor > position {
+            self.covering_token_range(position, cursor)
+        } else {
+            self.zero_range_at(position)
+        };
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::TermList,
+            range,
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position),
+            recovery_nodes,
+        }
+    }
+
     fn expect_algorithm_do_keyword(
         &mut self,
         cursor: usize,
@@ -6028,38 +6318,134 @@ impl Parser {
         cursor
     }
 
-    fn recover_deferred_loop_annotations_at(
+    fn parse_loop_verification_clauses_at(
         &mut self,
         mut cursor: usize,
+        allow_decreasing: bool,
         children: &mut Vec<SurfaceBuilderNodeId>,
         recovery_nodes: &mut Vec<SurfaceBuilderNodeId>,
     ) -> usize {
         while self.is_algorithm_loop_task34_clause_at(cursor) {
-            self.diagnose_malformed_formula_expression(
-                cursor,
-                "algorithm loop verification clauses are parsed by parser task 34",
-            );
-            let Some(recovery) = self.recover_malformed_algorithm_loop_annotation_tail(cursor)
-            else {
-                break;
-            };
-            let made_progress = recovery.next_position > cursor;
-            cursor = recovery.next_position;
-            children.push(recovery.id);
-            recovery_nodes.extend(recovery.recovery_nodes);
-
-            if self.is_semicolon_at(cursor) {
-                children.push(self.token_node_ids[cursor]);
-                cursor += 1;
+            if self.is_reserved_word_at(cursor, "invariant") {
+                let clause = self.parse_loop_invariant_clause_at(cursor);
+                let made_progress = clause.next_position > cursor;
+                cursor = clause.next_position;
+                children.push(clause.id);
+                recovery_nodes.extend(clause.recovery_nodes);
+                if !made_progress {
+                    break;
+                }
+            } else if allow_decreasing {
+                let clause = self.parse_loop_decreasing_clause_at(cursor);
+                let made_progress = clause.next_position > cursor;
+                cursor = clause.next_position;
+                children.push(clause.id);
+                recovery_nodes.extend(clause.recovery_nodes);
+                if !made_progress {
+                    break;
+                }
             } else {
-                self.diagnose_missing_semicolon(cursor);
-            }
+                self.diagnose_malformed_formula_expression(
+                    cursor,
+                    "range and collection loops accept only invariant verification clauses",
+                );
+                let Some(recovery) = self.recover_malformed_algorithm_loop_annotation_tail(cursor)
+                else {
+                    break;
+                };
+                let made_progress = recovery.next_position > cursor;
+                cursor = recovery.next_position;
+                children.push(recovery.id);
+                recovery_nodes.extend(recovery.recovery_nodes);
 
-            if !made_progress {
-                break;
+                if self.is_semicolon_at(cursor) {
+                    children.push(self.token_node_ids[cursor]);
+                    cursor += 1;
+                } else {
+                    self.diagnose_missing_semicolon(cursor);
+                }
+
+                if !made_progress {
+                    break;
+                }
             }
         }
         cursor
+    }
+
+    fn parse_loop_invariant_clause_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let mut cursor = position + 1;
+        cursor = self.parse_required_algorithm_formula(
+            cursor,
+            &mut children,
+            &mut recovery_nodes,
+            "expected invariant formula",
+        );
+        if let Some(justification) =
+            self.parse_definition_content_general_justification_at(cursor, true)
+        {
+            cursor = justification.next_position;
+            children.push(justification.id);
+            recovery_nodes.extend(justification.recovery_nodes);
+        }
+        cursor = self.finish_algorithm_clause_semicolon(cursor, &mut children);
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::LoopInvariantClause,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn parse_loop_decreasing_clause_at(&mut self, position: usize) -> ParsedTypeNode {
+        let mut children = vec![self.token_node_ids[position]];
+        let mut recovery_nodes = Vec::new();
+        let term_list = self.parse_algorithm_term_list_at(
+            position + 1,
+            AlgorithmTermListBoundary::ClauseStatement,
+            "expected decreasing measure",
+        );
+        let mut cursor = term_list.next_position;
+        children.push(term_list.id);
+        recovery_nodes.extend(term_list.recovery_nodes);
+        if let Some(justification) =
+            self.parse_definition_content_general_justification_at(cursor, true)
+        {
+            cursor = justification.next_position;
+            children.push(justification.id);
+            recovery_nodes.extend(justification.recovery_nodes);
+        }
+        cursor = self.finish_algorithm_clause_semicolon(cursor, &mut children);
+        let id = self.events.emit(SyntaxEvent::Node {
+            kind: SurfaceNodeKind::LoopDecreasingClause,
+            range: self.covering_token_range(position, cursor),
+            children,
+        });
+        ParsedTypeNode {
+            id,
+            next_position: cursor.max(position + 1),
+            recovery_nodes,
+        }
+    }
+
+    fn finish_algorithm_clause_semicolon(
+        &mut self,
+        cursor: usize,
+        children: &mut Vec<SurfaceBuilderNodeId>,
+    ) -> usize {
+        if self.is_semicolon_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor + 1
+        } else {
+            self.diagnose_missing_semicolon(cursor);
+            cursor
+        }
     }
 
     fn finish_algorithm_statement_semicolon(
@@ -11768,6 +12154,53 @@ impl Parser {
         self.emit_malformed_tail_recovery(position, cursor)
     }
 
+    fn recover_malformed_algorithm_term_list_tail(
+        &mut self,
+        position: usize,
+        boundary: AlgorithmTermListBoundary,
+    ) -> Option<ParsedItem> {
+        let mut cursor = position;
+        let mut paren_depth = 0_usize;
+        let mut bracket_depth = 0_usize;
+        let mut brace_depth = 0_usize;
+
+        while cursor < self.request.tokens.len() {
+            let top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            if top_level
+                && (self.is_reserved_symbol_at(cursor, ",")
+                    || self.is_algorithm_term_list_boundary_at(cursor, boundary))
+            {
+                break;
+            }
+
+            if self.is_reserved_symbol_at(cursor, "(") {
+                paren_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                if paren_depth == 0 {
+                    break;
+                }
+                paren_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                bracket_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                if bracket_depth == 0 {
+                    break;
+                }
+                bracket_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                brace_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                if brace_depth == 0 {
+                    break;
+                }
+                brace_depth -= 1;
+            }
+            cursor += 1;
+        }
+
+        self.emit_malformed_tail_recovery(position, cursor)
+    }
+
     fn recover_malformed_algorithm_misplaced_item_tail(
         &mut self,
         position: usize,
@@ -13064,11 +13497,17 @@ impl Parser {
     }
 
     fn is_algorithm_definition_start_at(&self, position: usize) -> bool {
-        if !self.is_reserved_word_at(position, "algorithm") {
+        let algorithm = if self.is_reserved_word_at(position, "terminating") {
+            position + 1
+        } else {
+            position
+        };
+
+        if !self.is_reserved_word_at(algorithm, "algorithm") {
             return false;
         }
 
-        let name = position + 1;
+        let name = algorithm + 1;
         if !self.is_identifier_at(name) {
             return false;
         }
@@ -13077,7 +13516,7 @@ impl Parser {
         if self.is_reserved_symbol_at(cursor, "(")
             || self.is_reserved_word_at(cursor, "do")
             || self.is_reserved_symbol_at(cursor, "->")
-            || self.is_algorithm_header_task34_keyword_at(cursor)
+            || self.is_algorithm_header_clause_start_at(cursor)
         {
             return true;
         }
@@ -13097,7 +13536,7 @@ impl Parser {
                     return self.is_reserved_symbol_at(cursor, "(")
                         || self.is_reserved_word_at(cursor, "do")
                         || self.is_reserved_symbol_at(cursor, "->")
-                        || self.is_algorithm_header_task34_keyword_at(cursor);
+                        || self.is_algorithm_header_clause_start_at(cursor);
                 }
             } else if self.is_semicolon_at(cursor) || self.is_end_keyword_at(cursor) {
                 return false;
@@ -13108,7 +13547,14 @@ impl Parser {
         true
     }
 
-    fn is_algorithm_header_task34_keyword_at(&self, position: usize) -> bool {
+    fn is_algorithm_header_clause_start_at(&self, position: usize) -> bool {
+        self.request.tokens.get(position).is_some_and(|token| {
+            token.kind == ParserTokenKind::ReservedWord
+                && matches!(token.text.as_ref(), "requires" | "ensures" | "decreasing")
+        })
+    }
+
+    fn is_algorithm_header_verification_keyword_at(&self, position: usize) -> bool {
         self.request.tokens.get(position).is_some_and(|token| {
             token.kind == ParserTokenKind::ReservedWord
                 && matches!(
@@ -13125,6 +13571,7 @@ impl Parser {
             || self.is_reserved_word_at(position, "match")
             || self.is_reserved_word_at(position, "break")
             || self.is_reserved_word_at(position, "continue")
+            || self.is_reserved_word_at(position, "assert")
             || self.is_reserved_word_at(position, "var")
             || self.is_reserved_word_at(position, "const")
             || self.is_reserved_word_at(position, "snapshot")
@@ -13183,6 +13630,36 @@ impl Parser {
     fn is_algorithm_loop_task34_clause_at(&self, position: usize) -> bool {
         self.is_reserved_word_at(position, "invariant")
             || self.is_reserved_word_at(position, "decreasing")
+    }
+
+    fn is_algorithm_term_list_boundary_at(
+        &self,
+        position: usize,
+        boundary: AlgorithmTermListBoundary,
+    ) -> bool {
+        if position >= self.request.tokens.len()
+            || self.is_semicolon_at(position)
+            || self.is_item_start_at(position)
+            || self.is_end_keyword_at(position)
+        {
+            return true;
+        }
+
+        match boundary {
+            AlgorithmTermListBoundary::HeaderClause => {
+                self.is_reserved_word_at(position, "do")
+                    || self.is_algorithm_header_verification_keyword_at(position)
+            }
+            AlgorithmTermListBoundary::ClauseStatement => {
+                self.is_reserved_word_at(position, "by")
+                    || self.is_reserved_word_at(position, "proof")
+                    || self.is_algorithm_statement_list_context_boundary_at(
+                        position,
+                        AlgorithmStatementListBoundary::NestedBlock,
+                    )
+                    || self.is_algorithm_statement_start_at(position)
+            }
+        }
     }
 
     fn is_algorithm_declaration_tail_boundary_at(&self, position: usize) -> bool {
@@ -25536,47 +26013,7 @@ mod tests {
                     ("while", ParserTokenKind::ReservedWord),
                     ("thesis", ParserTokenKind::ReservedWord),
                     ("do", ParserTokenKind::ReservedWord),
-                    ("invariant", ParserTokenKind::ReservedWord),
-                    ("thesis", ParserTokenKind::ReservedWord),
-                    ("by", ParserTokenKind::ReservedWord),
-                    ("Inv", ParserTokenKind::Identifier),
-                    (";", ParserTokenKind::ReservedSymbol),
-                    ("decreasing", ParserTokenKind::ReservedWord),
-                    ("m", ParserTokenKind::Identifier),
-                    ("by", ParserTokenKind::ReservedWord),
-                    ("Dec", ParserTokenKind::Identifier),
-                    (";", ParserTokenKind::ReservedSymbol),
                     ("break", ParserTokenKind::ReservedWord),
-                    (";", ParserTokenKind::ReservedSymbol),
-                    ("end", ParserTokenKind::ReservedWord),
-                    (";", ParserTokenKind::ReservedSymbol),
-                    ("for", ParserTokenKind::ReservedWord),
-                    ("r", ParserTokenKind::Identifier),
-                    ("=", ParserTokenKind::ReservedSymbol),
-                    ("start", ParserTokenKind::Identifier),
-                    ("to", ParserTokenKind::ReservedWord),
-                    ("stop", ParserTokenKind::Identifier),
-                    ("do", ParserTokenKind::ReservedWord),
-                    ("invariant", ParserTokenKind::ReservedWord),
-                    ("thesis", ParserTokenKind::ReservedWord),
-                    ("by", ParserTokenKind::ReservedWord),
-                    ("RangeInv", ParserTokenKind::Identifier),
-                    (";", ParserTokenKind::ReservedSymbol),
-                    ("break", ParserTokenKind::ReservedWord),
-                    (";", ParserTokenKind::ReservedSymbol),
-                    ("end", ParserTokenKind::ReservedWord),
-                    (";", ParserTokenKind::ReservedSymbol),
-                    ("for", ParserTokenKind::ReservedWord),
-                    ("item", ParserTokenKind::Identifier),
-                    ("in", ParserTokenKind::ReservedWord),
-                    ("Items", ParserTokenKind::Identifier),
-                    ("do", ParserTokenKind::ReservedWord),
-                    ("decreasing", ParserTokenKind::ReservedWord),
-                    ("measure", ParserTokenKind::Identifier),
-                    ("by", ParserTokenKind::ReservedWord),
-                    ("CollDec", ParserTokenKind::Identifier),
-                    (";", ParserTokenKind::ReservedSymbol),
-                    ("continue", ParserTokenKind::ReservedWord),
                     (";", ParserTokenKind::ReservedSymbol),
                     ("end", ParserTokenKind::ReservedWord),
                     (";", ParserTokenKind::ReservedSymbol),
@@ -25617,7 +26054,7 @@ mod tests {
             output.diagnostics.iter().any(|diagnostic| {
                 diagnostic.code == SyntaxDiagnosticCode::MalformedFormulaExpression
             }),
-            "task34 loop annotation deferral and malformed if condition should diagnose: {:?}",
+            "malformed if condition should diagnose: {:?}",
             output.diagnostics
         );
         assert!(
@@ -25643,14 +26080,14 @@ mod tests {
                 kind,
                 SurfaceNodeKind::ForRangeStatement
             )),
-            2
+            1
         );
         assert_eq!(
             count_nodes(&ast, |kind| matches!(
                 kind,
                 SurfaceNodeKind::ForCollectionStatement
             )),
-            1
+            0
         );
         assert_eq!(
             count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::MatchStatement)),
@@ -25659,13 +26096,6 @@ mod tests {
         assert_eq!(
             count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::MatchEnding)),
             1
-        );
-        assert!(
-            count_nodes(&ast, |kind| matches!(
-                kind,
-                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
-            )) >= 2,
-            "deferred loop annotations should be recovered as skipped token nodes"
         );
         assert!(
             count_nodes(&ast, |kind| matches!(
@@ -25832,12 +26262,6 @@ mod tests {
         let expected = [
             (
                 SyntaxDiagnosticCode::MalformedFormulaExpression,
-                "algorithm loop verification clauses are parsed by parser task 34",
-                nth_token_range(&tokens, "invariant", 0),
-                "repair the formula expression before continuing",
-            ),
-            (
-                SyntaxDiagnosticCode::MalformedFormulaExpression,
                 "expected `if` condition",
                 nth_token_range(&tokens, "do", 2),
                 "repair the formula expression before continuing",
@@ -25868,56 +26292,6 @@ mod tests {
 
     #[test]
     fn parser_pins_task33_control_flow_diagnostic_matrix() {
-        assert_task33_algorithm_body_diagnostics_exact(
-            source_id(210),
-            &[
-                ("for", ParserTokenKind::ReservedWord),
-                ("r", ParserTokenKind::Identifier),
-                ("=", ParserTokenKind::ReservedSymbol),
-                ("start", ParserTokenKind::Identifier),
-                ("to", ParserTokenKind::ReservedWord),
-                ("stop", ParserTokenKind::Identifier),
-                ("do", ParserTokenKind::ReservedWord),
-                ("invariant", ParserTokenKind::ReservedWord),
-                ("thesis", ParserTokenKind::ReservedWord),
-                ("by", ParserTokenKind::ReservedWord),
-                ("RangeInv", ParserTokenKind::Identifier),
-                (";", ParserTokenKind::ReservedSymbol),
-                ("break", ParserTokenKind::ReservedWord),
-                (";", ParserTokenKind::ReservedSymbol),
-                ("end", ParserTokenKind::ReservedWord),
-                (";", ParserTokenKind::ReservedSymbol),
-            ],
-            &[ExpectedParserDiagnostic::formula(
-                "algorithm loop verification clauses are parsed by parser task 34",
-                "invariant",
-                0,
-            )],
-        );
-        assert_task33_algorithm_body_diagnostics_exact(
-            source_id(211),
-            &[
-                ("for", ParserTokenKind::ReservedWord),
-                ("item", ParserTokenKind::Identifier),
-                ("in", ParserTokenKind::ReservedWord),
-                ("Items", ParserTokenKind::Identifier),
-                ("do", ParserTokenKind::ReservedWord),
-                ("decreasing", ParserTokenKind::ReservedWord),
-                ("measure", ParserTokenKind::Identifier),
-                ("by", ParserTokenKind::ReservedWord),
-                ("CollDec", ParserTokenKind::Identifier),
-                (";", ParserTokenKind::ReservedSymbol),
-                ("continue", ParserTokenKind::ReservedWord),
-                (";", ParserTokenKind::ReservedSymbol),
-                ("end", ParserTokenKind::ReservedWord),
-                (";", ParserTokenKind::ReservedSymbol),
-            ],
-            &[ExpectedParserDiagnostic::formula(
-                "algorithm loop verification clauses are parsed by parser task 34",
-                "decreasing",
-                0,
-            )],
-        );
         assert_task33_algorithm_body_diagnostics_exact(
             source_id(212),
             &[
@@ -26194,6 +26568,716 @@ mod tests {
         );
     }
 
+    #[test]
+    fn parser_parses_task34_algorithm_verification_surfaces() {
+        let source_id = source_id(230);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("definition", ParserTokenKind::ReservedWord),
+                    ("public", ParserTokenKind::ReservedWord),
+                    ("terminating", ParserTokenKind::ReservedWord),
+                    ("algorithm", ParserTokenKind::ReservedWord),
+                    ("verified", ParserTokenKind::Identifier),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    ("n", ParserTokenKind::Identifier),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("->", ParserTokenKind::ReservedSymbol),
+                    ("set", ParserTokenKind::ReservedWord),
+                    ("requires", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("ensures", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("decreasing", ParserTokenKind::ReservedWord),
+                    ("n", ParserTokenKind::Identifier),
+                    (",", ParserTokenKind::ReservedSymbol),
+                    ("measure", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("while", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("invariant", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Inv", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("decreasing", ParserTokenKind::ReservedWord),
+                    ("n", ParserTokenKind::Identifier),
+                    (",", ParserTokenKind::ReservedSymbol),
+                    ("measure", ParserTokenKind::Identifier),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Dec", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("assert", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("AssertRef", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("break", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("i", ParserTokenKind::Identifier),
+                    ("=", ParserTokenKind::ReservedSymbol),
+                    ("lower", ParserTokenKind::Identifier),
+                    ("to", ParserTokenKind::ReservedWord),
+                    ("upper", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("invariant", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("RangeInv", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("continue", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("item", ParserTokenKind::Identifier),
+                    ("in", ParserTokenKind::ReservedWord),
+                    ("Items", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("invariant", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("break", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("terminating", ParserTokenKind::ReservedWord),
+                    ("algorithm", ParserTokenKind::ReservedWord),
+                    ("bare", ParserTokenKind::Identifier),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("assert", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("private", ParserTokenKind::ReservedWord),
+                    ("terminating", ParserTokenKind::ReservedWord),
+                    ("algorithm", ParserTokenKind::ReservedWord),
+                    ("hidden", ParserTokenKind::Identifier),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("assert", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.is_empty(),
+            "task-34 algorithm verification clauses should parse: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("task-34 algorithm verification clauses should keep an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AlgorithmDefinition
+            )),
+            3
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AlgorithmTerminationClause
+            )),
+            3
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AlgorithmRequiresClause
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AlgorithmEnsuresClause
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AlgorithmDecreasingClause
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::LoopInvariantClause
+            )),
+            3
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::LoopDecreasingClause
+            )),
+            1
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AssertStatement
+            )),
+            3
+        );
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::TermList)),
+            2
+        );
+        assert_task34_verification_accessors_and_child_order(&ast);
+    }
+
+    #[test]
+    fn parser_recovers_task34_algorithm_verification_gaps() {
+        let source_id = source_id(231);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("definition", ParserTokenKind::ReservedWord),
+                    ("algorithm", ParserTokenKind::ReservedWord),
+                    ("dup_contract", ParserTokenKind::Identifier),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("requires", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("requires", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("assert", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("break", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("invariant", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("algorithm", ParserTokenKind::ReservedWord),
+                    ("out_of_order", ParserTokenKind::Identifier),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("ensures", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("requires", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("while", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("break", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("invariant", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("algorithm", ParserTokenKind::ReservedWord),
+                    ("missing_formulas", ParserTokenKind::Identifier),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("requires", ParserTokenKind::ReservedWord),
+                    ("ensures", ParserTokenKind::ReservedWord),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("while", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("decreasing", ParserTokenKind::ReservedWord),
+                    ("first", ParserTokenKind::Identifier),
+                    (",", ParserTokenKind::ReservedSymbol),
+                    ("break", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("algorithm", ParserTokenKind::ReservedWord),
+                    ("loop_gaps", ParserTokenKind::Identifier),
+                    ("(", ParserTokenKind::ReservedSymbol),
+                    (")", ParserTokenKind::ReservedSymbol),
+                    ("decreasing", ParserTokenKind::ReservedWord),
+                    (",", ParserTokenKind::ReservedSymbol),
+                    ("measure", ParserTokenKind::Identifier),
+                    (",", ParserTokenKind::ReservedSymbol),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("for", ParserTokenKind::ReservedWord),
+                    ("item", ParserTokenKind::Identifier),
+                    ("in", ParserTokenKind::ReservedWord),
+                    ("Items", ParserTokenKind::Identifier),
+                    ("do", ParserTokenKind::ReservedWord),
+                    ("decreasing", ParserTokenKind::ReservedWord),
+                    ("measure", ParserTokenKind::Identifier),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Dec", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("invariant", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("continue", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.iter().any(|diagnostic| {
+                diagnostic.message.as_ref()
+                    == "duplicate or out-of-order algorithm verification clause"
+            }),
+            "duplicate/out-of-order header clauses should diagnose: {:?}",
+            output.diagnostics
+        );
+        assert!(
+            output.diagnostics.iter().any(
+                |diagnostic| diagnostic.message.as_ref() == "expected formula after `requires`"
+            ),
+            "requires without a formula should diagnose"
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.message.as_ref() == "expected formula after `ensures`"),
+            "ensures without a formula should diagnose"
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.message.as_ref() == "expected assertion formula"),
+            "assert without a formula should diagnose"
+        );
+        assert!(
+            output.diagnostics.iter().any(|diagnostic| {
+                diagnostic.message.as_ref()
+                    == "range and collection loops accept only invariant verification clauses"
+            }),
+            "for-decreasing should diagnose"
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.message.as_ref() == "expected invariant formula"),
+            "empty invariant should diagnose"
+        );
+        assert!(
+            output.diagnostics.iter().any(|diagnostic| {
+                diagnostic.message.as_ref() == "expected decreasing measure before `,`"
+            }),
+            "empty decreasing term-list slot should diagnose"
+        );
+        assert!(
+            output
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.message.as_ref() == "expected term after `,`"),
+            "dangling decreasing term-list comma should diagnose"
+        );
+        let ast = output
+            .ast
+            .expect("task-34 verification recovery should keep an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AlgorithmDefinition
+            )),
+            4
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken)
+            )) >= 2
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingFormula)
+            )) >= 2
+        );
+        assert!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingTerm)
+            )) >= 2
+        );
+
+        let recovered_term_list_signatures =
+            surface_views(&ast, |kind| matches!(kind, SurfaceNodeKind::TermList))
+                .into_iter()
+                .map(direct_child_signature)
+                .collect::<Vec<_>>();
+        assert_contains_signature(
+            &recovered_term_list_signatures,
+            &["MissingTerm", ",", "TermExpression", ",", "MissingTerm"],
+        );
+        assert_contains_signature(
+            &recovered_term_list_signatures,
+            &["TermExpression", ",", "MissingTerm"],
+        );
+    }
+
+    #[test]
+    fn parser_pins_task34_verification_diagnostic_matrix() {
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(232),
+            &[
+                ("assert", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::formula(
+                "expected assertion formula",
+                ";",
+                0,
+            )],
+        );
+        assert_parser_diagnostics_exact(
+            source_id(233),
+            &[
+                ("definition", ParserTokenKind::ReservedWord),
+                ("algorithm", ParserTokenKind::ReservedWord),
+                ("late_while_invariant", ParserTokenKind::Identifier),
+                ("(", ParserTokenKind::ReservedSymbol),
+                (")", ParserTokenKind::ReservedSymbol),
+                ("do", ParserTokenKind::ReservedWord),
+                ("while", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                ("do", ParserTokenKind::ReservedWord),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("invariant", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::formula(
+                "expected algorithm statement",
+                "invariant",
+                0,
+            )],
+        );
+        assert_parser_diagnostics_exact(
+            source_id(234),
+            &[
+                ("definition", ParserTokenKind::ReservedWord),
+                ("algorithm", ParserTokenKind::ReservedWord),
+                ("late_for_invariant", ParserTokenKind::Identifier),
+                ("(", ParserTokenKind::ReservedSymbol),
+                (")", ParserTokenKind::ReservedSymbol),
+                ("do", ParserTokenKind::ReservedWord),
+                ("for", ParserTokenKind::ReservedWord),
+                ("item", ParserTokenKind::Identifier),
+                ("in", ParserTokenKind::ReservedWord),
+                ("Items", ParserTokenKind::Identifier),
+                ("do", ParserTokenKind::ReservedWord),
+                ("continue", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("invariant", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::formula(
+                "expected algorithm statement",
+                "invariant",
+                0,
+            )],
+        );
+        assert_task33_algorithm_body_diagnostics_exact(
+            source_id(235),
+            &[
+                ("for", ParserTokenKind::ReservedWord),
+                ("item", ParserTokenKind::Identifier),
+                ("in", ParserTokenKind::ReservedWord),
+                ("Items", ParserTokenKind::Identifier),
+                ("do", ParserTokenKind::ReservedWord),
+                ("decreasing", ParserTokenKind::ReservedWord),
+                ("measure", ParserTokenKind::Identifier),
+                ("by", ParserTokenKind::ReservedWord),
+                ("Dec", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("continue", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::formula(
+                "range and collection loops accept only invariant verification clauses",
+                "decreasing",
+                0,
+            )],
+        );
+        assert_parser_diagnostics_exact(
+            source_id(236),
+            &[
+                ("definition", ParserTokenKind::ReservedWord),
+                ("algorithm", ParserTokenKind::ReservedWord),
+                ("duplicate_header", ParserTokenKind::Identifier),
+                ("(", ParserTokenKind::ReservedSymbol),
+                (")", ParserTokenKind::ReservedSymbol),
+                ("requires", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                ("requires", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                ("do", ParserTokenKind::ReservedWord),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::formula(
+                "duplicate or out-of-order algorithm verification clause",
+                "requires",
+                1,
+            )],
+        );
+        assert_parser_diagnostics_exact(
+            source_id(237),
+            &[
+                ("definition", ParserTokenKind::ReservedWord),
+                ("algorithm", ParserTokenKind::ReservedWord),
+                ("out_of_order_header", ParserTokenKind::Identifier),
+                ("(", ParserTokenKind::ReservedSymbol),
+                (")", ParserTokenKind::ReservedSymbol),
+                ("ensures", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                ("requires", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                ("do", ParserTokenKind::ReservedWord),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::formula(
+                "duplicate or out-of-order algorithm verification clause",
+                "requires",
+                0,
+            )],
+        );
+        assert_parser_diagnostics_exact(
+            source_id(238),
+            &[
+                ("definition", ParserTokenKind::ReservedWord),
+                ("algorithm", ParserTokenKind::ReservedWord),
+                ("missing_requires_formula", ParserTokenKind::Identifier),
+                ("(", ParserTokenKind::ReservedSymbol),
+                (")", ParserTokenKind::ReservedSymbol),
+                ("requires", ParserTokenKind::ReservedWord),
+                ("ensures", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                ("do", ParserTokenKind::ReservedWord),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::formula(
+                "expected formula after `requires`",
+                "ensures",
+                0,
+            )],
+        );
+        assert_parser_diagnostics_exact(
+            source_id(239),
+            &[
+                ("definition", ParserTokenKind::ReservedWord),
+                ("algorithm", ParserTokenKind::ReservedWord),
+                ("missing_ensures_formula", ParserTokenKind::Identifier),
+                ("(", ParserTokenKind::ReservedSymbol),
+                (")", ParserTokenKind::ReservedSymbol),
+                ("requires", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                ("ensures", ParserTokenKind::ReservedWord),
+                ("do", ParserTokenKind::ReservedWord),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::formula(
+                "expected formula after `ensures`",
+                "do",
+                0,
+            )],
+        );
+        assert_parser_diagnostics_exact(
+            source_id(240),
+            &[
+                ("definition", ParserTokenKind::ReservedWord),
+                ("algorithm", ParserTokenKind::ReservedWord),
+                ("missing_measure", ParserTokenKind::Identifier),
+                ("(", ParserTokenKind::ReservedSymbol),
+                (")", ParserTokenKind::ReservedSymbol),
+                ("decreasing", ParserTokenKind::ReservedWord),
+                ("do", ParserTokenKind::ReservedWord),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::term(
+                "expected decreasing measure",
+                "do",
+                0,
+            )],
+        );
+        assert_parser_diagnostics_exact(
+            source_id(241),
+            &[
+                ("definition", ParserTokenKind::ReservedWord),
+                ("algorithm", ParserTokenKind::ReservedWord),
+                (
+                    "missing_loop_invariant_formula",
+                    ParserTokenKind::Identifier,
+                ),
+                ("(", ParserTokenKind::ReservedSymbol),
+                (")", ParserTokenKind::ReservedSymbol),
+                ("do", ParserTokenKind::ReservedWord),
+                ("while", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                ("do", ParserTokenKind::ReservedWord),
+                ("invariant", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::formula(
+                "expected invariant formula",
+                ";",
+                0,
+            )],
+        );
+        assert_parser_diagnostics_exact(
+            source_id(242),
+            &[
+                ("definition", ParserTokenKind::ReservedWord),
+                ("algorithm", ParserTokenKind::ReservedWord),
+                ("dangling_loop_measure", ParserTokenKind::Identifier),
+                ("(", ParserTokenKind::ReservedSymbol),
+                (")", ParserTokenKind::ReservedSymbol),
+                ("do", ParserTokenKind::ReservedWord),
+                ("while", ParserTokenKind::ReservedWord),
+                ("thesis", ParserTokenKind::ReservedWord),
+                ("do", ParserTokenKind::ReservedWord),
+                ("decreasing", ParserTokenKind::ReservedWord),
+                ("measure", ParserTokenKind::Identifier),
+                (",", ParserTokenKind::ReservedSymbol),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("break", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::term(
+                "expected term after `,`",
+                ";",
+                0,
+            )],
+        );
+        assert_parser_diagnostics_exact(
+            source_id(243),
+            &[
+                ("definition", ParserTokenKind::ReservedWord),
+                ("algorithm", ParserTokenKind::ReservedWord),
+                ("dangling_measure", ParserTokenKind::Identifier),
+                ("(", ParserTokenKind::ReservedSymbol),
+                (")", ParserTokenKind::ReservedSymbol),
+                ("decreasing", ParserTokenKind::ReservedWord),
+                ("measure", ParserTokenKind::Identifier),
+                (",", ParserTokenKind::ReservedSymbol),
+                ("do", ParserTokenKind::ReservedWord),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::term(
+                "expected term after `,`",
+                "do",
+                0,
+            )],
+        );
+        assert_parser_diagnostics_exact(
+            source_id(244),
+            &[
+                ("definition", ParserTokenKind::ReservedWord),
+                ("algorithm", ParserTokenKind::ReservedWord),
+                ("missing_comma", ParserTokenKind::Identifier),
+                ("(", ParserTokenKind::ReservedSymbol),
+                (")", ParserTokenKind::ReservedSymbol),
+                ("decreasing", ParserTokenKind::ReservedWord),
+                ("measure", ParserTokenKind::Identifier),
+                ("next", ParserTokenKind::Identifier),
+                ("do", ParserTokenKind::ReservedWord),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+            &[ExpectedParserDiagnostic::term(
+                "expected `,` between decreasing measures",
+                "next",
+                0,
+            )],
+        );
+    }
+
     fn assert_task33_control_flow_accessors_and_child_order(ast: &mizar_syntax::SurfaceAst) {
         let snapshot = ast.snapshot_text();
         for node_name in [
@@ -26405,6 +27489,228 @@ mod tests {
                 .iter()
                 .any(|view| direct_structural_child_kind_names(*view).is_empty())
         );
+    }
+
+    fn assert_task34_verification_accessors_and_child_order(ast: &mizar_syntax::SurfaceAst) {
+        let snapshot = ast.snapshot_text();
+        for node_name in [
+            "AlgorithmTerminationClause",
+            "AlgorithmRequiresClause",
+            "AlgorithmEnsuresClause",
+            "AlgorithmDecreasingClause",
+            "LoopInvariantClause",
+            "LoopDecreasingClause",
+            "AssertStatement",
+            "TermList",
+        ] {
+            assert!(
+                snapshot.contains(node_name),
+                "parser-produced snapshot should include {node_name}"
+            );
+        }
+
+        assert!(
+            surface_views(ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AlgorithmTerminationClause
+            ))
+            .iter()
+            .all(|view| (*view).as_algorithm_termination_clause().is_some())
+        );
+        assert!(
+            surface_views(ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AlgorithmRequiresClause
+            ))
+            .iter()
+            .all(|view| (*view).as_algorithm_requires_clause().is_some())
+        );
+        assert!(
+            surface_views(ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AlgorithmEnsuresClause
+            ))
+            .iter()
+            .all(|view| (*view).as_algorithm_ensures_clause().is_some())
+        );
+        assert!(
+            surface_views(ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::AlgorithmDecreasingClause
+            ))
+            .iter()
+            .all(|view| (*view).as_algorithm_decreasing_clause().is_some())
+        );
+        assert!(
+            surface_views(ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::LoopInvariantClause
+            ))
+            .iter()
+            .all(|view| (*view).as_loop_invariant_clause().is_some())
+        );
+        assert!(
+            surface_views(ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::LoopDecreasingClause
+            ))
+            .iter()
+            .all(|view| (*view).as_loop_decreasing_clause().is_some())
+        );
+        assert!(
+            surface_views(ast, |kind| matches!(kind, SurfaceNodeKind::AssertStatement))
+                .iter()
+                .all(|view| (*view).as_assert_statement().is_some())
+        );
+        assert!(
+            surface_views(ast, |kind| matches!(kind, SurfaceNodeKind::TermList))
+                .iter()
+                .all(|view| (*view).as_term_list().is_some())
+        );
+
+        let algorithm_signatures = surface_views(ast, |kind| {
+            matches!(kind, SurfaceNodeKind::AlgorithmDefinition)
+        })
+        .into_iter()
+        .map(direct_child_signature)
+        .collect::<Vec<_>>();
+        assert_contains_signature(
+            &algorithm_signatures,
+            &[
+                "AlgorithmTerminationClause",
+                "algorithm",
+                "verified",
+                "AlgorithmParameters",
+                "->",
+                "TypeExpression",
+                "AlgorithmRequiresClause",
+                "AlgorithmEnsuresClause",
+                "AlgorithmDecreasingClause",
+                "AlgorithmBody",
+                ";",
+            ],
+        );
+        assert_contains_signature(
+            &algorithm_signatures,
+            &[
+                "AlgorithmTerminationClause",
+                "algorithm",
+                "bare",
+                "AlgorithmParameters",
+                "AlgorithmBody",
+                ";",
+            ],
+        );
+
+        let term_list_signatures =
+            surface_views(ast, |kind| matches!(kind, SurfaceNodeKind::TermList))
+                .into_iter()
+                .map(direct_child_signature)
+                .collect::<Vec<_>>();
+        assert_contains_signature(
+            &term_list_signatures,
+            &["TermExpression", ",", "TermExpression"],
+        );
+
+        let invariant_signatures = surface_views(ast, |kind| {
+            matches!(kind, SurfaceNodeKind::LoopInvariantClause)
+        })
+        .into_iter()
+        .map(direct_child_signature)
+        .collect::<Vec<_>>();
+        assert_contains_signature(
+            &invariant_signatures,
+            &["invariant", "FormulaExpression", "JustificationClause", ";"],
+        );
+        assert_contains_signature(
+            &invariant_signatures,
+            &["invariant", "FormulaExpression", ";"],
+        );
+
+        let decreasing_signatures = surface_views(ast, |kind| {
+            matches!(kind, SurfaceNodeKind::LoopDecreasingClause)
+        })
+        .into_iter()
+        .map(direct_child_signature)
+        .collect::<Vec<_>>();
+        assert_contains_signature(
+            &decreasing_signatures,
+            &["decreasing", "TermList", "JustificationClause", ";"],
+        );
+
+        let while_signatures =
+            surface_views(ast, |kind| matches!(kind, SurfaceNodeKind::WhileStatement))
+                .into_iter()
+                .map(direct_child_signature)
+                .collect::<Vec<_>>();
+        assert_contains_signature(
+            &while_signatures,
+            &[
+                "while",
+                "FormulaExpression",
+                "do",
+                "LoopInvariantClause",
+                "LoopDecreasingClause",
+                "AlgorithmStatementList",
+                "end",
+                ";",
+            ],
+        );
+
+        let range_signatures = surface_views(ast, |kind| {
+            matches!(kind, SurfaceNodeKind::ForRangeStatement)
+        })
+        .into_iter()
+        .map(direct_child_signature)
+        .collect::<Vec<_>>();
+        assert_contains_signature(
+            &range_signatures,
+            &[
+                "for",
+                "i",
+                "=",
+                "TermExpression",
+                "to",
+                "TermExpression",
+                "do",
+                "LoopInvariantClause",
+                "AlgorithmStatementList",
+                "end",
+                ";",
+            ],
+        );
+
+        let collection_signatures = surface_views(ast, |kind| {
+            matches!(kind, SurfaceNodeKind::ForCollectionStatement)
+        })
+        .into_iter()
+        .map(direct_child_signature)
+        .collect::<Vec<_>>();
+        assert_contains_signature(
+            &collection_signatures,
+            &[
+                "for",
+                "item",
+                "in",
+                "TermExpression",
+                "do",
+                "LoopInvariantClause",
+                "AlgorithmStatementList",
+                "end",
+                ";",
+            ],
+        );
+
+        let assert_signatures =
+            surface_views(ast, |kind| matches!(kind, SurfaceNodeKind::AssertStatement))
+                .into_iter()
+                .map(direct_child_signature)
+                .collect::<Vec<_>>();
+        assert_contains_signature(
+            &assert_signatures,
+            &["assert", "FormulaExpression", "JustificationClause", ";"],
+        );
+        assert_contains_signature(&assert_signatures, &["assert", "FormulaExpression", ";"]);
     }
 
     #[test]
@@ -29693,8 +30999,20 @@ mod tests {
         match kind {
             SurfaceNodeKind::FormulaExpression => Some("FormulaExpression"),
             SurfaceNodeKind::TermExpression => Some("TermExpression"),
+            SurfaceNodeKind::TypeExpression => Some("TypeExpression"),
+            SurfaceNodeKind::AlgorithmParameters => Some("AlgorithmParameters"),
+            SurfaceNodeKind::AlgorithmBody => Some("AlgorithmBody"),
             SurfaceNodeKind::AlgorithmStatementList => Some("AlgorithmStatementList"),
+            SurfaceNodeKind::AlgorithmTerminationClause => Some("AlgorithmTerminationClause"),
+            SurfaceNodeKind::AlgorithmRequiresClause => Some("AlgorithmRequiresClause"),
+            SurfaceNodeKind::AlgorithmEnsuresClause => Some("AlgorithmEnsuresClause"),
+            SurfaceNodeKind::AlgorithmDecreasingClause => Some("AlgorithmDecreasingClause"),
+            SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingTerm) => Some("MissingTerm"),
             SurfaceNodeKind::IfStatement => Some("IfStatement"),
+            SurfaceNodeKind::LoopInvariantClause => Some("LoopInvariantClause"),
+            SurfaceNodeKind::LoopDecreasingClause => Some("LoopDecreasingClause"),
+            SurfaceNodeKind::AssertStatement => Some("AssertStatement"),
+            SurfaceNodeKind::TermList => Some("TermList"),
             SurfaceNodeKind::MatchCase => Some("MatchCase"),
             SurfaceNodeKind::MatchEnding => Some("MatchEnding"),
             SurfaceNodeKind::JustificationClause => Some("JustificationClause"),
@@ -29923,6 +31241,23 @@ mod tests {
         expected: &[ExpectedParserDiagnostic],
     ) {
         let tokens = task33_algorithm_body_tokens(source_id, body);
+        assert_parsed_tokens_diagnostics_exact(source_id, tokens, expected);
+    }
+
+    fn assert_parser_diagnostics_exact(
+        source_id: SourceId,
+        entries: &[(&str, ParserTokenKind)],
+        expected: &[ExpectedParserDiagnostic],
+    ) {
+        let tokens = token_sequence(source_id, entries);
+        assert_parsed_tokens_diagnostics_exact(source_id, tokens, expected);
+    }
+
+    fn assert_parsed_tokens_diagnostics_exact(
+        source_id: SourceId,
+        tokens: Vec<ParserToken>,
+        expected: &[ExpectedParserDiagnostic],
+    ) {
         let output = parse(ParseRequest::new(
             source_id,
             Edition::new("2026"),

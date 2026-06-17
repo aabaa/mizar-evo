@@ -11,4 +11,4 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.20.algorithm_control_flow.parser",
 ]
-notes = "Active task-33 parse-only coverage for algorithm if/else branches, while loops, range loops with to/downto and optional step, collection loops with and without processed bindings, multiple match cases, otherwise and exhaustive match endings with and without justification, break, and continue. Parser-unit coverage pins else-if chaining. Loop verification clauses remain task34."
+notes = "Active task-33 parse-only coverage for algorithm if/else branches, while loops, range loops with to/downto and optional step, collection loops with and without processed bindings, multiple match cases, otherwise and exhaustive match endings with and without justification, break, and continue. Parser-unit coverage pins else-if chaining; parser task 34 covers concrete verification clauses separately."

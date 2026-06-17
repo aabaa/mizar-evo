@@ -371,11 +371,19 @@ token payload を保持してよいが、それによって rowan tree 内の to
 | 168 | `MatchEnding` | task-33 の `otherwise ... end;` または `exhaustive [justification];` match ending |
 | 169 | `BreakStatement` | task-33 の algorithm `break;` statement |
 | 170 | `ContinueStatement` | task-33 の algorithm `continue;` statement |
+| 171 | `AlgorithmTerminationClause` | task-34 の `terminating` algorithm modifier |
+| 172 | `AlgorithmRequiresClause` | task-34 の header `requires formula` clause |
+| 173 | `AlgorithmEnsuresClause` | task-34 の header `ensures formula` clause |
+| 174 | `AlgorithmDecreasingClause` | task-34 の header `decreasing term_list` clause |
+| 175 | `LoopInvariantClause` | task-34 の leading loop `invariant formula [justification];` clause |
+| 176 | `LoopDecreasingClause` | task-34 の leading while-loop `decreasing term_list [justification];` clause |
+| 177 | `AssertStatement` | task-34 の algorithm `assert formula [justification];` statement |
+| 178 | `TermList` | task-34 の comma-separated decreasing-measure term list |
 
 `SyntaxKind::from_raw` は未知の raw value をすべて `Unknown` に写像する。
 `SyntaxKind::is_node_kind` は上に列挙したすべての structural node raw kind、つまり現在は
 `Root` から task-22 `ProofBlock` まで、task-23 `DefinitionBlockItem` から
-task-33 `ContinueStatement` まで、compatibility `Token` wrapper、および
+task-34 `TermList` まで、compatibility `Token` wrapper、および
 `ErrorRecovery` に対して true である。`is_token_kind` は `TokenIdentifier` から
 `TokenUnknown` までの token leaf raw kind に対してのみ true である。
 将来の raw value は、既存 snapshot と rowan test が raw 語彙変更時に明確に失敗するよう、
@@ -490,10 +498,10 @@ task-33 `ContinueStatement` まで、compatibility `Token` wrapper、および
 | `SurfaceNodeKind::TemplateLocus` | なし | `SyntaxKind::TemplateLocus` | parser task 31 の pattern 側 template locus identifier または missing-term recovery |
 | `SurfaceNodeKind::TemplateArguments` | なし | `SyntaxKind::TemplateArguments` | parser task 31 の call / reference 側 `[` template argument list `]`。delimiter、comma token、`TemplateArgument` child または recovery を所有する |
 | `SurfaceNodeKind::TemplateArgument` | なし | `SyntaxKind::TemplateArgument` | parser task 31 の単一 template actual。`TypeExpression`、`TermExpression` / `QuaExpression`、または missing-type recovery を包む |
-| `SurfaceNodeKind::AlgorithmDefinition` | なし | `SyntaxKind::AlgorithmDefinition` | parser task 32 の `algorithm name [template_loci] (parameters) [-> type] do ... end;` definition content。name、任意の identifier-only `TemplateLoci`、`AlgorithmParameters`、任意の return `TypeExpression`、`AlgorithmBody`、末尾 semicolon を所有する。header contract は task 34 に残す |
+| `SurfaceNodeKind::AlgorithmDefinition` | なし | `SyntaxKind::AlgorithmDefinition` | parser task 32 の `algorithm name [template_loci] (parameters) [-> type_expression] do ... end;` definition content。task 34 により、任意の leading `AlgorithmTerminationClause` と `AlgorithmBody` 前の ordered header verification clause も所有する |
 | `SurfaceNodeKind::AlgorithmParameters` | なし | `SyntaxKind::AlgorithmParameters` | parser task 32 の algorithm formal list。`(`、comma-separated identifier token または missing-term recovery、`)` / delimiter recovery を所有する |
 | `SurfaceNodeKind::AlgorithmBody` | なし | `SyntaxKind::AlgorithmBody` | parser task 32 の `do ... end` algorithm body。存在する場合の `do` token、`AlgorithmStatementList`、`end` / missing-end recovery を所有する |
-| `SurfaceNodeKind::AlgorithmStatementList` | なし | `SyntaxKind::AlgorithmStatementList` | parser task 32 の body statement list。task 33 により control-flow statement も source order で所有する。verification statement と annotation は parser tasks 34-35 に残す |
+| `SurfaceNodeKind::AlgorithmStatementList` | なし | `SyntaxKind::AlgorithmStatementList` | parser task 32 の body statement list。task 33 により control-flow statement、task 34 により `AssertStatement` も source order で所有する。annotation は parser task 35 に残す |
 | `SurfaceNodeKind::VariableDeclaration` | なし | `SyntaxKind::VariableDeclaration` | parser task 32 の `var` / `const` declaration。任意で `ghost` prefix を持つ。1 個以上の `VariableBinding`、任意の shared `as TypeExpression`、任意の syntax-level justification、semicolon または recovery を所有する |
 | `SurfaceNodeKind::VariableBinding` | なし | `SyntaxKind::VariableBinding` | parser task 32 の declaration binding。binding identifier と任意の `:= TermExpression` initializer または missing-term recovery を所有する |
 | `SurfaceNodeKind::AssignmentStatement` | なし | `SyntaxKind::AssignmentStatement` | parser task 32 の assignment statement。任意で `ghost` prefix を持つ。`Lvalue`、`:=`、代入 `TermExpression` または recovery、semicolon または recovery を所有する |
@@ -502,14 +510,22 @@ task-33 `ContinueStatement` まで、compatibility `Token` wrapper、および
 | `SurfaceNodeKind::ReturnStatement` | なし | `SyntaxKind::ReturnStatement` | parser task 32 の `return` statement。任意の returned `TermExpression`、任意の syntax-level justification、semicolon または recovery を所有する |
 | `SurfaceNodeKind::ClaimBlockItem` | なし | `SyntaxKind::ClaimBlockItem` | parser task 32 の top-level `claim algorithm_name do ... end;` item。bare theorem / lemma child を所有し、claim-local annotation は task 35 に残す |
 | `SurfaceNodeKind::IfStatement` | なし | `SyntaxKind::IfStatement` | parser task 33 の algorithm conditional。`if`、`FormulaExpression` または missing-formula recovery、`do`、then 側 `AlgorithmStatementList`、および `end;` / `else` + nested `IfStatement` / `else` + else 側 `AlgorithmStatementList` + `end;` を所有する |
-| `SurfaceNodeKind::WhileStatement` | なし | `SyntaxKind::WhileStatement` | parser task 33 の algorithm while loop。`while`、condition `FormulaExpression` または recovery、`do`、存在する場合の task-34 deferred loop-clause recovery、body `AlgorithmStatementList`、`end;` / missing-end recovery を所有する |
-| `SurfaceNodeKind::ForRangeStatement` | なし | `SyntaxKind::ForRangeStatement` | parser task 33 の algorithm range loop。`for`、loop identifier または recovery、`=`、lower `TermExpression`、`to` または `downto`、upper `TermExpression`、任意の `step TermExpression`、存在する場合の task-34 deferred loop-clause recovery、body list、`end;` / recovery を所有する |
-| `SurfaceNodeKind::ForCollectionStatement` | なし | `SyntaxKind::ForCollectionStatement` | parser task 33 の algorithm collection loop。`for`、loop identifier、`in`、collection `TermExpression`、任意の `processed` identifier、存在する場合の task-34 deferred loop-clause recovery、body list、`end;` / recovery を所有する |
+| `SurfaceNodeKind::WhileStatement` | なし | `SyntaxKind::WhileStatement` | parser task 33 の algorithm while loop。task 34 により `do` と body list の間に leading `LoopInvariantClause` / `LoopDecreasingClause` child も所有する |
+| `SurfaceNodeKind::ForRangeStatement` | なし | `SyntaxKind::ForRangeStatement` | parser task 33 の algorithm range loop。task 34 により `do` と body list の間に leading `LoopInvariantClause` child も所有する。`for` loop の `decreasing` は引き続き reject する |
+| `SurfaceNodeKind::ForCollectionStatement` | なし | `SyntaxKind::ForCollectionStatement` | parser task 33 の algorithm collection loop。task 34 により `do` と body list の間に leading `LoopInvariantClause` child も所有する。`for` loop の `decreasing` は引き続き reject する |
 | `SurfaceNodeKind::MatchStatement` | なし | `SyntaxKind::MatchStatement` | parser task 33 の algorithm structural match。`match`、scrutinee `TermExpression`、`do`、1 個以上の `MatchCase` または missing-statement recovery、`MatchEnding`、final `end;` / recovery を所有する |
 | `SurfaceNodeKind::MatchCase` | なし | `SyntaxKind::MatchCase` | parser task 33 の `case term_pattern do ... end;` branch。pattern `TermExpression`、branch statement list、branch `end;` / recovery を所有する |
 | `SurfaceNodeKind::MatchEnding` | なし | `SyntaxKind::MatchEnding` | parser task 33 の match ending。`otherwise` + statement list + `end;`、または `exhaustive` + 任意の syntax-level justification + semicolon を所有する |
 | `SurfaceNodeKind::BreakStatement` | なし | `SyntaxKind::BreakStatement` | parser task 33 の `break;` jump statement。loop context validity は意味論で扱い、ここには符号化しない |
 | `SurfaceNodeKind::ContinueStatement` | なし | `SyntaxKind::ContinueStatement` | parser task 33 の `continue;` jump statement。loop context と termination obligation は意味論で扱い、ここには符号化しない |
+| `SurfaceNodeKind::AlgorithmTerminationClause` | なし | `SyntaxKind::AlgorithmTerminationClause` | parser task 34 の `algorithm` 前 `terminating` modifier。termination proof obligation は意味論で扱い、ここには符号化しない |
+| `SurfaceNodeKind::AlgorithmRequiresClause` | なし | `SyntaxKind::AlgorithmRequiresClause` | parser task 34 の header `requires FormulaExpression` clause |
+| `SurfaceNodeKind::AlgorithmEnsuresClause` | なし | `SyntaxKind::AlgorithmEnsuresClause` | parser task 34 の header `ensures FormulaExpression` clause |
+| `SurfaceNodeKind::AlgorithmDecreasingClause` | なし | `SyntaxKind::AlgorithmDecreasingClause` | parser task 34 の header `decreasing TermList` clause |
+| `SurfaceNodeKind::LoopInvariantClause` | なし | `SyntaxKind::LoopInvariantClause` | parser task 34 の leading loop `invariant FormulaExpression [JustificationClause];` clause |
+| `SurfaceNodeKind::LoopDecreasingClause` | なし | `SyntaxKind::LoopDecreasingClause` | parser task 34 の leading while-loop `decreasing TermList [JustificationClause];` clause |
+| `SurfaceNodeKind::AssertStatement` | なし | `SyntaxKind::AssertStatement` | parser task 34 の algorithm assertion statement。`assert`、`FormulaExpression` または missing-formula recovery、任意の syntax-level justification、semicolon / recovery を所有する |
+| `SurfaceNodeKind::TermList` | なし | `SyntaxKind::TermList` | parser task 34 の decreasing measure 用 comma-separated list。1 個以上の `TermExpression` child、comma token、空 slot の missing-term recovery を所有する |
 | `SurfaceNodeKind::CompactStatement` | なし | `SyntaxKind::CompactStatement` | parser task 17 の最小の明示的 justification 付き compact statement host と parser task 22 の proof justification host。1 個の `Proposition`、1 個の `JustificationClause` または `ProofBlock`、任意の recovery、任意の semicolon を所有する |
 | `SurfaceNodeKind::JustificationClause` | なし | `SyntaxKind::JustificationClause` | parser task 17 の `by` clause。`by` token と、通常 citation 用の `ReferenceList` または `by computation(...)` 用の `ComputationJustification` を所有する |
 | `SurfaceNodeKind::ReferenceList` | なし | `SyntaxKind::ReferenceList` | parser task 17 の source-order citation list。comma token で区切られた citation node を所有する |
@@ -1347,6 +1363,14 @@ ForCollectionStatement range=<start>..<end> recovered=<bool>
 MatchStatement range=<start>..<end> recovered=<bool>
 MatchCase range=<start>..<end> recovered=<bool>
 MatchEnding range=<start>..<end> recovered=<bool>
+AlgorithmTerminationClause range=<start>..<end> recovered=<bool>
+AlgorithmRequiresClause range=<start>..<end> recovered=<bool>
+AlgorithmEnsuresClause range=<start>..<end> recovered=<bool>
+AlgorithmDecreasingClause range=<start>..<end> recovered=<bool>
+LoopInvariantClause range=<start>..<end> recovered=<bool>
+LoopDecreasingClause range=<start>..<end> recovered=<bool>
+AssertStatement range=<start>..<end> recovered=<bool>
+TermList range=<start>..<end> recovered=<bool>
 BreakStatement range=<start>..<end> recovered=<bool>
 ContinueStatement range=<start>..<end> recovered=<bool>
 StatementItem range=<start>..<end> recovered=<bool>

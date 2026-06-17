@@ -5,8 +5,8 @@ module-skeleton recovery, task-6 import recovery, task-7 export/visibility
 recovery, task-8 type-expression recovery, task-9 primary-term recovery,
 task-13 atomic-formula recovery, task-14 formula recovery, S-013/S-014
 statement/proof recovery, S-015 definition recovery through task 29, and
-task-33 algorithm control-flow recovery are implemented. Full grammar recovery
-remains planned.
+task-33 algorithm control-flow recovery plus task-34 algorithm-verification
+recovery are implemented. Full grammar recovery remains planned.
 
 ## Purpose
 
@@ -150,6 +150,14 @@ Current behavior:
   frontend-facing scope skeleton recognizes nested `struct` blocks and only
   treats `inherit` as block-like when a `where` appears before the statement
   semicolon or `end`;
+- task-34 algorithm verification parsing recovers duplicate or out-of-order
+  header clauses by skipping to the algorithm body boundary, inserts
+  `MissingFormula` after `requires`, `ensures`, loop `invariant`, and `assert`
+  when needed, inserts `MissingTerm` inside `TermList` for empty or dangling
+  `decreasing` measures, rejects `for ... do decreasing ...;` with
+  skipped-token recovery through the clause semicolon, and treats
+  `invariant` / `decreasing` after an ordinary loop-body statement as
+  misplaced algorithm statements recovered at the clause semicolon;
 - a stray `end` that has no matching block opener returns syntax diagnostics
   with `ast = None`.
 

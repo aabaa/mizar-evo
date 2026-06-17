@@ -1,0 +1,40 @@
+definition
+  algorithm Duplicate()
+  requires thesis
+  requires thesis
+  do
+    assert;
+    break;
+    invariant thesis;
+  end;
+
+  algorithm OutOfOrder()
+  ensures thesis
+  requires thesis
+  do
+    while thesis do
+      break;
+      invariant thesis;
+    end;
+  end;
+
+  algorithm MissingFormulas()
+  requires
+  ensures
+  do
+    while thesis do
+      decreasing first,;
+      break;
+    end;
+  end;
+
+  algorithm LoopGaps()
+  decreasing , measure,
+  do
+    for item in Items do
+      decreasing measure by Dec;
+      invariant;
+      continue;
+    end;
+  end;
+end;

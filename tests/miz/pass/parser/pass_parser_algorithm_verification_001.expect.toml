@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_algorithm_verification_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.algorithm_verification"
+source = "pass_parser_algorithm_verification_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+tags = ["active_parse_only"]
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.20.algorithm_verification.parser",
+]
+notes = "Active task-34 parse-only coverage for bare and public/private terminating algorithm headers, requires/ensures/decreasing header clauses, while invariant/decreasing clauses, range/collection loop invariants, and assert statements. Parser-unit coverage pins TermList child order and exact recovery diagnostics."

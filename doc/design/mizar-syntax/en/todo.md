@@ -499,9 +499,14 @@ interaction. Spec references are the normative grammar chapters under
       match cases, `otherwise` / `exhaustive` endings with and without
       justification, `break`, `continue`, active control-flow parse-only seeds,
       and frontend scope-skeleton support for match `otherwise` blocks.
-      Remaining: verification clauses (parser task 34);
-      statement-level annotations, `@[...]` library annotations, and
-      string-literal annotation arguments (parser task 35).
+    - Done for parser task 34: terminating algorithms, header `requires` /
+      `ensures` / `decreasing`, while `invariant` / `decreasing`, range and
+      collection `invariant`, `assert`, concrete verification AST vocabulary,
+      active verification parse-only seeds, and recovery for duplicate or
+      out-of-order header clauses, forbidden `for decreasing`, misplaced loop
+      clauses, and malformed `TermList` measures.
+      Remaining: statement-level annotations, `@[...]` library annotations,
+      and string-literal annotation arguments (parser task 35).
     - Spec: [18.templates.md](../../../spec/en/18.templates.md),
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md),
       [21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md).

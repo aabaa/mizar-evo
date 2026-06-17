@@ -372,11 +372,19 @@ The current raw discriminants are part of the rowan boundary for this phase:
 | 168 | `MatchEnding` | task-33 `otherwise ... end;` or `exhaustive [justification];` match ending |
 | 169 | `BreakStatement` | task-33 algorithm `break;` statement |
 | 170 | `ContinueStatement` | task-33 algorithm `continue;` statement |
+| 171 | `AlgorithmTerminationClause` | task-34 `terminating` algorithm modifier |
+| 172 | `AlgorithmRequiresClause` | task-34 header `requires formula` clause |
+| 173 | `AlgorithmEnsuresClause` | task-34 header `ensures formula` clause |
+| 174 | `AlgorithmDecreasingClause` | task-34 header `decreasing term_list` clause |
+| 175 | `LoopInvariantClause` | task-34 leading loop `invariant formula [justification];` clause |
+| 176 | `LoopDecreasingClause` | task-34 leading while-loop `decreasing term_list [justification];` clause |
+| 177 | `AssertStatement` | task-34 algorithm `assert formula [justification];` statement |
+| 178 | `TermList` | task-34 comma-separated decreasing-measure term list |
 
 `SyntaxKind::from_raw` maps any unknown raw value to `Unknown`.
 `SyntaxKind::is_node_kind` is true for every structural node raw kind listed
 above, including `Root` through task-22 `ProofBlock`, task-23
-`DefinitionBlockItem` through task-33 `ContinueStatement`, the compatibility
+`DefinitionBlockItem` through task-34 `TermList`, the compatibility
 `Token` wrapper, and `ErrorRecovery`; `is_token_kind` is true only for token
 leaf raw kinds `TokenIdentifier` through `TokenUnknown`. Future raw values should be
 appended or assigned into a documented reserved range so existing snapshots and
@@ -491,10 +499,10 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::TemplateLocus` | none | `SyntaxKind::TemplateLocus` | parser task-31 single pattern-side template locus identifier or missing-term recovery |
 | `SurfaceNodeKind::TemplateArguments` | none | `SyntaxKind::TemplateArguments` | parser task-31 call/reference-side `[` template argument list `]`; owns delimiters, comma tokens, and `TemplateArgument` children or recovery |
 | `SurfaceNodeKind::TemplateArgument` | none | `SyntaxKind::TemplateArgument` | parser task-31 single template actual, wrapping a `TypeExpression`, `TermExpression` / `QuaExpression`, or missing-type recovery |
-| `SurfaceNodeKind::AlgorithmDefinition` | none | `SyntaxKind::AlgorithmDefinition` | parser task-32 definition content for `algorithm name [template_loci] (parameters) [-> type] do ... end;`; owns the name, optional identifier-only `TemplateLoci`, `AlgorithmParameters`, optional return `TypeExpression`, `AlgorithmBody`, and trailing semicolon; header contracts remain task 34 |
+| `SurfaceNodeKind::AlgorithmDefinition` | none | `SyntaxKind::AlgorithmDefinition` | parser task-32 definition content for `algorithm name [template_loci] (parameters) [-> type_expression] do ... end;`, extended by task 34 to accept an optional leading `AlgorithmTerminationClause` and ordered header verification clauses before `AlgorithmBody` |
 | `SurfaceNodeKind::AlgorithmParameters` | none | `SyntaxKind::AlgorithmParameters` | parser task-32 algorithm formal list; owns `(`, comma-separated identifier tokens or missing-term recovery, and `)` / delimiter recovery |
 | `SurfaceNodeKind::AlgorithmBody` | none | `SyntaxKind::AlgorithmBody` | parser task-32 `do ... end` algorithm body; owns the `do` token when present, an `AlgorithmStatementList`, and `end` / missing-end recovery |
-| `SurfaceNodeKind::AlgorithmStatementList` | none | `SyntaxKind::AlgorithmStatementList` | parser task-32 source-ordered body statements, extended by task 33 to include control-flow statements; verification statements and annotations remain parser tasks 34-35 |
+| `SurfaceNodeKind::AlgorithmStatementList` | none | `SyntaxKind::AlgorithmStatementList` | parser task-32 source-ordered body statements, extended by task 33 to include control-flow statements and by task 34 to include `AssertStatement`; annotations remain parser task 35 |
 | `SurfaceNodeKind::VariableDeclaration` | none | `SyntaxKind::VariableDeclaration` | parser task-32 `var` / `const` declaration, optionally prefixed by `ghost`; owns one or more `VariableBinding` children, optional shared `as TypeExpression`, optional syntax-level justification, and the semicolon or recovery |
 | `SurfaceNodeKind::VariableBinding` | none | `SyntaxKind::VariableBinding` | parser task-32 declaration binding; owns a binding identifier plus optional `:= TermExpression` initializer or missing-term recovery |
 | `SurfaceNodeKind::AssignmentStatement` | none | `SyntaxKind::AssignmentStatement` | parser task-32 assignment statement, optionally prefixed by `ghost`; owns an `Lvalue`, `:=`, assigned `TermExpression` or recovery, and the semicolon or recovery |
@@ -503,14 +511,22 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::ReturnStatement` | none | `SyntaxKind::ReturnStatement` | parser task-32 `return` statement; owns optional returned `TermExpression`, optional syntax-level justification, and semicolon or recovery |
 | `SurfaceNodeKind::ClaimBlockItem` | none | `SyntaxKind::ClaimBlockItem` | parser task-32 top-level `claim algorithm_name do ... end;` item; owns bare theorem/lemma children and defers claim-local annotations to task 35 |
 | `SurfaceNodeKind::IfStatement` | none | `SyntaxKind::IfStatement` | parser task-33 algorithm conditional; owns `if`, a `FormulaExpression` or missing-formula recovery, `do`, the then `AlgorithmStatementList`, and either `end;`, `else` plus nested `IfStatement`, or `else` plus an else `AlgorithmStatementList` and `end;` |
-| `SurfaceNodeKind::WhileStatement` | none | `SyntaxKind::WhileStatement` | parser task-33 algorithm while loop; owns `while`, condition `FormulaExpression` or recovery, `do`, task-34-deferred loop-clause recovery when present, body `AlgorithmStatementList`, and `end;` / missing-end recovery |
-| `SurfaceNodeKind::ForRangeStatement` | none | `SyntaxKind::ForRangeStatement` | parser task-33 algorithm range loop; owns `for`, loop identifier or recovery, `=`, lower `TermExpression`, `to` or `downto`, upper `TermExpression`, optional `step TermExpression`, task-34-deferred loop-clause recovery when present, body list, and `end;` / recovery |
-| `SurfaceNodeKind::ForCollectionStatement` | none | `SyntaxKind::ForCollectionStatement` | parser task-33 algorithm collection loop; owns `for`, loop identifier, `in`, collection `TermExpression`, optional `processed` identifier, task-34-deferred loop-clause recovery when present, body list, and `end;` / recovery |
+| `SurfaceNodeKind::WhileStatement` | none | `SyntaxKind::WhileStatement` | parser task-33 algorithm while loop, extended by task 34 to own leading `LoopInvariantClause` and `LoopDecreasingClause` children between `do` and the body list |
+| `SurfaceNodeKind::ForRangeStatement` | none | `SyntaxKind::ForRangeStatement` | parser task-33 algorithm range loop, extended by task 34 to own leading `LoopInvariantClause` children between `do` and the body list; `decreasing` is still rejected for `for` loops |
+| `SurfaceNodeKind::ForCollectionStatement` | none | `SyntaxKind::ForCollectionStatement` | parser task-33 algorithm collection loop, extended by task 34 to own leading `LoopInvariantClause` children between `do` and the body list; `decreasing` is still rejected for `for` loops |
 | `SurfaceNodeKind::MatchStatement` | none | `SyntaxKind::MatchStatement` | parser task-33 algorithm structural match; owns `match`, scrutinee `TermExpression`, `do`, one or more `MatchCase` nodes or missing-statement recovery, a `MatchEnding`, and final `end;` / recovery |
 | `SurfaceNodeKind::MatchCase` | none | `SyntaxKind::MatchCase` | parser task-33 `case term_pattern do ... end;` branch; owns the pattern as `TermExpression`, branch statement list, and branch `end;` / recovery |
 | `SurfaceNodeKind::MatchEnding` | none | `SyntaxKind::MatchEnding` | parser task-33 match ending; owns either `otherwise` plus a statement list and `end;`, or `exhaustive` plus optional syntax-level justification and semicolon |
 | `SurfaceNodeKind::BreakStatement` | none | `SyntaxKind::BreakStatement` | parser task-33 `break;` jump statement; loop-context validity is semantic and not encoded here |
 | `SurfaceNodeKind::ContinueStatement` | none | `SyntaxKind::ContinueStatement` | parser task-33 `continue;` jump statement; loop-context and termination obligations are semantic and not encoded here |
+| `SurfaceNodeKind::AlgorithmTerminationClause` | none | `SyntaxKind::AlgorithmTerminationClause` | parser task-34 `terminating` modifier before `algorithm`; termination proof obligations are semantic and not encoded here |
+| `SurfaceNodeKind::AlgorithmRequiresClause` | none | `SyntaxKind::AlgorithmRequiresClause` | parser task-34 header `requires FormulaExpression` clause |
+| `SurfaceNodeKind::AlgorithmEnsuresClause` | none | `SyntaxKind::AlgorithmEnsuresClause` | parser task-34 header `ensures FormulaExpression` clause |
+| `SurfaceNodeKind::AlgorithmDecreasingClause` | none | `SyntaxKind::AlgorithmDecreasingClause` | parser task-34 header `decreasing TermList` clause |
+| `SurfaceNodeKind::LoopInvariantClause` | none | `SyntaxKind::LoopInvariantClause` | parser task-34 leading loop `invariant FormulaExpression [JustificationClause];` clause |
+| `SurfaceNodeKind::LoopDecreasingClause` | none | `SyntaxKind::LoopDecreasingClause` | parser task-34 leading while-loop `decreasing TermList [JustificationClause];` clause |
+| `SurfaceNodeKind::AssertStatement` | none | `SyntaxKind::AssertStatement` | parser task-34 algorithm assertion statement; owns `assert`, a `FormulaExpression` or missing-formula recovery, optional syntax-level justification, and semicolon/recovery |
+| `SurfaceNodeKind::TermList` | none | `SyntaxKind::TermList` | parser task-34 comma-separated list of one or more decreasing-measure `TermExpression` children with comma tokens and missing-term recovery for empty slots |
 | `SurfaceNodeKind::CompactStatement` | none | `SyntaxKind::CompactStatement` | parser task-17 minimal explicit-justification compact statement host plus parser task-22 proof justification host; owns one `Proposition`, one `JustificationClause` or `ProofBlock`, optional recovery, and optional semicolon |
 | `SurfaceNodeKind::JustificationClause` | none | `SyntaxKind::JustificationClause` | parser task-17 `by` clause; owns the `by` token plus either `ReferenceList` for ordinary citations or `ComputationJustification` for `by computation(...)` |
 | `SurfaceNodeKind::ReferenceList` | none | `SyntaxKind::ReferenceList` | parser task-17 source-ordered citation list; owns citation nodes separated by comma tokens |
@@ -1416,6 +1432,14 @@ ForCollectionStatement range=<start>..<end> recovered=<bool>
 MatchStatement range=<start>..<end> recovered=<bool>
 MatchCase range=<start>..<end> recovered=<bool>
 MatchEnding range=<start>..<end> recovered=<bool>
+AlgorithmTerminationClause range=<start>..<end> recovered=<bool>
+AlgorithmRequiresClause range=<start>..<end> recovered=<bool>
+AlgorithmEnsuresClause range=<start>..<end> recovered=<bool>
+AlgorithmDecreasingClause range=<start>..<end> recovered=<bool>
+LoopInvariantClause range=<start>..<end> recovered=<bool>
+LoopDecreasingClause range=<start>..<end> recovered=<bool>
+AssertStatement range=<start>..<end> recovered=<bool>
+TermList range=<start>..<end> recovered=<bool>
 BreakStatement range=<start>..<end> recovered=<bool>
 ContinueStatement range=<start>..<end> recovered=<bool>
 StatementItem range=<start>..<end> recovered=<bool>

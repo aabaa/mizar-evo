@@ -1,0 +1,30 @@
+schema_version = 1
+id = "fail_parser_algorithm_verification_recovery_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.algorithm_verification"
+source = "fail_parser_algorithm_verification_recovery_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "malformed_algorithm_verification_surfaces"
+stable_detail_key = "parser.algorithm_verification.recovery"
+diagnostic_codes = [
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_term_expression",
+  "malformed_formula_expression",
+  "malformed_formula_expression",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = [
+  "spec.en.20.algorithm_verification.parser",
+]
+notes = "Active task-34 parse-only recovery coverage for duplicate/out-of-order header clauses, missing requires/ensures/assert/invariant formulas, misplaced loop clauses after body statements, forbidden for-decreasing clauses, and empty or dangling decreasing TermList recovery."

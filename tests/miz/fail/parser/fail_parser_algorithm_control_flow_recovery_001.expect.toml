@@ -11,10 +11,6 @@ rejection_reason = "malformed_algorithm_control_flow_surfaces"
 stable_detail_key = "parser.algorithm_control_flow.recovery"
 diagnostic_codes = [
   "malformed_formula_expression",
-  "malformed_formula_expression",
-  "malformed_formula_expression",
-  "malformed_formula_expression",
-  "malformed_formula_expression",
   "malformed_term_expression",
   "malformed_term_expression",
   "malformed_term_expression",
@@ -24,4 +20,4 @@ tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
 spec_refs = [
   "spec.en.20.algorithm_control_flow.parser",
 ]
-notes = "Active task-33 parse-only recovery coverage for task34-deferred while/range/collection loop annotations, missing if conditions, malformed range loops, and match statements without a case. Concrete invariant/decreasing/assert nodes remain parser task34."
+notes = "Active task-33 parse-only recovery coverage for missing if conditions, malformed range loops, and match statements without a case. Concrete invariant/decreasing/assert verification surfaces are covered by parser task 34 fixtures."

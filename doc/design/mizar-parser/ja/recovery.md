@@ -6,8 +6,9 @@
 module-skeleton recovery、task 6 の import recovery、task 7 の export/visibility
 recovery、task 8 の type-expression recovery、task 9 の primary-term recovery、
 task 13 の atomic-formula recovery、task 14 の formula recovery、S-013 / S-014 の
-statement/proof recovery、task 29 までの S-015 definition recovery、および task 33 の
-algorithm control-flow recovery は実装済み。完全な文法回復は引き続き計画中。
+statement/proof recovery、task 29 までの S-015 definition recovery、task 33 の
+algorithm control-flow recovery、および task 34 の algorithm-verification recovery は
+実装済み。完全な文法回復は引き続き計画中。
 
 ## 目的
 
@@ -135,6 +136,13 @@ algorithm control-flow recovery は実装済み。完全な文法回復は引き
   boundary、EOF まで skip する。frontend-facing な scope skeleton は nested `struct`
   block を認識し、`inherit` は statement semicolon または `end` より前に `where` がある
   場合だけ block-like として扱う。
+- task 34 の algorithm verification parsing は、重複または順序違反の header clause を
+  algorithm body boundary まで skip して recover する。`requires`、`ensures`、loop
+  `invariant`、`assert` の formula 欠落には `MissingFormula` を挿入し、空または
+  dangling な `decreasing` measure には `TermList` 内の `MissingTerm` を挿入する。
+  `for ... do decreasing ...;` は clause semicolon まで skipped-token recovery して
+  reject し、通常の loop-body statement 後の `invariant` / `decreasing` は misplaced
+  algorithm statement として clause semicolon で recover する。
 - 対応する block opener を持たない裸の `end` は、構文診断とともに `ast = None` を返す。
 
 ## 公開 enum の互換性

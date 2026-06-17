@@ -760,16 +760,22 @@ older numeric syntax task references appear to disagree, prefer
       `to` / `downto` range loops with optional `step`, collection loops with
       and without `processed`, multiple match cases, `otherwise` and
       `exhaustive` endings with and without justification, and jump statements.
-      Loop `invariant` / `decreasing` clauses are still task 34: task 33
-      diagnoses and recovers them through the clause semicolon without creating
-      concrete verification-clause nodes.
+      Concrete loop verification clauses are covered by task 34.
     - Deps: 32, `mizar-syntax` task 16 / S-016. Spec:
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 
-34. **Algorithm verification clauses.** [ ]
+34. **Algorithm verification clauses.** [x]
     - Header and loop verification clauses: `requires`/`ensures`,
-      `decreasing`, `terminating`, `invariant`, `assert`, and their
-      justifications.
+      `decreasing`, `terminating`, `invariant`, `assert`, and syntax-level
+      justifications on loop clauses and assertions.
+    - Result: `AlgorithmTerminationClause`, `AlgorithmRequiresClause`,
+      `AlgorithmEnsuresClause`, `AlgorithmDecreasingClause`,
+      `LoopInvariantClause`, `LoopDecreasingClause`, `AssertStatement`, and
+      `TermList` surfaces are implemented. Active pass/fail parse-only
+      coverage exercises terminating visible algorithms, header contracts,
+      while/range/collection loop clauses, assertions, duplicate/out-of-order
+      header recovery, forbidden `for decreasing`, misplaced loop clauses, and
+      empty/dangling decreasing term lists.
     - Deps: 33, `mizar-syntax` task 16 / S-016. Spec:
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 
