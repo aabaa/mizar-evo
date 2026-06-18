@@ -12,7 +12,7 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| ast | [ast.md](./ast.md) | `src/ast.rs` | [x] rowan storage boundary and task-35 vocabulary complete; S-019 source/spec audit found no missing implementation |
+| ast | [ast.md](./ast.md) | `src/ast.rs` | [x] rowan storage boundary and task-35 vocabulary complete; S-019 source/spec audit found no missing implementation; task 24 tracks a behavior-preserving source split |
 | trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [x] task-4 model implemented; task-5 item attachment fixture landed |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [x] task-5 recovery vocabulary implemented; parser producers remain incremental |
 
@@ -608,6 +608,34 @@ interaction. Spec references are the normative grammar chapters under
       accessor, snapshot, or parser/syntax contract gaps as follow-up tasks.
     - Deps: 22. Spec: [ast.md](./ast.md), this TODO, and repository
       documentation policy.
+
+24. **AST module-boundary refactor.** [ ]
+    - Split the oversized `crates/mizar-syntax/src/ast.rs` implementation into
+      private responsibility modules without changing the public `mizar_syntax`
+      API, rowan-backed storage semantics, syntax-kind numbering, typed
+      accessor behavior, snapshot text, trivia attachment validation, or
+      parser-facing builder contract. Candidate boundaries are syntax-kind
+      definitions, `SurfaceAst` storage/views, `SurfaceAstBuilder`, typed
+      accessors, compatibility node/token wrappers, snapshot rendering,
+      green-tree construction, and AST tests; choose the final split from the
+      current code shape and record it in this TODO when complete.
+    - Keep `ast.md` as the canonical API contract and keep crate-root
+      re-exports stable. Do not expose raw rowan traversal, introduce semantic
+      fields, renumber `SyntaxKind`, or combine behavior cleanup with the move;
+      any public API change requires its own spec task.
+    - Tests: syntax unit tests, parser tests, frontend seam tests, and
+      snapshot baselines stay byte-stable; `cargo fmt --check` and
+      syntax/parser Clippy stay green.
+    - Deps: 22, 23. Spec: [ast.md](./ast.md), [trivia.md](./trivia.md),
+      [recovery.md](./recovery.md), this TODO.
+
+25. **AST refactor follow-up audit.** [ ]
+    - Re-run the source/spec correspondence and bilingual documentation sync
+      audits for the task-24 module split; record any drift in API lists,
+      source/test correspondence, re-export paths, snapshot stability, or
+      parser/syntax boundary promises as follow-up tasks.
+    - Deps: 24. Spec: [ast.md](./ast.md), [source_spec_correspondence.md](./source_spec_correspondence.md),
+      this TODO, and repository documentation policy.
 
 ## Recommended Verification
 

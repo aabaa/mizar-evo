@@ -13,6 +13,7 @@
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] parser task 30 の registration は private な cursor / event 基盤を使用。grammar coverage は段階的に継続 |
+| module grammar | [grammar.md](./grammar.md)、[recovery.md](./recovery.md) | `src/module.rs` | [~] grammar 実装は機能的には成熟しているが oversized。task 42 で挙動維持の private module split を追跡 |
 | pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task 12 の active prefix/postfix/infix operator に対する項 Pratt は実装済み。task 14 の固定 formula Pratt は項 fixity から分離して実装済み |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] parser task 30 の registration recovery と nested block-end matching は task 2 cursor / diagnostic / sync helper を使用 |
 
@@ -822,7 +823,25 @@ resolver / build-system 依存を避ける。
       [../../mizar-frontend/ja/todo.md](../../mizar-frontend/ja/todo.md)
       を参照。
 
-42. **ソース／仕様の対応監査と予約語カバレッジ。** [ ]
+42. **parser module 境界のリファクタリング。** [ ]
+    - oversized な `crates/mizar-parser/src/module.rs` 実装を、構文解析の挙動、
+      crate root の公開 API、syntax-event 出力、診断、コーパス期待値、
+      snapshot rendering を変えずに private な責務別 module へ分割する。
+      候補境界は top-level/module item、definition/registration、statement/proof、
+      term/formula/pattern、algorithm/annotation、集約した test helper。最終的な
+      分割は現在のコード形状から選び、完了時に本 TODO へ記録する。
+    - 新しい module はすべて semantic-free かつ parser-owned に保つ:
+      resolver 状態を読まない、`mizar-syntax` の raw rowan traversal に依存しない、
+      新しい公開 grammar API を作らない、挙動を変える cleanup を移動と混ぜない。
+      後で再利用する helper を抽出する場合も、別の spec task で公開するまでは
+      private のままにする。
+    - テスト: parser unit test と active parse-only corpus は byte-stable に保つ。
+      harness が要求する path-only な test-name 更新を除き `.expect.toml` は変更しない。
+      `cargo fmt --check` と parser/syntax Clippy を green に保つ。
+    - 依存: 36、37、39。仕様: [grammar.md](./grammar.md)、
+      [recovery.md](./recovery.md)、本 TODO。
+
+43. **ソース／仕様の対応監査と予約語カバレッジ。** [ ]
     - [grammar.md](./grammar.md)、[pratt.md](./pratt.md)、
       [recovery.md](./recovery.md) のすべての公開 API と約束された挙動を
       実装とテストへトレースし、ギャップをフォローアップタスクとして記録する。
@@ -830,19 +849,19 @@ resolver / build-system 依存を避ける。
       予約語が、少なくとも 1 つのパーサーコーパステストで消費されていること
       （または、まだ文法位置を持たない将来予約として明示的に記録されている
       こと）を検証し、暗黙に未実装のキーワードを機械的に検出する。
-    - 依存: 37。仕様: すべてのモジュール仕様と本 TODO。
+    - 依存: 37、42。仕様: すべてのモジュール仕様と本 TODO。
 
-43. **二言語ドキュメント同期監査。** [ ]
+44. **二言語ドキュメント同期監査。** [ ]
     - `doc/design/mizar-parser/en/` の各英語正本ドキュメントを日本語版と
       比較し、API 一覧、状態、用語、リンク、挙動の約束を同期する。
-    - 依存: 42。仕様: リポジトリのドキュメント方針。
+    - 依存: 43。仕様: リポジトリのドキュメント方針。
 
-44. **公開 enum の前方互換方針。** [ ]
+45. **公開 enum の前方互換方針。** [ ]
     - 初期の公開 enum ゲートを task 35 後に再確認し、文法成長で追加された
       後続の公開 enum について、`mizar-frontend` task 25 の手続きと
       `mizar-syntax` task 17 の最終監査に整合する形で、
       `#[non_exhaustive]` 対 意図的 exhaustive を決定する。
-    - 依存: 35。仕様: すべてのモジュール仕様。
+    - 依存: 35、42。仕様: すべてのモジュール仕様。
 
 ## 推奨検証
 

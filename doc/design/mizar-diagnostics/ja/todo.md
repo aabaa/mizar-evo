@@ -212,6 +212,19 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       内容を同期する。
     - 依存: 19。仕様: リポジトリのドキュメント方針。
 
+21. **module 境界リファクタリング gate。** [ ]
+    - crate を下流 consumer 向けに完了扱いにする前に、source layout を監査し、
+      oversized file、混在した責務、module table と module spec 境界に沿って
+      分割すべき private helper を洗い出す。review bottleneck になった実装
+      ファイルは、公開 API、診断、決定的 rendering、artifact-facing schema、
+      consumer-visible behavior を変えずに private module へ分割する。
+    - 分割後は必要に応じて本 module table / source path を更新し、移動した
+      API について source/spec 対応監査と二言語ドキュメント同期監査の範囲を
+      再実行する。挙動 cleanup や API 公開を移動と混ぜない。それらは独立した
+      spec task を要求する。
+    - 依存: 20。仕様: 本 TODO、
+      [internal 07](../../internal/ja/07.crate_module_layout.md)、全モジュール仕様。
+
 ## 推奨検証
 
 各タスクの後で実行する:

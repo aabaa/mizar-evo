@@ -259,6 +259,21 @@ Keep `cargo test -p mizar-driver` green after each task (see
     - Deps: 16, 19. Spec: all module specs, this TODO, and repository
       documentation policy.
 
+21. **Module-boundary refactor gate.** [ ]
+    - Before treating the crate as ready for downstream consumers, audit the
+      source layout for oversized files, mixed responsibilities, and private
+      helpers that should be split along the module table and spec boundaries.
+      Split any review-bottleneck implementation files into private modules
+      without changing public APIs, diagnostics, deterministic renderings,
+      artifact-facing schemas, or consumer-visible behavior.
+    - After any split, update this module table/source paths as needed and
+      re-run the source/spec and bilingual documentation audit scopes for the
+      moved APIs. Do not mix behavior cleanup or API exposure into the move;
+      those require their own spec tasks.
+    - Deps: 20. Spec: this TODO,
+      [internal 07](../../internal/en/07.crate_module_layout.md), all module
+      specs.
+
 ## Recommended Verification
 
 Run after each task:

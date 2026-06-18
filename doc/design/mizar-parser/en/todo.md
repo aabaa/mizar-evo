@@ -13,6 +13,7 @@
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] parser task 30 registrations use private cursor/event infrastructure; grammar coverage remains incremental |
+| module grammar | [grammar.md](./grammar.md), [recovery.md](./recovery.md) | `src/module.rs` | [~] grammar implementation is functionally mature but oversized; task 42 tracks a behavior-preserving private module split |
 | pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task-12 term Pratt over active prefix/postfix/infix operators is implemented; task-14 fixed formula Pratt is implemented separately from term fixity |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] parser task 30 registration recovery plus nested block-end matching uses task-2 cursor/diagnostic/sync helpers |
 
@@ -847,7 +848,27 @@ older numeric syntax task references appear to disagree, prefer
     - Deps: starts with 5, completes with 37. Spec:
       [../../mizar-frontend/en/todo.md](../../mizar-frontend/en/todo.md).
 
-42. **Source/spec correspondence audit and reserved-word coverage.** [ ]
+42. **Parser module-boundary refactor.** [ ]
+    - Split the oversized `crates/mizar-parser/src/module.rs` implementation
+      into private responsibility modules without changing parse behavior,
+      public crate-root APIs, syntax-event output, diagnostics, corpus
+      expectations, or snapshot renderings. Candidate boundaries are
+      top-level/module items, definitions/registrations, statements/proofs,
+      terms/formulas/patterns, algorithms/annotations, and focused test
+      helpers; choose the final split from the current code shape and record it
+      in this TODO when complete.
+    - Keep all new modules semantic-free and parser-owned: no resolver state,
+      no `mizar-syntax` raw rowan traversal, no new public grammar API, and no
+      behavior-motivated cleanup mixed into the move. Any helper extracted for
+      later reuse must remain private unless a separate spec task exposes it.
+    - Tests: parser unit tests and active parse-only corpus stay byte-stable;
+      no `.expect.toml` changes except path-only test-name updates if the
+      harness requires them; `cargo fmt --check` and parser/syntax Clippy stay
+      green.
+    - Deps: 36, 37, 39. Spec: [grammar.md](./grammar.md),
+      [recovery.md](./recovery.md), this TODO.
+
+43. **Source/spec correspondence audit and reserved-word coverage.** [ ]
     - Trace every public API and promised behavior in [grammar.md](./grammar.md),
       [pratt.md](./pratt.md), and [recovery.md](./recovery.md) to
       implementation and tests; record gaps as follow-up tasks.
@@ -856,21 +877,21 @@ older numeric syntax task references appear to disagree, prefer
       at least one parser corpus test (or is explicitly recorded as
       reserved-for-future with no grammar position yet), so silently
       unimplemented keywords are detected mechanically.
-    - Deps: 37. Spec: all module specs and this TODO.
+    - Deps: 37, 42. Spec: all module specs and this TODO.
 
-43. **Bilingual documentation sync audit.** [ ]
+44. **Bilingual documentation sync audit.** [ ]
     - Compare each English canonical document under
       `doc/design/mizar-parser/en/` with its Japanese companion and
       synchronize API lists, statuses, terminology, links, and behavior
       promises.
-    - Deps: 42. Spec: repository documentation policy.
+    - Deps: 43. Spec: repository documentation policy.
 
-44. **Public enum forward-compatibility policy.** [ ]
+45. **Public enum forward-compatibility policy.** [ ]
     - Revisit the initial public-enum gate after task 35 and decide
       `#[non_exhaustive]` versus deliberate exhaustiveness for any later public
       enums added by grammar growth, aligned with the `mizar-frontend` task-25
       procedure and the `mizar-syntax` task-17 final audit.
-    - Deps: 35. Spec: all module specs.
+    - Deps: 35, 42. Spec: all module specs.
 
 ## Recommended Verification
 
