@@ -40,9 +40,9 @@ LABEL_REWRITES = {
 }
 
 SECTION_LABEL_RE = re.compile(r"^[A-Za-z][A-Za-z0-9 `/'()&.,-]{0,80}:$")
-FRAME_WEIGHT_LIMIT = 14.5
+FRAME_WEIGHT_LIMIT = 17.0
 MAX_CODE_LINES_PER_BLOCK = 10
-MAX_LIST_ITEMS_PER_BLOCK = 5
+MAX_LIST_ITEMS_PER_BLOCK = 7
 
 
 SPECIALS = {
@@ -162,13 +162,16 @@ def table_to_tex(rows: list[str]) -> list[str]:
     header = data[0]
     body = data[2:]
     cols = max(len(header), *(len(row) for row in body)) if body else len(header)
+    font_size = r"\scriptsize" if cols >= 4 or (cols == 3 and len(body) >= 5) else r"\footnotesize"
+    font_env = font_size.lstrip("\\")
     if (len(body) > 7 and cols >= 3) or cols >= 5:
         out = [
-            r"\begin{footnotesize}",
+            rf"\begin{{{font_env}}}",
             r"\begin{description}",
-            r"\setlength{\itemsep}{1pt}",
+            r"\setlength{\itemsep}{0.5pt}",
             r"\setlength{\parsep}{0pt}",
             r"\setlength{\parskip}{0pt}",
+            r"\setlength{\topsep}{1pt}",
         ]
         for row in body:
             padded = row + [""] * (cols - len(row))
@@ -178,13 +181,13 @@ def table_to_tex(rows: list[str]) -> list[str]:
                 if cell:
                     parts.append(rf"\textbf{{{inline_tex(column_name)}:}} {inline_tex(cell)}")
             out.append(rf"\item[{label}] " + r" \par ".join(parts))
-        out.extend([r"\end{description}", r"\end{footnotesize}"])
+        out.extend([r"\end{description}", rf"\end{{{font_env}}}"])
         return out
     spec = "|" + "|".join([r">{\raggedright\arraybackslash}X"] * cols) + "|"
     out = [
-        r"\begin{footnotesize}",
-        r"\setlength{\tabcolsep}{2pt}",
-        r"\renewcommand{\arraystretch}{1.05}",
+        rf"\begin{{{font_env}}}",
+        r"\setlength{\tabcolsep}{1.5pt}",
+        r"\renewcommand{\arraystretch}{1.0}",
         rf"\begin{{tabularx}}{{\textwidth}}{{{spec}}}",
         r"\hline",
     ]
@@ -194,7 +197,7 @@ def table_to_tex(rows: list[str]) -> list[str]:
         padded = row + [""] * (cols - len(row))
         out.append(" & ".join(inline_tex(cell) for cell in padded[:cols]) + r" \\")
         out.append(r"\hline")
-    out.extend([r"\end{tabularx}", r"\end{footnotesize}"])
+    out.extend([r"\end{tabularx}", rf"\end{{{font_env}}}"])
     return out
 
 
@@ -239,7 +242,7 @@ def collect_list(lines: list[str], index: int, ordered: bool) -> tuple[list[str]
 
 def verbatim_font_size(code_lines: list[str]) -> str:
     longest = max((len(line) for line in code_lines), default=0)
-    if len(code_lines) > 14 or longest > 74:
+    if len(code_lines) > 7 or longest > 74:
         return r"\footnotesize"
     return r"\small"
 
@@ -375,13 +378,15 @@ def split_code_block(block: list[str]) -> list[list[str]]:
 
 
 def split_table_block(block: list[str]) -> list[list[str]]:
+    if any(is_code_fence(line) for line in block):
+        return [block]
     table_index = next((index for index, line in enumerate(block) if line.lstrip().startswith("|")), -1)
     if table_index < 0:
         return [block]
     prefix = block[:table_index]
     rows = block[table_index:]
     columns = len(split_table_row(rows[0])) if rows else 0
-    row_limit = 1 if columns >= 5 else 2 if columns >= 4 else 3 if columns == 3 else 5
+    row_limit = 3 if columns >= 4 else 5 if columns == 3 else 7
     if len(rows) <= row_limit + 2:
         return [block]
     header = rows[:2]
@@ -394,6 +399,8 @@ def split_table_block(block: list[str]) -> list[list[str]]:
 
 
 def split_list_block(block: list[str]) -> list[list[str]]:
+    if any(is_code_fence(line) for line in block):
+        return [block]
     first_item_index = next((index for index, line in enumerate(block) if is_list_marker(line)), -1)
     if first_item_index < 0:
         return [block]
@@ -431,7 +438,7 @@ def split_oversized_block(block: list[str]) -> list[list[str]]:
     return blocks
 
 
-def block_weight(block: list[str]) -> float:
+def count_code_lines(block: list[str]) -> int:
     code_lines = 0
     in_code = False
     for line in block:
@@ -440,6 +447,38 @@ def block_weight(block: list[str]) -> float:
             continue
         if in_code:
             code_lines += 1
+    return code_lines
+
+
+def has_table_rows(block: list[str]) -> bool:
+    in_code = False
+    for line in block:
+        if is_code_fence(line):
+            in_code = not in_code
+            continue
+        if not in_code and line.lstrip().startswith("|"):
+            return True
+    return False
+
+
+def count_list_items(block: list[str]) -> int:
+    if any(is_code_fence(line) for line in block):
+        return 0
+    return sum(1 for line in block if is_list_marker(line))
+
+
+def should_start_new_chunk(current: list[str], block: list[str]) -> bool:
+    if not current:
+        return False
+    if has_table_rows(current) and count_code_lines(block) >= 6:
+        return True
+    if count_code_lines(current) >= 8 and count_list_items(block) >= 4:
+        return True
+    return False
+
+
+def block_weight(block: list[str]) -> float:
+    code_lines = count_code_lines(block)
     if code_lines:
         prefix_lines = sum(1 for line in block if line.strip() and not is_code_fence(line)) - code_lines
         return 2.2 + prefix_lines * 0.9 + code_lines * 0.75
@@ -455,7 +494,7 @@ def block_weight(block: list[str]) -> float:
             weight += 1.2 + text_len / 82.0
         return weight
 
-    list_items = sum(1 for line in block if is_list_marker(line))
+    list_items = count_list_items(block)
     if list_items:
         continuation = sum(
             1
@@ -486,7 +525,9 @@ def split_frame_lines(lines: list[str]) -> list[list[str]]:
     current_weight = 0.0
     for block in blocks:
         weight = block_weight(block)
-        if current and current_weight + weight > FRAME_WEIGHT_LIMIT:
+        if current and (
+            should_start_new_chunk(current, block) or current_weight + weight > FRAME_WEIGHT_LIMIT
+        ):
             chunks.append(current)
             current = []
             current_weight = 0.0

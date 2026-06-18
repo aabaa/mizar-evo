@@ -31,8 +31,8 @@
 The design is judged by three constraints that must hold at the same time.
 
 \begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Pillar & What it means & Why it matters \\
@@ -168,6 +168,8 @@ Mizar Evo should not make proofs shorter by making the argument invisible.
 \item package manifests and lockfiles;
 \item stable fully-qualified names;
 \item deterministic build artifacts;
+\item incremental and parallel verification;
+\item LSP for editors;
 \end{itemize}
 \smallskip
 \textbf{Key Points:}
@@ -175,8 +177,6 @@ Mizar Evo should not make proofs shorter by making the argument invisible.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item incremental and parallel verification;
-\item LSP for editors;
 \item planned MCP-style context surfaces for AI agents;
 \item versioned links from publications to library objects.
 \end{itemize}
@@ -259,12 +259,12 @@ Mizar Evo should not make proofs shorter by making the argument invisible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (1/11)}
+\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (1/7)}
 This is a checklist, not a claim that every item must be finalized before the visit. Artifact and workflow deltas that affect migration semantics follow in the next inventory slide.
 
-\begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\begin{scriptsize}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Area & Current Mizar baseline & Evo delta & Why it changes \\
@@ -273,8 +273,10 @@ Article environment & \texttt{environ} roles such as vocabularies, notations, co
 \hline
 Module interfaces & article export is mediated by library tooling, with fewer source-level interface boundaries & \texttt{export}, \texttt{public}/\texttt{private}, opaque imports, and separate compilation define the public API surface & keep reusable interfaces stable while proof bodies and helpers stay private \\
 \hline
+Symbol identity & article-local names and MML article labels & path-derived FQNs and module-qualified labels & support migration, renaming, API compatibility, and citation repair \\
+\hline
 \end{tabularx}
-\end{footnotesize}
+\end{scriptsize}
 
 \note{
 \smallskip
@@ -302,60 +304,37 @@ For the table, read the row labels first, then the design reason.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (2/11)}
-\begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (2/7)}
+\begin{scriptsize}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Area & Current Mizar baseline & Evo delta & Why it changes \\
-\hline
-Symbol identity & article-local names and MML article labels & path-derived FQNs and module-qualified labels & support migration, renaming, API compatibility, and citation repair \\
 \hline
 Symbolic notation and aliases & broad symbolic constructor vocabulary, with synonyms and antonyms as mathematical aliases & arbitrary symbols concentrated in \texttt{func} and \texttt{pred}; type constructors stay identifier-like; synonym/antonym equivalence is preserved & stabilize lexing, parsing, editor tooling, and AI edits without losing alternative notation \\
-\hline
-\end{tabularx}
-\end{footnotesize}
-
-\note{
-\smallskip
-\textbf{Presenter script:}
-For the table, read the row labels first, then the design reason.
-
-Use this as the transition: Mizar To Evo Language Delta Inventory (2/11). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (3/11)}
-\begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Area & Current Mizar baseline & Evo delta & Why it changes \\
 \hline
 Operator precedence and parse domains & notation is powerful but precedence choices can be implicit in parser/verifier behavior & explicit operator metadata, separate term/formula precedence domains, and parse-before-overload discipline & make grouping deterministic, reviewable, and independent of overload choice \\
 \hline
 Lexical activation & vocabulary and notation availability is article-environment driven & import-prelude pre-scan, source-position active lexicon, no forward references, operator metadata after declaration & make tokenization and dot/operator disambiguation deterministic \\
 \hline
 \end{tabularx}
-\end{footnotesize}
+\end{scriptsize}
 
 \note{
 \smallskip
 \textbf{Presenter script:}
 For the table, read the row labels first, then the design reason.
 
-Use this as the transition: Mizar To Evo Language Delta Inventory (3/11). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Mizar To Evo Language Delta Inventory (2/7). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (4/11)}
-\begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (3/7)}
+\begin{scriptsize}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Area & Current Mizar baseline & Evo delta & Why it changes \\
@@ -364,73 +343,52 @@ Soft type foundation & Mizar soft types over set-theoretic objects & preserve so
 \hline
 Structures & parent structure, fields, and selectors are tightly coupled in one declaration & \texttt{struct}, \texttt{field}, \texttt{property}, and \texttt{inherit} are separate concepts & distinguish layout, derived canonical values, and inherited views \\
 \hline
-\end{tabularx}
-\end{footnotesize}
-
-\note{
-\smallskip
-\textbf{Presenter script:}
-For the table, read the row labels first, then the design reason.
-
-Use this as the transition: Mizar To Evo Language Delta Inventory (4/11). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (5/11)}
-\begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Area & Current Mizar baseline & Evo delta & Why it changes \\
-\hline
 Inheritance & inherited fields are mostly implicit in structure syntax & \texttt{inherit Child extends Parent where ...} records mapping, renaming, narrowing, and coherence & make multiple inheritance and diamond cases auditable \\
 \hline
-Modes and attributes & soft type vocabulary with adjectives and clusters & modes remain type abbreviations/refinements; attributes are type-refining predicates & preserve Mizar style while separating classification from data layout \\
-\hline
 \end{tabularx}
-\end{footnotesize}
+\end{scriptsize}
 
 \note{
 \smallskip
 \textbf{Presenter script:}
 For the table, read the row labels first, then the design reason.
 
-Use this as the transition: Mizar To Evo Language Delta Inventory (5/11). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Mizar To Evo Language Delta Inventory (3/7). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (6/11)}
-\begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (4/7)}
+\begin{scriptsize}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Area & Current Mizar baseline & Evo delta & Why it changes \\
+\hline
+Modes and attributes & soft type vocabulary with adjectives and clusters & modes remain type abbreviations/refinements; attributes are type-refining predicates & preserve Mizar style while separating classification from data layout \\
 \hline
 \texttt{sethood} and comprehensions & Fraenkel-style set formation relies on set-theoretic side conditions & mode \texttt{sethood} and comprehension checks are explicit type-checker obligations & preserve set-theoretic foundations before ATP search starts \\
 \hline
 Definitions and correctness & \texttt{func}/\texttt{pred} definitions use familiar \texttt{equals}/\texttt{means} styles & preserve \texttt{equals}, \texttt{means}, \texttt{existence}, \texttt{uniqueness}, and \texttt{assume} side conditions as explicit obligations & keep Mizar's definitional idiom while making obligations auditable \\
 \hline
 \end{tabularx}
-\end{footnotesize}
+\end{scriptsize}
 
 \note{
 \smallskip
 \textbf{Presenter script:}
 For the table, read the row labels first, then the design reason.
 
-Use this as the transition: Mizar To Evo Language Delta Inventory (6/11). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Mizar To Evo Language Delta Inventory (4/7). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (7/11)}
-\begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (5/7)}
+\begin{scriptsize}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Area & Current Mizar baseline & Evo delta & Why it changes \\
@@ -439,73 +397,52 @@ Predicate and functor properties & algebraic properties support concise automati
 \hline
 Overload and \texttt{redefine} & overloaded symbols and redefinitions are central Mizar idioms & root/family overload resolution, \texttt{coherence with}, and refinement joins are recorded and explainable & avoid source-order ambiguity and make refined result facts stable \\
 \hline
-\end{tabularx}
-\end{footnotesize}
-
-\note{
-\smallskip
-\textbf{Presenter script:}
-For the table, read the row labels first, then the design reason.
-
-Use this as the transition: Mizar To Evo Language Delta Inventory (7/11). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (8/11)}
-\begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Area & Current Mizar baseline & Evo delta & Why it changes \\
-\hline
 Registrations, clusters, and reductions & powerful automatic propagation and simplification, often hard to explain locally & labeled registration items, import-filtered resolution graph, reduction index, trace artifacts & keep automation but make inference and rewriting explainable \\
 \hline
-Schemes and generics & classical \texttt{scheme}, \texttt{of}/\texttt{over} parameterization & first-class templates; bracket form is canonical, constraints and inference are explicit, \texttt{of}/\texttt{over} are shorthands & unify parameterized definitions and theorem schemas without hiding instantiation choices \\
-\hline
 \end{tabularx}
-\end{footnotesize}
+\end{scriptsize}
 
 \note{
 \smallskip
 \textbf{Presenter script:}
 For the table, read the row labels first, then the design reason.
 
-Use this as the transition: Mizar To Evo Language Delta Inventory (8/11). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Mizar To Evo Language Delta Inventory (5/7). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (9/11)}
-\begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (6/7)}
+\begin{scriptsize}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Area & Current Mizar baseline & Evo delta & Why it changes \\
+\hline
+Schemes and generics & classical \texttt{scheme}, \texttt{of}/\texttt{over} parameterization & first-class templates; bracket form is canonical, constraints and inference are explicit, \texttt{of}/\texttt{over} are shorthands & unify parameterized definitions and theorem schemas without hiding instantiation choices \\
 \hline
 Declarative proof skeleton & Ja\'skowski-style \texttt{proof ... end} text with \texttt{let}, \texttt{assume}, \texttt{thus}, \texttt{hence}, \texttt{thesis}, and diffuse reasoning & preserve the readable proof skeleton and emit extracted obligations, thesis states, and source spans as metadata & protect Mizar's proof prose while making proof state toolable \\
 \hline
 Proof status & verified theorem items as the normal publication unit & \texttt{open}, \texttt{assumed}, and \texttt{conditional} theorem statuses & separate unsettled work, assumptions, and clean verified results \\
 \hline
 \end{tabularx}
-\end{footnotesize}
+\end{scriptsize}
 
 \note{
 \smallskip
 \textbf{Presenter script:}
 For the table, read the row labels first, then the design reason.
 
-Use this as the transition: Mizar To Evo Language Delta Inventory (9/11). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Mizar To Evo Language Delta Inventory (6/7). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (10/11)}
-\begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (7/7)}
+\begin{scriptsize}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Area & Current Mizar baseline & Evo delta & Why it changes \\
@@ -514,48 +451,27 @@ Proof citations & \texttt{by} references to visible facts & grouped/bulk citatio
 \hline
 Type views & existing \texttt{qua}, implicit widening, and local disambiguation idioms & keep source-level \texttt{qua}, and emit resolved view/coercion metadata artifacts & make overload and inherited-view choices inspectable \\
 \hline
-\end{tabularx}
-\end{footnotesize}
-
-\note{
-\smallskip
-\textbf{Presenter script:}
-For the table, read the row labels first, then the design reason.
-
-Use this as the transition: Mizar To Evo Language Delta Inventory (10/11). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.2 - Mizar To Evo Language Delta Inventory (11/11)}
-\begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Area & Current Mizar baseline & Evo delta & Why it changes \\
-\hline
 Algorithms & mathematical proof language, not a general verified programming surface & \texttt{algorithm}, contracts, invariants, termination, MVM, \texttt{by computation} & support verified computation without changing theorem truth \\
 \hline
 \end{tabularx}
-\end{footnotesize}
+\end{scriptsize}
 
 \note{
 \smallskip
 \textbf{Presenter script:}
 For the table, read the row labels first, then the design reason.
 
-Use this as the transition: Mizar To Evo Language Delta Inventory (11/11). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Mizar To Evo Language Delta Inventory (7/7). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.3 - Mizar To Evo Artifact And Workflow Delta Inventory (1/4)}
+\begin{frame}[fragile,t]{2.3 - Mizar To Evo Artifact And Workflow Delta Inventory (1/3)}
 These rows are not purely syntactic, but they affect what migration tools, reviewers, editors, and packages can trust.
 
-\begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\begin{scriptsize}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Area & Current Mizar baseline & Evo delta & Why it changes \\
@@ -564,8 +480,10 @@ Annotations & comments and informal tool hints & semantic-neutral annotations su
 \hline
 Diagnostics and LSP & verifier messages are primarily human-facing output & stable diagnostic codes, primary/secondary spans, fix suggestions, lazy explanations, and LSP records & make failures actionable for humans, editors, and AI tools \\
 \hline
+ATP boundary & proof search and verifier behavior are not surfaced as a stable artifact boundary & ATP dispatch plus independently checked certificates and rejection categories & keep a small trusted base \\
+\hline
 \end{tabularx}
-\end{footnotesize}
+\end{scriptsize}
 
 \note{
 \smallskip
@@ -592,60 +510,37 @@ For the table, read the row labels first, then the design reason.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.3 - Mizar To Evo Artifact And Workflow Delta Inventory (2/4)}
-\begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\begin{frame}[fragile,t]{2.3 - Mizar To Evo Artifact And Workflow Delta Inventory (2/3)}
+\begin{scriptsize}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Area & Current Mizar baseline & Evo delta & Why it changes \\
-\hline
-ATP boundary & proof search and verifier behavior are not surfaced as a stable artifact boundary & ATP dispatch plus independently checked certificates and rejection categories & keep a small trusted base \\
 \hline
 Packages and dependency resolution & article/MML workflow & \texttt{mizar.pkg}, lockfile, SemVer, features, compatibility checks, cached verifier artifacts & enable reproducible, package-oriented development \\
-\hline
-\end{tabularx}
-\end{footnotesize}
-
-\note{
-\smallskip
-\textbf{Presenter script:}
-For the table, read the row labels first, then the design reason.
-
-Use this as the transition: Mizar To Evo Artifact And Workflow Delta Inventory (2/4). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.3 - Mizar To Evo Artifact And Workflow Delta Inventory (3/4)}
-\begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Area & Current Mizar baseline & Evo delta & Why it changes \\
 \hline
 Incremental verification & accepted article output is the main reuse boundary & dependency slices, VC anchors, witness hashes, and cache keys; cache reuse is never proof authority & scale verification while preserving clean-build equivalence \\
 \hline
 Documentation generation & source comments and publication pages are separate from reusable API documentation & \texttt{mizar doc}, \texttt{:::} doc comments, label/FQN cross-links, \texttt{@latex}, docs from verified artifacts & produce browsable API documentation without making docs a proof gate \\
 \hline
 \end{tabularx}
-\end{footnotesize}
+\end{scriptsize}
 
 \note{
 \smallskip
 \textbf{Presenter script:}
 For the table, read the row labels first, then the design reason.
 
-Use this as the transition: Mizar To Evo Artifact And Workflow Delta Inventory (3/4). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Mizar To Evo Artifact And Workflow Delta Inventory (2/3). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.3 - Mizar To Evo Artifact And Workflow Delta Inventory (4/4)}
-\begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\begin{frame}[fragile,t]{2.3 - Mizar To Evo Artifact And Workflow Delta Inventory (3/3)}
+\begin{scriptsize}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Area & Current Mizar baseline & Evo delta & Why it changes \\
@@ -655,14 +550,14 @@ Code extraction & no general verified extraction workflow in the source language
 Formalized Mathematics link & article and library identity are closely coupled & publication metadata links to reusable library modules & preserve citation value while supporting package reuse \\
 \hline
 \end{tabularx}
-\end{footnotesize}
+\end{scriptsize}
 
 \note{
 \smallskip
 \textbf{Presenter script:}
 For the table, read the row labels first, then the design reason.
 
-Use this as the transition: Mizar To Evo Artifact And Workflow Delta Inventory (4/4). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Mizar To Evo Artifact And Workflow Delta Inventory (3/3). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
@@ -702,8 +597,8 @@ Use this as the transition: Mizar To Evo Artifact And Workflow Delta Inventory (
 All paths in this table are under \texttt{doc/spec/en/}.
 
 \begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Topic & Source \\
@@ -717,6 +612,10 @@ Lexical structure & \texttt{02.lexical\_structure.md} \\
 Structures & \texttt{05.structures.md} \\
 \hline
 Attributes and modes & \texttt{06.attributes.md}, \texttt{07.modes.md} \\
+\hline
+Terms and formulas & \texttt{13.term\_expression.md}, \texttt{14.formulas.md} \\
+\hline
+Statements and proofs & \texttt{15.statements.md}, \texttt{16.theorems\_and\_proofs.md} \\
 \hline
 \end{tabularx}
 \end{footnotesize}
@@ -741,15 +640,11 @@ Slow down: this is language-specification review, not only implementation detail
 
 \begin{frame}[fragile,t]{2.5 - Grammar Sources For This Review (2/2)}
 \begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Topic & Source \\
-\hline
-Terms and formulas & \texttt{13.term\_expression.md}, \texttt{14.formulas.md} \\
-\hline
-Statements and proofs & \texttt{15.statements.md}, \texttt{16.theorems\_and\_proofs.md} \\
 \hline
 Registrations and templates & \texttt{17.clusters\_and\_registrations.md}, \texttt{18.templates.md} \\
 \hline
@@ -794,6 +689,8 @@ Slow down: this is language-specification review, not only implementation detail
 \item definition blocks and visibility;
 \item type expressions, attributes, modes, and structures;
 \item functors, predicates, notation, properties, and overload families;
+\item operator precedence and term/formula boundary;
+\item terms, formulas, comprehensions, \texttt{the}, \texttt{sethood}, and \texttt{qua};
 \end{enumerate}
 \smallskip
 \textbf{The review should cover this grammar stack in order:}
@@ -801,8 +698,6 @@ Slow down: this is language-specification review, not only implementation detail
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item operator precedence and term/formula boundary;
-\item terms, formulas, comprehensions, \texttt{the}, \texttt{sethood}, and \texttt{qua};
 \item theorem/proof statements and citations;
 \item registrations, reductions, templates, annotations, and algorithms.
 \end{enumerate}
@@ -854,7 +749,7 @@ Slow down: this is language-specification review, not only implementation detail
 \begin{frame}[fragile,t]{2.7 - Compilation Unit Syntax (1/2)}
 \smallskip
 \textbf{Grammar sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 compilation_unit ::= import_prelude export_prelude
                      { annotated_declaration } ;
 
@@ -1132,7 +1027,7 @@ After the example, say which design obligation the syntax makes visible.
 \begin{frame}[fragile,t]{2.11 - Type Expression Syntax (1/2)}
 \smallskip
 \textbf{Grammar sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 type_expression ::= attribute_chain type_head ;
 type_head       ::= radix_type | mode_type ;
 
@@ -1198,7 +1093,7 @@ Slow down: this is language-specification review, not only implementation detail
 \begin{frame}[fragile,t]{2.12 - Definition Block Syntax (1/2)}
 \smallskip
 \textbf{Grammar sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 definition_block   ::= "definition"
                          { definition_content }
                        "end" ";" ;
@@ -1271,7 +1166,7 @@ Slow down: this is language-specification review, not only implementation detail
 \begin{frame}[fragile,t]{2.13 - Structure Declaration Syntax (1/2)}
 \smallskip
 \textbf{Grammar sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 struct_def    ::= "struct" struct_def_name [ type_params ]
                   "where" struct_member { struct_member }
                   "end" ";" ;
@@ -1280,6 +1175,15 @@ struct_member ::= field_decl | property_decl ;
 field_decl    ::= "field" identifier "->" type_expression
                   [ ":=" term_expression ] ";" ;
 property_decl ::= "property" identifier "->" type_expression ";" ;
+\end{Verbatim}
+\smallskip
+\textbf{Example:}
+\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+struct UnitalMagmaStr where
+  field carrier -> non empty set;
+  field mult -> BinOp of carrier;
+  property unit -> Element of carrier;
+end;
 \end{Verbatim}
 \note{
 \smallskip
@@ -1294,15 +1198,6 @@ Use this as the transition: Structure Declaration Syntax (1/2). Point to the vis
 \end{frame}
 
 \begin{frame}[fragile,t]{2.13 - Structure Declaration Syntax (2/2)}
-\smallskip
-\textbf{Example:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-struct UnitalMagmaStr where
-  field carrier -> non empty set;
-  field mult -> BinOp of carrier;
-  property unit -> Element of carrier;
-end;
-\end{Verbatim}
 \smallskip
 \textbf{Review Point:}
 \begin{itemize}
@@ -1326,14 +1221,12 @@ end;
 \item property declares a canonical derived slot or obligation.
 \item The syntax deliberately separates layout from mathematically determined values.
 \end{itemize}
-After the example, say which design obligation the syntax makes visible.
-
 Slow down: this is language-specification review, not only implementation detail.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.14 - Property Implementation Syntax (1/3)}
+\begin{frame}[fragile,t]{2.14 - Property Implementation Syntax (1/2)}
 \smallskip
 \textbf{Grammar sketch:}
 \begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
@@ -1343,22 +1236,9 @@ property_means_impl  ::= "property" identifier "." identifier
 property_equals_impl ::= "property" identifier "." identifier
                          "equals" term_definiens ";" ;
 \end{Verbatim}
-\note{
-\smallskip
-\textbf{Presenter script:}
-After the example, say which design obligation the syntax makes visible.
-
-Slow down: this is language-specification review, not only implementation detail.
-
-Use this as the transition: Property Implementation Syntax (1/3). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.14 - Property Implementation Syntax (2/3)}
 \smallskip
 \textbf{Example:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 definition
   let M be UnitalMagma;
   property M.unit means
@@ -1375,12 +1255,12 @@ After the example, say which design obligation the syntax makes visible.
 
 Slow down: this is language-specification review, not only implementation detail.
 
-Use this as the transition: Property Implementation Syntax (2/3). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Property Implementation Syntax (1/2). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.14 - Property Implementation Syntax (3/3)}
+\begin{frame}[fragile,t]{2.14 - Property Implementation Syntax (2/2)}
 \smallskip
 \textbf{Review Point:}
 \begin{itemize}
@@ -1412,7 +1292,7 @@ Slow down: this is language-specification review, not only implementation detail
 \begin{frame}[fragile,t]{2.15 - Inheritance Declaration Syntax (1/2)}
 \smallskip
 \textbf{Grammar sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 inherit_def ::= "inherit" inherit_child "extends" parent_type
                 [ "where" inherit_member { inherit_member }
                   [ coherence_block ] "end" ] ";" ;
@@ -1421,6 +1301,16 @@ field_redef    ::= "field" identifier [ "->" type_expression ]
                    "from" ( identifier | "it" ) ";" ;
 property_redef ::= "property" identifier [ "->" type_expression ]
                    "from" identifier ";" ;
+\end{Verbatim}
+\smallskip
+\textbf{Example:}
+\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+inherit GroupStr extends UnitalMagmaStr where
+  field carrier from carrier;
+  field mult from mult;
+  property unit from unit;
+  coherence by group.inherit_unital_magma;
+end;
 \end{Verbatim}
 \note{
 \smallskip
@@ -1435,16 +1325,6 @@ Use this as the transition: Inheritance Declaration Syntax (1/2). Point to the v
 \end{frame}
 
 \begin{frame}[fragile,t]{2.15 - Inheritance Declaration Syntax (2/2)}
-\smallskip
-\textbf{Example:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-inherit GroupStr extends UnitalMagmaStr where
-  field carrier from carrier;
-  field mult from mult;
-  property unit from unit;
-  coherence by group.inherit_unital_magma;
-end;
-\end{Verbatim}
 \smallskip
 \textbf{Review Point:}
 \begin{itemize}
@@ -1468,8 +1348,6 @@ end;
 \item Renaming, narrowing, and coherence are visible source items.
 \item Diamond inheritance becomes a checked mapping problem rather than a hidden merge.
 \end{itemize}
-After the example, say which design obligation the syntax makes visible.
-
 Slow down: this is language-specification review, not only implementation detail.
 
 }
@@ -1597,10 +1475,10 @@ Slow down: this is language-specification review, not only implementation detail
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.18 - Synonyms, Antonyms, And \texttt{redefine} (1/4)}
+\begin{frame}[fragile,t]{2.18 - Synonyms, Antonyms, And \texttt{redefine} (1/3)}
 \smallskip
 \textbf{Grammar sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 synonym_def  ::= "synonym" alt_pattern "for" original_pattern ";" ;
 antonym_def  ::= "antonym" alt_pattern "for" original_pattern ";" ;
 
@@ -1612,17 +1490,6 @@ redefine_pred ::= "redefine" "pred" label ":" pred_pattern
                   "coherence" [ "with" label ] justification ";" ;
 redefine_func ::= "redefine" "func" label ":" func_pattern
 \end{Verbatim}
-\note{
-\smallskip
-\textbf{Presenter script:}
-After the example, say which design obligation the syntax makes visible.
-
-Use this as the transition: Synonyms, Antonyms, And redefine (1/4). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.18 - Synonyms, Antonyms, And \texttt{redefine} (2/4)}
 \smallskip
 \textbf{Grammar sketch:}
 \begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
@@ -1635,15 +1502,15 @@ Use this as the transition: Synonyms, Antonyms, And redefine (1/4). Point to the
 \textbf{Presenter script:}
 After the example, say which design obligation the syntax makes visible.
 
-Use this as the transition: Synonyms, Antonyms, And redefine (2/4). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Synonyms, Antonyms, And redefine (1/3). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.18 - Synonyms, Antonyms, And \texttt{redefine} (3/4)}
+\begin{frame}[fragile,t]{2.18 - Synonyms, Antonyms, And \texttt{redefine} (2/3)}
 \smallskip
 \textbf{Example:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 definition
   let a, b be Real;
   pred LessDef: a < b means real.lt(a, b);
@@ -1666,12 +1533,12 @@ end;
 \textbf{Presenter script:}
 After the example, say which design obligation the syntax makes visible.
 
-Use this as the transition: Synonyms, Antonyms, And redefine (3/4). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Synonyms, Antonyms, And redefine (2/3). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.18 - Synonyms, Antonyms, And \texttt{redefine} (4/4)}
+\begin{frame}[fragile,t]{2.18 - Synonyms, Antonyms, And \texttt{redefine} (3/3)}
 \smallskip
 \textbf{Review Point:}
 \begin{itemize}
@@ -1723,7 +1590,7 @@ Use this as the transition: Predicate And Functor Properties (1/3). Point to the
 \begin{frame}[fragile,t]{2.19 - Predicate And Functor Properties (2/3)}
 \smallskip
 \textbf{Example:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 definition
   let x, y be Real;
   pred LessDef: x < y means x is_less_than y;
@@ -1734,6 +1601,14 @@ end;
 definition
   let X, Y be set;
   func UnionDef: X \/ Y -> set means
+\end{Verbatim}
+\smallskip
+\textbf{Example:}
+\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+    for z being object holds z in it iff z in X or z in Y;
+  commutativity by set.union_comm;
+  idempotence by set.union_idem;
+end;
 \end{Verbatim}
 \note{
 \smallskip
@@ -1747,14 +1622,6 @@ Use this as the transition: Predicate And Functor Properties (2/3). Point to the
 
 \begin{frame}[fragile,t]{2.19 - Predicate And Functor Properties (3/3)}
 \smallskip
-\textbf{Example:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-    for z being object holds z in it iff z in X or z in Y;
-  commutativity by set.union_comm;
-  idempotence by set.union_idem;
-end;
-\end{Verbatim}
-\smallskip
 \textbf{Review Point:}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
@@ -1777,17 +1644,15 @@ end;
 \item Each property is accepted only with a proof obligation.
 \item The design keeps algebraic notation compact while recording exactly which automatic matching, rewriting, and ATP facts may be used.
 \end{itemize}
-After the example, say which design obligation the syntax makes visible.
-
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.20 - \texttt{equals}, \texttt{means}, And Correctness Blocks (1/3)}
+\begin{frame}[fragile,t]{2.20 - \texttt{equals}, \texttt{means}, And Correctness Blocks (1/2)}
 \smallskip
 \textbf{Key distinction:}
 \begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Form & Meaning & Obligations \\
@@ -1801,17 +1666,6 @@ Form & Meaning & Obligations \\
 \end{tabularx}
 \end{footnotesize}
 
-\note{
-\smallskip
-\textbf{Presenter script:}
-For the table, read the row labels first, then the design reason.
-
-Use this as the transition: equals, means, And Correctness Blocks (1/3). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.20 - \texttt{equals}, \texttt{means}, And Correctness Blocks (2/3)}
 \smallskip
 \textbf{Grammar sketch:}
 \begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
@@ -1820,6 +1674,19 @@ uniqueness_block    ::= "uniqueness" justification ";" ;
 coherence_block     ::= "coherence" justification ";" ;
 compatibility_block ::= "compatibility" justification ";" ;
 \end{Verbatim}
+\note{
+\smallskip
+\textbf{Presenter script:}
+After the example, say which design obligation the syntax makes visible.
+
+For the table, read the row labels first, then the design reason.
+
+Use this as the transition: equals, means, And Correctness Blocks (1/2). Point to the visible example, question, or diagram before moving on.
+
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{2.20 - \texttt{equals}, \texttt{means}, And Correctness Blocks (2/2)}
 \smallskip
 \textbf{Example:}
 \begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
@@ -1828,17 +1695,6 @@ func InvDef: inverse(G, x) -> Element of G
 existence by group.inverse_exists;
 uniqueness by group.inverse_unique;
 \end{Verbatim}
-\note{
-\smallskip
-\textbf{Presenter script:}
-After the example, say which design obligation the syntax makes visible.
-
-Use this as the transition: equals, means, And Correctness Blocks (2/3). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.20 - \texttt{equals}, \texttt{means}, And Correctness Blocks (3/3)}
 \smallskip
 \textbf{Review Point:}
 \begin{itemize}
@@ -1858,10 +1714,12 @@ Use this as the transition: equals, means, And Correctness Blocks (2/3). Point t
 \setlength{\parskip}{0pt}
 \item The syntax should preserve Mizar's definitional idiom while exposing the proof obligations that migration tools must not hide.
 \end{itemize}
+After the example, say which design obligation the syntax makes visible.
+
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.21 - Operator Declarations And Precedence (1/4)}
+\begin{frame}[fragile,t]{2.21 - Operator Declarations And Precedence (1/3)}
 \smallskip
 \textbf{Grammar sketch:}
 \begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
@@ -1878,15 +1736,15 @@ infix_assoc           ::= "left" | "right" | "none" ;
 \textbf{Presenter script:}
 After the example, say which design obligation the syntax makes visible.
 
-Use this as the transition: Operator Declarations And Precedence (1/4). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Operator Declarations And Precedence (1/3). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.21 - Operator Declarations And Precedence (2/4)}
+\begin{frame}[fragile,t]{2.21 - Operator Declarations And Precedence (2/3)}
 \smallskip
 \textbf{Example:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 infix_operator("+", left, 80);
 infix_operator("*", left, 90);
 infix_operator("^", right, 95);
@@ -1902,12 +1760,12 @@ a %% b %% c     :: error if %% is non-associative
 \textbf{Presenter script:}
 After the example, say which design obligation the syntax makes visible.
 
-Use this as the transition: Operator Declarations And Precedence (2/4). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Operator Declarations And Precedence (2/3). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.21 - Operator Declarations And Precedence (3/4)}
+\begin{frame}[fragile,t]{2.21 - Operator Declarations And Precedence (3/3)}
 \smallskip
 \textbf{Design Reason:}
 \begin{itemize}
@@ -1919,6 +1777,16 @@ Use this as the transition: Operator Declarations And Precedence (2/4). Point to
 \item A symbolic functor with no declaration defaults to precedence \texttt{64} and non-associative grouping.
 \item Operator declarations affect only later tokens; they are not forward declarations, and the target spelling must already be an active functor.
 \item Parsing chooses grouping from operator metadata; overload resolution later chooses the semantic root.
+\item Conflicting imported metadata for the same visible user symbol is a link-time conflict.
+\item Built-in predicate symbols such as \texttt{=}, \texttt{<>}, and \texttt{in} come from the core module and cannot be overridden.
+\end{itemize}
+\smallskip
+\textbf{Design Reason:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \texttt{qua} is fixed by the language, has the lowest term precedence, and is left-associative.
 \end{itemize}
 \note{
 \smallskip
@@ -1934,33 +1802,6 @@ Use this as the transition: Operator Declarations And Precedence (2/4). Point to
 \item A symbolic functor with no declaration defaults to precedence 64 and non-associative grouping.
 \item Operator declarations affect only later tokens; they are not forward declarations, and the target spelling must already be an active functor.
 \item Parsing chooses grouping from operator metadata; overload resolution later chooses the semantic root.
-\end{itemize}
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.21 - Operator Declarations And Precedence (4/4)}
-\smallskip
-\textbf{Design Reason:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Conflicting imported metadata for the same visible user symbol is a link-time conflict.
-\item Built-in predicate symbols such as \texttt{=}, \texttt{<>}, and \texttt{in} come from the core module and cannot be overridden.
-\item \texttt{qua} is fixed by the language, has the lowest term precedence, and is left-associative.
-\end{itemize}
-\note{
-\smallskip
-\textbf{Presenter script:}
-\smallskip
-\textbf{Read aloud:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Conflicting imported metadata for the same visible user symbol is a link-time conflict.
-\item Built-in predicate symbols such as =, <>, and in come from the core module and cannot be overridden.
-\item qua is fixed by the language, has the lowest term precedence, and is left-associative.
 \end{itemize}
 }
 \end{frame}
@@ -2022,12 +1863,11 @@ Use this as the transition: Term Expressions, Selectors, And qua (1/2). Point to
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.23 - Term Primary Forms: Constructors, Sets, And \texttt{the} (1/4)}
+\begin{frame}[fragile,t]{2.23 - Term Primary Forms: Constructors, Sets, And \texttt{the} (1/3)}
 \smallskip
 \textbf{Grammar sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 term_primary      ::= variable_identifier
-
                     | "it"
                     | numeral
                     | "(" term_expression ")"
@@ -2035,25 +1875,6 @@ term_primary      ::= variable_identifier
                     | set_expression
                     | choice_expression
                     | inline_functor_application
-\end{Verbatim}
-\note{
-\smallskip
-\textbf{Presenter script:}
-After the example, say which design obligation the syntax makes visible.
-
-Use this as the transition: Term Primary Forms: Constructors, Sets, And the (1/4). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.23 - Term Primary Forms: Constructors, Sets, And \texttt{the} (2/4)}
-\smallskip
-\textbf{Grammar sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-term_primary      ::= variable_identifier
-
-                    | "it"
-                    | numeral
                     | template_functor_application
                     | bracket_functor_application ;
 \end{Verbatim}
@@ -2062,15 +1883,15 @@ term_primary      ::= variable_identifier
 \textbf{Presenter script:}
 After the example, say which design obligation the syntax makes visible.
 
-Use this as the transition: Term Primary Forms: Constructors, Sets, And the (2/4). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Term Primary Forms: Constructors, Sets, And the (1/3). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.23 - Term Primary Forms: Constructors, Sets, And \texttt{the} (3/4)}
+\begin{frame}[fragile,t]{2.23 - Term Primary Forms: Constructors, Sets, And \texttt{the} (2/3)}
 \smallskip
 \textbf{Grammar sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 
 struct_constructor ::= struct_name [ type_args ]
                        "(" [ field_assignment_list ] ")" ;
@@ -2093,12 +1914,12 @@ choice_expression ::= "the" type_expression ;
 \textbf{Presenter script:}
 After the example, say which design obligation the syntax makes visible.
 
-Use this as the transition: Term Primary Forms: Constructors, Sets, And the (3/4). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Term Primary Forms: Constructors, Sets, And the (2/3). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.23 - Term Primary Forms: Constructors, Sets, And \texttt{the} (4/4)}
+\begin{frame}[fragile,t]{2.23 - Term Primary Forms: Constructors, Sets, And \texttt{the} (3/3)}
 \smallskip
 \textbf{Example:}
 \begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
@@ -2189,7 +2010,7 @@ Use this as the transition: sethood And Fraenkel Safety (1/2). Point to the visi
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.25 - Formula Syntax (1/5)}
+\begin{frame}[fragile,t]{2.25 - Formula Syntax (1/4)}
 \smallskip
 \textbf{Grammar sketch:}
 \begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
@@ -2211,17 +2032,16 @@ After the example, say which design obligation the syntax makes visible.
 
 Slow down: this is language-specification review, not only implementation detail.
 
-Use this as the transition: Formula Syntax (1/5). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Formula Syntax (1/4). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.25 - Formula Syntax (2/5)}
+\begin{frame}[fragile,t]{2.25 - Formula Syntax (2/4)}
 \smallskip
 \textbf{Grammar sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
                       { "or" ( and_formula | quantified_formula )
-
                       | "or" "..." "or"
                         ( and_formula | quantified_formula ) } ;
 and_formula       ::= not_formula
@@ -2229,6 +2049,8 @@ and_formula       ::= not_formula
                       | "&" "..." "&"
                         ( not_formula | quantified_formula ) } ;
 not_formula       ::= "not" ( not_formula | quantified_formula )
+                    | atomic_formula
+                    | "(" formula ")"
 \end{Verbatim}
 \note{
 \smallskip
@@ -2237,26 +2059,15 @@ After the example, say which design obligation the syntax makes visible.
 
 Slow down: this is language-specification review, not only implementation detail.
 
-Use this as the transition: Formula Syntax (2/5). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Formula Syntax (2/4). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.25 - Formula Syntax (3/5)}
+\begin{frame}[fragile,t]{2.25 - Formula Syntax (3/4)}
 \smallskip
 \textbf{Grammar sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-                      { "or" ( and_formula | quantified_formula )
-
-                      | "or" "..." "or"
-                        ( and_formula | quantified_formula ) } ;
-                    | atomic_formula
-                    | "(" formula ")"
-\end{Verbatim}
-\smallskip
-\textbf{Grammar sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
                     | "contradiction"
                     | "thesis" ;
 
@@ -2264,26 +2075,6 @@ atomic_formula      ::= predicate_application
                       | inline_predicate_application
                       | is_assertion ;
 is_assertion        ::= term_expression "is" [ "not" ]
-\end{Verbatim}
-\note{
-\smallskip
-\textbf{Presenter script:}
-After the example, say which design obligation the syntax makes visible.
-
-Slow down: this is language-specification review, not only implementation detail.
-
-Use this as the transition: Formula Syntax (3/5). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.25 - Formula Syntax (4/5)}
-\smallskip
-\textbf{Grammar sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-
-                    | "contradiction"
-                    | "thesis" ;
                         is_assertion_body ;
 \end{Verbatim}
 \smallskip
@@ -2299,12 +2090,12 @@ After the example, say which design obligation the syntax makes visible.
 
 Slow down: this is language-specification review, not only implementation detail.
 
-Use this as the transition: Formula Syntax (4/5). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Formula Syntax (3/4). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.25 - Formula Syntax (5/5)}
+\begin{frame}[fragile,t]{2.25 - Formula Syntax (4/4)}
 \smallskip
 \textbf{Review Point:}
 \begin{itemize}
@@ -2337,8 +2128,8 @@ Slow down: this is language-specification review, not only implementation detail
 \smallskip
 \textbf{Precedence domains:}
 \begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Domain & Source of precedence & Review point \\
@@ -2365,7 +2156,7 @@ Use this as the transition: Term/Formula Boundary And Formula Precedence (1/3). 
 \begin{frame}[fragile,t]{2.26 - Term/Formula Boundary And Formula Precedence (2/3)}
 \smallskip
 \textbf{Example:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 a + b = c + d
 :: atomic formula over two parsed terms
 
@@ -2554,7 +2345,7 @@ Slow down: this is language-specification review, not only implementation detail
 \begin{frame}[fragile,t]{2.29 - Proof Statement Details (1/2)}
 \smallskip
 \textbf{Grammar sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 iterative_equality ::= [ label_identifier ":" ]
                        term_expression "=" term_expression
                        simple_justification
@@ -2563,6 +2354,16 @@ iterative_equality ::= [ label_identifier ":" ]
 
 statement ::= [ "then" ] linkable_statement
             | standalone_statement ;
+\end{Verbatim}
+\smallskip
+\textbf{Example:}
+\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+A1: f.(x + y) = f.x + f.y by Additive
+             .= g.x + f.y by A2
+             .= g.x + g.y by A3;
+
+assume A2: f = g;
+then f.x + f.y = g.x + f.y by FuncEq;
 \end{Verbatim}
 \note{
 \smallskip
@@ -2575,16 +2376,6 @@ Use this as the transition: Proof Statement Details (1/2). Point to the visible 
 \end{frame}
 
 \begin{frame}[fragile,t]{2.29 - Proof Statement Details (2/2)}
-\smallskip
-\textbf{Example:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-A1: f.(x + y) = f.x + f.y by Additive
-             .= g.x + f.y by A2
-             .= g.x + g.y by A3;
-
-assume A2: f = g;
-then f.x + f.y = g.x + f.y by FuncEq;
-\end{Verbatim}
 \smallskip
 \textbf{Review Point:}
 \begin{itemize}
@@ -2608,15 +2399,13 @@ then f.x + f.y = g.x + f.y by FuncEq;
 \item then records dependence on the immediately preceding statement.
 \item Statement-level such that and and create labeled assumptions, while formula-level st and \& remain inside one formula.
 \end{itemize}
-After the example, say which design obligation the syntax makes visible.
-
 }
 \end{frame}
 
 \begin{frame}[fragile,t]{2.30 - Citation And Reference Syntax (1/2)}
 \smallskip
 \textbf{Grammar sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 justification ::= simple_justification | proof | computation_proof ;
 simple_justification ::= [ "by" references ] ;
 
@@ -2680,10 +2469,10 @@ Slow down: this is language-specification review, not only implementation detail
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.31 - Registrations, Clusters, And Reductions (1/3)}
+\begin{frame}[fragile,t]{2.31 - Registrations, Clusters, And Reductions (1/2)}
 \smallskip
 \textbf{Grammar sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 registration_block ::= "registration"
                          { registration_content }
                        "end" ";" ;
@@ -2695,17 +2484,6 @@ registration_item ::= existential_registration
 
 conditional_registration ::= "cluster" label ":"
 \end{Verbatim}
-\note{
-\smallskip
-\textbf{Presenter script:}
-After the example, say which design obligation the syntax makes visible.
-
-Use this as the transition: Registrations, Clusters, And Reductions (1/3). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.31 - Registrations, Clusters, And Reductions (2/3)}
 \smallskip
 \textbf{Grammar sketch:}
 \begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
@@ -2714,6 +2492,17 @@ Use this as the transition: Registrations, Clusters, And Reductions (1/3). Point
                              "for" type_expression ";"
                              "coherence" justification ";" ;
 \end{Verbatim}
+\note{
+\smallskip
+\textbf{Presenter script:}
+After the example, say which design obligation the syntax makes visible.
+
+Use this as the transition: Registrations, Clusters, And Reductions (1/2). Point to the visible example, question, or diagram before moving on.
+
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{2.31 - Registrations, Clusters, And Reductions (2/2)}
 \smallskip
 \textbf{Example:}
 \begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
@@ -2723,17 +2512,6 @@ registration
   coherence by group.nonempty_from_unit;
 end;
 \end{Verbatim}
-\note{
-\smallskip
-\textbf{Presenter script:}
-After the example, say which design obligation the syntax makes visible.
-
-Use this as the transition: Registrations, Clusters, And Reductions (2/3). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.31 - Registrations, Clusters, And Reductions (3/3)}
 \smallskip
 \textbf{Review Point:}
 \begin{itemize}
@@ -2755,6 +2533,8 @@ Use this as the transition: Registrations, Clusters, And Reductions (2/3). Point
 \item Registrations remain a first-class Mizar strength.
 \item The syntax adds labels and traceability so automatic propagation is reviewable and import-filtered.
 \end{itemize}
+After the example, say which design obligation the syntax makes visible.
+
 }
 \end{frame}
 
@@ -2817,7 +2597,7 @@ Use this as the transition: Reduction Registration Semantics (1/2). Point to the
 \begin{frame}[fragile,t]{2.33 - Template Syntax (1/2)}
 \smallskip
 \textbf{Grammar sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 template_definition ::= definition_block ;
 template_parameter_decl ::= definition_parameter_decl ;
 
@@ -2888,7 +2668,7 @@ Slow down: this is language-specification review, not only implementation detail
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.34 - Template Constraints And Inference (1/3)}
+\begin{frame}[fragile,t]{2.34 - Template Constraints And Inference (1/2)}
 \smallskip
 \textbf{Grammar sketch:}
 \begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
@@ -2897,17 +2677,6 @@ let_constraint ::= "such" "that" formula ;
 let_type       ::= "type" [ "extends" bound_type ]
                  | type_expression ;
 \end{Verbatim}
-\note{
-\smallskip
-\textbf{Presenter script:}
-After the example, say which design obligation the syntax makes visible.
-
-Use this as the transition: Template Constraints And Inference (1/3). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.34 - Template Constraints And Inference (2/3)}
 \smallskip
 \textbf{Example:}
 \begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
@@ -2926,12 +2695,12 @@ M of A, B              :: greedy shorthand for M[A, B] when arity matches
 \textbf{Presenter script:}
 After the example, say which design obligation the syntax makes visible.
 
-Use this as the transition: Template Constraints And Inference (2/3). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Template Constraints And Inference (1/2). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.34 - Template Constraints And Inference (3/3)}
+\begin{frame}[fragile,t]{2.34 - Template Constraints And Inference (2/2)}
 \smallskip
 \textbf{Review Point:}
 \begin{itemize}
@@ -2961,7 +2730,7 @@ Use this as the transition: Template Constraints And Inference (2/3). Point to t
 \begin{frame}[fragile,t]{2.35 - Annotation Syntax (1/2)}
 \smallskip
 \textbf{Example:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 @show_type(total + x)
 
 @show_resolution
@@ -3019,7 +2788,7 @@ Slow down: this is language-specification review, not only implementation detail
 \begin{frame}[fragile,t]{2.36 - Algorithm Syntax Boundary (1/2)}
 \smallskip
 \textbf{Example:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 definition
   let x, y be Integer;
 
@@ -3090,6 +2859,8 @@ Slow down: this is language-specification review, not only implementation detail
 \item Are \texttt{field} / \texttt{property} / \texttt{attribute} distinctions readable enough in real algebraic examples?
 \item Is one-parent-per-\texttt{inherit} acceptable for multiple-inheritance-heavy MML fragments?
 \item Do the explicit operator-precedence rules match the expectations of existing Mizar notation users?
+\item Are \texttt{sethood} checks visible enough for Fraenkel-style set formation without making ordinary set notation too heavy?
+\item Which predicate/functor properties should be migrated first because existing proofs rely on them implicitly?
 \end{itemize}
 \note{
 \smallskip
@@ -3118,18 +2889,9 @@ Slow down: this is language-specification review, not only implementation detail
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Are \texttt{sethood} checks visible enough for Fraenkel-style set formation without making ordinary set notation too heavy?
-\item Which predicate/functor properties should be migrated first because existing proofs rely on them implicitly?
 \item Is oriented \texttt{reduce} a readable replacement for implicit simplification and older identification idioms?
 \item Are template brackets acceptable as canonical identity syntax if \texttt{of} and \texttt{over} remain source shorthands?
 \item Where should template inference stop and require explicit \texttt{[T]} arguments or \texttt{qua} views?
-\end{itemize}
-\smallskip
-\textbf{Questions for Bialystok:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
 \item Which proof statement forms are missing from this surface review?
 \end{itemize}
 \note{
@@ -3141,11 +2903,10 @@ Slow down: this is language-specification review, not only implementation detail
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Are sethood checks visible enough for Fraenkel-style set formation without making ordinary set notation too heavy?
-\item Which predicate/functor properties should be migrated first because existing proofs rely on them implicitly?
 \item Is oriented reduce a readable replacement for implicit simplification and older identification idioms?
 \item Are template brackets acceptable as canonical identity syntax if of and over remain source shorthands?
 \item Where should template inference stop and require explicit [T] arguments or qua views?
+\item Which proof statement forms are missing from this surface review?
 \end{itemize}
 Slow down: this is language-specification review, not only implementation detail.
 
@@ -3837,7 +3598,7 @@ begin :: Additive structures
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.65 - Mizar Evo Import Prelude (1/2)}
+\begin{frame}[fragile,t]{2.65 - Mizar Evo Import Prelude}
 \begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 import std.algebra.structure.sorted;
 import std.function.binop;
@@ -3853,6 +3614,15 @@ import std.algebra.structure.magma;
 \item package/module namespace;
 \item import closure as a build-system input;
 \item stable FQNs derived from path and module.
+\end{itemize}
+\smallskip
+\textbf{Design Reason:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item The prelude is deliberately file-scoped so lexing, disambiguation, and AI context extraction can build one stable imported base environment before reading the body.
+\item This makes dependency reports reproducible: a tool can say which import provided each symbol, notation, registration, and theorem.
 \end{itemize}
 \note{
 \smallskip
@@ -3872,35 +3642,10 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.65 - Mizar Evo Import Prelude (2/2)}
-\smallskip
-\textbf{Design Reason:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item The prelude is deliberately file-scoped so lexing, disambiguation, and AI context extraction can build one stable imported base environment before reading the body.
-\item This makes dependency reports reproducible: a tool can say which import provided each symbol, notation, registration, and theorem.
-\end{itemize}
-\note{
-\smallskip
-\textbf{Presenter script:}
-\smallskip
-\textbf{Read aloud:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item The prelude is deliberately file-scoped so lexing, disambiguation, and AI context extraction can build one stable imported base environment before reading the body.
-\item This makes dependency reports reproducible: a tool can say which import provided each symbol, notation, registration, and theorem.
-\end{itemize}
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.66 - Migration Map: Environment To Imports (1/2)}
+\begin{frame}[fragile,t]{2.66 - Migration Map: Environment To Imports}
 \begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Current Mizar role & Evo target \\
@@ -3915,27 +3660,6 @@ registrations & import-scoped registration index \\
 \hline
 requirements & package or prelude policy \\
 \hline
-\end{tabularx}
-\end{footnotesize}
-
-\note{
-\smallskip
-\textbf{Presenter script:}
-For the table, read the row labels first, then the design reason.
-
-Use this as the transition: Migration Map: Environment To Imports (1/2). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.66 - Migration Map: Environment To Imports (2/2)}
-\begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Current Mizar role & Evo target \\
-\hline
 article labels & module-qualified theorem identities \\
 \hline
 \end{tabularx}
@@ -3946,7 +3670,7 @@ article labels & module-qualified theorem identities \\
 \textbf{Presenter script:}
 For the table, read the row labels first, then the design reason.
 
-Use this as the transition: Migration Map: Environment To Imports (2/2). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Migration Map: Environment To Imports. Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
@@ -4013,7 +3737,7 @@ end;
 \end{frame}
 
 \begin{frame}[fragile,t]{2.69 - Evo Structure Example (1/2)}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 definition
   struct AddMagma where
     field carrier -> set;
@@ -4083,8 +3807,8 @@ Use this as the transition: Evo Structure Example (1/2). Point to the visible ex
 \smallskip
 \textbf{Design distinction:}
 \begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Concept & What it means & Why it is separate \\
@@ -4143,12 +3867,12 @@ For the table, read the row labels first, then the design reason.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.71 - Why Separate \texttt{struct} And \texttt{inherit}? (1/2)}
+\begin{frame}[fragile,t]{2.71 - Why Separate \texttt{struct} And \texttt{inherit}?}
 \smallskip
 \textbf{Design distinction:}
 \begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Declaration & What it owns & Why it is separate \\
@@ -4160,23 +3884,6 @@ Declaration & What it owns & Why it is separate \\
 \end{tabularx}
 \end{footnotesize}
 
-\note{
-\smallskip
-\textbf{Presenter script:}
-\smallskip
-\textbf{Say:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Source design vocabulary: \texttt{doc/spec/en/05.structures.md} requires one parent per \texttt{inherit} statement and uses explicit \texttt{where} blocks for renaming, narrowing, and coherence.
-\end{itemize}
-For the table, read the row labels first, then the design reason.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.71 - Why Separate \texttt{struct} And \texttt{inherit}? (2/2)}
 \smallskip
 \textbf{Message:}
 \begin{itemize}
@@ -4193,6 +3900,14 @@ For the table, read the row labels first, then the design reason.
 \smallskip
 \textbf{Presenter script:}
 \smallskip
+\textbf{Say:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source design vocabulary: \texttt{doc/spec/en/05.structures.md} requires one parent per \texttt{inherit} statement and uses explicit \texttt{where} blocks for renaming, narrowing, and coherence.
+\end{itemize}
+\smallskip
 \textbf{Read aloud:}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
@@ -4201,14 +3916,14 @@ For the table, read the row labels first, then the design reason.
 \item A structure declaration should answer "what is this object made of?"
 \item An inheritance declaration should answer "how is this object viewed as that parent?"
 \item Keeping them separate makes multiple inheritance explicit: each parent gets one auditable inherit statement instead of one large implicit merge.
-\item Diamond inheritance then becomes a diagnostic problem with source spans and coherence obligations, not a hidden side effect of declaration order.
-\item It also gives artifacts cleaner fingerprints: changing a field layout is not the same event as changing an inherited view or its coherence proof.
 \end{itemize}
+For the table, read the row labels first, then the design reason.
+
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.72 - Renaming And Views (1/2)}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{frame}[fragile,t]{2.72 - Renaming And Views}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 definition
   struct Magma where
     field carrier -> set;
@@ -4223,17 +3938,6 @@ definition
 \begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 end;
 \end{Verbatim}
-\note{
-\smallskip
-\textbf{Presenter script:}
-After the example, say which design obligation the syntax makes visible.
-
-Use this as the transition: Renaming And Views (1/2). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.72 - Renaming And Views (2/2)}
 \smallskip
 \textbf{Purpose:}
 \begin{itemize}
@@ -4255,6 +3959,8 @@ Use this as the transition: Renaming And Views (1/2). Point to the visible examp
 \item Support library organization where additive and multiplicative views share structure without relying on hidden informal naming conventions.
 \item Preserve the mathematical habit of reusing the same carrier through different views, while recording the view translation as checked source.
 \end{itemize}
+After the example, say which design obligation the syntax makes visible.
+
 }
 \end{frame}
 
@@ -4407,6 +4113,17 @@ thus thesis by A;
 \begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 thus thesis by A, B, C;
 \end{Verbatim}
+\smallskip
+\textbf{Exact current MML proof-citation example:}
+\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+theorem
+  for F being non degenerated ZeroOneStr holds 1.F in NonZero F
+proof
+  let F be non degenerated ZeroOneStr;
+  not 1.F in {0.F} by TARSKI:def 1;
+  hence thesis by XBOOLE_0:def 5;
+end;
+\end{Verbatim}
 \note{
 \smallskip
 \textbf{Presenter script:}
@@ -4423,17 +4140,6 @@ thus thesis by A, B, C;
 \end{frame}
 
 \begin{frame}[fragile,t]{2.76 - Proof Citation Repair (2/2)}
-\smallskip
-\textbf{Exact current MML proof-citation example:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-theorem
-  for F being non degenerated ZeroOneStr holds 1.F in NonZero F
-proof
-  let F be non degenerated ZeroOneStr;
-  not 1.F in {0.F} by TARSKI:def 1;
-  hence thesis by XBOOLE_0:def 5;
-end;
-\end{Verbatim}
 \smallskip
 \textbf{Message:}
 \begin{itemize}
@@ -4457,8 +4163,6 @@ end;
 \item A later refinement pass can minimize citations based on used axioms recorded in artifacts.
 \item The added dependency still matters; artifacts should record it so a later mizar refine-style pass can reduce noise.
 \end{itemize}
-After the example, say which design obligation the syntax makes visible.
-
 }
 \end{frame}
 
@@ -4535,10 +4239,10 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.79 - Templates (1/3)}
+\begin{frame}[fragile,t]{2.79 - Templates (1/2)}
 \smallskip
 \textbf{Proposed Evo sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 definition
   let T be type;
   struct MagmaStr[T] where
@@ -4549,6 +4253,13 @@ end;
 
 definition
   let M be type extends commutative Magma;
+\end{Verbatim}
+\smallskip
+\textbf{Proposed Evo sketch:}
+\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+  theorem PermProduct[M]:
+    ...
+end;
 \end{Verbatim}
 \note{
 \smallskip
@@ -4564,14 +4275,7 @@ definition
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.79 - Templates (2/3)}
-\smallskip
-\textbf{Proposed Evo sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-  theorem PermProduct[M]:
-    ...
-end;
-\end{Verbatim}
+\begin{frame}[fragile,t]{2.79 - Templates (2/2)}
 \smallskip
 \textbf{Message:}
 \begin{itemize}
@@ -4583,25 +4287,6 @@ end;
 \item Classical scheme-style reasoning becomes part of one template vocabulary rather than a separate special case.
 \item \texttt{of} / \texttt{over} forms remain readable shorthands; the bracket form records the canonical parameterization.
 \end{itemize}
-\note{
-\smallskip
-\textbf{Presenter script:}
-\smallskip
-\textbf{Read aloud:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Templates are the generics mechanism for Mizar Evo.
-\item They parameterize definitions and theorem schemas over types, predicates, or functors.
-\item Classical scheme-style reasoning becomes part of one template vocabulary rather than a separate special case.
-\end{itemize}
-After the example, say which design obligation the syntax makes visible.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.79 - Templates (3/3)}
 \smallskip
 \textbf{Design Reason:}
 \begin{itemize}
@@ -4621,9 +4306,11 @@ After the example, say which design obligation the syntax makes visible.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
+\item Templates are the generics mechanism for Mizar Evo.
+\item They parameterize definitions and theorem schemas over types, predicates, or functors.
+\item Classical scheme-style reasoning becomes part of one template vocabulary rather than a separate special case.
+\item of / over forms remain readable shorthands; the bracket form records the canonical parameterization.
 \item Templates avoid copying the same algebraic construction for every carrier, field, or predicate instance.
-\item They make generic mathematical patterns explicit enough for dependency fingerprints, theorem indexes, and AI retrieval.
-\item Constraints such as type extends commutative Magma say what the parameter must provide before ATP or proof search begins.
 \end{itemize}
 }
 \end{frame}
@@ -4631,7 +4318,7 @@ After the example, say which design obligation the syntax makes visible.
 \begin{frame}[fragile,t]{2.80 - Algorithm Verification (1/2)}
 \smallskip
 \textbf{Potential Evo sketch:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 definition
   let x, y be Integer;
 
@@ -4749,8 +4436,8 @@ After the example, say which design obligation the syntax makes visible.
 \end{frame}
 
 \section{Part 3. Architecture}
-\begin{frame}[fragile,t]{3.1 - Pipeline Overview (1/2)}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{frame}[fragile,t]{3.1 - Pipeline Overview}
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 Source
   -> TokenStream
   -> SurfaceAst
@@ -4762,17 +4449,6 @@ Source
   -> ProofCertificate
   -> VerifiedArtifact
 \end{Verbatim}
-\note{
-\smallskip
-\textbf{Presenter script:}
-After the example, say which design obligation the syntax makes visible.
-
-Use this as the transition: Pipeline Overview (1/2). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{3.1 - Pipeline Overview (2/2)}
 \smallskip
 \textbf{Message:}
 \begin{itemize}
@@ -4796,13 +4472,15 @@ Use this as the transition: Pipeline Overview (1/2). Point to the visible exampl
 \item The separation is for diagnostics, caching, trust, and reproducibility.
 \item The point is not a generic compiler diagram. Each boundary says who owns a fact, which artifact records it, and what must be recomputed when it changes.
 \end{itemize}
+After the example, say which design obligation the syntax makes visible.
+
 }
 \end{frame}
 
 \begin{frame}[fragile,t]{3.2 - Responsibility Split (1/2)}
 \begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Layer & Responsibility \\
@@ -4816,6 +4494,10 @@ checker & soft types, clusters, registrations, overloads \\
 elaborator & core logical representation \\
 \hline
 VC generator & proof and algorithm obligations \\
+\hline
+ATP & search for evidence \\
+\hline
+kernel & acceptance by replay/checking \\
 \hline
 \end{tabularx}
 \end{footnotesize}
@@ -4832,15 +4514,11 @@ Use this as the transition: Responsibility Split (1/2). Point to the visible exa
 
 \begin{frame}[fragile,t]{3.2 - Responsibility Split (2/2)}
 \begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Layer & Responsibility \\
-\hline
-ATP & search for evidence \\
-\hline
-kernel & acceptance by replay/checking \\
 \hline
 artifact emitter & stable outputs for tools and dependents \\
 \hline
@@ -4857,7 +4535,7 @@ Use this as the transition: Responsibility Split (2/2). Point to the visible exa
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{3.3 - Reasoning Boundary (1/3)}
+\begin{frame}[fragile,t]{3.3 - Reasoning Boundary (1/2)}
 \begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 Mizar-side semantics
   -> well-typed, resolved obligations
@@ -4894,7 +4572,7 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{3.3 - Reasoning Boundary (2/3)}
+\begin{frame}[fragile,t]{3.3 - Reasoning Boundary (2/2)}
 \smallskip
 \textbf{Design Reason:}
 \begin{itemize}
@@ -4905,28 +4583,11 @@ After the example, say which design obligation the syntax makes visible.
 \item Delegating all reasoning to ATPs would lose control of Mizar-specific semantics.
 \item The hybrid boundary keeps semantic processing deterministic, ATP search powerful, and final acceptance independently checkable.
 \end{itemize}
-\note{
-\smallskip
-\textbf{Presenter script:}
-\smallskip
-\textbf{Read aloud:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Putting all reasoning inside Mizar would make the trusted verifier larger.
-\item Delegating all reasoning to ATPs would lose control of Mizar-specific semantics.
-\item The hybrid boundary keeps semantic processing deterministic, ATP search powerful, and final acceptance independently checkable.
-\end{itemize}
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{3.3 - Reasoning Boundary (3/3)}
 \smallskip
 \textbf{Status distinction:}
 \begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Status & Meaning \\
@@ -4945,9 +4606,17 @@ Status & Meaning \\
 \note{
 \smallskip
 \textbf{Presenter script:}
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Putting all reasoning inside Mizar would make the trusted verifier larger.
+\item Delegating all reasoning to ATPs would lose control of Mizar-specific semantics.
+\item The hybrid boundary keeps semantic processing deterministic, ATP search powerful, and final acceptance independently checkable.
+\end{itemize}
 For the table, read the row labels first, then the design reason.
-
-Use this as the transition: Reasoning Boundary (3/3). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
@@ -4984,7 +4653,7 @@ Use this as the transition: Reasoning Boundary (3/3). Point to the visible examp
 \end{frame}
 
 \begin{frame}[fragile,t]{3.5 - Certificate Data}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 Certificate
   target VC fingerprint
   kernel profile
@@ -5034,13 +4703,6 @@ After the example, say which design obligation the syntax makes visible.
 \item no name resolution;
 \item no overload resolution;
 \item no cluster expansion;
-\end{itemize}
-\smallskip
-\textbf{Key Points:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
 \item no hidden global state;
 \item no trust in raw ATP success.
 \end{itemize}
@@ -5092,7 +4754,7 @@ After the example, say which design obligation the syntax makes visible.
 \end{frame}
 
 \begin{frame}[fragile,t]{3.8 - Memory Model}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 resident memory should scale with:
   active source
   imported public interfaces
@@ -5180,13 +4842,6 @@ Use this as the transition: Memory Model. Point to the visible example, question
 \item AI context extraction and patch verification;
 \item documentation generation;
 \item Formalized Mathematics article links;
-\end{itemize}
-\smallskip
-\textbf{Artifacts should serve:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
 \item reproducible build records.
 \end{itemize}
 \note{
@@ -5240,8 +4895,8 @@ Use this as the transition: Memory Model. Point to the visible example, question
 
 \begin{frame}[fragile,t]{3.13 - Safe AI Edit Classes}
 \begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Class & Examples & Policy \\
@@ -5377,7 +5032,7 @@ Use this as the transition: Roadmap Thesis. Point to the visible example, questi
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{4.3 - End Of 2026 Alpha Target (1/2)}
+\begin{frame}[fragile,t]{4.3 - End Of 2026 Alpha Target}
 \smallskip
 \textbf{Possible alpha scope:}
 \begin{itemize}
@@ -5389,34 +5044,8 @@ Use this as the transition: Roadmap Thesis. Point to the visible example, questi
 \item structured AST and diagnostics;
 \item basic type and registration scaffolding;
 \item test harness and corpus layout;
-\end{itemize}
-\smallskip
-\textbf{Possible alpha scope:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
 \item early artifact format for parsed/resolved source.
 \end{itemize}
-\note{
-\smallskip
-\textbf{Presenter script:}
-\smallskip
-\textbf{Read aloud:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item frontend and parser for a meaningful core subset;
-\item import prelude and module resolution prototype;
-\item structured AST and diagnostics;
-\item basic type and registration scaffolding;
-\item test harness and corpus layout;
-\end{itemize}
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{4.3 - End Of 2026 Alpha Target (2/2)}
 \smallskip
 \textbf{Non-goals:}
 \begin{itemize}
@@ -5437,15 +5066,16 @@ Use this as the transition: Roadmap Thesis. Point to the visible example, questi
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item full MML verification;
-\item final compatibility layer;
-\item stable AI protocol;
-\item complete Formalized Mathematics workflow.
+\item frontend and parser for a meaningful core subset;
+\item import prelude and module resolution prototype;
+\item structured AST and diagnostics;
+\item basic type and registration scaffolding;
+\item test harness and corpus layout;
 \end{itemize}
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{4.4 - 2027 Migration Laboratory (1/2)}
+\begin{frame}[fragile,t]{4.4 - 2027 Migration Laboratory}
 \smallskip
 \textbf{Focus:}
 \begin{itemize}
@@ -5468,6 +5098,8 @@ Use this as the transition: Roadmap Thesis. Point to the visible example, questi
 \item structure inheritance;
 \item registration or cluster behavior;
 \item overload behavior;
+\item proof citation or ATP behavior;
+\item documentation and origin metadata.
 \end{itemize}
 \note{
 \smallskip
@@ -5483,31 +5115,6 @@ Use this as the transition: Roadmap Thesis. Point to the visible example, questi
 \item record every mismatch as a classified issue;
 \item build side-by-side reports.
 \item syntax translation;
-\end{itemize}
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{4.4 - 2027 Migration Laboratory (2/2)}
-\smallskip
-\textbf{Suggested issue classes:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item proof citation or ATP behavior;
-\item documentation and origin metadata.
-\end{itemize}
-\note{
-\smallskip
-\textbf{Presenter script:}
-\smallskip
-\textbf{Read aloud:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item proof citation or ATP behavior;
-\item documentation and origin metadata.
 \end{itemize}
 }
 \end{frame}
@@ -5555,6 +5162,8 @@ Use this as the transition: Roadmap Thesis. Point to the visible example, questi
 \item resolved imports versus unresolved dependencies;
 \item proof obligations generated;
 \item obligations closed by deterministic reasoning;
+\item obligations closed by ATP plus kernel certificate;
+\item memory and build time per module;
 \end{itemize}
 \smallskip
 \textbf{Measure:}
@@ -5562,8 +5171,6 @@ Use this as the transition: Roadmap Thesis. Point to the visible example, questi
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item obligations closed by ATP plus kernel certificate;
-\item memory and build time per module;
 \item number of compatibility decisions needing human review.
 \end{itemize}
 \note{
@@ -5617,8 +5224,8 @@ Use this as the transition: Roadmap Thesis. Point to the visible example, questi
 
 \begin{frame}[fragile,t]{4.8 - Migration Risk Table}
 \begin{footnotesize}
-\setlength{\tabcolsep}{2pt}
-\renewcommand{\arraystretch}{1.05}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.0}
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 \hline
 Risk & Mitigation \\
@@ -5756,7 +5363,7 @@ Use this as the transition: Link Model. Point to the visible example, question, 
 \end{frame}
 
 \begin{frame}[fragile,t]{5.4 - Example Link Record (1/2)}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
 article: Formalized Mathematics, future volume
 section: Unique identity element
 library_object: std.algebra.group.identity_unique
@@ -5788,13 +5395,6 @@ Use this as the transition: Example Link Record (1/2). Point to the visible exam
 \item The origin id preserves continuity with MML and existing Formalized Mathematics history.
 \item The library FQN addresses the current reusable theorem object.
 \item The statement fingerprint detects semantic drift.
-\end{itemize}
-\smallskip
-\textbf{Design Reason:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
 \item The artifact hash supports reproducible verification of the exact build.
 \end{itemize}
 \note{
@@ -5815,7 +5415,7 @@ Use this as the transition: Example Link Record (1/2). Point to the visible exam
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{5.5 - Benefits (1/2)}
+\begin{frame}[fragile,t]{5.5 - Benefits}
 \smallskip
 \textbf{For readers:}
 \begin{itemize}
@@ -5836,25 +5436,6 @@ Use this as the transition: Example Link Record (1/2). Point to the visible exam
 \item versioned links preserve reproducibility;
 \item origin metadata preserves historical continuity.
 \end{itemize}
-\note{
-\smallskip
-\textbf{Presenter script:}
-\smallskip
-\textbf{Read aloud:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item article prose remains primary;
-\item formal source is one click away;
-\item proof status and dependency information are inspectable.
-\item library refactoring does not automatically rewrite article exposition;
-\item versioned links preserve reproducibility;
-\end{itemize}
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{5.5 - Benefits (2/2)}
 \smallskip
 \textbf{For AI:}
 \begin{itemize}
@@ -5874,9 +5455,11 @@ Use this as the transition: Example Link Record (1/2). Point to the visible exam
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item article prose provides semantic search text;
-\item formal links provide exact theorem identities;
-\item agents can retrieve both explanation and machine-checkable context.
+\item article prose remains primary;
+\item formal source is one click away;
+\item proof status and dependency information are inspectable.
+\item library refactoring does not automatically rewrite article exposition;
+\item versioned links preserve reproducibility;
 \end{itemize}
 }
 \end{frame}
@@ -5943,13 +5526,6 @@ Use this as the transition: Possible Workflow. Point to the visible example, que
 \item registration and cluster semantics;
 \item proof evidence and kernel boundary;
 \item Formalized Mathematics link model;
-\end{itemize}
-\smallskip
-\textbf{Key Points:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
 \item roadmap realism.
 \end{itemize}
 \note{
@@ -6020,83 +5596,44 @@ Use this as the transition: Closing. Point to the visible example, question, or 
 
 \appendix
 \section{Backup A. Prepared Exact Examples}
-\begin{frame}[fragile,t]{Backup A. Prepared Exact Examples (1/4)}
+\begin{frame}[fragile,t]{Backup A. Prepared Exact Examples (1/3)}
 \smallskip
 \textbf{Prepared short excerpts for Beamer conversion:}
-\begin{footnotesize}
+\begin{scriptsize}
 \begin{description}
-\setlength{\itemsep}{1pt}
+\setlength{\itemsep}{0.5pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
+\setlength{\topsep}{1pt}
 \item[Article environment] \textbf{Source:} \texttt{algstr\_0.miz} \par \textbf{Lines:} 15-25 \par \textbf{Migration point:} Translate article-level dependency classes into explicit import/package roles. \par \textbf{Evo sketch:} \texttt{import std.function.binop; import std.algebra.structure.sorted;}
-\end{description}
-\end{footnotesize}
-
-\smallskip
-\textbf{Prepared short excerpts for Beamer conversion:}
-\begin{footnotesize}
-\begin{description}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
 \item[Structure definition] \textbf{Source:} \texttt{algstr\_0.miz} \par \textbf{Lines:} 37-40 \par \textbf{Migration point:} Preserve structures while separating intrinsic fields from canonical properties and inheritance obligations. \par \textbf{Evo sketch:} \texttt{field carrier}, \texttt{field add}, and, where appropriate, \texttt{property zero} / \texttt{property unit}
-\end{description}
-\end{footnotesize}
-
-\note{
-\smallskip
-\textbf{Presenter script:}
-For the table, read the row labels first, then the design reason.
-
-Use this as the transition: Backup A. Prepared Exact Examples (1/4). Point to the visible example, question, or diagram before moving on.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{Backup A. Prepared Exact Examples (2/4)}
-\smallskip
-\textbf{Prepared short excerpts for Beamer conversion:}
-\begin{footnotesize}
-\begin{description}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
 \item[Registration/cluster propagation] \textbf{Source:} \texttt{algstr\_0.miz} \par \textbf{Lines:} 104-109 \par \textbf{Migration point:} Keep registrations, but make propagation traceable and import-filtered. \par \textbf{Evo sketch:} registration graph entry plus resolution trace artifact
 \end{description}
-\end{footnotesize}
-
-\smallskip
-\textbf{Prepared short excerpts for Beamer conversion:}
-\begin{footnotesize}
-\begin{description}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item[Proof citation] \textbf{Source:} \texttt{struct\_0.miz} \par \textbf{Lines:} 637-643 \par \textbf{Migration point:} Treat citation repair as a small verifier-checked edit. \par \textbf{Evo sketch:} Green edit: add or refine \texttt{by} citations; artifact records used facts
-\end{description}
-\end{footnotesize}
+\end{scriptsize}
 
 \note{
 \smallskip
 \textbf{Presenter script:}
 For the table, read the row labels first, then the design reason.
 
-Use this as the transition: Backup A. Prepared Exact Examples (2/4). Point to the visible example, question, or diagram before moving on.
+Use this as the transition: Backup A. Prepared Exact Examples (1/3). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{Backup A. Prepared Exact Examples (3/4)}
+\begin{frame}[fragile,t]{Backup A. Prepared Exact Examples (2/3)}
 \smallskip
 \textbf{Prepared short excerpts for Beamer conversion:}
-\begin{footnotesize}
+\begin{scriptsize}
 \begin{description}
-\setlength{\itemsep}{1pt}
+\setlength{\itemsep}{0.5pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
+\setlength{\topsep}{1pt}
+\item[Proof citation] \textbf{Source:} \texttt{struct\_0.miz} \par \textbf{Lines:} 637-643 \par \textbf{Migration point:} Treat citation repair as a small verifier-checked edit. \par \textbf{Evo sketch:} Green edit: add or refine \texttt{by} citations; artifact records used facts
 \item[Publication link] \textbf{Source:} \texttt{contents.html} \par \textbf{Lines:} 516-517 \par \textbf{Migration point:} Link scholarly article metadata to a reusable MML/library identifier. \par \textbf{Evo sketch:} Formalized Mathematics article label + \texttt{origin: mizar:GROUP\_1} + theorem FQN/fingerprint
 \end{description}
-\end{footnotesize}
+\end{scriptsize}
 
 \smallskip
 \textbf{Source URLs:}
@@ -6126,7 +5663,7 @@ For the table, read the row labels first, then the design reason.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{Backup A. Prepared Exact Examples (4/4)}
+\begin{frame}[fragile,t]{Backup A. Prepared Exact Examples (3/3)}
 \smallskip
 \textbf{Remaining Beamer preparation:}
 \begin{itemize}
@@ -6154,7 +5691,7 @@ For the table, read the row labels first, then the design reason.
 \end{frame}
 
 \section{Backup B. Diagram List}
-\begin{frame}[fragile,t]{Backup B. Diagram List (1/2)}
+\begin{frame}[fragile,t]{Backup B. Diagram List}
 \smallskip
 \textbf{Required diagrams:}
 \begin{enumerate}
@@ -6166,44 +5703,18 @@ For the table, read the row labels first, then the design reason.
 \item Environment-to-import migration.
 \item Structure inheritance and diamond coherence.
 \item Full compiler/verifier pipeline.
-\end{enumerate}
-\note{
-\smallskip
-\textbf{Presenter script:}
-\smallskip
-\textbf{Read aloud:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Current Mizar workflow: source -> Accommodator -> Verifier -> Exporter -> MML.
-\item Three pillars: readability, AI-readiness, scalability.
-\item Environment-to-import migration.
-\item Structure inheritance and diamond coherence.
-\item Full compiler/verifier pipeline.
-\end{itemize}
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{Backup B. Diagram List (2/2)}
-\smallskip
-\textbf{Required diagrams:}
-\begin{enumerate}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
 \item Reasoning boundary: Mizar semantics / ATP search / kernel checking.
 \item Certificate object and SAT/UNSAT checking.
+\end{enumerate}
+\smallskip
+\textbf{Required diagrams:}
+\begin{enumerate}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
 \item Incremental dependency and fingerprint graph.
 \item AI patch verification flow.
 \item Formalized Mathematics article-to-library link model.
-\end{enumerate}
-\smallskip
-\textbf{Required diagrams:}
-\begin{enumerate}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
 \item Roadmap timeline.
 \end{enumerate}
 \note{
@@ -6215,11 +5726,11 @@ For the table, read the row labels first, then the design reason.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Reasoning boundary: Mizar semantics / ATP search / kernel checking.
-\item Certificate object and SAT/UNSAT checking.
-\item Incremental dependency and fingerprint graph.
-\item AI patch verification flow.
-\item Formalized Mathematics article-to-library link model.
+\item Current Mizar workflow: source -> Accommodator -> Verifier -> Exporter -> MML.
+\item Three pillars: readability, AI-readiness, scalability.
+\item Environment-to-import migration.
+\item Structure inheritance and diamond coherence.
+\item Full compiler/verifier pipeline.
 \end{itemize}
 }
 \end{frame}
@@ -6242,6 +5753,8 @@ Mizar Evo: Readable, AI-Ready, and Scalable Formal Mathematics
 \item Design principles.
 \item Language evolution and compatibility.
 \item Verifier architecture and small kernel.
+\item AI-safe proof development.
+\item Package-based library and publication workflow.
 \end{enumerate}
 \note{
 \smallskip
@@ -6268,8 +5781,6 @@ After the example, say which design obligation the syntax makes visible.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item AI-safe proof development.
-\item Package-based library and publication workflow.
 \item Migration plan and evaluation metrics.
 \item Related work: current Mizar, Lean, Isabelle/Isar, ATP-integrated systems.
 \item Conclusion and collaboration agenda.
@@ -6283,8 +5794,6 @@ After the example, say which design obligation the syntax makes visible.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item AI-safe proof development.
-\item Package-based library and publication workflow.
 \item Migration plan and evaluation metrics.
 \item Related work: current Mizar, Lean, Isabelle/Isar, ATP-integrated systems.
 \item Conclusion and collaboration agenda.
@@ -6305,6 +5814,8 @@ After the example, say which design obligation the syntax makes visible.
 \item Does every architecture claim map to an existing or planned artifact?
 \item Does every code example say whether it is exact, schematic, or proposed?
 \item Do structure slides explain why \texttt{field}, \texttt{property}, and \texttt{attribute} are distinct?
+\item Do inheritance slides explain why \texttt{struct} and \texttt{inherit} are separate declarations?
+\item Do template slides explain why generic definitions and theorem schemas need a first-class mechanism rather than copy-paste or ad hoc schemes?
 \end{itemize}
 \note{
 \smallskip
@@ -6331,8 +5842,6 @@ After the example, say which design obligation the syntax makes visible.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Do inheritance slides explain why \texttt{struct} and \texttt{inherit} are separate declarations?
-\item Do template slides explain why generic definitions and theorem schemas need a first-class mechanism rather than copy-paste or ad hoc schemes?
 \item Are Red AI edits clearly forbidden?
 \item Are MML migration claims measurable?
 \item Does the Formalized Mathematics section preserve the value of publication, not only library indexing?
@@ -6346,8 +5855,6 @@ After the example, say which design obligation the syntax makes visible.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Do inheritance slides explain why struct and inherit are separate declarations?
-\item Do template slides explain why generic definitions and theorem schemas need a first-class mechanism rather than copy-paste or ad hoc schemes?
 \item Are Red AI edits clearly forbidden?
 \item Are MML migration claims measurable?
 \item Does the Formalized Mathematics section preserve the value of publication, not only library indexing?
