@@ -1,3 +1,20 @@
 /target/
 /crates/*/target/
-/doc/publications/
+
+# Publication work is usually local, but keep the Bialystok 2026 deck tracked.
+/doc/publications/*
+!/doc/publications/presentations/
+/doc/publications/presentations/*
+!/doc/publications/presentations/2026-09-bialystok/
+!/doc/publications/presentations/2026-09-bialystok/**
+
+# LaTeX/Python build byproducts for tracked publication decks.
+/doc/publications/**/*.aux
+/doc/publications/**/*.log
+/doc/publications/**/*.nav
+/doc/publications/**/*.out
+/doc/publications/**/*.snm
+/doc/publications/**/*.toc
+/doc/publications/**/*.vrb
+/doc/publications/**/__pycache__/
+/doc/publications/**/*.pyc
