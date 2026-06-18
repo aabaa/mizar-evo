@@ -7,17 +7,15 @@ syntax structures: frontend-adapted tokens in, `SurfaceAst` plus syntax
 diagnostics out. Parser-assisted lexing is allowed only through explicit context
 objects such as string-required positions and symbol-kind filters.
 
-Status: the minimal crate exposes a parser entry point that consumes the
-frontend-adapted token transfer object with session `SourceRange`s, returns
-`mizar_syntax::SurfaceAst` plus syntax diagnostics, preserves token order and
-ranges, implements active-lexicon prefix/postfix/infix term Pratt parsing
-through the frontend source path, and implements task-12 recovery passthrough
-plus task-28 nested missing-`end` matching, missing string literals, and
-unrecoverable `ast = None`. Task 2 parser infrastructure is in place as private
-cursor, syntax-event, expected-token diagnostic, synchronization, and recovery
-emission helpers. Concrete grammar coverage has grown through parser task 29,
-including module/import/export, type/term/formula, statement/proof, definition
-content, property, and structure surfaces. Full grammar coverage remains
+Status: the crate exposes a parser entry point that consumes the
+frontend-adapted token transfer object with session `SourceRange`s and returns
+`mizar_syntax::SurfaceAst` plus syntax diagnostics. Task 2 parser
+infrastructure is in place as private cursor, syntax-event, expected-token
+diagnostic, synchronization, and recovery-emission helpers. Grammar coverage has
+grown through parser task 35, including module/import/export,
+type/term/formula, statement/proof, definition, structure, registration,
+template, algorithm, verification-clause, and annotation surfaces. Task 36
+predicate redefinition label repair and hardening/audit tasks 37-45 remain
 planned.
 
 Initial module specs:

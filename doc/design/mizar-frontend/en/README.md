@@ -12,7 +12,8 @@ disambiguation rules (`mizar-lexer`); or `SurfaceAst` node definitions
 (`mizar-syntax`) and grammar, Pratt precedence, and recovery (`mizar-parser`).
 Those crates provide the primitives that the frontend coordinates into a
 `FrontendOutput`. `StubParserSeam` remains available for source-to-token
-coordinator paths and returns `ast = None`.
+coordinator paths and returns `ast = None`; `MizarParserSeam` calls the current
+parser/syntax boundary and passes through recoverable parser output.
 
 ## Context
 

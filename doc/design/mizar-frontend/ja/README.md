@@ -4,7 +4,7 @@
 
 `mizar-frontend` は、フェーズ 1〜3 の統制モジュール（source_and_frontend パイプラインの Step 1〜5）を所有する。すなわち、ソースの読み込み、ソースマップ、前処理の統制、アクティブ字句環境の構築、字句解析器の呼び出し、parser seam の呼び出し、そして統合されたフロントエンド出力である。
 
-この crate は、次を所有しない。ソース同一性・ソースハッシュ・スナップショット（`mizar-session`）、生スキャン・コメント除去・字句環境の組み立て・トークン曖昧性解消規則（`mizar-lexer`）、`SurfaceAst` ノード定義（`mizar-syntax`）や文法・Pratt 優先順位・回復（`mizar-parser`）である。これらの crate が提供するプリミティブを、フロントエンドが `FrontendOutput` へと統制する。`StubParserSeam` は source-to-token coordinator 経路のために残り、`ast = None` を返す。
+この crate は、次を所有しない。ソース同一性・ソースハッシュ・スナップショット（`mizar-session`）、生スキャン・コメント除去・字句環境の組み立て・トークン曖昧性解消規則（`mizar-lexer`）、`SurfaceAst` ノード定義（`mizar-syntax`）や文法・Pratt 優先順位・回復（`mizar-parser`）である。これらの crate が提供するプリミティブを、フロントエンドが `FrontendOutput` へと統制する。`StubParserSeam` は source-to-token coordinator 経路のために残り、`ast = None` を返す。`MizarParserSeam` は現在の parser/syntax 境界を呼び出し、回復可能な parser 出力をそのまま受け渡す。
 
 ## コンテキスト
 
