@@ -1,7 +1,21 @@
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use mizar_frontend::lexical_env::{
+    FrontendLexicalEnvironmentError, LexicalEnvironmentRequest, LexicalSummaryProvider, ModuleId,
+    ResolvedImports, build_active_lexical_environment,
+};
+use mizar_frontend::lexing::{ParserLexingPlan, TokenKind, TokenizeRequest, tokenize};
+use mizar_frontend::preprocess::preprocess;
+use mizar_frontend::source::{SourceUnit, register_source_unit};
+use mizar_frontend::span_bridge::SpanBridge;
+use mizar_session::{
+    BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, LineMap, ModulePath, PackageId,
+    SessionIdAllocator, SourceOrigin, hash_text, normalize_path,
+};
 use mizar_test::{
     DiscoveryConfig, ExpectedOutcome, PipelinePhase, Stage, TestKind, TestPlan, TestProfile,
     ValidationMode, active_parse_only_cases, build_test_plan, run_parse_only_corpus,
@@ -27,6 +41,15 @@ const PROPERTY_CLAUSES_REQUIREMENT_ID: &str = "spec.en.syntax.property_clauses.p
 const STRUCTURES_REQUIREMENT_ID: &str = "spec.en.05.structures.parser";
 const CORRECTNESS_CONDITIONS_REQUIREMENT_ID: &str = "spec.en.16.correctness_conditions.parser";
 const REGISTRATIONS_REQUIREMENT_ID: &str = "spec.en.17.clusters_and_registrations.parser";
+const PARSER_DEFERRED_RESERVED_WORDS: &[&str] = &[
+    "infix_operator",
+    "left",
+    "none",
+    "postfix_operator",
+    "prefix_operator",
+    "right",
+    "transitivity",
+];
 
 #[test]
 fn empty_corpus_succeeds() {
@@ -1196,6 +1219,51 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "`{requirement_id}` should keep a deferral reason"
         );
     }
+}
+
+#[test]
+fn repository_parser_reserved_words_are_covered_or_explicitly_deferred() {
+    let config = repository_config();
+    let plan = repository_plan();
+    let reserved_words = reserved_words_from_appendix_a(&config.workspace_root);
+    let covered_words = active_parser_corpus_reserved_words(&plan, &reserved_words);
+    let deferred_reserved_words = PARSER_DEFERRED_RESERVED_WORDS
+        .iter()
+        .map(|word| (*word).to_owned())
+        .collect::<BTreeSet<_>>();
+
+    let missing_words = reserved_words
+        .difference(&covered_words)
+        .filter(|word| !deferred_reserved_words.contains(*word))
+        .cloned()
+        .collect::<Vec<_>>();
+    assert!(
+        missing_words.is_empty(),
+        "reserved words from appendix A must appear as frontend ReservedWord \
+         tokens in active parser corpus sources or be listed as parser-deferred \
+         reserved words: {missing_words:?}"
+    );
+
+    let unknown_deferred_words = deferred_reserved_words
+        .difference(&reserved_words)
+        .cloned()
+        .collect::<Vec<_>>();
+    assert!(
+        unknown_deferred_words.is_empty(),
+        "parser-deferred reserved words must still exist in appendix A: {unknown_deferred_words:?}"
+    );
+
+    let stale_deferred_words = deferred_reserved_words
+        .intersection(&covered_words)
+        .cloned()
+        .collect::<Vec<_>>();
+    assert!(
+        stale_deferred_words.is_empty(),
+        "parser-deferred reserved words now appear as frontend ReservedWord tokens \
+         in active parser corpus sources; remove them from \
+         PARSER_DEFERRED_RESERVED_WORDS and update the task-43 audit: \
+         {stale_deferred_words:?}"
+    );
 }
 
 #[test]
@@ -2463,6 +2531,151 @@ fn repository_config() -> DiscoveryConfig {
         profile: TestProfile::Fast,
         validation_mode: ValidationMode::Metadata,
     }
+}
+
+fn reserved_words_from_appendix_a(workspace_root: &Path) -> BTreeSet<String> {
+    let path = workspace_root.join("doc/spec/en/appendix_a.grammar_summary.md");
+    let content = fs::read_to_string(&path)
+        .unwrap_or_else(|error| panic!("failed to read `{}`: {error}", path.display()));
+    let (_, after_heading) = content
+        .split_once("Reserved words are case-sensitive")
+        .expect("appendix A should contain the reserved-word contract");
+    let (_, after_fence) = after_heading
+        .split_once("```text\n")
+        .expect("reserved-word contract should use a text fence");
+    let (word_block, _) = after_fence
+        .split_once("\n```")
+        .expect("reserved-word text fence should close");
+
+    word_block.split_whitespace().map(str::to_owned).collect()
+}
+
+fn active_parser_corpus_reserved_words(
+    plan: &TestPlan,
+    reserved_words: &BTreeSet<String>,
+) -> BTreeSet<String> {
+    let mut covered_words = BTreeSet::new();
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshot = snapshot_id(43);
+
+    for (ordinal, case) in active_parse_only_cases(plan).enumerate() {
+        let source = fs::read_to_string(&case.source_path).unwrap_or_else(|error| {
+            panic!(
+                "failed to read active parse-only source `{}`: {error}",
+                case.source_path.display()
+            )
+        });
+        let source_id = ids
+            .next_source_id(snapshot)
+            .expect("reserved-word audit source id should allocate");
+        let source_unit =
+            source_unit_for_reserved_word_audit(&case.source_path, source_id, ordinal, &source);
+        covered_words.extend(reserved_words_in_frontend_tokens(
+            &source_unit,
+            reserved_words,
+        ));
+    }
+
+    covered_words
+}
+
+fn source_unit_for_reserved_word_audit(
+    source_path: &Path,
+    source_id: mizar_session::SourceId,
+    ordinal: usize,
+    source: &str,
+) -> SourceUnit {
+    let audit_root = std::env::temp_dir().join(format!(
+        "mizar-test-parser-reserved-word-audit-{}-{ordinal}",
+        std::process::id()
+    ));
+    let audit_path = audit_root
+        .join("src")
+        .join("parser")
+        .join("audit")
+        .join(format!("case_{ordinal}.miz"));
+    fs::create_dir_all(
+        audit_path
+            .parent()
+            .expect("audit path should have a parent"),
+    )
+    .expect("reserved-word audit temp directory should be created");
+    fs::write(&audit_path, source).expect("reserved-word audit temp source should be written");
+    let normalized_path = normalize_path(&audit_root, &audit_path)
+        .expect("reserved-word audit temp path should normalize");
+    let _ = fs::remove_dir_all(&audit_root);
+
+    SourceUnit {
+        source_id,
+        package_id: PackageId::new("parser_reserved_word_audit"),
+        module_path: ModulePath::new(format!("parser.audit.case_{ordinal}")),
+        normalized_path,
+        edition: Edition::new("2026"),
+        file_path: source_path.to_path_buf(),
+        source_text: Arc::from(source),
+        source_hash: hash_text(source),
+        line_map: LineMap::with_source(source_id, source),
+        loading_map: None,
+        origin: SourceOrigin::Disk,
+        generated_anchor: None,
+    }
+}
+
+fn reserved_words_in_frontend_tokens(
+    source: &SourceUnit,
+    reserved_words: &BTreeSet<String>,
+) -> BTreeSet<String> {
+    let mut bridge = SpanBridge::new();
+    register_source_unit(&mut bridge, source)
+        .expect("reserved-word audit source registration should succeed");
+    let preprocessed =
+        preprocess(source, &mut bridge).expect("reserved-word audit preprocessing should succeed");
+    let environment = build_active_lexical_environment(
+        &LexicalEnvironmentRequest {
+            source_id: source.source_id,
+            import_stubs: &preprocessed.import_stubs,
+            edition: source.edition.clone(),
+        },
+        &EmptyProvider,
+    )
+    .expect("reserved-word audit lexical environment should build")
+    .environment;
+    let plan = ParserLexingPlan::for_lexical_text(preprocessed.lexical_text.as_str());
+    let token_stream = tokenize(
+        TokenizeRequest::with_plan(&preprocessed, &environment, plan)
+            .with_current_module(ModuleId::new("parser.reserved_word_audit")),
+        &bridge,
+    )
+    .expect("reserved-word audit tokenization should succeed");
+
+    token_stream
+        .tokens()
+        .iter()
+        .filter(|token| token.kind == TokenKind::ReservedWord)
+        .map(|token| token.text.to_string())
+        .filter(|word| reserved_words.contains(word))
+        .collect()
+}
+
+struct EmptyProvider;
+
+impl LexicalSummaryProvider for EmptyProvider {
+    fn resolve_imports(
+        &self,
+        _request: &LexicalEnvironmentRequest<'_>,
+    ) -> Result<ResolvedImports, FrontendLexicalEnvironmentError> {
+        Ok(ResolvedImports {
+            imports: Vec::new(),
+            summaries: Vec::new(),
+            diagnostics: Vec::new(),
+        })
+    }
+}
+
+fn snapshot_id(byte: u8) -> BuildSnapshotId {
+    let hex = format!("{byte:02x}").repeat(Hash::BYTE_LEN);
+    BuildSnapshotId::from_published_schema_str(&format!("mizar-session-build-snapshot-v1:{hex}"))
+        .expect("static snapshot id should parse")
 }
 
 fn rel(root: &Path, path: &Path) -> PathBuf {

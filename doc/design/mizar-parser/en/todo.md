@@ -924,15 +924,29 @@ older numeric syntax task references appear to disagree, prefer
     - Deps: 36, 37, 39. Spec: [grammar.md](./grammar.md),
       [recovery.md](./recovery.md), this TODO.
 
-43. **Source/spec correspondence audit and reserved-word coverage.** [ ]
+43. **Source/spec correspondence audit and reserved-word coverage.** [x]
     - Trace every public API and promised behavior in [grammar.md](./grammar.md),
       [pratt.md](./pratt.md), and [recovery.md](./recovery.md) to
       implementation and tests; record gaps as follow-up tasks.
     - Verify that every reserved word of
       [§A.2.4](../../../spec/en/appendix_a.grammar_summary.md) is consumed by
       at least one parser corpus test (or is explicitly recorded as
-      reserved-for-future with no grammar position yet), so silently
-      unimplemented keywords are detected mechanically.
+      recorded as a parser-deferred gap or a future-reserved word with no
+      grammar position yet), so silently unimplemented keywords are detected
+      mechanically.
+    - Result: [source_spec_audit.md](./source_spec_audit.md) records the public
+      API and promised-behavior trace to source, parser unit tests, active
+      parse-only corpus cases, and traceability metadata. No blocking
+      non-deferred `spec_gap`, `boundary_violation`, or
+      `repo_metadata_conflict` was found. `crates/mizar-test/tests/metadata.rs`
+      now mechanically checks that every Appendix A reserved word appears as a
+      frontend `ReservedWord` token in active parser `.miz` corpus sources
+      unless it is explicitly parser-deferred. Concrete operator declarations
+      and their reserved-word corpus coverage are recorded as deferred task 46
+      because the words have grammar positions but no concrete parser/corpus
+      implementation yet; `transitivity` remains future-reserved for parser
+      purposes because the canonical implemented property productions do not
+      give it a parser grammar position.
     - Deps: 37, 42. Spec: all module specs and this TODO.
 
 44. **Bilingual documentation sync audit.** [ ]
@@ -948,6 +962,19 @@ older numeric syntax task references appear to disagree, prefer
       enums added by grammar growth, aligned with the `mizar-frontend` task-25
       procedure and the `mizar-syntax` task-17 final audit.
     - Deps: 35, 42. Spec: all module specs.
+
+46. **Concrete operator declarations and operator reserved-word corpus.** [ ] deferred
+    - Deferred follow-up recorded by task 43. Add concrete source-level parsing
+      for `operator_decl` (`infix_operator`, `prefix_operator`,
+      `postfix_operator`) plus active parser corpus coverage for those reserved
+      words and the infix associativity words `left`, `right`, and `none`.
+      This follow-up should run only when parser/frontend string-required
+      positions for operator declarations are in scope; until then,
+      `ParseRequest::operator_fixity` remains the implemented Pratt metadata
+      transfer path.
+    - Deps: 43 and the future frontend string-required operator-declaration
+      context. Spec: [grammar.md](./grammar.md), [pratt.md](./pratt.md),
+      [source_spec_audit.md](./source_spec_audit.md).
 
 ## Recommended Verification
 

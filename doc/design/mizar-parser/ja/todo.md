@@ -892,14 +892,27 @@ resolver / build-system 依存を避ける。
     - 依存: 36、37、39。仕様: [grammar.md](./grammar.md)、
       [recovery.md](./recovery.md)、本 TODO。
 
-43. **ソース／仕様の対応監査と予約語カバレッジ。** [ ]
+43. **ソース／仕様の対応監査と予約語カバレッジ。** [x]
     - [grammar.md](./grammar.md)、[pratt.md](./pratt.md)、
       [recovery.md](./recovery.md) のすべての公開 API と約束された挙動を
       実装とテストへトレースし、ギャップをフォローアップタスクとして記録する。
     - [§A.2.4](../../../spec/ja/appendix_a.grammar_summary.md) のすべての
       予約語が、少なくとも 1 つのパーサーコーパステストで消費されていること
-      （または、まだ文法位置を持たない将来予約として明示的に記録されている
-      こと）を検証し、暗黙に未実装のキーワードを機械的に検出する。
+      （または、parser-deferred gap か、まだ文法位置を持たない将来予約として
+      明示的に記録されていること）を検証し、暗黙に未実装のキーワードを
+      機械的に検出する。
+    - 結果: [source_spec_audit.md](./source_spec_audit.md) に、公開 API と
+      約束された挙動の source、parser unit test、active parse-only corpus case、
+      traceability metadata への対応を記録した。ブロックする non-deferred の
+      `spec_gap`、`boundary_violation`、`repo_metadata_conflict` は見つかって
+      いない。`crates/mizar-test/tests/metadata.rs` は、Appendix A の各予約語が
+      active parser `.miz` corpus source に frontend `ReservedWord` token として
+      出現するか、明示的に parser-deferred であることを機械的に確認する。
+      concrete operator declaration とその予約語 corpus coverage は、語に grammar
+      position がある一方で concrete parser/corpus 実装がまだないため deferred
+      task 46 として記録した。`transitivity` は、canonical な実装済み property
+      production が parser grammar position を与えていないため、parser では
+      future-reserved のまま残す。
     - 依存: 37、42。仕様: すべてのモジュール仕様と本 TODO。
 
 44. **二言語ドキュメント同期監査。** [ ]
@@ -913,6 +926,18 @@ resolver / build-system 依存を避ける。
       `mizar-syntax` task 17 の最終監査に整合する形で、
       `#[non_exhaustive]` 対 意図的 exhaustive を決定する。
     - 依存: 35、42。仕様: すべてのモジュール仕様。
+
+46. **concrete operator declaration と operator 予約語 corpus。** [ ] deferred
+    - task 43 で記録した deferred follow-up。`operator_decl`
+      （`infix_operator`、`prefix_operator`、`postfix_operator`）の concrete な
+      source-level parsing と、それらの予約語および infix associativity word
+      `left`、`right`、`none` に対する active parser corpus coverage を追加する。
+      この follow-up は、operator declaration 用の parser/frontend
+      string-required position が作業範囲に入ったときだけ実行する。それまでは
+      `ParseRequest::operator_fixity` が実装済み Pratt metadata transfer path である。
+    - 依存: 43、および将来の frontend string-required operator-declaration context。
+      仕様: [grammar.md](./grammar.md)、[pratt.md](./pratt.md)、
+      [source_spec_audit.md](./source_spec_audit.md)。
 
 ## 推奨検証
 
