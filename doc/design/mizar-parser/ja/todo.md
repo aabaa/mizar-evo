@@ -820,9 +820,15 @@ resolver / build-system 依存を避ける。
     - 依存: 3、35、`mizar-syntax` task 3。仕様:
       [../../mizar-test/ja/snapshot.md](../../mizar-test/ja/snapshot.md)。
 
-39. **決定性プロパティテスト。** [ ]
+39. **決定性プロパティテスト。** [x]
     - 同一のトークンストリームが同一の `SurfaceAst` ノード順序・範囲・診断
       順序を生むことの crate レベル網羅。frontend の決定性スイートに倣う。
+    - 結果: `crates/mizar-parser/tests/determinism.rs` に public API integration
+      coverage を追加し、同一の module-recovery、Pratt operator、不正な
+      multi-diagnostic token stream を繰り返し parse した結果を比較するようにした。
+      tests は `SurfaceAst::snapshot_text()`、token node の index / text / range、
+      expression-root identity、完全な `SyntaxDiagnostic` sequence を parser 呼び出し
+      間で比較する。
     - 依存: 35。仕様:
       [architecture/ja/20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
 

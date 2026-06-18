@@ -846,10 +846,16 @@ older numeric syntax task references appear to disagree, prefer
     - Deps: 3, 35, `mizar-syntax` task 3. Spec:
       [../../mizar-test/en/snapshot.md](../../mizar-test/en/snapshot.md).
 
-39. **Determinism property tests.** [ ]
+39. **Determinism property tests.** [x]
     - Crate-level coverage that identical token streams produce identical
       `SurfaceAst` node orders, ranges, and diagnostic orders, mirroring the
       frontend determinism suite.
+    - Result: added public-API integration coverage in
+      `crates/mizar-parser/tests/determinism.rs` for repeated parses of
+      identical module-recovery, Pratt operator, and malformed multi-diagnostic
+      token streams. The tests compare `SurfaceAst::snapshot_text()`, token node
+      indices/text/ranges, expression-root identity, and the full
+      `SyntaxDiagnostic` sequence across repeated parser invocations.
     - Deps: 35. Spec:
       [architecture/en/20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 
