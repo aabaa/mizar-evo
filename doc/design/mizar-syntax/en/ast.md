@@ -513,7 +513,7 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::ModePattern` | none | `SyntaxKind::ModePattern` | parser task-26 mode definition pattern; owns source-ordered raw tokens accepted by `mode_def_name [ type_params ]` plus `MissingTerm` recovery when no grammar-shaped split exists; it does not encode semantic parameter roles |
 | `SurfaceNodeKind::ModeProperty` | none | `SyntaxKind::ModeProperty` | parser task-26 `sethood` property immediately following a mode definition; owns `sethood`, a required general justification (`JustificationClause` or `ProofBlock`) when present, optional recovery, and the property semicolon when present |
 | `SurfaceNodeKind::AttributeRedefinition` | none | `SyntaxKind::AttributeRedefinition` | parser task-27 `redefine attr`; owns `redefine`, `attr`, a label identifier or `MissingTerm`, `:`, a subject identifier or `MissingTerm`, `is`, an `AttributePattern`, `means`, a `FormulaDefiniens`, the first semicolon when present, and a mandatory `CoherenceCondition` |
-| `SurfaceNodeKind::PredicateRedefinition` | none | `SyntaxKind::PredicateRedefinition` | parser task-27 `redefine pred`; owns `redefine`, `pred`, label, `:`, a raw `PredicatePattern`, `means`, a `FormulaDefiniens`, the first semicolon when present, and a mandatory `CoherenceCondition` |
+| `SurfaceNodeKind::PredicateRedefinition` | none | `SyntaxKind::PredicateRedefinition` | parser task-27 plus task-36 `redefine pred`; owns `redefine`, `pred`, a label identifier or `MissingTerm`, `:`, a raw `PredicatePattern`, `means`, a `FormulaDefiniens`, the first semicolon when present, and a mandatory `CoherenceCondition` |
 | `SurfaceNodeKind::FunctorRedefinition` | none | `SyntaxKind::FunctorRedefinition` | parser task-27 `redefine func`; owns `redefine`, `func`, a label identifier or `MissingTerm`, `:`, a raw `FunctorPattern`, `->`, a return `TypeExpression` or `MissingTypeExpression`, `means FormulaDefiniens` or `equals TermDefiniens`, the first semicolon when present, and a mandatory `CoherenceCondition` |
 | `SurfaceNodeKind::CoherenceCondition` | none | `SyntaxKind::CoherenceCondition` | parser task-27 redefinition coherence tail; owns `coherence`, optional `with` plus a label identifier or `MissingProofStep`, a required general justification when present, optional recovery, and the coherence semicolon when present |
 | `SurfaceNodeKind::NotationAlias` | none | `SyntaxKind::NotationAlias` | parser task-27 `synonym` or `antonym` declaration; owns the alias keyword, an alternate `NotationPattern`, `for`, an original `NotationPattern`, optional recovery, and the final semicolon when present |
@@ -617,10 +617,10 @@ The current implemented surface node vocabulary is deliberately small:
 | `SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant)` | constant | `SyntaxKind::FormulaConstant` | parser task-14 `thesis` or `contradiction` formula constant |
 | `SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind)` | recovery kind | `SyntaxKind::ErrorRecovery` | builder-created recovery nodes are recovered |
 
-The labeled `PredicateRedefinition` shape is the target AST contract after the
-parser task-36 predicate redefinition label repair. Until that implementation
-and corpus update lands, current parser behavior may still expose the earlier
-unlabeled surface; downstream design should depend on the labeled target.
+The labeled `PredicateRedefinition` shape is the implemented AST contract after
+the parser task-36 predicate redefinition label repair. Downstream design should
+depend on the label slot before `PredicatePattern`; omitted labels are preserved
+as `MissingTerm` recovery in that slot.
 
 `SurfaceTokenKind` currently maps to the token raw kinds listed above:
 `Identifier`, `ReservedWord`, `ReservedSymbol`, `Numeral`, `LexemeRun`,

@@ -7974,6 +7974,27 @@ impl Parser {
         let mut recovery_nodes = Vec::new();
         let mut cursor = position + 2;
 
+        if self.is_identifier_at(cursor) {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_term_expression(
+                cursor,
+                "expected predicate redefinition label",
+            );
+            self.push_missing_term(cursor, &mut children, &mut recovery_nodes);
+        }
+
+        if self.is_reserved_symbol_at(cursor, ":") {
+            children.push(self.token_node_ids[cursor]);
+            cursor += 1;
+        } else {
+            self.diagnose_malformed_formula_expression(
+                cursor,
+                "expected `:` after predicate redefinition label",
+            );
+        }
+
         let pattern = self.parse_predicate_pattern_at(cursor);
         cursor = pattern.next_position;
         children.push(pattern.id);
@@ -20682,6 +20703,8 @@ mod tests {
                     (";", ParserTokenKind::ReservedSymbol),
                     ("redefine", ParserTokenKind::ReservedWord),
                     ("pred", ParserTokenKind::ReservedWord),
+                    ("PredR", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
                     ("x", ParserTokenKind::Identifier),
                     ("R", ParserTokenKind::UserSymbol),
                     ("y", ParserTokenKind::Identifier),
@@ -20856,6 +20879,26 @@ mod tests {
             )),
             "all task-27 coherence conditions should be nested under redefinitions"
         );
+        let predicate_signatures = surface_views(&ast, |kind| {
+            matches!(kind, SurfaceNodeKind::PredicateRedefinition)
+        })
+        .into_iter()
+        .map(direct_child_signature)
+        .collect::<Vec<_>>();
+        assert_contains_signature(
+            &predicate_signatures,
+            &[
+                "redefine",
+                "pred",
+                "PredR",
+                ":",
+                "PredicatePattern",
+                "means",
+                "FormulaDefiniens",
+                ";",
+                "CoherenceCondition",
+            ],
+        );
         assert_eq!(
             count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::VisibleItem)),
             2,
@@ -20918,6 +20961,81 @@ mod tests {
     }
 
     #[test]
+    fn parser_recovers_missing_predicate_redefinition_label_slot() {
+        let source_id = source_id(188);
+        let output = parse(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("definition", ParserTokenKind::ReservedWord),
+                    ("redefine", ParserTokenKind::ReservedWord),
+                    ("pred", ParserTokenKind::ReservedWord),
+                    (":", ParserTokenKind::ReservedSymbol),
+                    ("x", ParserTokenKind::Identifier),
+                    ("R", ParserTokenKind::UserSymbol),
+                    ("y", ParserTokenKind::Identifier),
+                    ("means", ParserTokenKind::ReservedWord),
+                    ("thesis", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("coherence", ParserTokenKind::ReservedWord),
+                    ("by", ParserTokenKind::ReservedWord),
+                    ("Ref", ParserTokenKind::Identifier),
+                    (";", ParserTokenKind::ReservedSymbol),
+                    ("end", ParserTokenKind::ReservedWord),
+                    (";", ParserTokenKind::ReservedSymbol),
+                ],
+            ),
+            Vec::new(),
+        ));
+
+        assert!(
+            output.diagnostics.iter().any(|diagnostic| {
+                diagnostic.code == SyntaxDiagnosticCode::MalformedTermExpression
+            }),
+            "missing predicate redefinition labels should be diagnosed: {:?}",
+            output.diagnostics
+        );
+        let ast = output
+            .ast
+            .expect("missing predicate redefinition label should recover an AST");
+        assert_eq!(
+            count_nodes(&ast, |kind| matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingTerm)
+            )),
+            1,
+            "the omitted predicate redefinition label should insert exactly one MissingTerm"
+        );
+        let predicate_signatures = surface_views(&ast, |kind| {
+            matches!(kind, SurfaceNodeKind::PredicateRedefinition)
+        })
+        .into_iter()
+        .map(direct_child_signature)
+        .collect::<Vec<_>>();
+        assert_contains_signature(
+            &predicate_signatures,
+            &[
+                "redefine",
+                "pred",
+                "MissingTerm",
+                ":",
+                "PredicatePattern",
+                "means",
+                "FormulaDefiniens",
+                ";",
+                "CoherenceCondition",
+            ],
+        );
+        assert!(
+            ast.snapshot_text()
+                .contains("ErrorRecovery kind=MissingTerm"),
+            "snapshot should distinguish missing-label recovery"
+        );
+    }
+
+    #[test]
     fn parser_preserves_following_item_when_redefinition_coherence_is_missing() {
         let source_id = source_id(189);
         let output = parse(ParseRequest::new(
@@ -20939,6 +21057,8 @@ mod tests {
                     (";", ParserTokenKind::ReservedSymbol),
                     ("redefine", ParserTokenKind::ReservedWord),
                     ("pred", ParserTokenKind::ReservedWord),
+                    ("PredR", ParserTokenKind::Identifier),
+                    (":", ParserTokenKind::ReservedSymbol),
                     ("x", ParserTokenKind::Identifier),
                     ("R", ParserTokenKind::UserSymbol),
                     ("y", ParserTokenKind::Identifier),
@@ -32208,6 +32328,9 @@ mod tests {
             SurfaceNodeKind::MatchCase => Some("MatchCase"),
             SurfaceNodeKind::MatchEnding => Some("MatchEnding"),
             SurfaceNodeKind::JustificationClause => Some("JustificationClause"),
+            SurfaceNodeKind::PredicatePattern => Some("PredicatePattern"),
+            SurfaceNodeKind::FormulaDefiniens => Some("FormulaDefiniens"),
+            SurfaceNodeKind::CoherenceCondition => Some("CoherenceCondition"),
             _ => None,
         }
     }

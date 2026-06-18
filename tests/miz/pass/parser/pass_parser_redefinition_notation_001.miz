@@ -6,7 +6,7 @@ antonym Infinite for Finite;
 definition
   redefine attr AttrR: x is empty means thesis;
   coherence by Ref;
-  redefine pred x R y means thesis;
+  redefine pred PredR: x R y means thesis;
   coherence with C by Ref;
   redefine func FuncMeansR: g x -> set means thesis;
   coherence by Ref;

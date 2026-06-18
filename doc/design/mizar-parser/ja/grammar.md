@@ -1550,11 +1550,9 @@ notation_pattern       ::= top-level の "for"、semicolon、definition boundary
                            item boundary まで受理される raw token ;
 ```
 
-Status note: 上の `redefine_pred` production は Chapter 9 / Appendix A に基づく
-修正後の target grammar である。現行 parser 実装と legacy pass corpus は、`todo.md`
-の predicate redefinition label repair が着地するまで task-36 以前の label なし surface
-を反映している場合がある。実装作業は label なし形式を architecture contract と
-みなすのではなく、この target に収束させなければならない。
+Status note: parser task 36 は、実装と active corpus を上の修正済み Chapter 9 /
+Appendix A `redefine_pred` production に同期済みである。task 36 以前の label なし
+surface は architecture contract ではない。
 
 `AttributeRedefinition`、`PredicateRedefinition`、`FunctorRedefinition` は、grammar
 が同一の箇所で task 23〜25 の pattern parser と definiens parser を再利用し、その後に

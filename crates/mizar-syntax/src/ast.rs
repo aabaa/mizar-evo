@@ -6255,6 +6255,182 @@ mod tests {
                 "snapshot should render task-27 line {expected}"
             );
         }
+
+        let predicate_redefinition = first_view(root, |kind| {
+            matches!(kind, SurfaceNodeKind::PredicateRedefinition)
+        })
+        .expect("task-27 fixture should contain PredicateRedefinition");
+        assert_eq!(
+            child_signature(predicate_redefinition),
+            vec![
+                "redefine",
+                "pred",
+                "P",
+                ":",
+                "PredicatePattern",
+                "means",
+                "FormulaDefiniens",
+                ";",
+                "CoherenceCondition",
+            ],
+            "PredicateRedefinition should expose label before PredicatePattern"
+        );
+    }
+
+    #[test]
+    fn task22_predicate_redefinition_missing_label_snapshot_is_distinct() {
+        let source_id = source_id(42);
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let redefine = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "redefine",
+            range(source_id, 0, 8),
+        );
+        let pred = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "pred",
+            range(source_id, 9, 13),
+        );
+        let missing_label = builder.add_recovery(
+            SyntaxRecoveryKind::MissingTerm,
+            range(source_id, 14, 14),
+            vec![],
+        );
+        let colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 14, 15),
+        );
+        let left = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 16, 17));
+        let symbol = builder.add_token(SurfaceTokenKind::UserSymbol, "R", range(source_id, 18, 19));
+        let means = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "means",
+            range(source_id, 20, 25),
+        );
+        let thesis = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "thesis",
+            range(source_id, 26, 32),
+        );
+        let semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 32, 33),
+        );
+        let coherence = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "coherence",
+            range(source_id, 34, 43),
+        );
+        let by = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "by",
+            range(source_id, 44, 46),
+        );
+        let reference_name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "Ref",
+            range(source_id, 47, 50),
+        );
+        let coherence_semicolon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source_id, 50, 51),
+        );
+
+        let pattern = builder.add_node(
+            SurfaceNodeKind::PredicatePattern,
+            range(source_id, 16, 19),
+            vec![left, symbol],
+        );
+        let formula = thesis_formula_node(&mut builder, source_id, thesis, 26, 32);
+        let definiens = builder.add_node(
+            SurfaceNodeKind::FormulaDefiniens,
+            range(source_id, 26, 32),
+            vec![formula],
+        );
+        let reference = builder.add_node(
+            SurfaceNodeKind::Reference,
+            range(source_id, 47, 50),
+            vec![reference_name],
+        );
+        let references = builder.add_node(
+            SurfaceNodeKind::ReferenceList,
+            range(source_id, 47, 50),
+            vec![reference],
+        );
+        let justification = builder.add_node(
+            SurfaceNodeKind::JustificationClause,
+            range(source_id, 44, 50),
+            vec![by, references],
+        );
+        let coherence_node = builder.add_node(
+            SurfaceNodeKind::CoherenceCondition,
+            range(source_id, 34, 51),
+            vec![coherence, justification, coherence_semicolon],
+        );
+        let redefinition = builder.add_node(
+            SurfaceNodeKind::PredicateRedefinition,
+            range(source_id, 0, 51),
+            vec![
+                redefine,
+                pred,
+                missing_label,
+                colon,
+                pattern,
+                means,
+                definiens,
+                semicolon,
+                coherence_node,
+            ],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 51),
+            vec![
+                redefine,
+                pred,
+                missing_label,
+                colon,
+                left,
+                symbol,
+                means,
+                thesis,
+                semicolon,
+                coherence,
+                by,
+                reference_name,
+                coherence_semicolon,
+                redefinition,
+            ],
+        );
+        let ast = builder.finish(Some(root), None);
+        let predicate_redefinition = first_view(ast.root_view().unwrap(), |kind| {
+            matches!(kind, SurfaceNodeKind::PredicateRedefinition)
+        })
+        .expect("fixture should contain PredicateRedefinition");
+
+        assert_eq!(
+            child_signature(predicate_redefinition),
+            vec![
+                "redefine",
+                "pred",
+                "MissingTerm",
+                ":",
+                "PredicatePattern",
+                "means",
+                "FormulaDefiniens",
+                ";",
+                "CoherenceCondition",
+            ],
+            "missing label recovery should occupy the label slot before PredicatePattern"
+        );
+        assert!(
+            ast.snapshot_text()
+                .contains("ErrorRecovery kind=MissingTerm"),
+            "snapshot should render missing-label recovery distinctly"
+        );
     }
 
     #[test]
@@ -10322,54 +10498,61 @@ mod tests {
             "pred",
             range(source_id, 69, 73),
         );
+        let pred_redefinition_label =
+            builder.add_token(SurfaceTokenKind::Identifier, "P", range(source_id, 74, 75));
+        let pred_colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 75, 76),
+        );
         let pred_left =
-            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 74, 75));
+            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 77, 78));
         let pred_symbol =
-            builder.add_token(SurfaceTokenKind::UserSymbol, "P", range(source_id, 76, 77));
+            builder.add_token(SurfaceTokenKind::UserSymbol, "R", range(source_id, 79, 80));
         let pred_means = builder.add_token(
             SurfaceTokenKind::ReservedWord,
             "means",
-            range(source_id, 78, 83),
+            range(source_id, 81, 86),
         );
         let pred_thesis = builder.add_token(
             SurfaceTokenKind::ReservedWord,
             "thesis",
-            range(source_id, 84, 90),
+            range(source_id, 87, 93),
         );
         let pred_semicolon = builder.add_token(
             SurfaceTokenKind::ReservedSymbol,
             ";",
-            range(source_id, 90, 91),
+            range(source_id, 93, 94),
         );
         let pred_coherence = builder.add_token(
             SurfaceTokenKind::ReservedWord,
             "coherence",
-            range(source_id, 92, 101),
+            range(source_id, 95, 104),
         );
         let pred_with = builder.add_token(
             SurfaceTokenKind::ReservedWord,
             "with",
-            range(source_id, 102, 106),
+            range(source_id, 105, 109),
         );
-        let pred_label = builder.add_token(
+        let pred_coherence_label = builder.add_token(
             SurfaceTokenKind::Identifier,
             "C",
-            range(source_id, 107, 108),
+            range(source_id, 110, 111),
         );
         let pred_by = builder.add_token(
             SurfaceTokenKind::ReservedWord,
             "by",
-            range(source_id, 109, 111),
+            range(source_id, 112, 114),
         );
         let pred_reference_name = builder.add_token(
             SurfaceTokenKind::Identifier,
             "Ref",
-            range(source_id, 112, 115),
+            range(source_id, 115, 118),
         );
         let pred_coherence_semicolon = builder.add_token(
             SurfaceTokenKind::ReservedSymbol,
             ";",
-            range(source_id, 115, 116),
+            range(source_id, 118, 119),
         );
 
         let func_redefine = builder.add_token(
@@ -10520,47 +10703,49 @@ mod tests {
 
         let predicate_pattern = builder.add_node(
             SurfaceNodeKind::PredicatePattern,
-            range(source_id, 74, 77),
+            range(source_id, 77, 80),
             vec![pred_left, pred_symbol],
         );
-        let pred_formula = thesis_formula_node(&mut builder, source_id, pred_thesis, 84, 90);
+        let pred_formula = thesis_formula_node(&mut builder, source_id, pred_thesis, 87, 93);
         let pred_definiens = builder.add_node(
             SurfaceNodeKind::FormulaDefiniens,
-            range(source_id, 84, 90),
+            range(source_id, 87, 93),
             vec![pred_formula],
         );
         let pred_reference = builder.add_node(
             SurfaceNodeKind::Reference,
-            range(source_id, 112, 115),
+            range(source_id, 115, 118),
             vec![pred_reference_name],
         );
         let pred_references = builder.add_node(
             SurfaceNodeKind::ReferenceList,
-            range(source_id, 112, 115),
+            range(source_id, 115, 118),
             vec![pred_reference],
         );
         let pred_justification = builder.add_node(
             SurfaceNodeKind::JustificationClause,
-            range(source_id, 109, 115),
+            range(source_id, 112, 118),
             vec![pred_by, pred_references],
         );
         let pred_coherence_node = builder.add_node(
             SurfaceNodeKind::CoherenceCondition,
-            range(source_id, 92, 116),
+            range(source_id, 95, 119),
             vec![
                 pred_coherence,
                 pred_with,
-                pred_label,
+                pred_coherence_label,
                 pred_justification,
                 pred_coherence_semicolon,
             ],
         );
         let predicate_redefinition = builder.add_node(
             SurfaceNodeKind::PredicateRedefinition,
-            range(source_id, 60, 116),
+            range(source_id, 60, 119),
             vec![
                 pred_redefine,
                 pred_keyword,
+                pred_redefinition_label,
+                pred_colon,
                 predicate_pattern,
                 pred_means,
                 pred_definiens,
@@ -10669,6 +10854,8 @@ mod tests {
                 attr_coherence_semicolon,
                 pred_redefine,
                 pred_keyword,
+                pred_redefinition_label,
+                pred_colon,
                 pred_left,
                 pred_symbol,
                 pred_means,
@@ -10676,7 +10863,7 @@ mod tests {
                 pred_semicolon,
                 pred_coherence,
                 pred_with,
-                pred_label,
+                pred_coherence_label,
                 pred_by,
                 pred_reference_name,
                 pred_coherence_semicolon,
@@ -14292,6 +14479,33 @@ mod tests {
         }
         view.child_views()
             .find_map(|child| first_view(child, predicate))
+    }
+
+    fn child_signature(view: SurfaceNodeView<'_>) -> Vec<&'static str> {
+        view.child_views()
+            .map(|child| {
+                if let Some(token) = child.as_token() {
+                    return match token.text.as_ref() {
+                        "redefine" => "redefine",
+                        "pred" => "pred",
+                        "P" => "P",
+                        ":" => ":",
+                        "means" => "means",
+                        ";" => ";",
+                        _ => "Token",
+                    };
+                }
+                match child.kind() {
+                    SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingTerm) => {
+                        "MissingTerm"
+                    }
+                    SurfaceNodeKind::PredicatePattern => "PredicatePattern",
+                    SurfaceNodeKind::FormulaDefiniens => "FormulaDefiniens",
+                    SurfaceNodeKind::CoherenceCondition => "CoherenceCondition",
+                    _ => "Node",
+                }
+            })
+            .collect()
     }
 
     fn snapshot_id(byte: u8) -> BuildSnapshotId {

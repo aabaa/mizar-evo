@@ -14,6 +14,7 @@ diagnostic_codes = [
   "malformed_term_expression",
   "malformed_justification",
   "malformed_term_expression",
+  "malformed_term_expression",
   "malformed_justification",
   "malformed_type_expression",
   "malformed_justification",
@@ -25,4 +26,4 @@ tags = ["active_parse_only"]
 spec_refs = [
   "spec.en.syntax.redefinition_notation.parser",
 ]
-notes = "Active parse-only runner coverage for parser task 27 recovery: malformed attr/pred/func redefinition patterns and coherence justifications, empty synonym sides, missing alias for-delimiter recovery, and unsupported redefine mode fallback."
+notes = "Active parse-only runner coverage for parser task 27 and task 36 recovery: malformed attr/pred/func redefinition patterns, missing predicate redefinition label recovery, coherence justifications, empty synonym sides, missing alias for-delimiter recovery, and unsupported redefine mode fallback."

@@ -1376,6 +1376,7 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
                     "malformed_term_expression".to_owned(),
                     "malformed_justification".to_owned(),
                     "malformed_term_expression".to_owned(),
+                    "malformed_term_expression".to_owned(),
                     "malformed_justification".to_owned(),
                     "malformed_type_expression".to_owned(),
                     "malformed_justification".to_owned(),

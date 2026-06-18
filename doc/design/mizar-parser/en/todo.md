@@ -796,13 +796,18 @@ older numeric syntax task references appear to disagree, prefer
     - Deps: 34, `mizar-syntax` task 16 / S-016. Spec:
       [21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md).
 
-36. **Predicate redefinition label repair.** [ ]
+36. **Predicate redefinition label repair.** [x]
     - Bring parser task 27 back into sync with the corrected Chapter 9 and
       Appendix A production `redefine pred label: pred_pattern ...`: consume the
       required label and colon before `PredicatePattern`, emit the label child
       before the pattern with `MissingTerm` recovery for omitted labels, update
       pass/fail corpus cases and parser unit tests, and synchronize parser
       grammar/recovery plus mizar-syntax AST documentation.
+    - Result: implemented with `mizar-syntax` task 22. The parser consumes and
+      emits the required predicate redefinition label slot before
+      `PredicatePattern`, inserts `MissingTerm` for omitted labels, updates
+      unit and active parse-only corpus coverage, and synchronizes grammar plus
+      syntax AST documentation with the labeled contract.
     - Deps: 27. Spec: [09.predicates.md](../../../spec/en/09.predicates.md),
       [appendix_a.grammar_summary.md](../../../spec/en/appendix_a.grammar_summary.md).
 

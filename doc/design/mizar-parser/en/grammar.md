@@ -1654,12 +1654,9 @@ notation_pattern       ::= raw tokens accepted up to top-level "for",
                            semicolon, definition boundary, or item boundary ;
 ```
 
-Status note: the `redefine_pred` production above is the corrected target
-grammar from Chapter 9 / Appendix A. The current parser implementation and
-legacy pass corpus may still reflect the pre-task-36 unlabeled surface until
-the predicate redefinition label repair in `todo.md` lands; implementation work
-must converge to this target rather than treating the unlabeled form as the
-architecture contract.
+Status note: parser task 36 synchronized the implementation and active corpus
+with the corrected Chapter 9 / Appendix A `redefine_pred` production above.
+The pre-task-36 unlabeled surface is not the architecture contract.
 
 `AttributeRedefinition`, `PredicateRedefinition`, and `FunctorRedefinition`
 reuse the task-23 through task-25 pattern and definiens parsers where the

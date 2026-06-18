@@ -587,7 +587,7 @@ interaction. Spec references are the normative grammar chapters under
       workspace adopts a rustdoc policy — whichever comes first.
     - Deps: 17. Spec: repository documentation policy.
 
-22. **Predicate redefinition label AST follow-through.** [ ]
+22. **Predicate redefinition label AST follow-through.** [x]
     - Pair with the same implementation change as `mizar-parser` task 36:
       update the `PredicateRedefinition` builder/accessor/snapshot coverage so
       the node owns the required label child before `PredicatePattern`, uses
@@ -599,6 +599,11 @@ interaction. Spec references are the normative grammar chapters under
       snapshot rendering distinguishes present labels from missing-label
       recovery; downstream views do not treat the earlier unlabeled parser
       surface as the stable AST contract.
+    - Result: paired with `mizar-parser` task 36. `PredicateRedefinition` now
+      owns the label slot before `PredicatePattern`, omitted labels are
+      represented by `MissingTerm` recovery in that slot, syntax builder/unit
+      coverage checks present and missing labels, and the active parser corpus
+      uses the corrected labeled surface.
     - Deps: `mizar-parser` task 36. Spec: [ast.md](./ast.md),
       [../../mizar-parser/en/grammar.md](../../mizar-parser/en/grammar.md).
 

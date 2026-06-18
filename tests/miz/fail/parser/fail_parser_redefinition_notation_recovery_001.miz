@@ -2,7 +2,7 @@ definition
   let x, y be set;
   redefine attr : x is means thesis;
   coherence;
-  redefine pred x c= means thesis;
+  redefine pred : x c= means thesis;
   coherence with by Ref;
   redefine func Bad: f -> equals x;
   coherence by;

@@ -772,13 +772,18 @@ resolver / build-system 依存を避ける。
     - 依存: 34、`mizar-syntax` task 16 / S-016。仕様:
       [21.source_code_annotation_and_atp.md](../../../spec/ja/21.source_code_annotation_and_atp.md)。
 
-36. **predicate redefinition label の修正。** [ ]
+36. **predicate redefinition label の修正。** [x]
     - 修正済みの第 9 章と Appendix A の production
       `redefine pred label: pred_pattern ...` に parser task 27 を同期する:
       `PredicatePattern` の前に必須 label と colon を消費し、label child を
       pattern の前に送出し、label 欠落には `MissingTerm` recovery を使う。
       pass/fail corpus case と parser unit test を更新し、parser grammar/recovery
       および mizar-syntax AST documentation も同期する。
+    - 結果: `mizar-syntax` task 22 とともに実装済み。parser は必須の predicate
+      redefinition label slot を `PredicatePattern` の前で消費・送出し、省略
+      label には `MissingTerm` を挿入する。unit test と active parse-only corpus
+      coverage を更新し、grammar と syntax AST documentation を labeled contract
+      に同期した。
     - 依存: 27。仕様: [09.predicates.md](../../../spec/ja/09.predicates.md)、
       [appendix_a.grammar_summary.md](../../../spec/ja/appendix_a.grammar_summary.md)。
 
