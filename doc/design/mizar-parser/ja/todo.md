@@ -789,10 +789,18 @@ resolver / build-system 依存を避ける。
 
 ### 強化と横断的フォローアップ
 
-37. **recovery の統合と fail コーパスの拡張。** [ ]
+37. **recovery の統合と fail コーパスの拡張。** [x]
     - 全カテゴリの recovery 挙動を監査する: スキップトークンノード、対応
       しない区切り記号、不正な注釈。カテゴリがまだ同期せずに中断する箇所の
       ギャップを埋める。推奨 pass / fail 比率へ向けて fail コーパスを拡張する。
+    - 結果: task 36 までの実装済み recovery surface を監査し、古くなっていた
+      recovery status の記述を `design_drift` と分類した。top-level の unmatched
+      `@[` prefix が後続 theorem host を保持せず unexpected top-level recovery へ
+      落ち得る malformed-annotation host synchronization の `source_drift` を閉じた。
+      recovered AST shape の parser unit coverage、active fail corpus case
+      `fail_parser_recovery_consolidation_001`、traceability entry
+      `spec.en.syntax.parser_recovery.annotation_sync` を追加し、本 TODO と
+      [recovery.md](./recovery.md) を英語・日本語で同期した。
     - 依存: 35。仕様: [recovery.md](./recovery.md)、
       [architecture/ja/20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
 

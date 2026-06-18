@@ -1,12 +1,14 @@
 # mizar-parser: Recovery
 
-Status: minimal task-12 recovery, task-28 nested block-end recovery, task-5
-module-skeleton recovery, task-6 import recovery, task-7 export/visibility
-recovery, task-8 type-expression recovery, task-9 primary-term recovery,
-task-13 atomic-formula recovery, task-14 formula recovery, S-013/S-014
-statement/proof recovery, S-015 definition recovery through task 29, and
-task-33 algorithm control-flow recovery plus task-34 algorithm-verification
-recovery are implemented. Full grammar recovery remains planned.
+Status: recovery is implemented and task-37 consolidated for the parser grammar
+surface through task 36: module/import/export, type/term/formula,
+statement/proof, S-015 definition and registration content, templates,
+algorithms/claims, algorithm control flow and verification clauses,
+annotations, and predicate redefinition label repair. Future grammar growth may
+add new category-local recovery cases, but no known implemented parser category
+falls through to an unintended abort. The documented stray unmatched `end`
+path remains intentionally unrecoverable and returns diagnostics with
+`ast = None`.
 
 ## Purpose
 
@@ -150,6 +152,31 @@ Current behavior:
   frontend-facing scope skeleton recognizes nested `struct` blocks and only
   treats `inherit` as block-like when a `where` appears before the statement
   semicolon or `end`;
+- task-30 registration parsing uses registration-content synchronization
+  inside `registration ... end` blocks. Malformed registration parameters,
+  cluster heads, missing labels, missing antecedents or consequents,
+  malformed functorial payloads, unsupported nullary functorial ambiguity,
+  missing correctness conditions, and malformed reduction justifications use
+  the existing term/formula/type/justification recovery vocabulary and skip to
+  semicolon, `end`, the next registration-content start, a top-level item
+  boundary, or EOF. Missing registration block closers use `MissingEnd`;
+- task-31 template parsing recovers malformed template loci and argument
+  lists with `MalformedTypeExpression`, `MalformedTermExpression`, or
+  `MalformedFormulaExpression` according to the missing child kind. Chained
+  non-associative template predicate arguments keep the task-14
+  `NonAssociativeOperatorChain` diagnostic. Malformed template tails
+  synchronize at bracket, comma, semicolon, block, or item boundaries;
+- task-32 algorithm and claim parsing recovers malformed algorithm schema
+  loci, parameter lists, missing return types, declaration bindings, ghost
+  assignments, snapshot statements, return tails, assignment terms, malformed
+  claim targets/content, and missing algorithm or claim semicolons while
+  preserving the surrounding definition or top-level block item;
+- task-33 algorithm control-flow parsing recovers malformed `if`, `while`,
+  range and collection `for`, `match`, `otherwise`/`exhaustive`, `break`, and
+  `continue` shapes at algorithm statement-list boundaries. Missing nested
+  control-flow closers use `MissingEnd`; malformed heads and tails use the
+  nearest term/formula/skipped-token recovery vocabulary without consuming
+  following statements;
 - task-34 algorithm verification parsing recovers duplicate or out-of-order
   header clauses by skipping to the algorithm body boundary, inserts
   `MissingFormula` after `requires`, `ensures`, loop `invariant`, and `assert`
@@ -158,6 +185,23 @@ Current behavior:
   skipped-token recovery through the clause semicolon, and treats
   `invariant` / `decreasing` after an ordinary loop-body statement as
   misplaced algorithm statements recovered at the clause semicolon;
+- task-35 annotation parsing reports malformed annotation arguments,
+  proof-hint options, empty slots, invalid fixed-annotation values, standalone
+  diagnostic annotation operands, and unmatched annotation delimiters with
+  `MalformedAnnotation`, `MissingAnnotationArgument`,
+  `MalformedTermExpression`, or `UnmatchedOpeningDelimiter` as appropriate.
+  Malformed annotation delimiters synchronize at the following eligible item,
+  definition content, registration content, statement, algorithm statement,
+  semicolon, `end`, or EOF boundary so a bad prefix does not consume the host
+  that follows it;
+- task-36 predicate redefinition label repair treats an omitted required
+  redefinition label as malformed term syntax and inserts a `MissingTerm`
+  child before the predicate pattern while preserving the corrected
+  `redefine pred label: pattern` child order;
+- task-37 consolidation audited the implemented recovery surfaces, closed the
+  malformed-annotation host synchronization gap, and expanded active fail
+  corpus coverage for annotation recovery across definition, algorithm,
+  top-level, and registration hosts;
 - a stray `end` that has no matching block opener returns syntax diagnostics
   with `ast = None`.
 

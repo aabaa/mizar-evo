@@ -813,11 +813,20 @@ older numeric syntax task references appear to disagree, prefer
 
 ### Hardening and cross-cutting follow-ups
 
-37. **Recovery consolidation and fail-corpus expansion.** [ ]
+37. **Recovery consolidation and fail-corpus expansion.** [x]
     - Audit recovery behavior across all categories: skipped-token nodes,
       unmatched delimiters, malformed annotations; close gaps where a category
       still aborts instead of synchronizing. Expand the fail corpus toward the
       recommended pass/fail mix.
+    - Result: audited the implemented recovery surface through task 36,
+      classified stale recovery-status prose as `design_drift`, and closed the
+      malformed-annotation host synchronization `source_drift` where an
+      unmatched top-level `@[` prefix could fall through to unexpected
+      top-level recovery instead of preserving the following theorem host.
+      Added parser unit coverage for the recovered AST shape, active fail
+      corpus case `fail_parser_recovery_consolidation_001`, and traceability
+      entry `spec.en.syntax.parser_recovery.annotation_sync`; synchronized
+      this TODO and [recovery.md](./recovery.md) in English and Japanese.
     - Deps: 35. Spec: [recovery.md](./recovery.md),
       [architecture/en/20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 

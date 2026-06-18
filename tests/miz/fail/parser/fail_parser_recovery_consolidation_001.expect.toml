@@ -1,0 +1,24 @@
+schema_version = 1
+id = "fail_parser_recovery_consolidation_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser.recovery"
+source = "fail_parser_recovery_consolidation_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "recovery_consolidation_annotation_sync"
+stable_detail_key = "parser.recovery.consolidation.annotation_sync"
+diagnostic_codes = [
+  "malformed_annotation",
+  "malformed_annotation",
+  "malformed_annotation",
+  "malformed_term_expression",
+  "malformed_annotation",
+  "malformed_annotation",
+]
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = [
+  "spec.en.syntax.parser_recovery.annotation_sync",
+]
+notes = "Active parser task-37 fail corpus coverage for malformed annotation recovery that preserves following definition-content, algorithm-statement, top-level, and registration-content hosts."

@@ -1,0 +1,23 @@
+definition
+  @[bad
+  theorem RecoveredDefinitionHost: thesis;
+
+  @proof_hint(max_axioms:)
+  theorem RecoveredProofHintHost: thesis;
+
+  algorithm guarded()
+  do
+    @trace(, "late")
+    assert thesis;
+    @eval()
+    break;
+  end;
+end;
+
+@[top
+theorem RecoveredTopHost: thesis;
+
+registration
+  @[reg
+  let x be set;
+end;

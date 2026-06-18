@@ -2,13 +2,14 @@
 
 > 正本は英語です。英語版: [../en/recovery.md](../en/recovery.md)。
 
-状態: task 12 の最小回復、task 28 の入れ子 block-end 回復、task 5 の
-module-skeleton recovery、task 6 の import recovery、task 7 の export/visibility
-recovery、task 8 の type-expression recovery、task 9 の primary-term recovery、
-task 13 の atomic-formula recovery、task 14 の formula recovery、S-013 / S-014 の
-statement/proof recovery、task 29 までの S-015 definition recovery、task 33 の
-algorithm control-flow recovery、および task 34 の algorithm-verification recovery は
-実装済み。完全な文法回復は引き続き計画中。
+状態: parser task 36 までの grammar surface について、recovery は実装済みで
+task 37 により統合監査済みである。対象は module/import/export、type/term/formula、
+statement/proof、S-015 definition と registration content、template、
+algorithm/claim、algorithm control flow と verification clause、annotation、および
+predicate redefinition label repair である。今後の grammar growth では新しい
+category-local recovery が追加され得るが、既知の実装済み parser category が意図せず
+abort に落ちる箇所はない。対応する opener を持たない裸の `end` は、文書化された
+意図的な unrecoverable path のままであり、構文診断と `ast = None` を返す。
 
 ## 目的
 
@@ -136,6 +137,30 @@ algorithm control-flow recovery、および task 34 の algorithm-verification r
   boundary、EOF まで skip する。frontend-facing な scope skeleton は nested `struct`
   block を認識し、`inherit` は statement semicolon または `end` より前に `where` がある
   場合だけ block-like として扱う。
+- task 30 の registration parsing は、`registration ... end` block 内で
+  registration-content synchronization を使う。malformed な registration parameter、
+  cluster head、label 欠落、antecedent / consequent 欠落、malformed functorial
+  payload、未対応の nullary functorial ambiguity、correctness condition 欠落、
+  malformed reduction justification は、既存の term / formula / type / justification
+  recovery vocabulary を使い、semicolon、`end`、次の registration-content start、
+  top-level item boundary、または EOF まで同期する。registration block closer 欠落には
+  `MissingEnd` を使う。
+- task 31 の template parsing は、malformed な template loci と argument list を、
+  欠落 child の種類に応じて `MalformedTypeExpression`、
+  `MalformedTermExpression`、または `MalformedFormulaExpression` で回復する。
+  chained non-associative template predicate argument は task 14 の
+  `NonAssociativeOperatorChain` diagnostic を保つ。malformed template tail は bracket、
+  comma、semicolon、block、または item boundary で同期する。
+- task 32 の algorithm / claim parsing は、malformed algorithm schema loci、
+  parameter list、return type 欠落、declaration binding、ghost assignment、
+  snapshot statement、return tail、assignment term、malformed claim target / content、
+  algorithm または claim semicolon 欠落を回復し、周囲の definition または top-level
+  block item を保持する。
+- task 33 の algorithm control-flow parsing は、malformed な `if`、`while`、
+  range / collection `for`、`match`、`otherwise` / `exhaustive`、`break`、
+  `continue` の形を algorithm statement-list boundary で回復する。nested control-flow
+  closer 欠落には `MissingEnd` を使い、malformed head / tail は次の statement を
+  消費せず、最も近い term / formula / skipped-token recovery vocabulary を使う。
 - task 34 の algorithm verification parsing は、重複または順序違反の header clause を
   algorithm body boundary まで skip して recover する。`requires`、`ensures`、loop
   `invariant`、`assert` の formula 欠落には `MissingFormula` を挿入し、空または
@@ -143,6 +168,20 @@ algorithm control-flow recovery、および task 34 の algorithm-verification r
   `for ... do decreasing ...;` は clause semicolon まで skipped-token recovery して
   reject し、通常の loop-body statement 後の `invariant` / `decreasing` は misplaced
   algorithm statement として clause semicolon で recover する。
+- task 35 の annotation parsing は、malformed annotation argument、proof-hint option、
+  empty slot、不正な fixed-annotation value、standalone diagnostic annotation operand、
+  unmatched annotation delimiter を、必要に応じて `MalformedAnnotation`、
+  `MissingAnnotationArgument`、`MalformedTermExpression`、または
+  `UnmatchedOpeningDelimiter` で報告する。malformed annotation delimiter は、後続の
+  eligible item、definition content、registration content、statement、algorithm
+  statement、semicolon、`end`、または EOF boundary で同期し、不正な prefix が続く
+  host を消費しないようにする。
+- task 36 の predicate redefinition label repair は、省略された必須 redefinition label を
+  malformed term syntax として扱い、predicate pattern の前に `MissingTerm` child を
+  挿入しつつ、修正済みの `redefine pred label: pattern` child order を保持する。
+- task 37 の統合では、実装済み recovery surface を監査し、malformed annotation の
+  host synchronization gap を閉じ、definition、algorithm、top-level、registration
+  host をまたぐ annotation recovery の active fail corpus coverage を拡張した。
 - 対応する block opener を持たない裸の `end` は、構文診断とともに `ast = None` を返す。
 
 ## 公開 enum の互換性
