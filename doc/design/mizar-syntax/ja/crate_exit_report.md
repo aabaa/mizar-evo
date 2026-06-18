@@ -5,16 +5,19 @@
 
 ## 結果
 
-状態: 現在の autonomous `mizar-syntax` milestone について complete。
-[todo.md](./todo.md) の non-deferred task はすべて完了済みであり、S-021 rustdoc
-summary は policy trigger により明示的に deferred のまま残る。
+状態: task-35 autonomous `mizar-syntax` milestone の historical exit report。
+現在の [todo.md](./todo.md) は post-exit follow-up を追跡している。task 22 と
+task 23 は完了済み、task 24 と task 25 は pending のまま、S-021 rustdoc summary は
+policy trigger により明示的に deferred のまま残る。task 25 が final close-out を
+refresh するまでは、この report は以前の milestone evidence として扱う。
 
 品質スコア: reviewed 94/100。
 
-適用された score cap: なし。`mizar-syntax` scope には、未解決の hard gate
-failure、`source_undocumented_behavior`、`test_expectation_drift`、boundary
-violation、repo metadata conflict は把握していない。残る risk は deferred の
-parser/frontend producer work または policy-triggered rustdoc work として分類済み。
+適用された score cap: report 時点ではなし。S-023 再監査時点でも、
+`mizar-syntax` scope には新しい未解決の hard gate failure、
+`source_undocumented_behavior`、`test_expectation_drift`、boundary violation、
+repo metadata conflict は把握していない。現在残る work は task 24/25 の AST
+refactor follow-up と policy-triggered rustdoc deferral である。
 
 ## 範囲
 
@@ -24,6 +27,8 @@ Milestone scope:
   trivia、recovery、diagnostic、typed accessor、snapshot contract を完了する。
 - syntax task completion に必要な paired parser-facing syntax work を parser task
   4-35 まで完了する。
+- この historical report の後に parser task 36 / syntax task 22 の predicate-label
+  follow-through が着地し、S-023 audit で追跡されていることを記録する。
 - syntax representation を source-shaped に保ち、semantic name、type、proof、
   VC behavior を入れない。
 - source/spec/test correspondence、bilingual synchronization、本 crate exit evidence

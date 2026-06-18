@@ -81,7 +81,7 @@ are companions when both are present.
   vocabulary; current milestone complete with explicit deferred follow-ups.
 - [mizar-parser](./mizar-parser/README.md) - grammar implementation, Pratt
   parsing, syntax recovery, and parse-only corpus execution; grammar coverage
-  has grown through task 35, with task 36 and hardening work pending.
+  has grown through task 36, with hardening work pending.
 - [mizar-frontend](./mizar-frontend/README.md) - source loading and phase 1-3
   orchestration across session, lexer, syntax, and parser services; current
   milestone complete.

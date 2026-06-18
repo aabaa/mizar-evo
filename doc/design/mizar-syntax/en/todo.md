@@ -12,7 +12,7 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| ast | [ast.md](./ast.md) | `src/ast.rs` | [x] rowan storage boundary and task-35 vocabulary complete; S-019 source/spec audit found no missing implementation; task 24 tracks a behavior-preserving source split |
+| ast | [ast.md](./ast.md) | `src/ast.rs` | [x] rowan storage boundary, task-35 vocabulary, and task-22 predicate-label follow-through complete; S-023 audit found no remaining predicate-label gap; task 24 tracks a behavior-preserving source split |
 | trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [x] task-4 model implemented; task-5 item attachment fixture landed |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [x] task-5 recovery vocabulary implemented; parser producers remain incremental |
 
@@ -607,10 +607,25 @@ interaction. Spec references are the normative grammar chapters under
     - Deps: `mizar-parser` task 36. Spec: [ast.md](./ast.md),
       [../../mizar-parser/en/grammar.md](../../mizar-parser/en/grammar.md).
 
-23. **Predicate-label follow-up audit.** [ ]
+23. **Predicate-label follow-up audit.** [x]
     - Re-run the source/spec correspondence and bilingual documentation sync
       audits for the task-22 syntax repair; record any remaining AST,
       accessor, snapshot, or parser/syntax contract gaps as follow-up tasks.
+      The audit output is an S-023 update to
+      [source_spec_correspondence.md](./source_spec_correspondence.md) and
+      [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md).
+      It must also check status surfaces that mention the paired parser repair,
+      including parser README companions, top-level design roadmap docs, and
+      the historical crate-exit report.
+      Language spec changes, implementation changes, existing `.miz` source
+      changes, and expectation rebaselines are out of scope unless the audit
+      classifies a blocking gap and records a separate owner.
+    - Result: S-023 found the task-22 / parser-task-36 repair implemented,
+      tested, and documented with no remaining AST, accessor, snapshot,
+      parser/syntax contract, source/spec, bilingual documentation,
+      expectation, or metadata gap. It closed documentation `design_drift` in
+      stale parser/top-level/syntax status text without changing language
+      behavior.
     - Deps: 22. Spec: [ast.md](./ast.md), this TODO, and repository
       documentation policy.
 

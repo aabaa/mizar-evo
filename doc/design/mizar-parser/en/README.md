@@ -12,10 +12,10 @@ frontend-adapted token transfer object with session `SourceRange`s and returns
 `mizar_syntax::SurfaceAst` plus syntax diagnostics. Task 2 parser
 infrastructure is in place as private cursor, syntax-event, expected-token
 diagnostic, synchronization, and recovery-emission helpers. Grammar coverage has
-grown through parser task 35, including module/import/export,
+grown through parser task 36, including module/import/export,
 type/term/formula, statement/proof, definition, structure, registration,
-template, algorithm, verification-clause, and annotation surfaces. Task 36
-predicate redefinition label repair and hardening/audit tasks 37-45 remain
+template, algorithm, verification-clause, annotation surfaces, and the
+predicate redefinition label repair. Hardening/audit tasks 37-45 remain
 planned.
 
 Initial module specs:

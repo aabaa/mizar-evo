@@ -39,8 +39,8 @@ and the crate ownership map in
 |---|---:|---|---|---|
 | mizar-session | yes | Source identity, source maps, source loading, build snapshots, retention | [x] current milestone complete; no deferred crate-owned item | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | yes | Raw scan, scope skeletons, lexical environments, context-sensitive token disambiguation | [x] current milestone complete; `.miz` lexer companions and selector semantics are downstream-owned | [todo](./mizar-lexer/en/todo.md) |
-| mizar-syntax | yes | Rowan-backed `SurfaceAst`, syntax trivia, recovery, typed views, parser-facing syntax vocabulary | [x] current milestone complete; deferred rustdoc, predicate-label follow-through, and refactor follow-ups remain | [todo](./mizar-syntax/en/todo.md) |
-| mizar-parser | yes | Grammar, Pratt parsing, syntax recovery, parse-only corpus execution | [~] grammar tasks 1-35 complete; task 36 and hardening/audit tasks 37-45 remain | [todo](./mizar-parser/en/todo.md) |
+| mizar-syntax | yes | Rowan-backed `SurfaceAst`, syntax trivia, recovery, typed views, parser-facing syntax vocabulary | [x] current milestone complete; deferred rustdoc and AST refactor follow-ups remain | [todo](./mizar-syntax/en/todo.md) |
+| mizar-parser | yes | Grammar, Pratt parsing, syntax recovery, parse-only corpus execution | [~] grammar tasks 1-36 complete; hardening/audit tasks 37-45 remain | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | yes | Source loading and phase 1-3 orchestration across session, lexer, syntax, and parser | [x] current milestone complete; future parser growth may open bounded follow-ups | [todo](./mizar-frontend/en/todo.md) |
 | mizar-test | yes | Corpus discovery, expectation sidecars, staged model, traceability, snapshots, harness behavior | [~] implementation exists; formal lint/gap audit, runner validation, snapshots, and reporting remain | [todo](./mizar-test/en/todo.md) |
 | mizar-build | yes | Phase 0 workspace planning plus later task graph, scheduler, resources, cancellation, failure state | [~] scaffold and package-name validation slice exist; planner spec and full manifest/lockfile parsing are next | [todo](./mizar-build/en/todo.md) |
@@ -73,7 +73,7 @@ before per-crate task execution starts.
 | IV-003 | `source_drift` | Clean sequential, clean parallel, incremental sequential, and incremental parallel builds must agree on proof acceptance, published artifacts, interface hashes, dependency-facing summaries, and canonical diagnostics. | [mizar-build task 24](./mizar-build/en/todo.md), [mizar-test task 14](./mizar-test/en/todo.md), [mizar-driver task 16](./mizar-driver/en/todo.md) |
 | IV-004 | `source_drift` | ATP portfolio evidence collection may be parallel, but accepted proof identity and early stop are policy-deterministic, not raw-completion-order driven. | [mizar-atp task 25](./mizar-atp/en/todo.md), [mizar-proof tasks 6-7, 9, and 12-13](./mizar-proof/en/todo.md) |
 | IV-005 | `source_drift` | Proof-reuse metadata exported to the cache must include compatible verifier policy plus selected proof witness hash or deterministic discharge hash without upgrading evidence classes. | [mizar-proof task 17](./mizar-proof/en/todo.md), [mizar-cache task 20](./mizar-cache/en/todo.md) |
-| IV-006 | `design_drift` | The corrected labeled `redefine pred label: ...` target is documented, while current parser/syntax implementation is still repaired by pending follow-up tasks. | [mizar-parser task 36](./mizar-parser/en/todo.md), [mizar-syntax task 22](./mizar-syntax/en/todo.md) |
+| IV-006 | `design_drift` (closed) | The corrected labeled `redefine pred label: ...` target is documented and implemented by parser task 36 / syntax task 22. Syntax task 23 closed the stale roadmap/status drift that still described the repair as pending. | [mizar-parser task 36](./mizar-parser/en/todo.md), [mizar-syntax tasks 22-23](./mizar-syntax/en/todo.md) |
 | IV-007 | `source_drift` | Snapshot-scoped results must respect `BuildSnapshotId` freshness: obsolete or stale results cannot publish as current, obsolete outputs can be reused only as validated cache inputs, and open-buffer results never become package artifacts. | [mizar-ir tasks 7-10 and 13](./mizar-ir/en/todo.md), [mizar-build tasks 14, 18, and 24](./mizar-build/en/todo.md), [mizar-driver tasks 3, 14, and 16](./mizar-driver/en/todo.md), [mizar-diagnostics tasks 8-9](./mizar-diagnostics/en/todo.md), [mizar-lsp tasks 6-9](./mizar-lsp/en/todo.md) |
 
 Already covered by current frontend work: token/AST cache keys separate active
@@ -92,15 +92,14 @@ The current foundation milestone is complete for:
 - **mizar-lexer** - lexer-owned raw scan, local/imported lexical environments,
   source-position-aware operator metadata, and token disambiguation.
 - **mizar-syntax** - rowan-backed `SurfaceAst`, syntax diagnostics, trivia,
-  recovery vocabulary, and parser-facing syntax vocabulary through parser task
-  35.
+  recovery vocabulary, parser-facing syntax vocabulary through parser task 35,
+  and the parser-task-36 predicate-label follow-through.
 - **mizar-frontend** - phase 1-3 orchestration, parser-assisted lexing plan,
   parser handoff, cache keys, diagnostics merge, determinism, fuzz, and current
   parser-growth follow-through.
 
-`mizar-parser` has also completed the main grammar-growth run through task 35,
-but remains [~] because the predicate redefinition label repair and hardening
-tasks are still open.
+`mizar-parser` has also completed the main grammar-growth run through task 36,
+but remains [~] because hardening tasks 37-45 are still open.
 
 ### Immediate Next Work
 
@@ -110,19 +109,18 @@ tasks are still open.
    and module-index construction (tasks 4-6). This is the cleanest next
    foundation step because package/module identity and resolver inputs depend on
    it.
-2. **mizar-parser / mizar-syntax predicate-label follow-through** - complete
-   [mizar-parser task 36](./mizar-parser/en/todo.md) and
-   [mizar-syntax task 22](./mizar-syntax/en/todo.md), then run the paired audit
-   tasks. This closes IV-006 before parser snapshots and resolver consumers grow
-   further.
+2. **mizar-syntax AST module-boundary refactor** - complete
+   [mizar-syntax tasks 24-25](./mizar-syntax/en/todo.md) after the task-23
+   predicate-label audit. Keep the public `mizar_syntax` API, snapshot text,
+   SyntaxKind numbering, and parser-facing builder contract stable while
+   splitting the oversized AST source file.
 3. **mizar-test foundation cleanup** - run the lint-policy guard and
    source/spec gap audit (tasks 1-2), then harden validation/reporting,
    snapshots, and coverage reporting. The source crate already exists; the TODO
    is the formal gap-closing plan.
-4. **mizar-parser hardening** - after task 36, finish recovery consolidation,
-   AST snapshots, determinism, fuzzing, frontend passthrough follow-through,
-   module split, source/spec audit, bilingual sync, and public-enum policy
-   tasks 37-45.
+4. **mizar-parser hardening** - finish recovery consolidation, AST snapshots,
+   determinism, fuzzing, frontend passthrough follow-through, module split,
+   source/spec audit, bilingual sync, and public-enum policy tasks 37-45.
 5. **mizar-resolve kickoff** - resolver work can begin against the current
    parser/syntax surface. If it starts before `mizar-build` task 6, use the
    planned workspace-stub provider only as an interim bridge and replace it with
@@ -201,9 +199,9 @@ Two crates run as cross-cutting strands rather than strict steps:
   rowan-backed `SurfaceAst` storage boundary. Parser grammar code must go
   through the syntax builder/event boundary rather than relying on arena
   indices or raw rowan layout.
-- **Parser grammar status: main growth complete through task 35.** Remaining
-  parser work is the predicate redefinition label repair plus hardening,
-  snapshots, determinism, fuzzing, module split, and audits.
+- **Parser grammar status: main growth complete through task 36.** Remaining
+  parser work is hardening, snapshots, determinism, fuzzing, module split, and
+  audits.
 - **Package manifest name spelling: resolved.** Package ids are lowercase
   `snake_case` (`[a-z][a-z0-9]*(?:_[a-z0-9]+)*`), hyphenated names are rejected,
   and no hyphen-to-underscore normalization is performed. Enforcement belongs

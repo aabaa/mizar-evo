@@ -6,9 +6,9 @@ The crate should provide syntax data structures that are stable enough for the p
 
 Status: the crate owns a rowan-backed `SurfaceAst`, typed compatibility views,
 deterministic snapshot rendering, syntax diagnostics, syntax-owned trivia side
-tables, and the task-35 surface vocabulary. The S-019 source/spec audit found
-no missing implementation for the public API and behavior promises in the
-module specs.
+tables, the task-35 surface vocabulary, and the task-22 predicate redefinition
+label follow-through paired with parser task 36. The S-023 follow-up audits
+found no remaining source/spec or bilingual documentation gap for that repair.
 
 Autonomous crate-development kickoff plan:
 

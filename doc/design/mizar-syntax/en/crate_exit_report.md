@@ -5,17 +5,19 @@
 
 ## Result
 
-Status: complete for the current autonomous `mizar-syntax` milestone. All
-non-deferred tasks in [todo.md](./todo.md) are complete; S-021 rustdoc summaries
-remain explicitly deferred by policy trigger.
+Status: historical exit report for the task-35 autonomous `mizar-syntax`
+milestone. The current [todo.md](./todo.md) now tracks post-exit follow-ups:
+task 22 and task 23 are complete, task 24 and task 25 remain pending, and S-021
+rustdoc summaries remain explicitly deferred by policy trigger. Treat this
+report as prior milestone evidence until task 25 refreshes the final close-out.
 
 Quality score: reviewed 94/100.
 
-Score caps applied: none. No unresolved hard gate failure,
-`source_undocumented_behavior`, `test_expectation_drift`, boundary violation, or
-repo metadata conflict is known in `mizar-syntax` scope. Remaining risks are
-classified as deferred parser/frontend producer work or policy-triggered
-rustdoc work.
+Score caps applied: none at the time of the report. As of the S-023 rerun, no
+new unresolved hard gate failure, `source_undocumented_behavior`,
+`test_expectation_drift`, boundary violation, or repo metadata conflict is known
+in `mizar-syntax` scope. Remaining current work is the task-24/25 AST refactor
+follow-up plus the policy-triggered rustdoc deferral.
 
 ## Scope
 
@@ -26,6 +28,8 @@ Milestone scope:
   `mizar-syntax`;
 - complete paired parser-facing syntax work through parser tasks 4-35 where
   needed for syntax task completion;
+- record that parser task 36 / syntax task 22 predicate-label follow-through
+  landed after this historical report and is tracked by the S-023 audit;
 - keep syntax representation source-shaped and free of semantic name, type,
   proof, and VC behavior;
 - record source/spec/test correspondence, bilingual synchronization, and this

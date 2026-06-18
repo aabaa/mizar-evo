@@ -3,7 +3,8 @@
 > 正本は英語です。英語版:
 > [../en/source_spec_correspondence.md](../en/source_spec_correspondence.md)。
 
-状態: parser task 35 と S-018 incremental syntax reuse audit の後、S-019 まで完了。
+状態: parser task 36 の predicate redefinition label repair と task 22 syntax
+follow-through の後、S-023 まで完了。
 
 ## 範囲
 
@@ -18,9 +19,8 @@ crate plan、[todo.md](./todo.md)）へ照合し、public API と implementation
 合わせて source、expectation、documentation を隠すように変更するのではなく、
 分類済み follow-up として記録しなければならない。
 
-この監査で追加した日本語 companion は、下記の public API 名と behavior boundary
-を英語正本と対応させる。より広い wording、terminology、status、link の
-bilingual audit は
+日本語 companion は、下記の public API 名と behavior boundary を英語正本と対応
+させる。より広い wording、terminology、status、link の bilingual audit は
 [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md)
 に別途記録する。
 
@@ -35,19 +35,30 @@ bilingual audit は
   用の targeted Rust test を 1 つ追加した。既存の `mizar-syntax` unit tests、
   lint-policy tests、parser task 4-35 unit / corpus coverage、syntax snapshot
   baseline が、残る監査対象の約束を覆っている。
-- 新しい `spec_gap`、`test_gap`、`design_drift`、`source_drift`、
+- 未解決の `spec_gap`、`test_gap`、`source_drift`、
   `source_undocumented_behavior`、`test_expectation_drift`、
-  `boundary_violation`、`repo_metadata_conflict` は見つからなかった。
+  `boundary_violation`、`repo_metadata_conflict` は残っていない。S-023 再監査で
+  見つかった documentation `design_drift` は下で記録し、閉じた。
 - 既存の follow-up record は下記の分類のまま残る: parser fixture seed activation、
   vocabulary-only future recovery producer、dotted algorithm `Lvalue` の active
   `.miz` coverage gap、S-021 deferred rustdoc summary。
+- S-023 の再監査では、task 22 の predicate redefinition label repair が実装・
+  テスト済みであることを確認した。`PredicateRedefinition` は
+  `PredicatePattern` の前に label または `MissingTerm` の slot を所有し、parser
+  task 36 はその形を送出する。active pass/fail corpus expectation は labeled case
+  と missing-label case を覆い、新しい source/spec、test、expectation、metadata
+  gap は残っていない。
+- 再監査では、parser task 36 / syntax task 22 を未完了として扱う古い status
+  text に documentation `design_drift` が見つかった。この task は parser README、
+  top-level roadmap、syntax README、historical crate-exit note、bilingual audit
+  record を同期し、language behavior を変更せずにその drift を閉じた。
 
 ## Public API 対応
 
 | 仕様 | 確認した public API | Source | Test evidence |
 |---|---|---|---|
 | [ast.md](./ast.md) storage boundary | `MizarLanguage`, `RowanSyntaxNode`, `RowanSyntaxToken`, `RowanSyntaxElement`, `SyntaxKind`, `SurfaceAst`, `SurfaceAstBuilder`, `BuilderNode`, `SurfaceBuilderNodeId`, `SurfaceNodeId`, `SurfaceNode`, `SurfaceNodeView`, crate-root re-export | `crates/mizar-syntax/src/lib.rs`, `crates/mizar-syntax/src/ast.rs` | `builder_round_trips_into_rowan_backed_tree`, `surface_node_raw_kinds_round_trip_through_rowan_boundary`, `repeated_construction_produces_deterministic_green_tree_and_views`, `builder_rejects_child_ids_not_created_by_this_builder`, `builder_rejects_token_sharing_between_multiple_structural_parents` |
-| [ast.md](./ast.md) syntax vocabulary | `SurfaceNodeKind`, `SurfaceTokenKind`, `SurfaceToken`, `SurfaceInfixOperator`, `SurfacePrefixOperator`, `SurfacePostfixOperator`, `SurfaceOperatorAssociativity`, `SurfaceFormulaPrefixOperator`, `SurfaceFormulaConnective`, `SurfaceFormulaBinaryOperator`, `SurfaceQuantifierKind`, `SurfaceFormulaConstant`, task 35 までのすべての `SurfaceNodeView::as_*` helper | `crates/mizar-syntax/src/ast.rs` | `typed_accessors_cover_current_node_and_token_kinds`, `task8_typed_accessors_cover_type_expression_nodes`, `task9_typed_accessors_cover_primary_term_nodes`, `task10_typed_accessors_cover_selector_and_update_nodes`, `task11_typed_accessor_covers_qua_expression`, `task12_typed_accessors_cover_prefix_and_postfix_operator_nodes`, `task13_typed_accessors_cover_atomic_formula_nodes`, `task14_typed_accessors_cover_formula_connective_and_quantifier_nodes`, `task15_typed_accessors_cover_set_comprehension_nodes`, `task16_typed_accessors_cover_simple_statement_nodes`, `task17_typed_accessors_cover_justification_nodes`, `task18_typed_accessors_cover_consider_reconsider_nodes`, `task19_typed_accessors_cover_conclusion_then_iterative_nodes`, `task20_typed_accessors_cover_block_statement_nodes`, `task21_typed_accessors_cover_inline_definition_nodes`, `task22_typed_accessors_cover_theorem_and_proof_nodes`, `task23_typed_accessors_cover_definition_nodes`, `task24_typed_accessors_cover_predicate_definition_nodes`, `task25_typed_accessors_cover_functor_definition_nodes`, `task26_typed_accessors_cover_mode_definition_nodes`, `task27_typed_accessors_cover_redefinition_and_notation_nodes`, `task28_typed_accessors_cover_property_clause_nodes`, `task29_typed_accessors_cover_structure_nodes`, `task30_typed_accessors_cover_registration_nodes`, `task31_typed_accessors_cover_template_nodes`, `task32_typed_accessors_cover_algorithm_nodes`, `task33_typed_accessors_cover_algorithm_control_flow_nodes`, `task34_typed_accessors_cover_algorithm_verification_nodes`, `task35_typed_accessors_cover_annotation_nodes` |
+| [ast.md](./ast.md) syntax vocabulary | `SurfaceNodeKind`, `SurfaceTokenKind`, `SurfaceToken`, `SurfaceInfixOperator`, `SurfacePrefixOperator`, `SurfacePostfixOperator`, `SurfaceOperatorAssociativity`, `SurfaceFormulaPrefixOperator`, `SurfaceFormulaConnective`, `SurfaceFormulaBinaryOperator`, `SurfaceQuantifierKind`, `SurfaceFormulaConstant`, task 35 までのすべての `SurfaceNodeView::as_*` helper と task 22 の predicate redefinition label-slot follow-through | `crates/mizar-syntax/src/ast.rs` | `typed_accessors_cover_current_node_and_token_kinds`, `task8_typed_accessors_cover_type_expression_nodes`, `task9_typed_accessors_cover_primary_term_nodes`, `task10_typed_accessors_cover_selector_and_update_nodes`, `task11_typed_accessor_covers_qua_expression`, `task12_typed_accessors_cover_prefix_and_postfix_operator_nodes`, `task13_typed_accessors_cover_atomic_formula_nodes`, `task14_typed_accessors_cover_formula_connective_and_quantifier_nodes`, `task15_typed_accessors_cover_set_comprehension_nodes`, `task16_typed_accessors_cover_simple_statement_nodes`, `task17_typed_accessors_cover_justification_nodes`, `task18_typed_accessors_cover_consider_reconsider_nodes`, `task19_typed_accessors_cover_conclusion_then_iterative_nodes`, `task20_typed_accessors_cover_block_statement_nodes`, `task21_typed_accessors_cover_inline_definition_nodes`, `task22_typed_accessors_cover_theorem_and_proof_nodes`, `task23_typed_accessors_cover_definition_nodes`, `task24_typed_accessors_cover_predicate_definition_nodes`, `task25_typed_accessors_cover_functor_definition_nodes`, `task26_typed_accessors_cover_mode_definition_nodes`, `task27_typed_accessors_cover_redefinition_and_notation_nodes`, `task22_predicate_redefinition_missing_label_snapshot_is_distinct`, `task28_typed_accessors_cover_property_clause_nodes`, `task29_typed_accessors_cover_structure_nodes`, `task30_typed_accessors_cover_registration_nodes`, `task31_typed_accessors_cover_template_nodes`, `task32_typed_accessors_cover_algorithm_nodes`, `task33_typed_accessors_cover_algorithm_control_flow_nodes`, `task34_typed_accessors_cover_algorithm_verification_nodes`, `task35_typed_accessors_cover_annotation_nodes` |
 | [ast.md](./ast.md) deterministic snapshot、range、identity、reuse | `SurfaceAst::{snapshot_text, snapshot_text_with_trivia, range_contains_child_ranges, green_node, rowan_root, with_trivia, trivia}`, `SurfaceNodeKind::syntax_kind`, `SurfaceTokenKind::syntax_kind`, `SurfaceNodeView::{id, kind, syntax_kind, range, children, child_views, is_recovered}` | `crates/mizar-syntax/src/ast.rs` | `parent_ranges_contain_child_ranges_except_recovery_attachments`, `repeated_snapshot_rendering_is_byte_identical`, `snapshot_rendering_matches_current_vocabulary_baseline`, `snapshot_payload_names_cover_current_variants`, `snapshot_rendering_includes_trivia_when_requested`, `trivia_snapshot_rendering_is_sorted_and_byte_identical`, `trivia_snapshot_target_sorting_breaks_collisions_deterministically`, `tests/snapshots/mizar_syntax_surface_ast_current_vocabulary.snap` |
 | [trivia.md](./trivia.md) storage、sorting、attachment | `SurfaceTrivia`, `SurfaceTriviaBuilder`, `CommentTrivia`, `DocCommentAttachment`, `SkippedTokenRange`, `WhitespaceHint`, `TriviaNodeTarget`, `TriviaAttachmentTarget`, `TriviaPlacement`, `SkippedTokenReason`, `WhitespaceHintKind` | `crates/mizar-syntax/src/trivia.rs`, attachment validation in `crates/mizar-syntax/src/ast.rs` | `trivia_builder_preserves_ownership_and_attachment_hints`, `skipped_ranges_are_preserved_with_source_ranges`, `generated_detached_anchor_must_match_trivia_source`, `doc_comment_can_attach_to_following_placeholder_item_node`, `ast_rejects_token_node_as_trivia_node_target`, `ast_rejects_non_token_trivia_token_target`, `ast_rejects_trivia_target_with_mismatched_range`, `ast_rejects_trivia_from_another_source` |
 | [recovery.md](./recovery.md) diagnostics | `SyntaxDiagnostic`, `SyntaxDiagnostic::{new, with_secondary, with_recovery_note}`, `SyntaxDiagnosticCode` | `crates/mizar-syntax/src/recovery.rs`, parser producer in `crates/mizar-parser` | `syntax_diagnostic_builder_preserves_secondary_and_recovery_note`、`recovery_kinds_are_constructible_with_documented_ranges`、task 35 までの parser pass/fail corpus cases、frontend parser-seam syntax diagnostic passthrough tests |
@@ -93,6 +104,8 @@ bilingual audit は
 | S-017 enum policy | 最終 enum classification は source attribute と lint-policy tests で実装・guard 済み。 |
 | S-018 incremental reuse audit | Identity、raw-kind numbering、range-attached trivia / recovery reuse、localized-edit validation、annotation accessor / raw-kind gap は文書化・テスト済み。 |
 | S-019 source/spec audit | この文書が対応関係を記録する。監査では、新しい implementation、source、test、expectation、metadata gap を必要とする task は見つからなかった。 |
+| S-022 predicate redefinition label AST follow-through | Parser task 36 と syntax task 22 は同じ変更で実装済み。source と tests は `PredicateRedefinition` の child order が `redefine`、`pred`、label または `MissingTerm`、`:`、`PredicatePattern`、`means`、`FormulaDefiniens`、任意の semicolon、`CoherenceCondition` であることを示す。Active pass/fail corpus expectation は labeled surface と missing-label recovery を覆う。 |
+| S-023 predicate-label follow-up audit | この再監査は、predicate-label repair について残る AST、accessor、snapshot、parser/syntax contract、source/spec、bilingual documentation、expectation、metadata gap がないことを記録する。古い roadmap / status text の documentation `design_drift` はこの task で閉じた。 |
 
 ## Follow-up 記録
 
@@ -113,3 +126,5 @@ bilingual audit は
   source/test mismatch はなかった。
 - S-021 は re-entry trigger が満たされるまで rustdoc summary について明示的に
   deferred のまま残る。
+- S-022 と S-023 は完了済みである。predicate-label audit は新しい follow-up task
+  を作らなかった。

@@ -3,8 +3,8 @@
 > Canonical language: English. Japanese companion:
 > [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md).
 
-Status: completed through S-019, after parser task 35 and the S-018
-incremental syntax reuse audit.
+Status: completed through S-023, after the parser task-36 predicate
+redefinition label repair and task-22 syntax follow-through.
 
 ## Scope
 
@@ -21,9 +21,9 @@ needs a new owner, the item must be recorded as a classified follow-up rather
 than hidden by changing source, expectations, or documentation to match current
 behavior.
 
-The Japanese companion added with this audit mirrors the public API names and
-behavior boundaries below. The broader bilingual wording, terminology, status,
-and link audit is recorded separately in
+The Japanese companion mirrors the public API names and behavior boundaries
+below. The broader bilingual wording, terminology, status, and link audit is
+recorded separately in
 [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md).
 
 ## Result
@@ -38,19 +38,31 @@ and link audit is recorded separately in
   contract after method-level trace review. Existing `mizar-syntax` unit tests,
   lint-policy tests, parser task 4-35 unit/corpus coverage, and syntax snapshot
   baselines cover the remaining audited promises.
-- No new `spec_gap`, `test_gap`, `design_drift`, `source_drift`,
+- No remaining unclosed `spec_gap`, `test_gap`, `source_drift`,
   `source_undocumented_behavior`, `test_expectation_drift`,
-  `boundary_violation`, or `repo_metadata_conflict` was found.
+  `boundary_violation`, or `repo_metadata_conflict` was found. The S-023
+  documentation `design_drift` found during the rerun is recorded and closed
+  below.
 - Existing follow-up records remain classified below: parser fixture seed
   activation, vocabulary-only future recovery producers, the dotted algorithm
   `Lvalue` active `.miz` coverage gap, and S-021 deferred rustdoc summaries.
+- The S-023 rerun found the task-22 predicate redefinition label repair
+  implemented and tested: `PredicateRedefinition` owns the label-or-`MissingTerm`
+  slot before `PredicatePattern`, parser task 36 emits that shape, active
+  pass/fail corpus expectations cover labeled and missing-label cases, and no
+  new source/spec, test, expectation, or metadata gap remains.
+- The rerun found documentation `design_drift` in status text that still
+  treated parser task 36 / syntax task 22 as pending. This task closes that
+  drift in the parser README, top-level roadmap, syntax README, historical
+  crate-exit note, and bilingual audit records without changing language
+  behavior.
 
 ## Public API Correspondence
 
 | Spec | Public API checked | Source | Test evidence |
 |---|---|---|---|
 | [ast.md](./ast.md) storage boundary | `MizarLanguage`, `RowanSyntaxNode`, `RowanSyntaxToken`, `RowanSyntaxElement`, `SyntaxKind`, `SurfaceAst`, `SurfaceAstBuilder`, `BuilderNode`, `SurfaceBuilderNodeId`, `SurfaceNodeId`, `SurfaceNode`, `SurfaceNodeView`, crate-root re-exports | `crates/mizar-syntax/src/lib.rs`, `crates/mizar-syntax/src/ast.rs` | `builder_round_trips_into_rowan_backed_tree`, `surface_node_raw_kinds_round_trip_through_rowan_boundary`, `repeated_construction_produces_deterministic_green_tree_and_views`, `builder_rejects_child_ids_not_created_by_this_builder`, `builder_rejects_token_sharing_between_multiple_structural_parents` |
-| [ast.md](./ast.md) syntax vocabulary | `SurfaceNodeKind`, `SurfaceTokenKind`, `SurfaceToken`, `SurfaceInfixOperator`, `SurfacePrefixOperator`, `SurfacePostfixOperator`, `SurfaceOperatorAssociativity`, `SurfaceFormulaPrefixOperator`, `SurfaceFormulaConnective`, `SurfaceFormulaBinaryOperator`, `SurfaceQuantifierKind`, `SurfaceFormulaConstant`, and all `SurfaceNodeView::as_*` helpers through task 35 | `crates/mizar-syntax/src/ast.rs` | `typed_accessors_cover_current_node_and_token_kinds`, `task8_typed_accessors_cover_type_expression_nodes`, `task9_typed_accessors_cover_primary_term_nodes`, `task10_typed_accessors_cover_selector_and_update_nodes`, `task11_typed_accessor_covers_qua_expression`, `task12_typed_accessors_cover_prefix_and_postfix_operator_nodes`, `task13_typed_accessors_cover_atomic_formula_nodes`, `task14_typed_accessors_cover_formula_connective_and_quantifier_nodes`, `task15_typed_accessors_cover_set_comprehension_nodes`, `task16_typed_accessors_cover_simple_statement_nodes`, `task17_typed_accessors_cover_justification_nodes`, `task18_typed_accessors_cover_consider_reconsider_nodes`, `task19_typed_accessors_cover_conclusion_then_iterative_nodes`, `task20_typed_accessors_cover_block_statement_nodes`, `task21_typed_accessors_cover_inline_definition_nodes`, `task22_typed_accessors_cover_theorem_and_proof_nodes`, `task23_typed_accessors_cover_definition_nodes`, `task24_typed_accessors_cover_predicate_definition_nodes`, `task25_typed_accessors_cover_functor_definition_nodes`, `task26_typed_accessors_cover_mode_definition_nodes`, `task27_typed_accessors_cover_redefinition_and_notation_nodes`, `task28_typed_accessors_cover_property_clause_nodes`, `task29_typed_accessors_cover_structure_nodes`, `task30_typed_accessors_cover_registration_nodes`, `task31_typed_accessors_cover_template_nodes`, `task32_typed_accessors_cover_algorithm_nodes`, `task33_typed_accessors_cover_algorithm_control_flow_nodes`, `task34_typed_accessors_cover_algorithm_verification_nodes`, `task35_typed_accessors_cover_annotation_nodes` |
+| [ast.md](./ast.md) syntax vocabulary | `SurfaceNodeKind`, `SurfaceTokenKind`, `SurfaceToken`, `SurfaceInfixOperator`, `SurfacePrefixOperator`, `SurfacePostfixOperator`, `SurfaceOperatorAssociativity`, `SurfaceFormulaPrefixOperator`, `SurfaceFormulaConnective`, `SurfaceFormulaBinaryOperator`, `SurfaceQuantifierKind`, `SurfaceFormulaConstant`, and all `SurfaceNodeView::as_*` helpers through task 35 plus the task-22 predicate redefinition label-slot follow-through | `crates/mizar-syntax/src/ast.rs` | `typed_accessors_cover_current_node_and_token_kinds`, `task8_typed_accessors_cover_type_expression_nodes`, `task9_typed_accessors_cover_primary_term_nodes`, `task10_typed_accessors_cover_selector_and_update_nodes`, `task11_typed_accessor_covers_qua_expression`, `task12_typed_accessors_cover_prefix_and_postfix_operator_nodes`, `task13_typed_accessors_cover_atomic_formula_nodes`, `task14_typed_accessors_cover_formula_connective_and_quantifier_nodes`, `task15_typed_accessors_cover_set_comprehension_nodes`, `task16_typed_accessors_cover_simple_statement_nodes`, `task17_typed_accessors_cover_justification_nodes`, `task18_typed_accessors_cover_consider_reconsider_nodes`, `task19_typed_accessors_cover_conclusion_then_iterative_nodes`, `task20_typed_accessors_cover_block_statement_nodes`, `task21_typed_accessors_cover_inline_definition_nodes`, `task22_typed_accessors_cover_theorem_and_proof_nodes`, `task23_typed_accessors_cover_definition_nodes`, `task24_typed_accessors_cover_predicate_definition_nodes`, `task25_typed_accessors_cover_functor_definition_nodes`, `task26_typed_accessors_cover_mode_definition_nodes`, `task27_typed_accessors_cover_redefinition_and_notation_nodes`, `task22_predicate_redefinition_missing_label_snapshot_is_distinct`, `task28_typed_accessors_cover_property_clause_nodes`, `task29_typed_accessors_cover_structure_nodes`, `task30_typed_accessors_cover_registration_nodes`, `task31_typed_accessors_cover_template_nodes`, `task32_typed_accessors_cover_algorithm_nodes`, `task33_typed_accessors_cover_algorithm_control_flow_nodes`, `task34_typed_accessors_cover_algorithm_verification_nodes`, `task35_typed_accessors_cover_annotation_nodes` |
 | [ast.md](./ast.md) deterministic snapshots, ranges, identity, and reuse | `SurfaceAst::{snapshot_text, snapshot_text_with_trivia, range_contains_child_ranges, green_node, rowan_root, with_trivia, trivia}`, `SurfaceNodeKind::syntax_kind`, `SurfaceTokenKind::syntax_kind`, `SurfaceNodeView::{id, kind, syntax_kind, range, children, child_views, is_recovered}` | `crates/mizar-syntax/src/ast.rs` | `parent_ranges_contain_child_ranges_except_recovery_attachments`, `repeated_snapshot_rendering_is_byte_identical`, `snapshot_rendering_matches_current_vocabulary_baseline`, `snapshot_payload_names_cover_current_variants`, `snapshot_rendering_includes_trivia_when_requested`, `trivia_snapshot_rendering_is_sorted_and_byte_identical`, `trivia_snapshot_target_sorting_breaks_collisions_deterministically`, `tests/snapshots/mizar_syntax_surface_ast_current_vocabulary.snap` |
 | [trivia.md](./trivia.md) storage, sorting, and attachment | `SurfaceTrivia`, `SurfaceTriviaBuilder`, `CommentTrivia`, `DocCommentAttachment`, `SkippedTokenRange`, `WhitespaceHint`, `TriviaNodeTarget`, `TriviaAttachmentTarget`, `TriviaPlacement`, `SkippedTokenReason`, `WhitespaceHintKind` | `crates/mizar-syntax/src/trivia.rs`, `crates/mizar-syntax/src/ast.rs` attachment validation | `trivia_builder_preserves_ownership_and_attachment_hints`, `skipped_ranges_are_preserved_with_source_ranges`, `generated_detached_anchor_must_match_trivia_source`, `doc_comment_can_attach_to_following_placeholder_item_node`, `ast_rejects_token_node_as_trivia_node_target`, `ast_rejects_non_token_trivia_token_target`, `ast_rejects_trivia_target_with_mismatched_range`, `ast_rejects_trivia_from_another_source` |
 | [recovery.md](./recovery.md) diagnostics | `SyntaxDiagnostic`, `SyntaxDiagnostic::{new, with_secondary, with_recovery_note}`, `SyntaxDiagnosticCode` | `crates/mizar-syntax/src/recovery.rs`, parser producers in `crates/mizar-parser` | `syntax_diagnostic_builder_preserves_secondary_and_recovery_note`, `recovery_kinds_are_constructible_with_documented_ranges`, parser pass/fail corpus cases through task 35, frontend parser-seam syntax diagnostic passthrough tests |
@@ -96,6 +108,8 @@ and link audit is recorded separately in
 | S-017 enum policy | Final enum classification is implemented by source attributes and guarded by lint-policy tests. |
 | S-018 incremental reuse audit | Identity, raw-kind numbering, range-attached trivia/recovery reuse, localized-edit validation, and annotation accessor/raw-kind gaps are documented and covered by tests. |
 | S-019 source/spec audit | This document records the correspondence. The audit found no new implementation, source, test, expectation, or metadata gap requiring a new task. |
+| S-022 predicate redefinition label AST follow-through | Parser task 36 and syntax task 22 are implemented together. Source and tests show `PredicateRedefinition` child order as `redefine`, `pred`, label-or-`MissingTerm`, `:`, `PredicatePattern`, `means`, `FormulaDefiniens`, optional semicolon, and `CoherenceCondition`. Active pass/fail corpus expectations cover the labeled surface and missing-label recovery. |
+| S-023 predicate-label follow-up audit | This rerun records no remaining AST, accessor, snapshot, parser/syntax contract, source/spec, bilingual documentation, expectation, or metadata gap for the predicate-label repair. Documentation `design_drift` in stale roadmap/status text was closed in this task. |
 
 ## Follow-up Records
 
@@ -115,3 +129,5 @@ This audit did not add a new follow-up task. Existing classified records remain:
   it found only documentation `design_drift` and no source/test mismatch.
 - S-021 remains explicitly deferred for rustdoc summaries until its re-entry
   trigger is met.
+- S-022 and S-023 are now closed. No new follow-up task was created by the
+  predicate-label audit.
