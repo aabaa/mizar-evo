@@ -98,14 +98,15 @@ Keep `cargo test -p mizar-build` green after each task (see
      [23.package_management_and_build_system.md](../../../spec/en/23.package_management_and_build_system.md),
      architecture 00 "Interface Definitions".
 
-3. **Manifest and lockfile parsing.** [~]
+3. **Manifest and lockfile parsing.** [x]
    - Parse and validate package/workspace manifests and the lockfile with
      manifest-error diagnostics.
-   - Package manifest `name` spelling validation has landed as the first
-     bounded slice: package ids must be lowercase `snake_case`
-     (`[a-z][a-z0-9]*(?:_[a-z0-9]+)*`), hyphenated spellings are rejected, and
-     no hyphen-to-underscore normalization is performed. Full TOML parsing,
-     workspace manifest validation, and lockfile validation remain pending.
+   - Package manifest `name` spelling validation landed as the first bounded
+     slice and the full parsing/validation slice is now complete: package ids
+     must be lowercase `snake_case` (`[a-z][a-z0-9]*(?:_[a-z0-9]+)*`),
+     hyphenated spellings are rejected, no hyphen-to-underscore normalization
+     is performed, TOML package/workspace manifests are validated, and existing
+     lockfiles are parsed and checked for package/version/source consistency.
    - Tests: valid/invalid manifest fixtures; lockfile mismatch diagnostics;
      deterministic error order.
    - Deps: 2. Spec: `planner.md`.

@@ -14,3 +14,5 @@ workspace = true
 
 [dependencies]
 mizar-session = { path = "../mizar-session" }
+semver = "1"
+toml = "0.8"
