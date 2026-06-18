@@ -40,7 +40,7 @@ and the crate ownership map in
 | mizar-session | yes | Source identity, source maps, source loading, build snapshots, retention | [x] current milestone complete; no deferred crate-owned item | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | yes | Raw scan, scope skeletons, lexical environments, context-sensitive token disambiguation | [x] current milestone complete; `.miz` lexer companions and selector semantics are downstream-owned | [todo](./mizar-lexer/en/todo.md) |
 | mizar-syntax | yes | Rowan-backed `SurfaceAst`, syntax trivia, recovery, typed views, parser-facing syntax vocabulary | [x] current milestone complete; only deferred rustdoc summaries remain | [todo](./mizar-syntax/en/todo.md) |
-| mizar-parser | yes | Grammar, Pratt parsing, syntax recovery, parse-only corpus execution | [~] grammar tasks 1-36, recovery consolidation task 37, `SurfaceAst` snapshot baselines task 38, and determinism task 39 complete; hardening/audit tasks 40-45 remain | [todo](./mizar-parser/en/todo.md) |
+| mizar-parser | yes | Grammar, Pratt parsing, syntax recovery, parse-only corpus execution | [~] grammar tasks 1-36, recovery consolidation task 37, `SurfaceAst` snapshot baselines task 38, determinism task 39, and fuzz target task 40 complete; hardening/audit tasks 41-45 remain | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | yes | Source loading and phase 1-3 orchestration across session, lexer, syntax, and parser | [x] current milestone complete; future parser growth may open bounded follow-ups | [todo](./mizar-frontend/en/todo.md) |
 | mizar-test | yes | Corpus discovery, expectation sidecars, staged model, traceability, snapshots, harness behavior | [~] implementation exists; formal lint/gap audit, runner validation, snapshots, and reporting remain | [todo](./mizar-test/en/todo.md) |
 | mizar-build | yes | Phase 0 workspace planning plus later task graph, scheduler, resources, cancellation, failure state | [~] scaffold and package-name validation slice exist; planner spec and full manifest/lockfile parsing are next | [todo](./mizar-build/en/todo.md) |
@@ -100,9 +100,9 @@ The current foundation milestone is complete for:
   parser-growth follow-through.
 
 `mizar-parser` has also completed the main grammar-growth run through task 36,
-recovery consolidation task 37, `SurfaceAst` snapshot baselines task 38, and
-determinism task 39, but remains [~] because hardening tasks 40-45 are still
-open.
+recovery consolidation task 37, `SurfaceAst` snapshot baselines task 38,
+determinism task 39, and parser-owned fuzz target task 40, but remains [~]
+because hardening/audit tasks 41-45 are still open.
 
 ### Immediate Next Work
 
@@ -116,9 +116,9 @@ open.
    source/spec gap audit (tasks 1-2), then harden validation/reporting,
    snapshots, and coverage reporting. The source crate already exists; the TODO
    is the formal gap-closing plan.
-3. **mizar-parser hardening** - finish fuzzing, frontend passthrough
-   follow-through, module split, source/spec audit, bilingual sync, and
-   public-enum policy tasks 40-45.
+3. **mizar-parser hardening** - finish frontend passthrough follow-through,
+   module split, source/spec audit, bilingual sync, and public-enum policy
+   tasks 41-45.
 4. **mizar-resolve kickoff** - resolver work can begin against the current
    parser/syntax surface. If it starts before `mizar-build` task 6, use the
    planned workspace-stub provider only as an interim bridge and replace it with
@@ -198,8 +198,8 @@ Two crates run as cross-cutting strands rather than strict steps:
   through the syntax builder/event boundary rather than relying on arena
   indices or raw rowan layout.
 - **Parser grammar status: main growth complete through task 36; recovery
-  consolidation complete through task 37; snapshot baselines and determinism
-  complete through tasks 38-39.** Remaining parser work is fuzzing, frontend
+  consolidation complete through task 37; snapshot baselines, determinism, and
+  fuzz target complete through tasks 38-40.** Remaining parser work is frontend
   passthrough follow-through, module split, audits, and public-enum policy.
 - **Package manifest name spelling: resolved.** Package ids are lowercase
   `snake_case` (`[a-z][a-z0-9]*(?:_[a-z0-9]+)*`), hyphenated names are rejected,

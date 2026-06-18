@@ -11,13 +11,14 @@ Status: the crate exposes a parser entry point that consumes the
 frontend-adapted token transfer object with session `SourceRange`s and returns
 `mizar_syntax::SurfaceAst` plus syntax diagnostics. Task 2 parser
 infrastructure is in place as private cursor, syntax-event, expected-token
-diagnostic, synchronization, and recovery-emission helpers. Grammar coverage has
-grown through parser task 39, including module/import/export,
+diagnostic, synchronization, and recovery-emission helpers. The parser
+workstream has grown through parser task 40, including module/import/export,
 type/term/formula, statement/proof, definition, structure, registration,
 template, algorithm, verification-clause, annotation surfaces, and the
 predicate redefinition label repair, plus recovery consolidation and fail-corpus
-expansion, parse-only `SurfaceAst` snapshot baselines, and parser determinism
-coverage. Hardening/audit tasks 40-45 remain planned.
+expansion, parse-only `SurfaceAst` snapshot baselines, parser determinism
+coverage, and the parser-owned valid-UTF-8 fuzz target. Hardening/audit tasks
+41-45 remain planned.
 
 Initial module specs:
 

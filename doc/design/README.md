@@ -82,7 +82,8 @@ are companions when both are present.
   remaining.
 - [mizar-parser](./mizar-parser/README.md) - grammar implementation, Pratt
   parsing, syntax recovery, and parse-only corpus execution; grammar coverage
-  has grown through task 39, with hardening work from task 40 onward pending.
+  and parser-owned fuzz hardening have grown through task 40, with hardening
+  work from task 41 onward pending.
 - [mizar-frontend](./mizar-frontend/README.md) - source loading and phase 1-3
   orchestration across session, lexer, syntax, and parser services; current
   milestone complete.

@@ -26,3 +26,10 @@ path = "fuzz_targets/frontend_valid_utf8.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "parser_valid_utf8"
+path = "fuzz_targets/parser_valid_utf8.rs"
+test = false
+doc = false
+bench = false

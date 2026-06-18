@@ -116,14 +116,14 @@ documented frontend fallbacks.
 | 26 | Complete | Public `mizar-frontend` modules and public API items carry short rustdoc summaries derived from the canonical design specs, while detailed behavior promises remain in `doc/design/mizar-frontend/en/`. |
 | 27 | Complete | The `frontend_valid_utf8` fuzz target and Criterion frontend baselines are implemented under `fuzz/` and `crates/mizar-frontend/benches/frontend_pipeline.rs`; task 29 completed the real-parser fuzz follow-up triggered by task 28. |
 | 28 | Complete | Parser-growth follow-through is implemented in `mizar-parser`, `src/parsing.rs`, and `src/orchestration.rs` with nested block-end recovery, algorithm control-block matching, quantifier `for` exclusion, frontend recovery-node passthrough, syntax diagnostic merge coverage, and `MIZAR_PARSER_CACHE_KEY_VERSION` invalidation for changed parser output semantics. |
-| 29 | Complete | The `frontend_valid_utf8` fuzz target now runs valid UTF-8 through `MizarParserSeam`, syntax diagnostic merging, and `SurfaceAstCacheKey` construction when an AST is produced; `mizar-parser` task 39 continues tracking the parser-owned fuzz target. |
+| 29 | Complete | The `frontend_valid_utf8` fuzz target now runs valid UTF-8 through `MizarParserSeam`, syntax diagnostic merging, and `SurfaceAstCacheKey` construction when an AST is produced; the parser-owned fuzz target is complete in `mizar-parser` task 40. |
 
 ## Follow-up Records
 
 This audit added task 24 for reserved or currently unproduced diagnostic/fallback
 surface coverage. Tasks 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, and 29
 have since been completed. Task 29 completed the frontend-owned real-parser
-fuzz follow-up; the parser-owned counterpart remains tracked by `mizar-parser`
-task 39. Future producer-backed tests should be added when non-exhaustive
+fuzz follow-up; the parser-owned counterpart is complete in `mizar-parser` task
+40. Future producer-backed tests should be added when non-exhaustive
 lexer/session/parser contracts expose new concrete producers for the currently
 reserved fallback variants.

@@ -282,7 +282,7 @@
 
 29. **実 parser を使う frontend fuzz follow-up。** [x] 完了。
     - `frontend_valid_utf8` fuzz target は stub seam ではなく `MizarParserSeam` を使うようになった。これにより任意の valid UTF-8 は preprocessing、tokenization、実 parser seam、構文診断 merge、parser が AST を返す場合の `SurfaceAstCacheKey` construction まで流れる。parser 診断は hard frontend error ではなく、回復可能な frontend output として残る。
-    - `mizar-parser` task 39 と調整する frontend-owned 側は着地済み。parser-owned fuzz target は引き続き task 39 で追跡する。
+    - `mizar-parser` task 40 と調整する frontend-owned 側は着地済み。parser-owned fuzz target は task 40 で完了済みである。
     - 依存: 27、28。仕様: [parsing.md](./parsing.md)、[orchestration.md](./orchestration.md)、[cache_key.md](./cache_key.md)。
 
 ## 推奨検証

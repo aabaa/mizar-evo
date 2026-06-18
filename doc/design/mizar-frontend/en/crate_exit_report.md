@@ -40,9 +40,9 @@ Excluded:
 
 - changing `doc/spec/en`, `doc/spec/ja`, existing `.miz` tests, expectation
   files, source implementation, fuzz implementation, or benchmark code;
-- parser-owned grammar expansion, parser-owned fuzz follow-up, template/fixity
-  `.miz` seed activation, module resolution, semantic name/type/overload/proof
-  behavior, cache storage, artifact publication, and LSP display rendering;
+- parser-owned grammar expansion, template/fixity `.miz` seed activation,
+  module resolution, semantic name/type/overload/proof behavior, cache storage,
+  artifact publication, and LSP display rendering;
 - adding producer-backed tests for future non-exhaustive variants that current
   upstream crates cannot yet produce.
 

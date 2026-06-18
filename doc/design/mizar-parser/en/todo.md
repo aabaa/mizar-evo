@@ -859,12 +859,21 @@ older numeric syntax task references appear to disagree, prefer
     - Deps: 35. Spec:
       [architecture/en/20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 
-40. **Parser fuzz target.** [ ]
+40. **Parser fuzz target.** [x]
     - Add a workspace fuzz target driving tokenization plus parsing over
       arbitrary UTF-8, asserting no panics and recoverable-diagnostics-only
       completion. The `mizar-frontend` task 29 real-parser fuzz follow-up has
       landed the frontend-owned target; this task tracks the parser-owned
       counterpart.
+    - Result: added `fuzz/fuzz_targets/parser_valid_utf8.rs` as the
+      `parser_valid_utf8` fuzz binary. The target drives arbitrary valid UTF-8
+      through source loading, preprocessing, active lexical-environment
+      recovery, parser-plan tokenization, `MizarParserSeam`, parser diagnostics,
+      and recovered `SurfaceAst` traversal. It validates every produced
+      diagnostic and AST token range through the frontend `SpanBridge` and
+      renders `SurfaceAst::snapshot_text()` when an AST is present so parser
+      tree traversal stays covered. No parser public API or grammar output
+      semantics changed.
     - Deps: 37. Spec: [recovery.md](./recovery.md),
       [../../mizar-frontend/en/todo.md](../../mizar-frontend/en/todo.md) task 29.
 

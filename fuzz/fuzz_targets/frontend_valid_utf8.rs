@@ -117,10 +117,12 @@ fn assert_recovered_frontend_output<A>(
         output.preprocessed.source_map.lexical_len()
     );
     assert_eq!(output.ast.is_some(), output.cache_keys.ast.is_some());
-    assert!(output
-        .diagnostics
-        .iter()
-        .all(|diagnostic| matches!(diagnostic.location, DiagnosticLocation::SourceRange(_))));
+    assert!(
+        output
+            .diagnostics
+            .iter()
+            .all(|diagnostic| matches!(diagnostic.location, DiagnosticLocation::SourceRange(_)))
+    );
     assert!(output.diagnostics.iter().all(|diagnostic| {
         !matches!(diagnostic.code, DiagnosticCode::Syntax(_))
             || diagnostic.class == DiagnosticClass::Syntax
@@ -131,7 +133,10 @@ fn assert_recovered_frontend_output<A>(
             ast_key.parser_version.version.as_ref(),
             MIZAR_PARSER_CACHE_KEY_VERSION
         );
-        assert_eq!(ast_key.token_stream_hash, output.cache_keys.tokens.stable_hash());
+        assert_eq!(
+            ast_key.token_stream_hash,
+            output.cache_keys.tokens.stable_hash()
+        );
         let _ = ast_key.stable_hash();
     }
 }

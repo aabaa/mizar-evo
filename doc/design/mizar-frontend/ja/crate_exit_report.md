@@ -37,9 +37,9 @@ Excluded:
 
 - `doc/spec/en`、`doc/spec/ja`、既存 `.miz` tests、expectation files、source
   implementation、fuzz implementation、benchmark code の変更。
-- parser-owned grammar expansion、parser-owned fuzz follow-up、template/fixity `.miz`
-  seed activation、module resolution、semantic name/type/overload/proof behavior、
-  cache storage、artifact publication、LSP display rendering。
+- parser-owned grammar expansion、template/fixity `.miz` seed activation、
+  module resolution、semantic name/type/overload/proof behavior、cache storage、
+  artifact publication、LSP display rendering。
 - 現在の upstream crates がまだ生成できない future non-exhaustive variant に対する
   producer-backed tests の追加。
 

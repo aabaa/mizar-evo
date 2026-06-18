@@ -112,7 +112,7 @@ frontend fallback を使う。
 | 26 | 完了 | 公開 `mizar-frontend` module と公開 API item は、正準 design spec 由来の短い rustdoc summary を持つ。詳細な挙動の約束は引き続き `doc/design/mizar-frontend/en/` に置く。 |
 | 27 | 完了 | `frontend_valid_utf8` fuzz target と Criterion frontend baseline は `fuzz/` と `crates/mizar-frontend/benches/frontend_pipeline.rs` に実装済み。task 28 で発火した real-parser fuzz follow-up は task 29 で完了した。 |
 | 28 | 完了 | parser-growth follow-through は `mizar-parser`、`src/parsing.rs`、`src/orchestration.rs` に実装済み。nested block-end recovery、algorithm control-block matching、quantifier `for` exclusion、frontend recovery-node passthrough、構文診断 merge coverage、parser 出力 semantics 変更に対する `MIZAR_PARSER_CACHE_KEY_VERSION` invalidation を確認する。 |
-| 29 | 完了 | `frontend_valid_utf8` fuzz target は valid UTF-8 を `MizarParserSeam`、構文診断 merge、AST が生成された場合の `SurfaceAstCacheKey` construction まで流す。parser-owned fuzz target は引き続き `mizar-parser` task 39 で追跡する。 |
+| 29 | 完了 | `frontend_valid_utf8` fuzz target は valid UTF-8 を `MizarParserSeam`、構文診断 merge、AST が生成された場合の `SurfaceAstCacheKey` construction まで流す。parser-owned fuzz target は `mizar-parser` task 40 で完了済みである。 |
 
 ## Follow-up 記録
 
@@ -120,6 +120,6 @@ frontend fallback を使う。
 の coverage 用に task 24 を追加した。task 18、task 19、task 20、task 21、
 task 22、task 23、task 24、task 25、task 26、task 27、task 28、task 29 はその後完了した。
 task 29 は frontend-owned の real-parser fuzz follow-up を完了した。parser-owned 側は
-`mizar-parser` task 39 で引き続き追跡する。現在予約されている fallback variant に対する
+`mizar-parser` task 40 で完了済みである。現在予約されている fallback variant に対する
 具体的 producer を将来の non-exhaustive lexer/session/parser contract が公開した場合は、
 producer-backed tests を追加する。

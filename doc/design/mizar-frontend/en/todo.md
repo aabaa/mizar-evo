@@ -639,7 +639,7 @@ diagnostic ordering, and cache-key checks.
       Parser diagnostics remain recoverable frontend output rather than hard
       frontend errors.
     - This lands the frontend-owned half coordinated with `mizar-parser` task
-      39; the parser-owned fuzz target remains tracked there.
+      40; the parser-owned fuzz target is complete there.
     - Depends on: 27, 28. Spec: [parsing.md](./parsing.md),
       [orchestration.md](./orchestration.md), [cache_key.md](./cache_key.md).
 

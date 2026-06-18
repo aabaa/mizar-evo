@@ -33,7 +33,7 @@ readers.
   English canonical module specs and the Japanese companions.
 - Module and task statuses are synchronized: tasks 1-29 are complete; task 29
   completed the frontend-owned real-parser fuzz follow-up, while the
-  parser-owned counterpart remains tracked by `mizar-parser` task 39.
+  parser-owned counterpart is complete in `mizar-parser` task 40.
 - Terminology is synchronized for `SourceUnit`, `PreprocessedSource`,
   `ImportStub`, `ActiveLexicalEnvironment`, `TokenStream`, parser seam,
   `FrontendOutput`, frontend content cache keys, recoverable diagnostics, hard
@@ -86,7 +86,7 @@ the English canonical decision itself.
 
 Tasks 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, and 29 have since been
 completed. Task 29 completed the frontend-owned real-parser fuzz follow-up; the
-parser-owned counterpart remains tracked by `mizar-parser` task 39. Future
+parser-owned counterpart is complete in `mizar-parser` task 40. Future
 producer-backed tests should be added when non-exhaustive lexer/session/parser
 contracts expose concrete producers for the currently reserved fallback
 variants.

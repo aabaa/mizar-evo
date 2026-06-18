@@ -832,11 +832,19 @@ resolver / build-system 依存を避ける。
     - 依存: 35。仕様:
       [architecture/ja/20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
 
-40. **パーサー fuzz ターゲット。** [ ]
+40. **パーサー fuzz ターゲット。** [x]
     - 任意の UTF-8 上でトークン化と構文解析を駆動するワークスペース fuzz
       ターゲットを追加し、panic が起きず、回復可能診断のみで完了することを
       アサートする。`mizar-frontend` task 29 の real-parser fuzz follow-up は
       frontend-owned target を着地済みであり、この task は parser-owned 側を追跡する。
+    - 結果: `fuzz/fuzz_targets/parser_valid_utf8.rs` を
+      `parser_valid_utf8` fuzz binary として追加した。この target は任意の
+      valid UTF-8 を source loading、preprocessing、active lexical-environment
+      recovery、parser-plan tokenization、`MizarParserSeam`、parser diagnostics、
+      回復済み `SurfaceAst` traversal へ流す。生成されたすべての diagnostic と
+      AST token range を frontend `SpanBridge` で検証し、AST がある場合は
+      `SurfaceAst::snapshot_text()` を render して parser tree traversal も覆う。
+      parser public API や grammar output semantics は変更していない。
     - 依存: 37。仕様: [recovery.md](./recovery.md)、
       [../../mizar-frontend/ja/todo.md](../../mizar-frontend/ja/todo.md)
       task 29。
