@@ -9,8 +9,10 @@
 状態: この crate は、rowan-backed `SurfaceAst`、typed 互換 view、決定的な
 snapshot rendering、構文診断、syntax-owned trivia side table、task-35 surface
 vocabulary、parser task 36 と pair した task 22 の predicate redefinition label
-follow-through を所有している。S-023 follow-up audit では、その修正について残る
-source/spec gap や二言語 documentation gap は見つからなかった。
+follow-through、task 24 の private AST source split を所有している。S-025
+follow-up audit では、source/spec、source/test、re-export path、snapshot
+stability、parser/syntax boundary、二言語 documentation の gap は残っていない。
+S-021 rustdoc summary は明示的に deferred のままである。
 
 自律 crate 開発の kickoff plan:
 

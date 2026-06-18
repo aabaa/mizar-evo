@@ -1,14 +1,19 @@
 # mizar-syntax
 
+> Canonical language: English. Japanese companion: [../ja/README.md](../ja/README.md).
+
 `mizar-syntax` defines the `SurfaceAst` boundary for parsed Mizar Evo source.
 
 The crate should provide syntax data structures that are stable enough for the parser, resolver, LSP, formatter, and tests to share, while still remaining internal compiler data rather than a stable public artifact schema.
 
 Status: the crate owns a rowan-backed `SurfaceAst`, typed compatibility views,
 deterministic snapshot rendering, syntax diagnostics, syntax-owned trivia side
-tables, the task-35 surface vocabulary, and the task-22 predicate redefinition
-label follow-through paired with parser task 36. The S-023 follow-up audits
-found no remaining source/spec or bilingual documentation gap for that repair.
+tables, the task-35 surface vocabulary, the task-22 predicate redefinition
+label follow-through paired with parser task 36, and the task-24 private AST
+source split. The S-025 follow-up audit found no remaining source/spec,
+source/test, re-export-path, snapshot-stability, parser/syntax-boundary, or
+bilingual documentation gap. S-021 rustdoc summaries remain explicitly
+deferred.
 
 Autonomous crate-development kickoff plan:
 

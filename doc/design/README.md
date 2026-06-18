@@ -78,7 +78,8 @@ are companions when both are present.
   current milestone complete.
 - [mizar-syntax](./mizar-syntax/README.md) - rowan-backed `SurfaceAst`, syntax
   trivia, recovery vocabulary, typed views, and current parser-facing syntax
-  vocabulary; current milestone complete with explicit deferred follow-ups.
+  vocabulary; current milestone complete with only deferred rustdoc summaries
+  remaining.
 - [mizar-parser](./mizar-parser/README.md) - grammar implementation, Pratt
   parsing, syntax recovery, and parse-only corpus execution; grammar coverage
   has grown through task 36, with hardening work pending.

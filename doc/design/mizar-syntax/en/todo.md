@@ -12,7 +12,7 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [x] rowan storage boundary, task-35 vocabulary, task-22 predicate-label follow-through, and task-24 behavior-preserving source split complete; S-023 audit found no remaining predicate-label gap |
+| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [x] rowan storage boundary, task-35 vocabulary, task-22 predicate-label follow-through, task-24 behavior-preserving source split, and S-025 refactor audit complete; only S-021 rustdoc summaries remain deferred |
 | trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [x] task-4 model implemented; task-5 item attachment fixture landed |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [x] task-5 recovery vocabulary implemented; parser producers remain incremental |
 
@@ -658,11 +658,17 @@ interaction. Spec references are the normative grammar chapters under
     - Deps: 22, 23. Spec: [ast.md](./ast.md), [trivia.md](./trivia.md),
       [recovery.md](./recovery.md), this TODO.
 
-25. **AST refactor follow-up audit.** [ ]
+25. **AST refactor follow-up audit.** [x]
     - Re-run the source/spec correspondence and bilingual documentation sync
       audits for the task-24 module split; record any drift in API lists,
       source/test correspondence, re-export paths, snapshot stability, or
       parser/syntax boundary promises as follow-up tasks.
+    - Result: S-025 found the task-24 private module split implemented,
+      tested, and documented with no remaining API-list, source/test,
+      re-export-path, snapshot-stability, parser/syntax-boundary,
+      source/spec, bilingual documentation, expectation, metadata, or
+      repository-status drift. Audit/status surfaces now agree that tasks 24
+      and 25 are complete and S-021 is the only deferred `mizar-syntax` task.
     - Deps: 24. Spec: [ast.md](./ast.md), [source_spec_correspondence.md](./source_spec_correspondence.md),
       this TODO, and repository documentation policy.
 

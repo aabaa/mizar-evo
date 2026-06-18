@@ -5,19 +5,18 @@
 
 ## Result
 
-Status: historical exit report for the task-35 autonomous `mizar-syntax`
-milestone. The current [todo.md](./todo.md) now tracks post-exit follow-ups:
-task 22 and task 23 are complete, task 24 and task 25 remain pending, and S-021
-rustdoc summaries remain explicitly deferred by policy trigger. Treat this
-report as prior milestone evidence until task 25 refreshes the final close-out.
+Status: refreshed close-out after the task-25 AST refactor follow-up audit. The
+task-35 autonomous `mizar-syntax` milestone remains the historical basis for
+the score below; post-exit tasks 22 through 25 are now complete, and S-021
+rustdoc summaries remain explicitly deferred by policy trigger.
 
 Quality score: reviewed 94/100.
 
-Score caps applied: none at the time of the report. As of the S-023 rerun, no
+Score caps applied: none at the time of the historical report. As of the S-025 rerun, no
 new unresolved hard gate failure, `source_undocumented_behavior`,
 `test_expectation_drift`, boundary violation, or repo metadata conflict is known
-in `mizar-syntax` scope. Remaining current work is the task-24/25 AST refactor
-follow-up plus the policy-triggered rustdoc deferral.
+in `mizar-syntax` scope. Remaining current work is limited to the
+policy-triggered S-021 rustdoc deferral.
 
 ## Scope
 
@@ -26,10 +25,11 @@ Milestone scope:
 - complete the rowan-backed `SurfaceAst`, syntax vocabulary, trivia, recovery,
   diagnostic, typed-accessor, and snapshot contracts required by
   `mizar-syntax`;
-- complete paired parser-facing syntax work through parser tasks 4-35 where
+- complete paired parser-facing syntax work through parser tasks 4-36 where
   needed for syntax task completion;
-- record that parser task 36 / syntax task 22 predicate-label follow-through
-  landed after this historical report and is tracked by the S-023 audit;
+- record that parser task 36 / syntax task 22 predicate-label follow-through,
+  task 24 private AST source split, and task 25 follow-up audit landed after
+  the original historical report and are tracked by the S-023/S-025 audits;
 - keep syntax representation source-shaped and free of semantic name, type,
   proof, and VC behavior;
 - record source/spec/test correspondence, bilingual synchronization, and this
@@ -39,7 +39,10 @@ Included:
 
 - rowan-backed storage, deterministic green-tree and text snapshots, raw-kind
   compatibility, typed compatibility views, and current syntax vocabulary
-  through task 35;
+  through task 35, plus the parser-task-36 predicate redefinition label slot;
+- private AST implementation partitions for green-tree construction, stable
+  snapshot rendering, and AST tests under `src/ast/`, without changing public
+  `mizar_syntax` API paths;
 - syntax-owned trivia side tables for comments, doc-comment attachment hints,
   skipped-token ranges, and whitespace hints;
 - recovery kind and syntax diagnostic surfaces, including active parser
@@ -72,9 +75,9 @@ Excluded:
 | Gate | Status | Evidence |
 |---|---|---|
 | Specification consistency | Pass | [00.crate_plan.md](./00.crate_plan.md) maps syntax behavior to `doc/spec/en`, active `.miz` coverage, traceability metadata, and module specs. S-019 found no new `spec_gap` or blocking inconsistency. |
-| Test contract | Pass with explicit deferred rationale | Rust tests cover builder/accessor, rowan/raw-kind, snapshot, trivia, recovery, diagnostic, and lint-policy contracts. Active parser `.miz` cases and expectation sidecars cover parser-facing syntax through task 35. Deferred seed rows, vocabulary-only recovery producers, dotted `Lvalue` active `.miz` coverage, and rustdoc summaries have explicit owners and unblock conditions. |
+| Test contract | Pass with explicit deferred rationale | Rust tests cover builder/accessor, rowan/raw-kind, snapshot, trivia, recovery, diagnostic, and lint-policy contracts. Active parser `.miz` cases and expectation sidecars cover parser-facing syntax through task 35 plus the parser-task-36 predicate redefinition label repair. Deferred seed rows, vocabulary-only recovery producers, dotted `Lvalue` active `.miz` coverage, and rustdoc summaries have explicit owners and unblock conditions. |
 | Traceability | Pass | [source_spec_correspondence.md](./source_spec_correspondence.md) traces public APIs, method-level behavior, enum/diagnostic surfaces, source files, and test evidence. `tests/coverage/spec_trace.toml` records active and planned parser-facing cases. |
-| Design/source sync | Pass | S-019 found no unimplemented promised public behavior or undocumented implementation-facing public behavior. S-020 synchronized English and Japanese design docs. This report adds the final crate-exit record. |
+| Design/source sync | Pass | S-019 found no unimplemented promised public behavior or undocumented implementation-facing public behavior. S-020 synchronized English and Japanese design docs. S-023 and S-025 reruns found no remaining predicate-label or AST-refactor drift after updating status/source-layout records. |
 | Boundary discipline | Pass | [README.md](./README.md), [00.crate_plan.md](./00.crate_plan.md), and module specs keep lexer, parser, resolver, type, proof, VC, cache, and build-system responsibilities outside `mizar-syntax`. |
 | Verification | Pass | Current branch verification results are recorded below: format, clippy, workspace tests, and traceability plan all pass. |
 | Residual risk | Pass | Remaining items are classified as `MSYN-GAP-001`, `MSYN-GAP-003`, `MSYN-GAP-013`, or deferred S-021 rustdoc work. No blocking/high syntax-owned finding remains. |
@@ -135,6 +138,9 @@ The human reviewer should primarily inspect:
 - [todo.md](./todo.md)
 - `crates/mizar-syntax/src/lib.rs`
 - `crates/mizar-syntax/src/ast.rs`
+- `crates/mizar-syntax/src/ast/green.rs`
+- `crates/mizar-syntax/src/ast/snapshot.rs`
+- `crates/mizar-syntax/src/ast/tests.rs`
 - `crates/mizar-syntax/src/trivia.rs`
 - `crates/mizar-syntax/src/recovery.rs`
 - `crates/mizar-syntax/tests/lint_policy.rs`
@@ -175,7 +181,7 @@ files, or Rust source. The milestone relies on the following expectation groups.
 
 | Test | Intent | Expected outcome | Expected phase | Diagnostics | Spec refs |
 |---|---|---|---|---|---|
-| `tests/snapshots/mizar_syntax_surface_ast_current_vocabulary.snap` and `crates/mizar-syntax` Rust tests | Guard rowan-backed syntax storage, deterministic snapshots, typed accessors through task 35, trivia attachment, recovery vocabulary, diagnostics, and lint policy. | Pass | Rust unit/lint/snapshot | Panics only in documented negative invariant tests. | [ast.md](./ast.md), [trivia.md](./trivia.md), [recovery.md](./recovery.md) |
+| `tests/snapshots/mizar_syntax_surface_ast_current_vocabulary.snap` and `crates/mizar-syntax` Rust tests, including `src/ast/tests.rs` | Guard rowan-backed syntax storage, deterministic snapshots, typed accessors through task 35 plus the predicate redefinition label-slot follow-through, trivia attachment, recovery vocabulary, diagnostics, and lint policy. | Pass | Rust unit/lint/snapshot | Panics only in documented negative invariant tests. | [ast.md](./ast.md), [trivia.md](./trivia.md), [recovery.md](./recovery.md) |
 | `tests/miz/pass/parser/pass_parser_minimal_token_stream_001.expect.toml` and task-5 module/recovery sidecars | Guard frontend-reachable parser/syntax baseline and module skeleton recovery. | Pass or fail/recover as encoded by sidecar | Parse-only | Syntax diagnostics for expected recovery fixtures only. | `spec.en.syntax.parser_minimal_token_stream`, `spec.en.syntax.parser_recovery.*`, Chapter 12 |
 | Import/export/type sidecars for parser tasks 6-8 | Guard import/export/visibility and type-expression syntax surfaces. | Pass or fail/recover as encoded by sidecar | Parse-only | Syntax diagnostics for malformed import/export/type fixtures only. | Chapters 3 and 12; Appendix A |
 | Term/formula sidecars for parser tasks 9-15 | Guard primary terms, selector/update, `qua`, operator terms, set comprehensions, atomic formulas, connectives, quantifiers, constants, and formula recovery. | Pass or fail/recover as encoded by sidecar | Parse-only | Syntax diagnostics for missing operands, malformed delimiters, non-associative `iff`, and related recovery fixtures. | Chapters 13 and 14; Appendix B |

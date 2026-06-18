@@ -6,6 +6,14 @@ This directory contains implementation-facing design notes for the `mizar-syntax
 
 `mizar-syntax` owns the source-shaped syntax layer produced by `mizar-parser` and consumed by `mizar-resolve`, diagnostics, LSP features, formatters, and tests. It should remain semantic-free: no resolved symbol identities, inferred types, overload resolution results, cluster facts, or proof obligations belong here.
 
+Status: the crate owns the rowan-backed `SurfaceAst`, typed compatibility
+views, deterministic snapshot rendering, syntax diagnostics, syntax-owned
+trivia side tables, task-35 surface vocabulary, parser task-36 predicate
+redefinition label follow-through, and task-24 private AST source split. The
+S-025 follow-up audit found no remaining source/spec, source/test,
+re-export-path, snapshot-stability, parser/syntax-boundary, or bilingual
+documentation gap. S-021 rustdoc summaries remain explicitly deferred.
+
 ## Crate Plan
 
 - [en/00.crate_plan.md](./en/00.crate_plan.md) - autonomous crate-development kickoff plan, known gaps, task split, and exit gates
@@ -21,3 +29,10 @@ This directory contains implementation-facing design notes for the `mizar-syntax
 - [en/grammar_audit.md](./en/grammar_audit.md) - Appendix A consistency audit before AST node vocabulary growth
 - [en/parse_only_acceptance_matrix.md](./en/parse_only_acceptance_matrix.md) - parse-only matrix and fixture ownership plan before AST snapshots
 - [en/parse_only_fixture_seed.md](./en/parse_only_fixture_seed.md) - inactive fixture seed manifest for later parser activation
+
+## Cross-Cutting Audits
+
+- [en/source_spec_correspondence.md](./en/source_spec_correspondence.md) - S-025 source/spec/test correspondence
+- [en/bilingual_documentation_synchronization.md](./en/bilingual_documentation_synchronization.md) - S-025 bilingual synchronization
+- [en/crate_exit_report.md](./en/crate_exit_report.md) - refreshed close-out evidence
+- [en/todo.md](./en/todo.md) - implementation roadmap and deferred S-021 trigger

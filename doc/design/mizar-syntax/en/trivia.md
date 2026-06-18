@@ -1,5 +1,7 @@
 # mizar-syntax: Trivia
 
+> Canonical language: English. Japanese companion: [../ja/trivia.md](../ja/trivia.md).
+
 Status: task-4 trivia model implemented; syntax-level item attachment fixture
 landed with the first task-S-009 item-node increment.
 

@@ -1,5 +1,7 @@
 # mizar-syntax: Surface AST
 
+> Canonical language: English. Japanese companion: [../ja/ast.md](../ja/ast.md).
+
 Status: rowan-backed storage boundary, task-35 surface vocabulary, typed
 compatibility views, and S-018 incremental reuse contract implemented.
 

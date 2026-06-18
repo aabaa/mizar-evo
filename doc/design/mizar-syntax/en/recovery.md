@@ -1,5 +1,7 @@
 # mizar-syntax: Recovery Nodes
 
+> Canonical language: English. Japanese companion: [../ja/recovery.md](../ja/recovery.md).
+
 Status: recovery vocabulary for missing constructs, skipped tokens, unmatched delimiters, and malformed annotations implemented in `mizar-syntax`; parser production remains incremental.
 
 ## Purpose
