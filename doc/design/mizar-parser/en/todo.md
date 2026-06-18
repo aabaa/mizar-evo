@@ -830,10 +830,19 @@ older numeric syntax task references appear to disagree, prefer
     - Deps: 35. Spec: [recovery.md](./recovery.md),
       [architecture/en/20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 
-38. **`SurfaceAst` snapshot baselines.** [ ]
+38. **`SurfaceAst` snapshot baselines.** [x]
     - Add deterministic snapshot baselines under `tests/snapshots/` for
       representative corpus cases, using the `mizar-syntax` rendering (its
       task 3); wire snapshot comparison into the corpus runner.
+    - Result: added transitional parse-only `snapshots =
+      "snapshots/parser/<id>.surface_ast.snap"` sidecar support in
+      `mizar-test`, byte-for-byte comparison of `SurfaceAst::snapshot_text()`
+      after diagnostics match, harness failures for missing/unreadable/mismatched
+      baselines or snapshot requests without an AST, active pass/fail parser
+      baselines for the minimal token stream and unexpected top-level recovery
+      cases, and traceability entry `spec.en.testing.surface_ast_snapshots`.
+      The general `[[snapshots]]` hash registry and update mode remain future
+      `mizar-test` work.
     - Deps: 3, 35, `mizar-syntax` task 3. Spec:
       [../../mizar-test/en/snapshot.md](../../mizar-test/en/snapshot.md).
 

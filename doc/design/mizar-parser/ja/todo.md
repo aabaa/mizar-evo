@@ -804,11 +804,19 @@ resolver / build-system 依存を避ける。
     - 依存: 35。仕様: [recovery.md](./recovery.md)、
       [architecture/ja/20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
 
-38. **`SurfaceAst` スナップショットベースライン。** [ ]
+38. **`SurfaceAst` スナップショットベースライン。** [x]
     - 代表的なコーパスケースについて、`mizar-syntax` のレンダリング
       （その task 3）を使った決定的なスナップショットベースラインを
       `tests/snapshots/` 配下に追加し、スナップショット比較をコーパス
       ランナーに配線する。
+    - 結果: `mizar-test` に移行用 parse-only `snapshots =
+      "snapshots/parser/<id>.surface_ast.snap"` sidecar support を追加し、
+      diagnostics 一致後に `SurfaceAst::snapshot_text()` を byte-for-byte で比較
+      するようにした。missing / unreadable / mismatch baseline、または AST がない
+      snapshot request は harness failure になる。minimal token stream と
+      unexpected top-level recovery の active pass/fail parser baseline、および
+      traceability entry `spec.en.testing.surface_ast_snapshots` を追加した。general
+      `[[snapshots]]` hash registry と update mode は将来の `mizar-test` work に残る。
     - 依存: 3、35、`mizar-syntax` task 3。仕様:
       [../../mizar-test/ja/snapshot.md](../../mizar-test/ja/snapshot.md)。
 

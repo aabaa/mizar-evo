@@ -1,0 +1,29 @@
+surface-ast-snapshot-v1
+root:
+  Root range=0..22 recovered=false
+    Token kind=ReservedWord text="and" range=0..3 recovered=false
+    Token kind=ReservedWord text="theorem" range=4..11 recovered=false
+    Token kind=Identifier text="T" range=12..13 recovered=false
+    Token kind=ReservedSymbol text=":" range=13..14 recovered=false
+    Token kind=ReservedWord text="thesis" range=15..21 recovered=false
+    Token kind=ReservedSymbol text=";" range=21..22 recovered=false
+    CompilationUnit range=0..22 recovered=false
+      ItemList range=0..22 recovered=false
+        ErrorRecovery kind=SkippedToken range=0..3 recovered=true
+        TheoremItem range=4..22 recovered=false
+          Token kind=ReservedWord text="theorem" range=4..11 recovered=false
+          Token kind=Identifier text="T" range=12..13 recovered=false
+          Token kind=ReservedSymbol text=":" range=13..14 recovered=false
+          FormulaExpression range=15..21 recovered=false
+            FormulaConstant constant=Thesis range=15..21 recovered=false
+              Token kind=ReservedWord text="thesis" range=15..21 recovered=false
+          Token kind=ReservedSymbol text=";" range=21..22 recovered=false
+expression_root:
+  <none>
+token_nodes:
+  Token kind=ReservedWord text="and" range=0..3 recovered=false
+  Token kind=ReservedWord text="theorem" range=4..11 recovered=false
+  Token kind=Identifier text="T" range=12..13 recovered=false
+  Token kind=ReservedSymbol text=":" range=13..14 recovered=false
+  Token kind=ReservedWord text="thesis" range=15..21 recovered=false
+  Token kind=ReservedSymbol text=";" range=21..22 recovered=false

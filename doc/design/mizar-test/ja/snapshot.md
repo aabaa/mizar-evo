@@ -69,6 +69,12 @@ allowed update reasons:
 
 harness は normal test runs 中に snapshots を update してはならない。
 
+現在の実装済み slice: parser task 38 は、移行用 sidecar field
+`snapshots = "snapshots/parser/<id>.surface_ast.snap"` を通じて active parse-only
+`SurfaceAst` baseline を接続する。diagnostics が一致した後、commit 済みの
+`SurfaceAst::snapshot_text()` output を byte-for-byte で比較する。これは将来の
+一般 snapshot hash registry や update mode を実装するものではない。
+
 ## Determinism Checks
 
 snapshot tests は少なくとも次を run する。

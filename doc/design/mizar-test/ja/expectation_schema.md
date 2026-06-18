@@ -161,7 +161,7 @@ Fields:
 |---|---:|---|
 | `expected_phase` | yes | Harness がこの test で実行すべき latest phase. |
 | `diagnostic_codes` | yes | Expected diagnostics。Empty は diagnostics なしを意味する。 |
-| `snapshots` | no | Applicable な snapshot profiles and hashes. |
+| `snapshots` | no | 現在の parse-only `SurfaceAst` baseline path。該当する場合のみ。 |
 
 Expectation で明示的に許可されていない error diagnostic が出た場合、pass test は fail する。
 
@@ -187,6 +187,7 @@ Fields:
 | `rejection_reason` | conditional | Certificate and kernel rejection では必須。それ以外では optional. |
 | `diagnostic_codes` | yes | Deterministic order の stable diagnostic codes. |
 | `diagnostic_payloads` | no | Deterministic order の machine-readable diagnostic payload summaries. |
+| `snapshots` | no | 現在の parse-only `SurfaceAst` baseline path。該当する場合のみ。 |
 | `stable_detail_key` | yes | Diagnostic wording から独立した stable detail identity. |
 
 Fail test が成功した場合は harness failure である。Expected より早い phase で fail した場合も、その earlier sound boundary に expectation を意図的に更新しない限り harness failure である。
@@ -229,8 +230,20 @@ parse-only corpus runner は、`active_parse_only` tag を持つ `.miz` の pass
 sidecar だけを実行する。tag のない parse-only sidecar は引き続き discover と
 trace の対象だが、将来の grammar 作業用の inactive seed metadata に留める。
 現在の runner では、`diagnostic_codes` は `missing_end` のような bare parser
-syntax key と比較する。AST profile と snapshot は後続の surface vocabulary task
-まで予約扱いとする。
+syntax key と比較する。
+
+active parse-only の pass/fail sidecar は、移行用の `snapshots` field も使用してよい。
+
+```toml
+snapshots = "snapshots/parser/pass_parser_minimal_token_stream_001.surface_ast.snap"
+```
+
+この path は `tests/` からの相対 path で、`tests/snapshots/` 配下に留めなければ
+ならず、commit 済みの `SurfaceAst::snapshot_text()` baseline を指す。parse-only
+runner は diagnostics が一致した後、その baseline を byte-for-byte で比較する。
+snapshot を要求したのに parser AST がない場合、baseline が欠落または unreadable
+な場合、または内容が一致しない場合は harness failure である。通常の
+parse-only run は snapshot baseline を rewrite しない。
 
 現在の parser recovery case が preprocess や lexing 由来の frontend recovery
 diagnostic も同時に出す場合、sidecar は `allow_frontend_recovery_diagnostics` を
@@ -322,6 +335,11 @@ hash = "sha256:..."
 
 Snapshot update mode は explicit である。Harness は normal pass/fail execution 中に snapshots を rewrite してはならない。
 
+`[[snapshots]]` hash registry は将来の general snapshot contract である。上記の
+current parser task-38 slice は active pass/fail sidecar 向けの parse-only
+`SurfaceAst` shortcut に限られ、general `kind = "snapshot"` execution や
+hash-registry update mode を完了するものではない。
+
 ## Generated, Fuzz, And Property Metadata
 
 Generated and fuzz/property regression tests は provenance を記録する。
@@ -351,9 +369,12 @@ Harness は次を validate する。
 7. Fail expectations include failure identity fields.
 8. Certificate and kernel rejections include `rejection_reason`.
 9. Diagnostic codes are sorted in the expected deterministic order.
-10. Snapshot entries use supported hash algorithms.
-11. Generated/fuzz/property tests include origin metadata.
-12. Unknown fields are rejected unless the schema version explicitly permits extensions.
+10. 移行用 parse-only `snapshots` path は active parse-only pass/fail に限定され、
+    `snapshots/` 配下の clean な tests-root-relative path かつ `.snap` file でなければ
+    ならない。missing、unreadable、または mismatched baseline は harness failure である。
+11. General snapshot entries use supported hash algorithms.
+12. Generated/fuzz/property tests include origin metadata.
+13. Unknown fields are rejected unless the schema version explicitly permits extensions.
 
 Coverage completeness の validation は [traceability.md](./traceability.md) で定義される validation mode に依存する。Schema validation 自体は mode independent である。
 

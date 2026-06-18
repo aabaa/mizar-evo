@@ -59,7 +59,9 @@ pub struct ParseOnlyRunReport {
 4. Run cases in deterministic display order, even when execution is parallel.
 5. Capture compiler outputs as structured records.
 6. Match pass/fail expectations before snapshot expectations.
-7. Compare snapshots by canonical hash.
+7. Compare general `[[snapshots]]` entries by canonical hash; the current
+   parse-only `SurfaceAst` shortcut compares committed text baselines
+   byte-for-byte as described below.
 8. Report failures with phase, failure category, rejection reason, diagnostic code, and snapshot diff summary.
 
 The current parse-only runner copies each active corpus file into a temporary
@@ -73,8 +75,12 @@ exported symbols and exist only to keep import syntax cases from depending on
 semantic module availability. If parser syntax diagnostics and non-syntax
 frontend recovery diagnostics both appear, the runner reports all diagnostic
 codes unless the sidecar explicitly includes
-`allow_frontend_recovery_diagnostics`. AST snapshot assertion is deferred until
-the surface node vocabulary is expanded.
+`allow_frontend_recovery_diagnostics`. Active parse-only pass/fail sidecars may
+also set the transitional `snapshots = "snapshots/parser/<id>.surface_ast.snap"`
+field. For those cases, after diagnostics match, the runner requires a
+`SurfaceAst` and compares `SurfaceAst::snapshot_text()` with the committed
+baseline under `tests/snapshots/`. Snapshot baselines are never rewritten during
+normal parse-only runs.
 
 An expectation tagged `active_parse_only` but missing one of the runnable case
 predicates is a harness error rather than a silent skip.

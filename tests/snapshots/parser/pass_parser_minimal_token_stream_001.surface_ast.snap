@@ -1,0 +1,14 @@
+surface-ast-snapshot-v1
+root:
+  Root range=0..11 recovered=false
+    Token kind=Identifier text="alpha" range=0..5 recovered=false
+    Token kind=ReservedSymbol text=";" range=5..6 recovered=false
+    Token kind=Identifier text="beta" range=7..11 recovered=false
+    CompilationUnit range=0..11 recovered=false
+      ItemList range=0..11 recovered=false
+expression_root:
+  <none>
+token_nodes:
+  Token kind=Identifier text="alpha" range=0..5 recovered=false
+  Token kind=ReservedSymbol text=";" range=5..6 recovered=false
+  Token kind=Identifier text="beta" range=7..11 recovered=false

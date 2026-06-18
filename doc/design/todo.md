@@ -40,7 +40,7 @@ and the crate ownership map in
 | mizar-session | yes | Source identity, source maps, source loading, build snapshots, retention | [x] current milestone complete; no deferred crate-owned item | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | yes | Raw scan, scope skeletons, lexical environments, context-sensitive token disambiguation | [x] current milestone complete; `.miz` lexer companions and selector semantics are downstream-owned | [todo](./mizar-lexer/en/todo.md) |
 | mizar-syntax | yes | Rowan-backed `SurfaceAst`, syntax trivia, recovery, typed views, parser-facing syntax vocabulary | [x] current milestone complete; only deferred rustdoc summaries remain | [todo](./mizar-syntax/en/todo.md) |
-| mizar-parser | yes | Grammar, Pratt parsing, syntax recovery, parse-only corpus execution | [~] grammar tasks 1-36 and recovery consolidation task 37 complete; hardening/audit tasks 38-45 remain | [todo](./mizar-parser/en/todo.md) |
+| mizar-parser | yes | Grammar, Pratt parsing, syntax recovery, parse-only corpus execution | [~] grammar tasks 1-36, recovery consolidation task 37, and `SurfaceAst` snapshot baselines task 38 complete; hardening/audit tasks 39-45 remain | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | yes | Source loading and phase 1-3 orchestration across session, lexer, syntax, and parser | [x] current milestone complete; future parser growth may open bounded follow-ups | [todo](./mizar-frontend/en/todo.md) |
 | mizar-test | yes | Corpus discovery, expectation sidecars, staged model, traceability, snapshots, harness behavior | [~] implementation exists; formal lint/gap audit, runner validation, snapshots, and reporting remain | [todo](./mizar-test/en/todo.md) |
 | mizar-build | yes | Phase 0 workspace planning plus later task graph, scheduler, resources, cancellation, failure state | [~] scaffold and package-name validation slice exist; planner spec and full manifest/lockfile parsing are next | [todo](./mizar-build/en/todo.md) |
@@ -99,9 +99,9 @@ The current foundation milestone is complete for:
   parser handoff, cache keys, diagnostics merge, determinism, fuzz, and current
   parser-growth follow-through.
 
-`mizar-parser` has also completed the main grammar-growth run through task 36
-and recovery consolidation task 37, but remains [~] because hardening tasks
-38-45 are still open.
+`mizar-parser` has also completed the main grammar-growth run through task 36,
+recovery consolidation task 37, and `SurfaceAst` snapshot baselines task 38, but
+remains [~] because hardening tasks 39-45 are still open.
 
 ### Immediate Next Work
 

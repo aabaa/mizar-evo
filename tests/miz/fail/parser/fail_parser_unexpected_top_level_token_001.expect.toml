@@ -12,8 +12,10 @@ stable_detail_key = "parser.module_skeleton.unexpected_top_level_token"
 diagnostic_codes = [
   "unexpected_top_level_token",
 ]
+snapshots = "snapshots/parser/fail_parser_unexpected_top_level_token_001.surface_ast.snap"
 tags = ["active_parse_only"]
 spec_refs = [
   "spec.en.12.modules.compilation_unit_skeleton",
+  "spec.en.testing.surface_ast_snapshots",
 ]
 notes = "Active parse-only runner coverage for parser task 5 skipped-token recovery before a top-level item."

@@ -66,6 +66,7 @@ pub struct Expectation {
     pub diagnostic_payloads: Vec<String>,
     pub stable_detail_key: Option<String>,
     pub tags: Vec<String>,
+    pub snapshots: Option<PathBuf>,
     pub tokens: Vec<TokenExpectation>,
 }
 
@@ -174,6 +175,16 @@ fn expectation_from_table(
         })
         .collect::<Result<Vec<_>, _>>()?;
     let stable_detail_key = toml_lite::optional_string(table, "stable_detail_key")?;
+    let snapshots = toml_lite::optional_string(table, "snapshots")?
+        .map(PathBuf::from)
+        .map(|path| {
+            if path.as_os_str().is_empty() {
+                Err("`snapshots` must not be empty when present".to_owned())
+            } else {
+                Ok(path)
+            }
+        })
+        .transpose()?;
     let tags = optional_string_array(table, "tags")?
         .into_iter()
         .map(|tag| {
@@ -243,6 +254,7 @@ fn expectation_from_table(
         diagnostic_payloads,
         stable_detail_key,
         tags,
+        snapshots,
         tokens,
     })
 }
@@ -382,7 +394,7 @@ fn validate_optional_metadata_fields(table: &TomlTable) -> Result<(), String> {
             toml_lite::string_array(table, key)?;
         }
     }
-    for key in ["notes", "snapshots", "ast_profile"] {
+    for key in ["notes", "ast_profile"] {
         if table.contains_key(key) {
             toml_lite::optional_string(table, key)?;
         }
@@ -465,6 +477,56 @@ pub fn validate_expectation_path(
             "expectation.spec_refs",
             "committed executable tests must list at least one spec_ref",
         ));
+    }
+
+    if let Some(snapshot_path) = &expectation.snapshots {
+        if !clean_relative_path(snapshot_path) || !snapshot_path.starts_with("snapshots") {
+            diagnostics.push(ValidationDiagnostic::error(
+                path,
+                "expectation",
+                "E-EXPECT-SNAPSHOT-PATH",
+                "expectation.snapshots",
+                format!(
+                    "snapshots `{}` must be a clean tests-root-relative path under snapshots/",
+                    snapshot_path.display()
+                ),
+            ));
+        }
+        if snapshot_path
+            .extension()
+            .and_then(|extension| extension.to_str())
+            != Some("snap")
+        {
+            diagnostics.push(ValidationDiagnostic::error(
+                path,
+                "expectation",
+                "E-EXPECT-SNAPSHOT-EXTENSION",
+                "expectation.snapshots",
+                format!(
+                    "snapshots `{}` must use the .snap extension",
+                    snapshot_path.display()
+                ),
+            ));
+        }
+        let active_parse_only = expectation.stage == Stage::ParseOnly
+            && expectation.expected_phase == Some(PipelinePhase::Parse)
+            && matches!(
+                expectation.expected_outcome,
+                ExpectedOutcome::Pass | ExpectedOutcome::Fail
+            )
+            && expectation
+                .tags
+                .iter()
+                .any(|tag| tag == "active_parse_only");
+        if !active_parse_only {
+            diagnostics.push(ValidationDiagnostic::error(
+                path,
+                "expectation",
+                "E-EXPECT-SNAPSHOT-SCOPE",
+                "expectation.snapshots",
+                "snapshots are currently supported only for active parse-only pass/fail cases",
+            ));
+        }
     }
 
     let mut seen = BTreeSet::new();

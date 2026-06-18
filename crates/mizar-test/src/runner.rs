@@ -41,6 +41,7 @@ pub struct ParseOnlyCaseResult {
     pub expectation_path: PathBuf,
     pub status: ParseOnlyCaseStatus,
     pub actual_diagnostic_codes: Vec<String>,
+    pub snapshot_failure: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -81,6 +82,7 @@ impl ParseOnlyRunReport {
 
 pub fn run_parse_only_corpus(config: &DiscoveryConfig) -> Result<ParseOnlyRunReport, HarnessError> {
     let workspace_root = normalized_workspace_root(config)?;
+    let tests_root = normalized_tests_root(&workspace_root, config);
     let plan = build_test_plan(config)?;
     let mut diagnostics = plan.diagnostics.clone();
     if plan.error_count() > 0 {
@@ -93,7 +95,7 @@ pub fn run_parse_only_corpus(config: &DiscoveryConfig) -> Result<ParseOnlyRunRep
 
     let mut results = Vec::new();
     for (ordinal, case) in active_parse_only_cases(&plan).enumerate() {
-        let result = run_parse_only_case(&workspace_root, case, ordinal);
+        let result = run_parse_only_case(&workspace_root, &tests_root, case, ordinal);
         if result.status == ParseOnlyCaseStatus::Failed {
             diagnostics.push(parse_only_failure_diagnostic(case, &result));
         }
@@ -150,19 +152,21 @@ fn validate_active_parse_only_tags(plan: &TestPlan) -> Vec<ValidationDiagnostic>
 
 fn run_parse_only_case(
     workspace_root: &Path,
+    tests_root: &Path,
     case: &TestCase,
     ordinal: usize,
 ) -> ParseOnlyCaseResult {
     let output = run_frontend(workspace_root, case, ordinal);
-    let (has_ast, actual_diagnostic_codes) = match output {
+    let (has_ast, actual_diagnostic_codes, ast_snapshot) = match output {
         Ok(output) => (
             output.has_ast,
             assertion_diagnostic_codes(case, &output.diagnostics),
+            output.ast_snapshot,
         ),
-        Err(error) => (false, vec![frontend_error_code(&error)]),
+        Err(error) => (false, vec![frontend_error_code(&error)], None),
     };
     let expected_diagnostic_codes = &case.expectation.diagnostic_codes;
-    let status = match case.expectation.expected_outcome {
+    let diagnostic_status = match case.expectation.expected_outcome {
         ExpectedOutcome::Pass
             if has_ast && actual_diagnostic_codes == *expected_diagnostic_codes =>
         {
@@ -173,12 +177,28 @@ fn run_parse_only_case(
         }
         _ => ParseOnlyCaseStatus::Failed,
     };
+    let snapshot_failure = if diagnostic_status == ParseOnlyCaseStatus::Passed {
+        case.expectation
+            .snapshots
+            .as_ref()
+            .and_then(|snapshot_path| {
+                compare_surface_ast_snapshot(tests_root, snapshot_path, ast_snapshot.as_deref())
+            })
+    } else {
+        None
+    };
+    let status = if snapshot_failure.is_some() {
+        ParseOnlyCaseStatus::Failed
+    } else {
+        diagnostic_status
+    };
 
     ParseOnlyCaseResult {
         id: case.id.clone(),
         expectation_path: case.expectation_path.clone(),
         status,
         actual_diagnostic_codes,
+        snapshot_failure,
     }
 }
 
@@ -197,8 +217,10 @@ fn run_frontend(
     let output = frontend
         .run(prepared.request.clone(), &ids)
         .map_err(|error| error.to_string())?;
+    let ast_snapshot = output.ast.as_ref().map(|ast| ast.snapshot_text());
     Ok(FrontendRun {
         has_ast: output.ast.is_some(),
+        ast_snapshot,
         diagnostics: output.diagnostics,
     })
 }
@@ -206,6 +228,7 @@ fn run_frontend(
 #[derive(Debug)]
 struct FrontendRun {
     has_ast: bool,
+    ast_snapshot: Option<String>,
     diagnostics: Vec<FrontendDiagnostic>,
 }
 
@@ -276,6 +299,10 @@ fn normalized_workspace_root(config: &DiscoveryConfig) -> Result<PathBuf, Harnes
     Ok(absolute_from(&current_dir, &config.workspace_root))
 }
 
+fn normalized_tests_root(workspace_root: &Path, config: &DiscoveryConfig) -> PathBuf {
+    absolute_from(workspace_root, &config.tests_root)
+}
+
 fn module_path(workspace_root: &Path, source_path: &Path) -> String {
     source_path
         .strip_prefix(workspace_root)
@@ -341,6 +368,15 @@ fn parse_only_failure_diagnostic(
     case: &TestCase,
     result: &ParseOnlyCaseResult,
 ) -> ValidationDiagnostic {
+    if let Some(snapshot_failure) = &result.snapshot_failure {
+        return ValidationDiagnostic::error(
+            &case.expectation_path,
+            "parse_only",
+            "E-PARSE-ONLY-SNAPSHOT",
+            format!("parse_only.snapshot.{}", case.id.0),
+            format!("parse-only case `{}` {snapshot_failure}", case.id.0),
+        );
+    }
     ValidationDiagnostic::error(
         &case.expectation_path,
         "parse_only",
@@ -351,6 +387,39 @@ fn parse_only_failure_diagnostic(
             case.id.0, case.expectation.diagnostic_codes, result.actual_diagnostic_codes
         ),
     )
+}
+
+fn compare_surface_ast_snapshot(
+    tests_root: &Path,
+    snapshot_path: &Path,
+    actual: Option<&str>,
+) -> Option<String> {
+    let Some(actual) = actual else {
+        return Some(format!(
+            "requested SurfaceAst snapshot `{}` but the parser produced no AST",
+            snapshot_path.display()
+        ));
+    };
+    let full_path = tests_root.join(snapshot_path);
+    let expected = match fs::read_to_string(&full_path) {
+        Ok(expected) => expected,
+        Err(error) => {
+            return Some(format!(
+                "could not read SurfaceAst snapshot `{}`: {error}",
+                snapshot_path.display()
+            ));
+        }
+    };
+    if expected == actual {
+        None
+    } else {
+        Some(format!(
+            "SurfaceAst snapshot `{}` differed (expected {} bytes, got {} bytes)",
+            snapshot_path.display(),
+            expected.len(),
+            actual.len()
+        ))
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

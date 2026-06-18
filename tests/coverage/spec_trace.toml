@@ -716,6 +716,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.testing.surface_ast_snapshots"
+source = "doc/design/mizar-test/en/snapshot.md"
+section = "Update Policy"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "snapshot"
+tests = [
+  "tests/miz/pass/parser/pass_parser_minimal_token_stream_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_unexpected_top_level_token_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.12.modules.compilation_unit_skeleton"
 source = "doc/spec/en/12.modules_and_namespaces.md"
 section = "12.7 Complete Syntax (EBNF)"

@@ -169,7 +169,7 @@ Fields:
 |---|---:|---|
 | `expected_phase` | yes | Latest phase the harness must execute for this test. |
 | `diagnostic_codes` | yes | Expected diagnostics. Empty means no diagnostics. |
-| `snapshots` | no | Snapshot profiles and hashes, when applicable. |
+| `snapshots` | no | Current parse-only `SurfaceAst` baseline path, when applicable. |
 
 The harness fails a pass test if an error diagnostic is emitted unless that
 diagnostic is explicitly allowed by the expectation.
@@ -196,6 +196,7 @@ Fields:
 | `rejection_reason` | conditional | Required for certificate and kernel rejection; optional otherwise. |
 | `diagnostic_codes` | yes | Stable diagnostic codes in deterministic order. |
 | `diagnostic_payloads` | no | Optional stable summaries for machine-readable diagnostic payloads in deterministic order. |
+| `snapshots` | no | Current parse-only `SurfaceAst` baseline path, when applicable. |
 | `stable_detail_key` | yes | Stable detail identity independent of diagnostic wording. |
 
 A fail test that succeeds is a harness failure. A fail test that fails earlier
@@ -245,8 +246,21 @@ The parse-only corpus runner executes only `.miz` pass/fail sidecars that carry
 the `active_parse_only` tag. Untagged parse-only sidecars are still discovered
 and traced, but remain inactive seed metadata for future grammar work. For the
 current runner, `diagnostic_codes` compare against bare parser syntax keys such
-as `missing_end`; AST profiles and snapshots are reserved for later surface
-vocabulary tasks.
+as `missing_end`.
+
+Active parse-only pass/fail sidecars may also use the transitional
+`snapshots` field:
+
+```toml
+snapshots = "snapshots/parser/pass_parser_minimal_token_stream_001.surface_ast.snap"
+```
+
+The path is relative to `tests/`, must stay under `tests/snapshots/`, and names
+a committed `SurfaceAst::snapshot_text()` baseline. The parse-only runner
+compares that baseline byte-for-byte after diagnostics match. A requested
+snapshot with no parser AST, a missing or unreadable baseline, or a content
+mismatch is a harness failure. Normal parse-only runs never rewrite snapshot
+baselines.
 
 If a current parser recovery case also emits frontend recovery diagnostics from
 preprocessing or lexing, the sidecar may add
@@ -346,6 +360,11 @@ hash = "sha256:..."
 Snapshot update mode is explicit. The harness must not rewrite snapshots during
 normal pass/fail execution.
 
+The `[[snapshots]]` hash registry is the future general snapshot contract. The
+current parser task-38 slice above is only a parse-only `SurfaceAst` shortcut
+for active pass/fail sidecars and does not complete general `kind = "snapshot"`
+execution or hash-registry update mode.
+
 ## Generated, Fuzz, And Property Metadata
 
 Generated and fuzz/property regression tests record provenance.
@@ -377,10 +396,13 @@ The harness validates:
 7. Fail expectations include failure identity fields.
 8. Certificate and kernel rejections include `rejection_reason`.
 9. Diagnostic codes are sorted in the expected deterministic order.
-10. Snapshot entries use supported hash algorithms.
-11. Generated/fuzz/property tests include origin metadata.
-12. Unknown fields are rejected unless the schema version explicitly permits
-   extensions.
+10. Transitional parse-only `snapshots` paths are active parse-only pass/fail
+    only, clean tests-root-relative paths under `snapshots/`, and `.snap`
+    files; missing, unreadable, or mismatched baselines are harness failures.
+11. General snapshot entries use supported hash algorithms.
+12. Generated/fuzz/property tests include origin metadata.
+13. Unknown fields are rejected unless the schema version explicitly permits
+    extensions.
 
 Validation of coverage completeness depends on the validation mode defined in
 [traceability.md](./traceability.md). Schema validation itself is mode

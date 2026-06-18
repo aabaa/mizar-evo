@@ -7,8 +7,10 @@ source = "pass_parser_minimal_token_stream_001.miz"
 expected_outcome = "pass"
 expected_phase = "parse"
 diagnostic_codes = []
+snapshots = "snapshots/parser/pass_parser_minimal_token_stream_001.surface_ast.snap"
 tags = ["active_parse_only"]
 spec_refs = [
   "spec.en.syntax.parser_minimal_token_stream",
+  "spec.en.testing.surface_ast_snapshots",
 ]
 notes = "Active parse-only runner seed for current parser token preservation through the frontend seam."

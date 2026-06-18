@@ -44,7 +44,8 @@ should start from the earliest applicable spec chapter and grow forward.
   parsing.
 - `generated/`, `fuzz/`, and `property/` are reserved for generated,
   minimized fuzz, and property-test seeds.
-- `snapshots/` is reserved for deterministic snapshot baselines.
+- `snapshots/` contains deterministic snapshot baselines, including parse-only
+  `SurfaceAst` baselines referenced from `.expect.toml` sidecars.
 
 ## Naming
 

@@ -69,6 +69,12 @@ Allowed update reasons:
 
 The harness must not update snapshots during normal test runs.
 
+Current implemented slice: parser task 38 wires active parse-only `SurfaceAst`
+baselines through a transitional sidecar field
+`snapshots = "snapshots/parser/<id>.surface_ast.snap"`. This compares committed
+`SurfaceAst::snapshot_text()` output byte-for-byte after diagnostics match. It
+does not implement the future general snapshot hash registry or update mode.
+
 ## Determinism Checks
 
 Snapshot tests run at least:

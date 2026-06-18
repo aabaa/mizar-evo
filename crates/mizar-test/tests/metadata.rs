@@ -1708,6 +1708,7 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_minimal_token_stream_001"
             && result.actual_diagnostic_codes.is_empty()
+            && result.snapshot_failure.is_none()
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_parser_missing_block_semicolon_001"
@@ -1785,6 +1786,7 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_parser_unexpected_top_level_token_001"
             && result.actual_diagnostic_codes == vec!["unexpected_top_level_token".to_owned()]
+            && result.snapshot_failure.is_none()
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_module_skeleton_001"
@@ -2106,6 +2108,201 @@ lexeme = "alpha"
     let plan = corpus.plan();
 
     assert_has_code(&plan, "E-EXPECT-SCHEMA");
+}
+
+#[test]
+fn parse_only_surface_ast_snapshot_path_is_retained() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write("tests/miz/pass/parser/snapshot_case.miz", "alpha;");
+    corpus.write(
+        "tests/miz/pass/parser/snapshot_case.expect.toml",
+        r#"schema_version = 1
+id = "snapshot_case"
+kind = "pass"
+stage = "parse_only"
+domain = "parser"
+source = "snapshot_case.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+snapshots = "snapshots/parser/snapshot_case.surface_ast.snap"
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_eq!(plan.error_count(), 0, "{:#?}", plan.diagnostics);
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "snapshot_case")
+        .expect("snapshot case should be discovered");
+    assert_eq!(
+        case.expectation.snapshots.as_deref(),
+        Some(Path::new("snapshots/parser/snapshot_case.surface_ast.snap"))
+    );
+}
+
+#[test]
+fn parse_only_surface_ast_snapshot_path_is_validated() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write("tests/miz/pass/parser/snapshot_escape.miz", "alpha;");
+    corpus.write(
+        "tests/miz/pass/parser/snapshot_escape.expect.toml",
+        r#"schema_version = 1
+id = "snapshot_escape"
+kind = "pass"
+stage = "parse_only"
+domain = "parser"
+source = "snapshot_escape.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+snapshots = "../snapshot_escape.surface_ast.snap"
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+    corpus.write("tests/miz/pass/parser/snapshot_bad_ext.miz", "alpha;");
+    corpus.write(
+        "tests/miz/pass/parser/snapshot_bad_ext.expect.toml",
+        r#"schema_version = 1
+id = "snapshot_bad_ext"
+kind = "pass"
+stage = "parse_only"
+domain = "parser"
+source = "snapshot_bad_ext.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+snapshots = "snapshots/parser/snapshot_bad_ext.txt"
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+    corpus.write("tests/lexical/pass/snapshot_scope.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/snapshot_scope.expect.toml",
+        r#"schema_version = 1
+id = "snapshot_scope"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "snapshot_scope.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+snapshots = "snapshots/parser/snapshot_scope.surface_ast.snap"
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SNAPSHOT-PATH");
+    assert_has_code(&plan, "E-EXPECT-SNAPSHOT-EXTENSION");
+    assert_has_code(&plan, "E-EXPECT-SNAPSHOT-SCOPE");
+}
+
+#[test]
+fn parse_only_runner_reports_surface_ast_snapshot_mismatch() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write("tests/miz/pass/parser/snapshot_mismatch.miz", "alpha;");
+    corpus.write(
+        "tests/snapshots/parser/snapshot_mismatch.surface_ast.snap",
+        "wrong\n",
+    );
+    corpus.write(
+        "tests/miz/pass/parser/snapshot_mismatch.expect.toml",
+        r#"schema_version = 1
+id = "snapshot_mismatch"
+kind = "pass"
+stage = "parse_only"
+domain = "parser"
+source = "snapshot_mismatch.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+snapshots = "snapshots/parser/snapshot_mismatch.surface_ast.snap"
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let report = run_parse_only_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.failed_count(), 1);
+    assert_has_report_code(&report, "E-PARSE-ONLY-SNAPSHOT");
+}
+
+#[test]
+fn parse_only_runner_reports_missing_surface_ast_snapshot() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write("tests/miz/pass/parser/snapshot_missing.miz", "alpha;");
+    corpus.write(
+        "tests/miz/pass/parser/snapshot_missing.expect.toml",
+        r#"schema_version = 1
+id = "snapshot_missing"
+kind = "pass"
+stage = "parse_only"
+domain = "parser"
+source = "snapshot_missing.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+snapshots = "snapshots/parser/snapshot_missing.surface_ast.snap"
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let report = run_parse_only_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.failed_count(), 1);
+    assert_has_report_code(&report, "E-PARSE-ONLY-SNAPSHOT");
+}
+
+#[test]
+fn parse_only_runner_reports_snapshot_request_without_ast() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write("tests/miz/fail/parser/snapshot_no_ast.miz", "end;");
+    corpus.write(
+        "tests/snapshots/parser/snapshot_no_ast.surface_ast.snap",
+        "surface-ast-snapshot-v1\n",
+    );
+    corpus.write(
+        "tests/miz/fail/parser/snapshot_no_ast.expect.toml",
+        r#"schema_version = 1
+id = "snapshot_no_ast"
+kind = "fail"
+stage = "parse_only"
+domain = "parser"
+source = "snapshot_no_ast.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "stray_end"
+stable_detail_key = "parser.snapshot.no_ast"
+diagnostic_codes = [
+  "unrecoverable_input",
+]
+snapshots = "snapshots/parser/snapshot_no_ast.surface_ast.snap"
+tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let report = run_parse_only_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.failed_count(), 1);
+    assert_has_report_code(&report, "E-PARSE-ONLY-SNAPSHOT");
 }
 
 struct Corpus {

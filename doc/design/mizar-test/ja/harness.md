@@ -59,7 +59,9 @@ pub struct ParseOnlyRunReport {
 4. execution が parallel でも deterministic display order で cases を run する。
 5. compiler outputs を structured records として capture する。
 6. snapshot expectations より先に pass/fail expectations を match する。
-7. snapshots を canonical hash で compare する。
+7. general `[[snapshots]]` entries は canonical hash で compare する。現在の
+   parse-only `SurfaceAst` shortcut は後述の通り、commit 済み text baseline を
+   byte-for-byte で比較する。
 8. phase、failure category、rejection reason、diagnostic code、snapshot diff summary 付きで failures を report する。
 
 現在の parse-only runner は、各 active corpus file を一時的な `src/` package に
@@ -73,8 +75,11 @@ module id ごとに空の `ModuleLexicalSummary` を 1 つ返す。summary は e
 ためだけに存在する。parser syntax diagnostic と syntax 以外の frontend recovery
 diagnostic が同時に存在する場合、sidecar が明示的に
 `allow_frontend_recovery_diagnostics` を含めていない限り、runner はすべての
-diagnostic code を report する。AST snapshot assertion は surface node vocabulary
-が拡張されるまで deferred とする。
+diagnostic code を report する。active parse-only の pass/fail sidecar は、移行用の
+`snapshots = "snapshots/parser/<id>.surface_ast.snap"` field も設定してよい。その場合、
+diagnostics が一致した後、runner は `SurfaceAst` を要求し、`SurfaceAst::snapshot_text()`
+を `tests/snapshots/` 配下の commit 済み baseline と比較する。snapshot baseline は
+通常の parse-only run では rewrite されない。
 
 `active_parse_only` tag を持つ expectation が runnable case predicate のいずれかを
 満たさない場合、runner は silent skip ではなく harness error として扱う。
