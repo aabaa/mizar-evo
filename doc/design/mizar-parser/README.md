@@ -6,11 +6,11 @@ This directory contains implementation-facing design notes for the `mizar-parser
 
 `mizar-parser` consumes the frontend-adapted parser token transfer object, applies the Mizar Evo grammar, and produces `mizar-syntax::SurfaceAst`. It owns grammar logic and syntax recovery, but it must not perform semantic name resolution, type inference, overload selection, cluster registration, elaboration, or proof-obligation generation.
 
-Status: parser hardening has grown through task 44. The source/spec
-correspondence audit, reserved-word coverage guard, and bilingual documentation
-synchronization audit are recorded in the English canonical audit notes. Public
-enum policy task 45 remains planned, and task 46 is deferred for future
-concrete operator declarations.
+Status: the current parser hardening milestone is complete through task 45,
+excluding deferred task 46. The source/spec correspondence audit, reserved-word
+coverage guard, bilingual documentation synchronization audit, and public enum
+policy refresh are recorded in the English canonical notes. Task 46 is deferred
+for future concrete operator declarations.
 
 ## Expected Module Specs And Audits
 

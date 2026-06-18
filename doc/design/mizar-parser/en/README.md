@@ -20,9 +20,9 @@ expansion, parse-only `SurfaceAst` snapshot baselines, parser determinism
 coverage, the parser-owned valid-UTF-8 fuzz target, and frontend passthrough
 follow-through audit, plus a private annotation/test module-boundary split.
 Task 43 source/spec correspondence and reserved-word coverage audit is
-complete, and task 44 bilingual documentation synchronization is complete. The
-public enum policy task 45 remains planned, with deferred task 46 recorded for
-future concrete operator declarations.
+complete, task 44 bilingual documentation synchronization is complete, and task
+45 public enum policy is complete. Deferred task 46 is recorded for future
+concrete operator declarations.
 
 Module specs and audits:
 

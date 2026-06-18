@@ -961,15 +961,28 @@ older numeric syntax task references appear to disagree, prefer
       drift was found. The only closed finding was documentation
       `design_drift`: parser status/index text still treated task 44 as
       pending, parser audit lists did not include the bilingual audit, and task
-      43 had duplicate wording in this TODO. Task 45 remains pending and task
-      46 remains deferred.
+      43 had duplicate wording in this TODO. Task 45 is completed by the audit
+      below; task 46 remains deferred.
     - Deps: 43. Spec: repository documentation policy.
 
-45. **Public enum forward-compatibility policy.** [ ]
+45. **Public enum forward-compatibility policy.** [x]
     - Revisit the initial public-enum gate after task 35 and decide
       `#[non_exhaustive]` versus deliberate exhaustiveness for any later public
       enums added by grammar growth, aligned with the `mizar-frontend` task-25
       procedure and the `mizar-syntax` task-17 final audit.
+    - Result: the final task-45 audit found exactly four public parser enums in
+      `crates/mizar-parser/src/lib.rs`: `ParserTokenKind`,
+      `OperatorFixity`, `OperatorAssociativity`, and
+      `StringRequiredContext`. The existing policy remains the final policy:
+      `ParserTokenKind` and `StringRequiredContext` are `#[non_exhaustive]`
+      for downstream crates, while `OperatorFixity` and
+      `OperatorAssociativity` are deliberate exhaustive exceptions for the
+      current closed operator model. `crates/mizar-parser/tests/lint_policy.rs`
+      guards the complete classification with
+      `public_forward_compatible_enums_are_marked_non_exhaustive`,
+      `public_enum_exhaustiveness_exceptions_are_documented`, and
+      `every_public_enum_has_a_forward_compatibility_decision`. No Rust source
+      change was required. The only remaining parser TODO is deferred task 46.
     - Deps: 35, 42. Spec: all module specs.
 
 46. **Concrete operator declarations and operator reserved-word corpus.** [ ] deferred

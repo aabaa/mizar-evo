@@ -926,14 +926,27 @@ resolver / build-system 依存を避ける。
       残っていない。閉じた finding は documentation `design_drift` のみである。
       parser status/index text は task 44 を pending として扱ったままであり、parser
       audit list は bilingual audit を含んでおらず、英語 TODO の task 43 には重複
-      文言が残っていた。task 45 は pending、task 46 は deferred のまま残す。
+      文言が残っていた。task 45 は下記の監査で完了済み、task 46 は deferred のまま残す。
     - 依存: 43。仕様: リポジトリのドキュメント方針。
 
-45. **公開 enum の前方互換方針。** [ ]
+45. **公開 enum の前方互換方針。** [x]
     - 初期の公開 enum ゲートを task 35 後に再確認し、文法成長で追加された
       後続の公開 enum について、`mizar-frontend` task 25 の手続きと
       `mizar-syntax` task 17 の最終監査に整合する形で、
       `#[non_exhaustive]` 対 意図的 exhaustive を決定する。
+    - 結果: task 45 の最終監査では、`crates/mizar-parser/src/lib.rs` の public
+      parser enum が `ParserTokenKind`、`OperatorFixity`、
+      `OperatorAssociativity`、`StringRequiredContext` の 4 つだけであることを
+      確認した。既存方針を最終方針として維持する。`ParserTokenKind` と
+      `StringRequiredContext` は downstream crate 向けに `#[non_exhaustive]`、
+      `OperatorFixity` と `OperatorAssociativity` は現在の閉じた operator model の
+      意図的な exhaustive 例外である。
+      `crates/mizar-parser/tests/lint_policy.rs` は
+      `public_forward_compatible_enums_are_marked_non_exhaustive`、
+      `public_enum_exhaustiveness_exceptions_are_documented`、
+      `every_public_enum_has_a_forward_compatibility_decision` により完全な分類を
+      guard する。Rust source の変更は不要だった。残る parser TODO は deferred
+      task 46 のみである。
     - 依存: 35、42。仕様: すべてのモジュール仕様。
 
 46. **concrete operator declaration と operator 予約語 corpus。** [ ] deferred

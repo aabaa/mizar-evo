@@ -3,7 +3,7 @@
 > Canonical language: English. Japanese companion:
 > [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md).
 
-Status: completed for parser task 44.
+Status: completed for parser task 44 and refreshed after parser task 45.
 
 ## Scope
 
@@ -37,9 +37,9 @@ commitments to English and Japanese readers.
 - No remaining public API, parser transfer type, enum-policy, or
   behavior-promise drift was found between the English canonical parser docs and
   the Japanese companions.
-- Module and task statuses are synchronized: parser tasks 1-44 are complete,
-  task 45 remains pending, and task 46 remains explicitly deferred for concrete
-  operator declarations and operator reserved-word corpus coverage.
+- Module and task statuses are synchronized: parser tasks 1-45 are complete,
+  and task 46 remains explicitly deferred for concrete operator declarations
+  and operator reserved-word corpus coverage.
 - Terminology is synchronized for `ParseRequest`, `ParserToken`,
   `ParseOutput`, `OperatorFixityEntry`, `StringRequiredContext`,
   `SurfaceAst`, syntax-event output, Pratt metadata, recovery nodes,
@@ -67,13 +67,13 @@ commitments to English and Japanese readers.
 
 | English canonical | Japanese companion | Synchronization status |
 |---|---|---|
-| [README.md](./README.md) | [../ja/README.md](../ja/README.md) | Crate boundary, parser status through task 44, audit list, task 45 pending state, and task 46 deferred state are synchronized. |
-| [grammar.md](./grammar.md) | [../ja/grammar.md](../ja/grammar.md) | Grammar inventory, syntax-only responsibilities, public enum policy note, task statuses through task 35, and deferred operator-declaration wording are synchronized. |
+| [README.md](./README.md) | [../ja/README.md](../ja/README.md) | Crate boundary, parser status through task 45, audit list, and task 46 deferred state are synchronized. |
+| [grammar.md](./grammar.md) | [../ja/grammar.md](../ja/grammar.md) | Grammar inventory, syntax-only responsibilities, `ParserTokenKind` public enum policy note, current grammar-surface status, and deferred operator-declaration wording are synchronized. |
 | [pratt.md](./pratt.md) | [../ja/pratt.md](../ja/pratt.md) | Term Pratt, formula Pratt, active metadata, associativity, cache-key boundary, and public enum compatibility promises are synchronized. |
 | [recovery.md](./recovery.md) | [../ja/recovery.md](../ja/recovery.md) | Recovery responsibilities, synchronization policy, diagnostic ownership, task-37 consolidation status, and public enum compatibility promises are synchronized. |
 | [source_spec_audit.md](./source_spec_audit.md) | [../ja/source_spec_audit.md](../ja/source_spec_audit.md) | Task-43 public API trace, behavior trace, reserved-word guard, parser-deferred reserved-word list, and task-46 follow-up classification are synchronized. |
 | [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md) | This task-44 audit records the bilingual synchronization result in both languages. |
-| [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Task statuses and follow-up records are synchronized through task 44; task 45 remains pending and task 46 remains deferred in both languages. |
+| [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Task statuses and follow-up records are synchronized through task 45; task 46 remains deferred in both languages. |
 
 ## Link Policy
 
@@ -95,6 +95,8 @@ with the paired English/Japanese parser docs.
 Task 44 did not create a new implementation, test, or specification follow-up.
 It closed only the documentation `design_drift` recorded above.
 
-Task 45 remains pending for the public enum forward-compatibility policy
-follow-up. Task 46 remains deferred for concrete operator declarations and
+Task 45 later completed the public enum forward-compatibility policy follow-up
+without creating a new implementation, test, or specification follow-up. It
+confirmed that the existing parser lint-policy guard classifies every public
+parser enum. Task 46 remains deferred for concrete operator declarations and
 operator reserved-word corpus coverage.
