@@ -1,6 +1,10 @@
-use std::{collections::BTreeSet, error::Error, fmt};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    error::Error,
+    fmt,
+};
 
-use mizar_session::{Edition, PackageId};
+use mizar_session::{Edition, PackageId, ToolchainInfo, WorkspaceRoot};
 use semver::Version;
 use toml::{Table, Value};
 
@@ -113,6 +117,103 @@ pub struct BuildConfig {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PlanRequest {
+    pub workspace_root: WorkspaceRoot,
+    pub dependency_selection: DependencySelection,
+    pub toolchain: ToolchainInfo,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DependencySelection {
+    Normal,
+    NormalAndDev,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkspacePackage {
+    pub member_path: String,
+    pub manifest: PackageManifest,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BuildPlan {
+    pub workspace_root: WorkspaceRoot,
+    pub packages: Vec<PackagePlan>,
+    pub dependency_graph: DependencyGraph,
+    pub lockfile: Lockfile,
+    pub toolchain: ToolchainInfo,
+    pub verifier_config: WorkspaceVerifierConfig,
+    pub build_config: WorkspaceBuildConfig,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PackagePlan {
+    pub package_id: PackageId,
+    pub version: Version,
+    pub source: PackagePlanSource,
+    pub edition: Edition,
+    pub dependencies: Vec<ResolvedPackageDependency>,
+    pub verifier_config: VerifierConfig,
+    pub build_config: BuildConfig,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PackagePlanSource {
+    Workspace {
+        root: String,
+        source_root: String,
+        manifest_path: String,
+    },
+    Registry {
+        registry: String,
+        checksum: String,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedPackageDependency {
+    pub package_id: String,
+    pub requested: VersionConstraint,
+    pub resolved: Version,
+    pub kind: DependencyKind,
+    pub features: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DependencyGraph {
+    pub edges: Vec<DependencyEdge>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DependencyEdge {
+    pub dependent: String,
+    pub dependency: String,
+    pub kind: DependencyKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkspaceVerifierConfig {
+    pub packages: Vec<PackageVerifierConfig>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PackageVerifierConfig {
+    pub package_id: String,
+    pub config: VerifierConfig,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkspaceBuildConfig {
+    pub packages: Vec<PackageBuildConfig>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PackageBuildConfig {
+    pub package_id: String,
+    pub config: BuildConfig,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValidatedPackageManifest {
     pub package_id: PackageId,
     pub manifest: PackageManifest,
@@ -157,6 +258,9 @@ pub enum ManifestDiagnosticKind {
     UnknownLockedDependency,
     InvalidLockSource,
     InvalidDependencyVersion,
+    DuplicatePackageId,
+    UnsupportedEdition,
+    DependencyCycle,
     DuplicateFeature,
 }
 
@@ -362,6 +466,10 @@ pub fn validate_lockfile_for_workspace(
     lockfile: &Lockfile,
 ) -> Result<(), ManifestDiagnostics> {
     let mut diagnostics = Vec::new();
+    let workspace_names = manifests
+        .iter()
+        .map(|manifest| manifest.name.as_str())
+        .collect::<BTreeSet<_>>();
     for manifest in manifests {
         match lockfile
             .packages
@@ -410,12 +518,86 @@ pub fn validate_lockfile_for_workspace(
             );
         }
     }
+    for locked in &lockfile.packages {
+        if matches!(locked.source, LockSource::Workspace { .. })
+            && !workspace_names.contains(locked.name.as_str())
+        {
+            diagnostics.push(ManifestDiagnostic::new(
+                "<lockfile>",
+                format!("{}.source.kind", locked.name),
+                ManifestDiagnosticKind::InvalidLockSource,
+                Some("workspace".to_owned()),
+            ));
+        }
+    }
 
     if diagnostics.is_empty() {
         Ok(())
     } else {
         Err(ManifestDiagnostics::new(diagnostics))
     }
+}
+
+pub fn produce_build_plan(
+    request: PlanRequest,
+    workspace_packages: Vec<WorkspacePackage>,
+    lockfile: Lockfile,
+) -> Result<BuildPlan, ManifestDiagnostics> {
+    let mut diagnostics = Vec::new();
+    let workspace_by_name = collect_workspace_packages(workspace_packages, &mut diagnostics);
+    let workspace_manifests = workspace_by_name
+        .values()
+        .map(|package| package.manifest.clone())
+        .collect::<Vec<_>>();
+
+    if let Err(errors) = validate_lockfile_for_workspace(&workspace_manifests, &lockfile) {
+        diagnostics.extend(errors.into_diagnostics());
+    }
+    validate_workspace_package_editions(&workspace_by_name, &mut diagnostics);
+
+    let graph = build_dependency_graph(request.dependency_selection, &workspace_by_name, &lockfile);
+    let Some(package_order) =
+        topological_package_order(&workspace_by_name, &graph, &mut diagnostics)
+    else {
+        return Err(ManifestDiagnostics::new(diagnostics));
+    };
+
+    if !diagnostics.is_empty() {
+        return Err(ManifestDiagnostics::new(diagnostics));
+    }
+
+    let packages = package_order
+        .iter()
+        .filter_map(|package_id| package_plan_for(package_id, &workspace_by_name, &lockfile))
+        .collect::<Vec<_>>();
+    let verifier_config = WorkspaceVerifierConfig {
+        packages: packages
+            .iter()
+            .map(|package| PackageVerifierConfig {
+                package_id: package.package_id.as_str().to_owned(),
+                config: package.verifier_config.clone(),
+            })
+            .collect(),
+    };
+    let build_config = WorkspaceBuildConfig {
+        packages: packages
+            .iter()
+            .map(|package| PackageBuildConfig {
+                package_id: package.package_id.as_str().to_owned(),
+                config: package.build_config.clone(),
+            })
+            .collect(),
+    };
+
+    Ok(BuildPlan {
+        workspace_root: request.workspace_root,
+        packages,
+        dependency_graph: graph,
+        lockfile,
+        toolchain: request.toolchain,
+        verifier_config,
+        build_config,
+    })
 }
 
 #[must_use]
@@ -1100,6 +1282,296 @@ fn validate_locked_dependency_targets(
     }
 }
 
+fn collect_workspace_packages(
+    workspace_packages: Vec<WorkspacePackage>,
+    diagnostics: &mut Vec<ManifestDiagnostic>,
+) -> BTreeMap<String, WorkspacePackage> {
+    let mut packages = BTreeMap::new();
+    for package in workspace_packages {
+        let package_name = package.manifest.name.clone();
+        if packages.insert(package_name.clone(), package).is_some() {
+            diagnostics.push(ManifestDiagnostic::new(
+                "<workspace manifest>",
+                package_name.clone(),
+                ManifestDiagnosticKind::DuplicatePackageId,
+                Some(package_name),
+            ));
+        }
+    }
+    packages
+}
+
+fn validate_workspace_package_editions(
+    packages: &BTreeMap<String, WorkspacePackage>,
+    diagnostics: &mut Vec<ManifestDiagnostic>,
+) {
+    for package in packages.values() {
+        if package.manifest.edition.as_str() != CURRENT_STABLE_EDITION {
+            diagnostics.push(ManifestDiagnostic::new(
+                "<package manifest>",
+                format!("{}.package.edition", package.manifest.name),
+                ManifestDiagnosticKind::UnsupportedEdition,
+                Some(package.manifest.edition.as_str().to_owned()),
+            ));
+        }
+    }
+}
+
+fn build_dependency_graph(
+    selection: DependencySelection,
+    workspace_by_name: &BTreeMap<String, WorkspacePackage>,
+    lockfile: &Lockfile,
+) -> DependencyGraph {
+    let mut edges = Vec::new();
+    let mut active_nodes = workspace_by_name.keys().cloned().collect::<BTreeSet<_>>();
+    for package in workspace_by_name.values() {
+        for dependency in active_manifest_dependencies(&package.manifest, selection) {
+            if let Some(locked) = lockfile
+                .packages
+                .iter()
+                .find(|locked| locked.name == dependency.package_id)
+                && dependency.version.matches(&locked.version)
+            {
+                active_nodes.insert(locked.name.clone());
+                edges.push(DependencyEdge {
+                    dependent: package.manifest.name.clone(),
+                    dependency: dependency.package_id.clone(),
+                    kind: dependency.kind,
+                });
+            }
+        }
+    }
+
+    let mut pending = active_nodes.iter().cloned().collect::<BTreeSet<_>>();
+    let mut processed = BTreeSet::new();
+    while let Some(package_id) = pending.pop_first() {
+        if !processed.insert(package_id.clone()) {
+            continue;
+        }
+        if workspace_by_name.contains_key(&package_id) {
+            continue;
+        }
+        if let Some(locked) = lockfile
+            .packages
+            .iter()
+            .find(|locked| locked.name == package_id)
+        {
+            for dependency in &locked.dependencies {
+                if active_nodes.insert(dependency.name.clone()) {
+                    pending.insert(dependency.name.clone());
+                }
+                edges.push(DependencyEdge {
+                    dependent: locked.name.clone(),
+                    dependency: dependency.name.clone(),
+                    kind: DependencyKind::Normal,
+                });
+            }
+        }
+    }
+
+    edges.sort_by(|left, right| {
+        left.dependent
+            .cmp(&right.dependent)
+            .then_with(|| left.dependency.cmp(&right.dependency))
+            .then_with(|| left.kind.cmp(&right.kind))
+    });
+    DependencyGraph { edges }
+}
+
+fn topological_package_order(
+    workspace_by_name: &BTreeMap<String, WorkspacePackage>,
+    graph: &DependencyGraph,
+    diagnostics: &mut Vec<ManifestDiagnostic>,
+) -> Option<Vec<String>> {
+    let mut nodes = workspace_by_name.keys().cloned().collect::<BTreeSet<_>>();
+    for edge in &graph.edges {
+        nodes.insert(edge.dependent.clone());
+        nodes.insert(edge.dependency.clone());
+    }
+
+    let mut remaining_dependencies = nodes
+        .iter()
+        .map(|node| {
+            (
+                node.clone(),
+                graph
+                    .edges
+                    .iter()
+                    .filter(|edge| edge.dependent == *node)
+                    .map(|edge| edge.dependency.clone())
+                    .collect::<BTreeSet<_>>(),
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    let mut reverse_edges = BTreeMap::<String, BTreeSet<String>>::new();
+    for edge in &graph.edges {
+        reverse_edges
+            .entry(edge.dependency.clone())
+            .or_default()
+            .insert(edge.dependent.clone());
+    }
+    let mut ready = remaining_dependencies
+        .iter()
+        .filter(|(_, dependencies)| dependencies.is_empty())
+        .map(|(node, _)| node.clone())
+        .collect::<BTreeSet<_>>();
+    let mut order = Vec::new();
+
+    while let Some(node) = ready.pop_first() {
+        order.push(node.clone());
+        if let Some(dependents) = reverse_edges.get(&node) {
+            for dependent in dependents {
+                if let Some(dependencies) = remaining_dependencies.get_mut(dependent) {
+                    dependencies.remove(&node);
+                    if dependencies.is_empty() {
+                        ready.insert(dependent.clone());
+                    }
+                }
+            }
+        }
+    }
+    if order.len() == nodes.len() {
+        Some(order)
+    } else {
+        let ordered = order.iter().cloned().collect::<BTreeSet<_>>();
+        let blocked = nodes.difference(&ordered).cloned().collect::<Vec<_>>();
+        diagnostics.push(ManifestDiagnostic::new(
+            "<lockfile>",
+            blocked.first().cloned().unwrap_or_default(),
+            ManifestDiagnosticKind::DependencyCycle,
+            Some(blocked.join(" -> ")),
+        ));
+        None
+    }
+}
+
+fn package_plan_for(
+    package_id: &str,
+    workspace_by_name: &BTreeMap<String, WorkspacePackage>,
+    lockfile: &Lockfile,
+) -> Option<PackagePlan> {
+    let locked = lockfile
+        .packages
+        .iter()
+        .find(|locked| locked.name == package_id)?;
+    if let Some(workspace_package) = workspace_by_name.get(package_id) {
+        return Some(workspace_package_plan(workspace_package, locked, lockfile));
+    }
+
+    Some(locked_package_plan(locked))
+}
+
+fn workspace_package_plan(
+    workspace_package: &WorkspacePackage,
+    _locked: &LockedPackage,
+    lockfile: &Lockfile,
+) -> PackagePlan {
+    let root = workspace_package.member_path.clone();
+    let source_root = source_root_for_member(&root);
+    let manifest_path = manifest_path_for_member(&root);
+    PackagePlan {
+        package_id: workspace_package.manifest.package_id(),
+        version: workspace_package.manifest.version.clone(),
+        source: PackagePlanSource::Workspace {
+            root,
+            source_root,
+            manifest_path,
+        },
+        edition: workspace_package.manifest.edition.clone(),
+        dependencies: all_manifest_dependencies(&workspace_package.manifest)
+            .into_iter()
+            .filter_map(|dependency| resolved_manifest_dependency(dependency, lockfile))
+            .collect(),
+        verifier_config: workspace_package.manifest.verifier.clone(),
+        build_config: workspace_package.manifest.build.clone(),
+    }
+}
+
+fn locked_package_plan(locked: &LockedPackage) -> PackagePlan {
+    let source = match &locked.source {
+        LockSource::Workspace { path } => PackagePlanSource::Workspace {
+            root: path.clone(),
+            source_root: source_root_for_member(path),
+            manifest_path: manifest_path_for_member(path),
+        },
+        LockSource::Registry { registry, checksum } => PackagePlanSource::Registry {
+            registry: registry.clone(),
+            checksum: checksum.clone(),
+        },
+    };
+    PackagePlan {
+        package_id: PackageId::new(locked.name.clone()),
+        version: locked.version.clone(),
+        source,
+        edition: Edition::new(CURRENT_STABLE_EDITION),
+        dependencies: locked
+            .dependencies
+            .iter()
+            .map(|dependency| ResolvedPackageDependency {
+                package_id: dependency.name.clone(),
+                requested: VersionConstraint::Exact(dependency.version.clone()),
+                resolved: dependency.version.clone(),
+                kind: DependencyKind::Normal,
+                features: Vec::new(),
+            })
+            .collect(),
+        verifier_config: VerifierConfig::default(),
+        build_config: BuildConfig::default(),
+    }
+}
+
+fn active_manifest_dependencies(
+    manifest: &PackageManifest,
+    selection: DependencySelection,
+) -> Vec<&ManifestDependency> {
+    let mut dependencies = manifest.dependencies.iter().collect::<Vec<_>>();
+    if selection == DependencySelection::NormalAndDev {
+        dependencies.extend(manifest.dev_dependencies.iter());
+    }
+    dependencies
+}
+
+fn all_manifest_dependencies(manifest: &PackageManifest) -> Vec<&ManifestDependency> {
+    manifest
+        .dependencies
+        .iter()
+        .chain(manifest.dev_dependencies.iter())
+        .collect()
+}
+
+fn resolved_manifest_dependency(
+    dependency: &ManifestDependency,
+    lockfile: &Lockfile,
+) -> Option<ResolvedPackageDependency> {
+    let locked = lockfile
+        .packages
+        .iter()
+        .find(|locked| locked.name == dependency.package_id)?;
+    Some(ResolvedPackageDependency {
+        package_id: dependency.package_id.clone(),
+        requested: dependency.version.clone(),
+        resolved: locked.version.clone(),
+        kind: dependency.kind,
+        features: dependency.features.clone(),
+    })
+}
+
+fn source_root_for_member(member: &str) -> String {
+    if member == "." {
+        "src".to_owned()
+    } else {
+        format!("{member}/src")
+    }
+}
+
+fn manifest_path_for_member(member: &str) -> String {
+    if member == "." {
+        "mizar.pkg".to_owned()
+    } else {
+        format!("{member}/mizar.pkg")
+    }
+}
+
 fn validate_workspace_members(
     members: Vec<String>,
     diagnostics: &mut Vec<ManifestDiagnostic>,
@@ -1732,7 +2204,10 @@ fn diagnostic_rank(kind: &ManifestDiagnosticKind) -> u8 {
         ManifestDiagnosticKind::UnknownLockedDependency => 15,
         ManifestDiagnosticKind::InvalidLockSource => 16,
         ManifestDiagnosticKind::InvalidDependencyVersion => 17,
-        ManifestDiagnosticKind::DuplicateFeature => 18,
+        ManifestDiagnosticKind::DuplicatePackageId => 18,
+        ManifestDiagnosticKind::UnsupportedEdition => 19,
+        ManifestDiagnosticKind::DependencyCycle => 20,
+        ManifestDiagnosticKind::DuplicateFeature => 21,
     }
 }
 
@@ -1793,6 +2268,9 @@ impl fmt::Display for ManifestDiagnosticKind {
             Self::UnknownLockedDependency => f.write_str("unknown locked dependency"),
             Self::InvalidLockSource => f.write_str("invalid lock source"),
             Self::InvalidDependencyVersion => f.write_str("invalid dependency version"),
+            Self::DuplicatePackageId => f.write_str("duplicate package id"),
+            Self::UnsupportedEdition => f.write_str("unsupported edition"),
+            Self::DependencyCycle => f.write_str("dependency cycle"),
             Self::DuplicateFeature => f.write_str("duplicate feature"),
         }
     }
@@ -1819,12 +2297,14 @@ impl Error for ManifestValidationError {}
 #[cfg(test)]
 mod tests {
     use super::{
-        BuildConfig, DependencyKind, LockSource, ManifestDependency, ManifestDiagnosticKind,
-        ManifestValidationError, Solver, VerifierConfig, VersionComparison, VersionConstraint,
+        BuildConfig, DependencyKind, DependencySelection, LockSource, ManifestDependency,
+        ManifestDiagnosticKind, ManifestValidationError, PackagePlanSource, PlanRequest, Solver,
+        VerifierConfig, VersionComparison, VersionConstraint, WorkspacePackage,
         is_lowercase_snake_case_package_id, parse_lockfile, parse_package_manifest,
-        parse_workspace_manifest, validate_lockfile_for_workspace, validate_package_id_spelling,
-        validate_package_manifest,
+        parse_workspace_manifest, produce_build_plan, validate_lockfile_for_workspace,
+        validate_package_id_spelling, validate_package_manifest,
     };
+    use mizar_session::{ToolchainInfo, WorkspaceRoot};
     use semver::Version;
 
     #[test]
@@ -2170,6 +2650,46 @@ mod tests {
     }
 
     #[test]
+    fn lockfile_workspace_validation_rejects_nonmember_workspace_sources() {
+        let algebra = parse_package_manifest(
+            r#"
+            [package]
+            name = "algebra"
+            version = "1.2.3"
+
+            [dependencies]
+            local_dep = "1.0.0"
+            "#,
+        )
+        .expect("valid manifest");
+        let lockfile = parse_lockfile(
+            r#"
+            schema_version = 1
+
+            [[package]]
+            name = "algebra"
+            version = "1.2.3"
+            source = { kind = "workspace", path = "algebra" }
+            dependencies = [{ name = "local_dep", version = "1.0.0" }]
+
+            [[package]]
+            name = "local_dep"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "local_dep" }
+            dependencies = []
+            "#,
+        )
+        .expect("valid lockfile");
+
+        let diagnostics = validate_lockfile_for_workspace(&[algebra], &lockfile).unwrap_err();
+        assert!(diagnostics.diagnostics().iter().any(|diagnostic| {
+            matches!(diagnostic.kind, ManifestDiagnosticKind::InvalidLockSource)
+                && diagnostic.location.key == "local_dep.source.kind"
+                && diagnostic.value.as_deref() == Some("workspace")
+        }));
+    }
+
+    #[test]
     fn lockfile_workspace_validation_checks_manifest_dependency_versions() {
         let algebra = parse_package_manifest(
             r#"
@@ -2430,6 +2950,722 @@ mod tests {
     }
 
     #[test]
+    fn build_plan_orders_dependencies_before_dependents_deterministically() {
+        let algebra = workspace_package(
+            "algebra",
+            r#"
+            [package]
+            name = "algebra"
+            version = "1.0.0"
+            "#,
+        );
+        let topology = workspace_package(
+            "topology",
+            r#"
+            [package]
+            name = "topology"
+            version = "1.0.0"
+
+            [dependencies]
+            algebra = "1.0.0"
+            "#,
+        );
+        let logic = workspace_package(
+            "logic",
+            r#"
+            [package]
+            name = "logic"
+            version = "1.0.0"
+            "#,
+        );
+        let lockfile = parse_lockfile(
+            r#"
+            schema_version = 1
+
+            [[package]]
+            name = "topology"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "topology" }
+            dependencies = [{ name = "algebra", version = "1.0.0" }]
+
+            [[package]]
+            name = "algebra"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "algebra" }
+            dependencies = []
+
+            [[package]]
+            name = "logic"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "logic" }
+            dependencies = []
+            "#,
+        )
+        .expect("valid lockfile");
+
+        let plan = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![topology, logic, algebra],
+            lockfile,
+        )
+        .expect("valid plan");
+
+        assert_eq!(
+            plan.packages
+                .iter()
+                .map(|package| package.package_id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["algebra", "logic", "topology"]
+        );
+        assert_eq!(plan.dependency_graph.edges.len(), 1);
+        assert_eq!(plan.dependency_graph.edges[0].dependent, "topology");
+        assert_eq!(plan.dependency_graph.edges[0].dependency, "algebra");
+        assert!(matches!(
+            plan.packages[0].source,
+            PackagePlanSource::Workspace { .. }
+        ));
+    }
+
+    #[test]
+    fn build_plan_is_equal_for_shuffled_equivalent_inputs() {
+        let algebra = workspace_package(
+            "algebra",
+            r#"
+            [build]
+            artifact_dir = "build"
+
+            [dependencies]
+            topology = { features = ["compact", "metric"], version = "1.0.0" }
+
+            [package]
+            version = "1.0.0"
+            name = "algebra"
+            "#,
+        );
+        let topology = workspace_package(
+            "topology",
+            r#"
+            [package]
+            name = "topology"
+            version = "1.0.0"
+            "#,
+        );
+        let first_lockfile = parse_lockfile(
+            r#"
+            schema_version = 1
+
+            [[package]]
+            name = "algebra"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "algebra" }
+            dependencies = [{ name = "topology", version = "1.0.0" }]
+
+            [[package]]
+            name = "topology"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "topology" }
+            dependencies = []
+            "#,
+        )
+        .expect("valid lockfile");
+        let second_lockfile = parse_lockfile(
+            r#"
+            schema_version = 1
+
+            [[package]]
+            source = { path = "topology", kind = "workspace" }
+            dependencies = []
+            version = "1.0.0"
+            name = "topology"
+
+            [[package]]
+            dependencies = [{ version = "1.0.0", name = "topology" }]
+            source = { path = "algebra", kind = "workspace" }
+            version = "1.0.0"
+            name = "algebra"
+            "#,
+        )
+        .expect("valid lockfile");
+
+        let first = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![algebra.clone(), topology.clone()],
+            first_lockfile,
+        )
+        .expect("valid first plan");
+        let second = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![topology, algebra],
+            second_lockfile,
+        )
+        .expect("valid second plan");
+
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn build_plan_rejects_duplicate_workspace_package_ids() {
+        let algebra = workspace_package(
+            "algebra",
+            r#"
+            [package]
+            name = "algebra"
+            version = "1.0.0"
+            "#,
+        );
+        let duplicate_algebra = workspace_package(
+            "algebra_copy",
+            r#"
+            [package]
+            name = "algebra"
+            version = "1.0.0"
+            "#,
+        );
+        let lockfile = parse_lockfile(
+            r#"
+            schema_version = 1
+
+            [[package]]
+            name = "algebra"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "algebra" }
+            dependencies = []
+            "#,
+        )
+        .expect("valid lockfile");
+
+        let diagnostics = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![algebra, duplicate_algebra],
+            lockfile,
+        )
+        .unwrap_err();
+        assert_eq!(
+            diagnostics
+                .diagnostics()
+                .iter()
+                .filter(|diagnostic| {
+                    matches!(diagnostic.kind, ManifestDiagnosticKind::DuplicatePackageId)
+                        && diagnostic.location.key == "algebra"
+                })
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn build_plan_rejects_dependency_cycles() {
+        let algebra = workspace_package(
+            "algebra",
+            r#"
+            [package]
+            name = "algebra"
+            version = "1.0.0"
+
+            [dependencies]
+            topology = "1.0.0"
+            "#,
+        );
+        let topology = workspace_package(
+            "topology",
+            r#"
+            [package]
+            name = "topology"
+            version = "1.0.0"
+
+            [dependencies]
+            algebra = "1.0.0"
+            "#,
+        );
+        let lockfile = parse_lockfile(
+            r#"
+            schema_version = 1
+
+            [[package]]
+            name = "algebra"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "algebra" }
+            dependencies = [{ name = "topology", version = "1.0.0" }]
+
+            [[package]]
+            name = "topology"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "topology" }
+            dependencies = [{ name = "algebra", version = "1.0.0" }]
+            "#,
+        )
+        .expect("valid lockfile");
+
+        let diagnostics = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![algebra, topology],
+            lockfile,
+        )
+        .unwrap_err();
+        assert!(
+            diagnostics.diagnostics().iter().any(|diagnostic| matches!(
+                diagnostic.kind,
+                ManifestDiagnosticKind::DependencyCycle
+            ))
+        );
+    }
+
+    #[test]
+    fn build_plan_rejects_dev_only_cycles_when_dev_dependencies_are_active() {
+        let algebra = workspace_package(
+            "algebra",
+            r#"
+            [package]
+            name = "algebra"
+            version = "1.0.0"
+
+            [dev-dependencies]
+            test_utils = "1.0.0"
+            "#,
+        );
+        let test_utils = workspace_package(
+            "test_utils",
+            r#"
+            [package]
+            name = "test_utils"
+            version = "1.0.0"
+
+            [dependencies]
+            algebra = "1.0.0"
+            "#,
+        );
+        let lockfile = parse_lockfile(
+            r#"
+            schema_version = 1
+
+            [[package]]
+            name = "algebra"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "algebra" }
+            dependencies = [{ name = "test_utils", version = "1.0.0" }]
+
+            [[package]]
+            name = "test_utils"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "test_utils" }
+            dependencies = [{ name = "algebra", version = "1.0.0" }]
+            "#,
+        )
+        .expect("valid lockfile");
+
+        produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![algebra.clone(), test_utils.clone()],
+            lockfile.clone(),
+        )
+        .expect("normal plan ignores the dev edge that closes the cycle");
+
+        let diagnostics = produce_build_plan(
+            plan_request(DependencySelection::NormalAndDev),
+            vec![algebra, test_utils],
+            lockfile,
+        )
+        .unwrap_err();
+        assert!(
+            diagnostics.diagnostics().iter().any(|diagnostic| matches!(
+                diagnostic.kind,
+                ManifestDiagnosticKind::DependencyCycle
+            ))
+        );
+    }
+
+    #[test]
+    fn build_plan_rejects_dev_only_registry_cycles_only_when_dev_dependencies_are_active() {
+        let algebra = workspace_package(
+            "algebra",
+            r#"
+            [package]
+            name = "algebra"
+            version = "1.0.0"
+
+            [dev-dependencies]
+            registry_a = "1.0.0"
+            "#,
+        );
+        let lockfile = parse_lockfile(
+            r#"
+            schema_version = 1
+
+            [[package]]
+            name = "algebra"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "algebra" }
+            dependencies = [{ name = "registry_a", version = "1.0.0" }]
+
+            [[package]]
+            name = "registry_a"
+            version = "1.0.0"
+            source = { kind = "registry", registry = "default", checksum = "sha256:a" }
+            dependencies = [{ name = "registry_b", version = "1.0.0" }]
+
+            [[package]]
+            name = "registry_b"
+            version = "1.0.0"
+            source = { kind = "registry", registry = "default", checksum = "sha256:b" }
+            dependencies = [{ name = "registry_a", version = "1.0.0" }]
+            "#,
+        )
+        .expect("valid lockfile");
+
+        let normal = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![algebra.clone()],
+            lockfile.clone(),
+        )
+        .expect("normal plan ignores the dev-only registry cycle");
+        assert_eq!(
+            normal
+                .packages
+                .iter()
+                .map(|package| package.package_id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["algebra"]
+        );
+
+        let diagnostics = produce_build_plan(
+            plan_request(DependencySelection::NormalAndDev),
+            vec![algebra],
+            lockfile,
+        )
+        .unwrap_err();
+        assert!(
+            diagnostics.diagnostics().iter().any(|diagnostic| matches!(
+                diagnostic.kind,
+                ManifestDiagnosticKind::DependencyCycle
+            ))
+        );
+    }
+
+    #[test]
+    fn build_plan_rejects_reachable_registry_cycles() {
+        let algebra = workspace_package(
+            "algebra",
+            r#"
+            [package]
+            name = "algebra"
+            version = "1.0.0"
+
+            [dependencies]
+            registry_a = "1.0.0"
+            "#,
+        );
+        let lockfile = parse_lockfile(
+            r#"
+            schema_version = 1
+
+            [[package]]
+            name = "algebra"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "algebra" }
+            dependencies = [{ name = "registry_a", version = "1.0.0" }]
+
+            [[package]]
+            name = "registry_a"
+            version = "1.0.0"
+            source = { kind = "registry", registry = "default", checksum = "sha256:a" }
+            dependencies = [{ name = "registry_b", version = "1.0.0" }]
+
+            [[package]]
+            name = "registry_b"
+            version = "1.0.0"
+            source = { kind = "registry", registry = "default", checksum = "sha256:b" }
+            dependencies = [{ name = "registry_a", version = "1.0.0" }]
+            "#,
+        )
+        .expect("valid lockfile");
+
+        let diagnostics = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![algebra],
+            lockfile,
+        )
+        .unwrap_err();
+        assert!(
+            diagnostics.diagnostics().iter().any(|diagnostic| matches!(
+                diagnostic.kind,
+                ManifestDiagnosticKind::DependencyCycle
+            ))
+        );
+    }
+
+    #[test]
+    fn build_plan_expands_registry_dependencies_that_sort_before_their_parent() {
+        let algebra = workspace_package(
+            "algebra",
+            r#"
+            [package]
+            name = "algebra"
+            version = "1.0.0"
+
+            [dependencies]
+            registry_z = "1.0.0"
+            "#,
+        );
+        let first_lockfile = parse_lockfile(
+            r#"
+            schema_version = 1
+
+            [[package]]
+            name = "algebra"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "algebra" }
+            dependencies = [{ name = "registry_z", version = "1.0.0" }]
+
+            [[package]]
+            name = "registry_z"
+            version = "1.0.0"
+            source = { kind = "registry", registry = "default", checksum = "sha256:z" }
+            dependencies = [{ name = "registry_a", version = "1.0.0" }]
+
+            [[package]]
+            name = "registry_a"
+            version = "1.0.0"
+            source = { kind = "registry", registry = "default", checksum = "sha256:a" }
+            dependencies = [{ name = "registry_b", version = "1.0.0" }]
+
+            [[package]]
+            name = "registry_b"
+            version = "1.0.0"
+            source = { kind = "registry", registry = "default", checksum = "sha256:b" }
+            dependencies = []
+            "#,
+        )
+        .expect("valid lockfile");
+        let second_lockfile = parse_lockfile(
+            r#"
+            schema_version = 1
+
+            [[package]]
+            name = "registry_b"
+            version = "1.0.0"
+            source = { kind = "registry", registry = "default", checksum = "sha256:b" }
+            dependencies = []
+
+            [[package]]
+            name = "registry_a"
+            version = "1.0.0"
+            source = { kind = "registry", registry = "default", checksum = "sha256:a" }
+            dependencies = [{ name = "registry_b", version = "1.0.0" }]
+
+            [[package]]
+            name = "algebra"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "algebra" }
+            dependencies = [{ name = "registry_z", version = "1.0.0" }]
+
+            [[package]]
+            name = "registry_z"
+            version = "1.0.0"
+            source = { kind = "registry", registry = "default", checksum = "sha256:z" }
+            dependencies = [{ name = "registry_a", version = "1.0.0" }]
+            "#,
+        )
+        .expect("valid shuffled lockfile");
+
+        let first = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![algebra.clone()],
+            first_lockfile,
+        )
+        .expect("valid first plan");
+        let second = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![algebra],
+            second_lockfile,
+        )
+        .expect("valid second plan");
+        assert_eq!(first, second);
+        assert_eq!(
+            first
+                .packages
+                .iter()
+                .map(|package| package.package_id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["registry_b", "registry_a", "registry_z", "algebra"]
+        );
+        assert!(
+            first
+                .dependency_graph
+                .edges
+                .iter()
+                .any(|edge| { edge.dependent == "registry_a" && edge.dependency == "registry_b" })
+        );
+    }
+
+    #[test]
+    fn build_plan_rejects_manifest_version_conflicts() {
+        let algebra = workspace_package(
+            "algebra",
+            r#"
+            [package]
+            name = "algebra"
+            version = "1.0.0"
+
+            [dependencies]
+            topology = "^1.0.0"
+            "#,
+        );
+        let topology = workspace_package(
+            "topology",
+            r#"
+            [package]
+            name = "topology"
+            version = "2.0.0"
+            "#,
+        );
+        let lockfile = parse_lockfile(
+            r#"
+            schema_version = 1
+
+            [[package]]
+            name = "algebra"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "algebra" }
+            dependencies = [{ name = "topology", version = "2.0.0" }]
+
+            [[package]]
+            name = "topology"
+            version = "2.0.0"
+            source = { kind = "workspace", path = "topology" }
+            dependencies = []
+            "#,
+        )
+        .expect("valid lockfile");
+
+        let diagnostics = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![algebra, topology],
+            lockfile,
+        )
+        .unwrap_err();
+        assert_eq!(
+            diagnostics
+                .diagnostics()
+                .iter()
+                .filter(|diagnostic| {
+                    matches!(
+                        diagnostic.kind,
+                        ManifestDiagnosticKind::InvalidDependencyVersion
+                    ) && diagnostic.location.key == "algebra.dependencies.topology"
+                })
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn build_plan_rejects_unsupported_editions() {
+        let algebra = workspace_package(
+            "algebra",
+            r#"
+            [package]
+            name = "algebra"
+            version = "1.0.0"
+            edition = "2099"
+            "#,
+        );
+        let lockfile = parse_lockfile(
+            r#"
+            schema_version = 1
+
+            [[package]]
+            name = "algebra"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "algebra" }
+            dependencies = []
+            "#,
+        )
+        .expect("valid lockfile");
+
+        let diagnostics = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![algebra],
+            lockfile,
+        )
+        .unwrap_err();
+        assert!(diagnostics.diagnostics().iter().any(|diagnostic| matches!(
+            diagnostic.kind,
+            ManifestDiagnosticKind::UnsupportedEdition
+        )));
+    }
+
+    #[test]
+    fn build_plan_activates_dev_dependencies_only_when_requested() {
+        let algebra = workspace_package(
+            "algebra",
+            r#"
+            [package]
+            name = "algebra"
+            version = "1.0.0"
+
+            [dev-dependencies]
+            test_utils = "1.0.0"
+            "#,
+        );
+        let test_utils = workspace_package(
+            "test_utils",
+            r#"
+            [package]
+            name = "test_utils"
+            version = "1.0.0"
+            "#,
+        );
+        let lockfile = parse_lockfile(
+            r#"
+            schema_version = 1
+
+            [[package]]
+            name = "algebra"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "algebra" }
+            dependencies = [{ name = "test_utils", version = "1.0.0" }]
+
+            [[package]]
+            name = "test_utils"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "test_utils" }
+            dependencies = []
+            "#,
+        )
+        .expect("valid lockfile");
+
+        let normal = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![algebra.clone(), test_utils.clone()],
+            lockfile.clone(),
+        )
+        .expect("valid normal plan");
+        assert!(normal.dependency_graph.edges.is_empty());
+        let normal_algebra = normal
+            .packages
+            .iter()
+            .find(|package| package.package_id.as_str() == "algebra")
+            .expect("algebra package plan exists");
+        assert_eq!(normal_algebra.dependencies.len(), 1);
+        assert_eq!(normal_algebra.dependencies[0].kind, DependencyKind::Dev);
+
+        let with_dev = produce_build_plan(
+            plan_request(DependencySelection::NormalAndDev),
+            vec![algebra, test_utils],
+            lockfile,
+        )
+        .expect("valid dev plan");
+        assert_eq!(with_dev.dependency_graph.edges.len(), 1);
+        assert_eq!(with_dev.dependency_graph.edges[0].kind, DependencyKind::Dev);
+        let dev_algebra = with_dev
+            .packages
+            .iter()
+            .find(|package| package.package_id.as_str() == "algebra")
+            .expect("algebra package plan exists");
+        assert_eq!(normal_algebra.dependencies, dev_algebra.dependencies);
+    }
+
+    #[test]
     fn parses_explicit_version_ranges() {
         let manifest = parse_package_manifest(
             r#"
@@ -2450,5 +3686,20 @@ mod tests {
         assert_eq!(comparators[0].version, Version::new(1, 0, 0));
         assert_eq!(comparators[1].op, VersionComparison::Less);
         assert_eq!(comparators[1].version, Version::new(2, 0, 0));
+    }
+
+    fn workspace_package(member_path: &str, manifest: &str) -> WorkspacePackage {
+        WorkspacePackage {
+            member_path: member_path.to_owned(),
+            manifest: parse_package_manifest(manifest).expect("valid package manifest"),
+        }
+    }
+
+    fn plan_request(selection: DependencySelection) -> PlanRequest {
+        PlanRequest {
+            workspace_root: WorkspaceRoot::new("workspace"),
+            dependency_selection: selection,
+            toolchain: ToolchainInfo::new("mizar-evo-test"),
+        }
     }
 }

@@ -187,17 +187,27 @@ struct BuildPlan {
 struct PackagePlan {
     package_id: PackageId,
     version: Version,
-    root: PackageRoot,
-    source_root: PackageSourceRoot,
-    manifest_path: NormalizedManifestPath,
+    source: PackagePlanSource,
     edition: Edition,
-    dependencies: Vec<PackageDependency>,
+    dependencies: Vec<ResolvedPackageDependency>,
     verifier_config: VerifierConfig,
     build_config: BuildConfig,
 }
 
-struct PackageDependency {
-    package_id: PackageId,
+enum PackagePlanSource {
+    Workspace {
+        root: String,
+        source_root: String,
+        manifest_path: String,
+    },
+    Registry {
+        registry: String,
+        checksum: String,
+    },
+}
+
+struct ResolvedPackageDependency {
+    package_id: String,
     requested: VersionConstraint,
     resolved: Version,
     kind: DependencyKind,
@@ -215,10 +225,15 @@ source identity wrappers come from `mizar-session`. The planner must provide
 already validated package ids, editions, roots, and normalized paths to those
 APIs. It must not manufacture `SourceId`, `BuildSnapshotId`, or source hashes.
 
-`source_root` is the normalized `src` directory under the package root. The
-planner records this path but does not enumerate modules or require that the
+For workspace packages, `source.source_root` is the normalized `src` directory
+under the package root. This implementation slice exposes normalized plan paths
+and registry metadata as `String` values; later source/snapshot APIs still
+receive `mizar-session` identity wrappers at their own boundaries. The planner
+records source-root paths but does not enumerate modules or require that the
 directory already exists; source loading and module indexing report missing or
-invalid source-tree diagnostics through their own error surfaces.
+invalid source-tree diagnostics through their own error surfaces. Registry
+packages use `PackagePlanSource::Registry` and are dependency-artifact inputs
+rather than workspace source roots.
 
 `packages` is sorted with dependencies before dependents. Ties are broken by
 canonical package id. The root workspace members are preserved as package
@@ -231,15 +246,19 @@ stored edges, so every dependency appears before every dependent. The graph
 rejects cycles, duplicate package ids, duplicate dependency keys within a
 package, missing lock entries, version constraints not satisfied by the
 lockfile, and unsupported edition values. It never permits multiple
-simultaneous versions of the same package id in one workspace.
+simultaneous versions of the same package id in one workspace. A lockfile
+`source.kind = "workspace"` entry is valid only for a discovered workspace
+member whose manifest was parsed and validated by this planner; non-member
+dependencies must use registry source metadata in this implementation slice.
 
 `WorkspaceVerifierConfig` and `WorkspaceBuildConfig` are deterministic
-aggregates: they contain the toolchain defaults plus the sorted list of each
-package's effective config. They are not cross-package merges and do not erase
-package-specific settings. Snapshot/config hashes must include these aggregate
-records or an equivalent canonical encoding of every package's effective
-verifier and build config. Downstream code must use package-local settings when
-a phase is package-scoped.
+aggregates: they contain the package-plan-ordered list of each package's
+effective config, while the adjacent `BuildPlan.toolchain` records the
+toolchain identity used to interpret those configs. They are not cross-package
+merges and do not erase package-specific settings. Snapshot/config hashes must
+include these aggregate records or an equivalent canonical encoding of every
+package's effective verifier and build config. Downstream code must use
+package-local settings when a phase is package-scoped.
 
 ## Planning Algorithm
 
@@ -249,12 +268,15 @@ a phase is package-scoped.
 3. Validate schema, package ids, SemVer versions, version constraints, enum
    values, config defaults, member paths, and build paths.
 4. Build the package table keyed by package id and reject duplicates.
-5. Validate that every workspace package has a matching lockfile entry.
+5. Validate that every workspace package has a matching lockfile entry and
+   that every lockfile workspace-source entry corresponds to a discovered
+   workspace package.
 6. Validate each manifest dependency against the lockfile, collect exact
    resolved versions, and mark active edges according to the request's
    dependency selection.
 7. Build the active package dependency graph and reject cycles.
-8. Check supported editions and merge verifier/build defaults.
+8. Check supported editions and carry each package's effective verifier/build
+   config into both the package plan and aggregate config records.
 9. Produce `BuildPlan` with canonical ordering and deterministic diagnostics.
 
 Phase 0 may stop after manifest/lockfile validation when errors are blocking.

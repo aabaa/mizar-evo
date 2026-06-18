@@ -12,16 +12,17 @@
 
 Full module specs do not exist yet; each is written by its own spec task
 (English and Japanese in the same change) before the implementation tasks that
-cite it. The initial `planner` source exists only for the bounded package-name
-validation slice required by the synchronized package manifest specification.
-Module names follow [internal 07](../../internal/en/07.crate_module_layout.md)
+cite it. The `planner` source now covers wave A manifest/lockfile parsing and
+deterministic `BuildPlan` production; remaining modules still follow their
+dedicated spec-before-implementation tasks. Module names follow
+[internal 07](../../internal/en/07.crate_module_layout.md)
 (minimum: `task_graph`, `scheduler`, `failure_state`) plus the phase-0
 planning modules from architecture 00/03; the crate refines architecture 14
 and 19 and internal 01.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| planner | `planner.md` (task 2) | `src/planner.rs` | [~] |
+| planner | `planner.md` (task 2) | `src/planner.rs` | [x] |
 | module_index | `module_index.md` (task 5) | `src/module_index.rs` | [ ] |
 | task_graph | `task_graph.md` (task 7) | `src/task_graph.rs` | [ ] |
 | scheduler | `scheduler.md` (task 9) | `src/scheduler.rs` | [ ] |
@@ -111,7 +112,7 @@ Keep `cargo test -p mizar-build` green after each task (see
      deterministic error order.
    - Deps: 2. Spec: `planner.md`.
 
-4. **Dependency graph resolution and `BuildPlan` production.** [ ]
+4. **Dependency graph resolution and `BuildPlan` production.** [x]
    - Resolve the package dependency graph (cycles rejected, versions and
      editions checked) and produce a deterministic `BuildPlan`.
    - Tests: graph fixtures including cycles and version conflicts;
