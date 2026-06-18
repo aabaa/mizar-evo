@@ -43,6 +43,16 @@ green tree.
 
 `SurfaceNodeId`, rowan text ranges, compatibility node ids, and green-node identities are not `ObligationAnchor` and must not be used for proof-result reuse across edits. `SurfaceAst` must preserve syntactic anchor ingredients such as labels, item kinds, proof-step structure, algorithm statement structure, registration/redefinition nodes, source ranges, trivia, and recovery markers. `mizar-syntax` may expose semantic-free accessors for these ingredients, but it must not compute owner origin ids, `ObligationAnchor`, `DependencySlice`, or proof obligations.
 
+### Source Layout
+
+The public `ast` module remains `crates/mizar-syntax/src/ast.rs`. Private
+implementation partitions live under `crates/mizar-syntax/src/ast/`: `green.rs`
+owns rowan green-tree construction, `snapshot.rs` owns stable snapshot
+rendering, and `tests.rs` owns AST unit and snapshot coverage. These files are
+source-organization details only; they do not change crate-root re-exports,
+`mizar_syntax::ast` paths, rowan storage semantics, typed accessors, snapshot
+text, or parser-facing builder contracts.
+
 ### Syntax Kind Mapping
 
 `SyntaxKind` is the raw rowan kind vocabulary. Node kinds currently map as:

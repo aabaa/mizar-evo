@@ -12,7 +12,7 @@
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| ast | [ast.md](./ast.md) | `src/ast.rs` | [x] rowan storage boundary, task-35 vocabulary, and task-22 predicate-label follow-through complete; S-023 audit found no remaining predicate-label gap; task 24 tracks a behavior-preserving source split |
+| ast | [ast.md](./ast.md) | `src/ast.rs`, `src/ast/{green,snapshot,tests}.rs` | [x] rowan storage boundary, task-35 vocabulary, task-22 predicate-label follow-through, and task-24 behavior-preserving source split complete; S-023 audit found no remaining predicate-label gap |
 | trivia | [trivia.md](./trivia.md) | `src/trivia.rs` | [x] task-4 model implemented; task-5 item attachment fixture landed |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [x] task-5 recovery vocabulary implemented; parser producers remain incremental |
 
@@ -629,7 +629,7 @@ interaction. Spec references are the normative grammar chapters under
     - Deps: 22. Spec: [ast.md](./ast.md), this TODO, and repository
       documentation policy.
 
-24. **AST module-boundary refactor.** [ ]
+24. **AST module-boundary refactor.** [x]
     - Split the oversized `crates/mizar-syntax/src/ast.rs` implementation into
       private responsibility modules without changing the public `mizar_syntax`
       API, rowan-backed storage semantics, syntax-kind numbering, typed
@@ -646,6 +646,15 @@ interaction. Spec references are the normative grammar chapters under
     - Tests: syntax unit tests, parser tests, frontend seam tests, and
       snapshot baselines stay byte-stable; `cargo fmt --check` and
       syntax/parser Clippy stay green.
+    - Result: `crates/mizar-syntax/src/ast.rs` remains the public `ast`
+      module and keeps `SyntaxKind`, public AST types, builders, accessors, and
+      compatibility wrappers on the existing `mizar_syntax::ast` and
+      crate-root re-export paths. Private implementation partitions now live in
+      `src/ast/green.rs` for rowan green-tree construction,
+      `src/ast/snapshot.rs` for stable snapshot rendering, and
+      `src/ast/tests.rs` for AST unit/snapshot coverage. The split did not
+      add node kinds, renumber `SyntaxKind`, change snapshot text, alter trivia
+      validation, or expose new public rowan traversal APIs.
     - Deps: 22, 23. Spec: [ast.md](./ast.md), [trivia.md](./trivia.md),
       [recovery.md](./recovery.md), this TODO.
 
