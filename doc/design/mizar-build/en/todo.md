@@ -119,19 +119,24 @@ Keep `cargo test -p mizar-build` green after each task (see
      identical inputs produce identical plans.
    - Deps: 3. Spec: `planner.md`.
 
-5. **Spec: `module_index.md`.** [ ]
+5. **Spec: `module_index.md`.** [x]
    - Write the module-index spec (English and Japanese, no code): package →
      module identity mapping per architecture 03 Step 1, the provider
      contract the resolver consumes.
    - Deps: 2. Spec: architecture 03 "Step 1".
 
 6. **Module index construction.** [ ]
-   - Build the module index from the `BuildPlan` and source layout;
-     implement the resolver's provider contract so the `mizar-resolve`
-     workspace stub can be replaced (closes its task-7 interim seam).
+   - Build the module index from the `BuildPlan` and source layout; expose the
+     build-side provider/accessor contract defined in `module_index.md`.
+     Confirm `mizar-resolve` task 7 before attempting resolver-stub replacement:
+     if that task is still open, classify resolver parity as an external
+     dependency gap and do not invent resolver-owned fixtures or compatibility
+     shims in `mizar-build`.
    - Tests: multi-package fixtures; alias-independent module identity;
-     provider parity with the resolver stub fixtures.
-   - Deps: 4, 5, `mizar-resolve` task 7. Spec: `module_index.md`.
+     deterministic source-discovery order; provider parity with resolver stub
+     fixtures only after `mizar-resolve` task 7 supplies that seam.
+   - Deps: 4, 5. Resolver-stub replacement additionally depends on
+     `mizar-resolve` task 7. Spec: `module_index.md`.
 
 ### Wave B: task graph and scheduling
 
