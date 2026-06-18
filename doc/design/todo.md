@@ -40,7 +40,7 @@ and the crate ownership map in
 | mizar-session | yes | Source identity, source maps, source loading, build snapshots, retention | [x] current milestone complete; no deferred crate-owned item | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | yes | Raw scan, scope skeletons, lexical environments, context-sensitive token disambiguation | [x] current milestone complete; `.miz` lexer companions and selector semantics are downstream-owned | [todo](./mizar-lexer/en/todo.md) |
 | mizar-syntax | yes | Rowan-backed `SurfaceAst`, syntax trivia, recovery, typed views, parser-facing syntax vocabulary | [x] current milestone complete; only deferred rustdoc summaries remain | [todo](./mizar-syntax/en/todo.md) |
-| mizar-parser | yes | Grammar, Pratt parsing, syntax recovery, parse-only corpus execution | [~] grammar tasks 1-36, recovery consolidation task 37, `SurfaceAst` snapshot baselines task 38, determinism task 39, fuzz target task 40, frontend passthrough audit task 41, module-boundary split task 42, and source/spec audit task 43 complete; audit/policy tasks 44-45 remain, with deferred operator-declaration follow-up task 46 recorded | [todo](./mizar-parser/en/todo.md) |
+| mizar-parser | yes | Grammar, Pratt parsing, syntax recovery, parse-only corpus execution | [~] grammar tasks 1-36, recovery consolidation task 37, `SurfaceAst` snapshot baselines task 38, determinism task 39, fuzz target task 40, frontend passthrough audit task 41, module-boundary split task 42, source/spec audit task 43, and bilingual documentation sync task 44 complete; public enum policy task 45 remains, with deferred operator-declaration follow-up task 46 recorded | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | yes | Source loading and phase 1-3 orchestration across session, lexer, syntax, and parser | [x] current milestone complete; future parser growth may open bounded follow-ups | [todo](./mizar-frontend/en/todo.md) |
 | mizar-test | yes | Corpus discovery, expectation sidecars, staged model, traceability, snapshots, harness behavior | [~] implementation exists; formal lint/gap audit, runner validation, snapshots, and reporting remain | [todo](./mizar-test/en/todo.md) |
 | mizar-build | yes | Phase 0 workspace planning plus later task graph, scheduler, resources, cancellation, failure state | [~] scaffold and package-name validation slice exist; planner spec and full manifest/lockfile parsing are next | [todo](./mizar-build/en/todo.md) |
@@ -102,10 +102,10 @@ The current foundation milestone is complete for:
 `mizar-parser` has also completed the main grammar-growth run through task 36,
 recovery consolidation task 37, `SurfaceAst` snapshot baselines task 38,
 determinism task 39, parser-owned fuzz target task 40, frontend passthrough
-audit task 41, module-boundary split task 42, and source/spec audit task 43,
-but remains [~] because audit/policy tasks 44-45 are still open. Deferred
-operator-declaration follow-up task 46 is recorded but does not block the
-current parser hardening close-out.
+audit task 41, module-boundary split task 42, source/spec audit task 43, and
+bilingual documentation sync task 44, but remains [~] because public enum
+policy task 45 is still open. Deferred operator-declaration follow-up task 46
+is recorded but does not block the current parser hardening close-out.
 
 ### Immediate Next Work
 
@@ -119,8 +119,8 @@ current parser hardening close-out.
    source/spec gap audit (tasks 1-2), then harden validation/reporting,
    snapshots, and coverage reporting. The source crate already exists; the TODO
    is the formal gap-closing plan.
-3. **mizar-parser hardening** - finish bilingual sync and public-enum policy
-   tasks 44-45; deferred operator-declaration task 46 is future grammar growth.
+3. **mizar-parser hardening** - finish public-enum policy task 45; deferred
+   operator-declaration task 46 is future grammar growth.
 4. **mizar-resolve kickoff** - resolver work can begin against the current
    parser/syntax surface. If it starts before `mizar-build` task 6, use the
    planned workspace-stub provider only as an interim bridge and replace it with

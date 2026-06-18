@@ -915,9 +915,18 @@ resolver / build-system 依存を避ける。
       future-reserved のまま残す。
     - 依存: 37、42。仕様: すべてのモジュール仕様と本 TODO。
 
-44. **二言語ドキュメント同期監査。** [ ]
+44. **二言語ドキュメント同期監査。** [x]
     - `doc/design/mizar-parser/en/` の各英語正本ドキュメントを日本語版と
       比較し、API 一覧、状態、用語、リンク、挙動の約束を同期する。
+    - 結果:
+      [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md)
+      に、`README.md`、`grammar.md`、`pratt.md`、`recovery.md`、
+      `source_spec_audit.md`、この監査、`todo.md` の paired audit を記録した。
+      bilingual API、status、terminology、link、behavior-promise の drift は
+      残っていない。閉じた finding は documentation `design_drift` のみである。
+      parser status/index text は task 44 を pending として扱ったままであり、parser
+      audit list は bilingual audit を含んでおらず、英語 TODO の task 43 には重複
+      文言が残っていた。task 45 は pending、task 46 は deferred のまま残す。
     - 依存: 43。仕様: リポジトリのドキュメント方針。
 
 45. **公開 enum の前方互換方針。** [ ]

@@ -931,9 +931,8 @@ older numeric syntax task references appear to disagree, prefer
     - Verify that every reserved word of
       [§A.2.4](../../../spec/en/appendix_a.grammar_summary.md) is consumed by
       at least one parser corpus test (or is explicitly recorded as
-      recorded as a parser-deferred gap or a future-reserved word with no
-      grammar position yet), so silently unimplemented keywords are detected
-      mechanically.
+      a parser-deferred gap or a future-reserved word with no grammar position
+      yet), so silently unimplemented keywords are detected mechanically.
     - Result: [source_spec_audit.md](./source_spec_audit.md) records the public
       API and promised-behavior trace to source, parser unit tests, active
       parse-only corpus cases, and traceability metadata. No blocking
@@ -949,11 +948,21 @@ older numeric syntax task references appear to disagree, prefer
       give it a parser grammar position.
     - Deps: 37, 42. Spec: all module specs and this TODO.
 
-44. **Bilingual documentation sync audit.** [ ]
+44. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under
       `doc/design/mizar-parser/en/` with its Japanese companion and
       synchronize API lists, statuses, terminology, links, and behavior
       promises.
+    - Result:
+      [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md)
+      records the paired audit for `README.md`, `grammar.md`, `pratt.md`,
+      `recovery.md`, `source_spec_audit.md`, this audit, and `todo.md`. No
+      remaining bilingual API, status, terminology, link, or behavior-promise
+      drift was found. The only closed finding was documentation
+      `design_drift`: parser status/index text still treated task 44 as
+      pending, parser audit lists did not include the bilingual audit, and task
+      43 had duplicate wording in this TODO. Task 45 remains pending and task
+      46 remains deferred.
     - Deps: 43. Spec: repository documentation policy.
 
 45. **Public enum forward-compatibility policy.** [ ]

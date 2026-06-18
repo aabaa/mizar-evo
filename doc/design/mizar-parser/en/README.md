@@ -19,8 +19,9 @@ predicate redefinition label repair, plus recovery consolidation and fail-corpus
 expansion, parse-only `SurfaceAst` snapshot baselines, parser determinism
 coverage, the parser-owned valid-UTF-8 fuzz target, and frontend passthrough
 follow-through audit, plus a private annotation/test module-boundary split.
-Task 43 source/spec correspondence and reserved-word coverage audit is complete;
-hardening/audit tasks 44-45 remain planned, with deferred task 46 recorded for
+Task 43 source/spec correspondence and reserved-word coverage audit is
+complete, and task 44 bilingual documentation synchronization is complete. The
+public enum policy task 45 remains planned, with deferred task 46 recorded for
 future concrete operator declarations.
 
 Module specs and audits:
@@ -29,5 +30,6 @@ Module specs and audits:
 - `pratt.md`
 - `recovery.md`
 - `source_spec_audit.md`
+- `bilingual_documentation_synchronization.md`
 
 Implementation roadmap: [todo.md](./todo.md).
