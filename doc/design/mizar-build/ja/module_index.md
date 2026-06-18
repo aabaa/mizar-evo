@@ -259,7 +259,7 @@ provider invariant:
   `dependency_summary()` は location が `DependencySummary` である module に対してのみ成功する。
 
 `mizar-resolve` task 7 は resolver 側の interim seam と、そのテスト用
-workspace-stub provider を所有する。その task が存在するまでは、`mizar-build` は
+workspace-stub provider を所有する。その task が着地するまでは、`mizar-build` は
 index の定義と構築を行えるが、`mizar-resolve` の代わりに resolver fixture や
 resolver crate-local compatibility layer を創作してはならない。
 
@@ -277,9 +277,9 @@ module-index diagnostics は phase 0 build diagnostics である。必要な cat
 | dependency artifact | module summary の欠落、不正な summary identity |
 | provider | unknown package、unknown module、unavailable dependency summary |
 
-diagnostics には、利用可能な場合は package id、normalized path または module id、
-stable diagnostic category、rejected value を含める。package id、module path、
-normalized path、category、value の順で整列する。
+diagnostics には package id と stable diagnostic category を含める。利用可能な
+場合は normalized path または module id と rejected value も含める。package id、
+module path、normalized path、category、value の順で整列する。
 
 ## 決定性
 

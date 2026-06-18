@@ -12,8 +12,8 @@
 
 Full module specs do not exist yet; each is written by its own spec task
 (English and Japanese in the same change) before the implementation tasks that
-cite it. The `planner` source now covers wave A manifest/lockfile parsing and
-deterministic `BuildPlan` production; remaining modules still follow their
+cite it. The `planner` and `module_index` sources now cover wave A phase-0
+planning and module-index provider work; remaining modules still follow their
 dedicated spec-before-implementation tasks. Module names follow
 [internal 07](../../internal/en/07.crate_module_layout.md)
 (minimum: `task_graph`, `scheduler`, `failure_state`) plus the phase-0
@@ -41,10 +41,10 @@ reverse.
 
 It is built in two waves: **wave A** (planner and module index, phase 0)
 lands early because the resolver's module-index input replaces its
-workspace stub with the real planner output; **wave B** (task graph,
-scheduler, resources, cancellation, failure state) arrives with the
-verification phases it schedules and can be developed against synthetic
-tasks.
+workspace stub with the real module-index provider built from planner output;
+**wave B** (task graph, scheduler, resources, cancellation, failure state)
+arrives with the verification phases it schedules and can be developed against
+synthetic tasks.
 
 Each task below is deliberately small — one module spec, or one behavior slice
 of one module — so that a single task can be implemented, tested, and

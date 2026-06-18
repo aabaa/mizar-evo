@@ -253,6 +253,7 @@ pub enum ManifestDiagnosticKind {
     InvalidSolver,
     InvalidLockfileSchema,
     DuplicateLockPackage,
+    DuplicateDependency,
     MissingLockPackage,
     LockVersionMismatch,
     UnknownLockedDependency,
@@ -715,6 +716,7 @@ fn parse_package_manifest_from_tables(
         DependencyKind::Dev,
         diagnostics,
     );
+    validate_manifest_dependency_uniqueness(&dependencies, &dev_dependencies, diagnostics);
     let verifier = parse_verifier_config(document, diagnostics);
     let build = parse_build_config(document, diagnostics);
 
@@ -840,6 +842,39 @@ fn parse_dependency_table(
             .then_with(|| left.features.cmp(&right.features))
     });
     dependencies
+}
+
+fn validate_manifest_dependency_uniqueness(
+    dependencies: &[ManifestDependency],
+    dev_dependencies: &[ManifestDependency],
+    diagnostics: &mut Vec<ManifestDiagnostic>,
+) {
+    let mut seen = BTreeMap::<&str, DependencyKind>::new();
+    for dependency in dependencies.iter().chain(dev_dependencies.iter()) {
+        if let Some(previous_kind) = seen.insert(dependency.package_id.as_str(), dependency.kind) {
+            diagnostics.push(ManifestDiagnostic::new(
+                "<package manifest>",
+                format!(
+                    "{}.{}",
+                    dependency_table_name(dependency.kind),
+                    dependency.package_id
+                ),
+                ManifestDiagnosticKind::DuplicateDependency,
+                Some(format!(
+                    "{} also appears in {}",
+                    dependency.package_id,
+                    dependency_table_name(previous_kind)
+                )),
+            ));
+        }
+    }
+}
+
+fn dependency_table_name(kind: DependencyKind) -> &'static str {
+    match kind {
+        DependencyKind::Normal => "dependencies",
+        DependencyKind::Dev => "dev-dependencies",
+    }
 }
 
 fn parse_verifier_config(
@@ -1220,7 +1255,26 @@ fn parse_locked_dependencies(
         dependencies.push(LockedDependency { name, version });
     }
     dependencies.sort_by(|left, right| left.name.cmp(&right.name));
+    validate_locked_dependency_uniqueness(key_prefix, &dependencies, diagnostics);
     dependencies
+}
+
+fn validate_locked_dependency_uniqueness(
+    key_prefix: &str,
+    dependencies: &[LockedDependency],
+    diagnostics: &mut Vec<ManifestDiagnostic>,
+) {
+    let mut seen = BTreeSet::new();
+    for dependency in dependencies {
+        if !seen.insert(dependency.name.as_str()) {
+            diagnostics.push(ManifestDiagnostic::new(
+                "<lockfile>",
+                format!("{key_prefix}.dependencies.{}", dependency.name),
+                ManifestDiagnosticKind::DuplicateDependency,
+                Some(dependency.version.to_string()),
+            ));
+        }
+    }
 }
 
 fn validate_locked_package_uniqueness(
@@ -1289,6 +1343,15 @@ fn collect_workspace_packages(
     let mut packages = BTreeMap::new();
     for package in workspace_packages {
         let package_name = package.manifest.name.clone();
+        if !(package.member_path == "." || relative_path_is_valid(&package.member_path)) {
+            diagnostics.push(ManifestDiagnostic::new(
+                "<workspace package>",
+                format!("{package_name}.member_path"),
+                ManifestDiagnosticKind::InvalidWorkspaceMemberPath,
+                Some(package.member_path.clone()),
+            ));
+            continue;
+        }
         if packages.insert(package_name.clone(), package).is_some() {
             diagnostics.push(ManifestDiagnostic::new(
                 "<workspace manifest>",
@@ -1636,24 +1699,12 @@ fn parse_version_constraint(
 ) -> Option<VersionConstraint> {
     let value = value.trim();
     if let Some(version) = value.strip_prefix('^') {
-        return parse_version(
-            path,
-            key,
-            version,
-            ManifestDiagnosticKind::InvalidVersionConstraint,
-            diagnostics,
-        )
-        .map(VersionConstraint::Caret);
+        return parse_partial_version(path, key, version, diagnostics)
+            .map(VersionConstraint::Caret);
     }
     if let Some(version) = value.strip_prefix('~') {
-        return parse_version(
-            path,
-            key,
-            version,
-            ManifestDiagnosticKind::InvalidVersionConstraint,
-            diagnostics,
-        )
-        .map(VersionConstraint::Tilde);
+        return parse_partial_version(path, key, version, diagnostics)
+            .map(VersionConstraint::Tilde);
     }
     if comparator_starts(value) {
         let mut comparators = Vec::new();
@@ -2199,15 +2250,16 @@ fn diagnostic_rank(kind: &ManifestDiagnosticKind) -> u8 {
         ManifestDiagnosticKind::InvalidSolver => 10,
         ManifestDiagnosticKind::InvalidLockfileSchema => 11,
         ManifestDiagnosticKind::DuplicateLockPackage => 12,
-        ManifestDiagnosticKind::MissingLockPackage => 13,
-        ManifestDiagnosticKind::LockVersionMismatch => 14,
-        ManifestDiagnosticKind::UnknownLockedDependency => 15,
-        ManifestDiagnosticKind::InvalidLockSource => 16,
-        ManifestDiagnosticKind::InvalidDependencyVersion => 17,
-        ManifestDiagnosticKind::DuplicatePackageId => 18,
-        ManifestDiagnosticKind::UnsupportedEdition => 19,
-        ManifestDiagnosticKind::DependencyCycle => 20,
-        ManifestDiagnosticKind::DuplicateFeature => 21,
+        ManifestDiagnosticKind::DuplicateDependency => 13,
+        ManifestDiagnosticKind::MissingLockPackage => 14,
+        ManifestDiagnosticKind::LockVersionMismatch => 15,
+        ManifestDiagnosticKind::UnknownLockedDependency => 16,
+        ManifestDiagnosticKind::InvalidLockSource => 17,
+        ManifestDiagnosticKind::InvalidDependencyVersion => 18,
+        ManifestDiagnosticKind::DuplicatePackageId => 19,
+        ManifestDiagnosticKind::UnsupportedEdition => 20,
+        ManifestDiagnosticKind::DependencyCycle => 21,
+        ManifestDiagnosticKind::DuplicateFeature => 22,
     }
 }
 
@@ -2263,6 +2315,7 @@ impl fmt::Display for ManifestDiagnosticKind {
             Self::InvalidSolver => f.write_str("invalid solver"),
             Self::InvalidLockfileSchema => f.write_str("invalid lockfile schema"),
             Self::DuplicateLockPackage => f.write_str("duplicate locked package"),
+            Self::DuplicateDependency => f.write_str("duplicate dependency"),
             Self::MissingLockPackage => f.write_str("missing locked package"),
             Self::LockVersionMismatch => f.write_str("lockfile version mismatch"),
             Self::UnknownLockedDependency => f.write_str("unknown locked dependency"),
@@ -2417,6 +2470,54 @@ mod tests {
             ]
         );
         assert_eq!(manifest.dev_dependencies[0].kind, DependencyKind::Dev);
+    }
+
+    #[test]
+    fn parses_short_caret_and_tilde_dependency_constraints() {
+        let manifest = parse_package_manifest(
+            r#"
+            [package]
+            name = "short_versions"
+            version = "1.0.0"
+
+            [dependencies]
+            algebra = "^1.0"
+            topology = "~0.9"
+            "#,
+        )
+        .expect("short caret and tilde constraints are valid");
+
+        assert_eq!(
+            manifest.dependencies[0].version,
+            VersionConstraint::Caret(Version::new(1, 0, 0))
+        );
+        assert_eq!(
+            manifest.dependencies[1].version,
+            VersionConstraint::Tilde(Version::new(0, 9, 0))
+        );
+    }
+
+    #[test]
+    fn duplicate_manifest_dependencies_across_normal_and_dev_are_rejected() {
+        let diagnostics = parse_package_manifest(
+            r#"
+            [package]
+            name = "algebra"
+            version = "1.0.0"
+
+            [dependencies]
+            test_utils = "1.0.0"
+
+            [dev-dependencies]
+            test_utils = "1.0.0"
+            "#,
+        )
+        .unwrap_err();
+
+        assert!(diagnostics.diagnostics().iter().any(|diagnostic| {
+            matches!(diagnostic.kind, ManifestDiagnosticKind::DuplicateDependency)
+                && diagnostic.location.key == "dev-dependencies.test_utils"
+        }));
     }
 
     #[test]
@@ -2774,6 +2875,36 @@ mod tests {
         assert!(diagnostics.diagnostics().iter().any(|diagnostic| {
             matches!(diagnostic.kind, ManifestDiagnosticKind::LockVersionMismatch)
                 && diagnostic.location.key == "algebra.dependencies.mml_core"
+        }));
+    }
+
+    #[test]
+    fn lockfile_rejects_duplicate_dependency_names() {
+        let diagnostics = parse_lockfile(
+            r#"
+            schema_version = 1
+
+            [[package]]
+            name = "algebra"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "algebra" }
+            dependencies = [
+                { name = "mml_core", version = "1.0.0" },
+                { name = "mml_core", version = "1.0.0" },
+            ]
+
+            [[package]]
+            name = "mml_core"
+            version = "1.0.0"
+            source = { kind = "registry", registry = "default", checksum = "sha256:abcd" }
+            dependencies = []
+            "#,
+        )
+        .unwrap_err();
+
+        assert!(diagnostics.diagnostics().iter().any(|diagnostic| {
+            matches!(diagnostic.kind, ManifestDiagnosticKind::DuplicateDependency)
+                && diagnostic.location.key == "package[0].dependencies.mml_core"
         }));
     }
 
@@ -3151,6 +3282,43 @@ mod tests {
                 .count(),
             1
         );
+    }
+
+    #[test]
+    fn build_plan_revalidates_workspace_package_member_paths() {
+        let algebra = workspace_package(
+            "../algebra",
+            r#"
+            [package]
+            name = "algebra"
+            version = "1.0.0"
+            "#,
+        );
+        let lockfile = parse_lockfile(
+            r#"
+            schema_version = 1
+
+            [[package]]
+            name = "algebra"
+            version = "1.0.0"
+            source = { kind = "workspace", path = "algebra" }
+            dependencies = []
+            "#,
+        )
+        .expect("valid lockfile");
+
+        let diagnostics = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![algebra],
+            lockfile,
+        )
+        .unwrap_err();
+        assert!(diagnostics.diagnostics().iter().any(|diagnostic| {
+            matches!(
+                diagnostic.kind,
+                ManifestDiagnosticKind::InvalidWorkspaceMemberPath
+            ) && diagnostic.location.key == "algebra.member_path"
+        }));
     }
 
     #[test]

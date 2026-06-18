@@ -61,9 +61,9 @@ IR ownership: [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
   orchestration is owned by `mizar-driver`
   ([internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md));
   the resolver is a phase service, not a driver. The open part is the interim
-  module-index input the resolver consumes until the `mizar-build` planner and
-  the `mizar-driver` phase registry exist (workspace-stub provider is the
-  default candidate).
+  module-index input the resolver consumes until the `mizar-build` module-index
+  provider and the `mizar-driver` phase registry are integrated
+  (workspace-stub provider is the default candidate).
 - **`mizar-diagnostics` adoption timing: open, decided before task 13.**
   `mizar-diagnostics` is part of the target crate layout
   ([internal 07](../../internal/en/07.crate_module_layout.md),
@@ -135,12 +135,13 @@ Keep `cargo test -p mizar-resolve` green after each task (see
    - Resolve the interim-seam decision: define the package/module index input
      (architecture 03 Step 1) the resolver consumes as a phase service
      ([internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)),
-     with a workspace-stub provider for tests until the `mizar-build` planner
-     and `mizar-driver` registry exist. Record the decision here and at the
-     top level.
+     with a workspace-stub provider for tests until the `mizar-build`
+     module-index provider and `mizar-driver` registry are integrated. Record
+     the decision here and at the top level.
    - Tests: stub provider feeds a multi-module fixture; module identity is
      alias-independent.
-   - Deps: 4. Spec: architecture 03 "Step 1", `mizar-build` todo task 2.
+   - Deps: 4. Spec: architecture 03 "Step 1", `mizar-build` todo tasks 5-6
+     and `module_index.md`.
 
 ### Imports
 

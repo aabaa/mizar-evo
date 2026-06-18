@@ -263,7 +263,7 @@ Provider invariants:
   `DependencySummary`.
 
 `mizar-resolve` task 7 owns the resolver-side interim seam and its test
-workspace-stub provider. Until that task exists, `mizar-build` can define and
+workspace-stub provider. Until that task lands, `mizar-build` can define and
 construct the index, but it must not invent resolver fixtures or a resolver
 crate-local compatibility layer on behalf of `mizar-resolve`.
 
@@ -281,9 +281,10 @@ Module-index diagnostics are phase-0 build diagnostics. Required categories:
 | dependency artifact | missing module summary, malformed summary identity |
 | provider | unknown package, unknown module, unavailable dependency summary |
 
-Diagnostics must include the package id, normalized path or module id when
-available, the stable diagnostic category, and the rejected value. They are
-sorted by package id, module path, normalized path, category, then value.
+Diagnostics must include the package id and stable diagnostic category. When
+available, they also include the normalized path or module id and rejected
+value. They are sorted by package id, module path, normalized path, category,
+then value.
 
 ## Determinism
 

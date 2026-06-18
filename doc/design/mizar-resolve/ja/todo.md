@@ -60,9 +60,9 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
   パイプラインのオーケストレーションは `mizar-driver` が所有する
   （[internal 01](../../internal/ja/01.compiler_driver_and_pipeline_scheduler.md)）。
   resolver は phase サービスであり、ドライバーではない。未解決なのは、
-  `mizar-build` planner と `mizar-driver` の phase レジストリができるまで
-  resolver が消費する暫定モジュール索引入力（既定候補は workspace スタブ
-  プロバイダー）である。
+  `mizar-build` module-index provider と `mizar-driver` の phase レジストリが
+  統合されるまで resolver が消費する暫定モジュール索引入力（既定候補は
+  workspace スタブプロバイダー）である。
 - **`mizar-diagnostics` 採用時期: 未解決。task 13 までに決定する。**
   `mizar-diagnostics` は目標 crate 配置の一部である
   （[internal 07](../../internal/ja/07.crate_module_layout.md)、
@@ -133,12 +133,13 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
    - 暫定 seam の決定を解決する: resolver が phase サービス
      （[internal 01](../../internal/ja/01.compiler_driver_and_pipeline_scheduler.md)）
      として消費するパッケージ/モジュール索引入力（アーキテクチャ 03
-     Step 1）を定義し、`mizar-build` planner と `mizar-driver` レジストリが
-     できるまでテスト用 workspace スタブプロバイダーを用意する。決定を
-     ここに記録し、トップレベルにも反映する。
+     Step 1）を定義し、`mizar-build` module-index provider と `mizar-driver`
+     レジストリが統合されるまでテスト用 workspace スタブプロバイダーを
+     用意する。決定をここに記録し、トップレベルにも反映する。
    - テスト: スタブプロバイダーが複数モジュールのフィクスチャを供給する。
      モジュール識別がローカル別名に依存しない。
-   - 依存: 4。仕様: アーキテクチャ 03「Step 1」、`mizar-build` todo task 2。
+   - 依存: 4。仕様: アーキテクチャ 03「Step 1」、`mizar-build` todo
+     tasks 5〜6 と `module_index.md`。
 
 ### import
 
