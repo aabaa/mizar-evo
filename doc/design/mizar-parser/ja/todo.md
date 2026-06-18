@@ -849,11 +849,20 @@ resolver / build-system 依存を避ける。
       [../../mizar-frontend/ja/todo.md](../../mizar-frontend/ja/todo.md)
       task 29。
 
-41. **frontend パススルーのフォロースルー。** [ ]
+41. **frontend パススルーのフォロースルー。** [x]
     - 現在の mizar-frontend task 28 parser-recovery surface を超える文法の成長では、
       `mizar-frontend` の新しい follow-up を開く:
       各文法タスクに歩調を合わせて、frontend の recovery マーカーの
       パススルー、診断統合順序、`SurfaceAstCacheKey` の無効化の網羅を維持する。
+    - 結果: task 37 の recovery consolidation と task 40 の fuzz hardening 後に、
+      paired `mizar-frontend` surface を監査した。新しい frontend source task は
+      不要である。`mizar-frontend` task 28 は現在の parser output semantics について
+      recovery-node passthrough、syntax-diagnostic merge ordering、
+      `MIZAR_PARSER_CACHE_KEY_VERSION` invalidation をすでに覆っている。task 29 と
+      parser task 40 は real-parser frontend fuzz target と parser-owned fuzz target を
+      覆っている。将来 parser output semantics が変わる場合は、passthrough、
+      merge-order、fuzz、cache-key effects に限定した frontend follow-up を引き続き
+      開く必要がある。
     - 依存: 5 から始まり、37 で完了する。仕様:
       [../../mizar-frontend/ja/todo.md](../../mizar-frontend/ja/todo.md)
       を参照。

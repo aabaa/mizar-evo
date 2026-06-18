@@ -877,12 +877,21 @@ older numeric syntax task references appear to disagree, prefer
     - Deps: 37. Spec: [recovery.md](./recovery.md),
       [../../mizar-frontend/en/todo.md](../../mizar-frontend/en/todo.md) task 29.
 
-41. **Frontend passthrough follow-through.** [ ]
+41. **Frontend passthrough follow-through.** [x]
     - Grammar growth past the current mizar-frontend task-28 parser-recovery
       surface opens a new `mizar-frontend` follow-up:
       keep frontend recovery-marker passthrough, diagnostic merge order, and
       `SurfaceAstCacheKey` invalidation coverage in step with each grammar
       task.
+    - Result: audited the paired `mizar-frontend` surface after task 37
+      recovery consolidation and task 40 fuzz hardening. No new frontend source
+      task is required: `mizar-frontend` task 28 already covers recovery-node
+      passthrough, syntax-diagnostic merge ordering, and
+      `MIZAR_PARSER_CACHE_KEY_VERSION` invalidation for the current parser
+      output semantics; task 29 and parser task 40 cover the real-parser
+      frontend and parser-owned fuzz targets. Future parser output semantics
+      changes must still open a bounded frontend follow-up for passthrough,
+      merge-order, fuzz, and cache-key effects.
     - Deps: starts with 5, completes with 37. Spec:
       [../../mizar-frontend/en/todo.md](../../mizar-frontend/en/todo.md).
 
