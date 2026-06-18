@@ -89,7 +89,7 @@ Keep `cargo test -p mizar-build` green after each task (see
    - Tests: lint-policy guard passes; workspace builds.
    - Deps: none. Spec: architecture 14, internal 01.
 
-2. **Spec: `planner.md`.** [ ]
+2. **Spec: `planner.md`.** [x]
    - Write the planning spec (English and Japanese, no code): `mizar.pkg`,
      `mizar.workspace`, and `mizar.lock` models per spec chapter 23,
      `BuildPlan` (packages, dependency graph, toolchain, verifier and build
