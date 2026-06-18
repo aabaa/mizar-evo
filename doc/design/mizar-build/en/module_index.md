@@ -197,8 +197,11 @@ artifact produces both:
 - one `ModuleIndexEntry` with `ModuleIndexLocation::DependencySummary`, so
   `provider.module()` works uniformly for workspace and dependency modules.
 
-If dependency artifacts are missing, the provider must report an unavailable
-dependency summary instead of fabricating module content.
+If dependency artifacts are missing or contain no valid module summaries for a
+planned dependency package, construction must report `MissingDependencySummary`
+instead of fabricating module content. Provider `UnavailableDependencySummary`
+errors are reserved for constructed indexes when callers ask for dependency
+summary content for a module that is present but not dependency-summary-backed.
 
 ## Construction Algorithm
 
@@ -274,7 +277,7 @@ Module-index diagnostics are phase-0 build diagnostics. Required categories:
 | source path | file outside source root, unsupported path encoding |
 | module path | invalid module component, empty module path |
 | duplicate module | two files map to the same `(PackageId, ModulePath)` |
-| namespace binding | duplicate prefix, unsupported namespace root |
+| namespace binding | duplicate prefix, unsupported namespace root, invalid prefix component |
 | dependency artifact | missing module summary, malformed summary identity |
 | provider | unknown package, unknown module, unavailable dependency summary |
 
@@ -316,6 +319,6 @@ The implementation task that cites this spec must:
   resolver stub fixtures.
 
 If `mizar-resolve` task 7 is still open, task 6 must classify resolver stub
-replacement and resolver-fixture parity as an external `spec_gap`/dependency
-gap, complete only the `mizar-build` index and build-side provider slice, and
-leave resolver-owned compatibility work to `mizar-resolve`.
+replacement and resolver-fixture parity as an external dependency gap, complete
+only the `mizar-build` index and build-side provider slice, and leave
+resolver-owned compatibility work to `mizar-resolve`.

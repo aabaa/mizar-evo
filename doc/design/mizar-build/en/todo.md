@@ -23,7 +23,7 @@ and 19 and internal 01.
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | planner | `planner.md` (task 2) | `src/planner.rs` | [x] |
-| module_index | `module_index.md` (task 5) | `src/module_index.rs` | [ ] |
+| module_index | `module_index.md` (task 5) | `src/module_index.rs` | [x] |
 | task_graph | `task_graph.md` (task 7) | `src/task_graph.rs` | [ ] |
 | scheduler | `scheduler.md` (task 9) | `src/scheduler.rs` | [ ] |
 | resource | `resource.md` (task 11) | `src/resource.rs` | [ ] |
@@ -125,13 +125,19 @@ Keep `cargo test -p mizar-build` green after each task (see
      contract the resolver consumes.
    - Deps: 2. Spec: architecture 03 "Step 1".
 
-6. **Module index construction.** [ ]
+6. **Module index construction.** [x]
    - Build the module index from the `BuildPlan` and source layout; expose the
      build-side provider/accessor contract defined in `module_index.md`.
      Confirm `mizar-resolve` task 7 before attempting resolver-stub replacement:
      if that task is still open, classify resolver parity as an external
      dependency gap and do not invent resolver-owned fixtures or compatibility
      shims in `mizar-build`.
+   - Completed build-side slice: `ModuleIndex`, package/namespace/module
+     entries, dependency-summary-backed module entries, static source layout
+     provider, deterministic diagnostics, and provider accessors. Checked
+     `mizar-resolve` task 7 on 2026-06-18: it is still open and
+     `crates/mizar-resolve` is absent, so resolver-stub replacement and
+     resolver-fixture parity remain an external dependency gap.
    - Tests: multi-package fixtures; alias-independent module identity;
      deterministic source-discovery order; provider parity with resolver stub
      fixtures only after `mizar-resolve` task 7 supplies that seam.
