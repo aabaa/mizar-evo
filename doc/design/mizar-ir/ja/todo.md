@@ -125,29 +125,33 @@ internal: [06](../../internal/ja/06.ir_storage_and_snapshot_handles.md)。
 7. **仕様: `publisher.md`。** [ ]
    - publisher の仕様を執筆する（英語と日本語、コードなし）: snapshot/
      work-unit の検証、正準エンコーディングによる内容ハッシュ、ソース
-     マップと診断サイドテーブルの添付、部分 IR 非公開の規則。
+     マップと診断サイドテーブルの添付、obsolete snapshot の publication
+     拒否、open-buffer output の非公開、部分 IR 非公開の規則。
    - 依存: 4。仕様: [internal 06](../../internal/ja/06.ir_storage_and_snapshot_handles.md)
      「Phase Output Publisher」。
 
 8. **phase output publisher。** [ ]
    - phase サービスが使う狭い seal API を実装する。
-   - テスト: 誤った snapshot への公開の拒否。ハッシュの安定性。ハンドル
-     からサイドテーブルを取得できる。
+   - テスト: 誤った snapshot または obsolete snapshot への公開の拒否。
+     ハッシュの安定性。ハンドルからサイドテーブルを取得できる。
    - 依存: 5、7。仕様: `publisher.md`。
 
 9. **仕様: `cache_adapter.md`。** [ ]
    - cache adapter の仕様を執筆する（英語と日本語、コードなし）: どの
      出力がキャッシュ可能か、schema version と依存サマリー付きの
      レコードシリアライゼーション、ハンドル再構築前のヒット検証、
-     証明の権威としない規則。
+     証明の権威としない規則。architecture 22 の規則として、不完全な
+     dependency footprint と `uncacheable` marker は `PhaseOutputRef` を
+     再構築する前に miss を強制することも含める。
    - 依存: 7。仕様: [internal 06](../../internal/ja/06.ir_storage_and_snapshot_handles.md)
      「IR Cache Adapter」、[internal 02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)。
 
 10. **cache adapter。** [ ]
     - キャッシュ seam（`mizar-cache` 着地まではモックキャッシュ）の背後で
       レコード変換とヒットの再水和を実装する。
-    - テスト: モックキャッシュ経由のラウンドトリップ。無効ヒットの拒否。
-      再水和されたハンドルが元と等しい。
+    - テスト: モックキャッシュ経由のラウンドトリップ。無効ヒット、不完全な
+      dependency footprint、`uncacheable` record の拒否。再水和されたハンドルが
+      元と等しい。
     - 依存: 8、9。仕様: `cache_adapter.md`。
 
 11. **仕様: `projection.md`。** [ ]
@@ -168,9 +172,12 @@ internal: [06](../../internal/ja/06.ir_storage_and_snapshot_handles.md)。
 
 13. **watch/LSP の snapshot 置換。** [ ]
     - snapshot 置換を実装する: 新しい snapshot が古いものに取って代わり、
-      retain された参照は解放まで古い出力を生かしておく。
+      retain された参照は解放まで古い出力を生かしておく。古い出力は
+      読み取り可能なまま、または検証済み cache input になり得るが、
+      supersession 後に current result として公開してはならない。
     - テスト: 置換のフィクスチャ。古いハンドルは解放まで読め、その後
-      回収される。
+      回収される。supersede された出力は current publication として拒否される
+      が、cache validation には残せる。
     - 依存: 6、8。仕様: [internal 06](../../internal/ja/06.ir_storage_and_snapshot_handles.md)
       「Snapshot Replacement for Watch and LSP」。
 
@@ -195,6 +202,15 @@ internal: [06](../../internal/ja/06.ir_storage_and_snapshot_handles.md)。
     - `doc/design/mizar-ir/en/` の各英語正本と日本語版を比較し、内容を
       同期する。
     - 依存: 16。仕様: リポジトリのドキュメント方針。
+
+18. **architecture-22 フォローアップ監査。** [ ]
+    - architecture 22 のために追加した publisher、cache-adapter、
+      snapshot-replacement 契約について、ソース/仕様対応監査と二言語
+      ドキュメント同期監査を再実行する。obsolete output は current として
+      公開できず、open-buffer output は package artifact にならず、古い出力は
+      検証済み cache input としてのみ使えることを確認する。
+    - 依存: 10、13、14、17。仕様: 全モジュール仕様、本 TODO、リポジトリの
+      ドキュメント方針。
 
 ## 推奨検証
 

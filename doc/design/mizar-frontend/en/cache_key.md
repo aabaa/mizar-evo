@@ -128,6 +128,26 @@ pub fn parser_inputs_hash(inputs: &ParserInputs) -> Hash;
 `FrontendOutput.cache_keys` carries one `FrontendCacheKeys` bundle. `ast` is
 `None` when the configured parser seam produced no AST artifact.
 
+Conceptually, the bundle is also the frontend-owned `FrontendDependencyFootprint`
+for phase 1-3 reuse:
+
+```text
+FrontendDependencyFootprint
+  source_hash
+  lexical_hash
+  import_pre_scan_hash
+  active_lexical_environment_fingerprint
+  dependency lexical-summary fingerprints
+  parser_lexing_plan_hash
+  parser_input_hash
+  source_position_aware_operator_view_hash
+  parser/schema version
+  lexer/schema version
+  language edition
+```
+
+This footprint is not a semantic `DependencySlice` and does not record used theorems, definitions, registrations, or proof facts.
+
 ## Data Structures
 
 The key structs retain readable components and provide `stable_hash()` for
@@ -167,6 +187,13 @@ includes spelling, fixity kind, precedence, the source byte offset where the
 metadata becomes active, and infix associativity when the fixity kind is infix.
 It does not hash a symbol id because parser-facing operator metadata is attached
 to spelling-level notation rather than a selected overload root.
+
+`TokenStream` reuse requires matching lexical hash, active lexical environment
+fingerprint, imported lexical-summary fingerprints, parser lexing plan / filter
+hash, and relevant lexer/schema versions. Bundle/source-level reuse still
+requires a compatible language edition before token and AST entries are
+considered. `SurfaceAst` reuse requires matching token stream hash, parser
+version, parser input hash, range-aware operator view hash, and edition.
 
 Stable encodings for lexer-owned non-exhaustive context enums include explicit
 keys for known variants plus debug fallback text for future variants. This keeps

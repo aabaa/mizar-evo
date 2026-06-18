@@ -21,6 +21,8 @@ This module defines parser entry points and the module/item grammar for Mizar Ev
 - parse modules, imports, definitions, registrations, statements, proofs, algorithms, annotations, terms, and formulas;
 - keep parsing semantic-free: no name resolution, type inference, overload selection, or proof-obligation generation.
 
+Parser output must preserve source-shaped syntax sufficient for later `ObligationAnchor` construction, but the parser must not compute owner origin ids, `ObligationAnchor`, `DependencySlice`, proof obligations, overload root selection, type inference, or cluster facts. Matching parser node order, `SourceRange`, or `VcId` must not be treated as proof-reuse authority.
+
 Current behavior:
 
 - the crate-root public API (`parse`, `ParseRequest`, `ParserToken`,
@@ -1632,7 +1634,7 @@ declaration            ::= ... | [ visibility ] notation_decl ;
 redefine_attr          ::= "redefine" "attr" label ":" subject "is"
                            attr_pattern "means" formula_definiens ";"
                            coherence_tail ;
-redefine_pred          ::= "redefine" "pred" pred_pattern
+redefine_pred          ::= "redefine" "pred" label ":" pred_pattern
                            "means" formula_definiens ";"
                            coherence_tail ;
 redefine_func          ::= "redefine" "func" label ":" func_pattern
@@ -1652,15 +1654,21 @@ notation_pattern       ::= raw tokens accepted up to top-level "for",
                            semicolon, definition boundary, or item boundary ;
 ```
 
+Status note: the `redefine_pred` production above is the corrected target
+grammar from Chapter 9 / Appendix A. The current parser implementation and
+legacy pass corpus may still reflect the pre-task-36 unlabeled surface until
+the predicate redefinition label repair in `todo.md` lands; implementation work
+must converge to this target rather than treating the unlabeled form as the
+architecture contract.
+
 `AttributeRedefinition`, `PredicateRedefinition`, and `FunctorRedefinition`
 reuse the task-23 through task-25 pattern and definiens parsers where the
 grammar is identical, then own a mandatory `CoherenceCondition` tail.
 `AttributeRedefinition` owns `redefine`, `attr`, label, `:`, subject, `is`,
 `AttributePattern`, `means`, `FormulaDefiniens`, the first semicolon when
 present, and `CoherenceCondition`. `PredicateRedefinition` owns `redefine`,
-`pred`, `PredicatePattern`, `means`, `FormulaDefiniens`, the first semicolon,
-and `CoherenceCondition`; the Chapter 9 production has no predicate label
-before the pattern. `FunctorRedefinition` owns `redefine`, `func`, label, `:`,
+`pred`, label, `:`, `PredicatePattern`, `means`, `FormulaDefiniens`, the first
+semicolon, and `CoherenceCondition`. `FunctorRedefinition` owns `redefine`, `func`, label, `:`,
 `FunctorPattern`, `->`, return `TypeExpression`, the selected `means` /
 `equals` definiens branch, the first semicolon, and `CoherenceCondition`.
 Definition-local `public` / `private` redefinitions use the existing
@@ -1712,8 +1720,9 @@ definition-content start, top-level item boundary, or EOF.
 
 Task 27 tests must pin: attribute, predicate, and functor redefinitions with
 `coherence by ...;`, `coherence with Label by ...;`, and proof-block
-coherence; predicate redefinitions without a label slot; functor redefinitions
-for both `means` and `equals`; top-level and definition-local `synonym` /
+coherence; predicate redefinitions with the required label slot and
+missing-label recovery; functor redefinitions for both `means` and `equals`;
+top-level and definition-local `synonym` /
 `antonym` aliases, including mode-like and attribute-like raw patterns;
 visibility-wrapped redefinitions and aliases; absence of concrete
 `redefine mode`; malformed pattern/body/coherence/alias recovery; active

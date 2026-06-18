@@ -127,29 +127,33 @@ Keep `cargo test -p mizar-ir` green after each task (see
 7. **Spec: `publisher.md`.** [ ]
    - Write the publisher spec (English and Japanese, no code): snapshot/
      work-unit validation, canonical-encoding content hashes, source-map
-     and diagnostic side-table attachment, and the
+     and diagnostic side-table attachment, obsolete-snapshot publication
+     rejection, open-buffer output non-publication, and the
      no-partial-IR-exposure rule.
    - Deps: 4. Spec: [internal 06](../../internal/en/06.ir_storage_and_snapshot_handles.md)
      "Phase Output Publisher".
 
 8. **Phase output publisher.** [ ]
    - Implement the narrow sealing API used by phase services.
-   - Tests: wrong-snapshot publication rejected; hashes stable; side
-     tables retrievable from handles.
+   - Tests: wrong-snapshot or obsolete-snapshot publication rejected; hashes
+     stable; side tables retrievable from handles.
    - Deps: 5, 7. Spec: `publisher.md`.
 
 9. **Spec: `cache_adapter.md`.** [ ]
    - Write the cache-adapter spec (English and Japanese, no code): which
      outputs are cacheable, record serialization with schema versions and
      dependency summaries, hit validation before handle reconstruction, and
-     the no-proof-authority rule.
+     the no-proof-authority rule. Include the architecture-22 rule that
+     incomplete dependency footprints and `uncacheable` markers force a miss
+     before any `PhaseOutputRef` is reconstructed.
    - Deps: 7. Spec: [internal 06](../../internal/en/06.ir_storage_and_snapshot_handles.md)
      "IR Cache Adapter", [internal 02](../../internal/en/02.artifact_store_cache_key_and_manifest.md).
 
 10. **Cache adapter.** [ ]
     - Implement record conversion and hit rehydration behind a cache seam
       (mock cache until `mizar-cache` lands).
-    - Tests: round-trip through mock cache; invalid hits rejected;
+    - Tests: round-trip through mock cache; invalid hits, incomplete
+      dependency footprints, and `uncacheable` records are rejected;
       rehydrated handles equal originals.
     - Deps: 8, 9. Spec: `cache_adapter.md`.
 
@@ -171,10 +175,13 @@ Keep `cargo test -p mizar-ir` green after each task (see
     - Deps: 8, 11, `mizar-artifact` task 11. Spec: `projection.md`.
 
 13. **Watch/LSP snapshot replacement.** [ ]
-    - Implement snapshot replacement: new snapshots supersede old ones
-      while retained references keep old outputs alive until released.
-    - Tests: replacement fixtures; stale handles stay readable until
-      release, then collect.
+   - Implement snapshot replacement: new snapshots supersede old ones
+     while retained references keep old outputs alive until released. Old
+     outputs may remain readable or become validated cache inputs, but they
+     cannot publish as current results after supersession.
+   - Tests: replacement fixtures; stale handles stay readable until release,
+     then collect; superseded outputs are rejected as current publications but
+     remain eligible for cache validation.
     - Deps: 6, 8. Spec: [internal 06](../../internal/en/06.ir_storage_and_snapshot_handles.md)
       "Snapshot Replacement for Watch and LSP".
 
@@ -200,6 +207,15 @@ Keep `cargo test -p mizar-ir` green after each task (see
       `doc/design/mizar-ir/en/` with its Japanese companion and
       synchronize content.
     - Deps: 16. Spec: repository documentation policy.
+
+18. **Architecture-22 follow-up audit.** [ ]
+    - Re-run the source/spec correspondence and bilingual documentation sync
+      audits for the publisher, cache-adapter, and snapshot-replacement
+      contract added for architecture 22: obsolete outputs cannot publish as
+      current, open-buffer outputs do not become package artifacts, and old
+      outputs may be used only as validated cache inputs.
+    - Deps: 10, 13, 14, 17. Spec: all module specs, this TODO, and repository
+      documentation policy.
 
 ## Recommended Verification
 

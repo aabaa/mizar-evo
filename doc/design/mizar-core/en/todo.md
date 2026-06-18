@@ -86,7 +86,9 @@ Keep `cargo test -p mizar-core` green after each task (see
    - Write the `CoreIr` data-shape spec (English and Japanese, no code):
      `CoreItem`, core terms/formulas, `CoreDefinitionTable` with stable
      expansion boundaries, `CoreProofTable`, `CoreSourceMap` with
-     `GeneratedFrom` markers, and the obligation-seed reference shape.
+     `GeneratedFrom` markers, and the obligation-seed reference shape,
+     including anchor-ready local proof/program paths, labels, normalized
+     semantic origins, and source/core provenance consumed by `mizar-vc`.
    - Deps: 1. Spec: architecture 06 "Interface Definitions",
      [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
 
@@ -219,9 +221,12 @@ Keep `cargo test -p mizar-core` green after each task (see
     - Define and implement the obligation-seed output consumed by `mizar-vc`
       (seeds only; concrete `VcId`s are assigned by phase 11), covering
       theorem bodies, correctness conditions, checker-initial obligations,
-      and algorithm contracts.
+      and algorithm contracts. Seeds must carry anchor-ready local
+      proof/program paths, labels, normalized semantic origins, and
+      source/core provenance, while leaving cross-edit reuse identity to
+      `mizar-vc`.
     - Tests: seed coverage fixtures; seeds reference `CoreIr`/`ControlFlowIr`
-      nodes and source ranges.
+      nodes, source ranges, local proof/program paths, labels, and provenance.
     - Deps: 12, 16, coordinated with `mizar-vc` tasks 2 and 4. Spec:
       `core_ir.md` (seed section), architecture 06 constraints.
 
@@ -267,6 +272,12 @@ For tasks that touch the checker boundary or the corpus, also run:
 ```text
 cargo test -p mizar-checker
 cargo test -p mizar-test
+```
+
+For the obligation-seed handoff and architecture-22 anchor inputs, also run:
+
+```text
+cargo test -p mizar-vc
 ```
 
 Check the task off here once tests pass.

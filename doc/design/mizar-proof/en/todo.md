@@ -102,7 +102,7 @@ Keep `cargo test -p mizar-proof` green after each task (see
      winning under `require_kernel_certificates`, never producing trusted
      `used_axioms`.
    - Tests: admission matrices per profile; rejection diagnostics stable.
-   - Deps: 3. Spec: `policy.md` (external-evidence section).
+   - Deps: 3. Spec: `policy.md` (externally attested evidence section).
 
 ### Selection and status
 
@@ -111,7 +111,9 @@ Keep `cargo test -p mizar-proof` green after each task (see
      deterministic ordering classes (kernel-verified satisfying release
      policy → policy-permitted external → best-explained open), tie-break
      keys (backend profile priority, certificate format priority, encoded
-     problem hash, profile id), and the completion-time prohibition.
+     problem hash, profile id), the selected proof witness hash or
+     deterministic discharge hash exported for reuse validation, and the
+     completion-time prohibition.
    - Deps: 2. Spec: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
      "Winner Selection".
 
@@ -154,8 +156,8 @@ Keep `cargo test -p mizar-proof` green after each task (see
 10. **Spec: `witness_store.md`.** [ ]
     - Write the witness-store spec (English and Japanese, no code): the
       stage/publish flow (`stage` before commit, `publish_ref` only after
-      the artifact manifest references the witness), content hashing, and
-      provenance metadata.
+      the artifact manifest references the witness), stable content hashing
+      used as proof witness hashes, and provenance metadata.
     - Deps: 2. Spec: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
       "Proof Witness Store".
 
@@ -201,6 +203,29 @@ Keep `cargo test -p mizar-proof` green after each task (see
       synchronize content.
     - Deps: 15. Spec: repository documentation policy.
 
+17. **Proof-reuse metadata export contract.** [ ]
+    - Expose the proof-reuse metadata consumed by `mizar-cache`: compatible
+      verifier-policy fingerprint, selected proof witness hash or deterministic
+      discharge hash, evidence class, selected-candidate provenance, and the
+      selection reason. This metadata is a validation predicate for reuse, not
+      trusted proof status.
+    - Tests: changing any exported reuse component changes or invalidates the
+      reuse predicate; shuffled candidate arrival preserves the same exported
+      metadata; externally attested evidence remains externally attested and is
+      never upgraded by metadata reuse.
+    - Deps: 6, 7, 9, 11, 13. Spec:
+      [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md),
+      [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md),
+      [11.artifact_and_incremental_build.md](../../architecture/en/11.artifact_and_incremental_build.md).
+
+18. **Architecture-22 follow-up audit.** [ ]
+    - Re-run the source/spec correspondence and bilingual documentation sync
+      audits for the task-17 reuse-metadata export contract; record any
+      remaining trust-boundary, witness-hash, deterministic discharge, or
+      policy-selection gaps as follow-up tasks.
+    - Deps: 17. Spec: all module specs, this TODO, and repository
+      documentation policy.
+
 ## Recommended Verification
 
 Run after each task:
@@ -216,6 +241,12 @@ For tasks that touch kernel, ATP, or artifact boundaries, also run:
 cargo test -p mizar-kernel
 cargo test -p mizar-atp
 cargo test -p mizar-artifact
+```
+
+For proof-reuse metadata tasks, also run:
+
+```text
+cargo test -p mizar-cache
 ```
 
 Check the task off here once tests pass.

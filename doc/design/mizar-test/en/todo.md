@@ -178,6 +178,36 @@ Keep `cargo test -p mizar-test` green after each task (see
       synchronize content.
     - Deps: 12. Spec: repository documentation policy.
 
+14. **Incremental/parallel verification regression matrix.** [ ]
+    - Add corpus/harness metadata and reporting support for the architecture-22
+      regression matrix, while keeping this crate pipeline-free. Consumer
+      crates execute the cases, but `mizar-test` owns the scenario ids,
+      expected equivalence classes, active/planned gating, and traceability
+      records.
+    - Matrix rows must cover: clean sequential == clean parallel; clean build
+      == incremental build for externally visible artifacts; sequential
+      incremental == parallel incremental; randomized ready-task scheduling;
+      randomized ATP backend completion order; cache hit/miss timing;
+      `VcId` reordering with reuse only on matching `ObligationAnchor`,
+      fingerprints, policy, and witness/discharge hashes; missing dependency
+      slice forcing cache miss; stale snapshot diagnostics and obsolete-result
+      non-publication; proof witness mismatch; externally attested evidence
+      non-upgrade; cache-key races; artifact manifest atomicity; registration
+      and cluster invalidation; theorem proof-body and theorem-status
+      invalidation; notation/operator invalidation.
+    - Deps: 10, 11. Spec:
+      [20.test_strategy.md](../../architecture/en/20.test_strategy.md),
+      [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md).
+
+15. **Architecture-22 follow-up audit.** [ ]
+    - Re-run the source/spec gap and bilingual documentation sync audits, and
+      review the task-14 scenario ids, equivalence classes, active/planned
+      gating, and traceability records against architecture 22; record any
+      remaining matrix gaps as follow-up tasks.
+    - Deps: 14. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md),
+      [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md),
+      repository documentation policy.
+
 ## Recommended Verification
 
 Run after each task:
@@ -192,6 +222,18 @@ consumers that embed corpus runners (currently):
 
 ```text
 cargo test -p mizar-frontend
+```
+
+For the architecture-22 regression matrix, also run the active consumer
+crates for the rows being added:
+
+```text
+cargo test -p mizar-build
+cargo test -p mizar-driver
+cargo test -p mizar-cache
+cargo test -p mizar-vc
+cargo test -p mizar-atp
+cargo test -p mizar-proof
 ```
 
 Check the task off here once tests pass.

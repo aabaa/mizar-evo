@@ -156,6 +156,8 @@ Disambiguation diagnostics include:
 
 Whenever possible, the disambiguator emits an `ErrorRecovery` token with the original spelling and resumes at the next recoverable byte boundary.
 
+Disambiguation consumes lexical and parser-facing context only. It must not encode semantic resolution, overload root selection, type facts, registration firing, or proof information into token classification or diagnostics. Parser context filters affect tokenization and therefore participate in frontend cache footprints, but they are not semantic dependency slices.
+
 Diagnostic codes and byte spans are stable. Human-facing `message` text remains provisional. Tooling should use `LexDiagnosticPayload` for machine-readable details:
 
 | Code | Payload |

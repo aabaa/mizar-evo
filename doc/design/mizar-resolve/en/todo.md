@@ -96,7 +96,9 @@ Keep `cargo test -p mizar-resolve` green after each task (see
    - Write the `ResolvedAst` data-shape spec (English and Japanese, no code):
      `ModuleId`, `SymbolId` (stable, fully qualified), node arena,
      `NameRefTable`, `LabelRefTable`, `ResolvedImports`, explicit
-     unresolved/ambiguous node representation, and recovered-shell rules.
+     unresolved/ambiguous node representation, recovered-shell rules, and
+     normalized origin/provenance fields consumed by downstream obligation
+     anchors.
    - Deps: 1. Spec: architecture 03 "Interface Definitions",
      [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
 
@@ -220,8 +222,9 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 
 17. **Spec: `labels.md`.** [ ]
     - Write the label-resolution spec (English and Japanese, no code): the
-      separate label scope family, proof-block nesting, and forward-reference
-      policy.
+      separate label scope family, proof-block nesting, forward-reference
+      policy, and normalized label-origin paths used by downstream
+      `ObligationAnchor` construction.
     - Deps: 2. Spec: architecture 03 "Label Resolution Is Scoped Separately".
 
 18. **Label resolution.** [ ]
@@ -237,7 +240,8 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 19. **Spec: `symbols.md`.** [ ]
     - Write the signature-collection spec (English and Japanese, no code):
       declaration-pass contract (no type checking), per-kind signature
-      shapes, duplicate/illegal-declaration policy.
+      shapes, duplicate/illegal-declaration policy, and normalized semantic
+      origins that remain stable under formatting and unrelated local edits.
     - Deps: 3. Spec: architecture 03 "Step 5",
       [11.symbol_management.md](../../../spec/en/11.symbol_management.md).
 
@@ -322,6 +326,14 @@ For tasks that touch the frontend seam, corpus, or shared boundaries, also run:
 cargo test -p mizar-syntax
 cargo test -p mizar-frontend
 cargo test -p mizar-test
+```
+
+For normalized origin, label-origin, or symbol-origin fields consumed by
+obligation anchors, also run:
+
+```text
+cargo test -p mizar-core
+cargo test -p mizar-vc
 ```
 
 Check the task off here once tests pass.

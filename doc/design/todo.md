@@ -55,6 +55,30 @@ It complements [README.md](./README.md) (doc layout) and the pipeline definition
 Crate ownership boundaries follow
 [internal/en/07.crate_module_layout.md](./internal/en/07.crate_module_layout.md).
 
+## Incremental Verification Contract Inventory
+
+The design contract in
+[architecture/en/22.incremental_verification_contract.md](./architecture/en/22.incremental_verification_contract.md)
+adds cross-crate implementation work. The table below records the inventory
+before per-crate task execution starts, so the contract is not hidden inside
+architecture prose.
+
+| ID | Classification | Contract delta | Owning TODO task |
+|---|---|---|---|
+| IV-001 | `source_drift` | VC reuse needs cross-edit `ObligationAnchor`, canonical VC fingerprints, local-context fingerprints, and dependency-slice fingerprints; `VcId`, `SourceRange`, and syntax-node ids are not stable reuse identity. | [mizar-core task 18](./mizar-core/en/todo.md), [mizar-resolve tasks 2, 4, and 17-21](./mizar-resolve/en/todo.md), [mizar-vc task 20](./mizar-vc/en/todo.md), [mizar-cache task 20](./mizar-cache/en/todo.md) |
+| IV-002 | `source_drift` | Cache reuse must fail closed: incomplete dependency data, `uncacheable` outputs, schema/toolchain/policy incompatibility, witness mismatch, or deterministic discharge mismatch force a miss. | [mizar-cache task 20](./mizar-cache/en/todo.md), [mizar-ir tasks 9-10](./mizar-ir/en/todo.md), [mizar-build tasks 18 and 24](./mizar-build/en/todo.md) |
+| IV-003 | `source_drift` | Clean sequential, clean parallel, incremental sequential, and incremental parallel builds must agree on proof acceptance, published artifacts, interface hashes, dependency-facing summaries, and canonical diagnostics. | [mizar-build task 24](./mizar-build/en/todo.md), [mizar-test task 14](./mizar-test/en/todo.md), [mizar-driver task 16](./mizar-driver/en/todo.md) |
+| IV-004 | `source_drift` | ATP portfolio evidence collection may be parallel, but accepted proof identity and early stop are policy-deterministic, not raw-completion-order driven. | [mizar-atp task 25](./mizar-atp/en/todo.md), [mizar-proof tasks 6-7, 9, and 12-13](./mizar-proof/en/todo.md) |
+| IV-005 | `source_drift` | Proof-reuse metadata exported to the cache must include compatible verifier policy plus selected proof witness hash or deterministic discharge hash without upgrading evidence classes. | [mizar-proof task 17](./mizar-proof/en/todo.md), [mizar-cache task 20](./mizar-cache/en/todo.md) |
+| IV-006 | `design_drift` | The corrected labeled `redefine pred label: ...` target is documented, while current parser/syntax implementation is still repaired by the pending task. | [mizar-parser task 36](./mizar-parser/en/todo.md), [mizar-syntax task 22](./mizar-syntax/en/todo.md) |
+| IV-007 | `source_drift` | Snapshot-scoped results must respect `BuildSnapshotId` freshness: obsolete or stale results cannot publish as current, obsolete outputs can be reused only as validated cache inputs, and open-buffer results never become package artifacts. | [mizar-ir tasks 7-10 and 13](./mizar-ir/en/todo.md), [mizar-build tasks 14, 18, and 24](./mizar-build/en/todo.md), [mizar-driver tasks 3, 14, and 16](./mizar-driver/en/todo.md), [mizar-diagnostics tasks 8-9](./mizar-diagnostics/en/todo.md), [mizar-lsp tasks 6-9](./mizar-lsp/en/todo.md) |
+
+Already covered by current frontend work: token/AST cache keys separate active
+lexical environment fingerprints, parser lexing plan/filter hashes, and
+bundle/source-level language edition. Keep this covered by
+[mizar-frontend task 19](./mizar-frontend/en/todo.md) and later source/spec
+audits; no new architecture-22 task is needed for that slice.
+
 ## Recommended Order
 
 ### Finished: finish **mizar-session**

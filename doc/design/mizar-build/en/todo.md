@@ -258,6 +258,31 @@ Keep `cargo test -p mizar-build` green after each task (see
       synchronize content.
     - Deps: 22. Spec: repository documentation policy.
 
+24. **Incremental/parallel equivalence gate.** [ ]
+    - Add the scheduler-level regression gate for architecture 22: clean
+      sequential, clean parallel, incremental sequential, and incremental
+      parallel execution over the same `BuildSnapshot` and verifier policy must
+      commit identical published artifacts, interface hashes,
+      dependency-facing summaries, proof acceptance, and canonical diagnostics.
+      Progress or build-event timing may differ when cache hits skip work, but
+      event consumers must not observe stale publications as current results.
+    - Tests: randomized ready-task scheduling and worker counts; mock cache
+      hit/miss timing; cancellation/supersession leaves no partial publication;
+      cache misses enqueue work without changing the deterministic commit
+      boundary.
+    - Deps: 14, 18, 20. Spec:
+      [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md),
+      [14.parallel_verification_and_scheduling.md](../../architecture/en/14.parallel_verification_and_scheduling.md),
+      [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
+
+25. **Architecture-22 follow-up audit.** [ ]
+    - Re-run the source/spec correspondence and bilingual documentation sync
+      audits for the task-24 scheduler equivalence, cancellation, and cache
+      seam contract; record any remaining stale-publication or deterministic
+      commit-boundary gaps as follow-up tasks.
+    - Deps: 24. Spec: all module specs, this TODO, and repository
+      documentation policy.
+
 ## Recommended Verification
 
 Run after each task:
@@ -272,6 +297,14 @@ For tasks that touch the resolver provider or the commit boundary, also run:
 ```text
 cargo test -p mizar-resolve
 cargo test -p mizar-artifact
+```
+
+For the architecture-22 equivalence gate, also run:
+
+```text
+cargo test -p mizar-cache
+cargo test -p mizar-driver
+cargo test -p mizar-test
 ```
 
 Check the task off here once tests pass.

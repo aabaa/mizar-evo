@@ -121,6 +121,25 @@ pub fn parser_inputs_hash(inputs: &ParserInputs) -> Hash;
 
 `FrontendOutput.cache_keys` は `FrontendCacheKeys` の束を 1 つ保持する。設定された parser seam が AST artifact を生成しなかった場合、`ast` は `None` である。
 
+概念的には、この bundle は phase 1-3 reuse のために frontend が所有する `FrontendDependencyFootprint` でもある。
+
+```text
+FrontendDependencyFootprint
+  source_hash
+  lexical_hash
+  import_pre_scan_hash
+  active_lexical_environment_fingerprint
+  dependency lexical-summary fingerprints
+  parser_lexing_plan_hash
+  parser_input_hash
+  source_position_aware_operator_view_hash
+  parser/schema version
+  lexer/schema version
+  language edition
+```
+
+この footprint は semantic `DependencySlice` ではなく、使用された theorem、definition、registration、proof fact を記録しない。
+
 ## データ構造
 
 キー構造体は可読な構成要素を保持し、driver がコンパクトな content-addressed lookup 値を必要とする場合のために `stable_hash()` を提供する。ハッシュは domain-separated であり、関連する key version 文字列を含む。
@@ -134,6 +153,8 @@ pub fn parser_inputs_hash(inputs: &ParserInputs) -> Hash;
 `TokenStreamCacheKey` は lexical hash、アクティブ字句環境 fingerprint、現在の default `ParserLexContext`、parser-assisted lexing plan key を組み合わせる。task 20 の plan key は、plan version、default context、位置別の各 lexical byte range とその `ParserLexContext` を記録する。string-required range や user-symbol kind filter が変わると、version string が同じでも tokenization は無効化される。これは token sequence と diagnostics の content key であり、range-faithful artifact key 全体ではない。source-spanned token を再利用する driver は、正確な source range が重要な場合、source-version または source-map identity と合成する必要がある。
 
 `SurfaceAstCacheKey` は token-stream content hash、parser seam cache version、parser-input hash、edition を組み合わせる。Parser seam は `ParserSeam::cache_key_version` により version を公開する。`parser_inputs_hash` は、token stream が不変でも AST shape を変え得るため、edition、string-required context、operator fixity entries を含む。各 fixity entry hash は spelling、fixity kind、precedence、その metadata が有効になる source byte offset、fixity kind が infix の場合の associativity を含む。parser-facing operator metadata は選択済み overload root ではなく spelling 単位の notation に付くため、symbol id は hash しない。
+
+`TokenStream` reuse には lexical hash、active lexical environment fingerprint、imported lexical-summary fingerprint、parser lexing plan / filter hash、関連する lexer/schema version の一致が必要である。bundle/source-level reuse では、token と AST entry を検討する前に互換な language edition が必要である。`SurfaceAst` reuse には token stream hash、parser version、parser input hash、range-aware operator view hash、edition の一致が必要である。
 
 lexer 所有の non-exhaustive context enum の安定 encoding は、既知 variant の明示 key と、将来 variant 用の debug fallback text を含む。これにより、将来の lexer 変更は、このモジュールが意図的な新 key version を追加するまで cache key に反映される。
 

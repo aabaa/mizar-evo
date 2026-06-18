@@ -87,7 +87,9 @@ Keep `cargo test -p mizar-cache` green after each task (see
      `CacheKey` fields (phase, work unit, source identity, input/dependency
      hashes, dependency slices, config hash, schema versions, policy
      fingerprint), canonical vector ordering, and the domain-separated
-     final hash.
+     final hash. Include the architecture-22 validation inputs for verifier
+     policy, toolchain/schema compatibility, canonical VC fingerprints,
+     local-context fingerprints, and dependency-slice fingerprints.
    - Deps: 1. Spec: [internal 02](../../internal/en/02.artifact_store_cache_key_and_manifest.md)
      "Cache Key".
 
@@ -103,6 +105,8 @@ Keep `cargo test -p mizar-cache` green after each task (see
      fingerprint targets, dependency slices, stable inputs (and excluded
      nondeterministic inputs), rebuild triggers, and the API-compatibility
      diff per architecture 18, including the slice-granularity decision.
+     Specify complete dependency-footprint requirements and the conservative
+     `uncacheable` marker used when a footprint cannot be trusted.
    - Deps: 2. Spec:
      [18.dependency_fingerprint.md](../../architecture/en/18.dependency_fingerprint.md).
 
@@ -128,7 +132,9 @@ Keep `cargo test -p mizar-cache` green after each task (see
    - Write the store spec (English and Japanese, no code): the
      `.mizar-cache/` layout (records by phase and key, content-addressed
      blobs), `CacheRecordHeader`, compatibility checks, the record-encoding
-     decision, and deletability guarantees.
+     decision, `uncacheable` record handling, miss-on-incomplete-footprint
+     behavior, miss-on-unknown-compatibility behavior, and deletability
+     guarantees.
    - Deps: 2. Spec: [internal 02](../../internal/en/02.artifact_store_cache_key_and_manifest.md)
      "Cache Store"/"Cache Record".
 
@@ -150,9 +156,12 @@ Keep `cargo test -p mizar-cache` green after each task (see
 
 10. **Spec: `proof_reuse.md`.** [ ]
     - Write the proof-reuse spec (English and Japanese, no code): reuse
-      requires matching witness hashes, dependency artifact hashes, policy
-      fingerprint, and schema versions; deterministic built-in discharge
-      records; and the rule that records never upgrade evidence class.
+      requires matching `ObligationAnchor`, canonical VC fingerprint,
+      local-context fingerprint, dependency-slice fingerprint, selected proof
+      witness hash or deterministic discharge hash, dependency artifact
+      hashes, policy fingerprint, and schema versions; deterministic built-in
+      discharge records; and the rule that records never upgrade evidence
+      class.
     - Deps: 7. Spec: [internal 02](../../internal/en/02.artifact_store_cache_key_and_manifest.md),
       [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
       "Proof Witness and Artifact Flow".
@@ -160,9 +169,13 @@ Keep `cargo test -p mizar-cache` green after each task (see
 11. **Proof-reuse validation.** [ ]
     - Implement reuse validation over `ProofReuseEvidence`; failures
       degrade to recomputation, never to acceptance.
-    - Tests: matching evidence reuses; each mismatched component (witness
-      hash, policy, schema) blocks reuse; external evidence never becomes
-      kernel-verified via cache.
+    - Tests: matching evidence reuses; each mismatched component
+      (`ObligationAnchor`, canonical VC fingerprint, local-context
+      fingerprint, dependency-slice fingerprint, selected witness hash,
+      deterministic discharge hash, policy, schema) blocks reuse; external
+      evidence never becomes kernel-verified via cache. Cross-crate producer
+      wiring, cache hit/miss timing, and clean/incremental equivalence remain
+      the task-20 gate.
     - Deps: 8, 10. Spec: `proof_reuse.md`.
 
 12. **Spec: `cluster_db.md`.** [ ]
@@ -221,6 +234,33 @@ Keep `cargo test -p mizar-cache` green after each task (see
       synchronize content.
     - Deps: 18. Spec: repository documentation policy.
 
+20. **Incremental verification fail-closed cache contract.** [ ]
+    - Implement and test the architecture-22 cache contract across
+      `cache_key`, `dependency_fingerprint`, `cache_store`, and `proof_reuse`:
+      a reusable output must have a complete dependency slice/footprint, an
+      `uncacheable` marker always forces a miss, unknown schema/toolchain
+      compatibility forces a miss, and proof reuse validates policy,
+      `ObligationAnchor`, canonical VC fingerprint, local-context fingerprint,
+      dependency-slice fingerprints, and proof witness or deterministic
+      discharge hashes.
+    - Tests: each missing or mismatched field independently blocks reuse;
+      deleting any cache subset changes only performance; cache hit/miss timing
+      cannot change diagnostics, artifact order, or proof acceptance;
+      externally attested evidence is never upgraded by a reused record.
+    - Deps: 5, 6, 11, 15, 16, `mizar-vc` task 20, `mizar-proof` task 17.
+      Spec:
+      [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md),
+      [11.artifact_and_incremental_build.md](../../architecture/en/11.artifact_and_incremental_build.md),
+      [18.dependency_fingerprint.md](../../architecture/en/18.dependency_fingerprint.md).
+
+21. **Architecture-22 follow-up audit.** [ ]
+    - Re-run the source/spec correspondence and bilingual documentation sync
+      audits for the task-20 cache-key, dependency-footprint, store, and
+      proof-reuse contract; record any remaining fail-closed or trust-boundary
+      gaps as follow-up tasks.
+    - Deps: 20. Spec: all module specs, this TODO, and repository
+      documentation policy.
+
 ## Recommended Verification
 
 Run after each task:
@@ -236,6 +276,14 @@ For integration tasks, also run:
 cargo test -p mizar-artifact
 cargo test -p mizar-build
 cargo test -p mizar-ir
+```
+
+For the architecture-22 proof-reuse contract, also run the producers of the
+reuse identity and metadata:
+
+```text
+cargo test -p mizar-vc
+cargo test -p mizar-proof
 ```
 
 Check the task off here once tests pass.

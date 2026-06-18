@@ -198,7 +198,9 @@ Keep `cargo test -p mizar-atp` green after each task (see
     - Write the portfolio spec (English and Japanese, no code): per-VC
       portfolio tasks, candidate evidence collection, early stop, resource
       budgets, and the boundary that winner selection is `mizar-proof`
-      policy — completion order never decides results.
+      policy — completion order never decides results. Early stop is allowed
+      only after the proof policy reports that no pending candidate can
+      displace the selected class.
     - Deps: 13. Spec: architecture 10 "Portfolio Execution",
       [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
       "ATP Portfolio Service".
@@ -245,6 +247,28 @@ Keep `cargo test -p mizar-atp` green after each task (see
       synchronize content.
     - Deps: 23. Spec: repository documentation policy.
 
+25. **Portfolio completion-order independence gate.** [ ]
+    - Add a portfolio-specific regression gate that runs mock backends with
+      adversarial completion orders. Candidate collection may finish early only
+      when `mizar-proof` policy reports that no pending candidate can displace
+      the selected class; raw completion time must never become proof identity.
+    - Tests: a later kernel-verifiable candidate beats an earlier externally
+      attested result under release policy; ties use deterministic backend
+      priority/certificate-strength/problem-hash keys; cancelled or killed
+      losing backends leave no partial accepted state.
+    - Deps: 18, 21, `mizar-proof` tasks 7, 9, 12, and 13. Spec:
+      [10.atp_backend_integration.md](../../architecture/en/10.atp_backend_integration.md),
+      [14.parallel_verification_and_scheduling.md](../../architecture/en/14.parallel_verification_and_scheduling.md),
+      [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md).
+
+26. **Architecture-22 follow-up audit.** [ ]
+    - Re-run the source/spec correspondence and bilingual documentation sync
+      audits for the task-25 portfolio ordering and early-stop contract;
+      record any remaining policy-boundary or completion-order gaps as
+      follow-up tasks.
+    - Deps: 25. Spec: all module specs, this TODO, and repository
+      documentation policy.
+
 ## Recommended Verification
 
 Run after each task:
@@ -259,6 +283,12 @@ For tasks that touch the VC or kernel boundary, also run:
 ```text
 cargo test -p mizar-vc
 cargo test -p mizar-kernel
+```
+
+For portfolio ordering and early-stop tasks, also run:
+
+```text
+cargo test -p mizar-proof
 ```
 
 Check the task off here once tests pass.

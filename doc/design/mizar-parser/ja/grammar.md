@@ -22,6 +22,8 @@ package-oriented item grammar は引き続き計画中。
 - モジュール、import、定義、registration、文、証明、アルゴリズム、アノテーション、項、論理式を構文解析する。
 - 名前解決、型推論、オーバーロード選択、証明義務生成を行わず、構文解析を意味論から分離する。
 
+parser output は後段の `ObligationAnchor` construction に十分な source-shaped syntax を保持しなければならないが、parser は owner origin id、`ObligationAnchor`、`DependencySlice`、proof obligation、overload root selection、type inference、cluster fact を計算してはならない。parser node order、`SourceRange`、`VcId` の一致を proof-reuse authority として扱ってはならない。
+
 現在の挙動:
 
 - crate root の公開 API（`parse`、`ParseRequest`、`ParserToken`、
@@ -1528,7 +1530,7 @@ declaration            ::= ... | [ visibility ] notation_decl ;
 redefine_attr          ::= "redefine" "attr" label ":" subject "is"
                            attr_pattern "means" formula_definiens ";"
                            coherence_tail ;
-redefine_pred          ::= "redefine" "pred" pred_pattern
+redefine_pred          ::= "redefine" "pred" label ":" pred_pattern
                            "means" formula_definiens ";"
                            coherence_tail ;
 redefine_func          ::= "redefine" "func" label ":" func_pattern
@@ -1548,15 +1550,20 @@ notation_pattern       ::= top-level の "for"、semicolon、definition boundary
                            item boundary まで受理される raw token ;
 ```
 
+Status note: 上の `redefine_pred` production は Chapter 9 / Appendix A に基づく
+修正後の target grammar である。現行 parser 実装と legacy pass corpus は、`todo.md`
+の predicate redefinition label repair が着地するまで task-36 以前の label なし surface
+を反映している場合がある。実装作業は label なし形式を architecture contract と
+みなすのではなく、この target に収束させなければならない。
+
 `AttributeRedefinition`、`PredicateRedefinition`、`FunctorRedefinition` は、grammar
 が同一の箇所で task 23〜25 の pattern parser と definiens parser を再利用し、その後に
 必須 `CoherenceCondition` tail を所有する。`AttributeRedefinition` は `redefine`、
 `attr`、label、`:`、subject、`is`、`AttributePattern`、`means`、
 `FormulaDefiniens`、存在する場合の最初の semicolon、`CoherenceCondition` を所有する。
-`PredicateRedefinition` は `redefine`、`pred`、`PredicatePattern`、`means`、
-`FormulaDefiniens`、最初の semicolon、`CoherenceCondition` を所有する。Chapter 9 の
-production には pattern 前の predicate label slot は存在しない。`FunctorRedefinition` は
-`redefine`、`func`、label、`:`、`FunctorPattern`、`->`、return
+`PredicateRedefinition` は `redefine`、`pred`、label、`:`、`PredicatePattern`、
+`means`、`FormulaDefiniens`、最初の semicolon、`CoherenceCondition` を所有する。
+`FunctorRedefinition` は `redefine`、`func`、label、`:`、`FunctorPattern`、`->`、return
 `TypeExpression`、選択された `means` / `equals` definiens branch、最初の semicolon、
 `CoherenceCondition` を所有する。
 definition-local な `public` / `private` redefinition は、Appendix A の
@@ -1602,8 +1609,8 @@ placeholder proof step が必要な場合に `MalformedJustification` と `Missi
 item boundary、または EOF まで skip してよい。
 
 Task 27 tests は、`coherence by ...;`、`coherence with Label by ...;`、
-proof-block coherence を伴う attribute / predicate / functor redefinition、label slot を
-持たない predicate redefinition、`means` と `equals` の両方の functor redefinition、
+proof-block coherence を伴う attribute / predicate / functor redefinition、必須 label slot
+と missing-label recovery を伴う predicate redefinition、`means` と `equals` の両方の functor redefinition、
 mode-like / attribute-like raw pattern を含む top-level と definition-local の
 `synonym` / `antonym` alias、visibility-wrapped redefinition と alias、concrete
 `redefine mode` が存在しないこと、malformed pattern / body / coherence / alias

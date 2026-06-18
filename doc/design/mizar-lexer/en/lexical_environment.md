@@ -310,6 +310,25 @@ Errors are environment construction failures, not tokenization failures:
 
 Ambiguous same-spelling user symbols from the same imported module remain representable as deterministic candidates; same-spelling symbols from different imports are rejected as conflicts. Import order and summary order are not diagnosed as errors, but they are part of the deterministic input contract and are reflected in the environment fingerprint.
 
+## Cache and Fingerprint Contract
+
+`LexicalEnvironmentFingerprint` must cover every active-lexical-environment input that can change token boundaries or environment-owned parser-facing token classification:
+
+- reserved tables;
+- imported lexical summaries;
+- visible user-symbol spellings;
+- user-symbol conflict decisions;
+- import order where relevant;
+- symbol provenance relevant to deterministic diagnostics.
+
+Parser-facing lexical filters used by disambiguation are request inputs outside
+the active lexical environment. `TokenStream` reuse composes the active
+environment fingerprint with the parser lexing plan / filter hash; changing
+those filters invalidates the token stream cache without rebuilding the
+environment itself.
+
+The lexer must not include semantic resolution, overload root choice, type facts, registration firing, or proof information in lexical fingerprints. Missing or unsupported lexical-summary fingerprint data forces frontend cache miss. A changed active lexical environment invalidates `TokenStream` reuse even when local source text is unchanged.
+
 ## Tests
 
 Tests should cover:

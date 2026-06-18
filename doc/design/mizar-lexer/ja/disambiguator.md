@@ -134,6 +134,8 @@ SourceSpan {
 
 `ParserLexContext` は `UserSymbolKindSet` も保持できます。`General`、`Symbolic`、`Recovery` の各モードは、その綴りのアクティブ候補のうち少なくとも一つが許可された種別を持つ場合にだけ、ユーザーシンボルを許可します。これにより、パーサー側の統合は、アクティブ字句環境を再構築せずに、述語のみ・functorのみ・モードのみといった、カテゴリ別の字句ビューを要求できます。最終 `UserSymbol` トークンは引き続き綴りとスパンだけを保持します。種別・アリティ(arity)・オーバーロード・由来(provenance)の詳細が必要な下流フェーズは、アクティブ字句環境から候補リストを復元します。
 
+disambiguation が消費するのは lexical context と parser-facing context だけです。semantic resolution、overload root selection、type fact、registration firing、proof information を token classification や diagnostics に埋め込んではなりません。parser context filter は tokenization に影響するため frontend cache footprint に参加しますが、semantic dependency slice ではありません。
+
 実装済みのモードごとの許可関係は以下のとおりです。
 
 | Mode | Identifiers | Reserved Words | Reserved Symbols | User Symbols | Numerals | Strings |

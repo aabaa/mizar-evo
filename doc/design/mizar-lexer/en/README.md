@@ -69,6 +69,7 @@ authoritative syntax, source, or semantic services.
 | Parser lexical context | Parser | `ParserLexContext` is a parser-facing request object consumed by disambiguation. The lexer does not decide grammar progress beyond honoring the supplied context. |
 | Human-facing diagnostics, rendering, tab expansion, one-based columns, LSP UTF-16 positions | Diagnostic/frontend/LSP adapter crates | Lexer diagnostics keep stable codes and byte spans. Human/protocol coordinate conversion stays explicit outside tokens and outside core lexer state. |
 | Type checking, overload resolution, proof semantics, undefined-name diagnostics | Resolver/elaborator/kernel-facing phases | No lexer ownership. User-symbol tokens carry spelling and span; downstream phases recover candidates and choose meanings. |
+| Incremental proof reuse identity and semantic dependency slices | VC/cache/semantic phases | No lexer ownership. Lexer fingerprints cover tokenization and parser-facing classification inputs only; they are not proof dependencies or `ObligationAnchor`s. |
 
 The intended dependency direction is:
 

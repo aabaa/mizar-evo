@@ -41,6 +41,7 @@
 | [19.failure_semantics.md](./19.failure_semantics.md) | 全体 | 安定した失敗分類、伝播、決定的なエラー順序 | Draft |
 | [20.test_strategy.md](./20.test_strategy.md) | 全体 | 失敗系・健全性のテストを優先する回帰テスト戦略 | Draft |
 | [21.ai_agent_interface.md](./21.ai_agent_interface.md) | 全体, 15 | AI エージェント操作性: 安全編集クラス、認可スコープ、文脈／パッチプロトコルの枠組み | Draft |
+| [22.incremental_verification_contract.md](./22.incremental_verification_contract.md) | 全体, 0-15 | 部分編集の増分検証、証明／VC 再利用、キャッシュ検証、並列互換 scheduling の健全性契約 | Draft |
 
 `00.pipeline_overview.md` はこのディレクトリの親文書です。他のアーキテクチャ文書は、自分がどのパイプライン段階を詳細化するのかを明記し、「関連文書」節から概要へリンクを張ってください。
 

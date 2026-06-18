@@ -20,11 +20,7 @@ set-comprehension primary は実装済みである。
 
 ## 項 Pratt 契約
 
-`ParseRequest::operator_fixity` は、`ParserInputs` から導出された parser-facing
-operator metadata を運ぶ。内容は spelling、fixity kind、precedence、source-coordinate
-の `active_from`、そして infix operator については associativity である。parser はこの
-metadata を文法設定としてのみ消費する。overload root の選択、result type 推論、
-cluster fact の評価、selector-versus-namespace role の解決は行わない。
+`ParseRequest::operator_fixity` は、`ParserInputs` から導出された source-position-aware `ParserOperatorView` の現在の転送形である。内容は spelling、fixity kind、precedence、source-coordinate の `active_from`、そして infix operator については associativity である。Pratt lookup は operator token span で active な operator metadata を問い合わせなければならない。parser はこの metadata を文法設定としてのみ消費する。overload root の選択、result type 推論、cluster fact の評価、proof obligation の生成、`ObligationAnchor` の構築、`DependencySlice` の生成、selector-versus-namespace role の解決は行わない。
 
 `infix_operator`、`prefix_operator`、`postfix_operator` の宣言は後続のトークンにだけ
 影響するため、Pratt の検索は演算子トークンの source span で metadata を filter する。
@@ -67,6 +63,8 @@ operand を parse した後だけである。同一 spelling operator の incomp
 conflict は lexical-environment または link stage の error である。この parser stage は、
 `ParserInputs` が parse 中のトークン位置に対する決定的な visible entry order をすでに
 選んでいると仮定する。
+
+`ParserInputsHash` は range-aware operator view またはその canonical fingerprint を含めなければならない。parser node order、`SourceRange`、`VcId` の一致を proof-reuse authority として扱ってはならない。
 
 ## Formula Pratt Contract
 

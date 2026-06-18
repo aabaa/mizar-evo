@@ -18,12 +18,7 @@ This module defines the precedence parser for term and formula expressions.
 
 ## Term Pratt Contract
 
-`ParseRequest::operator_fixity` carries parser-facing operator metadata derived
-from `ParserInputs`: spelling, fixity kind, precedence, source-coordinate
-`active_from`, and, for infix operators, associativity. The parser consumes
-this metadata only as grammar configuration. It does not choose overload roots,
-infer result types, evaluate cluster facts, or resolve selector-versus-namespace
-roles.
+`ParseRequest::operator_fixity` is the current transfer shape for the source-position-aware `ParserOperatorView` derived from `ParserInputs`: spelling, fixity kind, precedence, source-coordinate `active_from`, and, for infix operators, associativity. Pratt lookup must query operator metadata active at the operator token span. The parser consumes this metadata only as grammar configuration. It does not choose overload roots, infer result types, evaluate cluster facts, generate proof obligations, construct `ObligationAnchor`, generate `DependencySlice`, or resolve selector-versus-namespace roles.
 
 `infix_operator`, `prefix_operator`, and `postfix_operator` declarations affect
 only later tokens, so Pratt lookup filters operator metadata by the operator
@@ -70,6 +65,8 @@ entries after a left operand has been parsed. A same-spelling operator conflict
 with incompatible metadata is a lexical-environment or link stage error; this
 parser stage assumes `ParserInputs` has already selected a deterministic visible
 entry order for the token position being parsed.
+
+`ParserInputsHash` must include the range-aware operator view or its canonical fingerprint. Matching parser node order, `SourceRange`, or `VcId` must not be treated as proof-reuse authority.
 
 ## Formula Pratt Contract
 

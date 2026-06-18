@@ -244,6 +244,10 @@ attached when a later diagnostic may be affected by an earlier recovery.
 10. Map every phase diagnostic into `FrontendDiagnostic`, merge in the
    deterministic order above, and assemble `FrontendOutput`.
 
+The cache-key bundle is the frontend dependency footprint for source,
+preprocessing, lexing, and parsing. It is not a semantic `DependencySlice` and
+does not record theorem, definition, registration, or proof facts.
+
 Phases 2-5 do not abort on recoverable problems: they record diagnostics and
 carry recovered artifacts forward, so one run can report lexical, tokenization,
 and syntax diagnostics together.

@@ -160,6 +160,11 @@ coordinator.
 versions, while custom seams inherit a conservative custom-seam version unless
 they override it.
 
+`SurfaceAst` reuse requires the token stream hash, parser version, parser input
+hash, range-aware operator view hash, and edition to match. Parser output is
+syntax only; it is not a semantic `DependencySlice` and cannot authorize proof
+reuse.
+
 `OperatorFixity` and `OperatorAssociativity` are deliberately exhaustive in the
 frontend parser-input API. They mirror the parser-facing closed operator
 metadata currently accepted by `mizar-parser`: prefix, postfix, and infix

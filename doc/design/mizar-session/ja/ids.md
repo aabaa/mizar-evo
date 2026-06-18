@@ -178,4 +178,7 @@ ID は意味的な順序を定義しません。
 - ID の値は、利用者向けの名前ではない。
 - `SourceId` はスナップショットスコープであり、安定したアーティファクト同一性として用いてはならない。
 - `BuildSnapshotId` は同一性と鮮度のトークンであり、証明上の権威ではない。
+- `SourceId`、`SourceRange`、`SourceMapId`、`BuildSessionId`、allocator-issued id は、編集をまたぐ安定した obligation identity として使ってはならない。
+- `SourceRange` は diagnostics や best-effort anchor hint に参加してよいが、source range だけでは編集をまたぐ proof/VC reuse には決して十分ではない。
+- `ObligationAnchor` は後段の semantic/VC layer が所有し、`mizar-session` は所有しない。
 - デバッグ出力には不透明な ID を含めてよいが、再現可能なアーティファクトはそれらに依存してはならない。

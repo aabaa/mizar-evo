@@ -84,7 +84,9 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
    - `CoreIr` のデータ形状仕様を執筆する（英語と日本語、コードなし）:
      `CoreItem`、core の項/論理式、安定した展開境界を持つ
      `CoreDefinitionTable`、`CoreProofTable`、`GeneratedFrom` マーカーを
-     持つ `CoreSourceMap`、obligation seed の参照形状。
+     持つ `CoreSourceMap`、obligation seed の参照形状。`mizar-vc` が消費する
+     anchor-ready な局所 proof / program path、label、正規化された semantic
+     origin、source/core provenance を含める。
    - 依存: 1。仕様: アーキテクチャ 06「Interface Definitions」、
      [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 
@@ -211,9 +213,12 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - `mizar-vc` が消費する obligation seed 出力を定義・実装する（seed
       のみ。具体的な `VcId` は phase 11 が割り当てる）。定理本体、
       correctness condition、checker の initial obligation、アルゴリズム
-      契約を網羅する。
+      契約を網羅する。seed は anchor-ready な局所 proof / program path、
+      label、正規化された semantic origin、source/core provenance を持つが、
+      編集をまたぐ reuse identity は `mizar-vc` に委ねる。
     - テスト: seed カバレッジのフィクスチャ。seed が
-      `CoreIr`/`ControlFlowIr` ノードとソース範囲を参照する。
+      `CoreIr`/`ControlFlowIr` ノード、ソース範囲、局所 proof / program
+      path、label、provenance を参照する。
     - 依存: 12、16。`mizar-vc` task 2 と 4 と調整する。仕様: `core_ir.md`
       （seed の節）、アーキテクチャ 06 の制約。
 
@@ -258,6 +263,12 @@ checker 境界やコーパスに触れるタスクでは追加で実行する:
 ```text
 cargo test -p mizar-checker
 cargo test -p mizar-test
+```
+
+obligation-seed handoff と architecture-22 anchor input では追加で実行する:
+
+```text
+cargo test -p mizar-vc
 ```
 
 テストが通ったらここでタスクにチェックを付ける。

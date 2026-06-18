@@ -281,6 +281,8 @@ Key scenarios:
   provenance are captured here.
 - The active lexical environment can change token boundaries, so its fingerprint
   is part of the `TokenStream` cache key.
+- Missing or unsupported dependency lexical-summary fingerprint data forces a
+  frontend cache miss; it must not be interpreted as "no lexical dependency".
 - Reserved tables are built-in and independent of imports.
 - The active lexical environment holds only compact `ModuleLexicalSummary`
   projections of imported modules, never their definitions or full module IR (the

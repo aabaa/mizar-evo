@@ -391,4 +391,7 @@ Key scenarios:
 - Snapshot identity must be deterministic across machines for the same normalized workspace inputs.
 - Absolute paths are not included in published artifacts unless explicitly requested for local diagnostics.
 - `BuildSnapshotId` is an identity and freshness token, not proof authority.
+- Open editor buffers are source snapshots, not published artifacts.
+- Obsolete results may be reused only through normal cache validation against the target `BuildSnapshotId`.
+- `ObligationAnchor` is owned by later semantic/VC layers, not by `mizar-session`.
 - Cache reuse across snapshots belongs to `mizar-cache`; this module only provides the inputs needed to validate equivalence.

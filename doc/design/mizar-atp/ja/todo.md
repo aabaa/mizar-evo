@@ -197,7 +197,8 @@
     - portfolio の仕様を執筆する（英語と日本語、コードなし）: VC ごとの
       portfolio タスク、候補証拠の収集、early stop、リソース予算、そして
       「勝者選択は `mizar-proof` のポリシーであり、完了順が結果を決める
-      ことは決してない」という境界。
+      ことは決してない」という境界。early stop は、保留中の候補が選択済み
+      class を覆せないと proof policy が報告した後に限って許可する。
     - 依存: 13。仕様: アーキテクチャ 10「Portfolio Execution」、
       [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
       「ATP Portfolio Service」。
@@ -244,6 +245,28 @@
       同期する。
     - 依存: 23。仕様: リポジトリのドキュメント方針。
 
+25. **portfolio 完了順独立性 gate。** [ ]
+    - adversarial な完了順を持つ mock backend で portfolio-specific regression
+      gate を追加する。candidate collection が早期終了できるのは、保留中の
+      candidate が選択済み class を覆せないと `mizar-proof` policy が報告する
+      場合だけである。生の完了時刻を proof identity にしてはならない。
+    - テスト: release policy の下では、後から返った kernel-verifiable candidate
+      が先に返った externally attested result より優先される。tie は
+      deterministic backend priority / certificate strength / problem hash key
+      で解く。cancel または kill された敗者 backend が部分的な accepted state を
+      残さない。
+    - 依存: 18、21、`mizar-proof` task 7、9、12、13。仕様:
+      [10.atp_backend_integration.md](../../architecture/ja/10.atp_backend_integration.md),
+      [14.parallel_verification_and_scheduling.md](../../architecture/ja/14.parallel_verification_and_scheduling.md),
+      [22.incremental_verification_contract.md](../../architecture/ja/22.incremental_verification_contract.md)。
+
+26. **architecture-22 フォローアップ監査。** [ ]
+    - task 25 の portfolio ordering と early-stop 契約について、ソース/仕様
+      対応監査と二言語ドキュメント同期監査を再実行する。残る policy-boundary
+      または completion-order gap をフォローアップタスクとして記録する。
+    - 依存: 25。仕様: 全モジュール仕様、本 TODO、リポジトリの
+      ドキュメント方針。
+
 ## 推奨検証
 
 各タスクの後で実行する:
@@ -258,6 +281,12 @@ VC や kernel の境界に触れるタスクでは追加で実行する:
 ```text
 cargo test -p mizar-vc
 cargo test -p mizar-kernel
+```
+
+portfolio ordering と early-stop のタスクでは追加で実行する:
+
+```text
+cargo test -p mizar-proof
 ```
 
 テストが通ったらここでタスクにチェックを付ける。

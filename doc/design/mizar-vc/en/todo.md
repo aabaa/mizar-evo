@@ -87,7 +87,13 @@ Keep `cargo test -p mizar-vc` green after each task (see
    - Write the `VcIr` data-shape spec (English and Japanese, no code):
      `VcId`, `VcKind`, `LocalContext`, symbolic `PremiseRef`s, goal formula,
      `ProofHint`, the VC status model (including `NeedsAtp` and policy
-     statuses), and the seeds-become-VCs-exactly-once rule.
+     statuses), the seeds-become-VCs-exactly-once rule, and the
+     architecture-22 `ObligationAnchor` contract. The anchor spec must record
+     anchor-ready local proof/program paths, label roles, normalized semantic
+     origins, and source/core provenance, while keeping `VcId` and source
+     ranges snapshot-local. Task 20 owns the later cross-edit reuse
+     implementation and regression gate once discharge evidence, dependency
+     slices, and determinism coverage exist.
    - Deps: 1. Spec: architecture 07 "VC IR"/"VC Status",
      [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
 
@@ -184,7 +190,10 @@ Keep `cargo test -p mizar-vc` green after each task (see
 13. **Spec: `dependency_slice.md`.** [ ]
     - Write the dependency-slice spec (English and Japanese, no code): which
       imported facts, registrations, and definitions each VC depends on, and
-      how slices feed fingerprints and incremental rebuilds.
+      how slices feed canonical dependency-slice fingerprints, proof reuse,
+      and incremental rebuilds. Specify that incomplete or unknown dependency
+      coverage is represented conservatively so consumers can force cache
+      misses.
     - Deps: 2. Spec:
       [18.dependency_fingerprint.md](../../architecture/en/18.dependency_fingerprint.md).
 
@@ -221,6 +230,31 @@ Keep `cargo test -p mizar-vc` green after each task (see
       with its Japanese companion and synchronize content.
     - Deps: 18. Spec: repository documentation policy.
 
+20. **Obligation anchors and cross-edit reuse identity.** [ ]
+    - Complete the cross-edit reuse implementation for the task-2 `VcIr` /
+      seed contract by wiring `ObligationAnchor`, canonical VC fingerprints,
+      local-context fingerprints, and dependency-slice fingerprints through the
+      generated obligations. `VcId`, `SourceRange`, `SurfaceNodeId`, and
+      task-local ids must remain snapshot-local evidence only, never
+      cross-edit proof-reuse identity.
+    - Tests: inserting a proof step before an existing obligation changes
+      `VcId` ordering but preserves reuse eligibility only when the anchor,
+      canonical VC fingerprint, local context fingerprint, dependency slice
+      fingerprint, compatible verifier policy, and selected proof witness hash
+      or deterministic discharge hash match.
+    - Deps: 2, 12, 14, 16. Spec:
+      [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md),
+      [07.vc_generation.md](../../architecture/en/07.vc_generation.md),
+      [18.dependency_fingerprint.md](../../architecture/en/18.dependency_fingerprint.md).
+
+21. **Architecture-22 follow-up audit.** [ ]
+    - Re-run the source/spec correspondence and bilingual documentation sync
+      audits for the task-20 anchor, fingerprint, and proof-reuse identity
+      contract; record any remaining architecture-22 gaps as follow-up tasks
+      before consumers depend on the contract.
+    - Deps: 20. Spec: all module specs, this TODO, and repository
+      documentation policy.
+
 ## Recommended Verification
 
 Run after each task:
@@ -235,6 +269,14 @@ For tasks that touch the core boundary or the corpus, also run:
 ```text
 cargo test -p mizar-core
 cargo test -p mizar-test
+```
+
+For the architecture-22 reuse-identity contract, also run the consumers of
+the anchor and proof metadata:
+
+```text
+cargo test -p mizar-cache
+cargo test -p mizar-proof
 ```
 
 Check the task off here once tests pass.

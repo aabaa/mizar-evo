@@ -86,6 +86,9 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
      `CacheKey` のフィールド（phase、work unit、ソース識別、入力/依存
      ハッシュ、依存スライス、設定ハッシュ、schema version、ポリシー
      fingerprint）、ベクタの正準順序、ドメイン分離された最終ハッシュ。
+     verifier policy、toolchain/schema 互換性、canonical VC fingerprint、
+     local-context fingerprint、dependency-slice fingerprint に関する
+     architecture-22 の検証入力を含める。
    - 依存: 1。仕様: [internal 02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)
      「Cache Key」。
 
@@ -100,7 +103,9 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
    - fingerprint の仕様を執筆する（英語と日本語、コードなし）:
      fingerprint の対象、依存スライス、安定入力（と除外される非決定的
      入力）、再ビルドトリガー、アーキテクチャ 18 の API 互換性 diff。
-     スライス粒度の決定を含む。
+     スライス粒度の決定を含む。完全な dependency-footprint 要件と、
+     footprint を信頼できない場合に使う保守的な `uncacheable` marker を
+     仕様化する。
    - 依存: 2。仕様:
      [18.dependency_fingerprint.md](../../architecture/ja/18.dependency_fingerprint.md)。
 
@@ -126,7 +131,9 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
    - ストアの仕様を執筆する（英語と日本語、コードなし）:
      `.mizar-cache/` のレイアウト（phase とキーごとのレコード、
      content-addressed blob）、`CacheRecordHeader`、互換性チェック、
-     レコードエンコーディングの決定、削除可能性の保証。
+     レコードエンコーディングの決定、`uncacheable` record の扱い、
+     incomplete-footprint 時の miss、unknown-compatibility 時の miss、
+     削除可能性の保証。
    - 依存: 2。仕様: [internal 02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)
      「Cache Store」「Cache Record」。
 
@@ -148,9 +155,11 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 
 10. **仕様: `proof_reuse.md`。** [ ]
     - proof 再利用の仕様を執筆する（英語と日本語、コードなし）: 再利用は
-      witness ハッシュ、依存 artifact ハッシュ、ポリシー fingerprint、
-      schema version の一致を要する。決定的な built-in discharge
-      レコード。レコードが証拠クラスを決して昇格させない規則。
+      `ObligationAnchor`、canonical VC fingerprint、local-context fingerprint、
+      dependency-slice fingerprint、選択された proof witness hash または
+      deterministic discharge hash、依存 artifact ハッシュ、ポリシー
+      fingerprint、schema version の一致を要する。決定的な built-in
+      discharge レコード。レコードが証拠クラスを決して昇格させない規則。
     - 依存: 7。仕様: [internal 02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
       「Proof Witness and Artifact Flow」。
@@ -158,9 +167,13 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 11. **proof 再利用の検証。** [ ]
     - `ProofReuseEvidence` 上の再利用検証を実装する。失敗は再計算へ
       退化し、受理へは決して退化しない。
-    - テスト: 一致する証拠の再利用。各構成要素（witness ハッシュ、
-      ポリシー、schema）の不一致が再利用をブロックする。外部証拠が
-      キャッシュ経由で kernel 検証済みになることは決してない。
+    - テスト: 一致する証拠の再利用。各構成要素（`ObligationAnchor`、
+      canonical VC fingerprint、local-context fingerprint、dependency-slice
+      fingerprint、選択された witness hash、deterministic discharge hash、
+      ポリシー、schema）の不一致が再利用をブロックする。外部認証された
+      証拠がキャッシュ経由で kernel 検証済みになることは決してない。
+      cross-crate producer wiring、cache hit/miss timing、clean/incremental
+      equivalence は task 20 の gate に残す。
     - 依存: 8、10。仕様: `proof_reuse.md`。
 
 12. **仕様: `cluster_db.md`。** [ ]
@@ -218,6 +231,33 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       同期する。
     - 依存: 18。仕様: リポジトリのドキュメント方針。
 
+20. **増分検証の fail-closed cache 契約。** [ ]
+    - architecture 22 の cache contract を `cache_key`、
+      `dependency_fingerprint`、`cache_store`、`proof_reuse` 全体で実装・
+      テストする。再利用される output は完全な dependency slice / footprint
+      を持たなければならない。`uncacheable` marker は常に miss を強制する。
+      不明な schema / toolchain 互換性は miss を強制する。proof reuse は
+      policy、`ObligationAnchor`、canonical VC fingerprint、local-context
+      fingerprint、dependency-slice fingerprint、proof witness または
+      deterministic discharge hash を検証する。
+    - テスト: 欠落または不一致の各 field が独立に reuse を止める。任意の
+      cache 部分集合を削除しても変わるのは性能だけである。cache hit/miss
+      timing が diagnostics、artifact order、proof acceptance を変えない。
+      reused record が外部認証された証拠を昇格させない。
+    - 依存: 5、6、11、15、16、`mizar-vc` task 20、`mizar-proof` task 17。
+      仕様:
+      [22.incremental_verification_contract.md](../../architecture/ja/22.incremental_verification_contract.md),
+      [11.artifact_and_incremental_build.md](../../architecture/ja/11.artifact_and_incremental_build.md),
+      [18.dependency_fingerprint.md](../../architecture/ja/18.dependency_fingerprint.md)。
+
+21. **architecture-22 フォローアップ監査。** [ ]
+    - task 20 の cache-key、dependency-footprint、store、proof-reuse 契約に
+      ついて、ソース/仕様対応監査と二言語ドキュメント同期監査を再実行する。
+      残る fail-closed または trust-boundary gap をフォローアップタスクとして
+      記録する。
+    - 依存: 20。仕様: 全モジュール仕様、本 TODO、リポジトリの
+      ドキュメント方針。
+
 ## 推奨検証
 
 各タスクの後で実行する:
@@ -233,6 +273,14 @@ cargo clippy -p mizar-cache --all-targets -- -D warnings
 cargo test -p mizar-artifact
 cargo test -p mizar-build
 cargo test -p mizar-ir
+```
+
+architecture-22 の proof-reuse 契約では、reuse identity と metadata の
+producer も追加で実行する:
+
+```text
+cargo test -p mizar-vc
+cargo test -p mizar-proof
 ```
 
 テストが通ったらここでタスクにチェックを付ける。

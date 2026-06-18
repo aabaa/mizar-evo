@@ -41,6 +41,7 @@ Architecture documents are numbered by reading order and design dependency, not 
 | [19.failure_semantics.md](./19.failure_semantics.md) | All | Stable failure classification, propagation, and deterministic error ordering | Draft |
 | [20.test_strategy.md](./20.test_strategy.md) | All | Regression strategy prioritizing fail and soundness tests | Draft |
 | [21.ai_agent_interface.md](./21.ai_agent_interface.md) | All, 15 | AI agent operability: safe edit classes, authorization scopes, and the context/patch protocol framework | Draft |
+| [22.incremental_verification_contract.md](./22.incremental_verification_contract.md) | All, 0-15 | Soundness contract for partial-edit incremental verification, proof/VC reuse, cache validation, and parallel-compatible scheduling | Draft |
 
 `00.pipeline_overview.md` is the parent document for this directory. Other architecture documents should state which pipeline phase(s) they refine and should link back to the overview in their Context section.
 

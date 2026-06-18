@@ -40,6 +40,8 @@ consumer は `SurfaceNodeView` と typed accessor を優先するべきである
 node は cross-run identity として serialize してはならず、consumer が green tree
 と独立に mutation することもできない。
 
+`SurfaceNodeId`、rowan text range、compatibility node id、green-node identity は `ObligationAnchor` ではなく、編集をまたぐ proof-result reuse に使ってはならない。`SurfaceAst` は label、item kind、proof-step structure、algorithm statement structure、registration/redefinition node、source range、trivia、recovery marker といった syntactic anchor ingredient を保持しなければならない。`mizar-syntax` はこれらの ingredient に対する semantic-free accessor を公開してよいが、owner origin id、`ObligationAnchor`、`DependencySlice`、proof obligation を計算してはならない。
+
 ### Syntax kind mapping
 
 `SyntaxKind` は rowan の raw kind 語彙である。現在の node kind mapping は以下:
@@ -509,7 +511,7 @@ task-35 `AnnotatedRegistrationContent` まで、compatibility `Token` wrapper、
 | `SurfaceNodeKind::ModePattern` | なし | `SyntaxKind::ModePattern` | parser task 26 の mode definition pattern。`mode_def_name [ type_params ]` として受理できる source-order raw token と、grammar-shaped split が存在しない場合の `MissingTerm` recovery を所有する。semantic parameter role は encode しない |
 | `SurfaceNodeKind::ModeProperty` | なし | `SyntaxKind::ModeProperty` | parser task 26 の mode definition 直後の `sethood` property。`sethood`、存在する場合の必須 general justification（`JustificationClause` または `ProofBlock`）、任意の recovery、存在する場合の property semicolon を所有する |
 | `SurfaceNodeKind::AttributeRedefinition` | なし | `SyntaxKind::AttributeRedefinition` | parser task 27 の `redefine attr`。`redefine`、`attr`、label identifier または `MissingTerm`、`:`、subject identifier または `MissingTerm`、`is`、`AttributePattern`、`means`、`FormulaDefiniens`、存在する場合の最初の semicolon、必須 `CoherenceCondition` を所有する |
-| `SurfaceNodeKind::PredicateRedefinition` | なし | `SyntaxKind::PredicateRedefinition` | parser task 27 の `redefine pred`。`redefine`、`pred`、raw `PredicatePattern`、`means`、`FormulaDefiniens`、存在する場合の最初の semicolon、必須 `CoherenceCondition` を所有する |
+| `SurfaceNodeKind::PredicateRedefinition` | なし | `SyntaxKind::PredicateRedefinition` | parser task 27 の `redefine pred`。`redefine`、`pred`、label、`:`、raw `PredicatePattern`、`means`、`FormulaDefiniens`、存在する場合の最初の semicolon、必須 `CoherenceCondition` を所有する |
 | `SurfaceNodeKind::FunctorRedefinition` | なし | `SyntaxKind::FunctorRedefinition` | parser task 27 の `redefine func`。`redefine`、`func`、label identifier または `MissingTerm`、`:`、raw `FunctorPattern`、`->`、return `TypeExpression` または `MissingTypeExpression`、`means FormulaDefiniens` または `equals TermDefiniens`、存在する場合の最初の semicolon、必須 `CoherenceCondition` を所有する |
 | `SurfaceNodeKind::CoherenceCondition` | なし | `SyntaxKind::CoherenceCondition` | parser task 27 の redefinition coherence tail。`coherence`、任意の `with` と label identifier または `MissingProofStep`、存在する場合の必須 general justification、任意の recovery、存在する場合の coherence semicolon を所有する |
 | `SurfaceNodeKind::NotationAlias` | なし | `SyntaxKind::NotationAlias` | parser task 27 の `synonym` または `antonym` declaration。alias keyword、alternate `NotationPattern`、`for`、original `NotationPattern`、任意の recovery、存在する場合の final semicolon を所有する |
@@ -612,6 +614,11 @@ task-35 `AnnotatedRegistrationContent` まで、compatibility `Token` wrapper、
 | `SurfaceNodeKind::QuantifierVariableSegment` | なし | `SyntaxKind::QuantifierVariableSegment` | parser task 14 の quantified variable segment。variable identifier/comma token、optional `be`/`being`、optional `TypeExpression` を所有する |
 | `SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant)` | constant | `SyntaxKind::FormulaConstant` | parser task 14 の `thesis` / `contradiction` formula constant |
 | `SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind)` | recovery kind | `SyntaxKind::ErrorRecovery` | builder が作る recovery node は recovered |
+
+labeled `PredicateRedefinition` shape は、parser task-36 の predicate redefinition
+label repair 後の target AST contract である。その実装と corpus 更新が着地するまでは、
+現行 parser behavior が以前の label なし surface を露出する場合がある。downstream design
+は labeled target に依存する。
 
 `SurfaceTokenKind` は、上に挙げた token raw kind に対応する現在の語彙として
 `Identifier`、`ReservedWord`、`ReservedSymbol`、`Numeral`、`LexemeRun`、

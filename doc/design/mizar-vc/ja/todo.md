@@ -82,7 +82,12 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
    - `VcIr` のデータ形状仕様を執筆する（英語と日本語、コードなし）:
      `VcId`、`VcKind`、`LocalContext`、シンボリックな `PremiseRef`、goal
      論理式、`ProofHint`、VC 状態モデル（`NeedsAtp` とポリシー状態を
-     含む）、「seed は正確に 1 回だけ VC になる」規則。
+     含む）、「seed は正確に 1 回だけ VC になる」規則、architecture-22 の
+     `ObligationAnchor` 契約。anchor 仕様には anchor-ready な局所 proof /
+     program path、label role、正規化された semantic origin、source/core
+     provenance を記録し、`VcId` と source range は snapshot-local に
+     とどめる。task 20 は、discharge 証拠、依存スライス、決定性カバレッジが
+     揃った後の編集横断 reuse 実装と regression gate を所有する。
    - 依存: 1。仕様: アーキテクチャ 07「VC IR」「VC Status」、
      [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 
@@ -177,7 +182,9 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 13. **仕様: `dependency_slice.md`。** [ ]
     - 依存スライスの仕様を執筆する（英語と日本語、コードなし）: 各 VC が
       依存する import 済み事実・registration・定義と、スライスが
-      fingerprint と増分再ビルドへ供給される方法。
+      canonical dependency-slice fingerprint、proof reuse、増分再ビルドへ
+      供給される方法。依存範囲が不完全または不明な場合は、consumer が
+      cache miss を強制できるよう保守的に表現することを明記する。
     - 依存: 2。仕様:
       [18.dependency_fingerprint.md](../../architecture/ja/18.dependency_fingerprint.md)。
 
@@ -214,6 +221,30 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       同期する。
     - 依存: 18。仕様: リポジトリのドキュメント方針。
 
+20. **obligation anchor と編集をまたぐ再利用 identity。** [ ]
+    - task 2 の `VcIr` / seed 契約に対する編集横断 reuse 実装を完成させる:
+      `ObligationAnchor`、canonical VC fingerprint、local-context fingerprint、
+      dependency-slice fingerprint を生成済み obligation へ接続する。
+      `VcId`、`SourceRange`、`SurfaceNodeId`、task-local id は snapshot-local な
+      証拠にとどめ、編集をまたぐ proof-reuse identity にはしない。
+    - テスト: 既存 obligation の前に proof step を挿入すると `VcId` ordering
+      は変わるが、anchor、canonical VC fingerprint、local context fingerprint、
+      dependency slice fingerprint、compatible verifier policy、選択された
+      proof witness hash または deterministic discharge hash が一致する場合に
+      限って再利用可能になること。
+    - 依存: 2、12、14、16。仕様:
+      [22.incremental_verification_contract.md](../../architecture/ja/22.incremental_verification_contract.md),
+      [07.vc_generation.md](../../architecture/ja/07.vc_generation.md),
+      [18.dependency_fingerprint.md](../../architecture/ja/18.dependency_fingerprint.md)。
+
+21. **architecture-22 フォローアップ監査。** [ ]
+    - task 20 の anchor、fingerprint、proof-reuse identity 契約について、
+      ソース/仕様対応監査と二言語ドキュメント同期監査を再実行する。
+      consumer がこの契約へ依存する前に、残る architecture-22 gap を
+      フォローアップタスクとして記録する。
+    - 依存: 20。仕様: 全モジュール仕様、本 TODO、リポジトリの
+      ドキュメント方針。
+
 ## 推奨検証
 
 各タスクの後で実行する:
@@ -228,6 +259,14 @@ core 境界やコーパスに触れるタスクでは追加で実行する:
 ```text
 cargo test -p mizar-core
 cargo test -p mizar-test
+```
+
+architecture-22 の reuse-identity 契約では、anchor と proof metadata の
+consumer も追加で実行する:
+
+```text
+cargo test -p mizar-cache
+cargo test -p mizar-proof
 ```
 
 テストが通ったらここでタスクにチェックを付ける。

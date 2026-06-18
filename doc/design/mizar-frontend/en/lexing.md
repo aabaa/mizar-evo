@@ -396,4 +396,7 @@ Implemented task-7/8/9 and task-20 scenarios:
 - When token streams are cached, the cache key is `PreprocessedSource.lexical_hash`,
   the active lexical environment fingerprint, and a stable encoding of the
   `ParserLexContext` / parser-assisted lexing plan used for the run.
+- A changed active lexical environment, imported lexical summary, or parser
+  lexing plan invalidates `TokenStream` reuse even when local source text is
+  unchanged.
 - All token spans are session `SourceRange` values produced through `span_bridge`.

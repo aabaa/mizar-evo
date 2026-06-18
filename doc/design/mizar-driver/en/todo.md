@@ -93,13 +93,17 @@ Keep `cargo test -p mizar-driver` green after each task (see
 2. **Spec: `request.md`.** [ ]
    - Write the request spec (English and Japanese, no code):
      `BuildRequest` shapes for batch/watch/LSP, `BuildSession` and its
-     source/dependency snapshots, and session lifecycle states.
+     source/dependency snapshots, session lifecycle states, and the
+     current-snapshot boundary that rejects obsolete publications from
+     superseded watch/LSP sessions.
    - Deps: 1. Spec: [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
      "Build Session".
 
 3. **`BuildRequest` and `BuildSession`.** [ ]
    - Implement requests and sessions with snapshot capture through
-     `mizar-session`/`mizar-ir` identities.
+     `mizar-session`/`mizar-ir` identities, including the current-snapshot
+     boundary used to reject obsolete publications from superseded watch/LSP
+     sessions.
    - Tests: session round-trips; identical workspace states produce
      identical snapshot ids.
    - Deps: 2. Spec: `request.md`.
@@ -223,7 +227,14 @@ Keep `cargo test -p mizar-driver` green after each task (see
 16. **End-to-end determinism suite.** [ ]
     - Property coverage that identical workspaces produce identical event
       streams, diagnostics, and exit codes across worker counts and runs.
-    - Deps: 13. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
+      After the cache/scheduler seam is wired, include architecture-22
+      equivalence cases for clean versus incremental and cache hit/miss timing
+      through the driver-owned query boundary, with stale or obsolete snapshot
+      outputs rejected before they can publish as current diagnostics or
+      artifacts.
+    - Deps: 13, 14, `mizar-build` task 24. Spec:
+      [20.test_strategy.md](../../architecture/en/20.test_strategy.md),
+      [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md).
 
 17. **Public-enum forward-compatibility policy.** [ ]
     - Apply the `mizar-frontend` task-25 procedure to each public enum.
@@ -239,6 +250,14 @@ Keep `cargo test -p mizar-driver` green after each task (see
       `doc/design/mizar-driver/en/` with its Japanese companion and
       synchronize content.
     - Deps: 18. Spec: repository documentation policy.
+
+20. **Architecture-22 follow-up audit.** [ ]
+    - Re-run the source/spec correspondence and bilingual documentation sync
+      audits for the task-16 driver query-boundary, stale-output rejection,
+      diagnostics, and artifact-publication contract; record any remaining
+      architecture-22 gaps as follow-up tasks.
+    - Deps: 16, 19. Spec: all module specs, this TODO, and repository
+      documentation policy.
 
 ## Recommended Verification
 

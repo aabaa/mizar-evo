@@ -289,6 +289,24 @@ active な環境は、インポートされたモジュールの圧縮された 
 
 同じインポート元モジュール内の同綴りユーザーシンボルは、決定的な候補として表現できます。一方、異なるインポートから来た同綴りシンボルは衝突として拒否します。インポート順序とサマリー順序はエラーとして診断しませんが、決定的な入力規約の一部であり、環境のフィンガープリントに反映されます。
 
+## Cache と fingerprint の契約
+
+`LexicalEnvironmentFingerprint` は、token boundary または environment-owned parser-facing token classification を変え得るすべての active-lexical-environment input を含めなければならない。
+
+- reserved table;
+- imported lexical summary;
+- visible user-symbol spelling;
+- user-symbol conflict decision;
+- 関連する import order;
+- deterministic diagnostics に関係する symbol provenance。
+
+disambiguation が使う parser-facing lexical filter は、active lexical environment の外側にある
+request input である。`TokenStream` reuse は active environment fingerprint と parser
+lexing plan / filter hash を合成する。それらの filter が変わった場合、environment 自体を
+再構築せずに token stream cache を無効化する。
+
+lexer は semantic resolution、overload root choice、type fact、registration firing、proof information を lexical fingerprint に含めてはならない。lexical-summary fingerprint data が欠落している、または未対応である場合は frontend cache miss を強制する。active lexical environment が変わった場合、local source text が不変でも `TokenStream` reuse は無効化される。
+
 ## Tests
 
 テストでは以下を確認します。

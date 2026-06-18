@@ -188,4 +188,7 @@ Key scenarios:
 - Id values are not user-facing names.
 - `SourceId` is snapshot-scoped and must not be used as a stable artifact identity.
 - `BuildSnapshotId` is an identity and freshness token, not proof authority.
+- `SourceId`, `SourceRange`, `SourceMapId`, `BuildSessionId`, and allocator-issued ids must not be used as cross-edit-stable obligation identities.
+- `SourceRange` may participate in diagnostics and best-effort anchor hints, but source range alone is never sufficient for proof or VC reuse across edits.
+- `ObligationAnchor` is owned by later semantic/VC layers, not by `mizar-session`.
 - Debug output may include opaque ids, but reproducible artifacts must not depend on them.
