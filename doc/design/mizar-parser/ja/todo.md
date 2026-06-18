@@ -13,7 +13,7 @@
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] parser task 30 の registration は private な cursor / event 基盤を使用。grammar coverage は段階的に継続 |
-| module grammar | [grammar.md](./grammar.md)、[recovery.md](./recovery.md) | `src/module.rs` | [~] grammar 実装は機能的には成熟しているが oversized。task 42 で挙動維持の private module split を追跡 |
+| module grammar | [grammar.md](./grammar.md)、[recovery.md](./recovery.md) | `src/module.rs`、`src/module/annotations.rs`、`src/module/tests.rs` | [~] task 42 で annotation parsing と module tests を private submodule へ分割済み。main grammar 実装は挙動維持かつ parser-owned のまま残す |
 | pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task 12 の active prefix/postfix/infix operator に対する項 Pratt は実装済み。task 14 の固定 formula Pratt は項 fixity から分離して実装済み |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] parser task 30 の registration recovery と nested block-end matching は task 2 cursor / diagnostic / sync helper を使用 |
 
@@ -867,7 +867,7 @@ resolver / build-system 依存を避ける。
       [../../mizar-frontend/ja/todo.md](../../mizar-frontend/ja/todo.md)
       を参照。
 
-42. **parser module 境界のリファクタリング。** [ ]
+42. **parser module 境界のリファクタリング。** [x]
     - oversized な `crates/mizar-parser/src/module.rs` 実装を、構文解析の挙動、
       crate root の公開 API、syntax-event 出力、診断、コーパス期待値、
       snapshot rendering を変えずに private な責務別 module へ分割する。
@@ -882,6 +882,13 @@ resolver / build-system 依存を避ける。
     - テスト: parser unit test と active parse-only corpus は byte-stable に保つ。
       harness が要求する path-only な test-name 更新を除き `.expect.toml` は変更しない。
       `cargo fmt --check` と parser/syntax Clippy を green に保つ。
+    - 結果: annotation parser implementation を private な
+      `crates/mizar-parser/src/module/annotations.rs` へ分割し、大きな module grammar
+      test/helper surface を private な `crates/mizar-parser/src/module/tests.rs` へ移した。
+      crate root API、parser-owned grammar semantics、syntax-event output、diagnostics、
+      active parse-only corpus expectation、snapshot rendering は変更していない。
+      残る `module.rs` implementation は、同じくらい明確な ownership boundary を持つ
+      将来の挙動維持 slice まで、main grammar dispatch と shared helper を保持する。
     - 依存: 36、37、39。仕様: [grammar.md](./grammar.md)、
       [recovery.md](./recovery.md)、本 TODO。
 

@@ -12,13 +12,14 @@ frontend-adapted token transfer object with session `SourceRange`s and returns
 `mizar_syntax::SurfaceAst` plus syntax diagnostics. Task 2 parser
 infrastructure is in place as private cursor, syntax-event, expected-token
 diagnostic, synchronization, and recovery-emission helpers. The parser
-workstream has grown through parser task 41, including module/import/export,
+workstream has grown through parser task 42, including module/import/export,
 type/term/formula, statement/proof, definition, structure, registration,
 template, algorithm, verification-clause, annotation surfaces, and the
 predicate redefinition label repair, plus recovery consolidation and fail-corpus
 expansion, parse-only `SurfaceAst` snapshot baselines, parser determinism
 coverage, the parser-owned valid-UTF-8 fuzz target, and frontend passthrough
-follow-through audit. Hardening/audit tasks 42-45 remain planned.
+follow-through audit, plus a private annotation/test module-boundary split.
+Hardening/audit tasks 43-45 remain planned.
 
 Initial module specs:
 

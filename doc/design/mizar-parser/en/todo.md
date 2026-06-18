@@ -13,7 +13,7 @@
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | grammar | [grammar.md](./grammar.md) | `src/grammar.rs` | [~] parser task 30 registrations use private cursor/event infrastructure; grammar coverage remains incremental |
-| module grammar | [grammar.md](./grammar.md), [recovery.md](./recovery.md) | `src/module.rs` | [~] grammar implementation is functionally mature but oversized; task 42 tracks a behavior-preserving private module split |
+| module grammar | [grammar.md](./grammar.md), [recovery.md](./recovery.md) | `src/module.rs`, `src/module/annotations.rs`, `src/module/tests.rs` | [~] task 42 split annotation parsing and module tests into private submodules; the main grammar implementation remains behavior-preserving and parser-owned |
 | pratt | [pratt.md](./pratt.md) | `src/pratt.rs` | [~] task-12 term Pratt over active prefix/postfix/infix operators is implemented; task-14 fixed formula Pratt is implemented separately from term fixity |
 | recovery | [recovery.md](./recovery.md) | `src/recovery.rs` | [~] parser task 30 registration recovery plus nested block-end matching uses task-2 cursor/diagnostic/sync helpers |
 
@@ -895,7 +895,7 @@ older numeric syntax task references appear to disagree, prefer
     - Deps: starts with 5, completes with 37. Spec:
       [../../mizar-frontend/en/todo.md](../../mizar-frontend/en/todo.md).
 
-42. **Parser module-boundary refactor.** [ ]
+42. **Parser module-boundary refactor.** [x]
     - Split the oversized `crates/mizar-parser/src/module.rs` implementation
       into private responsibility modules without changing parse behavior,
       public crate-root APIs, syntax-event output, diagnostics, corpus
@@ -912,6 +912,15 @@ older numeric syntax task references appear to disagree, prefer
       no `.expect.toml` changes except path-only test-name updates if the
       harness requires them; `cargo fmt --check` and parser/syntax Clippy stay
       green.
+    - Result: split the annotation parser implementation into private
+      `crates/mizar-parser/src/module/annotations.rs` and moved the large
+      module grammar test/helper surface into private
+      `crates/mizar-parser/src/module/tests.rs`. The crate-root API,
+      parser-owned grammar semantics, syntax-event output, diagnostics, active
+      parse-only corpus expectations, and snapshot rendering are unchanged.
+      The remaining `module.rs` implementation keeps the main grammar dispatch
+      and shared helpers until future behavior-preserving slices have an
+      equally clear ownership boundary.
     - Deps: 36, 37, 39. Spec: [grammar.md](./grammar.md),
       [recovery.md](./recovery.md), this TODO.
 
