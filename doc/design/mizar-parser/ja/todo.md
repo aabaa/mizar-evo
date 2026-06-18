@@ -771,16 +771,26 @@ resolver / build-system 依存を避ける。
     - 依存: 34、`mizar-syntax` task 16 / S-016。仕様:
       [21.source_code_annotation_and_atp.md](../../../spec/ja/21.source_code_annotation_and_atp.md)。
 
+36. **predicate redefinition label の修正。** [ ]
+    - 修正済みの第 9 章と Appendix A の production
+      `redefine pred label: pred_pattern ...` に parser task 27 を同期する:
+      `PredicatePattern` の前に必須 label と colon を消費し、label child を
+      pattern の前に送出し、label 欠落には `MissingTerm` recovery を使う。
+      pass/fail corpus case と parser unit test を更新し、parser grammar/recovery
+      および mizar-syntax AST documentation も同期する。
+    - 依存: 27。仕様: [09.predicates.md](../../../spec/ja/09.predicates.md)、
+      [appendix_a.grammar_summary.md](../../../spec/ja/appendix_a.grammar_summary.md)。
+
 ### 強化と横断的フォローアップ
 
-36. **recovery の統合と fail コーパスの拡張。** [ ]
+37. **recovery の統合と fail コーパスの拡張。** [ ]
     - 全カテゴリの recovery 挙動を監査する: スキップトークンノード、対応
       しない区切り記号、不正な注釈。カテゴリがまだ同期せずに中断する箇所の
       ギャップを埋める。推奨 pass / fail 比率へ向けて fail コーパスを拡張する。
     - 依存: 35。仕様: [recovery.md](./recovery.md)、
       [architecture/ja/20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
 
-37. **`SurfaceAst` スナップショットベースライン。** [ ]
+38. **`SurfaceAst` スナップショットベースライン。** [ ]
     - 代表的なコーパスケースについて、`mizar-syntax` のレンダリング
       （その task 3）を使った決定的なスナップショットベースラインを
       `tests/snapshots/` 配下に追加し、スナップショット比較をコーパス
@@ -788,31 +798,31 @@ resolver / build-system 依存を避ける。
     - 依存: 3、35、`mizar-syntax` task 3。仕様:
       [../../mizar-test/ja/snapshot.md](../../mizar-test/ja/snapshot.md)。
 
-38. **決定性プロパティテスト。** [ ]
+39. **決定性プロパティテスト。** [ ]
     - 同一のトークンストリームが同一の `SurfaceAst` ノード順序・範囲・診断
       順序を生むことの crate レベル網羅。frontend の決定性スイートに倣う。
     - 依存: 35。仕様:
       [architecture/ja/20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
 
-39. **パーサー fuzz ターゲット。** [ ]
+40. **パーサー fuzz ターゲット。** [ ]
     - 任意の UTF-8 上でトークン化と構文解析を駆動するワークスペース fuzz
       ターゲットを追加し、panic が起きず、回復可能診断のみで完了することを
       アサートする。`mizar-frontend` task 29 の real-parser fuzz follow-up は
       frontend-owned target を着地済みであり、この task は parser-owned 側を追跡する。
-    - 依存: 36。仕様: [recovery.md](./recovery.md)、
+    - 依存: 37。仕様: [recovery.md](./recovery.md)、
       [../../mizar-frontend/ja/todo.md](../../mizar-frontend/ja/todo.md)
       task 29。
 
-40. **frontend パススルーのフォロースルー。** [ ]
+41. **frontend パススルーのフォロースルー。** [ ]
     - 現在の mizar-frontend task 28 parser-recovery surface を超える文法の成長では、
       `mizar-frontend` の新しい follow-up を開く:
       各文法タスクに歩調を合わせて、frontend の recovery マーカーの
       パススルー、診断統合順序、`SurfaceAstCacheKey` の無効化の網羅を維持する。
-    - 依存: 5 から始まり、36 で完了する。仕様:
+    - 依存: 5 から始まり、37 で完了する。仕様:
       [../../mizar-frontend/ja/todo.md](../../mizar-frontend/ja/todo.md)
       を参照。
 
-41. **ソース／仕様の対応監査と予約語カバレッジ。** [ ]
+42. **ソース／仕様の対応監査と予約語カバレッジ。** [ ]
     - [grammar.md](./grammar.md)、[pratt.md](./pratt.md)、
       [recovery.md](./recovery.md) のすべての公開 API と約束された挙動を
       実装とテストへトレースし、ギャップをフォローアップタスクとして記録する。
@@ -820,14 +830,14 @@ resolver / build-system 依存を避ける。
       予約語が、少なくとも 1 つのパーサーコーパステストで消費されていること
       （または、まだ文法位置を持たない将来予約として明示的に記録されている
       こと）を検証し、暗黙に未実装のキーワードを機械的に検出する。
-    - 依存: 36。仕様: すべてのモジュール仕様と本 TODO。
+    - 依存: 37。仕様: すべてのモジュール仕様と本 TODO。
 
-42. **二言語ドキュメント同期監査。** [ ]
+43. **二言語ドキュメント同期監査。** [ ]
     - `doc/design/mizar-parser/en/` の各英語正本ドキュメントを日本語版と
       比較し、API 一覧、状態、用語、リンク、挙動の約束を同期する。
-    - 依存: 41。仕様: リポジトリのドキュメント方針。
+    - 依存: 42。仕様: リポジトリのドキュメント方針。
 
-43. **公開 enum の前方互換方針。** [ ]
+44. **公開 enum の前方互換方針。** [ ]
     - 初期の公開 enum ゲートを task 35 後に再確認し、文法成長で追加された
       後続の公開 enum について、`mizar-frontend` task 25 の手続きと
       `mizar-syntax` task 17 の最終監査に整合する形で、

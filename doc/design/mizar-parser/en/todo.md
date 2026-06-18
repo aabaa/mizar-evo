@@ -795,9 +795,19 @@ older numeric syntax task references appear to disagree, prefer
     - Deps: 34, `mizar-syntax` task 16 / S-016. Spec:
       [21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md).
 
+36. **Predicate redefinition label repair.** [ ]
+    - Bring parser task 27 back into sync with the corrected Chapter 9 and
+      Appendix A production `redefine pred label: pred_pattern ...`: consume the
+      required label and colon before `PredicatePattern`, emit the label child
+      before the pattern with `MissingTerm` recovery for omitted labels, update
+      pass/fail corpus cases and parser unit tests, and synchronize parser
+      grammar/recovery plus mizar-syntax AST documentation.
+    - Deps: 27. Spec: [09.predicates.md](../../../spec/en/09.predicates.md),
+      [appendix_a.grammar_summary.md](../../../spec/en/appendix_a.grammar_summary.md).
+
 ### Hardening and cross-cutting follow-ups
 
-36. **Recovery consolidation and fail-corpus expansion.** [ ]
+37. **Recovery consolidation and fail-corpus expansion.** [ ]
     - Audit recovery behavior across all categories: skipped-token nodes,
       unmatched delimiters, malformed annotations; close gaps where a category
       still aborts instead of synchronizing. Expand the fail corpus toward the
@@ -805,39 +815,39 @@ older numeric syntax task references appear to disagree, prefer
     - Deps: 35. Spec: [recovery.md](./recovery.md),
       [architecture/en/20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 
-37. **`SurfaceAst` snapshot baselines.** [ ]
+38. **`SurfaceAst` snapshot baselines.** [ ]
     - Add deterministic snapshot baselines under `tests/snapshots/` for
       representative corpus cases, using the `mizar-syntax` rendering (its
       task 3); wire snapshot comparison into the corpus runner.
     - Deps: 3, 35, `mizar-syntax` task 3. Spec:
       [../../mizar-test/en/snapshot.md](../../mizar-test/en/snapshot.md).
 
-38. **Determinism property tests.** [ ]
+39. **Determinism property tests.** [ ]
     - Crate-level coverage that identical token streams produce identical
       `SurfaceAst` node orders, ranges, and diagnostic orders, mirroring the
       frontend determinism suite.
     - Deps: 35. Spec:
       [architecture/en/20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 
-39. **Parser fuzz target.** [ ]
+40. **Parser fuzz target.** [ ]
     - Add a workspace fuzz target driving tokenization plus parsing over
       arbitrary UTF-8, asserting no panics and recoverable-diagnostics-only
       completion. The `mizar-frontend` task 29 real-parser fuzz follow-up has
       landed the frontend-owned target; this task tracks the parser-owned
       counterpart.
-    - Deps: 36. Spec: [recovery.md](./recovery.md),
+    - Deps: 37. Spec: [recovery.md](./recovery.md),
       [../../mizar-frontend/en/todo.md](../../mizar-frontend/en/todo.md) task 29.
 
-40. **Frontend passthrough follow-through.** [ ]
+41. **Frontend passthrough follow-through.** [ ]
     - Grammar growth past the current mizar-frontend task-28 parser-recovery
       surface opens a new `mizar-frontend` follow-up:
       keep frontend recovery-marker passthrough, diagnostic merge order, and
       `SurfaceAstCacheKey` invalidation coverage in step with each grammar
       task.
-    - Deps: starts with 5, completes with 36. Spec:
+    - Deps: starts with 5, completes with 37. Spec:
       [../../mizar-frontend/en/todo.md](../../mizar-frontend/en/todo.md).
 
-41. **Source/spec correspondence audit and reserved-word coverage.** [ ]
+42. **Source/spec correspondence audit and reserved-word coverage.** [ ]
     - Trace every public API and promised behavior in [grammar.md](./grammar.md),
       [pratt.md](./pratt.md), and [recovery.md](./recovery.md) to
       implementation and tests; record gaps as follow-up tasks.
@@ -846,16 +856,16 @@ older numeric syntax task references appear to disagree, prefer
       at least one parser corpus test (or is explicitly recorded as
       reserved-for-future with no grammar position yet), so silently
       unimplemented keywords are detected mechanically.
-    - Deps: 36. Spec: all module specs and this TODO.
+    - Deps: 37. Spec: all module specs and this TODO.
 
-42. **Bilingual documentation sync audit.** [ ]
+43. **Bilingual documentation sync audit.** [ ]
     - Compare each English canonical document under
       `doc/design/mizar-parser/en/` with its Japanese companion and
       synchronize API lists, statuses, terminology, links, and behavior
       promises.
-    - Deps: 41. Spec: repository documentation policy.
+    - Deps: 42. Spec: repository documentation policy.
 
-43. **Public enum forward-compatibility policy.** [ ]
+44. **Public enum forward-compatibility policy.** [ ]
     - Revisit the initial public-enum gate after task 35 and decide
       `#[non_exhaustive]` versus deliberate exhaustiveness for any later public
       enums added by grammar growth, aligned with the `mizar-frontend` task-25

@@ -314,7 +314,7 @@ template_loci    ::= "[" locus_list "]" ;
 def_predicate_symbol ::= def_symbol ;
 predicate_symbol ::= def_symbol ;
 
-redefine_pred    ::= "redefine" "pred" pred_pattern "means" formula_definiens ";"
+redefine_pred    ::= "redefine" "pred" label ":" pred_pattern "means" formula_definiens ";"
                      "coherence" [ "with" label ] justification ";" ;
 
 pred_property    ::= ( "symmetry" | "asymmetry" | "connectedness"
