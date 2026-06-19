@@ -101,11 +101,11 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
    - 依存: 1。仕様: アーキテクチャ 03「Interface Definitions」、
      [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 
-3. **仕様: `env.md`。** [ ]
+3. **仕様: `env.md`。** [x]
    - `SymbolEnv` の仕様を執筆する（英語と日本語、コードなし）: 索引群
-     （`SymbolIndex`、`DefinitionIndex`、`OverloadIndex`、
-     `RegistrationIndex`、`NamespaceGraph`）、ソース単位の寄与追跡、
-     無効化の注記。
+     （`SymbolIndex`、`LabelIndex`、`DefinitionIndex`、`OverloadIndex`、
+     `RegistrationIndex`、`NamespaceGraph`、`DeclarationDependencyIndex`）、
+     ソース単位の寄与追跡、無効化の注記。
    - 依存: 1。仕様: アーキテクチャ 03「Symbol Environment」。
 
 4. **`resolved_ast` データ形状の実装。** [ ]

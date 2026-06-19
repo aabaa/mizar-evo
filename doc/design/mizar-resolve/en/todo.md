@@ -104,11 +104,11 @@ Keep `cargo test -p mizar-resolve` green after each task (see
    - Deps: 1. Spec: architecture 03 "Interface Definitions",
      [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
 
-3. **Spec: `env.md`.** [ ]
+3. **Spec: `env.md`.** [x]
    - Write the `SymbolEnv` spec (English and Japanese, no code): the index
-     family (`SymbolIndex`, `DefinitionIndex`, `OverloadIndex`,
-     `RegistrationIndex`, `NamespaceGraph`), per-source contribution
-     tracking, and invalidation notes.
+     family (`SymbolIndex`, `LabelIndex`, `DefinitionIndex`, `OverloadIndex`,
+     `RegistrationIndex`, `NamespaceGraph`, `DeclarationDependencyIndex`),
+     per-source contribution tracking, and invalidation notes.
    - Deps: 1. Spec: architecture 03 "Symbol Environment".
 
 4. **Implement `resolved_ast` data shapes.** [ ]
