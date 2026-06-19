@@ -8,6 +8,9 @@
 /// Symbol environment data shapes and deterministic indexes.
 pub mod env;
 
+/// Semantic import graph construction and cycle rejection.
+pub mod imports;
+
 /// Resolver-side module-index phase input seam.
 pub mod module_index;
 

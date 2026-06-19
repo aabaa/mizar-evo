@@ -163,9 +163,12 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
    - 依存: 2。仕様: アーキテクチャ 03「Step 2」、
      [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)。
 
-9. **import グラフ構築と循環の拒否。** [ ]
-   - モジュール索引上に意味論的 import グラフを構築し、決定的な診断で
-     循環を拒否する。
+9. **import グラフ構築と循環の拒否。** [x]
+   - モジュール索引上に意味論的 import グラフを構築し、決定的な cycle record で
+     循環を拒否する。public/user-facing diagnostics は引き続き R-G001 に gate される。
+   - `src/imports.rs` に、`ModuleIndexInput` 上の canonical graph construction を実装済み。
+     alias binding、relative-prefix interpretation、source-shaped path からの
+     unresolved-import recovery は R-010 が所有する。
    - テスト: 循環フィクスチャが決定的に拒否される。非循環フィクスチャが
      期待どおりのグラフになる。
    - 依存: 7、8、`mizar-parser` task 6。仕様: `imports.md`。

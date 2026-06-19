@@ -2,10 +2,11 @@
 
 > Canonical language: English. Japanese companion: [../ja/imports.md](../ja/imports.md).
 
-Status: task R-008 specification. Import graph, cycle, alias, relative-prefix,
-and unresolved-import implementation starts in tasks R-009 and R-010. Export
-validation grows with the later import, name, label, and symbol tasks that
-populate the required resolver tables.
+Status: task R-009 implements canonical import graph construction and cycle
+rejection over already-resolved canonical candidates. Alias binding,
+relative-prefix interpretation, and unresolved-import recovery remain task
+R-010. Export validation grows with the later import, name, label, and symbol
+tasks that populate the required resolver tables.
 
 ## Purpose
 
@@ -35,6 +36,14 @@ publishes resolver output.
 Malformed or recovered syntax remains visible to this phase when the parser can
 produce a `SurfaceAst` node for it. If the parser cannot produce a directive
 node, the resolver does not invent a semantic directive.
+
+Task R-009's graph builder starts after path resolution and therefore accepts
+only canonical source/target module identities. Its node universe is the
+explicit set of source modules passed to the builder plus their canonical import
+targets. A zero-import module that should participate in graph ordering is
+passed as an explicit empty candidate set. Unknown source or target modules are
+invalid builder inputs; final semantic unresolved-import recovery is owned by
+task R-010.
 
 ## Outputs
 
@@ -199,17 +208,24 @@ one module, or a self-edge, is rejected as cyclic.
 Cycle records are deterministic:
 
 - modules in a cycle are ordered by canonical `ModuleId`;
-- edges are ordered by source range and then canonical target module;
-- equal source positions are ordered by crate-local failure class and candidate
-  key.
+- edges are ordered by source-range offsets, source module as the stable
+  source-file proxy, and then canonical target module;
+- cycle records are ordered by the first retained cycle edge's source-range
+  offsets, source module as the stable source-file proxy, target module, and
+  source-order ordinal. For R-009 all cycle records have the same crate-local
+  cycle failure class, so equal source positions use that edge candidate key
+  directly.
 
 Cyclic imports make the affected graph edges unavailable to later import and
 name resolution. Acyclic modules outside the rejected cycle remain available.
 
-The topological order contains resolved acyclic modules only. Unresolved module
-imports and rejected cyclic components are omitted from that order and retained
-as unresolved/cycle records with source provenance. When several modules are
-ready at the same time, the order is by canonical `ModuleId`.
+The topological order contains resolved acyclic modules only. R-009 also keeps
+the accepted `ImportGraph` node and edge lists to that acyclic portion; cyclic
+modules live in `ImportCycle` records until the caller decides how to degrade
+later phases. Unresolved module imports and rejected cyclic components are
+omitted from that order and retained as unresolved/cycle records with source
+provenance. When several modules are ready at the same time, the order is by
+canonical `ModuleId`.
 
 ## Unresolved Imports
 
@@ -237,8 +253,11 @@ available summaries.
 
 - Source-order candidates are used for conflict checks and user-facing
   provenance.
-- Canonical graph edges are deduplicated and sorted by target `ModuleId` after
-  source-order conflict checks.
+- Canonical graph edges are deduplicated after source-order conflict checks and
+  sorted by source `ModuleId`, target `ModuleId`, and retained source
+  provenance. Cycle-record edges are sorted by source-range offsets, source
+  module, and then canonical target module; cycle records are sorted by their
+  first retained cycle edge.
 - `ResolvedImport` and `ResolvedExport` records preserve source-order ordinals
   and expose deterministic iteration.
 - Unresolved and cycle records are sorted by source range, failure class, and

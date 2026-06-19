@@ -167,9 +167,13 @@ Keep `cargo test -p mizar-resolve` green after each task (see
    - Deps: 2. Spec: architecture 03 "Step 2",
      [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
-9. **Import graph construction and cycle rejection.** [ ]
+9. **Import graph construction and cycle rejection.** [x]
    - Build the semantic import graph over the module index and reject cycles
-     with deterministic diagnostics.
+     with deterministic cycle records. Public/user-facing diagnostics remain
+     gated by R-G001.
+   - Implemented `src/imports.rs` canonical graph construction over
+     `ModuleIndexInput`. R-010 still owns alias binding, relative-prefix
+     interpretation, and unresolved-import recovery from source-shaped paths.
    - Tests: cycle fixtures rejected deterministically; acyclic fixtures
      produce the expected graph.
    - Deps: 7, 8, `mizar-parser` task 6. Spec: `imports.md`.
