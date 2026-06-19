@@ -13,9 +13,13 @@ enabled builtin、deterministic `NameRefTable` outcome が対象である。task
 root-aware な internal name diagnostic record を実装する。対象は
 `NameDiagnosticRootId`、primary / cascade role、unresolved import-alias root、
 namespace/name dependent record、stable candidate payload、deterministic record
-ordering である。dot-chain finalization は task R-016 に残る。public resolver
-diagnostic 向けの code range は既知の `spec_gap` のままであるため、本書は diagnostic
-class、payload、ordering を仕様化するが、public numeric diagnostic code は創作しない。
+ordering である。task R-016 は source-shaped dot-chain finalization を実装する。対象は
+`LocalTermScope`、`LocalTermBinding`、`DotChainCandidate`、`DotChainFinalizer` であり、
+visible local term binding は namespace head を shadow して `DeferredSelector` を生成し、
+shadow されない chain は leading path を namespace、final segment を qualified symbol として
+解決する。public resolver diagnostic 向けの code range は既知の `spec_gap` のままであるため、
+本書は diagnostic class、payload、ordering を仕様化するが、public numeric diagnostic code は
+創作しない。
 
 ## 参照
 
@@ -272,16 +276,23 @@ primary diagnostic を出さない。namespace failure が unresolved import ali
 場合、import dependency root が primary record になり、dependent namespace record と
 failed-namespace `NameRefTable` entry は cascade record としてその root に link する。
 
-## Dot-Chain Finalization Contract
+## Dot-Chain Finalization
 
 parser と syntax crate は dot role を source-shaped のまま保持する。task R-016 は、
 namespace qualification と selector access のどちらにもなり得る chain について、
 resolver-owned semantic boundary を最終決定する。
 
-R-016 の contract:
+実装 contract:
 
-- first segment が local term binding に解決する場合、その chain は selector syntax であり、
-  その segment に対する namespace lookup は試みない。
+- local term binding は stable lexical `LocalTermScope`、declaration range、
+  visible-after ordinal を持つ。use-site scope が binding scope と等しい、またはその
+  配下にあり、binding が chain ordinal より前に visible である場合、その binding は
+  in scope である。同じ spelling の binding が複数 in scope の場合、innermost scope、
+  latest visible-after ordinal、declaration range の順で決定的に選ぶ。
+- first segment が in-scope local term binding に解決する場合、その chain は selector
+  syntax であり、その segment に対する namespace lookup は試みない。resolver は
+  binding declaration node ではなく `DotChainCandidate` の use-site base term node を使って
+  `DeferredSelector` を記録する。
 - first segment が import alias、namespace root、package binding、または current-module
   namespace に解決し、local binding が shadow していない場合、resolver は final symbol
   segment まで leading chain を namespace-qualified として扱う。
@@ -289,11 +300,11 @@ R-016 の contract:
   場合、`DeferredSelector` を記録する。
 - namespace と selector のどちらの解釈も不可能な場合、最初に決定的に失敗した segment で
   unresolved とする。
-- complete-source fixture によりより狭い規則が必要になった場合、最終 R-016 実装は本書を
-  更新しなければならない。
+- malformed、recovered、single-segment の dotted-chain candidate は parser や checker の
+  semantics を創作せず unresolved internal record として保持する。
 
-この contract は handoff を記録する。selector field lookup や selector-call type checking
-は行わない。
+この finalizer は handoff を記録する。selector field lookup、selector-call type checking、
+type-directed overload winner selection、parser recovery decision は行わない。
 
 ## Diagnostics
 

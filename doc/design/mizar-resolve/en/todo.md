@@ -56,10 +56,11 @@ IR ownership: [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
 
 ## Resolved And Open Decisions
 
-- **Dot-role finalization: open, resolved by task 16.** The parser leaves
+- **Dot-role finalization: resolved by task 16.** The parser leaves
   selector-versus-namespace separation syntactic (`mizar-parser` task 10,
-  `mizar-syntax` task 8); the resolver finishes the decision using variable
-  scope. Registered at the top level
+  `mizar-syntax` task 8); `mizar_resolve::names::DotChainFinalizer` finishes
+  the decision using lexical local-term scope and preserves selector validation
+  for checker/type phases. Also recorded at the top level
   ([../../todo.md](../../todo.md) "Resolved And Open Decisions").
 - **Interim orchestration seam: resolved by task 7.** Pipeline orchestration is
   owned by `mizar-driver`
@@ -279,12 +280,19 @@ Keep `cargo test -p mizar-resolve` green after each task (see
     - Deps: 14. Spec: `names.md`,
       [22.error_handling_and_diagnostics.md](../../../spec/en/22.error_handling_and_diagnostics.md).
 
-16. **Dot-chain finalization.** [ ]
+16. **Dot-chain finalization.** [x]
     - Finish the unresolved dot chains the parser left syntactic: selector
       access versus namespace separation by variable scope. Record the
       decision in `names.md` and close the top-level open decision.
+    - Implemented R-016 in `src/names.rs` with `LocalTermScope`,
+      `LocalTermBinding`, `DotChainCandidate`, `DotChainFinalizer`, and
+      `DotChainResolution`. In-scope local terms shadow namespace heads and
+      produce `DeferredSelector` records using the use-site base node; otherwise
+      the leading path resolves through `NamespaceResolver` and the final
+      segment through qualified `SymbolNameResolver`.
     - Tests: selector/namespace splits from spec §A.2.5 examples; chains that
-      fit neither role are diagnosed.
+      fit neither role are diagnosed; out-of-scope locals do not shadow
+      namespaces; innermost local binding wins; output order is deterministic.
     - Deps: 14, `mizar-parser` task 10. Spec:
       [§A.2.5](../../../spec/en/appendix_a.grammar_summary.md).
 

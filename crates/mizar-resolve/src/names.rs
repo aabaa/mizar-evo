@@ -1,12 +1,14 @@
 //! Namespace and symbol-name resolution.
 //!
 //! This module implements the R-013 namespace slice, the R-014 ordinary
-//! symbol-name lookup slice, and the R-015 internal name-diagnostic slice. It
-//! resolves source-shaped namespace path candidates to canonical module
-//! namespaces, resolves ordinary name references through preliminary symbol
-//! projections, and keeps unresolved/ambiguous diagnostic roots explicit
-//! without checking selectors, choosing overload winners, assigning public
-//! diagnostic codes, or assigning full signature-bearing symbol entries.
+//! symbol-name lookup slice, the R-015 internal name-diagnostic slice, and the
+//! R-016 dot-chain finalization slice. It resolves source-shaped namespace path
+//! candidates to canonical module namespaces, resolves ordinary name references
+//! through preliminary symbol projections, finalizes dotted chains as
+//! checker-deferred selectors or namespace-qualified symbol references, and
+//! keeps unresolved/ambiguous diagnostic roots explicit without checking
+//! selectors, choosing overload winners, assigning public diagnostic codes, or
+//! assigning full signature-bearing symbol entries.
 
 use crate::env::{NamespacePath, SymbolKind, Visibility};
 use crate::imports::{ImportPathFailureClass, ResolvedImportCandidate, UnresolvedImportCandidate};
@@ -14,9 +16,9 @@ use crate::module_index::{
     IndexedModuleId, ModuleIndexInput, ModuleIndexProviderError, NamespaceIndexEntry, NamespaceRoot,
 };
 use crate::resolved_ast::{
-    AmbiguousNameRef, BuiltinId, BuiltinRef, ModuleId, NameLookupClass, NameRefEntry, NameRefId,
-    NameRefTable, NameResolution, NameResolutionCandidate, ReferenceSite, SemanticOrigin, SymbolId,
-    SymbolRef,
+    AmbiguousNameRef, BuiltinId, BuiltinRef, DeferredSelectorRef, ModuleId, NameLookupClass,
+    NameRefEntry, NameRefId, NameRefTable, NameResolution, NameResolutionCandidate, ReferenceSite,
+    ResolvedNodeId, SemanticOrigin, SymbolId, SymbolRef,
 };
 use mizar_session::{ModulePath, PackageId, SourceRange};
 use std::cmp::Ordering;
@@ -818,6 +820,239 @@ impl NameReferenceCandidate {
     }
 }
 
+/// Lexical scope key for local term bindings.
+#[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct LocalTermScope {
+    path: Vec<u32>,
+}
+
+impl LocalTermScope {
+    /// Creates a scope key from a stable lexical path.
+    #[must_use]
+    pub fn new(path: impl Into<Vec<u32>>) -> Self {
+        Self { path: path.into() }
+    }
+
+    /// Returns the lexical path.
+    #[must_use]
+    pub fn path(&self) -> &[u32] {
+        &self.path
+    }
+
+    fn contains(&self, other: &Self) -> bool {
+        other.path.starts_with(&self.path)
+    }
+}
+
+/// Local term/binder name that can shadow a namespace segment.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LocalTermBinding {
+    spelling: String,
+    scope: LocalTermScope,
+    declaration_range: SourceRange,
+    visible_after_ordinal: usize,
+}
+
+impl LocalTermBinding {
+    /// Creates a local term binding.
+    #[must_use]
+    pub fn new(
+        spelling: impl Into<String>,
+        scope: LocalTermScope,
+        declaration_range: SourceRange,
+        visible_after_ordinal: usize,
+    ) -> Self {
+        Self {
+            spelling: spelling.into(),
+            scope,
+            declaration_range,
+            visible_after_ordinal,
+        }
+    }
+
+    /// Returns the local binding spelling.
+    #[must_use]
+    pub fn spelling(&self) -> &str {
+        &self.spelling
+    }
+
+    /// Returns the lexical scope that owns this binding.
+    #[must_use]
+    pub const fn scope(&self) -> &LocalTermScope {
+        &self.scope
+    }
+
+    /// Returns the declaration range.
+    #[must_use]
+    pub const fn declaration_range(&self) -> SourceRange {
+        self.declaration_range
+    }
+
+    /// Returns the source-order ordinal after which this binding is visible.
+    #[must_use]
+    pub const fn visible_after_ordinal(&self) -> usize {
+        self.visible_after_ordinal
+    }
+}
+
+/// One represented segment in a source-shaped dotted chain.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DotChainSegment {
+    spelling: String,
+    range: SourceRange,
+}
+
+impl DotChainSegment {
+    /// Creates a dotted-chain segment.
+    #[must_use]
+    pub fn new(spelling: impl Into<String>, range: SourceRange) -> Self {
+        Self {
+            spelling: spelling.into(),
+            range,
+        }
+    }
+
+    /// Returns the segment spelling.
+    #[must_use]
+    pub fn spelling(&self) -> &str {
+        &self.spelling
+    }
+
+    /// Returns the segment range.
+    #[must_use]
+    pub const fn range(&self) -> SourceRange {
+        self.range
+    }
+}
+
+/// Source-shaped dotted chain that needs selector-vs-namespace finalization.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DotChainCandidate {
+    segments: Vec<DotChainSegment>,
+    site: ReferenceSite,
+    origin: SemanticOrigin,
+    base_node: ResolvedNodeId,
+    scope: LocalTermScope,
+    ordinal: usize,
+    recovered: bool,
+}
+
+impl DotChainCandidate {
+    /// Creates a dotted-chain candidate.
+    #[must_use]
+    pub fn new(
+        segments: Vec<DotChainSegment>,
+        site: ReferenceSite,
+        origin: SemanticOrigin,
+        base_node: ResolvedNodeId,
+        scope: LocalTermScope,
+        ordinal: usize,
+    ) -> Self {
+        Self {
+            segments,
+            site,
+            origin,
+            base_node,
+            scope,
+            ordinal,
+            recovered: false,
+        }
+    }
+
+    /// Marks this candidate as parser-recovered.
+    #[must_use]
+    pub const fn with_recovered(mut self) -> Self {
+        self.recovered = true;
+        self
+    }
+
+    /// Returns represented segments.
+    #[must_use]
+    pub fn segments(&self) -> &[DotChainSegment] {
+        &self.segments
+    }
+
+    /// Returns the full-chain reference site.
+    #[must_use]
+    pub const fn site(&self) -> &ReferenceSite {
+        &self.site
+    }
+
+    /// Returns normalized provenance.
+    #[must_use]
+    pub const fn origin(&self) -> &SemanticOrigin {
+        &self.origin
+    }
+
+    /// Returns the use-site base term node used by deferred selector records.
+    #[must_use]
+    pub const fn base_node(&self) -> ResolvedNodeId {
+        self.base_node
+    }
+
+    /// Returns the use-site lexical scope.
+    #[must_use]
+    pub const fn scope(&self) -> &LocalTermScope {
+        &self.scope
+    }
+
+    /// Returns the source-order ordinal.
+    #[must_use]
+    pub const fn ordinal(&self) -> usize {
+        self.ordinal
+    }
+
+    /// Returns whether parser recovery was involved.
+    #[must_use]
+    pub const fn recovered(&self) -> bool {
+        self.recovered
+    }
+
+    fn spelling(&self) -> String {
+        self.segments
+            .iter()
+            .map(|segment| segment.spelling())
+            .collect::<Vec<_>>()
+            .join(".")
+    }
+}
+
+/// Deterministic dot-chain finalization result.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct DotChainResolution {
+    table: NameRefTable,
+    ids: Vec<NameRefId>,
+    namespaces: NamespacePathResolution,
+}
+
+impl DotChainResolution {
+    fn new(table: NameRefTable, ids: Vec<NameRefId>, namespaces: NamespacePathResolution) -> Self {
+        Self {
+            table,
+            ids,
+            namespaces,
+        }
+    }
+
+    /// Returns the populated name-reference table.
+    #[must_use]
+    pub const fn table(&self) -> &NameRefTable {
+        &self.table
+    }
+
+    /// Returns table ids in deterministic chain order.
+    #[must_use]
+    pub fn ids(&self) -> &[NameRefId] {
+        &self.ids
+    }
+
+    /// Returns namespace path outcomes produced while finalizing chains.
+    #[must_use]
+    pub const fn namespaces(&self) -> &NamespacePathResolution {
+        &self.namespaces
+    }
+}
+
 /// Deterministic name-reference lookup result.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NameReferenceResolution {
@@ -1314,6 +1549,200 @@ impl<'a> SymbolNameResolver<'a> {
     }
 }
 
+/// Finalizes dotted chains as either selector access or namespace-qualified
+/// symbol lookup.
+#[derive(Clone, Copy)]
+pub struct DotChainFinalizer<'a> {
+    namespace_resolver: NamespaceResolver<'a>,
+    symbol_resolver: SymbolNameResolver<'a>,
+    local_terms: &'a [LocalTermBinding],
+}
+
+struct DotChainFinalizeContext<'a> {
+    current_module: &'a ModuleId,
+    current_namespace: &'a NamespacePath,
+    resolved_imports: &'a [ResolvedImportCandidate],
+    unresolved_imports: &'a [UnresolvedImportCandidate],
+}
+
+#[derive(Default)]
+struct DotChainNamespaceSink {
+    resolved: Vec<ResolvedNamespacePath>,
+    unresolved: Vec<UnresolvedNamespacePath>,
+}
+
+impl<'a> DotChainFinalizer<'a> {
+    /// Creates a dot-chain finalizer.
+    #[must_use]
+    pub const fn new(
+        namespace_resolver: NamespaceResolver<'a>,
+        symbol_resolver: SymbolNameResolver<'a>,
+        local_terms: &'a [LocalTermBinding],
+    ) -> Self {
+        Self {
+            namespace_resolver,
+            symbol_resolver,
+            local_terms,
+        }
+    }
+
+    /// Finalizes source-shaped dotted chains for the current module.
+    #[must_use]
+    pub fn finalize(
+        self,
+        current_module: &ModuleId,
+        current_namespace: &NamespacePath,
+        resolved_imports: &[ResolvedImportCandidate],
+        unresolved_imports: &[UnresolvedImportCandidate],
+        chains: &[DotChainCandidate],
+    ) -> DotChainResolution {
+        let mut ordered = chains.iter().collect::<Vec<_>>();
+        ordered.sort_by(|left, right| dot_chain_candidate_cmp(left, right));
+
+        let mut table = NameRefTable::new();
+        let mut ids = Vec::with_capacity(ordered.len());
+        let mut namespaces = DotChainNamespaceSink::default();
+        let context = DotChainFinalizeContext {
+            current_module,
+            current_namespace,
+            resolved_imports,
+            unresolved_imports,
+        };
+
+        for chain in ordered {
+            let id = self.finalize_one(&context, chain, &mut table, &mut namespaces);
+            ids.push(id);
+        }
+
+        DotChainResolution::new(
+            table,
+            ids,
+            NamespacePathResolution::new(namespaces.resolved, namespaces.unresolved),
+        )
+    }
+
+    fn finalize_one(
+        self,
+        context: &DotChainFinalizeContext<'_>,
+        chain: &DotChainCandidate,
+        table: &mut NameRefTable,
+        namespaces: &mut DotChainNamespaceSink,
+    ) -> NameRefId {
+        let resolution = self.resolve_chain(context, chain, namespaces);
+        table.insert(NameRefEntry::new(
+            chain.site().clone(),
+            resolution,
+            chain.origin().clone(),
+        ))
+    }
+
+    fn resolve_chain(
+        self,
+        context: &DotChainFinalizeContext<'_>,
+        chain: &DotChainCandidate,
+        namespaces: &mut DotChainNamespaceSink,
+    ) -> NameResolution {
+        let Some(malformed) = malformed_dot_chain_segment(chain) else {
+            if chain.segments().len() < 2 {
+                return unresolved_dot_chain(
+                    chain,
+                    chain.site().range(),
+                    NameLookupClass::Selector,
+                );
+            }
+            if chain.recovered() || chain.origin().is_recovered() {
+                return unresolved_dot_chain(
+                    chain,
+                    chain.site().range(),
+                    NameLookupClass::Selector,
+                );
+            }
+            if self.local_term_binding(chain).is_some() {
+                return NameResolution::DeferredSelector(DeferredSelectorRef::new(
+                    chain.base_node(),
+                    dot_chain_member_spelling(chain),
+                    chain.site().range(),
+                ));
+            }
+            return self.resolve_namespace_chain(context, chain, namespaces);
+        };
+        unresolved_dot_chain(chain, malformed.range(), NameLookupClass::Selector)
+    }
+
+    fn resolve_namespace_chain(
+        self,
+        context: &DotChainFinalizeContext<'_>,
+        chain: &DotChainCandidate,
+        namespaces: &mut DotChainNamespaceSink,
+    ) -> NameResolution {
+        let namespace_candidate = namespace_candidate_from_dot_chain(chain);
+        let namespace_resolution = self.namespace_resolver.resolve(
+            context.current_module,
+            context.resolved_imports,
+            context.unresolved_imports,
+            &[namespace_candidate],
+        );
+        namespaces
+            .resolved
+            .extend(namespace_resolution.resolved().iter().cloned());
+        namespaces
+            .unresolved
+            .extend(namespace_resolution.unresolved().iter().cloned());
+
+        if let Some(unresolved) = namespace_resolution.unresolved().first() {
+            let range = unresolved
+                .failed_segment()
+                .map(NamespacePathSegment::range)
+                .unwrap_or_else(|| unresolved.range());
+            return NameResolution::Unresolved(crate::resolved_ast::UnresolvedNameRef::new(
+                unresolved.spelling(),
+                range,
+                NameLookupClass::Namespace,
+            ));
+        }
+
+        let Some(namespace) = namespace_resolution.resolved().first() else {
+            return unresolved_dot_chain(chain, chain.site().range(), NameLookupClass::Namespace);
+        };
+        let Some(final_segment) = chain.segments().last() else {
+            return unresolved_dot_chain(chain, chain.site().range(), NameLookupClass::Selector);
+        };
+        let name_candidate = NameReferenceCandidate::qualified_module(
+            ReferenceSite::new(
+                chain.site().node(),
+                final_segment.range(),
+                final_segment.spelling(),
+            ),
+            chain.origin().clone(),
+            chain.ordinal(),
+            namespace.target().clone(),
+        );
+        let name_resolution = self.symbol_resolver.resolve(
+            context.current_module,
+            context.current_namespace,
+            &[name_candidate],
+        );
+        let Some(id) = name_resolution.ids().first() else {
+            return unresolved_dot_chain(chain, final_segment.range(), NameLookupClass::Symbol);
+        };
+        name_resolution
+            .table()
+            .get(*id)
+            .map(|entry| entry.resolution().clone())
+            .unwrap_or_else(|| {
+                unresolved_dot_chain(chain, final_segment.range(), NameLookupClass::Symbol)
+            })
+    }
+
+    fn local_term_binding(self, chain: &DotChainCandidate) -> Option<&'a LocalTermBinding> {
+        let first = chain.segments().first()?;
+        self.local_terms
+            .iter()
+            .filter(|binding| local_term_binding_visible(binding, chain, first.spelling()))
+            .max_by(|left, right| local_term_binding_cmp(left, right))
+    }
+}
+
 /// Resolves source-shaped namespace path candidates.
 #[derive(Clone, Copy)]
 pub struct NamespaceResolver<'a> {
@@ -1746,6 +2175,91 @@ fn unresolved_name(candidate: &NameReferenceCandidate, lookup: NameLookupClass) 
     ))
 }
 
+fn unresolved_dot_chain(
+    chain: &DotChainCandidate,
+    range: SourceRange,
+    lookup: NameLookupClass,
+) -> NameResolution {
+    NameResolution::Unresolved(crate::resolved_ast::UnresolvedNameRef::new(
+        chain.spelling(),
+        range,
+        lookup,
+    ))
+}
+
+fn malformed_dot_chain_segment(chain: &DotChainCandidate) -> Option<&DotChainSegment> {
+    chain
+        .segments()
+        .iter()
+        .find(|segment| segment.spelling().is_empty())
+}
+
+fn namespace_candidate_from_dot_chain(chain: &DotChainCandidate) -> NamespacePathCandidate {
+    let namespace_segments = chain
+        .segments()
+        .iter()
+        .take(chain.segments().len().saturating_sub(1))
+        .map(|segment| NamespacePathSegment::new(segment.spelling(), segment.range()))
+        .collect::<Vec<_>>();
+    NamespacePathCandidate::new(
+        namespace_segments,
+        dot_chain_namespace_range(chain),
+        chain.ordinal(),
+    )
+}
+
+fn dot_chain_namespace_range(chain: &DotChainCandidate) -> SourceRange {
+    let first = chain.segments().first().map(DotChainSegment::range);
+    let namespace_len = chain.segments().len().saturating_sub(1);
+    let last = namespace_len
+        .checked_sub(1)
+        .and_then(|index| chain.segments().get(index))
+        .map(DotChainSegment::range);
+    match (first, last) {
+        (Some(first), Some(last)) => SourceRange {
+            source_id: first.source_id,
+            start: first.start,
+            end: last.end,
+        },
+        _ => chain.site().range(),
+    }
+}
+
+fn dot_chain_member_spelling(chain: &DotChainCandidate) -> String {
+    chain
+        .segments()
+        .iter()
+        .skip(1)
+        .map(|segment| segment.spelling())
+        .collect::<Vec<_>>()
+        .join(".")
+}
+
+fn local_term_binding_visible(
+    binding: &LocalTermBinding,
+    chain: &DotChainCandidate,
+    spelling: &str,
+) -> bool {
+    binding.spelling() == spelling
+        && binding.visible_after_ordinal() < chain.ordinal()
+        && binding.scope().contains(chain.scope())
+}
+
+fn local_term_binding_cmp(left: &LocalTermBinding, right: &LocalTermBinding) -> Ordering {
+    left.scope()
+        .path()
+        .len()
+        .cmp(&right.scope().path().len())
+        .then_with(|| {
+            left.visible_after_ordinal()
+                .cmp(&right.visible_after_ordinal())
+        })
+        .then_with(|| {
+            range_key(left.declaration_range()).cmp(&range_key(right.declaration_range()))
+        })
+        .then_with(|| left.spelling().cmp(right.spelling()))
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum DiagnosticRootKey {
     Name {
@@ -2006,8 +2520,17 @@ fn collect_namespace_diagnostic_root(
             namespace.spelling().to_owned(),
             range_key(namespace.range()),
         ),
-        root_key,
+        root_key.clone(),
     );
+    if let Some(failed_segment) = namespace.failed_segment() {
+        namespace_root_keys.insert(
+            (
+                namespace.spelling().to_owned(),
+                range_key(failed_segment.range()),
+            ),
+            root_key,
+        );
+    }
 }
 
 fn finish_name_diagnostics(
@@ -2454,6 +2977,13 @@ fn name_reference_candidate_cmp(
         .cmp(&right.ordinal())
         .then_with(|| range_key(left.site().range()).cmp(&range_key(right.site().range())))
         .then_with(|| left.site().spelling().cmp(right.site().spelling()))
+}
+
+fn dot_chain_candidate_cmp(left: &DotChainCandidate, right: &DotChainCandidate) -> Ordering {
+    left.ordinal()
+        .cmp(&right.ordinal())
+        .then_with(|| range_key(left.site().range()).cmp(&range_key(right.site().range())))
+        .then_with(|| left.spelling().cmp(&right.spelling()))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -3711,6 +4241,301 @@ mod tests {
     }
 
     #[test]
+    fn dot_chain_local_binding_defers_selector_without_namespace_lookup() {
+        let source_id = source_id();
+        let provider = fixture_provider();
+        let current = module_id("app", "main");
+        let namespace = NamespacePath::new("main");
+        let local_scope = LocalTermScope::new(vec![1, 2]);
+        let chain = dot_chain_candidate(
+            source_id,
+            current.clone(),
+            10,
+            40,
+            &["dep", "logic", "P"],
+            local_scope.clone(),
+        );
+        let base_node = chain.base_node();
+        let local_terms = vec![LocalTermBinding::new(
+            "dep",
+            LocalTermScope::new(vec![1]),
+            range(source_id, 0, 3),
+            0,
+        )];
+
+        let resolved = DotChainFinalizer::new(
+            NamespaceResolver::new(ModuleIndexInput::new(&provider)),
+            SymbolNameResolver::new(&[], &[]),
+            &local_terms,
+        )
+        .finalize(&current, &namespace, &[], &[], &[chain]);
+
+        assert!(resolved.namespaces().resolved().is_empty());
+        assert!(resolved.namespaces().unresolved().is_empty());
+        let entry = resolved.table().get(resolved.ids()[0]).unwrap();
+        let NameResolution::DeferredSelector(selector) = entry.resolution() else {
+            panic!("expected deferred selector");
+        };
+        assert_eq!(selector.base(), base_node);
+        assert_eq!(selector.member(), "logic.P");
+        assert_eq!(selector.range(), range(source_id, 40, 51));
+    }
+
+    #[test]
+    fn dot_chain_without_visible_local_resolves_namespace_symbol() {
+        let source_id = source_id();
+        let provider = fixture_provider();
+        let current = module_id("app", "main");
+        let namespace = NamespacePath::new("main");
+        let dep = module_id("dep", "logic");
+        let projections = vec![imported_projection(
+            source_id,
+            dep,
+            NamespacePath::new("logic"),
+            "P",
+            "dep::logic::P",
+            Visibility::Public,
+            0,
+        )];
+        let chain = dot_chain_candidate(
+            source_id,
+            current.clone(),
+            10,
+            40,
+            &["dep", "logic", "P"],
+            LocalTermScope::new(vec![1, 2]),
+        );
+        let out_of_scope_locals = vec![LocalTermBinding::new(
+            "dep",
+            LocalTermScope::new(vec![9]),
+            range(source_id, 0, 3),
+            0,
+        )];
+
+        let resolved = DotChainFinalizer::new(
+            NamespaceResolver::new(ModuleIndexInput::new(&provider)),
+            SymbolNameResolver::new(&projections, &[]),
+            &out_of_scope_locals,
+        )
+        .finalize(&current, &namespace, &[], &[], &[chain]);
+
+        assert_eq!(resolved.namespaces().resolved().len(), 1);
+        let entry = resolved.table().get(resolved.ids()[0]).unwrap();
+        let NameResolution::Resolved(symbol) = entry.resolution() else {
+            panic!("expected resolved qualified symbol");
+        };
+        assert_eq!(symbol.symbol().fqn().as_str(), "dep::logic::P");
+        assert_eq!(symbol.range(), range(source_id, 50, 51));
+    }
+
+    #[test]
+    fn dot_chain_uses_innermost_visible_local_binding() {
+        let source_id = source_id();
+        let provider = fixture_provider();
+        let current = module_id("app", "main");
+        let namespace = NamespacePath::new("main");
+        let chain = dot_chain_candidate(
+            source_id,
+            current.clone(),
+            10,
+            40,
+            &["x", "field"],
+            LocalTermScope::new(vec![1, 2, 3]),
+        );
+        let local_terms = vec![
+            LocalTermBinding::new("x", LocalTermScope::new(vec![1]), range(source_id, 0, 1), 0),
+            LocalTermBinding::new(
+                "x",
+                LocalTermScope::new(vec![1, 2]),
+                range(source_id, 10, 11),
+                0,
+            ),
+            LocalTermBinding::new(
+                "x",
+                LocalTermScope::new(vec![1, 2]),
+                range(source_id, 12, 13),
+                5,
+            ),
+            LocalTermBinding::new(
+                "x",
+                LocalTermScope::new(vec![1, 2]),
+                range(source_id, 14, 15),
+                5,
+            ),
+            LocalTermBinding::new(
+                "x",
+                LocalTermScope::new(vec![1, 2, 3]),
+                range(source_id, 20, 21),
+                20,
+            ),
+        ];
+        let finalizer = DotChainFinalizer::new(
+            NamespaceResolver::new(ModuleIndexInput::new(&provider)),
+            SymbolNameResolver::new(&[], &[]),
+            &local_terms,
+        );
+
+        let selected = finalizer.local_term_binding(&chain).unwrap();
+        assert_eq!(selected.declaration_range(), range(source_id, 14, 15));
+
+        let resolved = finalizer.finalize(&current, &namespace, &[], &[], &[chain]);
+        let entry = resolved.table().get(resolved.ids()[0]).unwrap();
+        assert!(matches!(
+            entry.resolution(),
+            NameResolution::DeferredSelector(selector) if selector.member() == "field"
+        ));
+    }
+
+    #[test]
+    fn dot_chain_unresolved_namespace_uses_earliest_failed_segment() {
+        let source_id = source_id();
+        let provider = fixture_provider();
+        let current = module_id("app", "main");
+        let namespace = NamespacePath::new("main");
+        let chain = dot_chain_candidate(
+            source_id,
+            current.clone(),
+            0,
+            20,
+            &["pub", "math", "missing", "P"],
+            LocalTermScope::new(vec![1]),
+        );
+
+        let resolved = DotChainFinalizer::new(
+            NamespaceResolver::new(ModuleIndexInput::new(&provider)),
+            SymbolNameResolver::new(&[], &[]),
+            &[],
+        )
+        .finalize(&current, &namespace, &[], &[], &[chain]);
+
+        assert_eq!(resolved.namespaces().unresolved().len(), 1);
+        let entry = resolved.table().get(resolved.ids()[0]).unwrap();
+        let NameResolution::Unresolved(unresolved) = entry.resolution() else {
+            panic!("expected unresolved namespace");
+        };
+        assert_eq!(unresolved.lookup(), NameLookupClass::Namespace);
+        assert_eq!(unresolved.range(), range(source_id, 29, 36));
+
+        let report = NameDiagnosticCollector::new()
+            .with_namespace_roots(resolved.namespaces().unresolved())
+            .collect(resolved.table());
+        assert_eq!(report.primary().count(), 1);
+        let cascades = report.cascades().collect::<Vec<_>>();
+        assert_eq!(cascades.len(), 1);
+        assert_eq!(cascades[0].root_range(), range(source_id, 20, 36));
+        assert_eq!(cascades[0].range(), range(source_id, 29, 36));
+    }
+
+    #[test]
+    fn dot_chain_finalizer_orders_out_of_order_inputs() {
+        let source_id = source_id();
+        let provider = fixture_provider();
+        let current = module_id("app", "main");
+        let namespace = NamespacePath::new("main");
+        let local_terms = vec![LocalTermBinding::new(
+            "x",
+            LocalTermScope::new(vec![1]),
+            range(source_id, 0, 1),
+            0,
+        )];
+        let late = dot_chain_candidate(
+            source_id,
+            current.clone(),
+            2,
+            40,
+            &["x", "late"],
+            LocalTermScope::new(vec![1]),
+        );
+        let early = dot_chain_candidate(
+            source_id,
+            current.clone(),
+            1,
+            20,
+            &["x", "early"],
+            LocalTermScope::new(vec![1]),
+        );
+
+        let resolved = DotChainFinalizer::new(
+            NamespaceResolver::new(ModuleIndexInput::new(&provider)),
+            SymbolNameResolver::new(&[], &[]),
+            &local_terms,
+        )
+        .finalize(&current, &namespace, &[], &[], &[late, early]);
+
+        let spellings = resolved
+            .ids()
+            .iter()
+            .map(|id| resolved.table().get(*id).unwrap().site().spelling())
+            .collect::<Vec<_>>();
+        assert_eq!(spellings, vec!["x.early", "x.late"]);
+    }
+
+    #[test]
+    fn dot_chain_malformed_or_recovered_inputs_stay_unresolved() {
+        let source_id = source_id();
+        let provider = fixture_provider();
+        let current = module_id("app", "main");
+        let namespace = NamespacePath::new("main");
+        let malformed = dot_chain_candidate(
+            source_id,
+            current.clone(),
+            0,
+            20,
+            &["x", ""],
+            LocalTermScope::new(vec![1]),
+        );
+        let recovered = dot_chain_candidate(
+            source_id,
+            current.clone(),
+            1,
+            40,
+            &["x", "field"],
+            LocalTermScope::new(vec![1]),
+        )
+        .with_recovered();
+        let single = dot_chain_candidate(
+            source_id,
+            current.clone(),
+            2,
+            60,
+            &["x"],
+            LocalTermScope::new(vec![1]),
+        );
+
+        let resolved = DotChainFinalizer::new(
+            NamespaceResolver::new(ModuleIndexInput::new(&provider)),
+            SymbolNameResolver::new(&[], &[]),
+            &[],
+        )
+        .finalize(
+            &current,
+            &namespace,
+            &[],
+            &[],
+            &[malformed, recovered, single],
+        );
+
+        assert_unresolved_entry(
+            resolved.table(),
+            resolved.ids()[0],
+            NameLookupClass::Selector,
+            range(source_id, 22, 22),
+        );
+        assert_unresolved_entry(
+            resolved.table(),
+            resolved.ids()[1],
+            NameLookupClass::Selector,
+            range(source_id, 40, 47),
+        );
+        assert_unresolved_entry(
+            resolved.table(),
+            resolved.ids()[2],
+            NameLookupClass::Selector,
+            range(source_id, 60, 61),
+        );
+    }
+
+    #[test]
     fn resolver_resolves_alias_roots_and_package_names_deterministically() {
         let source_id = source_id();
         let provider = fixture_provider();
@@ -4453,6 +5278,69 @@ mod tests {
         };
         assert_eq!(unresolved.lookup(), expected_lookup);
         assert_eq!(unresolved.spelling(), expected_spelling);
+    }
+
+    fn assert_unresolved_entry(
+        table: &NameRefTable,
+        id: NameRefId,
+        expected_lookup: NameLookupClass,
+        expected_range: SourceRange,
+    ) {
+        let entry = table.get(id).unwrap();
+        let NameResolution::Unresolved(unresolved) = entry.resolution() else {
+            panic!("expected unresolved name");
+        };
+        assert_eq!(unresolved.lookup(), expected_lookup);
+        assert_eq!(unresolved.range(), expected_range);
+    }
+
+    fn dot_chain_candidate(
+        source_id: SourceId,
+        module: ModuleId,
+        ordinal: usize,
+        start: usize,
+        spellings: &[&str],
+        scope: LocalTermScope,
+    ) -> DotChainCandidate {
+        let mut cursor = start;
+        let mut segments = Vec::new();
+        for spelling in spellings {
+            segments.push(DotChainSegment::new(
+                *spelling,
+                range(source_id, cursor, cursor + spelling.len()),
+            ));
+            cursor += spelling.len() + 1;
+        }
+        let chain_range = range(source_id, start, cursor.saturating_sub(1));
+        let origin = SemanticOrigin::new(
+            source_id,
+            module,
+            SourceAnchor::Range(chain_range),
+            vec![ordinal as u32],
+        );
+        let mut arena = ResolvedArenaBuilder::new();
+        let base_node = arena
+            .push(ResolvedNode::new(
+                SurfaceNodeKind::TermReference,
+                Vec::new(),
+                origin.clone(),
+            ))
+            .unwrap();
+        let chain_node = arena
+            .push(ResolvedNode::new(
+                SurfaceNodeKind::SelectorAccess,
+                Vec::new(),
+                origin.clone(),
+            ))
+            .unwrap();
+        DotChainCandidate::new(
+            segments,
+            ReferenceSite::new(chain_node, chain_range, spellings.join(".")),
+            origin,
+            base_node,
+            scope,
+            ordinal,
+        )
     }
 
     fn unresolved_namespace_fixture(

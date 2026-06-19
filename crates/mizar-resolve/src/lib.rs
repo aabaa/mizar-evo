@@ -4,8 +4,9 @@
 //! resolver-owned `ResolvedAst` and `SymbolEnv` data shapes, the module-index
 //! input seam, source-shaped import path and graph resolution,
 //! declaration-shell collection, namespace lookup, preliminary symbol-name
-//! lookup, and crate-local/internal name diagnostics while executable label,
-//! signature, and full symbol extraction passes land in follow-on tasks.
+//! lookup, crate-local/internal name diagnostics, and dot-chain finalization
+//! while executable label, signature, and full symbol extraction passes land in
+//! follow-on tasks.
 
 /// Source-shaped declaration shell collection.
 pub mod declarations;
@@ -19,7 +20,8 @@ pub mod imports;
 /// Resolver-side module-index phase input seam.
 pub mod module_index;
 
-/// Namespace, preliminary symbol-name resolution, and internal diagnostics.
+/// Namespace, preliminary symbol-name resolution, internal diagnostics, and
+/// dot-chain finalization.
 pub mod names;
 
 /// Resolved AST data shapes and reference tables.

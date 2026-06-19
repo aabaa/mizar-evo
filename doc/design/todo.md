@@ -45,7 +45,7 @@ and the crate ownership map in
 | mizar-test | yes | Corpus discovery, expectation sidecars, staged model, traceability, snapshots, harness behavior | [~] implementation exists; formal lint/gap audit, runner validation, snapshots, and reporting remain | [todo](./mizar-test/en/todo.md) |
 | mizar-build | yes | Phase 0 workspace planning plus later task graph, scheduler, resources, cancellation, failure state | [~] scaffold and package-name validation slice exist; planner spec and full manifest/lockfile parsing are next | [todo](./mizar-build/en/todo.md) |
 | mizar-lsp | yes | Editor range mapping now; future server, snapshots, diagnostics, metadata, navigation, actions, explanations | [~] range conversion slice exists; specs and server features remain planned | [todo](./mizar-lsp/en/todo.md) |
-| mizar-resolve | yes | Module graph, namespaces, symbols, labels, signature collection | [~] foundation tasks 1-7 complete; imports/name wave is next | [todo](./mizar-resolve/en/todo.md) |
+| mizar-resolve | yes | Module graph, namespaces, symbols, labels, signature collection | [~] tasks 1-16 complete; labels wave is next | [todo](./mizar-resolve/en/todo.md) |
 | mizar-checker | no | Type checking, cluster/registration resolution, overload resolution | [ ] planned | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | no | Elaboration, binder-normalized core logic, control-flow preparation | [ ] planned | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | no | VC IR, VC generation, deterministic pre-ATP discharge, dependency slices | [ ] planned | [todo](./mizar-vc/en/todo.md) |
@@ -109,9 +109,9 @@ current parser hardening close-out.
 
 ### Immediate Next Work
 
-1. **mizar-resolve imports/name wave** - resolver foundation tasks 1-7 have
-   landed, including the resolver-side module-index seam over the build-side
-   provider contract. Continue with import and name-resolution tasks 8-16.
+1. **mizar-resolve labels wave** - resolver tasks 1-16 have landed, including
+   import/name resolution and dot-chain finalization. Continue with label
+   resolution tasks 17-18.
 2. **mizar-test foundation cleanup** - run the lint-policy guard and
    source/spec gap audit (tasks 1-2), then harden validation/reporting,
    snapshots, and coverage reporting. The source crate already exists; the TODO
@@ -184,13 +184,14 @@ Two crates run as cross-cutting strands rather than strict steps:
   position-sensitive `ParserLexingPlan` over lexical byte ranges and passes only
   `ParserLexContext` values to the lexer. The parser and lexer do not
   interleave, and the lexer never receives arbitrary parser state.
-- **Dot-role surface shape: resolved for parser/syntax.** The parser resolves
-  dot roles only as far as syntax allows (spec
+- **Dot-role surface shape and resolver finalization: resolved.** The parser
+  resolves dot roles only as far as syntax allows (spec
   [A.2.5](../spec/en/appendix_a.grammar_summary.md)): dotted qualified-name
   heads remain qualified surfaces, while `.` after an already parsed term is a
   selector/update postfix. Scope-dependent selector-versus-namespace separation
-  remains resolver-owned and is finalized by
-  [mizar-resolve task 16](./mizar-resolve/en/todo.md).
+  is finalized by [mizar-resolve task 16](./mizar-resolve/en/todo.md) using
+  lexical local-term scope, with selector validation left to checker/type
+  phases.
 - **Resolver module-index seam: resolved.** `mizar-resolve` consumes the
   build-side `ModuleIndexProvider` contract through
   `mizar_resolve::module_index::ModuleIndexInput`. Its

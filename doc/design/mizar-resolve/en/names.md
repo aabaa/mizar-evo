@@ -13,7 +13,11 @@ overload-group placeholders, enabled builtins, and deterministic `NameRefTable`
 outcomes. Task R-015 implements root-aware internal name diagnostic records:
 `NameDiagnosticRootId`, primary/cascade roles, unresolved import-alias roots,
 namespace/name dependent records, stable candidate payloads, and deterministic
-record ordering. Dot-chain finalization remains task R-016. The diagnostic code
+record ordering. Task R-016 implements source-shaped dot-chain finalization with
+`LocalTermScope`, `LocalTermBinding`, `DotChainCandidate`, and
+`DotChainFinalizer`: visible local term bindings shadow namespace heads and
+produce `DeferredSelector`, while non-shadowed chains resolve their leading path
+as a namespace and their final segment as a qualified symbol. The diagnostic code
 range for public resolver diagnostics is still a known `spec_gap`; this
 document therefore specifies diagnostic classes, payloads, and ordering, but no
 public numeric diagnostic codes.
@@ -292,16 +296,24 @@ by an unresolved import alias, the import dependency root is the primary record;
 dependent namespace records and failed-namespace `NameRefTable` entries link to
 that root as cascade records.
 
-## Dot-Chain Finalization Contract
+## Dot-Chain Finalization
 
 The parser and syntax crates keep dot roles source-shaped. Task R-016 finalizes
 the resolver-owned semantic boundary for chains that can be either namespace
 qualification or selector access.
 
-Contract for R-016:
+Implementation contract:
 
-- if the first segment resolves to a local term binding, the chain is selector
-  syntax and namespace lookup is not attempted for that segment;
+- local term bindings carry a stable lexical `LocalTermScope`, declaration
+  range, and visible-after ordinal. A binding is in scope when the use-site
+  scope is equal to or nested under the binding scope and the binding is visible
+  before the chain ordinal. When several bindings with the same spelling are in
+  scope, the innermost scope wins, then latest visible-after ordinal, then
+  declaration range;
+- if the first segment resolves to an in-scope local term binding, the chain is
+  selector syntax and namespace lookup is not attempted for that segment. The
+  resolver records `DeferredSelector` with the use-site base term node from
+  `DotChainCandidate`, not the binding declaration node;
 - if the first segment resolves to an import alias, namespace root, package
   binding, or current-module namespace and no local binding shadows it, the
   resolver treats the leading chain as namespace-qualified until the final
@@ -310,11 +322,12 @@ Contract for R-016:
   validate the selector, it records `DeferredSelector`;
 - when both namespace and selector interpretations are impossible, the failure
   is unresolved at the earliest decisive segment;
-- the final R-016 implementation must update this document if complete-source
-  fixtures require a narrower rule.
+- malformed, recovered, or single-segment dotted-chain candidates are retained
+  as unresolved internal records without inventing parser or checker semantics.
 
-This contract records the handoff. It does not perform selector field lookup or
-selector-call type checking.
+This finalizer records the handoff. It does not perform selector field lookup,
+selector-call type checking, type-directed overload winner selection, or parser
+recovery decisions.
 
 ## Diagnostics
 

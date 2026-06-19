@@ -55,11 +55,11 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 
 ## 解決済みおよび保留中の決定
 
-- **ドット役割の最終決定: 未解決。task 16 で解決する。** パーサーは
-  selector と namespace の分離を構文的なまま残す（`mizar-parser` task 10、
-  `mizar-syntax` task 8）。resolver が変数スコープを用いて決定を完了する。
-  トップレベル（[../../todo.md](../../todo.md)「Resolved And Open
-  Decisions」）にも登録済み。
+- **ドット役割の最終決定: task 16 で解決済み。** パーサーは selector と namespace の
+  分離を構文的なまま残す（`mizar-parser` task 10、`mizar-syntax` task 8）。
+  `mizar_resolve::names::DotChainFinalizer` が lexical local-term scope を用いて
+  決定を完了し、selector validation は checker/type phase に残す。トップレベル
+  （[../../todo.md](../../todo.md)「Resolved And Open Decisions」）にも記録済み。
 - **暫定オーケストレーション seam: task 7 で解決済み。**
   パイプラインのオーケストレーションは `mizar-driver` が所有する
   （[internal 01](../../internal/ja/01.compiler_driver_and_pipeline_scheduler.md)）。
@@ -265,12 +265,18 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
     - 依存: 14。仕様: `names.md`、
       [22.error_handling_and_diagnostics.md](../../../spec/ja/22.error_handling_and_diagnostics.md)。
 
-16. **ドット連鎖の最終決定。** [ ]
+16. **ドット連鎖の最終決定。** [x]
     - パーサーが構文的なまま残した未解決ドット連鎖を完了する: 変数スコープに
       よる selector access と namespace 区切りの分離。決定を `names.md` に
       記録し、トップレベルの保留決定をクローズする。
+    - R-016 は `src/names.rs` の `LocalTermScope`、`LocalTermBinding`、
+      `DotChainCandidate`、`DotChainFinalizer`、`DotChainResolution` として実装済み。
+      in-scope local term は namespace head を shadow し、use-site base node を使った
+      `DeferredSelector` record を生成する。それ以外は leading path を
+      `NamespaceResolver`、final segment を qualified `SymbolNameResolver` で解決する。
     - テスト: 仕様 §A.2.5 の例による selector/namespace の分離。どちらの
-      役割にも合わない連鎖の診断。
+      役割にも合わない連鎖の診断。out-of-scope local は namespace を shadow しない。
+      innermost local binding が勝つ。出力順序は deterministic。
     - 依存: 14、`mizar-parser` task 10。仕様:
       [§A.2.5](../../../spec/ja/appendix_a.grammar_summary.md)。
 
