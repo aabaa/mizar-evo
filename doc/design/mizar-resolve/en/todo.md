@@ -125,7 +125,7 @@ Keep `cargo test -p mizar-resolve` green after each task (see
      unit.
    - Deps: 3. Spec: `env.md`.
 
-6. **Deterministic debug rendering.** [ ]
+6. **Deterministic debug rendering.** [x]
    - Add stable, human-readable renderings of `ResolvedAst` and `SymbolEnv`
      for corpus snapshot baselines; byte-identical across runs and platforms.
    - Tests: identical output across repeated renders; fixture covering every

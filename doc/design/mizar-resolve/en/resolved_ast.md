@@ -256,6 +256,12 @@ platforms for equivalent source, module-index input, and dependency summaries.
 Implementations must not expose raw `HashMap` or `HashSet` iteration order in
 public renderings, snapshots, diagnostics, or serialized projections.
 
+The human-readable debug rendering used for resolver snapshot baselines is a
+versioned debug format, not a published artifact schema. It uses LF line
+endings, locale-independent decimal formatting, deterministic string escaping,
+and hand-written variant names rather than unstable implementation `Debug`
+output.
+
 ## Planned Data-Shape Tests
 
 Task R-004 must add focused unit tests for:

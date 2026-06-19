@@ -245,6 +245,11 @@ summary に対して、実行間・platform 間で決定的でなければなら
 実装は raw `HashMap` や `HashSet` の iteration order を public rendering、
 snapshot、diagnostic、serialized projection に露出してはならない。
 
+resolver snapshot baseline 用の human-readable debug rendering は versioned debug
+format であり、published artifact schema ではない。LF line ending、
+locale-independent decimal formatting、deterministic string escaping、および
+不安定な実装 `Debug` output ではなく手書き variant name を使う。
+
 ## 計画中の data-shape test
 
 Task R-004 は以下の focused unit test を追加しなければならない。

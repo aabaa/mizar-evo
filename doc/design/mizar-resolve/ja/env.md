@@ -317,6 +317,12 @@ ordering は raw `HashMap`/`HashSet` iteration order、memory address、filesyst
 order、canonical identity が利用できる場合の local import alias spelling に依存しては
 ならない。
 
+snapshot baseline 用の human-readable `SymbolEnv` debug rendering は versioned debug
+format であり、published artifact schema ではない。すべての index family と
+contribution effect を固定 section order で描画し、LF line ending を使い、
+absolute path、不透明な source-id debug output、外部に見える variant の derived
+`Debug` text を避けなければならない。
+
 ## 計画中の data-shape test
 
 Task R-005 は以下の focused unit test を追加しなければならない。

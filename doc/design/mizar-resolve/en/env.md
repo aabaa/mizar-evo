@@ -324,6 +324,12 @@ Ordering must not depend on raw `HashMap`/`HashSet` iteration order, memory
 addresses, filesystem traversal order, or local import alias spelling when a
 canonical identity is available.
 
+The human-readable `SymbolEnv` debug rendering used for snapshot baselines is a
+versioned debug format, not a published artifact schema. It must render every
+index family and contribution effect in a fixed section order, use LF line
+endings, and avoid absolute paths, opaque source-id debug output, and derived
+`Debug` text for externally visible variants.
+
 ## Planned Data-Shape Tests
 
 Task R-005 must add focused unit tests for:
