@@ -10,9 +10,8 @@
 
 ## Module Implementation
 
-Module specs do not exist yet; each is written by its own spec task (English
-and Japanese in the same change) before the implementation tasks that cite it,
-following
+Module specs are introduced by their own spec tasks (English and Japanese in
+the same change) before the implementation tasks that cite them, following
 [architecture/en/03.module_and_symbol_resolution.md](../../architecture/en/03.module_and_symbol_resolution.md).
 Autonomous crate development preparation is tracked in
 [00.crate_plan.md](./00.crate_plan.md).
@@ -22,7 +21,7 @@ Autonomous crate development preparation is tracked in
 | resolved_ast | `resolved_ast.md` (task 2) | `src/resolved_ast.rs` | [x] |
 | env | `env.md` (task 3) | `src/env.rs` | [x] |
 | module_index | architecture 03 Step 1 / `mizar-build` `module_index.md` (task 7) | `src/module_index.rs` | [x] |
-| imports | `imports.md` (task 8) | `src/imports.rs` | [ ] |
+| imports | `imports.md` (task 8) | `src/imports.rs` | [~] |
 | names | `names.md` (task 12) | `src/names.rs` | [ ] |
 | labels | `labels.md` (task 17) | `src/labels.rs` | [ ] |
 | symbols | `symbols.md` (task 19) | `src/symbols.rs` | [ ] |
@@ -157,11 +156,14 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 
 ### Imports
 
-8. **Spec: `imports.md`.** [ ]
+8. **Spec: `imports.md`.** [x]
    - Write the import-resolution spec (English and Japanese, no code): the
      two-pass contract (frontend candidate prescan versus semantic
      validation), alias and relative-prefix rules, cycle policy, and
      unresolved-import representation.
+   - Completed by [imports.md](./imports.md), paired with
+     [../ja/imports.md](../ja/imports.md). The spec keeps public diagnostic
+     codes out of scope until R-G001 is resolved.
    - Deps: 2. Spec: architecture 03 "Step 2",
      [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 

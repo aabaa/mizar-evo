@@ -10,8 +10,8 @@
 
 ## モジュール実装
 
-モジュール仕様はまだ存在しない。各仕様は、それを引用する実装タスクより前に、
-専用の仕様タスクが（英語と日本語を同じ変更で）執筆する。準拠先は
+モジュール仕様は、それを引用する実装タスクより前に、専用の仕様タスクが
+（英語と日本語を同じ変更で）順次導入する。準拠先は
 [architecture/ja/03.module_and_symbol_resolution.md](../../architecture/ja/03.module_and_symbol_resolution.md)。
 自律 crate 開発の準備は [00.crate_plan.md](./00.crate_plan.md) で追跡する。
 
@@ -20,7 +20,7 @@
 | resolved_ast | `resolved_ast.md`（task 2） | `src/resolved_ast.rs` | [x] |
 | env | `env.md`（task 3） | `src/env.rs` | [x] |
 | module_index | アーキテクチャ 03 Step 1 / `mizar-build` `module_index.md`（task 7） | `src/module_index.rs` | [x] |
-| imports | `imports.md`（task 8） | `src/imports.rs` | [ ] |
+| imports | `imports.md`（task 8） | `src/imports.rs` | [~] |
 | names | `names.md`（task 12） | `src/names.rs` | [ ] |
 | labels | `labels.md`（task 17） | `src/labels.rs` | [ ] |
 | symbols | `symbols.md`（task 19） | `src/symbols.rs` | [ ] |
@@ -153,10 +153,13 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 
 ### import
 
-8. **仕様: `imports.md`。** [ ]
+8. **仕様: `imports.md`。** [x]
    - import 解決の仕様を執筆する（英語と日本語、コードなし）: 2 パス契約
      （frontend の候補プレスキャン対意味論的検証）、別名と相対プレフィックスの
      規則、循環ポリシー、未解決 import の表現。
+   - [imports.md](./imports.md) で完了。英語正本は
+     [../en/imports.md](../en/imports.md)。public diagnostic code は R-G001 が
+     解決されるまで範囲外に保つ。
    - 依存: 2。仕様: アーキテクチャ 03「Step 2」、
      [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)。
 
