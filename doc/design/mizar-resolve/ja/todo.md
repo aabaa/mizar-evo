@@ -92,7 +92,7 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
    - テスト: lint 方針ガードが通る。workspace がビルドできる。
    - 依存: なし。仕様: アーキテクチャ 03。
 
-2. **仕様: `resolved_ast.md`。** [ ]
+2. **仕様: `resolved_ast.md`。** [x]
    - `ResolvedAst` のデータ形状仕様を執筆する（英語と日本語、コードなし）:
      `ModuleId`、`SymbolId`（安定かつ完全修飾）、ノード arena、
      `NameRefTable`、`LabelRefTable`、`ResolvedImports`、未解決/曖昧ノードの

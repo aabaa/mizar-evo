@@ -94,7 +94,7 @@ Keep `cargo test -p mizar-resolve` green after each task (see
    - Tests: lint-policy guard passes; workspace builds.
    - Deps: none. Spec: architecture 03.
 
-2. **Spec: `resolved_ast.md`.** [ ]
+2. **Spec: `resolved_ast.md`.** [x]
    - Write the `ResolvedAst` data-shape spec (English and Japanese, no code):
      `ModuleId`, `SymbolId` (stable, fully qualified), node arena,
      `NameRefTable`, `LabelRefTable`, `ResolvedImports`, explicit
