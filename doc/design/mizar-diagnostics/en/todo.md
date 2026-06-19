@@ -44,9 +44,9 @@ committed autonomously without holding the rest of the crate in flight.
 ## Crate Prerequisites
 
 The crate depends on `mizar-session` only (source ranges and snapshot ids).
-Its first consumer is `mizar-resolve` (the adoption-timing decision at that
-crate's task 13 gate); the LSP bridge consumes the same records from
-`mizar-lsp`. Architecture:
+The first resolver adoption point was deferred by `mizar-resolve` task 13; the
+next trigger is the first user-facing resolver diagnostic integration. The LSP
+bridge consumes the same records from `mizar-lsp`. Architecture:
 [12.diagnostics_and_lsp.md](../../architecture/en/12.diagnostics_and_lsp.md),
 [19.failure_semantics.md](../../architecture/en/19.failure_semantics.md);
 internal: [03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md);
@@ -54,10 +54,11 @@ spec: [22.error_handling_and_diagnostics.md](../../../spec/en/22.error_handling_
 
 ## Resolved And Open Decisions
 
-- **Adoption timing: open, owned by `mizar-resolve` task 13's gate.** This
-  crate exists in the target layout either way; the decision is whether the
-  resolver adopts it from its first diagnostic or one layer later.
-  Registered at the top level.
+- **Adoption timing: deferred by `mizar-resolve` task 13.** This crate remains
+  in the target layout, but R-013 kept resolver failures as crate-local/internal
+  records because resolver diagnostic code ownership is still a `spec_gap`.
+  Revisit before the first user-facing resolver diagnostic integration,
+  starting with `mizar-resolve` task 15 if that task needs public diagnostics.
 - **Migration of existing per-crate diagnostics: open, resolved by
   task 16.** `mizar-lexer`/`mizar-frontend`/`mizar-parser` diagnostics
   predate this crate. Decide whether they migrate to the shared record (and

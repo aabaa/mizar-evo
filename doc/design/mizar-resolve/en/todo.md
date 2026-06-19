@@ -23,7 +23,7 @@ Autonomous crate development preparation is tracked in
 | module_index | architecture 03 Step 1 / `mizar-build` `module_index.md` (task 7) | `src/module_index.rs` | [x] |
 | imports | `imports.md` (task 8) | `src/imports.rs` | [~] |
 | declarations | `declarations.md` (task 11) | `src/declarations.rs` | [x] |
-| names | `names.md` (task 12) | `src/names.rs` | [ ] |
+| names | `names.md` (task 12) | `src/names.rs` | [~] |
 | labels | `labels.md` (task 17) | `src/labels.rs` | [ ] |
 | symbols | `symbols.md` (task 19) | `src/symbols.rs` | [ ] |
 
@@ -69,13 +69,14 @@ IR ownership: [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
   `mizar_resolve::module_index::ModuleIndexInput`, and keeps only a
   resolver-local `WorkspaceStubModuleIndexProvider` for tests and fixtures until
   driver registry integration lands.
-- **`mizar-diagnostics` adoption timing: open, decided before task 13.**
-  `mizar-diagnostics` is part of the target crate layout
+- **`mizar-diagnostics` adoption timing: deferred by task 13.**
+  `mizar-diagnostics` remains part of the target crate layout
   ([internal 07](../../internal/en/07.crate_module_layout.md),
-  [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md));
-  the resolver is the first crate whose diagnostics span multiple files.
-  Decide whether to introduce the shared diagnostic record now or keep
-  per-crate diagnostics one more layer. Registered at the top level.
+  [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md)).
+  R-013 keeps namespace-resolution failures as crate-local/internal records and
+  does not emit public resolver diagnostics because R-G001 still lacks a
+  resolver code range. Revisit before the first user-facing resolver diagnostic
+  integration, starting with task 15 if that task needs public diagnostics.
 - **ModuleSummary reuse timing: open, resolved by task 24.** Architecture 03
   allows dependency modules to be consumed as `ModuleSummary` artifacts
   instead of re-read sources. The first iteration resolves the in-memory
@@ -228,11 +229,22 @@ Keep `cargo test -p mizar-resolve` green after each task (see
     - Deps: 2. Spec: architecture 03 "Step 4",
       [11.symbol_management.md](../../../spec/en/11.symbol_management.md).
 
-13. **Namespace resolution.** [ ]
+13. **Namespace resolution.** [x]
     - Resolve namespace segments before symbols (architecture 03 "Namespaces
       Resolve Before Symbols") over the import graph and declaration shells.
-    - Tests: nested namespace fixtures; missing-namespace diagnostics carry
-      the failing segment range.
+    - Implemented the R-013 namespace lookup slice in `src/names.rs`. It
+      resolves source-shaped namespace path candidates through import aliases,
+      reserved namespace roots, package-name bindings, and current-package
+      fallback to canonical module namespaces. It retains internal namespace
+      unresolved/ambiguous records, unresolved import-alias dependencies,
+      deterministic ambiguous alias target payloads, and provider-error
+      classifications. It does not look up final symbols, selector fields, or
+      overload winners.
+    - Tests: nested namespace fixtures, import aliases, package/current-package
+      fallback, longest-prefix bindings, all reserved roots, recovered and
+      malformed paths, unresolved import aliases, ambiguous aliases, provider
+      errors, deterministic ordering, and missing-namespace records carrying
+      the earliest failing segment range.
     - Deps: 10, 11, 12. Spec: `names.md`.
 
 14. **Qualified names, visibility, and shadowing.** [ ]

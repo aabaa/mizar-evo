@@ -22,7 +22,7 @@
 | module_index | アーキテクチャ 03 Step 1 / `mizar-build` `module_index.md`（task 7） | `src/module_index.rs` | [x] |
 | imports | `imports.md`（task 8） | `src/imports.rs` | [~] |
 | declarations | `declarations.md`（task 11） | `src/declarations.rs` | [x] |
-| names | `names.md`（task 12） | `src/names.rs` | [ ] |
+| names | `names.md`（task 12） | `src/names.rs` | [~] |
 | labels | `labels.md`（task 17） | `src/labels.rs` | [ ] |
 | symbols | `symbols.md`（task 19） | `src/symbols.rs` | [ ] |
 
@@ -68,13 +68,14 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
   `mizar_resolve::module_index::ModuleIndexInput` 経由で消費し、driver registry
   統合が入るまでのテスト・フィクスチャ用に限って resolver-local な
   `WorkspaceStubModuleIndexProvider` を保持する。
-- **`mizar-diagnostics` 採用時期: 未解決。task 13 までに決定する。**
-  `mizar-diagnostics` は目標 crate 配置の一部である
+- **`mizar-diagnostics` 採用時期: task 13 で deferred。**
+  `mizar-diagnostics` は目標 crate 配置に残る
   （[internal 07](../../internal/ja/07.crate_module_layout.md)、
   [internal 03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)）。
-  resolver は複数ファイルにまたがる診断を持つ最初の crate である。共有
-  diagnostic レコードを今導入するか、もう 1 層だけ crate ごとの診断を
-  維持するかを決める。トップレベルにも登録済み。
+  R-013 は namespace-resolution failure を crate-local/internal record として保持し、
+  R-G001 に resolver code range がまだないため public resolver diagnostics を出さない。
+  最初の user-facing resolver diagnostic integration の前、task 15 が public
+  diagnostics を必要とする場合は同 task から、再検討する。
 - **ModuleSummary 再利用の時期: 未解決。task 24 で解決する。**
   アーキテクチャ 03 は依存モジュールをソース再読込ではなく `ModuleSummary`
   artifact として消費することを許す。最初のイテレーションはメモリ内の
@@ -217,11 +218,20 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
     - 依存: 2。仕様: アーキテクチャ 03「Step 4」、
       [11.symbol_management.md](../../../spec/ja/11.symbol_management.md)。
 
-13. **名前空間解決。** [ ]
+13. **名前空間解決。** [x]
     - import グラフと宣言シェル上で、symbol より先に namespace セグメントを
       解決する（アーキテクチャ 03「Namespaces Resolve Before Symbols」）。
-    - テスト: 入れ子名前空間のフィクスチャ。namespace 欠落診断が失敗
-      セグメントの範囲を保持する。
+    - R-013 の namespace lookup slice を `src/names.rs` に実装した。source-shaped
+      namespace path candidate を import alias、reserved namespace root、package-name
+      binding、current-package fallback を通じて canonical module namespace に解決する。
+      internal namespace unresolved / ambiguous record、unresolved import-alias
+      dependency、deterministic ambiguous alias target payload、provider-error
+      classification を保持する。final symbol、selector field、overload winner は lookup
+      しない。
+    - テスト: 入れ子 namespace fixture、import alias、package/current-package fallback、
+      longest-prefix binding、すべての reserved root、recovered / malformed path、
+      unresolved import alias、ambiguous alias、provider error、deterministic ordering、
+      earliest failing segment range を保持する missing-namespace record。
     - 依存: 10、11、12。仕様: `names.md`。
 
 14. **修飾名、可視性、シャドーイング。** [ ]

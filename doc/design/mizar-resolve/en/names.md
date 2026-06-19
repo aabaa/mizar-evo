@@ -3,10 +3,15 @@
 > Canonical language: English. Japanese companion: [../ja/names.md](../ja/names.md).
 
 Status: task R-012 specifies the resolver-owned name-resolution contract for
-tasks R-013 through R-016. It introduces no executable pass. The diagnostic code
-range for public resolver diagnostics is still a known `spec_gap`; this document
-therefore specifies diagnostic classes, payloads, and ordering, but no public
-numeric diagnostic codes.
+tasks R-013 through R-016. Task R-013 implements the namespace lookup slice:
+resolved and unresolved import-alias records, reserved namespace roots,
+package-name bindings, current-package fallback, and internal namespace
+unresolved/ambiguous records.
+Final symbol lookup, visibility/shadowing over symbols, unresolved/ambiguous
+symbol references, and dot-chain finalization remain later tasks. The diagnostic
+code range for public resolver diagnostics is still a known `spec_gap`; this
+document therefore specifies diagnostic classes, payloads, and ordering, but no
+public numeric diagnostic codes.
 
 ## References
 
@@ -35,7 +40,8 @@ resolver-owned indexes, then records explicit name outcomes in `ResolvedAst`.
 Inputs:
 
 - `SurfaceAst` for the current module;
-- resolved import graph and alias bindings from `imports.md`;
+- resolved import graph, resolved alias bindings, and unresolved import-alias
+  dependency records from `imports.md`;
 - declaration shells from `declarations.md`;
 - preliminary shell-derived symbol identities for current-module declarations;
 - dependency symbol/namespace projections from source-backed fixtures or
@@ -161,6 +167,38 @@ root instead of fabricating a target.
 Alias spelling is local provenance only. Resolved identities use canonical
 `ModuleId` and `SymbolId` values, not import aliases.
 
+## Namespace Lookup Precedence
+
+Task R-013 starts after a leading namespace candidate has been collected. Local
+term binding shadowing is still the R-016 dot-chain layer; when a future
+dot-chain pass proves that the first segment is a local term, namespace lookup
+is not attempted for that segment.
+
+Namespace candidates are resolved in this order:
+
+1. Resolved import aliases are considered first. Import resolution rejects
+   aliases that collide with reserved roots, so a resolver-visible resolved
+   alias is already alias-shaped provenance.
+2. Unresolved import aliases are considered before reserved roots and package
+   bindings. A namespace candidate that depends on such an alias records an
+   internal `UnresolvedImportAlias` dependency, or `AmbiguousImportAlias` when
+   duplicate import records retain multiple canonical targets; it does not fall
+   through to root/package/current-package lookup.
+3. Reserved namespace roots (`std`, `pub`, `pkg`, `dev`, `ext`) are matched
+   through the longest root binding. If no binding exists, the first segment
+   after the root, or the root itself for an empty suffix, is the failing
+   segment.
+4. Package-name namespace bindings use longest-prefix matching and take
+   precedence over current-package fallback.
+5. Current-package fallback is attempted only when no import alias, unresolved
+   import alias, reserved root, or package-name binding matched the first
+   segment.
+6. After a package has been selected, the remaining segments must name an
+   indexed module. Missing module lookup reports the earliest segment whose
+   prefix has no module in the selected package. Stale namespace/package
+   provider state is a crate-local `ProviderError`, not a user-facing module
+   miss.
+
 ## Visibility And Shadowing
 
 Visibility is interpreted at the use site:
@@ -208,6 +246,7 @@ Required internal namespace unresolved classes:
 
 - unknown namespace segment;
 - unresolved import or alias dependency;
+- stale module-index provider state;
 - recovered or malformed namespace segment.
 
 Required ambiguous classes:
