@@ -86,7 +86,7 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 
 ### Foundation
 
-1. **Crate scaffold and lint-policy guard.** [ ]
+1. **Crate scaffold and lint-policy guard.** [x]
    - Add the `mizar-resolve` workspace member depending on `mizar-session` and
      `mizar-syntax`; add `tests/lint_policy.rs` mirroring the `mizar-frontend`
      guard (workspace lint opt-in, deny baseline, rationale next to any

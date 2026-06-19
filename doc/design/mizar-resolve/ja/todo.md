@@ -84,7 +84,7 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 
 ### 基盤
 
-1. **crate の足場と lint 方針のガード。** [ ]
+1. **crate の足場と lint 方針のガード。** [x]
    - `mizar-session` と `mizar-syntax` に依存する workspace メンバー
      `mizar-resolve` を追加し、`mizar-frontend` のガードに倣った
      `tests/lint_policy.rs`（workspace lint へのオプトイン、deny

@@ -380,6 +380,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "mizar-resolve"
+version = "0.1.0"
+dependencies = [
+ "mizar-session",
+ "mizar-syntax",
+]
+
+[[package]]
 name = "mizar-session"
 version = "0.1.0"
 dependencies = [

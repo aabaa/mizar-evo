@@ -1,0 +1,17 @@
+[package]
+name = "mizar-resolve"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "mizar_resolve"
+path = "src/lib.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+mizar-session = { path = "../mizar-session" }
+mizar-syntax = { path = "../mizar-syntax" }
