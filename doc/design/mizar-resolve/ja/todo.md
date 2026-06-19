@@ -21,6 +21,7 @@
 | env | `env.md`（task 3） | `src/env.rs` | [x] |
 | module_index | アーキテクチャ 03 Step 1 / `mizar-build` `module_index.md`（task 7） | `src/module_index.rs` | [x] |
 | imports | `imports.md`（task 8） | `src/imports.rs` | [~] |
+| declarations | `declarations.md`（task 11） | `src/declarations.rs` | [x] |
 | names | `names.md`（task 12） | `src/names.rs` | [ ] |
 | labels | `labels.md`（task 17） | `src/labels.rs` | [ ] |
 | symbols | `symbols.md`（task 19） | `src/symbols.rs` | [ ] |
@@ -189,12 +190,20 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 
 ### 名前
 
-11. **宣言シェル。** [ ]
+11. **宣言シェル。** [x]
     - `SurfaceAst` の item からローカル宣言シェルを構築する（アーキテクチャ
       03 Step 3）: item の識別、可視性マーカー、export 射影。型付けも本体
       解決も行わない。
-    - テスト: パーサーが生成する item 種別ごとのシェル。recovered な部分木は
-      recovered フラグ付きシェルになり、黙って捨てられない。
+    - `src/declarations.rs` に source-shaped collector slice を実装し、
+      [declarations.md](./declarations.md) に仕様化した。表現済み declaration-like
+      item、visibility wrapper、recovered-shell state、透明 annotation wrapper、
+      export projection shell を記録する。preliminary `SymbolId`、label scope、
+      duplicate / illegal-declaration diagnostics、final export validation、
+      kind-specific signature extraction は後続の name、label、symbol work に残る。
+    - テスト: parser-produced declaration shell の include/exclude inventory、
+      visibility wrapper propagation、transparent annotation wrapper、recovered subtree が
+      recovered フラグ付きで保持されること、target validation なしで保持される
+      export projection shell。
     - 依存: 7、`mizar-parser` task 5 と 7。仕様: アーキテクチャ 03「Step 3」。
 
 12. **仕様: `names.md`。** [ ]

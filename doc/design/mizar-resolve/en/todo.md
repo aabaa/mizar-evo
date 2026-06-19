@@ -22,6 +22,7 @@ Autonomous crate development preparation is tracked in
 | env | `env.md` (task 3) | `src/env.rs` | [x] |
 | module_index | architecture 03 Step 1 / `mizar-build` `module_index.md` (task 7) | `src/module_index.rs` | [x] |
 | imports | `imports.md` (task 8) | `src/imports.rs` | [~] |
+| declarations | `declarations.md` (task 11) | `src/declarations.rs` | [x] |
 | names | `names.md` (task 12) | `src/names.rs` | [ ] |
 | labels | `labels.md` (task 17) | `src/labels.rs` | [ ] |
 | symbols | `symbols.md` (task 19) | `src/symbols.rs` | [ ] |
@@ -198,12 +199,21 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 
 ### Names
 
-11. **Declaration shells.** [ ]
+11. **Declaration shells.** [x]
     - Build local declaration shells from `SurfaceAst` items (architecture 03
       Step 3): item identity, visibility markers, export projections — no
       typing, no body resolution.
-    - Tests: shell per item kind the parser produces; recovered subtrees
-      yield shells flagged recovered, not silent drops.
+    - Implemented the source-shaped collector slice in `src/declarations.rs`
+      and specified it in [declarations.md](./declarations.md). This records
+      represented declaration-like items, visibility wrappers, recovered-shell
+      state, transparent annotation wrappers, and export projection shells.
+      Preliminary `SymbolId`s, label scopes, duplicate/illegal-declaration
+      diagnostics, final export validation, and kind-specific signature
+      extraction remain later name, label, and symbol work.
+    - Tests: parser-produced declaration shell include/exclude inventory,
+      visibility wrapper propagation, transparent annotation wrappers,
+      recovered subtrees retained and flagged recovered, export projection
+      shells retained without target validation.
     - Deps: 7, `mizar-parser` tasks 5 and 7. Spec: architecture 03 "Step 3".
 
 12. **Spec: `names.md`.** [ ]
