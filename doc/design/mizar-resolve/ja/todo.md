@@ -206,11 +206,14 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       export projection shell。
     - 依存: 7、`mizar-parser` task 5 と 7。仕様: アーキテクチャ 03「Step 3」。
 
-12. **仕様: `names.md`。** [ ]
+12. **仕様: `names.md`。** [x]
     - 名前解決の仕様を執筆する（英語と日本語、コードなし）: スコープ
       モデル、namespace を symbol より先に解決する順序、可視性と
       シャドーイングの規則、曖昧性の表現、ドット連鎖最終決定の契約
       （決定は task 16 が記録する）。
+    - 英語正本 [names.md](./names.md) を追加し、日本語 companion と同期した。
+      type-directed overload winner selection、selector type checking、cluster firing、
+      public resolver diagnostic-code allocation は R-012 の外に保つ。
     - 依存: 2。仕様: アーキテクチャ 03「Step 4」、
       [11.symbol_management.md](../../../spec/ja/11.symbol_management.md)。
 

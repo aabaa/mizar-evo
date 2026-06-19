@@ -216,11 +216,15 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       shells retained without target validation.
     - Deps: 7, `mizar-parser` tasks 5 and 7. Spec: architecture 03 "Step 3".
 
-12. **Spec: `names.md`.** [ ]
+12. **Spec: `names.md`.** [x]
     - Write the name-resolution spec (English and Japanese, no code): scope
       model, namespace-before-symbol ordering, visibility and shadowing
       rules, ambiguity representation, and the dot-chain finalization
       contract (decision recorded by task 16).
+    - Added [names.md](./names.md) as the English canonical design and
+      synchronized the Japanese companion. The spec keeps type-directed
+      overload winner selection, selector type checking, cluster firing, and
+      public resolver diagnostic-code allocation outside R-012.
     - Deps: 2. Spec: architecture 03 "Step 4",
       [11.symbol_management.md](../../../spec/en/11.symbol_management.md).
 
