@@ -1,11 +1,12 @@
 //! Namespace and symbol-name resolution.
 //!
-//! This module implements the R-013 namespace slice and the R-014 ordinary
-//! symbol-name lookup slice. It resolves source-shaped namespace path
-//! candidates to canonical module namespaces, resolves ordinary name references
-//! through preliminary symbol projections, and keeps unresolved records
-//! explicit without checking selectors, choosing overload winners, or assigning
-//! full signature-bearing symbol entries.
+//! This module implements the R-013 namespace slice, the R-014 ordinary
+//! symbol-name lookup slice, and the R-015 internal name-diagnostic slice. It
+//! resolves source-shaped namespace path candidates to canonical module
+//! namespaces, resolves ordinary name references through preliminary symbol
+//! projections, and keeps unresolved/ambiguous diagnostic roots explicit
+//! without checking selectors, choosing overload winners, assigning public
+//! diagnostic codes, or assigning full signature-bearing symbol entries.
 
 use crate::env::{NamespacePath, SymbolKind, Visibility};
 use crate::imports::{ImportPathFailureClass, ResolvedImportCandidate, UnresolvedImportCandidate};
@@ -852,6 +853,331 @@ impl NameReferenceResolution {
     }
 }
 
+/// Stable id for an internal resolver diagnostic record.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct NameDiagnosticId(usize);
+
+impl NameDiagnosticId {
+    const fn new(index: usize) -> Self {
+        Self(index)
+    }
+
+    /// Returns the zero-based diagnostic index.
+    #[must_use]
+    pub const fn index(self) -> usize {
+        self.0
+    }
+}
+
+/// Stable id for a crate-local unresolved or ambiguous diagnostic root.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct NameDiagnosticRootId(usize);
+
+impl NameDiagnosticRootId {
+    const fn new(index: usize) -> Self {
+        Self(index)
+    }
+
+    /// Returns the zero-based root index.
+    #[must_use]
+    pub const fn index(self) -> usize {
+        self.0
+    }
+}
+
+/// Whether a diagnostic is the primary report for a root or a dependent
+/// cascade record.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum NameDiagnosticRole {
+    /// Primary report for a distinct unresolved or ambiguous root.
+    Primary,
+    /// Dependent record linked to a root so user-facing diagnostics can avoid
+    /// cascaded primaries.
+    Cascade,
+}
+
+/// Crate-local name-resolution diagnostic class.
+///
+/// These classes are not public user-facing diagnostic codes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+pub enum NameDiagnosticKind {
+    /// A name reference could not be resolved.
+    UnresolvedName {
+        /// Lookup layer that failed.
+        lookup: NameLookupClass,
+    },
+    /// Multiple visible symbols remained at the names phase.
+    AmbiguousName,
+    /// A namespace path could not be resolved.
+    UnresolvedNamespace {
+        /// Crate-local namespace failure class.
+        class: NamespaceFailureClass,
+    },
+    /// A namespace path or alias had multiple deterministic targets.
+    AmbiguousNamespace {
+        /// Crate-local namespace failure class.
+        class: NamespaceFailureClass,
+    },
+    /// A namespace failure depends on an unresolved import alias.
+    UnresolvedImportAliasDependency {
+        /// Crate-local import failure class.
+        class: ImportPathFailureClass,
+    },
+}
+
+/// Namespace candidate payload retained by internal name diagnostics.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NameDiagnosticNamespaceCandidate {
+    stable_variant: &'static str,
+    target: ModuleId,
+    range: SourceRange,
+    alias_range: Option<SourceRange>,
+    ordinal: usize,
+}
+
+impl NameDiagnosticNamespaceCandidate {
+    fn from_namespace_target(target: &NamespaceCandidateTarget) -> Self {
+        Self {
+            stable_variant: "import-alias-target",
+            target: target.target().clone(),
+            range: target.range(),
+            alias_range: target.alias_range(),
+            ordinal: target.ordinal(),
+        }
+    }
+
+    /// Returns the stable candidate variant name used for deterministic keys.
+    #[must_use]
+    pub const fn stable_variant(&self) -> &'static str {
+        self.stable_variant
+    }
+
+    /// Returns the canonical namespace target.
+    #[must_use]
+    pub const fn target(&self) -> &ModuleId {
+        &self.target
+    }
+
+    /// Returns the source range that introduced this candidate.
+    #[must_use]
+    pub const fn range(&self) -> SourceRange {
+        self.range
+    }
+
+    /// Returns the explicit alias range when represented.
+    #[must_use]
+    pub const fn alias_range(&self) -> Option<SourceRange> {
+        self.alias_range
+    }
+
+    /// Returns the source-order ordinal.
+    #[must_use]
+    pub const fn ordinal(&self) -> usize {
+        self.ordinal
+    }
+}
+
+/// Internal resolver diagnostic record for R-015.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NameDiagnostic {
+    id: NameDiagnosticId,
+    root: NameDiagnosticRootId,
+    role: NameDiagnosticRole,
+    kind: NameDiagnosticKind,
+    root_range: SourceRange,
+    range: SourceRange,
+    attempted_spelling: String,
+    normalized_namespace_prefix: Vec<String>,
+    name_ref: Option<NameRefId>,
+    secondary_ranges: Vec<SourceRange>,
+    symbol_candidates: Vec<NameResolutionCandidate>,
+    namespace_candidates: Vec<NameDiagnosticNamespaceCandidate>,
+    dependent_ranges: Vec<SourceRange>,
+}
+
+impl NameDiagnostic {
+    /// Returns this diagnostic record id.
+    #[must_use]
+    pub const fn id(&self) -> NameDiagnosticId {
+        self.id
+    }
+
+    /// Returns the root id shared by cascaded diagnostics.
+    #[must_use]
+    pub const fn root(&self) -> NameDiagnosticRootId {
+        self.root
+    }
+
+    /// Returns whether this is a primary or cascade record.
+    #[must_use]
+    pub const fn role(&self) -> NameDiagnosticRole {
+        self.role
+    }
+
+    /// Returns the crate-local diagnostic kind.
+    #[must_use]
+    pub const fn kind(&self) -> NameDiagnosticKind {
+        self.kind
+    }
+
+    /// Returns the primary root range used for deterministic grouping and
+    /// sorting.
+    #[must_use]
+    pub const fn root_range(&self) -> SourceRange {
+        self.root_range
+    }
+
+    /// Returns this record's own source range.
+    #[must_use]
+    pub const fn range(&self) -> SourceRange {
+        self.range
+    }
+
+    /// Returns the attempted spelling associated with this record.
+    #[must_use]
+    pub fn attempted_spelling(&self) -> &str {
+        &self.attempted_spelling
+    }
+
+    /// Returns the normalized namespace prefix, when known.
+    #[must_use]
+    pub fn normalized_namespace_prefix(&self) -> &[String] {
+        &self.normalized_namespace_prefix
+    }
+
+    /// Returns the linked name-reference table id, when this record came from
+    /// `NameRefTable`.
+    #[must_use]
+    pub const fn name_ref(&self) -> Option<NameRefId> {
+        self.name_ref
+    }
+
+    /// Returns secondary source ranges that explain the root.
+    #[must_use]
+    pub fn secondary_ranges(&self) -> &[SourceRange] {
+        &self.secondary_ranges
+    }
+
+    /// Returns deterministic ambiguous symbol candidates.
+    #[must_use]
+    pub fn symbol_candidates(&self) -> &[NameResolutionCandidate] {
+        &self.symbol_candidates
+    }
+
+    /// Returns deterministic ambiguous namespace candidates.
+    #[must_use]
+    pub fn namespace_candidates(&self) -> &[NameDiagnosticNamespaceCandidate] {
+        &self.namespace_candidates
+    }
+
+    /// Returns dependent source ranges linked to the same root.
+    #[must_use]
+    pub fn dependent_ranges(&self) -> &[SourceRange] {
+        &self.dependent_ranges
+    }
+}
+
+/// Deterministic crate-local diagnostics for unresolved and ambiguous names.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct NameDiagnosticReport {
+    records: Vec<NameDiagnostic>,
+}
+
+impl NameDiagnosticReport {
+    fn new(mut records: Vec<NameDiagnostic>) -> Self {
+        records.sort_by(name_diagnostic_cmp);
+        for (index, record) in records.iter_mut().enumerate() {
+            record.id = NameDiagnosticId::new(index);
+        }
+        Self { records }
+    }
+
+    /// Returns a diagnostic by id.
+    #[must_use]
+    pub fn get(&self, id: NameDiagnosticId) -> Option<&NameDiagnostic> {
+        self.records.get(id.index())
+    }
+
+    /// Iterates diagnostics in deterministic order.
+    pub fn iter(&self) -> impl Iterator<Item = &NameDiagnostic> {
+        self.records.iter()
+    }
+
+    /// Iterates primary diagnostics only.
+    pub fn primary(&self) -> impl Iterator<Item = &NameDiagnostic> {
+        self.records
+            .iter()
+            .filter(|diagnostic| diagnostic.role() == NameDiagnosticRole::Primary)
+    }
+
+    /// Iterates cascade diagnostics only.
+    pub fn cascades(&self) -> impl Iterator<Item = &NameDiagnostic> {
+        self.records
+            .iter()
+            .filter(|diagnostic| diagnostic.role() == NameDiagnosticRole::Cascade)
+    }
+
+    /// Returns the number of diagnostic records.
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.records.len()
+    }
+
+    /// Returns whether the report is empty.
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.records.is_empty()
+    }
+}
+
+/// Collects crate-local name diagnostics without assigning public diagnostic
+/// codes.
+#[derive(Clone, Copy)]
+pub struct NameDiagnosticCollector<'a> {
+    namespace_roots: &'a [UnresolvedNamespacePath],
+}
+
+impl<'a> NameDiagnosticCollector<'a> {
+    /// Creates a collector with no namespace-root side input.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            namespace_roots: &[],
+        }
+    }
+
+    /// Provides unresolved namespace roots that failed before a final symbol
+    /// spelling was reached.
+    #[must_use]
+    pub const fn with_namespace_roots(
+        mut self,
+        namespace_roots: &'a [UnresolvedNamespacePath],
+    ) -> Self {
+        self.namespace_roots = namespace_roots;
+        self
+    }
+
+    /// Collects diagnostics from a populated name-reference table.
+    #[must_use]
+    pub fn collect(self, name_refs: &NameRefTable) -> NameDiagnosticReport {
+        collect_name_diagnostics(name_refs, self.namespace_roots)
+    }
+
+    /// Collects diagnostics from a name-reference resolution result.
+    #[must_use]
+    pub fn collect_resolution(self, resolution: &NameReferenceResolution) -> NameDiagnosticReport {
+        self.collect(resolution.table())
+    }
+}
+
+impl Default for NameDiagnosticCollector<'_> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Resolves ordinary symbol-name references after namespace lookup.
 #[derive(Clone, Copy)]
 pub struct SymbolNameResolver<'a> {
@@ -1420,6 +1746,683 @@ fn unresolved_name(candidate: &NameReferenceCandidate, lookup: NameLookupClass) 
     ))
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+enum DiagnosticRootKey {
+    Name {
+        range: (usize, usize),
+        spelling: String,
+        lookup: NameLookupClass,
+    },
+    AmbiguousName {
+        range: (usize, usize),
+        spelling: String,
+        name_ref: usize,
+    },
+    Namespace {
+        range: (usize, usize),
+        spelling: String,
+        class: NamespaceFailureClass,
+        failed_segment: Vec<String>,
+    },
+    ImportAliasDependency {
+        range: (usize, usize),
+        alias: String,
+        ordinal: usize,
+        class: ImportPathFailureClass,
+    },
+}
+
+#[derive(Debug, Clone)]
+struct DiagnosticRootState {
+    root: NameDiagnosticRootId,
+    key: DiagnosticRootKey,
+    kind: NameDiagnosticKind,
+    range: SourceRange,
+    attempted_spelling: String,
+    normalized_namespace_prefix: Vec<String>,
+    name_ref: Option<NameRefId>,
+    secondary_ranges: Vec<SourceRange>,
+    symbol_candidates: Vec<NameResolutionCandidate>,
+    namespace_candidates: Vec<NameDiagnosticNamespaceCandidate>,
+    dependent_ranges: Vec<SourceRange>,
+}
+
+#[derive(Debug, Clone)]
+struct DiagnosticRootPayload {
+    kind: NameDiagnosticKind,
+    range: SourceRange,
+    attempted_spelling: String,
+    normalized_namespace_prefix: Vec<String>,
+    name_ref: Option<NameRefId>,
+    secondary_ranges: Vec<SourceRange>,
+    symbol_candidates: Vec<NameResolutionCandidate>,
+    namespace_candidates: Vec<NameDiagnosticNamespaceCandidate>,
+}
+
+#[derive(Debug, Clone)]
+struct PendingDiagnosticRecord {
+    root_key: DiagnosticRootKey,
+    role: NameDiagnosticRole,
+    kind: NameDiagnosticKind,
+    range: SourceRange,
+    attempted_spelling: String,
+    normalized_namespace_prefix: Vec<String>,
+    name_ref: Option<NameRefId>,
+    secondary_ranges: Vec<SourceRange>,
+    symbol_candidates: Vec<NameResolutionCandidate>,
+    namespace_candidates: Vec<NameDiagnosticNamespaceCandidate>,
+    dependent_ranges: Vec<SourceRange>,
+    ordinal: usize,
+}
+
+impl PendingDiagnosticRecord {
+    fn from_root(root: &DiagnosticRootState, ordinal: usize) -> Self {
+        Self {
+            root_key: root.key.clone(),
+            role: NameDiagnosticRole::Primary,
+            kind: root.kind,
+            range: root.range,
+            attempted_spelling: root.attempted_spelling.clone(),
+            normalized_namespace_prefix: root.normalized_namespace_prefix.clone(),
+            name_ref: root.name_ref,
+            secondary_ranges: root.secondary_ranges.clone(),
+            symbol_candidates: root.symbol_candidates.clone(),
+            namespace_candidates: root.namespace_candidates.clone(),
+            dependent_ranges: root.dependent_ranges.clone(),
+            ordinal,
+        }
+    }
+}
+
+fn collect_name_diagnostics(
+    name_refs: &NameRefTable,
+    namespace_roots: &[UnresolvedNamespacePath],
+) -> NameDiagnosticReport {
+    let mut roots = BTreeMap::<DiagnosticRootKey, DiagnosticRootState>::new();
+    let mut namespace_root_keys = BTreeMap::<(String, (usize, usize)), DiagnosticRootKey>::new();
+    let mut pending = Vec::<PendingDiagnosticRecord>::new();
+
+    let mut ordered_namespace_roots = namespace_roots.iter().collect::<Vec<_>>();
+    ordered_namespace_roots.sort_by(|left, right| unresolved_namespace_path_cmp(left, right));
+    for namespace in ordered_namespace_roots {
+        collect_namespace_diagnostic_root(
+            namespace,
+            &mut roots,
+            &mut namespace_root_keys,
+            &mut pending,
+        );
+    }
+
+    for (name_ref, entry) in name_refs.iter() {
+        match entry.resolution() {
+            NameResolution::Ambiguous(ambiguous) => {
+                let key = ambiguous_name_root_key(name_ref, ambiguous);
+                insert_root(
+                    &mut roots,
+                    key,
+                    DiagnosticRootPayload {
+                        kind: NameDiagnosticKind::AmbiguousName,
+                        range: ambiguous.range(),
+                        attempted_spelling: ambiguous.spelling().to_owned(),
+                        normalized_namespace_prefix: Vec::new(),
+                        name_ref: Some(name_ref),
+                        secondary_ranges: ambiguous
+                            .candidates()
+                            .iter()
+                            .map(|candidate| candidate.range())
+                            .collect(),
+                        symbol_candidates: ambiguous.candidates().to_vec(),
+                        namespace_candidates: Vec::new(),
+                    },
+                );
+            }
+            NameResolution::Unresolved(unresolved) => {
+                if unresolved.lookup() == NameLookupClass::Namespace {
+                    let namespace_key = (
+                        unresolved.spelling().to_owned(),
+                        range_key(unresolved.range()),
+                    );
+                    if let Some(root_key) = namespace_root_keys.get(&namespace_key).cloned() {
+                        add_dependent_range(&mut roots, &root_key, unresolved.range());
+                        pending.push(PendingDiagnosticRecord {
+                            root_key,
+                            role: NameDiagnosticRole::Cascade,
+                            kind: NameDiagnosticKind::UnresolvedName {
+                                lookup: unresolved.lookup(),
+                            },
+                            range: unresolved.range(),
+                            attempted_spelling: unresolved.spelling().to_owned(),
+                            normalized_namespace_prefix: Vec::new(),
+                            name_ref: Some(name_ref),
+                            secondary_ranges: Vec::new(),
+                            symbol_candidates: Vec::new(),
+                            namespace_candidates: Vec::new(),
+                            dependent_ranges: Vec::new(),
+                            ordinal: name_ref.index(),
+                        });
+                        continue;
+                    }
+                }
+                let key = unresolved_name_root_key(unresolved);
+                let inserted = insert_root(
+                    &mut roots,
+                    key.clone(),
+                    DiagnosticRootPayload {
+                        kind: NameDiagnosticKind::UnresolvedName {
+                            lookup: unresolved.lookup(),
+                        },
+                        range: unresolved.range(),
+                        attempted_spelling: unresolved.spelling().to_owned(),
+                        normalized_namespace_prefix: Vec::new(),
+                        name_ref: Some(name_ref),
+                        secondary_ranges: Vec::new(),
+                        symbol_candidates: Vec::new(),
+                        namespace_candidates: Vec::new(),
+                    },
+                );
+                if !inserted {
+                    add_dependent_range(&mut roots, &key, unresolved.range());
+                    pending.push(PendingDiagnosticRecord {
+                        root_key: key,
+                        role: NameDiagnosticRole::Cascade,
+                        kind: NameDiagnosticKind::UnresolvedName {
+                            lookup: unresolved.lookup(),
+                        },
+                        range: unresolved.range(),
+                        attempted_spelling: unresolved.spelling().to_owned(),
+                        normalized_namespace_prefix: Vec::new(),
+                        name_ref: Some(name_ref),
+                        secondary_ranges: Vec::new(),
+                        symbol_candidates: Vec::new(),
+                        namespace_candidates: Vec::new(),
+                        dependent_ranges: Vec::new(),
+                        ordinal: name_ref.index(),
+                    });
+                }
+            }
+            NameResolution::Resolved(_)
+            | NameResolution::ResolvedBuiltin(_)
+            | NameResolution::DeferredSelector(_) => {}
+        }
+    }
+
+    finish_name_diagnostics(roots, pending)
+}
+
+fn collect_namespace_diagnostic_root(
+    namespace: &UnresolvedNamespacePath,
+    roots: &mut BTreeMap<DiagnosticRootKey, DiagnosticRootState>,
+    namespace_root_keys: &mut BTreeMap<(String, (usize, usize)), DiagnosticRootKey>,
+    pending: &mut Vec<PendingDiagnosticRecord>,
+) {
+    let namespace_secondary_ranges = namespace_secondary_ranges(namespace);
+    let namespace_candidates = diagnostic_namespace_candidates(namespace.candidate_targets());
+    let namespace_prefix = namespace_normalized_prefix(namespace);
+    let root_key = if let Some(import_root) = first_import_dependency_root_key(namespace) {
+        for dependency in namespace.import_dependencies() {
+            let dependency_key = import_dependency_root_key(dependency);
+            let mut secondary_ranges = import_dependency_secondary_ranges(dependency);
+            secondary_ranges.extend(namespace_secondary_ranges.clone());
+            insert_root(
+                roots,
+                dependency_key.clone(),
+                DiagnosticRootPayload {
+                    kind: NameDiagnosticKind::UnresolvedImportAliasDependency {
+                        class: dependency.class(),
+                    },
+                    range: dependency.range(),
+                    attempted_spelling: dependency.alias().to_owned(),
+                    normalized_namespace_prefix: namespace_prefix.clone(),
+                    name_ref: None,
+                    secondary_ranges,
+                    symbol_candidates: Vec::new(),
+                    namespace_candidates: namespace_candidates.clone(),
+                },
+            );
+            add_dependent_range(roots, &dependency_key, namespace.range());
+        }
+        pending.push(namespace_cascade_record(namespace, import_root.clone()));
+        import_root
+    } else {
+        let key = namespace_root_key(namespace);
+        insert_root(
+            roots,
+            key.clone(),
+            DiagnosticRootPayload {
+                kind: namespace_diagnostic_kind(namespace),
+                range: namespace.range(),
+                attempted_spelling: namespace.spelling().to_owned(),
+                normalized_namespace_prefix: namespace_prefix,
+                name_ref: None,
+                secondary_ranges: namespace_secondary_ranges,
+                symbol_candidates: Vec::new(),
+                namespace_candidates,
+            },
+        );
+        key
+    };
+    namespace_root_keys.insert(
+        (
+            namespace.spelling().to_owned(),
+            range_key(namespace.range()),
+        ),
+        root_key,
+    );
+}
+
+fn finish_name_diagnostics(
+    roots: BTreeMap<DiagnosticRootKey, DiagnosticRootState>,
+    mut pending: Vec<PendingDiagnosticRecord>,
+) -> NameDiagnosticReport {
+    let mut ordered_roots = roots.into_values().collect::<Vec<_>>();
+    ordered_roots.sort_by(diagnostic_root_cmp);
+    let root_ids = ordered_roots
+        .iter()
+        .enumerate()
+        .map(|(index, root)| (root.key.clone(), NameDiagnosticRootId::new(index)))
+        .collect::<BTreeMap<_, _>>();
+    for (index, root) in ordered_roots.iter_mut().enumerate() {
+        root.root = NameDiagnosticRootId::new(index);
+    }
+    pending.extend(
+        ordered_roots
+            .iter()
+            .enumerate()
+            .map(|(index, root)| PendingDiagnosticRecord::from_root(root, index)),
+    );
+
+    let records = pending
+        .into_iter()
+        .filter_map(|record| {
+            let root = *root_ids.get(&record.root_key)?;
+            let root_state = ordered_roots.iter().find(|state| state.root == root)?;
+            Some(NameDiagnostic {
+                id: NameDiagnosticId::new(record.ordinal),
+                root,
+                role: record.role,
+                kind: record.kind,
+                root_range: root_state.range,
+                range: record.range,
+                attempted_spelling: record.attempted_spelling,
+                normalized_namespace_prefix: record.normalized_namespace_prefix,
+                name_ref: record.name_ref,
+                secondary_ranges: sorted_ranges(record.secondary_ranges),
+                symbol_candidates: sorted_symbol_candidates(record.symbol_candidates),
+                namespace_candidates: sorted_namespace_candidates(record.namespace_candidates),
+                dependent_ranges: sorted_ranges(record.dependent_ranges),
+            })
+        })
+        .collect();
+    NameDiagnosticReport::new(records)
+}
+
+fn insert_root(
+    roots: &mut BTreeMap<DiagnosticRootKey, DiagnosticRootState>,
+    key: DiagnosticRootKey,
+    payload: DiagnosticRootPayload,
+) -> bool {
+    use std::collections::btree_map::Entry;
+    match roots.entry(key.clone()) {
+        Entry::Vacant(entry) => {
+            entry.insert(DiagnosticRootState {
+                root: NameDiagnosticRootId::new(0),
+                key,
+                kind: payload.kind,
+                range: payload.range,
+                attempted_spelling: payload.attempted_spelling,
+                normalized_namespace_prefix: payload.normalized_namespace_prefix,
+                name_ref: payload.name_ref,
+                secondary_ranges: sorted_ranges(payload.secondary_ranges),
+                symbol_candidates: sorted_symbol_candidates(payload.symbol_candidates),
+                namespace_candidates: sorted_namespace_candidates(payload.namespace_candidates),
+                dependent_ranges: Vec::new(),
+            });
+            true
+        }
+        Entry::Occupied(mut entry) => {
+            let root = entry.get_mut();
+            if root.normalized_namespace_prefix.is_empty() {
+                root.normalized_namespace_prefix = payload.normalized_namespace_prefix;
+            }
+            root.secondary_ranges
+                .extend(sorted_ranges(payload.secondary_ranges));
+            root.secondary_ranges = sorted_ranges(root.secondary_ranges.clone());
+            root.symbol_candidates
+                .extend(sorted_symbol_candidates(payload.symbol_candidates));
+            root.symbol_candidates = sorted_symbol_candidates(root.symbol_candidates.clone());
+            root.namespace_candidates
+                .extend(sorted_namespace_candidates(payload.namespace_candidates));
+            root.namespace_candidates =
+                sorted_namespace_candidates(root.namespace_candidates.clone());
+            false
+        }
+    }
+}
+
+fn add_dependent_range(
+    roots: &mut BTreeMap<DiagnosticRootKey, DiagnosticRootState>,
+    key: &DiagnosticRootKey,
+    range: SourceRange,
+) {
+    if let Some(root) = roots.get_mut(key) {
+        root.dependent_ranges.push(range);
+        root.dependent_ranges = sorted_ranges(root.dependent_ranges.clone());
+    }
+}
+
+fn ambiguous_name_root_key(name_ref: NameRefId, ambiguous: &AmbiguousNameRef) -> DiagnosticRootKey {
+    DiagnosticRootKey::AmbiguousName {
+        range: range_key(ambiguous.range()),
+        spelling: ambiguous.spelling().to_owned(),
+        name_ref: name_ref.index(),
+    }
+}
+
+fn unresolved_name_root_key(
+    unresolved: &crate::resolved_ast::UnresolvedNameRef,
+) -> DiagnosticRootKey {
+    DiagnosticRootKey::Name {
+        range: range_key(unresolved.range()),
+        spelling: unresolved.spelling().to_owned(),
+        lookup: unresolved.lookup(),
+    }
+}
+
+fn namespace_root_key(namespace: &UnresolvedNamespacePath) -> DiagnosticRootKey {
+    DiagnosticRootKey::Namespace {
+        range: range_key(namespace.range()),
+        spelling: namespace.spelling().to_owned(),
+        class: namespace.class(),
+        failed_segment: failed_segment_key(namespace),
+    }
+}
+
+fn first_import_dependency_root_key(
+    namespace: &UnresolvedNamespacePath,
+) -> Option<DiagnosticRootKey> {
+    namespace
+        .import_dependencies()
+        .iter()
+        .min_by(|left, right| namespace_import_dependency_cmp(left, right))
+        .map(import_dependency_root_key)
+}
+
+fn import_dependency_root_key(dependency: &NamespaceImportDependency) -> DiagnosticRootKey {
+    DiagnosticRootKey::ImportAliasDependency {
+        range: range_key(dependency.range()),
+        alias: dependency.alias().to_owned(),
+        ordinal: dependency.ordinal(),
+        class: dependency.class(),
+    }
+}
+
+fn namespace_cascade_record(
+    namespace: &UnresolvedNamespacePath,
+    root_key: DiagnosticRootKey,
+) -> PendingDiagnosticRecord {
+    PendingDiagnosticRecord {
+        root_key,
+        role: NameDiagnosticRole::Cascade,
+        kind: namespace_diagnostic_kind(namespace),
+        range: namespace.range(),
+        attempted_spelling: namespace.spelling().to_owned(),
+        normalized_namespace_prefix: namespace_normalized_prefix(namespace),
+        name_ref: None,
+        secondary_ranges: namespace_secondary_ranges(namespace),
+        symbol_candidates: Vec::new(),
+        namespace_candidates: diagnostic_namespace_candidates(namespace.candidate_targets()),
+        dependent_ranges: Vec::new(),
+        ordinal: namespace.ordinal(),
+    }
+}
+
+fn namespace_diagnostic_kind(namespace: &UnresolvedNamespacePath) -> NameDiagnosticKind {
+    if namespace_is_ambiguous(namespace) {
+        NameDiagnosticKind::AmbiguousNamespace {
+            class: namespace.class(),
+        }
+    } else {
+        NameDiagnosticKind::UnresolvedNamespace {
+            class: namespace.class(),
+        }
+    }
+}
+
+fn namespace_is_ambiguous(namespace: &UnresolvedNamespacePath) -> bool {
+    namespace.class() == NamespaceFailureClass::AmbiguousImportAlias
+        || !namespace.candidate_targets().is_empty()
+}
+
+fn namespace_secondary_ranges(namespace: &UnresolvedNamespacePath) -> Vec<SourceRange> {
+    let mut ranges = Vec::new();
+    if let Some(segment) = namespace.failed_segment() {
+        ranges.push(segment.range());
+    }
+    ranges.extend(
+        namespace
+            .import_dependencies()
+            .iter()
+            .flat_map(import_dependency_secondary_ranges),
+    );
+    ranges.extend(
+        namespace
+            .candidate_targets()
+            .iter()
+            .flat_map(namespace_candidate_secondary_ranges),
+    );
+    sorted_ranges(ranges)
+}
+
+fn import_dependency_secondary_ranges(dependency: &NamespaceImportDependency) -> Vec<SourceRange> {
+    let mut ranges = vec![dependency.range()];
+    if let Some(alias_range) = dependency.alias_range() {
+        ranges.push(alias_range);
+    }
+    sorted_ranges(ranges)
+}
+
+fn namespace_candidate_secondary_ranges(candidate: &NamespaceCandidateTarget) -> Vec<SourceRange> {
+    let mut ranges = vec![candidate.range()];
+    if let Some(alias_range) = candidate.alias_range() {
+        ranges.push(alias_range);
+    }
+    sorted_ranges(ranges)
+}
+
+fn sorted_ranges(mut ranges: Vec<SourceRange>) -> Vec<SourceRange> {
+    ranges.sort_by(|left, right| source_range_cmp(*left, *right));
+    ranges.dedup_by(|left, right| *left == *right);
+    ranges
+}
+
+fn sorted_symbol_candidates(
+    mut candidates: Vec<NameResolutionCandidate>,
+) -> Vec<NameResolutionCandidate> {
+    candidates.sort();
+    candidates.dedup();
+    candidates
+}
+
+fn sorted_namespace_candidates(
+    mut candidates: Vec<NameDiagnosticNamespaceCandidate>,
+) -> Vec<NameDiagnosticNamespaceCandidate> {
+    candidates.sort_by(diagnostic_namespace_candidate_cmp);
+    candidates.dedup();
+    candidates
+}
+
+fn diagnostic_namespace_candidates(
+    candidates: &[NamespaceCandidateTarget],
+) -> Vec<NameDiagnosticNamespaceCandidate> {
+    sorted_namespace_candidates(
+        candidates
+            .iter()
+            .map(NameDiagnosticNamespaceCandidate::from_namespace_target)
+            .collect(),
+    )
+}
+
+fn namespace_normalized_prefix(namespace: &UnresolvedNamespacePath) -> Vec<String> {
+    let Some(partial) = namespace.partial() else {
+        return Vec::new();
+    };
+    let mut prefix = Vec::new();
+    if partial.origin() == NamespacePartialOrigin::ReservedRoot
+        && let Some(root) = namespace.segments().first()
+    {
+        prefix.push(root.spelling().to_owned());
+    }
+    prefix.extend(partial.matched_prefix().iter().cloned());
+    prefix
+}
+
+fn name_diagnostic_cmp(left: &NameDiagnostic, right: &NameDiagnostic) -> Ordering {
+    source_range_cmp(left.root_range(), right.root_range())
+        .then_with(|| left.role().cmp(&right.role()))
+        .then_with(|| {
+            name_diagnostic_kind_name(left.kind()).cmp(name_diagnostic_kind_name(right.kind()))
+        })
+        .then_with(|| left.attempted_spelling().cmp(right.attempted_spelling()))
+        .then_with(|| {
+            name_diagnostic_candidate_key(left).cmp(&name_diagnostic_candidate_key(right))
+        })
+        .then_with(|| source_range_cmp(left.range(), right.range()))
+        .then_with(|| {
+            left.name_ref()
+                .map(NameRefId::index)
+                .cmp(&right.name_ref().map(NameRefId::index))
+        })
+        .then_with(|| left.id().cmp(&right.id()))
+}
+
+fn diagnostic_root_cmp(left: &DiagnosticRootState, right: &DiagnosticRootState) -> Ordering {
+    source_range_cmp(left.range, right.range)
+        .then_with(|| {
+            name_diagnostic_kind_name(left.kind).cmp(name_diagnostic_kind_name(right.kind))
+        })
+        .then_with(|| left.attempted_spelling.cmp(&right.attempted_spelling))
+        .then_with(|| {
+            diagnostic_root_candidate_key(left).cmp(&diagnostic_root_candidate_key(right))
+        })
+        .then_with(|| left.key.cmp(&right.key))
+}
+
+fn name_diagnostic_candidate_key(diagnostic: &NameDiagnostic) -> Vec<String> {
+    let mut keys = diagnostic
+        .symbol_candidates()
+        .iter()
+        .map(symbol_candidate_key)
+        .chain(
+            diagnostic
+                .namespace_candidates()
+                .iter()
+                .map(namespace_candidate_key),
+        )
+        .collect::<Vec<_>>();
+    keys.sort();
+    keys
+}
+
+fn diagnostic_root_candidate_key(root: &DiagnosticRootState) -> Vec<String> {
+    let mut keys = root
+        .symbol_candidates
+        .iter()
+        .map(symbol_candidate_key)
+        .chain(
+            root.namespace_candidates
+                .iter()
+                .map(namespace_candidate_key),
+        )
+        .collect::<Vec<_>>();
+    keys.sort();
+    keys
+}
+
+fn symbol_candidate_key(candidate: &NameResolutionCandidate) -> String {
+    format!(
+        "symbol:{}:{}:{}:{}",
+        candidate.symbol().fqn().as_str(),
+        candidate.symbol().module().package().as_str(),
+        candidate.symbol().module().path().as_str(),
+        range_key_string(candidate.range())
+    )
+}
+
+fn namespace_candidate_key(candidate: &NameDiagnosticNamespaceCandidate) -> String {
+    format!(
+        "namespace:{}:{}:{}:{}",
+        candidate.stable_variant(),
+        candidate.target().package().as_str(),
+        candidate.target().path().as_str(),
+        range_key_string(candidate.range())
+    )
+}
+
+fn name_diagnostic_kind_name(kind: NameDiagnosticKind) -> &'static str {
+    match kind {
+        NameDiagnosticKind::UnresolvedName { lookup } => match lookup {
+            NameLookupClass::Module => "unresolved-name.module",
+            NameLookupClass::Namespace => "unresolved-name.namespace",
+            NameLookupClass::Symbol => "unresolved-name.symbol",
+            NameLookupClass::Builtin => "unresolved-name.builtin",
+            NameLookupClass::Selector => "unresolved-name.selector",
+        },
+        NameDiagnosticKind::AmbiguousName => "ambiguous-name",
+        NameDiagnosticKind::UnresolvedNamespace { class } => match class {
+            NamespaceFailureClass::EmptyPath => "unresolved-namespace.empty-path",
+            NamespaceFailureClass::RecoveredSyntax => "unresolved-namespace.recovered-syntax",
+            NamespaceFailureClass::UnknownNamespaceSegment => {
+                "unresolved-namespace.unknown-segment"
+            }
+            NamespaceFailureClass::UnknownModule => "unresolved-namespace.unknown-module",
+            NamespaceFailureClass::AmbiguousImportAlias => {
+                "unresolved-namespace.ambiguous-import-alias"
+            }
+            NamespaceFailureClass::UnresolvedImportAlias => {
+                "unresolved-namespace.unresolved-import-alias"
+            }
+            NamespaceFailureClass::ProviderError => "unresolved-namespace.provider-error",
+            NamespaceFailureClass::IllegalCandidateState => {
+                "unresolved-namespace.illegal-candidate-state"
+            }
+        },
+        NameDiagnosticKind::AmbiguousNamespace { class } => match class {
+            NamespaceFailureClass::EmptyPath => "ambiguous-namespace.empty-path",
+            NamespaceFailureClass::RecoveredSyntax => "ambiguous-namespace.recovered-syntax",
+            NamespaceFailureClass::UnknownNamespaceSegment => "ambiguous-namespace.unknown-segment",
+            NamespaceFailureClass::UnknownModule => "ambiguous-namespace.unknown-module",
+            NamespaceFailureClass::AmbiguousImportAlias => {
+                "ambiguous-namespace.ambiguous-import-alias"
+            }
+            NamespaceFailureClass::UnresolvedImportAlias => {
+                "ambiguous-namespace.unresolved-import-alias"
+            }
+            NamespaceFailureClass::ProviderError => "ambiguous-namespace.provider-error",
+            NamespaceFailureClass::IllegalCandidateState => {
+                "ambiguous-namespace.illegal-candidate-state"
+            }
+        },
+        NameDiagnosticKind::UnresolvedImportAliasDependency { class } => match class {
+            ImportPathFailureClass::EmptyPath => "unresolved-import-alias.empty-path",
+            ImportPathFailureClass::UnknownNamespaceOrPackage => {
+                "unresolved-import-alias.unknown-namespace-or-package"
+            }
+            ImportPathFailureClass::UnknownModule => "unresolved-import-alias.unknown-module",
+            ImportPathFailureClass::RelativePathEscapesPackage => {
+                "unresolved-import-alias.relative-path-escapes-package"
+            }
+            ImportPathFailureClass::RecoveredSyntax => "unresolved-import-alias.recovered-syntax",
+            ImportPathFailureClass::DuplicateAlias => "unresolved-import-alias.duplicate-alias",
+            ImportPathFailureClass::AliasRootConflict => {
+                "unresolved-import-alias.alias-root-conflict"
+            }
+            ImportPathFailureClass::IllegalCandidateState => {
+                "unresolved-import-alias.illegal-candidate-state"
+            }
+        },
+    }
+}
+
 fn sorted_name_symbol_projections(
     mut projections: Vec<&NameSymbolProjection>,
 ) -> Vec<&NameSymbolProjection> {
@@ -1871,6 +2874,17 @@ fn namespace_candidate_target_cmp(
         .then_with(|| range_key(left.range).cmp(&range_key(right.range)))
 }
 
+fn diagnostic_namespace_candidate_cmp(
+    left: &NameDiagnosticNamespaceCandidate,
+    right: &NameDiagnosticNamespaceCandidate,
+) -> Ordering {
+    left.stable_variant()
+        .cmp(right.stable_variant())
+        .then_with(|| left.target().cmp(right.target()))
+        .then_with(|| left.ordinal().cmp(&right.ordinal()))
+        .then_with(|| range_key(left.range()).cmp(&range_key(right.range())))
+}
+
 fn failed_segment_key(path: &UnresolvedNamespacePath) -> Vec<String> {
     path.failed_segment()
         .map(|segment| {
@@ -1887,14 +2901,22 @@ const fn range_key(range: SourceRange) -> (usize, usize) {
     (range.start, range.end)
 }
 
+fn source_range_cmp(left: SourceRange, right: SourceRange) -> Ordering {
+    range_key(left).cmp(&range_key(right))
+}
+
+fn range_key_string(range: SourceRange) -> String {
+    format!("{}..{}", range.start, range.end)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::imports::{ImportPathCandidate, ImportPathPrefix, ImportPathResolver};
     use crate::module_index::WorkspaceStubModuleIndexProvider;
     use crate::resolved_ast::{
-        FullyQualifiedName, LocalSymbolId, NameResolution, ResolvedArenaBuilder, ResolvedNode,
-        SymbolId,
+        AmbiguousNameRef, FullyQualifiedName, LocalSymbolId, NameRefEntry, NameResolution,
+        NameResolutionCandidate, ResolvedArenaBuilder, ResolvedNode, SymbolId,
     };
     use mizar_build::module_index::{
         DependencyModuleSummaryRef, ModuleIndexEntry, ModuleIndexLocation, PackageIndexEntry,
@@ -2154,6 +3176,538 @@ mod tests {
         assert_unresolved(&resolved, 0, NameLookupClass::Namespace, "Ns.Missing");
         assert_unresolved(&resolved, 1, NameLookupClass::Symbol, "");
         assert_unresolved(&resolved, 2, NameLookupClass::Symbol, "Recovered");
+    }
+
+    #[test]
+    fn name_diagnostics_preserve_ambiguous_candidate_order() {
+        let source_id = source_id();
+        let current = module_id("app", "main");
+        let dep = module_id("dep", "logic");
+        let namespace = NamespacePath::new("main");
+        let projections = vec![
+            imported_projection(
+                source_id,
+                dep,
+                namespace.clone(),
+                "Q/dep",
+                "dep::logic::Q",
+                Visibility::Public,
+                20,
+            ),
+            imported_projection(
+                source_id,
+                module_id("dep", "alt"),
+                namespace.clone(),
+                "Q/alt",
+                "dep::alt::Q",
+                Visibility::Public,
+                10,
+            ),
+        ];
+        let resolved = SymbolNameResolver::new(&projections, &[]).resolve(
+            &current,
+            &namespace,
+            &[name_candidate(source_id, current.clone(), 0, 50, "Q")],
+        );
+
+        let report = NameDiagnosticCollector::new().collect_resolution(&resolved);
+
+        let primary = report.primary().collect::<Vec<_>>();
+        assert_eq!(primary.len(), 1);
+        assert_eq!(primary[0].role(), NameDiagnosticRole::Primary);
+        assert_eq!(primary[0].kind(), NameDiagnosticKind::AmbiguousName);
+        let candidate_fqns = primary[0]
+            .symbol_candidates()
+            .iter()
+            .map(|candidate| candidate.symbol().fqn().as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(candidate_fqns, vec!["dep::alt::Q", "dep::logic::Q"]);
+    }
+
+    #[test]
+    fn unresolved_import_dependency_produces_one_primary_name_diagnostic() {
+        let source_id = source_id();
+        let provider = fixture_provider();
+        let input = ModuleIndexInput::new(&provider);
+        let current = module_id("app", "main");
+        let namespace = NamespacePath::new("main");
+        let import_resolution = ImportPathResolver::new(input).resolve(
+            &current,
+            &[ImportPathCandidate::new(
+                vec!["missing".to_owned(), "thing".to_owned()],
+                ImportPathPrefix::Unprefixed,
+                Some("util".to_owned()),
+                range(source_id, 0, 18),
+                0,
+            )
+            .with_alias_range(range(source_id, 14, 18))],
+        );
+        let namespace_candidates = vec![
+            candidate(source_id, 0, 25, &["util"]),
+            candidate(source_id, 1, 40, &["util"]),
+        ];
+        let namespace_resolution = NamespaceResolver::new(input).resolve(
+            &current,
+            import_resolution.resolved(),
+            import_resolution.unresolved(),
+            &namespace_candidates,
+        );
+        let name_resolution = SymbolNameResolver::new(&[], &[]).resolve(
+            &current,
+            &namespace,
+            &[
+                failed_namespace_candidate(source_id, current.clone(), 0, 25, "util"),
+                failed_namespace_candidate(source_id, current.clone(), 1, 40, "util"),
+                failed_namespace_candidate(source_id, current.clone(), 2, 25, "util"),
+            ],
+        );
+
+        let report = NameDiagnosticCollector::new()
+            .with_namespace_roots(namespace_resolution.unresolved())
+            .collect_resolution(&name_resolution);
+
+        let primary = report.primary().collect::<Vec<_>>();
+        assert_eq!(primary.len(), 1);
+        assert_eq!(
+            primary[0].kind(),
+            NameDiagnosticKind::UnresolvedImportAliasDependency {
+                class: ImportPathFailureClass::UnknownModule
+            }
+        );
+        assert_eq!(primary[0].attempted_spelling(), "util");
+        assert_eq!(
+            primary[0].dependent_ranges(),
+            &[range(source_id, 25, 29), range(source_id, 40, 44)]
+        );
+        let cascades = report.cascades().collect::<Vec<_>>();
+        assert_eq!(cascades.len(), 5);
+        assert!(
+            cascades
+                .iter()
+                .all(|diagnostic| diagnostic.root() == primary[0].root())
+        );
+        let cascade_order = cascades
+            .iter()
+            .map(|diagnostic| {
+                (
+                    diagnostic.kind(),
+                    diagnostic.range(),
+                    diagnostic.name_ref().map(NameRefId::index),
+                )
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            cascade_order,
+            vec![
+                (
+                    NameDiagnosticKind::UnresolvedName {
+                        lookup: NameLookupClass::Namespace
+                    },
+                    range(source_id, 25, 29),
+                    Some(0),
+                ),
+                (
+                    NameDiagnosticKind::UnresolvedName {
+                        lookup: NameLookupClass::Namespace
+                    },
+                    range(source_id, 25, 29),
+                    Some(2),
+                ),
+                (
+                    NameDiagnosticKind::UnresolvedName {
+                        lookup: NameLookupClass::Namespace
+                    },
+                    range(source_id, 40, 44),
+                    Some(1),
+                ),
+                (
+                    NameDiagnosticKind::UnresolvedNamespace {
+                        class: NamespaceFailureClass::UnresolvedImportAlias
+                    },
+                    range(source_id, 25, 29),
+                    None,
+                ),
+                (
+                    NameDiagnosticKind::UnresolvedNamespace {
+                        class: NamespaceFailureClass::UnresolvedImportAlias
+                    },
+                    range(source_id, 40, 44),
+                    None,
+                ),
+            ]
+        );
+        assert_eq!(
+            cascades
+                .iter()
+                .filter(|diagnostic| matches!(
+                    diagnostic.kind(),
+                    NameDiagnosticKind::UnresolvedNamespace { .. }
+                ))
+                .count(),
+            2
+        );
+        assert_eq!(
+            cascades
+                .iter()
+                .filter(|diagnostic| matches!(
+                    diagnostic.kind(),
+                    NameDiagnosticKind::UnresolvedName {
+                        lookup: NameLookupClass::Namespace
+                    }
+                ))
+                .count(),
+            3
+        );
+    }
+
+    #[test]
+    fn name_diagnostics_use_mixed_root_ordering() {
+        let source_id = source_id();
+        let provider = fixture_provider();
+        let input = ModuleIndexInput::new(&provider);
+        let current = module_id("app", "main");
+        let namespace = NamespacePath::new("main");
+        let import_resolution = ImportPathResolver::new(input).resolve(
+            &current,
+            &[ImportPathCandidate::new(
+                vec!["missing".to_owned(), "thing".to_owned()],
+                ImportPathPrefix::Unprefixed,
+                Some("util".to_owned()),
+                range(source_id, 0, 18),
+                0,
+            )
+            .with_alias_range(range(source_id, 14, 18))],
+        );
+        let namespace_resolution = NamespaceResolver::new(input).resolve(
+            &current,
+            import_resolution.resolved(),
+            import_resolution.unresolved(),
+            &[candidate(source_id, 0, 25, &["util"])],
+        );
+        let projections = vec![
+            imported_projection(
+                source_id,
+                module_id("dep", "logic"),
+                namespace.clone(),
+                "Q/dep",
+                "dep::logic::Q",
+                Visibility::Public,
+                20,
+            ),
+            imported_projection(
+                source_id,
+                module_id("dep", "alt"),
+                namespace.clone(),
+                "Q/alt",
+                "dep::alt::Q",
+                Visibility::Public,
+                10,
+            ),
+        ];
+        let name_resolution = SymbolNameResolver::new(&projections, &[]).resolve(
+            &current,
+            &namespace,
+            &[
+                name_candidate(source_id, current.clone(), 1, 70, "Q"),
+                failed_namespace_candidate(source_id, current.clone(), 0, 25, "util"),
+            ],
+        );
+
+        let report = NameDiagnosticCollector::new()
+            .with_namespace_roots(namespace_resolution.unresolved())
+            .collect_resolution(&name_resolution);
+
+        let order = report
+            .iter()
+            .map(|diagnostic| {
+                (
+                    diagnostic.role(),
+                    diagnostic.kind(),
+                    diagnostic.attempted_spelling().to_owned(),
+                    diagnostic.range(),
+                )
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            order,
+            vec![
+                (
+                    NameDiagnosticRole::Primary,
+                    NameDiagnosticKind::UnresolvedImportAliasDependency {
+                        class: ImportPathFailureClass::UnknownModule
+                    },
+                    "util".to_owned(),
+                    range(source_id, 0, 18),
+                ),
+                (
+                    NameDiagnosticRole::Cascade,
+                    NameDiagnosticKind::UnresolvedName {
+                        lookup: NameLookupClass::Namespace
+                    },
+                    "util".to_owned(),
+                    range(source_id, 25, 29),
+                ),
+                (
+                    NameDiagnosticRole::Cascade,
+                    NameDiagnosticKind::UnresolvedNamespace {
+                        class: NamespaceFailureClass::UnresolvedImportAlias
+                    },
+                    "util".to_owned(),
+                    range(source_id, 25, 29),
+                ),
+                (
+                    NameDiagnosticRole::Primary,
+                    NameDiagnosticKind::AmbiguousName,
+                    "Q".to_owned(),
+                    range(source_id, 70, 71),
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn name_diagnostics_keep_namespace_payloads_on_import_dependency_primaries() {
+        let source_id = source_id();
+        let provider = fixture_provider();
+        let input = ModuleIndexInput::new(&provider);
+        let current = module_id("app", "main");
+        let import_resolution = ImportPathResolver::new(input).resolve(
+            &current,
+            &[
+                ImportPathCandidate::new(
+                    vec!["app".to_owned(), "util".to_owned()],
+                    ImportPathPrefix::Unprefixed,
+                    Some("Shared".to_owned()),
+                    range(source_id, 30, 46),
+                    9,
+                ),
+                ImportPathCandidate::new(
+                    vec!["dep".to_owned(), "logic".to_owned()],
+                    ImportPathPrefix::Unprefixed,
+                    Some("Shared".to_owned()),
+                    range(source_id, 0, 16),
+                    3,
+                ),
+            ],
+        );
+        let namespace_resolution = NamespaceResolver::new(input).resolve(
+            &current,
+            import_resolution.resolved(),
+            import_resolution.unresolved(),
+            &[candidate(source_id, 0, 60, &["Shared"])],
+        );
+
+        let report = NameDiagnosticCollector::new()
+            .with_namespace_roots(namespace_resolution.unresolved())
+            .collect(&NameRefTable::new());
+
+        let primaries = report.primary().collect::<Vec<_>>();
+        assert_eq!(primaries.len(), 2);
+        for primary in primaries {
+            assert_eq!(
+                primary.kind(),
+                NameDiagnosticKind::UnresolvedImportAliasDependency {
+                    class: ImportPathFailureClass::DuplicateAlias
+                }
+            );
+            assert_eq!(
+                primary.normalized_namespace_prefix(),
+                &["Shared".to_owned()]
+            );
+            let candidates = primary
+                .namespace_candidates()
+                .iter()
+                .map(|candidate| {
+                    (
+                        candidate.stable_variant(),
+                        candidate.target().package().as_str(),
+                        candidate.target().path().as_str(),
+                        candidate.range(),
+                    )
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(
+                candidates,
+                vec![
+                    (
+                        "import-alias-target",
+                        "app",
+                        "util",
+                        range(source_id, 30, 46),
+                    ),
+                    (
+                        "import-alias-target",
+                        "dep",
+                        "logic",
+                        range(source_id, 0, 16),
+                    ),
+                ]
+            );
+            assert_eq!(primary.dependent_ranges(), &[range(source_id, 60, 66)]);
+        }
+    }
+
+    #[test]
+    fn name_diagnostics_include_reserved_roots_in_normalized_prefixes() {
+        let source_id = source_id();
+        let provider = fixture_provider();
+        let input = ModuleIndexInput::new(&provider);
+        let current = module_id("app", "main");
+        let namespace_resolution = NamespaceResolver::new(input).resolve(
+            &current,
+            &[],
+            &[],
+            &[
+                candidate(source_id, 0, 10, &["pub", "math", "missing"]),
+                candidate(source_id, 1, 40, &["std", "missing"]),
+            ],
+        );
+
+        let report = NameDiagnosticCollector::new()
+            .with_namespace_roots(namespace_resolution.unresolved())
+            .collect(&NameRefTable::new());
+
+        let prefixes = report
+            .primary()
+            .map(|diagnostic| diagnostic.normalized_namespace_prefix().to_vec())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            prefixes,
+            vec![
+                vec!["pub".to_owned(), "math".to_owned()],
+                vec!["std".to_owned()],
+            ]
+        );
+    }
+
+    #[test]
+    fn name_diagnostics_match_namespace_roots_by_spelling_and_range() {
+        let source_id = source_id();
+        let current = module_id("app", "main");
+        let first_namespace = unresolved_namespace_fixture(
+            source_id,
+            0,
+            10,
+            "Ns",
+            NamespaceFailureClass::UnknownNamespaceSegment,
+            &["Ns"],
+        );
+        let second_namespace = unresolved_namespace_fixture(
+            source_id,
+            1,
+            40,
+            "Ns",
+            NamespaceFailureClass::RecoveredSyntax,
+            &["RecoveredNs"],
+        );
+        let first_order = vec![first_namespace.clone(), second_namespace.clone()];
+        let second_order = vec![second_namespace, first_namespace];
+        let mut name_refs = NameRefTable::new();
+        let first_name = failed_namespace_candidate(source_id, current.clone(), 1, 40, "Ns");
+        name_refs.insert(NameRefEntry::new(
+            first_name.site().clone(),
+            unresolved_name(&first_name, NameLookupClass::Namespace),
+            first_name.origin().clone(),
+        ));
+        let second_name = failed_namespace_candidate(source_id, current.clone(), 0, 10, "Ns");
+        name_refs.insert(NameRefEntry::new(
+            second_name.site().clone(),
+            unresolved_name(&second_name, NameLookupClass::Namespace),
+            second_name.origin().clone(),
+        ));
+
+        let first_report = NameDiagnosticCollector::new()
+            .with_namespace_roots(&first_order)
+            .collect(&name_refs);
+        let second_report = NameDiagnosticCollector::new()
+            .with_namespace_roots(&second_order)
+            .collect(&name_refs);
+
+        let first_roots = primary_root_ranges(&first_report);
+        let second_roots = primary_root_ranges(&second_report);
+        assert_eq!(first_roots, second_roots);
+        assert_eq!(
+            first_roots,
+            vec![
+                (NameDiagnosticRootId::new(0), range(source_id, 10, 12)),
+                (NameDiagnosticRootId::new(1), range(source_id, 40, 42)),
+            ]
+        );
+        for cascade in first_report.cascades() {
+            assert_eq!(cascade.root_range(), cascade.range());
+        }
+    }
+
+    #[test]
+    fn name_diagnostics_order_same_range_by_class_spelling_and_candidate_key() {
+        let source_id = source_id();
+        let current = module_id("app", "main");
+        let mut table = NameRefTable::new();
+        insert_unresolved_name_entry(&mut table, source_id, current.clone(), 0, 50, "Z");
+        insert_ambiguous_name_entry(
+            &mut table,
+            source_id,
+            current.clone(),
+            1,
+            50,
+            "Q",
+            &[("B", "app::main::B", 20)],
+        );
+        insert_unresolved_name_entry(&mut table, source_id, current.clone(), 2, 50, "A");
+        insert_ambiguous_name_entry(
+            &mut table,
+            source_id,
+            current,
+            3,
+            50,
+            "Q",
+            &[("A", "app::main::A", 10)],
+        );
+
+        let report = NameDiagnosticCollector::new().collect(&table);
+
+        let order = report
+            .primary()
+            .map(|diagnostic| {
+                (
+                    diagnostic.kind(),
+                    diagnostic.attempted_spelling().to_owned(),
+                    diagnostic
+                        .symbol_candidates()
+                        .first()
+                        .map(|candidate| candidate.symbol().fqn().as_str().to_owned()),
+                )
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            order,
+            vec![
+                (
+                    NameDiagnosticKind::AmbiguousName,
+                    "Q".to_owned(),
+                    Some("app::main::A".to_owned()),
+                ),
+                (
+                    NameDiagnosticKind::AmbiguousName,
+                    "Q".to_owned(),
+                    Some("app::main::B".to_owned()),
+                ),
+                (
+                    NameDiagnosticKind::UnresolvedName {
+                        lookup: NameLookupClass::Symbol
+                    },
+                    "A".to_owned(),
+                    None,
+                ),
+                (
+                    NameDiagnosticKind::UnresolvedName {
+                        lookup: NameLookupClass::Symbol
+                    },
+                    "Z".to_owned(),
+                    None,
+                ),
+            ]
+        );
     }
 
     #[test]
@@ -2899,6 +4453,89 @@ mod tests {
         };
         assert_eq!(unresolved.lookup(), expected_lookup);
         assert_eq!(unresolved.spelling(), expected_spelling);
+    }
+
+    fn unresolved_namespace_fixture(
+        source_id: SourceId,
+        ordinal: usize,
+        start: usize,
+        spelling: &str,
+        class: NamespaceFailureClass,
+        matched_prefix: &[&str],
+    ) -> UnresolvedNamespacePath {
+        let candidate = candidate(source_id, ordinal, start, &[spelling]);
+        let partial = NamespacePartialCandidate::new(
+            NamespacePartialOrigin::ImportAlias,
+            matched_prefix
+                .iter()
+                .map(|part| (*part).to_owned())
+                .collect(),
+            None,
+            Vec::new(),
+        );
+        UnresolvedNamespacePath::from_candidate(
+            &candidate,
+            class,
+            candidate.segments().first().cloned(),
+            Some(partial),
+            Vec::new(),
+            Vec::new(),
+        )
+    }
+
+    fn primary_root_ranges(
+        report: &NameDiagnosticReport,
+    ) -> Vec<(NameDiagnosticRootId, SourceRange)> {
+        report
+            .primary()
+            .map(|diagnostic| (diagnostic.root(), diagnostic.root_range()))
+            .collect()
+    }
+
+    fn insert_unresolved_name_entry(
+        table: &mut NameRefTable,
+        source_id: SourceId,
+        module: ModuleId,
+        ordinal: usize,
+        start: usize,
+        spelling: &str,
+    ) {
+        let candidate = name_candidate(source_id, module, ordinal, start, spelling);
+        table.insert(NameRefEntry::new(
+            candidate.site().clone(),
+            unresolved_name(&candidate, NameLookupClass::Symbol),
+            candidate.origin().clone(),
+        ));
+    }
+
+    fn insert_ambiguous_name_entry(
+        table: &mut NameRefTable,
+        source_id: SourceId,
+        module: ModuleId,
+        ordinal: usize,
+        start: usize,
+        spelling: &str,
+        candidates: &[(&str, &str, usize)],
+    ) {
+        let (site, origin) = reference_site(source_id, module.clone(), start, spelling, ordinal);
+        let candidates = candidates
+            .iter()
+            .map(|(local, fqn, declaration_start)| {
+                NameResolutionCandidate::new(
+                    symbol_id(module.clone(), local, fqn),
+                    range(
+                        source_id,
+                        *declaration_start,
+                        *declaration_start + local.len(),
+                    ),
+                )
+            })
+            .collect();
+        table.insert(NameRefEntry::new(
+            site.clone(),
+            NameResolution::Ambiguous(AmbiguousNameRef::new(spelling, site.range(), candidates)),
+            origin,
+        ));
     }
 
     fn candidate(

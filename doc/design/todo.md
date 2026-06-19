@@ -220,11 +220,10 @@ Two crates run as cross-cutting strands rather than strict steps:
 - **`mizar-diagnostics` adoption timing: deferred at mizar-resolve task 13.**
   The shared diagnostic crate remains part of the target layout
   ([internal 07](./internal/en/07.crate_module_layout.md)), but R-013 keeps
-  resolver failures as crate-local/internal records until resolver diagnostic
-  code ownership is specified. Revisit before the first user-facing resolver
-  diagnostic integration, starting with
-  [mizar-resolve task 15](./mizar-resolve/en/todo.md) if that task needs public
-  diagnostics.
+  resolver failures as crate-local/internal records and R-015 keeps name
+  diagnostics crate-local/internal until resolver diagnostic code ownership is
+  specified. Revisit before the first later user-facing resolver diagnostic
+  integration.
 - **ModuleSummary reuse timing: open.** The first resolver iteration may use
   the in-memory dependency closure; summary-backed resolution needs the
   `mizar-artifact` schema wave first. Owned by

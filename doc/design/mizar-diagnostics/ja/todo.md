@@ -57,10 +57,10 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
 ## 解決済みおよび保留中の決定
 
 - **採用時期: `mizar-resolve` task 13 で deferred。** この crate は目標配置に
-  残るが、R-013 は resolver failure を crate-local/internal record として保持した。
-  resolver diagnostic code ownership がまだ `spec_gap` であるためである。最初の
-  user-facing resolver diagnostic integration の前、`mizar-resolve` task 15 が
-  public diagnostics を必要とする場合は同 task から、再検討する。
+  残るが、R-013 は resolver failure を crate-local/internal record として保持し、
+  R-015 は name diagnostic を crate-local/internal に保った。resolver diagnostic code
+  ownership がまだ `spec_gap` であるためである。後続の user-facing resolver diagnostic
+  integration の前に再検討する。
 - **既存の crate ごとの診断の移行: 未解決。task 16 で解決する。**
   `mizar-lexer`/`mizar-frontend`/`mizar-parser` の診断はこの crate より
   古い。共有レコードへ移行する（その順序も）か、変換アダプターの背後で

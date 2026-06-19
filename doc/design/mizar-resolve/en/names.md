@@ -10,10 +10,13 @@ unresolved/ambiguous records. Task R-014 implements ordinary symbol-name lookup
 over a preliminary `NameSymbolProjection` seam: qualified and unqualified
 visibility, declaration-point filtering, current-module shadowing,
 overload-group placeholders, enabled builtins, and deterministic `NameRefTable`
-outcomes. Dot-chain finalization remains task R-016. The diagnostic code range
-for public resolver diagnostics is still a known `spec_gap`; this document
-therefore specifies diagnostic classes, payloads, and ordering, but no public
-numeric diagnostic codes.
+outcomes. Task R-015 implements root-aware internal name diagnostic records:
+`NameDiagnosticRootId`, primary/cascade roles, unresolved import-alias roots,
+namespace/name dependent records, stable candidate payloads, and deterministic
+record ordering. Dot-chain finalization remains task R-016. The diagnostic code
+range for public resolver diagnostics is still a known `spec_gap`; this
+document therefore specifies diagnostic classes, payloads, and ordering, but no
+public numeric diagnostic codes.
 
 ## References
 
@@ -231,8 +234,13 @@ Shadowing is source- and tier-sensitive:
 Every failed or ambiguous ordinary symbol lookup is explicit in `NameRefTable`.
 Namespace failures that occur before a final symbol spelling is reached are
 explicit internal namespace records linked from the dependent name reference or
-diagnostic. This matches the current `NameRefTable` shape, whose ambiguous
-candidate payload is a deterministic list of `SymbolId` candidates.
+diagnostic. Task R-015 keeps `NameRefTable` as the source of truth for name
+outcomes and adds a crate-local diagnostic report that assigns deterministic
+`NameDiagnosticRootId` values for unresolved/ambiguous name references,
+unresolved namespace paths, unresolved import-alias dependencies, and ambiguous
+namespace/import-alias roots. This matches the current `NameRefTable` shape,
+whose ambiguous candidate payload is a deterministic list of `SymbolId`
+candidates.
 
 Required unresolved symbol-name classes:
 
@@ -279,7 +287,10 @@ hash-map iteration or filesystem order.
 
 One unresolved root should produce one primary resolver diagnostic. Dependent
 nodes link to the root unresolved key and should not emit cascaded primary
-diagnostics unless they add a distinct cause.
+diagnostics unless they add a distinct cause. When a namespace failure is caused
+by an unresolved import alias, the import dependency root is the primary record;
+dependent namespace records and failed-namespace `NameRefTable` entries link to
+that root as cascade records.
 
 ## Dot-Chain Finalization Contract
 
@@ -315,12 +326,14 @@ name diagnostics remain crate-local/internal records. They must include:
 - failure class or ambiguity class;
 - attempted spelling and normalized namespace prefix;
 - deterministic candidate keys for ambiguous lookups;
-- root unresolved key for cascade suppression.
+- root unresolved key for cascade suppression;
+- primary/cascade role for each internal record.
 
-Diagnostic ordering uses primary range, failure/ambiguity class name, attempted
-spelling, and stable candidate key. Public numeric codes must be added only
-after `doc/spec/en/22.error_handling_and_diagnostics.md` assigns or delegates
-resolver code ownership.
+Diagnostic ordering uses root primary range, primary-before-cascade role,
+failure/ambiguity class name, attempted spelling, stable candidate key, and
+record-local range/name-reference tie-breakers. Public numeric codes must be
+added only after `doc/spec/en/22.error_handling_and_diagnostics.md` assigns or
+delegates resolver code ownership.
 
 ## Tests Planned For Implementation Tasks
 

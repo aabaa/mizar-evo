@@ -73,9 +73,9 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
   （[internal 07](../../internal/ja/07.crate_module_layout.md)、
   [internal 03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)）。
   R-013 は namespace-resolution failure を crate-local/internal record として保持し、
-  R-G001 に resolver code range がまだないため public resolver diagnostics を出さない。
-  最初の user-facing resolver diagnostic integration の前、task 15 が public
-  diagnostics を必要とする場合は同 task から、再検討する。
+  R-015 は name diagnostic を crate-local/internal に保つ。R-G001 に resolver code range
+  がまだないため public resolver diagnostics を出さない。後続の user-facing resolver
+  diagnostic integration の前に再検討する。
 - **ModuleSummary 再利用の時期: 未解決。task 24 で解決する。**
   アーキテクチャ 03 は依存モジュールをソース再読込ではなく `ModuleSummary`
   artifact として消費することを許す。最初のイテレーションはメモリ内の
@@ -251,11 +251,17 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
     - 依存: 13。仕様: `names.md`、
       [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)。
 
-15. **未解決・曖昧参照の診断。** [ ]
+15. **未解決・曖昧参照の診断。** [x]
     - 未解決/曖昧な参照を決定的な候補リストを持つ明示ノードとして表現する。
       1 つの未解決根から診断を連鎖させない。
+    - R-015 は `src/names.rs` の crate-local/internal `NameDiagnosticReport` record
+      として実装済み。deterministic `NameDiagnosticRootId` allocation、primary /
+      cascade role、unresolved import-alias root、namespace/name dependent record、
+      stable symbol/namespace candidate payload、public numeric diagnostic code を伴わない
+      record ordering を持つ。
     - テスト: 候補順が安定した曖昧性フィクスチャ。1 つの未解決 import が
-      1 つの主診断を生む。
+      1 つの主診断を生む。import-root、namespace、name、symbol ambiguity の混在診断が
+      deterministic ordering を保つ。
     - 依存: 14。仕様: `names.md`、
       [22.error_handling_and_diagnostics.md](../../../spec/ja/22.error_handling_and_diagnostics.md)。
 

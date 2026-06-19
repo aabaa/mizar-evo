@@ -73,10 +73,10 @@ IR ownership: [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
   `mizar-diagnostics` remains part of the target crate layout
   ([internal 07](../../internal/en/07.crate_module_layout.md),
   [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md)).
-  R-013 keeps namespace-resolution failures as crate-local/internal records and
-  does not emit public resolver diagnostics because R-G001 still lacks a
-  resolver code range. Revisit before the first user-facing resolver diagnostic
-  integration, starting with task 15 if that task needs public diagnostics.
+  R-013 keeps namespace-resolution failures as crate-local/internal records,
+  and R-015 keeps name diagnostics crate-local/internal, because R-G001 still
+  lacks a resolver code range. Revisit before the first later user-facing
+  resolver diagnostic integration.
 - **ModuleSummary reuse timing: open, resolved by task 24.** Architecture 03
   allows dependency modules to be consumed as `ModuleSummary` artifacts
   instead of re-read sources. The first iteration resolves the in-memory
@@ -264,12 +264,18 @@ Keep `cargo test -p mizar-resolve` green after each task (see
     - Deps: 13. Spec: `names.md`,
       [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
-15. **Unresolved and ambiguous reference diagnostics.** [ ]
+15. **Unresolved and ambiguous reference diagnostics.** [x]
     - Represent unresolved/ambiguous references as explicit nodes with
       deterministic candidate lists; no diagnostic cascades from a single
       unresolved root.
+    - Implemented R-015 as crate-local/internal `NameDiagnosticReport` records
+      in `src/names.rs`: deterministic `NameDiagnosticRootId` allocation,
+      primary/cascade roles, unresolved import-alias roots, namespace/name
+      dependent records, stable symbol/namespace candidate payloads, and
+      record ordering without public numeric diagnostic codes.
     - Tests: ambiguity fixtures with stable candidate order; one unresolved
-      import produces one primary diagnostic.
+      import produces one primary diagnostic; mixed import-root, namespace,
+      name, and symbol-ambiguity diagnostics preserve deterministic ordering.
     - Deps: 14. Spec: `names.md`,
       [22.error_handling_and_diagnostics.md](../../../spec/en/22.error_handling_and_diagnostics.md).
 

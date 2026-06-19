@@ -56,9 +56,9 @@ spec: [22.error_handling_and_diagnostics.md](../../../spec/en/22.error_handling_
 
 - **Adoption timing: deferred by `mizar-resolve` task 13.** This crate remains
   in the target layout, but R-013 kept resolver failures as crate-local/internal
-  records because resolver diagnostic code ownership is still a `spec_gap`.
-  Revisit before the first user-facing resolver diagnostic integration,
-  starting with `mizar-resolve` task 15 if that task needs public diagnostics.
+  records and R-015 kept name diagnostics crate-local/internal because resolver
+  diagnostic code ownership is still a `spec_gap`. Revisit before the first
+  later user-facing resolver diagnostic integration.
 - **Migration of existing per-crate diagnostics: open, resolved by
   task 16.** `mizar-lexer`/`mizar-frontend`/`mizar-parser` diagnostics
   predate this crate. Decide whether they migrate to the shared record (and
