@@ -383,8 +383,10 @@ dependencies = [
 name = "mizar-resolve"
 version = "0.1.0"
 dependencies = [
+ "mizar-build",
  "mizar-session",
  "mizar-syntax",
+ "semver",
 ]
 
 [[package]]

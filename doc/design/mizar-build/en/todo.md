@@ -134,10 +134,11 @@ Keep `cargo test -p mizar-build` green after each task (see
      shims in `mizar-build`.
    - Completed build-side slice: `ModuleIndex`, package/namespace/module
      entries, dependency-summary-backed module entries, static source layout
-     provider, deterministic diagnostics, and provider accessors. Checked
-     `mizar-resolve` task 7 on 2026-06-18: it is still open and
-     `crates/mizar-resolve` is absent, so resolver-stub replacement and
-     resolver-fixture parity remain an external dependency gap.
+     provider, deterministic diagnostics, and provider accessors. Historical
+     check on 2026-06-18 found `mizar-resolve` task 7 open; R-007 has since
+     landed the resolver-owned seam and workspace stub provider, so the
+     build-side external dependency gap is closed without adding resolver
+     fixtures or compatibility shims to `mizar-build`.
    - Tests: multi-package fixtures; alias-independent module identity;
      deterministic source-discovery order; provider parity with resolver stub
      fixtures only after `mizar-resolve` task 7 supplies that seam.

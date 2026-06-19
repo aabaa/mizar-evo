@@ -262,10 +262,10 @@ Provider invariants:
   modules; `dependency_summary()` succeeds only for modules whose location is
   `DependencySummary`.
 
-`mizar-resolve` task 7 owns the resolver-side interim seam and its test
-workspace-stub provider. Until that task lands, `mizar-build` can define and
-construct the index, but it must not invent resolver fixtures or a resolver
-crate-local compatibility layer on behalf of `mizar-resolve`.
+`mizar-resolve` task 7 has landed the resolver-side seam and its test
+workspace-stub provider. `mizar-build` defines and constructs the index, but it
+does not own resolver fixtures or a resolver crate-local compatibility layer on
+behalf of `mizar-resolve`.
 
 ## Diagnostics
 

@@ -45,7 +45,7 @@ and the crate ownership map in
 | mizar-test | yes | Corpus discovery, expectation sidecars, staged model, traceability, snapshots, harness behavior | [~] implementation exists; formal lint/gap audit, runner validation, snapshots, and reporting remain | [todo](./mizar-test/en/todo.md) |
 | mizar-build | yes | Phase 0 workspace planning plus later task graph, scheduler, resources, cancellation, failure state | [~] scaffold and package-name validation slice exist; planner spec and full manifest/lockfile parsing are next | [todo](./mizar-build/en/todo.md) |
 | mizar-lsp | yes | Editor range mapping now; future server, snapshots, diagnostics, metadata, navigation, actions, explanations | [~] range conversion slice exists; specs and server features remain planned | [todo](./mizar-lsp/en/todo.md) |
-| mizar-resolve | no | Module graph, namespaces, symbols, labels, signature collection | [ ] planned | [todo](./mizar-resolve/en/todo.md) |
+| mizar-resolve | yes | Module graph, namespaces, symbols, labels, signature collection | [~] foundation tasks 1-7 complete; imports/name wave is next | [todo](./mizar-resolve/en/todo.md) |
 | mizar-checker | no | Type checking, cluster/registration resolution, overload resolution | [ ] planned | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | no | Elaboration, binder-normalized core logic, control-flow preparation | [ ] planned | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | no | VC IR, VC generation, deterministic pre-ATP discharge, dependency slices | [ ] planned | [todo](./mizar-vc/en/todo.md) |
@@ -109,10 +109,9 @@ current parser hardening close-out.
 
 ### Immediate Next Work
 
-1. **mizar-resolve kickoff** - start the resolver foundation now that
-   `mizar-build` wave A has landed. First create/maintain the crate plan, then
-   proceed through scaffold, `ResolvedAst`/`SymbolEnv` specs, data shapes, and
-   the resolver-side module-index seam (tasks 1-7).
+1. **mizar-resolve imports/name wave** - resolver foundation tasks 1-7 have
+   landed, including the resolver-side module-index seam over the build-side
+   provider contract. Continue with import and name-resolution tasks 8-16.
 2. **mizar-test foundation cleanup** - run the lint-policy guard and
    source/spec gap audit (tasks 1-2), then harden validation/reporting,
    snapshots, and coverage reporting. The source crate already exists; the TODO
@@ -192,6 +191,12 @@ Two crates run as cross-cutting strands rather than strict steps:
   selector/update postfix. Scope-dependent selector-versus-namespace separation
   remains resolver-owned and is finalized by
   [mizar-resolve task 16](./mizar-resolve/en/todo.md).
+- **Resolver module-index seam: resolved.** `mizar-resolve` consumes the
+  build-side `ModuleIndexProvider` contract through
+  `mizar_resolve::module_index::ModuleIndexInput`. Its
+  `WorkspaceStubModuleIndexProvider` is resolver-local test infrastructure; the
+  resolver does not rediscover packages, load sources, construct module indexes,
+  or parse dependency-summary artifacts.
 - **Syntax tree backend: resolved, rowan-backed.** `mizar-syntax` owns a
   rowan-backed `SurfaceAst` storage boundary. Parser grammar code must go
   through the syntax builder/event boundary rather than relying on arena

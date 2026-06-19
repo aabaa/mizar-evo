@@ -21,6 +21,7 @@ Autonomous crate development preparation is tracked in
 |---|---|---|---|
 | resolved_ast | `resolved_ast.md` (task 2) | `src/resolved_ast.rs` | [x] |
 | env | `env.md` (task 3) | `src/env.rs` | [x] |
+| module_index | architecture 03 Step 1 / `mizar-build` `module_index.md` (task 7) | `src/module_index.rs` | [x] |
 | imports | `imports.md` (task 8) | `src/imports.rs` | [ ] |
 | names | `names.md` (task 12) | `src/names.rs` | [ ] |
 | labels | `labels.md` (task 17) | `src/labels.rs` | [ ] |
@@ -42,11 +43,12 @@ committed autonomously without holding the rest of the crate in flight.
 
 ## Crate Prerequisites
 
-The crate depends on `mizar-session` and `mizar-syntax`. It consumes
-`SurfaceAst` produced through the frontend seam, so meaningful input exists
-only after `mizar-parser` tasks 5-7 (module skeleton, imports, exports) land;
-resolution breadth then grows with parser grammar tasks. Later, the
-ModuleSummary-reuse task adds a dependency on `mizar-artifact` (schema wave).
+The crate depends on `mizar-session`, `mizar-syntax`, and the build-side
+`ModuleIndexProvider` contract from `mizar-build`. It consumes `SurfaceAst`
+produced through the frontend seam, so meaningful input exists only after
+`mizar-parser` tasks 5-7 (module skeleton, imports, exports) land; resolution
+breadth then grows with parser grammar tasks. Later, the ModuleSummary-reuse
+task adds a dependency on `mizar-artifact` (schema wave).
 Architecture: [03.module_and_symbol_resolution.md](../../architecture/en/03.module_and_symbol_resolution.md)
 (must also refine architecture 18 and 19 per
 [internal 07](../../internal/en/07.crate_module_layout.md));
@@ -59,13 +61,14 @@ IR ownership: [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
   `mizar-syntax` task 8); the resolver finishes the decision using variable
   scope. Registered at the top level
   ([../../todo.md](../../todo.md) "Resolved And Open Decisions").
-- **Interim orchestration seam: open, resolved by task 7.** Pipeline
-  orchestration is owned by `mizar-driver`
+- **Interim orchestration seam: resolved by task 7.** Pipeline orchestration is
+  owned by `mizar-driver`
   ([internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md));
-  the resolver is a phase service, not a driver. The open part is the interim
-  module-index input the resolver consumes until the `mizar-build` module-index
-  provider and the `mizar-driver` phase registry are integrated
-  (workspace-stub provider is the default candidate).
+  the resolver is a phase service, not a driver. The resolver consumes the
+  build-side `ModuleIndexProvider` through
+  `mizar_resolve::module_index::ModuleIndexInput`, and keeps only a
+  resolver-local `WorkspaceStubModuleIndexProvider` for tests and fixtures until
+  driver registry integration lands.
 - **`mizar-diagnostics` adoption timing: open, decided before task 13.**
   `mizar-diagnostics` is part of the target crate layout
   ([internal 07](../../internal/en/07.crate_module_layout.md),
@@ -133,15 +136,22 @@ Keep `cargo test -p mizar-resolve` green after each task (see
    - Deps: 4, 5. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md)
      "Snapshot Tests".
 
-7. **Module-index input contract and interim orchestration seam.** [ ]
+7. **Module-index input contract and interim orchestration seam.** [x]
    - Resolve the interim-seam decision: define the package/module index input
      (architecture 03 Step 1) the resolver consumes as a phase service
      ([internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)),
      with a workspace-stub provider for tests until the `mizar-build`
      module-index provider and `mizar-driver` registry are integrated. Record
      the decision here and at the top level.
+   - Decision: `mizar_resolve::module_index::ModuleIndexInput` borrows the
+     build-side `ModuleIndexProvider` contract and forwards package,
+     namespace, module, and dependency-summary lookups. The resolver converts
+     build-owned module identities into resolver `ModuleId` values, but does
+     not discover packages, load sources, construct module indexes, or parse
+     dependency-summary artifacts. `WorkspaceStubModuleIndexProvider` is
+     resolver-local test infrastructure only.
    - Tests: stub provider feeds a multi-module fixture; module identity is
-     alias-independent.
+     alias-independent; provider errors are deterministic.
    - Deps: 4. Spec: architecture 03 "Step 1", `mizar-build` todo tasks 5-6
      and `module_index.md`.
 

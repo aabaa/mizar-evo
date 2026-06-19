@@ -258,10 +258,10 @@ provider invariant:
 - `module()` は workspace module と dependency-summary-backed module の両方で動かなければならない。
   `dependency_summary()` は location が `DependencySummary` である module に対してのみ成功する。
 
-`mizar-resolve` task 7 は resolver 側の interim seam と、そのテスト用
-workspace-stub provider を所有する。その task が着地するまでは、`mizar-build` は
-index の定義と構築を行えるが、`mizar-resolve` の代わりに resolver fixture や
-resolver crate-local compatibility layer を創作してはならない。
+`mizar-resolve` task 7 は resolver 側の seam と、そのテスト用
+workspace-stub provider を実装済みである。`mizar-build` は index の定義と構築を
+所有するが、`mizar-resolve` の代わりに resolver fixture や resolver crate-local
+compatibility layer を所有しない。
 
 ## diagnostics
 

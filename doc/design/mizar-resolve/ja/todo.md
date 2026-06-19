@@ -19,6 +19,7 @@
 |---|---|---|---|
 | resolved_ast | `resolved_ast.md`（task 2） | `src/resolved_ast.rs` | [x] |
 | env | `env.md`（task 3） | `src/env.rs` | [x] |
+| module_index | アーキテクチャ 03 Step 1 / `mizar-build` `module_index.md`（task 7） | `src/module_index.rs` | [x] |
 | imports | `imports.md`（task 8） | `src/imports.rs` | [ ] |
 | names | `names.md`（task 12） | `src/names.rs` | [ ] |
 | labels | `labels.md`（task 17） | `src/labels.rs` | [ ] |
@@ -40,11 +41,12 @@
 
 ## crate の前提条件
 
-この crate は `mizar-session` と `mizar-syntax` に依存する。frontend seam を
-通じて生成される `SurfaceAst` を消費するため、意味のある入力は
-`mizar-parser` task 5-7（モジュール骨格、import、export）が入って初めて
-存在する。以後、解決の網羅性はパーサーの文法タスクとともに成長する。後段の
-ModuleSummary 再利用タスクで `mizar-artifact`（スキーマ波）への依存が加わる。
+この crate は `mizar-session`、`mizar-syntax`、および `mizar-build` の
+build-side `ModuleIndexProvider` contract に依存する。frontend seam を通じて
+生成される `SurfaceAst` を消費するため、意味のある入力は `mizar-parser`
+task 5-7（モジュール骨格、import、export）が入って初めて存在する。以後、
+解決の網羅性はパーサーの文法タスクとともに成長する。後段の ModuleSummary
+再利用タスクで `mizar-artifact`（スキーマ波）への依存が加わる。
 アーキテクチャ: [03.module_and_symbol_resolution.md](../../architecture/ja/03.module_and_symbol_resolution.md)
 （[internal 07](../../internal/ja/07.crate_module_layout.md) によりアーキテクチャ
 18 と 19 も精緻化対象）、
@@ -57,13 +59,14 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
   `mizar-syntax` task 8）。resolver が変数スコープを用いて決定を完了する。
   トップレベル（[../../todo.md](../../todo.md)「Resolved And Open
   Decisions」）にも登録済み。
-- **暫定オーケストレーション seam: 未解決。task 7 で解決する。**
+- **暫定オーケストレーション seam: task 7 で解決済み。**
   パイプラインのオーケストレーションは `mizar-driver` が所有する
   （[internal 01](../../internal/ja/01.compiler_driver_and_pipeline_scheduler.md)）。
-  resolver は phase サービスであり、ドライバーではない。未解決なのは、
-  `mizar-build` module-index provider と `mizar-driver` の phase レジストリが
-  統合されるまで resolver が消費する暫定モジュール索引入力（既定候補は
-  workspace スタブプロバイダー）である。
+  resolver は phase サービスであり、ドライバーではない。resolver は
+  build 側の `ModuleIndexProvider` を
+  `mizar_resolve::module_index::ModuleIndexInput` 経由で消費し、driver registry
+  統合が入るまでのテスト・フィクスチャ用に限って resolver-local な
+  `WorkspaceStubModuleIndexProvider` を保持する。
 - **`mizar-diagnostics` 採用時期: 未解決。task 13 までに決定する。**
   `mizar-diagnostics` は目標 crate 配置の一部である
   （[internal 07](../../internal/ja/07.crate_module_layout.md)、
@@ -130,15 +133,21 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
    - 依存: 4、5。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)
      「Snapshot Tests」。
 
-7. **モジュール索引の入力契約と暫定オーケストレーション seam。** [ ]
+7. **モジュール索引の入力契約と暫定オーケストレーション seam。** [x]
    - 暫定 seam の決定を解決する: resolver が phase サービス
      （[internal 01](../../internal/ja/01.compiler_driver_and_pipeline_scheduler.md)）
      として消費するパッケージ/モジュール索引入力（アーキテクチャ 03
      Step 1）を定義し、`mizar-build` module-index provider と `mizar-driver`
      レジストリが統合されるまでテスト用 workspace スタブプロバイダーを
      用意する。決定をここに記録し、トップレベルにも反映する。
+   - 決定: `mizar_resolve::module_index::ModuleIndexInput` は build 側の
+     `ModuleIndexProvider` contract を借用し、package、namespace、module、
+     dependency-summary lookup を転送する。resolver は build 側 module identity
+     を resolver の `ModuleId` に変換するが、package discovery、source loading、
+     module-index 構築、dependency-summary artifact parsing は行わない。
+     `WorkspaceStubModuleIndexProvider` は resolver-local なテスト基盤に限る。
    - テスト: スタブプロバイダーが複数モジュールのフィクスチャを供給する。
-     モジュール識別がローカル別名に依存しない。
+     モジュール識別がローカル別名に依存しない。provider error は決定的である。
    - 依存: 4。仕様: アーキテクチャ 03「Step 1」、`mizar-build` todo
      tasks 5〜6 と `module_index.md`。
 
