@@ -1,15 +1,22 @@
-//! Namespace resolution before symbol lookup.
+//! Namespace and symbol-name resolution.
 //!
-//! This module implements the R-013 namespace slice of name resolution. It
-//! resolves source-shaped namespace path candidates to canonical module
-//! namespaces and keeps unresolved namespace failures explicit without looking
-//! up final symbols, checking selectors, or assigning declaration symbols.
+//! This module implements the R-013 namespace slice and the R-014 ordinary
+//! symbol-name lookup slice. It resolves source-shaped namespace path
+//! candidates to canonical module namespaces, resolves ordinary name references
+//! through preliminary symbol projections, and keeps unresolved records
+//! explicit without checking selectors, choosing overload winners, or assigning
+//! full signature-bearing symbol entries.
 
+use crate::env::{NamespacePath, SymbolKind, Visibility};
 use crate::imports::{ImportPathFailureClass, ResolvedImportCandidate, UnresolvedImportCandidate};
 use crate::module_index::{
     IndexedModuleId, ModuleIndexInput, ModuleIndexProviderError, NamespaceIndexEntry, NamespaceRoot,
 };
-use crate::resolved_ast::ModuleId;
+use crate::resolved_ast::{
+    AmbiguousNameRef, BuiltinId, BuiltinRef, ModuleId, NameLookupClass, NameRefEntry, NameRefId,
+    NameRefTable, NameResolution, NameResolutionCandidate, ReferenceSite, SemanticOrigin, SymbolId,
+    SymbolRef,
+};
 use mizar_session::{ModulePath, PackageId, SourceRange};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
@@ -539,6 +546,448 @@ pub enum NamespacePartialOrigin {
     CurrentPackage,
 }
 
+/// Source provenance of a preliminary name-symbol projection.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum NameProjectionSource {
+    /// Current-module declaration shell projection.
+    CurrentModule {
+        /// The declaration is visible after this source-order ordinal.
+        visible_after_ordinal: usize,
+    },
+    /// Imported public or dependency-summary projection.
+    Imported,
+}
+
+/// Preliminary symbol projection used by R-014 name lookup.
+///
+/// This is intentionally smaller than a complete `SymbolEnv` entry. Later
+/// symbol/signature tasks refine the same `SymbolId`s with kind-specific
+/// signatures and export summaries.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NameSymbolProjection {
+    symbol: SymbolId,
+    namespace: NamespacePath,
+    primary_spelling: String,
+    kind: SymbolKind,
+    visibility: Visibility,
+    declaration_range: SourceRange,
+    source: NameProjectionSource,
+    overload_group: Option<SymbolId>,
+}
+
+impl NameSymbolProjection {
+    /// Creates a current-module declaration projection.
+    #[must_use]
+    pub fn current_module(
+        symbol: SymbolId,
+        namespace: NamespacePath,
+        primary_spelling: impl Into<String>,
+        kind: SymbolKind,
+        visibility: Visibility,
+        declaration_range: SourceRange,
+        visible_after_ordinal: usize,
+    ) -> Self {
+        Self {
+            symbol,
+            namespace,
+            primary_spelling: primary_spelling.into(),
+            kind,
+            visibility,
+            declaration_range,
+            source: NameProjectionSource::CurrentModule {
+                visible_after_ordinal,
+            },
+            overload_group: None,
+        }
+    }
+
+    /// Creates an imported declaration or summary projection.
+    #[must_use]
+    pub fn imported(
+        symbol: SymbolId,
+        namespace: NamespacePath,
+        primary_spelling: impl Into<String>,
+        kind: SymbolKind,
+        visibility: Visibility,
+        declaration_range: SourceRange,
+    ) -> Self {
+        Self {
+            symbol,
+            namespace,
+            primary_spelling: primary_spelling.into(),
+            kind,
+            visibility,
+            declaration_range,
+            source: NameProjectionSource::Imported,
+            overload_group: None,
+        }
+    }
+
+    /// Attaches a resolver-visible overload-group placeholder.
+    #[must_use]
+    pub fn with_overload_group(mut self, overload_group: SymbolId) -> Self {
+        self.overload_group = Some(overload_group);
+        self
+    }
+
+    /// Returns the projected symbol id.
+    #[must_use]
+    pub const fn symbol(&self) -> &SymbolId {
+        &self.symbol
+    }
+
+    /// Returns the namespace projection.
+    #[must_use]
+    pub const fn namespace(&self) -> &NamespacePath {
+        &self.namespace
+    }
+
+    /// Returns the primary spelling.
+    #[must_use]
+    pub fn primary_spelling(&self) -> &str {
+        &self.primary_spelling
+    }
+
+    /// Returns the symbol kind family.
+    #[must_use]
+    pub const fn kind(&self) -> SymbolKind {
+        self.kind
+    }
+
+    /// Returns resolver visibility.
+    #[must_use]
+    pub const fn visibility(&self) -> Visibility {
+        self.visibility
+    }
+
+    /// Returns the declaration/source range used for candidate ordering.
+    #[must_use]
+    pub const fn declaration_range(&self) -> SourceRange {
+        self.declaration_range
+    }
+
+    /// Returns source provenance.
+    #[must_use]
+    pub const fn source(&self) -> NameProjectionSource {
+        self.source
+    }
+
+    /// Returns an overload-group placeholder, if this projection belongs to one.
+    #[must_use]
+    pub const fn overload_group(&self) -> Option<&SymbolId> {
+        self.overload_group.as_ref()
+    }
+}
+
+/// Enabled builtin spelling available to name lookup.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BuiltinNameProjection {
+    builtin: BuiltinId,
+    spelling: String,
+}
+
+impl BuiltinNameProjection {
+    /// Creates an enabled builtin projection.
+    #[must_use]
+    pub fn new(builtin: BuiltinId, spelling: impl Into<String>) -> Self {
+        Self {
+            builtin,
+            spelling: spelling.into(),
+        }
+    }
+
+    /// Returns the builtin id.
+    #[must_use]
+    pub const fn builtin(&self) -> &BuiltinId {
+        &self.builtin
+    }
+
+    /// Returns the source spelling.
+    #[must_use]
+    pub fn spelling(&self) -> &str {
+        &self.spelling
+    }
+}
+
+/// Scope for an ordinary name-reference candidate.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum NameReferenceScope {
+    /// Unqualified lookup in the current namespace.
+    Unqualified,
+    /// Qualified lookup restricted to one namespace target.
+    Qualified {
+        /// Canonical module namespace.
+        module: ModuleId,
+        /// Namespace projection used by symbol entries.
+        namespace: NamespacePath,
+    },
+    /// Lookup depends on a namespace path that already failed.
+    FailedNamespace,
+}
+
+/// Source-shaped ordinary name reference collected for R-014 lookup.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NameReferenceCandidate {
+    site: ReferenceSite,
+    origin: SemanticOrigin,
+    ordinal: usize,
+    scope: NameReferenceScope,
+}
+
+impl NameReferenceCandidate {
+    /// Creates an unqualified name-reference candidate.
+    #[must_use]
+    pub const fn unqualified(site: ReferenceSite, origin: SemanticOrigin, ordinal: usize) -> Self {
+        Self {
+            site,
+            origin,
+            ordinal,
+            scope: NameReferenceScope::Unqualified,
+        }
+    }
+
+    /// Creates a module-qualified name-reference candidate.
+    #[must_use]
+    pub fn qualified_module(
+        site: ReferenceSite,
+        origin: SemanticOrigin,
+        ordinal: usize,
+        module: ModuleId,
+    ) -> Self {
+        let namespace = NamespacePath::new(module.path().as_str());
+        Self::qualified(site, origin, ordinal, module, namespace)
+    }
+
+    /// Creates a qualified name-reference candidate.
+    #[must_use]
+    pub const fn qualified(
+        site: ReferenceSite,
+        origin: SemanticOrigin,
+        ordinal: usize,
+        module: ModuleId,
+        namespace: NamespacePath,
+    ) -> Self {
+        Self {
+            site,
+            origin,
+            ordinal,
+            scope: NameReferenceScope::Qualified { module, namespace },
+        }
+    }
+
+    /// Creates a candidate blocked by an unresolved namespace.
+    #[must_use]
+    pub const fn failed_namespace(
+        site: ReferenceSite,
+        origin: SemanticOrigin,
+        ordinal: usize,
+    ) -> Self {
+        Self {
+            site,
+            origin,
+            ordinal,
+            scope: NameReferenceScope::FailedNamespace,
+        }
+    }
+
+    /// Returns the reference site.
+    #[must_use]
+    pub const fn site(&self) -> &ReferenceSite {
+        &self.site
+    }
+
+    /// Returns normalized provenance.
+    #[must_use]
+    pub const fn origin(&self) -> &SemanticOrigin {
+        &self.origin
+    }
+
+    /// Returns the source-order ordinal.
+    #[must_use]
+    pub const fn ordinal(&self) -> usize {
+        self.ordinal
+    }
+
+    /// Returns the lookup scope.
+    #[must_use]
+    pub const fn scope(&self) -> &NameReferenceScope {
+        &self.scope
+    }
+}
+
+/// Deterministic name-reference lookup result.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct NameReferenceResolution {
+    table: NameRefTable,
+    ids: Vec<NameRefId>,
+}
+
+impl NameReferenceResolution {
+    fn new(table: NameRefTable, ids: Vec<NameRefId>) -> Self {
+        Self { table, ids }
+    }
+
+    /// Returns the populated name-reference table.
+    #[must_use]
+    pub const fn table(&self) -> &NameRefTable {
+        &self.table
+    }
+
+    /// Returns table ids in deterministic candidate order.
+    #[must_use]
+    pub fn ids(&self) -> &[NameRefId] {
+        &self.ids
+    }
+
+    /// Returns whether any name reference failed.
+    #[must_use]
+    pub fn has_unresolved(&self) -> bool {
+        self.ids.iter().any(|id| {
+            self.table
+                .get(*id)
+                .is_some_and(|entry| matches!(entry.resolution(), NameResolution::Unresolved(_)))
+        })
+    }
+}
+
+/// Resolves ordinary symbol-name references after namespace lookup.
+#[derive(Clone, Copy)]
+pub struct SymbolNameResolver<'a> {
+    projections: &'a [NameSymbolProjection],
+    builtins: &'a [BuiltinNameProjection],
+}
+
+impl<'a> SymbolNameResolver<'a> {
+    /// Creates a symbol-name resolver over preliminary projections.
+    #[must_use]
+    pub const fn new(
+        projections: &'a [NameSymbolProjection],
+        builtins: &'a [BuiltinNameProjection],
+    ) -> Self {
+        Self {
+            projections,
+            builtins,
+        }
+    }
+
+    /// Resolves name-reference candidates for the current module.
+    #[must_use]
+    pub fn resolve(
+        self,
+        current_module: &ModuleId,
+        current_namespace: &NamespacePath,
+        candidates: &[NameReferenceCandidate],
+    ) -> NameReferenceResolution {
+        let mut ordered = candidates.iter().collect::<Vec<_>>();
+        ordered.sort_by(|left, right| name_reference_candidate_cmp(left, right));
+        let mut table = NameRefTable::new();
+        let mut ids = Vec::with_capacity(ordered.len());
+        for candidate in ordered {
+            let resolution = self.resolve_one(current_module, current_namespace, candidate);
+            let id = table.insert(NameRefEntry::new(
+                candidate.site().clone(),
+                resolution,
+                candidate.origin().clone(),
+            ));
+            ids.push(id);
+        }
+        NameReferenceResolution::new(table, ids)
+    }
+
+    fn resolve_one(
+        self,
+        current_module: &ModuleId,
+        current_namespace: &NamespacePath,
+        candidate: &NameReferenceCandidate,
+    ) -> NameResolution {
+        let spelling = candidate.site().spelling();
+        if candidate.origin().is_recovered() || spelling.is_empty() {
+            return unresolved_name(candidate, NameLookupClass::Symbol);
+        }
+        match candidate.scope() {
+            NameReferenceScope::Unqualified => {
+                self.resolve_unqualified(current_module, current_namespace, candidate)
+            }
+            NameReferenceScope::Qualified { module, namespace } => {
+                self.resolve_qualified(current_module, module, namespace, candidate)
+            }
+            NameReferenceScope::FailedNamespace => {
+                unresolved_name(candidate, NameLookupClass::Namespace)
+            }
+        }
+    }
+
+    fn resolve_unqualified(
+        self,
+        current_module: &ModuleId,
+        current_namespace: &NamespacePath,
+        candidate: &NameReferenceCandidate,
+    ) -> NameResolution {
+        let current = self
+            .projections
+            .iter()
+            .filter(|projection| {
+                projection_matches(projection, current_namespace, candidate.site().spelling())
+                    && current_projection_visible(projection, current_module, candidate.ordinal())
+            })
+            .collect::<Vec<_>>();
+        let imported = self
+            .projections
+            .iter()
+            .filter(|projection| {
+                projection_matches(projection, current_namespace, candidate.site().spelling())
+                    && imported_projection_visible(projection)
+            })
+            .collect::<Vec<_>>();
+        let effective = effective_unqualified_candidates(current, imported);
+        if !effective.is_empty() {
+            return resolution_from_symbol_candidates(candidate, effective);
+        }
+        if let Some(builtin) = self
+            .builtins
+            .iter()
+            .filter(|builtin| builtin.spelling() == candidate.site().spelling())
+            .min_by(|left, right| left.builtin().cmp(right.builtin()))
+        {
+            return NameResolution::ResolvedBuiltin(BuiltinRef::new(
+                builtin.builtin().clone(),
+                candidate.site().range(),
+                candidate.site().spelling(),
+            ));
+        }
+        unresolved_name(candidate, NameLookupClass::Symbol)
+    }
+
+    fn resolve_qualified(
+        self,
+        current_module: &ModuleId,
+        module: &ModuleId,
+        namespace: &NamespacePath,
+        candidate: &NameReferenceCandidate,
+    ) -> NameResolution {
+        let candidates = self
+            .projections
+            .iter()
+            .filter(|projection| {
+                projection_matches(projection, namespace, candidate.site().spelling())
+                    && qualified_projection_visible(
+                        projection,
+                        current_module,
+                        module,
+                        candidate.ordinal(),
+                    )
+            })
+            .collect::<Vec<_>>();
+        if candidates.is_empty() {
+            unresolved_name(candidate, NameLookupClass::Symbol)
+        } else {
+            resolution_from_symbol_candidates(candidate, candidates)
+        }
+    }
+}
+
 /// Resolves source-shaped namespace path candidates.
 #[derive(Clone, Copy)]
 pub struct NamespaceResolver<'a> {
@@ -848,6 +1297,160 @@ impl<'a> NamespaceResolver<'a> {
         }
         Ok(path_segments.last().cloned())
     }
+}
+
+fn projection_matches(
+    projection: &NameSymbolProjection,
+    namespace: &NamespacePath,
+    spelling: &str,
+) -> bool {
+    projection.namespace() == namespace && projection.primary_spelling() == spelling
+}
+
+fn current_projection_visible(
+    projection: &NameSymbolProjection,
+    current_module: &ModuleId,
+    use_ordinal: usize,
+) -> bool {
+    if projection.symbol().module() != current_module {
+        return false;
+    }
+    match projection.source() {
+        NameProjectionSource::CurrentModule {
+            visible_after_ordinal,
+        } => visible_after_ordinal < use_ordinal,
+        NameProjectionSource::Imported => false,
+    }
+}
+
+fn imported_projection_visible(projection: &NameSymbolProjection) -> bool {
+    matches!(projection.source(), NameProjectionSource::Imported)
+        && projection.visibility() == Visibility::Public
+}
+
+fn qualified_projection_visible(
+    projection: &NameSymbolProjection,
+    current_module: &ModuleId,
+    target_module: &ModuleId,
+    use_ordinal: usize,
+) -> bool {
+    if projection.symbol().module() != target_module {
+        return false;
+    }
+    if target_module == current_module {
+        match projection.source() {
+            NameProjectionSource::CurrentModule {
+                visible_after_ordinal,
+            } => visible_after_ordinal < use_ordinal,
+            NameProjectionSource::Imported => projection.visibility() == Visibility::Public,
+        }
+    } else {
+        matches!(projection.source(), NameProjectionSource::Imported)
+            && projection.visibility() == Visibility::Public
+    }
+}
+
+fn effective_unqualified_candidates<'a>(
+    mut current: Vec<&'a NameSymbolProjection>,
+    imported: Vec<&'a NameSymbolProjection>,
+) -> Vec<&'a NameSymbolProjection> {
+    if current.is_empty() {
+        return sorted_name_symbol_projections(imported);
+    }
+    let current_groups = current
+        .iter()
+        .filter_map(|projection| projection.overload_group().cloned())
+        .collect::<BTreeSet<_>>();
+    current.extend(imported.into_iter().filter(|projection| {
+        projection
+            .overload_group()
+            .is_some_and(|group| current_groups.contains(group))
+    }));
+    sorted_name_symbol_projections(current)
+}
+
+fn resolution_from_symbol_candidates(
+    candidate: &NameReferenceCandidate,
+    projections: Vec<&NameSymbolProjection>,
+) -> NameResolution {
+    let projections = sorted_name_symbol_projections(projections);
+    if projections.len() == 1 {
+        return NameResolution::Resolved(
+            SymbolRef::new(projections[0].symbol().clone(), candidate.site().range())
+                .with_spelling(candidate.site().spelling()),
+        );
+    }
+    if let Some(group) = collapsed_overload_group(&projections) {
+        return NameResolution::Resolved(
+            SymbolRef::new(group, candidate.site().range())
+                .with_spelling(candidate.site().spelling()),
+        );
+    }
+    NameResolution::Ambiguous(AmbiguousNameRef::new(
+        candidate.site().spelling(),
+        candidate.site().range(),
+        projections
+            .iter()
+            .map(|projection| {
+                NameResolutionCandidate::new(
+                    projection.symbol().clone(),
+                    projection.declaration_range(),
+                )
+            })
+            .collect(),
+    ))
+}
+
+fn collapsed_overload_group(projections: &[&NameSymbolProjection]) -> Option<SymbolId> {
+    if projections.len() < 2 {
+        return None;
+    }
+    let mut groups = BTreeSet::<SymbolId>::new();
+    for projection in projections {
+        groups.insert(projection.overload_group()?.clone());
+    }
+    (groups.len() == 1).then(|| groups.into_iter().next().unwrap())
+}
+
+fn unresolved_name(candidate: &NameReferenceCandidate, lookup: NameLookupClass) -> NameResolution {
+    NameResolution::Unresolved(crate::resolved_ast::UnresolvedNameRef::new(
+        candidate.site().spelling(),
+        candidate.site().range(),
+        lookup,
+    ))
+}
+
+fn sorted_name_symbol_projections(
+    mut projections: Vec<&NameSymbolProjection>,
+) -> Vec<&NameSymbolProjection> {
+    projections.sort_by(|left, right| name_symbol_projection_cmp(left, right));
+    projections
+}
+
+fn name_symbol_projection_cmp(
+    left: &NameSymbolProjection,
+    right: &NameSymbolProjection,
+) -> Ordering {
+    left.symbol()
+        .cmp(right.symbol())
+        .then_with(|| left.namespace().cmp(right.namespace()))
+        .then_with(|| left.primary_spelling().cmp(right.primary_spelling()))
+        .then_with(|| left.kind().cmp(&right.kind()))
+        .then_with(|| left.visibility().cmp(&right.visibility()))
+        .then_with(|| {
+            range_key(left.declaration_range()).cmp(&range_key(right.declaration_range()))
+        })
+        .then_with(|| left.source().cmp(&right.source()))
+}
+
+fn name_reference_candidate_cmp(
+    left: &NameReferenceCandidate,
+    right: &NameReferenceCandidate,
+) -> Ordering {
+    left.ordinal()
+        .cmp(&right.ordinal())
+        .then_with(|| range_key(left.site().range()).cmp(&range_key(right.site().range())))
+        .then_with(|| left.site().spelling().cmp(right.site().spelling()))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1289,14 +1892,269 @@ mod tests {
     use super::*;
     use crate::imports::{ImportPathCandidate, ImportPathPrefix, ImportPathResolver};
     use crate::module_index::WorkspaceStubModuleIndexProvider;
+    use crate::resolved_ast::{
+        FullyQualifiedName, LocalSymbolId, NameResolution, ResolvedArenaBuilder, ResolvedNode,
+        SymbolId,
+    };
     use mizar_build::module_index::{
         DependencyModuleSummaryRef, ModuleIndexEntry, ModuleIndexLocation, PackageIndexEntry,
         PackageIndexSource,
     };
     use mizar_session::{
-        BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceId,
+        BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, SessionIdAllocator,
+        SourceAnchor, SourceId,
     };
+    use mizar_syntax::ast::SurfaceNodeKind;
     use semver::Version;
+
+    #[test]
+    fn unqualified_lookup_uses_declaration_point_shadowing_and_builtins() {
+        let source_id = source_id();
+        let current = module_id("app", "main");
+        let dep = module_id("dep", "logic");
+        let namespace = NamespacePath::new("main");
+        let projections = vec![
+            imported_projection(
+                source_id,
+                dep.clone(),
+                namespace.clone(),
+                "P",
+                "dep::logic::P",
+                Visibility::Public,
+                0,
+            ),
+            current_private_projection(
+                source_id,
+                current.clone(),
+                namespace.clone(),
+                "P",
+                "app::main::P",
+                10,
+                5,
+            ),
+            current_public_projection(
+                source_id,
+                current.clone(),
+                namespace.clone(),
+                "Fwd",
+                "app::main::Fwd",
+                20,
+                20,
+            ),
+        ];
+        let builtins = vec![
+            BuiltinNameProjection::new(BuiltinId::new("builtin:P"), "P"),
+            BuiltinNameProjection::new(BuiltinId::new("builtin:TRUE"), "TRUE"),
+        ];
+        let candidates = vec![
+            name_candidate(source_id, current.clone(), 12, 50, "TRUE"),
+            name_candidate(source_id, current.clone(), 10, 40, "Fwd"),
+            name_candidate(source_id, current.clone(), 9, 30, "P"),
+        ];
+
+        let resolved = SymbolNameResolver::new(&projections, &builtins).resolve(
+            &current,
+            &namespace,
+            &candidates,
+        );
+
+        assert!(resolved.has_unresolved());
+        assert_resolved_symbol(&resolved, 0, "app::main::P");
+        assert_unresolved(&resolved, 1, NameLookupClass::Symbol, "Fwd");
+        assert_resolved_builtin(&resolved, 2, "builtin:TRUE");
+    }
+
+    #[test]
+    fn qualified_lookup_restricts_namespace_and_visibility() {
+        let source_id = source_id();
+        let current = module_id("app", "main");
+        let dep = module_id("dep", "logic");
+        let current_namespace = NamespacePath::new("main");
+        let dep_namespace = NamespacePath::new("logic");
+        let projections = vec![
+            imported_projection(
+                source_id,
+                dep.clone(),
+                dep_namespace.clone(),
+                "Q",
+                "dep::logic::Q",
+                Visibility::Public,
+                0,
+            ),
+            imported_projection(
+                source_id,
+                dep.clone(),
+                dep_namespace.clone(),
+                "Secret",
+                "dep::logic::Secret",
+                Visibility::Private,
+                1,
+            ),
+            current_private_projection(
+                source_id,
+                current.clone(),
+                current_namespace.clone(),
+                "Secret",
+                "app::main::Secret",
+                2,
+                0,
+            ),
+        ];
+        let builtins = vec![BuiltinNameProjection::new(BuiltinId::new("builtin:Q"), "Q")];
+        let qualified_public = qualified_name_candidate(
+            source_id,
+            current.clone(),
+            0,
+            20,
+            "Q",
+            dep.clone(),
+            dep_namespace.clone(),
+        );
+        let qualified_private_dep = qualified_name_candidate(
+            source_id,
+            current.clone(),
+            1,
+            30,
+            "Secret",
+            dep,
+            dep_namespace,
+        );
+        let qualified_current_private = qualified_name_candidate(
+            source_id,
+            current.clone(),
+            2,
+            40,
+            "Secret",
+            current.clone(),
+            current_namespace.clone(),
+        );
+        let qualified_missing = qualified_name_candidate(
+            source_id,
+            current.clone(),
+            3,
+            50,
+            "Missing",
+            current.clone(),
+            current_namespace.clone(),
+        );
+
+        let resolved = SymbolNameResolver::new(&projections, &builtins).resolve(
+            &current,
+            &current_namespace,
+            &[
+                qualified_missing,
+                qualified_current_private,
+                qualified_private_dep,
+                qualified_public,
+            ],
+        );
+
+        assert_resolved_symbol(&resolved, 0, "dep::logic::Q");
+        assert_unresolved(&resolved, 1, NameLookupClass::Symbol, "Secret");
+        assert_resolved_symbol(&resolved, 2, "app::main::Secret");
+        assert_unresolved(&resolved, 3, NameLookupClass::Symbol, "Missing");
+    }
+
+    #[test]
+    fn overload_groups_collapse_without_names_phase_ambiguity() {
+        let source_id = source_id();
+        let current = module_id("app", "main");
+        let dep = module_id("dep", "logic");
+        let namespace = NamespacePath::new("main");
+        let overload_group = symbol_id(current.clone(), "P#group", "app::main::P#group");
+        let projections = vec![
+            current_public_projection(
+                source_id,
+                current.clone(),
+                namespace.clone(),
+                "P/1",
+                "app::main::P/1",
+                0,
+                0,
+            )
+            .with_overload_group(overload_group.clone()),
+            imported_projection(
+                source_id,
+                dep.clone(),
+                namespace.clone(),
+                "P/3",
+                "dep::logic::P/3",
+                Visibility::Public,
+                2,
+            )
+            .with_overload_group(overload_group),
+            imported_projection(
+                source_id,
+                dep.clone(),
+                namespace.clone(),
+                "Q/dep",
+                "dep::logic::Q",
+                Visibility::Public,
+                3,
+            ),
+            imported_projection(
+                source_id,
+                module_id("dep", "alt"),
+                namespace.clone(),
+                "Q/alt",
+                "dep::alt::Q",
+                Visibility::Public,
+                4,
+            ),
+        ];
+        let candidates = vec![
+            name_candidate(source_id, current.clone(), 11, 40, "Q"),
+            name_candidate(source_id, current.clone(), 10, 30, "P"),
+        ];
+
+        let resolved =
+            SymbolNameResolver::new(&projections, &[]).resolve(&current, &namespace, &candidates);
+
+        assert_resolved_symbol(&resolved, 0, "app::main::P#group");
+        let NameResolution::Ambiguous(ambiguous) = resolved
+            .table()
+            .get(resolved.ids()[1])
+            .unwrap()
+            .resolution()
+        else {
+            panic!("expected ambiguous Q");
+        };
+        let candidates = ambiguous
+            .candidates()
+            .iter()
+            .map(|candidate| candidate.symbol().fqn().as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(candidates, vec!["dep::alt::Q", "dep::logic::Q"]);
+    }
+
+    #[test]
+    fn failed_recovered_and_malformed_name_candidates_are_unresolved_in_order() {
+        let source_id = source_id();
+        let current = module_id("app", "main");
+        let namespace = NamespacePath::new("main");
+        let projections = vec![current_public_projection(
+            source_id,
+            current.clone(),
+            namespace.clone(),
+            "Recovered",
+            "app::main::Recovered",
+            0,
+            0,
+        )];
+        let candidates = vec![
+            recovered_name_candidate(source_id, current.clone(), 2, 40, "Recovered"),
+            empty_name_candidate(source_id, current.clone(), 1, 30),
+            failed_namespace_candidate(source_id, current.clone(), 0, 20, "Ns.Missing"),
+        ];
+
+        let resolved =
+            SymbolNameResolver::new(&projections, &[]).resolve(&current, &namespace, &candidates);
+
+        assert!(resolved.has_unresolved());
+        assert_unresolved(&resolved, 0, NameLookupClass::Namespace, "Ns.Missing");
+        assert_unresolved(&resolved, 1, NameLookupClass::Symbol, "");
+        assert_unresolved(&resolved, 2, NameLookupClass::Symbol, "Recovered");
+    }
 
     #[test]
     fn resolver_resolves_alias_roots_and_package_names_deterministically() {
@@ -1850,6 +2708,199 @@ mod tests {
         );
     }
 
+    fn name_candidate(
+        source_id: SourceId,
+        module: ModuleId,
+        ordinal: usize,
+        start: usize,
+        spelling: &str,
+    ) -> NameReferenceCandidate {
+        let (site, origin) = reference_site(source_id, module, start, spelling, ordinal);
+        NameReferenceCandidate::unqualified(site, origin, ordinal)
+    }
+
+    fn qualified_name_candidate(
+        source_id: SourceId,
+        module: ModuleId,
+        ordinal: usize,
+        start: usize,
+        spelling: &str,
+        target: ModuleId,
+        namespace: NamespacePath,
+    ) -> NameReferenceCandidate {
+        let (site, origin) = reference_site(source_id, module, start, spelling, ordinal);
+        NameReferenceCandidate::qualified(site, origin, ordinal, target, namespace)
+    }
+
+    fn failed_namespace_candidate(
+        source_id: SourceId,
+        module: ModuleId,
+        ordinal: usize,
+        start: usize,
+        spelling: &str,
+    ) -> NameReferenceCandidate {
+        let (site, origin) = reference_site(source_id, module, start, spelling, ordinal);
+        NameReferenceCandidate::failed_namespace(site, origin, ordinal)
+    }
+
+    fn recovered_name_candidate(
+        source_id: SourceId,
+        module: ModuleId,
+        ordinal: usize,
+        start: usize,
+        spelling: &str,
+    ) -> NameReferenceCandidate {
+        let (site, origin) = reference_site(source_id, module, start, spelling, ordinal);
+        NameReferenceCandidate::unqualified(site, origin.recovered(), ordinal)
+    }
+
+    fn empty_name_candidate(
+        source_id: SourceId,
+        module: ModuleId,
+        ordinal: usize,
+        start: usize,
+    ) -> NameReferenceCandidate {
+        name_candidate(source_id, module, ordinal, start, "")
+    }
+
+    fn reference_site(
+        source_id: SourceId,
+        module: ModuleId,
+        start: usize,
+        spelling: &str,
+        ordinal: usize,
+    ) -> (ReferenceSite, SemanticOrigin) {
+        let range = range(source_id, start, start + spelling.len());
+        let origin = SemanticOrigin::new(
+            source_id,
+            module,
+            SourceAnchor::Range(range),
+            vec![ordinal as u32],
+        );
+        let mut arena = ResolvedArenaBuilder::new();
+        let node = arena
+            .push(ResolvedNode::new(
+                SurfaceNodeKind::Reference,
+                Vec::new(),
+                origin.clone(),
+            ))
+            .unwrap();
+        (ReferenceSite::new(node, range, spelling), origin)
+    }
+
+    fn current_public_projection(
+        source_id: SourceId,
+        module: ModuleId,
+        namespace: NamespacePath,
+        local: &str,
+        fqn: &str,
+        declaration_start: usize,
+        visible_after_ordinal: usize,
+    ) -> NameSymbolProjection {
+        NameSymbolProjection::current_module(
+            symbol_id(module, local, fqn),
+            namespace,
+            primary_spelling(local),
+            SymbolKind::Predicate,
+            Visibility::Public,
+            range(
+                source_id,
+                declaration_start,
+                declaration_start + local.len(),
+            ),
+            visible_after_ordinal,
+        )
+    }
+
+    fn current_private_projection(
+        source_id: SourceId,
+        module: ModuleId,
+        namespace: NamespacePath,
+        local: &str,
+        fqn: &str,
+        declaration_start: usize,
+        visible_after_ordinal: usize,
+    ) -> NameSymbolProjection {
+        NameSymbolProjection::current_module(
+            symbol_id(module, local, fqn),
+            namespace,
+            primary_spelling(local),
+            SymbolKind::Predicate,
+            Visibility::Private,
+            range(
+                source_id,
+                declaration_start,
+                declaration_start + local.len(),
+            ),
+            visible_after_ordinal,
+        )
+    }
+
+    fn imported_projection(
+        source_id: SourceId,
+        module: ModuleId,
+        namespace: NamespacePath,
+        local: &str,
+        fqn: &str,
+        visibility: Visibility,
+        declaration_start: usize,
+    ) -> NameSymbolProjection {
+        NameSymbolProjection::imported(
+            symbol_id(module, local, fqn),
+            namespace,
+            primary_spelling(local),
+            SymbolKind::Predicate,
+            visibility,
+            range(
+                source_id,
+                declaration_start,
+                declaration_start + local.len(),
+            ),
+        )
+    }
+
+    fn primary_spelling(local: &str) -> String {
+        local.split('/').next().unwrap_or(local).to_owned()
+    }
+
+    fn assert_resolved_symbol(
+        resolution: &NameReferenceResolution,
+        index: usize,
+        expected_fqn: &str,
+    ) {
+        let entry = resolution.table().get(resolution.ids()[index]).unwrap();
+        let NameResolution::Resolved(symbol) = entry.resolution() else {
+            panic!("expected resolved symbol at index {index}");
+        };
+        assert_eq!(symbol.symbol().fqn().as_str(), expected_fqn);
+    }
+
+    fn assert_resolved_builtin(
+        resolution: &NameReferenceResolution,
+        index: usize,
+        expected_builtin: &str,
+    ) {
+        let entry = resolution.table().get(resolution.ids()[index]).unwrap();
+        let NameResolution::ResolvedBuiltin(builtin) = entry.resolution() else {
+            panic!("expected resolved builtin at index {index}");
+        };
+        assert_eq!(builtin.builtin().as_str(), expected_builtin);
+    }
+
+    fn assert_unresolved(
+        resolution: &NameReferenceResolution,
+        index: usize,
+        expected_lookup: NameLookupClass,
+        expected_spelling: &str,
+    ) {
+        let entry = resolution.table().get(resolution.ids()[index]).unwrap();
+        let NameResolution::Unresolved(unresolved) = entry.resolution() else {
+            panic!("expected unresolved name at index {index}");
+        };
+        assert_eq!(unresolved.lookup(), expected_lookup);
+        assert_eq!(unresolved.spelling(), expected_spelling);
+    }
+
     fn candidate(
         source_id: SourceId,
         ordinal: usize,
@@ -1984,6 +3035,14 @@ mod tests {
 
     fn module_id(package_id: &str, path: &str) -> ModuleId {
         ModuleId::new(PackageId::new(package_id), ModulePath::new(path))
+    }
+
+    fn symbol_id(module: ModuleId, local: &str, fqn: &str) -> SymbolId {
+        SymbolId::new(
+            module,
+            LocalSymbolId::new(local),
+            FullyQualifiedName::new(fqn),
+        )
     }
 
     fn source_id() -> SourceId {

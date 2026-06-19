@@ -6,12 +6,14 @@ Status: task R-012 specifies the resolver-owned name-resolution contract for
 tasks R-013 through R-016. Task R-013 implements the namespace lookup slice:
 resolved and unresolved import-alias records, reserved namespace roots,
 package-name bindings, current-package fallback, and internal namespace
-unresolved/ambiguous records.
-Final symbol lookup, visibility/shadowing over symbols, unresolved/ambiguous
-symbol references, and dot-chain finalization remain later tasks. The diagnostic
-code range for public resolver diagnostics is still a known `spec_gap`; this
-document therefore specifies diagnostic classes, payloads, and ordering, but no
-public numeric diagnostic codes.
+unresolved/ambiguous records. Task R-014 implements ordinary symbol-name lookup
+over a preliminary `NameSymbolProjection` seam: qualified and unqualified
+visibility, declaration-point filtering, current-module shadowing,
+overload-group placeholders, enabled builtins, and deterministic `NameRefTable`
+outcomes. Dot-chain finalization remains task R-016. The diagnostic code range
+for public resolver diagnostics is still a known `spec_gap`; this document
+therefore specifies diagnostic classes, payloads, and ordering, but no public
+numeric diagnostic codes.
 
 ## References
 
@@ -96,11 +98,11 @@ summary entries:
 
 This projection must produce the same `SymbolId` shape required by
 `resolved_ast.md`, but it remains a resolver identity for name references, not a
-complete `SymbolEnv` entry. R-019 through R-021 refine the same identities with
-kind-specific signatures, overload families, relation links, and exported
-summary data. If a declaration cannot be represented as a semantic declaration,
-the resolver records an unresolved or ambiguous result instead of fabricating a
-`SymbolId`.
+complete `SymbolEnv` entry. R-014 exposes this seam as `NameSymbolProjection`.
+R-019 through R-021 refine the same identities with kind-specific signatures,
+overload families, relation links, and exported summary data. If a declaration
+cannot be represented as a semantic declaration, the resolver records an
+unresolved or ambiguous result instead of fabricating a `SymbolId`.
 
 ## Name-Use Sites
 

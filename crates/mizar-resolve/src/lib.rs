@@ -3,8 +3,9 @@
 //! This crate owns phases 4-5 of the pipeline. It currently exposes the
 //! resolver-owned `ResolvedAst` and `SymbolEnv` data shapes, the module-index
 //! input seam, source-shaped import path and graph resolution,
-//! declaration-shell collection, and namespace lookup while executable symbol,
-//! label, and signature resolution passes land in follow-on tasks.
+//! declaration-shell collection, namespace lookup, and preliminary symbol-name
+//! lookup while executable label, signature, and full symbol extraction passes
+//! land in follow-on tasks.
 
 /// Source-shaped declaration shell collection.
 pub mod declarations;
@@ -18,7 +19,7 @@ pub mod imports;
 /// Resolver-side module-index phase input seam.
 pub mod module_index;
 
-/// Namespace resolution before symbol lookup.
+/// Namespace and preliminary symbol-name resolution.
 pub mod names;
 
 /// Resolved AST data shapes and reference tables.

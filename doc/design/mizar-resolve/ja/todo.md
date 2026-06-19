@@ -234,11 +234,20 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       earliest failing segment range を保持する missing-namespace record。
     - 依存: 10、11、12。仕様: `names.md`。
 
-14. **修飾名、可視性、シャドーイング。** [ ]
+14. **修飾名、可視性、シャドーイング。** [x]
     - 修飾・非修飾のシンボル参照を仕様のスコープ規則どおりに可視性と
       シャドーイング込みで解決し、結果を `SymbolId` として `NameRefTable`
       に記録する。
-    - テスト: 修飾、シャドーイング、private シンボル可視性のフィクスチャ。
+    - R-014 の symbol-name lookup slice を `src/names.rs` に実装した。
+      preliminary `NameSymbolProjection` record、declaration-point filtering、
+      current-module shadowing、qualified namespace restriction、imported public
+      visibility、enabled builtin fallback、failed-namespace propagation、
+      overload-group placeholder collapse を使い、checker-owned winner selection は
+      行わない。
+    - テスト: 修飾、current-module shadowing、declaration-point visibility、
+      private dependency rejection、builtin shadowing/fallback、overload-group collapse、
+      incompatible ambiguity、failed namespace、recovered / malformed final spelling、
+      deterministic table order。
     - 依存: 13。仕様: `names.md`、
       [12.modules_and_namespaces.md](../../../spec/ja/12.modules_and_namespaces.md)。
 

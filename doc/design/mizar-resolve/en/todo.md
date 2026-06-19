@@ -247,11 +247,20 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       the earliest failing segment range.
     - Deps: 10, 11, 12. Spec: `names.md`.
 
-14. **Qualified names, visibility, and shadowing.** [ ]
+14. **Qualified names, visibility, and shadowing.** [x]
     - Resolve qualified and unqualified symbol references with visibility and
       shadowing per the spec scope rules; record results in `NameRefTable` as
       `SymbolId`s.
-    - Tests: qualification, shadowing, private-symbol visibility fixtures.
+    - Implemented the R-014 symbol-name lookup slice in `src/names.rs`. It uses
+      preliminary `NameSymbolProjection` records, declaration-point filtering,
+      current-module shadowing, qualified namespace restriction, imported
+      public visibility, enabled builtin fallback, failed-namespace propagation,
+      and overload-group placeholder collapse without checker-owned winner
+      selection.
+    - Tests: qualification, current-module shadowing, declaration-point
+      visibility, private dependency rejection, builtin shadowing/fallback,
+      overload-group collapse, incompatible ambiguity, failed namespace,
+      recovered/malformed final spellings, and deterministic table order.
     - Deps: 13. Spec: `names.md`,
       [12.modules_and_namespaces.md](../../../spec/en/12.modules_and_namespaces.md).
 
