@@ -18,7 +18,7 @@
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | resolved_ast | `resolved_ast.md`（task 2） | `src/resolved_ast.rs` | [x] |
-| env | `env.md`（task 3） | `src/env.rs` | [ ] |
+| env | `env.md`（task 3） | `src/env.rs` | [x] |
 | imports | `imports.md`（task 8） | `src/imports.rs` | [ ] |
 | names | `names.md`（task 12） | `src/names.rs` | [ ] |
 | labels | `labels.md`（task 17） | `src/labels.rs` | [ ] |
@@ -115,7 +115,7 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
      テーブルのラウンドトリップ。
    - 依存: 2。仕様: `resolved_ast.md`。
 
-5. **`env` データ形状の実装。** [ ]
+5. **`env` データ形状の実装。** [x]
    - task 3 の仕様どおりに `SymbolEnv` 索引群とソース単位寄与追跡を
      実装する。
    - テスト: 索引の挿入/参照ラウンドトリップ。ソース単位ごとの寄与追跡。

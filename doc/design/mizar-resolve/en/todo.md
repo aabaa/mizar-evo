@@ -20,7 +20,7 @@ Autonomous crate development preparation is tracked in
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | resolved_ast | `resolved_ast.md` (task 2) | `src/resolved_ast.rs` | [x] |
-| env | `env.md` (task 3) | `src/env.rs` | [ ] |
+| env | `env.md` (task 3) | `src/env.rs` | [x] |
 | imports | `imports.md` (task 8) | `src/imports.rs` | [ ] |
 | names | `names.md` (task 12) | `src/names.rs` | [ ] |
 | labels | `labels.md` (task 17) | `src/labels.rs` | [ ] |
@@ -118,7 +118,7 @@ Keep `cargo test -p mizar-resolve` green after each task (see
      table round-trips.
    - Deps: 2. Spec: `resolved_ast.md`.
 
-5. **Implement `env` data shapes.** [ ]
+5. **Implement `env` data shapes.** [x]
    - Implement the `SymbolEnv` index family and per-source contribution
      tracking as task 3 specified.
    - Tests: index insert/lookup round-trips; contribution tracking per source
