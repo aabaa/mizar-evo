@@ -172,18 +172,28 @@ Keep `cargo test -p mizar-resolve` green after each task (see
      with deterministic cycle records. Public/user-facing diagnostics remain
      gated by R-G001.
    - Implemented `src/imports.rs` canonical graph construction over
-     `ModuleIndexInput`. R-010 still owns alias binding, relative-prefix
-     interpretation, and unresolved-import recovery from source-shaped paths.
+     `ModuleIndexInput`. R-010 extends the same module with alias binding,
+     relative-prefix interpretation, and unresolved-import recovery from
+     source-shaped paths.
    - Tests: cycle fixtures rejected deterministically; acyclic fixtures
      produce the expected graph.
    - Deps: 7, 8, `mizar-parser` task 6. Spec: `imports.md`.
 
-10. **Import aliases, relative prefixes, and unresolved-import recovery.** [ ]
+10. **Import aliases, relative prefixes, and unresolved-import recovery.** [x]
     - Resolve aliases and `.`/`..` prefixes to canonical module identity;
       represent unresolved imports explicitly and keep resolving the rest of
       the module.
-    - Tests: aliases do not change canonical identity; unresolved imports do
-      not abort module resolution.
+    - Implemented `ImportPathResolver` and source-shaped
+      `ImportPathResolution` records in `src/imports.rs`, preserving alias
+      spans, branch provenance, normalized path components, matched namespace
+      or package candidates, and crate-local failure classes without public
+      diagnostic codes. `ResolvedAst` source-walk integration remains paired
+      with later import/name tasks.
+    - Tests: aliases do not change canonical identity; `.`/`..` use
+      dot-separated `ModulePath` directories; namespace/package bindings win
+      over package-local fallback; unresolved imports do not abort module
+      resolution; duplicate aliases and reserved-root aliases are explicit
+      unresolved records.
     - Deps: 9. Spec: `imports.md`.
 
 ### Names

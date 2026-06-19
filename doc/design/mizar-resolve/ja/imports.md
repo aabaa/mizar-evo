@@ -3,9 +3,11 @@
 > 正本は英語です。英語版: [../en/imports.md](../en/imports.md)。
 
 状態: task R-009 は、すでに解決済みの canonical candidate 上で canonical import graph
-construction と cycle rejection を実装する。alias binding、relative-prefix interpretation、
-unresolved-import recovery は task R-010 に残る。export validation は、必要な resolver
-table を埋める後続の import、name、label、symbol task とともに成長する。
+construction と cycle rejection を実装する。task R-010 は、alias binding、
+relative-prefix interpretation、namespace/package binding、明示的な unresolved-import
+recovery を graph layer へ供給する resolver-owned source-shaped path candidate seam を
+実装する。`SurfaceAst` を直接 candidate に歩く処理と export validation は、必要な
+resolver table を埋める後続の import、name、label、symbol task とともに成長する。
 
 ## 目的
 
@@ -136,6 +138,11 @@ package-local import と relative import は current module の package と path
 - unprefixed package-local path は current package root から解決する。
 - package root からの escape は invalid である。
 
+resolver path candidate は、現在の `ModulePath` 文字列表現の `.` separator によって
+module-path component を encode する。この component encoding は task R-010 の
+resolver-side seam であり、parser syntax の所有権は `mizar-parser` /
+`mizar-syntax` に残る。
+
 branch import member は base path の absolute / relative context を継承する。現在の
 grammar が提供するのは `.` と `..` だけである。より深い relative prefix の resolver
 挙動は、parser syntax が変わるまで範囲外である。
@@ -143,6 +150,12 @@ grammar が提供するのは `.` と `..` だけである。より深い relati
 unprefixed first component が package-local module component と namespace/package
 binding の両方に解釈できる場合、cross-package import のために namespace binding が勝つ。
 同じ first component を持つ package-local module は明示的な relative import で到達できる。
+
+package-local fallback は、reserved namespace root と package-name binding のどちらにも
+一致しない場合にだけ適用される。reserved namespace root が一致したが binding がない場合、
+import は unknown namespace/package として unresolved になる。package-name または
+namespace binding が一致したが残りの module path が未知の場合、import は unknown module
+として unresolved になり、resolver は package-local path へ fallback しない。
 
 ## alias binding
 
@@ -155,12 +168,19 @@ alias binding rules:
 - `as Alias` のある import は importing module 内で `Alias` を通じて見える。
 - 同じ canonical module へ解決される duplicate import declaration は source record
   として保持する。一方 downstream import closure は canonical graph edge を 1 つだけ使う。
-- 異なる canonical module を指す duplicate alias は決定的に拒否する。
-- reserved namespace root または既に bind 済みの imported namespace spelling と衝突する
-  alias は決定的に拒否する。
+- 異なる canonical module を指す duplicate alias は決定的に拒否する。task R-010 は
+  conflict している alias group のすべての member を unresolved とし、その alias group
+  について graph edge を出力しない。
+- reserved namespace root と衝突する alias は、task R-010 が決定的に拒否する。
+- 既に bind 済みの imported namespace spelling と衝突する alias は、後続の import/name
+  integration がそれらの namespace binding をこの phase に提供してから決定的に拒否する。
 
 resolver は alias conflict について crate-local failure class を保持してよいが、
 resolver diagnostic-code gap が閉じるまで public diagnostic code を創作してはならない。
+
+task R-010 の source-shaped candidate は、caller が提供した場合、明示的な alias range、
+branch base/member provenance、parser-recovery flag を保持する。これにより、resolver が
+parser syntax traversal を所有せずに diagnostic provenance を保てる。
 
 ## export resolution
 
@@ -205,6 +225,10 @@ module は caller が後続 phase の degraded 処理を決めるまで `ImportC
 source provenance を持つ unresolved/cycle record として保持する。同時に ready になった
 module は canonical `ModuleId` で並べる。
 
+task R-010 は、task R-009 の canonical graph builder を呼ぶ前に unresolved path
+candidate を filter する。未知の canonical module は引き続き direct graph builder input
+として invalid である。
+
 ## unresolved import
 
 unresolved import は first-class な resolver output であり、欠落 entry ではない。
@@ -222,6 +246,14 @@ failure class は public resolver diagnostic code が仕様化されるまで cr
 relative import、malformed recovered directive、duplicate alias、alias/root conflict、
 unavailable dependency summary、illegal import candidate state、import cycle が含まれる。
 
+task R-010 の interim `ImportPathResolution` は、この recovery information のうち
+path-candidate subset を resolver-owned source-shaped record として保持し、成功裏に
+解決された record だけを `ModuleImportCandidates` へ射影できる。dependency-summary
+failure と cycle failure は、別個の後続または graph-layer record に残る。既存の
+`ResolvedAst` import table は task R-004 由来の最小 unresolved import shape をまだ含む。
+完全な `ResolvedImports` integration は、ここで創作せず、後続の source-walk と
+import/name task と pair する。
+
 ## determinism
 
 resolution は、同等の source、module-index input、利用可能な summary に対して決定的である。
@@ -233,8 +265,9 @@ resolution は、同等の source、module-index input、利用可能な summary
   cycle record は最初に保持された cycle edge で sort する。
 - `ResolvedImport` と `ResolvedExport` record は source-order ordinal を保持し、
   決定的 iteration を公開する。
-- unresolved record と cycle record は source range、failure class、stable candidate
-  key で sort する。
+- unresolved record は source-order ordinal、source range、failure class、stable
+  candidate key で sort する。cycle record は source range、failure class、stable
+  candidate key で sort する。
 
 ## boundary notes
 

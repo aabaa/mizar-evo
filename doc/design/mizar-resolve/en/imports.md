@@ -3,10 +3,12 @@
 > Canonical language: English. Japanese companion: [../ja/imports.md](../ja/imports.md).
 
 Status: task R-009 implements canonical import graph construction and cycle
-rejection over already-resolved canonical candidates. Alias binding,
-relative-prefix interpretation, and unresolved-import recovery remain task
-R-010. Export validation grows with the later import, name, label, and symbol
-tasks that populate the required resolver tables.
+rejection over already-resolved canonical candidates. Task R-010 implements the
+resolver-owned source-shaped path candidate seam for alias binding,
+relative-prefix interpretation, namespace/package binding, and explicit
+unresolved-import recovery feeding that graph layer. Walking `SurfaceAst`
+directly into these candidates and export validation grow with later import,
+name, label, and symbol tasks that populate the required resolver tables.
 
 ## Purpose
 
@@ -148,6 +150,11 @@ path:
 - an unprefixed package-local path resolves from the current package root;
 - Escaping the package root is invalid.
 
+Resolver path candidates encode module-path components with `.` separators in
+the current `ModulePath` string representation. This component encoding is a
+resolver-side seam for task R-010; parser syntax ownership remains with
+`mizar-parser`/`mizar-syntax`.
+
 Branch import members inherit the base path's absolute or relative context.
 The grammar currently provides only `.` and `..`; resolver behavior for deeper
 relative prefixes is out of scope until parser syntax changes.
@@ -156,6 +163,13 @@ If an unprefixed first component could be interpreted both as a package-local
 module component and as a namespace/package binding, the namespace binding wins
 for cross-package import. A package-local module with the same first component
 remains reachable through an explicit relative import.
+
+Package-local fallback applies only when no reserved namespace root and no
+package-name binding match. If a reserved namespace root matches but has no
+binding, the import is unresolved as an unknown namespace/package. If a
+package-name or namespace binding matches but the remaining module path is
+unknown, the import is unresolved as an unknown module; resolver does not fall
+back to a package-local path.
 
 ## Alias Binding
 
@@ -173,13 +187,22 @@ Alias binding rules:
   preserved as source records, while downstream import closure uses one
   canonical graph edge;
 - duplicate aliases that point to different canonical modules are rejected
-  deterministically;
-- aliases that collide with reserved namespace roots or already-bound imported
-  namespace spellings are rejected deterministically.
+  deterministically; task R-010 marks every member of the conflicting alias
+  group unresolved and emits no graph edge for that alias group;
+- aliases that collide with reserved namespace roots are rejected
+  deterministically by task R-010;
+- aliases that collide with already-bound imported namespace spellings are
+  rejected deterministically once later import/name integration provides those
+  namespace bindings to this phase.
 
 The resolver may keep crate-local failure classes for alias conflicts, but it
 must not invent public diagnostic codes until the resolver diagnostic-code gap
 is closed.
+
+Task R-010 source-shaped candidates preserve the explicit alias range, branch
+base/member provenance, and parser-recovery flag when the caller provides them.
+This preserves diagnostic provenance without making the resolver own parser
+syntax traversal.
 
 ## Export Resolution
 
@@ -227,6 +250,10 @@ omitted from that order and retained as unresolved/cycle records with source
 provenance. When several modules are ready at the same time, the order is by
 canonical `ModuleId`.
 
+Task R-010 filters unresolved path candidates before calling the task R-009
+canonical graph builder. Unknown canonical modules remain invalid direct graph
+builder inputs.
+
 ## Unresolved Imports
 
 Unresolved imports are first-class resolver output, not missing entries. Each
@@ -246,6 +273,14 @@ relative import escaping the package root, malformed recovered directive,
 duplicate alias, alias/root conflict, unavailable dependency summary, illegal
 import candidate state, and import cycle.
 
+Task R-010's interim `ImportPathResolution` stores the path-candidate subset of
+this recovery information as resolver-owned source-shaped records and can
+project only successfully resolved records into `ModuleImportCandidates`.
+Dependency-summary and cycle failures remain separate later/graph-layer records.
+The existing `ResolvedAst` import table still contains the minimal unresolved
+import shape from task R-004; full `ResolvedImports` integration is paired with
+the later source-walk and import/name tasks rather than invented here.
+
 ## Determinism
 
 Resolution is deterministic for equivalent source, module-index input, and
@@ -260,8 +295,9 @@ available summaries.
   first retained cycle edge.
 - `ResolvedImport` and `ResolvedExport` records preserve source-order ordinals
   and expose deterministic iteration.
-- Unresolved and cycle records are sorted by source range, failure class, and
-  stable candidate key.
+- Unresolved records are sorted by source-order ordinal, then source range,
+  failure class, and stable candidate key. Cycle records are sorted by source
+  range, failure class, and stable candidate key.
 
 ## Boundary Notes
 

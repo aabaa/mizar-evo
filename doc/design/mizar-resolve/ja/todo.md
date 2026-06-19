@@ -167,17 +167,24 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
    - モジュール索引上に意味論的 import グラフを構築し、決定的な cycle record で
      循環を拒否する。public/user-facing diagnostics は引き続き R-G001 に gate される。
    - `src/imports.rs` に、`ModuleIndexInput` 上の canonical graph construction を実装済み。
-     alias binding、relative-prefix interpretation、source-shaped path からの
-     unresolved-import recovery は R-010 が所有する。
+     R-010 は同じ module に、alias binding、relative-prefix interpretation、
+     source-shaped path からの unresolved-import recovery を追加する。
    - テスト: 循環フィクスチャが決定的に拒否される。非循環フィクスチャが
      期待どおりのグラフになる。
    - 依存: 7、8、`mizar-parser` task 6。仕様: `imports.md`。
 
-10. **import の別名、相対プレフィックス、未解決 import の回復。** [ ]
+10. **import の別名、相対プレフィックス、未解決 import の回復。** [x]
     - 別名と `.`/`..` プレフィックスを正準モジュール識別へ解決する。未解決
       import は明示的に表現し、モジュールの残りの解決を続行する。
-    - テスト: 別名が正準識別を変えない。未解決 import がモジュール解決を
-      中断させない。
+    - `src/imports.rs` に `ImportPathResolver` と source-shaped
+      `ImportPathResolution` record を実装済み。alias span、branch provenance、
+      normalized path component、matched namespace/package candidate、crate-local
+      failure class を、public diagnostic code を創作せず保持する。`ResolvedAst`
+      source-walk integration は後続の import/name task と pair して残る。
+    - テスト: 別名が正準識別を変えない。`.`/`..` が dot-separated `ModulePath`
+      directory を使う。namespace/package binding が package-local fallback に勝つ。
+      未解決 import がモジュール解決を中断させない。duplicate alias と reserved-root
+      alias が明示的な unresolved record になる。
     - 依存: 9。仕様: `imports.md`。
 
 ### 名前
