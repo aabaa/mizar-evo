@@ -17,7 +17,7 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| resolved_ast | `resolved_ast.md`（task 2） | `src/resolved_ast.rs` | [ ] |
+| resolved_ast | `resolved_ast.md`（task 2） | `src/resolved_ast.rs` | [x] |
 | env | `env.md`（task 3） | `src/env.rs` | [ ] |
 | imports | `imports.md`（task 8） | `src/imports.rs` | [ ] |
 | names | `names.md`（task 12） | `src/names.rs` | [ ] |
@@ -108,7 +108,7 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
      ソース単位の寄与追跡、無効化の注記。
    - 依存: 1。仕様: アーキテクチャ 03「Symbol Environment」。
 
-4. **`resolved_ast` データ形状の実装。** [ ]
+4. **`resolved_ast` データ形状の実装。** [x]
    - task 2 の仕様どおりに arena、テーブル、id 不変条件を実装し、型付き
      accessor ヘルパーを加える。
    - テスト: id の決定性。arena 不変条件（有効な子 id、循環なし）。

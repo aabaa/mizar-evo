@@ -185,6 +185,7 @@ Required contents:
 
 - all import directives in source order;
 - all export directives in source order;
+- the owning `ResolvedNodeId` for each import/export directive outcome;
 - canonical module targets for resolved imports/exports;
 - local alias spelling when one was present;
 - unresolved import/export entries with source spelling, range, and failure
@@ -196,6 +197,8 @@ The canonical dependency projection may be exposed in deterministic
 `ModuleId` order, but source-order records must remain available for diagnostics.
 An unresolved import is represented explicitly and does not abort resolution of
 the rest of the module.
+Node-local import/export keys must point at an entry whose owner is the same
+arena node.
 
 The detailed alias, relative-prefix, and cycle rules are specified in
 `imports.md`; this document defines only the storage shape and recoverability

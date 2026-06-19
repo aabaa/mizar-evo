@@ -179,6 +179,7 @@ invariant だけを定義する。
 
 - source order のすべての import directive
 - source order のすべての export directive
+- 各 import/export directive outcome を所有する `ResolvedNodeId`
 - 解決済み import/export の canonical module target
 - 存在する場合の local alias spelling
 - source spelling、range、failure class を持つ unresolved import/export entry
@@ -188,6 +189,8 @@ invariant だけを定義する。
 canonical dependency projection は決定的な `ModuleId` order で公開してよいが、
 診断のために source-order record を残さなければならない。未解決 import は明示的に
 表現し、module の残りの解決を中断しない。
+node-local な import/export key は、同じ arena node を owner とする entry を
+指さなければならない。
 
 alias、relative-prefix、cycle rule の詳細は `imports.md` で指定する。この文書は
 storage shape と recoverability requirement だけを定義する。

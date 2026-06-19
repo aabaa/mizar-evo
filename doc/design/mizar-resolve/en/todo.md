@@ -19,7 +19,7 @@ Autonomous crate development preparation is tracked in
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| resolved_ast | `resolved_ast.md` (task 2) | `src/resolved_ast.rs` | [ ] |
+| resolved_ast | `resolved_ast.md` (task 2) | `src/resolved_ast.rs` | [x] |
 | env | `env.md` (task 3) | `src/env.rs` | [ ] |
 | imports | `imports.md` (task 8) | `src/imports.rs` | [ ] |
 | names | `names.md` (task 12) | `src/names.rs` | [ ] |
@@ -111,7 +111,7 @@ Keep `cargo test -p mizar-resolve` green after each task (see
      per-source contribution tracking, and invalidation notes.
    - Deps: 1. Spec: architecture 03 "Symbol Environment".
 
-4. **Implement `resolved_ast` data shapes.** [ ]
+4. **Implement `resolved_ast` data shapes.** [x]
    - Implement the arena, tables, and id invariants exactly as task 2
      specified, plus typed accessor helpers.
    - Tests: id determinism; arena invariants (valid child ids, no cycles);

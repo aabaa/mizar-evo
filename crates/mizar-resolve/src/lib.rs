@@ -1,5 +1,9 @@
 //! Module and symbol resolution for Mizar Evo.
 //!
-//! This crate currently exposes only scaffold documentation and lint-policy
-//! coverage. It owns phases 4-5 of the pipeline, but semantic resolver behavior
-//! lands in the follow-on data-shape implementation tasks.
+//! This crate owns phases 4-5 of the pipeline. It currently exposes the
+//! resolver-owned `ResolvedAst` data shapes and reference tables while the
+//! executable import, name, label, and symbol resolution passes land in
+//! follow-on tasks.
+
+/// Resolved AST data shapes and reference tables.
+pub mod resolved_ast;
