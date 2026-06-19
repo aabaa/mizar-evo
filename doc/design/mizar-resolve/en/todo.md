@@ -14,6 +14,8 @@ Module specs do not exist yet; each is written by its own spec task (English
 and Japanese in the same change) before the implementation tasks that cite it,
 following
 [architecture/en/03.module_and_symbol_resolution.md](../../architecture/en/03.module_and_symbol_resolution.md).
+Autonomous crate development preparation is tracked in
+[00.crate_plan.md](./00.crate_plan.md).
 
 | Module | Spec | Source | Status |
 |---|---|---|---|

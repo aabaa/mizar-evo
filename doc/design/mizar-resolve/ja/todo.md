@@ -13,6 +13,7 @@
 モジュール仕様はまだ存在しない。各仕様は、それを引用する実装タスクより前に、
 専用の仕様タスクが（英語と日本語を同じ変更で）執筆する。準拠先は
 [architecture/ja/03.module_and_symbol_resolution.md](../../architecture/ja/03.module_and_symbol_resolution.md)。
+自律 crate 開発の準備は [00.crate_plan.md](./00.crate_plan.md) で追跡する。
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|

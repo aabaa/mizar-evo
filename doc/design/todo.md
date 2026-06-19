@@ -109,20 +109,18 @@ current parser hardening close-out.
 
 ### Immediate Next Work
 
-1. **mizar-build wave A** - continue the workspace planning crate from its
-   current package-name validation slice. Write `planner.md` (task 2), complete
-   manifest/lockfile parsing (task 3), then implement deterministic `BuildPlan`
-   and module-index construction (tasks 4-6). This is the cleanest next
-   foundation step because package/module identity and resolver inputs depend on
-   it.
+1. **mizar-resolve kickoff** - start the resolver foundation now that
+   `mizar-build` wave A has landed. First create/maintain the crate plan, then
+   proceed through scaffold, `ResolvedAst`/`SymbolEnv` specs, data shapes, and
+   the resolver-side module-index seam (tasks 1-7).
 2. **mizar-test foundation cleanup** - run the lint-policy guard and
    source/spec gap audit (tasks 1-2), then harden validation/reporting,
    snapshots, and coverage reporting. The source crate already exists; the TODO
    is the formal gap-closing plan.
-3. **mizar-resolve kickoff** - resolver work can begin against the current
-   parser/syntax surface. If it starts before `mizar-build` task 6, use the
-   planned workspace-stub provider only as an interim bridge and replace it with
-   the real module-index provider as soon as build wave A lands.
+3. **mizar-artifact wave A, in parallel when useful** - canonical
+   serialization and `ModuleSummary` schema work can proceed beside resolver
+   foundation, but summary-backed resolver reuse remains gated on
+   `mizar-artifact` task 5 and `mizar-resolve` task 24.
 
 ### Semantic And Proof Layers
 
@@ -136,8 +134,9 @@ leaf support crates forward when they unblock cross-module work:
    - **mizar-artifact wave A** - canonical serialization plus
      `ModuleSummary`/`RegistrationSummary` schemas for summary-backed
      resolution. [todo](./mizar-artifact/en/todo.md)
-   - **mizar-build wave A** - planner and module index if not already
-     completed. [todo](./mizar-build/en/todo.md)
+   - **mizar-build wave B** - task graph and scheduling work can continue
+     independently when scheduler/driver foundations become the focus.
+     [todo](./mizar-build/en/todo.md)
    - **mizar-diagnostics** - shared diagnostic records before resolver
      adoption expands. [todo](./mizar-diagnostics/en/todo.md)
 3. **mizar-checker** (phases 6-8) - type checking, cluster/registration
