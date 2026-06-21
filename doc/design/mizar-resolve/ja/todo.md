@@ -329,12 +329,18 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       policy、exported summary と lexical-summary projection、recovery、
       relation/dependency edge、R-020/R-021/R-023 への test handoff を仕様化した。
 
-20. **収集骨格と重複検出。** [ ]
+20. **収集骨格と重複検出。** [x]
     - 宣言シェルから `SymbolEnv` を構築する: 種別ごとの名前登録、重複・
       競合診断、オーバーロード候補のグループ化。シグネチャ自体はまだ
       不透明のままでよい。
     - テスト: 種別ごとの重複検出。候補グループ化。決定的な診断順。
     - 依存: 5、11、19。仕様: `symbols.md`。
+    - R-020 で完了: `src/symbols.rs` は explicit な
+      `DeclarationShellId` keyed projection seam、opaque symbol collection の
+      `SymbolIndex` / `DefinitionIndex` / `RegistrationIndex` / `OverloadIndex` への
+      登録、internal duplicate / illegal-overload diagnostic、recovered と
+      context-only shell policy、contribution tracking、決定的な unit test を追加した。
+      専用 lexical-summary と artifact-summary data shape は R-021/R-024 に残る。
 
 21. **種別ごとのシグネチャ抽出。** [ ] — `mizar-parser` task 23-31 が律速。
     - 具体的なシグネチャ（struct、mode、attribute、predicate、functor、

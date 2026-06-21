@@ -349,13 +349,20 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       lexical-summary projections, recovery, relation/dependency edges, and the
       R-020/R-021/R-023 test handoff.
 
-20. **Collection skeleton and duplicate detection.** [ ]
+20. **Collection skeleton and duplicate detection.** [x]
     - Populate `SymbolEnv` from declaration shells: registration of names per
       kind, duplicate and conflict diagnostics, overload candidate grouping —
       signatures still opaque.
     - Tests: duplicate detection per kind; candidate grouping; deterministic
       diagnostic order.
     - Deps: 5, 11, 19. Spec: `symbols.md`.
+    - Completed by R-020: `src/symbols.rs` adds the explicit
+      `DeclarationShellId`-keyed projection seam, opaque symbol collection into
+      `SymbolIndex` / `DefinitionIndex` / `RegistrationIndex` / `OverloadIndex`,
+      internal duplicate and illegal-overload diagnostics, recovered and
+      context-only shell policy, contribution tracking, and deterministic unit
+      tests. Dedicated lexical-summary and artifact-summary data shapes remain
+      R-021/R-024 work.
 
 21. **Per-kind signature extraction.** [ ] — paced by `mizar-parser` tasks 23-31.
     - Extract concrete signatures (structs, modes, attributes, predicates,

@@ -212,6 +212,20 @@ pub enum SymbolKind {
     Registration,
     /// Theorem-like declaration represented as a symbol.
     Theorem,
+    /// Lemma declaration represented as a symbol.
+    Lemma,
+    /// Algorithm declaration represented by signature and contracts.
+    Algorithm,
+    /// Scheme declaration represented as a symbol.
+    Scheme,
+    /// Template declaration represented as a symbol.
+    Template,
+    /// Synonym relation declaration.
+    Synonym,
+    /// Antonym relation declaration.
+    Antonym,
+    /// Redefinition relation declaration.
+    Redefinition,
     /// Built-in resolver-visible symbol.
     Builtin,
 }
@@ -706,6 +720,24 @@ pub enum DefinitionKind {
     Structure,
     /// Registration definition shell.
     Registration,
+    /// Theorem statement shell.
+    Theorem,
+    /// Lemma statement shell.
+    Lemma,
+    /// Algorithm signature and contract shell.
+    Algorithm,
+    /// Scheme signature shell.
+    Scheme,
+    /// Template signature shell.
+    Template,
+    /// Synonym relation shell.
+    Synonym,
+    /// Antonym relation shell.
+    Antonym,
+    /// Redefinition relation shell.
+    Redefinition,
+    /// Structure selector or member shell.
+    Selector,
 }
 
 /// Duplicate or conflict classification for declaration collection.
@@ -3369,6 +3401,13 @@ fn symbol_kind_name(kind: SymbolKind) -> &'static str {
         SymbolKind::Selector => "selector",
         SymbolKind::Registration => "registration",
         SymbolKind::Theorem => "theorem",
+        SymbolKind::Lemma => "lemma",
+        SymbolKind::Algorithm => "algorithm",
+        SymbolKind::Scheme => "scheme",
+        SymbolKind::Template => "template",
+        SymbolKind::Synonym => "synonym",
+        SymbolKind::Antonym => "antonym",
+        SymbolKind::Redefinition => "redefinition",
         SymbolKind::Builtin => "builtin",
     }
 }
@@ -3405,6 +3444,15 @@ fn definition_kind_name(kind: DefinitionKind) -> &'static str {
         DefinitionKind::Attribute => "attribute",
         DefinitionKind::Structure => "structure",
         DefinitionKind::Registration => "registration",
+        DefinitionKind::Theorem => "theorem",
+        DefinitionKind::Lemma => "lemma",
+        DefinitionKind::Algorithm => "algorithm",
+        DefinitionKind::Scheme => "scheme",
+        DefinitionKind::Template => "template",
+        DefinitionKind::Synonym => "synonym",
+        DefinitionKind::Antonym => "antonym",
+        DefinitionKind::Redefinition => "redefinition",
+        DefinitionKind::Selector => "selector",
     }
 }
 

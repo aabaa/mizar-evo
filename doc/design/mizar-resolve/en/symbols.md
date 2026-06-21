@@ -3,8 +3,9 @@
 > Canonical language: English. Japanese companion: [../ja/symbols.md](../ja/symbols.md).
 
 Status: task R-019 specifies the resolver-owned signature-collection
-contract. Task R-020 implements the collection skeleton, duplicate/conflict
-detection, and overload grouping over opaque signatures. Task R-021 extracts
+contract, and task R-020 implements the collection skeleton, duplicate/conflict
+detection, registration indexing, and overload grouping over explicit
+declaration projections with opaque signatures. Task R-021 extracts
 kind-specific signature payloads incrementally as parser coverage provides the
 corresponding source shapes. Semantic `.miz` corpus coverage and traceability
 metadata remain task R-023 work.
@@ -199,6 +200,16 @@ well-typed, semantically compatible, terminating, executable, or proof-valid.
 | redefinition | Redefined target mention, replacement signature shell, relation ordinal, and compatibility placeholders. Compatibility checking is checker-owned. |
 | inline deffunc / defpred | Local proof abbreviation shell only when represented by resolver input. These are proof-scope bindings, not module `SymbolEnv` symbols; they do not receive exported or module `SymbolId`s, seed module lexical summaries, or become exported module symbols. |
 
+R-020 uses explicit declaration projections and may collapse source shell
+subitems into the closest resolver-owned symbol family until R-021 performs
+parser-backed extraction. `StructureField` uses `selector`; property clauses
+and structure properties use the projected `attribute` or `selector` family
+chosen by the extractor; predicate/functor/attribute/field/property
+redefinitions use `redefinition`; and represented inheritance contributes only
+when the extractor provides a `structure` projection. The collapse is explicit
+in `SymbolDeclarationProjection`, so the collector never infers a family from a
+context shell alone.
+
 If parser coverage does not yet expose a concrete source role, R-021 leaves the
 payload opaque and records the shell as pending extraction rather than
 inventing source structure.
@@ -264,6 +275,12 @@ or inline proof abbreviations. Artifact-backed summary reuse is task R-024.
 Until then, symbols may consume source-backed or in-memory dependency
 projections, but must not define a resolver-local artifact schema.
 
+R-020 does not add a dedicated lexical-summary or artifact-summary data shape.
+It records exportability through `SymbolIndex`, `DefinitionIndex`,
+`RegistrationIndex`, `OverloadIndex`, and `SourceContributionIndex` only.
+Parser-backed lexical spelling extraction remains R-021 work, and
+artifact-backed `ModuleSummary` reuse remains R-024 work.
+
 ## Dependency Edges And Relations
 
 `DeclarationDependencyIndex` records resolver-visible edges discovered during
@@ -322,10 +339,14 @@ unit tests for:
 - registration of opaque declaration signatures into `SymbolEnv`;
 - duplicate/conflict detection per represented kind family;
 - legal and illegal overload grouping;
-- deterministic symbol, overload, dependency, diagnostic, exported-summary,
-  and lexical-summary ordering.
+- registration insertion into symbol, definition, and registration indexes;
+- recovered and context-only shell policy;
+- deterministic symbol, definition, overload, diagnostic, and contribution
+  ordering.
 
 R-021 adds per-kind signature extraction tests as parser-backed source roles
-become executable. R-023 adds semantic `.miz` corpus cases and traceability
-metadata for the `declaration_symbol` stage. Existing `.miz` cases and
-expectations must not be rebaselined to match resolver implementation behavior.
+become executable, including parser-backed lexical-summary spelling fixtures
+where the syntax supports them. R-023 adds semantic `.miz` corpus cases and
+traceability metadata for the `declaration_symbol` stage. Existing `.miz`
+cases and expectations must not be rebaselined to match resolver
+implementation behavior.

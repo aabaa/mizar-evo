@@ -2,11 +2,12 @@
 
 > 正本は英語です。英語版: [../en/symbols.md](../en/symbols.md)。
 
-Status: task R-019 は resolver-owned な signature collection 契約を仕様化する。
-task R-020 は opaque signature 上の collection skeleton、duplicate/conflict
-detection、overload grouping を実装する。task R-021 は parser coverage が対応する
-source shape を提供するたびに kind-specific signature payload を増分で抽出する。
-semantic `.miz` corpus coverage と traceability metadata は task R-023 に残る。
+Status: task R-019 は resolver-owned な signature collection 契約を仕様化し、task
+R-020 は explicit declaration projection と opaque signature 上の collection skeleton、
+duplicate/conflict detection、registration indexing、overload grouping を実装する。
+task R-021 は parser coverage が対応する source shape を提供するたびに
+kind-specific signature payload を増分で抽出する。semantic `.miz` corpus coverage と
+traceability metadata は task R-023 に残る。
 
 ## 参照
 
@@ -188,6 +189,15 @@ proof-valid であるとは主張しない。
 | redefinition | redefined target mention、replacement signature shell、relation ordinal、compatibility placeholder。compatibility checking は checker-owned。 |
 | inline deffunc / defpred | resolver input が表現する場合のみ local proof abbreviation shell。これは proof-scope binding であり、module `SymbolEnv` symbol ではない。exported または module `SymbolId` を受け取らず、module lexical summary を seed せず、exported module symbol にならない。 |
 
+R-020 は explicit declaration projection を使い、R-021 が parser-backed extraction
+を行うまで、source shell subitem を最も近い resolver-owned symbol family へ明示的に
+畳み込んでよい。`StructureField` は `selector` を使う。property clause と
+structure property は extractor が選ぶ projected `attribute` または `selector`
+family を使う。predicate/functor/attribute/field/property redefinition は
+`redefinition` を使う。表現済み inheritance は extractor が `structure`
+projection を提供する場合だけ寄与する。この collapse は `SymbolDeclarationProjection`
+内で明示されるため、collector が context shell だけから family を推論することはない。
+
 parser coverage がまだ concrete source role を公開していない場合、R-021 は source
 structure を創作せず、payload を opaque のまま pending extraction として記録する。
 
@@ -247,6 +257,12 @@ artifact-backed summary reuse は task R-024 で扱う。それまでは source-
 in-memory dependency projection を消費してよいが、resolver-local artifact schema を
 定義してはならない。
 
+R-020 は専用の lexical-summary または artifact-summary data shape を追加しない。
+exportability は `SymbolIndex`、`DefinitionIndex`、`RegistrationIndex`、
+`OverloadIndex`、`SourceContributionIndex` を通じてのみ記録する。parser-backed な
+lexical spelling extraction は R-021 に残り、artifact-backed `ModuleSummary` reuse は
+R-024 に残る。
+
 ## Dependency Edge と Relation
 
 `DeclarationDependencyIndex` は signature collection 中に発見された resolver-visible edge を
@@ -301,10 +317,12 @@ resolver unit test を追加する:
 - opaque declaration signature の `SymbolEnv` への登録。
 - 表現済み kind family ごとの duplicate/conflict detection。
 - legal / illegal overload grouping。
-- symbol、overload、dependency、diagnostic、exported-summary、lexical-summary
-  ordering の決定性。
+- symbol / definition / registration index への registration insertion。
+- recovered と context-only shell の policy。
+- symbol、definition、overload、diagnostic、contribution ordering の決定性。
 
 R-021 は parser-backed source role が実行可能になるたびに kind-specific signature
-extraction test を追加する。R-023 は `declaration_symbol` stage 用の semantic `.miz`
-corpus case と traceability metadata を追加する。既存 `.miz` case と expectation は
-resolver implementation behavior に合わせる目的で rebaseline してはならない。
+extraction test を追加し、syntax が対応した lexical-summary spelling fixture も扱う。
+R-023 は `declaration_symbol` stage 用の semantic `.miz` corpus case と traceability
+metadata を追加する。既存 `.miz` case と expectation は resolver implementation
+behavior に合わせる目的で rebaseline してはならない。
