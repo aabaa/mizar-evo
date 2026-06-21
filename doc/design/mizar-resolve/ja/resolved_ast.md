@@ -161,7 +161,9 @@ label は ordinary symbol とは別 scope なので、`LabelRefTable` は `NameR
 - theorem、definition、proof-step、registration label の解決を表す
   `Resolved(LabelRef)`
 - 決定的な candidate を持つ `Ambiguous(AmbiguousLabelRef)`
-- 試みた label spelling と scope family を持つ `Unresolved(UnresolvedLabelRef)`
+- 試みた label spelling と expected scope family を持つ
+  `Unresolved(UnresolvedLabelRef)`。expected family は具体的な label kind、または
+  `by` reference 用の proof-step-or-theorem のような mixed citation family でよい。
 
 `LabelRef` は正規化された label-origin path と use-site range を記録する。
 label-origin path は後続の `ObligationAnchor` 構築に十分な安定性を持たなければ

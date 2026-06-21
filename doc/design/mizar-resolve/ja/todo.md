@@ -23,7 +23,7 @@
 | imports | `imports.md`（task 8） | `src/imports.rs` | [~] |
 | declarations | `declarations.md`（task 11） | `src/declarations.rs` | [x] |
 | names | `names.md`（task 12） | `src/names.rs` | [~] |
-| labels | `labels.md`（task 17） | `src/labels.rs` | [~] |
+| labels | `labels.md`（task 17） | `src/labels.rs` | [x] |
 | symbols | `symbols.md`（task 19） | `src/symbols.rs` | [ ] |
 
 `mizar-resolve` はパイプライン phase 4-5 を実装する。入力は `SurfaceAst`、
@@ -298,12 +298,19 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
     - 依存: 2。仕様: アーキテクチャ 03「Label Resolution Is Scoped
       Separately」。
 
-18. **ラベル解決。** [ ]
+18. **ラベル解決。** [x]
     - task 17 に従って文/定理ラベルを解決する。証明ブロックの入れ子を含む。
+    - R-018 は `src/labels.rs` に `LabelScopePath`、`LabelProjection`、
+      `LabelReferenceCandidate`、`LabelResolver`、`LabelResolutionResult`、
+      crate-local/internal な `LabelDiagnostic` record を実装した。実行可能な slice は
+      theorem / lemma と proof-step label projection を解決し、forward reference を拒否し、
+      resolved namespace / module projection 済みの qualified / grouped item candidate を扱い、
+      public diagnostic code や proof / VC semantics を創作せずに deterministic な
+      `LabelIndex` / `LabelRefTable` output を投入する。
     - テスト: proof-block visibility。visible nested proof scope をまたぐ
       duplicate / conflicting label の拒否。後続ラベルへの参照の拒否。
-      parser coverage が存在する範囲での simple / qualified / grouped citation
-      lookup。`LabelRefTable` の決定性。
+      parser coverage が存在する範囲での simple / qualified / lowered grouped-item
+      citation lookup。deterministic `LabelIndex` / `LabelRefTable` / diagnostic ordering。
     - 依存: 11、17、`mizar-parser` task 22。仕様: `labels.md`、
       [16.theorems_and_proofs.md](../../../spec/ja/16.theorems_and_proofs.md)。
 

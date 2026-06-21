@@ -166,8 +166,9 @@ Required result variants:
 - `Resolved(LabelRef)` for a resolved theorem, definition, proof-step, or
   registration label;
 - `Ambiguous(AmbiguousLabelRef)` with deterministic candidates;
-- `Unresolved(UnresolvedLabelRef)` with the attempted label spelling and scope
-  family.
+- `Unresolved(UnresolvedLabelRef)` with the attempted label spelling and
+  expected scope family. The expected family may be a concrete label kind or a
+  mixed citation family such as proof-step-or-theorem for `by` references.
 
 `LabelRef` records the normalized label-origin path and the use-site range.
 The label-origin path must be stable enough for downstream `ObligationAnchor`

@@ -2,12 +2,16 @@
 
 > Canonical language: English. Japanese companion: [../ja/labels.md](../ja/labels.md).
 
-Status: task R-017 specifies the resolver-owned label-resolution contract for
-task R-018. It records the dedicated label scope families, proof-block nesting
-rules, forward-reference policy, citation lookup behavior, and normalized
-label-origin paths used later by proof, checker, VC, and artifact phases. This
-is a design-only task: executable label collection and `LabelRefTable`
-population land in R-018.
+Status: task R-017 specified the resolver-owned label-resolution contract, and
+task R-018 implemented the executable theorem/lemma and proof-step projection
+resolver in `src/labels.rs`. The implementation covers the dedicated label
+scope family, proof-block nesting keys, forward-reference rejection, simple /
+qualified citation candidates, lowered grouped-item candidates, `LabelIndex`
+population, `LabelRefTable` outcomes, and crate-local/internal conflict
+diagnostics. Full `SurfaceAst` lowering into the driver pipeline, grouped
+shared-prefix container diagnostics, and semantic `.miz` traceability remain
+task R-023 work under R-G002; definition and registration label extraction
+remain paced by later symbol/signature source roles.
 
 ## References
 
@@ -163,9 +167,11 @@ rules for local-term shadowing, selectors, and `DeferredSelector` records do
 not apply to simple, qualified, grouped, or bulk citation prefixes.
 
 Grouped citations use the same resolved module prefix for each grouped label
-and produce one label-resolution outcome per concrete grouped item. A failure
-in the shared module prefix is recorded once as an unresolved namespace/module
-dependency and each grouped item records a dependent unresolved label outcome.
+and produce one label-resolution outcome per concrete grouped item. R-018
+accepts the lowered per-item candidates after the shared prefix has already
+been resolved or failed. Full `SurfaceAst` lowering records a shared-prefix
+failure once and then attaches dependent unresolved label outcomes to each
+grouped item; that container-level source walk remains R-023 paired work.
 
 Bulk citations (`module_path.*`) are not permission to fabricate individual
 label entries. If the target module's exported theorem/lemma label table is
@@ -231,15 +237,15 @@ Label collection and resolution are deterministic:
 
 ## Test Obligations
 
-R-017 adds no executable tests because it is documentation-only. R-018 must add
+R-017 added no executable tests because it was documentation-only. R-018 adds
 unit tests for:
 
 - proof-block visibility and nested-block confinement;
 - duplicate/conflicting labels across visible scopes, including the
   spec-forbidden inner-scope shadowing case;
 - rejection of forward references to later labels;
-- simple, qualified, and grouped citation lookup where the parser already
-  produces the relevant syntax;
+- simple, qualified, and lowered grouped-item citation lookup where the parser
+  already produces the relevant syntax;
 - deterministic `LabelRefTable`, `LabelIndex`, and diagnostic ordering.
 
 Semantic `.miz` corpus coverage and traceability metadata are introduced by

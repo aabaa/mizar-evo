@@ -24,7 +24,7 @@ Autonomous crate development preparation is tracked in
 | imports | `imports.md` (task 8) | `src/imports.rs` | [~] |
 | declarations | `declarations.md` (task 11) | `src/declarations.rs` | [x] |
 | names | `names.md` (task 12) | `src/names.rs` | [~] |
-| labels | `labels.md` (task 17) | `src/labels.rs` | [~] |
+| labels | `labels.md` (task 17) | `src/labels.rs` | [x] |
 | symbols | `symbols.md` (task 19) | `src/symbols.rs` | [ ] |
 
 `mizar-resolve` implements pipeline phases 4-5: `SurfaceAst` in, `ResolvedAst`
@@ -315,13 +315,21 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       R-017.
     - Deps: 2. Spec: architecture 03 "Label Resolution Is Scoped Separately".
 
-18. **Label resolution.** [ ]
+18. **Label resolution.** [x]
     - Resolve statement/theorem labels per task 17, including proof-block
       nesting.
+    - Implemented R-018 in `src/labels.rs` with `LabelScopePath`,
+      `LabelProjection`, `LabelReferenceCandidate`, `LabelResolver`,
+      `LabelResolutionResult`, and crate-local/internal `LabelDiagnostic`
+      records. The executable slice resolves theorem/lemma and proof-step
+      label projections, rejects forward references, handles qualified/grouped
+      item candidates through already resolved namespace/module projections,
+      and populates deterministic `LabelIndex` / `LabelRefTable` outputs
+      without public diagnostic codes or proof/VC semantics.
     - Tests: proof-block visibility; duplicate/conflicting labels across visible
       nested proof scopes rejected; references to later labels rejected; simple,
-      qualified, and grouped citation lookup where parser coverage exists;
-      `LabelRefTable` determinism.
+      qualified, and lowered grouped-item citation lookup where parser coverage exists;
+      deterministic `LabelIndex` / `LabelRefTable` / diagnostic ordering.
     - Deps: 11, 17, `mizar-parser` task 22. Spec: `labels.md`,
       [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md).
 

@@ -964,6 +964,38 @@ pub enum LabelKind {
     Registration,
 }
 
+/// Expected label scope family for unresolved label references.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum LabelExpectation {
+    /// `by` citation accepting a local proof-step or theorem/lemma label.
+    ProofOrTheorem,
+    /// Theorem or lemma label only.
+    Theorem,
+    /// Proof-step label only.
+    ProofStep,
+    /// Definition label only.
+    Definition,
+    /// Registration label only.
+    Registration,
+}
+
+impl LabelExpectation {
+    /// Returns whether this expectation accepts a concrete label kind.
+    pub const fn accepts(self, kind: LabelKind) -> bool {
+        matches!(
+            (self, kind),
+            (
+                Self::ProofOrTheorem,
+                LabelKind::ProofStep | LabelKind::Theorem
+            ) | (Self::Theorem, LabelKind::Theorem)
+                | (Self::ProofStep, LabelKind::ProofStep)
+                | (Self::Definition, LabelKind::Definition)
+                | (Self::Registration, LabelKind::Registration)
+        )
+    }
+}
+
 /// A resolved label reference.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LabelRef {
@@ -1091,16 +1123,20 @@ impl AmbiguousLabelRef {
 pub struct UnresolvedLabelRef {
     spelling: String,
     range: SourceRange,
-    kind: LabelKind,
+    expectation: LabelExpectation,
 }
 
 impl UnresolvedLabelRef {
     /// Creates an unresolved label reference.
-    pub fn new(spelling: impl Into<String>, range: SourceRange, kind: LabelKind) -> Self {
+    pub fn new(
+        spelling: impl Into<String>,
+        range: SourceRange,
+        expectation: LabelExpectation,
+    ) -> Self {
         Self {
             spelling: spelling.into(),
             range,
-            kind,
+            expectation,
         }
     }
 
@@ -1114,9 +1150,9 @@ impl UnresolvedLabelRef {
         self.range
     }
 
-    /// Returns the label scope family.
-    pub const fn kind(&self) -> LabelKind {
-        self.kind
+    /// Returns the expected label scope family.
+    pub const fn expectation(&self) -> LabelExpectation {
+        self.expectation
     }
 }
 
@@ -1905,8 +1941,8 @@ fn write_label_resolution_snapshot(output: &mut String, resolution: &LabelResolu
         LabelResolution::Unresolved(unresolved_ref) => {
             output.push_str("    resolution=unresolved spelling=\"");
             write_escaped(output, unresolved_ref.spelling());
-            output.push_str("\" kind=");
-            output.push_str(label_kind_name(unresolved_ref.kind()));
+            output.push_str("\" expectation=");
+            output.push_str(label_expectation_name(unresolved_ref.expectation()));
             output.push_str(" range=");
             write_range(output, unresolved_ref.range());
             output.push('\n');
@@ -2128,6 +2164,16 @@ fn label_kind_name(kind: LabelKind) -> &'static str {
         LabelKind::Definition => "definition",
         LabelKind::ProofStep => "proof_step",
         LabelKind::Registration => "registration",
+    }
+}
+
+fn label_expectation_name(expectation: LabelExpectation) -> &'static str {
+    match expectation {
+        LabelExpectation::ProofOrTheorem => "proof_or_theorem",
+        LabelExpectation::Theorem => "theorem",
+        LabelExpectation::ProofStep => "proof_step",
+        LabelExpectation::Definition => "definition",
+        LabelExpectation::Registration => "registration",
     }
 }
 
@@ -3286,7 +3332,11 @@ mod tests {
         ));
         let unresolved = table.insert(LabelRefEntry::new(
             ReferenceSite::new(node, range, "A2"),
-            LabelResolution::Unresolved(UnresolvedLabelRef::new("A2", range, LabelKind::Theorem)),
+            LabelResolution::Unresolved(UnresolvedLabelRef::new(
+                "A2",
+                range,
+                LabelExpectation::Theorem,
+            )),
             entry_origin,
         ));
 
@@ -3449,7 +3499,7 @@ mod tests {
             LabelResolution::Unresolved(UnresolvedLabelRef::new(
                 "A1",
                 range(source_id, 1, 2),
-                LabelKind::Theorem,
+                LabelExpectation::Theorem,
             )),
             normal_origin.clone(),
         ));
@@ -3879,7 +3929,7 @@ mod tests {
             LabelResolution::Unresolved(UnresolvedLabelRef::new(
                 "OwnedByChildLabel",
                 range(primary_source_id, 0, 1),
-                LabelKind::Theorem,
+                LabelExpectation::Theorem,
             )),
             origin(primary_source_id, module_id("pkg", "main")),
         ));
@@ -4201,7 +4251,7 @@ mod tests {
             LabelResolution::Unresolved(UnresolvedLabelRef::new(
                 "L1",
                 range(source_id, 2, 3),
-                LabelKind::Theorem,
+                LabelExpectation::Theorem,
             )),
             origin.clone(),
         ));
@@ -4210,7 +4260,7 @@ mod tests {
             LabelResolution::Unresolved(UnresolvedLabelRef::new(
                 "L2",
                 range(source_id, 3, 4),
-                LabelKind::Theorem,
+                LabelExpectation::Theorem,
             )),
             origin.clone(),
         ));
@@ -4305,7 +4355,7 @@ mod tests {
             "resolution=unresolved spelling=\"Missing\" lookup=symbol",
             "resolution=resolved origin=\"pkg::main::T1\" kind=theorem",
             "resolution=ambiguous spelling=\"A1\" range=11..12 candidates=[",
-            "resolution=unresolved spelling=\"A2\" kind=proof_step",
+            "resolution=unresolved spelling=\"A2\" expectation=proof_step",
             "resolution=resolved module=pkg::dep",
             "resolution=ambiguous candidates=[pkg::alpha, pkg::zeta]",
             "resolution=unresolved spelling=\"missing\" class=module_not_found",
@@ -4512,7 +4562,7 @@ mod tests {
             LabelResolution::Unresolved(UnresolvedLabelRef::new(
                 "A2",
                 range(source_id, 14, 15),
-                LabelKind::ProofStep,
+                LabelExpectation::ProofStep,
             )),
             recovered_origin.clone(),
         ));
@@ -4719,7 +4769,7 @@ mod tests {
             LabelResolution::Unresolved(UnresolvedLabelRef::new(
                 "L",
                 range(source_id, 1, 2),
-                LabelKind::Theorem,
+                LabelExpectation::Theorem,
             )),
             origin.clone(),
         ));
