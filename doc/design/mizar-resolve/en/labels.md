@@ -211,6 +211,10 @@ navigation. They are not canonical label identity by themselves.
 Recovered or malformed label syntax is retained as unresolved or recovered
 label records when the surrounding source shape is still represented. The
 resolver must not panic on recovered proof or declaration subtrees.
+Recovered label projections remain available as degraded label-index facts, but
+they are excluded from label-reference candidate sets and from
+duplicate/conflicting-label diagnostics so parser recovery does not cascade
+into semantic ambiguity or conflict reports.
 
 Diagnostic records remain crate-local/internal while R-G001 is open. Label
 diagnostics must preserve:

@@ -26,6 +26,7 @@ Autonomous crate development preparation is tracked in
 | names | `names.md` (task 12) | `src/names.rs` | [~] |
 | labels | `labels.md` (task 17) | `src/labels.rs` | [x] |
 | symbols | `symbols.md` (task 19) | `src/symbols.rs` | [~] |
+| recovered syntax policy | `recovery.md` (task 22) | `src/recovery.rs` helper plus stage-specific call sites | [x] |
 
 `mizar-resolve` implements pipeline phases 4-5: `SurfaceAst` in, `ResolvedAst`
 plus `SymbolEnv` out. It is the first semantic owner — namespaces, imports,
@@ -384,13 +385,17 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 
 ### Hardening and cross-cutting follow-ups
 
-22. **Recovered-syntax policy.** [ ]
+22. **Recovered-syntax policy.** [x]
     - Define and implement how each resolver stage treats recovered
       `SurfaceAst` subtrees (skip, shell-only, or diagnose), keeping the
       `recovered` flag contract from `mizar-syntax`.
     - Tests: recovered input never panics resolution; diagnostics do not
       cascade from recovered regions.
     - Deps: 13. Spec: [mizar-syntax recovery.md](../../mizar-syntax/en/recovery.md).
+    - Completed by R-022: added [recovery.md](./recovery.md), centralized
+      resolver-local recovered-subtree detection, and made name, label, and
+      symbol diagnostics suppress dependent semantic diagnostics from recovered
+      origins or shells while retaining degraded table/env facts.
 
 23. **Corpus runner at stage `declaration_symbol`.** [ ]
     - Wire `tests/miz/{pass,fail}/` cases at stage `declaration_symbol`

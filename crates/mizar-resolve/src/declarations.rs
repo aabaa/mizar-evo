@@ -4,6 +4,7 @@
 //! declaration shells without assigning final symbol identities, checking
 //! signatures, or validating export legality.
 
+use crate::recovery::surface_contains_recovery as contains_recovery;
 use crate::resolved_ast::ModuleId;
 use mizar_session::SourceRange;
 use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceNodeView, SyntaxKind};
@@ -698,10 +699,6 @@ fn first_token_text(view: SurfaceNodeView<'_>) -> Option<String> {
             .map(|token| token.text.as_ref().to_owned())
             .or_else(|| first_token_text(child))
     })
-}
-
-fn contains_recovery(view: SurfaceNodeView<'_>) -> bool {
-    view.is_recovered() || view.as_recovery().is_some() || view.child_views().any(contains_recovery)
 }
 
 fn declaration_shell_cmp(left: &DeclarationShell, right: &DeclarationShell) -> Ordering {

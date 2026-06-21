@@ -10,6 +10,7 @@
 use crate::env::{
     ExportStatus, LabelEntry, LabelIndex, NamespacePath, SourceContributionId, Visibility,
 };
+use crate::recovery::suppress_dependent_diagnostic_for_recovered_origin;
 use crate::resolved_ast::{
     AmbiguousLabelRef, LabelCandidate, LabelExpectation, LabelKind, LabelOriginPath, LabelRef,
     LabelRefEntry, LabelRefId, LabelRefTable, LabelResolution, ModuleId, ReferenceSite,
@@ -590,7 +591,7 @@ impl<'a> LabelResolver<'a> {
                 matches!(
                     projection.source(),
                     LabelProjectionSource::CurrentModule { .. }
-                )
+                ) && !suppress_dependent_diagnostic_for_recovered_origin(projection.origin())
             })
             .collect::<Vec<_>>();
         ordered.sort_by(|left, right| label_projection_cmp(left, right));
@@ -671,6 +672,7 @@ impl<'a> LabelResolver<'a> {
                     && projection.module() == current_module
                     && projection.primary_spelling() == reference.site().spelling()
                     && current_projection_visible(projection, current_module, reference.ordinal())
+                    && reference_projection_visible(projection)
                     && proof_label_visible(projection.proof_scope(), proof_scope.as_ref())
             })
             .collect::<Vec<_>>();
@@ -685,6 +687,7 @@ impl<'a> LabelResolver<'a> {
                     && projection.namespace() == current_namespace
                     && projection.primary_spelling() == reference.site().spelling()
                     && current_projection_visible(projection, current_module, reference.ordinal())
+                    && reference_projection_visible(projection)
             })
             .collect::<Vec<_>>();
 
@@ -697,6 +700,7 @@ impl<'a> LabelResolver<'a> {
                     && projection.namespace() == current_namespace
                     && projection.primary_spelling() == reference.site().spelling()
                     && imported_projection_visible(projection)
+                    && reference_projection_visible(projection)
             })
             .collect::<Vec<_>>();
 
@@ -724,6 +728,7 @@ impl<'a> LabelResolver<'a> {
                     && projection.namespace() == namespace
                     && projection.primary_spelling() == reference.site().spelling()
                     && qualified_projection_visible(projection, current_module, reference.ordinal())
+                    && reference_projection_visible(projection)
             })
             .collect::<Vec<_>>();
         resolution_from_label_candidates(reference, candidates)
@@ -791,6 +796,10 @@ fn projection_index_visible(projection: &LabelProjection) -> bool {
         projection.source(),
         LabelProjectionSource::CurrentModule { .. }
     ) || imported_projection_visible(projection)
+}
+
+fn reference_projection_visible(projection: &LabelProjection) -> bool {
+    !projection.origin().is_recovered()
 }
 
 fn qualified_projection_visible(
@@ -1220,6 +1229,37 @@ mod tests {
         assert_unresolved_label(&resolved, 0, LabelExpectation::ProofOrTheorem, "A");
         assert_unresolved_label(&resolved, 1, LabelExpectation::ProofOrTheorem, "");
         assert_unresolved_label(&resolved, 2, LabelExpectation::Theorem, "B");
+    }
+
+    #[test]
+    fn recovered_label_projections_do_not_emit_conflict_diagnostics() {
+        let source_id = source_id();
+        let current = module_id("app", "main");
+        let namespace = NamespacePath::new("main");
+        let mut contributions = SourceContributionIndex::new();
+        let contribution = contribution(&mut contributions, current.clone(), source_id, 0);
+        let fixture =
+            ProjectionFixture::new(source_id, current.clone(), namespace.clone(), contribution);
+        let clean = current_theorem_projection(&fixture, "A", 10, 1);
+        let mut recovered_data = fixture.data("A", LabelKind::Theorem, "theorem", 20, 2);
+        recovered_data.origin = recovered_data.origin.recovered();
+        let recovered = LabelProjection::current_module(recovered_data, 2)
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported);
+        let projections = vec![clean, recovered];
+        let references = vec![unqualified_ref(
+            source_id,
+            current.clone(),
+            3,
+            30,
+            "A",
+            None,
+        )];
+
+        let resolved = LabelResolver::new(&projections).resolve(&current, &namespace, &references);
+
+        assert!(resolved.diagnostics().is_empty());
+        assert_resolved_label(&resolved, 0, "app::main::theorem::A");
     }
 
     #[test]

@@ -14,6 +14,7 @@ use crate::env::{
     RegistrationKind, SignatureShell, SourceContributionId, SymbolEntry, SymbolEnv,
     SymbolEnvIndexes, SymbolKind, Visibility,
 };
+use crate::recovery::suppress_dependent_diagnostic_for_recovered_shell;
 use crate::resolved_ast::{FullyQualifiedName, LocalSymbolId, ModuleId, SemanticOrigin, SymbolId};
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNodeKind, SurfaceNodeView, SurfaceTokenKind};
@@ -118,9 +119,7 @@ impl SymbolDeclarationProjection {
         self
     }
 
-    /// Requests a module lexical-summary seed for this projection.
-    #[must_use]
-    pub const fn with_lexical_summary_kind(mut self, kind: LexicalSummaryKind) -> Self {
+    fn with_parser_backed_lexical_summary_kind(mut self, kind: LexicalSummaryKind) -> Self {
         self.lexical_summary_kind = Some(kind);
         self
     }
@@ -481,7 +480,8 @@ impl<'a> SignatureProjectionExtractor<'a> {
             projection = projection.with_notation_spelling(notation);
         }
         if lexer_visible_pattern(pattern) {
-            projection = projection.with_lexical_summary_kind(LexicalSummaryKind::Notation);
+            projection =
+                projection.with_parser_backed_lexical_summary_kind(LexicalSummaryKind::Notation);
         }
         Some(projection)
     }
@@ -573,7 +573,8 @@ impl<'a> SignatureProjectionExtractor<'a> {
             projection = projection.with_notation_spelling(notation);
         }
         if lexer_visible_pattern(pattern) {
-            projection = projection.with_lexical_summary_kind(LexicalSummaryKind::Notation);
+            projection =
+                projection.with_parser_backed_lexical_summary_kind(LexicalSummaryKind::Notation);
         }
         Some(projection)
     }
@@ -710,8 +711,11 @@ impl<'a> SymbolCollector<'a> {
                 diagnostic_drafts.push(DiagnosticDraft::missing_shell(projection, self.source_id));
                 continue;
             };
+            let context_recovered = shell_context(self.shells, shell).recovered;
             if !symbol_bearing_shell(shell.kind()) {
-                diagnostic_drafts.push(DiagnosticDraft::context_only(shell, projection));
+                if !suppress_dependent_diagnostic_for_recovered_shell(context_recovered) {
+                    diagnostic_drafts.push(DiagnosticDraft::context_only(shell, projection));
+                }
                 continue;
             }
             collected.push(CollectedProjection::new(
@@ -982,6 +986,9 @@ fn classify_conflicts(
     let mut conflicts = classify_illegal_overload_groups(collected, diagnostic_drafts);
     let mut groups: BTreeMap<ConflictKey, Vec<&CollectedProjection<'_>>> = BTreeMap::new();
     for item in collected {
+        if suppress_dependent_diagnostic_for_recovered_shell(item.recovered) {
+            continue;
+        }
         if item.projection.overload_policy() == SymbolOverloadPolicy::Overloadable {
             continue;
         }
@@ -1017,6 +1024,9 @@ fn classify_illegal_overload_groups(
 ) -> BTreeMap<SymbolId, DeclarationConflictClass> {
     let mut groups: BTreeMap<OverloadKey, Vec<&CollectedProjection<'_>>> = BTreeMap::new();
     for item in collected {
+        if suppress_dependent_diagnostic_for_recovered_shell(item.recovered) {
+            continue;
+        }
         if item.projection.overload_policy() == SymbolOverloadPolicy::IllegalGroup {
             groups.entry(item.overload_key()).or_default().push(item);
         }
@@ -1339,7 +1349,9 @@ fn parser_signature(
 fn lexical_summary_projection(
     item: &CollectedProjection<'_>,
 ) -> Option<(LexicalSummaryKind, String)> {
-    if item.export_status == ExportStatus::LocalOnly {
+    if item.export_status == ExportStatus::LocalOnly
+        || suppress_dependent_diagnostic_for_recovered_shell(item.recovered)
+    {
         return None;
     }
     let kind = item.projection.lexical_summary_kind?;
@@ -2188,6 +2200,183 @@ mod tests {
             result.env().definitions().iter().next().unwrap().conflict(),
             Some(&DeclarationConflictClass::RecoveredShell)
         );
+        assert!(result.env().lexical_summaries().is_empty());
+    }
+
+    #[test]
+    fn recovered_symbols_do_not_cascade_duplicate_or_overload_diagnostics() {
+        let source_id = source_id();
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let duplicate_recovery = builder.add_recovery(
+            SyntaxRecoveryKind::SkippedToken,
+            range(source_id, 1, 2),
+            Vec::new(),
+        );
+        let overload_recovery = builder.add_recovery(
+            SyntaxRecoveryKind::SkippedToken,
+            range(source_id, 21, 22),
+            Vec::new(),
+        );
+        let recovered_predicate = node(
+            &mut builder,
+            SurfaceNodeKind::PredicateDefinition,
+            source_id,
+            0,
+            5,
+            vec![duplicate_recovery],
+        );
+        let clean_predicate = node(
+            &mut builder,
+            SurfaceNodeKind::PredicateDefinition,
+            source_id,
+            10,
+            15,
+            Vec::new(),
+        );
+        let recovered_functor = node(
+            &mut builder,
+            SurfaceNodeKind::FunctorDefinition,
+            source_id,
+            20,
+            25,
+            vec![overload_recovery],
+        );
+        let clean_functor = node(
+            &mut builder,
+            SurfaceNodeKind::FunctorDefinition,
+            source_id,
+            30,
+            35,
+            Vec::new(),
+        );
+        let root = finish_module(
+            &mut builder,
+            source_id,
+            vec![
+                recovered_predicate,
+                clean_predicate,
+                recovered_functor,
+                clean_functor,
+            ],
+        );
+        let ast = builder.finish(Some(root), None);
+        let module = module_id();
+        let shells = DeclarationShellCollector::new(&ast, &module).collect();
+        let namespace = NamespacePath::new("main");
+        let projections = vec![
+            projection(
+                shells.declarations()[0].id(),
+                namespace.clone(),
+                "P",
+                SymbolKind::Predicate,
+                DefinitionKind::Predicate,
+            ),
+            projection(
+                shells.declarations()[1].id(),
+                namespace.clone(),
+                "P",
+                SymbolKind::Predicate,
+                DefinitionKind::Predicate,
+            ),
+            projection(
+                shells.declarations()[2].id(),
+                namespace.clone(),
+                "BadRecovered",
+                SymbolKind::Functor,
+                DefinitionKind::Functor,
+            )
+            .with_notation_spelling("_ bad _")
+            .with_overload_policy(SymbolOverloadPolicy::IllegalGroup),
+            projection(
+                shells.declarations()[3].id(),
+                namespace,
+                "BadClean",
+                SymbolKind::Functor,
+                DefinitionKind::Functor,
+            )
+            .with_notation_spelling("_ bad _")
+            .with_overload_policy(SymbolOverloadPolicy::IllegalGroup),
+        ];
+
+        let result = collect(source_id, &shells, &projections);
+        let conflicts = result
+            .env()
+            .definitions()
+            .iter()
+            .filter_map(|entry| entry.conflict())
+            .collect::<Vec<_>>();
+
+        assert!(result.diagnostics().is_empty());
+        assert_eq!(result.env().overloads().len(), 1);
+        let overload = result.env().overloads().iter().next().unwrap();
+        assert_eq!(overload.candidates().len(), 2);
+        assert!(overload.diagnostics().is_empty());
+        assert_eq!(
+            conflicts,
+            vec![
+                &DeclarationConflictClass::RecoveredShell,
+                &DeclarationConflictClass::RecoveredShell
+            ]
+        );
+        assert!(
+            result
+                .env()
+                .contributions()
+                .iter()
+                .next()
+                .unwrap()
+                .effects()
+                .diagnostics()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn recovered_context_only_shells_do_not_emit_context_diagnostics() {
+        let source_id = source_id();
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let recovery = builder.add_recovery(
+            SyntaxRecoveryKind::SkippedToken,
+            range(source_id, 1, 2),
+            Vec::new(),
+        );
+        let registration_block = node(
+            &mut builder,
+            SurfaceNodeKind::RegistrationBlockItem,
+            source_id,
+            10,
+            20,
+            Vec::new(),
+        );
+        let definition_block = node(
+            &mut builder,
+            SurfaceNodeKind::DefinitionBlockItem,
+            source_id,
+            0,
+            30,
+            vec![recovery, registration_block],
+        );
+        let root = finish_module(&mut builder, source_id, vec![definition_block]);
+        let ast = builder.finish(Some(root), None);
+        let module = module_id();
+        let shells = DeclarationShellCollector::new(&ast, &module).collect();
+        let child = shells
+            .declarations()
+            .iter()
+            .find(|shell| shell.kind() == DeclarationShellKind::RegistrationBlock)
+            .unwrap();
+        let projections = vec![projection(
+            child.id(),
+            NamespacePath::new("main"),
+            "RecoveredContext",
+            SymbolKind::Registration,
+            DefinitionKind::Registration,
+        )];
+
+        let result = collect(source_id, &shells, &projections);
+
+        assert!(result.diagnostics().is_empty());
+        assert!(result.env().symbols().is_empty());
     }
 
     #[test]
@@ -2258,6 +2447,7 @@ mod tests {
             result.env().definitions().iter().next().unwrap().conflict(),
             Some(&DeclarationConflictClass::RecoveredShell)
         );
+        assert!(result.env().lexical_summaries().is_empty());
     }
 
     #[test]
@@ -2468,6 +2658,7 @@ mod tests {
             result.env().definitions().iter().next().unwrap().conflict(),
             Some(&DeclarationConflictClass::RecoveredShell)
         );
+        assert!(result.env().lexical_summaries().is_empty());
     }
 
     #[derive(Debug, Clone)]

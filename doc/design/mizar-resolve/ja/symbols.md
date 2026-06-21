@@ -222,8 +222,9 @@ duplicate detection は name-level かつ kind-family specific である:
   conflict する。
 - same-spelling import は、qualification または aliasing で conflict が解けるかどうかを
   semantic lookup が判断できるまで candidate として visible に残る。
-- recovered declaration は spelling と kind family が表現されていれば conflict diagnostic に
-  参加してよいが、fabricated identity によって後続の valid declaration を抑制してはならない。
+- recovered declaration は spelling と kind family が表現されていれば degraded
+  symbol / definition fact と `RecoveredShell` metadata を保持してよいが、duplicate
+  または illegal-overload diagnostic には参加しない。
 
 overload group は、その family が overloadable で、利用可能な syntax から checker なしで
 互換な resolver-owned grouping key が得られる場合にだけ形成できる:
@@ -269,11 +270,11 @@ in-memory dependency projection を消費してよいが、resolver-local artifa
 定義してはならない。
 
 R-020 は専用の lexical-summary または artifact-summary data shape を追加しない。
-R-021 は extractor が lexer-visible notation token（`UserSymbol` / `LexemeRun`）
-として確認した parser-backed public lexical spelling 用の resolver-local
-`ModuleLexicalSummaryIndex` を追加する。property keyword、algorithm、theorem label、
-structure constructor、selector は R-021 の active lexical summary を seed しない。
-artifact-backed `ModuleSummary` reuse は R-024 に残る。
+R-021 は resolver-local `ModuleLexicalSummaryIndex` を追加する。parser-backed extractor
+が lexer-visible notation token（`UserSymbol` / `LexemeRun`）を eligible として marker し、
+collection は export-visible かつ non-recovered な projection だけを seed する。property
+keyword、algorithm、theorem label、structure constructor、selector は R-021 の active
+lexical summary を seed しない。artifact-backed `ModuleSummary` reuse は R-024 に残る。
 
 ## Dependency Edge と Relation
 
@@ -297,12 +298,12 @@ encode してはならない。
 
 recovered または malformed declaration syntax は、周辺 source shape が表現されている限り保持する:
 
-- usable spelling を持つ recovered declaration は recovered signature shell を受け取り、
-  duplicate diagnostic に参加してよい。
+- usable spelling を持つ recovered declaration は recovered signature shell と
+  `RecoveredShell` conflict metadata を受け取ってよい。
 - identity data が不足する recovered declaration は shell-only unresolved declaration fact に残る。
 - malformed relation target は link を創作せず、unresolved または ambiguous target payload を記録する。
-- recovered region 由来の diagnostic は、その source declaration 自体が root failure の場合のみ
-  primary になり、それ以外は dependent cascade record に留まる。
+- duplicate / illegal-overload diagnostics は recovered declaration を無視し、
+  parser recovery が semantic conflict report へ連鎖しないようにする。
 
 diagnostic record は R-G001 が未解決の間 crate-local/internal に留める。source range、
 declaration origin、conflict candidate、relation target、recovery state は保持するが、

@@ -191,6 +191,9 @@ Source range と `SurfaceNodeId` は diagnostics と editor navigation の prove
 recovered または malformed label syntax は、周辺の source shape がまだ表現されている場合、
 unresolved または recovered label record として保持する。resolver は recovered proof /
 declaration subtree で panic してはならない。
+recovered label projection は degraded label-index fact として保持するが、
+label-reference candidate set と duplicate / conflicting-label diagnostics から除外し、
+parser recovery が semantic ambiguity や conflict report へ連鎖しないようにする。
 
 diagnostic record は R-G001 が未解決の間 crate-local/internal に保つ。label diagnostic は
 次を保持しなければならない。

@@ -236,9 +236,9 @@ Duplicate detection is name-level and kind-family specific:
   the language would not allow both declarations to coexist;
 - same-spelling imports remain visible as candidates until semantic lookup can
   determine whether qualification or aliasing resolves the conflict;
-- recovered declarations may participate in conflict diagnostics when the
-  spelling and kind family are represented, but they must not suppress later
-  valid declarations by fabricated identity.
+- recovered declarations may retain degraded symbol/definition facts and
+  `RecoveredShell` metadata when the spelling and kind family are represented,
+  but they do not participate in duplicate or illegal-overload diagnostics.
 
 An overload group may be formed only when the family is overloadable and the
 available syntax provides a compatible resolver-owned grouping key:
@@ -288,11 +288,12 @@ Until then, symbols may consume source-backed or in-memory dependency
 projections, but must not define a resolver-local artifact schema.
 
 R-020 does not add a dedicated lexical-summary or artifact-summary data shape.
-R-021 adds the resolver-local `ModuleLexicalSummaryIndex` for parser-backed
-public lexical spellings confirmed by the extractor as lexer-visible notation
-tokens (`UserSymbol` / `LexemeRun`). Property keywords, algorithms, theorem
-labels, structure constructors, and selectors do not seed active lexical
-summaries in R-021. Artifact-backed `ModuleSummary` reuse remains R-024 work.
+R-021 adds the resolver-local `ModuleLexicalSummaryIndex`; the parser-backed
+extractor marks lexer-visible notation tokens (`UserSymbol` / `LexemeRun`) as
+eligible, and collection seeds only export-visible, non-recovered projections.
+Property keywords, algorithms, theorem labels, structure constructors, and
+selectors do not seed active lexical summaries in R-021. Artifact-backed
+`ModuleSummary` reuse remains R-024 work.
 
 ## Dependency Edges And Relations
 
@@ -318,14 +319,13 @@ Recovered or malformed declaration syntax is retained when the surrounding
 source shape is represented:
 
 - a recovered declaration with a usable spelling may receive a recovered
-  signature shell and participate in duplicate diagnostics;
+  signature shell and `RecoveredShell` conflict metadata;
 - a recovered declaration without enough identity data remains a shell-only
   unresolved declaration fact;
 - malformed relation targets record unresolved or ambiguous target payloads
   instead of fabricating links;
-- diagnostics from recovered regions are primary only when the source
-  declaration itself is the root failure; otherwise they remain dependent
-  cascade records.
+- duplicate and illegal-overload diagnostics ignore recovered declarations so
+  parser recovery does not cascade into semantic conflict reports.
 
 Diagnostic records remain crate-local/internal while R-G001 is open. They
 preserve source ranges, declaration origins, conflict candidates, relation

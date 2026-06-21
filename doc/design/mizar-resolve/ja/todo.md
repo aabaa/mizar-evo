@@ -25,6 +25,7 @@
 | names | `names.md`（task 12） | `src/names.rs` | [~] |
 | labels | `labels.md`（task 17） | `src/labels.rs` | [x] |
 | symbols | `symbols.md`（task 19） | `src/symbols.rs` | [~] |
+| recovered 構文ポリシー | `recovery.md`（task 22） | `src/recovery.rs` helper と stage 別 call site | [x] |
 
 `mizar-resolve` はパイプライン phase 4-5 を実装する。入力は `SurfaceAst`、
 出力は `ResolvedAst` と `SymbolEnv` である。名前空間、import、export、
@@ -362,13 +363,17 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 
 ### 強化と横断フォローアップ
 
-22. **recovered 構文ポリシー。** [ ]
+22. **recovered 構文ポリシー。** [x]
     - resolver の各段が recovered な `SurfaceAst` 部分木をどう扱うか
       （スキップ、シェルのみ、診断）を定義・実装する。`mizar-syntax` の
       `recovered` フラグ契約を維持する。
     - テスト: recovered 入力で解決が panic しない。recovered 領域から診断が
       連鎖しない。
     - 依存: 13。仕様: [mizar-syntax recovery.md](../../mizar-syntax/ja/recovery.md)。
+    - R-022 で完了: [recovery.md](./recovery.md) を追加し、resolver-local な
+      recovered-subtree 検出を集約した。name / label / symbol diagnostics は、
+      degraded table/env fact を保持しつつ、recovered origin または shell からの
+      dependent semantic diagnostics を抑制する。
 
 23. **stage `declaration_symbol` のコーパスランナー。** [ ]
     - `tests/miz/{pass,fail}/` のケースを stage `declaration_symbol` で

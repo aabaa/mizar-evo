@@ -294,7 +294,9 @@ nodes link to the root unresolved key and should not emit cascaded primary
 diagnostics unless they add a distinct cause. When a namespace failure is caused
 by an unresolved import alias, the import dependency root is the primary record;
 dependent namespace records and failed-namespace `NameRefTable` entries link to
-that root as cascade records.
+that root as cascade records. Recovered namespace records and recovered
+reference origins are retained in resolver tables but omitted from internal
+name diagnostic roots and cascades.
 
 ## Dot-Chain Finalization
 

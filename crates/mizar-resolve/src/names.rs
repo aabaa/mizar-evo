@@ -15,6 +15,7 @@ use crate::imports::{ImportPathFailureClass, ResolvedImportCandidate, Unresolved
 use crate::module_index::{
     IndexedModuleId, ModuleIndexInput, ModuleIndexProviderError, NamespaceIndexEntry, NamespaceRoot,
 };
+use crate::recovery::suppress_dependent_diagnostic_for_recovered_origin;
 use crate::resolved_ast::{
     AmbiguousNameRef, BuiltinId, BuiltinRef, DeferredSelectorRef, ModuleId, NameLookupClass,
     NameRefEntry, NameRefId, NameRefTable, NameResolution, NameResolutionCandidate, ReferenceSite,
@@ -1629,11 +1630,12 @@ impl<'a> DotChainFinalizer<'a> {
         namespaces: &mut DotChainNamespaceSink,
     ) -> NameRefId {
         let resolution = self.resolve_chain(context, chain, namespaces);
-        table.insert(NameRefEntry::new(
-            chain.site().clone(),
-            resolution,
-            chain.origin().clone(),
-        ))
+        let origin = if chain.recovered() {
+            chain.origin().clone().recovered()
+        } else {
+            chain.origin().clone()
+        };
+        table.insert(NameRefEntry::new(chain.site().clone(), resolution, origin))
     }
 
     fn resolve_chain(
@@ -2359,6 +2361,9 @@ fn collect_name_diagnostics(
     let mut ordered_namespace_roots = namespace_roots.iter().collect::<Vec<_>>();
     ordered_namespace_roots.sort_by(|left, right| unresolved_namespace_path_cmp(left, right));
     for namespace in ordered_namespace_roots {
+        if namespace.recovered() {
+            continue;
+        }
         collect_namespace_diagnostic_root(
             namespace,
             &mut roots,
@@ -2368,6 +2373,9 @@ fn collect_name_diagnostics(
     }
 
     for (name_ref, entry) in name_refs.iter() {
+        if suppress_dependent_diagnostic_for_recovered_origin(entry.origin()) {
+            continue;
+        }
         match entry.resolution() {
             NameResolution::Ambiguous(ambiguous) => {
                 let key = ambiguous_name_root_key(name_ref, ambiguous);
@@ -4424,6 +4432,64 @@ mod tests {
         assert_eq!(cascades.len(), 1);
         assert_eq!(cascades[0].root_range(), range(source_id, 20, 36));
         assert_eq!(cascades[0].range(), range(source_id, 29, 36));
+    }
+
+    #[test]
+    fn recovered_inputs_do_not_emit_name_diagnostic_roots() {
+        let source_id = source_id();
+        let provider = fixture_provider();
+        let current = module_id("app", "main");
+        let namespace = NamespacePath::new("main");
+        let recovered_reference = recovered_name_candidate(source_id, current.clone(), 0, 10, "R");
+
+        let resolved_names =
+            SymbolNameResolver::new(&[], &[]).resolve(&current, &namespace, &[recovered_reference]);
+
+        assert!(resolved_names.has_unresolved());
+        let name_report = NameDiagnosticCollector::new().collect_resolution(&resolved_names);
+        assert!(name_report.is_empty());
+
+        let recovered_namespace = candidate(source_id, 1, 20, &["RecoveredNs"]).with_recovered();
+        let namespace_resolution = NamespaceResolver::new(ModuleIndexInput::new(&provider))
+            .resolve(&current, &[], &[], &[recovered_namespace]);
+
+        assert_eq!(namespace_resolution.unresolved().len(), 1);
+        assert_eq!(
+            namespace_resolution.unresolved()[0].class(),
+            NamespaceFailureClass::RecoveredSyntax
+        );
+        let namespace_report = NameDiagnosticCollector::new()
+            .with_namespace_roots(namespace_resolution.unresolved())
+            .collect(&NameRefTable::new());
+        assert!(namespace_report.is_empty());
+
+        let recovered_chain = dot_chain_candidate(
+            source_id,
+            current.clone(),
+            2,
+            40,
+            &["x", "field"],
+            LocalTermScope::new(vec![1]),
+        )
+        .with_recovered();
+        let dot_resolution = DotChainFinalizer::new(
+            NamespaceResolver::new(ModuleIndexInput::new(&provider)),
+            SymbolNameResolver::new(&[], &[]),
+            &[],
+        )
+        .finalize(&current, &namespace, &[], &[], &[recovered_chain]);
+        let entry = dot_resolution.table().get(dot_resolution.ids()[0]).unwrap();
+
+        assert!(entry.origin().is_recovered());
+        assert!(matches!(
+            entry.resolution(),
+            NameResolution::Unresolved(unresolved)
+                if unresolved.lookup() == NameLookupClass::Selector
+        ));
+        let dot_report = NameDiagnosticCollector::new()
+            .with_namespace_roots(dot_resolution.namespaces().unresolved())
+            .collect(dot_resolution.table());
+        assert!(dot_report.is_empty());
     }
 
     #[test]

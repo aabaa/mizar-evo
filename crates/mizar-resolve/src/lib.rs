@@ -6,7 +6,9 @@
 //! declaration-shell collection, namespace lookup, preliminary symbol-name
 //! lookup, crate-local/internal name diagnostics, dot-chain finalization, and
 //! executable label resolution plus declaration-symbol collection and
-//! parser-backed per-kind signature projection.
+//! parser-backed per-kind signature projection. Recovered syntax is consumed
+//! according to the resolver-local policy without changing parser recovery
+//! ownership.
 
 /// Source-shaped declaration shell collection.
 pub mod declarations;
@@ -29,6 +31,8 @@ pub mod names;
 
 /// Resolved AST data shapes and reference tables.
 pub mod resolved_ast;
+
+mod recovery;
 
 /// Symbol/signature projection and collection.
 pub mod symbols;
