@@ -24,7 +24,7 @@
 | declarations | `declarations.md`（task 11） | `src/declarations.rs` | [x] |
 | names | `names.md`（task 12） | `src/names.rs` | [~] |
 | labels | `labels.md`（task 17） | `src/labels.rs` | [x] |
-| symbols | `symbols.md`（task 19） | `src/symbols.rs` | [ ] |
+| symbols | `symbols.md`（task 19） | `src/symbols.rs` | [~] |
 
 `mizar-resolve` はパイプライン phase 4-5 を実装する。入力は `SurfaceAst`、
 出力は `ResolvedAst` と `SymbolEnv` である。名前空間、import、export、
@@ -316,13 +316,18 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 
 ### シグネチャ収集
 
-19. **仕様: `symbols.md`。** [ ]
+19. **仕様: `symbols.md`。** [x]
     - シグネチャ収集の仕様を執筆する（英語と日本語、コードなし）: 宣言パス
       契約（型検査なし）、種別ごとのシグネチャ形状、重複・不正宣言の
       ポリシー、整形や無関係な局所編集で安定する正規化された semantic
       origin。
     - 依存: 3。仕様: アーキテクチャ 03「Step 5」、
       [11.symbol_management.md](../../../spec/ja/11.symbol_management.md)。
+    - R-019 で完了: `symbols.md` は resolver-owned な signature collection
+      契約、stable symbol origin、symbol-bearing shell の分類、algorithm を含む
+      kind ごとの opaque / structural payload、duplicate/conflict と overload
+      policy、exported summary と lexical-summary projection、recovery、
+      relation/dependency edge、R-020/R-021/R-023 への test handoff を仕様化した。
 
 20. **収集骨格と重複検出。** [ ]
     - 宣言シェルから `SymbolEnv` を構築する: 種別ごとの名前登録、重複・
@@ -333,8 +338,9 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 
 21. **種別ごとのシグネチャ抽出。** [ ] — `mizar-parser` task 23-31 が律速。
     - 具体的なシグネチャ（struct、mode、attribute、predicate、functor、
-      theorem、registration、template）を増分で抽出する: 各増分は、その
-      宣言種別を生成するパーサー文法タスクの後に、独立した変更として
+      algorithm、theorem、registration、template、および synonym / antonym /
+      redefinition などの relation declaration）を増分で抽出する: 各増分は、
+      その宣言種別を生成するパーサー文法タスクの後に、独立した変更として
       着地させる。最後の対の増分が着地した時点でチェックを付ける。
     - 増分ごとのテスト: その種別のシグネチャ形状フィクスチャと
       `SymbolEnv` 参照。

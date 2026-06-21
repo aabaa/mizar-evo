@@ -25,7 +25,7 @@ Autonomous crate development preparation is tracked in
 | declarations | `declarations.md` (task 11) | `src/declarations.rs` | [x] |
 | names | `names.md` (task 12) | `src/names.rs` | [~] |
 | labels | `labels.md` (task 17) | `src/labels.rs` | [x] |
-| symbols | `symbols.md` (task 19) | `src/symbols.rs` | [ ] |
+| symbols | `symbols.md` (task 19) | `src/symbols.rs` | [~] |
 
 `mizar-resolve` implements pipeline phases 4-5: `SurfaceAst` in, `ResolvedAst`
 plus `SymbolEnv` out. It is the first semantic owner — namespaces, imports,
@@ -335,13 +335,19 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 
 ### Signature collection
 
-19. **Spec: `symbols.md`.** [ ]
+19. **Spec: `symbols.md`.** [x]
     - Write the signature-collection spec (English and Japanese, no code):
       declaration-pass contract (no type checking), per-kind signature
       shapes, duplicate/illegal-declaration policy, and normalized semantic
       origins that remain stable under formatting and unrelated local edits.
     - Deps: 3. Spec: architecture 03 "Step 5",
       [11.symbol_management.md](../../../spec/en/11.symbol_management.md).
+    - Completed by R-019: `symbols.md` specifies the resolver-owned
+      signature-collection contract, stable symbol origins, symbol-bearing
+      shell classification, per-kind opaque / structural payloads including
+      algorithms, duplicate/conflict and overload policy, exported summary and
+      lexical-summary projections, recovery, relation/dependency edges, and the
+      R-020/R-021/R-023 test handoff.
 
 20. **Collection skeleton and duplicate detection.** [ ]
     - Populate `SymbolEnv` from declaration shells: registration of names per
@@ -353,10 +359,11 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 
 21. **Per-kind signature extraction.** [ ] — paced by `mizar-parser` tasks 23-31.
     - Extract concrete signatures (structs, modes, attributes, predicates,
-      functors, theorems, registrations, templates) incrementally: each
-      increment lands after the parser grammar task that produces the
-      declaration kind, in its own change. Checked off when the last paired
-      increment lands.
+      functors, algorithms, theorems, registrations, templates, and relation
+      declarations such as synonyms, antonyms, and redefinitions)
+      incrementally: each increment lands after the parser grammar task that
+      produces the declaration kind, in its own change. Checked off when the
+      last paired increment lands.
     - Tests per increment: signature shape fixtures and `SymbolEnv` lookups
       for that kind.
     - Deps: 20; pairs with `mizar-parser` tasks 23-31. Spec: `symbols.md`.
