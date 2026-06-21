@@ -3,18 +3,22 @@
 > Canonical language: English. Japanese companion:
 > [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md).
 
-Status: task R-027 audit complete.
+Status: task R-027 audit complete; task R-029 refactor scope re-run complete.
 
 ## Scope
 
-This audit checks the completed non-deferred `mizar-resolve` tasks through
-R-026 against the English canonical resolver design specs:
+The original R-027 audit checked the completed non-deferred `mizar-resolve`
+tasks through R-026 against the English canonical resolver design specs:
 [resolved_ast.md](./resolved_ast.md), [env.md](./env.md),
 [imports.md](./imports.md), [declarations.md](./declarations.md),
 [names.md](./names.md), [labels.md](./labels.md),
 [symbols.md](./symbols.md), [recovery.md](./recovery.md), this crate plan, and
 [todo.md](./todo.md). It traces public API families and implementation-facing
 behavior promises to source and tests.
+
+The R-029 re-run covers the same public API and behavior promises after the
+behavior-preserving private helper/test split. It updates moved source paths and
+task correspondence through R-029 without expanding resolver behavior.
 
 Task R-024 is explicitly deferred as `external_dependency_gap`; it is audited
 only for its deferral record and for the absence of a resolver-owned artifact
@@ -25,7 +29,8 @@ implementation behavior.
 ## Result
 
 - No missing implementation was found for non-deferred public APIs and behavior
-  contracts promised by the resolver module specs through R-026.
+  contracts promised by the resolver module specs. R-029 moved private helpers
+  and tests only; the moved-source re-run found no new mismatch through R-029.
 - No resolver behavior was found that requires a new `doc/spec` change or a
   rebaseline of existing `.miz` tests/expectations.
 - Source behavior that remains outside the current executable corpus is already
@@ -42,23 +47,26 @@ implementation behavior.
 - The Japanese companion carries the same API families, source paths, behavior
   boundaries, and follow-up classifications. Broader wording/terminology/link
   synchronization is handled by task R-028.
+- R-029 moved only private helper/test modules. Public API paths and behavior
+  promises are unchanged; the affected source rows below now include the
+  private helper paths introduced by the refactor gate.
 
 ## Public API Correspondence
 
 | Spec | Public API checked | Source | Test evidence | Finding |
 |---|---|---|---|---|
-| [resolved_ast.md](./resolved_ast.md) stable identity and node arena | `ModuleId`, `LocalSymbolId`, `FullyQualifiedName`, `SymbolId`, `BuiltinId`, `LabelOriginPath`, resolver id wrappers, `SemanticOrigin`, `ResolvedNode`, `ResolvedArena`, `ResolvedArenaBuilder`, `ResolvedAst`, and validation error surfaces | `crates/mizar-resolve/src/resolved_ast.rs` | `module_and_symbol_ids_are_deterministic_and_alias_independent`, `arena_allocates_deterministic_ids_and_validates_children`, `arena_rejects_cycles`, `resolved_ast_validates_node_keys_and_preserves_traversal_states`, `resolved_ast_rejects_stale_keys_and_mismatched_modules` | No finding |
-| [resolved_ast.md](./resolved_ast.md) name/label/import/export reference tables | `NameRefTable`, `LabelRefTable`, `ResolvedImports`, name/label/import/export resolution records, ambiguity/unresolved records, deferred selector records | `crates/mizar-resolve/src/resolved_ast.rs` | `name_ref_table_round_trips_all_current_result_kinds`, `ambiguous_name_candidates_tie_break_by_range_before_local_symbol_id`, `label_ref_table_round_trips_all_current_result_kinds`, `resolved_imports_round_trip_and_project_canonical_modules`, `table_and_import_export_iteration_is_stable`, `node_reference_keys_are_stable_for_equivalent_builds` | No finding |
-| [resolved_ast.md](./resolved_ast.md) deterministic debug rendering | `ResolvedAst::snapshot_text` and stable variant-name rendering for resolver snapshot baselines | `crates/mizar-resolve/src/resolved_ast.rs`, crate-root determinism test | `resolved_ast_snapshot_text_is_stable_and_covers_tables`, `resolved_ast_snapshot_text_covers_payload_escaping_and_non_range_anchors`, `resolver_public_seams_are_deterministic_for_equivalent_inputs` | No finding |
+| [resolved_ast.md](./resolved_ast.md) stable identity and node arena | `ModuleId`, `LocalSymbolId`, `FullyQualifiedName`, `SymbolId`, `BuiltinId`, `LabelOriginPath`, resolver id wrappers, `SemanticOrigin`, `ResolvedNode`, `ResolvedArena`, `ResolvedArenaBuilder`, `ResolvedAst`, and validation error surfaces | `crates/mizar-resolve/src/resolved_ast.rs`, `crates/mizar-resolve/src/resolved_ast/validation.rs` | `module_and_symbol_ids_are_deterministic_and_alias_independent`, `arena_allocates_deterministic_ids_and_validates_children`, `arena_rejects_cycles`, `resolved_ast_validates_node_keys_and_preserves_traversal_states`, `resolved_ast_rejects_stale_keys_and_mismatched_modules` | No finding |
+| [resolved_ast.md](./resolved_ast.md) name/label/import/export reference tables | `NameRefTable`, `LabelRefTable`, `ResolvedImports`, name/label/import/export resolution records, ambiguity/unresolved records, deferred selector records | `crates/mizar-resolve/src/resolved_ast.rs`, `crates/mizar-resolve/src/resolved_ast/validation.rs` | `name_ref_table_round_trips_all_current_result_kinds`, `ambiguous_name_candidates_tie_break_by_range_before_local_symbol_id`, `label_ref_table_round_trips_all_current_result_kinds`, `resolved_imports_round_trip_and_project_canonical_modules`, `table_and_import_export_iteration_is_stable`, `node_reference_keys_are_stable_for_equivalent_builds` | No finding |
+| [resolved_ast.md](./resolved_ast.md) deterministic debug rendering | `ResolvedAst::snapshot_text` and stable variant-name rendering for resolver snapshot baselines | `crates/mizar-resolve/src/resolved_ast.rs`, `crates/mizar-resolve/src/resolved_ast/snapshot.rs`, crate-root determinism test | `resolved_ast_snapshot_text_is_stable_and_covers_tables`, `resolved_ast_snapshot_text_covers_payload_escaping_and_non_range_anchors`, `resolver_public_seams_are_deterministic_for_equivalent_inputs` | No finding |
 | [env.md](./env.md) symbol environment indexes | `SymbolEnv`, `SymbolEnvIndexes`, symbol, label, definition, overload, registration, lexical-summary, namespace, declaration-dependency, module-summary, diagnostic-anchor, and source-contribution index families | `crates/mizar-resolve/src/env.rs` | `index_families_round_trip_insertions_and_lookups`, `index_iteration_is_deterministic_for_all_families`, `contribution_tracking_covers_sources_summaries_builtins_and_invalidation`, `equivalent_construction_is_stable_and_checker_facts_are_absent` | No finding |
-| [env.md](./env.md) deterministic environment debug rendering | `SymbolEnv::snapshot_text` and sorted index/contribution sections | `crates/mizar-resolve/src/env.rs`, crate-root determinism test | `symbol_env_snapshot_text_is_stable_and_covers_index_families`, `resolver_public_seams_are_deterministic_for_equivalent_inputs` | No finding |
+| [env.md](./env.md) deterministic environment debug rendering | `SymbolEnv::snapshot_text` and sorted index/contribution sections | `crates/mizar-resolve/src/env.rs`, `crates/mizar-resolve/src/env/snapshot.rs`, crate-root determinism test | `symbol_env_snapshot_text_is_stable_and_covers_index_families`, `resolver_public_seams_are_deterministic_for_equivalent_inputs` | No finding |
 | crate plan / R-007 module-index seam | `ModuleIndexInput`, `resolver_module_id`, `WorkspaceStubModuleIndexProvider`, and re-exported build-side provider/index types | `crates/mizar-resolve/src/module_index.rs`; build-side contract in `doc/design/mizar-build/en/module_index.md` | `stub_provider_feeds_multi_module_fixture`, `forwarded_packages_preserve_provider_order_and_namespaces_are_canonical`, `module_identity_is_alias_independent`, `provider_errors_are_deterministic` | No finding |
 | [imports.md](./imports.md) import path and alias resolution | `ImportPathCandidate`, `ResolvedImportCandidate`, `UnresolvedImportCandidate`, `ImportPathResolution`, `ImportPathResolver`, `ModuleImportCandidates`, `ImportEdgeCandidate`, `ImportPathPrefix`, `ImportPathFailureClass` | `crates/mizar-resolve/src/imports.rs` | `aliases_do_not_change_canonical_targets_or_graph_candidates`, `relative_prefixes_use_dot_separated_module_directories`, `namespace_bindings_win_over_package_local_fallback`, `duplicate_aliases_and_reserved_aliases_are_unresolved_deterministically`, `unknown_modules_are_rejected_before_graph_publication`, `unresolved_imports_do_not_abort_later_candidates` | No finding |
 | [imports.md](./imports.md) semantic import graph and cycle rejection | `ImportGraphBuilder`, `ImportGraphResolution`, `ImportGraph`, `ImportGraphEdge`, `ImportCycle`, `ImportGraphBuildError` | `crates/mizar-resolve/src/imports.rs` | `acyclic_fixture_builds_expected_graph_and_dependency_first_order`, `cycle_fixture_is_rejected_deterministically`, `self_cycle_is_rejected_deterministically`, `independent_acyclic_components_use_canonical_ready_ties`, `independent_cycles_sort_by_source_provenance` | No finding |
 | [declarations.md](./declarations.md) declaration shells and export projections | `DeclarationShellSet`, `DeclarationShell`, `DeclarationShellKind`, `DeclarationShellVisibility`, `ExportPathShell`, `ExportProjectionShell`, `DeclarationShellCollector` | `crates/mizar-resolve/src/declarations.rs` | `collector_records_represented_declaration_kinds_in_source_order`, `annotation_wrappers_are_transparent_for_shell_collection`, `excluded_context_body_statement_and_recovery_nodes_do_not_create_shells`, `malformed_export_projection_is_retained_without_target_validation` | No finding |
 | [declarations.md](./declarations.md), [recovery.md](./recovery.md) recovered declaration policy | recovered-shell markers, transparent wrapper recovery, and shell-only retention without symbol fabrication | `crates/mizar-resolve/src/declarations.rs`, `crates/mizar-resolve/src/recovery.rs` | `recovered_subtrees_are_retained_and_marked_recovered` | No finding |
 | [names.md](./names.md) namespace resolution | namespace path candidates/results, partial candidates, import dependencies, namespace roots, candidate targets, and `NamespaceResolver` | `crates/mizar-resolve/src/names.rs` | `resolver_resolves_alias_roots_and_package_names_deterministically`, `longest_namespace_bindings_win_over_shorter_prefixes`, `qualified_lookup_restricts_namespace_and_visibility`, `missing_namespace_records_the_earliest_failing_segment_range`, `malformed_namespace_paths_are_unresolved_in_deterministic_order`, `stale_namespace_bindings_are_provider_errors`, `stale_empty_prefix_reserved_root_bindings_report_the_root_segment` | No finding |
-| [names.md](./names.md) preliminary symbol-name resolution and internal diagnostics | name projections, built-in projections, reference candidates, `SymbolNameResolver`, `NameDiagnosticCollector`, `NameDiagnosticReport`, diagnostic roots/cascades | `crates/mizar-resolve/src/names.rs` | `unqualified_lookup_uses_declaration_point_shadowing_and_builtins`, `duplicate_import_aliases_drive_ambiguous_namespace_payloads_deterministically`, `unresolved_import_dependency_produces_one_primary_name_diagnostic`, `name_diagnostics_preserve_ambiguous_candidate_order`, `name_diagnostics_order_same_range_by_class_spelling_and_candidate_key`, `name_diagnostics_use_mixed_root_ordering`, `recovered_inputs_do_not_emit_name_diagnostic_roots` | No finding |
+| [names.md](./names.md) preliminary symbol-name resolution and internal diagnostics | name projections, built-in projections, reference candidates, `SymbolNameResolver`, `NameDiagnosticCollector`, `NameDiagnosticReport`, diagnostic roots/cascades | `crates/mizar-resolve/src/names.rs`, `crates/mizar-resolve/src/names/diagnostics.rs` | `unqualified_lookup_uses_declaration_point_shadowing_and_builtins`, `duplicate_import_aliases_drive_ambiguous_namespace_payloads_deterministically`, `unresolved_import_dependency_produces_one_primary_name_diagnostic`, `name_diagnostics_preserve_ambiguous_candidate_order`, `name_diagnostics_order_same_range_by_class_spelling_and_candidate_key`, `name_diagnostics_use_mixed_root_ordering`, `recovered_inputs_do_not_emit_name_diagnostic_roots` | No finding |
 | [names.md](./names.md) dot-chain finalization | local term scopes/bindings, dot-chain candidates, `DotChainFinalizer`, namespace-vs-selector handoff, `DeferredSelector` results | `crates/mizar-resolve/src/names.rs`, `crates/mizar-resolve/src/resolved_ast.rs` | `dot_chain_uses_innermost_visible_local_binding`, `dot_chain_local_binding_defers_selector_without_namespace_lookup`, `dot_chain_without_visible_local_resolves_namespace_symbol`, `dot_chain_unresolved_namespace_uses_earliest_failed_segment`, `dot_chain_malformed_or_recovered_inputs_stay_unresolved`, `dot_chain_finalizer_orders_out_of_order_inputs` | No finding |
 | [labels.md](./labels.md) label projection and citation resolution | label scopes, projections, reference candidates, diagnostics, result tables, `LabelResolver` | `crates/mizar-resolve/src/labels.rs`, `crates/mizar-resolve/src/resolved_ast.rs`, `crates/mizar-resolve/src/env.rs` | `unqualified_citation_respects_proof_block_visibility_and_confinement`, `duplicate_and_visible_nested_labels_are_internal_diagnostics`, `forward_references_to_later_theorem_labels_are_unresolved`, `forward_references_to_later_proof_step_labels_are_unresolved`, `qualified_and_lowered_grouped_item_citations_use_module_label_projections`, `ambiguous_cross_family_citations_keep_sorted_candidates`, `label_index_and_reference_table_order_are_deterministic`, `imported_local_only_labels_are_not_visible_to_citations` | No finding |
 | [labels.md](./labels.md), [recovery.md](./recovery.md) recovered label policy | recovered/failed namespace references remain unresolved and recovered label projections do not emit conflict diagnostics | `crates/mizar-resolve/src/labels.rs`, `crates/mizar-resolve/src/recovery.rs` | `recovered_empty_and_failed_namespace_references_are_unresolved`, `recovered_label_projections_do_not_emit_conflict_diagnostics` | No finding |
@@ -94,6 +102,8 @@ implementation behavior.
 | R-025 determinism suite | `src/lib.rs` contains the public-seam determinism regression over import graphs, name diagnostics, `ResolvedAst` snapshots, and `SymbolEnv` snapshots, complementing module-local determinism tests. |
 | R-026 public enum policy | Module specs list every resolver-owned public enum decision; source attributes mark all listed enums `#[non_exhaustive]`; `tests/lint_policy.rs` guards source/spec drift for the spec-owned modules. |
 | R-027 source/spec audit | This document records the correspondence. The audit found no unclassified blocking/high `spec_gap`, `test_gap`, `source_drift`, `source_undocumented_behavior`, `test_expectation_drift`, `boundary_violation`, or `repo_metadata_conflict`. |
+| R-028 bilingual documentation sync audit | Bilingual design sync is recorded in `bilingual_documentation_synchronization.md`; no public source behavior changed. |
+| R-029 module-boundary refactor gate | Private helper/test modules were split as recorded in `module_boundary_refactor.md`; this source/spec scope was re-run for moved APIs and found no public API, behavior, diagnostic, rendering, artifact, or boundary drift. |
 
 ## Follow-up Records
 

@@ -488,7 +488,7 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       statements, terminology, or resolver task handoff wording. No `doc/spec`,
       `.miz`, expectation, or source files changed.
 
-29. **Module-boundary refactor gate.** [ ]
+29. **Module-boundary refactor gate.** [x]
     - Before treating the crate as ready for downstream consumers, audit the
       source layout for oversized files, mixed responsibilities, and private
       helpers that should be split along the module table and spec boundaries.
@@ -502,6 +502,15 @@ Keep `cargo test -p mizar-resolve` green after each task (see
     - Deps: 28. Spec: this TODO,
       [internal 07](../../internal/en/07.crate_module_layout.md), all module
       specs.
+    - Completed by R-029: [module_boundary_refactor.md](./module_boundary_refactor.md)
+      records the source-layout audit and behavior-preserving split. Public
+      module paths and APIs stayed unchanged; inline unit tests moved to
+      per-module private `tests.rs` files; deterministic snapshot helpers moved
+      to `env/snapshot.rs` and `resolved_ast/snapshot.rs`; resolved-AST
+      validation moved to `resolved_ast/validation.rs`; and crate-local name
+      diagnostic assembly moved to `names/diagnostics.rs`. Source/spec and
+      bilingual documentation audit scopes were re-run for the moved APIs with
+      no new drift.
 
 ## Recommended Verification
 

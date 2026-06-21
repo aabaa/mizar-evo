@@ -462,7 +462,7 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       wording に残る不一致は見つからなかった。`doc/spec`、`.miz`、expectation、
       source file は変更していない。
 
-29. **module 境界リファクタリング gate。** [ ]
+29. **module 境界リファクタリング gate。** [x]
     - crate を下流 consumer 向けに完了扱いにする前に、source layout を監査し、
       oversized file、混在した責務、module table と module spec 境界に沿って
       分割すべき private helper を洗い出す。review bottleneck になった実装
@@ -474,6 +474,14 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       spec task を要求する。
     - 依存: 28。仕様: 本 TODO、
       [internal 07](../../internal/ja/07.crate_module_layout.md)、全モジュール仕様。
+    - R-029 で完了: [module_boundary_refactor.md](./module_boundary_refactor.md)
+      に source-layout audit と behavior-preserving split を記録した。public module path と
+      API は変更せず、inline unit test は module ごとの private `tests.rs` file へ移した。
+      deterministic snapshot helper は `env/snapshot.rs` と
+      `resolved_ast/snapshot.rs` へ、resolved-AST validation は
+      `resolved_ast/validation.rs` へ、crate-local name diagnostic assembly は
+      `names/diagnostics.rs` へ移した。移動した API について source/spec と二言語
+      ドキュメント監査 scope を再実行し、新しい drift は見つからなかった。
 
 ## 推奨検証
 
