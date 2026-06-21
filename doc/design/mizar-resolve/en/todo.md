@@ -397,12 +397,27 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       symbol diagnostics suppress dependent semantic diagnostics from recovered
       origins or shells while retaining degraded table/env facts.
 
-23. **Corpus runner at stage `declaration_symbol`.** [ ]
+23. **Corpus runner at stage `declaration_symbol`.** [x]
     - Wire `tests/miz/{pass,fail}/` cases at stage `declaration_symbol`
-      through the harness, with `spec_trace.toml` coverage entries; seed pass
-      and fail cases for tasks 9-20; grow toward the 40/60 pass/fail mix.
+      through the harness, with `spec_trace.toml` coverage entries; seed an
+      initial spec-derived pass/fail set for the declaration-symbol path and
+      record broader semantic corpus growth toward the 40/60 pass/fail mix as
+      explicit follow-up coverage.
     - Deps: 20. Spec: [staged_model.md](../../mizar-test/en/staged_model.md),
       [traceability.md](../../mizar-test/en/traceability.md).
+    - Completed by R-023: `mizar-test declaration-symbol` now discovers
+      active `.miz` expectations tagged `active_declaration_symbol` at
+      `stage = "declaration_symbol"` / `expected_phase = "resolve"`, runs the
+      frontend plus resolver declaration-shell, signature-projection, and
+      symbol-collection path, and compares fail cases against crate-local
+      internal detail keys in `diagnostic_payloads` / `stable_detail_key`
+      without inventing public resolver diagnostic codes. Seed corpus coverage
+      includes one pass smoke fixture for parser-backed declarations,
+      visibility, and theorem/lemma symbols, plus one duplicate-theorem fail
+      fixture derived from same-scope label uniqueness, with `spec_trace.toml`
+      requirements. Broader semantic import/name/label corpus growth for
+      tasks 9-19 is recorded as R-G007 test-gap follow-up, but the executable
+      declaration-symbol runner and initial traceable active set are in place.
 
 24. **ModuleSummary reuse.** [ ]
     - Consume dependency modules as `ModuleSummary` artifacts (schema-version

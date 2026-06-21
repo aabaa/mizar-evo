@@ -272,21 +272,46 @@ kernel failure identities.
 
 ## Declaration And Symbol Expectations
 
-Declaration and symbol expectations may assert symbol table effects or resolver
-failures.
+Declaration and symbol expectations currently assert clean resolver execution
+or resolver failures. Detailed symbol table effects are future runner work.
 
 ```toml
 stage = "declaration_symbol"
 expected_phase = "resolve"
-
-[[symbols]]
-name = "EmptyDef"
-kind = "attribute"
-visibility = "public"
+expected_outcome = "pass"
+diagnostic_codes = []
+tags = ["active_declaration_symbol"]
 ```
 
-Undefined symbol tests use `failure_category = "resolve_error"` and a stable
-resolver diagnostic code.
+The declaration-symbol corpus runner executes only `.miz` pass/fail sidecars
+that carry the `active_declaration_symbol` tag. Untagged sidecars are still
+discovered and traced, but remain inactive seed metadata.
+
+The current runner checks that pass cases produce no frontend assertion
+diagnostics and no resolver symbol diagnostics. Detailed `[[symbols]]` table
+assertions are future runner work; sidecars must not include unimplemented
+symbol assertion tables.
+
+Until public resolver diagnostic codes are specified, all active
+declaration-symbol cases keep `diagnostic_codes = []`; the active gate rejects
+non-empty values. Active fail cases assert resolver-owned internal detail keys
+through `diagnostic_payloads`, falling back to `stable_detail_key` when no
+payload list is provided:
+
+```toml
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+stable_detail_key = "declaration_symbol.symbol.duplicate_declaration"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "declaration_symbol.symbol.duplicate_declaration",
+]
+tags = ["active_declaration_symbol"]
+```
+
+Once a stable resolver diagnostic-code range exists, resolver fail cases may
+also assert user-facing codes in `diagnostic_codes`.
 
 ## Type And Elaboration Expectations
 

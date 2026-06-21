@@ -1,0 +1,17 @@
+schema_version = 1
+id = "pass_resolve_declaration_symbol_smoke_001"
+kind = "pass"
+stage = "declaration_symbol"
+domain = "resolve.declaration_symbol"
+source = "pass_resolve_declaration_symbol_smoke_001.miz"
+expected_outcome = "pass"
+expected_phase = "resolve"
+diagnostic_codes = []
+tags = ["active_declaration_symbol"]
+spec_refs = [
+  "spec.en.11.symbol_management.signatures",
+  "spec.en.11.symbol_management.visibility",
+  "spec.en.12.modules.visibility.semantic",
+  "spec.en.16.theorems_and_proofs.labels.declaration_symbols",
+]
+notes = "Active declaration_symbol runner smoke coverage that parser-backed declaration shells, visibility-bearing declarations, and theorem/lemma declarations reach symbol collection without internal diagnostics; detailed symbol/visibility fact assertions remain future corpus growth."

@@ -45,7 +45,7 @@ and the crate ownership map in
 | mizar-test | yes | Corpus discovery, expectation sidecars, staged model, traceability, snapshots, harness behavior | [~] implementation exists; formal lint/gap audit, runner validation, snapshots, and reporting remain | [todo](./mizar-test/en/todo.md) |
 | mizar-build | yes | Phase 0 workspace planning plus later task graph, scheduler, resources, cancellation, failure state | [~] scaffold and package-name validation slice exist; planner spec and full manifest/lockfile parsing are next | [todo](./mizar-build/en/todo.md) |
 | mizar-lsp | yes | Editor range mapping now; future server, snapshots, diagnostics, metadata, navigation, actions, explanations | [~] range conversion slice exists; specs and server features remain planned | [todo](./mizar-lsp/en/todo.md) |
-| mizar-resolve | yes | Module graph, namespaces, symbols, labels, signature collection | [~] tasks 1-22 complete; declaration_symbol corpus runner is next | [todo](./mizar-resolve/en/todo.md) |
+| mizar-resolve | yes | Module graph, namespaces, symbols, labels, signature collection | [~] tasks 1-23 complete; ModuleSummary reuse gate is next | [todo](./mizar-resolve/en/todo.md) |
 | mizar-checker | no | Type checking, cluster/registration resolution, overload resolution | [ ] planned | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | no | Elaboration, binder-normalized core logic, control-flow preparation | [ ] planned | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | no | VC IR, VC generation, deterministic pre-ATP discharge, dependency slices | [ ] planned | [todo](./mizar-vc/en/todo.md) |
@@ -109,11 +109,13 @@ current parser hardening close-out.
 
 ### Immediate Next Work
 
-1. **mizar-resolve symbols wave** - resolver tasks 1-22 have landed, including
+1. **mizar-resolve symbols wave** - resolver tasks 1-23 have landed, including
    import/name resolution, dot-chain finalization, theorem/proof-step label
    resolution, the signature collection spec, and the opaque symbol collection
    skeleton plus parser-backed per-kind signature extraction and recovered
-   syntax policy. Continue with the `declaration_symbol` corpus runner task 23.
+   syntax policy plus the `declaration_symbol` corpus runner seed. Continue
+   with the task-24 `ModuleSummary` reuse gate, which remains dependent on
+   `mizar-artifact` task 5.
 2. **mizar-test foundation cleanup** - run the lint-policy guard and
    source/spec gap audit (tasks 1-2), then harden validation/reporting,
    snapshots, and coverage reporting. The source crate already exists; the TODO

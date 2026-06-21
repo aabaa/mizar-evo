@@ -1,0 +1,15 @@
+import parser.type_fixtures;
+
+definition
+  let x, y be set;
+  public pred PublicRelDef: x R y means thesis;
+  private func HiddenFuncDef: hidden_f x -> set equals x;
+  mode CarrierDef: CarrierMode is set;
+  attr FlagDef: x is flagged means thesis;
+  struct Carrier where
+    field carrier -> set;
+  end;
+end;
+
+theorem VisibleTheorem: thesis;
+lemma VisibleLemma: thesis by VisibleTheorem;

@@ -409,7 +409,9 @@ name = "mizar-test"
 version = "0.1.0"
 dependencies = [
  "mizar-frontend",
+ "mizar-resolve",
  "mizar-session",
+ "mizar-syntax",
 ]
 
 [[package]]

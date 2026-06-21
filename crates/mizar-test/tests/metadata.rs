@@ -18,7 +18,8 @@ use mizar_session::{
 };
 use mizar_test::{
     DiscoveryConfig, ExpectedOutcome, PipelinePhase, Stage, TestKind, TestPlan, TestProfile,
-    ValidationMode, active_parse_only_cases, build_test_plan, run_parse_only_corpus,
+    ValidationMode, active_parse_only_cases, build_test_plan, run_declaration_symbol_corpus,
+    run_parse_only_corpus,
 };
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
@@ -544,6 +545,24 @@ fn repository_corpus_plan_succeeds() {
                 .spec_refs
                 .iter()
                 .any(|spec_ref| spec_ref.0 == "spec.en.02.lexical.identifiers.basic")
+    }));
+}
+
+#[test]
+fn repository_declaration_symbol_runner_executes_active_resolver_seeds() {
+    let report = run_declaration_symbol_corpus(&repository_config()).unwrap();
+
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
+    assert_eq!(report.results.len(), 2);
+    assert_eq!(report.passed_count(), 2);
+    assert_eq!(report.failed_count(), 0);
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_resolve_declaration_symbol_smoke_001"
+            && result.actual_detail_keys.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_resolve_duplicate_theorem_symbol_001"
+            && result.actual_detail_keys == ["declaration_symbol.symbol.duplicate_declaration"]
     }));
 }
 
@@ -1977,6 +1996,144 @@ tests = ["tests/lexical/pass/tagged_lexical.expect.toml"]
 }
 
 #[test]
+fn declaration_symbol_runner_rejects_active_tag_on_non_resolve_case() {
+    let corpus = Corpus::new();
+    corpus.write("tests/lexical/pass/tagged_lexical.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/tagged_lexical.expect.toml",
+        r#"schema_version = 1
+id = "tagged_lexical"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "tagged_lexical.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+tags = ["active_declaration_symbol"]
+spec_refs = ["spec.en.test.lexical"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.lexical"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = ["tests/lexical/pass/tagged_lexical.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_declaration_symbol_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.results.len(), 0);
+    assert_has_declaration_symbol_report_code(&report, "E-DECLARATION-SYMBOL-ACTIVE-GATE");
+}
+
+#[test]
+fn declaration_symbol_runner_rejects_public_diagnostic_codes_until_range_exists() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/fail/resolve/fail_duplicate_theorem.miz",
+        "theorem Clash: thesis;\ntheorem Clash: thesis;\n",
+    );
+    corpus.write(
+        "tests/miz/fail/resolve/fail_duplicate_theorem.expect.toml",
+        r#"schema_version = 1
+id = "fail_duplicate_theorem"
+kind = "fail"
+stage = "declaration_symbol"
+domain = "resolve.declaration_symbol"
+source = "fail_duplicate_theorem.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+rejection_reason = "duplicate_theorem_symbol"
+stable_detail_key = "declaration_symbol.symbol.duplicate_declaration"
+diagnostic_codes = ["E-RESOLVE-BOGUS"]
+tags = ["active_declaration_symbol"]
+spec_refs = ["spec.en.test.resolve"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.resolve"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "declaration_symbol"
+status = "partial"
+required = true
+coverage = "manual_review"
+tests = ["tests/miz/fail/resolve/fail_duplicate_theorem.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_declaration_symbol_corpus(&corpus.config()).unwrap();
+
+    assert_has_declaration_symbol_report_code(
+        &report,
+        "E-DECLARATION-SYMBOL-PUBLIC-DIAGNOSTIC-CODES",
+    );
+}
+
+#[test]
+fn declaration_symbol_runner_uses_stable_detail_key_fallback() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/fail/resolve/fail_duplicate_theorem.miz",
+        "theorem Clash: thesis;\ntheorem Clash: thesis;\n",
+    );
+    corpus.write(
+        "tests/miz/fail/resolve/fail_duplicate_theorem.expect.toml",
+        r#"schema_version = 1
+id = "fail_duplicate_theorem"
+kind = "fail"
+stage = "declaration_symbol"
+domain = "resolve.declaration_symbol"
+source = "fail_duplicate_theorem.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+rejection_reason = "duplicate_theorem_symbol"
+stable_detail_key = "declaration_symbol.symbol.duplicate_declaration"
+diagnostic_codes = []
+tags = ["active_declaration_symbol"]
+spec_refs = ["spec.en.test.resolve"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.resolve"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "declaration_symbol"
+status = "partial"
+required = true
+coverage = "manual_review"
+tests = ["tests/miz/fail/resolve/fail_duplicate_theorem.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_declaration_symbol_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.passed_count(), 1);
+}
+
+#[test]
 fn parse_only_cli_reports_active_runner_summary() {
     let output = std::process::Command::new(env!("CARGO_BIN_EXE_mizar-test"))
         .arg("parse-only")
@@ -1994,6 +2151,27 @@ fn parse_only_cli_reports_active_runner_summary() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("parse-only cases: 96"));
     assert!(stdout.contains("passed: 96"));
+    assert!(stdout.contains("failed: 0"));
+}
+
+#[test]
+fn declaration_symbol_cli_reports_active_runner_summary() {
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_mizar-test"))
+        .arg("declaration-symbol")
+        .arg("--workspace-root")
+        .arg(repository_config().workspace_root)
+        .output()
+        .expect("mizar-test declaration-symbol should run");
+
+    assert!(
+        output.status.success(),
+        "declaration-symbol CLI failed: stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("declaration-symbol cases: 2"));
+    assert!(stdout.contains("passed: 2"));
     assert!(stdout.contains("failed: 0"));
 }
 
@@ -2504,6 +2682,20 @@ fn assert_has_code(plan: &mizar_test::TestPlan, code: &str) {
 }
 
 fn assert_has_report_code(report: &mizar_test::ParseOnlyRunReport, code: &str) {
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code.0 == code),
+        "expected diagnostic {code}, got {:#?}",
+        report.diagnostics
+    );
+}
+
+fn assert_has_declaration_symbol_report_code(
+    report: &mizar_test::DeclarationSymbolRunReport,
+    code: &str,
+) {
     assert!(
         report
             .diagnostics

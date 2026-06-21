@@ -1,0 +1,20 @@
+schema_version = 1
+id = "fail_resolve_duplicate_theorem_symbol_001"
+kind = "fail"
+stage = "declaration_symbol"
+domain = "resolve.declaration_symbol"
+source = "fail_resolve_duplicate_theorem_symbol_001.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+rejection_reason = "duplicate_theorem_symbol"
+stable_detail_key = "declaration_symbol.symbol.duplicate_declaration"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "declaration_symbol.symbol.duplicate_declaration",
+]
+tags = ["active_declaration_symbol"]
+spec_refs = [
+  "spec.en.16.theorems_and_proofs.labels.same_scope_uniqueness",
+]
+notes = "Active declaration_symbol fail coverage for same-scope duplicate theorem labels before proof checking."

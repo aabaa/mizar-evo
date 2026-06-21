@@ -11,7 +11,9 @@ path = "src/lib.rs"
 
 [dependencies]
 mizar-frontend = { path = "../mizar-frontend" }
+mizar-resolve = { path = "../mizar-resolve" }
 mizar-session = { path = "../mizar-session" }
+mizar-syntax = { path = "../mizar-syntax" }
 
 [[bin]]
 name = "mizar-test"

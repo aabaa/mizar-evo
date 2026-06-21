@@ -254,19 +254,45 @@ Parse-only expectations は type、resolver、proof、certificate、kernel failu
 
 ## Declaration And Symbol Expectations
 
-Declaration and symbol expectations は symbol table effects or resolver failures を assert してよい。
+Declaration and symbol expectations は現在、clean resolver execution または resolver
+failures を assert する。詳細な symbol table effects は将来の runner work である。
 
 ```toml
 stage = "declaration_symbol"
 expected_phase = "resolve"
-
-[[symbols]]
-name = "EmptyDef"
-kind = "attribute"
-visibility = "public"
+expected_outcome = "pass"
+diagnostic_codes = []
+tags = ["active_declaration_symbol"]
 ```
 
-Undefined symbol tests は `failure_category = "resolve_error"` と stable resolver diagnostic code を使う。
+Declaration-symbol corpus runner は `active_declaration_symbol` tag を持つ `.miz`
+pass/fail sidecar だけを実行する。tag のない sidecar は発見と traceability の対象だが、
+inactive seed metadata のままにする。
+
+現在の runner は、pass case が frontend assertion diagnostic と resolver symbol
+diagnostic を出さないことを check する。詳細な `[[symbols]]` table assertion は将来の
+runner work であり、sidecar は未実装の symbol assertion table を含めてはならない。
+
+public resolver diagnostic code が仕様化されるまで、すべての active
+declaration-symbol case は `diagnostic_codes = []` とし、active gate は non-empty
+値を拒否する。active fail case は resolver-owned internal detail key を
+`diagnostic_payloads` で assert する。payload list が無い場合は `stable_detail_key`
+へ fallback する。
+
+```toml
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+stable_detail_key = "declaration_symbol.symbol.duplicate_declaration"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "declaration_symbol.symbol.duplicate_declaration",
+]
+tags = ["active_declaration_symbol"]
+```
+
+stable resolver diagnostic-code range が存在した後は、resolver fail case も
+`diagnostic_codes` で user-facing code を assert してよい。
 
 ## Type And Elaboration Expectations
 

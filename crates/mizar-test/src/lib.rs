@@ -16,8 +16,9 @@ pub use harness::{
     DiscoveryConfig, HarnessError, TestCase, TestPlan, TestProfile, ValidationMode, build_test_plan,
 };
 pub use runner::{
-    ParseOnlyCaseResult, ParseOnlyCaseStatus, ParseOnlyRunReport, active_parse_only_cases,
-    run_parse_only_corpus,
+    DeclarationSymbolCaseResult, DeclarationSymbolCaseStatus, DeclarationSymbolRunReport,
+    ParseOnlyCaseResult, ParseOnlyCaseStatus, ParseOnlyRunReport, active_declaration_symbol_cases,
+    active_parse_only_cases, run_declaration_symbol_corpus, run_parse_only_corpus,
 };
 pub use staged_model::Stage;
 pub use traceability::{SpecRequirement, SpecRequirementId, TraceManifest, parse_trace_manifest};

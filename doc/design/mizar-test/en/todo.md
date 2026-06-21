@@ -30,10 +30,12 @@ per [internal 07](../../internal/en/07.crate_module_layout.md).
 `mizar-test` is the corpus and harness crate: test discovery, `.expect.toml`
 expectation parsing, the staged model, spec-coverage traceability, snapshot
 comparison, and the fail/soundness contract. It is deliberately minimal
-([minimal_crate.md](./minimal_crate.md)): it owns validation and planning,
-not pipeline execution — stage runners live in consumer crates' integration
-tests (precedent: the frontend lexical-corpus runner; `mizar-parser` task 3
-decides the parse-only runner location).
+([minimal_crate.md](./minimal_crate.md)): the metadata `plan` mode owns
+validation and planning without executing payloads, while explicit active
+runner subcommands may depend on the narrow pipeline seams needed for their
+stage. The parse-only runner location was settled by `mizar-parser` task 3;
+the declaration-symbol runner follows the same active-subcommand model for
+`mizar-resolve` task 23.
 
 Each task below is deliberately small — one behavior slice against an
 existing spec — so that a single task can be implemented, tested, and
@@ -42,9 +44,9 @@ committed autonomously without holding the rest of the crate in flight.
 ## Crate Prerequisites
 
 The crate keeps its dependency set minimal per
-[minimal_crate.md](./minimal_crate.md); it does not depend on pipeline
-crates, and consumer crates depend on it for discovery, expectations, and
-validation. Corpus and coverage growth is paced by the consumer-crate
+[minimal_crate.md](./minimal_crate.md). Its metadata APIs remain payload-free;
+active runner subcommands add only the pipeline dependencies needed by the
+stage they execute. Corpus and coverage growth is paced by the consumer-crate
 runner tasks (`mizar-parser` task 3, `mizar-resolve` task 23,
 `mizar-checker` tasks 12/29, `mizar-vc` task 15, `mizar-atp` task 20,
 `mizar-kernel` task 17).
@@ -52,11 +54,12 @@ runner tasks (`mizar-parser` task 3, `mizar-resolve` task 23,
 ## Resolved And Open Decisions
 
 - **No pipeline dependencies: resolved by [minimal_crate.md](./minimal_crate.md).**
-  Stage execution lives in consumer crates; this crate validates, plans,
-  compares, and reports.
+  The metadata `plan` path has no payload execution. Explicit active runner
+  subcommands may depend on the narrow pipeline seams they exercise; those
+  dependencies are not used by metadata validation.
 - **Corpus runner location: owned by `mizar-parser` task 3** (and the
-  corresponding tasks of later stages); this crate provides discovery and
-  expectations either way.
+  corresponding tasks of later stages); `mizar-resolve` task 23 extends this
+  precedent with the declaration-symbol runner in `mizar-test`.
 - **Snapshot update mechanism: open, resolved by task 5.** Decide how
   baselines are (re)generated — explicit update mode versus environment
   flag — within the update policy of [snapshot.md](./snapshot.md), and
@@ -158,6 +161,11 @@ Keep `cargo test -p mizar-test` green after each task (see
       can execute them. The default metadata plan may discover such cases, but
       a consumer runner must not silently count a planned seed as executed
       coverage.
+    - R-023 paired work adds the `declaration-symbol` active runner command for
+      `mizar-resolve` task 23, including active-tag validation, public-code
+      gating while resolver diagnostic ranges are unspecified, summary
+      reporting, and two traceable seed fixtures. This task stays open until
+      all planned consumer runners land.
     - Deps: 5, 8. Spec: [harness.md](./harness.md).
 
 11. **Determinism suite.** [ ]
@@ -222,6 +230,7 @@ consumers that embed corpus runners (currently):
 
 ```text
 cargo test -p mizar-frontend
+cargo test -p mizar-resolve
 ```
 
 For the architecture-22 regression matrix, also run the active consumer
@@ -240,8 +249,10 @@ Check the task off here once tests pass.
 
 ## Notes
 
-- This crate stays minimal: validation, planning, comparison, reporting —
-  never pipeline execution and never pipeline dependencies.
+- This crate stays minimal: metadata validation, planning, comparison, and
+  reporting stay payload-free. Explicit active runner subcommands are the only
+  paths that execute pipeline seams, and those seams are scoped to the stage
+  being run.
 - Stage ids are canonical values shared with `.expect.toml`,
   `spec_trace.toml`, and consumer enums; display names may localize, ids
   may not.

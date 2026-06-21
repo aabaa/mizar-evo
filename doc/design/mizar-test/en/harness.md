@@ -33,6 +33,11 @@ pub struct ParseOnlyRunReport {
     pub results: Vec<ParseOnlyCaseResult>,
     pub diagnostics: Vec<ValidationDiagnostic>,
 }
+
+pub struct DeclarationSymbolRunReport {
+    pub results: Vec<DeclarationSymbolCaseResult>,
+    pub diagnostics: Vec<ValidationDiagnostic>,
+}
 ```
 
 ## Runner Modes
@@ -41,6 +46,7 @@ pub struct ParseOnlyRunReport {
 |---|---|
 | metadata plan | discover sidecars and validate layout, expectation schema, and traceability without executing payloads |
 | parse-only | run active `.miz` parse-only cases through `mizar-frontend` and `MizarParserSeam` |
+| declaration-symbol | run active `.miz` declaration-symbol cases through frontend parsing and resolver declaration/symbol collection |
 | pass/fail | run `.miz` cases and match expected outcome |
 | snapshot | compare canonical snapshot hashes |
 | determinism | repeat runs and compare artifacts, diagnostics, and hashes |
@@ -56,13 +62,18 @@ pub struct ParseOnlyRunReport {
    `expected_phase = "parse"`, `.miz` payloads, pass/fail outcomes, and
    `tags = ["active_parse_only"]`. Untagged parse-only sidecars remain
    discovery and traceability metadata.
-4. Run cases in deterministic display order, even when execution is parallel.
-5. Capture compiler outputs as structured records.
-6. Match pass/fail expectations before snapshot expectations.
-7. Compare general `[[snapshots]]` entries by canonical hash; the current
+4. For `declaration-symbol`, select only cases with
+   `stage = "declaration_symbol"`, `expected_phase = "resolve"`, `.miz`
+   payloads, pass/fail outcomes, and `tags = ["active_declaration_symbol"]`.
+   Untagged declaration-symbol sidecars remain discovery and traceability
+   metadata.
+5. Run cases in deterministic display order, even when execution is parallel.
+6. Capture compiler outputs as structured records.
+7. Match pass/fail expectations before snapshot expectations.
+8. Compare general `[[snapshots]]` entries by canonical hash; the current
    parse-only `SurfaceAst` shortcut compares committed text baselines
    byte-for-byte as described below.
-8. Report failures with phase, failure category, rejection reason, diagnostic code, and snapshot diff summary.
+9. Report failures with phase, failure category, rejection reason, diagnostic code, and snapshot diff summary.
 
 The current parse-only runner copies each active corpus file into a temporary
 `src/` package, runs the real frontend parser seam, requires pass cases to
@@ -84,6 +95,20 @@ normal parse-only runs.
 
 An expectation tagged `active_parse_only` but missing one of the runnable case
 predicates is a harness error rather than a silent skip.
+
+The current declaration-symbol runner copies each active `.miz` corpus file
+into the same temporary package shape, runs the real frontend, then feeds the
+resulting `SurfaceAst` through the resolver declaration-shell collector,
+parser-backed signature projection extractor, and symbol collector. Pass cases
+require no frontend assertion diagnostics and no resolver symbol diagnostics.
+Fail cases compare the resolver's crate-local internal detail keys against
+`diagnostic_payloads` when present, or `stable_detail_key` otherwise. The runner
+does not require or invent public resolver diagnostic codes while the
+diagnostic-code ownership gap remains open; active declaration-symbol
+expectations with non-empty `diagnostic_codes` are harness errors.
+
+An expectation tagged `active_declaration_symbol` but missing one of the
+runnable case predicates is a harness error rather than a silent skip.
 
 ## Determinism Requirements
 

@@ -15,10 +15,17 @@ use mizar_frontend::lexical_env::{
 use mizar_frontend::orchestration::{DiagnosticCode, Frontend, FrontendDiagnostic};
 use mizar_frontend::parsing::MizarParserSeam;
 use mizar_frontend::source::{FrontendSourceLoader, SourceUnitRequest};
+use mizar_resolve::declarations::DeclarationShellCollector;
+use mizar_resolve::env::NamespacePath;
+use mizar_resolve::resolved_ast::ModuleId as ResolverModuleId;
+use mizar_resolve::symbols::{
+    SignatureProjectionExtractor, SymbolCollector, SymbolDiagnostic, SymbolDiagnosticClass,
+};
 use mizar_session::{
     BuildSnapshotId, DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
     SourceInput, SourceOriginInput, normalize_path,
 };
+use mizar_syntax::SurfaceAst;
 
 use crate::diagnostic::{ValidationDiagnostic, ValidationSeverity};
 use crate::expectation::{ExpectedOutcome, PipelinePhase};
@@ -27,6 +34,7 @@ use crate::path_rules::absolute_from;
 use crate::staged_model::Stage;
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
+const ACTIVE_DECLARATION_SYMBOL_TAG: &str = "active_declaration_symbol";
 const ALLOW_FRONTEND_RECOVERY_DIAGNOSTICS_TAG: &str = "allow_frontend_recovery_diagnostics";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -50,6 +58,26 @@ pub enum ParseOnlyCaseStatus {
     Failed,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeclarationSymbolRunReport {
+    pub results: Vec<DeclarationSymbolCaseResult>,
+    pub diagnostics: Vec<ValidationDiagnostic>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeclarationSymbolCaseResult {
+    pub id: crate::expectation::TestCaseId,
+    pub expectation_path: PathBuf,
+    pub status: DeclarationSymbolCaseStatus,
+    pub actual_detail_keys: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DeclarationSymbolCaseStatus {
+    Passed,
+    Failed,
+}
+
 impl ParseOnlyRunReport {
     pub fn passed_count(&self) -> usize {
         self.results
@@ -62,6 +90,36 @@ impl ParseOnlyRunReport {
         self.results
             .iter()
             .filter(|result| result.status == ParseOnlyCaseStatus::Failed)
+            .count()
+    }
+
+    pub fn error_count(&self) -> usize {
+        self.diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.severity == ValidationSeverity::Error)
+            .count()
+    }
+
+    pub fn warning_count(&self) -> usize {
+        self.diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.severity == ValidationSeverity::Warning)
+            .count()
+    }
+}
+
+impl DeclarationSymbolRunReport {
+    pub fn passed_count(&self) -> usize {
+        self.results
+            .iter()
+            .filter(|result| result.status == DeclarationSymbolCaseStatus::Passed)
+            .count()
+    }
+
+    pub fn failed_count(&self) -> usize {
+        self.results
+            .iter()
+            .filter(|result| result.status == DeclarationSymbolCaseStatus::Failed)
             .count()
     }
 
@@ -109,8 +167,44 @@ pub fn run_parse_only_corpus(config: &DiscoveryConfig) -> Result<ParseOnlyRunRep
     })
 }
 
+pub fn run_declaration_symbol_corpus(
+    config: &DiscoveryConfig,
+) -> Result<DeclarationSymbolRunReport, HarnessError> {
+    let workspace_root = normalized_workspace_root(config)?;
+    let plan = build_test_plan(config)?;
+    let mut diagnostics = plan.diagnostics.clone();
+    if plan.error_count() > 0 {
+        return Ok(DeclarationSymbolRunReport {
+            results: Vec::new(),
+            diagnostics,
+        });
+    }
+    diagnostics.extend(validate_active_declaration_symbol_tags(&plan));
+
+    let mut results = Vec::new();
+    for (ordinal, case) in active_declaration_symbol_cases(&plan).enumerate() {
+        let result = run_declaration_symbol_case(&workspace_root, case, ordinal);
+        if result.status == DeclarationSymbolCaseStatus::Failed {
+            diagnostics.push(declaration_symbol_failure_diagnostic(case, &result));
+        }
+        results.push(result);
+    }
+    diagnostics.sort();
+
+    Ok(DeclarationSymbolRunReport {
+        results,
+        diagnostics,
+    })
+}
+
 pub fn active_parse_only_cases(plan: &TestPlan) -> impl Iterator<Item = &TestCase> {
     plan.cases.iter().filter(|case| is_active_parse_only(case))
+}
+
+pub fn active_declaration_symbol_cases(plan: &TestPlan) -> impl Iterator<Item = &TestCase> {
+    plan.cases
+        .iter()
+        .filter(|case| is_active_declaration_symbol(case))
 }
 
 fn is_active_parse_only(case: &TestCase) -> bool {
@@ -127,11 +221,32 @@ fn is_active_parse_only(case: &TestCase) -> bool {
             .is_some_and(|extension| extension == "miz")
 }
 
+fn is_active_declaration_symbol(case: &TestCase) -> bool {
+    has_active_declaration_symbol_tag(case)
+        && case.expectation.stage == Stage::DeclarationSymbol
+        && case.expectation.expected_phase == Some(PipelinePhase::Resolve)
+        && matches!(
+            case.expectation.expected_outcome,
+            ExpectedOutcome::Pass | ExpectedOutcome::Fail
+        )
+        && case
+            .source_path
+            .extension()
+            .is_some_and(|extension| extension == "miz")
+}
+
 fn has_active_parse_only_tag(case: &TestCase) -> bool {
     case.expectation
         .tags
         .iter()
         .any(|tag| tag == ACTIVE_PARSE_ONLY_TAG)
+}
+
+fn has_active_declaration_symbol_tag(case: &TestCase) -> bool {
+    case.expectation
+        .tags
+        .iter()
+        .any(|tag| tag == ACTIVE_DECLARATION_SYMBOL_TAG)
 }
 
 fn validate_active_parse_only_tags(plan: &TestPlan) -> Vec<ValidationDiagnostic> {
@@ -150,6 +265,37 @@ fn validate_active_parse_only_tags(plan: &TestPlan) -> Vec<ValidationDiagnostic>
         .collect()
 }
 
+fn validate_active_declaration_symbol_tags(plan: &TestPlan) -> Vec<ValidationDiagnostic> {
+    let mut diagnostics = Vec::new();
+    for case in plan
+        .cases
+        .iter()
+        .filter(|case| has_active_declaration_symbol_tag(case))
+    {
+        if !is_active_declaration_symbol(case) {
+            diagnostics.push(
+                ValidationDiagnostic::error(
+                    &case.expectation_path,
+                    "declaration_symbol",
+                    "E-DECLARATION-SYMBOL-ACTIVE-GATE",
+                    format!("declaration_symbol.active_gate.{}", case.id.0),
+                    "active_declaration_symbol cases must be .miz pass/fail expectations at stage declaration_symbol and phase resolve",
+                ),
+            );
+        }
+        if !case.expectation.diagnostic_codes.is_empty() {
+            diagnostics.push(ValidationDiagnostic::error(
+                &case.expectation_path,
+                "declaration_symbol",
+                "E-DECLARATION-SYMBOL-PUBLIC-DIAGNOSTIC-CODES",
+                format!("declaration_symbol.public_codes.{}", case.id.0),
+                "active_declaration_symbol cases must keep diagnostic_codes empty until public resolver diagnostic codes are specified; use diagnostic_payloads or stable_detail_key for internal detail keys",
+            ));
+        }
+    }
+    diagnostics
+}
+
 fn run_parse_only_case(
     workspace_root: &Path,
     tests_root: &Path,
@@ -159,7 +305,7 @@ fn run_parse_only_case(
     let output = run_frontend(workspace_root, case, ordinal);
     let (has_ast, actual_diagnostic_codes, ast_snapshot) = match output {
         Ok(output) => (
-            output.has_ast,
+            output.ast.is_some(),
             assertion_diagnostic_codes(case, &output.diagnostics),
             output.ast_snapshot,
         ),
@@ -202,6 +348,35 @@ fn run_parse_only_case(
     }
 }
 
+fn run_declaration_symbol_case(
+    workspace_root: &Path,
+    case: &TestCase,
+    ordinal: usize,
+) -> DeclarationSymbolCaseResult {
+    let output = run_frontend(workspace_root, case, ordinal);
+    let actual_detail_keys = match output {
+        Ok(output) => declaration_symbol_detail_keys(workspace_root, case, output),
+        Err(error) => vec![format!("frontend_error:{error}")],
+    };
+    let expected_detail_keys = expected_declaration_symbol_detail_keys(case);
+    let status = match case.expectation.expected_outcome {
+        ExpectedOutcome::Pass if actual_detail_keys.is_empty() => {
+            DeclarationSymbolCaseStatus::Passed
+        }
+        ExpectedOutcome::Fail if actual_detail_keys == expected_detail_keys => {
+            DeclarationSymbolCaseStatus::Passed
+        }
+        _ => DeclarationSymbolCaseStatus::Failed,
+    };
+
+    DeclarationSymbolCaseResult {
+        id: case.id.clone(),
+        expectation_path: case.expectation_path.clone(),
+        status,
+        actual_detail_keys,
+    }
+}
+
 fn run_frontend(
     workspace_root: &Path,
     case: &TestCase,
@@ -219,7 +394,7 @@ fn run_frontend(
         .map_err(|error| error.to_string())?;
     let ast_snapshot = output.ast.as_ref().map(|ast| ast.snapshot_text());
     Ok(FrontendRun {
-        has_ast: output.ast.is_some(),
+        ast: output.ast,
         ast_snapshot,
         diagnostics: output.diagnostics,
     })
@@ -227,9 +402,69 @@ fn run_frontend(
 
 #[derive(Debug)]
 struct FrontendRun {
-    has_ast: bool,
+    ast: Option<SurfaceAst>,
     ast_snapshot: Option<String>,
     diagnostics: Vec<FrontendDiagnostic>,
+}
+
+fn declaration_symbol_detail_keys(
+    workspace_root: &Path,
+    case: &TestCase,
+    output: FrontendRun,
+) -> Vec<String> {
+    let frontend_diagnostic_keys = assertion_diagnostic_codes(case, &output.diagnostics)
+        .into_iter()
+        .map(|code| format!("frontend:{code}"))
+        .collect::<Vec<_>>();
+    if !frontend_diagnostic_keys.is_empty() {
+        return frontend_diagnostic_keys;
+    }
+
+    let Some(ast) = output.ast else {
+        return vec!["declaration_symbol.no_ast".to_owned()];
+    };
+    let module = resolver_module_id(workspace_root, &case.source_path);
+    let namespace = NamespacePath::new(module.path().as_str());
+    let shells = DeclarationShellCollector::new(&ast, &module).collect();
+    let projections = SignatureProjectionExtractor::new(&ast, &shells, namespace).extract();
+    let result = SymbolCollector::new(ast.source_id, &module, &shells, &projections).collect();
+
+    result
+        .diagnostics()
+        .iter()
+        .map(symbol_diagnostic_detail_key)
+        .collect()
+}
+
+fn resolver_module_id(workspace_root: &Path, source_path: &Path) -> ResolverModuleId {
+    ResolverModuleId::new(
+        PackageId::new("mizar-test-corpus"),
+        ModulePath::new(module_path(workspace_root, source_path)),
+    )
+}
+
+fn symbol_diagnostic_detail_key(diagnostic: &SymbolDiagnostic) -> String {
+    format!(
+        "declaration_symbol.symbol.{}",
+        symbol_diagnostic_class_key(diagnostic.class())
+    )
+}
+
+const fn symbol_diagnostic_class_key(class: SymbolDiagnosticClass) -> &'static str {
+    match class {
+        SymbolDiagnosticClass::MissingShell => "missing_shell",
+        SymbolDiagnosticClass::ContextOnlyShell => "context_only_shell",
+        SymbolDiagnosticClass::DuplicateDeclaration => "duplicate_declaration",
+        SymbolDiagnosticClass::IllegalOverloadGroup => "illegal_overload_group",
+        _ => "unknown",
+    }
+}
+
+fn expected_declaration_symbol_detail_keys(case: &TestCase) -> Vec<String> {
+    if !case.expectation.diagnostic_payloads.is_empty() {
+        return case.expectation.diagnostic_payloads.clone();
+    }
+    case.expectation.stable_detail_key.iter().cloned().collect()
 }
 
 fn prepare_source_package(
@@ -245,9 +480,9 @@ fn prepare_source_package(
         .join("src")
         .join(source_path.file_name().unwrap_or_default());
     fs::create_dir_all(temp_source.parent().unwrap_or(&package_root))
-        .map_err(|error| format!("failed to create parse-only temp package: {error}"))?;
+        .map_err(|error| format!("failed to create corpus temp package: {error}"))?;
     fs::write(&temp_source, text)
-        .map_err(|error| format!("failed to write parse-only temp source: {error}"))?;
+        .map_err(|error| format!("failed to write corpus temp source: {error}"))?;
     let normalized_path = normalize_path(&package_root, &temp_source)
         .map_err(|error| format!("failed to normalize temp source path: {error}"))?;
 
@@ -287,7 +522,7 @@ fn temp_package_root(ordinal: usize) -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .map_or(0, |duration| duration.as_nanos());
     std::env::temp_dir().join(format!(
-        "mizar-test-parse-only-{}-{ordinal}-{nanos}",
+        "mizar-test-corpus-{}-{ordinal}-{nanos}",
         std::process::id()
     ))
 }
@@ -385,6 +620,24 @@ fn parse_only_failure_diagnostic(
         format!(
             "parse-only case `{}` expected diagnostics {:?} but got {:?}",
             case.id.0, case.expectation.diagnostic_codes, result.actual_diagnostic_codes
+        ),
+    )
+}
+
+fn declaration_symbol_failure_diagnostic(
+    case: &TestCase,
+    result: &DeclarationSymbolCaseResult,
+) -> ValidationDiagnostic {
+    ValidationDiagnostic::error(
+        &case.expectation_path,
+        "declaration_symbol",
+        "E-DECLARATION-SYMBOL-ASSERT",
+        format!("declaration_symbol.{}", case.id.0),
+        format!(
+            "declaration-symbol case `{}` expected detail keys {:?} but got {:?}",
+            case.id.0,
+            expected_declaration_symbol_detail_keys(case),
+            result.actual_detail_keys
         ),
     )
 }
@@ -591,6 +844,15 @@ fn parse_only_fixture_symbols(module_id: &ModuleId) -> Vec<ExportedSymbolShape> 
 }
 
 impl fmt::Display for ParseOnlyCaseStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::Passed => "passed",
+            Self::Failed => "failed",
+        })
+    }
+}
+
+impl fmt::Display for DeclarationSymbolCaseStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             Self::Passed => "passed",

@@ -574,6 +574,66 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.11.symbol_management.signatures"
+source = "doc/spec/en/11.symbol_management.md"
+section = "11.2 Scope and Visibility"
+stage = "declaration_symbol"
+status = "partial"
+required = true
+coverage = "manual_review"
+tests = [
+  "tests/miz/pass/resolve/pass_resolve_declaration_symbol_smoke_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.11.symbol_management.visibility"
+source = "doc/spec/en/11.symbol_management.md"
+section = "11.4 Public and Private Symbols"
+stage = "declaration_symbol"
+status = "partial"
+required = true
+coverage = "manual_review"
+tests = [
+  "tests/miz/pass/resolve/pass_resolve_declaration_symbol_smoke_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.12.modules.visibility.semantic"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.5 Visibility Control (Private/Public)"
+stage = "declaration_symbol"
+status = "partial"
+required = true
+coverage = "manual_review"
+tests = [
+  "tests/miz/pass/resolve/pass_resolve_declaration_symbol_smoke_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.16.theorems_and_proofs.labels.declaration_symbols"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.2 Syntax of Theorem Declarations"
+stage = "declaration_symbol"
+status = "partial"
+required = true
+coverage = "manual_review"
+tests = [
+  "tests/miz/pass/resolve/pass_resolve_declaration_symbol_smoke_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.16.theorems_and_proofs.labels.same_scope_uniqueness"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.4.2 Scope and Visibility"
+stage = "declaration_symbol"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/resolve/fail_resolve_duplicate_theorem_symbol_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.04.variables_and_constants.binders.lexical_shapes"
 source = "doc/spec/en/04.variables_and_constants.md"
 section = "4 Variables and Constants"

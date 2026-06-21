@@ -71,6 +71,14 @@ Declaration and symbol tests introduce the smallest valid declarations needed
 for later stages. Undefined symbol failures belong here unless a later-stage
 test explicitly targets resolver behavior.
 
+The active runner for this stage is the `mizar-test declaration-symbol`
+subcommand. It executes only `.miz` pass/fail expectations tagged
+`active_declaration_symbol`; untagged declaration-symbol sidecars stay
+traceability metadata until their owning resolver behavior is executable. While
+public resolver diagnostic codes remain a specification gap, fail cases assert
+crate-local internal detail keys rather than user-facing codes, and non-empty
+`diagnostic_codes` are rejected by the active gate.
+
 They cover:
 
 - symbol registration;

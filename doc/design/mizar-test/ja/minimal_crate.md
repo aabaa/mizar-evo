@@ -8,6 +8,10 @@
 
 Minimal crate は compiler を実行せずに test corpus metadata and traceability contracts を validate する。これにより、後続の test-first compiler work が安全になる。Language implementation を trust する前に、test files、expectation sidecars、spec coverage metadata を check できる。
 
+後続の active runner subcommand は、`parse-only` や `declaration-symbol` のような
+明示 command を通じてのみ、この first slice を拡張する。metadata `plan` path は、
+ここで定義する minimal payload-free contract のままである。
+
 ## Scope
 
 First implementation は次を提供する。
@@ -22,15 +26,17 @@ First implementation は次を提供する。
 - deterministic `TestPlan` construction
 - CI に適した metadata-only reporting
 
-First implementation は `.miz`、certificate、snapshot、fuzz、property payloads を実行しない。
+First implementation と metadata `plan` path は `.miz`、certificate、snapshot、
+fuzz、property payloads を実行しない。Active runner subcommand は、対象 stage が
+所有する狭い compiler seam を実行してよい。
 
 ## Non-Goals
 
-Minimal crate は次を実装してはならない。
+Minimal metadata path は次を実装してはならない。
 
-- compiler execution
-- lexer or parser behavior
-- pass/fail semantic checking
+- explicit active runner subcommand の外にある broad compiler execution
+- active runner から owning pipeline seam を呼ぶ以上の lexer or parser behavior
+- stage-owned active runner の外にある pass/fail semantic checking
 - certificate replay
 - kernel checking
 - snapshot comparison or update
@@ -40,7 +46,8 @@ Minimal crate は次を実装してはならない。
 - cache validation
 - `doc/spec/` prose からの coverage inference
 
-これらの features は metadata and traceability contracts が stable になった後に追加する。
+これらの features は metadata and traceability contracts が stable になった後、
+独自の active gate を持つ explicit runner mode としてのみ追加する。
 
 ## Public API
 

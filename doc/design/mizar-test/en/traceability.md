@@ -181,6 +181,14 @@ For example, a parser fixture can cover the syntax of a cluster declaration,
 but it does not cover cluster expansion semantics. The semantic requirement
 remains planned until advanced semantic tests exist.
 
+For the declaration-symbol stage, coverage is executable only for `.miz`
+sidecars admitted by the active runner gate (`active_declaration_symbol`,
+`stage = "declaration_symbol"`, `expected_phase = "resolve"`, and pass/fail
+outcome). Fail coverage may use `diagnostic_payloads` or `stable_detail_key`
+for resolver internal detail keys while public resolver diagnostic codes remain
+unspecified; active sidecars must leave `diagnostic_codes` empty until that
+range exists.
+
 ## Reporting
 
 The default report groups results by:

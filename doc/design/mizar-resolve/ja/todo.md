@@ -375,13 +375,27 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       degraded table/env fact を保持しつつ、recovered origin または shell からの
       dependent semantic diagnostics を抑制する。
 
-23. **stage `declaration_symbol` のコーパスランナー。** [ ]
+23. **stage `declaration_symbol` のコーパスランナー。** [x]
     - `tests/miz/{pass,fail}/` のケースを stage `declaration_symbol` で
-      ハーネスに接続し、`spec_trace.toml` のカバレッジ項目を付ける。task
-      9-20 の pass/fail ケースをシードし、40/60 の pass/fail 比率へ向けて
-      拡大する。
+      ハーネスに接続し、`spec_trace.toml` のカバレッジ項目を付ける。
+      declaration-symbol 経路の初期 spec-derived pass/fail set をシードし、
+      40/60 の pass/fail 比率へ向けたより広い semantic corpus growth は
+      明示的な follow-up coverage として記録する。
     - 依存: 20。仕様: [staged_model.md](../../mizar-test/ja/staged_model.md)、
       [traceability.md](../../mizar-test/ja/traceability.md)。
+    - R-023 で完了: `mizar-test declaration-symbol` は
+      `active_declaration_symbol` tag を持つ
+      `stage = "declaration_symbol"` / `expected_phase = "resolve"` の active
+      `.miz` expectation を発見し、frontend と resolver の declaration-shell、
+      signature-projection、symbol-collection 経路を実行する。fail case は
+      public resolver diagnostic code を創作せず、`diagnostic_payloads` /
+      `stable_detail_key` の crate-local internal detail key と比較する。seed
+      corpus coverage は、parser-backed declaration、visibility、theorem/lemma
+      symbol の pass smoke fixture 1 件と、same-scope label uniqueness 由来の
+      duplicate-theorem fail fixture 1 件を `spec_trace.toml` requirement とともに
+      追加した。task 9〜19 のより広い semantic import/name/label corpus の拡充は
+      R-G007 test-gap follow-up として記録するが、実行可能な
+      declaration-symbol runner と初期の traceable active set は揃った。
 
 24. **ModuleSummary の再利用。** [ ]
     - 依存モジュールを（schema-version を検証した）`ModuleSummary` artifact

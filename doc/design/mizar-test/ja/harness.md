@@ -33,6 +33,11 @@ pub struct ParseOnlyRunReport {
     pub results: Vec<ParseOnlyCaseResult>,
     pub diagnostics: Vec<ValidationDiagnostic>,
 }
+
+pub struct DeclarationSymbolRunReport {
+    pub results: Vec<DeclarationSymbolCaseResult>,
+    pub diagnostics: Vec<ValidationDiagnostic>,
+}
 ```
 
 ## Runner Modes
@@ -41,6 +46,7 @@ pub struct ParseOnlyRunReport {
 |---|---|
 | metadata plan | payload を実行せずに sidecar を discover し、layout、expectation schema、traceability を validate |
 | parse-only | active な `.miz` parse-only case を `mizar-frontend` と `MizarParserSeam` で run |
+| declaration-symbol | active な `.miz` declaration-symbol case を frontend parsing と resolver declaration/symbol collection で run |
 | pass/fail | `.miz` cases を run し expected outcome と match |
 | snapshot | canonical snapshot hashes を compare |
 | determinism | repeated runs を比較し artifacts、diagnostics、hashes を check |
@@ -56,13 +62,17 @@ pub struct ParseOnlyRunReport {
    `.miz` payload、pass/fail outcome、`tags = ["active_parse_only"]` を持つ
    case だけを選ぶ。tag のない parse-only sidecar は discovery と traceability
    metadata のままにする。
-4. execution が parallel でも deterministic display order で cases を run する。
-5. compiler outputs を structured records として capture する。
-6. snapshot expectations より先に pass/fail expectations を match する。
-7. general `[[snapshots]]` entries は canonical hash で compare する。現在の
+4. `declaration-symbol` では、`stage = "declaration_symbol"`、
+   `expected_phase = "resolve"`、`.miz` payload、pass/fail outcome、
+   `tags = ["active_declaration_symbol"]` を持つ case だけを選ぶ。tag のない
+   declaration-symbol sidecar は discovery と traceability metadata のままにする。
+5. execution が parallel でも deterministic display order で cases を run する。
+6. compiler outputs を structured records として capture する。
+7. snapshot expectations より先に pass/fail expectations を match する。
+8. general `[[snapshots]]` entries は canonical hash で compare する。現在の
    parse-only `SurfaceAst` shortcut は後述の通り、commit 済み text baseline を
    byte-for-byte で比較する。
-8. phase、failure category、rejection reason、diagnostic code、snapshot diff summary 付きで failures を report する。
+9. phase、failure category、rejection reason、diagnostic code、snapshot diff summary 付きで failures を report する。
 
 現在の parse-only runner は、各 active corpus file を一時的な `src/` package に
 copy し、実際の frontend parser seam を実行する。pass case では AST が生成され、
@@ -83,6 +93,20 @@ diagnostics が一致した後、runner は `SurfaceAst` を要求し、`Surface
 
 `active_parse_only` tag を持つ expectation が runnable case predicate のいずれかを
 満たさない場合、runner は silent skip ではなく harness error として扱う。
+
+現在の declaration-symbol runner は、各 active `.miz` corpus file を同じ一時的な
+package 形状へ copy し、実際の frontend を実行したうえで、得られた
+`SurfaceAst` を resolver の declaration-shell collector、parser-backed signature
+projection extractor、symbol collector に渡す。pass case は frontend assertion
+diagnostic と resolver symbol diagnostic がどちらも無いことを要求する。fail case
+は、`diagnostic_payloads` が存在する場合はそれを、無い場合は
+`stable_detail_key` を使って、resolver の crate-local internal detail key と比較する。
+diagnostic-code ownership gap が open の間、この runner は public resolver
+diagnostic code を要求せず、創作もしない。non-empty `diagnostic_codes` を持つ
+active declaration-symbol expectation は harness error である。
+
+`active_declaration_symbol` tag を持つ expectation が runnable case predicate の
+いずれかを満たさない場合、runner は silent skip ではなく harness error として扱う。
 
 ## Determinism Requirements
 

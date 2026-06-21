@@ -11,6 +11,10 @@ without running the compiler. It exists to make later test-first compiler work
 safe: test files, expectation sidecars, and spec coverage metadata can be
 checked before any language implementation is trusted.
 
+Later active runner subcommands extend this first slice only through explicit
+commands such as `parse-only` and `declaration-symbol`. The metadata `plan`
+path remains the minimal payload-free contract described here.
+
 ## Scope
 
 The first implementation provides:
@@ -25,16 +29,18 @@ The first implementation provides:
 - deterministic `TestPlan` construction;
 - metadata-only reporting suitable for CI.
 
-The first implementation does not execute `.miz`, certificate, snapshot, fuzz,
-or property payloads.
+The first implementation and the metadata `plan` path do not execute `.miz`,
+certificate, snapshot, fuzz, or property payloads. Active runner subcommands
+may execute the narrow compiler seams owned by their stage.
 
 ## Non-Goals
 
-The minimal crate must not implement:
+The minimal metadata path must not implement:
 
-- compiler execution;
-- lexer or parser behavior;
-- pass/fail semantic checking;
+- broad compiler execution outside explicit active runner subcommands;
+- lexer or parser behavior beyond calling the owning pipeline seam from an
+  active runner;
+- pass/fail semantic checking outside stage-owned active runners;
 - certificate replay;
 - kernel checking;
 - snapshot comparison or update;
@@ -45,7 +51,7 @@ The minimal crate must not implement:
 - coverage inference from `doc/spec/` prose.
 
 These features are added only after the metadata and traceability contracts are
-stable.
+stable, and only through explicit runner modes with their own active gates.
 
 ## Public API
 
