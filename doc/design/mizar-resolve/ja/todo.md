@@ -397,8 +397,8 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       symbol の pass smoke fixture 1 件と、same-scope label uniqueness 由来の
       duplicate-theorem fail fixture 1 件を `spec_trace.toml` requirement とともに
       追加した。task 9〜19 のより広い semantic import/name/label corpus の拡充は
-      R-G007 test-gap follow-up として記録するが、実行可能な
-      declaration-symbol runner と初期の traceable active set は揃った。
+      R-G007 test-gap follow-up として将来の runner assertion 拡張に記録するが、
+      実行可能な declaration-symbol runner と初期の traceable active set は揃った。
 
 24. **ModuleSummary の再利用。** [x] deferred / external_dependency_gap
     - 依存モジュールを（schema-version を検証した）`ModuleSummary` artifact
@@ -437,10 +437,19 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       記録し、これら spec-owned module における将来の public-enum 追加は
       `mizar-resolve` lint test で guard する。
 
-27. **ソース/仕様対応監査。** [ ]
+27. **ソース/仕様対応監査。** [x]
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ
       トレースし、ギャップをフォローアップタスクとして記録する。
     - 依存: 26。仕様: 全モジュール仕様と本 TODO。
+    - R-027 で完了: [source_spec_correspondence.md](./source_spec_correspondence.md)
+      に公開 API family、behavior boundary、task requirement、follow-up の
+      traceability を記録した。監査では unclassified な blocking/high
+      `spec_gap`、`test_gap`、`source_drift`、`source_undocumented_behavior`、
+      `test_expectation_drift`、`boundary_violation`、`repo_metadata_conflict` は
+      見つからなかった。既存の分類済み record として、R-G001 public resolver
+      diagnostic code-space `spec_gap`、R-G007 が精緻化する R-G002 historical
+      semantic corpus coverage `test_gap`、R-G003 deferred `ModuleSummary` reuse、
+      R-G006 parser/syntax scheme-role dependency は残る。
 
 28. **二言語ドキュメント同期監査。** [ ]
     - `doc/design/mizar-resolve/en/` の各英語正本と日本語版を比較し、API
