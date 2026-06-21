@@ -79,11 +79,13 @@ IR ownership: [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
   and R-015 keeps name diagnostics crate-local/internal, because R-G001 still
   lacks a resolver code range. Revisit before the first later user-facing
   resolver diagnostic integration.
-- **ModuleSummary reuse timing: open, resolved by task 24.** Architecture 03
+- **ModuleSummary reuse timing: deferred by task 24.** Architecture 03
   allows dependency modules to be consumed as `ModuleSummary` artifacts
   instead of re-read sources. The first iteration resolves the in-memory
   dependency closure; the artifact-backed path needs `mizar-artifact`
-  module-summary schema first. Registered at the top level.
+  module-summary schema first. R-024 classifies this as an
+  `external_dependency_gap` and does not invent a resolver-local artifact
+  format.
 - **Nested proof label shadowing wording: resolved by task 17.** An earlier
   task-18 test note asked for "label shadowing across nested proofs", but
   spec chapter 15 forbids inner-scope label shadowing. R-017 classifies that
@@ -363,7 +365,8 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       internal duplicate and illegal-overload diagnostics, recovered and
       context-only shell policy, contribution tracking, and deterministic unit
       tests. Dedicated lexical-summary data shapes are completed by R-021;
-      artifact-summary data shapes remain R-024 work.
+      artifact-summary data shapes are deferred by the R-024
+      `external_dependency_gap` until `mizar-artifact` task 5 lands.
 
 21. **Per-kind signature extraction.** [x] — paced by `mizar-parser` tasks 23-31.
     - Extract concrete signatures (structs, modes, attributes, predicates,
@@ -419,7 +422,7 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       tasks 9-19 is recorded as R-G007 test-gap follow-up, but the executable
       declaration-symbol runner and initial traceable active set are in place.
 
-24. **ModuleSummary reuse.** [ ]
+24. **ModuleSummary reuse.** [x] deferred / external_dependency_gap
     - Consume dependency modules as `ModuleSummary` artifacts (schema-version
       checked) instead of re-reading sources; fall back to source resolution
       when summaries are absent or incompatible.
@@ -427,6 +430,13 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       fixture; incompatible schema falls back with a diagnostic.
     - Deps: 20, `mizar-artifact` task 5. Spec: architecture 03 "Module
       Summary", [18.dependency_fingerprint.md](../../architecture/en/18.dependency_fingerprint.md).
+    - R-024 gate result: `mizar-artifact` task 5 is not complete and the
+      `mizar-artifact` workspace crate does not exist yet, so this task is
+      explicitly deferred as R-G003 `external_dependency_gap`. No resolver
+      artifact schema, shim, or fallback reader is implemented. Unblock only
+      after `mizar-artifact` tasks 1-5 provide the canonical
+      `ModuleSummary` schema, writer, validating reader, and version
+      compatibility policy.
 
 25. **Determinism suite.** [ ]
     - Property coverage that identical inputs produce identical ids, tables,

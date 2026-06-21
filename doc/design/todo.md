@@ -45,7 +45,7 @@ and the crate ownership map in
 | mizar-test | yes | Corpus discovery, expectation sidecars, staged model, traceability, snapshots, harness behavior | [~] implementation exists; formal lint/gap audit, runner validation, snapshots, and reporting remain | [todo](./mizar-test/en/todo.md) |
 | mizar-build | yes | Phase 0 workspace planning plus later task graph, scheduler, resources, cancellation, failure state | [~] scaffold and package-name validation slice exist; planner spec and full manifest/lockfile parsing are next | [todo](./mizar-build/en/todo.md) |
 | mizar-lsp | yes | Editor range mapping now; future server, snapshots, diagnostics, metadata, navigation, actions, explanations | [~] range conversion slice exists; specs and server features remain planned | [todo](./mizar-lsp/en/todo.md) |
-| mizar-resolve | yes | Module graph, namespaces, symbols, labels, signature collection | [~] tasks 1-23 complete; ModuleSummary reuse gate is next | [todo](./mizar-resolve/en/todo.md) |
+| mizar-resolve | yes | Module graph, namespaces, symbols, labels, signature collection | [~] tasks 1-23 complete; task 24 is deferred on `mizar-artifact` task 5; hardening tasks 25-29 are next | [todo](./mizar-resolve/en/todo.md) |
 | mizar-checker | no | Type checking, cluster/registration resolution, overload resolution | [ ] planned | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | no | Elaboration, binder-normalized core logic, control-flow preparation | [ ] planned | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | no | VC IR, VC generation, deterministic pre-ATP discharge, dependency slices | [ ] planned | [todo](./mizar-vc/en/todo.md) |
@@ -109,21 +109,21 @@ current parser hardening close-out.
 
 ### Immediate Next Work
 
-1. **mizar-resolve symbols wave** - resolver tasks 1-23 have landed, including
+1. **mizar-resolve hardening wave** - resolver tasks 1-23 have landed, including
    import/name resolution, dot-chain finalization, theorem/proof-step label
    resolution, the signature collection spec, and the opaque symbol collection
    skeleton plus parser-backed per-kind signature extraction and recovered
-   syntax policy plus the `declaration_symbol` corpus runner seed. Continue
-   with the task-24 `ModuleSummary` reuse gate, which remains dependent on
-   `mizar-artifact` task 5.
+   syntax policy plus the `declaration_symbol` corpus runner seed. Task 24 is
+   explicitly deferred on `mizar-artifact` task 5; continue with resolver
+   hardening tasks 25-29.
 2. **mizar-test foundation cleanup** - run the lint-policy guard and
    source/spec gap audit (tasks 1-2), then harden validation/reporting,
    snapshots, and coverage reporting. The source crate already exists; the TODO
    is the formal gap-closing plan.
 3. **mizar-artifact wave A, in parallel when useful** - canonical
    serialization and `ModuleSummary` schema work can proceed beside resolver
-   foundation, but summary-backed resolver reuse remains gated on
-   `mizar-artifact` task 5 and `mizar-resolve` task 24.
+   hardening, but summary-backed resolver reuse remains gated on
+   `mizar-artifact` task 5.
 
 ### Semantic And Proof Layers
 
@@ -229,11 +229,12 @@ Two crates run as cross-cutting strands rather than strict steps:
   diagnostics crate-local/internal until resolver diagnostic code ownership is
   specified. Revisit before the first later user-facing resolver diagnostic
   integration.
-- **ModuleSummary reuse timing: open.** The first resolver iteration may use
-  the in-memory dependency closure; summary-backed resolution needs the
-  `mizar-artifact` schema wave first. Owned by
-  [mizar-resolve task 24](./mizar-resolve/en/todo.md) and
-  [mizar-artifact task 5](./mizar-artifact/en/todo.md).
+- **ModuleSummary reuse timing: deferred at mizar-resolve task 24.** The first
+  resolver iteration uses the in-memory dependency closure; summary-backed
+  resolution needs the `mizar-artifact` schema wave first. The R-024 gate is
+  clear only after [mizar-artifact task 5](./mizar-artifact/en/todo.md)
+  provides the canonical `ModuleSummary` schema, writer, reader, and version
+  compatibility policy.
 - **Registration activation gating: open.** Local registrations must not affect
   inference until their obligations are accepted by verifier policy. Owned by
   [mizar-checker task 19](./mizar-checker/en/todo.md) and revisited when
