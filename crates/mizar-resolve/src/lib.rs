@@ -5,8 +5,8 @@
 //! input seam, source-shaped import path and graph resolution,
 //! declaration-shell collection, namespace lookup, preliminary symbol-name
 //! lookup, crate-local/internal name diagnostics, dot-chain finalization, and
-//! executable label resolution plus an opaque declaration-symbol collection
-//! skeleton while full per-kind signature extraction lands in follow-on tasks.
+//! executable label resolution plus declaration-symbol collection and
+//! parser-backed per-kind signature projection.
 
 /// Source-shaped declaration shell collection.
 pub mod declarations;
@@ -30,5 +30,5 @@ pub mod names;
 /// Resolved AST data shapes and reference tables.
 pub mod resolved_ast;
 
-/// Opaque symbol/signature collection skeleton.
+/// Symbol/signature projection and collection.
 pub mod symbols;

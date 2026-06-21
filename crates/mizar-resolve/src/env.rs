@@ -53,6 +53,21 @@ impl RegistrationId {
     }
 }
 
+/// Stable id for a module lexical summary entry.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct LexicalSummaryId(usize);
+
+impl LexicalSummaryId {
+    const fn new(index: usize) -> Self {
+        Self(index)
+    }
+
+    /// Returns the zero-based local index.
+    pub const fn index(self) -> usize {
+        self.0
+    }
+}
+
 /// Stable id for a namespace graph node.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NamespaceNodeId(usize);
@@ -1382,6 +1397,167 @@ impl RegistrationIndex {
     }
 }
 
+/// Module lexical summary family.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum LexicalSummaryKind {
+    /// Public symbolic or identifier notation.
+    Notation,
+    /// Public selector/member spelling.
+    Selector,
+    /// Public constructor-like spelling.
+    Constructor,
+}
+
+/// Public lexical spelling exported by a module for downstream lexing.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LexicalSummaryEntry {
+    id: LexicalSummaryId,
+    symbol: SymbolId,
+    namespace: NamespacePath,
+    spelling: String,
+    kind: LexicalSummaryKind,
+    arity: Option<u32>,
+    contribution: SourceContributionId,
+}
+
+impl LexicalSummaryEntry {
+    /// Returns the lexical summary id.
+    pub const fn id(&self) -> LexicalSummaryId {
+        self.id
+    }
+
+    /// Returns the source symbol id.
+    pub const fn symbol(&self) -> &SymbolId {
+        &self.symbol
+    }
+
+    /// Returns the namespace path.
+    pub const fn namespace(&self) -> &NamespacePath {
+        &self.namespace
+    }
+
+    /// Returns the public lexical spelling.
+    pub fn spelling(&self) -> &str {
+        &self.spelling
+    }
+
+    /// Returns the summary family.
+    pub const fn kind(&self) -> LexicalSummaryKind {
+        self.kind
+    }
+
+    /// Returns syntactic arity when available.
+    pub const fn arity(&self) -> Option<u32> {
+        self.arity
+    }
+
+    /// Returns source contribution id.
+    pub const fn contribution(&self) -> SourceContributionId {
+        self.contribution
+    }
+}
+
+impl Ord for LexicalSummaryEntry {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.namespace
+            .cmp(other.namespace())
+            .then_with(|| self.spelling.cmp(&other.spelling))
+            .then_with(|| self.kind.cmp(&other.kind))
+            .then_with(|| self.arity.cmp(&other.arity))
+            .then_with(|| self.symbol.cmp(other.symbol()))
+            .then_with(|| self.id.cmp(&other.id))
+    }
+}
+
+impl PartialOrd for LexicalSummaryEntry {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+/// Module lexical summary index.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ModuleLexicalSummaryIndex {
+    next_id: usize,
+    entries: Vec<LexicalSummaryEntry>,
+}
+
+impl ModuleLexicalSummaryIndex {
+    /// Creates an empty lexical summary index.
+    pub const fn new() -> Self {
+        Self {
+            next_id: 0,
+            entries: Vec::new(),
+        }
+    }
+
+    /// Inserts a lexical summary entry.
+    pub fn insert(
+        &mut self,
+        symbol: SymbolId,
+        namespace: NamespacePath,
+        spelling: impl Into<String>,
+        kind: LexicalSummaryKind,
+        arity: Option<u32>,
+        contribution: SourceContributionId,
+    ) -> LexicalSummaryId {
+        let id = LexicalSummaryId::new(self.next_id);
+        self.next_id += 1;
+        self.entries.push(LexicalSummaryEntry {
+            id,
+            symbol,
+            namespace,
+            spelling: spelling.into(),
+            kind,
+            arity,
+            contribution,
+        });
+        self.entries.sort();
+        id
+    }
+
+    /// Returns a lexical summary entry by id.
+    pub fn get(&self, id: LexicalSummaryId) -> Option<&LexicalSummaryEntry> {
+        self.entries.iter().find(|entry| entry.id() == id)
+    }
+
+    /// Returns entries visible under a namespace and spelling.
+    pub fn visible_candidates(
+        &self,
+        namespace: &NamespacePath,
+        spelling: &str,
+    ) -> Vec<&LexicalSummaryEntry> {
+        self.entries
+            .iter()
+            .filter(|entry| entry.namespace() == namespace && entry.spelling() == spelling)
+            .collect()
+    }
+
+    /// Returns summaries produced by a contribution.
+    pub fn by_contribution(&self, contribution: SourceContributionId) -> Vec<&LexicalSummaryEntry> {
+        self.entries
+            .iter()
+            .filter(|entry| entry.contribution() == contribution)
+            .collect()
+    }
+
+    /// Iterates lexical summaries in deterministic order.
+    pub fn iter(&self) -> impl Iterator<Item = &LexicalSummaryEntry> {
+        self.entries.iter()
+    }
+
+    /// Returns the number of summaries.
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    /// Returns whether the index is empty.
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
 /// Namespace graph node kind.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
@@ -2157,6 +2333,7 @@ pub struct ContributionEffects {
     definitions: Vec<DefinitionId>,
     overload_groups: Vec<OverloadGroupId>,
     registrations: Vec<RegistrationId>,
+    lexical_summaries: Vec<LexicalSummaryId>,
     labels: Vec<LabelOriginPath>,
     namespace_edges: Vec<NamespaceEdgeId>,
     declaration_dependencies: Vec<DeclarationDependencyId>,
@@ -2184,6 +2361,11 @@ impl ContributionEffects {
     /// Returns affected registrations.
     pub fn registrations(&self) -> &[RegistrationId] {
         &self.registrations
+    }
+
+    /// Returns affected lexical summaries.
+    pub fn lexical_summaries(&self) -> &[LexicalSummaryId] {
+        &self.lexical_summaries
     }
 
     /// Returns affected labels.
@@ -2314,6 +2496,13 @@ impl SourceContributionIndex {
     pub fn add_registration(&mut self, id: SourceContributionId, registration: RegistrationId) {
         if let Some(record) = self.get_mut(id) {
             insert_sorted_unique(&mut record.effects.registrations, registration);
+        }
+    }
+
+    /// Records an affected lexical summary.
+    pub fn add_lexical_summary(&mut self, id: SourceContributionId, summary: LexicalSummaryId) {
+        if let Some(record) = self.get_mut(id) {
+            insert_sorted_unique(&mut record.effects.lexical_summaries, summary);
         }
     }
 
@@ -2541,6 +2730,8 @@ pub struct SymbolEnvIndexes {
     pub overloads: OverloadIndex,
     /// Registration declaration index.
     pub registrations: RegistrationIndex,
+    /// Module lexical summary index.
+    pub lexical_summaries: ModuleLexicalSummaryIndex,
     /// Namespace graph.
     pub namespace_graph: NamespaceGraph,
     /// Declaration dependency index.
@@ -2604,6 +2795,11 @@ impl SymbolEnv {
         &self.indexes.registrations
     }
 
+    /// Returns the module lexical summary index.
+    pub const fn lexical_summaries(&self) -> &ModuleLexicalSummaryIndex {
+        &self.indexes.lexical_summaries
+    }
+
     /// Returns the namespace graph.
     pub const fn namespace_graph(&self) -> &NamespaceGraph {
         &self.indexes.namespace_graph
@@ -2637,6 +2833,7 @@ impl SymbolEnv {
         write_definition_index_snapshot(&mut output, self.definitions());
         write_overload_index_snapshot(&mut output, self.overloads());
         write_registration_index_snapshot(&mut output, self.registrations());
+        write_lexical_summary_index_snapshot(&mut output, self.lexical_summaries());
         write_namespace_graph_snapshot(&mut output, self.namespace_graph());
         write_declaration_dependency_index_snapshot(&mut output, self.declaration_dependencies());
         write_contribution_index_snapshot(&mut output, self.contributions());
@@ -2885,6 +3082,39 @@ fn write_registration_index_snapshot(output: &mut String, registrations: &Regist
     }
 }
 
+fn write_lexical_summary_index_snapshot(
+    output: &mut String,
+    summaries: &ModuleLexicalSummaryIndex,
+) {
+    output.push_str("lexical_summaries:\n");
+    if summaries.is_empty() {
+        output.push_str("  <none>\n");
+        return;
+    }
+    for entry in summaries.iter() {
+        let _ = write!(output, "  lexical#{} symbol=", entry.id().index());
+        write_symbol_id(output, entry.symbol());
+        output.push_str(" namespace=\"");
+        write_escaped(output, entry.namespace().as_str());
+        output.push_str("\" spelling=\"");
+        write_escaped(output, entry.spelling());
+        output.push_str("\" kind=");
+        output.push_str(lexical_summary_kind_name(entry.kind()));
+        output.push_str(" arity=");
+        match entry.arity() {
+            Some(arity) => {
+                let _ = write!(output, "{arity}");
+            }
+            None => output.push_str("<none>"),
+        }
+        let _ = writeln!(
+            output,
+            " contribution=contribution#{}",
+            entry.contribution().index()
+        );
+    }
+}
+
 fn write_namespace_graph_snapshot(output: &mut String, graph: &NamespaceGraph) {
     output.push_str("namespace_graph:\n");
     output.push_str("  nodes:\n");
@@ -3066,6 +3296,8 @@ fn write_contribution_effects(output: &mut String, effects: &ContributionEffects
     write_overload_group_ids(output, effects.overload_groups());
     output.push_str(" registrations=");
     write_registration_ids(output, effects.registrations());
+    output.push_str(" lexical_summaries=");
+    write_lexical_summary_ids(output, effects.lexical_summaries());
     output.push_str(" labels=");
     write_label_origin_paths(output, effects.labels());
     output.push_str(" namespace_edges=");
@@ -3297,6 +3529,17 @@ fn write_registration_ids(output: &mut String, ids: &[RegistrationId]) {
     output.push(']');
 }
 
+fn write_lexical_summary_ids(output: &mut String, ids: &[LexicalSummaryId]) {
+    output.push('[');
+    for (index, id) in ids.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(output, "lexical#{}", id.index());
+    }
+    output.push(']');
+}
+
 fn write_namespace_edge_ids(output: &mut String, ids: &[NamespaceEdgeId]) {
     output.push('[');
     for (index, id) in ids.iter().enumerate() {
@@ -3424,6 +3667,14 @@ fn export_status_name(status: ExportStatus) -> &'static str {
         ExportStatus::LocalOnly => "local_only",
         ExportStatus::Exported => "exported",
         ExportStatus::ReExported => "re_exported",
+    }
+}
+
+fn lexical_summary_kind_name(kind: LexicalSummaryKind) -> &'static str {
+    match kind {
+        LexicalSummaryKind::Notation => "notation",
+        LexicalSummaryKind::Selector => "selector",
+        LexicalSummaryKind::Constructor => "constructor",
     }
 }
 
@@ -3720,6 +3971,26 @@ mod tests {
             ]
         );
 
+        let mut lexical_summaries = ModuleLexicalSummaryIndex::new();
+        let lexical = lexical_summaries.insert(
+            symbol.clone(),
+            namespace.clone(),
+            "P(_)",
+            LexicalSummaryKind::Notation,
+            Some(1),
+            local,
+        );
+        assert_eq!(
+            lexical_summaries
+                .visible_candidates(&namespace, "P(_)")
+                .first()
+                .map(|entry| entry.id()),
+            Some(lexical)
+        );
+        assert_eq!(lexical_summaries.len(), 1);
+        assert_eq!(lexical_summaries.get(lexical).unwrap().spelling(), "P(_)");
+        assert_eq!(lexical_summaries.by_contribution(local).len(), 1);
+
         let mut graph = NamespaceGraph::new();
         let root = graph.insert_node(
             NamespaceNodeKind::Module,
@@ -3797,6 +4068,7 @@ mod tests {
         contributions.add_definition(local, definition);
         contributions.add_overload_group(local, overload);
         contributions.add_registration(local, registration);
+        contributions.add_lexical_summary(local, lexical);
         contributions.add_namespace_edge(local, edge);
         contributions.add_declaration_dependency(local, dependency);
         contributions.add_import(local, import_id);
@@ -3813,6 +4085,7 @@ mod tests {
                 definitions,
                 overloads,
                 registrations,
+                lexical_summaries,
                 namespace_graph: graph,
                 declaration_dependencies: dependencies,
                 contributions,
@@ -3824,6 +4097,13 @@ mod tests {
         assert_eq!(
             env.contributions().affected_by(local).unwrap().symbols(),
             &[symbol]
+        );
+        assert_eq!(
+            env.contributions()
+                .affected_by(local)
+                .unwrap()
+                .lexical_summaries(),
+            &[lexical]
         );
         assert_eq!(
             env.contributions()
@@ -3968,6 +4248,31 @@ mod tests {
             vec![a_registration, z_registration]
         );
 
+        let mut lexical_summaries = ModuleLexicalSummaryIndex::new();
+        let z_lexical = lexical_summaries.insert(
+            z_symbol.clone(),
+            namespace.clone(),
+            "Z",
+            LexicalSummaryKind::Notation,
+            None,
+            local,
+        );
+        let a_lexical = lexical_summaries.insert(
+            a_symbol.clone(),
+            namespace.clone(),
+            "A",
+            LexicalSummaryKind::Notation,
+            None,
+            local,
+        );
+        assert_eq!(
+            lexical_summaries
+                .iter()
+                .map(LexicalSummaryEntry::id)
+                .collect::<Vec<_>>(),
+            vec![a_lexical, z_lexical]
+        );
+
         let mut graph = NamespaceGraph::new();
         let z_node =
             graph.insert_node(NamespaceNodeKind::Segment, Some(module.clone()), "z", local);
@@ -4110,6 +4415,7 @@ mod tests {
         let definition = DefinitionId::new(0);
         let overload = OverloadGroupId::new(0);
         let registration = RegistrationId::new(0);
+        let lexical_summary = LexicalSummaryId::new(0);
         let label = LabelOriginPath::new("pkg::main::T1");
         let namespace_edge = NamespaceEdgeId::new(0);
         let dependency = DeclarationDependencyId::new(0);
@@ -4120,6 +4426,7 @@ mod tests {
         contributions.add_definition(local, definition);
         contributions.add_overload_group(local, overload);
         contributions.add_registration(local, registration);
+        contributions.add_lexical_summary(local, lexical_summary);
         contributions.add_label(local, label.clone());
         contributions.add_namespace_edge(local, namespace_edge);
         contributions.add_declaration_dependency(local, dependency);
@@ -4139,6 +4446,7 @@ mod tests {
         assert_eq!(effects.definitions(), &[definition]);
         assert_eq!(effects.overload_groups(), &[overload]);
         assert_eq!(effects.registrations(), &[registration]);
+        assert_eq!(effects.lexical_summaries(), &[lexical_summary]);
         assert_eq!(effects.labels(), &[label]);
         assert_eq!(effects.namespace_edges(), &[namespace_edge]);
         assert_eq!(effects.declaration_dependencies(), &[dependency]);
@@ -4242,6 +4550,11 @@ mod tests {
 
         assert_eq!(first, second);
         assert!(first.starts_with("symbol-env-debug-v1\nmodule: pkg::main\n"));
+        assert!(
+            SymbolEnv::new(module_id("pkg", "empty"), SymbolEnvIndexes::default())
+                .snapshot_text()
+                .contains("lexical_summaries:\n  <none>\n")
+        );
         assert!(!first.contains("SourceId"));
         assert!(!first.contains("/tmp/private"));
         assert!(!first.contains('\r'));
@@ -4256,6 +4569,7 @@ mod tests {
                 "definitions:\n",
                 "overloads:\n",
                 "registrations:\n",
+                "lexical_summaries:\n",
                 "namespace_graph:\n",
                 "declaration_dependencies:\n",
                 "contributions:\n",
@@ -4271,11 +4585,12 @@ mod tests {
             "overloads:\n  overload#0 key={namespace=\"main\" spelling=\"P\" kind=predicate arity=1} candidates=[",
             "diagnostics=[diagnostic#4]",
             "registrations:\n  registration#0 symbol={fqn=\"pkg::main::pred/0\" module=pkg::main local=\"pred/0\"} kind=cluster target=malformed(class=\"recovered-target\") visibility=public export=re_exported dependencies=[dependency#0]",
+            "lexical_summaries:\n  lexical#0 symbol={fqn=\"pkg::main::pred/0\" module=pkg::main local=\"pred/0\"} namespace=\"main\" spelling=\"P(_)\" kind=notation arity=1 contribution=contribution#0",
             "namespace_graph:\n  nodes:\n    node#0 kind=module module=pkg::main spelling=\"main\" contribution=contribution#0",
             "  edges:\n    edge#0 from=node#0 to=node#1 kind=import anchor=range(2..3) visibility=public target=module=pkg::dep local_spelling=\"D\" contribution=contribution#0",
             "declaration_dependencies:\n  dependency#0 source=symbol={fqn=\"pkg::main::pred/0\" module=pkg::main local=\"pred/0\"} target=namespace_edge#0 kind=import anchor=range(2..3) contribution=contribution#0",
             "contributions:\n  contribution#0 module=pkg::main kind=local_source anchor=range(0..1) effects={symbols=[",
-            " definitions=[definition#0] overloads=[overload#0] registrations=[registration#0] labels=[\"pkg::main::T1\"] namespace_edges=[edge#0] declaration_dependencies=[dependency#0] imports=[import#0] exports=[export#0] diagnostics=[diagnostic#9]}",
+            " definitions=[definition#0] overloads=[overload#0] registrations=[registration#0] lexical_summaries=[lexical#0] labels=[\"pkg::main::T1\"] namespace_edges=[edge#0] declaration_dependencies=[dependency#0] imports=[import#0] exports=[export#0] diagnostics=[diagnostic#9]}",
             "contribution#1 module=pkg::dep_source kind=imported_source anchor=point(5)",
             "contribution#2 module=pkg::dep_summary kind=summary identity=\"summary:dep:v1\" anchor=generated(range(1..2), reason=present)",
             "contribution#3 module=pkg::builtin kind=builtin name=\"prelude\"",
@@ -4425,6 +4740,16 @@ mod tests {
             .set_export_status(ExportStatus::ReExported)
             .set_dependencies(vec![DeclarationDependencyId::new(0)]);
 
+        let mut lexical_summaries = ModuleLexicalSummaryIndex::new();
+        let lexical_summary = lexical_summaries.insert(
+            symbol.clone(),
+            namespace.clone(),
+            "P(_)",
+            LexicalSummaryKind::Notation,
+            Some(1),
+            local,
+        );
+
         let mut namespace_graph = NamespaceGraph::new();
         let root = namespace_graph.insert_node(
             NamespaceNodeKind::Module,
@@ -4485,6 +4810,7 @@ mod tests {
         contributions.add_definition(local, definition);
         contributions.add_overload_group(local, overload);
         contributions.add_registration(local, registration);
+        contributions.add_lexical_summary(local, lexical_summary);
         contributions.add_label(local, label);
         contributions.add_namespace_edge(local, namespace_edge);
         contributions.add_declaration_dependency(local, dependency);
@@ -4502,6 +4828,7 @@ mod tests {
                 definitions,
                 overloads,
                 registrations,
+                lexical_summaries,
                 namespace_graph,
                 declaration_dependencies,
                 contributions,

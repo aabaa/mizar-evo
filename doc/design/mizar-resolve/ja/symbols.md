@@ -2,11 +2,12 @@
 
 > 正本は英語です。英語版: [../en/symbols.md](../en/symbols.md)。
 
-Status: task R-019 は resolver-owned な signature collection 契約を仕様化し、task
-R-020 は explicit declaration projection と opaque signature 上の collection skeleton、
-duplicate/conflict detection、registration indexing、overload grouping を実装する。
-task R-021 は parser coverage が対応する source shape を提供するたびに
-kind-specific signature payload を増分で抽出する。semantic `.miz` corpus coverage と
+Status: task R-019〜R-021 は resolver-owned な signature collection 経路を仕様化し
+実装する。R-020 は explicit declaration projection 上の collection、
+duplicate/conflict detection、registration indexing、overload grouping を実装した。
+R-021 は parser-backed な kind ごとの projection extraction、parser-owned な
+opaque signature payload、exported lexer-visible spelling 用の resolver-local
+module lexical summary index を追加した。semantic `.miz` corpus coverage と
 traceability metadata は task R-023 に残る。
 
 ## 参照
@@ -201,6 +202,16 @@ projection を提供する場合だけ寄与する。この collapse は `Symbol
 parser coverage がまだ concrete source role を公開していない場合、R-021 は source
 structure を創作せず、payload を opaque のまま pending extraction として記録する。
 
+R-021 は theorem / lemma label、attribute / predicate / functor / mode /
+structure pattern、algorithm、notation alias、redefinition、property clause、
+structure selector、label 付き registration の、表現済み parser-backed source role
+を抽出する。direct declaration child である template parameter は named payload role
+として保持し、parser pattern node の下に nest する template loci は、syntax が専用の
+declaration-owned role を公開するまで flattened parser-owned signature surface 内で
+保持する。現在の parser/syntax 境界には module-level scheme declaration shell がないため、
+resolver extraction は scheme declaration を external source-role dependency gap として扱い、
+scheme/template module symbol を創作しない。
+
 ## Duplicate、Conflict、Overload
 
 duplicate detection は name-level かつ kind-family specific である:
@@ -258,10 +269,11 @@ in-memory dependency projection を消費してよいが、resolver-local artifa
 定義してはならない。
 
 R-020 は専用の lexical-summary または artifact-summary data shape を追加しない。
-exportability は `SymbolIndex`、`DefinitionIndex`、`RegistrationIndex`、
-`OverloadIndex`、`SourceContributionIndex` を通じてのみ記録する。parser-backed な
-lexical spelling extraction は R-021 に残り、artifact-backed `ModuleSummary` reuse は
-R-024 に残る。
+R-021 は extractor が lexer-visible notation token（`UserSymbol` / `LexemeRun`）
+として確認した parser-backed public lexical spelling 用の resolver-local
+`ModuleLexicalSummaryIndex` を追加する。property keyword、algorithm、theorem label、
+structure constructor、selector は R-021 の active lexical summary を seed しない。
+artifact-backed `ModuleSummary` reuse は R-024 に残る。
 
 ## Dependency Edge と Relation
 
@@ -321,8 +333,9 @@ resolver unit test を追加する:
 - recovered と context-only shell の policy。
 - symbol、definition、overload、diagnostic、contribution ordering の決定性。
 
-R-021 は parser-backed source role が実行可能になるたびに kind-specific signature
-extraction test を追加し、syntax が対応した lexical-summary spelling fixture も扱う。
+R-021 は表現済み source role に対する parser-backed な kind-specific signature
+extraction、opaque payload 内の template-role preservation、syntax が対応した
+parser-backed lexical-summary spelling fixture の resolver unit test を追加する。
 R-023 は `declaration_symbol` stage 用の semantic `.miz` corpus case と traceability
 metadata を追加する。既存 `.miz` case と expectation は resolver implementation
 behavior に合わせる目的で rebaseline してはならない。

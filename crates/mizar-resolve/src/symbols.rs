@@ -1,8 +1,8 @@
-//! Opaque symbol/signature collection skeleton.
+//! Symbol/signature projection and collection.
 //!
 //! This module implements the R-020 declaration-symbol skeleton over explicit
-//! declaration projections. Parser-backed per-kind spelling and signature
-//! extraction remains R-021 work.
+//! declaration projections. R-021 adds parser-backed per-kind spelling and
+//! opaque signature extraction for represented declaration shells.
 
 use crate::declarations::{
     DeclarationShell, DeclarationShellId, DeclarationShellKind, DeclarationShellSet,
@@ -10,11 +10,13 @@ use crate::declarations::{
 };
 use crate::env::{
     ContributionKind, DeclarationConflictClass, DefinitionKind, DefinitionShell,
-    DiagnosticAnchorId, ExportStatus, NamespacePath, OverloadKey, RegistrationKind, SignatureShell,
-    SourceContributionId, SymbolEntry, SymbolEnv, SymbolEnvIndexes, SymbolKind, Visibility,
+    DiagnosticAnchorId, ExportStatus, LexicalSummaryKind, NamespacePath, OverloadKey,
+    RegistrationKind, SignatureShell, SourceContributionId, SymbolEntry, SymbolEnv,
+    SymbolEnvIndexes, SymbolKind, Visibility,
 };
 use crate::resolved_ast::{FullyQualifiedName, LocalSymbolId, ModuleId, SemanticOrigin, SymbolId};
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
+use mizar_syntax::{SurfaceAst, SurfaceNodeKind, SurfaceNodeView, SurfaceTokenKind};
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
@@ -43,6 +45,7 @@ pub struct SymbolDeclarationProjection {
     arity: Option<u32>,
     overload_policy: SymbolOverloadPolicy,
     identity_slot: Option<String>,
+    lexical_summary_kind: Option<LexicalSummaryKind>,
     signature: Option<SignatureShell>,
 }
 
@@ -66,6 +69,7 @@ impl SymbolDeclarationProjection {
             arity: None,
             overload_policy: SymbolOverloadPolicy::NonOverloadable,
             identity_slot: None,
+            lexical_summary_kind: None,
             signature: None,
         }
     }
@@ -114,6 +118,13 @@ impl SymbolDeclarationProjection {
         self
     }
 
+    /// Requests a module lexical-summary seed for this projection.
+    #[must_use]
+    pub const fn with_lexical_summary_kind(mut self, kind: LexicalSummaryKind) -> Self {
+        self.lexical_summary_kind = Some(kind);
+        self
+    }
+
     /// Sets an opaque signature shell.
     #[must_use]
     pub fn with_signature(mut self, signature: SignatureShell) -> Self {
@@ -139,6 +150,12 @@ impl SymbolDeclarationProjection {
         &self.primary_spelling
     }
 
+    /// Returns notation spelling when present.
+    #[must_use]
+    pub fn notation_spelling(&self) -> Option<&str> {
+        self.notation_spelling.as_deref()
+    }
+
     /// Returns the projected symbol kind.
     #[must_use]
     pub const fn symbol_kind(&self) -> SymbolKind {
@@ -159,10 +176,22 @@ impl SymbolDeclarationProjection {
         self.registration_kind
     }
 
+    /// Returns syntactic arity when available.
+    #[must_use]
+    pub const fn arity(&self) -> Option<u32> {
+        self.arity
+    }
+
     /// Returns the overload grouping policy.
     #[must_use]
     pub const fn overload_policy(&self) -> SymbolOverloadPolicy {
         self.overload_policy
+    }
+
+    /// Returns the opaque signature shell when populated by extraction.
+    #[must_use]
+    pub const fn signature(&self) -> Option<&SignatureShell> {
+        self.signature.as_ref()
     }
 }
 
@@ -270,6 +299,367 @@ impl SymbolCollectionResult {
     #[must_use]
     pub fn into_env(self) -> SymbolEnv {
         self.env
+    }
+}
+
+/// Parser-backed per-kind signature projection extractor.
+#[derive(Debug, Clone)]
+pub struct SignatureProjectionExtractor<'a> {
+    ast: &'a SurfaceAst,
+    shells: &'a DeclarationShellSet,
+    namespace: NamespacePath,
+}
+
+impl<'a> SignatureProjectionExtractor<'a> {
+    /// Creates a parser-backed projection extractor.
+    #[must_use]
+    pub fn new(
+        ast: &'a SurfaceAst,
+        shells: &'a DeclarationShellSet,
+        namespace: NamespacePath,
+    ) -> Self {
+        Self {
+            ast,
+            shells,
+            namespace,
+        }
+    }
+
+    /// Extracts concrete parser-backed projections for represented shell kinds.
+    #[must_use]
+    pub fn extract(&self) -> Vec<SymbolDeclarationProjection> {
+        let mut projections = self
+            .shells
+            .declarations()
+            .iter()
+            .filter_map(|shell| self.extract_shell(shell))
+            .collect::<Vec<_>>();
+        projections.sort_by(|left, right| {
+            left.shell()
+                .cmp(&right.shell())
+                .then_with(|| left.primary_spelling().cmp(right.primary_spelling()))
+                .then_with(|| left.symbol_kind().cmp(&right.symbol_kind()))
+        });
+        projections
+    }
+
+    fn extract_shell(&self, shell: &DeclarationShell) -> Option<SymbolDeclarationProjection> {
+        let view = self.ast.node_view(shell.node_id())?;
+        match shell.kind() {
+            DeclarationShellKind::Theorem => {
+                self.label_projection(shell, view, SymbolKind::Theorem, DefinitionKind::Theorem)
+            }
+            DeclarationShellKind::Lemma => {
+                self.label_projection(shell, view, SymbolKind::Lemma, DefinitionKind::Lemma)
+            }
+            DeclarationShellKind::AttributeDefinition => self.pattern_projection(
+                shell,
+                view,
+                is_attribute_pattern,
+                SymbolKind::Attribute,
+                DefinitionKind::Attribute,
+                SymbolOverloadPolicy::Overloadable,
+            ),
+            DeclarationShellKind::PredicateDefinition => self.pattern_projection(
+                shell,
+                view,
+                is_predicate_pattern,
+                SymbolKind::Predicate,
+                DefinitionKind::Predicate,
+                SymbolOverloadPolicy::Overloadable,
+            ),
+            DeclarationShellKind::FunctorDefinition => self.pattern_projection(
+                shell,
+                view,
+                is_functor_pattern,
+                SymbolKind::Functor,
+                DefinitionKind::Functor,
+                SymbolOverloadPolicy::Overloadable,
+            ),
+            DeclarationShellKind::ModeDefinition => self.pattern_projection(
+                shell,
+                view,
+                is_mode_pattern,
+                SymbolKind::Mode,
+                DefinitionKind::Mode,
+                SymbolOverloadPolicy::Overloadable,
+            ),
+            DeclarationShellKind::StructureDefinition => self.pattern_projection(
+                shell,
+                view,
+                is_structure_pattern,
+                SymbolKind::Structure,
+                DefinitionKind::Structure,
+                SymbolOverloadPolicy::NonOverloadable,
+            ),
+            DeclarationShellKind::AlgorithmDefinition => self.algorithm_projection(shell, view),
+            DeclarationShellKind::AttributeRedefinition
+            | DeclarationShellKind::PredicateRedefinition
+            | DeclarationShellKind::FunctorRedefinition
+            | DeclarationShellKind::FieldRedefinition
+            | DeclarationShellKind::PropertyRedefinition => {
+                self.redefinition_projection(shell, view)
+            }
+            DeclarationShellKind::NotationAlias => self.notation_alias_projection(shell, view),
+            DeclarationShellKind::PropertyClause => self.property_projection(shell, view),
+            DeclarationShellKind::StructureField | DeclarationShellKind::StructureProperty => {
+                self.selector_projection(shell, view)
+            }
+            DeclarationShellKind::ExistentialRegistration
+            | DeclarationShellKind::ConditionalRegistration
+            | DeclarationShellKind::FunctorialRegistration
+            | DeclarationShellKind::ReductionRegistration => {
+                self.registration_projection(shell, view)
+            }
+            DeclarationShellKind::Placeholder
+            | DeclarationShellKind::Reserve
+            | DeclarationShellKind::DefinitionBlock
+            | DeclarationShellKind::RegistrationBlock
+            | DeclarationShellKind::ClaimBlock
+            | DeclarationShellKind::InheritanceDefinition
+            | DeclarationShellKind::VisibilityWrapper => None,
+        }
+    }
+
+    fn label_projection(
+        &self,
+        shell: &DeclarationShell,
+        view: SurfaceNodeView<'_>,
+        symbol_kind: SymbolKind,
+        definition_kind: DefinitionKind,
+    ) -> Option<SymbolDeclarationProjection> {
+        let spelling = label_before_colon(view)?;
+        Some(
+            SymbolDeclarationProjection::new(
+                shell.id(),
+                self.namespace.clone(),
+                spelling,
+                symbol_kind,
+            )
+            .with_definition_kind(definition_kind)
+            .with_signature(parser_signature(
+                view,
+                symbol_kind,
+                definition_kind,
+                None,
+                None,
+            )),
+        )
+    }
+
+    fn pattern_projection(
+        &self,
+        shell: &DeclarationShell,
+        view: SurfaceNodeView<'_>,
+        is_pattern: fn(&SurfaceNodeKind) -> bool,
+        symbol_kind: SymbolKind,
+        definition_kind: DefinitionKind,
+        overload_policy: SymbolOverloadPolicy,
+    ) -> Option<SymbolDeclarationProjection> {
+        let pattern = first_child_matching(view, is_pattern).unwrap_or(view);
+        let spelling = normalized_token_shape(pattern);
+        if spelling.is_empty() {
+            return None;
+        }
+        let notation = normalized_token_shape(pattern);
+        let mut projection = SymbolDeclarationProjection::new(
+            shell.id(),
+            self.namespace.clone(),
+            spelling,
+            symbol_kind,
+        )
+        .with_definition_kind(definition_kind)
+        .with_overload_policy(overload_policy)
+        .with_signature(parser_signature(
+            view,
+            symbol_kind,
+            definition_kind,
+            Some(&notation),
+            None,
+        ));
+        if !notation.is_empty() {
+            projection = projection.with_notation_spelling(notation);
+        }
+        if lexer_visible_pattern(pattern) {
+            projection = projection.with_lexical_summary_kind(LexicalSummaryKind::Notation);
+        }
+        Some(projection)
+    }
+
+    fn algorithm_projection(
+        &self,
+        shell: &DeclarationShell,
+        view: SurfaceNodeView<'_>,
+    ) -> Option<SymbolDeclarationProjection> {
+        let spelling = identifier_after_keyword(view, "algorithm")?;
+        Some(
+            SymbolDeclarationProjection::new(
+                shell.id(),
+                self.namespace.clone(),
+                spelling,
+                SymbolKind::Algorithm,
+            )
+            .with_definition_kind(DefinitionKind::Algorithm)
+            .with_signature(parser_signature(
+                view,
+                SymbolKind::Algorithm,
+                DefinitionKind::Algorithm,
+                None,
+                None,
+            )),
+        )
+    }
+
+    fn redefinition_projection(
+        &self,
+        shell: &DeclarationShell,
+        view: SurfaceNodeView<'_>,
+    ) -> Option<SymbolDeclarationProjection> {
+        let spelling = preferred_symbol_spelling(view)?;
+        let notation = normalized_token_shape(view);
+        let mut projection = SymbolDeclarationProjection::new(
+            shell.id(),
+            self.namespace.clone(),
+            spelling,
+            SymbolKind::Redefinition,
+        )
+        .with_definition_kind(DefinitionKind::Redefinition)
+        .with_identity_slot(format!(
+            "redefinition:{}",
+            declaration_shell_kind_key(shell.kind())
+        ))
+        .with_signature(parser_signature(
+            view,
+            SymbolKind::Redefinition,
+            DefinitionKind::Redefinition,
+            Some(&notation),
+            None,
+        ));
+        if !notation.is_empty() {
+            projection = projection.with_notation_spelling(notation);
+        }
+        Some(projection)
+    }
+
+    fn notation_alias_projection(
+        &self,
+        shell: &DeclarationShell,
+        view: SurfaceNodeView<'_>,
+    ) -> Option<SymbolDeclarationProjection> {
+        let alias_kind = if first_reserved_word(view).as_deref() == Some("antonym") {
+            (SymbolKind::Antonym, DefinitionKind::Antonym)
+        } else {
+            (SymbolKind::Synonym, DefinitionKind::Synonym)
+        };
+        let pattern = first_child_matching(view, is_notation_pattern).unwrap_or(view);
+        let spelling = preferred_symbol_spelling(pattern)?;
+        let notation = normalized_token_shape(pattern);
+        let mut projection = SymbolDeclarationProjection::new(
+            shell.id(),
+            self.namespace.clone(),
+            spelling,
+            alias_kind.0,
+        )
+        .with_definition_kind(alias_kind.1)
+        .with_identity_slot(format!("relation:{}", symbol_kind_key(alias_kind.0)))
+        .with_signature(parser_signature(
+            view,
+            alias_kind.0,
+            alias_kind.1,
+            Some(&notation),
+            None,
+        ));
+        if !notation.is_empty() {
+            projection = projection.with_notation_spelling(notation);
+        }
+        if lexer_visible_pattern(pattern) {
+            projection = projection.with_lexical_summary_kind(LexicalSummaryKind::Notation);
+        }
+        Some(projection)
+    }
+
+    fn property_projection(
+        &self,
+        shell: &DeclarationShell,
+        view: SurfaceNodeView<'_>,
+    ) -> Option<SymbolDeclarationProjection> {
+        let spelling = first_reserved_word(view).or_else(|| preferred_symbol_spelling(view))?;
+        Some(
+            SymbolDeclarationProjection::new(
+                shell.id(),
+                self.namespace.clone(),
+                spelling,
+                SymbolKind::Attribute,
+            )
+            .with_definition_kind(DefinitionKind::Attribute)
+            .with_identity_slot("property-clause")
+            .with_signature(parser_signature(
+                view,
+                SymbolKind::Attribute,
+                DefinitionKind::Attribute,
+                None,
+                None,
+            )),
+        )
+    }
+
+    fn selector_projection(
+        &self,
+        shell: &DeclarationShell,
+        view: SurfaceNodeView<'_>,
+    ) -> Option<SymbolDeclarationProjection> {
+        let spelling = preferred_symbol_spelling(view)?;
+        Some(
+            SymbolDeclarationProjection::new(
+                shell.id(),
+                self.namespace.clone(),
+                spelling,
+                SymbolKind::Selector,
+            )
+            .with_definition_kind(DefinitionKind::Selector)
+            .with_identity_slot(format!(
+                "selector:{}",
+                declaration_shell_kind_key(shell.kind())
+            ))
+            .with_signature(parser_signature(
+                view,
+                SymbolKind::Selector,
+                DefinitionKind::Selector,
+                None,
+                None,
+            )),
+        )
+    }
+
+    fn registration_projection(
+        &self,
+        shell: &DeclarationShell,
+        view: SurfaceNodeView<'_>,
+    ) -> Option<SymbolDeclarationProjection> {
+        let spelling = label_before_colon(view)?;
+        let registration_kind = match shell.kind() {
+            DeclarationShellKind::ReductionRegistration => RegistrationKind::Reduction,
+            DeclarationShellKind::ExistentialRegistration
+            | DeclarationShellKind::ConditionalRegistration
+            | DeclarationShellKind::FunctorialRegistration => RegistrationKind::Cluster,
+            _ => return None,
+        };
+        Some(
+            SymbolDeclarationProjection::new(
+                shell.id(),
+                self.namespace.clone(),
+                spelling,
+                SymbolKind::Registration,
+            )
+            .with_registration_kind(registration_kind)
+            .with_signature(parser_signature(
+                view,
+                SymbolKind::Registration,
+                DefinitionKind::Registration,
+                None,
+                None,
+            )),
+        )
     }
 }
 
@@ -390,6 +780,19 @@ impl<'a> SymbolCollector<'a> {
         indexes
             .contributions
             .add_symbol(item.contribution, item.symbol.clone());
+        if let Some((summary_kind, spelling)) = lexical_summary_projection(item) {
+            let summary = indexes.lexical_summaries.insert(
+                item.symbol.clone(),
+                item.projection.namespace().clone(),
+                spelling,
+                summary_kind,
+                item.projection.arity,
+                item.contribution,
+            );
+            indexes
+                .contributions
+                .add_lexical_summary(item.contribution, summary);
+        }
 
         if let Some(definition_kind) = item.projection.definition_kind() {
             let mut definition = DefinitionShell::new(
@@ -464,10 +867,14 @@ impl<'a> CollectedProjection<'a> {
         let visibility = context.visibility;
         let export_status = shell_export_status(visibility, context.recovered);
         let symbol = symbol_id(module, shell, projection, contribution, &context);
-        let signature = projection
-            .signature
-            .clone()
-            .unwrap_or_else(|| default_signature(shell, projection, &context));
+        let signature = if context.recovered {
+            default_signature(shell, projection, &context)
+        } else {
+            projection
+                .signature
+                .clone()
+                .unwrap_or_else(|| default_signature(shell, projection, &context))
+        };
         Self {
             shell,
             projection,
@@ -720,6 +1127,7 @@ fn sorted_projections(
             .then_with(|| left.arity.cmp(&right.arity))
             .then_with(|| left.overload_policy.cmp(&right.overload_policy))
             .then_with(|| left.identity_slot.cmp(&right.identity_slot))
+            .then_with(|| left.lexical_summary_kind.cmp(&right.lexical_summary_kind))
             .then_with(|| left.signature.cmp(&right.signature))
     });
     sorted
@@ -743,7 +1151,6 @@ fn symbol_bearing_shell(kind: DeclarationShellKind) -> bool {
             | DeclarationShellKind::PropertyClause
             | DeclarationShellKind::StructureField
             | DeclarationShellKind::StructureProperty
-            | DeclarationShellKind::InheritanceDefinition
             | DeclarationShellKind::FieldRedefinition
             | DeclarationShellKind::PropertyRedefinition
             | DeclarationShellKind::ExistentialRegistration
@@ -903,6 +1310,175 @@ fn default_signature(
             ),
         }
     }
+}
+
+fn parser_signature(
+    view: SurfaceNodeView<'_>,
+    symbol_kind: SymbolKind,
+    definition_kind: DefinitionKind,
+    notation: Option<&str>,
+    arity: Option<u32>,
+) -> SignatureShell {
+    SignatureShell::Opaque {
+        schema: "parser-signature-v1".to_owned(),
+        payload: format!(
+            "node={};symbol={};definition={};primary_tokens={};notation={};arity={};roles={}",
+            surface_node_kind_key(view.kind()),
+            symbol_kind_key(symbol_kind),
+            definition_kind_key(definition_kind),
+            normalized_token_shape(view),
+            notation.unwrap_or("_"),
+            arity
+                .map(|arity| arity.to_string())
+                .unwrap_or_else(|| "_".to_owned()),
+            direct_structural_roles(view)
+        ),
+    }
+}
+
+fn lexical_summary_projection(
+    item: &CollectedProjection<'_>,
+) -> Option<(LexicalSummaryKind, String)> {
+    if item.export_status == ExportStatus::LocalOnly {
+        return None;
+    }
+    let kind = item.projection.lexical_summary_kind?;
+    Some((
+        kind,
+        item.projection
+            .notation_spelling()
+            .unwrap_or_else(|| item.projection.primary_spelling())
+            .to_owned(),
+    ))
+}
+
+fn first_child_matching<'a>(
+    view: SurfaceNodeView<'a>,
+    matches_kind: fn(&SurfaceNodeKind) -> bool,
+) -> Option<SurfaceNodeView<'a>> {
+    view.child_views().find(|child| matches_kind(child.kind()))
+}
+
+fn label_before_colon(view: SurfaceNodeView<'_>) -> Option<String> {
+    let tokens = flattened_tokens(view);
+    tokens.windows(2).find_map(|window| {
+        let (kind, text) = window[0];
+        let (_, next) = window[1];
+        if matches!(
+            kind,
+            SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol
+        ) && next == ":"
+        {
+            Some(text.to_owned())
+        } else {
+            None
+        }
+    })
+}
+
+fn identifier_after_keyword(view: SurfaceNodeView<'_>, keyword: &str) -> Option<String> {
+    let tokens = flattened_tokens(view);
+    tokens.windows(2).find_map(|window| {
+        let (_, text) = window[0];
+        let (next_kind, next_text) = window[1];
+        if text == keyword && next_kind == SurfaceTokenKind::Identifier {
+            Some(next_text.to_owned())
+        } else {
+            None
+        }
+    })
+}
+
+fn preferred_symbol_spelling(view: SurfaceNodeView<'_>) -> Option<String> {
+    first_token_text(view, SurfaceTokenKind::UserSymbol)
+        .or_else(|| first_token_text(view, SurfaceTokenKind::LexemeRun))
+        .or_else(|| first_token_text(view, SurfaceTokenKind::Identifier))
+}
+
+fn first_reserved_word(view: SurfaceNodeView<'_>) -> Option<String> {
+    first_token_text(view, SurfaceTokenKind::ReservedWord)
+}
+
+fn first_token_text(view: SurfaceNodeView<'_>, kind: SurfaceTokenKind) -> Option<String> {
+    flattened_tokens(view)
+        .into_iter()
+        .find_map(|(token_kind, text)| (token_kind == kind).then(|| text.to_owned()))
+}
+
+fn normalized_token_shape(view: SurfaceNodeView<'_>) -> String {
+    flattened_tokens(view)
+        .into_iter()
+        .filter(|(kind, _)| {
+            matches!(
+                *kind,
+                SurfaceTokenKind::Identifier
+                    | SurfaceTokenKind::ReservedWord
+                    | SurfaceTokenKind::ReservedSymbol
+                    | SurfaceTokenKind::UserSymbol
+                    | SurfaceTokenKind::LexemeRun
+                    | SurfaceTokenKind::Numeral
+            )
+        })
+        .map(|(_, text)| text)
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn lexer_visible_pattern(view: SurfaceNodeView<'_>) -> bool {
+    flattened_tokens(view).into_iter().any(|(kind, _)| {
+        matches!(
+            kind,
+            SurfaceTokenKind::UserSymbol | SurfaceTokenKind::LexemeRun
+        )
+    })
+}
+
+fn flattened_tokens(view: SurfaceNodeView<'_>) -> Vec<(SurfaceTokenKind, &str)> {
+    let mut tokens = Vec::new();
+    collect_tokens(view, &mut tokens);
+    tokens
+}
+
+fn collect_tokens<'a>(view: SurfaceNodeView<'a>, tokens: &mut Vec<(SurfaceTokenKind, &'a str)>) {
+    if let Some(token) = view.as_token() {
+        tokens.push((token.kind, token.text.as_ref()));
+        return;
+    }
+    for child in view.child_views() {
+        collect_tokens(child, tokens);
+    }
+}
+
+fn direct_structural_roles(view: SurfaceNodeView<'_>) -> String {
+    view.child_views()
+        .filter(|child| child.kind().is_structural())
+        .map(|child| surface_node_kind_key(child.kind()))
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+fn is_attribute_pattern(kind: &SurfaceNodeKind) -> bool {
+    matches!(kind, SurfaceNodeKind::AttributePattern)
+}
+
+fn is_predicate_pattern(kind: &SurfaceNodeKind) -> bool {
+    matches!(kind, SurfaceNodeKind::PredicatePattern)
+}
+
+fn is_functor_pattern(kind: &SurfaceNodeKind) -> bool {
+    matches!(kind, SurfaceNodeKind::FunctorPattern)
+}
+
+fn is_mode_pattern(kind: &SurfaceNodeKind) -> bool {
+    matches!(kind, SurfaceNodeKind::ModePattern)
+}
+
+fn is_structure_pattern(kind: &SurfaceNodeKind) -> bool {
+    matches!(kind, SurfaceNodeKind::StructurePattern)
+}
+
+fn is_notation_pattern(kind: &SurfaceNodeKind) -> bool {
+    matches!(kind, SurfaceNodeKind::NotationPattern)
 }
 
 fn structural_path(
@@ -1094,6 +1670,10 @@ fn overload_policy_key(policy: SymbolOverloadPolicy) -> &'static str {
         SymbolOverloadPolicy::Overloadable => "overloadable",
         SymbolOverloadPolicy::IllegalGroup => "illegal-group",
     }
+}
+
+fn surface_node_kind_key(kind: &SurfaceNodeKind) -> String {
+    format!("{:?}", kind.syntax_kind())
 }
 
 const fn declaration_shell_kind_code(kind: DeclarationShellKind) -> u32 {
@@ -1727,6 +2307,169 @@ mod tests {
         );
     }
 
+    #[test]
+    fn parser_backed_extractor_projects_represented_signature_families() {
+        let source_id = source_id();
+        let ast = parser_backed_signature_ast(source_id);
+        let module = module_id();
+        let shells = DeclarationShellCollector::new(&ast, &module).collect();
+        let namespace = NamespacePath::new("main");
+        let projections =
+            SignatureProjectionExtractor::new(&ast, &shells, namespace.clone()).extract();
+
+        assert_projection(&projections, SymbolKind::Theorem, "T1");
+        assert_projection(&projections, SymbolKind::Lemma, "L1");
+        assert_projection(&projections, SymbolKind::Attribute, "empty");
+        assert_projection(&projections, SymbolKind::Predicate, "x R y");
+        assert_projection(&projections, SymbolKind::Functor, "F");
+        assert_projection(&projections, SymbolKind::Mode, "Element");
+        assert_projection(&projections, SymbolKind::Structure, "Carrier");
+        assert_projection(&projections, SymbolKind::Selector, "carrier");
+        assert_projection(&projections, SymbolKind::Selector, "property");
+        assert_projection(&projections, SymbolKind::Algorithm, "verified");
+        assert_projection(&projections, SymbolKind::Synonym, "++");
+        assert_projection(&projections, SymbolKind::Antonym, "--");
+        assert_projection(&projections, SymbolKind::Redefinition, "R2");
+        assert_projection(&projections, SymbolKind::Redefinition, "attr-red");
+        assert_projection(&projections, SymbolKind::Redefinition, "func-red");
+        assert_projection(&projections, SymbolKind::Redefinition, "field-red");
+        assert_projection(&projections, SymbolKind::Redefinition, "property-red");
+        assert_projection(&projections, SymbolKind::Attribute, "symmetry");
+        assert_projection(&projections, SymbolKind::Registration, "Reg");
+        assert_projection(&projections, SymbolKind::Registration, "ExistsReg");
+        assert_projection(&projections, SymbolKind::Registration, "FunctorialReg");
+        assert_projection(&projections, SymbolKind::Registration, "ReduceReg");
+
+        for projection in &projections {
+            assert!(matches!(
+                projection.signature(),
+                Some(SignatureShell::Opaque { schema, .. }) if schema == "parser-signature-v1"
+            ));
+        }
+
+        let predicate = projections
+            .iter()
+            .find(|projection| projection.symbol_kind() == SymbolKind::Predicate)
+            .unwrap();
+        assert_eq!(predicate.notation_spelling(), Some("x R y"));
+        assert_eq!(predicate.arity(), None);
+        assert!(matches!(
+            predicate.signature(),
+            Some(SignatureShell::Opaque { schema, payload })
+                if schema == "parser-signature-v1"
+                    && payload.contains("node=PredicateDefinition")
+                    && payload.contains("roles=PredicatePattern")
+                    && payload.contains("TemplateParameter")
+        ));
+
+        let result = collect(source_id, &shells, &projections);
+        assert!(
+            result
+                .env()
+                .lexical_summaries()
+                .visible_candidates(&namespace, "x R y")
+                .iter()
+                .any(|entry| entry.kind() == LexicalSummaryKind::Notation)
+        );
+        assert!(
+            result
+                .env()
+                .lexical_summaries()
+                .visible_candidates(&namespace, "carrier")
+                .is_empty()
+        );
+        assert!(
+            result
+                .env()
+                .lexical_summaries()
+                .visible_candidates(&namespace, "symmetry")
+                .is_empty()
+        );
+        assert!(
+            result
+                .env()
+                .lexical_summaries()
+                .visible_candidates(&namespace, "verified")
+                .is_empty()
+        );
+        assert!(
+            result
+                .env()
+                .lexical_summaries()
+                .visible_candidates(&namespace, "T1")
+                .is_empty()
+        );
+        assert!(
+            result
+                .env()
+                .registrations()
+                .iter()
+                .any(|entry| entry.kind() == RegistrationKind::Cluster)
+        );
+        assert!(
+            result
+                .env()
+                .registrations()
+                .iter()
+                .any(|entry| entry.kind() == RegistrationKind::Reduction)
+        );
+    }
+
+    #[test]
+    fn parser_backed_recovered_projection_uses_malformed_signature() {
+        let source_id = source_id();
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let recovery = builder.add_recovery(
+            SyntaxRecoveryKind::SkippedToken,
+            range(source_id, 0, 1),
+            Vec::new(),
+        );
+        let pattern_tokens = token_sequence(
+            &mut builder,
+            source_id,
+            2,
+            &[(SurfaceTokenKind::UserSymbol, "Broken")],
+        );
+        let pattern = node(
+            &mut builder,
+            SurfaceNodeKind::PredicatePattern,
+            source_id,
+            2,
+            8,
+            pattern_tokens,
+        );
+        let predicate = node(
+            &mut builder,
+            SurfaceNodeKind::PredicateDefinition,
+            source_id,
+            0,
+            8,
+            vec![recovery, pattern],
+        );
+        let root = finish_module(&mut builder, source_id, vec![predicate]);
+        let ast = builder.finish(Some(root), None);
+        let module = module_id();
+        let shells = DeclarationShellCollector::new(&ast, &module).collect();
+        let projections =
+            SignatureProjectionExtractor::new(&ast, &shells, NamespacePath::new("main")).extract();
+
+        assert!(matches!(
+            projections[0].signature(),
+            Some(SignatureShell::Opaque { schema, .. }) if schema == "parser-signature-v1"
+        ));
+        let result = collect(source_id, &shells, &projections);
+        let symbol = result.env().symbols().iter().next().unwrap();
+
+        assert!(matches!(
+            symbol.signature(),
+            Some(SignatureShell::Malformed { class }) if class == "recovered-shell"
+        ));
+        assert_eq!(
+            result.env().definitions().iter().next().unwrap().conflict(),
+            Some(&DeclarationConflictClass::RecoveredShell)
+        );
+    }
+
     #[derive(Debug, Clone)]
     struct DuplicateCase {
         item_kind: SurfaceNodeKind,
@@ -1864,6 +2607,416 @@ mod tests {
                     test_item(start, case.item_kind.clone()),
                     test_item(start + 10, case.item_kind.clone()),
                 ]
+            })
+            .collect()
+    }
+
+    fn assert_projection(
+        projections: &[SymbolDeclarationProjection],
+        kind: SymbolKind,
+        spelling: &str,
+    ) {
+        assert!(
+            projections
+                .iter()
+                .any(|projection| projection.symbol_kind() == kind
+                    && projection.primary_spelling() == spelling),
+            "missing {kind:?} projection named {spelling}; projections={projections:?}"
+        );
+    }
+
+    fn parser_backed_signature_ast(source_id: SourceId) -> mizar_syntax::SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let items = vec![
+            label_item(
+                &mut builder,
+                source_id,
+                0,
+                SurfaceNodeKind::TheoremItem,
+                "T1",
+            ),
+            label_item(
+                &mut builder,
+                source_id,
+                20,
+                SurfaceNodeKind::LemmaItem,
+                "L1",
+            ),
+            pattern_item(
+                &mut builder,
+                source_id,
+                40,
+                SurfaceNodeKind::AttributeDefinition,
+                SurfaceNodeKind::AttributePattern,
+                &[(SurfaceTokenKind::Identifier, "empty")],
+            ),
+            templated_pattern_item(
+                &mut builder,
+                source_id,
+                60,
+                SurfaceNodeKind::PredicateDefinition,
+                SurfaceNodeKind::PredicatePattern,
+                &[
+                    (SurfaceTokenKind::Identifier, "x"),
+                    (SurfaceTokenKind::UserSymbol, "R"),
+                    (SurfaceTokenKind::Identifier, "y"),
+                ],
+                "T",
+            ),
+            pattern_item(
+                &mut builder,
+                source_id,
+                90,
+                SurfaceNodeKind::FunctorDefinition,
+                SurfaceNodeKind::FunctorPattern,
+                &[(SurfaceTokenKind::Identifier, "F")],
+            ),
+            pattern_item(
+                &mut builder,
+                source_id,
+                110,
+                SurfaceNodeKind::ModeDefinition,
+                SurfaceNodeKind::ModePattern,
+                &[(SurfaceTokenKind::Identifier, "Element")],
+            ),
+            structure_item(&mut builder, source_id, 135),
+            algorithm_item(&mut builder, source_id, 190, "verified"),
+            notation_alias_item(&mut builder, source_id, 230, "synonym", "++"),
+            notation_alias_item(&mut builder, source_id, 250, "antonym", "--"),
+            redefinition_item(
+                &mut builder,
+                source_id,
+                270,
+                SurfaceNodeKind::PredicateRedefinition,
+                "R2",
+            ),
+            redefinition_item(
+                &mut builder,
+                source_id,
+                290,
+                SurfaceNodeKind::AttributeRedefinition,
+                "attr-red",
+            ),
+            redefinition_item(
+                &mut builder,
+                source_id,
+                310,
+                SurfaceNodeKind::FunctorRedefinition,
+                "func-red",
+            ),
+            redefinition_item(
+                &mut builder,
+                source_id,
+                330,
+                SurfaceNodeKind::FieldRedefinition,
+                "field-red",
+            ),
+            redefinition_item(
+                &mut builder,
+                source_id,
+                350,
+                SurfaceNodeKind::PropertyRedefinition,
+                "property-red",
+            ),
+            property_clause_item(&mut builder, source_id, 375, "symmetry"),
+            label_item(
+                &mut builder,
+                source_id,
+                395,
+                SurfaceNodeKind::ExistentialRegistration,
+                "ExistsReg",
+            ),
+            label_item(
+                &mut builder,
+                source_id,
+                420,
+                SurfaceNodeKind::ConditionalRegistration,
+                "Reg",
+            ),
+            label_item(
+                &mut builder,
+                source_id,
+                440,
+                SurfaceNodeKind::FunctorialRegistration,
+                "FunctorialReg",
+            ),
+            label_item(
+                &mut builder,
+                source_id,
+                470,
+                SurfaceNodeKind::ReductionRegistration,
+                "ReduceReg",
+            ),
+        ];
+        let root = finish_module(&mut builder, source_id, items);
+        builder.finish(Some(root), None)
+    }
+
+    fn label_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        start: usize,
+        kind: SurfaceNodeKind,
+        label: &str,
+    ) -> SurfaceBuilderNodeId {
+        let label_token = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            label,
+            range(source_id, start, start + label.len()),
+        );
+        let colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, start + label.len(), start + label.len() + 1),
+        );
+        node(
+            builder,
+            kind,
+            source_id,
+            start,
+            start + label.len() + 1,
+            vec![label_token, colon],
+        )
+    }
+
+    fn pattern_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        start: usize,
+        item_kind: SurfaceNodeKind,
+        pattern_kind: SurfaceNodeKind,
+        tokens: &[(SurfaceTokenKind, &str)],
+    ) -> SurfaceBuilderNodeId {
+        let token_nodes = token_sequence(builder, source_id, start, tokens);
+        let end = start + token_nodes.len() * 2 + 1;
+        let pattern = node(builder, pattern_kind, source_id, start, end, token_nodes);
+        node(builder, item_kind, source_id, start, end, vec![pattern])
+    }
+
+    fn templated_pattern_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        start: usize,
+        item_kind: SurfaceNodeKind,
+        pattern_kind: SurfaceNodeKind,
+        tokens: &[(SurfaceTokenKind, &str)],
+        template_name: &str,
+    ) -> SurfaceBuilderNodeId {
+        let token_nodes = token_sequence(builder, source_id, start, tokens);
+        let pattern_end = start + token_nodes.len() * 2 + 1;
+        let pattern = node(
+            builder,
+            pattern_kind,
+            source_id,
+            start,
+            pattern_end,
+            token_nodes,
+        );
+        let template_start = pattern_end + 1;
+        let template_token = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            template_name,
+            range(
+                source_id,
+                template_start,
+                template_start + template_name.len(),
+            ),
+        );
+        let template = node(
+            builder,
+            SurfaceNodeKind::TemplateParameter,
+            source_id,
+            template_start,
+            template_start + template_name.len(),
+            vec![template_token],
+        );
+        node(
+            builder,
+            item_kind,
+            source_id,
+            start,
+            template_start + template_name.len(),
+            vec![pattern, template],
+        )
+    }
+
+    fn structure_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        start: usize,
+    ) -> SurfaceBuilderNodeId {
+        let pattern_tokens = token_sequence(
+            builder,
+            source_id,
+            start,
+            &[(SurfaceTokenKind::Identifier, "Carrier")],
+        );
+        let pattern = node(
+            builder,
+            SurfaceNodeKind::StructurePattern,
+            source_id,
+            start,
+            start + 7,
+            pattern_tokens,
+        );
+        let field_tokens = token_sequence(
+            builder,
+            source_id,
+            start + 10,
+            &[(SurfaceTokenKind::Identifier, "carrier")],
+        );
+        let field = node(
+            builder,
+            SurfaceNodeKind::StructureField,
+            source_id,
+            start + 10,
+            start + 17,
+            field_tokens,
+        );
+        let property_tokens = token_sequence(
+            builder,
+            source_id,
+            start + 20,
+            &[(SurfaceTokenKind::Identifier, "property")],
+        );
+        let property = node(
+            builder,
+            SurfaceNodeKind::StructureProperty,
+            source_id,
+            start + 20,
+            start + 28,
+            property_tokens,
+        );
+        node(
+            builder,
+            SurfaceNodeKind::StructureDefinition,
+            source_id,
+            start,
+            start + 30,
+            vec![pattern, field, property],
+        )
+    }
+
+    fn algorithm_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        start: usize,
+        name: &str,
+    ) -> SurfaceBuilderNodeId {
+        let algorithm = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "algorithm",
+            range(source_id, start, start + 9),
+        );
+        let name_start = start + 10;
+        let name = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            name,
+            range(source_id, name_start, name_start + name.len()),
+        );
+        node(
+            builder,
+            SurfaceNodeKind::AlgorithmDefinition,
+            source_id,
+            start,
+            name_start + 8,
+            vec![algorithm, name],
+        )
+    }
+
+    fn notation_alias_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        start: usize,
+        keyword: &str,
+        spelling: &str,
+    ) -> SurfaceBuilderNodeId {
+        let keyword_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            keyword,
+            range(source_id, start, start + keyword.len()),
+        );
+        let pattern_start = start + keyword.len() + 1;
+        let pattern_tokens = token_sequence(
+            builder,
+            source_id,
+            pattern_start,
+            &[(SurfaceTokenKind::UserSymbol, spelling)],
+        );
+        let pattern = node(
+            builder,
+            SurfaceNodeKind::NotationPattern,
+            source_id,
+            pattern_start,
+            pattern_start + spelling.len(),
+            pattern_tokens,
+        );
+        node(
+            builder,
+            SurfaceNodeKind::NotationAlias,
+            source_id,
+            start,
+            pattern_start + spelling.len(),
+            vec![keyword_token, pattern],
+        )
+    }
+
+    fn property_clause_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        start: usize,
+        spelling: &str,
+    ) -> SurfaceBuilderNodeId {
+        let token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            spelling,
+            range(source_id, start, start + spelling.len()),
+        );
+        node(
+            builder,
+            SurfaceNodeKind::PropertyClause,
+            source_id,
+            start,
+            start + spelling.len(),
+            vec![token],
+        )
+    }
+
+    fn redefinition_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        start: usize,
+        kind: SurfaceNodeKind,
+        spelling: &str,
+    ) -> SurfaceBuilderNodeId {
+        let token = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            spelling,
+            range(source_id, start, start + spelling.len()),
+        );
+        node(
+            builder,
+            kind,
+            source_id,
+            start,
+            start + spelling.len(),
+            vec![token],
+        )
+    }
+
+    fn token_sequence(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        start: usize,
+        tokens: &[(SurfaceTokenKind, &str)],
+    ) -> Vec<SurfaceBuilderNodeId> {
+        tokens
+            .iter()
+            .scan(start, |cursor, (kind, text)| {
+                let token_start = *cursor;
+                let token_end = token_start + text.len();
+                *cursor = token_end + 1;
+                Some(builder.add_token(*kind, *text, range(source_id, token_start, token_end)))
             })
             .collect()
     }

@@ -361,10 +361,10 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       `SymbolIndex` / `DefinitionIndex` / `RegistrationIndex` / `OverloadIndex`,
       internal duplicate and illegal-overload diagnostics, recovered and
       context-only shell policy, contribution tracking, and deterministic unit
-      tests. Dedicated lexical-summary and artifact-summary data shapes remain
-      R-021/R-024 work.
+      tests. Dedicated lexical-summary data shapes are completed by R-021;
+      artifact-summary data shapes remain R-024 work.
 
-21. **Per-kind signature extraction.** [ ] — paced by `mizar-parser` tasks 23-31.
+21. **Per-kind signature extraction.** [x] — paced by `mizar-parser` tasks 23-31.
     - Extract concrete signatures (structs, modes, attributes, predicates,
       functors, algorithms, theorems, registrations, templates, and relation
       declarations such as synonyms, antonyms, and redefinitions)
@@ -374,6 +374,13 @@ Keep `cargo test -p mizar-resolve` green after each task (see
     - Tests per increment: signature shape fixtures and `SymbolEnv` lookups
       for that kind.
     - Deps: 20; pairs with `mizar-parser` tasks 23-31. Spec: `symbols.md`.
+    - Completed by R-021: `SignatureProjectionExtractor` lowers represented
+      parser-backed declaration shells into `SymbolDeclarationProjection`
+      records with parser-owned opaque signature payloads, preserves template
+      roles in the owning declaration payload, and seeds
+      `ModuleLexicalSummaryIndex` entries for exported lexer-visible spellings.
+      Module-level scheme declarations remain an external source-role gap until
+      parser/syntax exposes a scheme declaration shell.
 
 ### Hardening and cross-cutting follow-ups
 

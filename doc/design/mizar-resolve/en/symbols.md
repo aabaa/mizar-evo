@@ -2,13 +2,13 @@
 
 > Canonical language: English. Japanese companion: [../ja/symbols.md](../ja/symbols.md).
 
-Status: task R-019 specifies the resolver-owned signature-collection
-contract, and task R-020 implements the collection skeleton, duplicate/conflict
+Status: tasks R-019 to R-021 specify and implement the resolver-owned
+signature-collection path. R-020 implements collection, duplicate/conflict
 detection, registration indexing, and overload grouping over explicit
-declaration projections with opaque signatures. Task R-021 extracts
-kind-specific signature payloads incrementally as parser coverage provides the
-corresponding source shapes. Semantic `.miz` corpus coverage and traceability
-metadata remain task R-023 work.
+declaration projections. R-021 adds parser-backed per-kind projection
+extraction, parser-owned opaque signature payloads, and a resolver-local module
+lexical summary index for exported lexer-visible spellings. Semantic `.miz`
+corpus coverage and traceability metadata remain task R-023 work.
 
 ## References
 
@@ -214,6 +214,18 @@ If parser coverage does not yet expose a concrete source role, R-021 leaves the
 payload opaque and records the shell as pending extraction rather than
 inventing source structure.
 
+R-021 extracts represented parser-backed source roles for theorem and lemma
+labels, attribute/predicate/functor/mode/structure patterns, algorithms,
+notation aliases, redefinitions, property clauses, structure selectors, and
+labeled registrations. Template parameters that are direct declaration
+children are preserved as named payload roles; template loci nested under
+parser pattern nodes remain preserved in the flattened parser-owned signature
+surface until syntax exposes a dedicated declaration-owned role. The
+parser/syntax boundary currently has no module-level scheme declaration shell;
+resolver extraction therefore treats scheme declarations as an external
+source-role dependency gap and does not fabricate scheme/template module
+symbols.
+
 ## Duplicates, Conflicts, And Overloads
 
 Duplicate detection is name-level and kind-family specific:
@@ -276,10 +288,11 @@ Until then, symbols may consume source-backed or in-memory dependency
 projections, but must not define a resolver-local artifact schema.
 
 R-020 does not add a dedicated lexical-summary or artifact-summary data shape.
-It records exportability through `SymbolIndex`, `DefinitionIndex`,
-`RegistrationIndex`, `OverloadIndex`, and `SourceContributionIndex` only.
-Parser-backed lexical spelling extraction remains R-021 work, and
-artifact-backed `ModuleSummary` reuse remains R-024 work.
+R-021 adds the resolver-local `ModuleLexicalSummaryIndex` for parser-backed
+public lexical spellings confirmed by the extractor as lexer-visible notation
+tokens (`UserSymbol` / `LexemeRun`). Property keywords, algorithms, theorem
+labels, structure constructors, and selectors do not seed active lexical
+summaries in R-021. Artifact-backed `ModuleSummary` reuse remains R-024 work.
 
 ## Dependency Edges And Relations
 
@@ -344,9 +357,10 @@ unit tests for:
 - deterministic symbol, definition, overload, diagnostic, and contribution
   ordering.
 
-R-021 adds per-kind signature extraction tests as parser-backed source roles
-become executable, including parser-backed lexical-summary spelling fixtures
-where the syntax supports them. R-023 adds semantic `.miz` corpus cases and
-traceability metadata for the `declaration_symbol` stage. Existing `.miz`
+R-021 adds resolver unit tests for parser-backed per-kind signature extraction
+over represented source roles, template-role preservation in opaque payloads,
+and parser-backed lexical-summary spelling fixtures where the syntax supports
+them. R-023 adds semantic `.miz` corpus cases and traceability metadata for the
+`declaration_symbol` stage. Existing `.miz`
 cases and expectations must not be rebaselined to match resolver
 implementation behavior.

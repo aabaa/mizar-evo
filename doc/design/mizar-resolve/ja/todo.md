@@ -340,9 +340,10 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       `SymbolIndex` / `DefinitionIndex` / `RegistrationIndex` / `OverloadIndex` への
       登録、internal duplicate / illegal-overload diagnostic、recovered と
       context-only shell policy、contribution tracking、決定的な unit test を追加した。
-      専用 lexical-summary と artifact-summary data shape は R-021/R-024 に残る。
+      専用 lexical-summary data shape は R-021 で完了済みであり、
+      artifact-summary data shape は R-024 に残る。
 
-21. **種別ごとのシグネチャ抽出。** [ ] — `mizar-parser` task 23-31 が律速。
+21. **種別ごとのシグネチャ抽出。** [x] — `mizar-parser` task 23-31 が律速。
     - 具体的なシグネチャ（struct、mode、attribute、predicate、functor、
       algorithm、theorem、registration、template、および synonym / antonym /
       redefinition などの relation declaration）を増分で抽出する: 各増分は、
@@ -351,6 +352,13 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
     - 増分ごとのテスト: その種別のシグネチャ形状フィクスチャと
       `SymbolEnv` 参照。
     - 依存: 20。`mizar-parser` task 23-31 と対になる。仕様: `symbols.md`。
+    - R-021 で完了: `SignatureProjectionExtractor` は表現済み parser-backed
+      declaration shell を parser-owned opaque signature payload 付きの
+      `SymbolDeclarationProjection` へ lower し、template role を owning
+      declaration payload に保持し、exported lexer-visible spelling 用の
+      `ModuleLexicalSummaryIndex` entry を seed する。module-level scheme
+      declaration は、parser/syntax が scheme declaration shell を公開するまで
+      external source-role gap として残る。
 
 ### 強化と横断フォローアップ
 
