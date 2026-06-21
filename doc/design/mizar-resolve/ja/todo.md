@@ -415,10 +415,16 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       `mizar-artifact` task 1〜5 により canonical な `ModuleSummary` schema、
       writer、検証つき reader、version compatibility policy が揃うことである。
 
-25. **決定性スイート。** [ ]
+25. **決定性スイート。** [x]
     - 同一入力が同一の id、テーブル、診断順、debug レンダリングを生むことの
       プロパティ的検証。frontend のスイートに倣う。
     - 依存: 21。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
+    - R-025 で完了: crate root の determinism regression を追加し、等価な
+      public-seam input を二度構築して import graph resolution、name diagnostic
+      order、`ResolvedAst` debug rendering、`SymbolEnv` debug rendering を比較する。
+      `resolved_ast`、`env`、`imports`、`names`、`labels`、`symbols` 内の詳細な
+      id / table / candidate / diagnostic ordering は、既存の module-local determinism
+      test が引き続きカバーする。
 
 26. **公開 enum の前方互換性ポリシー。** [ ]
     - 各公開 enum に `mizar-frontend` task 25 の決定手続きを適用し、所有

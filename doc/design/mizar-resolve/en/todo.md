@@ -438,10 +438,16 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       `ModuleSummary` schema, writer, validating reader, and version
       compatibility policy.
 
-25. **Determinism suite.** [ ]
+25. **Determinism suite.** [x]
     - Property coverage that identical inputs produce identical ids, tables,
       diagnostic order, and debug renderings, mirroring the frontend suite.
     - Deps: 21. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
+    - Completed by R-025: added a crate-root determinism regression that
+      builds equivalent public-seam inputs twice and compares import graph
+      resolution, name diagnostic order, `ResolvedAst` debug rendering, and
+      `SymbolEnv` debug rendering. Existing module-local determinism tests
+      continue to cover detailed id, table, candidate, and diagnostic ordering
+      within `resolved_ast`, `env`, `imports`, `names`, `labels`, and `symbols`.
 
 26. **Public-enum forward-compatibility policy.** [ ]
     - Apply the `mizar-frontend` task-25 decision procedure to each public
