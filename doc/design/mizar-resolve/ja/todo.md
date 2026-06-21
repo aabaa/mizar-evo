@@ -451,10 +451,16 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       semantic corpus coverage `test_gap`、R-G003 deferred `ModuleSummary` reuse、
       R-G006 parser/syntax scheme-role dependency は残る。
 
-28. **二言語ドキュメント同期監査。** [ ]
+28. **二言語ドキュメント同期監査。** [x]
     - `doc/design/mizar-resolve/en/` の各英語正本と日本語版を比較し、API
       一覧、状態、用語、リンク、挙動の約束を同期する。
     - 依存: 27。仕様: リポジトリのドキュメント方針。
+    - R-028 で完了: [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md)
+      に、英日 design-document pair の checklist を記録した。監査では public API
+      family、enum policy、task state、deferred / external-dependency record、
+      behavior promise、boundary statement、terminology、resolver task handoff
+      wording に残る不一致は見つからなかった。`doc/spec`、`.miz`、expectation、
+      source file は変更していない。
 
 29. **module 境界リファクタリング gate。** [ ]
     - crate を下流 consumer 向けに完了扱いにする前に、source layout を監査し、

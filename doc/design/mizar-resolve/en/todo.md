@@ -475,12 +475,18 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       semantic corpus coverage `test_gap` refined by R-G007, R-G003 deferred
       `ModuleSummary` reuse, and R-G006 parser/syntax scheme-role dependency.
 
-28. **Bilingual documentation sync audit.** [ ]
+28. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under
       `doc/design/mizar-resolve/en/` with its Japanese companion and
       synchronize API lists, statuses, terminology, links, and behavior
       promises.
     - Deps: 27. Spec: repository documentation policy.
+    - Completed by R-028: [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md)
+      records the paired English/Japanese design-document checklist. The audit
+      found no remaining mismatch in public API families, enum policy, task
+      states, deferred/external-dependency records, behavior promises, boundary
+      statements, terminology, or resolver task handoff wording. No `doc/spec`,
+      `.miz`, expectation, or source files changed.
 
 29. **Module-boundary refactor gate.** [ ]
     - Before treating the crate as ready for downstream consumers, audit the
