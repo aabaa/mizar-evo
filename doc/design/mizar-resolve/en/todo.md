@@ -512,6 +512,13 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       bilingual documentation audit scopes were re-run for the moved APIs with
       no new drift.
 
+## Crate Close-Out
+
+- Completed: [crate_exit_report.md](./crate_exit_report.md) records
+  non-deferred task completion, R-024 deferral, milestone gates, quality score
+  94/100, full verification, human-review surface, task commits, and next-crate
+  handoff.
+
 ## Recommended Verification
 
 Run after each task:

@@ -3,7 +3,7 @@
 > Canonical language: English. Japanese companion:
 > [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md).
 
-Status: task R-028 audit complete; task R-029 scope re-run complete.
+Status: task R-028 audit complete; task R-029 and close-out scopes re-run complete.
 
 ## Scope
 
@@ -13,8 +13,8 @@ This audit compares each English canonical design document under
 status, gap/deferred classifications, behavior promises, boundary statements,
 terminology, and links relevant to the `mizar-resolve` task stream.
 
-The audit covers the completed non-deferred resolver work through R-029 and the
-R-024 `external_dependency_gap` deferral record. It does not replace the
+The audit covers the completed non-deferred resolver work through close-out and
+the R-024 `external_dependency_gap` deferral record. It does not replace the
 source/spec correspondence audit in
 [source_spec_correspondence.md](./source_spec_correspondence.md), and it does
 not change `doc/spec`, `.miz` sources, or expectation sidecars.
@@ -53,13 +53,13 @@ not change `doc/spec`, `.miz` sources, or expectation sidecars.
 | [source_spec_correspondence.md](./source_spec_correspondence.md) | [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md) | R-027 public API, behavior-boundary, task-requirement, and follow-up records are synchronized, including the relationship between R-G002 and R-G007; the R-029 moved-source scope re-run is also synchronized. |
 | [symbols.md](./symbols.md) | [../ja/symbols.md](../ja/symbols.md) | Symbol-bearing shells, collection order, identities/origins, signatures, duplicates/overloads, visibility/export/summary policy, dependency relations, recovery/diagnostics, determinism, and public enum policy are synchronized. |
 | [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Ordered task states, deferral notes, recommended verification, and close-out handoff wording are synchronized. |
-| [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md) | This R-028 audit and R-029 scope re-run are recorded in both languages with the same scope, result, pair checklist, and handoff notes. |
+| [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md) | This R-028 audit, R-029 scope re-run, and close-out re-run are recorded in both languages with the same scope, result, pair checklist, and handoff notes. |
 | [module_boundary_refactor.md](./module_boundary_refactor.md) | [../ja/module_boundary_refactor.md](../ja/module_boundary_refactor.md) | R-029 source-layout audit, private helper/test split list, re-run audit notes, and verification requirements are synchronized. |
+| [crate_exit_report.md](./crate_exit_report.md) | [../ja/crate_exit_report.md](../ja/crate_exit_report.md) | Close-out status, quality score, hard gates, deferred items, human-review surface, verification, task commits, and next-crate handoff are synchronized. |
 
 ## Handoff
 
-Crate-wide close-out should treat this audit as the baseline bilingual sync
-state. If the close-out report adds new design files, add both language
-companions together. Behavior cleanup, public API changes, or new diagnostics
-remain outside the completed refactor gate and require separate spec/test
-authority.
+Post-close-out resolver updates should treat this audit as the baseline
+bilingual sync state. Add future design files in both language directories in
+the same change. Behavior cleanup, public API changes, or new diagnostics remain
+outside the completed refactor gate and require separate spec/test authority.

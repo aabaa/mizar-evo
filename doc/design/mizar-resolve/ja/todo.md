@@ -483,6 +483,12 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       `names/diagnostics.rs` へ移した。移動した API について source/spec と二言語
       ドキュメント監査 scope を再実行し、新しい drift は見つからなかった。
 
+## crate close-out
+
+- 完了: [crate_exit_report.md](./crate_exit_report.md) に、non-deferred task completion、
+  R-024 deferral、milestone gate、quality score 94/100、full verification、
+  human-review surface、task commit、next-crate handoff を記録した。
+
 ## 推奨検証
 
 各タスクの後で実行する:

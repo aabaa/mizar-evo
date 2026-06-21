@@ -3,7 +3,7 @@
 > 正本は英語です。英語版:
 > [../en/bilingual_documentation_synchronization.md](../en/bilingual_documentation_synchronization.md)。
 
-状態: task R-028 audit complete; task R-029 scope re-run complete。
+状態: task R-028 audit complete; task R-029 and close-out scopes re-run complete。
 
 ## 範囲
 
@@ -12,7 +12,7 @@
 filename、API list、task status、gap / deferred classification、behavior promise、
 boundary statement、terminology、`mizar-resolve` task stream に関係する link である。
 
-監査範囲は R-029 までの完了済み non-deferred resolver work と、R-024
+監査範囲は close-out までの完了済み non-deferred resolver work と、R-024
 `external_dependency_gap` deferral record である。この監査は
 [source_spec_correspondence.md](./source_spec_correspondence.md) の source/spec
 correspondence audit を置き換えない。また、`doc/spec`、`.miz` source、expectation
@@ -51,12 +51,13 @@ sidecar は変更しない。
 | [source_spec_correspondence.md](../en/source_spec_correspondence.md) | [./source_spec_correspondence.md](./source_spec_correspondence.md) | R-027 の public API、behavior-boundary、task-requirement、follow-up record が、R-G002 と R-G007 の関係を含めて同期している。R-029 の moved-source scope re-run も同期している。 |
 | [symbols.md](../en/symbols.md) | [./symbols.md](./symbols.md) | symbol-bearing shell、collection order、identity / origin、signature、duplicate / overload、visibility / export / summary policy、dependency relation、recovery / diagnostics、determinism、public enum policy が同期している。 |
 | [todo.md](../en/todo.md) | [./todo.md](./todo.md) | ordered task state、deferral note、recommended verification、close-out handoff wording が同期している。 |
-| [bilingual_documentation_synchronization.md](../en/bilingual_documentation_synchronization.md) | [./bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | この R-028 audit と R-029 scope re-run は、同じ scope、result、pair checklist、handoff note を両言語で記録している。 |
+| [bilingual_documentation_synchronization.md](../en/bilingual_documentation_synchronization.md) | [./bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | この R-028 audit、R-029 scope re-run、close-out re-run は、同じ scope、result、pair checklist、handoff note を両言語で記録している。 |
 | [module_boundary_refactor.md](../en/module_boundary_refactor.md) | [./module_boundary_refactor.md](./module_boundary_refactor.md) | R-029 source-layout audit、private helper / test split list、re-run audit note、verification requirement が同期している。 |
+| [crate_exit_report.md](../en/crate_exit_report.md) | [./crate_exit_report.md](./crate_exit_report.md) | close-out status、quality score、hard gate、deferred item、human-review surface、verification、task commit、next-crate handoff が同期している。 |
 
 ## handoff
 
-crate-wide close-out はこの監査を二言語同期状態の baseline として扱う。close-out report で
-新しい design file を追加する場合は、両言語 companion を同時に追加する。挙動 cleanup、
+post-close-out の resolver update は、この監査を二言語同期状態の baseline として扱う。
+将来 design file を追加する場合は、両言語 directory に同時に追加する。挙動 cleanup、
 public API change、新しい diagnostics は完了済み refactor gate の範囲外であり、独立した
 spec/test authority を要求する。

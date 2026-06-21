@@ -45,7 +45,7 @@ and the crate ownership map in
 | mizar-test | yes | Corpus discovery, expectation sidecars, staged model, traceability, snapshots, harness behavior | [~] implementation exists; formal lint/gap audit, runner validation, snapshots, and reporting remain | [todo](./mizar-test/en/todo.md) |
 | mizar-build | yes | Phase 0 workspace planning plus later task graph, scheduler, resources, cancellation, failure state | [~] scaffold and package-name validation slice exist; planner spec and full manifest/lockfile parsing are next | [todo](./mizar-build/en/todo.md) |
 | mizar-lsp | yes | Editor range mapping now; future server, snapshots, diagnostics, metadata, navigation, actions, explanations | [~] range conversion slice exists; specs and server features remain planned | [todo](./mizar-lsp/en/todo.md) |
-| mizar-resolve | yes | Module graph, namespaces, symbols, labels, signature collection | [~] tasks 1-23 and 25-29 complete; task 24 is deferred on `mizar-artifact` task 5; crate-wide close-out verification is next | [todo](./mizar-resolve/en/todo.md) |
+| mizar-resolve | yes | Module graph, namespaces, symbols, labels, signature collection | [x] non-deferred tasks 1-23 and 25-29 complete; task 24 is deferred on `mizar-artifact` task 5 | [todo](./mizar-resolve/en/todo.md) |
 | mizar-checker | no | Type checking, cluster/registration resolution, overload resolution | [ ] planned | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | no | Elaboration, binder-normalized core logic, control-flow preparation | [ ] planned | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | no | VC IR, VC generation, deterministic pre-ATP discharge, dependency slices | [ ] planned | [todo](./mizar-vc/en/todo.md) |
@@ -109,59 +109,52 @@ current parser hardening close-out.
 
 ### Immediate Next Work
 
-1. **mizar-resolve close-out verification** - resolver tasks 1-23 have landed, including
-   import/name resolution, dot-chain finalization, theorem/proof-step label
-   resolution, the signature collection spec, and the opaque symbol collection
-   skeleton plus parser-backed per-kind signature extraction and recovered
-   syntax policy plus the `declaration_symbol` corpus runner seed. Task 24 is
-   explicitly deferred on `mizar-artifact` task 5, task 25 adds the crate-root
-   determinism suite, task 26 records the public-enum forward-compatibility
-   policy, task 27 records source/spec correspondence with no unclassified
-   blocking/high gaps, and task 28 records bilingual documentation
-   synchronization with no remaining English/Japanese design mismatch. Task 29
-   completes the module-boundary refactor gate without public API or behavior
-   changes; continue with crate-wide close-out verification and exit reporting.
+1. **mizar-artifact wave A** - run tasks 1-5 to create the canonical
+   `ModuleSummary` schema, writer, validating reader, and version compatibility
+   policy that unblock the deferred mizar-resolve task 24. Keep artifact schema
+   ownership in `mizar-artifact`; do not create resolver-local summary formats.
 2. **mizar-test foundation cleanup** - run the lint-policy guard and
    source/spec gap audit (tasks 1-2), then harden validation/reporting,
    snapshots, and coverage reporting. The source crate already exists; the TODO
    is the formal gap-closing plan.
-3. **mizar-artifact wave A, in parallel when useful** - canonical
-   serialization and `ModuleSummary` schema work can proceed beside resolver
-   hardening, but summary-backed resolver reuse remains gated on
-   `mizar-artifact` task 5.
+3. **mizar-resolve task 24 resume, after artifact task 5** - consume the
+   canonical artifact schema and compare summary-backed and source-backed
+   resolution without inventing resolver-owned artifact formats.
 
 ### Semantic And Proof Layers
+
+`mizar-resolve` has completed phases 4-5 for all non-deferred tasks. Resume only
+the deferred summary-backed reuse task after `mizar-artifact` task 5 lands:
+[mizar-resolve task 24](./mizar-resolve/en/todo.md).
 
 After the immediate foundation work, proceed bottom-up by phase while pulling
 leaf support crates forward when they unblock cross-module work:
 
-1. **mizar-resolve** (phases 4-5) - module graph, import/export visibility,
-   namespace scopes, symbol tables, labels, and signature collection.
-   [todo](./mizar-resolve/en/todo.md)
-2. **Early leaf strands, in parallel with resolver:**
+1. **Early leaf strands before checker work:**
    - **mizar-artifact wave A** - canonical serialization plus
      `ModuleSummary`/`RegistrationSummary` schemas for summary-backed
      resolution. [todo](./mizar-artifact/en/todo.md)
    - **mizar-build wave B** - task graph and scheduling work can continue
      independently when scheduler/driver foundations become the focus.
      [todo](./mizar-build/en/todo.md)
-   - **mizar-diagnostics** - shared diagnostic records before resolver
-     adoption expands. [todo](./mizar-diagnostics/en/todo.md)
-3. **mizar-checker** (phases 6-8) - type checking, cluster/registration
+   - **mizar-diagnostics** - shared diagnostic records before user-facing
+     resolver or checker diagnostic adoption expands.
+     [todo](./mizar-diagnostics/en/todo.md)
+2. **mizar-checker** (phases 6-8) - type checking, cluster/registration
    resolution with replayable traces, and overload resolution.
    [todo](./mizar-checker/en/todo.md)
-4. **mizar-core** (phases 9-10) - elaboration and control-flow preparation;
+3. **mizar-core** (phases 9-10) - elaboration and control-flow preparation;
    binder foundations can start alongside checker work when inputs are stable.
    [todo](./mizar-core/en/todo.md)
-5. **mizar-vc** (phases 11-12) - VC generation, `VcId` assignment, dependency
+4. **mizar-vc** (phases 11-12) - VC generation, `VcId` assignment, dependency
    slices, and deterministic pre-ATP discharge. [todo](./mizar-vc/en/todo.md)
-6. **mizar-kernel** (phase 14) - certificate schema and trusted checking,
+5. **mizar-kernel** (phase 14) - certificate schema and trusted checking,
    deliberately ahead of ATP integration. [todo](./mizar-kernel/en/todo.md)
-7. **mizar-atp** (phase 13) and **mizar-proof** - ATP encoders/runners,
+6. **mizar-atp** (phase 13) and **mizar-proof** - ATP encoders/runners,
    portfolio candidates, proof policy, winner selection, and witness storage.
    [mizar-atp todo](./mizar-atp/en/todo.md),
    [mizar-proof todo](./mizar-proof/en/todo.md)
-8. **mizar-artifact wave B**, **mizar-build wave B**, **mizar-ir**,
+7. **mizar-artifact wave B**, **mizar-build wave B**, **mizar-ir**,
    **mizar-cache**, and **mizar-driver** - store/manifest transactions,
    scheduler/cancellation/commit boundary, IR storage and projections, cache
    reuse, query orchestration, and user entry points.
@@ -170,7 +163,7 @@ leaf support crates forward when they unblock cross-module work:
    [mizar-ir](./mizar-ir/en/todo.md),
    [mizar-cache](./mizar-cache/en/todo.md),
    [mizar-driver](./mizar-driver/en/todo.md)
-9. **mizar-doc** (phase 16) - documentation rendering and extraction over
+8. **mizar-doc** (phase 16) - documentation rendering and extraction over
    published artifacts. [todo](./mizar-doc/en/todo.md)
 
 Two crates run as cross-cutting strands rather than strict steps:
