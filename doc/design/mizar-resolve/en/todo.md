@@ -24,7 +24,7 @@ Autonomous crate development preparation is tracked in
 | imports | `imports.md` (task 8) | `src/imports.rs` | [~] |
 | declarations | `declarations.md` (task 11) | `src/declarations.rs` | [x] |
 | names | `names.md` (task 12) | `src/names.rs` | [~] |
-| labels | `labels.md` (task 17) | `src/labels.rs` | [ ] |
+| labels | `labels.md` (task 17) | `src/labels.rs` | [~] |
 | symbols | `symbols.md` (task 19) | `src/symbols.rs` | [ ] |
 
 `mizar-resolve` implements pipeline phases 4-5: `SurfaceAst` in, `ResolvedAst`
@@ -83,6 +83,11 @@ IR ownership: [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
   instead of re-read sources. The first iteration resolves the in-memory
   dependency closure; the artifact-backed path needs `mizar-artifact`
   module-summary schema first. Registered at the top level.
+- **Nested proof label shadowing wording: resolved by task 17.** An earlier
+  task-18 test note asked for "label shadowing across nested proofs", but
+  spec chapter 15 forbids inner-scope label shadowing. R-017 classifies that
+  note as `design_drift` in this derived TODO and repairs the target to
+  duplicate/conflict rejection across visible label scopes.
 
 ## Ordered Task List
 
@@ -298,18 +303,25 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 
 ### Labels
 
-17. **Spec: `labels.md`.** [ ]
+17. **Spec: `labels.md`.** [x]
     - Write the label-resolution spec (English and Japanese, no code): the
       separate label scope family, proof-block nesting, forward-reference
       policy, and normalized label-origin paths used by downstream
       `ObligationAnchor` construction.
+    - Completed by [labels.md](./labels.md), paired with
+      [../ja/labels.md](../ja/labels.md). The spec keeps proof validity,
+      template instantiation, ATP premise selection, `ObligationAnchor`
+      construction, and public resolver diagnostic-code allocation outside
+      R-017.
     - Deps: 2. Spec: architecture 03 "Label Resolution Is Scoped Separately".
 
 18. **Label resolution.** [ ]
     - Resolve statement/theorem labels per task 17, including proof-block
       nesting.
-    - Tests: label shadowing across nested proofs; references to later labels
-      rejected; `LabelRefTable` determinism.
+    - Tests: proof-block visibility; duplicate/conflicting labels across visible
+      nested proof scopes rejected; references to later labels rejected; simple,
+      qualified, and grouped citation lookup where parser coverage exists;
+      `LabelRefTable` determinism.
     - Deps: 11, 17, `mizar-parser` task 22. Spec: `labels.md`,
       [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md).
 

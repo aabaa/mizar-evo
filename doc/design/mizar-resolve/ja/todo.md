@@ -23,7 +23,7 @@
 | imports | `imports.md`（task 8） | `src/imports.rs` | [~] |
 | declarations | `declarations.md`（task 11） | `src/declarations.rs` | [x] |
 | names | `names.md`（task 12） | `src/names.rs` | [~] |
-| labels | `labels.md`（task 17） | `src/labels.rs` | [ ] |
+| labels | `labels.md`（task 17） | `src/labels.rs` | [~] |
 | symbols | `symbols.md`（task 19） | `src/symbols.rs` | [ ] |
 
 `mizar-resolve` はパイプライン phase 4-5 を実装する。入力は `SurfaceAst`、
@@ -81,6 +81,11 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
   artifact として消費することを許す。最初のイテレーションはメモリ内の
   依存閉包を解決し、artifact 経由の経路は `mizar-artifact` の
   module-summary スキーマを先に必要とする。トップレベルにも登録済み。
+- **nested proof label shadowing の文言: task 17 で解決済み。**
+  以前の task 18 の test note は「nested proof の label shadowing」を求めていたが、
+  spec chapter 15 は inner-scope label shadowing を禁止する。R-017 はこの note を
+  derived TODO の `design_drift` として分類し、visible label scope をまたぐ
+  duplicate / conflict の拒否へ修正する。
 
 ## 順序付きタスク一覧
 
@@ -282,17 +287,23 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 
 ### ラベル
 
-17. **仕様: `labels.md`。** [ ]
+17. **仕様: `labels.md`。** [x]
     - ラベル解決の仕様を執筆する（英語と日本語、コードなし）: 独立した
       ラベルスコープ族、証明ブロックの入れ子、前方参照ポリシー、下流の
       `ObligationAnchor` 構築が使う正規化された label-origin path。
+    - [labels.md](./labels.md) で完了。英語正本は
+      [../en/labels.md](../en/labels.md)。proof validity、template instantiation、
+      ATP premise selection、`ObligationAnchor` construction、public resolver
+      diagnostic-code allocation は R-017 の範囲外に保つ。
     - 依存: 2。仕様: アーキテクチャ 03「Label Resolution Is Scoped
       Separately」。
 
 18. **ラベル解決。** [ ]
     - task 17 に従って文/定理ラベルを解決する。証明ブロックの入れ子を含む。
-    - テスト: 入れ子証明をまたぐラベルのシャドーイング。後方ラベルへの
-      参照の拒否。`LabelRefTable` の決定性。
+    - テスト: proof-block visibility。visible nested proof scope をまたぐ
+      duplicate / conflicting label の拒否。後続ラベルへの参照の拒否。
+      parser coverage が存在する範囲での simple / qualified / grouped citation
+      lookup。`LabelRefTable` の決定性。
     - 依存: 11、17、`mizar-parser` task 22。仕様: `labels.md`、
       [16.theorems_and_proofs.md](../../../spec/ja/16.theorems_and_proofs.md)。
 
