@@ -330,6 +330,33 @@ index family and contribution effect in a fixed section order, use LF line
 endings, and avoid absolute paths, opaque source-id debug output, and derived
 `Debug` text for externally visible variants.
 
+## Public Enum Forward-Compatibility
+
+Task R-026 applies the frontend task-25 public-enum decision procedure to this
+module. All public resolver-owned enums in `env` are forward-compatible API
+surfaces and must remain `#[non_exhaustive]`:
+
+- `SymbolKind`
+- `Visibility`
+- `ExportStatus`
+- `SignatureShell`
+- `RelationKind`
+- `DefinitionKind`
+- `DeclarationConflictClass`
+- `RegistrationKind`
+- `LexicalSummaryKind`
+- `NamespaceNodeKind`
+- `NamespaceEdgeKind`
+- `NamespaceTarget`
+- `DependencyEndpoint`
+- `DeclarationDependencyKind`
+- `ContributionKind`
+
+No exhaustive public enum exceptions are owned by this module. Downstream
+consumers must keep wildcard or fallback arms; resolver-internal matches may
+remain exhaustive over the currently represented variants when implementing the
+specified behavior.
+
 ## Planned Data-Shape Tests
 
 Task R-005 must add focused unit tests for:

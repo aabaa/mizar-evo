@@ -252,6 +252,31 @@ format であり、published artifact schema ではない。LF line ending、
 locale-independent decimal formatting、deterministic string escaping、および
 不安定な実装 `Debug` output ではなく手書き variant name を使う。
 
+## 公開 enum の前方互換性
+
+task R-026 は frontend task 25 の public-enum decision procedure をこの module に適用する。
+`resolved_ast` が所有する公開 resolver enum はすべて forward-compatible API surface であり、
+`#[non_exhaustive]` を維持しなければならない:
+
+- `RecoveryState`
+- `NodeResolutionState`
+- `NodeReferenceKey`
+- `ResolvedArenaError`
+- `NameLookupClass`
+- `NameResolution`
+- `LabelKind`
+- `LabelExpectation`
+- `LabelResolution`
+- `ImportResolution`
+- `ImportFailureClass`
+- `ExportFailureClass`
+- `ExportTarget`
+- `ResolvedAstError`
+
+この module は exhaustive な公開 enum 例外を所有しない。下流 consumer は wildcard
+または fallback arm を持たなければならない。resolver 内部の match は、仕様化済みの
+挙動を実装する範囲で、現在表現されている variant に対して exhaustive でよい。
+
 ## 計画中の data-shape test
 
 Task R-004 は以下の focused unit test を追加しなければならない。

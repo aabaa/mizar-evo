@@ -323,6 +323,32 @@ contribution effect を固定 section order で描画し、LF line ending を使
 absolute path、不透明な source-id debug output、外部に見える variant の derived
 `Debug` text を避けなければならない。
 
+## 公開 enum の前方互換性
+
+task R-026 は frontend task 25 の public-enum decision procedure をこの module に適用する。
+`env` が所有する公開 resolver enum はすべて forward-compatible API surface であり、
+`#[non_exhaustive]` を維持しなければならない:
+
+- `SymbolKind`
+- `Visibility`
+- `ExportStatus`
+- `SignatureShell`
+- `RelationKind`
+- `DefinitionKind`
+- `DeclarationConflictClass`
+- `RegistrationKind`
+- `LexicalSummaryKind`
+- `NamespaceNodeKind`
+- `NamespaceEdgeKind`
+- `NamespaceTarget`
+- `DependencyEndpoint`
+- `DeclarationDependencyKind`
+- `ContributionKind`
+
+この module は exhaustive な公開 enum 例外を所有しない。下流 consumer は wildcard
+または fallback arm を持たなければならない。resolver 内部の match は、仕様化済みの
+挙動を実装する範囲で、現在表現されている variant に対して exhaustive でよい。
+
 ## 計画中の data-shape test
 
 Task R-005 は以下の focused unit test を追加しなければならない。

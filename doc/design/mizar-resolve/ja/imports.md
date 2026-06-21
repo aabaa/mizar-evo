@@ -269,6 +269,20 @@ resolution は、同等の source、module-index input、利用可能な summary
   candidate key で sort する。cycle record は source range、failure class、stable
   candidate key で sort する。
 
+## 公開 enum の前方互換性
+
+task R-026 は frontend task 25 の public-enum decision procedure をこの module に適用する。
+`imports` が所有する公開 resolver enum はすべて forward-compatible API surface であり、
+`#[non_exhaustive]` を維持しなければならない:
+
+- `ImportPathPrefix`
+- `ImportPathFailureClass`
+- `ImportGraphBuildError`
+
+この module は exhaustive な公開 enum 例外を所有しない。下流 consumer は wildcard
+または fallback arm を持たなければならない。resolver 内部の match は、仕様化済みの
+挙動を実装する範囲で、現在表現されている variant に対して exhaustive でよい。
+
 ## boundary notes
 
 - parser と syntax crate は directive syntax と recovery shape を所有する。

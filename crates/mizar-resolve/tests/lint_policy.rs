@@ -1,7 +1,258 @@
 use std::{
+    collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
 };
+
+#[derive(Debug, Clone, Copy)]
+struct PublicEnumDecision {
+    relative_path: &'static str,
+    enum_name: &'static str,
+    spec_name: &'static str,
+}
+
+const PUBLIC_ENUM_DECISIONS: &[PublicEnumDecision] = &[
+    PublicEnumDecision {
+        relative_path: "src/declarations.rs",
+        enum_name: "DeclarationShellKind",
+        spec_name: "declarations.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/declarations.rs",
+        enum_name: "DeclarationShellVisibilityState",
+        spec_name: "declarations.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/env.rs",
+        enum_name: "SymbolKind",
+        spec_name: "env.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/env.rs",
+        enum_name: "Visibility",
+        spec_name: "env.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/env.rs",
+        enum_name: "ExportStatus",
+        spec_name: "env.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/env.rs",
+        enum_name: "SignatureShell",
+        spec_name: "env.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/env.rs",
+        enum_name: "RelationKind",
+        spec_name: "env.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/env.rs",
+        enum_name: "DefinitionKind",
+        spec_name: "env.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/env.rs",
+        enum_name: "DeclarationConflictClass",
+        spec_name: "env.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/env.rs",
+        enum_name: "RegistrationKind",
+        spec_name: "env.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/env.rs",
+        enum_name: "LexicalSummaryKind",
+        spec_name: "env.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/env.rs",
+        enum_name: "NamespaceNodeKind",
+        spec_name: "env.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/env.rs",
+        enum_name: "NamespaceEdgeKind",
+        spec_name: "env.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/env.rs",
+        enum_name: "NamespaceTarget",
+        spec_name: "env.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/env.rs",
+        enum_name: "DependencyEndpoint",
+        spec_name: "env.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/env.rs",
+        enum_name: "DeclarationDependencyKind",
+        spec_name: "env.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/env.rs",
+        enum_name: "ContributionKind",
+        spec_name: "env.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/imports.rs",
+        enum_name: "ImportPathPrefix",
+        spec_name: "imports.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/imports.rs",
+        enum_name: "ImportPathFailureClass",
+        spec_name: "imports.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/imports.rs",
+        enum_name: "ImportGraphBuildError",
+        spec_name: "imports.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/labels.rs",
+        enum_name: "LabelProjectionSource",
+        spec_name: "labels.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/labels.rs",
+        enum_name: "LabelReferenceScope",
+        spec_name: "labels.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/labels.rs",
+        enum_name: "LabelDiagnosticKind",
+        spec_name: "labels.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/names.rs",
+        enum_name: "NamespaceResolutionOrigin",
+        spec_name: "names.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/names.rs",
+        enum_name: "NamespaceFailureClass",
+        spec_name: "names.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/names.rs",
+        enum_name: "NamespacePartialOrigin",
+        spec_name: "names.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/names.rs",
+        enum_name: "NameProjectionSource",
+        spec_name: "names.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/names.rs",
+        enum_name: "NameReferenceScope",
+        spec_name: "names.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/names.rs",
+        enum_name: "NameDiagnosticRole",
+        spec_name: "names.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/names.rs",
+        enum_name: "NameDiagnosticKind",
+        spec_name: "names.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/resolved_ast.rs",
+        enum_name: "RecoveryState",
+        spec_name: "resolved_ast.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/resolved_ast.rs",
+        enum_name: "NodeResolutionState",
+        spec_name: "resolved_ast.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/resolved_ast.rs",
+        enum_name: "NodeReferenceKey",
+        spec_name: "resolved_ast.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/resolved_ast.rs",
+        enum_name: "ResolvedArenaError",
+        spec_name: "resolved_ast.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/resolved_ast.rs",
+        enum_name: "NameLookupClass",
+        spec_name: "resolved_ast.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/resolved_ast.rs",
+        enum_name: "NameResolution",
+        spec_name: "resolved_ast.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/resolved_ast.rs",
+        enum_name: "LabelKind",
+        spec_name: "resolved_ast.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/resolved_ast.rs",
+        enum_name: "LabelExpectation",
+        spec_name: "resolved_ast.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/resolved_ast.rs",
+        enum_name: "LabelResolution",
+        spec_name: "resolved_ast.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/resolved_ast.rs",
+        enum_name: "ImportResolution",
+        spec_name: "resolved_ast.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/resolved_ast.rs",
+        enum_name: "ImportFailureClass",
+        spec_name: "resolved_ast.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/resolved_ast.rs",
+        enum_name: "ExportFailureClass",
+        spec_name: "resolved_ast.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/resolved_ast.rs",
+        enum_name: "ExportTarget",
+        spec_name: "resolved_ast.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/resolved_ast.rs",
+        enum_name: "ResolvedAstError",
+        spec_name: "resolved_ast.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/symbols.rs",
+        enum_name: "SymbolOverloadPolicy",
+        spec_name: "symbols.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/symbols.rs",
+        enum_name: "SymbolDiagnosticClass",
+        spec_name: "symbols.md",
+    },
+];
+
+const PUBLIC_ENUM_DECISION_SOURCE_FILES: &[&str] = &[
+    "src/declarations.rs",
+    "src/env.rs",
+    "src/imports.rs",
+    "src/labels.rs",
+    "src/names.rs",
+    "src/resolved_ast.rs",
+    "src/symbols.rs",
+];
 
 #[test]
 fn resolve_manifest_opts_into_workspace_lints() {
@@ -54,6 +305,35 @@ fn resolve_allow_exceptions_are_documented_inline() {
     assert!(
         violations.is_empty(),
         "intentional lint allow exceptions need an adjacent reason:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn public_resolver_enums_are_marked_non_exhaustive_and_documented() {
+    let root = crate_root();
+    let specs_root = workspace_root().join("doc/design/mizar-resolve");
+    let expected_keys = PUBLIC_ENUM_DECISIONS
+        .iter()
+        .map(|decision| {
+            (
+                decision.relative_path.to_owned(),
+                decision.enum_name.to_owned(),
+            )
+        })
+        .collect::<BTreeSet<_>>();
+    let mut violations = Vec::new();
+
+    for decision in PUBLIC_ENUM_DECISIONS {
+        collect_public_enum_decision_violations(&root, &specs_root, decision, &mut violations);
+    }
+    collect_unlisted_public_enum_decisions(&root, &expected_keys, &mut violations);
+
+    assert!(
+        violations.is_empty(),
+        "task 26 public enum forward-compatibility policy requires \
+         #[non_exhaustive] and owning-spec decisions for resolver-owned \
+         public enums:\n{}",
         violations.join("\n")
     );
 }
@@ -196,6 +476,137 @@ fn collect_undocumented_allows(root: &Path, path: &Path, violations: &mut Vec<St
         let display_path = path.strip_prefix(root).unwrap_or(path);
         violations.push(format!("{}:{line_number}", display_path.display()));
     }
+}
+
+fn collect_public_enum_decision_violations(
+    root: &Path,
+    specs_root: &Path,
+    decision: &PublicEnumDecision,
+    violations: &mut Vec<String>,
+) {
+    let path = root.join(decision.relative_path);
+    let source = read_to_string(&path);
+    if !source_contains_public_enum(&source, decision.enum_name) {
+        violations.push(format!(
+            "{}: missing pub enum {}",
+            decision.relative_path, decision.enum_name
+        ));
+        return;
+    }
+
+    if !enum_has_attribute(&source, decision.enum_name, "non_exhaustive") {
+        violations.push(format!(
+            "{}: pub enum {} lacks #[non_exhaustive]",
+            decision.relative_path, decision.enum_name
+        ));
+    }
+
+    for language in ["en", "ja"] {
+        let spec_path = specs_root.join(language).join(decision.spec_name);
+        let spec = read_to_string(&spec_path);
+        if spec_contains_public_enum_decision(&spec, decision.enum_name) {
+            continue;
+        }
+        violations.push(format!(
+            "doc/design/mizar-resolve/{language}/{}: missing R-026 decision for {}",
+            decision.spec_name, decision.enum_name
+        ));
+    }
+}
+
+fn collect_unlisted_public_enum_decisions(
+    root: &Path,
+    expected_keys: &BTreeSet<(String, String)>,
+    violations: &mut Vec<String>,
+) {
+    for relative_source_file in PUBLIC_ENUM_DECISION_SOURCE_FILES {
+        let path = root.join(relative_source_file);
+        let source = read_to_string(&path);
+        let lines = source.lines().collect::<Vec<_>>();
+        let relative_path = (*relative_source_file).to_owned();
+
+        for (line_index, line) in lines.iter().enumerate() {
+            if declaration_has_preceding_attribute(&lines, line_index, "cfg(test)") {
+                continue;
+            }
+            let Some(enum_name) = public_enum_name(line) else {
+                continue;
+            };
+            if expected_keys.contains(&(relative_path.clone(), enum_name.to_owned())) {
+                continue;
+            }
+
+            violations.push(format!(
+                "{relative_path}:{} pub enum {enum_name} has no R-026 decision",
+                line_index + 1
+            ));
+        }
+    }
+}
+
+fn public_enum_name(line: &str) -> Option<&str> {
+    let rest = line.trim_start().strip_prefix("pub enum ")?;
+    rest.split(|character: char| character != '_' && !character.is_ascii_alphanumeric())
+        .next()
+        .filter(|name| !name.is_empty())
+}
+
+fn source_contains_public_enum(source: &str, enum_name: &str) -> bool {
+    source
+        .lines()
+        .any(|line| public_enum_name(line) == Some(enum_name))
+}
+
+fn enum_has_attribute(source: &str, enum_name: &str, attribute_name: &str) -> bool {
+    let lines = source.lines().collect::<Vec<_>>();
+
+    for (line_index, line) in lines.iter().enumerate() {
+        if public_enum_name(line) == Some(enum_name) {
+            return declaration_has_preceding_attribute(&lines, line_index, attribute_name);
+        }
+    }
+
+    false
+}
+
+fn spec_contains_public_enum_decision(spec: &str, enum_name: &str) -> bool {
+    let bullet = format!("- `{enum_name}`");
+    spec.lines().any(|line| line.trim() == bullet)
+}
+
+fn declaration_has_preceding_attribute(
+    lines: &[&str],
+    declaration_line_index: usize,
+    attribute_name: &str,
+) -> bool {
+    let mut line_index = declaration_line_index;
+
+    while let Some(previous_index) = line_index.checked_sub(1) {
+        let previous_line = lines[previous_index].trim();
+        if previous_line.is_empty() || previous_line.starts_with("///") {
+            line_index = previous_index;
+            continue;
+        }
+        if starts_attribute(lines[previous_index]) {
+            let (attribute, _) = attribute_block(lines, previous_index);
+            if attribute_is(&attribute, attribute_name) {
+                return true;
+            }
+            line_index = previous_index;
+            continue;
+        }
+        break;
+    }
+
+    false
+}
+
+fn attribute_is(attribute: &str, attribute_name: &str) -> bool {
+    let compact = compact_attribute_tokens(attribute);
+    let outer = format!("#[{attribute_name}");
+    let inner = format!("#![{attribute_name}");
+
+    compact.starts_with(&outer) || compact.starts_with(&inner)
 }
 
 fn undocumented_allow_line_numbers(source: &str) -> Vec<usize> {

@@ -239,6 +239,21 @@ Label collection and resolution are deterministic:
   origin path;
 - debug rendering uses normalized origin paths and never raw hash-map order.
 
+## Public Enum Forward-Compatibility
+
+Task R-026 applies the frontend task-25 public-enum decision procedure to this
+module. All public resolver-owned enums in `labels` are forward-compatible API
+surfaces and must remain `#[non_exhaustive]`:
+
+- `LabelProjectionSource`
+- `LabelReferenceScope`
+- `LabelDiagnosticKind`
+
+No exhaustive public enum exceptions are owned by this module. Downstream
+consumers must keep wildcard or fallback arms; resolver-internal matches may
+remain exhaustive over the currently represented variants when implementing the
+specified behavior.
+
 ## Test Obligations
 
 R-017 added no executable tests because it was documentation-only. R-018 adds

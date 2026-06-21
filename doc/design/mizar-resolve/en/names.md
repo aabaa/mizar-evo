@@ -350,6 +350,25 @@ record-local range/name-reference tie-breakers. Public numeric codes must be
 added only after `doc/spec/en/22.error_handling_and_diagnostics.md` assigns or
 delegates resolver code ownership.
 
+## Public Enum Forward-Compatibility
+
+Task R-026 applies the frontend task-25 public-enum decision procedure to this
+module. All public resolver-owned enums in `names` are forward-compatible API
+surfaces and must remain `#[non_exhaustive]`:
+
+- `NamespaceResolutionOrigin`
+- `NamespaceFailureClass`
+- `NamespacePartialOrigin`
+- `NameProjectionSource`
+- `NameReferenceScope`
+- `NameDiagnosticRole`
+- `NameDiagnosticKind`
+
+No exhaustive public enum exceptions are owned by this module. Downstream
+consumers must keep wildcard or fallback arms; resolver-internal matches may
+remain exhaustive over the currently represented variants when implementing the
+specified behavior.
+
 ## Tests Planned For Implementation Tasks
 
 R-012 adds no tests because it changes documentation only. Follow-on tasks must

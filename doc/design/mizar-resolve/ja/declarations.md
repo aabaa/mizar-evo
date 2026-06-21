@@ -134,3 +134,16 @@ shell は次のいずれかを満たすと recovered として印付けされる
 後続 task は、関連仕様が揃ってから、current `ModuleId`、source order / structural
 position、declaration kind、signature/name information から stable semantic identity を
 導出する。
+
+## 公開 enum の前方互換性
+
+task R-026 は frontend task 25 の public-enum decision procedure をこの module に適用する。
+`declarations` が所有する公開 resolver enum はすべて forward-compatible API surface
+であり、`#[non_exhaustive]` を維持しなければならない:
+
+- `DeclarationShellKind`
+- `DeclarationShellVisibilityState`
+
+この module は exhaustive な公開 enum 例外を所有しない。下流 consumer は wildcard
+または fallback arm を持たなければならない。resolver 内部の match は、仕様化済みの
+挙動を実装する範囲で、現在表現されている variant に対して exhaustive でよい。

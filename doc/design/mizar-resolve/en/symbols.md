@@ -344,6 +344,20 @@ Signature collection must be byte-stable for equivalent inputs:
 - debug snapshots contain normalized origins and stable spellings rather than
   session-local addresses or allocation ids.
 
+## Public Enum Forward-Compatibility
+
+Task R-026 applies the frontend task-25 public-enum decision procedure to this
+module. All public resolver-owned enums in `symbols` are forward-compatible API
+surfaces and must remain `#[non_exhaustive]`:
+
+- `SymbolOverloadPolicy`
+- `SymbolDiagnosticClass`
+
+No exhaustive public enum exceptions are owned by this module. Downstream
+consumers must keep wildcard or fallback arms; resolver-internal matches may
+remain exhaustive over the currently represented variants when implementing the
+specified behavior.
+
 ## Test Obligations
 
 R-019 is documentation-only and adds no executable tests. R-020 adds resolver

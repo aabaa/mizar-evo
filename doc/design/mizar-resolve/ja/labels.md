@@ -216,6 +216,20 @@ label collection と resolution は deterministic である。
 - diagnostic は primary source range、diagnostic class、stable origin path で sort する。
 - debug rendering は normalized origin path を使い、raw hash-map order を使わない。
 
+## 公開 enum の前方互換性
+
+task R-026 は frontend task 25 の public-enum decision procedure をこの module に適用する。
+`labels` が所有する公開 resolver enum はすべて forward-compatible API surface であり、
+`#[non_exhaustive]` を維持しなければならない:
+
+- `LabelProjectionSource`
+- `LabelReferenceScope`
+- `LabelDiagnosticKind`
+
+この module は exhaustive な公開 enum 例外を所有しない。下流 consumer は wildcard
+または fallback arm を持たなければならない。resolver 内部の match は、仕様化済みの
+挙動を実装する範囲で、現在表現されている variant に対して exhaustive でよい。
+
 ## Test Obligations
 
 R-017 は documentation-only であったため executable test を追加しなかった。R-018 は次の

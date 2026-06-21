@@ -139,3 +139,17 @@ syntax documentation explicitly does not make it a persistent semantic anchor.
 Later tasks derive stable semantic identity from the current `ModuleId`,
 source order/structural position, declaration kind, and signature/name
 information once the relevant specs are in place.
+
+## Public Enum Forward-Compatibility
+
+Task R-026 applies the frontend task-25 public-enum decision procedure to this
+module. All public resolver-owned enums in `declarations` are
+forward-compatible API surfaces and must remain `#[non_exhaustive]`:
+
+- `DeclarationShellKind`
+- `DeclarationShellVisibilityState`
+
+No exhaustive public enum exceptions are owned by this module. Downstream
+consumers must keep wildcard or fallback arms; resolver-internal matches may
+remain exhaustive over the currently represented variants when implementing the
+specified behavior.

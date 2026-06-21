@@ -426,10 +426,16 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       id / table / candidate / diagnostic ordering は、既存の module-local determinism
       test が引き続きカバーする。
 
-26. **公開 enum の前方互換性ポリシー。** [ ]
+26. **公開 enum の前方互換性ポリシー。** [x]
     - 各公開 enum に `mizar-frontend` task 25 の決定手続きを適用し、所有
       モジュール仕様の enum の隣に各決定を記録する。
     - 依存: 21。仕様: 全モジュール仕様。
+    - R-026 で完了: `resolved_ast`、`env`、`imports`、`declarations`、`names`、
+      `labels`、`symbols` の resolver-owned public enum を監査した。すべての
+      public enum は `#[non_exhaustive]` のままで、exhaustive exception はない。
+      所有 module spec に decision と下流 consumer の wildcard/fallback requirement を
+      記録し、これら spec-owned module における将来の public-enum 追加は
+      `mizar-resolve` lint test で guard する。
 
 27. **ソース/仕様対応監査。** [ ]
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ

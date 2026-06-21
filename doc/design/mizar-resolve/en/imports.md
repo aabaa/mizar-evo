@@ -299,6 +299,21 @@ available summaries.
   failure class, and stable candidate key. Cycle records are sorted by source
   range, failure class, and stable candidate key.
 
+## Public Enum Forward-Compatibility
+
+Task R-026 applies the frontend task-25 public-enum decision procedure to this
+module. All public resolver-owned enums in `imports` are forward-compatible API
+surfaces and must remain `#[non_exhaustive]`:
+
+- `ImportPathPrefix`
+- `ImportPathFailureClass`
+- `ImportGraphBuildError`
+
+No exhaustive public enum exceptions are owned by this module. Downstream
+consumers must keep wildcard or fallback arms; resolver-internal matches may
+remain exhaustive over the currently represented variants when implementing the
+specified behavior.
+
 ## Boundary Notes
 
 - Parser and syntax crates own directive syntax and recovery shape.

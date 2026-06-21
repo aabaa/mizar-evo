@@ -327,6 +327,24 @@ range/name-reference tie-breaker を使う。public numeric code は
 `doc/spec/en/22.error_handling_and_diagnostics.md` が resolver code ownership を割り当てる、
 または委譲した後にだけ追加する。
 
+## 公開 enum の前方互換性
+
+task R-026 は frontend task 25 の public-enum decision procedure をこの module に適用する。
+`names` が所有する公開 resolver enum はすべて forward-compatible API surface であり、
+`#[non_exhaustive]` を維持しなければならない:
+
+- `NamespaceResolutionOrigin`
+- `NamespaceFailureClass`
+- `NamespacePartialOrigin`
+- `NameProjectionSource`
+- `NameReferenceScope`
+- `NameDiagnosticRole`
+- `NameDiagnosticKind`
+
+この module は exhaustive な公開 enum 例外を所有しない。下流 consumer は wildcard
+または fallback arm を持たなければならない。resolver 内部の match は、仕様化済みの
+挙動を実装する範囲で、現在表現されている variant に対して exhaustive でよい。
+
 ## Implementation Task 向け Planned Tests
 
 R-012 は documentation-only change なので test は追加しない。後続 task は次を cover する。

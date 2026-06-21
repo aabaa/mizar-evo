@@ -449,10 +449,16 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       continue to cover detailed id, table, candidate, and diagnostic ordering
       within `resolved_ast`, `env`, `imports`, `names`, `labels`, and `symbols`.
 
-26. **Public-enum forward-compatibility policy.** [ ]
+26. **Public-enum forward-compatibility policy.** [x]
     - Apply the `mizar-frontend` task-25 decision procedure to each public
       enum; record each decision next to the enum in the owning module spec.
     - Deps: 21. Spec: all module specs.
+    - Completed by R-026: audited resolver-owned public enums in
+      `resolved_ast`, `env`, `imports`, `declarations`, `names`, `labels`, and
+      `symbols`; every public enum remains `#[non_exhaustive]` with no
+      exhaustive exception. The owning module specs now list the decision and
+      downstream wildcard/fallback requirement, and `mizar-resolve` lint tests
+      guard future public-enum additions in those spec-owned modules.
 
 27. **Source/spec correspondence audit.** [ ]
     - Trace every public API and promised behavior in the module specs to

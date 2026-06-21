@@ -263,6 +263,32 @@ endings, locale-independent decimal formatting, deterministic string escaping,
 and hand-written variant names rather than unstable implementation `Debug`
 output.
 
+## Public Enum Forward-Compatibility
+
+Task R-026 applies the frontend task-25 public-enum decision procedure to this
+module. All public resolver-owned enums in `resolved_ast` are forward-compatible
+API surfaces and must remain `#[non_exhaustive]`:
+
+- `RecoveryState`
+- `NodeResolutionState`
+- `NodeReferenceKey`
+- `ResolvedArenaError`
+- `NameLookupClass`
+- `NameResolution`
+- `LabelKind`
+- `LabelExpectation`
+- `LabelResolution`
+- `ImportResolution`
+- `ImportFailureClass`
+- `ExportFailureClass`
+- `ExportTarget`
+- `ResolvedAstError`
+
+No exhaustive public enum exceptions are owned by this module. Downstream
+consumers must keep wildcard or fallback arms; resolver-internal matches may
+remain exhaustive over the currently represented variants when implementing the
+specified behavior.
+
 ## Planned Data-Shape Tests
 
 Task R-004 must add focused unit tests for:
