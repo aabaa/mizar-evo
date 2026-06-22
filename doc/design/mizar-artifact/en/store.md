@@ -99,6 +99,10 @@ Canonical JSON bytes obey these rules:
 - optional fields are omitted when absent unless the schema explicitly requires
   a `null`;
 - strings preserve source text exactly except for required JSON escaping;
+- string escaping uses `\"` for quotation mark, `\\` for reverse solidus, `\b`,
+  `\t`, `\n`, `\f`, and `\r` for those control characters, and lowercase
+  `\u00xx` escapes for the remaining U+0000 through U+001F control characters;
+  non-control Unicode scalar values remain UTF-8, not `\u`-escaped;
 - paths are normalized before serialization and use `/` separators in portable
   fields;
 - hash strings include their algorithm or domain prefix when the schema
@@ -132,6 +136,10 @@ Compatibility errors report the schema family, actual version, supported
 version range, and artifact path. They do not trigger cache fallback that would
 turn an unsupported artifact into proof authority.
 
+The shared task 3 compatibility helper carries the schema family and supported
+range in every error. Artifact readers that have a path use the path-aware
+check so reported diagnostics include the artifact path.
+
 ## Hash Separation
 
 The store distinguishes four hash classes.
@@ -148,6 +156,14 @@ never reused directly as another class. The concrete hash algorithm and domain
 tags are implementation constants introduced with the shared canonical hashing
 implementation in task 3, but every exposed hash string records enough
 algorithm/domain information for readers to reject mismatches.
+
+Task 3 uses the construction label
+`mizar-artifact/artifact-framed-hash-text/v1`: the artifact hash class,
+schema family, schema version, and filtered canonical JSON bytes are framed as
+UTF-8 text and passed through `mizar_session::hash_text`. This preserves the
+`mizar-session`-only dependency boundary. It is not an artifact-owned raw
+BLAKE3 API, and exposed hash strings must identify this construction label when
+they are serialized by later schema tasks.
 
 Diagnostic and development artifacts may have their own hashes, but those
 hashes do not decide semantic dependency compatibility. Internal cache keys and
@@ -171,6 +187,12 @@ publication equivalence unless a later schema explicitly moves a field into a
 stable provenance hash domain. A reader must not use a hash-excluded field to
 accept a proof result, validate dependency compatibility, or decide package
 publication eligibility.
+
+Hash-exclusion paths are object-key paths. An absent path has no effect. A path
+to a parent field excludes the whole subtree, making any child exclusion below
+that parent redundant. Paths do not address array elements; schemas that need
+array-local local metadata must isolate that metadata in an object field whose
+whole value can be excluded.
 
 ## Atomic Writes
 
@@ -213,12 +235,13 @@ Published artifact readers:
 Read failures are artifact diagnostics. They do not silently fall back to
 internal cache records and do not establish proof authority.
 
-## Deferred Implementation
+## Implementation Staging
 
-Task 2 adds this specification only. Source implementation is deferred:
+Task 2 introduced this specification. Source implementation is staged across
+later tasks:
 
-- task 3 implements shared canonical serialization, hash domains, and version
-  checks;
+- task 3 implements shared canonical serialization, hash domains, hash
+  exclusions, and version checks;
 - task 13 implements store writes, atomicity, and corruption-detecting reads;
 - task 14 implements manifest transactions;
 - schema-specific reader/writer behavior is implemented by each schema task.

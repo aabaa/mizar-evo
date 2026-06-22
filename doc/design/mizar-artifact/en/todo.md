@@ -20,7 +20,7 @@ and 18 and internal 02 and 06.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| store | `store.md` (task 2) | `src/store.rs` | [ ] |
+| store | `store.md` (task 2) | `src/store.rs` | [~] |
 | module_summary | `module_summary.md` (task 4) | `src/module_summary.rs` | [ ] |
 | registration_summary | `registration_summary.md` (task 6) | `src/registration_summary.rs` | [ ] |
 | proof_witness | `proof_witness.md` (task 8) | `src/proof_witness.rs` | [ ] |
@@ -95,7 +95,7 @@ Keep `cargo test -p mizar-artifact` green after each task (see
    - Deps: 1. Spec: [internal 02](../../internal/en/02.artifact_store_cache_key_and_manifest.md),
      architecture 11 "Deterministic Artifact Output"/"Atomic Writes".
 
-3. **Canonical serialization and schema-version checks.** [ ]
+3. **Canonical serialization and schema-version checks.** [x]
    - Implement canonical serialization, hashing rules, and schema-version
      compatibility checking shared by all schemas.
    - Tests: byte-identical serialization across runs/platforms; version

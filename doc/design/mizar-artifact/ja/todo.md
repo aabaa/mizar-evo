@@ -19,7 +19,7 @@ source task が始まる前に file を追加する。モジュール名は
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| store | `store.md`（task 2） | `src/store.rs` | [ ] |
+| store | `store.md`（task 2） | `src/store.rs` | [~] |
 | module_summary | `module_summary.md`（task 4） | `src/module_summary.rs` | [ ] |
 | registration_summary | `registration_summary.md`（task 6） | `src/registration_summary.rs` | [ ] |
 | proof_witness | `proof_witness.md`（task 8） | `src/proof_witness.rs` | [ ] |
@@ -94,7 +94,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
    - 依存: 1。仕様: [internal 02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
      アーキテクチャ 11「Deterministic Artifact Output」「Atomic Writes」。
 
-3. **正準シリアライゼーションと schema-version チェック。** [ ]
+3. **正準シリアライゼーションと schema-version チェック。** [x]
    - 全スキーマが共有する正準シリアライゼーション、ハッシュ規則、
      schema-version 互換性チェックを実装する。
    - テスト: 実行/プラットフォームをまたぐバイト同一のシリアライ
