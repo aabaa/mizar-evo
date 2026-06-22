@@ -57,6 +57,7 @@ macro_rules! string_key {
 dense_id!(OverloadSiteId);
 dense_id!(OverloadCandidateId);
 dense_id!(OverloadDiagnosticId);
+dense_id!(TemplateExpansionId);
 
 string_key!(OverloadSiteKey);
 string_key!(OverloadNameKey);
@@ -97,6 +98,39 @@ impl OverloadCollectionOutput {
         let mut output = String::from("overload-collection-debug-v1\n");
         write_sites(&mut output, &self.sites);
         write_candidates(&mut output, &self.candidates);
+        write_diagnostics(&mut output, &self.diagnostics);
+        output
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateExpansionOutput {
+    candidates: OverloadCandidateTable,
+    expansions: TemplateExpansionTable,
+    diagnostics: OverloadDiagnosticTable,
+}
+
+impl TemplateExpansionOutput {
+    pub fn expand(collection: &OverloadCollectionOutput) -> Self {
+        TemplateExpansionBuilder::new(collection).finish()
+    }
+
+    pub const fn candidates(&self) -> &OverloadCandidateTable {
+        &self.candidates
+    }
+
+    pub const fn expansions(&self) -> &TemplateExpansionTable {
+        &self.expansions
+    }
+
+    pub const fn diagnostics(&self) -> &OverloadDiagnosticTable {
+        &self.diagnostics
+    }
+
+    pub fn debug_text(&self) -> String {
+        let mut output = String::from("template-expansion-debug-v1\n");
+        write_candidates(&mut output, &self.candidates);
+        write_template_expansions(&mut output, &self.expansions);
         write_diagnostics(&mut output, &self.diagnostics);
         output
     }
@@ -221,7 +255,9 @@ pub enum CoherenceStatus {
 pub struct TemplateCandidatePayload {
     pub template: SymbolId,
     pub instantiation_key: TemplateInstantiationKey,
+    pub parameters: Vec<TemplateParameterKey>,
     pub arguments: Vec<TemplateArgument>,
+    pub inferred_arguments: Vec<TemplateArgumentInference>,
     pub constraints: Vec<TemplateConstraintEvidence>,
 }
 
@@ -230,6 +266,27 @@ pub struct TemplateCandidatePayload {
 pub enum TemplateArgument {
     Explicit(NormalizedTypeId),
     Omitted(TemplateParameterKey),
+    SourceQua {
+        source: NormalizedTypeId,
+        target: NormalizedTypeId,
+        path: QuaPathKey,
+        status: TemplateQuaStatus,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum TemplateQuaStatus {
+    AcceptedWidening,
+    RejectedNarrowing,
+    DeferredExternalDependency,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateArgumentInference {
+    pub parameter: TemplateParameterKey,
+    pub inferred: NormalizedTypeId,
+    pub evidence_key: CandidateProvenanceKey,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -237,6 +294,15 @@ pub struct TemplateConstraintEvidence {
     pub parameter: TemplateParameterKey,
     pub evidence_key: CandidateProvenanceKey,
     pub facts: Vec<TypeFactId>,
+    pub status: TemplateConstraintEvidenceStatus,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum TemplateConstraintEvidenceStatus {
+    Accepted,
+    Missing,
+    DeferredExternalDependency,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -399,6 +465,104 @@ impl OverloadCandidateTable {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateExpansion {
+    pub id: TemplateExpansionId,
+    pub source_candidate: OverloadCandidateId,
+    pub site: OverloadSiteId,
+    pub template: SymbolId,
+    pub instantiation_key: TemplateInstantiationKey,
+    pub substitutions: Vec<TemplateSubstitution>,
+    pub instantiated_candidate: Option<OverloadCandidateId>,
+    pub status: TemplateExpansionStatus,
+    pub diagnostics: Vec<OverloadDiagnosticId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct TemplateExpansionTable {
+    entries: Vec<TemplateExpansion>,
+}
+
+impl TemplateExpansionTable {
+    pub const fn new() -> Self {
+        Self {
+            entries: Vec::new(),
+        }
+    }
+
+    pub fn get(&self, id: TemplateExpansionId) -> Option<&TemplateExpansion> {
+        self.entries.get(id.index())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (TemplateExpansionId, &TemplateExpansion)> {
+        self.entries.iter().map(|entry| (entry.id, entry))
+    }
+
+    pub fn canonical_iter(
+        &self,
+    ) -> impl Iterator<Item = (TemplateExpansionId, &TemplateExpansion)> {
+        let mut entries = self.entries.iter().collect::<Vec<_>>();
+        entries.sort_by_key(|entry| template_expansion_order_key(entry));
+        entries.into_iter().map(|entry| (entry.id, entry))
+    }
+
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    fn push(&mut self, expansion: TemplateExpansion) {
+        self.entries.push(expansion);
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateSubstitution {
+    pub parameter: TemplateParameterKey,
+    pub value: NormalizedTypeId,
+    pub source: TemplateSubstitutionSource,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum TemplateSubstitutionSource {
+    Explicit,
+    OmittedInference {
+        evidence_key: CandidateProvenanceKey,
+    },
+    SourceQua {
+        source: NormalizedTypeId,
+        path: QuaPathKey,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum TemplateExpansionStatus {
+    Instantiated,
+    Rejected(TemplateExpansionFailure),
+    Deferred(TemplateExpansionFailure),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum TemplateExpansionFailure {
+    ArityMismatch,
+    DuplicateParameter,
+    ParameterMismatch,
+    MissingInference,
+    AmbiguousInference,
+    UnknownConstraintParameter,
+    MissingConstraintEvidence,
+    DeferredConstraintEvidence,
+    RejectedSourceQua,
+    DeferredSourceQua,
+    DeferredCandidate,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OverloadDiagnostic {
     pub id: OverloadDiagnosticId,
     pub site: Option<OverloadSiteId>,
@@ -505,6 +669,7 @@ pub enum OverloadDiagnosticClass {
     MissingSite,
     UnsupportedSiteRole,
     UnsupportedCandidateRole,
+    TemplateExpansion,
     Recovery,
     ExternalDependencyGap,
 }
@@ -574,6 +739,7 @@ type DiagnosticOutputOrderKey = (
     String,
     usize,
 );
+type TemplateExpansionOrderKey = (usize, String, usize);
 
 struct SiteInputWithOrder {
     input: OverloadSiteInput,
@@ -794,6 +960,305 @@ impl OverloadCollectionBuilder {
     }
 }
 
+struct TemplateExpansionBuilder<'a> {
+    collection: &'a OverloadCollectionOutput,
+    candidates: OverloadCandidateTable,
+    expansions: TemplateExpansionTable,
+    diagnostics: OverloadDiagnosticTable,
+}
+
+impl<'a> TemplateExpansionBuilder<'a> {
+    fn new(collection: &'a OverloadCollectionOutput) -> Self {
+        Self {
+            collection,
+            candidates: OverloadCandidateTable::new(),
+            expansions: TemplateExpansionTable::new(),
+            diagnostics: OverloadDiagnosticTable::new(),
+        }
+    }
+
+    fn finish(mut self) -> TemplateExpansionOutput {
+        for (_, candidate) in self.collection.candidates().canonical_iter() {
+            if let Some(payload) = &candidate.template {
+                self.expand_template_candidate(candidate, payload);
+            } else {
+                self.copy_concrete_candidate(candidate);
+            }
+        }
+        TemplateExpansionOutput {
+            candidates: self.candidates,
+            expansions: self.expansions,
+            diagnostics: self.diagnostics,
+        }
+    }
+
+    fn expand_template_candidate(
+        &mut self,
+        candidate: &OverloadCandidate,
+        payload: &TemplateCandidatePayload,
+    ) {
+        let expansion_id = TemplateExpansionId::new(self.expansions.len());
+        let evaluation = evaluate_template_candidate(candidate, payload);
+        let (status, substitutions, instantiated_candidate, diagnostics) = match evaluation {
+            TemplateEvaluation::Instantiated { substitutions } => {
+                let concrete = self.instantiate_candidate(candidate, payload);
+                (
+                    TemplateExpansionStatus::Instantiated,
+                    substitutions,
+                    Some(concrete),
+                    Vec::new(),
+                )
+            }
+            TemplateEvaluation::Rejected { failure } => {
+                let diagnostic = self.insert_template_diagnostic(candidate, &failure, false);
+                (
+                    TemplateExpansionStatus::Rejected(failure),
+                    Vec::new(),
+                    None,
+                    vec![diagnostic],
+                )
+            }
+            TemplateEvaluation::Deferred { failure } => {
+                let diagnostic = self.insert_template_diagnostic(candidate, &failure, true);
+                (
+                    TemplateExpansionStatus::Deferred(failure),
+                    Vec::new(),
+                    None,
+                    vec![diagnostic],
+                )
+            }
+        };
+
+        self.expansions.push(TemplateExpansion {
+            id: expansion_id,
+            source_candidate: candidate.id,
+            site: candidate.site,
+            template: payload.template.clone(),
+            instantiation_key: payload.instantiation_key.clone(),
+            substitutions,
+            instantiated_candidate,
+            status,
+            diagnostics,
+        });
+    }
+
+    fn instantiate_candidate(
+        &mut self,
+        candidate: &OverloadCandidate,
+        payload: &TemplateCandidatePayload,
+    ) -> OverloadCandidateId {
+        let id = OverloadCandidateId::new(self.candidates.len());
+        let mut concrete = candidate.clone();
+        concrete.id = id;
+        concrete.origin = CandidateOrigin::TemplateDerived {
+            template: payload.template.clone(),
+            instantiation: payload.instantiation_key.clone(),
+        };
+        concrete.template = None;
+        concrete.diagnostics = self.remap_candidate_diagnostics(candidate, id);
+        self.candidates.push(concrete);
+        id
+    }
+
+    fn copy_concrete_candidate(&mut self, candidate: &OverloadCandidate) -> OverloadCandidateId {
+        let id = OverloadCandidateId::new(self.candidates.len());
+        let mut concrete = candidate.clone();
+        concrete.id = id;
+        concrete.diagnostics = self.remap_candidate_diagnostics(candidate, id);
+        self.candidates.push(concrete);
+        id
+    }
+
+    fn remap_candidate_diagnostics(
+        &mut self,
+        candidate: &OverloadCandidate,
+        output_candidate: OverloadCandidateId,
+    ) -> Vec<OverloadDiagnosticId> {
+        candidate
+            .diagnostics
+            .iter()
+            .filter_map(|diagnostic| {
+                self.collection
+                    .diagnostics()
+                    .get(*diagnostic)
+                    .map(|diagnostic| {
+                        self.diagnostics.insert(OverloadDiagnosticDraft {
+                            site: diagnostic.site,
+                            site_key: diagnostic.site_key.clone(),
+                            candidate: Some(output_candidate),
+                            provenance: diagnostic.provenance.clone(),
+                            class: diagnostic.class,
+                            severity: diagnostic.severity,
+                            message_key: diagnostic.message_key.clone(),
+                            recovery: diagnostic.recovery,
+                        })
+                    })
+            })
+            .collect()
+    }
+
+    fn insert_template_diagnostic(
+        &mut self,
+        candidate: &OverloadCandidate,
+        failure: &TemplateExpansionFailure,
+        deferred: bool,
+    ) -> OverloadDiagnosticId {
+        self.diagnostics.insert(OverloadDiagnosticDraft {
+            site: Some(candidate.site),
+            site_key: Some(candidate.site_key.clone()),
+            candidate: None,
+            provenance: Some(candidate_diagnostic_provenance_from_candidate(candidate)),
+            class: OverloadDiagnosticClass::TemplateExpansion,
+            severity: if deferred {
+                OverloadDiagnosticSeverity::Note
+            } else {
+                OverloadDiagnosticSeverity::Error
+            },
+            message_key: OverloadDiagnosticMessageKey::new(format!(
+                "overload.template.{}",
+                template_failure_name(failure)
+            )),
+            recovery: if deferred {
+                OverloadDiagnosticRecovery::Degraded
+            } else {
+                OverloadDiagnosticRecovery::Normal
+            },
+        })
+    }
+}
+
+enum TemplateEvaluation {
+    Instantiated {
+        substitutions: Vec<TemplateSubstitution>,
+    },
+    Rejected {
+        failure: TemplateExpansionFailure,
+    },
+    Deferred {
+        failure: TemplateExpansionFailure,
+    },
+}
+
+fn evaluate_template_candidate(
+    candidate: &OverloadCandidate,
+    payload: &TemplateCandidatePayload,
+) -> TemplateEvaluation {
+    if candidate.status != OverloadCandidateStatus::Collected {
+        return TemplateEvaluation::Deferred {
+            failure: TemplateExpansionFailure::DeferredCandidate,
+        };
+    }
+    if payload.parameters.len() != payload.arguments.len() {
+        return TemplateEvaluation::Rejected {
+            failure: TemplateExpansionFailure::ArityMismatch,
+        };
+    }
+
+    let mut seen_parameters = BTreeMap::new();
+    for parameter in &payload.parameters {
+        if seen_parameters.insert(parameter.clone(), ()).is_some() {
+            return TemplateEvaluation::Rejected {
+                failure: TemplateExpansionFailure::DuplicateParameter,
+            };
+        }
+    }
+
+    let mut inferences = BTreeMap::new();
+    for inference in &payload.inferred_arguments {
+        if inferences
+            .insert(inference.parameter.clone(), inference)
+            .is_some()
+        {
+            return TemplateEvaluation::Rejected {
+                failure: TemplateExpansionFailure::AmbiguousInference,
+            };
+        }
+    }
+
+    let mut substitutions = Vec::new();
+    for (parameter, argument) in payload.parameters.iter().zip(&payload.arguments) {
+        match argument {
+            TemplateArgument::Explicit(value) => {
+                substitutions.push(TemplateSubstitution {
+                    parameter: parameter.clone(),
+                    value: *value,
+                    source: TemplateSubstitutionSource::Explicit,
+                });
+            }
+            TemplateArgument::Omitted(omitted) => {
+                if omitted != parameter {
+                    return TemplateEvaluation::Rejected {
+                        failure: TemplateExpansionFailure::ParameterMismatch,
+                    };
+                }
+                let Some(inference) = inferences.get(parameter) else {
+                    return TemplateEvaluation::Rejected {
+                        failure: TemplateExpansionFailure::MissingInference,
+                    };
+                };
+                substitutions.push(TemplateSubstitution {
+                    parameter: parameter.clone(),
+                    value: inference.inferred,
+                    source: TemplateSubstitutionSource::OmittedInference {
+                        evidence_key: inference.evidence_key.clone(),
+                    },
+                });
+            }
+            TemplateArgument::SourceQua {
+                source,
+                target,
+                path,
+                status,
+            } => match status {
+                TemplateQuaStatus::AcceptedWidening => {
+                    substitutions.push(TemplateSubstitution {
+                        parameter: parameter.clone(),
+                        value: *target,
+                        source: TemplateSubstitutionSource::SourceQua {
+                            source: *source,
+                            path: path.clone(),
+                        },
+                    });
+                }
+                TemplateQuaStatus::RejectedNarrowing => {
+                    return TemplateEvaluation::Rejected {
+                        failure: TemplateExpansionFailure::RejectedSourceQua,
+                    };
+                }
+                TemplateQuaStatus::DeferredExternalDependency => {
+                    return TemplateEvaluation::Deferred {
+                        failure: TemplateExpansionFailure::DeferredSourceQua,
+                    };
+                }
+            },
+        }
+    }
+
+    for constraint in &payload.constraints {
+        if !seen_parameters.contains_key(&constraint.parameter) {
+            return TemplateEvaluation::Rejected {
+                failure: TemplateExpansionFailure::UnknownConstraintParameter,
+            };
+        }
+        match constraint.status {
+            TemplateConstraintEvidenceStatus::Accepted if !constraint.facts.is_empty() => {}
+            TemplateConstraintEvidenceStatus::Accepted
+            | TemplateConstraintEvidenceStatus::Missing => {
+                return TemplateEvaluation::Rejected {
+                    failure: TemplateExpansionFailure::MissingConstraintEvidence,
+                };
+            }
+            TemplateConstraintEvidenceStatus::DeferredExternalDependency => {
+                return TemplateEvaluation::Deferred {
+                    failure: TemplateExpansionFailure::DeferredConstraintEvidence,
+                };
+            }
+        }
+    }
+
+    TemplateEvaluation::Instantiated { substitutions }
+}
+
 fn site_status(input: &OverloadSiteInput) -> OverloadSiteStatus {
     if !input.kind.is_supported() {
         OverloadSiteStatus::Deferred
@@ -846,6 +1311,19 @@ fn candidate_diagnostic_provenance(input: &OverloadCandidateInput) -> OverloadDi
         template: input.template.clone().map(Box::new),
         coherence: input.coherence,
         provenance: input.provenance.clone(),
+    }
+}
+
+fn candidate_diagnostic_provenance_from_candidate(
+    candidate: &OverloadCandidate,
+) -> OverloadDiagnosticProvenance {
+    OverloadDiagnosticProvenance::CandidateInput {
+        symbol: candidate.symbol.clone(),
+        ordinary_root: candidate.ordinary_root.clone(),
+        declaration_kind: candidate.declaration_kind.clone(),
+        template: candidate.template.clone().map(Box::new),
+        coherence: candidate.coherence,
+        provenance: candidate.provenance.clone(),
     }
 }
 
@@ -902,6 +1380,14 @@ fn candidate_output_key(candidate: &OverloadCandidate) -> CandidateOutputOrderKe
         template_order_key(candidate.template.as_ref(), &candidate.origin),
         provenance_order_key(&candidate.provenance),
         candidate.id.index(),
+    )
+}
+
+fn template_expansion_order_key(expansion: &TemplateExpansion) -> TemplateExpansionOrderKey {
+    (
+        expansion.source_candidate.index(),
+        expansion.instantiation_key.as_str().to_owned(),
+        expansion.id.index(),
     )
 }
 
@@ -1089,6 +1575,37 @@ fn write_candidates(output: &mut String, candidates: &OverloadCandidateTable) {
     }
 }
 
+fn write_template_expansions(output: &mut String, expansions: &TemplateExpansionTable) {
+    output.push_str("template_expansions:\n");
+    if expansions.is_empty() {
+        output.push_str("  <none>\n");
+        return;
+    }
+    for (id, expansion) in expansions.canonical_iter() {
+        let _ = write!(
+            output,
+            "  expansion#{} source=candidate#{} site=site#{} template=",
+            id.index(),
+            expansion.source_candidate.index(),
+            expansion.site.index()
+        );
+        write_symbol_id(output, &expansion.template);
+        let _ = write!(
+            output,
+            " instantiation=\"{}\" status=",
+            escaped_display(expansion.instantiation_key.as_str())
+        );
+        write_template_expansion_status(output, &expansion.status);
+        output.push_str(" substitutions=");
+        write_template_substitutions(output, &expansion.substitutions);
+        output.push_str(" instantiated=");
+        write_optional_candidate_id(output, expansion.instantiated_candidate);
+        output.push_str(" diagnostics=");
+        write_diagnostic_ids(output, &expansion.diagnostics);
+        output.push('\n');
+    }
+}
+
 fn write_diagnostics(output: &mut String, diagnostics: &OverloadDiagnosticTable) {
     output.push_str("diagnostics:\n");
     if diagnostics.is_empty() {
@@ -1202,6 +1719,55 @@ fn write_qua_views(output: &mut String, views: &[SourceQuaView]) {
     output.push(']');
 }
 
+fn write_template_expansion_status(output: &mut String, status: &TemplateExpansionStatus) {
+    match status {
+        TemplateExpansionStatus::Instantiated => output.push_str("instantiated"),
+        TemplateExpansionStatus::Rejected(failure) => {
+            let _ = write!(output, "rejected({})", template_failure_name(failure));
+        }
+        TemplateExpansionStatus::Deferred(failure) => {
+            let _ = write!(output, "deferred({})", template_failure_name(failure));
+        }
+    }
+}
+
+fn write_template_substitutions(output: &mut String, substitutions: &[TemplateSubstitution]) {
+    output.push('[');
+    for (index, substitution) in substitutions.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(
+            output,
+            "{{parameter=\"{}\", value=",
+            escaped_display(substitution.parameter.as_str())
+        );
+        write_type_id(output, substitution.value);
+        output.push_str(", source=");
+        write_template_substitution_source(output, &substitution.source);
+        output.push('}');
+    }
+    output.push(']');
+}
+
+fn write_template_substitution_source(output: &mut String, source: &TemplateSubstitutionSource) {
+    match source {
+        TemplateSubstitutionSource::Explicit => output.push_str("explicit"),
+        TemplateSubstitutionSource::OmittedInference { evidence_key } => {
+            let _ = write!(
+                output,
+                "omitted_inference(\"{}\")",
+                escaped_display(evidence_key.as_str())
+            );
+        }
+        TemplateSubstitutionSource::SourceQua { source, path } => {
+            output.push_str("source_qua(source=");
+            write_type_id(output, *source);
+            let _ = write!(output, ", path=\"{}\")", escaped_display(path.as_str()));
+        }
+    }
+}
+
 fn write_template_payload(output: &mut String, payload: Option<&TemplateCandidatePayload>) {
     let Some(payload) = payload else {
         output.push_str("<none>");
@@ -1212,13 +1778,28 @@ fn write_template_payload(output: &mut String, payload: Option<&TemplateCandidat
     write_symbol_id(output, &payload.template);
     let _ = write!(
         output,
-        ", instantiation=\"{}\", arguments=",
+        ", instantiation=\"{}\", parameters=",
         escaped_display(payload.instantiation_key.as_str())
     );
+    write_template_parameters(output, &payload.parameters);
+    output.push_str(", arguments=");
     write_template_arguments(output, &payload.arguments);
+    output.push_str(", inferred=");
+    write_template_inferences(output, &payload.inferred_arguments);
     output.push_str(", constraints=");
     write_template_constraints(output, &payload.constraints);
     output.push('}');
+}
+
+fn write_template_parameters(output: &mut String, parameters: &[TemplateParameterKey]) {
+    output.push('[');
+    for (index, parameter) in parameters.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(output, "\"{}\"", escaped_display(parameter.as_str()));
+    }
+    output.push(']');
 }
 
 fn write_template_arguments(output: &mut String, arguments: &[TemplateArgument]) {
@@ -1239,7 +1820,45 @@ fn write_template_arguments(output: &mut String, arguments: &[TemplateArgument])
                     escaped_display(parameter.as_str())
                 );
             }
+            TemplateArgument::SourceQua {
+                source,
+                target,
+                path,
+                status,
+            } => {
+                output.push_str("source_qua(source=");
+                write_type_id(output, *source);
+                output.push_str(", target=");
+                write_type_id(output, *target);
+                let _ = write!(
+                    output,
+                    ", path=\"{}\", status={})",
+                    escaped_display(path.as_str()),
+                    template_qua_status_name(*status)
+                );
+            }
         }
+    }
+    output.push(']');
+}
+
+fn write_template_inferences(output: &mut String, inferences: &[TemplateArgumentInference]) {
+    output.push('[');
+    for (index, inference) in inferences.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(
+            output,
+            "{{parameter=\"{}\", inferred=",
+            escaped_display(inference.parameter.as_str())
+        );
+        write_type_id(output, inference.inferred);
+        let _ = write!(
+            output,
+            ", evidence=\"{}\"}}",
+            escaped_display(inference.evidence_key.as_str())
+        );
     }
     output.push(']');
 }
@@ -1252,9 +1871,10 @@ fn write_template_constraints(output: &mut String, constraints: &[TemplateConstr
         }
         let _ = write!(
             output,
-            "{{parameter=\"{}\", evidence=\"{}\", facts=",
+            "{{parameter=\"{}\", evidence=\"{}\", status={}, facts=",
             escaped_display(constraint.parameter.as_str()),
-            escaped_display(constraint.evidence_key.as_str())
+            escaped_display(constraint.evidence_key.as_str()),
+            template_constraint_status_name(constraint.status)
         );
         write_fact_ids(output, &constraint.facts);
         output.push('}');
@@ -1529,8 +2149,43 @@ fn diagnostic_class_name(class: OverloadDiagnosticClass) -> &'static str {
         OverloadDiagnosticClass::MissingSite => "missing_site",
         OverloadDiagnosticClass::UnsupportedSiteRole => "unsupported_site_role",
         OverloadDiagnosticClass::UnsupportedCandidateRole => "unsupported_candidate_role",
+        OverloadDiagnosticClass::TemplateExpansion => "template_expansion",
         OverloadDiagnosticClass::Recovery => "recovery",
         OverloadDiagnosticClass::ExternalDependencyGap => "external_dependency_gap",
+    }
+}
+
+fn template_failure_name(failure: &TemplateExpansionFailure) -> &'static str {
+    match failure {
+        TemplateExpansionFailure::ArityMismatch => "arity_mismatch",
+        TemplateExpansionFailure::DuplicateParameter => "duplicate_parameter",
+        TemplateExpansionFailure::ParameterMismatch => "parameter_mismatch",
+        TemplateExpansionFailure::MissingInference => "missing_inference",
+        TemplateExpansionFailure::AmbiguousInference => "ambiguous_inference",
+        TemplateExpansionFailure::UnknownConstraintParameter => "unknown_constraint_parameter",
+        TemplateExpansionFailure::MissingConstraintEvidence => "missing_constraint_evidence",
+        TemplateExpansionFailure::DeferredConstraintEvidence => "deferred_constraint_evidence",
+        TemplateExpansionFailure::RejectedSourceQua => "rejected_source_qua",
+        TemplateExpansionFailure::DeferredSourceQua => "deferred_source_qua",
+        TemplateExpansionFailure::DeferredCandidate => "deferred_candidate",
+    }
+}
+
+fn template_qua_status_name(status: TemplateQuaStatus) -> &'static str {
+    match status {
+        TemplateQuaStatus::AcceptedWidening => "accepted_widening",
+        TemplateQuaStatus::RejectedNarrowing => "rejected_narrowing",
+        TemplateQuaStatus::DeferredExternalDependency => "deferred_external_dependency",
+    }
+}
+
+fn template_constraint_status_name(status: TemplateConstraintEvidenceStatus) -> &'static str {
+    match status {
+        TemplateConstraintEvidenceStatus::Accepted => "accepted",
+        TemplateConstraintEvidenceStatus::Missing => "missing",
+        TemplateConstraintEvidenceStatus::DeferredExternalDependency => {
+            "deferred_external_dependency"
+        }
     }
 }
 
@@ -1811,14 +2466,24 @@ mod tests {
         input.template = Some(TemplateCandidatePayload {
             template,
             instantiation_key: TemplateInstantiationKey::new("T=mode"),
+            parameters: vec![
+                TemplateParameterKey::new("T"),
+                TemplateParameterKey::new("U"),
+            ],
             arguments: vec![
                 TemplateArgument::Explicit(NormalizedTypeId::new(7)),
                 TemplateArgument::Omitted(TemplateParameterKey::new("U")),
             ],
+            inferred_arguments: vec![TemplateArgumentInference {
+                parameter: TemplateParameterKey::new("U"),
+                inferred: NormalizedTypeId::new(10),
+                evidence_key: CandidateProvenanceKey::new("inferred-U"),
+            }],
             constraints: vec![TemplateConstraintEvidence {
                 parameter: TemplateParameterKey::new("U"),
                 evidence_key: CandidateProvenanceKey::new("constraint-visible"),
                 facts: vec![TypeFactId::new(8)],
+                status: TemplateConstraintEvidenceStatus::Accepted,
             }],
         });
         input.coherence = Some(CoherenceStatus::Accepted);
@@ -1848,6 +2513,382 @@ mod tests {
         let debug = output.debug_text();
         assert!(debug.contains("coherence=accepted"));
         assert!(debug.contains("instantiation=\"T=mode\""));
+    }
+
+    #[test]
+    fn explicit_template_candidates_expand_into_concrete_candidates_deterministically() {
+        let source_id = source_id(33);
+        let sites = vec![site(
+            "call",
+            OverloadSiteKind::FunctorApplication,
+            source_id,
+            10,
+        )];
+        let plain = candidate("call", "root", "same", CandidateScope::Local, 0);
+        let mut templated = candidate("call", "root", "same", CandidateScope::Local, 1);
+        templated.parameters = vec![NormalizedTypeId::new(7), NormalizedTypeId::new(8)];
+        templated.result = Some(NormalizedTypeId::new(9));
+        templated.template = Some(template_payload(
+            "T=explicit",
+            vec![TemplateParameterKey::new("T")],
+            vec![TemplateArgument::Explicit(NormalizedTypeId::new(7))],
+        ));
+        let collection = OverloadCollectionOutput::collect(sites.clone(), vec![templated, plain]);
+        let mut reversed_candidates = collection
+            .candidates()
+            .iter()
+            .map(|(_, candidate)| OverloadCandidateInput {
+                site: candidate.site_key.clone(),
+                symbol: candidate.symbol.clone(),
+                ordinary_root: candidate.ordinary_root.clone(),
+                declaration_kind: candidate.declaration_kind.clone(),
+                parameters: candidate.parameters.clone(),
+                result: candidate.result,
+                origin: candidate.origin.clone(),
+                template: candidate.template.clone(),
+                coherence: candidate.coherence,
+                provenance: candidate.provenance.clone(),
+            })
+            .collect::<Vec<_>>();
+        reversed_candidates.reverse();
+        let permuted_collection = OverloadCollectionOutput::collect(sites, reversed_candidates);
+
+        let output = TemplateExpansionOutput::expand(&collection);
+        let permuted_output = TemplateExpansionOutput::expand(&permuted_collection);
+
+        assert_eq!(output.debug_text(), permuted_output.debug_text());
+        assert_eq!(output.expansions().len(), 1);
+        let (_, expansion) = output.expansions().iter().next().expect("expansion");
+        assert_eq!(expansion.status, TemplateExpansionStatus::Instantiated);
+        assert_eq!(
+            expansion.substitutions,
+            [TemplateSubstitution {
+                parameter: TemplateParameterKey::new("T"),
+                value: NormalizedTypeId::new(7),
+                source: TemplateSubstitutionSource::Explicit
+            }]
+        );
+        let candidate_origins = output
+            .candidates()
+            .canonical_iter()
+            .map(|(_, candidate)| &candidate.origin)
+            .collect::<Vec<_>>();
+        assert!(matches!(candidate_origins[0], CandidateOrigin::Ordinary));
+        assert!(matches!(
+            candidate_origins[1],
+            CandidateOrigin::TemplateDerived { .. }
+        ));
+        let plain_candidate = output
+            .candidates()
+            .canonical_iter()
+            .find_map(|(_, candidate)| {
+                matches!(candidate.origin, CandidateOrigin::Ordinary).then_some(candidate)
+            })
+            .expect("plain candidate");
+        assert_eq!(
+            plain_candidate.parameters,
+            [NormalizedTypeId::new(1), NormalizedTypeId::new(2)]
+        );
+        assert_eq!(plain_candidate.result, Some(NormalizedTypeId::new(3)));
+        assert_eq!(plain_candidate.status, OverloadCandidateStatus::Collected);
+        let expanded = output
+            .candidates()
+            .get(
+                expansion
+                    .instantiated_candidate
+                    .expect("instantiated candidate"),
+            )
+            .expect("expanded candidate");
+        assert!(expanded.template.is_none());
+        assert_eq!(
+            expanded.parameters,
+            [NormalizedTypeId::new(7), NormalizedTypeId::new(8)]
+        );
+        assert_eq!(expanded.result, Some(NormalizedTypeId::new(9)));
+        assert_eq!(expanded.status, OverloadCandidateStatus::Collected);
+    }
+
+    #[test]
+    fn omitted_template_arguments_require_explicit_inference_payload() {
+        let source_id = source_id(34);
+        let mut inferred = candidate("call", "root", "inferred", CandidateScope::Local, 0);
+        let mut inferred_payload = template_payload(
+            "U=inferred",
+            vec![TemplateParameterKey::new("U")],
+            vec![TemplateArgument::Omitted(TemplateParameterKey::new("U"))],
+        );
+        inferred_payload.inferred_arguments = vec![TemplateArgumentInference {
+            parameter: TemplateParameterKey::new("U"),
+            inferred: NormalizedTypeId::new(11),
+            evidence_key: CandidateProvenanceKey::new("exact-argument-type"),
+        }];
+        inferred.template = Some(inferred_payload);
+        let mut missing = candidate("call", "root", "missing", CandidateScope::Local, 1);
+        missing.template = Some(template_payload(
+            "U=missing",
+            vec![TemplateParameterKey::new("U")],
+            vec![TemplateArgument::Omitted(TemplateParameterKey::new("U"))],
+        ));
+        let collection = OverloadCollectionOutput::collect(
+            vec![site(
+                "call",
+                OverloadSiteKind::FunctorApplication,
+                source_id,
+                10,
+            )],
+            vec![missing, inferred],
+        );
+
+        let output = TemplateExpansionOutput::expand(&collection);
+
+        assert_eq!(output.candidates().len(), 1);
+        assert_eq!(
+            output
+                .expansions()
+                .canonical_iter()
+                .map(|(_, expansion)| &expansion.status)
+                .collect::<Vec<_>>(),
+            [
+                &TemplateExpansionStatus::Instantiated,
+                &TemplateExpansionStatus::Rejected(TemplateExpansionFailure::MissingInference)
+            ]
+        );
+        assert!(
+            output
+                .debug_text()
+                .contains("omitted_inference(\"exact-argument-type\")")
+        );
+        assert!(
+            output
+                .debug_text()
+                .contains("message_key=\"overload.template.missing_inference\"")
+        );
+    }
+
+    #[test]
+    fn constraint_evidence_accepts_rejects_and_defers_templates() {
+        let source_id = source_id(35);
+        let accepted = constrained_template_candidate(
+            "accepted",
+            TemplateConstraintEvidenceStatus::Accepted,
+            vec![TypeFactId::new(1)],
+            0,
+        );
+        let missing = constrained_template_candidate(
+            "missing",
+            TemplateConstraintEvidenceStatus::Missing,
+            Vec::new(),
+            1,
+        );
+        let deferred = constrained_template_candidate(
+            "deferred",
+            TemplateConstraintEvidenceStatus::DeferredExternalDependency,
+            Vec::new(),
+            2,
+        );
+        let collection = OverloadCollectionOutput::collect(
+            vec![site(
+                "call",
+                OverloadSiteKind::FunctorApplication,
+                source_id,
+                10,
+            )],
+            vec![deferred, accepted, missing],
+        );
+
+        let output = TemplateExpansionOutput::expand(&collection);
+
+        assert_eq!(output.candidates().len(), 1);
+        assert_eq!(
+            output
+                .expansions()
+                .canonical_iter()
+                .map(|(_, expansion)| &expansion.status)
+                .collect::<Vec<_>>(),
+            [
+                &TemplateExpansionStatus::Instantiated,
+                &TemplateExpansionStatus::Deferred(
+                    TemplateExpansionFailure::DeferredConstraintEvidence
+                ),
+                &TemplateExpansionStatus::Rejected(
+                    TemplateExpansionFailure::MissingConstraintEvidence
+                )
+            ]
+        );
+        let debug = output.debug_text();
+        assert!(debug.contains("message_key=\"overload.template.missing_constraint_evidence\""));
+        assert!(debug.contains("message_key=\"overload.template.deferred_constraint_evidence\""));
+    }
+
+    #[test]
+    fn source_qua_template_arguments_must_be_accepted_widenings() {
+        let source_id = source_id(36);
+        let mut accepted = candidate("call", "root", "qua-ok", CandidateScope::Local, 0);
+        accepted.template = Some(template_payload(
+            "T=qua-ok",
+            vec![TemplateParameterKey::new("T")],
+            vec![TemplateArgument::SourceQua {
+                source: NormalizedTypeId::new(3),
+                target: NormalizedTypeId::new(4),
+                path: QuaPathKey::new("widening-path"),
+                status: TemplateQuaStatus::AcceptedWidening,
+            }],
+        ));
+        let mut rejected = candidate("call", "root", "qua-bad", CandidateScope::Local, 1);
+        rejected.template = Some(template_payload(
+            "T=qua-bad",
+            vec![TemplateParameterKey::new("T")],
+            vec![TemplateArgument::SourceQua {
+                source: NormalizedTypeId::new(4),
+                target: NormalizedTypeId::new(3),
+                path: QuaPathKey::new("narrowing-path"),
+                status: TemplateQuaStatus::RejectedNarrowing,
+            }],
+        ));
+        let mut deferred = candidate("call", "root", "qua-deferred", CandidateScope::Local, 2);
+        deferred.template = Some(template_payload(
+            "T=qua-deferred",
+            vec![TemplateParameterKey::new("T")],
+            vec![TemplateArgument::SourceQua {
+                source: NormalizedTypeId::new(5),
+                target: NormalizedTypeId::new(6),
+                path: QuaPathKey::new("external-qua-path"),
+                status: TemplateQuaStatus::DeferredExternalDependency,
+            }],
+        ));
+        let collection = OverloadCollectionOutput::collect(
+            vec![site(
+                "call",
+                OverloadSiteKind::FunctorApplication,
+                source_id,
+                10,
+            )],
+            vec![rejected, deferred, accepted],
+        );
+
+        let output = TemplateExpansionOutput::expand(&collection);
+
+        assert_eq!(output.candidates().len(), 1);
+        assert_eq!(
+            output
+                .expansions()
+                .canonical_iter()
+                .map(|(_, expansion)| &expansion.status)
+                .collect::<Vec<_>>(),
+            [
+                &TemplateExpansionStatus::Rejected(TemplateExpansionFailure::RejectedSourceQua),
+                &TemplateExpansionStatus::Deferred(TemplateExpansionFailure::DeferredSourceQua),
+                &TemplateExpansionStatus::Instantiated
+            ]
+        );
+        let debug = output.debug_text();
+        assert!(debug.contains("source_qua(source=normalized_type#3, path=\"widening-path\")"));
+        assert!(debug.contains("message_key=\"overload.template.rejected_source_qua\""));
+        assert!(debug.contains("message_key=\"overload.template.deferred_source_qua\""));
+    }
+
+    #[test]
+    fn template_expansion_diagnostics_do_not_reference_output_candidate_ids() {
+        let source_id = source_id(37);
+        let mut rejected = candidate("call", "root", "aaa-template", CandidateScope::Local, 0);
+        rejected.template = Some(template_payload(
+            "T=arity-mismatch",
+            vec![TemplateParameterKey::new("T")],
+            Vec::new(),
+        ));
+        let plain = candidate("call", "root", "zzz-plain", CandidateScope::Local, 1);
+        let collection = OverloadCollectionOutput::collect(
+            vec![site(
+                "call",
+                OverloadSiteKind::FunctorApplication,
+                source_id,
+                10,
+            )],
+            vec![rejected, plain],
+        );
+
+        let output = TemplateExpansionOutput::expand(&collection);
+
+        assert_eq!(output.candidates().len(), 1);
+        let (_, output_candidate) = output.candidates().iter().next().expect("candidate");
+        assert_eq!(output_candidate.id, OverloadCandidateId::new(0));
+        let (_, diagnostic) = output.diagnostics().iter().next().expect("diagnostic");
+        assert_eq!(diagnostic.class, OverloadDiagnosticClass::TemplateExpansion);
+        assert!(diagnostic.candidate.is_none());
+        let (_, expansion) = output.expansions().iter().next().expect("expansion");
+        assert_eq!(expansion.source_candidate, OverloadCandidateId::new(0));
+    }
+
+    #[test]
+    fn non_template_candidate_diagnostics_are_remapped_into_expansion_output() {
+        let source_id = source_id(38);
+        let mut input = candidate("call", "root", "unsupported", CandidateScope::Local, 0);
+        input.declaration_kind =
+            CandidateDeclarationKind::Unsupported(UnsupportedOverloadRole::TheoremApplication);
+        let collection = OverloadCollectionOutput::collect(
+            vec![site(
+                "call",
+                OverloadSiteKind::FunctorApplication,
+                source_id,
+                10,
+            )],
+            vec![input],
+        );
+
+        let output = TemplateExpansionOutput::expand(&collection);
+
+        let (_, candidate) = output.candidates().iter().next().expect("candidate");
+        assert_eq!(candidate.id, OverloadCandidateId::new(0));
+        assert_eq!(candidate.diagnostics.len(), 1);
+        let diagnostic = output
+            .diagnostics()
+            .get(candidate.diagnostics[0])
+            .expect("remapped diagnostic");
+        assert_eq!(
+            diagnostic.class,
+            OverloadDiagnosticClass::UnsupportedCandidateRole
+        );
+        assert_eq!(diagnostic.candidate, Some(candidate.id));
+        assert!(
+            output
+                .debug_text()
+                .contains("class=unsupported_candidate_role")
+        );
+    }
+
+    #[test]
+    fn deferred_template_candidates_preserve_exclusion_reasons() {
+        let source_id = source_id(39);
+        let mut input = candidate("scheme", "root", "symbol", CandidateScope::Local, 0);
+        input.template = Some(template_payload(
+            "T=deferred",
+            vec![TemplateParameterKey::new("T")],
+            vec![TemplateArgument::Explicit(NormalizedTypeId::new(5))],
+        ));
+        let collection = OverloadCollectionOutput::collect(
+            vec![site(
+                "scheme",
+                OverloadSiteKind::Unsupported(UnsupportedOverloadRole::SchemeApplication),
+                source_id,
+                10,
+            )],
+            vec![input],
+        );
+
+        let output = TemplateExpansionOutput::expand(&collection);
+
+        assert!(output.candidates().is_empty());
+        let (_, expansion) = output.expansions().iter().next().expect("expansion");
+        assert_eq!(
+            expansion.status,
+            TemplateExpansionStatus::Deferred(TemplateExpansionFailure::DeferredCandidate)
+        );
+        assert_eq!(output.diagnostics().len(), 1);
+        assert!(
+            output
+                .debug_text()
+                .contains("message_key=\"overload.template.deferred_candidate\"")
+        );
     }
 
     #[test]
@@ -1906,7 +2947,9 @@ mod tests {
         missing.template = Some(TemplateCandidatePayload {
             template: symbol_id("missing-template"),
             instantiation_key: TemplateInstantiationKey::new("T=missing"),
+            parameters: vec![TemplateParameterKey::new("T")],
             arguments: vec![TemplateArgument::Explicit(NormalizedTypeId::new(4))],
+            inferred_arguments: Vec::new(),
             constraints: Vec::new(),
         });
         missing.coherence = Some(CoherenceStatus::Pending);
@@ -2063,6 +3106,49 @@ mod tests {
                 declaration_order,
             },
         }
+    }
+
+    fn template_payload(
+        instantiation: &str,
+        parameters: Vec<TemplateParameterKey>,
+        arguments: Vec<TemplateArgument>,
+    ) -> TemplateCandidatePayload {
+        TemplateCandidatePayload {
+            template: symbol_id("template-source"),
+            instantiation_key: TemplateInstantiationKey::new(instantiation),
+            parameters,
+            arguments,
+            inferred_arguments: Vec::new(),
+            constraints: Vec::new(),
+        }
+    }
+
+    fn constrained_template_candidate(
+        symbol: &str,
+        status: TemplateConstraintEvidenceStatus,
+        facts: Vec<TypeFactId>,
+        declaration_order: usize,
+    ) -> OverloadCandidateInput {
+        let mut input = candidate(
+            "call",
+            "root",
+            symbol,
+            CandidateScope::Local,
+            declaration_order,
+        );
+        let mut payload = template_payload(
+            &format!("T={symbol}"),
+            vec![TemplateParameterKey::new("T")],
+            vec![TemplateArgument::Explicit(NormalizedTypeId::new(7))],
+        );
+        payload.constraints = vec![TemplateConstraintEvidence {
+            parameter: TemplateParameterKey::new("T"),
+            evidence_key: CandidateProvenanceKey::new(format!("{symbol}-constraint")),
+            facts,
+            status,
+        }];
+        input.template = Some(payload);
+        input
     }
 
     fn symbol_id(name: &str) -> SymbolId {

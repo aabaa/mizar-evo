@@ -25,9 +25,10 @@ refines:
 Task 21 is documentation-only. It introduces no Rust source, no new language
 behavior, no source extraction, no artifact writer, and no proof acceptance.
 Task 22 implements the checker-local site/candidate collection data layer for
-explicit payloads. Tasks 23-26 implement the remaining named sections below.
-Task 28 later assembles the final `ResolvedTypedAst` data shape specified by
-`resolved_typed_ast.md`.
+explicit payloads. Task 23 implements the checker-local template expansion
+data layer over those payloads. Tasks 24-26 implement the remaining named
+sections below. Task 28 later assembles the final `ResolvedTypedAst` data shape
+specified by `resolved_typed_ast.md`.
 
 ## Boundary
 
@@ -202,16 +203,22 @@ Template expansion runs before ordinary viability and specificity.
 For each candidate tagged with a template payload:
 
 1. Classify explicit template arguments against the template parameter list.
-2. If arguments are omitted, infer template parameters from exact argument
-   types and mode-hierarchy constraints only.
+2. If arguments are omitted, validate the caller-supplied omitted-argument
+   inference payload, whose evidence must be exact argument type or
+   mode-hierarchy constraint metadata already exposed before task 23.
 3. Check constrained template parameters against explicit constraint evidence
-   supplied by the caller and facts visible at the site.
+   status supplied by the caller and facts visible at the site.
 4. Reject inference that is missing, contradictory, ambiguous, unsupported, or
    missing required constraint evidence.
 5. Instantiate successful templates into concrete candidates and retain the
    template origin for tie-breaking and diagnostics.
 
-Cluster expansion is not used during omitted-argument template inference.
+Task 23 does not compute omitted-argument inference from `TypedAst`, fact
+tables, cluster closure, or resolver globals. It validates explicit payload
+fields: template parameter list, template arguments, omitted-argument
+inference payloads, source-`qua` argument status, and constraint-evidence
+status. Cluster expansion is not used during omitted-argument template
+inference.
 Source-written template `qua_arg` is accepted only when it is a proof-free
 inheritance widening exposed by the typed/coercion payloads. Predicate,
 functor, scheme, and algorithm template roles remain deferred unless parser,
@@ -222,10 +229,30 @@ their concrete parameter vectors are otherwise equivalent.
 Template expansion diagnostics preserve the skipped template candidate and the
 reason. A failed template expansion does not become an ordinary candidate.
 When a `such that` template constraint lacks visible accepted evidence, the
-candidate is blocked or rejected with a constraint-evidence reason; the checker
+candidate is rejected or deferred with a constraint-evidence reason; the checker
 must not create a new proof obligation or assume the constraint during overload
 resolution. If parser/resolver payloads do not expose the constraint or label
 mapping, the candidate is deferred under MC-G027 instead of being expanded.
+
+### Task 23 Template Expansion Data Layer
+
+`TemplateExpansionOutput::expand` consumes an `OverloadCollectionOutput` and
+validates only the explicit `TemplateCandidatePayload` metadata retained by
+task 22. Successful template candidates are copied into a concrete
+`OverloadCandidateTable` with the template payload removed and
+`CandidateOrigin::TemplateDerived` retained. Non-template candidates are copied
+unchanged. Rejected or deferred template candidates are omitted from the
+concrete candidate table and preserved in `TemplateExpansionTable` with
+diagnostics, source candidate ids, successful substitution lists, and stable
+failure reasons. Task 23 does not rewrite normalized signature ids; the
+candidate's normalized parameter/result metadata is the caller-provided
+concrete signature, and the expansion table records the template argument
+mapping that justified exposing it as concrete.
+
+Task 23 deliberately does not infer omitted parameters from fresh site/fact
+state, run cluster expansion, check viability, compare specificity, select
+ordinary roots, insert views, or synthesize unsupported parser/resolver
+template roles.
 
 ## Viability Over Recorded Facts
 
@@ -408,9 +435,9 @@ Deterministic rendering requirements:
 
 ## Deferred And External Gaps
 
-Task 22 deliberately keeps the following deferred:
+Task 23 deliberately keeps the following deferred:
 
-- Rust implementation for tasks 23-26;
+- Rust implementation for tasks 24-26;
 - AST-wide source-to-checker extraction of overload sites, candidates,
   template payloads, source `qua` paths, and scheme/theorem roles;
 - parser/resolver exposure for unsupported template and scheme roles noted by
@@ -440,8 +467,11 @@ Task 23 template expansion:
 - explicit and omitted template argument cases;
 - no cluster expansion during inference;
 - constrained template evidence accepted, missing, and deferred cases;
+- source-`qua` accepted widening and rejected narrowing cases;
+- missing omitted-inference payload cases;
 - non-template priority over equivalent template-derived candidates;
-- unsupported template/scheme roles produce deferred exclusions.
+- unsupported template/scheme roles produce deferred exclusions;
+- deterministic template expansion rendering.
 
 Task 24 viability:
 

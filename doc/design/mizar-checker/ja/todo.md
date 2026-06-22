@@ -396,13 +396,22 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       check、root selection、`ResolvedTypedAst` projection なしに、scope/visibility
       filter 済み candidate set を供給された通りに保存する。
 
-23. **template 展開。** [ ]
+23. **template 展開。** [x]
     - 通常の候補順序付けに先立って template 候補を具体候補へ展開する。
       展開不能な template は理由を記録して除外する。
     - テスト: 展開フィクスチャ。constrained-template evidence case。
       除外が理由を保持する。
     - 依存: 22、`mizar-parser` task 31。仕様: `overload_resolution.md`
       （template の節）。
+    - task 23 で完了: `TemplateExpansionOutput::expand` は task 22 が保持した
+      explicit `TemplateCandidatePayload` metadata だけを検証する。non-template candidate を
+      copy し、成功した template を `CandidateOrigin::TemplateDerived` 付き concrete
+      candidate に instantiate し、substitution と `TemplateExpansionTable` row を記録し、
+      skipped template candidate を stable rejection/deferred diagnostic とともに保存する。
+      explicit argument、omitted inference payload、accepted/missing/deferred constraint、
+      source-`qua` widening/narrowing status、non-template priority、unsupported/deferred
+      candidate、deterministic rendering を、cluster expansion、新しい fact inference、
+      viability、specificity、root selection、view insertion なしで cover する。
 
 24. **viability フィルタリング。** [ ]
     - 記録済みの型事実のみを用いて候補を viability でフィルタする — 新しい

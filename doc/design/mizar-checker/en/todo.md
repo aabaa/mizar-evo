@@ -420,7 +420,7 @@ Keep `cargo test -p mizar-checker` green after each task (see
       scanning `SymbolEnv`, walking raw syntax, expanding templates, checking
       viability, selecting roots, or projecting `ResolvedTypedAst`.
 
-23. **Template expansion.** [ ]
+23. **Template expansion.** [x]
     - Expand template candidates into concrete candidates ahead of ordinary
       candidate ordering; record exclusion reasons for non-expandable
       templates.
@@ -428,6 +428,17 @@ Keep `cargo test -p mizar-checker` green after each task (see
       exclusions carry reasons.
     - Deps: 22, `mizar-parser` task 31. Spec: `overload_resolution.md`
       (templates section).
+    - Completed by task 23: `TemplateExpansionOutput::expand` validates only
+      explicit `TemplateCandidatePayload` metadata retained by task 22. It
+      copies non-template candidates, instantiates successful templates into
+      concrete candidates with `CandidateOrigin::TemplateDerived`, records
+      substitutions and `TemplateExpansionTable` rows, preserves skipped
+      template candidates with stable rejection/deferred diagnostics, and
+      covers explicit arguments, omitted inference payloads, accepted/missing/
+      deferred constraints, source-`qua` widening/narrowing status,
+      non-template priority, unsupported/deferred candidates, and deterministic
+      rendering without cluster expansion, fresh fact inference, viability,
+      specificity, root selection, or view insertion.
 
 24. **Viability filtering.** [ ]
     - Filter candidates by viability using recorded type facts only — no new

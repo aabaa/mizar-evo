@@ -12,7 +12,8 @@
 //! shapes; task 16 exposes cluster closure and trace recording; task 19
 //! exposes pending-registration validation and activation gating; task 20
 //! exposes existential gates for attributed type use; task 22 exposes
-//! checker-owned overload site and candidate collection. Later overload
+//! checker-owned overload site and candidate collection; task 23 exposes
+//! checker-owned template expansion over collected candidates. Later overload
 //! resolution phases and resolved typed AST APIs land in later task-scoped
 //! modules after their design specs are written.
 
