@@ -243,10 +243,14 @@ Keep `cargo test -p mizar-artifact` green after each task (see
       reject unknown serialized enum values unless a future schema revision says
       otherwise.
 
-20. **Source/spec correspondence audit.** [ ]
+20. **Source/spec correspondence audit.** [x]
     - Trace every public API and promised behavior in the module specs to
       implementation and tests; record gaps as follow-up tasks.
     - Deps: 19. Spec: all module specs and this TODO.
+    - Status: [source_spec_correspondence.md](./source_spec_correspondence.md)
+      records no new `spec_gap`, `test_gap`, `source_drift`, or
+      `design_drift`; remaining gaps are upstream `external_dependency_gap`s or
+      task-22 source-layout deferrals.
 
 21. **Bilingual documentation sync audit.** [ ]
     - Compare each English canonical document under

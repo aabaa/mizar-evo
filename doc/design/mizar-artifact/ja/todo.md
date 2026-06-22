@@ -243,10 +243,14 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       schema revision が明示しない限り、現在の reader は unknown serialized enum
       value を拒否する。
 
-20. **ソース/仕様対応監査。** [ ]
+20. **ソース/仕様対応監査。** [x]
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ
       トレースし、ギャップをフォローアップタスクとして記録する。
     - 依存: 19。仕様: 全モジュール仕様と本 TODO。
+    - 状態: [source_spec_correspondence.md](./source_spec_correspondence.md)
+      は新しい `spec_gap`、`test_gap`、`source_drift`、`design_drift` がないことを
+      記録する。残る gap は upstream の `external_dependency_gap` または task 22 の
+      source-layout deferral である。
 
 21. **二言語ドキュメント同期監査。** [ ]
     - `doc/design/mizar-artifact/en/` の各英語正本と日本語版を比較し、
