@@ -168,6 +168,15 @@ diagnostic code が未仕様の間、fail coverage は resolver internal detail 
 `diagnostic_payloads` または `stable_detail_key` で assert してよい。この range が
 存在するまで、active sidecar は `diagnostic_codes` を空にしなければならない。
 
+初期 type-elaboration stage では、active runner gate（`active_type_elaboration`、
+`stage = "type_elaboration"`、`expected_phase = "type_check"`、pass/fail outcome）
+を満たす `.miz` sidecar だけが executable coverage になる。source-to-checker
+payload extraction が存在するまで、covered active test は external-gap detail key
+`type_elaboration.external_dependency.ast_payload_extraction` を MC-G020 bridge gap
+だけに対して assert してよい。これらの test は task 7-11 semantic pass/fail
+coverage を満たさない。semantic pass coverage は stubbed checker output から credit せず
+deferred のままにする。
+
 ## Reporting
 
 Default report は次で group する。

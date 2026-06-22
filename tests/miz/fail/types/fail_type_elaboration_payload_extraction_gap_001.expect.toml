@@ -1,0 +1,20 @@
+schema_version = 1
+id = "fail_type_elaboration_payload_extraction_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_payload_extraction_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "missing_ast_payload_extraction"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.payload_extraction",
+]
+notes = "Active type_elaboration runner gap coverage: frontend parsing and resolver symbol collection reach checker handoff, then the runner records that AST-wide source-to-checker payload extraction for tasks 7-11 is still unavailable."

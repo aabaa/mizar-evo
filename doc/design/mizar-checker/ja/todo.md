@@ -228,11 +228,18 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       保持する。statement/proof assumption、theorem acceptance、phase-7 trace fact は
       MC-G019 external dependency gap として残す。
 
-12. **stage `type_elaboration` のコーパスランナー。** [ ]
-    - `tests/miz/{pass,fail}/` のケースを stage `type_elaboration` で
-      ハーネスに接続し、`spec_trace.toml` 項目を付ける。task 7-11 の
-      pass/fail ケースをシードする。
+12. **stage `type_elaboration` のコーパスランナー。** [x]
+    - stage `type_elaboration` の external-gap fail case を
+      `spec_trace.toml` 項目付きでハーネスに接続する。real task 7-11 semantic
+      pass/fail seed は source-to-checker payload extraction が存在するまで deferred にする。
     - 依存: 10、11。仕様: [staged_model.md](../../mizar-test/ja/staged_model.md)。
+    - task 12 で boundary-preserving runner として完了:
+      active `type-elaboration` harness command は `.miz` case を frontend parsing と
+      resolver symbol collection まで通し、AST 全体の source-to-checker payload
+      extraction API が存在するまで MC-G020
+      `type_elaboration.external_dependency.ast_payload_extraction` を report する。
+      real task 7-11 semantic pass/fail `.miz` assertion は checker payload を捏造して
+      accepted にせず deferred のままにする。
 
 ### 第 2 波: cluster と registration の解決（phase 7）
 

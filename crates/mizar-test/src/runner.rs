@@ -35,7 +35,10 @@ use crate::staged_model::Stage;
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
 const ACTIVE_DECLARATION_SYMBOL_TAG: &str = "active_declaration_symbol";
+const ACTIVE_TYPE_ELABORATION_TAG: &str = "active_type_elaboration";
 const ALLOW_FRONTEND_RECOVERY_DIAGNOSTICS_TAG: &str = "allow_frontend_recovery_diagnostics";
+const TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY: &str =
+    "type_elaboration.external_dependency.ast_payload_extraction";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseOnlyRunReport {
@@ -74,6 +77,26 @@ pub struct DeclarationSymbolCaseResult {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DeclarationSymbolCaseStatus {
+    Passed,
+    Failed,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TypeElaborationRunReport {
+    pub results: Vec<TypeElaborationCaseResult>,
+    pub diagnostics: Vec<ValidationDiagnostic>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TypeElaborationCaseResult {
+    pub id: crate::expectation::TestCaseId,
+    pub expectation_path: PathBuf,
+    pub status: TypeElaborationCaseStatus,
+    pub actual_detail_keys: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TypeElaborationCaseStatus {
     Passed,
     Failed,
 }
@@ -120,6 +143,36 @@ impl DeclarationSymbolRunReport {
         self.results
             .iter()
             .filter(|result| result.status == DeclarationSymbolCaseStatus::Failed)
+            .count()
+    }
+
+    pub fn error_count(&self) -> usize {
+        self.diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.severity == ValidationSeverity::Error)
+            .count()
+    }
+
+    pub fn warning_count(&self) -> usize {
+        self.diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.severity == ValidationSeverity::Warning)
+            .count()
+    }
+}
+
+impl TypeElaborationRunReport {
+    pub fn passed_count(&self) -> usize {
+        self.results
+            .iter()
+            .filter(|result| result.status == TypeElaborationCaseStatus::Passed)
+            .count()
+    }
+
+    pub fn failed_count(&self) -> usize {
+        self.results
+            .iter()
+            .filter(|result| result.status == TypeElaborationCaseStatus::Failed)
             .count()
     }
 
@@ -197,6 +250,36 @@ pub fn run_declaration_symbol_corpus(
     })
 }
 
+pub fn run_type_elaboration_corpus(
+    config: &DiscoveryConfig,
+) -> Result<TypeElaborationRunReport, HarnessError> {
+    let workspace_root = normalized_workspace_root(config)?;
+    let plan = build_test_plan(config)?;
+    let mut diagnostics = plan.diagnostics.clone();
+    if plan.error_count() > 0 {
+        return Ok(TypeElaborationRunReport {
+            results: Vec::new(),
+            diagnostics,
+        });
+    }
+    diagnostics.extend(validate_active_type_elaboration_tags(&plan));
+
+    let mut results = Vec::new();
+    for (ordinal, case) in active_type_elaboration_cases(&plan).enumerate() {
+        let result = run_type_elaboration_case(&workspace_root, case, ordinal);
+        if result.status == TypeElaborationCaseStatus::Failed {
+            diagnostics.push(type_elaboration_failure_diagnostic(case, &result));
+        }
+        results.push(result);
+    }
+    diagnostics.sort();
+
+    Ok(TypeElaborationRunReport {
+        results,
+        diagnostics,
+    })
+}
+
 pub fn active_parse_only_cases(plan: &TestPlan) -> impl Iterator<Item = &TestCase> {
     plan.cases.iter().filter(|case| is_active_parse_only(case))
 }
@@ -205,6 +288,12 @@ pub fn active_declaration_symbol_cases(plan: &TestPlan) -> impl Iterator<Item = 
     plan.cases
         .iter()
         .filter(|case| is_active_declaration_symbol(case))
+}
+
+pub fn active_type_elaboration_cases(plan: &TestPlan) -> impl Iterator<Item = &TestCase> {
+    plan.cases
+        .iter()
+        .filter(|case| is_active_type_elaboration(case))
 }
 
 fn is_active_parse_only(case: &TestCase) -> bool {
@@ -235,6 +324,20 @@ fn is_active_declaration_symbol(case: &TestCase) -> bool {
             .is_some_and(|extension| extension == "miz")
 }
 
+fn is_active_type_elaboration(case: &TestCase) -> bool {
+    has_active_type_elaboration_tag(case)
+        && case.expectation.stage == Stage::TypeElaboration
+        && case.expectation.expected_phase == Some(PipelinePhase::TypeCheck)
+        && matches!(
+            case.expectation.expected_outcome,
+            ExpectedOutcome::Pass | ExpectedOutcome::Fail
+        )
+        && case
+            .source_path
+            .extension()
+            .is_some_and(|extension| extension == "miz")
+}
+
 fn has_active_parse_only_tag(case: &TestCase) -> bool {
     case.expectation
         .tags
@@ -247,6 +350,13 @@ fn has_active_declaration_symbol_tag(case: &TestCase) -> bool {
         .tags
         .iter()
         .any(|tag| tag == ACTIVE_DECLARATION_SYMBOL_TAG)
+}
+
+fn has_active_type_elaboration_tag(case: &TestCase) -> bool {
+    case.expectation
+        .tags
+        .iter()
+        .any(|tag| tag == ACTIVE_TYPE_ELABORATION_TAG)
 }
 
 fn validate_active_parse_only_tags(plan: &TestPlan) -> Vec<ValidationDiagnostic> {
@@ -290,6 +400,37 @@ fn validate_active_declaration_symbol_tags(plan: &TestPlan) -> Vec<ValidationDia
                 "E-DECLARATION-SYMBOL-PUBLIC-DIAGNOSTIC-CODES",
                 format!("declaration_symbol.public_codes.{}", case.id.0),
                 "active_declaration_symbol cases must keep diagnostic_codes empty until public resolver diagnostic codes are specified; use diagnostic_payloads or stable_detail_key for internal detail keys",
+            ));
+        }
+    }
+    diagnostics
+}
+
+fn validate_active_type_elaboration_tags(plan: &TestPlan) -> Vec<ValidationDiagnostic> {
+    let mut diagnostics = Vec::new();
+    for case in plan
+        .cases
+        .iter()
+        .filter(|case| has_active_type_elaboration_tag(case))
+    {
+        if !is_active_type_elaboration(case) {
+            diagnostics.push(
+                ValidationDiagnostic::error(
+                    &case.expectation_path,
+                    "type_elaboration",
+                    "E-TYPE-ELABORATION-ACTIVE-GATE",
+                    format!("type_elaboration.active_gate.{}", case.id.0),
+                    "active_type_elaboration cases must be .miz pass/fail expectations at stage type_elaboration and phase type_check",
+                ),
+            );
+        }
+        if !case.expectation.diagnostic_codes.is_empty() {
+            diagnostics.push(ValidationDiagnostic::error(
+                &case.expectation_path,
+                "type_elaboration",
+                "E-TYPE-ELABORATION-PUBLIC-DIAGNOSTIC-CODES",
+                format!("type_elaboration.public_codes.{}", case.id.0),
+                "active_type_elaboration cases must keep diagnostic_codes empty until public checker diagnostic codes are specified; use diagnostic_payloads or stable_detail_key for internal detail keys",
             ));
         }
     }
@@ -377,6 +518,33 @@ fn run_declaration_symbol_case(
     }
 }
 
+fn run_type_elaboration_case(
+    workspace_root: &Path,
+    case: &TestCase,
+    ordinal: usize,
+) -> TypeElaborationCaseResult {
+    let output = run_frontend(workspace_root, case, ordinal);
+    let actual_detail_keys = match output {
+        Ok(output) => type_elaboration_detail_keys(workspace_root, case, output),
+        Err(error) => vec![format!("frontend_error:{error}")],
+    };
+    let expected_detail_keys = expected_type_elaboration_detail_keys(case);
+    let status = match case.expectation.expected_outcome {
+        ExpectedOutcome::Pass if actual_detail_keys.is_empty() => TypeElaborationCaseStatus::Passed,
+        ExpectedOutcome::Fail if actual_detail_keys == expected_detail_keys => {
+            TypeElaborationCaseStatus::Passed
+        }
+        _ => TypeElaborationCaseStatus::Failed,
+    };
+
+    TypeElaborationCaseResult {
+        id: case.id.clone(),
+        expectation_path: case.expectation_path.clone(),
+        status,
+        actual_detail_keys,
+    }
+}
+
 fn run_frontend(
     workspace_root: &Path,
     case: &TestCase,
@@ -423,6 +591,30 @@ fn declaration_symbol_detail_keys(
     let Some(ast) = output.ast else {
         return vec!["declaration_symbol.no_ast".to_owned()];
     };
+    resolver_symbol_detail_keys(workspace_root, case, ast)
+}
+
+fn type_elaboration_detail_keys(
+    workspace_root: &Path,
+    case: &TestCase,
+    output: FrontendRun,
+) -> Vec<String> {
+    let lower_stage_detail_keys = declaration_symbol_detail_keys(workspace_root, case, output);
+    if !lower_stage_detail_keys.is_empty() {
+        return lower_stage_detail_keys
+            .into_iter()
+            .map(|key| format!("type_elaboration.lower_stage.{key}"))
+            .collect();
+    }
+
+    vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+}
+
+fn resolver_symbol_detail_keys(
+    workspace_root: &Path,
+    case: &TestCase,
+    ast: SurfaceAst,
+) -> Vec<String> {
     let module = resolver_module_id(workspace_root, &case.source_path);
     let namespace = NamespacePath::new(module.path().as_str());
     let shells = DeclarationShellCollector::new(&ast, &module).collect();
@@ -461,6 +653,13 @@ const fn symbol_diagnostic_class_key(class: SymbolDiagnosticClass) -> &'static s
 }
 
 fn expected_declaration_symbol_detail_keys(case: &TestCase) -> Vec<String> {
+    if !case.expectation.diagnostic_payloads.is_empty() {
+        return case.expectation.diagnostic_payloads.clone();
+    }
+    case.expectation.stable_detail_key.iter().cloned().collect()
+}
+
+fn expected_type_elaboration_detail_keys(case: &TestCase) -> Vec<String> {
     if !case.expectation.diagnostic_payloads.is_empty() {
         return case.expectation.diagnostic_payloads.clone();
     }
@@ -637,6 +836,24 @@ fn declaration_symbol_failure_diagnostic(
             "declaration-symbol case `{}` expected detail keys {:?} but got {:?}",
             case.id.0,
             expected_declaration_symbol_detail_keys(case),
+            result.actual_detail_keys
+        ),
+    )
+}
+
+fn type_elaboration_failure_diagnostic(
+    case: &TestCase,
+    result: &TypeElaborationCaseResult,
+) -> ValidationDiagnostic {
+    ValidationDiagnostic::error(
+        &case.expectation_path,
+        "type_elaboration",
+        "E-TYPE-ELABORATION-ASSERT",
+        format!("type_elaboration.{}", case.id.0),
+        format!(
+            "type-elaboration case `{}` expected detail keys {:?} but got {:?}",
+            case.id.0,
+            expected_type_elaboration_detail_keys(case),
             result.actual_detail_keys
         ),
     )
@@ -853,6 +1070,15 @@ impl fmt::Display for ParseOnlyCaseStatus {
 }
 
 impl fmt::Display for DeclarationSymbolCaseStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::Passed => "passed",
+            Self::Failed => "failed",
+        })
+    }
+}
+
+impl fmt::Display for TypeElaborationCaseStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             Self::Passed => "passed",

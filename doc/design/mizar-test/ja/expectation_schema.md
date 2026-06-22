@@ -309,6 +309,31 @@ expected = "set"
 
 これらの tests は、expectation が missing prerequisite を明示的に target しない限り、built-ins と lower stages で admitted された symbols だけを使う。
 
+task 12 は source-to-checker payload extraction bridge が存在する前に、active
+`type-elaboration` corpus runner を導入する。この runner の active `.miz` sidecar は
+`tags = ["active_type_elaboration"]`、`stage = "type_elaboration"`、
+`expected_phase = "type_check"` を持ち、public checker diagnostic code が指定されるまで
+`diagnostic_codes = []` を保つ。runner は frontend parsing と resolver symbol collection を
+実行し、それら lower stage が成功したが checker payload extraction が使えない場合に、
+stable external-gap detail key
+`type_elaboration.external_dependency.ast_payload_extraction` を report する。
+
+```toml
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+```
+
+real type pass expectation と detailed type assertion table は、runner が `.miz` source から
+checker-owned payload を declaration、term、coercion、fact、proof evidence を捏造せず構築できるまで
+deferred のままにする。
+
 ## Formula, Statement, And Proof Expectations
 
 Formula and statement expectations は typed formulas、statement structure、labels、local proof context を check する。

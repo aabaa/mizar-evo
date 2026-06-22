@@ -38,6 +38,11 @@ pub struct DeclarationSymbolRunReport {
     pub results: Vec<DeclarationSymbolCaseResult>,
     pub diagnostics: Vec<ValidationDiagnostic>,
 }
+
+pub struct TypeElaborationRunReport {
+    pub results: Vec<TypeElaborationCaseResult>,
+    pub diagnostics: Vec<ValidationDiagnostic>,
+}
 ```
 
 ## Runner Modes
@@ -47,6 +52,7 @@ pub struct DeclarationSymbolRunReport {
 | metadata plan | payload を実行せずに sidecar を discover し、layout、expectation schema、traceability を validate |
 | parse-only | active な `.miz` parse-only case を `mizar-frontend` と `MizarParserSeam` で run |
 | declaration-symbol | active な `.miz` declaration-symbol case を frontend parsing と resolver declaration/symbol collection で run |
+| type-elaboration | active な `.miz` type-elaboration case を frontend parsing と resolver declaration/symbol collection まで run し、checker payload extraction bridge の不足を stable external dependency gap として surface する |
 | pass/fail | `.miz` cases を run し expected outcome と match |
 | snapshot | canonical snapshot hashes を compare |
 | determinism | repeated runs を比較し artifacts、diagnostics、hashes を check |
@@ -66,13 +72,17 @@ pub struct DeclarationSymbolRunReport {
    `expected_phase = "resolve"`、`.miz` payload、pass/fail outcome、
    `tags = ["active_declaration_symbol"]` を持つ case だけを選ぶ。tag のない
    declaration-symbol sidecar は discovery と traceability metadata のままにする。
-5. execution が parallel でも deterministic display order で cases を run する。
-6. compiler outputs を structured records として capture する。
-7. snapshot expectations より先に pass/fail expectations を match する。
-8. general `[[snapshots]]` entries は canonical hash で compare する。現在の
+5. `type-elaboration` では、`stage = "type_elaboration"`、
+   `expected_phase = "type_check"`、`.miz` payload、pass/fail outcome、
+   `tags = ["active_type_elaboration"]` を持つ case だけを選ぶ。tag のない
+   type-elaboration sidecar は discovery と traceability metadata のままにする。
+6. execution が parallel でも deterministic display order で cases を run する。
+7. compiler outputs を structured records として capture する。
+8. snapshot expectations より先に pass/fail expectations を match する。
+9. general `[[snapshots]]` entries は canonical hash で compare する。現在の
    parse-only `SurfaceAst` shortcut は後述の通り、commit 済み text baseline を
    byte-for-byte で比較する。
-9. phase、failure category、rejection reason、diagnostic code、snapshot diff summary 付きで failures を report する。
+10. phase、failure category、rejection reason、diagnostic code、snapshot diff summary 付きで failures を report する。
 
 現在の parse-only runner は、各 active corpus file を一時的な `src/` package に
 copy し、実際の frontend parser seam を実行する。pass case では AST が生成され、
@@ -106,6 +116,26 @@ diagnostic code を要求せず、創作もしない。non-empty `diagnostic_cod
 active declaration-symbol expectation は harness error である。
 
 `active_declaration_symbol` tag を持つ expectation が runnable case predicate の
+いずれかを満たさない場合、runner は silent skip ではなく harness error として扱う。
+
+現在の type-elaboration runner は、各 active `.miz` corpus file を同じ一時的な
+package 形状へ copy し、実際の frontend を実行したうえで、得られた
+`SurfaceAst` を resolver の declaration-shell collector、parser-backed signature
+projection extractor、symbol collector に渡す。これにより checker payload extraction
+へ進む前に lower-stage prerequisite を正直に確認する。task 12 は不足している
+source-to-checker bridge を捏造しない。repository には parsed/resolved `.miz` の
+declaration、type expression、term、formula、coercion site、type fact を
+`mizar-checker` task 7-11 が公開する checker-owned payload に変換する AST-wide
+extraction API がまだない。parsing と symbol collection が成功した場合、runner は
+その bridge が存在するまで stable detail key
+`type_elaboration.external_dependency.ast_payload_extraction` を report する。
+active fail case はこの key を `diagnostic_payloads` または `stable_detail_key` で
+assert してよい。real checker semantics を必要とする active pass case は stub で
+pass させず deferred のままにする。
+
+public checker diagnostic code が指定されるまで、non-empty `diagnostic_codes` を持つ
+active type-elaboration expectation は harness error である。
+`active_type_elaboration` tag を持つ expectation が runnable case predicate の
 いずれかを満たさない場合、runner は silent skip ではなく harness error として扱う。
 
 ## Determinism Requirements

@@ -330,6 +330,32 @@ expected = "set"
 These tests may use only built-ins and symbols admitted by lower stages unless
 the expectation explicitly targets a missing prerequisite.
 
+Task 12 introduces the active `type-elaboration` corpus runner before the
+source-to-checker payload extraction bridge exists. Active `.miz` sidecars for
+that runner must carry `tags = ["active_type_elaboration"]`, use
+`stage = "type_elaboration"` and `expected_phase = "type_check"`, and leave
+`diagnostic_codes = []` until public checker diagnostic codes are specified.
+The runner executes frontend parsing and resolver symbol collection, then
+reports the stable external-gap detail key
+`type_elaboration.external_dependency.ast_payload_extraction` when those lower
+stages succeed but checker payload extraction is unavailable:
+
+```toml
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+```
+
+Real type pass expectations and detailed type assertion tables remain deferred
+until the runner can build checker-owned payloads from `.miz` source without
+inventing declarations, terms, coercions, facts, or proof evidence.
+
 ## Formula, Statement, And Proof Expectations
 
 Formula and statement expectations check typed formulas, statement structure,

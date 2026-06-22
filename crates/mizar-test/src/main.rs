@@ -4,7 +4,7 @@ use std::process::ExitCode;
 
 use mizar_test::{
     DiscoveryConfig, TestProfile, ValidationMode, ValidationSeverity, build_test_plan,
-    run_declaration_symbol_corpus, run_parse_only_corpus,
+    run_declaration_symbol_corpus, run_parse_only_corpus, run_type_elaboration_corpus,
 };
 
 fn main() -> ExitCode {
@@ -24,7 +24,7 @@ fn run() -> Result<ExitCode, String> {
     };
     if !matches!(
         command.as_str(),
-        "plan" | "parse-only" | "declaration-symbol"
+        "plan" | "parse-only" | "declaration-symbol" | "type-elaboration"
     ) {
         return Err(usage());
     }
@@ -73,6 +73,7 @@ fn run() -> Result<ExitCode, String> {
         "plan" => run_plan(&config),
         "parse-only" => run_parse_only(&config),
         "declaration-symbol" => run_declaration_symbol(&config),
+        "type-elaboration" => run_type_elaboration(&config),
         _ => unreachable!("command was validated above"),
     }
 }
@@ -140,8 +141,28 @@ fn run_declaration_symbol(config: &DiscoveryConfig) -> Result<ExitCode, String> 
     }
 }
 
+fn run_type_elaboration(config: &DiscoveryConfig) -> Result<ExitCode, String> {
+    let report = run_type_elaboration_corpus(config).map_err(|error| error.to_string())?;
+
+    for diagnostic in &report.diagnostics {
+        eprintln!("{diagnostic}");
+    }
+
+    println!("type-elaboration cases: {}", report.results.len());
+    println!("passed: {}", report.passed_count());
+    println!("failed: {}", report.failed_count());
+    println!("errors: {}", report.error_count());
+    println!("warnings: {}", report.warning_count());
+
+    if report.error_count() > 0 {
+        Ok(ExitCode::from(1))
+    } else {
+        Ok(ExitCode::SUCCESS)
+    }
+}
+
 fn usage() -> String {
-    "usage: mizar-test <plan|parse-only|declaration-symbol> [--tests-root tests] [--manifest tests/coverage/spec_trace.toml] [--workspace-root .]".to_owned()
+    "usage: mizar-test <plan|parse-only|declaration-symbol|type-elaboration> [--tests-root tests] [--manifest tests/coverage/spec_trace.toml] [--workspace-root .]".to_owned()
 }
 
 fn next_value(args: &[String], idx: usize, name: &str) -> Result<String, String> {

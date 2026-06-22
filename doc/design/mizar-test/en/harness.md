@@ -38,6 +38,11 @@ pub struct DeclarationSymbolRunReport {
     pub results: Vec<DeclarationSymbolCaseResult>,
     pub diagnostics: Vec<ValidationDiagnostic>,
 }
+
+pub struct TypeElaborationRunReport {
+    pub results: Vec<TypeElaborationCaseResult>,
+    pub diagnostics: Vec<ValidationDiagnostic>,
+}
 ```
 
 ## Runner Modes
@@ -47,6 +52,7 @@ pub struct DeclarationSymbolRunReport {
 | metadata plan | discover sidecars and validate layout, expectation schema, and traceability without executing payloads |
 | parse-only | run active `.miz` parse-only cases through `mizar-frontend` and `MizarParserSeam` |
 | declaration-symbol | run active `.miz` declaration-symbol cases through frontend parsing and resolver declaration/symbol collection |
+| type-elaboration | run active `.miz` type-elaboration cases through frontend parsing and resolver declaration/symbol collection, then surface the missing checker payload-extraction bridge as a stable external dependency gap |
 | pass/fail | run `.miz` cases and match expected outcome |
 | snapshot | compare canonical snapshot hashes |
 | determinism | repeat runs and compare artifacts, diagnostics, and hashes |
@@ -67,13 +73,18 @@ pub struct DeclarationSymbolRunReport {
    payloads, pass/fail outcomes, and `tags = ["active_declaration_symbol"]`.
    Untagged declaration-symbol sidecars remain discovery and traceability
    metadata.
-5. Run cases in deterministic display order, even when execution is parallel.
-6. Capture compiler outputs as structured records.
-7. Match pass/fail expectations before snapshot expectations.
-8. Compare general `[[snapshots]]` entries by canonical hash; the current
+5. For `type-elaboration`, select only cases with
+   `stage = "type_elaboration"`, `expected_phase = "type_check"`, `.miz`
+   payloads, pass/fail outcomes, and `tags = ["active_type_elaboration"]`.
+   Untagged type-elaboration sidecars remain discovery and traceability
+   metadata.
+6. Run cases in deterministic display order, even when execution is parallel.
+7. Capture compiler outputs as structured records.
+8. Match pass/fail expectations before snapshot expectations.
+9. Compare general `[[snapshots]]` entries by canonical hash; the current
    parse-only `SurfaceAst` shortcut compares committed text baselines
    byte-for-byte as described below.
-9. Report failures with phase, failure category, rejection reason, diagnostic code, and snapshot diff summary.
+10. Report failures with phase, failure category, rejection reason, diagnostic code, and snapshot diff summary.
 
 The current parse-only runner copies each active corpus file into a temporary
 `src/` package, runs the real frontend parser seam, requires pass cases to
@@ -109,6 +120,27 @@ expectations with non-empty `diagnostic_codes` are harness errors.
 
 An expectation tagged `active_declaration_symbol` but missing one of the
 runnable case predicates is a harness error rather than a silent skip.
+
+The current type-elaboration runner copies each active `.miz` corpus file into
+the same temporary package shape, runs the real frontend, then feeds the
+resulting `SurfaceAst` through the resolver declaration-shell collector,
+parser-backed signature projection extractor, and symbol collector. This keeps
+type-elaboration cases honest about lower-stage prerequisites before checker
+payload extraction begins. Task 12 intentionally does not fabricate the missing
+source-to-checker bridge: the repository still lacks an AST-wide extraction API
+that turns parsed/resolved `.miz` declarations, type expressions, terms,
+formulas, coercion sites, and type facts into the checker-owned payloads exposed
+by `mizar-checker` tasks 7-11. When parsing and symbol collection succeed, the
+runner therefore reports the stable detail key
+`type_elaboration.external_dependency.ast_payload_extraction` until that bridge
+exists. Active fail cases may assert that key through `diagnostic_payloads` or
+`stable_detail_key`; active pass cases that require real checker semantics
+remain deferred rather than passing through a stub.
+
+Active type-elaboration expectations with non-empty `diagnostic_codes` are
+harness errors until public checker diagnostic codes are specified. An
+expectation tagged `active_type_elaboration` but missing one of the runnable
+case predicates is a harness error rather than a silent skip.
 
 ## Determinism Requirements
 

@@ -236,11 +236,18 @@ Keep `cargo test -p mizar-checker` green after each task (see
       statement/proof assumption, theorem acceptance, and phase-7 trace facts
       as MC-G019 external dependency gaps.
 
-12. **Corpus runner at stage `type_elaboration`.** [ ]
-    - Wire `tests/miz/{pass,fail}/` cases at stage `type_elaboration` through
-      the harness with `spec_trace.toml` entries; seed pass/fail cases for
-      tasks 7-11.
+12. **Corpus runner at stage `type_elaboration`.** [x]
+    - Wire a stage `type_elaboration` external-gap fail case through the
+      harness with a `spec_trace.toml` entry; defer real task 7-11 semantic
+      pass/fail seeds until source-to-checker payload extraction exists.
     - Deps: 10, 11. Spec: [staged_model.md](../../mizar-test/en/staged_model.md).
+    - Completed by task 12 as a boundary-preserving runner: the active
+      `type-elaboration` harness command runs `.miz` cases through frontend
+      parsing and resolver symbol collection, then reports MC-G020
+      `type_elaboration.external_dependency.ast_payload_extraction` until an
+      AST-wide source-to-checker payload extraction API exists. Real task 7-11
+      semantic pass/fail `.miz` assertions are deferred rather than accepted
+      through fabricated checker payloads.
 
 ### Wave 2: cluster and registration resolution (phase 7)
 

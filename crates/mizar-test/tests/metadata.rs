@@ -19,7 +19,7 @@ use mizar_session::{
 use mizar_test::{
     DiscoveryConfig, ExpectedOutcome, PipelinePhase, Stage, TestKind, TestPlan, TestProfile,
     ValidationMode, active_parse_only_cases, build_test_plan, run_declaration_symbol_corpus,
-    run_parse_only_corpus,
+    run_parse_only_corpus, run_type_elaboration_corpus,
 };
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
@@ -563,6 +563,21 @@ fn repository_declaration_symbol_runner_executes_active_resolver_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_resolve_duplicate_theorem_symbol_001"
             && result.actual_detail_keys == ["declaration_symbol.symbol.duplicate_declaration"]
+    }));
+}
+
+#[test]
+fn repository_type_elaboration_runner_executes_active_gap_seed() {
+    let report = run_type_elaboration_corpus(&repository_config()).unwrap();
+
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.passed_count(), 1);
+    assert_eq!(report.failed_count(), 0);
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_type_elaboration_payload_extraction_gap_001"
+            && result.actual_detail_keys
+                == ["type_elaboration.external_dependency.ast_payload_extraction"]
     }));
 }
 
@@ -2086,6 +2101,240 @@ tests = ["tests/miz/fail/resolve/fail_duplicate_theorem.expect.toml"]
 }
 
 #[test]
+fn type_elaboration_runner_rejects_active_tag_on_non_type_case() {
+    let corpus = Corpus::new();
+    corpus.write("tests/lexical/pass/tagged_lexical.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/tagged_lexical.expect.toml",
+        r#"schema_version = 1
+id = "tagged_lexical"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "tagged_lexical.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+tags = ["active_type_elaboration"]
+spec_refs = ["spec.en.test.lexical"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.lexical"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = ["tests/lexical/pass/tagged_lexical.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_type_elaboration_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.results.len(), 0);
+    assert_has_type_elaboration_report_code(&report, "E-TYPE-ELABORATION-ACTIVE-GATE");
+}
+
+#[test]
+fn type_elaboration_runner_rejects_public_diagnostic_codes_until_range_exists() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/fail/types/fail_payload_gap.miz",
+        "theorem VisibleTheorem: thesis;\n",
+    );
+    corpus.write(
+        "tests/miz/fail/types/fail_payload_gap.expect.toml",
+        r#"schema_version = 1
+id = "fail_payload_gap"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_payload_gap.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "missing_ast_payload_extraction"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = ["E-CHECKER-BOGUS"]
+tags = ["active_type_elaboration"]
+spec_refs = ["spec.en.test.type_elaboration"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.type_elaboration"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "type_elaboration"
+status = "partial"
+required = true
+coverage = "diagnostic"
+tests = ["tests/miz/fail/types/fail_payload_gap.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_type_elaboration_corpus(&corpus.config()).unwrap();
+
+    assert_has_type_elaboration_report_code(&report, "E-TYPE-ELABORATION-PUBLIC-DIAGNOSTIC-CODES");
+}
+
+#[test]
+fn type_elaboration_runner_uses_stable_detail_key_fallback() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/fail/types/fail_payload_gap.miz",
+        "theorem VisibleTheorem: thesis;\n",
+    );
+    corpus.write(
+        "tests/miz/fail/types/fail_payload_gap.expect.toml",
+        r#"schema_version = 1
+id = "fail_payload_gap"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_payload_gap.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "missing_ast_payload_extraction"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+tags = ["active_type_elaboration"]
+spec_refs = ["spec.en.test.type_elaboration"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.type_elaboration"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "type_elaboration"
+status = "partial"
+required = true
+coverage = "diagnostic"
+tests = ["tests/miz/fail/types/fail_payload_gap.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_type_elaboration_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.passed_count(), 1);
+}
+
+#[test]
+fn type_elaboration_runner_reports_lower_stage_symbol_failures_before_gap() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/fail/types/fail_duplicate_theorem.miz",
+        "theorem Clash: thesis;\ntheorem Clash: thesis;\n",
+    );
+    corpus.write(
+        "tests/miz/fail/types/fail_duplicate_theorem.expect.toml",
+        r#"schema_version = 1
+id = "fail_duplicate_theorem"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_duplicate_theorem.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "lower_stage_error"
+rejection_reason = "duplicate_theorem_symbol"
+stable_detail_key = "type_elaboration.lower_stage.declaration_symbol.symbol.duplicate_declaration"
+diagnostic_codes = []
+tags = ["active_type_elaboration"]
+spec_refs = ["spec.en.test.type_elaboration"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.type_elaboration"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "type_elaboration"
+status = "partial"
+required = true
+coverage = "diagnostic"
+tests = ["tests/miz/fail/types/fail_duplicate_theorem.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_type_elaboration_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.passed_count(), 1);
+    assert_eq!(
+        report.results[0].actual_detail_keys,
+        ["type_elaboration.lower_stage.declaration_symbol.symbol.duplicate_declaration"]
+    );
+}
+
+#[test]
+fn type_elaboration_runner_rejects_active_tag_on_wrong_phase() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/fail/types/fail_payload_gap.miz",
+        "theorem VisibleTheorem: thesis;\n",
+    );
+    corpus.write(
+        "tests/miz/fail/types/fail_payload_gap.expect.toml",
+        r#"schema_version = 1
+id = "fail_payload_gap"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_payload_gap.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "external_dependency_gap"
+rejection_reason = "missing_ast_payload_extraction"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+tags = ["active_type_elaboration"]
+spec_refs = ["spec.en.test.type_elaboration"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.type_elaboration"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "type_elaboration"
+status = "partial"
+required = true
+coverage = "diagnostic"
+tests = ["tests/miz/fail/types/fail_payload_gap.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_type_elaboration_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.results.len(), 0);
+    assert_has_type_elaboration_report_code(&report, "E-TYPE-ELABORATION-ACTIVE-GATE");
+}
+
+#[test]
 fn declaration_symbol_runner_uses_stable_detail_key_fallback() {
     let corpus = Corpus::new();
     corpus.write(
@@ -2172,6 +2421,27 @@ fn declaration_symbol_cli_reports_active_runner_summary() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("declaration-symbol cases: 2"));
     assert!(stdout.contains("passed: 2"));
+    assert!(stdout.contains("failed: 0"));
+}
+
+#[test]
+fn type_elaboration_cli_reports_active_runner_summary() {
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_mizar-test"))
+        .arg("type-elaboration")
+        .arg("--workspace-root")
+        .arg(repository_config().workspace_root)
+        .output()
+        .expect("mizar-test type-elaboration should run");
+
+    assert!(
+        output.status.success(),
+        "type-elaboration CLI failed: stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("type-elaboration cases: 1"));
+    assert!(stdout.contains("passed: 1"));
     assert!(stdout.contains("failed: 0"));
 }
 
@@ -2694,6 +2964,20 @@ fn assert_has_report_code(report: &mizar_test::ParseOnlyRunReport, code: &str) {
 
 fn assert_has_declaration_symbol_report_code(
     report: &mizar_test::DeclarationSymbolRunReport,
+    code: &str,
+) {
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code.0 == code),
+        "expected diagnostic {code}, got {:#?}",
+        report.diagnostics
+    );
+}
+
+fn assert_has_type_elaboration_report_code(
+    report: &mizar_test::TypeElaborationRunReport,
     code: &str,
 ) {
     assert!(
