@@ -366,7 +366,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 
 ### 第 3 波: オーバーロード解決（phase 8）
 
-21. **仕様: `overload_resolution.md`。** [ ]
+21. **仕様: `overload_resolution.md`。** [x]
     - オーバーロードの仕様を、名前付き節とともに執筆する（英語と日本語、
       コードなし）: 来歴付きサイト/候補収集、template 展開、記録済み事実に
       よる viability、specificity 半順序（サイトごとのグラフ、グローバル
@@ -375,6 +375,12 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - 依存: 2。仕様: アーキテクチャ 05、
       [19.overload_resolution.md](../../../spec/ja/19.overload_resolution.md)、
       [18.templates.md](../../../spec/ja/18.templates.md)。
+    - task 21 で完了: `overload_resolution.md` は checker-local phase-8 boundary、
+      explicit site/candidate payload、template expansion、recorded fact 上の
+      viability、per-site specificity graph、root selection、refinement join、
+      widening-only inserted `qua` view、failed-site preservation、diagnostic、
+      determinism、tasks 22-26 の planned task coverage、MC-G027 test/deferred/external
+      gap を code なしで定義する。
 
 22. **候補サイトの収集。** [ ]
     - `TypedAst` と `SymbolEnv`（スコープ/可視性で既にフィルタ済み）から
@@ -385,7 +391,8 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 23. **template 展開。** [ ]
     - 通常の候補順序付けに先立って template 候補を具体候補へ展開する。
       展開不能な template は理由を記録して除外する。
-    - テスト: 展開フィクスチャ。除外が理由を保持する。
+    - テスト: 展開フィクスチャ。constrained-template evidence case。
+      除外が理由を保持する。
     - 依存: 22、`mizar-parser` task 31。仕様: `overload_resolution.md`
       （template の節）。
 
@@ -393,7 +400,8 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - 記録済みの型事実のみを用いて候補を viability でフィルタする — 新しい
       推論は行わない（アーキテクチャ 05「Viability Uses Type Facts, Not
       New Inference」）。
-    - テスト: viability フィクスチャ。診断のための棄却理由の保持。
+    - テスト: viability フィクスチャ。consumable な fact evidence と
+      pending/degraded/rejected fact evidence の対比。診断のための棄却理由の保持。
     - 依存: 23。仕様: `overload_resolution.md`（viability の節）。
 
 25. **specificity グラフの構築。** [ ]
@@ -406,8 +414,9 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - オーバーロード根を選択し、整合する refinement グループを結合し、
       `qua` view を挿入し、失敗サイトを明示的に保存する（アーキテクチャ
       05 Step 5）。
-    - テスト: refinement 結合を含む選択フィクスチャ。候補リスト付きの
-      曖昧性診断。失敗サイトは決して有効な出力にならない。
+    - テスト: strongest-type、attribute-union、incompatible refinement join を
+      含む選択フィクスチャ。候補リスト付きの曖昧性診断。失敗サイトは
+      決して有効な出力にならない。
     - 依存: 25。仕様: `overload_resolution.md`（選択/view の節）。
 
 27. **仕様: `resolved_typed_ast.md`。** [ ]

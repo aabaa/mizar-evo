@@ -384,7 +384,7 @@ Keep `cargo test -p mizar-checker` green after each task (see
 
 ### Wave 3: overload resolution (phase 8)
 
-21. **Spec: `overload_resolution.md`.** [ ]
+21. **Spec: `overload_resolution.md`.** [x]
     - Write the overload spec (English and Japanese, no code) with named
       sections: site/candidate collection with provenance, template
       expansion, viability over recorded facts, specificity partial order
@@ -394,6 +394,13 @@ Keep `cargo test -p mizar-checker` green after each task (see
     - Deps: 2. Spec: architecture 05,
       [19.overload_resolution.md](../../../spec/en/19.overload_resolution.md),
       [18.templates.md](../../../spec/en/18.templates.md).
+    - Completed by task 21: `overload_resolution.md` now defines the
+      checker-local phase-8 boundary, explicit site/candidate payloads,
+      template expansion, viability over recorded facts, per-site specificity
+      graphs, root selection, refinement joins, widening-only inserted `qua`
+      views, failed-site preservation, diagnostics, determinism, planned task
+      coverage for tasks 22-26, and MC-G027 test/deferred/external gaps. No
+      code was added.
 
 22. **Candidate site collection.** [ ]
     - Collect overload sites and candidate sets with provenance from
@@ -406,7 +413,8 @@ Keep `cargo test -p mizar-checker` green after each task (see
     - Expand template candidates into concrete candidates ahead of ordinary
       candidate ordering; record exclusion reasons for non-expandable
       templates.
-    - Tests: expansion fixtures; exclusions carry reasons.
+    - Tests: expansion fixtures; constrained-template evidence cases;
+      exclusions carry reasons.
     - Deps: 22, `mizar-parser` task 31. Spec: `overload_resolution.md`
       (templates section).
 
@@ -414,7 +422,8 @@ Keep `cargo test -p mizar-checker` green after each task (see
     - Filter candidates by viability using recorded type facts only — no new
       inference (architecture 05 "Viability Uses Type Facts, Not New
       Inference").
-    - Tests: viability fixtures; rejection reasons preserved for diagnostics.
+    - Tests: viability fixtures; consumable versus pending/degraded/rejected
+      fact evidence; rejection reasons preserved for diagnostics.
     - Deps: 23. Spec: `overload_resolution.md` (viability section).
 
 25. **Specificity graph construction.** [ ]
@@ -426,9 +435,9 @@ Keep `cargo test -p mizar-checker` green after each task (see
 26. **Root selection, refinement joins, and view insertion.** [ ]
     - Select overload roots, join coherent refinement groups, insert `qua`
       views, and preserve failed sites explicitly (architecture 05 Step 5).
-    - Tests: selection fixtures including refinement joins; ambiguity
-      diagnostics with candidate lists; failed sites never become valid
-      output.
+    - Tests: selection fixtures including strongest-type, attribute-union, and
+      incompatible refinement joins; ambiguity diagnostics with candidate
+      lists; failed sites never become valid output.
     - Deps: 25. Spec: `overload_resolution.md` (selection/views sections).
 
 27. **Spec: `resolved_typed_ast.md`.** [ ]
