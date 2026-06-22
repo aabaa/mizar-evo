@@ -20,7 +20,7 @@ source task が始まる前に file を追加する。モジュール名は
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | store | `store.md`（task 2） | `src/store.rs` | [~] |
-| module_summary | `module_summary.md`（task 4） | `src/module_summary.rs` | [ ] |
+| module_summary | `module_summary.md`（task 4） | `src/module_summary.rs` | [x] |
 | registration_summary | `registration_summary.md`（task 6） | `src/registration_summary.rs` | [ ] |
 | proof_witness | `proof_witness.md`（task 8） | `src/proof_witness.rs` | [ ] |
 | verified_artifact | `verified_artifact.md`（task 10） | `src/verified_artifact.rs` | [ ] |
@@ -111,11 +111,13 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
    - 依存: 2。仕様: アーキテクチャ 03、
      [18.dependency_fingerprint.md](../../architecture/ja/18.dependency_fingerprint.md)。
 
-5. **`ModuleSummary` スキーマ、writer、reader。** [ ]
+5. **`ModuleSummary` スキーマ、writer、reader。** [x]
    - writer と検証つき reader を備えたスキーマを実装する。これにより
      `mizar-resolve` task 24（summary 経由の解決）のブロックが外れる。
-   - テスト: ラウンドトリップ。本体のみの変更に対する interface-hash の
-     安定性。非互換バージョンの読み込みが明確に失敗する。
+   - テスト: ラウンドトリップ、deterministic canonical ordering、
+     body-only/source-metadata change に対する interface-hash stability、
+     exported interface change による interface-hash change、
+     incompatible-version read、module/hash mismatch rejection。
    - 依存: 3、4。仕様: `module_summary.md`。
 
 6. **仕様: `registration_summary.md`。** [ ]

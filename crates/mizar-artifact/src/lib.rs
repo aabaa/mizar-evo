@@ -8,3 +8,6 @@
 
 /// Canonical artifact serialization, schema-version checks, and hash framing.
 pub mod store;
+
+/// Published module-summary schema and validating reader/writer.
+pub mod module_summary;

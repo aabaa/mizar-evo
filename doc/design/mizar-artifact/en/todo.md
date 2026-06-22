@@ -21,7 +21,7 @@ and 18 and internal 02 and 06.
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | store | `store.md` (task 2) | `src/store.rs` | [~] |
-| module_summary | `module_summary.md` (task 4) | `src/module_summary.rs` | [ ] |
+| module_summary | `module_summary.md` (task 4) | `src/module_summary.rs` | [x] |
 | registration_summary | `registration_summary.md` (task 6) | `src/registration_summary.rs` | [ ] |
 | proof_witness | `proof_witness.md` (task 8) | `src/proof_witness.rs` | [ ] |
 | verified_artifact | `verified_artifact.md` (task 10) | `src/verified_artifact.rs` | [ ] |
@@ -110,11 +110,13 @@ Keep `cargo test -p mizar-artifact` green after each task (see
    - Deps: 2. Spec: architecture 03,
      [18.dependency_fingerprint.md](../../architecture/en/18.dependency_fingerprint.md).
 
-5. **`ModuleSummary` schema, writer, and reader.** [ ]
+5. **`ModuleSummary` schema, writer, and reader.** [x]
    - Implement the schema with writer and validating reader; this unblocks
      `mizar-resolve` task 24 (summary-backed resolution).
-   - Tests: round-trips; interface-hash stability under body-only changes;
-     incompatible-version reads fail cleanly.
+   - Tests: round-trips; deterministic canonical ordering; interface-hash
+     stability under body-only/source-metadata changes; interface-hash changes
+     for exported interface changes; incompatible-version reads fail cleanly;
+     module and hash mismatch rejection.
    - Deps: 3, 4. Spec: `module_summary.md`.
 
 6. **Spec: `registration_summary.md`.** [ ]

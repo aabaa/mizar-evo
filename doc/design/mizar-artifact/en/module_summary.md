@@ -57,6 +57,13 @@ struct ModuleSummary {
 }
 ```
 
+Task 5 serializes this shape as one canonical JSON object. Optional fields are
+present with JSON `null` when absent; readers reject omitted required fields and
+unknown fields. String-valued kinds and visibility fields use stable
+lower-snake-case identifiers supplied by producer crates. The task 5 reader
+validates that those fields are non-empty and that fixed enums such as
+`proof_status` use a known value.
+
 `source_hash` records the exact source file content used to produce the summary
 so readers can diagnose stale artifacts. It is not part of `interface_hash`,
 because body-only, proof-body-only, diagnostic-only, and comment-only source
@@ -68,7 +75,8 @@ changes must not invalidate importers when the exported interface is unchanged.
 to downstream tools:
 
 - package id;
-- package version or lockfile identity when available;
+- package version, encoded as `package_version`, when available;
+- lockfile identity, encoded as `lockfile_identity`, when available;
 - module path;
 - language edition.
 
@@ -78,6 +86,23 @@ are not part of `interface_hash` unless a schema-specific rule makes a source
 path visible to importers. Local aliases and filesystem traversal details are
 not part of module identity. Readers reject a summary when the manifest entry
 or requested import path identifies a different package or module.
+
+Source ranges attached to exported entries are diagnostic and navigation
+metadata. They may be used as canonical ordering tie-breakers for otherwise
+identical entries, but they are excluded from `interface_hash` so comment-only
+and formatting-only movement does not invalidate importers.
+
+The canonical JSON field shape is:
+
+```text
+module = {
+  "package_id": string,
+  "package_version": string | null,
+  "lockfile_identity": string | null,
+  "module_path": string,
+  "language_edition": string
+}
+```
 
 ## Exported Symbols
 
@@ -108,6 +133,31 @@ Proof acceptance status is projected data supplied by proof-producing phases.
 `ModuleSummary` records the status but does not validate proofs or decide
 whether a proof is accepted.
 
+The canonical JSON field shape is:
+
+```text
+exported_symbol = {
+  "origin_id": string,
+  "fully_qualified_name": string,
+  "namespace_path": [string, ...],
+  "visibility": string,
+  "declaration_kind": string,
+  "source_range": source_range,
+  "rendered_signature": string,
+  "interface_fingerprint": interface_hash_string,
+  "proof_status": "accepted" | "not_accepted" | "not_required" | null
+}
+
+source_range = {
+  "start_byte": non_negative_integer,
+  "end_byte": non_negative_integer
+}
+```
+
+Readers reject ranges whose start is greater than their end. The
+`interface_fingerprint` uses the same serialized hash construction as
+`interface_hash` below.
+
 ## Exported Labels
 
 `exported_labels` records labels that downstream modules may cite. Each entry
@@ -125,6 +175,19 @@ Private or module-local proof-step labels are excluded. Ambiguous or duplicate
 labels are not normalized away by this schema; resolver diagnostics are owned by
 `mizar-resolve`.
 
+The canonical JSON field shape is:
+
+```text
+exported_label = {
+  "origin_id": string,
+  "label": string,
+  "owner_fully_qualified_name": string,
+  "visibility": string,
+  "source_range": source_range,
+  "target_kind": string
+}
+```
+
 ## Lexical Summary
 
 `lexical_summary` contains only exported lexical contributions needed to build a
@@ -140,6 +203,23 @@ The lexical summary is not proof authority and does not decide whether an import
 is legal. Active lexical environment construction may use candidate summaries,
 but semantic import resolution validates imports later.
 
+The canonical JSON field shape is:
+
+```text
+lexical_summary = {
+  "schema_version": string,
+  "fingerprint": interface_hash_string | null,
+  "contributions": [
+    {
+      "kind": string,
+      "key": string,
+      "payload": string
+    },
+    ...
+  ]
+}
+```
+
 ## Re-exports And Dependencies
 
 `reexports` records exported forwarding relationships by stable module identity
@@ -152,6 +232,22 @@ that affected this summary. Missing dependency data is never interpreted as "no
 dependency"; incomplete dependency interface information makes the summary
 uncacheable for reuse decisions owned by `mizar-cache`.
 
+The canonical JSON field shape is:
+
+```text
+reexport = {
+  "target_module": module,
+  "target_item_origin_id": string | null,
+  "exported_name": string | null,
+  "provenance_origin_id": string | null
+}
+
+dependency_interface = {
+  "module": module,
+  "interface_hash": interface_hash_string
+}
+```
+
 ## Interface Hash
 
 `interface_hash` is the canonical dependency-facing key for the importer-visible
@@ -161,6 +257,27 @@ published file bytes.
 
 `interface_hash` is computed with the task-3 `HashClass::Interface` domain over
 the canonical interface projection.
+
+Hash fields are serialized as strings so readers can reject construction and
+domain mismatches before comparing digest bytes:
+
+```text
+source_hash_string =
+  "mizar-session/hash-text/v1:" lower_hex_32_byte_digest
+
+interface_hash_string =
+  "mizar-artifact/artifact-framed-hash-text/v1:interface:"
+  "mizar-artifact/module-summary:" schema_version ":"
+  lower_hex_32_byte_digest
+```
+
+`source_hash` uses `source_hash_string`. Top-level `interface_hash`, exported
+element fingerprints, lexical fingerprints, and dependency interface hashes use
+`interface_hash_string`. Readers reject malformed hex, wrong construction
+labels, wrong hash class, wrong schema family, wrong schema version, a
+top-level `interface_hash` that differs from the recomputed interface
+projection hash, and any caller-provided expected module or interface hash that
+does not match the summary.
 
 The hash includes:
 
@@ -173,10 +290,12 @@ The hash includes:
 - exported algorithm signatures and `requires` / `ensures` contracts;
 - dependency-facing notation, overload summaries, and coherent-refinement
   metadata when present in the summary.
+- dependency interface references and their interface hashes.
 
 The hash excludes:
 
 - `source_hash` of the whole file;
+- diagnostic and navigation source ranges;
 - comments and formatting outside syntax-sensitive notation;
 - proof bodies and algorithm bodies;
 - local diagnostics and diagnostic wording;
@@ -191,22 +310,35 @@ entries or store-level `artifact_hash` values may differ.
 
 All collections are serialized deterministically:
 
-- exported symbols sort by fully-qualified name, stable origin id, and source
-  range;
+- exported symbols sort by fully-qualified name, stable origin id, namespace
+  path, visibility, declaration kind, source range, rendered signature,
+  interface fingerprint, and proof status; readers reject duplicate
+  `(fully_qualified_name, origin_id)` pairs;
 - exported labels sort by label text, owner fully-qualified name, stable origin
-  id, and source range;
-- lexical contributions sort by contribution kind and canonical lexical key;
-- re-exports sort by target module identity and item identity;
-- dependency interface references sort by package id, module path, and
-  interface hash.
+  id, source range, visibility, and target kind; readers reject duplicate
+  `(label, owner_fully_qualified_name, origin_id)` triples;
+- lexical contributions sort by contribution kind, canonical lexical key, and
+  payload; readers reject duplicate `(kind, key, payload)` triples;
+- re-exports sort by the full target module identity, target item origin id,
+  exported name, and provenance origin id; readers reject duplicate full
+  re-export tuples;
+- dependency interface references sort by full module identity and interface
+  hash; readers reject duplicate module identities because one dependency
+  module must not publish two interface hashes in one summary.
 
 No insertion order, source traversal order, filesystem order, or worker
 completion order may affect serialized bytes or hashes.
 
+Task 5 writers sort these collections before serialization. Readers reject
+unsorted collection arrays so a non-canonical producer cannot publish a summary
+whose bytes differ only by traversal or worker order.
+
 ## Reader And Writer Requirements
 
 Writers use the canonical UTF-8 JSON rules from `store.md` and emit the current
-schema version. Readers:
+schema version. Task 5 readers operate over `CanonicalJson` values produced at
+the store boundary; byte-level artifact parsing and duplicate-key detection for
+files remain part of the later artifact-store I/O task. Readers:
 
 - check schema-version compatibility before interpreting summary fields;
 - verify that the manifest entry, requested module, and summary module identity
@@ -224,5 +356,7 @@ and do not silently fall back to internal cache records.
 
 Task 4 adds this specification only. Source implementation is deferred to task
 5, which adds the `ModuleSummary` schema, writer, validating reader, and tests
-for round-trips, interface-hash stability under body-only changes, and
-incompatible-version reads.
+for round-trips, deterministic canonical ordering, interface-hash stability
+under body-only/source-metadata changes, interface-hash changes for exported
+interface changes, incompatible-version reads, and module/hash mismatch
+rejection.
