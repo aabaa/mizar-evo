@@ -296,11 +296,19 @@ fn public_declaration_name(line: &str) -> Option<&str> {
 
 fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> bool {
     let relative = path.strip_prefix(root).unwrap_or(path);
-    if relative == Path::new("src/typed_ast.rs") || relative == Path::new("src/binding_env.rs") {
+    if matches!(
+        relative,
+        path if path == Path::new("src/typed_ast.rs")
+            || path == Path::new("src/binding_env.rs")
+            || path == Path::new("src/type_checker.rs")
+    ) {
         return true;
     }
     relative == Path::new("src/lib.rs")
-        && matches!(line.trim(), "pub mod typed_ast;" | "pub mod binding_env;")
+        && matches!(
+            line.trim(),
+            "pub mod typed_ast;" | "pub mod binding_env;" | "pub mod type_checker;"
+        )
 }
 
 fn undocumented_allow_line_numbers(source: &str) -> Vec<usize> {

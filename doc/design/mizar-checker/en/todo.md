@@ -164,11 +164,18 @@ Keep `cargo test -p mizar-checker` green after each task (see
      initial-obligation behavior, task 11 fact queries, partial recovery,
      deterministic rendering expectations, and external/deferred gates.
 
-7. **Type-expression normalization.** [ ]
+7. **Type-expression normalization.** [x]
    - Implement normalization of surface type expressions into canonical
      predicate form (attribute order, `non`, radix-type handling).
    - Tests: attribute-order canonicalization; idempotent normalization.
    - Deps: 5, 6. Spec: `type_checker.md` (normalization section).
+   - Completed by task 7: `src/type_checker.rs` implements
+     `TypeNormalizationOutput` with a task-local `NormalizedTypeTable`,
+     checker-owned type-expression payload normalization, deterministic type
+     ids/debug rendering, explicit mode-expansion provider support, `TypeEntry`
+     emission, degraded diagnostics for missing explicit mode-expansion provider
+     payloads, and unsupported-payload recovery. Resolver/source-walk site
+     extraction and full signature payloads remain external dependencies.
 
 8. **Declaration and local-binding checking.** [ ]
    - Check declarations and local bindings (`let`, `reserve`, `set`, …)

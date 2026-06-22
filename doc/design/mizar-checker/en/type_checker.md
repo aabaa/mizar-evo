@@ -102,7 +102,7 @@ normalized type is a radix/type-head key plus a canonical attribute set:
 struct NormalizedType {
     id: NormalizedTypeId,
     head: TypeHeadRef,
-    args: Vec<TypeArgumentRef>,
+    args: Vec<NormalizedTypeId>,
     attributes: AttributeSet,
     source: TypeSource,
     status: NormalizedTypeStatus,
@@ -113,7 +113,15 @@ enum TypeHeadRef {
     BuiltinSet,
     Mode(SymbolId),
     Structure(SymbolId),
-    Error(TypeDiagnosticId),
+    Error(TypeHeadErrorKind),
+}
+
+enum TypeHeadErrorKind {
+    Unknown,
+    WrongKind,
+    Ambiguous,
+    Unsupported,
+    Recovery,
 }
 
 struct AttributeSet {
@@ -123,14 +131,16 @@ struct AttributeSet {
 
 struct AttributeInstance {
     symbol: SymbolId,
-    args: Vec<TypeArgumentRef>,
-    source_range: SourceRange,
+    args: Vec<NormalizedTypeId>,
+    source_range: SourceRangeKey,
+    spelling: String,
 }
 ```
 
 Canonical type keys are ordered by head kind, canonical `SymbolId`, normalized
-argument keys, then attribute keys. Source spelling and ranges are retained for
-diagnostics but do not define semantic equality.
+argument keys, then attribute keys. Source ranges are retained for diagnostics;
+source spelling and ranges are retained on normalized records for debug
+rendering, but neither defines semantic equality.
 
 Required invariants:
 
@@ -152,19 +162,27 @@ Task 7 implements this section.
 
 Inputs:
 
-- resolved type-expression sites from `ResolvedAst`;
-- type-head, attribute, mode, structure, and parameter signatures exposed by
+- checker-owned resolved type-expression payloads that identify typed sites,
+  source ranges, type-head symbols, type arguments, and attribute occurrences;
+- type-head, attribute, mode, and structure identities validated through
   `SymbolEnv`;
-- local binding/type context from `BindingEnv` and earlier normalized parameter
-  sites.
+- an explicit mode-expansion provider for radix/attribute payloads when later
+  resolver or artifact tasks expose those payloads.
 
 Outputs:
 
-- `NormalizedType` entries in deterministic key order;
+- a task-local `TypeNormalizationOutput` owning `NormalizedTypeTable` entries in
+  deterministic key order;
 - `TypeEntry`s for type-expression sites;
-- diagnostics for unknown heads, wrong arity, wrong type-argument kind,
-  contradictory attributes, unsupported syntax payloads, and missing external
-  resolver payloads.
+- diagnostics for unknown heads, wrong arity, wrong symbol kind,
+  contradictory attributes, unsupported checker-owned payloads, and missing
+  explicit mode-expansion provider payloads.
+
+Task 7 does not walk `ResolvedAst` directly because the current resolver does
+not expose a typed site table for type expressions. The integration seam is the
+checker-owned payload listed above. A later resolver/source-walk task may fill
+that payload from `ResolvedAst`, but task 7 must not infer it from raw surface
+node kinds.
 
 Rules:
 
@@ -176,11 +194,13 @@ Rules:
    in the positive set.
 4. Sort attributes by canonical symbol id, normalized arguments, polarity, and
    source range; this order is for storage and rendering only.
-5. Unfold mode definitions only when the resolver exposes their defining radix
-   and attribute payload. If that payload is absent, record an
-   `external_dependency_gap` and keep a degraded type headed by the mode symbol.
-6. Preserve source spelling and source range for every diagnostic and for
-   debug rendering.
+5. Unfold mode definitions only through the explicit mode-expansion provider
+   when it supplies defining radix and attribute payload. If that payload is
+   absent, record an `external_dependency_gap` and keep a degraded type headed
+   by the mode symbol.
+6. Preserve source ranges for every diagnostic. Preserve source spelling and
+   range on normalized type and attribute records for debug rendering, using a
+   deterministic representative source for semantically equivalent type keys.
 7. Never use cluster closure to "fix" a normalized type during task 7. Cluster
    closure is phase 7 and belongs to later registration tasks.
 
@@ -379,7 +399,8 @@ Task 7 must add Rust tests for:
 - attribute sorting, deduplication, polarity, and contradiction diagnostics;
 - built-in singleton heads, structure heads that remain radix heads, and
   recursive type-argument normalization;
-- mode unfolding idempotence when resolver payload exists;
+- mode unfolding idempotence when the explicit mode-expansion provider supplies
+  payload;
 - degraded mode/type entries when signature payload is missing;
 - unknown or ambiguous heads, wrong arity/kind diagnostics, and source-range
   preservation;
@@ -441,6 +462,6 @@ corpus runner and traceability metadata.
 | `spec_gap` | No task-6 blocking spec gap remains for the named phase-6 sections. Chapters 03, 08, and 13 plus architecture 04 provide enough authority for normalization, declaration checking, term-expression inference, coercion candidates, facts, and recovery. | Continue to task 7 after task-6 review, verification, and commit. |
 | `test_gap` | Active checker-stage `.miz` coverage and `type_elaboration` runner remain absent. | Tasks 7-11 add task-local Rust tests. Task 12 owns active corpus coverage and traceability metadata. |
 | `design_drift` | Architecture 04 examples use broad `TypeContext` and `CoercionCandidateTable` names, while existing checker docs use `BindingEnv`, immutable `LocalTypeContextTable`, and `CoercionTable`. | This spec preserves the refined checker module split and treats `CoercionTable` entries as candidates until later phases resolve them. |
-| `source_drift` | `src/type_checker.rs` does not exist yet. | Task 7 is expected to create it; no source repair belongs to task 6. |
+| `source_drift` | At task 6 time `src/type_checker.rs` did not exist yet. | Resolved by task 7, which creates the module and exports it from `lib.rs`; no source repair belonged to task 6. |
 | `external_dependency_gap` | Several implementation seams depend on resolver-exposed signature payloads for mode unfolding, structure fields, attributes, functor/predicate candidates, built-ins, and dependency activated summaries. Public checker diagnostic codes are also not allocated. | Implementation tasks must consume only exposed resolver/artifact payloads. Missing payloads become external dependency gaps or degraded diagnostics; do not add direct raw-syntax reconstruction. |
 | `deferred` | Registration closure, reduction normalization, final overload selection, inserted overload-disambiguating `qua` views, VC generation, proof acceptance, kernel replay, and artifact publication remain outside task 6 and phase 6. | Later checker and downstream crate tasks own these boundaries. |

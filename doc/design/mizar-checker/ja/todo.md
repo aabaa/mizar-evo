@@ -160,11 +160,18 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      behavior、task 11 fact query、partial recovery、deterministic rendering
      expectation、external/deferred gate を定義した。
 
-7. **型式の正規化。** [ ]
+7. **型式の正規化。** [x]
    - surface の型式を正準述語形へ正規化する処理を実装する（attribute
      順序、`non`、radix 型の扱い）。
    - テスト: attribute 順序の正準化。正規化の冪等性。
    - 依存: 5、6。仕様: `type_checker.md`（正規化の節）。
+   - task 7 で完了: `src/type_checker.rs` が task-local
+     `NormalizedTypeTable` を持つ `TypeNormalizationOutput`、checker-owned
+     type-expression payload normalization、deterministic type id/debug
+     rendering、explicit mode-expansion provider support、`TypeEntry`
+     emission、explicit mode-expansion provider payload 欠落時の degraded
+     diagnostic、unsupported-payload recovery を実装した。resolver/source-walk
+     site extraction と完全な signature payload は external dependency として残る。
 
 8. **宣言とローカル束縛の検査。** [ ]
    - 宣言とローカル束縛（`let`、`reserve`、`set`、…）を正規化された型に

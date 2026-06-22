@@ -99,7 +99,7 @@ normalized type は radix/type-head key と canonical attribute set から成る
 struct NormalizedType {
     id: NormalizedTypeId,
     head: TypeHeadRef,
-    args: Vec<TypeArgumentRef>,
+    args: Vec<NormalizedTypeId>,
     attributes: AttributeSet,
     source: TypeSource,
     status: NormalizedTypeStatus,
@@ -110,7 +110,15 @@ enum TypeHeadRef {
     BuiltinSet,
     Mode(SymbolId),
     Structure(SymbolId),
-    Error(TypeDiagnosticId),
+    Error(TypeHeadErrorKind),
+}
+
+enum TypeHeadErrorKind {
+    Unknown,
+    WrongKind,
+    Ambiguous,
+    Unsupported,
+    Recovery,
 }
 
 struct AttributeSet {
@@ -120,13 +128,15 @@ struct AttributeSet {
 
 struct AttributeInstance {
     symbol: SymbolId,
-    args: Vec<TypeArgumentRef>,
-    source_range: SourceRange,
+    args: Vec<NormalizedTypeId>,
+    source_range: SourceRangeKey,
+    spelling: String,
 }
 ```
 
 canonical type key は head kind、canonical `SymbolId`、normalized argument key、
-attribute key の順で並ぶ。source spelling と range は diagnostic のために保持するが、
+attribute key の順で並ぶ。source range は diagnostic のために保持する。source spelling
+と range は debug rendering 用に normalized record 上にも保持するが、どちらも
 semantic equality を定義しない。
 
 必須 invariant:
@@ -148,17 +158,25 @@ task 7 がこの section を実装する。
 
 入力:
 
-- `ResolvedAst` から得る resolved type-expression site;
-- `SymbolEnv` が公開する type-head、attribute、mode、structure、parameter signature;
-- `BindingEnv` と先行 normalized parameter site から得る local binding/type context。
+- typed site、source range、type-head symbol、type argument、attribute occurrence を
+  識別する checker-owned resolved type-expression payload;
+- `SymbolEnv` で validation する type-head、attribute、mode、structure identity;
+- 後続 resolver / artifact task が payload を公開した場合の radix / attribute payload 用
+  explicit mode-expansion provider。
 
 出力:
 
-- deterministic key order の `NormalizedType` entry;
+- deterministic key order の `NormalizedTypeTable` entry を所有する task-local
+  `TypeNormalizationOutput`;
 - type-expression site の `TypeEntry`;
-- unknown head、wrong arity、wrong type-argument kind、contradictory
-  attribute、unsupported syntax payload、missing external resolver payload の
-  diagnostic。
+- unknown head、wrong arity、wrong symbol kind、contradictory attribute、
+  unsupported checker-owned payload、missing explicit mode-expansion provider
+  payload の diagnostic。
+
+現在の resolver は type expression 用 typed site table を公開しないので、task 7 は
+`ResolvedAst` を直接 walk しない。integration seam は上記の checker-owned payload である。
+後続 resolver/source-walk task はその payload を `ResolvedAst` から埋めてもよいが、task 7 は
+raw surface node kind から推測してはならない。
 
 規則:
 
@@ -168,10 +186,12 @@ task 7 がこの section を実装する。
 3. `non A` を negative set、`A` を positive set に保存して attribute polarity を正規化する。
 4. attribute を canonical symbol id、normalized arguments、polarity、source range の順で
    sort する。この順序は storage/rendering 用だけである。
-5. resolver が defining radix と attribute payload を公開する場合だけ mode definition を
-   unfold する。payload がない場合は `external_dependency_gap` を記録し、mode symbol
-   headed の degraded type を保持する。
-6. すべての diagnostic と debug rendering のために source spelling と source range を保持する。
+5. explicit mode-expansion provider が defining radix と attribute payload を供給する場合だけ
+   mode definition を unfold する。payload がない場合は `external_dependency_gap` を記録し、
+   mode symbol headed の degraded type を保持する。
+6. すべての diagnostic について source range を保持する。normalized type と attribute
+   record には debug rendering 用の source spelling と range を保持し、semantic に同等な
+   type key には deterministic representative source を使う。
 7. task 7 では cluster closure を使って normalized type を「修復」しない。cluster closure は
    phase 7 であり、後続 registration task が所有する。
 
@@ -357,7 +377,7 @@ task 7 は Rust test で次を覆う。
 - attribute sorting、deduplication、polarity、contradiction diagnostic;
 - built-in singleton head、radix head のまま残る structure head、recursive
   type-argument normalization;
-- resolver payload がある場合の mode unfolding idempotence;
+- explicit mode-expansion provider が payload を供給する場合の mode unfolding idempotence;
 - signature payload 欠落時の degraded mode/type entry;
 - unknown / ambiguous head、wrong arity/kind diagnostic、source-range
   preservation;
@@ -415,6 +435,6 @@ task 12 が所有する。
 | `spec_gap` | named phase-6 section について task 6 を block する spec gap は残っていない。chapter 03、chapter 08、chapter 13、architecture 04 が normalization、declaration checking、term-expression inference、coercion candidate、fact、recovery に十分な authority を与える。 | task 6 の review、verification、commit 後に task 7 へ進む。 |
 | `test_gap` | active checker-stage `.miz` coverage と `type_elaboration` runner はまだ存在しない。 | task 7-11 が task-local Rust test を追加する。task 12 が active corpus coverage と traceability metadata を所有する。 |
 | `design_drift` | architecture 04 の例は broad `TypeContext` と `CoercionCandidateTable` 名を使うが、既存 checker docs は `BindingEnv`、immutable `LocalTypeContextTable`、`CoercionTable` を使う。 | 本 spec は refined checker module split を保ち、`CoercionTable` entry を後続 phase が解決するまで candidate として扱う。 |
-| `source_drift` | `src/type_checker.rs` はまだ存在しない。 | task 7 が作成する想定である。task 6 では source repair しない。 |
+| `source_drift` | task 6 時点では `src/type_checker.rs` はまだ存在しなかった。 | task 7 が module を作成し `lib.rs` から export したことで解決済みである。task 6 では source repair しなかった。 |
 | `external_dependency_gap` | 複数の実装 seam は mode unfolding、structure field、attribute、functor/predicate candidate、built-in、dependency activated summary の resolver-exposed signature payload に依存する。public checker diagnostic code も未割り当てである。 | 実装 task は公開済み resolver/artifact payload だけを消費する。不足 payload は external dependency gap または degraded diagnostic とし、direct raw-syntax reconstruction を追加しない。 |
 | `deferred` | registration closure、reduction normalization、final overload selection、inserted overload-disambiguating `qua` view、VC generation、proof acceptance、kernel replay、artifact publication は task 6 と phase 6 の外に残る。 | 後続 checker task と downstream crate task がこれらの境界を所有する。 |
