@@ -1,10 +1,10 @@
-//! Checker-local overload site and candidate collection for phase 8.
+//! Checker-local overload site, template, and viability data layers for phase 8.
 
-use crate::typed_ast::{NormalizedTypeId, TypeFactId, TypedSiteRef};
+use crate::typed_ast::{CoercionId, NormalizedTypeId, TypeFactId, TypedSiteRef};
 use mizar_resolve::resolved_ast::{ModuleId, SymbolId};
 use mizar_session::SourceRange;
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     fmt::{self, Write as _},
 };
 
@@ -58,6 +58,7 @@ dense_id!(OverloadSiteId);
 dense_id!(OverloadCandidateId);
 dense_id!(OverloadDiagnosticId);
 dense_id!(TemplateExpansionId);
+dense_id!(CandidateViabilityId);
 
 string_key!(OverloadSiteKey);
 string_key!(OverloadNameKey);
@@ -66,6 +67,7 @@ string_key!(CandidateProvenanceKey);
 string_key!(TemplateInstantiationKey);
 string_key!(TemplateParameterKey);
 string_key!(QuaPathKey);
+string_key!(ViabilityEvidenceKey);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OverloadCollectionOutput {
@@ -131,6 +133,42 @@ impl TemplateExpansionOutput {
         let mut output = String::from("template-expansion-debug-v1\n");
         write_candidates(&mut output, &self.candidates);
         write_template_expansions(&mut output, &self.expansions);
+        write_diagnostics(&mut output, &self.diagnostics);
+        output
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CandidateViabilityOutput {
+    candidates: OverloadCandidateTable,
+    decisions: CandidateViabilityTable,
+    diagnostics: OverloadDiagnosticTable,
+}
+
+impl CandidateViabilityOutput {
+    pub fn filter(
+        expansion: &TemplateExpansionOutput,
+        inputs: impl IntoIterator<Item = CandidateViabilityInput>,
+    ) -> Self {
+        CandidateViabilityBuilder::new(expansion, inputs).finish()
+    }
+
+    pub const fn candidates(&self) -> &OverloadCandidateTable {
+        &self.candidates
+    }
+
+    pub const fn decisions(&self) -> &CandidateViabilityTable {
+        &self.decisions
+    }
+
+    pub const fn diagnostics(&self) -> &OverloadDiagnosticTable {
+        &self.diagnostics
+    }
+
+    pub fn debug_text(&self) -> String {
+        let mut output = String::from("candidate-viability-debug-v1\n");
+        write_candidates(&mut output, &self.candidates);
+        write_candidate_viability(&mut output, &self.decisions);
         write_diagnostics(&mut output, &self.diagnostics);
         output
     }
@@ -563,6 +601,201 @@ pub enum TemplateExpansionFailure {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CandidateViabilityInput {
+    pub candidate: OverloadCandidateId,
+    pub arguments: Vec<ArgumentViabilityEvidence>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ArgumentViabilityEvidence {
+    Exact {
+        actual: NormalizedTypeId,
+    },
+    FactWidening {
+        actual: NormalizedTypeId,
+        target: NormalizedTypeId,
+        facts: Vec<TypeFactId>,
+        status: ViabilityFactStatus,
+    },
+    Coercion {
+        actual: NormalizedTypeId,
+        target: NormalizedTypeId,
+        coercion: CoercionId,
+        kind: ViabilityCoercionKind,
+        status: ViabilityCoercionStatus,
+        facts: Vec<TypeFactId>,
+        path: Option<QuaPathKey>,
+    },
+    Missing {
+        actual: Option<NormalizedTypeId>,
+        target: NormalizedTypeId,
+    },
+    AmbiguousInheritance {
+        actual: NormalizedTypeId,
+        target: NormalizedTypeId,
+        paths: Vec<QuaPathKey>,
+    },
+    DeferredExternalDependency {
+        actual: Option<NormalizedTypeId>,
+        target: NormalizedTypeId,
+        reason: ViabilityEvidenceKey,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum ViabilityFactStatus {
+    Consumable,
+    PendingObligation,
+    Degraded,
+    Rejected,
+    OutOfScopeAssumption,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum ViabilityCoercionKind {
+    Widening,
+    SourceQua,
+    Narrowing,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum ViabilityCoercionStatus {
+    Accepted,
+    PendingObligation,
+    Blocked,
+    Rejected,
+    MissingEvidence,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CandidateViability {
+    pub id: CandidateViabilityId,
+    pub source_candidate: OverloadCandidateId,
+    pub site: OverloadSiteId,
+    pub output_candidate: Option<OverloadCandidateId>,
+    pub status: CandidateViabilityStatus,
+    pub diagnostics: Vec<OverloadDiagnosticId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct CandidateViabilityTable {
+    entries: Vec<CandidateViability>,
+}
+
+impl CandidateViabilityTable {
+    pub const fn new() -> Self {
+        Self {
+            entries: Vec::new(),
+        }
+    }
+
+    pub fn get(&self, id: CandidateViabilityId) -> Option<&CandidateViability> {
+        self.entries.get(id.index())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (CandidateViabilityId, &CandidateViability)> {
+        self.entries.iter().map(|entry| (entry.id, entry))
+    }
+
+    pub fn canonical_iter(
+        &self,
+    ) -> impl Iterator<Item = (CandidateViabilityId, &CandidateViability)> {
+        let mut entries = self.entries.iter().collect::<Vec<_>>();
+        entries.sort_by_key(|entry| candidate_viability_order_key(entry));
+        entries.into_iter().map(|entry| (entry.id, entry))
+    }
+
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    fn push(&mut self, viability: CandidateViability) {
+        self.entries.push(viability);
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum CandidateViabilityStatus {
+    Viable { views: Vec<ArgumentViewPlan> },
+    Rejected { reasons: Vec<CandidateRejection> },
+    Blocked { reason: CandidateBlockedReason },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ArgumentViewPlan {
+    pub argument_index: usize,
+    pub actual: NormalizedTypeId,
+    pub target: NormalizedTypeId,
+    pub kind: ArgumentViewKind,
+    pub facts: Vec<TypeFactId>,
+    pub coercion: Option<CoercionId>,
+    pub path: Option<QuaPathKey>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum ArgumentViewKind {
+    Exact,
+    FactWidening,
+    CoercionWidening,
+    SourceQua,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CandidateRejection {
+    pub argument_index: usize,
+    pub reason: CandidateRejectionReason,
+    pub actual: Option<NormalizedTypeId>,
+    pub target: Option<NormalizedTypeId>,
+    pub facts: Vec<TypeFactId>,
+    pub coercion: Option<CoercionId>,
+    pub path: Option<QuaPathKey>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum CandidateRejectionReason {
+    ArityMismatch,
+    ParameterMismatch,
+    MissingEvidence,
+    PendingEvidence,
+    DegradedEvidence,
+    RejectedEvidence,
+    OutOfScopeAssumption,
+    InvalidNarrowing,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CandidateBlockedReason {
+    pub argument_index: Option<usize>,
+    pub reason: CandidateBlockedReasonKind,
+    pub actual: Option<NormalizedTypeId>,
+    pub target: Option<NormalizedTypeId>,
+    pub paths: Vec<QuaPathKey>,
+    pub detail: Option<ViabilityEvidenceKey>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum CandidateBlockedReasonKind {
+    CandidateDeferred,
+    DuplicateViabilityPayload,
+    MissingViabilityPayload,
+    AmbiguousInheritance,
+    BlockedCoercion,
+    DeferredExternalDependency,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OverloadDiagnostic {
     pub id: OverloadDiagnosticId,
     pub site: Option<OverloadSiteId>,
@@ -670,6 +903,7 @@ pub enum OverloadDiagnosticClass {
     UnsupportedSiteRole,
     UnsupportedCandidateRole,
     TemplateExpansion,
+    Viability,
     Recovery,
     ExternalDependencyGap,
 }
@@ -740,6 +974,7 @@ type DiagnosticOutputOrderKey = (
     usize,
 );
 type TemplateExpansionOrderKey = (usize, String, usize);
+type CandidateViabilityOrderKey = (usize, usize);
 
 struct SiteInputWithOrder {
     input: OverloadSiteInput,
@@ -1259,6 +1494,597 @@ fn evaluate_template_candidate(
     TemplateEvaluation::Instantiated { substitutions }
 }
 
+struct CandidateViabilityBuilder<'a> {
+    expansion: &'a TemplateExpansionOutput,
+    inputs: BTreeMap<OverloadCandidateId, CandidateViabilityInput>,
+    duplicate_inputs: BTreeSet<OverloadCandidateId>,
+    candidates: OverloadCandidateTable,
+    decisions: CandidateViabilityTable,
+    diagnostics: OverloadDiagnosticTable,
+}
+
+impl<'a> CandidateViabilityBuilder<'a> {
+    fn new(
+        expansion: &'a TemplateExpansionOutput,
+        inputs: impl IntoIterator<Item = CandidateViabilityInput>,
+    ) -> Self {
+        let mut input_map = BTreeMap::new();
+        let mut duplicate_inputs = BTreeSet::new();
+        for input in inputs {
+            let candidate = input.candidate;
+            if input_map.insert(candidate, input).is_some() {
+                duplicate_inputs.insert(candidate);
+            }
+        }
+        Self {
+            expansion,
+            inputs: input_map,
+            duplicate_inputs,
+            candidates: OverloadCandidateTable::new(),
+            decisions: CandidateViabilityTable::new(),
+            diagnostics: OverloadDiagnosticTable::new(),
+        }
+    }
+
+    fn finish(mut self) -> CandidateViabilityOutput {
+        self.insert_unknown_input_diagnostics();
+        for (_, candidate) in self.expansion.candidates().canonical_iter() {
+            self.evaluate_candidate(candidate);
+        }
+        CandidateViabilityOutput {
+            candidates: self.candidates,
+            decisions: self.decisions,
+            diagnostics: self.diagnostics,
+        }
+    }
+
+    fn insert_unknown_input_diagnostics(&mut self) {
+        let candidate_ids = self
+            .expansion
+            .candidates()
+            .iter()
+            .map(|(id, _)| id)
+            .collect::<BTreeSet<_>>();
+        let unknown_inputs = self
+            .inputs
+            .keys()
+            .filter(|id| !candidate_ids.contains(id))
+            .copied()
+            .collect::<Vec<_>>();
+        for candidate in unknown_inputs {
+            self.diagnostics.insert(OverloadDiagnosticDraft {
+                site: None,
+                site_key: None,
+                candidate: None,
+                provenance: None,
+                class: OverloadDiagnosticClass::Viability,
+                severity: OverloadDiagnosticSeverity::Note,
+                message_key: OverloadDiagnosticMessageKey::new(format!(
+                    "overload.viability.unknown_candidate_input.{}",
+                    candidate.index()
+                )),
+                recovery: OverloadDiagnosticRecovery::Degraded,
+            });
+        }
+    }
+
+    fn evaluate_candidate(&mut self, candidate: &OverloadCandidate) {
+        let decision_id = CandidateViabilityId::new(self.decisions.len());
+        let evaluation = self.evaluate_candidate_status(candidate);
+        let (status, output_candidate, diagnostics) = match evaluation {
+            CandidateViabilityStatus::Viable { views } => {
+                let output_candidate = self.copy_viable_candidate(candidate);
+                (
+                    CandidateViabilityStatus::Viable { views },
+                    Some(output_candidate),
+                    Vec::new(),
+                )
+            }
+            CandidateViabilityStatus::Rejected { reasons } => {
+                let diagnostic = self.insert_viability_diagnostic(
+                    candidate,
+                    Some(viability_rejection_name(
+                        reasons
+                            .first()
+                            .map(|reason| reason.reason)
+                            .unwrap_or(CandidateRejectionReason::MissingEvidence),
+                    )),
+                    false,
+                );
+                (
+                    CandidateViabilityStatus::Rejected { reasons },
+                    None,
+                    vec![diagnostic],
+                )
+            }
+            CandidateViabilityStatus::Blocked { reason } => {
+                let diagnostic = self.insert_viability_diagnostic(
+                    candidate,
+                    Some(viability_blocked_reason_name(reason.reason)),
+                    true,
+                );
+                (
+                    CandidateViabilityStatus::Blocked { reason },
+                    None,
+                    vec![diagnostic],
+                )
+            }
+        };
+
+        self.decisions.push(CandidateViability {
+            id: decision_id,
+            source_candidate: candidate.id,
+            site: candidate.site,
+            output_candidate,
+            status,
+            diagnostics,
+        });
+    }
+
+    fn evaluate_candidate_status(&self, candidate: &OverloadCandidate) -> CandidateViabilityStatus {
+        if candidate.status != OverloadCandidateStatus::Collected {
+            return CandidateViabilityStatus::Blocked {
+                reason: CandidateBlockedReason {
+                    argument_index: None,
+                    reason: CandidateBlockedReasonKind::CandidateDeferred,
+                    actual: None,
+                    target: None,
+                    paths: Vec::new(),
+                    detail: None,
+                },
+            };
+        }
+
+        if self.duplicate_inputs.contains(&candidate.id) {
+            return CandidateViabilityStatus::Blocked {
+                reason: CandidateBlockedReason {
+                    argument_index: None,
+                    reason: CandidateBlockedReasonKind::DuplicateViabilityPayload,
+                    actual: None,
+                    target: None,
+                    paths: Vec::new(),
+                    detail: None,
+                },
+            };
+        }
+
+        let Some(input) = self.inputs.get(&candidate.id) else {
+            return CandidateViabilityStatus::Blocked {
+                reason: CandidateBlockedReason {
+                    argument_index: None,
+                    reason: CandidateBlockedReasonKind::MissingViabilityPayload,
+                    actual: None,
+                    target: None,
+                    paths: Vec::new(),
+                    detail: None,
+                },
+            };
+        };
+
+        if input.arguments.len() != candidate.parameters.len() {
+            return CandidateViabilityStatus::Rejected {
+                reasons: vec![CandidateRejection {
+                    argument_index: input.arguments.len().min(candidate.parameters.len()),
+                    reason: CandidateRejectionReason::ArityMismatch,
+                    actual: None,
+                    target: candidate
+                        .parameters
+                        .get(input.arguments.len().min(candidate.parameters.len()))
+                        .copied(),
+                    facts: Vec::new(),
+                    coercion: None,
+                    path: None,
+                }],
+            };
+        }
+
+        let mut views = Vec::new();
+        let mut rejections = Vec::new();
+        for (index, (target, evidence)) in candidate
+            .parameters
+            .iter()
+            .copied()
+            .zip(&input.arguments)
+            .enumerate()
+        {
+            match evaluate_argument_viability(index, target, evidence) {
+                ArgumentViabilityEvaluation::Accepted(view) => views.push(view),
+                ArgumentViabilityEvaluation::Rejected(rejection) => rejections.push(rejection),
+                ArgumentViabilityEvaluation::Blocked(reason) => {
+                    return CandidateViabilityStatus::Blocked { reason };
+                }
+            }
+        }
+
+        if rejections.is_empty() {
+            CandidateViabilityStatus::Viable { views }
+        } else {
+            CandidateViabilityStatus::Rejected {
+                reasons: rejections,
+            }
+        }
+    }
+
+    fn copy_viable_candidate(&mut self, candidate: &OverloadCandidate) -> OverloadCandidateId {
+        let id = OverloadCandidateId::new(self.candidates.len());
+        let mut viable = candidate.clone();
+        viable.id = id;
+        viable.diagnostics = self.remap_candidate_diagnostics(candidate, id);
+        self.candidates.push(viable);
+        id
+    }
+
+    fn remap_candidate_diagnostics(
+        &mut self,
+        candidate: &OverloadCandidate,
+        output_candidate: OverloadCandidateId,
+    ) -> Vec<OverloadDiagnosticId> {
+        candidate
+            .diagnostics
+            .iter()
+            .filter_map(|diagnostic| {
+                self.expansion
+                    .diagnostics()
+                    .get(*diagnostic)
+                    .map(|diagnostic| {
+                        self.diagnostics.insert(OverloadDiagnosticDraft {
+                            site: diagnostic.site,
+                            site_key: diagnostic.site_key.clone(),
+                            candidate: Some(output_candidate),
+                            provenance: diagnostic.provenance.clone(),
+                            class: diagnostic.class,
+                            severity: diagnostic.severity,
+                            message_key: diagnostic.message_key.clone(),
+                            recovery: diagnostic.recovery,
+                        })
+                    })
+            })
+            .collect()
+    }
+
+    fn insert_viability_diagnostic(
+        &mut self,
+        candidate: &OverloadCandidate,
+        reason: Option<&str>,
+        blocked: bool,
+    ) -> OverloadDiagnosticId {
+        let reason = reason.unwrap_or("unknown");
+        self.diagnostics.insert(OverloadDiagnosticDraft {
+            site: Some(candidate.site),
+            site_key: Some(candidate.site_key.clone()),
+            candidate: None,
+            provenance: Some(candidate_diagnostic_provenance_from_candidate(candidate)),
+            class: OverloadDiagnosticClass::Viability,
+            severity: if blocked {
+                OverloadDiagnosticSeverity::Note
+            } else {
+                OverloadDiagnosticSeverity::Error
+            },
+            message_key: OverloadDiagnosticMessageKey::new(format!("overload.viability.{reason}")),
+            recovery: if blocked {
+                OverloadDiagnosticRecovery::Degraded
+            } else {
+                OverloadDiagnosticRecovery::Normal
+            },
+        })
+    }
+}
+
+enum ArgumentViabilityEvaluation {
+    Accepted(ArgumentViewPlan),
+    Rejected(CandidateRejection),
+    Blocked(CandidateBlockedReason),
+}
+
+fn evaluate_argument_viability(
+    argument_index: usize,
+    parameter: NormalizedTypeId,
+    evidence: &ArgumentViabilityEvidence,
+) -> ArgumentViabilityEvaluation {
+    match evidence {
+        ArgumentViabilityEvidence::Exact { actual } if *actual == parameter => {
+            ArgumentViabilityEvaluation::Accepted(ArgumentViewPlan {
+                argument_index,
+                actual: *actual,
+                target: parameter,
+                kind: ArgumentViewKind::Exact,
+                facts: Vec::new(),
+                coercion: None,
+                path: None,
+            })
+        }
+        ArgumentViabilityEvidence::Exact { actual } => {
+            ArgumentViabilityEvaluation::Rejected(CandidateRejection {
+                argument_index,
+                reason: CandidateRejectionReason::MissingEvidence,
+                actual: Some(*actual),
+                target: Some(parameter),
+                facts: Vec::new(),
+                coercion: None,
+                path: None,
+            })
+        }
+        ArgumentViabilityEvidence::FactWidening {
+            actual,
+            target,
+            facts,
+            status,
+        } => evaluate_fact_viability(argument_index, parameter, *actual, *target, facts, *status),
+        ArgumentViabilityEvidence::Coercion {
+            actual,
+            target,
+            coercion,
+            kind,
+            status,
+            facts,
+            path,
+        } => evaluate_coercion_viability(
+            argument_index,
+            parameter,
+            CoercionViabilityEvidence {
+                actual: *actual,
+                target: *target,
+                coercion: *coercion,
+                kind: *kind,
+                status: *status,
+                facts,
+                path: path.clone(),
+            },
+        ),
+        ArgumentViabilityEvidence::Missing { actual, target } => {
+            if *target != parameter {
+                return parameter_mismatch(argument_index, *actual, parameter, *target);
+            }
+            ArgumentViabilityEvaluation::Rejected(CandidateRejection {
+                argument_index,
+                reason: CandidateRejectionReason::MissingEvidence,
+                actual: *actual,
+                target: Some(parameter),
+                facts: Vec::new(),
+                coercion: None,
+                path: None,
+            })
+        }
+        ArgumentViabilityEvidence::AmbiguousInheritance {
+            actual,
+            target,
+            paths,
+        } => {
+            if *target != parameter {
+                return parameter_mismatch(argument_index, Some(*actual), parameter, *target);
+            }
+            ArgumentViabilityEvaluation::Blocked(CandidateBlockedReason {
+                argument_index: Some(argument_index),
+                reason: CandidateBlockedReasonKind::AmbiguousInheritance,
+                actual: Some(*actual),
+                target: Some(parameter),
+                paths: paths.clone(),
+                detail: None,
+            })
+        }
+        ArgumentViabilityEvidence::DeferredExternalDependency {
+            actual,
+            target,
+            reason,
+        } => {
+            if *target != parameter {
+                return parameter_mismatch(argument_index, *actual, parameter, *target);
+            }
+            ArgumentViabilityEvaluation::Blocked(CandidateBlockedReason {
+                argument_index: Some(argument_index),
+                reason: CandidateBlockedReasonKind::DeferredExternalDependency,
+                actual: *actual,
+                target: Some(parameter),
+                paths: Vec::new(),
+                detail: Some(reason.clone()),
+            })
+        }
+    }
+}
+
+fn evaluate_fact_viability(
+    argument_index: usize,
+    parameter: NormalizedTypeId,
+    actual: NormalizedTypeId,
+    target: NormalizedTypeId,
+    facts: &[TypeFactId],
+    status: ViabilityFactStatus,
+) -> ArgumentViabilityEvaluation {
+    if target != parameter {
+        return parameter_mismatch(argument_index, Some(actual), parameter, target);
+    }
+    match status {
+        ViabilityFactStatus::Consumable if !facts.is_empty() => {
+            ArgumentViabilityEvaluation::Accepted(ArgumentViewPlan {
+                argument_index,
+                actual,
+                target: parameter,
+                kind: ArgumentViewKind::FactWidening,
+                facts: facts.to_vec(),
+                coercion: None,
+                path: None,
+            })
+        }
+        ViabilityFactStatus::Consumable => {
+            ArgumentViabilityEvaluation::Rejected(CandidateRejection {
+                argument_index,
+                reason: CandidateRejectionReason::MissingEvidence,
+                actual: Some(actual),
+                target: Some(parameter),
+                facts: facts.to_vec(),
+                coercion: None,
+                path: None,
+            })
+        }
+        ViabilityFactStatus::PendingObligation => {
+            ArgumentViabilityEvaluation::Rejected(CandidateRejection {
+                argument_index,
+                reason: CandidateRejectionReason::PendingEvidence,
+                actual: Some(actual),
+                target: Some(parameter),
+                facts: facts.to_vec(),
+                coercion: None,
+                path: None,
+            })
+        }
+        ViabilityFactStatus::Degraded => {
+            ArgumentViabilityEvaluation::Rejected(CandidateRejection {
+                argument_index,
+                reason: CandidateRejectionReason::DegradedEvidence,
+                actual: Some(actual),
+                target: Some(parameter),
+                facts: facts.to_vec(),
+                coercion: None,
+                path: None,
+            })
+        }
+        ViabilityFactStatus::Rejected => {
+            ArgumentViabilityEvaluation::Rejected(CandidateRejection {
+                argument_index,
+                reason: CandidateRejectionReason::RejectedEvidence,
+                actual: Some(actual),
+                target: Some(parameter),
+                facts: facts.to_vec(),
+                coercion: None,
+                path: None,
+            })
+        }
+        ViabilityFactStatus::OutOfScopeAssumption => {
+            ArgumentViabilityEvaluation::Rejected(CandidateRejection {
+                argument_index,
+                reason: CandidateRejectionReason::OutOfScopeAssumption,
+                actual: Some(actual),
+                target: Some(parameter),
+                facts: facts.to_vec(),
+                coercion: None,
+                path: None,
+            })
+        }
+    }
+}
+
+struct CoercionViabilityEvidence<'a> {
+    actual: NormalizedTypeId,
+    target: NormalizedTypeId,
+    coercion: CoercionId,
+    kind: ViabilityCoercionKind,
+    status: ViabilityCoercionStatus,
+    facts: &'a [TypeFactId],
+    path: Option<QuaPathKey>,
+}
+
+fn evaluate_coercion_viability(
+    argument_index: usize,
+    parameter: NormalizedTypeId,
+    evidence: CoercionViabilityEvidence<'_>,
+) -> ArgumentViabilityEvaluation {
+    let CoercionViabilityEvidence {
+        actual,
+        target,
+        coercion,
+        kind,
+        status,
+        facts,
+        path,
+    } = evidence;
+
+    if target != parameter {
+        return parameter_mismatch(argument_index, Some(actual), parameter, target);
+    }
+    if kind == ViabilityCoercionKind::Narrowing {
+        return ArgumentViabilityEvaluation::Rejected(CandidateRejection {
+            argument_index,
+            reason: CandidateRejectionReason::InvalidNarrowing,
+            actual: Some(actual),
+            target: Some(parameter),
+            facts: facts.to_vec(),
+            coercion: Some(coercion),
+            path,
+        });
+    }
+    match status {
+        ViabilityCoercionStatus::Accepted => {
+            let view_kind = match kind {
+                ViabilityCoercionKind::Widening => ArgumentViewKind::CoercionWidening,
+                ViabilityCoercionKind::SourceQua => ArgumentViewKind::SourceQua,
+                ViabilityCoercionKind::Narrowing => unreachable!("handled above"),
+            };
+            ArgumentViabilityEvaluation::Accepted(ArgumentViewPlan {
+                argument_index,
+                actual,
+                target: parameter,
+                kind: view_kind,
+                facts: facts.to_vec(),
+                coercion: Some(coercion),
+                path,
+            })
+        }
+        ViabilityCoercionStatus::PendingObligation => {
+            ArgumentViabilityEvaluation::Rejected(CandidateRejection {
+                argument_index,
+                reason: CandidateRejectionReason::PendingEvidence,
+                actual: Some(actual),
+                target: Some(parameter),
+                facts: facts.to_vec(),
+                coercion: Some(coercion),
+                path,
+            })
+        }
+        ViabilityCoercionStatus::Blocked => {
+            ArgumentViabilityEvaluation::Blocked(CandidateBlockedReason {
+                argument_index: Some(argument_index),
+                reason: CandidateBlockedReasonKind::BlockedCoercion,
+                actual: Some(actual),
+                target: Some(parameter),
+                paths: path.into_iter().collect(),
+                detail: None,
+            })
+        }
+        ViabilityCoercionStatus::Rejected => {
+            ArgumentViabilityEvaluation::Rejected(CandidateRejection {
+                argument_index,
+                reason: CandidateRejectionReason::RejectedEvidence,
+                actual: Some(actual),
+                target: Some(parameter),
+                facts: facts.to_vec(),
+                coercion: Some(coercion),
+                path,
+            })
+        }
+        ViabilityCoercionStatus::MissingEvidence => {
+            ArgumentViabilityEvaluation::Rejected(CandidateRejection {
+                argument_index,
+                reason: CandidateRejectionReason::MissingEvidence,
+                actual: Some(actual),
+                target: Some(parameter),
+                facts: facts.to_vec(),
+                coercion: Some(coercion),
+                path,
+            })
+        }
+    }
+}
+
+fn parameter_mismatch(
+    argument_index: usize,
+    actual: Option<NormalizedTypeId>,
+    parameter: NormalizedTypeId,
+    supplied_target: NormalizedTypeId,
+) -> ArgumentViabilityEvaluation {
+    ArgumentViabilityEvaluation::Rejected(CandidateRejection {
+        argument_index,
+        reason: CandidateRejectionReason::ParameterMismatch,
+        actual,
+        target: Some(parameter),
+        facts: Vec::new(),
+        coercion: None,
+        path: Some(QuaPathKey::new(format!(
+            "payload-target:{}",
+            supplied_target.index()
+        ))),
+    })
+}
+
 fn site_status(input: &OverloadSiteInput) -> OverloadSiteStatus {
     if !input.kind.is_supported() {
         OverloadSiteStatus::Deferred
@@ -1389,6 +2215,10 @@ fn template_expansion_order_key(expansion: &TemplateExpansion) -> TemplateExpans
         expansion.instantiation_key.as_str().to_owned(),
         expansion.id.index(),
     )
+}
+
+fn candidate_viability_order_key(viability: &CandidateViability) -> CandidateViabilityOrderKey {
+    (viability.source_candidate.index(), viability.id.index())
 }
 
 fn diagnostic_output_key(diagnostic: &OverloadDiagnostic) -> DiagnosticOutputOrderKey {
@@ -1604,6 +2434,122 @@ fn write_template_expansions(output: &mut String, expansions: &TemplateExpansion
         write_diagnostic_ids(output, &expansion.diagnostics);
         output.push('\n');
     }
+}
+
+fn write_candidate_viability(output: &mut String, decisions: &CandidateViabilityTable) {
+    output.push_str("candidate_viability:\n");
+    if decisions.is_empty() {
+        output.push_str("  <none>\n");
+        return;
+    }
+    for (id, decision) in decisions.canonical_iter() {
+        let _ = write!(
+            output,
+            "  viability#{} source=candidate#{} site=site#{} output=",
+            id.index(),
+            decision.source_candidate.index(),
+            decision.site.index()
+        );
+        write_optional_candidate_id(output, decision.output_candidate);
+        output.push_str(" status=");
+        write_candidate_viability_status(output, &decision.status);
+        output.push_str(" diagnostics=");
+        write_diagnostic_ids(output, &decision.diagnostics);
+        output.push('\n');
+    }
+}
+
+fn write_candidate_viability_status(output: &mut String, status: &CandidateViabilityStatus) {
+    match status {
+        CandidateViabilityStatus::Viable { views } => {
+            output.push_str("viable(views=");
+            write_argument_view_plans(output, views);
+            output.push(')');
+        }
+        CandidateViabilityStatus::Rejected { reasons } => {
+            output.push_str("rejected(reasons=");
+            write_candidate_rejections(output, reasons);
+            output.push(')');
+        }
+        CandidateViabilityStatus::Blocked { reason } => {
+            output.push_str("blocked(reason=");
+            write_candidate_blocked_reason(output, reason);
+            output.push(')');
+        }
+    }
+}
+
+fn write_argument_view_plans(output: &mut String, views: &[ArgumentViewPlan]) {
+    output.push('[');
+    for (index, view) in views.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(output, "{{arg={} actual=", view.argument_index);
+        write_type_id(output, view.actual);
+        output.push_str(" target=");
+        write_type_id(output, view.target);
+        let _ = write!(output, " kind={}", argument_view_kind_name(view.kind));
+        output.push_str(" facts=");
+        write_fact_ids(output, &view.facts);
+        output.push_str(" coercion=");
+        write_optional_coercion_id(output, view.coercion);
+        output.push_str(" path=");
+        write_optional_qua_path(output, view.path.as_ref());
+        output.push('}');
+    }
+    output.push(']');
+}
+
+fn write_candidate_rejections(output: &mut String, rejections: &[CandidateRejection]) {
+    output.push('[');
+    for (index, rejection) in rejections.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(
+            output,
+            "{{arg={} reason={} actual=",
+            rejection.argument_index,
+            viability_rejection_name(rejection.reason)
+        );
+        write_optional_type(output, rejection.actual);
+        output.push_str(" target=");
+        write_optional_type(output, rejection.target);
+        output.push_str(" facts=");
+        write_fact_ids(output, &rejection.facts);
+        output.push_str(" coercion=");
+        write_optional_coercion_id(output, rejection.coercion);
+        output.push_str(" path=");
+        write_optional_qua_path(output, rejection.path.as_ref());
+        output.push('}');
+    }
+    output.push(']');
+}
+
+fn write_candidate_blocked_reason(output: &mut String, reason: &CandidateBlockedReason) {
+    let _ = write!(
+        output,
+        "{{arg={} reason={} actual=",
+        reason
+            .argument_index
+            .map(|index| index.to_string())
+            .unwrap_or_else(|| "<none>".to_owned()),
+        viability_blocked_reason_name(reason.reason)
+    );
+    write_optional_type(output, reason.actual);
+    output.push_str(" target=");
+    write_optional_type(output, reason.target);
+    output.push_str(" paths=");
+    write_qua_paths(output, &reason.paths);
+    output.push_str(" detail=");
+    match &reason.detail {
+        Some(detail) => {
+            let _ = write!(output, "\"{}\"", escaped_display(detail.as_str()));
+        }
+        None => output.push_str("<none>"),
+    }
+    output.push('}');
 }
 
 fn write_diagnostics(output: &mut String, diagnostics: &OverloadDiagnosticTable) {
@@ -2009,6 +2955,17 @@ fn write_fact_ids(output: &mut String, ids: &[TypeFactId]) {
     output.push(']');
 }
 
+fn write_qua_paths(output: &mut String, paths: &[QuaPathKey]) {
+    output.push('[');
+    for (index, path) in paths.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(output, "\"{}\"", escaped_display(path.as_str()));
+    }
+    output.push(']');
+}
+
 fn write_diagnostic_ids(output: &mut String, ids: &[OverloadDiagnosticId]) {
     output.push('[');
     for (index, id) in ids.iter().enumerate() {
@@ -2053,6 +3010,24 @@ fn write_optional_candidate_id(output: &mut String, id: Option<OverloadCandidate
     match id {
         Some(id) => {
             let _ = write!(output, "candidate#{}", id.index());
+        }
+        None => output.push_str("<none>"),
+    }
+}
+
+fn write_optional_coercion_id(output: &mut String, id: Option<CoercionId>) {
+    match id {
+        Some(id) => {
+            let _ = write!(output, "coercion#{}", id.index());
+        }
+        None => output.push_str("<none>"),
+    }
+}
+
+fn write_optional_qua_path(output: &mut String, path: Option<&QuaPathKey>) {
+    match path {
+        Some(path) => {
+            let _ = write!(output, "\"{}\"", escaped_display(path.as_str()));
         }
         None => output.push_str("<none>"),
     }
@@ -2150,6 +3125,7 @@ fn diagnostic_class_name(class: OverloadDiagnosticClass) -> &'static str {
         OverloadDiagnosticClass::UnsupportedSiteRole => "unsupported_site_role",
         OverloadDiagnosticClass::UnsupportedCandidateRole => "unsupported_candidate_role",
         OverloadDiagnosticClass::TemplateExpansion => "template_expansion",
+        OverloadDiagnosticClass::Viability => "viability",
         OverloadDiagnosticClass::Recovery => "recovery",
         OverloadDiagnosticClass::ExternalDependencyGap => "external_dependency_gap",
     }
@@ -2186,6 +3162,39 @@ fn template_constraint_status_name(status: TemplateConstraintEvidenceStatus) -> 
         TemplateConstraintEvidenceStatus::DeferredExternalDependency => {
             "deferred_external_dependency"
         }
+    }
+}
+
+fn argument_view_kind_name(kind: ArgumentViewKind) -> &'static str {
+    match kind {
+        ArgumentViewKind::Exact => "exact",
+        ArgumentViewKind::FactWidening => "fact_widening",
+        ArgumentViewKind::CoercionWidening => "coercion_widening",
+        ArgumentViewKind::SourceQua => "source_qua",
+    }
+}
+
+fn viability_rejection_name(reason: CandidateRejectionReason) -> &'static str {
+    match reason {
+        CandidateRejectionReason::ArityMismatch => "arity_mismatch",
+        CandidateRejectionReason::ParameterMismatch => "parameter_mismatch",
+        CandidateRejectionReason::MissingEvidence => "missing_evidence",
+        CandidateRejectionReason::PendingEvidence => "pending_evidence",
+        CandidateRejectionReason::DegradedEvidence => "degraded_evidence",
+        CandidateRejectionReason::RejectedEvidence => "rejected_evidence",
+        CandidateRejectionReason::OutOfScopeAssumption => "out_of_scope_assumption",
+        CandidateRejectionReason::InvalidNarrowing => "invalid_narrowing",
+    }
+}
+
+fn viability_blocked_reason_name(reason: CandidateBlockedReasonKind) -> &'static str {
+    match reason {
+        CandidateBlockedReasonKind::CandidateDeferred => "candidate_deferred",
+        CandidateBlockedReasonKind::DuplicateViabilityPayload => "duplicate_viability_payload",
+        CandidateBlockedReasonKind::MissingViabilityPayload => "missing_viability_payload",
+        CandidateBlockedReasonKind::AmbiguousInheritance => "ambiguous_inheritance",
+        CandidateBlockedReasonKind::BlockedCoercion => "blocked_coercion",
+        CandidateBlockedReasonKind::DeferredExternalDependency => "deferred_external_dependency",
     }
 }
 
@@ -2892,6 +3901,430 @@ mod tests {
     }
 
     #[test]
+    fn viability_accepts_exact_fact_and_source_qua_evidence_deterministically() {
+        let source_id = source_id(40);
+        let candidates = vec![
+            candidate("call", "root", "exact", CandidateScope::Local, 0),
+            candidate("call", "root", "fact", CandidateScope::Local, 1),
+            candidate("call", "root", "qua", CandidateScope::Local, 2),
+            candidate("call", "root", "widening", CandidateScope::Local, 3),
+        ];
+        let expansion = expanded_candidates(candidates, source_id);
+        let inputs = viability_inputs_by_symbol(
+            &expansion,
+            [
+                (
+                    "exact",
+                    vec![
+                        ArgumentViabilityEvidence::Exact {
+                            actual: NormalizedTypeId::new(1),
+                        },
+                        ArgumentViabilityEvidence::Exact {
+                            actual: NormalizedTypeId::new(2),
+                        },
+                    ],
+                ),
+                (
+                    "fact",
+                    vec![
+                        ArgumentViabilityEvidence::Exact {
+                            actual: NormalizedTypeId::new(1),
+                        },
+                        ArgumentViabilityEvidence::FactWidening {
+                            actual: NormalizedTypeId::new(20),
+                            target: NormalizedTypeId::new(2),
+                            facts: vec![TypeFactId::new(7)],
+                            status: ViabilityFactStatus::Consumable,
+                        },
+                    ],
+                ),
+                (
+                    "qua",
+                    vec![
+                        ArgumentViabilityEvidence::Exact {
+                            actual: NormalizedTypeId::new(1),
+                        },
+                        ArgumentViabilityEvidence::Coercion {
+                            actual: NormalizedTypeId::new(21),
+                            target: NormalizedTypeId::new(2),
+                            coercion: CoercionId::new(3),
+                            kind: ViabilityCoercionKind::SourceQua,
+                            status: ViabilityCoercionStatus::Accepted,
+                            facts: vec![TypeFactId::new(8)],
+                            path: Some(QuaPathKey::new("source-qua-path")),
+                        },
+                    ],
+                ),
+                (
+                    "widening",
+                    vec![
+                        ArgumentViabilityEvidence::Exact {
+                            actual: NormalizedTypeId::new(1),
+                        },
+                        ArgumentViabilityEvidence::Coercion {
+                            actual: NormalizedTypeId::new(22),
+                            target: NormalizedTypeId::new(2),
+                            coercion: CoercionId::new(6),
+                            kind: ViabilityCoercionKind::Widening,
+                            status: ViabilityCoercionStatus::Accepted,
+                            facts: vec![TypeFactId::new(9)],
+                            path: Some(QuaPathKey::new("widening-path")),
+                        },
+                    ],
+                ),
+            ],
+        );
+        let mut reversed_inputs = inputs.clone();
+        reversed_inputs.reverse();
+
+        let output = CandidateViabilityOutput::filter(&expansion, inputs);
+        let permuted_output = CandidateViabilityOutput::filter(&expansion, reversed_inputs);
+
+        assert_eq!(output.debug_text(), permuted_output.debug_text());
+        assert_eq!(output.candidates().len(), 4);
+        assert!(output.diagnostics().is_empty());
+        let debug = output.debug_text();
+        assert!(debug.contains("kind=exact"));
+        assert!(debug.contains("kind=fact_widening facts=[fact#7]"));
+        assert!(debug.contains("kind=source_qua facts=[fact#8] coercion=coercion#3"));
+        assert!(debug.contains("kind=coercion_widening facts=[fact#9] coercion=coercion#6"));
+    }
+
+    #[test]
+    fn non_consumable_fact_evidence_rejects_with_stable_reasons() {
+        let source_id = source_id(41);
+        let expansion = expanded_candidates(
+            vec![
+                candidate("call", "root", "pending", CandidateScope::Local, 0),
+                candidate("call", "root", "degraded", CandidateScope::Local, 1),
+                candidate("call", "root", "rejected", CandidateScope::Local, 2),
+                candidate("call", "root", "out-of-scope", CandidateScope::Local, 3),
+            ],
+            source_id,
+        );
+        let input_for = |status| {
+            vec![
+                ArgumentViabilityEvidence::Exact {
+                    actual: NormalizedTypeId::new(1),
+                },
+                ArgumentViabilityEvidence::FactWidening {
+                    actual: NormalizedTypeId::new(9),
+                    target: NormalizedTypeId::new(2),
+                    facts: vec![TypeFactId::new(1)],
+                    status,
+                },
+            ]
+        };
+        let inputs = viability_inputs_by_symbol(
+            &expansion,
+            [
+                ("pending", input_for(ViabilityFactStatus::PendingObligation)),
+                ("degraded", input_for(ViabilityFactStatus::Degraded)),
+                ("rejected", input_for(ViabilityFactStatus::Rejected)),
+                (
+                    "out-of-scope",
+                    input_for(ViabilityFactStatus::OutOfScopeAssumption),
+                ),
+            ],
+        );
+
+        let output = CandidateViabilityOutput::filter(&expansion, inputs);
+
+        assert!(output.candidates().is_empty());
+        let reasons = output
+            .decisions()
+            .canonical_iter()
+            .map(|(_, decision)| match &decision.status {
+                CandidateViabilityStatus::Rejected { reasons } => reasons[0].reason,
+                status => panic!("expected rejection, got {status:?}"),
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            reasons,
+            [
+                CandidateRejectionReason::DegradedEvidence,
+                CandidateRejectionReason::OutOfScopeAssumption,
+                CandidateRejectionReason::PendingEvidence,
+                CandidateRejectionReason::RejectedEvidence,
+            ]
+        );
+        let debug = output.debug_text();
+        assert!(debug.contains("message_key=\"overload.viability.pending_evidence\""));
+        assert!(debug.contains("message_key=\"overload.viability.degraded_evidence\""));
+        assert!(debug.contains("message_key=\"overload.viability.rejected_evidence\""));
+        assert!(debug.contains("message_key=\"overload.viability.out_of_scope_assumption\""));
+    }
+
+    #[test]
+    fn narrowing_missing_and_ambiguous_evidence_do_not_become_viable() {
+        let source_id = source_id(42);
+        let expansion = expanded_candidates(
+            vec![
+                candidate("call", "root", "ambiguous", CandidateScope::Local, 0),
+                candidate("call", "root", "missing", CandidateScope::Local, 1),
+                candidate("call", "root", "narrowing", CandidateScope::Local, 2),
+                candidate("call", "root", "blocked", CandidateScope::Local, 3),
+            ],
+            source_id,
+        );
+        let inputs = viability_inputs_by_symbol(
+            &expansion,
+            [
+                (
+                    "ambiguous",
+                    vec![
+                        ArgumentViabilityEvidence::Exact {
+                            actual: NormalizedTypeId::new(1),
+                        },
+                        ArgumentViabilityEvidence::AmbiguousInheritance {
+                            actual: NormalizedTypeId::new(9),
+                            target: NormalizedTypeId::new(2),
+                            paths: vec![QuaPathKey::new("left"), QuaPathKey::new("right")],
+                        },
+                    ],
+                ),
+                (
+                    "missing",
+                    vec![
+                        ArgumentViabilityEvidence::Exact {
+                            actual: NormalizedTypeId::new(1),
+                        },
+                        ArgumentViabilityEvidence::Missing {
+                            actual: Some(NormalizedTypeId::new(9)),
+                            target: NormalizedTypeId::new(2),
+                        },
+                    ],
+                ),
+                (
+                    "narrowing",
+                    vec![
+                        ArgumentViabilityEvidence::Exact {
+                            actual: NormalizedTypeId::new(1),
+                        },
+                        ArgumentViabilityEvidence::Coercion {
+                            actual: NormalizedTypeId::new(2),
+                            target: NormalizedTypeId::new(2),
+                            coercion: CoercionId::new(4),
+                            kind: ViabilityCoercionKind::Narrowing,
+                            status: ViabilityCoercionStatus::Accepted,
+                            facts: Vec::new(),
+                            path: Some(QuaPathKey::new("narrowing")),
+                        },
+                    ],
+                ),
+                (
+                    "blocked",
+                    vec![
+                        ArgumentViabilityEvidence::Exact {
+                            actual: NormalizedTypeId::new(1),
+                        },
+                        ArgumentViabilityEvidence::Coercion {
+                            actual: NormalizedTypeId::new(9),
+                            target: NormalizedTypeId::new(2),
+                            coercion: CoercionId::new(5),
+                            kind: ViabilityCoercionKind::Widening,
+                            status: ViabilityCoercionStatus::Blocked,
+                            facts: Vec::new(),
+                            path: Some(QuaPathKey::new("blocked-widening")),
+                        },
+                    ],
+                ),
+            ],
+        );
+
+        let output = CandidateViabilityOutput::filter(&expansion, inputs);
+
+        assert!(output.candidates().is_empty());
+        let debug = output.debug_text();
+        assert!(debug.contains("blocked(reason={arg=1 reason=ambiguous_inheritance"));
+        assert!(debug.contains("message_key=\"overload.viability.missing_evidence\""));
+        assert!(debug.contains("message_key=\"overload.viability.invalid_narrowing\""));
+        assert!(debug.contains("message_key=\"overload.viability.blocked_coercion\""));
+    }
+
+    #[test]
+    fn missing_and_deferred_viability_payloads_block_without_output_candidate_ids() {
+        let source_id = source_id(43);
+        let expansion = expanded_candidates(
+            vec![
+                candidate("call", "root", "deferred", CandidateScope::Local, 0),
+                candidate("call", "root", "missing-payload", CandidateScope::Local, 1),
+            ],
+            source_id,
+        );
+        let inputs = viability_inputs_by_symbol(
+            &expansion,
+            [(
+                "deferred",
+                vec![
+                    ArgumentViabilityEvidence::Exact {
+                        actual: NormalizedTypeId::new(1),
+                    },
+                    ArgumentViabilityEvidence::DeferredExternalDependency {
+                        actual: Some(NormalizedTypeId::new(9)),
+                        target: NormalizedTypeId::new(2),
+                        reason: ViabilityEvidenceKey::new("missing-trace-fact"),
+                    },
+                ],
+            )],
+        );
+
+        let output = CandidateViabilityOutput::filter(&expansion, inputs);
+
+        assert!(output.candidates().is_empty());
+        assert_eq!(output.diagnostics().len(), 2);
+        for (_, diagnostic) in output.diagnostics().iter() {
+            assert!(diagnostic.candidate.is_none());
+        }
+        let debug = output.debug_text();
+        assert!(debug.contains("reason=deferred_external_dependency"));
+        assert!(debug.contains("detail=\"missing-trace-fact\""));
+        assert!(debug.contains("message_key=\"overload.viability.missing_viability_payload\""));
+    }
+
+    #[test]
+    fn viability_remaps_existing_diagnostics_only_for_retained_candidates() {
+        let source_id = source_id(44);
+        let mut expansion = expanded_candidates(
+            vec![
+                candidate(
+                    "call",
+                    "root",
+                    "rejected-with-diag",
+                    CandidateScope::Local,
+                    0,
+                ),
+                candidate("call", "root", "viable-with-diag", CandidateScope::Local, 1),
+            ],
+            source_id,
+        );
+        attach_existing_candidate_diagnostic(
+            &mut expansion,
+            "rejected-with-diag",
+            "overload.collection.preexisting_rejected",
+        );
+        attach_existing_candidate_diagnostic(
+            &mut expansion,
+            "viable-with-diag",
+            "overload.collection.preexisting_viable",
+        );
+        let inputs = viability_inputs_by_symbol(
+            &expansion,
+            [
+                (
+                    "rejected-with-diag",
+                    vec![
+                        ArgumentViabilityEvidence::Exact {
+                            actual: NormalizedTypeId::new(1),
+                        },
+                        ArgumentViabilityEvidence::Missing {
+                            actual: Some(NormalizedTypeId::new(9)),
+                            target: NormalizedTypeId::new(2),
+                        },
+                    ],
+                ),
+                (
+                    "viable-with-diag",
+                    vec![
+                        ArgumentViabilityEvidence::Exact {
+                            actual: NormalizedTypeId::new(1),
+                        },
+                        ArgumentViabilityEvidence::Exact {
+                            actual: NormalizedTypeId::new(2),
+                        },
+                    ],
+                ),
+            ],
+        );
+
+        let output = CandidateViabilityOutput::filter(&expansion, inputs);
+
+        assert_eq!(output.candidates().len(), 1);
+        let (_, viable) = output.candidates().iter().next().expect("viable");
+        assert_eq!(viable.symbol.local().as_str(), "viable-with-diag");
+        assert_eq!(viable.diagnostics.len(), 1);
+        let remapped = output
+            .diagnostics()
+            .get(viable.diagnostics[0])
+            .expect("remapped diagnostic");
+        assert_eq!(remapped.candidate, Some(viable.id));
+        assert_eq!(
+            remapped.message_key.as_str(),
+            "overload.collection.preexisting_viable"
+        );
+        let debug = output.debug_text();
+        assert!(debug.contains("message_key=\"overload.collection.preexisting_viable\""));
+        assert!(!debug.contains("message_key=\"overload.collection.preexisting_rejected\""));
+        assert!(debug.contains("message_key=\"overload.viability.missing_evidence\""));
+    }
+
+    #[test]
+    fn duplicate_and_unknown_viability_inputs_are_reported_deterministically() {
+        let source_id = source_id(45);
+        let expansion = expanded_candidates(
+            vec![candidate("call", "root", "dup", CandidateScope::Local, 0)],
+            source_id,
+        );
+        let duplicate_candidate = candidate_id_by_symbol(&expansion, "dup");
+        let viable_input = CandidateViabilityInput {
+            candidate: duplicate_candidate,
+            arguments: vec![
+                ArgumentViabilityEvidence::Exact {
+                    actual: NormalizedTypeId::new(1),
+                },
+                ArgumentViabilityEvidence::Exact {
+                    actual: NormalizedTypeId::new(2),
+                },
+            ],
+        };
+        let rejecting_input = CandidateViabilityInput {
+            candidate: duplicate_candidate,
+            arguments: vec![
+                ArgumentViabilityEvidence::Exact {
+                    actual: NormalizedTypeId::new(1),
+                },
+                ArgumentViabilityEvidence::Missing {
+                    actual: Some(NormalizedTypeId::new(9)),
+                    target: NormalizedTypeId::new(2),
+                },
+            ],
+        };
+        let unknown_input = CandidateViabilityInput {
+            candidate: OverloadCandidateId::new(99),
+            arguments: Vec::new(),
+        };
+
+        let output = CandidateViabilityOutput::filter(
+            &expansion,
+            vec![
+                viable_input.clone(),
+                unknown_input.clone(),
+                rejecting_input.clone(),
+            ],
+        );
+        let reversed_output = CandidateViabilityOutput::filter(
+            &expansion,
+            vec![rejecting_input, unknown_input, viable_input],
+        );
+
+        assert_eq!(output.debug_text(), reversed_output.debug_text());
+        assert!(output.candidates().is_empty());
+        let (_, decision) = output.decisions().iter().next().expect("decision");
+        assert!(matches!(
+            decision.status,
+            CandidateViabilityStatus::Blocked {
+                reason: CandidateBlockedReason {
+                    reason: CandidateBlockedReasonKind::DuplicateViabilityPayload,
+                    ..
+                }
+            }
+        ));
+        let debug = output.debug_text();
+        assert!(debug.contains("message_key=\"overload.viability.duplicate_viability_payload\""));
+        assert!(debug.contains("message_key=\"overload.viability.unknown_candidate_input.99\""));
+    }
+
+    #[test]
     fn source_qua_and_recovery_site_provenance_are_retained() {
         let source_id = source_id(4);
         let mut input = site(
@@ -3149,6 +4582,79 @@ mod tests {
         }];
         input.template = Some(payload);
         input
+    }
+
+    fn expanded_candidates(
+        candidates: Vec<OverloadCandidateInput>,
+        source_id: SourceId,
+    ) -> TemplateExpansionOutput {
+        let collection = OverloadCollectionOutput::collect(
+            vec![site(
+                "call",
+                OverloadSiteKind::FunctorApplication,
+                source_id,
+                10,
+            )],
+            candidates,
+        );
+        TemplateExpansionOutput::expand(&collection)
+    }
+
+    fn viability_inputs_by_symbol<const N: usize>(
+        expansion: &TemplateExpansionOutput,
+        entries: [(&str, Vec<ArgumentViabilityEvidence>); N],
+    ) -> Vec<CandidateViabilityInput> {
+        entries
+            .into_iter()
+            .map(|(symbol, arguments)| {
+                let candidate = candidate_id_by_symbol(expansion, symbol);
+                CandidateViabilityInput {
+                    candidate,
+                    arguments,
+                }
+            })
+            .collect()
+    }
+
+    fn candidate_id_by_symbol(
+        expansion: &TemplateExpansionOutput,
+        symbol: &str,
+    ) -> OverloadCandidateId {
+        expansion
+            .candidates()
+            .iter()
+            .find_map(|(id, candidate)| (candidate.symbol.local().as_str() == symbol).then_some(id))
+            .expect("candidate symbol")
+    }
+
+    fn attach_existing_candidate_diagnostic(
+        expansion: &mut TemplateExpansionOutput,
+        symbol: &str,
+        message_key: &str,
+    ) {
+        let candidate_id = candidate_id_by_symbol(expansion, symbol);
+        let candidate = expansion
+            .candidates()
+            .get(candidate_id)
+            .expect("candidate")
+            .clone();
+        let diagnostic = expansion.diagnostics.insert(OverloadDiagnosticDraft {
+            site: Some(candidate.site),
+            site_key: Some(candidate.site_key.clone()),
+            candidate: Some(candidate.id),
+            provenance: Some(candidate_diagnostic_provenance_from_candidate(&candidate)),
+            class: OverloadDiagnosticClass::Recovery,
+            severity: OverloadDiagnosticSeverity::Note,
+            message_key: OverloadDiagnosticMessageKey::new(message_key),
+            recovery: OverloadDiagnosticRecovery::Degraded,
+        });
+        expansion
+            .candidates
+            .entries
+            .get_mut(candidate_id.index())
+            .expect("candidate")
+            .diagnostics
+            .push(diagnostic);
     }
 
     fn symbol_id(name: &str) -> SymbolId {

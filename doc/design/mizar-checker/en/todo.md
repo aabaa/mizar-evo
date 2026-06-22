@@ -440,13 +440,22 @@ Keep `cargo test -p mizar-checker` green after each task (see
       rendering without cluster expansion, fresh fact inference, viability,
       specificity, root selection, or view insertion.
 
-24. **Viability filtering.** [ ]
+24. **Viability filtering.** [x]
     - Filter candidates by viability using recorded type facts only — no new
       inference (architecture 05 "Viability Uses Type Facts, Not New
       Inference").
     - Tests: viability fixtures; consumable versus pending/degraded/rejected
       fact evidence; rejection reasons preserved for diagnostics.
     - Deps: 23. Spec: `overload_resolution.md` (viability section).
+    - Completed by task 24: `CandidateViabilityOutput::filter` consumes
+      `TemplateExpansionOutput` and explicit checker-owned viability payloads
+      keyed by concrete candidate id. It emits only fully viable candidates,
+      records decision rows for every candidate, preserves accepted exact,
+      consumable fact, widening, and source-`qua` view plans, rejects
+      pending/degraded/rejected/out-of-scope/missing/narrowing evidence with
+      stable diagnostics, blocks ambiguous or externally deferred payloads, and
+      avoids new type inference, fact derivation, cluster firing, root
+      selection, or view insertion.
 
 25. **Specificity graph construction.** [ ]
     - Build per-site specificity graphs over viable candidates.

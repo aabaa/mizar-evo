@@ -26,9 +26,10 @@ Task 21 is documentation-only. It introduces no Rust source, no new language
 behavior, no source extraction, no artifact writer, and no proof acceptance.
 Task 22 implements the checker-local site/candidate collection data layer for
 explicit payloads. Task 23 implements the checker-local template expansion
-data layer over those payloads. Tasks 24-26 implement the remaining named
-sections below. Task 28 later assembles the final `ResolvedTypedAst` data shape
-specified by `resolved_typed_ast.md`.
+data layer over those payloads. Task 24 implements the checker-local viability
+filtering data layer over explicit recorded-evidence payloads. Tasks 25-26
+implement the remaining named sections below. Task 28 later assembles the
+final `ResolvedTypedAst` data shape specified by `resolved_typed_ast.md`.
 
 ## Boundary
 
@@ -297,6 +298,30 @@ Ambiguous inheritance paths block the affected candidate unless source `qua`
 selects a path. Invalid narrowing is rejected; narrowing belongs to
 `reconsider` and task-10 obligation handling, not overload resolution.
 
+### Task 24 Viability Data Layer
+
+`CandidateViabilityOutput::filter` consumes `TemplateExpansionOutput` plus
+explicit checker-owned viability payloads keyed by concrete candidate id. The
+payload for each argument states the already-recorded evidence kind and status:
+exact type match, consumable fact widening, accepted widening/source-`qua`
+coercion, rejected narrowing, missing evidence, pending/degraded/rejected fact
+state, out-of-scope assumption, ambiguous inheritance, or an external
+dependency deferral.
+
+Task 24 validates those payloads without deriving facts from `TypeFactTable`,
+running cluster closure, activating registrations, discharging obligations,
+walking `TypedAst`, or inserting views. A candidate is emitted to the viable
+candidate table only when all arguments have accepted proof-free evidence.
+Rejected or blocked candidates are omitted from that table and retained in a
+viability decision table with stable per-argument reasons and diagnostics.
+The viability decision table contains one row for every concrete source
+candidate, including accepted candidates, so accepted view plans and
+non-viable reasons render from the same stable table. Existing candidate
+diagnostics are remapped only for candidates that remain in the viable
+candidate table. Duplicate viability payloads for the same concrete candidate
+block that candidate with a stable reason, and payloads keyed to unknown
+candidate ids are diagnosed instead of being silently consumed.
+
 ## Specificity Partial Order
 
 Specificity is represented as a graph per overload site, not as a global DAG.
@@ -435,11 +460,12 @@ Deterministic rendering requirements:
 
 ## Deferred And External Gaps
 
-Task 23 deliberately keeps the following deferred:
+Task 24 deliberately keeps the following deferred:
 
-- Rust implementation for tasks 24-26;
+- Rust implementation for tasks 25-26;
 - AST-wide source-to-checker extraction of overload sites, candidates,
-  template payloads, source `qua` paths, and scheme/theorem roles;
+  template payloads, source `qua` paths, viability evidence, and
+  scheme/theorem roles;
 - parser/resolver exposure for unsupported template and scheme roles noted by
   MC-G006;
 - public diagnostic-code allocation;
@@ -479,7 +505,9 @@ Task 24 viability:
 - known/context-visible/consumable evidence versus pending, degraded,
   rejected, and out-of-scope evidence;
 - missing facts, invalid narrowing, ambiguous inheritance path;
-- rejection reasons and view plans are stable.
+- missing viability payloads and deferred external dependencies;
+- rejection reasons, blocked reasons, and view plans are stable;
+- deterministic viability rendering.
 
 Task 25 specificity:
 

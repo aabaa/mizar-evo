@@ -413,13 +413,22 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       candidate、deterministic rendering を、cluster expansion、新しい fact inference、
       viability、specificity、root selection、view insertion なしで cover する。
 
-24. **viability フィルタリング。** [ ]
+24. **viability フィルタリング。** [x]
     - 記録済みの型事実のみを用いて候補を viability でフィルタする — 新しい
       推論は行わない（アーキテクチャ 05「Viability Uses Type Facts, Not
       New Inference」）。
     - テスト: viability フィクスチャ。consumable な fact evidence と
       pending/degraded/rejected fact evidence の対比。診断のための棄却理由の保持。
     - 依存: 23。仕様: `overload_resolution.md`（viability の節）。
+    - task 24 で完了: `CandidateViabilityOutput::filter` は
+      `TemplateExpansionOutput` と、concrete candidate id で key 付けされた
+      explicit checker-owned viability payload を消費する。完全に viable な candidate
+      だけを出力し、すべての candidate について decision row を記録し、accepted exact、
+      consumable fact、widening、source-`qua` view plan を保持し、
+      pending/degraded/rejected/out-of-scope/missing/narrowing evidence を stable
+      diagnostic 付きで reject し、ambiguous または externally deferred payload を block
+      する。新しい type inference、fact derivation、cluster firing、root selection、
+      view insertion は行わない。
 
 25. **specificity グラフの構築。** [ ]
     - viable 候補上にサイトごとの specificity グラフを構築する。
