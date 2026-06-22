@@ -8,8 +8,9 @@ projection である。downstream package、LSP feature、documentation generati
 AI tooling が compiler-internal IR を読まずに source-shaped な verified metadata を
 必要とするときに読む主要 artifact である。
 
-この document は task 10 の仕様だけを定義する。task 11 が schema、
-projection-input contract、writer、validating reader、test を実装する。
+task 10 がこの仕様を導入し、task 11 が schema、projection-input contract、
+writer、validating reader、test を実装し、task 15 が provenance envelope と
+local verified-artifact metadata 用の store-level artifact-hash exclusion を確定する。
 
 ## Ownership
 
@@ -274,8 +275,7 @@ index、proof/kernel-internal state を公開してはならない。
 理解する助けになるが、dependency artifact、source hash、verifier policy fingerprint、proof witness
 hash の validation の代替ではない。
 
-task 10 はこの envelope を仕様化する。task 15 は full provenance record の producer-owned field
-vocabulary を refine してよい。
+task 15 は published verified artifact 向けの、この crate が所有する provenance envelope を確定する。
 
 ```text
 build_provenance = {
@@ -295,11 +295,13 @@ dependency_artifact_hash = {
 }
 ```
 
-cache key は opaque な producer-owned fingerprint である。`mizar-artifact` は producer が供給した場合にだけ
-記録する。cache lookup、cache invalidation、proof-reuse validation は `mizar-cache` が所有し続ける。
-`cache_key` は hash-excluded な local/cache metadata である。空でない string または JSON `null` として
-parse されるが、`interface_hash`、`implementation_hash`、artifact publication equivalence、
-reproducibility comparison には参加しない。
+`verifier_config_hash` は verifier policy と configuration の安定した producer-owned settings
+fingerprint を記録する。cache key は opaque な producer-owned fingerprint である。
+`mizar-artifact` は producer が供給した場合にだけ記録する。cache lookup、cache invalidation、
+proof-reuse validation は `mizar-cache` が所有し続ける。`cache_key` は hash-excluded な
+local/cache metadata である。空でない string または JSON `null` として parse されるが、
+`interface_hash`、`implementation_hash`、artifact publication equivalence、reproducibility
+comparison には参加しない。
 
 ## Hash String Domains
 
@@ -455,7 +457,7 @@ writer、validating reader、および round-trip、raw-IR-shaped payload reject
 ordering、schema-version compatibility、source-range validation、hash class/domain validation、
 witness-reference consistency、hash participation、ownership-boundary field rejection の test を実装する。
 
-real producer integration は、resolver、checker、VC、proof、kernel crate が stable projection input を
-公開するまで `external_dependency_gap` として残る。full provenance record は task 15 に deferred。
-interface と implementation hash input helper は task 16 に deferred。manifest/file I/O と atomic
-publication は task 13 と 14 に deferred のままとする。
+task 15 は provenance record と、local verified-artifact field の store-level artifact-hash exclusion
+helper を確定する。real producer integration は、resolver、checker、VC、proof、kernel crate が stable
+projection input を公開するまで `external_dependency_gap` として残る。interface と implementation hash
+input helper は task 16 に deferred。manifest/file I/O と atomic publication は task 13 と 14 で完了済み。

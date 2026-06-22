@@ -20,8 +20,8 @@ use crate::{
     registration_summary::{ArtifactHashClass, ArtifactHashRef},
     store::{
         ARTIFACT_HASH_CONSTRUCTION, CanonicalHashDomain, CanonicalJson, CanonicalJsonError,
-        HashClass, MinorVersionPolicy, SchemaVersion, SchemaVersionError, SchemaVersionSupport,
-        canonical_json_bytes,
+        FieldPath, HashClass, MinorVersionPolicy, SchemaVersion, SchemaVersionError,
+        SchemaVersionSupport, canonical_json_bytes,
     },
 };
 
@@ -341,6 +341,15 @@ pub fn schema_version_support() -> SchemaVersionSupport {
         current_schema_version().minor(),
         MinorVersionPolicy::UpToSupported,
     )
+}
+
+/// Returns store-level artifact-hash exclusions for local verified-artifact metadata.
+pub fn artifact_hash_excluded_paths() -> Vec<FieldPath> {
+    vec![
+        FieldPath::new(["verified_at"]).expect("verified_at hash-exclusion path is valid"),
+        FieldPath::new(["provenance", "cache_key"])
+            .expect("provenance cache_key hash-exclusion path is valid"),
+    ]
 }
 
 /// Serializes a verified artifact to canonical UTF-8 JSON bytes.
@@ -3269,10 +3278,10 @@ mod tests {
     use super::{
         ArtifactDiagnostic, BuildProvenance, DependencyArtifactHash, DiagnosticRelated,
         DiagnosticSeverity, ExportProofStatus, ExportVisibility, ExpressionMetadata,
-        ObligationMetadata, ObligationStatus, OverloadMetadata, VerifiedArtifact,
-        VerifiedArtifactError, VerifiedArtifactReadOptions, VerifiedExport, current_schema_version,
-        read_verified_artifact, verified_artifact_hash_string, verified_artifact_json,
-        write_verified_artifact,
+        ObligationMetadata, ObligationStatus, OverloadMetadata, VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+        VerifiedArtifact, VerifiedArtifactError, VerifiedArtifactReadOptions, VerifiedExport,
+        artifact_hash_excluded_paths, current_schema_version, read_verified_artifact,
+        verified_artifact_hash_string, verified_artifact_json, write_verified_artifact,
     };
     use crate::{
         module_summary::{ModuleSummaryIdentity, SourceRangeSummary},
@@ -3281,7 +3290,10 @@ mod tests {
             ProofWitnessRef,
         },
         registration_summary::{ArtifactHashClass, ArtifactHashRef},
-        store::{CanonicalJson, SchemaVersion, SchemaVersionError, canonical_json_string},
+        store::{
+            CanonicalJson, SchemaVersion, SchemaVersionError, artifact_hash_domain,
+            canonical_json_string,
+        },
     };
 
     #[test]
@@ -3664,6 +3676,68 @@ mod tests {
         assert_eq!(read.implementation_hash, original.implementation_hash);
         assert_eq!(read.verified_at.as_deref(), Some("2026-06-23T00:00:00Z"));
         assert_eq!(read.provenance.cache_key.as_deref(), Some("new-cache-key"));
+    }
+
+    #[test]
+    fn artifact_hash_exclusions_cover_local_provenance_fields() {
+        let original = sample_json();
+        let domain =
+            artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, current_schema_version());
+        let excluded_paths = artifact_hash_excluded_paths();
+        let original_hash = domain.hash(&original, &excluded_paths);
+
+        let mut local_changed = original.clone();
+        set_field(
+            &mut local_changed,
+            "verified_at",
+            CanonicalJson::string("2026-06-23T00:00:00Z"),
+        );
+        set_object_field(
+            object_field_mut(&mut local_changed, "provenance"),
+            "cache_key",
+            CanonicalJson::string("new-cache-key"),
+        );
+        assert_eq!(domain.hash(&local_changed, &excluded_paths), original_hash);
+
+        for (field, mutate) in [
+            (
+                "provenance.toolchain",
+                mutate_provenance_toolchain as fn(&mut CanonicalJson),
+            ),
+            (
+                "provenance.language_edition",
+                mutate_provenance_language_edition,
+            ),
+            ("provenance.lockfile_hash", mutate_provenance_lockfile_hash),
+            (
+                "provenance.verifier_config_hash",
+                mutate_provenance_verifier_config_hash,
+            ),
+            (
+                "provenance.dependency_artifact_hashes[].module",
+                mutate_dependency_module,
+            ),
+            (
+                "provenance.dependency_artifact_hashes[].interface_hash",
+                mutate_dependency_interface_hash,
+            ),
+            (
+                "provenance.dependency_artifact_hashes[].implementation_hash",
+                mutate_dependency_implementation_hash,
+            ),
+            (
+                "provenance.dependency_artifact_hashes[].artifact_hash",
+                mutate_dependency_artifact_hash,
+            ),
+        ] {
+            let mut stable_changed = original.clone();
+            mutate(&mut stable_changed);
+            assert_ne!(
+                domain.hash(&stable_changed, &excluded_paths),
+                original_hash,
+                "{field} must participate in the artifact hash"
+            );
+        }
     }
 
     #[test]
@@ -4300,6 +4374,107 @@ mod tests {
             panic!("expected array");
         };
         values
+    }
+
+    fn provenance_field_mut(json: &mut CanonicalJson) -> &mut CanonicalJson {
+        object_field_mut(json, "provenance")
+    }
+
+    fn first_dependency_hash_mut(json: &mut CanonicalJson) -> &mut CanonicalJson {
+        array_object_field_mut(provenance_field_mut(json), "dependency_artifact_hashes")
+            .first_mut()
+            .expect("dependency artifact hash entry")
+    }
+
+    fn mutate_provenance_toolchain(json: &mut CanonicalJson) {
+        set_object_field(
+            provenance_field_mut(json),
+            "toolchain",
+            CanonicalJson::string("changed-toolchain"),
+        );
+    }
+
+    fn mutate_provenance_language_edition(json: &mut CanonicalJson) {
+        set_object_field(
+            provenance_field_mut(json),
+            "language_edition",
+            CanonicalJson::string("2027"),
+        );
+    }
+
+    fn mutate_provenance_lockfile_hash(json: &mut CanonicalJson) {
+        set_object_field(
+            provenance_field_mut(json),
+            "lockfile_hash",
+            CanonicalJson::string(
+                hash_ref(ArtifactHashClass::Artifact, "mizar-build/lockfile", 101)
+                    .to_artifact_hash_string(),
+            ),
+        );
+    }
+
+    fn mutate_provenance_verifier_config_hash(json: &mut CanonicalJson) {
+        set_object_field(
+            provenance_field_mut(json),
+            "verifier_config_hash",
+            CanonicalJson::string(
+                hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-build/verifier-config",
+                    102,
+                )
+                .to_artifact_hash_string(),
+            ),
+        );
+    }
+
+    fn mutate_dependency_module(json: &mut CanonicalJson) {
+        set_object_field(
+            object_field_mut(first_dependency_hash_mut(json), "module"),
+            "module_path",
+            CanonicalJson::string("articles/changed-base"),
+        );
+    }
+
+    fn mutate_dependency_interface_hash(json: &mut CanonicalJson) {
+        set_object_field(
+            first_dependency_hash_mut(json),
+            "interface_hash",
+            CanonicalJson::string(
+                hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-artifact/module-summary",
+                    103,
+                )
+                .to_artifact_hash_string(),
+            ),
+        );
+    }
+
+    fn mutate_dependency_implementation_hash(json: &mut CanonicalJson) {
+        set_object_field(
+            first_dependency_hash_mut(json),
+            "implementation_hash",
+            CanonicalJson::string(
+                hash_ref(
+                    ArtifactHashClass::Implementation,
+                    "mizar-artifact/verified-artifact",
+                    104,
+                )
+                .to_artifact_hash_string(),
+            ),
+        );
+    }
+
+    fn mutate_dependency_artifact_hash(json: &mut CanonicalJson) {
+        set_object_field(
+            first_dependency_hash_mut(json),
+            "artifact_hash",
+            CanonicalJson::string(
+                hash_ref(ArtifactHashClass::Artifact, "mizar-artifact/file", 105)
+                    .to_artifact_hash_string(),
+            ),
+        );
     }
 
     fn duplicate_array_item(values: &mut Vec<CanonicalJson>, index: usize) {

@@ -193,7 +193,7 @@ Keep `cargo test -p mizar-artifact` green after each task (see
       commits are idempotent.
     - Deps: 13. Spec: `manifest.md`.
 
-15. **Provenance and reproducibility metadata.** [ ]
+15. **Provenance and reproducibility metadata.** [x]
     - Implement build provenance records (toolchain, edition, settings,
       dependency hashes) attached to emitted artifacts, with hash-excluded
       local fields handled per task 2.

@@ -25,14 +25,14 @@ use crate::{
     },
     store::{
         ARTIFACT_HASH_CONSTRUCTION, CanonicalHashDomain, CanonicalJson, CanonicalJsonError,
-        FieldPath, MinorVersionPolicy, PublishedArtifactPath, PublishedArtifactReadOptions,
+        MinorVersionPolicy, PublishedArtifactPath, PublishedArtifactReadOptions,
         PublishedArtifactWrite, PublishedPathError, SchemaVersion, SchemaVersionError,
         SchemaVersionSupport, StoreIoError, StoreIoOperation, artifact_hash_domain,
         canonical_json_bytes, read_published_artifact, write_published_artifact,
     },
     verified_artifact::{
         VERIFIED_ARTIFACT_SCHEMA_FAMILY, VerifiedArtifactError, VerifiedArtifactReadOptions,
-        read_verified_artifact,
+        artifact_hash_excluded_paths, read_verified_artifact,
     },
 };
 
@@ -1579,7 +1579,7 @@ fn validate_module_references(
         VERIFIED_ARTIFACT_SCHEMA_FAMILY,
         entry.artifact_hash.schema_version,
     );
-    let excluded_paths = verified_artifact_hash_excluded_paths()?;
+    let excluded_paths = artifact_hash_excluded_paths();
     let read = read_published_artifact(
         artifact_root,
         &artifact_path,
@@ -1908,21 +1908,6 @@ fn is_missing_manifest(error: &ManifestError) -> bool {
             ..
         })
     )
-}
-
-fn verified_artifact_hash_excluded_paths() -> Result<Vec<FieldPath>, ManifestError> {
-    Ok(vec![
-        FieldPath::new(["verified_at"]).map_err(|error| ManifestError::InvalidField {
-            path: "$.verified_at".to_owned(),
-            reason: error.to_string(),
-        })?,
-        FieldPath::new(["provenance", "cache_key"]).map_err(|error| {
-            ManifestError::InvalidField {
-                path: "$.provenance.cache_key".to_owned(),
-                reason: error.to_string(),
-            }
-        })?,
-    ])
 }
 
 fn json_object<I, K>(fields: I) -> Result<CanonicalJson, ManifestError>
@@ -2653,7 +2638,7 @@ mod tests {
         let mut entry = publish_verified_artifact(root.path(), "artifacts/a.json", &artifact);
         let wrong_version = SchemaVersion::new(1, 1);
         let json = verified_artifact_json(&artifact).expect("verified artifact JSON");
-        let excluded = verified_artifact_hash_excluded_paths().expect("hash exclusions");
+        let excluded = artifact_hash_excluded_paths();
         entry.artifact_hash.schema_version = wrong_version;
         entry.artifact_hash.digest =
             artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, wrong_version)
@@ -3346,7 +3331,7 @@ mod tests {
     ) -> ModuleArtifactEntry {
         let json = verified_artifact_json(artifact).expect("verified artifact JSON");
         let domain = artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact.schema_version);
-        let excluded = verified_artifact_hash_excluded_paths().expect("hash exclusions");
+        let excluded = artifact_hash_excluded_paths();
         let published_path = PublishedArtifactPath::new(path).expect("published path");
         let write = write_published_artifact(root, &published_path, &json, &domain, &excluded)
             .expect("write verified artifact");

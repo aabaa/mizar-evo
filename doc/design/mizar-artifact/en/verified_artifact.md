@@ -8,8 +8,10 @@ file. It is the primary artifact read by downstream packages, LSP features,
 documentation generation, and AI tooling when they need source-shaped verified
 metadata without loading compiler-internal IR.
 
-This document defines the task 10 specification only. Task 11 implements the
-schema, projection-input contract, writer, validating reader, and tests.
+Task 10 introduced this specification, task 11 implemented the schema,
+projection-input contract, writer, validating reader, and tests, and task 15
+finalizes the provenance envelope plus store-level artifact-hash exclusions for
+local verified-artifact metadata.
 
 ## Ownership
 
@@ -297,8 +299,8 @@ understand how the artifact was produced, but it is not a substitute for
 validating dependency artifacts, source hashes, verifier policy fingerprints, or
 proof witness hashes.
 
-Task 10 specifies this envelope; task 15 may refine the producer-owned field
-vocabulary for full provenance records:
+Task 15 finalizes the crate-owned provenance envelope for published verified
+artifacts:
 
 ```text
 build_provenance = {
@@ -318,12 +320,14 @@ dependency_artifact_hash = {
 }
 ```
 
-The cache key is an opaque producer-owned fingerprint. `mizar-artifact` records
-it only when the producer supplies it; cache lookup, cache invalidation, and
-proof-reuse validation remain owned by `mizar-cache`. `cache_key` is
-hash-excluded local/cache metadata: it is parsed as a non-empty string or JSON
-`null`, but it does not participate in `interface_hash`, `implementation_hash`,
-artifact publication equivalence, or reproducibility comparisons.
+`verifier_config_hash` records the stable producer-owned settings fingerprint
+for verifier policy and configuration. The cache key is an opaque
+producer-owned fingerprint. `mizar-artifact` records it only when the producer
+supplies it; cache lookup, cache invalidation, and proof-reuse validation
+remain owned by `mizar-cache`. `cache_key` is hash-excluded local/cache
+metadata: it is parsed as a non-empty string or JSON `null`, but it does not
+participate in `interface_hash`, `implementation_hash`, artifact publication
+equivalence, or reproducibility comparisons.
 
 ## Hash String Domains
 
@@ -496,8 +500,9 @@ ordering, schema-version compatibility, source-range validation, hash
 class/domain validation, witness-reference consistency, hash participation, and
 ownership-boundary field rejection.
 
-Real producer integration remains an `external_dependency_gap` until resolver,
-checker, VC, proof, and kernel crates expose stable projection inputs. Full
-provenance records remain deferred to task 15. Interface and implementation
+Task 15 finalizes provenance records and the store-level artifact-hash
+exclusion helper for local verified-artifact fields. Real producer integration
+remains an `external_dependency_gap` until resolver, checker, VC, proof, and
+kernel crates expose stable projection inputs. Interface and implementation
 hash input helpers remain deferred to task 16. Manifest/file I/O and atomic
-publication remain deferred to tasks 13 and 14.
+publication were completed by tasks 13 and 14.

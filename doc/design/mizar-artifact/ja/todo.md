@@ -193,7 +193,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       冪等である。
     - 依存: 13。仕様: `manifest.md`。
 
-15. **来歴と再現性メタデータ。** [ ]
+15. **来歴と再現性メタデータ。** [x]
     - 発行された artifact に付くビルド来歴レコード（ツールチェーン、
       edition、設定、依存ハッシュ）を実装する。ハッシュ除外のローカル
       フィールドは task 2 に従って扱う。
