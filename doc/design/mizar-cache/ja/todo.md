@@ -74,7 +74,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 
 ### キーと fingerprint
 
-1. **crate の足場と lint 方針のガード。** [ ]
+1. **crate の足場と lint 方針のガード。** [x]
    - `mizar-session` と `mizar-artifact` に依存する workspace メンバー
      `mizar-cache` を追加し、`mizar-frontend` のガードに倣った
      `tests/lint_policy.rs` を追加する。
@@ -115,7 +115,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
      fingerprint を計算する。
    - テスト: 非インターフェース編集に対する fingerprint の安定性。
      スライスの変化が正確に依存先の fingerprint だけを変える。
-   - 依存: 3、4、`mizar-artifact` task 16。仕様:
+   - 依存: 3、4、`mizar-artifact` task 16、`mizar-vc` task 14。仕様:
      `dependency_fingerprint.md`。
 
 6. **再ビルドトリガーの評価。** [ ]
@@ -174,7 +174,8 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       証拠がキャッシュ経由で kernel 検証済みになることは決してない。
       cross-crate producer wiring、cache hit/miss timing、clean/incremental
       equivalence は task 20 の gate に残す。
-    - 依存: 8、10。仕様: `proof_reuse.md`。
+    - 依存: 8、10、`mizar-vc` task 14、`mizar-proof` の witness/policy
+      出力、`mizar-kernel` の acceptance 出力。仕様: `proof_reuse.md`。
 
 12. **仕様: `cluster_db.md`。** [ ]
     - cluster-db の仕様を執筆する（英語と日本語、コードなし）: 索引
@@ -244,7 +245,8 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       cache 部分集合を削除しても変わるのは性能だけである。cache hit/miss
       timing が diagnostics、artifact order、proof acceptance を変えない。
       reused record が外部認証された証拠を昇格させない。
-    - 依存: 5、6、11、15、16、`mizar-vc` task 20、`mizar-proof` task 17。
+    - 依存: 5、6、11、15、16、`mizar-vc` task 20、`mizar-proof` task 17、
+      `mizar-kernel` の acceptance 出力。
       仕様:
       [22.incremental_verification_contract.md](../../architecture/ja/22.incremental_verification_contract.md),
       [11.artifact_and_incremental_build.md](../../architecture/ja/11.artifact_and_incremental_build.md),

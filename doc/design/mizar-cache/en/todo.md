@@ -75,7 +75,7 @@ Keep `cargo test -p mizar-cache` green after each task (see
 
 ### Keys and fingerprints
 
-1. **Crate scaffold and lint-policy guard.** [ ]
+1. **Crate scaffold and lint-policy guard.** [x]
    - Add the `mizar-cache` workspace member depending on `mizar-session`
      and `mizar-artifact`; add `tests/lint_policy.rs` mirroring the
      `mizar-frontend` guard.
@@ -116,7 +116,7 @@ Keep `cargo test -p mizar-cache` green after each task (see
      (`mizar-vc` task 14) at the decided granularity.
    - Tests: fingerprint stability under non-interface edits; slice changes
      flip exactly the dependent fingerprints.
-   - Deps: 3, 4, `mizar-artifact` task 16. Spec:
+   - Deps: 3, 4, `mizar-artifact` task 16, `mizar-vc` task 14. Spec:
      `dependency_fingerprint.md`.
 
 6. **Rebuild-trigger evaluation.** [ ]
@@ -176,7 +176,8 @@ Keep `cargo test -p mizar-cache` green after each task (see
       evidence never becomes kernel-verified via cache. Cross-crate producer
       wiring, cache hit/miss timing, and clean/incremental equivalence remain
       the task-20 gate.
-    - Deps: 8, 10. Spec: `proof_reuse.md`.
+    - Deps: 8, 10, `mizar-vc` task 14, `mizar-proof` witness/policy
+      outputs, `mizar-kernel` acceptance outputs. Spec: `proof_reuse.md`.
 
 12. **Spec: `cluster_db.md`.** [ ]
     - Write the cluster-db spec (English and Japanese, no code): index
@@ -247,7 +248,8 @@ Keep `cargo test -p mizar-cache` green after each task (see
       deleting any cache subset changes only performance; cache hit/miss timing
       cannot change diagnostics, artifact order, or proof acceptance;
       externally attested evidence is never upgraded by a reused record.
-    - Deps: 5, 6, 11, 15, 16, `mizar-vc` task 20, `mizar-proof` task 17.
+    - Deps: 5, 6, 11, 15, 16, `mizar-vc` task 20, `mizar-proof` task 17,
+      `mizar-kernel` acceptance outputs.
       Spec:
       [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md),
       [11.artifact_and_incremental_build.md](../../architecture/en/11.artifact_and_incremental_build.md),
