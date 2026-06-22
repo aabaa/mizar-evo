@@ -10,9 +10,10 @@
 
 ## Module Implementation
 
-Module specs do not exist yet; each is written by its own spec task (English
-and Japanese in the same change) before the implementation tasks that cite it.
-Module names follow the minimum split of
+Module specs are written by their own spec tasks (English and Japanese in the
+same change) before the implementation tasks that cite them. Completed spec
+tasks add their files before the corresponding source task starts. Module names
+follow the minimum split of
 [internal 07](../../internal/en/07.crate_module_layout.md) (plus the summary
 schemas the resolver and checker consume); the crate refines architecture 11
 and 18 and internal 02 and 06.
@@ -85,7 +86,7 @@ Keep `cargo test -p mizar-artifact` green after each task (see
    - Tests: lint-policy guard passes; workspace builds.
    - Deps: none. Spec: architecture 11.
 
-2. **Spec: `store.md`.** [ ]
+2. **Spec: `store.md`.** [x]
    - Write the store/canonical-form spec (English and Japanese, no code):
      store layout per internal 02, canonical UTF-8 JSON serialization with
      deterministic ordering, `schema_version` and compatibility checks,
@@ -170,11 +171,13 @@ Keep `cargo test -p mizar-artifact` green after each task (see
       "Manifest Transaction", architecture 11 "Artifact Manifest".
 
 13. **Artifact store with atomic writes.** [ ]
-    - Implement the store: content-addressed blob writes, temp-and-rename
+    - Implement the store: stable published artifact writes, schema-required
+      hash-addressed published files such as witnesses, temp-and-rename
       atomicity, and corruption detection on read; interrupted writes never
-      look like complete output.
+      look like complete output. Internal cache blobs remain owned by
+      `mizar-cache`.
     - Tests: kill-during-write fixtures leave no visible partial artifact;
-      corrupted blob reads fail with positions.
+      corrupted artifact or witness reads fail with positions.
     - Deps: 3, 12. Spec: `store.md`, `manifest.md`.
 
 14. **Manifest transactions.** [ ]

@@ -10,8 +10,9 @@
 
 ## モジュール実装
 
-モジュール仕様はまだ存在しない。各仕様は、それを引用する実装タスクより前に、
-専用の仕様タスクが（英語と日本語を同じ変更で）執筆する。モジュール名は
+モジュール仕様は専用の仕様タスクが（英語と日本語を同じ変更で）執筆し、
+それを引用する実装タスクより前に追加する。完了した仕様タスクは、対応する
+source task が始まる前に file を追加する。モジュール名は
 [internal 07](../../internal/ja/07.crate_module_layout.md) の最小分割
 （に加えて resolver と checker が消費する summary スキーマ）に従う。
 この crate はアーキテクチャ 11、18 と internal 02、06 を精緻化する。
@@ -84,7 +85,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
    - テスト: lint 方針ガードが通る。workspace がビルドできる。
    - 依存: なし。仕様: アーキテクチャ 11。
 
-2. **仕様: `store.md`。** [ ]
+2. **仕様: `store.md`。** [x]
    - ストア/正準形の仕様を執筆する（英語と日本語、コードなし）: internal
      02 に従うストアレイアウト、決定的順序を持つ正準 UTF-8 JSON
      シリアライゼーション、`schema_version` と互換性チェック、意味論
@@ -170,11 +171,14 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       「Manifest Transaction」、アーキテクチャ 11「Artifact Manifest」。
 
 13. **atomic write を備えた artifact ストア。** [ ]
-    - ストアを実装する: content-addressed な blob 書き込み、temp-and-
-      rename の原子性、読み込み時の破損検出。中断された書き込みが完全な
-      出力に見えることは決してない。
+    - ストアを実装する: 安定した公開 artifact 書き込み、witness など
+      schema が要求する hash-addressed published file、temp-and-rename の
+      原子性、読み込み時の破損検出。中断された書き込みが完全な出力に
+      見えることは決してない。internal cache blob は `mizar-cache` が
+      所有し続ける。
     - テスト: 書き込み中 kill のフィクスチャが可視の部分 artifact を
-      残さない。破損 blob の読み込みが位置付きで失敗する。
+      残さない。破損した artifact または witness の読み込みが位置付きで
+      失敗する。
     - 依存: 3、12。仕様: `store.md`、`manifest.md`。
 
 14. **manifest トランザクション。** [ ]
