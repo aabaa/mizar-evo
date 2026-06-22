@@ -17,7 +17,7 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| typed_ast | `typed_ast.md`（task 2） | `src/typed_ast.rs` | [~] |
+| typed_ast | `typed_ast.md`（task 2） | `src/typed_ast.rs` | [x] |
 | binding_env | `binding_env.md`（task 4） | `src/binding_env.rs` | [ ] |
 | type_checker | `type_checker.md`（task 6） | `src/type_checker.rs` | [ ] |
 | registration_resolution | `registration_resolution.md`（task 13） | `src/registration_resolution.rs` | [ ] |
@@ -56,10 +56,12 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 
 ## 解決済みおよび保留中の決定
 
-- **TypedAst の arena 表現: 未解決。task 3 で解決する。** `mizar-syntax`
-  task 2 の arena 決定（同質な kind-enum arena 対 型付きノード構造体）を
-  `TypedAst`/`ResolvedTypedAst` に対して鏡映し、決定と syntax arena 決定
-  との関係を `typed_ast.md` に記録する。
+- **TypedAst の arena 表現: task 3 で解決済み。** `TypedAst` は dense local
+  id を持つ同質な `TypedNodeKind` arena を使い、現在の `mizar-syntax`
+  compatibility view と `mizar-resolve` arena style を鏡映する。task 3 は
+  node-kind storage のための direct `mizar-syntax` dependency を追加せず、
+  checker-local な source-shape projection を使う。`ResolvedTypedAst` は task 28
+  で同じ決定を再訪する。
 - **registration の活性化ゲート: 未解決。task 19 で解決する。** ローカル
   registration は、その証明義務が設定済み verifier ポリシーに受理される
   まで自動推論に影響してはならない（アーキテクチャ 04 の制約）。phase
@@ -105,12 +107,17 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      recovery、task 3 のテスト義務、deferred arena-representation decision を
      定義した。
 
-3. **`typed_ast` データ形状の実装。** [ ]
+3. **`typed_ast` データ形状の実装。** [x]
    - task 2 に従って arena とテーブルを実装し、arena 表現の決定を解決し、
      決定的 debug レンダリングを加える。
    - テスト: id の決定性。テーブルのラウンドトリップ。レンダリングの
      安定性。
    - 依存: 2。仕様: `typed_ast.md`。
+   - task 3 で完了: `src/typed_ast.rs` が dense id、同質な `TypedNodeKind`
+     arena、local context snapshot、type/fact/coercion/obligation/diagnostic
+     table、validation、`typed-ast-debug-v1` rendering を実装した。unit test は
+     determinism、table round-trip、context/status invariant、proof-boundary
+     guard、stable rendering を覆う。
 
 4. **仕様: `binding_env.md`。** [ ]
    - 束縛/コンテキストの仕様を執筆する（英語と日本語、コードなし）:

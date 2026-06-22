@@ -81,14 +81,37 @@ fn checker_manifest_dependency_boundary_is_task_one_minimal() {
 }
 
 #[test]
-fn checker_task_one_exposes_no_public_semantic_api() {
+fn checker_source_does_not_import_syntax_directly() {
+    let root = crate_root();
+    let mut violations = Vec::new();
+
+    for path in checker_src_files(&root) {
+        let source = read_to_string(&path);
+        if source.contains("mizar_syntax::") || source.contains("extern crate mizar_syntax") {
+            let display_path = path.strip_prefix(&root).unwrap_or(&path);
+            violations.push(display_path.display().to_string());
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "mizar-checker must keep task-3 typed AST source-shape storage \
+         checker-local instead of importing mizar-syntax directly:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn checker_public_semantic_api_matches_documented_modules() {
     let root = crate_root();
     let mut violations = Vec::new();
 
     for path in checker_src_files(&root) {
         let source = read_to_string(&path);
         for (line_index, line) in source.lines().enumerate() {
-            if public_declaration_name(line).is_some() {
+            if public_declaration_name(line).is_some()
+                && !public_checker_api_is_documented(&root, &path, line)
+            {
                 let display_path = path.strip_prefix(&root).unwrap_or(&path);
                 violations.push(format!("{}:{}", display_path.display(), line_index + 1));
             }
@@ -97,8 +120,7 @@ fn checker_task_one_exposes_no_public_semantic_api() {
 
     assert!(
         violations.is_empty(),
-        "task 1 exposes only the crate boundary; public checker APIs require \
-         their owning module spec first:\n{}",
+        "public checker APIs require their owning module spec first:\n{}",
         violations.join("\n")
     );
 }
@@ -270,6 +292,14 @@ fn public_declaration_name(line: &str) -> Option<&str> {
         character.is_whitespace() || matches!(character, '(' | ')' | ':' | '<' | '{')
     })
     .find(|part| !part.is_empty())
+}
+
+fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> bool {
+    let relative = path.strip_prefix(root).unwrap_or(path);
+    if relative == Path::new("src/typed_ast.rs") {
+        return true;
+    }
+    relative == Path::new("src/lib.rs") && line.trim() == "pub mod typed_ast;"
 }
 
 fn undocumented_allow_line_numbers(source: &str) -> Vec<usize> {

@@ -18,7 +18,7 @@ architecture 04, 05, 16, 17, 18, and 19.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| typed_ast | `typed_ast.md` (task 2) | `src/typed_ast.rs` | [~] |
+| typed_ast | `typed_ast.md` (task 2) | `src/typed_ast.rs` | [x] |
 | binding_env | `binding_env.md` (task 4) | `src/binding_env.rs` | [ ] |
 | type_checker | `type_checker.md` (task 6) | `src/type_checker.rs` | [ ] |
 | registration_resolution | `registration_resolution.md` (task 13) | `src/registration_resolution.rs` | [ ] |
@@ -57,10 +57,12 @@ crate ownership: [internal 07](../../internal/en/07.crate_module_layout.md).
 
 ## Resolved And Open Decisions
 
-- **TypedAst arena representation: open, resolved by task 3.** Mirror the
-  `mizar-syntax` task-2 arena decision (homogeneous kind-enum arena versus
-  typed node structs) for `TypedAst`/`ResolvedTypedAst`, recording the
-  decision and its relation to the syntax-arena decision in `typed_ast.md`.
+- **TypedAst arena representation: resolved by task 3.** `TypedAst` uses a
+  homogeneous `TypedNodeKind` arena with dense local ids, mirroring the current
+  `mizar-syntax` compatibility view and `mizar-resolve` arena style. Task 3
+  does not add a direct `mizar-syntax` dependency for node-kind storage; it uses
+  a checker-local source-shape projection. `ResolvedTypedAst` revisits the same
+  decision in task 28.
 - **Registration activation gating: open, resolved by task 19.** Local
   registrations must not affect automatic inference until their proof
   obligations are accepted by the configured verifier policy (architecture 04
@@ -107,11 +109,17 @@ Keep `cargo test -p mizar-checker` green after each task (see
      boundary, partial-typing recovery, task-3 test obligations, and deferred
      arena-representation decision.
 
-3. **Implement `typed_ast` data shapes.** [ ]
+3. **Implement `typed_ast` data shapes.** [x]
    - Implement the arena and tables per task 2, resolving the arena
      representation decision, plus a deterministic debug rendering.
    - Tests: id determinism; table round-trips; rendering stability.
    - Deps: 2. Spec: `typed_ast.md`.
+   - Completed by task 3: `src/typed_ast.rs` implements dense ids, the
+     homogeneous `TypedNodeKind` arena, local context snapshots, typed/fact/
+     coercion/obligation/diagnostic tables, validation, and
+     `typed-ast-debug-v1` rendering. Unit tests cover determinism, table
+     round-trips, context/status invariants, proof-boundary guards, and stable
+     rendering.
 
 4. **Spec: `binding_env.md`.** [ ]
    - Write the binding/context spec (English and Japanese, no code): layered

@@ -15,10 +15,10 @@ It refines:
   phase 6 and the `Typed AST` interface;
 - checker [todo.md](./todo.md) task 2.
 
-This document specifies the logical data shape used by later implementation
-tasks. Task 3 chooses the physical arena representation and implements these
-structures. This task does not add source code, executable tests, language
-semantics, or proof behavior.
+This document specifies the logical data shape used by checker implementation
+tasks. Task 3 records the physical arena representation decision and implements
+these structures without adding type inference, registration firing, overload
+selection, language semantics, or proof behavior.
 
 ## Boundary
 
@@ -113,10 +113,25 @@ Arena invariants:
 - arena ids must not be used as `VcId`s, `ObligationAnchor`s, artifact ids, or
   cross-edit proof-reuse identities.
 
-Task 3 must record the physical representation decision here. The allowed
-choices are a homogeneous kind-enum arena or typed node structs with a shared
-id abstraction, mirroring the `mizar-syntax` arena decision. Either choice must
-preserve the logical invariants above and keep deterministic debug rendering.
+Task 3 decision: `TypedAst` uses a homogeneous arena of `TypedNode` records
+whose source-shaped role is carried by `TypedNodeKind`. The arena allocates
+dense local `TypedNodeId`s in insertion order and validates child links plus
+acyclicity before a `TypedAst` is accepted. This mirrors the current
+`mizar-syntax` compatibility view and `mizar-resolve` arena style, where a
+shared id abstraction owns source-shaped traversal and node-specific meaning is
+kept in node kind payloads or side tables.
+
+`TypedNodeKind` is a checker-local source-shape projection. Task 3 must not add
+a direct `mizar-syntax` dependency merely to store parser node kinds. When a
+typed node mirrors a resolved source node, it records a stable checker-local
+kind name plus the originating `ResolvedNodeId`; later tasks may add a
+resolver-provided projection if `mizar-resolve` exposes one. Unsupported or
+generated checker shells use explicit checker-local kind names instead of raw
+parser vocabulary.
+
+Typed node structs remain a possible future refactor only if a later task shows
+that they remove concrete complexity without changing id stability,
+side-table ownership, or deterministic debug rendering.
 
 ## LocalTypeContextTable
 
@@ -132,6 +147,7 @@ struct LocalTypeContext {
     parent: Option<LocalTypeContextId>,
     layer: TypeContextLayer,
     bindings: Vec<BindingTypeRef>,
+    introduced_assumptions: Vec<TypeFactId>,
     visible_facts: Vec<TypeFactId>,
     recovery: ContextRecoveryState,
 }
@@ -144,8 +160,12 @@ Required invariants:
 - parent links form an acyclic layer chain;
 - bindings refer to resolver-owned symbols or typed binding sites without
   redoing name lookup;
+- `introduced_assumptions` records the `FactStatus::Assumed` facts introduced
+  by this context layer;
 - visible fact lists are sorted deterministically and may include only facts
   whose status is consumable in that context;
+- an `Assumed` fact is consumable only when it appears in the current context's
+  `introduced_assumptions` or in an ancestor context that remains visible;
 - recovered contexts are explicit so later phases can avoid treating degraded
   assumptions as verified evidence.
 
@@ -176,16 +196,25 @@ enum TypeStatus {
 }
 ```
 
+Task 3 exposes `TypeStatus::is_available_for_handoff()` only as a status
+predicate: `Known` and `Assumed` may be forwarded with their provenance, while
+`Unknown`, `Error`, and `Skipped` remain explicit partial-typing records.
+
 `TypedSiteRef` is a source-local reference to a typed node or a stable
 sub-node role, such as a binding site, expression result, formula result, type
 expression, or candidate argument. It must not point back to raw surface
 syntax. Resolver-owned ids may be referenced only through the owning typed
 node's resolver link.
+Typed site order sorts by the owning `TypedNodeId`, then whole-node entries
+before role entries, then the stable role key.
 
 `TypeEntryActual` records the normalized type known for the site, a candidate
 set whose final overload root remains open, or the absence of a type after an
 error. A table entry with `Error`, `Unknown`, or `Skipped` status is explicit
-state, not a fabricated successful type.
+state, not a fabricated successful type. A handoff-available `Known` or
+`Assumed` entry must carry either a known normalized type or a candidate set;
+`Absent` is reserved for partial, error, or skipped typing state. Recovery
+provenance must reference an existing `TypeDiagnosticId`.
 
 Required invariants:
 
@@ -247,10 +276,15 @@ corresponding `ResolutionTrace` step.
 - `Rejected` facts are retained only to explain diagnostics and cannot be
   consumed or exported.
 
+Task 3 exposes `FactStatus::is_unconditionally_consumable()` for the `Known`
+case only. Assumed facts still require local-context introduction before they
+can be visible.
+
 Required invariants:
 
 - facts are deduplicated by canonical subject, predicate, polarity, and
   provenance key;
+- `Obligation` provenance must reference an existing `InitialObligationId`;
 - contradictory facts are recorded through diagnostics and status rather than
   resolved by hash or traversal accidents;
 - invalid facts derived from errored nodes may remain as local degraded
@@ -299,6 +333,11 @@ enum CoercionProvenance {
 }
 ```
 
+Task 3 exposes `CoercionStatus::is_available_for_handoff()` so later phases
+can distinguish `Candidate` and `RequiresObligation` entries from `Blocked` and
+`Rejected` entries without inferring that from renderer text. Recovery
+provenance must reference an existing `TypeDiagnosticId`.
+
 Required behavior:
 
 - widening candidates must be proof-free semantic views justified by recorded
@@ -317,7 +356,8 @@ Required behavior:
   to `TypedAst`;
 - candidate ordering is deterministic by site order, kind, target type, and
   provenance. When provenance keys tie, `supporting_facts` order breaks the
-  tie.
+  tie. If those keys are also identical, source type and `CoercionId` are used
+  only as deterministic final tie-breakers.
 
 ## InitialObligation
 
@@ -342,6 +382,10 @@ enum InitialObligationStatus {
     Invalidated,
 }
 ```
+
+Task 3 exposes `InitialObligationStatus::is_available_for_handoff()` for
+`Pending` obligations only. `Blocked` and `Invalidated` obligations remain
+diagnostic state until the owning later task changes them.
 
 Required obligation kinds include:
 
@@ -369,6 +413,33 @@ Required invariants:
 - later VC generation maps initial obligations to `VcId`s exactly at the
   proof-owned boundary.
 
+## TypeDiagnosticTable
+
+`TypeDiagnosticTable` stores checker-local diagnostic records for type data
+shapes and recovery. It does not allocate public diagnostic codes while the
+dedicated diagnostic code-space remains an external planning gate.
+
+```rust
+struct TypeDiagnostic {
+    id: TypeDiagnosticId,
+    owner: Option<TypedSiteRef>,
+    source_range: SourceRange,
+    class: TypeDiagnosticClass,
+    severity: TypeDiagnosticSeverity,
+    message_key: String,
+    recovery: DiagnosticRecoveryState,
+}
+```
+
+Required invariants:
+
+- `TypeDiagnosticId` is local to the `TypedAst` snapshot;
+- `message_key` is a stable crate-internal key, not a public diagnostic code;
+- diagnostics sort by source range, class, message key, then id;
+- diagnostic records may explain degraded types, facts, coercions, contexts,
+  and initial obligations, but they are not proof evidence;
+- no diagnostic field stores verifier status, proof witness, or `VcId`.
+
 ## Partial Typing After Errors
 
 Type checking should continue after recoverable resolver or type errors when
@@ -395,10 +466,9 @@ as successful core terms.
 
 ## Deterministic Debug Rendering
 
-Task 3 must provide a deterministic debug rendering for `TypedAst`. The
-rendering contract is:
+Task 3 must provide `TypedAst::debug_text()` as a deterministic debug rendering
+with the exact `typed-ast-debug-v1` header. The rendering contract is:
 
-- include a schema/debug format version;
 - render top-level ids, arena nodes, type entries, facts, coercions, initial
   obligations, and diagnostics in stable order;
 - render source references as source-local ranges or resolver/typed ids, not
@@ -446,4 +516,15 @@ corpus runner and traceability entries.
 | `design_drift` | Architecture 01 says `TypedAst` owns local type context while `todo.md` assigns context construction to `binding_env.md`; architecture 01 also names the coercion side table `CoercionTable`, while architecture 04's example uses `CoercionCandidateTable`. | This spec resolves the context split by reserving `LocalTypeContextTable` storage while deferring construction rules to tasks 4-5. It standardizes the checker module name as `CoercionTable` and states that it stores candidate entries only. No architecture rename is performed in task 2. |
 | `source_drift` | None. Task 1 introduced only crate scaffolding and no checker semantic source. | No source repair is needed for task 2. |
 | `external_dependency_gap` | None blocking task 2. Later tasks still depend on resolver payloads, diagnostic code ownership, artifact summaries, and proof acceptance inputs. | Re-evaluate in the owning implementation tasks; do not fabricate missing external data. |
-| `deferred` | The physical arena representation is intentionally unresolved. | Task 3 must record and implement the final representation decision. |
+| `deferred` | Resolved by task 3 for the typed arena: use a homogeneous `TypedNodeKind` arena with dense local ids. Later semantic tasks still own their external dependency gates. | Keep any future representation refactor behavior-preserving and task-scoped. |
+
+## Task 3 Classification
+
+| Class | Finding | Action |
+|---|---|---|
+| `spec_gap` | None blocking the data-shape implementation after task 3 adds the checker-local node-kind projection, diagnostic table shape, and context assumption links. | Implement only the documented data shapes and deterministic rendering. |
+| `test_gap` | Task 2 documented the missing Rust coverage for ids, tables, contexts, statuses, proof-boundary guards, final-overload-field absence, and rendering. | Resolved by task 3 Rust unit tests. `.miz` semantic fixtures remain task 12. |
+| `design_drift` | The task-1 lint guard described the crate as exposing no public semantic API, and the TODO decision described the arena representation as open before this task. | Resolved by task 3: the guard allows only the documented `typed_ast` API and the TODO decision text records the arena decision. |
+| `source_drift` | Before task 3, source had no `typed_ast` module while task 2 specified it. | Resolved by task 3: `src/typed_ast.rs` is added and only this documented module is exposed from `lib.rs`. |
+| `external_dependency_gap` | Public checker diagnostic code ownership remains absent; resolver may later expose a richer source-kind projection. Neither blocks task 3. | Keep diagnostics crate-internal with stable `message_key`s. Do not add a direct `mizar-syntax` dependency for node-kind storage. |
+| `deferred` | No physical typed-arena deferral remains after the task-3 decision. Type inference, binding construction, registration firing, overload resolution, public diagnostics, artifacts, and proof acceptance remain owned by later tasks. | Keep task 3 data-only. |

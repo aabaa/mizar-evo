@@ -14,9 +14,9 @@
   の phase 6 と `Typed AST` interface
 - checker [todo.md](./todo.md) task 2
 
-この文書は、後続の実装タスクが使う論理的なデータ形状を定める。task 3 が
-物理的な arena 表現を選択し、これらの構造を実装する。このタスクではソース
-コード、実行可能テスト、言語意味論、証明挙動を追加しない。
+この文書は、checker 実装タスクが使う論理的なデータ形状を定める。task 3 が
+物理的な arena 表現の決定を記録し、type inference、registration firing、
+overload selection、言語意味論、証明挙動を追加せずにこれらの構造を実装する。
 
 ## 境界
 
@@ -110,10 +110,24 @@ arena invariant:
 - arena id を `VcId`、`ObligationAnchor`、artifact id、cross-edit proof-reuse
   identity として使ってはならない。
 
-task 3 は、ここに物理表現の決定を記録しなければならない。許される選択肢は、
-同質な kind-enum arena、または共有 id 抽象を持つ typed node struct であり、
-`mizar-syntax` の arena 決定を鏡映する。どちらを選んでも、上記の論理 invariant
-を保ち、決定的な debug rendering を維持しなければならない。
+task 3 の決定: `TypedAst` は、source-shaped role を `TypedNodeKind` が持つ
+`TypedNode` record の同質 arena を使う。この arena は insertion order で dense な
+local `TypedNodeId` を割り当て、`TypedAst` を受理する前に child link と acyclicity
+を検証する。これは、共有 id 抽象が source-shaped traversal を所有し、node-specific
+meaning は node kind payload または side table に置く、現在の `mizar-syntax`
+compatibility view と `mizar-resolve` arena style を鏡映する。
+
+`TypedNodeKind` は checker-local な source-shape projection である。task 3 は、
+parser node kind を保存するためだけに direct `mizar-syntax` dependency を追加して
+はならない。typed node が resolved source node を鏡映する場合、stable な
+checker-local kind name と元の `ResolvedNodeId` を記録する。後で `mizar-resolve`
+が projection を公開する場合、後続 task がそれを追加してよい。unsupported または
+generated checker shell は raw parser vocabulary ではなく明示的な checker-local
+kind name を用いる。
+
+typed node struct は、後続 task が id stability、side-table ownership、deterministic
+debug rendering を変えずに具体的な複雑さを減らせることを示した場合にだけ、
+将来の refactor 候補として残る。
 
 ## LocalTypeContextTable
 
@@ -129,6 +143,7 @@ struct LocalTypeContext {
     parent: Option<LocalTypeContextId>,
     layer: TypeContextLayer,
     bindings: Vec<BindingTypeRef>,
+    introduced_assumptions: Vec<TypeFactId>,
     visible_facts: Vec<TypeFactId>,
     recovery: ContextRecoveryState,
 }
@@ -141,8 +156,12 @@ struct LocalTypeContext {
 - parent link は acyclic な layer chain を形成する。
 - binding は name lookup をやり直さず、resolver 所有 symbol または typed binding
   site を参照する。
+- `introduced_assumptions` はこの context layer が導入した
+  `FactStatus::Assumed` fact を記録する。
 - visible fact list は決定的に sort され、その context で消費可能な status の
   fact だけを含んでよい。
+- `Assumed` fact は、current context の `introduced_assumptions` にあるか、
+  visibility が残っている ancestor context にある場合だけ消費できる。
 - recovered context は明示的であり、後続 phase が degraded assumption を
   verified evidence として扱うことを避けられる。
 
@@ -172,15 +191,24 @@ enum TypeStatus {
 }
 ```
 
+task 3 は `TypeStatus::is_available_for_handoff()` を status predicate としてだけ
+公開する。`Known` と `Assumed` は provenance とともに後続へ渡してよいが、
+`Unknown`、`Error`、`Skipped` は明示的な partial-typing record として残る。
+
 `TypedSiteRef` は、typed node または binding site、expression result、
 formula result、type expression、candidate argument などの安定した sub-node role
 への source-local な参照である。raw surface syntax を指してはならない。
 resolver 所有の id は、所有 typed node の resolver link を通してのみ参照してよい。
+typed site order は、所有する `TypedNodeId`、whole-node entry、role entry、
+安定 role key の順で並べる。
 
 `TypeEntryActual` は、その site で分かっている normalized type、final overload
 root が未確定の candidate set、または error 後に型がない状態を記録する。
 `Error`、`Unknown`、`Skipped` status の table entry は明示状態であり、
-成功した型の捏造ではない。
+成功した型の捏造ではない。handoff 可能な `Known` または `Assumed` entry は、
+known normalized type または candidate set のどちらかを持たなければならない。
+`Absent` は partial、error、skipped typing state 専用である。Recovery
+provenance は存在する `TypeDiagnosticId` を参照しなければならない。
 
 必須 invariant:
 
@@ -242,10 +270,16 @@ cluster-derived fact を作り出してはならない。
 - `Rejected` fact は diagnostic を説明するためだけに保持され、消費または export
   できない。
 
+task 3 は `FactStatus::is_unconditionally_consumable()` を `Known` case にだけ
+公開する。Assumed fact は visible になる前に local-context introduction を
+必要とし続ける。
+
 必須 invariant:
 
 - fact は canonical subject、predicate、polarity、provenance key によって
   重複排除される。
+- `Obligation` provenance は存在する `InitialObligationId` を参照しなければ
+  ならない。
 - 矛盾する fact は、hash や traversal の偶然で解決するのではなく、
   diagnostic と status によって記録される。
 - error node から導かれた invalid fact は local degraded metadata として残って
@@ -294,6 +328,11 @@ enum CoercionProvenance {
 }
 ```
 
+task 3 は `CoercionStatus::is_available_for_handoff()` を公開し、後続 phase が
+renderer text から推測せずに `Candidate` と `RequiresObligation` を
+`Blocked` / `Rejected` から区別できるようにする。Recovery provenance は存在する
+`TypeDiagnosticId` を参照しなければならない。
+
 必須挙動:
 
 - widening candidate は、記録済み type fact によって正当化される proof-free な
@@ -312,7 +351,8 @@ enum CoercionProvenance {
   `ResolvedTypedAst` に属する。
 - candidate ordering は site order、kind、target type、provenance によって
   決定的である。provenance key が同じ場合は `supporting_facts` order が
-  tie-breaker になる。
+  tie-breaker になる。これらの key も同一の場合に限り、source type と
+  `CoercionId` を決定的な最終 tie-breaker として使う。
 
 ## InitialObligation
 
@@ -338,6 +378,10 @@ enum InitialObligationStatus {
 }
 ```
 
+task 3 は `InitialObligationStatus::is_available_for_handoff()` を `Pending`
+obligation にだけ公開する。`Blocked` と `Invalidated` obligation は、所有する
+後続 task が変更するまで diagnostic state として残る。
+
 必須 obligation kind:
 
 - type expression と witness を導入する構文が必要とする sethood obligation
@@ -361,6 +405,34 @@ enum InitialObligationStatus {
   accepted verifier status を保存しない。
 - 後続の VC generation が、proof-owned boundary で initial obligation を
   `VcId` へ写像する。
+
+## TypeDiagnosticTable
+
+`TypeDiagnosticTable` は、type data shape と recovery の checker-local diagnostic
+record を保存する。dedicated diagnostic code-space が external planning gate として
+残る間、public diagnostic code は割り当てない。
+
+```rust
+struct TypeDiagnostic {
+    id: TypeDiagnosticId,
+    owner: Option<TypedSiteRef>,
+    source_range: SourceRange,
+    class: TypeDiagnosticClass,
+    severity: TypeDiagnosticSeverity,
+    message_key: String,
+    recovery: DiagnosticRecoveryState,
+}
+```
+
+必須 invariant:
+
+- `TypeDiagnosticId` は `TypedAst` snapshot に局所的である。
+- `message_key` は stable crate-internal key であり、public diagnostic code では
+  ない。
+- diagnostic は source range、class、message key、その後 id で sort される。
+- diagnostic record は degraded type、fact、coercion、context、initial obligation
+  を説明してよいが、proof evidence ではない。
+- diagnostic field は verifier status、proof witness、`VcId` を保存しない。
 
 ## エラー後の部分型付け
 
@@ -386,10 +458,9 @@ core term として elaborate してはならない。
 
 ## 決定的 Debug Rendering
 
-task 3 は `TypedAst` の決定的な debug rendering を提供しなければならない。
-rendering contract:
+task 3 は、exact な `typed-ast-debug-v1` header を持つ決定的な debug rendering
+として `TypedAst::debug_text()` を提供しなければならない。rendering contract:
 
-- schema/debug format version を含める。
 - top-level id、arena node、type entry、fact、coercion、initial obligation、
   diagnostic を安定順に render する。
 - source reference は memory address や host path ではなく、source-local range
@@ -436,4 +507,15 @@ checker-stage fixture は不要である。最初の active `type_elaboration` c
 | `design_drift` | architecture 01 は `TypedAst` が local type context を所有すると述べる一方、`todo.md` は context construction を `binding_env.md` に割り当てている。さらに architecture 01 は coercion side table を `CoercionTable` と呼び、architecture 04 の例は `CoercionCandidateTable` を使っている。 | この spec は `LocalTypeContextTable` storage を予約しつつ construction rule を task 4-5 に延期することで context split を解決する。checker module 名を `CoercionTable` として標準化し、それが candidate entry だけを保存することを明記する。task 2 では architecture rename は行わない。 |
 | `source_drift` | なし。task 1 は crate scaffolding だけを導入し、checker semantic source はない。 | task 2 では source repair は不要。 |
 | `external_dependency_gap` | task 2 をブロックするものはない。後続 task は resolver payload、diagnostic code ownership、artifact summary、proof acceptance input に依存し続ける。 | 所有する実装タスクで再評価する。欠けている外部データを捏造しない。 |
-| `deferred` | 物理 arena 表現は意図的に未解決である。 | task 3 は最終表現決定を記録して実装しなければならない。 |
+| `deferred` | typed arena については task 3 で解決済み: dense local id を持つ同質な `TypedNodeKind` arena を使う。後続 semantic task はそれぞれの external dependency gate を所有し続ける。 | 将来の表現 refactor は behavior-preserving かつ task-scoped に保つ。 |
+
+## task 3 の分類
+
+| Class | Finding | Action |
+|---|---|---|
+| `spec_gap` | task 3 が checker-local node-kind projection、diagnostic table shape、context assumption link を追加した後、data-shape implementation をブロックするものはない。 | 文書化済み data shape と deterministic rendering だけを実装する。 |
+| `test_gap` | task 2 は id、table、context、status、proof-boundary guard、final-overload-field 不在、rendering の Rust coverage 欠落を記録した。 | task 3 の Rust unit test で解決済み。`.miz` semantic fixture は task 12 のまま。 |
+| `design_drift` | task-1 lint guard は crate が public semantic API を公開しないと記述し、TODO decision もこの task 前は arena representation を open と述べていた。 | task 3 で解決済み: guard は文書化済み `typed_ast` API だけを許し、TODO decision text も arena decision を記録する。 |
+| `source_drift` | task 3 前は source に `typed_ast` module がなく、task 2 がそれを仕様化していた。 | task 3 で解決済み: `src/typed_ast.rs` を追加し、`lib.rs` から文書化済み module だけを公開する。 |
+| `external_dependency_gap` | public checker diagnostic code ownership は未確定のままであり、resolver は後でより豊かな source-kind projection を公開する可能性がある。どちらも task 3 はブロックしない。 | diagnostic は stable `message_key` を持つ crate-internal record に保つ。node-kind storage のための direct `mizar-syntax` dependency は追加しない。 |
+| `deferred` | task-3 decision 後、typed arena の物理表現について残る deferred はない。type inference、binding construction、registration firing、overload resolution、public diagnostics、artifact、proof acceptance は後続 task が所有する。 | task 3 は data-only に保つ。 |
