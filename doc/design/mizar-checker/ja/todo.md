@@ -19,7 +19,7 @@
 |---|---|---|---|
 | typed_ast | `typed_ast.md`（task 2） | `src/typed_ast.rs` | [x] |
 | binding_env | `binding_env.md`（task 4） | `src/binding_env.rs` | [x] |
-| type_checker | `type_checker.md`（task 6） | `src/type_checker.rs` | [ ] |
+| type_checker | `type_checker.md`（task 6） | `src/type_checker.rs` | [~] |
 | registration_resolution | `registration_resolution.md`（task 13） | `src/registration_resolution.rs` | [ ] |
 | cluster_trace | `cluster_trace.md`（task 15） | `src/cluster_trace.rs` | [ ] |
 | overload_resolution | `overload_resolution.md`（task 21） | `src/overload_resolution.rs` | [ ] |
@@ -144,7 +144,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      rendering、現時点で未公開の resolver/source-walk payload に対する
      external-gap diagnostic を実装した。
 
-6. **仕様: `type_checker.md`。** [ ]
+6. **仕様: `type_checker.md`。** [x]
    - 検査/推論の仕様を、実装タスクが引用する名前付き節とともに執筆する
      （英語と日本語、コードなし）: 型式正規化（正規化述語としての型、
      Step 2）、宣言とローカル束縛の検査（Step 3）、項/論理式の推論
@@ -152,7 +152,13 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      回復。
    - 依存: 4。仕様: アーキテクチャ 04「Step 2」〜「Step 4」、
      [03.type_system.md](../../../spec/ja/03.type_system.md)、
-     [08.type_inference.md](../../../spec/ja/08.type_inference.md)。
+     [08.type_inference.md](../../../spec/ja/08.type_inference.md)、
+     [13.term_expression.md](../../../spec/ja/13.term_expression.md)。
+   - task 6 で完了: `type_checker.md` が phase-6 boundary、normalized type
+     model、task 7 normalization、task 8 declaration/local binding checking、
+     task 9 term/formula inference、task 10 coercion and initial-obligation
+     behavior、task 11 fact query、partial recovery、deterministic rendering
+     expectation、external/deferred gate を定義した。
 
 7. **型式の正規化。** [ ]
    - surface の型式を正準述語形へ正規化する処理を実装する（attribute

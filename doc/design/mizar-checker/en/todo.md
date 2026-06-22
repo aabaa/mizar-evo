@@ -20,7 +20,7 @@ architecture 04, 05, 16, 17, 18, and 19.
 |---|---|---|---|
 | typed_ast | `typed_ast.md` (task 2) | `src/typed_ast.rs` | [x] |
 | binding_env | `binding_env.md` (task 4) | `src/binding_env.rs` | [x] |
-| type_checker | `type_checker.md` (task 6) | `src/type_checker.rs` | [ ] |
+| type_checker | `type_checker.md` (task 6) | `src/type_checker.rs` | [~] |
 | registration_resolution | `registration_resolution.md` (task 13) | `src/registration_resolution.rs` | [ ] |
 | cluster_trace | `cluster_trace.md` (task 15) | `src/cluster_trace.rs` | [ ] |
 | overload_resolution | `overload_resolution.md` (task 21) | `src/overload_resolution.rs` | [ ] |
@@ -147,7 +147,7 @@ Keep `cargo test -p mizar-checker` green after each task (see
      `binding-env-debug-v1` rendering, and external-gap diagnostics for
      resolver/source-walk payloads that are not currently exposed.
 
-6. **Spec: `type_checker.md`.** [ ]
+6. **Spec: `type_checker.md`.** [x]
    - Write the checking/inference spec (English and Japanese, no code) with
      named sections the implementation tasks cite: type-expression
      normalization (types as normalized predicates, Step 2), declaration and
@@ -156,7 +156,13 @@ Keep `cargo test -p mizar-checker` green after each task (see
      partial-typing recovery.
    - Deps: 4. Spec: architecture 04 "Step 2"-"Step 4",
      [03.type_system.md](../../../spec/en/03.type_system.md),
-     [08.type_inference.md](../../../spec/en/08.type_inference.md).
+     [08.type_inference.md](../../../spec/en/08.type_inference.md),
+     [13.term_expression.md](../../../spec/en/13.term_expression.md).
+   - Completed by task 6: `type_checker.md` now defines the phase-6 boundary,
+     normalized type model, task 7 normalization, task 8 declaration/local
+     binding checking, task 9 term/formula inference, task 10 coercion and
+     initial-obligation behavior, task 11 fact queries, partial recovery,
+     deterministic rendering expectations, and external/deferred gates.
 
 7. **Type-expression normalization.** [ ]
    - Implement normalization of surface type expressions into canonical
