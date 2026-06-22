@@ -385,8 +385,12 @@ from [proof_witness.md](./proof_witness.md).
 ## Hash Participation
 
 Task 11 computes and validates both top-level hashes from filtered canonical JSON
-projections. Task 16 may expose these projection builders as reusable helpers,
-but it does not change the task-11 participation rules.
+projections. Task 16 exposes these projection builders as reusable helpers:
+`interface_hash_input_json(&VerifiedArtifact)` and
+`implementation_hash_input_json(&VerifiedArtifact)`. These helpers return the
+canonical JSON values that are framed by `CanonicalHashDomain` when hashing;
+they do not return the final artifact-framed preimage text and they do not
+change the task-11 participation rules.
 
 `interface_hash` is computed over exactly these importer-visible fields:
 
@@ -420,6 +424,14 @@ field.
 `implementation_hash` excludes only `verified_at`, the stored `interface_hash`
 and `implementation_hash` fields themselves, `cache_key`, and any future
 local/cache-only provenance field.
+
+The interface hash input sorts `exports` by `origin_id`,
+`fully_qualified_name`, `export_kind`, and `source_range`, and sorts
+`dependency_artifact_hashes` by module identity while serializing only each
+dependency `module` and `interface_hash`. The implementation hash input sorts
+the full `exports`, `expressions`, `obligations`, `proof_witnesses`,
+`diagnostics`, `diagnostic.related`, and `provenance.dependency_artifact_hashes`
+collections by the canonical ordering keys below.
 
 Both hashes use task-3 artifact-framed hash strings and domain-separated hash
 classes. The manifest's artifact hash validates the store-level
@@ -501,8 +513,8 @@ class/domain validation, witness-reference consistency, hash participation, and
 ownership-boundary field rejection.
 
 Task 15 finalizes provenance records and the store-level artifact-hash
-exclusion helper for local verified-artifact fields. Real producer integration
-remains an `external_dependency_gap` until resolver, checker, VC, proof, and
-kernel crates expose stable projection inputs. Interface and implementation
-hash input helpers remain deferred to task 16. Manifest/file I/O and atomic
-publication were completed by tasks 13 and 14.
+exclusion helper for local verified-artifact fields. Task 16 exposes the
+canonical interface and implementation hash input helpers. Real producer
+integration remains an `external_dependency_gap` until resolver, checker, VC,
+proof, and kernel crates expose stable projection inputs. Manifest/file I/O and
+atomic publication were completed by tasks 13 and 14.

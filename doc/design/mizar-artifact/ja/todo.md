@@ -202,7 +202,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
     - 依存: 11、14。仕様: アーキテクチャ 11「VerifiedArtifact Is a
       Projection」、[18.dependency_fingerprint.md](../../architecture/ja/18.dependency_fingerprint.md)。
 
-16. **interface/implementation ハッシュ入力。** [ ]
+16. **interface/implementation ハッシュ入力。** [x]
     - `mizar-cache` の fingerprint が消費する interface-hash と
       implementation-hash の入力を計算・公開する（アーキテクチャ 18）。
       ハッシュごとに正準順序を文書化する。

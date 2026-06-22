@@ -202,7 +202,7 @@ Keep `cargo test -p mizar-artifact` green after each task (see
     - Deps: 11, 14. Spec: architecture 11 "VerifiedArtifact Is a
       Projection", [18.dependency_fingerprint.md](../../architecture/en/18.dependency_fingerprint.md).
 
-16. **Interface/implementation hash inputs.** [ ]
+16. **Interface/implementation hash inputs.** [x]
     - Compute and expose the interface-hash and implementation-hash inputs
       that `mizar-cache` fingerprints consume (architecture 18), with
       canonical ordering documented per hash.

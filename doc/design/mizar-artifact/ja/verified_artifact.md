@@ -357,7 +357,11 @@ version を保持する。
 ## Hash Participation
 
 task 11 は filtered canonical JSON projection から両方の top-level hash を計算し検証する。task 16 は
-これらの projection builder を reusable helper として公開してよいが、task 11 の participation rule は変更しない。
+これらの projection builder を reusable helper として公開する:
+`interface_hash_input_json(&VerifiedArtifact)` と
+`implementation_hash_input_json(&VerifiedArtifact)`。これらの helper は hash 時に
+`CanonicalHashDomain` で frame される canonical JSON value を返す。最終的な
+artifact-framed preimage text は返さず、task 11 の participation rule も変更しない。
 
 `interface_hash` は次の importer-visible field だけに対して計算される。
 
@@ -388,6 +392,13 @@ local/cache-only provenance field を除外する。
 
 `implementation_hash` は `verified_at`、stored `interface_hash` と `implementation_hash`
 field 自身、`cache_key`、将来の local/cache-only provenance field だけを除外する。
+
+interface hash input は `exports` を `origin_id`、`fully_qualified_name`、`export_kind`、
+`source_range` で sort し、`dependency_artifact_hashes` を module identity で sort したうえで、
+各 dependency の `module` と `interface_hash` だけを serialize する。implementation hash input は
+full `exports`、`expressions`、`obligations`、`proof_witnesses`、`diagnostics`、
+`diagnostic.related`、`provenance.dependency_artifact_hashes` collection を、下記の canonical
+ordering key で sort する。
 
 どちらの hash も task 3 の artifact-framed hash string と domain-separated hash class を使う。
 manifest の artifact hash は store-level publication-equivalent content、すなわち宣言済み
@@ -458,6 +469,7 @@ ordering、schema-version compatibility、source-range validation、hash class/d
 witness-reference consistency、hash participation、ownership-boundary field rejection の test を実装する。
 
 task 15 は provenance record と、local verified-artifact field の store-level artifact-hash exclusion
-helper を確定する。real producer integration は、resolver、checker、VC、proof、kernel crate が stable
-projection input を公開するまで `external_dependency_gap` として残る。interface と implementation hash
-input helper は task 16 に deferred。manifest/file I/O と atomic publication は task 13 と 14 で完了済み。
+helper を確定する。task 16 は canonical interface/implementation hash input helper を公開する。
+real producer integration は、resolver、checker、VC、proof、kernel crate が stable projection input を
+公開するまで `external_dependency_gap` として残る。manifest/file I/O と atomic publication は task 13 と
+14 で完了済み。

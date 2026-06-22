@@ -516,7 +516,7 @@ pub fn read_verified_artifact(
 impl VerifiedArtifact {
     /// Computes the importer-visible interface hash for this artifact.
     pub fn compute_interface_hash(&self) -> Result<Hash, VerifiedArtifactError> {
-        let projection = interface_projection_json(self)?;
+        let projection = interface_hash_input_json(self)?;
         let domain = CanonicalHashDomain::new(
             HashClass::Interface,
             VERIFIED_ARTIFACT_SCHEMA_FAMILY,
@@ -527,7 +527,7 @@ impl VerifiedArtifact {
 
     /// Computes the full stable implementation hash for this artifact.
     pub fn compute_implementation_hash(&self) -> Result<Hash, VerifiedArtifactError> {
-        let projection = implementation_projection_json(self)?;
+        let projection = implementation_hash_input_json(self)?;
         let domain = CanonicalHashDomain::new(
             HashClass::Implementation,
             VERIFIED_ARTIFACT_SCHEMA_FAMILY,
@@ -847,7 +847,11 @@ fn verified_artifact_json_unchecked(
     ])
 }
 
-fn interface_projection_json(
+/// Returns the canonical JSON value used to compute an artifact's interface hash.
+///
+/// `CanonicalHashDomain` frames this value when hashing; this helper does not
+/// return the final artifact-framed preimage text.
+pub fn interface_hash_input_json(
     artifact: &VerifiedArtifact,
 ) -> Result<CanonicalJson, VerifiedArtifactError> {
     json_object([
@@ -877,7 +881,11 @@ fn interface_projection_json(
     ])
 }
 
-fn implementation_projection_json(
+/// Returns the canonical JSON value used to compute an artifact's implementation hash.
+///
+/// `CanonicalHashDomain` frames this value when hashing; this helper does not
+/// return the final artifact-framed preimage text.
+pub fn implementation_hash_input_json(
     artifact: &VerifiedArtifact,
 ) -> Result<CanonicalJson, VerifiedArtifactError> {
     json_object([
@@ -3280,8 +3288,9 @@ mod tests {
         DiagnosticSeverity, ExportProofStatus, ExportVisibility, ExpressionMetadata,
         ObligationMetadata, ObligationStatus, OverloadMetadata, VERIFIED_ARTIFACT_SCHEMA_FAMILY,
         VerifiedArtifact, VerifiedArtifactError, VerifiedArtifactReadOptions, VerifiedExport,
-        artifact_hash_excluded_paths, current_schema_version, read_verified_artifact,
-        verified_artifact_hash_string, verified_artifact_json, write_verified_artifact,
+        artifact_hash_excluded_paths, current_schema_version, implementation_hash_input_json,
+        interface_hash_input_json, read_verified_artifact, verified_artifact_hash_string,
+        verified_artifact_json, write_verified_artifact,
     };
     use crate::{
         module_summary::{ModuleSummaryIdentity, SourceRangeSummary},
@@ -3291,8 +3300,8 @@ mod tests {
         },
         registration_summary::{ArtifactHashClass, ArtifactHashRef},
         store::{
-            CanonicalJson, SchemaVersion, SchemaVersionError, artifact_hash_domain,
-            canonical_json_string,
+            CanonicalHashDomain, CanonicalJson, HashClass, SchemaVersion, SchemaVersionError,
+            artifact_hash_domain, canonical_json_string,
         },
     };
 
@@ -3315,6 +3324,39 @@ mod tests {
             )
             .expect("valid verified artifact"),
             artifact
+        );
+    }
+
+    #[test]
+    fn public_hash_input_helpers_match_computed_hashes() {
+        let artifact = sample_artifact();
+        let interface_input = interface_hash_input_json(&artifact).expect("interface hash input");
+        let implementation_input =
+            implementation_hash_input_json(&artifact).expect("implementation hash input");
+        let interface_domain = CanonicalHashDomain::new(
+            HashClass::Interface,
+            VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+            artifact.schema_version,
+        );
+        let implementation_domain = CanonicalHashDomain::new(
+            HashClass::Implementation,
+            VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+            artifact.schema_version,
+        );
+
+        assert_eq!(
+            interface_domain.hash(&interface_input, &[]),
+            artifact.compute_interface_hash().expect("interface hash")
+        );
+        assert_eq!(
+            implementation_domain.hash(&implementation_input, &[]),
+            artifact
+                .compute_implementation_hash()
+                .expect("implementation hash")
+        );
+        assert_ne!(
+            interface_domain.hash(&interface_input, &[]),
+            implementation_domain.hash(&implementation_input, &[])
         );
     }
 
@@ -3769,6 +3811,113 @@ mod tests {
 
         assert_eq!(artifact.interface_hash, original.interface_hash);
         assert_ne!(artifact.implementation_hash, original.implementation_hash);
+    }
+
+    #[test]
+    fn public_hash_input_helpers_sort_participating_collections() {
+        let baseline = sample_artifact_with_extra_ordering_items();
+        let mut unsorted = baseline.clone();
+        unsorted.exports.reverse();
+        unsorted.expressions.reverse();
+        unsorted.obligations.reverse();
+        unsorted.proof_witnesses.reverse();
+        unsorted
+            .diagnostics
+            .iter_mut()
+            .find(|diagnostic| diagnostic.related.len() > 1)
+            .expect("diagnostic with related entries")
+            .related
+            .reverse();
+        unsorted.diagnostics.reverse();
+        unsorted.provenance.dependency_artifact_hashes.reverse();
+
+        assert_eq!(
+            interface_hash_input_json(&unsorted).expect("unsorted interface input"),
+            interface_hash_input_json(&baseline).expect("baseline interface input")
+        );
+        assert_eq!(
+            implementation_hash_input_json(&unsorted).expect("unsorted implementation input"),
+            implementation_hash_input_json(&baseline).expect("baseline implementation input")
+        );
+        assert_eq!(
+            unsorted
+                .compute_interface_hash()
+                .expect("unsorted interface hash"),
+            baseline
+                .compute_interface_hash()
+                .expect("baseline interface hash")
+        );
+        assert_eq!(
+            unsorted
+                .compute_implementation_hash()
+                .expect("unsorted implementation hash"),
+            baseline
+                .compute_implementation_hash()
+                .expect("baseline implementation hash")
+        );
+    }
+
+    #[test]
+    fn implementation_only_edits_do_not_change_interface_hash_input() {
+        let baseline = sample_artifact();
+        let mut changed = baseline.clone();
+        changed.source_file = "articles/renamed-local-path.miz".to_owned();
+        changed.source_hash = hash(106);
+        changed.exports[0].source_range = range(110, 120);
+        changed.exports[0].documentation_ref = Some(hash_ref(
+            ArtifactHashClass::Diagnostic,
+            "mizar-doc/section",
+            107,
+        ));
+        changed.expressions[0].rendered_surface = "changed local expression".to_owned();
+        changed.obligations[1].statement_summary = "changed local obligation".to_owned();
+        changed.proof_witnesses[0].witness_path =
+            "proof-witnesses/hidden/local-changed-task16.json".to_owned();
+        changed.diagnostics[0].rendered_message = "changed local diagnostic".to_owned();
+        changed.provenance.toolchain = "changed-toolchain".to_owned();
+        changed.provenance.language_edition = "2027".to_owned();
+        changed.provenance.lockfile_hash =
+            hash_ref(ArtifactHashClass::Artifact, "mizar-build/lockfile", 108);
+        changed.provenance.verifier_config_hash = hash_ref(
+            ArtifactHashClass::Interface,
+            "mizar-build/verifier-config",
+            109,
+        );
+        changed.provenance.dependency_artifact_hashes[0].implementation_hash = Some(hash_ref(
+            ArtifactHashClass::Implementation,
+            "mizar-artifact/verified-artifact",
+            110,
+        ));
+        changed.provenance.dependency_artifact_hashes[0].artifact_hash = Some(hash_ref(
+            ArtifactHashClass::Artifact,
+            "mizar-artifact/file",
+            111,
+        ));
+
+        assert_eq!(
+            interface_hash_input_json(&changed).expect("changed interface input"),
+            interface_hash_input_json(&baseline).expect("baseline interface input")
+        );
+        assert_ne!(
+            implementation_hash_input_json(&changed).expect("changed implementation input"),
+            implementation_hash_input_json(&baseline).expect("baseline implementation input")
+        );
+        assert_eq!(
+            changed
+                .compute_interface_hash()
+                .expect("changed interface hash"),
+            baseline
+                .compute_interface_hash()
+                .expect("baseline interface hash")
+        );
+        assert_ne!(
+            changed
+                .compute_implementation_hash()
+                .expect("changed implementation hash"),
+            baseline
+                .compute_implementation_hash()
+                .expect("baseline implementation hash")
+        );
     }
 
     #[test]
@@ -4288,6 +4437,48 @@ mod tests {
             },
         };
         artifact.refresh_hashes().expect("sample hashes");
+        artifact
+    }
+
+    fn sample_artifact_with_extra_ordering_items() -> VerifiedArtifact {
+        let mut artifact = sample_artifact();
+        let mut extra_obligation = artifact.obligations[0].clone();
+        extra_obligation.obligation_id = "obl-0".to_owned();
+        extra_obligation.source_range = range(6, 9);
+        extra_obligation.accepted_witness_obligation_id = Some("obl-0".to_owned());
+        extra_obligation.obligation_fingerprint =
+            hash_ref(ArtifactHashClass::Interface, "mizar-proof/obligation", 110);
+
+        let mut extra_witness = artifact.proof_witnesses[0].clone();
+        extra_witness.obligation_id = "obl-0".to_owned();
+        extra_witness.obligation_fingerprint = extra_obligation.obligation_fingerprint.clone();
+        extra_witness.witness_path = "proof-witnesses/hidden/obl-0.json".to_owned();
+        extra_witness.witness_artifact_hash =
+            hash_ref(ArtifactHashClass::Artifact, "mizar-proof/witness-file", 111);
+
+        artifact.obligations.push(extra_obligation);
+        artifact.proof_witnesses.push(extra_witness);
+        artifact
+            .provenance
+            .dependency_artifact_hashes
+            .push(DependencyArtifactHash {
+                module: identity("dep", "articles/alpha", "2026"),
+                interface_hash: hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-artifact/module-summary",
+                    112,
+                ),
+                implementation_hash: Some(hash_ref(
+                    ArtifactHashClass::Implementation,
+                    "mizar-artifact/verified-artifact",
+                    113,
+                )),
+                artifact_hash: Some(hash_ref(
+                    ArtifactHashClass::Artifact,
+                    "mizar-artifact/file",
+                    114,
+                )),
+            });
         artifact
     }
 
