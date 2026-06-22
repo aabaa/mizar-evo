@@ -185,6 +185,44 @@ Ordering requirements:
 4. Hash-map iteration, worker order, import order, and cache insertion order
    must not affect firing order or diagnostics.
 
+### Task 14: Registration Index Data Layer
+
+Task 14 implements this section as `src/registration_resolution.rs`.
+
+The first implementation builds checker-owned pending, activated, rejected, and
+diagnostic tables from resolver `SymbolEnv` registration declarations. Resolver
+registrations are treated as identity and provenance records only: the checker
+preserves resolver registration id, optional symbol id, resolver registration
+kind, opaque target-shell classification, visibility, export status, normalized
+origin, source contribution, dependencies, and recovery state.
+
+Pending records created from resolver entries without accepted checker-owned
+activation input are marked as `external_dependency_gap` and never contribute
+automatic facts, reductions, or existential gates. Malformed resolver target
+shells become rejected records. Activated records can be created only through
+explicit caller-supplied activation input that includes the resolver kind,
+trigger key, accepted checker-owned pattern key, accepted correctness key, and
+activation evidence key. Activation evidence alone is not sufficient.
+
+Task 14 deliberately does not parse opaque resolver target shells, validate
+semantic registration patterns, create `InitialObligationId`s, accept proofs,
+read artifact summaries, compute cluster closure, apply reductions, satisfy
+existential gates, or produce `ResolutionTrace` steps. Later tasks may consume
+the task-14 data layer, but they must continue to treat MC-G021 payloads as
+external until an explicit checker-owned payload seam is available.
+
+Task 14 canonical ordering:
+
+1. pending and rejected records sort by source contribution id, origin
+   structural path, resolver registration id, resolver registration kind,
+   label/symbol fallback key, and rejection reason when present;
+2. activated trigger lists sort by trigger key, origin module path, origin
+   structural path, resolver registration id, label/symbol fallback key,
+   resolver registration kind, fingerprint or pattern fallback key, and
+   checker registration id;
+3. debug rendering uses the same checker-owned order, never resolver map or
+   worker iteration order.
+
 ## Validation Obligations
 
 Task 19 implements validation. Validation starts from a checker-ready

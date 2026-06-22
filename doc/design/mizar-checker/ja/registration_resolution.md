@@ -173,6 +173,41 @@ accepted proof/artifact input のない単一 pass では、checker が initial 
 4. hash-map iteration、worker order、import order、cache insertion order が firing
    order や diagnostic に影響してはならない。
 
+### task 14: registration index data layer
+
+task 14 はこの section を `src/registration_resolution.rs` として実装する。
+
+最初の実装は、resolver `SymbolEnv` registration declaration から checker-owned な
+pending、activated、rejected、diagnostic table を構築する。resolver registration は
+identity / provenance record としてだけ扱う。checker は resolver registration id、
+optional symbol id、resolver registration kind、opaque target-shell classification、
+visibility、export status、normalized origin、source contribution、dependency、recovery
+state を保持する。
+
+accepted checker-owned activation input がない resolver entry から作られる pending
+record は `external_dependency_gap` として印付けされ、automatic fact、reduction、
+existential gate に決して寄与しない。malformed resolver target shell は rejected record
+になる。activated record は、resolver kind、trigger key、accepted checker-owned pattern
+key、accepted correctness key、activation evidence key を含む explicit caller-supplied
+activation input を通じてだけ作成できる。activation evidence だけでは不十分である。
+
+task 14 は opaque resolver target shell の parse、semantic registration pattern の
+validation、`InitialObligationId` の作成、proof acceptance、artifact summary の読み取り、
+cluster closure、reduction 適用、existential gate の充足、`ResolutionTrace` step の生成を
+行わない。後続 task は task-14 data layer を消費してよいが、explicit checker-owned
+payload seam が利用可能になるまでは MC-G021 payload を external として扱い続けなければならない。
+
+task 14 の canonical order:
+
+1. pending / rejected record は source contribution id、origin structural path、
+   resolver registration id、resolver registration kind、label/symbol fallback key、
+   必要に応じて rejection reason の順で sort する;
+2. activated trigger list は trigger key、origin module path、origin structural path、
+   resolver registration id、label/symbol fallback key、resolver registration kind、
+   fingerprint または pattern fallback key、checker registration id の順で sort する;
+3. debug rendering は同じ checker-owned order を使い、resolver map や worker iteration
+   order に依存しない。
+
 ## validation obligation
 
 task 19 が validation を実装する。validation は checker-ready registration payload と

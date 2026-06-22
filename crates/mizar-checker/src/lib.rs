@@ -8,10 +8,11 @@
 //! checker-owned payloads; task 9 exposes term/formula inference over
 //! checker-owned payloads; task 10 exposes coercion candidate and initial
 //! obligation checking over checker-owned payloads; task 11 exposes
-//! deterministic type-fact queries. Later cluster traces, overload resolution,
-//! and resolved typed AST APIs land in later task-scoped modules after their
-//! design specs are written.
+//! deterministic type-fact queries; task 14 exposes registration database data
+//! shapes. Later cluster traces, overload resolution, and resolved typed AST
+//! APIs land in later task-scoped modules after their design specs are written.
 
 pub mod binding_env;
+pub mod registration_resolution;
 pub mod type_checker;
 pub mod typed_ast;

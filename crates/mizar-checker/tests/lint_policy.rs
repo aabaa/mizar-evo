@@ -301,13 +301,17 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
         path if path == Path::new("src/typed_ast.rs")
             || path == Path::new("src/binding_env.rs")
             || path == Path::new("src/type_checker.rs")
+            || path == Path::new("src/registration_resolution.rs")
     ) {
         return true;
     }
     relative == Path::new("src/lib.rs")
         && matches!(
             line.trim(),
-            "pub mod typed_ast;" | "pub mod binding_env;" | "pub mod type_checker;"
+            "pub mod typed_ast;"
+                | "pub mod binding_env;"
+                | "pub mod type_checker;"
+                | "pub mod registration_resolution;"
         )
 }
 

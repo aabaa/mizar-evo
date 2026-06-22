@@ -264,13 +264,21 @@ Keep `cargo test -p mizar-checker` green after each task (see
       planned tests for tasks 14 and 16-20, and MC-G021 external/deferred
       payload gaps without adding source behavior.
 
-14. **Registration index.** [ ]
+14. **Registration index.** [x]
     - Implement the pending/activated registration databases over
       `SymbolEnv` registration declarations.
     - Tests: pending entries never fire; activation moves entries
       deterministically; per-source contribution tracking.
     - Deps: 11, 13, `mizar-resolve` task 21 (registration increment). Spec:
       `registration_resolution.md`.
+    - Completed by task 14: `RegistrationDatabase` builds checker-owned
+      pending/activated/rejected tables from resolver registration origins,
+      preserves origin/visibility/export/contribution metadata, records
+      MC-G021 external-gap pending records, rejects malformed and invalid
+      activation inputs, accepts only full caller-supplied activation payloads,
+      keeps pending/rejected entries from contributing to inference, and
+      renders deterministic checker-owned ordering without parsing opaque
+      resolver shells.
 
 15. **Spec: `cluster_trace.md`.** [ ]
     - Write the `ResolutionTrace` spec (English and Japanese, no code) as a

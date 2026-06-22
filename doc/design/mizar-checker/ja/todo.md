@@ -256,13 +256,19 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       16-20 の planned test、MC-G021 external/deferred payload gap を、source
       behavior を追加せず定義する。
 
-14. **registration 索引。** [ ]
+14. **registration 索引。** [x]
     - `SymbolEnv` の registration 宣言上に pending/activated データベースを
       実装する。
     - テスト: pending 項目は発火しない。活性化が項目を決定的に移動する。
       ソース単位の寄与追跡。
     - 依存: 11、13、`mizar-resolve` task 21（registration 増分）。仕様:
       `registration_resolution.md`。
+    - task 14 で完了: `registration_resolution` module は resolver registration
+      identity/origin metadata の pending / activated / rejected database を構築し、
+      semantic payload を完全な explicit `ActivationInput` として受け取った場合だけ
+      active record を作成する。pending external gap と invalid activation は
+      deterministic diagnostic/debug output に残り、MC-G021 semantic payload gap は
+      deferred のまま。
 
 15. **仕様: `cluster_trace.md`。** [ ]
     - 正準スキーマの精緻化として `ResolutionTrace` の仕様を執筆する
