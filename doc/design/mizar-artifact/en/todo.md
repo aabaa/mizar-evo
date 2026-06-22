@@ -119,7 +119,7 @@ Keep `cargo test -p mizar-artifact` green after each task (see
      module and hash mismatch rejection.
    - Deps: 3, 4. Spec: `module_summary.md`.
 
-6. **Spec: `registration_summary.md`.** [ ]
+6. **Spec: `registration_summary.md`.** [x]
    - Write the `RegistrationSummary` schema spec (English and Japanese, no
      code): exported registrations and cluster-trace artifact references
      per architecture 04 and 17.

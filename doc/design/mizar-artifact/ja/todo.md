@@ -120,7 +120,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
      incompatible-version read、module/hash mismatch rejection。
    - 依存: 3、4。仕様: `module_summary.md`。
 
-6. **仕様: `registration_summary.md`。** [ ]
+6. **仕様: `registration_summary.md`。** [x]
    - `RegistrationSummary` スキーマの仕様を執筆する（英語と日本語、
      コードなし）: アーキテクチャ 04 と 17 に従う export 済み
      registration と cluster trace artifact への参照。
