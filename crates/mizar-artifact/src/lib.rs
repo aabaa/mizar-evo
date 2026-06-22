@@ -20,3 +20,6 @@ pub mod proof_witness;
 
 /// Published verified-artifact schema and validating reader/writer.
 pub mod verified_artifact;
+
+/// Published package manifest schema and transaction manager.
+pub mod manifest;

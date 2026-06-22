@@ -37,8 +37,8 @@ The manifest does not own:
   decisions;
 - the store file I/O implementation, which is owned by `store.md` and
   `src/store.rs`;
-- the Rust manifest reader/writer and transaction manager, which remain task 14
-  work.
+- scheduler ordering and cache promotion policy, which are represented only by
+  caller-supplied transaction freshness checks and commit results.
 
 The manifest is integrity and reachability metadata. A manifest entry can prove
 that a referenced artifact has the publication-equivalent content named by its
@@ -191,12 +191,13 @@ identity or hash tuple differs from the referenced artifact. This guarantees
 that every accepted obligation requiring a trusted witness remains reachable
 through the manifest.
 
-The manifest transaction writes witness files and records producer-owned
-`witness_artifact_hash` values before the manifest is committed. A committed
-manifest entry that names an accepted witness must make the witness file
-reachable by `witness_path`, and readers reject missing witness files or witness
-hash mismatches when witness validation is requested. The concrete witness
-payload hash construction remains producer-owned as described by
+The producer-owned witness writer records `witness_artifact_hash` values and
+makes witness files reachable before the manifest transaction commits the
+manifest. A committed manifest entry that names an accepted witness must make
+the witness file reachable by `witness_path`, and readers reject missing witness
+files or witness tuple mismatches when witness validation is requested. Task 14
+does not recompute witness payload hashes; the concrete witness payload hash
+construction remains producer-owned as described by
 [proof_witness.md](./proof_witness.md).
 
 ## Development Artifact Entries
@@ -342,8 +343,11 @@ The manager rejects a staged update if:
 
 - a path is outside the artifact root;
 - a required referenced file is missing;
-- a recorded hash does not match the referenced canonical artifact, producer-owned
-  payload, or referenced artifact field;
+- a recorded hash does not match a referenced canonical artifact or referenced
+  artifact field;
+- a producer-owned payload path is unreachable when task-14 reachability
+  validation applies. Payload hash recomputation waits for the producer-owned
+  payload schema;
 - two staged module updates have the same module identity but different
   canonical content or hashes;
 - an update attempts to publish raw IR, scheduler state, internal cache records,
@@ -363,7 +367,9 @@ Commit performs these steps:
 4. Merge unchanged current entries with staged updates, then sort all entries by
    canonical keys.
 5. Serialize the candidate manifest using canonical JSON.
-6. Validate every entry path and referenced hash from disk.
+6. Validate every entry path and referenced canonical artifact hash from disk;
+   validate producer-owned payload reachability and defer payload hash
+   recomputation to the producer-owned schema.
 7. Write candidate bytes to a temporary manifest path in the artifact root.
 8. Flush the temporary manifest file.
 9. Atomically rename the temporary manifest over `artifact-manifest.json`.
@@ -413,10 +419,15 @@ This recovery rule means a package is observed through exactly one complete
 manifest version at a time: the previous committed manifest or the new committed
 manifest.
 
-## Deferred Implementation
+## Implementation Status
 
-Task 12 adds this specification only. Task 13 implements artifact-store writes
-and corruption-detecting file reads. Task 14 implements the manifest schema,
-validating reader, writer, and transaction manager. Task 17 connects real
-producer projections to store and manifest publication. Broader determinism
-coverage remains task 18 work.
+Task 12 added this specification. Task 13 implemented artifact-store writes and
+corruption-detecting file reads. Task 14 implements the manifest schema,
+validating reader, writer, and transaction manager in `src/manifest.rs`,
+including manifest-first reads, deterministic transaction commits, referenced
+`VerifiedArtifact` and summary validation, exact `ProofWitnessRef` coverage, and
+development-artifact reachability checks. Concrete witness payload hash
+construction and development payload hash recomputation remain
+producer-owned external dependencies. Task 17 connects real producer projections
+to store and manifest publication. Broader determinism coverage remains task 18
+work.

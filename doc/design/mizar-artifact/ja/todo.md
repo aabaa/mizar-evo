@@ -186,7 +186,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       失敗する。
     - 依存: 3、12。仕様: `store.md`、`manifest.md`。
 
-14. **manifest トランザクション。** [ ]
+14. **manifest トランザクション。** [x]
     - 決定的な項目順と reader 側検証を備えたトランザクショナルな
       manifest 更新を実装する。
     - テスト: 並行 reader は旧か新を見る（混在しない）。コミットの再生は

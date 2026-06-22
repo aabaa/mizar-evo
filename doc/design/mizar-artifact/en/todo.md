@@ -186,7 +186,7 @@ Keep `cargo test -p mizar-artifact` green after each task (see
       corrupted artifact or witness reads fail with positions.
     - Deps: 3, 12. Spec: `store.md`, `manifest.md`.
 
-14. **Manifest transactions.** [ ]
+14. **Manifest transactions.** [x]
     - Implement transactional manifest updates with deterministic entry
       ordering and reader-side validation.
     - Tests: concurrent reader sees old-or-new, never mixed; replayed

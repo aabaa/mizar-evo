@@ -29,7 +29,8 @@ manifest が所有しないもの:
 - raw compiler IR dump、scheduler state、internal cache record、`mizar-cache` content-addressed blob。
 - proof authority、witness replay、kernel acceptance、verifier policy decision。
 - store file I/O implementation。これは `store.md` と `src/store.rs` が所有する。
-- Rust の manifest reader/writer と transaction manager。これは task 14 に残る。
+- scheduler ordering と cache promotion policy。これらは caller-supplied transaction
+  freshness check と commit result としてだけ表現される。
 
 manifest は integrity と reachability metadata である。manifest entry は、参照先 artifact が
 store-level artifact hash により名指された publication-equivalent content を持つことを示せるが、
@@ -167,10 +168,11 @@ collection を過不足なく cover しなければならない。reader は、m
 manifest witness entry、参照先 artifact と identity または hash tuple が異なる entry を拒否する。これにより、
 trusted witness を必要とする accepted obligation はすべて manifest を通じて到達可能であることが保証される。
 
-manifest transaction は、manifest を commit する前に witness file を write し、producer-owned な
-`witness_artifact_hash` value を記録する。accepted witness を名指す committed manifest entry は、
-`witness_path` で witness file へ到達可能にしなければならない。reader は witness validation が要求された場合、
-missing witness file や witness hash mismatch を拒否する。concrete witness payload hash construction は
+producer-owned witness writer は、manifest transaction が manifest を commit する前に
+`witness_artifact_hash` value を記録し、witness file へ到達可能にする。accepted witness を名指す
+committed manifest entry は、`witness_path` で witness file へ到達可能にしなければならない。reader は
+witness validation が要求された場合、missing witness file や witness tuple mismatch を拒否する。task 14 は
+witness payload hash を再計算しない。concrete witness payload hash construction は
 [proof_witness.md](./proof_witness.md) が説明する通り producer-owned のまま残る。
 
 ## Development Artifact Entries
@@ -305,7 +307,9 @@ manager は次の場合に staged update を拒否する。
 
 - path が artifact root の外にある。
 - 必須の参照先 file が存在しない。
-- 記録された hash が参照先 canonical artifact、producer-owned payload、または参照先 artifact field と一致しない。
+- 記録された hash が参照先 canonical artifact または参照先 artifact field と一致しない。
+- task-14 reachability validation が適用される producer-owned payload path へ到達できない。payload hash
+  recomputation は producer-owned payload schema を待つ。
 - 同じ module identity を持つ 2 つの staged module update が異なる canonical content または hash を持つ。
 - update が raw IR、scheduler state、internal cache record、proof authority state を manifest entry として
   publish しようとする。
@@ -320,7 +324,8 @@ commit は次の手順を行う。
    active snapshot に対して staged content を refresh し、freshness check を繰り返さなければならない。
 4. unchanged current entry と staged update を merge し、すべての entry を canonical key で sort する。
 5. candidate manifest を canonical JSON で serialize する。
-6. すべての entry path と参照先 hash を disk から検証する。
+6. すべての entry path と参照先 canonical artifact hash を disk から検証する。producer-owned payload
+   reachability を検証し、payload hash recomputation は producer-owned schema に deferred とする。
 7. candidate byte を artifact root 内の temporary manifest path に書く。
 8. temporary manifest file を flush する。
 9. temporary manifest を `artifact-manifest.json` の上へ atomic rename する。
@@ -360,8 +365,12 @@ recovery は manifest-first である。
 この recovery rule により、package は一度にちょうど 1 つの complete manifest version を通じて観測される:
 以前の committed manifest、または新しい committed manifest である。
 
-## Deferred Implementation
+## Implementation Status
 
-task 12 はこの仕様だけを追加する。task 13 は artifact-store write と corruption-detecting file read を実装する。
-task 14 は manifest schema、validating reader、writer、transaction manager を実装する。task 17 は実 producer
-projection を store と manifest publication へ接続する。より広い determinism coverage は task 18 に残る。
+task 12 はこの仕様を追加した。task 13 は artifact-store write と corruption-detecting file read を実装した。
+task 14 は `src/manifest.rs` に manifest schema、validating reader、writer、transaction manager を実装する。
+これには manifest-first read、決定的 transaction commit、参照先 `VerifiedArtifact` と summary の validation、
+正確な `ProofWitnessRef` coverage、development artifact reachability check が含まれる。concrete witness payload
+hash construction と development payload hash recomputation は producer-owned external dependency として残る。
+task 17 は実 producer projection を store と manifest publication へ接続する。より広い determinism coverage は
+task 18 に残る。
