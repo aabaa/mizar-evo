@@ -1,0 +1,3449 @@
+//! Published `RegistrationSummary` schema, canonical writer, and validating reader.
+//!
+//! The schema is specified in
+//! [registration_summary.md](../../../../doc/design/mizar-artifact/en/registration_summary.md).
+
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    error::Error,
+    fmt,
+    str::FromStr,
+};
+
+use mizar_session::Hash;
+
+use crate::{
+    module_summary::{ModuleSummaryIdentity, SOURCE_HASH_CONSTRUCTION, SourceRangeSummary},
+    store::{
+        ARTIFACT_HASH_CONSTRUCTION, CanonicalHashDomain, CanonicalJson, CanonicalJsonError,
+        HashClass, MinorVersionPolicy, SchemaVersion, SchemaVersionError, SchemaVersionSupport,
+        canonical_json_bytes,
+    },
+};
+
+/// Schema family used by all registration summary artifacts.
+pub const REGISTRATION_SUMMARY_SCHEMA_FAMILY: &str = "mizar-artifact/registration-summary";
+
+/// Dependency-facing published registration summary.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RegistrationSummary {
+    /// Schema version read from or written to the artifact.
+    pub schema_version: SchemaVersion,
+    /// Stable package/module identity.
+    pub module: ModuleSummaryIdentity,
+    /// Exact source text hash for stale-artifact diagnostics.
+    pub source_hash: Hash,
+    /// Recomputed dependency-facing registration interface hash.
+    pub registration_interface_hash: Hash,
+    /// Activated public registrations visible to importers.
+    pub activated_registrations: Vec<ActivatedRegistrationSummary>,
+    /// Hash-addressed references to published resolution traces.
+    pub trace_artifacts: Vec<RegistrationTraceArtifactRef>,
+    /// Dependency registration summaries that affected this projection.
+    pub dependency_registrations: Vec<DependencyRegistrationRef>,
+}
+
+/// One activated registration exported to importers.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActivatedRegistrationSummary {
+    /// Stable registration origin id.
+    pub origin_id: String,
+    /// Source label or stable generated label.
+    pub label: Option<String>,
+    /// Registration kind.
+    pub registration_kind: RegistrationKind,
+    /// Export visibility. Task 7 publishes only public registrations.
+    pub visibility: RegistrationVisibility,
+    /// Exported namespace path.
+    pub namespace_path: Vec<String>,
+    /// Module that declared the registration.
+    pub source_module: ModuleSummaryIdentity,
+    /// Canonical checker trigger key.
+    pub trigger_key: String,
+    /// Normalized trigger pattern projection.
+    pub normalized_pattern: RegistrationPatternSummary,
+    /// Generated contribution projection.
+    pub generated_contribution: RegistrationContributionSummary,
+    /// Projected proof status. Task 7 publishes only accepted registrations.
+    pub accepted_status: RegistrationAcceptedStatus,
+    /// Verifier-policy fingerprint that made this registration visible.
+    pub verifier_policy_fingerprint: ArtifactHashRef,
+    /// Resolution trace ids required for replay or diagnostics.
+    pub trace_ids: Vec<String>,
+    /// Diagnostic/navigation source range.
+    pub source_range: Option<SourceRangeSummary>,
+}
+
+/// Normalized registration trigger pattern.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RegistrationPatternSummary {
+    /// Producer-owned semantic pattern fingerprint.
+    pub fingerprint: ArtifactHashRef,
+    /// Referenced type head when applicable.
+    pub type_head: Option<String>,
+    /// Referenced attribute when applicable.
+    pub attribute: Option<String>,
+    /// Referenced functor when applicable.
+    pub functor: Option<String>,
+    /// Referenced term head when applicable.
+    pub term_head: Option<String>,
+    /// Pattern parameters in canonical producer order.
+    pub parameters: Vec<String>,
+    /// Guard fingerprints in canonical producer order.
+    pub guards: Vec<ArtifactHashRef>,
+}
+
+/// Generated registration contribution.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RegistrationContributionSummary {
+    /// Contribution kind.
+    pub kind: RegistrationContributionKind,
+    /// Stable human-readable summary of the generated contribution.
+    pub summary: String,
+    /// Producer-owned semantic contribution fingerprint.
+    pub fingerprint: ArtifactHashRef,
+}
+
+/// Hash-addressed reference to a published resolution trace artifact.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RegistrationTraceArtifactRef {
+    /// Stable trace id used by registrations.
+    pub trace_id: String,
+    /// Trace kind owned by the resolution-trace schema.
+    pub trace_kind: RegistrationTraceKind,
+    /// Package-relative artifact path.
+    pub artifact_path: String,
+    /// Published trace file byte hash.
+    pub artifact_hash: ArtifactHashRef,
+    /// Semantic replay hash that participates in registration compatibility.
+    pub trace_replay_hash: ArtifactHashRef,
+    /// Optional diagnostic payload hash.
+    pub diagnostic_hash: Option<ArtifactHashRef>,
+    /// Activated registration origin ids that name this trace id.
+    pub used_by_registration_origin_ids: Vec<String>,
+}
+
+/// Dependency registration summary hash that affected this summary.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DependencyRegistrationRef {
+    /// Dependency module identity.
+    pub module: ModuleSummaryIdentity,
+    /// Dependency registration interface hash.
+    pub registration_interface_hash: Hash,
+}
+
+/// Artifact-framed hash classes used by producer-owned hash references.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+pub enum ArtifactHashClass {
+    /// Dependency-facing exported interface hash.
+    Interface,
+    /// Full stable published projection hash.
+    Implementation,
+    /// Projected diagnostics and explanation-handle hash.
+    Diagnostic,
+    /// Published artifact equivalence hash.
+    Artifact,
+}
+
+/// Producer-owned artifact-framed hash reference.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ArtifactHashRef {
+    /// Hash class.
+    pub class: ArtifactHashClass,
+    /// Producer-owned schema family.
+    pub schema_family: String,
+    /// Producer-owned schema version.
+    pub schema_version: SchemaVersion,
+    /// Digest bytes.
+    pub digest: Hash,
+}
+
+/// Registration kind.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+pub enum RegistrationKind {
+    /// Existential registration.
+    Existential,
+    /// Conditional cluster registration.
+    Conditional,
+    /// Functorial cluster registration.
+    Functorial,
+    /// Reduction registration.
+    Reduction,
+}
+
+/// Export visibility represented in this dependency-facing artifact.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+pub enum RegistrationVisibility {
+    /// Public registration.
+    Public,
+}
+
+/// Projected registration proof status represented in this artifact.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+pub enum RegistrationAcceptedStatus {
+    /// The registration obligations were accepted by the configured verifier policy.
+    Accepted,
+}
+
+/// Generated contribution kind.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+pub enum RegistrationContributionKind {
+    /// Produced existence fact.
+    ExistenceFact,
+    /// Produced attribute fact.
+    AttributeFact,
+    /// Produced functorial result fact.
+    FunctorialResult,
+    /// Produced reduction rule.
+    ReductionRule,
+}
+
+/// Resolution trace kind referenced by a registration summary.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+pub enum RegistrationTraceKind {
+    /// Cluster expansion trace.
+    Cluster,
+    /// Reduction strategy trace.
+    Reduction,
+}
+
+/// Additional validation requested by a caller while reading a summary.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct RegistrationSummaryReadOptions<'a> {
+    /// Artifact path to include in schema-version diagnostics.
+    pub artifact_path: Option<&'a str>,
+    /// Expected module identity from the manifest or import request.
+    pub expected_module: Option<&'a ModuleSummaryIdentity>,
+    /// Expected registration interface hash from the manifest or import request.
+    pub expected_registration_interface_hash: Option<Hash>,
+    /// Referenced trace artifacts supplied by the caller for hash validation.
+    pub supplied_trace_artifacts: &'a [SuppliedTraceArtifactRef<'a>],
+}
+
+/// Hashes observed for a referenced trace artifact supplied by the caller.
+#[derive(Debug, Clone, Copy)]
+pub struct SuppliedTraceArtifactRef<'a> {
+    /// Trace id.
+    pub trace_id: &'a str,
+    /// Published trace file byte hash observed by the caller.
+    pub artifact_hash: &'a ArtifactHashRef,
+    /// Semantic trace replay hash observed by the caller.
+    pub trace_replay_hash: &'a ArtifactHashRef,
+    /// Optional diagnostic payload hash observed by the caller.
+    pub diagnostic_hash: Option<&'a ArtifactHashRef>,
+}
+
+/// Errors produced by the registration summary schema.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum RegistrationSummaryError {
+    /// Canonical JSON object construction failed.
+    CanonicalJson(CanonicalJsonError),
+    /// Schema-version compatibility failed.
+    SchemaVersion(SchemaVersionError),
+    /// A required field is missing.
+    MissingField { path: String },
+    /// An unknown field was present.
+    UnknownField { path: String, field: String },
+    /// A field had the wrong JSON type.
+    UnexpectedType {
+        path: String,
+        expected: &'static str,
+    },
+    /// A field value failed schema validation.
+    InvalidField { path: String, reason: String },
+    /// A serialized hash string is malformed or has the wrong domain.
+    InvalidHash { path: String, reason: String },
+    /// A collection is not in canonical order.
+    UnsortedCollection { path: String },
+    /// A collection contains a duplicate identity key.
+    DuplicateEntry { path: String, key: String },
+    /// The stored registration interface hash does not match the recomputed hash.
+    RegistrationInterfaceHashMismatch { expected: String, actual: String },
+    /// The caller-provided expected registration interface hash does not match.
+    ExpectedRegistrationInterfaceHashMismatch { expected: String, actual: String },
+    /// The caller-provided expected module identity does not match the summary.
+    ModuleIdentityMismatch { expected: String, actual: String },
+    /// Trace ids and used-by relationships are not bidirectionally consistent.
+    TraceReferenceMismatch { path: String, reason: String },
+    /// A caller-supplied trace artifact does not match the summary reference.
+    SuppliedTraceArtifactMismatch {
+        trace_id: String,
+        field: &'static str,
+        expected: String,
+        actual: String,
+    },
+    /// A caller-supplied trace artifact does not correspond to this summary.
+    UnknownSuppliedTraceArtifact { trace_id: String },
+}
+
+/// Returns the current registration summary schema version.
+pub const fn current_schema_version() -> SchemaVersion {
+    SchemaVersion::new(1, 0)
+}
+
+/// Returns the supported registration summary schema-version range.
+pub fn schema_version_support() -> SchemaVersionSupport {
+    SchemaVersionSupport::new(
+        REGISTRATION_SUMMARY_SCHEMA_FAMILY,
+        current_schema_version().major(),
+        current_schema_version().minor(),
+        MinorVersionPolicy::UpToSupported,
+    )
+}
+
+/// Serializes a registration summary to canonical UTF-8 JSON bytes.
+pub fn write_registration_summary(
+    summary: &RegistrationSummary,
+) -> Result<Vec<u8>, RegistrationSummaryError> {
+    registration_summary_json(summary).map(|json| canonical_json_bytes(&json))
+}
+
+/// Builds the canonical JSON value for a registration summary.
+pub fn registration_summary_json(
+    summary: &RegistrationSummary,
+) -> Result<CanonicalJson, RegistrationSummaryError> {
+    validate_summary(summary)?;
+    registration_summary_json_unchecked(summary)
+}
+
+/// Reads and validates a registration summary from a canonical JSON value.
+pub fn read_registration_summary(
+    value: &CanonicalJson,
+    options: RegistrationSummaryReadOptions<'_>,
+) -> Result<RegistrationSummary, RegistrationSummaryError> {
+    let fields = expect_object(value, "$")?;
+    let schema_version = read_schema_version(fields, options.artifact_path)?;
+    reject_unknown_fields(
+        fields,
+        &[
+            "schema_version",
+            "module",
+            "source_hash",
+            "registration_interface_hash",
+            "activated_registrations",
+            "trace_artifacts",
+            "dependency_registrations",
+        ],
+        "$",
+    )?;
+
+    let summary = RegistrationSummary {
+        schema_version,
+        module: read_identity(required_field(fields, "module", "$")?, "$.module")?,
+        source_hash: read_source_hash(
+            required_field(fields, "source_hash", "$")?,
+            "$.source_hash",
+        )?,
+        registration_interface_hash: read_registration_interface_hash(
+            required_field(fields, "registration_interface_hash", "$")?,
+            "$.registration_interface_hash",
+            schema_version,
+        )?,
+        activated_registrations: read_activated_registrations(
+            required_field(fields, "activated_registrations", "$")?,
+            "$.activated_registrations",
+            schema_version,
+        )?,
+        trace_artifacts: read_trace_artifacts(
+            required_field(fields, "trace_artifacts", "$")?,
+            "$.trace_artifacts",
+        )?,
+        dependency_registrations: read_dependency_registrations(
+            required_field(fields, "dependency_registrations", "$")?,
+            "$.dependency_registrations",
+            schema_version,
+        )?,
+    };
+
+    validate_summary_shape(&summary)?;
+    let recomputed = summary.compute_registration_interface_hash()?;
+    if recomputed != summary.registration_interface_hash {
+        return Err(
+            RegistrationSummaryError::RegistrationInterfaceHashMismatch {
+                expected: registration_interface_hash_string(schema_version, recomputed),
+                actual: registration_interface_hash_string(
+                    schema_version,
+                    summary.registration_interface_hash,
+                ),
+            },
+        );
+    }
+
+    if let Some(expected_module) = options.expected_module
+        && expected_module != &summary.module
+    {
+        return Err(RegistrationSummaryError::ModuleIdentityMismatch {
+            expected: identity_display(expected_module),
+            actual: identity_display(&summary.module),
+        });
+    }
+
+    if let Some(expected_hash) = options.expected_registration_interface_hash
+        && expected_hash != summary.registration_interface_hash
+    {
+        return Err(
+            RegistrationSummaryError::ExpectedRegistrationInterfaceHashMismatch {
+                expected: registration_interface_hash_string(schema_version, expected_hash),
+                actual: registration_interface_hash_string(
+                    schema_version,
+                    summary.registration_interface_hash,
+                ),
+            },
+        );
+    }
+
+    validate_supplied_trace_artifacts(&summary, options.supplied_trace_artifacts)?;
+
+    Ok(summary)
+}
+
+impl RegistrationSummary {
+    /// Computes the dependency-facing registration interface hash for this summary.
+    pub fn compute_registration_interface_hash(&self) -> Result<Hash, RegistrationSummaryError> {
+        let projection = registration_interface_projection_json(self)?;
+        let domain = CanonicalHashDomain::new(
+            HashClass::Interface,
+            REGISTRATION_SUMMARY_SCHEMA_FAMILY,
+            self.schema_version,
+        );
+        Ok(domain.hash(&projection, &[]))
+    }
+
+    /// Recomputes and stores the dependency-facing registration interface hash.
+    pub fn refresh_registration_interface_hash(
+        &mut self,
+    ) -> Result<Hash, RegistrationSummaryError> {
+        let hash = self.compute_registration_interface_hash()?;
+        self.registration_interface_hash = hash;
+        Ok(hash)
+    }
+}
+
+impl ArtifactHashRef {
+    /// Builds a producer-owned artifact-framed hash reference.
+    pub fn new(
+        class: ArtifactHashClass,
+        schema_family: impl Into<String>,
+        schema_version: SchemaVersion,
+        digest: Hash,
+    ) -> Self {
+        Self {
+            class,
+            schema_family: schema_family.into(),
+            schema_version,
+            digest,
+        }
+    }
+
+    /// Returns the canonical artifact-framed hash string.
+    pub fn to_artifact_hash_string(&self) -> String {
+        artifact_hash_ref_string(self)
+    }
+}
+
+impl ArtifactHashClass {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Interface => "interface",
+            Self::Implementation => "implementation",
+            Self::Diagnostic => "diagnostic",
+            Self::Artifact => "artifact",
+        }
+    }
+
+    fn from_str(value: &str) -> Option<Self> {
+        match value {
+            "interface" => Some(Self::Interface),
+            "implementation" => Some(Self::Implementation),
+            "diagnostic" => Some(Self::Diagnostic),
+            "artifact" => Some(Self::Artifact),
+            _ => None,
+        }
+    }
+}
+
+impl RegistrationKind {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Existential => "existential",
+            Self::Conditional => "conditional",
+            Self::Functorial => "functorial",
+            Self::Reduction => "reduction",
+        }
+    }
+
+    fn from_str(value: &str) -> Option<Self> {
+        match value {
+            "existential" => Some(Self::Existential),
+            "conditional" => Some(Self::Conditional),
+            "functorial" => Some(Self::Functorial),
+            "reduction" => Some(Self::Reduction),
+            _ => None,
+        }
+    }
+}
+
+impl RegistrationVisibility {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Public => "public",
+        }
+    }
+
+    fn from_str(value: &str) -> Option<Self> {
+        match value {
+            "public" => Some(Self::Public),
+            _ => None,
+        }
+    }
+}
+
+impl RegistrationAcceptedStatus {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Accepted => "accepted",
+        }
+    }
+
+    fn from_str(value: &str) -> Option<Self> {
+        match value {
+            "accepted" => Some(Self::Accepted),
+            _ => None,
+        }
+    }
+}
+
+impl RegistrationContributionKind {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::ExistenceFact => "existence_fact",
+            Self::AttributeFact => "attribute_fact",
+            Self::FunctorialResult => "functorial_result",
+            Self::ReductionRule => "reduction_rule",
+        }
+    }
+
+    fn from_str(value: &str) -> Option<Self> {
+        match value {
+            "existence_fact" => Some(Self::ExistenceFact),
+            "attribute_fact" => Some(Self::AttributeFact),
+            "functorial_result" => Some(Self::FunctorialResult),
+            "reduction_rule" => Some(Self::ReductionRule),
+            _ => None,
+        }
+    }
+}
+
+impl RegistrationTraceKind {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Cluster => "cluster",
+            Self::Reduction => "reduction",
+        }
+    }
+
+    fn from_str(value: &str) -> Option<Self> {
+        match value {
+            "cluster" => Some(Self::Cluster),
+            "reduction" => Some(Self::Reduction),
+            _ => None,
+        }
+    }
+}
+
+impl fmt::Display for RegistrationSummaryError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::CanonicalJson(error) => write!(formatter, "{error}"),
+            Self::SchemaVersion(error) => write!(formatter, "{error}"),
+            Self::MissingField { path } => write!(formatter, "missing required field `{path}`"),
+            Self::UnknownField { path, field } => {
+                write!(formatter, "unknown field `{field}` in object `{path}`")
+            }
+            Self::UnexpectedType { path, expected } => {
+                write!(formatter, "field `{path}` must be {expected}")
+            }
+            Self::InvalidField { path, reason } => {
+                write!(formatter, "invalid field `{path}`: {reason}")
+            }
+            Self::InvalidHash { path, reason } => {
+                write!(formatter, "invalid hash field `{path}`: {reason}")
+            }
+            Self::UnsortedCollection { path } => {
+                write!(formatter, "collection `{path}` is not in canonical order")
+            }
+            Self::DuplicateEntry { path, key } => {
+                write!(
+                    formatter,
+                    "collection `{path}` contains duplicate key `{key}`"
+                )
+            }
+            Self::RegistrationInterfaceHashMismatch { expected, actual } => {
+                write!(
+                    formatter,
+                    "registration summary registration_interface_hash mismatch: expected \
+                     `{expected}`, got `{actual}`"
+                )
+            }
+            Self::ExpectedRegistrationInterfaceHashMismatch { expected, actual } => {
+                write!(
+                    formatter,
+                    "registration summary expected interface hash `{expected}` does not match \
+                     `{actual}`"
+                )
+            }
+            Self::ModuleIdentityMismatch { expected, actual } => {
+                write!(
+                    formatter,
+                    "registration summary expected module `{expected}` does not match `{actual}`"
+                )
+            }
+            Self::TraceReferenceMismatch { path, reason } => {
+                write!(formatter, "invalid trace reference `{path}`: {reason}")
+            }
+            Self::SuppliedTraceArtifactMismatch {
+                trace_id,
+                field,
+                expected,
+                actual,
+            } => {
+                write!(
+                    formatter,
+                    "supplied trace artifact `{trace_id}` field `{field}` expected `{expected}` \
+                     but got `{actual}`"
+                )
+            }
+            Self::UnknownSuppliedTraceArtifact { trace_id } => {
+                write!(
+                    formatter,
+                    "supplied trace artifact `{trace_id}` is not referenced by the summary"
+                )
+            }
+        }
+    }
+}
+
+impl Error for RegistrationSummaryError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::CanonicalJson(error) => Some(error),
+            Self::SchemaVersion(error) => Some(error),
+            _ => None,
+        }
+    }
+}
+
+impl From<CanonicalJsonError> for RegistrationSummaryError {
+    fn from(error: CanonicalJsonError) -> Self {
+        Self::CanonicalJson(error)
+    }
+}
+
+impl From<SchemaVersionError> for RegistrationSummaryError {
+    fn from(error: SchemaVersionError) -> Self {
+        Self::SchemaVersion(error)
+    }
+}
+
+fn validate_summary(summary: &RegistrationSummary) -> Result<(), RegistrationSummaryError> {
+    validate_summary_shape(summary)?;
+    let recomputed = summary.compute_registration_interface_hash()?;
+    if recomputed != summary.registration_interface_hash {
+        return Err(
+            RegistrationSummaryError::RegistrationInterfaceHashMismatch {
+                expected: registration_interface_hash_string(summary.schema_version, recomputed),
+                actual: registration_interface_hash_string(
+                    summary.schema_version,
+                    summary.registration_interface_hash,
+                ),
+            },
+        );
+    }
+    Ok(())
+}
+
+fn validate_summary_shape(summary: &RegistrationSummary) -> Result<(), RegistrationSummaryError> {
+    schema_version_support().check(Some(&summary.schema_version.to_string()))?;
+    validate_identity(&summary.module, "$.module")?;
+    validate_activated_registrations(
+        &summary.activated_registrations,
+        "$.activated_registrations",
+    )?;
+    validate_trace_artifacts(&summary.trace_artifacts, "$.trace_artifacts")?;
+    validate_dependency_registrations(
+        &summary.dependency_registrations,
+        "$.dependency_registrations",
+    )?;
+    validate_trace_reference_consistency(summary)?;
+    Ok(())
+}
+
+fn registration_summary_json_unchecked(
+    summary: &RegistrationSummary,
+) -> Result<CanonicalJson, RegistrationSummaryError> {
+    json_object([
+        (
+            "schema_version",
+            CanonicalJson::string(summary.schema_version.to_string()),
+        ),
+        ("module", identity_json(&summary.module)?),
+        (
+            "source_hash",
+            CanonicalJson::string(source_hash_string(summary.source_hash)),
+        ),
+        (
+            "registration_interface_hash",
+            CanonicalJson::string(registration_interface_hash_string(
+                summary.schema_version,
+                summary.registration_interface_hash,
+            )),
+        ),
+        (
+            "activated_registrations",
+            CanonicalJson::array(
+                sorted_activated_registrations(&summary.activated_registrations)
+                    .into_iter()
+                    .map(activated_registration_json)
+                    .collect::<Result<Vec<_>, _>>()?,
+            ),
+        ),
+        (
+            "trace_artifacts",
+            CanonicalJson::array(
+                sorted_trace_artifacts(&summary.trace_artifacts)
+                    .into_iter()
+                    .map(trace_artifact_json)
+                    .collect::<Result<Vec<_>, _>>()?,
+            ),
+        ),
+        (
+            "dependency_registrations",
+            CanonicalJson::array(
+                sorted_dependency_registrations(&summary.dependency_registrations)
+                    .into_iter()
+                    .map(|dependency| {
+                        dependency_registration_json(dependency, summary.schema_version)
+                    })
+                    .collect::<Result<Vec<_>, _>>()?,
+            ),
+        ),
+    ])
+}
+
+fn registration_interface_projection_json(
+    summary: &RegistrationSummary,
+) -> Result<CanonicalJson, RegistrationSummaryError> {
+    json_object([
+        (
+            "schema_version",
+            CanonicalJson::string(summary.schema_version.to_string()),
+        ),
+        ("module", identity_json(&summary.module)?),
+        (
+            "activated_registrations",
+            CanonicalJson::array(
+                sorted_activated_registrations(&summary.activated_registrations)
+                    .into_iter()
+                    .map(activated_registration_interface_json)
+                    .collect::<Result<Vec<_>, _>>()?,
+            ),
+        ),
+        (
+            "trace_artifacts",
+            CanonicalJson::array(
+                sorted_trace_artifacts(&summary.trace_artifacts)
+                    .into_iter()
+                    .map(trace_artifact_interface_json)
+                    .collect::<Result<Vec<_>, _>>()?,
+            ),
+        ),
+        (
+            "dependency_registrations",
+            CanonicalJson::array(
+                sorted_dependency_registrations(&summary.dependency_registrations)
+                    .into_iter()
+                    .map(|dependency| {
+                        dependency_registration_json(dependency, summary.schema_version)
+                    })
+                    .collect::<Result<Vec<_>, _>>()?,
+            ),
+        ),
+    ])
+}
+
+fn identity_json(
+    identity: &ModuleSummaryIdentity,
+) -> Result<CanonicalJson, RegistrationSummaryError> {
+    json_object([
+        ("package_id", CanonicalJson::string(&identity.package_id)),
+        (
+            "package_version",
+            optional_string_json(identity.package_version.as_deref()),
+        ),
+        (
+            "lockfile_identity",
+            optional_string_json(identity.lockfile_identity.as_deref()),
+        ),
+        ("module_path", CanonicalJson::string(&identity.module_path)),
+        (
+            "language_edition",
+            CanonicalJson::string(&identity.language_edition),
+        ),
+    ])
+}
+
+fn source_range_json(range: SourceRangeSummary) -> Result<CanonicalJson, RegistrationSummaryError> {
+    json_object([
+        (
+            "start_byte",
+            CanonicalJson::integer(integer_from_u64(
+                range.start_byte,
+                "source_range.start_byte",
+            )?),
+        ),
+        (
+            "end_byte",
+            CanonicalJson::integer(integer_from_u64(range.end_byte, "source_range.end_byte")?),
+        ),
+    ])
+}
+
+fn optional_source_range_json(
+    range: Option<SourceRangeSummary>,
+) -> Result<CanonicalJson, RegistrationSummaryError> {
+    range.map_or(Ok(CanonicalJson::null()), source_range_json)
+}
+
+fn activated_registration_json(
+    registration: &ActivatedRegistrationSummary,
+) -> Result<CanonicalJson, RegistrationSummaryError> {
+    json_object([
+        ("origin_id", CanonicalJson::string(&registration.origin_id)),
+        ("label", optional_string_json(registration.label.as_deref())),
+        (
+            "registration_kind",
+            CanonicalJson::string(registration.registration_kind.as_str()),
+        ),
+        (
+            "visibility",
+            CanonicalJson::string(registration.visibility.as_str()),
+        ),
+        (
+            "namespace_path",
+            string_array_json(&registration.namespace_path),
+        ),
+        ("source_module", identity_json(&registration.source_module)?),
+        (
+            "trigger_key",
+            CanonicalJson::string(&registration.trigger_key),
+        ),
+        (
+            "normalized_pattern",
+            registration_pattern_json(&registration.normalized_pattern)?,
+        ),
+        (
+            "generated_contribution",
+            registration_contribution_json(&registration.generated_contribution)?,
+        ),
+        (
+            "accepted_status",
+            CanonicalJson::string(registration.accepted_status.as_str()),
+        ),
+        (
+            "verifier_policy_fingerprint",
+            CanonicalJson::string(artifact_hash_ref_string(
+                &registration.verifier_policy_fingerprint,
+            )),
+        ),
+        (
+            "trace_ids",
+            CanonicalJson::array(
+                sorted_strings(&registration.trace_ids)
+                    .into_iter()
+                    .map(CanonicalJson::string),
+            ),
+        ),
+        (
+            "source_range",
+            optional_source_range_json(registration.source_range)?,
+        ),
+    ])
+}
+
+fn activated_registration_interface_json(
+    registration: &ActivatedRegistrationSummary,
+) -> Result<CanonicalJson, RegistrationSummaryError> {
+    json_object([
+        ("origin_id", CanonicalJson::string(&registration.origin_id)),
+        ("label", optional_string_json(registration.label.as_deref())),
+        (
+            "registration_kind",
+            CanonicalJson::string(registration.registration_kind.as_str()),
+        ),
+        (
+            "visibility",
+            CanonicalJson::string(registration.visibility.as_str()),
+        ),
+        (
+            "namespace_path",
+            string_array_json(&registration.namespace_path),
+        ),
+        ("source_module", identity_json(&registration.source_module)?),
+        (
+            "trigger_key",
+            CanonicalJson::string(&registration.trigger_key),
+        ),
+        (
+            "normalized_pattern",
+            registration_pattern_json(&registration.normalized_pattern)?,
+        ),
+        (
+            "generated_contribution",
+            registration_contribution_json(&registration.generated_contribution)?,
+        ),
+        (
+            "accepted_status",
+            CanonicalJson::string(registration.accepted_status.as_str()),
+        ),
+        (
+            "verifier_policy_fingerprint",
+            CanonicalJson::string(artifact_hash_ref_string(
+                &registration.verifier_policy_fingerprint,
+            )),
+        ),
+        (
+            "trace_ids",
+            CanonicalJson::array(
+                sorted_strings(&registration.trace_ids)
+                    .into_iter()
+                    .map(CanonicalJson::string),
+            ),
+        ),
+    ])
+}
+
+fn registration_pattern_json(
+    pattern: &RegistrationPatternSummary,
+) -> Result<CanonicalJson, RegistrationSummaryError> {
+    json_object([
+        (
+            "fingerprint",
+            CanonicalJson::string(artifact_hash_ref_string(&pattern.fingerprint)),
+        ),
+        (
+            "type_head",
+            optional_string_json(pattern.type_head.as_deref()),
+        ),
+        (
+            "attribute",
+            optional_string_json(pattern.attribute.as_deref()),
+        ),
+        ("functor", optional_string_json(pattern.functor.as_deref())),
+        (
+            "term_head",
+            optional_string_json(pattern.term_head.as_deref()),
+        ),
+        ("parameters", string_array_json(&pattern.parameters)),
+        (
+            "guards",
+            CanonicalJson::array(
+                pattern
+                    .guards
+                    .iter()
+                    .map(|guard| CanonicalJson::string(artifact_hash_ref_string(guard))),
+            ),
+        ),
+    ])
+}
+
+fn registration_contribution_json(
+    contribution: &RegistrationContributionSummary,
+) -> Result<CanonicalJson, RegistrationSummaryError> {
+    json_object([
+        ("kind", CanonicalJson::string(contribution.kind.as_str())),
+        ("summary", CanonicalJson::string(&contribution.summary)),
+        (
+            "fingerprint",
+            CanonicalJson::string(artifact_hash_ref_string(&contribution.fingerprint)),
+        ),
+    ])
+}
+
+fn trace_artifact_json(
+    trace: &RegistrationTraceArtifactRef,
+) -> Result<CanonicalJson, RegistrationSummaryError> {
+    json_object([
+        ("trace_id", CanonicalJson::string(&trace.trace_id)),
+        (
+            "trace_kind",
+            CanonicalJson::string(trace.trace_kind.as_str()),
+        ),
+        ("artifact_path", CanonicalJson::string(&trace.artifact_path)),
+        (
+            "artifact_hash",
+            CanonicalJson::string(artifact_hash_ref_string(&trace.artifact_hash)),
+        ),
+        (
+            "trace_replay_hash",
+            CanonicalJson::string(artifact_hash_ref_string(&trace.trace_replay_hash)),
+        ),
+        (
+            "diagnostic_hash",
+            optional_artifact_hash_json(trace.diagnostic_hash.as_ref()),
+        ),
+        (
+            "used_by_registration_origin_ids",
+            CanonicalJson::array(
+                sorted_strings(&trace.used_by_registration_origin_ids)
+                    .into_iter()
+                    .map(CanonicalJson::string),
+            ),
+        ),
+    ])
+}
+
+fn trace_artifact_interface_json(
+    trace: &RegistrationTraceArtifactRef,
+) -> Result<CanonicalJson, RegistrationSummaryError> {
+    json_object([
+        ("trace_id", CanonicalJson::string(&trace.trace_id)),
+        (
+            "trace_kind",
+            CanonicalJson::string(trace.trace_kind.as_str()),
+        ),
+        (
+            "trace_replay_hash",
+            CanonicalJson::string(artifact_hash_ref_string(&trace.trace_replay_hash)),
+        ),
+    ])
+}
+
+fn dependency_registration_json(
+    dependency: &DependencyRegistrationRef,
+    schema_version: SchemaVersion,
+) -> Result<CanonicalJson, RegistrationSummaryError> {
+    json_object([
+        ("module", identity_json(&dependency.module)?),
+        (
+            "registration_interface_hash",
+            CanonicalJson::string(registration_interface_hash_string(
+                schema_version,
+                dependency.registration_interface_hash,
+            )),
+        ),
+    ])
+}
+
+fn json_object(
+    fields: impl IntoIterator<Item = (&'static str, CanonicalJson)>,
+) -> Result<CanonicalJson, RegistrationSummaryError> {
+    CanonicalJson::object(fields).map_err(Into::into)
+}
+
+fn optional_string_json(value: Option<&str>) -> CanonicalJson {
+    value.map_or_else(CanonicalJson::null, CanonicalJson::string)
+}
+
+fn optional_artifact_hash_json(value: Option<&ArtifactHashRef>) -> CanonicalJson {
+    value.map_or_else(CanonicalJson::null, |hash_ref| {
+        CanonicalJson::string(artifact_hash_ref_string(hash_ref))
+    })
+}
+
+fn string_array_json(values: &[String]) -> CanonicalJson {
+    CanonicalJson::array(values.iter().map(CanonicalJson::string))
+}
+
+fn read_schema_version(
+    fields: &BTreeMap<String, CanonicalJson>,
+    artifact_path: Option<&str>,
+) -> Result<SchemaVersion, RegistrationSummaryError> {
+    let value = fields.get("schema_version");
+    let version = match value {
+        Some(CanonicalJson::String(version)) => Some(version.as_str()),
+        Some(_) => {
+            return Err(RegistrationSummaryError::UnexpectedType {
+                path: "$.schema_version".to_owned(),
+                expected: "a schema-version string",
+            });
+        }
+        None => None,
+    };
+    let support = schema_version_support();
+    if let Some(path) = artifact_path {
+        support.check_at_path(version, path).map_err(Into::into)
+    } else {
+        support.check(version).map_err(Into::into)
+    }
+}
+
+fn read_identity(
+    value: &CanonicalJson,
+    path: &str,
+) -> Result<ModuleSummaryIdentity, RegistrationSummaryError> {
+    let fields = expect_object(value, path)?;
+    reject_unknown_fields(
+        fields,
+        &[
+            "package_id",
+            "package_version",
+            "lockfile_identity",
+            "module_path",
+            "language_edition",
+        ],
+        path,
+    )?;
+    let identity = ModuleSummaryIdentity {
+        package_id: read_required_string(fields, "package_id", path)?,
+        package_version: read_optional_string(fields, "package_version", path)?,
+        lockfile_identity: read_optional_string(fields, "lockfile_identity", path)?,
+        module_path: read_required_string(fields, "module_path", path)?,
+        language_edition: read_required_string(fields, "language_edition", path)?,
+    };
+    validate_identity(&identity, path)?;
+    Ok(identity)
+}
+
+fn read_source_range(
+    value: &CanonicalJson,
+    path: &str,
+) -> Result<SourceRangeSummary, RegistrationSummaryError> {
+    let fields = expect_object(value, path)?;
+    reject_unknown_fields(fields, &["start_byte", "end_byte"], path)?;
+    let range = SourceRangeSummary {
+        start_byte: read_non_negative_u64(fields, "start_byte", path)?,
+        end_byte: read_non_negative_u64(fields, "end_byte", path)?,
+    };
+    validate_source_range(range, path)?;
+    Ok(range)
+}
+
+fn read_optional_source_range(
+    fields: &BTreeMap<String, CanonicalJson>,
+    field: &str,
+    path: &str,
+) -> Result<Option<SourceRangeSummary>, RegistrationSummaryError> {
+    let path = field_path(path, field);
+    let value = required_field(
+        fields,
+        field,
+        path.rsplit_once('.').map_or("$", |(base, _)| base),
+    )?;
+    match value {
+        CanonicalJson::Null => Ok(None),
+        _ => read_source_range(value, &path).map(Some),
+    }
+}
+
+fn read_activated_registrations(
+    value: &CanonicalJson,
+    path: &str,
+    schema_version: SchemaVersion,
+) -> Result<Vec<ActivatedRegistrationSummary>, RegistrationSummaryError> {
+    let values = expect_array(value, path)?;
+    let registrations = values
+        .iter()
+        .enumerate()
+        .map(|(index, value)| {
+            read_activated_registration(value, &array_path(path, index), schema_version)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    validate_activated_registrations(&registrations, path)?;
+    ensure_sorted(&registrations, activated_registration_sort_key, path)?;
+    Ok(registrations)
+}
+
+fn read_activated_registration(
+    value: &CanonicalJson,
+    path: &str,
+    _schema_version: SchemaVersion,
+) -> Result<ActivatedRegistrationSummary, RegistrationSummaryError> {
+    let fields = expect_object(value, path)?;
+    reject_unknown_fields(
+        fields,
+        &[
+            "origin_id",
+            "label",
+            "registration_kind",
+            "visibility",
+            "namespace_path",
+            "source_module",
+            "trigger_key",
+            "normalized_pattern",
+            "generated_contribution",
+            "accepted_status",
+            "verifier_policy_fingerprint",
+            "trace_ids",
+            "source_range",
+        ],
+        path,
+    )?;
+    let registration = ActivatedRegistrationSummary {
+        origin_id: read_required_string(fields, "origin_id", path)?,
+        label: read_optional_string(fields, "label", path)?,
+        registration_kind: read_registration_kind(fields, "registration_kind", path)?,
+        visibility: read_visibility(fields, "visibility", path)?,
+        namespace_path: read_string_array(
+            required_field(fields, "namespace_path", path)?,
+            &field_path(path, "namespace_path"),
+        )?,
+        source_module: read_identity(
+            required_field(fields, "source_module", path)?,
+            &field_path(path, "source_module"),
+        )?,
+        trigger_key: read_required_string(fields, "trigger_key", path)?,
+        normalized_pattern: read_registration_pattern(
+            required_field(fields, "normalized_pattern", path)?,
+            &field_path(path, "normalized_pattern"),
+        )?,
+        generated_contribution: read_registration_contribution(
+            required_field(fields, "generated_contribution", path)?,
+            &field_path(path, "generated_contribution"),
+        )?,
+        accepted_status: read_accepted_status(fields, "accepted_status", path)?,
+        verifier_policy_fingerprint: read_required_artifact_hash_ref(
+            fields,
+            "verifier_policy_fingerprint",
+            path,
+            ArtifactHashClass::Interface,
+        )?,
+        trace_ids: read_string_array(
+            required_field(fields, "trace_ids", path)?,
+            &field_path(path, "trace_ids"),
+        )?,
+        source_range: read_optional_source_range(fields, "source_range", path)?,
+    };
+    validate_activated_registration(&registration, path)?;
+    ensure_sorted(
+        &registration.trace_ids,
+        |value| value.clone(),
+        &field_path(path, "trace_ids"),
+    )?;
+    Ok(registration)
+}
+
+fn read_registration_pattern(
+    value: &CanonicalJson,
+    path: &str,
+) -> Result<RegistrationPatternSummary, RegistrationSummaryError> {
+    let fields = expect_object(value, path)?;
+    reject_unknown_fields(
+        fields,
+        &[
+            "fingerprint",
+            "type_head",
+            "attribute",
+            "functor",
+            "term_head",
+            "parameters",
+            "guards",
+        ],
+        path,
+    )?;
+    let pattern = RegistrationPatternSummary {
+        fingerprint: read_required_artifact_hash_ref(
+            fields,
+            "fingerprint",
+            path,
+            ArtifactHashClass::Interface,
+        )?,
+        type_head: read_optional_string(fields, "type_head", path)?,
+        attribute: read_optional_string(fields, "attribute", path)?,
+        functor: read_optional_string(fields, "functor", path)?,
+        term_head: read_optional_string(fields, "term_head", path)?,
+        parameters: read_string_array(
+            required_field(fields, "parameters", path)?,
+            &field_path(path, "parameters"),
+        )?,
+        guards: read_artifact_hash_array(
+            required_field(fields, "guards", path)?,
+            &field_path(path, "guards"),
+            ArtifactHashClass::Interface,
+        )?,
+    };
+    validate_registration_pattern(&pattern, path)?;
+    Ok(pattern)
+}
+
+fn read_registration_contribution(
+    value: &CanonicalJson,
+    path: &str,
+) -> Result<RegistrationContributionSummary, RegistrationSummaryError> {
+    let fields = expect_object(value, path)?;
+    reject_unknown_fields(fields, &["kind", "summary", "fingerprint"], path)?;
+    let contribution = RegistrationContributionSummary {
+        kind: read_contribution_kind(fields, "kind", path)?,
+        summary: read_required_string(fields, "summary", path)?,
+        fingerprint: read_required_artifact_hash_ref(
+            fields,
+            "fingerprint",
+            path,
+            ArtifactHashClass::Interface,
+        )?,
+    };
+    validate_registration_contribution(&contribution, path)?;
+    Ok(contribution)
+}
+
+fn read_trace_artifacts(
+    value: &CanonicalJson,
+    path: &str,
+) -> Result<Vec<RegistrationTraceArtifactRef>, RegistrationSummaryError> {
+    let values = expect_array(value, path)?;
+    let traces = values
+        .iter()
+        .enumerate()
+        .map(|(index, value)| read_trace_artifact(value, &array_path(path, index)))
+        .collect::<Result<Vec<_>, _>>()?;
+    validate_trace_artifacts(&traces, path)?;
+    ensure_sorted(&traces, trace_artifact_sort_key, path)?;
+    Ok(traces)
+}
+
+fn read_trace_artifact(
+    value: &CanonicalJson,
+    path: &str,
+) -> Result<RegistrationTraceArtifactRef, RegistrationSummaryError> {
+    let fields = expect_object(value, path)?;
+    reject_unknown_fields(
+        fields,
+        &[
+            "trace_id",
+            "trace_kind",
+            "artifact_path",
+            "artifact_hash",
+            "trace_replay_hash",
+            "diagnostic_hash",
+            "used_by_registration_origin_ids",
+        ],
+        path,
+    )?;
+    let trace = RegistrationTraceArtifactRef {
+        trace_id: read_required_string(fields, "trace_id", path)?,
+        trace_kind: read_trace_kind(fields, "trace_kind", path)?,
+        artifact_path: read_required_string(fields, "artifact_path", path)?,
+        artifact_hash: read_required_artifact_hash_ref(
+            fields,
+            "artifact_hash",
+            path,
+            ArtifactHashClass::Artifact,
+        )?,
+        trace_replay_hash: read_required_artifact_hash_ref(
+            fields,
+            "trace_replay_hash",
+            path,
+            ArtifactHashClass::Interface,
+        )?,
+        diagnostic_hash: read_optional_artifact_hash_ref(
+            fields,
+            "diagnostic_hash",
+            path,
+            ArtifactHashClass::Diagnostic,
+        )?,
+        used_by_registration_origin_ids: read_string_array(
+            required_field(fields, "used_by_registration_origin_ids", path)?,
+            &field_path(path, "used_by_registration_origin_ids"),
+        )?,
+    };
+    validate_trace_artifact(&trace, path)?;
+    ensure_sorted(
+        &trace.used_by_registration_origin_ids,
+        |value| value.clone(),
+        &field_path(path, "used_by_registration_origin_ids"),
+    )?;
+    Ok(trace)
+}
+
+fn read_dependency_registrations(
+    value: &CanonicalJson,
+    path: &str,
+    schema_version: SchemaVersion,
+) -> Result<Vec<DependencyRegistrationRef>, RegistrationSummaryError> {
+    let values = expect_array(value, path)?;
+    let dependencies = values
+        .iter()
+        .enumerate()
+        .map(|(index, value)| {
+            read_dependency_registration(value, &array_path(path, index), schema_version)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    validate_dependency_registrations(&dependencies, path)?;
+    ensure_sorted(&dependencies, dependency_registration_sort_key, path)?;
+    Ok(dependencies)
+}
+
+fn read_dependency_registration(
+    value: &CanonicalJson,
+    path: &str,
+    schema_version: SchemaVersion,
+) -> Result<DependencyRegistrationRef, RegistrationSummaryError> {
+    let fields = expect_object(value, path)?;
+    reject_unknown_fields(fields, &["module", "registration_interface_hash"], path)?;
+    let dependency = DependencyRegistrationRef {
+        module: read_identity(
+            required_field(fields, "module", path)?,
+            &field_path(path, "module"),
+        )?,
+        registration_interface_hash: read_registration_interface_hash(
+            required_field(fields, "registration_interface_hash", path)?,
+            &field_path(path, "registration_interface_hash"),
+            schema_version,
+        )?,
+    };
+    validate_dependency_registration(&dependency, path)?;
+    Ok(dependency)
+}
+
+fn read_registration_kind(
+    fields: &BTreeMap<String, CanonicalJson>,
+    field: &str,
+    path: &str,
+) -> Result<RegistrationKind, RegistrationSummaryError> {
+    let path = field_path(path, field);
+    let value = required_field(
+        fields,
+        field,
+        path.rsplit_once('.').map_or("$", |(base, _)| base),
+    )?;
+    let CanonicalJson::String(value) = value else {
+        return Err(RegistrationSummaryError::UnexpectedType {
+            path,
+            expected: "a registration-kind string",
+        });
+    };
+    RegistrationKind::from_str(value).ok_or_else(|| RegistrationSummaryError::InvalidField {
+        path,
+        reason: "unknown registration kind".to_owned(),
+    })
+}
+
+fn read_visibility(
+    fields: &BTreeMap<String, CanonicalJson>,
+    field: &str,
+    path: &str,
+) -> Result<RegistrationVisibility, RegistrationSummaryError> {
+    let path = field_path(path, field);
+    let value = required_field(
+        fields,
+        field,
+        path.rsplit_once('.').map_or("$", |(base, _)| base),
+    )?;
+    let CanonicalJson::String(value) = value else {
+        return Err(RegistrationSummaryError::UnexpectedType {
+            path,
+            expected: "a visibility string",
+        });
+    };
+    RegistrationVisibility::from_str(value).ok_or_else(|| RegistrationSummaryError::InvalidField {
+        path,
+        reason: "registration summary publishes only public registrations".to_owned(),
+    })
+}
+
+fn read_accepted_status(
+    fields: &BTreeMap<String, CanonicalJson>,
+    field: &str,
+    path: &str,
+) -> Result<RegistrationAcceptedStatus, RegistrationSummaryError> {
+    let path = field_path(path, field);
+    let value = required_field(
+        fields,
+        field,
+        path.rsplit_once('.').map_or("$", |(base, _)| base),
+    )?;
+    let CanonicalJson::String(value) = value else {
+        return Err(RegistrationSummaryError::UnexpectedType {
+            path,
+            expected: "an accepted-status string",
+        });
+    };
+    RegistrationAcceptedStatus::from_str(value).ok_or_else(|| {
+        RegistrationSummaryError::InvalidField {
+            path,
+            reason: "registration summary publishes only accepted registrations".to_owned(),
+        }
+    })
+}
+
+fn read_contribution_kind(
+    fields: &BTreeMap<String, CanonicalJson>,
+    field: &str,
+    path: &str,
+) -> Result<RegistrationContributionKind, RegistrationSummaryError> {
+    let path = field_path(path, field);
+    let value = required_field(
+        fields,
+        field,
+        path.rsplit_once('.').map_or("$", |(base, _)| base),
+    )?;
+    let CanonicalJson::String(value) = value else {
+        return Err(RegistrationSummaryError::UnexpectedType {
+            path,
+            expected: "a contribution-kind string",
+        });
+    };
+    RegistrationContributionKind::from_str(value).ok_or_else(|| {
+        RegistrationSummaryError::InvalidField {
+            path,
+            reason: "unknown contribution kind".to_owned(),
+        }
+    })
+}
+
+fn read_trace_kind(
+    fields: &BTreeMap<String, CanonicalJson>,
+    field: &str,
+    path: &str,
+) -> Result<RegistrationTraceKind, RegistrationSummaryError> {
+    let path = field_path(path, field);
+    let value = required_field(
+        fields,
+        field,
+        path.rsplit_once('.').map_or("$", |(base, _)| base),
+    )?;
+    let CanonicalJson::String(value) = value else {
+        return Err(RegistrationSummaryError::UnexpectedType {
+            path,
+            expected: "a trace-kind string",
+        });
+    };
+    RegistrationTraceKind::from_str(value).ok_or_else(|| RegistrationSummaryError::InvalidField {
+        path,
+        reason: "unknown trace kind".to_owned(),
+    })
+}
+
+fn read_required_artifact_hash_ref(
+    fields: &BTreeMap<String, CanonicalJson>,
+    field: &str,
+    path: &str,
+    expected_class: ArtifactHashClass,
+) -> Result<ArtifactHashRef, RegistrationSummaryError> {
+    let path = field_path(path, field);
+    let value = required_field(
+        fields,
+        field,
+        path.rsplit_once('.').map_or("$", |(base, _)| base),
+    )?;
+    read_artifact_hash_ref(value, &path, expected_class)
+}
+
+fn read_optional_artifact_hash_ref(
+    fields: &BTreeMap<String, CanonicalJson>,
+    field: &str,
+    path: &str,
+    expected_class: ArtifactHashClass,
+) -> Result<Option<ArtifactHashRef>, RegistrationSummaryError> {
+    let path = field_path(path, field);
+    let value = required_field(
+        fields,
+        field,
+        path.rsplit_once('.').map_or("$", |(base, _)| base),
+    )?;
+    match value {
+        CanonicalJson::Null => Ok(None),
+        _ => read_artifact_hash_ref(value, &path, expected_class).map(Some),
+    }
+}
+
+fn read_artifact_hash_array(
+    value: &CanonicalJson,
+    path: &str,
+    expected_class: ArtifactHashClass,
+) -> Result<Vec<ArtifactHashRef>, RegistrationSummaryError> {
+    let values = expect_array(value, path)?;
+    values
+        .iter()
+        .enumerate()
+        .map(|(index, value)| {
+            read_artifact_hash_ref(value, &array_path(path, index), expected_class)
+        })
+        .collect()
+}
+
+fn read_artifact_hash_ref(
+    value: &CanonicalJson,
+    path: &str,
+    expected_class: ArtifactHashClass,
+) -> Result<ArtifactHashRef, RegistrationSummaryError> {
+    let CanonicalJson::String(value) = value else {
+        return Err(RegistrationSummaryError::UnexpectedType {
+            path: path.to_owned(),
+            expected: "an artifact-framed hash string",
+        });
+    };
+    let hash_ref = parse_artifact_hash_ref_string(value, path)?;
+    if hash_ref.class != expected_class {
+        return Err(RegistrationSummaryError::InvalidHash {
+            path: path.to_owned(),
+            reason: format!(
+                "wrong artifact hash class: expected `{}`, got `{}`",
+                expected_class.as_str(),
+                hash_ref.class.as_str()
+            ),
+        });
+    }
+    Ok(hash_ref)
+}
+
+fn read_source_hash(value: &CanonicalJson, path: &str) -> Result<Hash, RegistrationSummaryError> {
+    let CanonicalJson::String(value) = value else {
+        return Err(RegistrationSummaryError::UnexpectedType {
+            path: path.to_owned(),
+            expected: "a source hash string",
+        });
+    };
+    parse_source_hash_string(value, path)
+}
+
+fn read_registration_interface_hash(
+    value: &CanonicalJson,
+    path: &str,
+    schema_version: SchemaVersion,
+) -> Result<Hash, RegistrationSummaryError> {
+    let CanonicalJson::String(value) = value else {
+        return Err(RegistrationSummaryError::UnexpectedType {
+            path: path.to_owned(),
+            expected: "a registration interface hash string",
+        });
+    };
+    parse_registration_interface_hash_string(value, path, schema_version)
+}
+
+fn validate_identity(
+    identity: &ModuleSummaryIdentity,
+    path: &str,
+) -> Result<(), RegistrationSummaryError> {
+    validate_non_empty(&identity.package_id, &field_path(path, "package_id"))?;
+    validate_optional_non_empty(
+        identity.package_version.as_deref(),
+        &field_path(path, "package_version"),
+    )?;
+    validate_optional_non_empty(
+        identity.lockfile_identity.as_deref(),
+        &field_path(path, "lockfile_identity"),
+    )?;
+    validate_non_empty(&identity.module_path, &field_path(path, "module_path"))?;
+    validate_non_empty(
+        &identity.language_edition,
+        &field_path(path, "language_edition"),
+    )
+}
+
+fn validate_source_range(
+    range: SourceRangeSummary,
+    path: &str,
+) -> Result<(), RegistrationSummaryError> {
+    if range.start_byte > range.end_byte {
+        return Err(RegistrationSummaryError::InvalidField {
+            path: path.to_owned(),
+            reason: "start_byte must not be greater than end_byte".to_owned(),
+        });
+    }
+    integer_from_u64(range.start_byte, &field_path(path, "start_byte"))?;
+    integer_from_u64(range.end_byte, &field_path(path, "end_byte"))?;
+    Ok(())
+}
+
+fn validate_activated_registrations(
+    registrations: &[ActivatedRegistrationSummary],
+    path: &str,
+) -> Result<(), RegistrationSummaryError> {
+    ensure_no_duplicate_keys(registrations, activated_registration_origin_key, path)?;
+    for (index, registration) in registrations.iter().enumerate() {
+        validate_activated_registration(registration, &array_path(path, index))?;
+    }
+    Ok(())
+}
+
+fn validate_activated_registration(
+    registration: &ActivatedRegistrationSummary,
+    path: &str,
+) -> Result<(), RegistrationSummaryError> {
+    validate_non_empty(&registration.origin_id, &field_path(path, "origin_id"))?;
+    validate_optional_non_empty(registration.label.as_deref(), &field_path(path, "label"))?;
+    validate_string_array(
+        &registration.namespace_path,
+        &field_path(path, "namespace_path"),
+    )?;
+    validate_identity(
+        &registration.source_module,
+        &field_path(path, "source_module"),
+    )?;
+    validate_non_empty(&registration.trigger_key, &field_path(path, "trigger_key"))?;
+    validate_registration_pattern(
+        &registration.normalized_pattern,
+        &field_path(path, "normalized_pattern"),
+    )?;
+    validate_registration_contribution(
+        &registration.generated_contribution,
+        &field_path(path, "generated_contribution"),
+    )?;
+    validate_artifact_hash_ref(
+        &registration.verifier_policy_fingerprint,
+        &field_path(path, "verifier_policy_fingerprint"),
+        ArtifactHashClass::Interface,
+    )?;
+    validate_string_array(&registration.trace_ids, &field_path(path, "trace_ids"))?;
+    ensure_no_duplicate_keys(
+        &registration.trace_ids,
+        |value| value.clone(),
+        &field_path(path, "trace_ids"),
+    )?;
+    if let Some(range) = registration.source_range {
+        validate_source_range(range, &field_path(path, "source_range"))?;
+    }
+    Ok(())
+}
+
+fn validate_registration_pattern(
+    pattern: &RegistrationPatternSummary,
+    path: &str,
+) -> Result<(), RegistrationSummaryError> {
+    validate_artifact_hash_ref(
+        &pattern.fingerprint,
+        &field_path(path, "fingerprint"),
+        ArtifactHashClass::Interface,
+    )?;
+    validate_optional_non_empty(pattern.type_head.as_deref(), &field_path(path, "type_head"))?;
+    validate_optional_non_empty(pattern.attribute.as_deref(), &field_path(path, "attribute"))?;
+    validate_optional_non_empty(pattern.functor.as_deref(), &field_path(path, "functor"))?;
+    validate_optional_non_empty(pattern.term_head.as_deref(), &field_path(path, "term_head"))?;
+    validate_string_array(&pattern.parameters, &field_path(path, "parameters"))?;
+    for (index, guard) in pattern.guards.iter().enumerate() {
+        validate_artifact_hash_ref(
+            guard,
+            &array_path(&field_path(path, "guards"), index),
+            ArtifactHashClass::Interface,
+        )?;
+    }
+    Ok(())
+}
+
+fn validate_registration_contribution(
+    contribution: &RegistrationContributionSummary,
+    path: &str,
+) -> Result<(), RegistrationSummaryError> {
+    validate_non_empty(&contribution.summary, &field_path(path, "summary"))?;
+    validate_artifact_hash_ref(
+        &contribution.fingerprint,
+        &field_path(path, "fingerprint"),
+        ArtifactHashClass::Interface,
+    )
+}
+
+fn validate_trace_artifacts(
+    traces: &[RegistrationTraceArtifactRef],
+    path: &str,
+) -> Result<(), RegistrationSummaryError> {
+    ensure_no_duplicate_keys(traces, trace_artifact_identity_key, path)?;
+    for (index, trace) in traces.iter().enumerate() {
+        validate_trace_artifact(trace, &array_path(path, index))?;
+    }
+    Ok(())
+}
+
+fn validate_trace_artifact(
+    trace: &RegistrationTraceArtifactRef,
+    path: &str,
+) -> Result<(), RegistrationSummaryError> {
+    validate_non_empty(&trace.trace_id, &field_path(path, "trace_id"))?;
+    validate_non_empty(&trace.artifact_path, &field_path(path, "artifact_path"))?;
+    validate_artifact_hash_ref(
+        &trace.artifact_hash,
+        &field_path(path, "artifact_hash"),
+        ArtifactHashClass::Artifact,
+    )?;
+    validate_artifact_hash_ref(
+        &trace.trace_replay_hash,
+        &field_path(path, "trace_replay_hash"),
+        ArtifactHashClass::Interface,
+    )?;
+    if let Some(diagnostic_hash) = &trace.diagnostic_hash {
+        validate_artifact_hash_ref(
+            diagnostic_hash,
+            &field_path(path, "diagnostic_hash"),
+            ArtifactHashClass::Diagnostic,
+        )?;
+    }
+    validate_string_array(
+        &trace.used_by_registration_origin_ids,
+        &field_path(path, "used_by_registration_origin_ids"),
+    )?;
+    ensure_no_duplicate_keys(
+        &trace.used_by_registration_origin_ids,
+        |value| value.clone(),
+        &field_path(path, "used_by_registration_origin_ids"),
+    )
+}
+
+fn validate_dependency_registrations(
+    dependencies: &[DependencyRegistrationRef],
+    path: &str,
+) -> Result<(), RegistrationSummaryError> {
+    ensure_no_duplicate_keys(dependencies, dependency_module_identity_key, path)?;
+    for (index, dependency) in dependencies.iter().enumerate() {
+        validate_dependency_registration(dependency, &array_path(path, index))?;
+    }
+    Ok(())
+}
+
+fn validate_dependency_registration(
+    dependency: &DependencyRegistrationRef,
+    path: &str,
+) -> Result<(), RegistrationSummaryError> {
+    validate_identity(&dependency.module, &field_path(path, "module"))
+}
+
+fn validate_artifact_hash_ref(
+    hash_ref: &ArtifactHashRef,
+    path: &str,
+    expected_class: ArtifactHashClass,
+) -> Result<(), RegistrationSummaryError> {
+    if hash_ref.class != expected_class {
+        return Err(RegistrationSummaryError::InvalidHash {
+            path: path.to_owned(),
+            reason: format!(
+                "wrong artifact hash class: expected `{}`, got `{}`",
+                expected_class.as_str(),
+                hash_ref.class.as_str()
+            ),
+        });
+    }
+    validate_schema_family(&hash_ref.schema_family, path)?;
+    Ok(())
+}
+
+fn validate_schema_family(value: &str, path: &str) -> Result<(), RegistrationSummaryError> {
+    if value.is_empty() {
+        return Err(RegistrationSummaryError::InvalidHash {
+            path: path.to_owned(),
+            reason: "schema family must not be empty".to_owned(),
+        });
+    }
+    for segment in value.split('/') {
+        if segment.is_empty() {
+            return Err(RegistrationSummaryError::InvalidHash {
+                path: path.to_owned(),
+                reason: "schema family segments must not be empty".to_owned(),
+            });
+        }
+        if !segment
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.'))
+        {
+            return Err(RegistrationSummaryError::InvalidHash {
+                path: path.to_owned(),
+                reason: "schema family contains invalid characters".to_owned(),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn validate_trace_reference_consistency(
+    summary: &RegistrationSummary,
+) -> Result<(), RegistrationSummaryError> {
+    let mut expected_used_by = BTreeMap::<String, BTreeSet<String>>::new();
+    for registration in &summary.activated_registrations {
+        for trace_id in &registration.trace_ids {
+            expected_used_by
+                .entry(trace_id.clone())
+                .or_default()
+                .insert(registration.origin_id.clone());
+        }
+    }
+
+    let trace_ids = summary
+        .trace_artifacts
+        .iter()
+        .map(|trace| trace.trace_id.clone())
+        .collect::<BTreeSet<_>>();
+    let expected_trace_ids = expected_used_by.keys().cloned().collect::<BTreeSet<_>>();
+    if trace_ids != expected_trace_ids {
+        return Err(RegistrationSummaryError::TraceReferenceMismatch {
+            path: "$.trace_artifacts".to_owned(),
+            reason: "trace ids must exactly match activated registration trace_ids".to_owned(),
+        });
+    }
+
+    for trace in &summary.trace_artifacts {
+        let actual = trace
+            .used_by_registration_origin_ids
+            .iter()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let expected = expected_used_by
+            .get(&trace.trace_id)
+            .cloned()
+            .unwrap_or_default();
+        if actual != expected {
+            return Err(RegistrationSummaryError::TraceReferenceMismatch {
+                path: format!(
+                    "$.trace_artifacts[{}].used_by_registration_origin_ids",
+                    trace.trace_id
+                ),
+                reason: "used_by set must exactly match registrations naming this trace id"
+                    .to_owned(),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn validate_supplied_trace_artifacts(
+    summary: &RegistrationSummary,
+    supplied: &[SuppliedTraceArtifactRef<'_>],
+) -> Result<(), RegistrationSummaryError> {
+    let traces = summary
+        .trace_artifacts
+        .iter()
+        .map(|trace| (trace.trace_id.as_str(), trace))
+        .collect::<BTreeMap<_, _>>();
+    let mut seen = BTreeSet::new();
+    for supplied_trace in supplied {
+        if !seen.insert(supplied_trace.trace_id) {
+            return Err(RegistrationSummaryError::DuplicateEntry {
+                path: "supplied_trace_artifacts".to_owned(),
+                key: supplied_trace.trace_id.to_owned(),
+            });
+        }
+        let Some(trace) = traces.get(supplied_trace.trace_id) else {
+            return Err(RegistrationSummaryError::UnknownSuppliedTraceArtifact {
+                trace_id: supplied_trace.trace_id.to_owned(),
+            });
+        };
+        validate_supplied_trace_field(
+            supplied_trace.trace_id,
+            "artifact_hash",
+            &trace.artifact_hash,
+            supplied_trace.artifact_hash,
+        )?;
+        validate_supplied_trace_field(
+            supplied_trace.trace_id,
+            "trace_replay_hash",
+            &trace.trace_replay_hash,
+            supplied_trace.trace_replay_hash,
+        )?;
+        match (&trace.diagnostic_hash, supplied_trace.diagnostic_hash) {
+            (Some(expected), Some(actual)) => validate_supplied_trace_field(
+                supplied_trace.trace_id,
+                "diagnostic_hash",
+                expected,
+                actual,
+            )?,
+            (None, None) => {}
+            (expected, actual) => {
+                return Err(RegistrationSummaryError::SuppliedTraceArtifactMismatch {
+                    trace_id: supplied_trace.trace_id.to_owned(),
+                    field: "diagnostic_hash",
+                    expected: expected
+                        .as_ref()
+                        .map_or_else(|| "null".to_owned(), artifact_hash_ref_string),
+                    actual: actual.map_or_else(|| "null".to_owned(), artifact_hash_ref_string),
+                });
+            }
+        }
+    }
+    Ok(())
+}
+
+fn validate_supplied_trace_field(
+    trace_id: &str,
+    field: &'static str,
+    expected: &ArtifactHashRef,
+    actual: &ArtifactHashRef,
+) -> Result<(), RegistrationSummaryError> {
+    if expected != actual {
+        return Err(RegistrationSummaryError::SuppliedTraceArtifactMismatch {
+            trace_id: trace_id.to_owned(),
+            field,
+            expected: artifact_hash_ref_string(expected),
+            actual: artifact_hash_ref_string(actual),
+        });
+    }
+    Ok(())
+}
+
+fn validate_non_empty(value: &str, path: &str) -> Result<(), RegistrationSummaryError> {
+    if value.is_empty() {
+        return Err(RegistrationSummaryError::InvalidField {
+            path: path.to_owned(),
+            reason: "must not be empty".to_owned(),
+        });
+    }
+    Ok(())
+}
+
+fn validate_optional_non_empty(
+    value: Option<&str>,
+    path: &str,
+) -> Result<(), RegistrationSummaryError> {
+    if matches!(value, Some("")) {
+        return Err(RegistrationSummaryError::InvalidField {
+            path: path.to_owned(),
+            reason: "must be null or a non-empty string".to_owned(),
+        });
+    }
+    Ok(())
+}
+
+fn validate_string_array(values: &[String], path: &str) -> Result<(), RegistrationSummaryError> {
+    for (index, value) in values.iter().enumerate() {
+        validate_non_empty(value, &array_path(path, index))?;
+    }
+    Ok(())
+}
+
+fn sorted_activated_registrations(
+    registrations: &[ActivatedRegistrationSummary],
+) -> Vec<&ActivatedRegistrationSummary> {
+    let mut registrations = registrations.iter().collect::<Vec<_>>();
+    registrations.sort_by_key(|registration| activated_registration_sort_key(registration));
+    registrations
+}
+
+fn sorted_trace_artifacts(
+    traces: &[RegistrationTraceArtifactRef],
+) -> Vec<&RegistrationTraceArtifactRef> {
+    let mut traces = traces.iter().collect::<Vec<_>>();
+    traces.sort_by_key(|trace| trace_artifact_sort_key(trace));
+    traces
+}
+
+fn sorted_dependency_registrations(
+    dependencies: &[DependencyRegistrationRef],
+) -> Vec<&DependencyRegistrationRef> {
+    let mut dependencies = dependencies.iter().collect::<Vec<_>>();
+    dependencies.sort_by_key(|dependency| dependency_registration_sort_key(dependency));
+    dependencies
+}
+
+fn sorted_strings(values: &[String]) -> Vec<&String> {
+    let mut values = values.iter().collect::<Vec<_>>();
+    values.sort();
+    values
+}
+
+type IdentityKey = (String, Option<String>, Option<String>, String, String);
+type ActivatedRegistrationSortKey = (
+    String,
+    String,
+    String,
+    Option<String>,
+    String,
+    String,
+    String,
+);
+type TraceArtifactSortKey = (String, String, String, String, String);
+type DependencyRegistrationSortKey = (IdentityKey, String);
+
+fn identity_key(identity: &ModuleSummaryIdentity) -> IdentityKey {
+    (
+        identity.package_id.clone(),
+        identity.package_version.clone(),
+        identity.lockfile_identity.clone(),
+        identity.module_path.clone(),
+        identity.language_edition.clone(),
+    )
+}
+
+fn activated_registration_origin_key(registration: &ActivatedRegistrationSummary) -> String {
+    registration.origin_id.clone()
+}
+
+fn activated_registration_sort_key(
+    registration: &ActivatedRegistrationSummary,
+) -> ActivatedRegistrationSortKey {
+    (
+        registration.registration_kind.as_str().to_owned(),
+        registration.trigger_key.clone(),
+        registration.origin_id.clone(),
+        registration.label.clone(),
+        artifact_hash_ref_string(&registration.normalized_pattern.fingerprint),
+        artifact_hash_ref_string(&registration.generated_contribution.fingerprint),
+        registration.accepted_status.as_str().to_owned(),
+    )
+}
+
+fn trace_artifact_identity_key(trace: &RegistrationTraceArtifactRef) -> String {
+    trace.trace_id.clone()
+}
+
+fn trace_artifact_sort_key(trace: &RegistrationTraceArtifactRef) -> TraceArtifactSortKey {
+    (
+        trace.trace_kind.as_str().to_owned(),
+        trace.trace_id.clone(),
+        trace.artifact_path.clone(),
+        artifact_hash_ref_string(&trace.artifact_hash),
+        artifact_hash_ref_string(&trace.trace_replay_hash),
+    )
+}
+
+fn dependency_module_identity_key(dependency: &DependencyRegistrationRef) -> IdentityKey {
+    identity_key(&dependency.module)
+}
+
+fn dependency_registration_sort_key(
+    dependency: &DependencyRegistrationRef,
+) -> DependencyRegistrationSortKey {
+    (
+        identity_key(&dependency.module),
+        lower_hex_hash(dependency.registration_interface_hash),
+    )
+}
+
+fn ensure_sorted<T, K, F>(
+    items: &[T],
+    mut key: F,
+    path: &str,
+) -> Result<(), RegistrationSummaryError>
+where
+    K: Ord,
+    F: FnMut(&T) -> K,
+{
+    let mut previous = None;
+    for item in items {
+        let current = key(item);
+        if previous
+            .as_ref()
+            .is_some_and(|previous| previous > &current)
+        {
+            return Err(RegistrationSummaryError::UnsortedCollection {
+                path: path.to_owned(),
+            });
+        }
+        previous = Some(current);
+    }
+    Ok(())
+}
+
+fn ensure_no_duplicate_keys<T, K, F>(
+    items: &[T],
+    mut key: F,
+    path: &str,
+) -> Result<(), RegistrationSummaryError>
+where
+    K: Ord + fmt::Debug,
+    F: FnMut(&T) -> K,
+{
+    let mut seen = BTreeSet::new();
+    for item in items {
+        let key = key(item);
+        if seen.contains(&key) {
+            return Err(RegistrationSummaryError::DuplicateEntry {
+                path: path.to_owned(),
+                key: format!("{key:?}"),
+            });
+        }
+        seen.insert(key);
+    }
+    Ok(())
+}
+
+fn expect_object<'a>(
+    value: &'a CanonicalJson,
+    path: &str,
+) -> Result<&'a BTreeMap<String, CanonicalJson>, RegistrationSummaryError> {
+    let CanonicalJson::Object(fields) = value else {
+        return Err(RegistrationSummaryError::UnexpectedType {
+            path: path.to_owned(),
+            expected: "an object",
+        });
+    };
+    Ok(fields)
+}
+
+fn expect_array<'a>(
+    value: &'a CanonicalJson,
+    path: &str,
+) -> Result<&'a [CanonicalJson], RegistrationSummaryError> {
+    let CanonicalJson::Array(values) = value else {
+        return Err(RegistrationSummaryError::UnexpectedType {
+            path: path.to_owned(),
+            expected: "an array",
+        });
+    };
+    Ok(values)
+}
+
+fn required_field<'a>(
+    fields: &'a BTreeMap<String, CanonicalJson>,
+    field: &str,
+    path: &str,
+) -> Result<&'a CanonicalJson, RegistrationSummaryError> {
+    fields
+        .get(field)
+        .ok_or_else(|| RegistrationSummaryError::MissingField {
+            path: field_path(path, field),
+        })
+}
+
+fn reject_unknown_fields(
+    fields: &BTreeMap<String, CanonicalJson>,
+    allowed: &[&str],
+    path: &str,
+) -> Result<(), RegistrationSummaryError> {
+    for field in fields.keys() {
+        if !allowed.contains(&field.as_str()) {
+            return Err(RegistrationSummaryError::UnknownField {
+                path: path.to_owned(),
+                field: field.clone(),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn read_required_string(
+    fields: &BTreeMap<String, CanonicalJson>,
+    field: &str,
+    path: &str,
+) -> Result<String, RegistrationSummaryError> {
+    let path = field_path(path, field);
+    let value = required_field(
+        fields,
+        field,
+        path.rsplit_once('.').map_or("$", |(base, _)| base),
+    )?;
+    let CanonicalJson::String(value) = value else {
+        return Err(RegistrationSummaryError::UnexpectedType {
+            path,
+            expected: "a string",
+        });
+    };
+    validate_non_empty(value, &path)?;
+    Ok(value.clone())
+}
+
+fn read_optional_string(
+    fields: &BTreeMap<String, CanonicalJson>,
+    field: &str,
+    path: &str,
+) -> Result<Option<String>, RegistrationSummaryError> {
+    let path = field_path(path, field);
+    let value = required_field(
+        fields,
+        field,
+        path.rsplit_once('.').map_or("$", |(base, _)| base),
+    )?;
+    match value {
+        CanonicalJson::Null => Ok(None),
+        CanonicalJson::String(value) => {
+            validate_non_empty(value, &path)?;
+            Ok(Some(value.clone()))
+        }
+        _ => Err(RegistrationSummaryError::UnexpectedType {
+            path,
+            expected: "a string or null",
+        }),
+    }
+}
+
+fn read_string_array(
+    value: &CanonicalJson,
+    path: &str,
+) -> Result<Vec<String>, RegistrationSummaryError> {
+    let values = expect_array(value, path)?;
+    values
+        .iter()
+        .enumerate()
+        .map(|(index, value)| {
+            let path = array_path(path, index);
+            let CanonicalJson::String(value) = value else {
+                return Err(RegistrationSummaryError::UnexpectedType {
+                    path,
+                    expected: "a string",
+                });
+            };
+            validate_non_empty(value, &path)?;
+            Ok(value.clone())
+        })
+        .collect()
+}
+
+fn read_non_negative_u64(
+    fields: &BTreeMap<String, CanonicalJson>,
+    field: &str,
+    path: &str,
+) -> Result<u64, RegistrationSummaryError> {
+    let path = field_path(path, field);
+    let value = required_field(
+        fields,
+        field,
+        path.rsplit_once('.').map_or("$", |(base, _)| base),
+    )?;
+    let CanonicalJson::Integer(value) = value else {
+        return Err(RegistrationSummaryError::UnexpectedType {
+            path,
+            expected: "a non-negative integer",
+        });
+    };
+    u64::try_from(*value).map_err(|_| RegistrationSummaryError::InvalidField {
+        path,
+        reason: "must be non-negative".to_owned(),
+    })
+}
+
+fn source_hash_string(hash: Hash) -> String {
+    format!("{}:{}", SOURCE_HASH_CONSTRUCTION, lower_hex_hash(hash))
+}
+
+fn registration_interface_hash_string(schema_version: SchemaVersion, hash: Hash) -> String {
+    format!(
+        "{}:{}:{}:{}:{}",
+        ARTIFACT_HASH_CONSTRUCTION,
+        ArtifactHashClass::Interface.as_str(),
+        REGISTRATION_SUMMARY_SCHEMA_FAMILY,
+        schema_version,
+        lower_hex_hash(hash)
+    )
+}
+
+fn artifact_hash_ref_string(hash_ref: &ArtifactHashRef) -> String {
+    format!(
+        "{}:{}:{}:{}:{}",
+        ARTIFACT_HASH_CONSTRUCTION,
+        hash_ref.class.as_str(),
+        hash_ref.schema_family,
+        hash_ref.schema_version,
+        lower_hex_hash(hash_ref.digest)
+    )
+}
+
+fn parse_source_hash_string(value: &str, path: &str) -> Result<Hash, RegistrationSummaryError> {
+    let Some(hex) = value
+        .strip_prefix(SOURCE_HASH_CONSTRUCTION)
+        .and_then(|rest| rest.strip_prefix(':'))
+    else {
+        return Err(RegistrationSummaryError::InvalidHash {
+            path: path.to_owned(),
+            reason: "wrong source hash construction label".to_owned(),
+        });
+    };
+    parse_lower_hex_hash(hex, path)
+}
+
+fn parse_registration_interface_hash_string(
+    value: &str,
+    path: &str,
+    schema_version: SchemaVersion,
+) -> Result<Hash, RegistrationSummaryError> {
+    let hash_ref = parse_artifact_hash_ref_string(value, path)?;
+    if hash_ref.class != ArtifactHashClass::Interface {
+        return Err(RegistrationSummaryError::InvalidHash {
+            path: path.to_owned(),
+            reason: "wrong artifact hash class".to_owned(),
+        });
+    }
+    if hash_ref.schema_family != REGISTRATION_SUMMARY_SCHEMA_FAMILY {
+        return Err(RegistrationSummaryError::InvalidHash {
+            path: path.to_owned(),
+            reason: "wrong schema family".to_owned(),
+        });
+    }
+    if hash_ref.schema_version != schema_version {
+        return Err(RegistrationSummaryError::InvalidHash {
+            path: path.to_owned(),
+            reason: "wrong schema version".to_owned(),
+        });
+    }
+    Ok(hash_ref.digest)
+}
+
+fn parse_artifact_hash_ref_string(
+    value: &str,
+    path: &str,
+) -> Result<ArtifactHashRef, RegistrationSummaryError> {
+    let parts = value.split(':').collect::<Vec<_>>();
+    if parts.len() != 5 {
+        return Err(RegistrationSummaryError::InvalidHash {
+            path: path.to_owned(),
+            reason: "expected construction:class:schema_family:schema_version:digest".to_owned(),
+        });
+    }
+    if parts[0] != ARTIFACT_HASH_CONSTRUCTION {
+        return Err(RegistrationSummaryError::InvalidHash {
+            path: path.to_owned(),
+            reason: "wrong artifact hash construction label".to_owned(),
+        });
+    }
+    let class = ArtifactHashClass::from_str(parts[1]).ok_or_else(|| {
+        RegistrationSummaryError::InvalidHash {
+            path: path.to_owned(),
+            reason: "unknown artifact hash class".to_owned(),
+        }
+    })?;
+    validate_schema_family(parts[2], path)?;
+    let schema_version =
+        SchemaVersion::from_str(parts[3]).map_err(|_| RegistrationSummaryError::InvalidHash {
+            path: path.to_owned(),
+            reason: "malformed schema version".to_owned(),
+        })?;
+    let digest = parse_lower_hex_hash(parts[4], path)?;
+    Ok(ArtifactHashRef {
+        class,
+        schema_family: parts[2].to_owned(),
+        schema_version,
+        digest,
+    })
+}
+
+fn parse_lower_hex_hash(hex: &str, path: &str) -> Result<Hash, RegistrationSummaryError> {
+    if hex.len() != Hash::BYTE_LEN * 2 {
+        return Err(RegistrationSummaryError::InvalidHash {
+            path: path.to_owned(),
+            reason: "digest must be 64 lowercase hexadecimal characters".to_owned(),
+        });
+    }
+    let mut bytes = [0; Hash::BYTE_LEN];
+    for (index, pair) in hex.as_bytes().chunks_exact(2).enumerate() {
+        let high = parse_lower_hex_nibble(pair[0], path)?;
+        let low = parse_lower_hex_nibble(pair[1], path)?;
+        bytes[index] = (high << 4) | low;
+    }
+    Ok(Hash::from_bytes(bytes))
+}
+
+fn parse_lower_hex_nibble(byte: u8, path: &str) -> Result<u8, RegistrationSummaryError> {
+    match byte {
+        b'0'..=b'9' => Ok(byte - b'0'),
+        b'a'..=b'f' => Ok(byte - b'a' + 10),
+        _ => Err(RegistrationSummaryError::InvalidHash {
+            path: path.to_owned(),
+            reason: "digest must use lowercase hexadecimal".to_owned(),
+        }),
+    }
+}
+
+fn lower_hex_hash(hash: Hash) -> String {
+    let mut encoded = String::with_capacity(Hash::BYTE_LEN * 2);
+    for byte in hash.as_bytes() {
+        encoded.push_str(&format!("{byte:02x}"));
+    }
+    encoded
+}
+
+fn integer_from_u64(value: u64, path: &str) -> Result<i64, RegistrationSummaryError> {
+    i64::try_from(value).map_err(|_| RegistrationSummaryError::InvalidField {
+        path: path.to_owned(),
+        reason: "value exceeds canonical JSON integer range".to_owned(),
+    })
+}
+
+fn field_path(path: &str, field: &str) -> String {
+    format!("{path}.{field}")
+}
+
+fn array_path(path: &str, index: usize) -> String {
+    format!("{path}[{index}]")
+}
+
+fn identity_display(identity: &ModuleSummaryIdentity) -> String {
+    format!(
+        "{}:{}:{}",
+        identity.package_id, identity.module_path, identity.language_edition
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        ActivatedRegistrationSummary, ArtifactHashClass, ArtifactHashRef,
+        DependencyRegistrationRef, REGISTRATION_SUMMARY_SCHEMA_FAMILY, RegistrationAcceptedStatus,
+        RegistrationContributionKind, RegistrationContributionSummary, RegistrationKind,
+        RegistrationPatternSummary, RegistrationSummary, RegistrationSummaryError,
+        RegistrationSummaryReadOptions, RegistrationTraceArtifactRef, RegistrationTraceKind,
+        RegistrationVisibility, SuppliedTraceArtifactRef, current_schema_version,
+        read_registration_summary, registration_interface_projection_json,
+        registration_summary_json, registration_summary_json_unchecked, write_registration_summary,
+    };
+    use crate::{
+        module_summary::{ModuleSummaryIdentity, SourceRangeSummary},
+        store::{
+            CanonicalHashDomain, CanonicalJson, HashClass, SchemaVersion, SchemaVersionError,
+            canonical_json_string,
+        },
+    };
+    use mizar_session::Hash;
+
+    #[test]
+    fn registration_summary_round_trips_through_canonical_json() {
+        let summary = sample_summary();
+        let json = registration_summary_json(&summary).expect("canonical registration JSON");
+        let bytes =
+            write_registration_summary(&summary).expect("canonical registration summary bytes");
+
+        assert_eq!(bytes, canonical_json_string(&json).into_bytes());
+        assert_eq!(
+            read_registration_summary(&json, RegistrationSummaryReadOptions::default())
+                .expect("valid summary"),
+            summary
+        );
+    }
+
+    #[test]
+    fn writer_sorts_collections_and_reader_rejects_unsorted_arrays() {
+        let mut summary = sample_summary();
+        summary.activated_registrations.reverse();
+        summary.trace_artifacts.reverse();
+        summary.dependency_registrations.reverse();
+        summary.activated_registrations[0].trace_ids.reverse();
+        summary.trace_artifacts[0]
+            .used_by_registration_origin_ids
+            .reverse();
+        summary
+            .refresh_registration_interface_hash()
+            .expect("refresh hash");
+
+        let json = registration_summary_json(&summary).expect("writer sorts collections");
+        let text = canonical_json_string(&json);
+        assert!(
+            text.find("\"trigger_key\":\"alpha\"")
+                .expect("alpha trigger")
+                < text.find("\"trigger_key\":\"zeta\"").expect("zeta trigger")
+        );
+        assert!(
+            text.find("\"trace_id\":\"cluster:alpha\"")
+                .expect("cluster trace")
+                < text
+                    .find("\"trace_id\":\"reduction:zeta\"")
+                    .expect("reduction trace")
+        );
+
+        assert_unsorted_collection_rejected(
+            json.clone(),
+            &["activated_registrations"],
+            "$.activated_registrations",
+        );
+        assert_unsorted_collection_rejected(
+            json.clone(),
+            &["trace_artifacts"],
+            "$.trace_artifacts",
+        );
+        assert_unsorted_collection_rejected(
+            json.clone(),
+            &["dependency_registrations"],
+            "$.dependency_registrations",
+        );
+        assert_unsorted_collection_rejected(
+            json.clone(),
+            &["activated_registrations", "trace_ids"],
+            "$.activated_registrations[0].trace_ids",
+        );
+        assert_unsorted_collection_rejected(
+            json,
+            &["trace_artifacts", "used_by_registration_origin_ids"],
+            "$.trace_artifacts[0].used_by_registration_origin_ids",
+        );
+    }
+
+    #[test]
+    fn trace_references_resolve_by_hash_when_supplied() {
+        let summary = sample_summary();
+        let json = registration_summary_json(&summary).expect("canonical JSON");
+        let cluster = &summary.trace_artifacts[0];
+        let reduction = &summary.trace_artifacts[1];
+        let supplied = [supplied_trace(cluster), supplied_trace(reduction)];
+
+        assert!(
+            read_registration_summary(
+                &json,
+                RegistrationSummaryReadOptions {
+                    supplied_trace_artifacts: &supplied,
+                    ..RegistrationSummaryReadOptions::default()
+                },
+            )
+            .is_ok()
+        );
+
+        let bad_artifact_hash = hash_ref(
+            ArtifactHashClass::Artifact,
+            "mizar-artifact/resolution-trace",
+            88,
+        );
+        let bad_supplied = [SuppliedTraceArtifactRef {
+            trace_id: cluster.trace_id.as_str(),
+            artifact_hash: &bad_artifact_hash,
+            trace_replay_hash: &cluster.trace_replay_hash,
+            diagnostic_hash: cluster.diagnostic_hash.as_ref(),
+        }];
+
+        assert!(matches!(
+            read_registration_summary(
+                &json,
+                RegistrationSummaryReadOptions {
+                    supplied_trace_artifacts: &bad_supplied,
+                    ..RegistrationSummaryReadOptions::default()
+                },
+            ),
+            Err(RegistrationSummaryError::SuppliedTraceArtifactMismatch {
+                field: "artifact_hash",
+                ..
+            })
+        ));
+
+        let bad_trace_replay_hash = hash_ref(
+            ArtifactHashClass::Interface,
+            "mizar-artifact/resolution-trace",
+            89,
+        );
+        let bad_supplied = [SuppliedTraceArtifactRef {
+            trace_id: cluster.trace_id.as_str(),
+            artifact_hash: &cluster.artifact_hash,
+            trace_replay_hash: &bad_trace_replay_hash,
+            diagnostic_hash: cluster.diagnostic_hash.as_ref(),
+        }];
+
+        assert!(matches!(
+            read_registration_summary(
+                &json,
+                RegistrationSummaryReadOptions {
+                    supplied_trace_artifacts: &bad_supplied,
+                    ..RegistrationSummaryReadOptions::default()
+                },
+            ),
+            Err(RegistrationSummaryError::SuppliedTraceArtifactMismatch {
+                field: "trace_replay_hash",
+                ..
+            })
+        ));
+
+        let bad_diagnostic_hash = hash_ref(
+            ArtifactHashClass::Diagnostic,
+            "mizar-artifact/resolution-trace",
+            90,
+        );
+        let bad_supplied = [SuppliedTraceArtifactRef {
+            trace_id: cluster.trace_id.as_str(),
+            artifact_hash: &cluster.artifact_hash,
+            trace_replay_hash: &cluster.trace_replay_hash,
+            diagnostic_hash: Some(&bad_diagnostic_hash),
+        }];
+
+        assert!(matches!(
+            read_registration_summary(
+                &json,
+                RegistrationSummaryReadOptions {
+                    supplied_trace_artifacts: &bad_supplied,
+                    ..RegistrationSummaryReadOptions::default()
+                },
+            ),
+            Err(RegistrationSummaryError::SuppliedTraceArtifactMismatch {
+                field: "diagnostic_hash",
+                ..
+            })
+        ));
+
+        let bad_supplied = [SuppliedTraceArtifactRef {
+            trace_id: cluster.trace_id.as_str(),
+            artifact_hash: &cluster.artifact_hash,
+            trace_replay_hash: &cluster.trace_replay_hash,
+            diagnostic_hash: None,
+        }];
+
+        assert!(matches!(
+            read_registration_summary(
+                &json,
+                RegistrationSummaryReadOptions {
+                    supplied_trace_artifacts: &bad_supplied,
+                    ..RegistrationSummaryReadOptions::default()
+                },
+            ),
+            Err(RegistrationSummaryError::SuppliedTraceArtifactMismatch {
+                field: "diagnostic_hash",
+                ..
+            })
+        ));
+
+        let duplicate_supplied = [supplied_trace(cluster), supplied_trace(cluster)];
+        assert!(matches!(
+            read_registration_summary(
+                &json,
+                RegistrationSummaryReadOptions {
+                    supplied_trace_artifacts: &duplicate_supplied,
+                    ..RegistrationSummaryReadOptions::default()
+                },
+            ),
+            Err(RegistrationSummaryError::DuplicateEntry { path, .. })
+                if path == "supplied_trace_artifacts"
+        ));
+
+        let unknown_supplied = [SuppliedTraceArtifactRef {
+            trace_id: "trace:unknown",
+            artifact_hash: &cluster.artifact_hash,
+            trace_replay_hash: &cluster.trace_replay_hash,
+            diagnostic_hash: cluster.diagnostic_hash.as_ref(),
+        }];
+        assert!(matches!(
+            read_registration_summary(
+                &json,
+                RegistrationSummaryReadOptions {
+                    supplied_trace_artifacts: &unknown_supplied,
+                    ..RegistrationSummaryReadOptions::default()
+                },
+            ),
+            Err(RegistrationSummaryError::UnknownSuppliedTraceArtifact { trace_id })
+                if trace_id == "trace:unknown"
+        ));
+    }
+
+    #[test]
+    fn registration_interface_hash_ignores_source_and_trace_byte_metadata() {
+        let mut baseline = sample_summary();
+        let baseline_hash = baseline
+            .refresh_registration_interface_hash()
+            .expect("baseline hash");
+        let mut changed_metadata = baseline.clone();
+        changed_metadata.source_hash = hash(99);
+        changed_metadata.activated_registrations[0].source_range = Some(SourceRangeSummary {
+            start_byte: 100,
+            end_byte: 120,
+        });
+        changed_metadata.trace_artifacts[0].artifact_path =
+            "traces/renamed.cluster.json".to_owned();
+        changed_metadata.trace_artifacts[0].artifact_hash = hash_ref(
+            ArtifactHashClass::Artifact,
+            "mizar-artifact/resolution-trace",
+            91,
+        );
+        changed_metadata.trace_artifacts[0].diagnostic_hash = Some(hash_ref(
+            ArtifactHashClass::Diagnostic,
+            "mizar-artifact/resolution-trace",
+            92,
+        ));
+
+        assert_eq!(
+            changed_metadata
+                .refresh_registration_interface_hash()
+                .expect("metadata-only hash"),
+            baseline_hash
+        );
+    }
+
+    #[test]
+    fn registration_interface_hash_uses_declared_registration_summary_domain() {
+        let summary = sample_summary();
+        let projection = registration_interface_projection_json(&summary).expect("projection");
+        let expected = CanonicalHashDomain::new(
+            HashClass::Interface,
+            REGISTRATION_SUMMARY_SCHEMA_FAMILY,
+            current_schema_version(),
+        )
+        .hash(&projection, &[]);
+
+        assert_eq!(
+            summary
+                .compute_registration_interface_hash()
+                .expect("summary hash"),
+            expected
+        );
+        assert_ne!(
+            CanonicalHashDomain::new(
+                HashClass::Artifact,
+                REGISTRATION_SUMMARY_SCHEMA_FAMILY,
+                current_schema_version(),
+            )
+            .hash(&projection, &[]),
+            expected
+        );
+        assert_ne!(
+            CanonicalHashDomain::new(
+                HashClass::Interface,
+                "mizar-artifact/other-summary",
+                current_schema_version(),
+            )
+            .hash(&projection, &[]),
+            expected
+        );
+    }
+
+    #[test]
+    fn registration_interface_hash_changes_for_importer_visible_projection_changes() {
+        assert_registration_hash_changes("module identity", |summary| {
+            summary.module.module_path = "Renamed.Hidden".to_owned();
+        });
+        assert_registration_hash_changes("registration contribution", |summary| {
+            summary.activated_registrations[0]
+                .generated_contribution
+                .fingerprint = hash_ref(ArtifactHashClass::Interface, "mizar-artifact/checker", 51);
+        });
+        assert_registration_hash_changes("verifier policy", |summary| {
+            summary.activated_registrations[0].verifier_policy_fingerprint = hash_ref(
+                ArtifactHashClass::Interface,
+                "mizar-artifact/verifier-policy",
+                52,
+            );
+        });
+        assert_registration_hash_changes("trace replay hash", |summary| {
+            summary.trace_artifacts[0].trace_replay_hash = hash_ref(
+                ArtifactHashClass::Interface,
+                "mizar-artifact/resolution-trace",
+                53,
+            );
+        });
+        assert_registration_hash_changes("dependency registration", |summary| {
+            summary.dependency_registrations[0].registration_interface_hash = hash(54);
+        });
+    }
+
+    #[test]
+    fn incompatible_version_reads_fail_cleanly() {
+        let summary = sample_summary();
+        let mut json = registration_summary_json(&summary).expect("canonical JSON");
+        replace_object_field(&mut json, "schema_version", CanonicalJson::string("2.0"));
+
+        assert!(matches!(
+            read_registration_summary(
+                &json,
+                RegistrationSummaryReadOptions {
+                    artifact_path: Some("build/registration-summary.json"),
+                    ..RegistrationSummaryReadOptions::default()
+                },
+            ),
+            Err(RegistrationSummaryError::SchemaVersion(
+                SchemaVersionError::MajorMismatch { .. }
+            ))
+        ));
+    }
+
+    #[test]
+    fn reader_rejects_hash_and_module_mismatches() {
+        let summary = sample_summary();
+        let json = registration_summary_json(&summary).expect("canonical JSON");
+        let other_module = ModuleSummaryIdentity {
+            package_id: "other-package".to_owned(),
+            ..summary.module.clone()
+        };
+        assert!(matches!(
+            read_registration_summary(
+                &json,
+                RegistrationSummaryReadOptions {
+                    expected_module: Some(&other_module),
+                    ..RegistrationSummaryReadOptions::default()
+                }
+            ),
+            Err(RegistrationSummaryError::ModuleIdentityMismatch { .. })
+        ));
+
+        assert!(matches!(
+            read_registration_summary(
+                &json,
+                RegistrationSummaryReadOptions {
+                    expected_registration_interface_hash: Some(hash(88)),
+                    ..RegistrationSummaryReadOptions::default()
+                }
+            ),
+            Err(RegistrationSummaryError::ExpectedRegistrationInterfaceHashMismatch { .. })
+        ));
+
+        let mut bad_hash_json = json;
+        replace_object_field(
+            &mut bad_hash_json,
+            "registration_interface_hash",
+            CanonicalJson::string(format!(
+                "mizar-artifact/artifact-framed-hash-text/v1:interface:mizar-artifact/registration-summary:1.0:{}",
+                "77".repeat(Hash::BYTE_LEN)
+            )),
+        );
+        assert!(matches!(
+            read_registration_summary(&bad_hash_json, RegistrationSummaryReadOptions::default()),
+            Err(RegistrationSummaryError::RegistrationInterfaceHashMismatch { .. })
+        ));
+    }
+
+    #[test]
+    fn reader_rejects_invalid_hash_domains_and_digests() {
+        let summary = sample_summary();
+        let json = registration_summary_json(&summary).expect("canonical JSON");
+        let digest = "11".repeat(Hash::BYTE_LEN);
+
+        for bad_hash in [
+            format!(
+                "mizar-artifact/other-framed-hash/v1:interface:mizar-artifact/registration-summary:1.0:{digest}"
+            ),
+            format!(
+                "mizar-artifact/artifact-framed-hash-text/v1:artifact:mizar-artifact/registration-summary:1.0:{digest}"
+            ),
+            format!(
+                "mizar-artifact/artifact-framed-hash-text/v1:interface:mizar-artifact/other-summary:1.0:{digest}"
+            ),
+            format!(
+                "mizar-artifact/artifact-framed-hash-text/v1:interface:mizar-artifact/registration-summary:1.1:{digest}"
+            ),
+            format!(
+                "mizar-artifact/artifact-framed-hash-text/v1:interface:mizar-artifact/registration-summary:1.0:{}",
+                "GG".repeat(Hash::BYTE_LEN)
+            ),
+        ] {
+            let mut bad_json = json.clone();
+            replace_object_field(
+                &mut bad_json,
+                "registration_interface_hash",
+                CanonicalJson::string(bad_hash),
+            );
+
+            assert!(matches!(
+                read_registration_summary(&bad_json, RegistrationSummaryReadOptions::default()),
+                Err(RegistrationSummaryError::InvalidHash { path, .. })
+                    if path == "$.registration_interface_hash"
+            ));
+        }
+
+        let mut bad_pattern_family = json;
+        replace_nested_object_field(
+            &mut bad_pattern_family,
+            &["activated_registrations", "normalized_pattern"],
+            "fingerprint",
+            CanonicalJson::string(format!(
+                "mizar-artifact/artifact-framed-hash-text/v1:interface:mizar-artifact//bad:1.0:{digest}"
+            )),
+        );
+
+        assert!(matches!(
+            read_registration_summary(&bad_pattern_family, RegistrationSummaryReadOptions::default()),
+            Err(RegistrationSummaryError::InvalidHash { path, .. })
+                if path == "$.activated_registrations[0].normalized_pattern.fingerprint"
+        ));
+    }
+
+    #[test]
+    fn reader_rejects_duplicates_and_broken_trace_cross_references() {
+        let summary = sample_summary();
+        let json = registration_summary_json(&summary).expect("canonical JSON");
+
+        assert_duplicate_collection_rejected(
+            json.clone(),
+            &["activated_registrations"],
+            "$.activated_registrations",
+        );
+        assert_duplicate_collection_rejected(
+            json.clone(),
+            &["trace_artifacts"],
+            "$.trace_artifacts",
+        );
+        assert_duplicate_collection_rejected(
+            json.clone(),
+            &["dependency_registrations"],
+            "$.dependency_registrations",
+        );
+        assert_duplicate_collection_rejected(
+            json.clone(),
+            &["trace_artifacts", "used_by_registration_origin_ids"],
+            "$.trace_artifacts[0].used_by_registration_origin_ids",
+        );
+        assert_duplicate_collection_rejected(
+            json.clone(),
+            &["activated_registrations", "trace_ids"],
+            "$.activated_registrations[0].trace_ids",
+        );
+
+        let mut missing_trace = json.clone();
+        remove_first_array_item_at(&mut missing_trace, &["trace_artifacts"]);
+        assert!(matches!(
+            read_registration_summary(&missing_trace, RegistrationSummaryReadOptions::default()),
+            Err(RegistrationSummaryError::TraceReferenceMismatch { path, .. })
+                if path == "$.trace_artifacts"
+        ));
+
+        let mut extra_trace_summary = sample_summary();
+        extra_trace_summary.trace_artifacts.push(trace(
+            "cluster:unused",
+            RegistrationTraceKind::Cluster,
+            &[],
+            66,
+        ));
+        let extra_trace_json =
+            registration_summary_json_unchecked(&extra_trace_summary).expect("unchecked JSON");
+        assert!(matches!(
+            read_registration_summary(&extra_trace_json, RegistrationSummaryReadOptions::default()),
+            Err(RegistrationSummaryError::TraceReferenceMismatch { path, .. })
+                if path == "$.trace_artifacts"
+        ));
+
+        let mut wrong_used_by = json;
+        replace_nested_object_field(
+            &mut wrong_used_by,
+            &["trace_artifacts"],
+            "used_by_registration_origin_ids",
+            CanonicalJson::array([CanonicalJson::string("registration:missing")]),
+        );
+        assert!(matches!(
+            read_registration_summary(&wrong_used_by, RegistrationSummaryReadOptions::default()),
+            Err(RegistrationSummaryError::TraceReferenceMismatch { .. })
+        ));
+    }
+
+    #[test]
+    fn reader_rejects_nested_missing_and_unknown_fields() {
+        let summary = sample_summary();
+        let json = registration_summary_json(&summary).expect("canonical JSON");
+
+        let mut missing_registration_field = json.clone();
+        remove_nested_object_field(
+            &mut missing_registration_field,
+            &["activated_registrations"],
+            "trigger_key",
+        );
+        assert!(matches!(
+            read_registration_summary(
+                &missing_registration_field,
+                RegistrationSummaryReadOptions::default()
+            ),
+            Err(RegistrationSummaryError::MissingField { path })
+                if path == "$.activated_registrations[0].trigger_key"
+        ));
+
+        let mut unknown_registration_field = json.clone();
+        replace_nested_object_field(
+            &mut unknown_registration_field,
+            &["activated_registrations"],
+            "raw_checker_state",
+            CanonicalJson::bool(true),
+        );
+        assert!(matches!(
+            read_registration_summary(
+                &unknown_registration_field,
+                RegistrationSummaryReadOptions::default()
+            ),
+            Err(RegistrationSummaryError::UnknownField { path, field })
+                if path == "$.activated_registrations[0]" && field == "raw_checker_state"
+        ));
+
+        let mut missing_pattern_field = json.clone();
+        remove_nested_object_field(
+            &mut missing_pattern_field,
+            &["activated_registrations", "normalized_pattern"],
+            "fingerprint",
+        );
+        assert!(matches!(
+            read_registration_summary(&missing_pattern_field, RegistrationSummaryReadOptions::default()),
+            Err(RegistrationSummaryError::MissingField { path })
+                if path == "$.activated_registrations[0].normalized_pattern.fingerprint"
+        ));
+
+        let mut unknown_pattern_field = json.clone();
+        replace_nested_object_field(
+            &mut unknown_pattern_field,
+            &["activated_registrations", "normalized_pattern"],
+            "raw_trace",
+            CanonicalJson::bool(true),
+        );
+        assert!(matches!(
+            read_registration_summary(&unknown_pattern_field, RegistrationSummaryReadOptions::default()),
+            Err(RegistrationSummaryError::UnknownField { path, field })
+                if path == "$.activated_registrations[0].normalized_pattern" && field == "raw_trace"
+        ));
+
+        let mut missing_trace_field = json.clone();
+        remove_nested_object_field(&mut missing_trace_field, &["trace_artifacts"], "trace_kind");
+        assert!(matches!(
+            read_registration_summary(&missing_trace_field, RegistrationSummaryReadOptions::default()),
+            Err(RegistrationSummaryError::MissingField { path })
+                if path == "$.trace_artifacts[0].trace_kind"
+        ));
+
+        let mut unknown_trace_field = json.clone();
+        replace_nested_object_field(
+            &mut unknown_trace_field,
+            &["trace_artifacts"],
+            "scheduler_state",
+            CanonicalJson::bool(true),
+        );
+        assert!(matches!(
+            read_registration_summary(&unknown_trace_field, RegistrationSummaryReadOptions::default()),
+            Err(RegistrationSummaryError::UnknownField { path, field })
+                if path == "$.trace_artifacts[0]" && field == "scheduler_state"
+        ));
+
+        let mut missing_dependency_field = json.clone();
+        remove_nested_object_field(
+            &mut missing_dependency_field,
+            &["dependency_registrations"],
+            "registration_interface_hash",
+        );
+        assert!(matches!(
+            read_registration_summary(&missing_dependency_field, RegistrationSummaryReadOptions::default()),
+            Err(RegistrationSummaryError::MissingField { path })
+                if path == "$.dependency_registrations[0].registration_interface_hash"
+        ));
+
+        let mut unknown_dependency_field = json;
+        replace_nested_object_field(
+            &mut unknown_dependency_field,
+            &["dependency_registrations"],
+            "cache_record",
+            CanonicalJson::bool(true),
+        );
+        assert!(matches!(
+            read_registration_summary(&unknown_dependency_field, RegistrationSummaryReadOptions::default()),
+            Err(RegistrationSummaryError::UnknownField { path, field })
+                if path == "$.dependency_registrations[0]" && field == "cache_record"
+        ));
+    }
+
+    #[test]
+    fn reader_rejects_unaccepted_private_missing_and_unknown_fields() {
+        let summary = sample_summary();
+        let json = registration_summary_json(&summary).expect("canonical JSON");
+
+        let mut unaccepted = json.clone();
+        replace_nested_object_field(
+            &mut unaccepted,
+            &["activated_registrations"],
+            "accepted_status",
+            CanonicalJson::string("pending"),
+        );
+        assert!(matches!(
+            read_registration_summary(&unaccepted, RegistrationSummaryReadOptions::default()),
+            Err(RegistrationSummaryError::InvalidField { path, .. })
+                if path == "$.activated_registrations[0].accepted_status"
+        ));
+
+        let mut private = json.clone();
+        replace_nested_object_field(
+            &mut private,
+            &["activated_registrations"],
+            "visibility",
+            CanonicalJson::string("private"),
+        );
+        assert!(matches!(
+            read_registration_summary(&private, RegistrationSummaryReadOptions::default()),
+            Err(RegistrationSummaryError::InvalidField { path, .. })
+                if path == "$.activated_registrations[0].visibility"
+        ));
+
+        let mut missing = json.clone();
+        remove_object_field(&mut missing, "source_hash");
+        assert!(matches!(
+            read_registration_summary(&missing, RegistrationSummaryReadOptions::default()),
+            Err(RegistrationSummaryError::MissingField { path }) if path == "$.source_hash"
+        ));
+
+        let mut unknown = json;
+        insert_object_field(&mut unknown, "cache_record", CanonicalJson::bool(true));
+        assert!(matches!(
+            read_registration_summary(&unknown, RegistrationSummaryReadOptions::default()),
+            Err(RegistrationSummaryError::UnknownField { path, field })
+                if path == "$" && field == "cache_record"
+        ));
+    }
+
+    fn sample_summary() -> RegistrationSummary {
+        let module = identity("base", "Hidden");
+        let dep_alpha = identity("dep-alpha", "AlphaDep");
+        let dep_zeta = identity("dep-zeta", "ZetaDep");
+        let mut zeta_registration = registration(
+            "registration:zeta",
+            RegistrationKind::Reduction,
+            "zeta",
+            "reduction:zeta",
+            20,
+        );
+        zeta_registration
+            .trace_ids
+            .push("cluster:000-shared".to_owned());
+        let mut alpha_registration = registration(
+            "registration:alpha",
+            RegistrationKind::Conditional,
+            "alpha",
+            "cluster:alpha",
+            0,
+        );
+        alpha_registration
+            .trace_ids
+            .push("cluster:000-shared".to_owned());
+        let mut summary = RegistrationSummary {
+            schema_version: current_schema_version(),
+            module: module.clone(),
+            source_hash: hash(1),
+            registration_interface_hash: hash(0),
+            activated_registrations: vec![zeta_registration, alpha_registration],
+            trace_artifacts: vec![
+                trace(
+                    "reduction:zeta",
+                    RegistrationTraceKind::Reduction,
+                    &["registration:zeta"],
+                    6,
+                ),
+                trace(
+                    "cluster:alpha",
+                    RegistrationTraceKind::Cluster,
+                    &["registration:alpha"],
+                    7,
+                ),
+                trace(
+                    "cluster:000-shared",
+                    RegistrationTraceKind::Cluster,
+                    &["registration:zeta", "registration:alpha"],
+                    8,
+                ),
+            ],
+            dependency_registrations: vec![
+                DependencyRegistrationRef {
+                    module: dep_zeta,
+                    registration_interface_hash: hash(8),
+                },
+                DependencyRegistrationRef {
+                    module: dep_alpha,
+                    registration_interface_hash: hash(9),
+                },
+            ],
+        };
+        summary
+            .refresh_registration_interface_hash()
+            .expect("sample hash");
+        registration_summary_json(&summary).expect("sample is canonical");
+        read_registration_summary(
+            &registration_summary_json(&summary).expect("sample JSON"),
+            RegistrationSummaryReadOptions::default(),
+        )
+        .expect("sample round-trip")
+    }
+
+    fn identity(package_id: &str, module_path: &str) -> ModuleSummaryIdentity {
+        ModuleSummaryIdentity {
+            package_id: package_id.to_owned(),
+            package_version: Some("1.0.0".to_owned()),
+            lockfile_identity: Some("lock:fixture".to_owned()),
+            module_path: module_path.to_owned(),
+            language_edition: "2026".to_owned(),
+        }
+    }
+
+    fn registration(
+        origin_id: &str,
+        kind: RegistrationKind,
+        trigger_key: &str,
+        trace_id: &str,
+        start_byte: u64,
+    ) -> ActivatedRegistrationSummary {
+        ActivatedRegistrationSummary {
+            origin_id: origin_id.to_owned(),
+            label: Some(format!("label:{trigger_key}")),
+            registration_kind: kind,
+            visibility: RegistrationVisibility::Public,
+            namespace_path: vec!["Hidden".to_owned()],
+            source_module: identity("base", "Hidden"),
+            trigger_key: trigger_key.to_owned(),
+            normalized_pattern: RegistrationPatternSummary {
+                fingerprint: hash_ref(ArtifactHashClass::Interface, "mizar-artifact/checker", 2),
+                type_head: Some("Hidden.Type".to_owned()),
+                attribute: Some("non_empty".to_owned()),
+                functor: None,
+                term_head: None,
+                parameters: vec!["T".to_owned()],
+                guards: vec![hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-artifact/checker",
+                    3,
+                )],
+            },
+            generated_contribution: RegistrationContributionSummary {
+                kind: if kind == RegistrationKind::Reduction {
+                    RegistrationContributionKind::ReductionRule
+                } else {
+                    RegistrationContributionKind::AttributeFact
+                },
+                summary: format!("generated contribution for {trigger_key}"),
+                fingerprint: hash_ref(ArtifactHashClass::Interface, "mizar-artifact/checker", 4),
+            },
+            accepted_status: RegistrationAcceptedStatus::Accepted,
+            verifier_policy_fingerprint: hash_ref(
+                ArtifactHashClass::Interface,
+                "mizar-artifact/verifier-policy",
+                5,
+            ),
+            trace_ids: vec![trace_id.to_owned()],
+            source_range: Some(SourceRangeSummary {
+                start_byte,
+                end_byte: start_byte + 10,
+            }),
+        }
+    }
+
+    fn trace(
+        trace_id: &str,
+        trace_kind: RegistrationTraceKind,
+        used_by_origin_ids: &[&str],
+        seed: u8,
+    ) -> RegistrationTraceArtifactRef {
+        RegistrationTraceArtifactRef {
+            trace_id: trace_id.to_owned(),
+            trace_kind,
+            artifact_path: format!("traces/{trace_id}.json"),
+            artifact_hash: hash_ref(
+                ArtifactHashClass::Artifact,
+                "mizar-artifact/resolution-trace",
+                seed,
+            ),
+            trace_replay_hash: hash_ref(
+                ArtifactHashClass::Interface,
+                "mizar-artifact/resolution-trace",
+                seed + 10,
+            ),
+            diagnostic_hash: Some(hash_ref(
+                ArtifactHashClass::Diagnostic,
+                "mizar-artifact/resolution-trace",
+                seed + 20,
+            )),
+            used_by_registration_origin_ids: used_by_origin_ids
+                .iter()
+                .map(|origin_id| (*origin_id).to_owned())
+                .collect(),
+        }
+    }
+
+    fn supplied_trace(trace: &RegistrationTraceArtifactRef) -> SuppliedTraceArtifactRef<'_> {
+        SuppliedTraceArtifactRef {
+            trace_id: trace.trace_id.as_str(),
+            artifact_hash: &trace.artifact_hash,
+            trace_replay_hash: &trace.trace_replay_hash,
+            diagnostic_hash: trace.diagnostic_hash.as_ref(),
+        }
+    }
+
+    fn hash_ref(class: ArtifactHashClass, schema_family: &str, seed: u8) -> ArtifactHashRef {
+        ArtifactHashRef::new(class, schema_family, SchemaVersion::new(1, 0), hash(seed))
+    }
+
+    fn hash(seed: u8) -> Hash {
+        Hash::from_bytes([seed; Hash::BYTE_LEN])
+    }
+
+    fn assert_registration_hash_changes(name: &str, mutate: impl FnOnce(&mut RegistrationSummary)) {
+        let baseline = sample_summary();
+        let baseline_hash = baseline.registration_interface_hash;
+        let mut changed = baseline.clone();
+        mutate(&mut changed);
+
+        assert_ne!(
+            changed
+                .refresh_registration_interface_hash()
+                .unwrap_or_else(|error| panic!("{name}: {error}")),
+            baseline_hash,
+            "{name}"
+        );
+    }
+
+    fn assert_unsorted_collection_rejected(
+        mut json: CanonicalJson,
+        fields: &[&str],
+        expected_path: &str,
+    ) {
+        reverse_array_at(&mut json, fields);
+
+        assert!(matches!(
+            read_registration_summary(&json, RegistrationSummaryReadOptions::default()),
+            Err(RegistrationSummaryError::UnsortedCollection { path }) if path == expected_path
+        ));
+    }
+
+    fn assert_duplicate_collection_rejected(
+        mut json: CanonicalJson,
+        fields: &[&str],
+        expected_path: &str,
+    ) {
+        duplicate_first_array_item_at(&mut json, fields);
+
+        assert!(matches!(
+            read_registration_summary(&json, RegistrationSummaryReadOptions::default()),
+            Err(RegistrationSummaryError::DuplicateEntry { path, .. }) if path == expected_path
+        ));
+    }
+
+    fn replace_object_field(value: &mut CanonicalJson, field: &str, replacement: CanonicalJson) {
+        let CanonicalJson::Object(fields) = value else {
+            panic!("expected object");
+        };
+        fields.insert(field.to_owned(), replacement);
+    }
+
+    fn insert_object_field(value: &mut CanonicalJson, field: &str, replacement: CanonicalJson) {
+        replace_object_field(value, field, replacement);
+    }
+
+    fn remove_object_field(value: &mut CanonicalJson, field: &str) {
+        let CanonicalJson::Object(fields) = value else {
+            panic!("expected object");
+        };
+        fields.remove(field).expect("object field");
+    }
+
+    fn remove_nested_object_field(value: &mut CanonicalJson, fields: &[&str], field: &str) {
+        let object = first_object_at_mut(value, fields);
+        remove_object_field(object, field);
+    }
+
+    fn replace_nested_object_field(
+        value: &mut CanonicalJson,
+        fields: &[&str],
+        field: &str,
+        replacement: CanonicalJson,
+    ) {
+        let object = first_object_at_mut(value, fields);
+        replace_object_field(object, field, replacement);
+    }
+
+    fn reverse_array_at(value: &mut CanonicalJson, fields: &[&str]) {
+        let values = array_at_mut(value, fields);
+        values.reverse();
+    }
+
+    fn duplicate_first_array_item_at(value: &mut CanonicalJson, fields: &[&str]) {
+        let values = array_at_mut(value, fields);
+        assert!(
+            values.len() >= 2,
+            "fixture array must contain at least two entries"
+        );
+        values[1] = values[0].clone();
+    }
+
+    fn remove_first_array_item_at(value: &mut CanonicalJson, fields: &[&str]) {
+        let values = array_at_mut(value, fields);
+        values.remove(0);
+    }
+
+    fn array_at_mut<'a>(
+        value: &'a mut CanonicalJson,
+        fields: &[&str],
+    ) -> &'a mut Vec<CanonicalJson> {
+        let (last, parents) = fields.split_last().expect("field path must be non-empty");
+        let mut current = value;
+        for field in parents {
+            current = first_object_at_mut(current, &[*field]);
+        }
+        let CanonicalJson::Array(values) = object_field_mut(current, last) else {
+            panic!("expected array");
+        };
+        values
+    }
+
+    fn first_object_at_mut<'a>(
+        value: &'a mut CanonicalJson,
+        fields: &[&str],
+    ) -> &'a mut CanonicalJson {
+        let mut current = value;
+        for field in fields {
+            current = object_field_mut(current, field);
+            if let CanonicalJson::Array(values) = current {
+                current = values.first_mut().expect("array item");
+            }
+        }
+        current
+    }
+
+    fn object_field_mut<'a>(value: &'a mut CanonicalJson, field: &str) -> &'a mut CanonicalJson {
+        let CanonicalJson::Object(fields) = value else {
+            panic!("expected object");
+        };
+        fields.get_mut(field).expect("object field")
+    }
+}

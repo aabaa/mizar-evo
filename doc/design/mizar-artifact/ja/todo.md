@@ -21,7 +21,7 @@ source task が始まる前に file を追加する。モジュール名は
 |---|---|---|---|
 | store | `store.md`（task 2） | `src/store.rs` | [~] |
 | module_summary | `module_summary.md`（task 4） | `src/module_summary.rs` | [x] |
-| registration_summary | `registration_summary.md`（task 6） | `src/registration_summary.rs` | [ ] |
+| registration_summary | `registration_summary.md`（task 6） | `src/registration_summary.rs` | [x] |
 | proof_witness | `proof_witness.md`（task 8） | `src/proof_witness.rs` | [ ] |
 | verified_artifact | `verified_artifact.md`（task 10） | `src/verified_artifact.rs` | [ ] |
 | manifest | `manifest.md`（task 12） | `src/manifest.rs` | [ ] |
@@ -127,7 +127,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
    - 依存: 2。仕様: アーキテクチャ 04、
      [17.cluster_trace_format.md](../../architecture/ja/17.cluster_trace_format.md)。
 
-7. **`RegistrationSummary` スキーマ、writer、reader。** [ ]
+7. **`RegistrationSummary` スキーマ、writer、reader。** [x]
    - checker のクロスモジュール再利用のために、writer と検証つき reader を
      備えたスキーマを実装する。
    - テスト: ラウンドトリップ。trace 参照がハッシュで解決される。決定的な

@@ -57,8 +57,8 @@ struct RegistrationSummary {
 }
 ```
 
-Task 6 specifies this shape only. Task 7 serializes it as canonical JSON and
-adds the validating reader/writer.
+The task 7 implementation serializes this shape as canonical JSON and adds the
+validating reader/writer.
 
 `source_hash` records the source text used to produce the summary so readers can
 diagnose stale artifacts. It is not part of `registration_interface_hash`.
@@ -106,7 +106,7 @@ activated_registration = {
   "origin_id": string,
   "label": string | null,
   "registration_kind": "existential" | "conditional" | "functorial" | "reduction",
-  "visibility": string,
+  "visibility": "public",
   "namespace_path": [string, ...],
   "source_module": module,
   "trigger_key": string,
@@ -141,11 +141,45 @@ source_range = {
 ```
 
 Optional fields are present with JSON `null` when absent. Readers reject empty
-strings in identity, label, kind, trigger, summary, parameter, and trace-id
-fields; unknown enum values; ranges whose start is greater than end; duplicate
-`trace_ids`; and any `accepted_status` other than `accepted`. Pending or
-unaccepted registrations are represented by absence from this summary, not by
-alternate status values.
+strings in all string fields and string-array entries, including identity,
+origin id, label, namespace path, trigger, pattern head, summary, parameter,
+artifact path, trace id, and used-by origin id fields; unknown enum values;
+ranges whose start is greater than end; duplicate `trace_ids`; any `visibility`
+other than `public`; and any `accepted_status` other than `accepted`. Pending,
+private, or unaccepted registrations are represented by absence from this
+summary, not by alternate status values.
+
+## Hash String Domains
+
+Task 7 uses the task-3 artifact-framed hash string form for published artifact
+hashes:
+
+```text
+mizar-artifact/artifact-framed-hash-text/v1:<class>:<schema_family>:<schema_version>:<digest>
+```
+
+`<digest>` is a 64-character lowercase hexadecimal digest. Top-level
+`registration_interface_hash` and
+`dependency_registration.registration_interface_hash` use class `interface`,
+schema family `mizar-artifact/registration-summary`, and the summary's
+`schema_version`. `source_hash` is not artifact-framed; it uses the
+`mizar-session/hash-text/v1:<digest>` source-text construction.
+
+Artifact-framed `schema_family` strings are non-empty, colon-free,
+slash-separated identifiers. Each segment must be non-empty and contain only
+ASCII letters, ASCII digits, hyphen, underscore, or dot. `schema_version` uses
+the same `major.minor` grammar as the task-3 store schema version.
+
+Pattern fingerprints, contribution fingerprints, guard fingerprints,
+`verifier_policy_fingerprint`, and `trace_replay_hash` are semantic interface
+hash strings. They preserve their producer-owned schema family and schema
+version instead of being rewritten into the registration-summary domain.
+`artifact_hash` uses class `artifact`; `diagnostic_hash` uses class
+`diagnostic`. Task 7 validates the construction label, class, version shape, and
+digest spelling, and validates exact hash-reference equality when the caller
+supplies a referenced trace artifact. It does not define the future
+`ResolutionTrace` artifact schema family; that remains an
+`external_dependency_gap` for the trace producer/schema task.
 
 ## Trace Artifact References
 
@@ -172,6 +206,11 @@ The trace body remains owned by the trace artifact schema from architecture 17.
 This summary owns only the stable reference. Missing trace data is never
 interpreted as "no trace"; if a registration requires a trace for replay or
 diagnostics, the reference must be present and hash-validated by the reader.
+The reader also checks bidirectional reference consistency: the set of
+`trace_artifacts.trace_id` values must exactly equal the set of trace ids named
+by activated registrations, and each trace artifact's
+`used_by_registration_origin_ids` must exactly equal the sorted set of
+activated registration origin ids that name that trace id.
 Activation is not a `ResolutionTrace` kind in architecture 17. Registration
 activation is projected through `accepted_status` and
 `verifier_policy_fingerprint`; any future activation proof witness reference is
@@ -244,6 +283,8 @@ All collections are serialized deterministically:
 - activated registrations sort by registration kind, trigger key, origin id,
   label, normalized pattern fingerprint, generated contribution fingerprint,
   and accepted proof status; readers reject duplicate origin ids;
+- each activated registration's `trace_ids` sort by trace id and reject
+  duplicates;
 - trace references sort by trace kind, trace id, artifact path, artifact hash,
   and `trace_replay_hash`; optional `diagnostic_hash` is not an interface-order
   tie-breaker; readers reject duplicate trace ids;
@@ -261,6 +302,9 @@ current schema version. Task 7 readers operate over `CanonicalJson` values
 produced at the store boundary; byte-level artifact parsing and duplicate-key
 detection for files remain part of the later artifact-store I/O task. Readers:
 
+- require every schema object field listed above, including fields whose absent
+  value is represented as JSON `null`;
+- reject unknown fields at every schema object;
 - check schema-version compatibility before interpreting summary fields;
 - verify that the manifest entry, requested module, and summary module identity
   agree;
@@ -280,11 +324,12 @@ cache records.
 
 ## Deferred Implementation
 
-Task 6 adds this specification only. Source implementation is deferred to task
-7, which adds the `RegistrationSummary` schema, writer, validating reader, and
-tests for round-trips, trace references resolving by hash, deterministic
-ordering, incompatible-version reads, and registration/hash mismatch rejection.
+Task 7 adds the `RegistrationSummary` schema, canonical value writer,
+validating `CanonicalJson` reader, and tests for round-trips, trace references
+resolving by hash, deterministic ordering, incompatible-version reads, and
+registration/hash mismatch rejection.
 
 Checker producer integration, concrete `ResolutionTrace` artifact production,
 proof acceptance, and manifest/file I/O remain external or later-task work and
-must not be stubbed in task 6.
+must not be stubbed in task 7. Byte-level artifact parsing and duplicate-key
+detection for files remain deferred to artifact-store I/O.

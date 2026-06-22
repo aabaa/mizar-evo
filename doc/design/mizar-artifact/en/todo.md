@@ -22,7 +22,7 @@ and 18 and internal 02 and 06.
 |---|---|---|---|
 | store | `store.md` (task 2) | `src/store.rs` | [~] |
 | module_summary | `module_summary.md` (task 4) | `src/module_summary.rs` | [x] |
-| registration_summary | `registration_summary.md` (task 6) | `src/registration_summary.rs` | [ ] |
+| registration_summary | `registration_summary.md` (task 6) | `src/registration_summary.rs` | [x] |
 | proof_witness | `proof_witness.md` (task 8) | `src/proof_witness.rs` | [ ] |
 | verified_artifact | `verified_artifact.md` (task 10) | `src/verified_artifact.rs` | [ ] |
 | manifest | `manifest.md` (task 12) | `src/manifest.rs` | [ ] |
@@ -126,7 +126,7 @@ Keep `cargo test -p mizar-artifact` green after each task (see
    - Deps: 2. Spec: architecture 04,
      [17.cluster_trace_format.md](../../architecture/en/17.cluster_trace_format.md).
 
-7. **`RegistrationSummary` schema, writer, and reader.** [ ]
+7. **`RegistrationSummary` schema, writer, and reader.** [x]
    - Implement the schema with writer and validating reader for checker
      cross-module reuse.
    - Tests: round-trips; trace references resolve by hash; deterministic
