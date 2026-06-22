@@ -22,7 +22,7 @@
 | type_checker | `type_checker.md`（task 6） | `src/type_checker.rs` | [~] |
 | registration_resolution | `registration_resolution.md`（task 13） | `src/registration_resolution.rs` | [~] |
 | cluster_trace | `cluster_trace.md`（task 15） | `src/cluster_trace.rs` | [~] |
-| overload_resolution | `overload_resolution.md`（task 21） | `src/overload_resolution.rs` | [ ] |
+| overload_resolution | `overload_resolution.md`（task 21） | `src/overload_resolution.rs` | [~] |
 | resolved_typed_ast | `resolved_typed_ast.md`（task 27） | `src/resolved_typed_ast.rs` | [ ] |
 
 `mizar-checker` はパイプライン phase 6-8 を実装する。入力は `ResolvedAst` と
@@ -382,11 +382,19 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       determinism、tasks 22-26 の planned task coverage、MC-G027 test/deferred/external
       gap を code なしで定義する。
 
-22. **候補サイトの収集。** [ ]
-    - `TypedAst` と `SymbolEnv`（スコープ/可視性で既にフィルタ済み）から
-      来歴付きでオーバーロードサイトと候補集合を収集する。
+22. **候補サイトの収集。** [x]
+    - スコープ/可視性でフィルタ済みの後、`TypedAst` site ref と resolver symbol id を
+      持つ explicit overload site / candidate payload を収集する。
     - テスト: 適用形ごとのサイトカバレッジ。来歴の保持。決定的な候補順。
     - 依存: 11、21。仕様: `overload_resolution.md`（サイトの節）。
+    - task 22 で完了: `src/overload_resolution.rs` は explicit site / candidate
+      payload 上の checker-owned `OverloadCollectionOutput::collect` を公開する。
+      deterministic local site/candidate id を割り当て、site / candidate provenance、
+      source-written `qua`、template、coherence metadata を保持し、duplicate site key と
+      missing candidate-site link を rejected input provenance を残しながら診断し、
+      unsupported role を stable diagnostic 付きで deferred にし、`SymbolEnv` scan、raw syntax walk、template expansion、viability
+      check、root selection、`ResolvedTypedAst` projection なしに、scope/visibility
+      filter 済み candidate set を供給された通りに保存する。
 
 23. **template 展開。** [ ]
     - 通常の候補順序付けに先立って template 候補を具体候補へ展開する。

@@ -102,6 +102,33 @@ fn checker_source_does_not_import_syntax_directly() {
 }
 
 #[test]
+fn overload_collection_stays_on_explicit_payload_boundary() {
+    let root = crate_root();
+    let path = root.join("src/overload_resolution.rs");
+    let source = read_to_string(&path);
+    let forbidden = [
+        "mizar_resolve::env",
+        "SymbolEnv",
+        "ResolvedAst",
+        "mizar_syntax::",
+        "extern crate mizar_syntax",
+    ];
+    let violations = forbidden
+        .iter()
+        .copied()
+        .filter(|token| source.contains(token))
+        .collect::<Vec<_>>();
+
+    assert!(
+        violations.is_empty(),
+        "{} must collect explicit overload payloads without resolver-global \
+         scans, resolved-AST walks, or direct syntax parsing:\n{}",
+        path.display(),
+        violations.join("\n")
+    );
+}
+
+#[test]
 fn checker_public_semantic_api_matches_documented_modules() {
     let root = crate_root();
     let mut violations = Vec::new();
@@ -303,6 +330,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
             || path == Path::new("src/type_checker.rs")
             || path == Path::new("src/registration_resolution.rs")
             || path == Path::new("src/cluster_trace.rs")
+            || path == Path::new("src/overload_resolution.rs")
     ) {
         return true;
     }
@@ -314,6 +342,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
                 | "pub mod type_checker;"
                 | "pub mod registration_resolution;"
                 | "pub mod cluster_trace;"
+                | "pub mod overload_resolution;"
         )
 }
 

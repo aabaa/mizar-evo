@@ -23,7 +23,7 @@ architecture 04, 05, 16, 17, 18, and 19.
 | type_checker | `type_checker.md` (task 6) | `src/type_checker.rs` | [~] |
 | registration_resolution | `registration_resolution.md` (task 13) | `src/registration_resolution.rs` | [~] |
 | cluster_trace | `cluster_trace.md` (task 15) | `src/cluster_trace.rs` | [~] |
-| overload_resolution | `overload_resolution.md` (task 21) | `src/overload_resolution.rs` | [ ] |
+| overload_resolution | `overload_resolution.md` (task 21) | `src/overload_resolution.rs` | [~] |
 | resolved_typed_ast | `resolved_typed_ast.md` (task 27) | `src/resolved_typed_ast.rs` | [ ] |
 
 `mizar-checker` implements pipeline phases 6-8: `ResolvedAst` plus `SymbolEnv`
@@ -402,12 +402,23 @@ Keep `cargo test -p mizar-checker` green after each task (see
       coverage for tasks 22-26, and MC-G027 test/deferred/external gaps. No
       code was added.
 
-22. **Candidate site collection.** [ ]
-    - Collect overload sites and candidate sets with provenance from
-      `TypedAst` and `SymbolEnv` (already scope/visibility filtered).
+22. **Candidate site collection.** [x]
+    - Collect explicit overload site and candidate payloads carrying
+      `TypedAst` site refs and resolver symbol ids after scope/visibility
+      filtering.
     - Tests: site coverage per application form; provenance retained;
       deterministic candidate order.
     - Deps: 11, 21. Spec: `overload_resolution.md` (sites section).
+    - Completed by task 22: `src/overload_resolution.rs` exposes
+      checker-owned `OverloadCollectionOutput::collect` over explicit site and
+      candidate payloads. It assigns deterministic local site/candidate ids,
+      preserves site and candidate provenance, source-written `qua`, template,
+      and coherence metadata, diagnoses duplicate site keys and missing
+      candidate-site links while retaining rejected input provenance, defers
+      unsupported roles with stable diagnostics, and preserves already
+      scope/visibility-filtered candidate sets without
+      scanning `SymbolEnv`, walking raw syntax, expanding templates, checking
+      viability, selecting roots, or projecting `ResolvedTypedAst`.
 
 23. **Template expansion.** [ ]
     - Expand template candidates into concrete candidates ahead of ordinary

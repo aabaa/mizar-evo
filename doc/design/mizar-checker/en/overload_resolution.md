@@ -24,8 +24,10 @@ refines:
 
 Task 21 is documentation-only. It introduces no Rust source, no new language
 behavior, no source extraction, no artifact writer, and no proof acceptance.
-Tasks 22-26 implement the named sections below. Task 28 later assembles the
-final `ResolvedTypedAst` data shape specified by `resolved_typed_ast.md`.
+Task 22 implements the checker-local site/candidate collection data layer for
+explicit payloads. Tasks 23-26 implement the remaining named sections below.
+Task 28 later assembles the final `ResolvedTypedAst` data shape specified by
+`resolved_typed_ast.md`.
 
 ## Boundary
 
@@ -104,10 +106,11 @@ selected:
 
 ```rust
 struct OverloadSiteInput {
+    key: OverloadSiteKey,
     owner: TypedSiteRef,
     source_range: SourceRange,
     kind: OverloadSiteKind,
-    name: SymbolRef,
+    name: OverloadNameKey,
     arguments: Vec<TypedSiteRef>,
     expected: Option<NormalizedTypeId>,
     source_qua: Vec<SourceQuaView>,
@@ -125,7 +128,7 @@ Each candidate records the already-resolved declaration identity:
 
 ```rust
 struct OverloadCandidateInput {
-    site: OverloadSiteId,
+    site: OverloadSiteKey,
     symbol: SymbolId,
     ordinary_root: SymbolId,
     declaration_kind: CandidateDeclarationKind,
@@ -144,6 +147,18 @@ enum CoherenceStatus {
 }
 ```
 
+`OverloadSiteInput.key` is a caller-supplied stable key for the collection
+payload. `OverloadCandidateInput.site` references that key; output
+`OverloadSiteId`s are assigned only after canonical site sorting and are local
+to the collection output. A candidate whose site key is unknown is diagnosed and
+not inserted.
+
+Task 22 treats site provenance as the combination of `owner`, `source_range`,
+`name`, `arguments`, `source_qua`, and `recovery`. Candidate provenance is the
+explicit `CandidateProvenance` payload. Both are retained for deterministic
+debug rendering and diagnostics; the collector does not scan raw syntax or
+resolver globals to invent missing provenance.
+
 `result` is retained for metadata and same-root refinement joins. It never
 participates in ordinary root selection. A `redefine` candidate must point to
 the ordinary root it refines; same-root redefinitions are not competing roots.
@@ -152,9 +167,33 @@ accepted coherence can make a redefinition active.
 
 Canonical ordering for sites and candidates uses source id, source range,
 typed owner key, declaration kind, ordinary root, symbol id, template
-instantiation key, import/source provenance, and candidate-local id as the
-last duplicate tie-break. Hash-map iteration, worker order, import read order,
-and diagnostic insertion order must not affect rendered output.
+instantiation key, import/source provenance, explicit declaration order, and
+candidate-local id as the last duplicate tie-break. Within a site, candidates
+sort by declaration kind, ordinary root, symbol id, template instantiation key,
+provenance, explicit declaration order, and candidate-local id. Hash-map
+iteration, worker order, import read order, and diagnostic insertion order must
+not affect rendered output.
+
+### Task 22 Collection Data Layer
+
+`src/overload_resolution.rs` implements `OverloadCollectionOutput::collect`
+for explicit `OverloadSiteInput` and `OverloadCandidateInput` vectors. It:
+
+- assigns deterministic local `OverloadSiteId` and `OverloadCandidateId`
+  values after canonical sorting;
+- preserves site provenance, candidate provenance, source-written `qua`
+  metadata, template payload metadata, and coherence metadata;
+- validates duplicate site keys and candidate links to unknown site keys;
+- emits stable checker-local diagnostics for duplicate keys, unknown links,
+  unsupported roles, and recovery states while retaining the offending or
+  relevant site/candidate input provenance;
+- marks unsupported site and candidate roles as deferred;
+- preserves already scope/visibility-filtered candidate sets as supplied.
+
+Task 22 deliberately does not walk `TypedAst`, scan `SymbolEnv`, parse opaque
+resolver shells, expand templates, run viability checks, build specificity
+graphs, select roots, insert views, or project `ResolvedTypedAst`. Those remain
+tasks 23-28 or MC-G027 external/deferred work.
 
 ## Template Expansion
 
@@ -360,17 +399,18 @@ suggested `qua` targets when a unique widening would disambiguate the site.
 Deterministic rendering requirements:
 
 1. Sites sort by source id, range, owner, and kind.
-2. Candidates sort by ordinary root, symbol id, template key, provenance, and
-   declaration source order.
+2. Candidates sort within each site by declaration kind, ordinary root,
+   symbol id, template key, provenance, declaration source order, and the final
+   duplicate tie-break.
 3. Template exclusions, viability rejections, specificity edges, active
    refinements, inserted views, and diagnostics all render in canonical order.
 4. Equivalent inputs produce byte-identical debug rendering.
 
 ## Deferred And External Gaps
 
-Task 21 deliberately keeps the following deferred:
+Task 22 deliberately keeps the following deferred:
 
-- Rust implementation for tasks 22-26;
+- Rust implementation for tasks 23-26;
 - AST-wide source-to-checker extraction of overload sites, candidates,
   template payloads, source `qua` paths, and scheme/theorem roles;
 - parser/resolver exposure for unsupported template and scheme roles noted by
@@ -391,7 +431,9 @@ Task 22 candidate-site collection:
 - one fixture per supported site kind;
 - provenance and source range retention;
 - already-filtered scope/visibility inputs are preserved without global scans;
-- deterministic candidate order.
+- deterministic candidate order;
+- duplicate site keys, missing candidate site links, and deferred unsupported
+  roles.
 
 Task 23 template expansion:
 
