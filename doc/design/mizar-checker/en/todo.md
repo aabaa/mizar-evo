@@ -61,13 +61,15 @@ crate ownership: [internal 07](../../internal/en/07.crate_module_layout.md).
   `mizar-syntax` task-2 arena decision (homogeneous kind-enum arena versus
   typed node structs) for `TypedAst`/`ResolvedTypedAst`, recording the
   decision and its relation to the syntax-arena decision in `typed_ast.md`.
-- **Registration activation gating: open, resolved by task 18.** Local
+- **Registration activation gating: open, resolved by task 19.** Local
   registrations must not affect automatic inference until their proof
   obligations are accepted by the configured verifier policy (architecture 04
   constraints). The first iteration needs an interim policy because phases
-  11-14 do not exist yet (default candidate: activate on
-  successfully-generated obligations, marked unverified). Registered at the
-  top level; revisited when `mizar-vc`/`mizar-proof` land.
+  11-14 do not exist yet. The default interim policy is no unverified
+  activation: generated obligations are recorded with pending/unverified
+  status, and registrations do not enter the active database until an accepted
+  verifier status is available. Registered at the top level; revisited when
+  `mizar-vc`/`mizar-proof` land.
 - **Trace schema conformance: resolved.**
   [17.cluster_trace_format.md](../../architecture/en/17.cluster_trace_format.md)
   is the canonical `ResolutionTrace` schema; `cluster_trace.md` refines it,
@@ -224,7 +226,8 @@ Keep `cargo test -p mizar-checker` green after each task (see
       emit their obligations, and implement the interim activation-gating
       policy; record the decision here and at the top level.
     - Tests: invalid registrations diagnosed; unverified registrations never
-      affect inference unless policy admits them explicitly.
+      affect inference; policy-admitted activation requires accepted verifier
+      status from a later proof/artifact input.
     - Deps: 17, 18. Spec: `registration_resolution.md`.
 
 20. **Existential gating of attributed type use.** [ ]

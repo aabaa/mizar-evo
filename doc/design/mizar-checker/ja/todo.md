@@ -64,7 +64,9 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
   registration は、その証明義務が設定済み verifier ポリシーに受理される
   まで自動推論に影響してはならない（アーキテクチャ 04 の制約）。phase
   11-14 がまだ存在しないため最初のイテレーションには暫定ポリシーが必要
-  （既定候補: 義務の生成成功で活性化し、未検証マークを付ける）。
+  である。既定の暫定ポリシーは未検証 registration を活性化しない:
+  生成された義務は pending / unverified status として記録し、accepted verifier
+  status が利用可能になるまで registration は active database に入らない。
   トップレベルに登録済み。`mizar-vc`/`mizar-proof` 着地時に再訪する。
 - **trace スキーマ準拠: 解決済み。**
   [17.cluster_trace_format.md](../../architecture/ja/17.cluster_trace_format.md)
@@ -217,8 +219,9 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - pending registration 宣言を検証し（アーキテクチャ 04 Step 6）、その
       義務を発行し、暫定の活性化ゲートポリシーを実装する。決定をここと
       トップレベルに記録する。
-    - テスト: 不正な registration の診断。未検証 registration はポリシーが
-      明示的に許さない限り推論に影響しない。
+    - テスト: 不正な registration の診断。未検証 registration は推論に影響せず、
+      policy-admitted activation には後続 proof/artifact input からの accepted
+      verifier status を要求する。
     - 依存: 17、18。仕様: `registration_resolution.md`。
 
 20. **attribute 付き型使用の existential ゲート。** [ ]
