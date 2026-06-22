@@ -7,8 +7,9 @@
 lets published verified artifacts name a witness by path and hash without
 embedding the witness payload in the main artifact.
 
-This document defines the task 8 specification only. Task 9 implements the
-schema, writer, validating reader, and tests.
+This document defines the `ProofWitnessRef` schema. Task 9 implements the
+schema, canonical value writer, validating reader, and tests at the
+`CanonicalJson` boundary.
 
 ## Ownership
 
@@ -75,7 +76,9 @@ Readers reject other combinations.
 format-specific, for example an ATP certificate format. It is JSON `null` for
 allowed kernel primitives that do not have a certificate file format. The exact
 format vocabulary is owned by the proof and kernel crates, not by
-`mizar-artifact`.
+`mizar-artifact`. Task 9 readers require a non-empty `certificate_format` for
+`atp_certificate` and `builtin_certificate`, and require JSON `null` for
+`kernel_primitive`.
 
 ## Hash String Domains
 
@@ -107,11 +110,13 @@ kernel acceptance metadata.
 ## Witness Paths And Publication
 
 `witness_path` is relative to the package artifact root and must normalize under
-`proof-witnesses/`. It must not be absolute, empty, or contain `..` traversal.
-Task 9 readers perform this lexical path validation at the `CanonicalJson`
-boundary. Symlink and artifact-root escape checks require filesystem access and
-remain part of artifact-store I/O. The manifest is the publication index: a
-witness file is not published merely because it exists under `proof-witnesses/`.
+`proof-witnesses/`. Task 9 performs lexical path validation at the
+`CanonicalJson` boundary: the path must use `/` separators, start with
+`proof-witnesses/`, contain at least one non-empty child segment after that
+prefix, and contain no empty, `.`, or `..` segments. It must not be absolute.
+Symlink and artifact-root escape checks require filesystem access and remain
+part of artifact-store I/O. The manifest is the publication index: a witness
+file is not published merely because it exists under `proof-witnesses/`.
 
 The manifest transaction writes and hashes witness files before the manifest is
 committed. A `ProofWitnessRef` becomes publication-reachable only when a
@@ -119,9 +124,10 @@ committed manifest entry references both the main artifact and the witness file.
 If publication policy requires a witness, a missing file or hash mismatch rejects
 publication for the affected artifact.
 
-Task 8 specifies the reference and validation contract only. Atomic writes,
-manifest visibility, and byte-level corruption diagnostics remain deferred to
-the artifact store and manifest tasks.
+Task 9 implements the reference and validation contract at the canonical-value
+boundary. Atomic writes, manifest visibility, byte-level corruption diagnostics,
+and filesystem escape checks remain deferred to the artifact store and manifest
+tasks.
 
 ## Resident-Set Discipline
 
@@ -178,11 +184,11 @@ belong to artifact-store I/O. Readers:
 Reader failures are artifact diagnostics. They do not establish proof authority
 and do not silently downgrade to externally attested evidence.
 
-## Deferred Implementation
+## Implementation Boundary
 
-Task 8 adds this specification only. Task 9 implements the `ProofWitnessRef`
-schema, canonical value writer, validating `CanonicalJson` reader, and tests for
-round-trips and hash mismatch detection.
+Task 9 implements the `ProofWitnessRef` schema, canonical value writer,
+validating `CanonicalJson` reader, and tests for round-trips and hash mismatch
+detection.
 
 Concrete witness payload schemas, proof producer integration, accepted kernel
 result construction, and built-in certificate/primitive encodings remain

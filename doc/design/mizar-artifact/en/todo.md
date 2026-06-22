@@ -23,7 +23,7 @@ and 18 and internal 02 and 06.
 | store | `store.md` (task 2) | `src/store.rs` | [~] |
 | module_summary | `module_summary.md` (task 4) | `src/module_summary.rs` | [x] |
 | registration_summary | `registration_summary.md` (task 6) | `src/registration_summary.rs` | [x] |
-| proof_witness | `proof_witness.md` (task 8) | `src/proof_witness.rs` | [ ] |
+| proof_witness | `proof_witness.md` (task 8) | `src/proof_witness.rs` | [x] |
 | verified_artifact | `verified_artifact.md` (task 10) | `src/verified_artifact.rs` | [ ] |
 | manifest | `manifest.md` (task 12) | `src/manifest.rs` | [ ] |
 
@@ -144,7 +144,7 @@ Keep `cargo test -p mizar-artifact` green after each task (see
      [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
      "Proof Witness Store".
 
-9. **`ProofWitnessRef` schema.** [ ]
+9. **`ProofWitnessRef` schema.** [x]
    - Implement witness references with hash validation.
    - Tests: round-trips; hash mismatch detection.
    - Deps: 3, 8. Spec: `proof_witness.md`.

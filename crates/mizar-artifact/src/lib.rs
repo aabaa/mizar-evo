@@ -14,3 +14,6 @@ pub mod module_summary;
 
 /// Published registration-summary schema and validating reader/writer.
 pub mod registration_summary;
+
+/// Published proof-witness reference schema and validating reader/writer.
+pub mod proof_witness;

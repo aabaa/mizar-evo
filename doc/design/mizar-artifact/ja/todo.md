@@ -22,7 +22,7 @@ source task が始まる前に file を追加する。モジュール名は
 | store | `store.md`（task 2） | `src/store.rs` | [~] |
 | module_summary | `module_summary.md`（task 4） | `src/module_summary.rs` | [x] |
 | registration_summary | `registration_summary.md`（task 6） | `src/registration_summary.rs` | [x] |
-| proof_witness | `proof_witness.md`（task 8） | `src/proof_witness.rs` | [ ] |
+| proof_witness | `proof_witness.md`（task 8） | `src/proof_witness.rs` | [x] |
 | verified_artifact | `verified_artifact.md`（task 10） | `src/verified_artifact.rs` | [ ] |
 | manifest | `manifest.md`（task 12） | `src/manifest.rs` | [ ] |
 
@@ -144,7 +144,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
      [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
      「Proof Witness Store」。
 
-9. **`ProofWitnessRef` スキーマ。** [ ]
+9. **`ProofWitnessRef` スキーマ。** [x]
    - ハッシュ検証つきの witness 参照を実装する。
    - テスト: ラウンドトリップ。ハッシュ不一致の検出。
    - 依存: 3、8。仕様: `proof_witness.md`。
