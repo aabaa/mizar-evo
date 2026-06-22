@@ -503,6 +503,27 @@ Reader failures are artifact diagnostics. They do not establish proof authority,
 do not silently fall back to internal cache records, and do not upgrade
 externally attested evidence into kernel-verified evidence.
 
+## Public Enum Forward Compatibility
+
+Task 19 applies the frontend task-25 public-enum procedure to verified-artifact
+APIs. Every public enum owned by this module is a forward-compatible API surface
+and must remain `#[non_exhaustive]`; downstream consumers must keep wildcard
+fallback arms when matching them.
+
+This is an API compatibility decision, not a reader leniency rule. Artifact
+schema readers still reject unknown serialized enum values unless a later schema
+revision and version policy explicitly document how to accept them.
+
+| Enum | Forward-compatibility decision |
+|---|---|
+| `ExportVisibility` | Non-exhaustive so export visibility categories can grow. |
+| `ExportProofStatus` | Non-exhaustive so importer-visible export proof states can grow. |
+| `ObligationStatus` | Non-exhaustive so obligation status categories can grow without weakening current witness rules. |
+| `DiagnosticSeverity` | Non-exhaustive so diagnostic severities can grow under documented artifact policy. |
+| `VerifiedArtifactError` | Non-exhaustive so verified-artifact validation diagnostics can grow. |
+
+This module has no exhaustive public enum exceptions.
+
 ## Deferred Implementation
 
 Task 10 adds this specification only. Task 11 implements the

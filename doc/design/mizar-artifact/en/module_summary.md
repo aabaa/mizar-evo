@@ -353,6 +353,24 @@ files remain part of the later artifact-store I/O task. Readers:
 Reader failures are artifact diagnostics. They do not establish proof authority
 and do not silently fall back to internal cache records.
 
+## Public Enum Forward Compatibility
+
+Task 19 applies the frontend task-25 public-enum procedure to module-summary
+APIs. Every public enum owned by this module is a forward-compatible API surface
+and must remain `#[non_exhaustive]`; downstream consumers must keep wildcard
+fallback arms when matching them.
+
+This is an API compatibility decision, not a reader leniency rule. Artifact
+schema readers still reject unknown serialized enum values unless a later schema
+revision and version policy explicitly document how to accept them.
+
+| Enum | Forward-compatibility decision |
+|---|---|
+| `ProofStatusSummary` | Non-exhaustive so importer-visible proof states can grow under documented schema policy. |
+| `ModuleSummaryError` | Non-exhaustive so module-summary validation diagnostics can grow. |
+
+This module has no exhaustive public enum exceptions.
+
 ## Deferred Implementation
 
 Task 4 adds this specification only. Source implementation is deferred to task

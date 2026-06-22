@@ -365,6 +365,23 @@ recovery は manifest-first である。
 この recovery rule により、package は一度にちょうど 1 つの complete manifest version を通じて観測される:
 以前の committed manifest、または新しい committed manifest である。
 
+## 公開 enum の前方互換性
+
+task 19 は frontend task 25 の public-enum 手続きを manifest API に適用する。この
+module が所有するすべての public enum は forward-compatible API surface であり、
+`#[non_exhaustive]` のままにしなければならない。downstream consumer は match 時に
+wildcard fallback arm を持たなければならない。
+
+これは API 互換性の判断であり、reader の寛容化ルールではない。manifest reader は、
+将来の schema revision と version policy が受け入れ方法を明示しない限り、
+unknown serialized enum value を引き続き拒否する。
+
+| Enum | 前方互換性の判断 |
+|---|---|
+| `ManifestError` | manifest schema、transaction、reference-validation、store-wrapping diagnostic を拡張できるよう non-exhaustive。 |
+
+この module は exhaustive な public enum 例外を所有しない。
+
 ## Implementation Status
 
 task 12 はこの仕様を追加した。task 13 は artifact-store write と corruption-detecting file read を実装した。

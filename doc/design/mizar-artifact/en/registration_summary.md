@@ -323,6 +323,29 @@ Reader failures are artifact diagnostics. They do not establish proof authority,
 do not rerun registration search, and do not silently fall back to internal
 cache records.
 
+## Public Enum Forward Compatibility
+
+Task 19 applies the frontend task-25 public-enum procedure to registration
+summary APIs. Every public enum owned by this module is a forward-compatible API
+surface and must remain `#[non_exhaustive]`; downstream consumers must keep
+wildcard fallback arms when matching them.
+
+This is an API compatibility decision, not a reader leniency rule. Artifact
+schema readers still reject unknown serialized enum values unless a later schema
+revision and version policy explicitly document how to accept them.
+
+| Enum | Forward-compatibility decision |
+|---|---|
+| `ArtifactHashClass` | Non-exhaustive so producer-owned artifact hash references can name future classes under documented schema policy. |
+| `RegistrationKind` | Non-exhaustive so exported registration categories can grow. |
+| `RegistrationVisibility` | Non-exhaustive so visibility categories can grow without breaking downstream matches, even though task 7 publishes only public registrations. |
+| `RegistrationAcceptedStatus` | Non-exhaustive so accepted-status categories can grow without weakening task-7 acceptance rules. |
+| `RegistrationContributionKind` | Non-exhaustive so generated contribution categories can grow. |
+| `RegistrationTraceKind` | Non-exhaustive so referenced trace categories can grow. |
+| `RegistrationSummaryError` | Non-exhaustive so registration-summary validation diagnostics can grow. |
+
+This module has no exhaustive public enum exceptions.
+
 ## Deferred Implementation
 
 Task 7 adds the `RegistrationSummary` schema, canonical value writer,

@@ -419,6 +419,23 @@ This recovery rule means a package is observed through exactly one complete
 manifest version at a time: the previous committed manifest or the new committed
 manifest.
 
+## Public Enum Forward Compatibility
+
+Task 19 applies the frontend task-25 public-enum procedure to manifest APIs.
+Every public enum owned by this module is a forward-compatible API surface and
+must remain `#[non_exhaustive]`; downstream consumers must keep wildcard
+fallback arms when matching them.
+
+This is an API compatibility decision, not a reader leniency rule. Manifest
+readers still reject unknown serialized enum values unless a later schema
+revision and version policy explicitly document how to accept them.
+
+| Enum | Forward-compatibility decision |
+|---|---|
+| `ManifestError` | Non-exhaustive so manifest schema, transaction, reference-validation, and store-wrapping diagnostics can grow. |
+
+This module has no exhaustive public enum exceptions.
+
 ## Implementation Status
 
 Task 12 added this specification. Task 13 implemented artifact-store writes and

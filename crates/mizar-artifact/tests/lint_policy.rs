@@ -58,6 +58,45 @@ fn workspace_lint_baseline_denies_rustc_warnings_and_clippy_all() {
     );
 }
 
+#[test]
+fn public_artifact_enums_are_non_exhaustive_and_documented() {
+    let expected = public_enum_policy();
+    let mut expected_pairs = expected
+        .iter()
+        .map(|entry| (entry.source.to_string(), entry.name.to_string()))
+        .collect::<Vec<_>>();
+    expected_pairs.sort_unstable();
+
+    let mut actual_pairs = Vec::new();
+    for source in source_files() {
+        for declaration in public_enum_declarations(&source) {
+            assert!(
+                declaration.non_exhaustive,
+                "{}::{} must stay #[non_exhaustive] unless the owning module spec \
+                 documents an explicit exhaustive public-enum exception",
+                declaration.source, declaration.name
+            );
+            actual_pairs.push((declaration.source, declaration.name));
+        }
+    }
+    actual_pairs.sort_unstable();
+
+    assert_eq!(
+        actual_pairs, expected_pairs,
+        "every public enum in src/*.rs must be recorded in the task-19 \
+         forward-compatibility policy table"
+    );
+
+    for entry in expected {
+        assert_documented_enum(
+            entry.en_doc,
+            "## Public Enum Forward Compatibility",
+            entry.name,
+        );
+        assert_documented_enum(entry.ja_doc, "## 公開 enum の前方互換性", entry.name);
+    }
+}
+
 fn crate_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 }
@@ -145,4 +184,258 @@ fn assignment_is(line: &str, key: &str, value: &str) -> bool {
         return false;
     };
     lhs.trim() == key && rhs.trim().trim_matches('"') == value
+}
+
+#[derive(Debug)]
+struct PublicEnumPolicy {
+    source: &'static str,
+    name: &'static str,
+    en_doc: &'static str,
+    ja_doc: &'static str,
+}
+
+#[derive(Debug)]
+struct PublicEnumDeclaration {
+    source: String,
+    name: String,
+    non_exhaustive: bool,
+}
+
+fn public_enum_policy() -> &'static [PublicEnumPolicy] {
+    &[
+        PublicEnumPolicy {
+            source: "src/manifest.rs",
+            name: "ManifestError",
+            en_doc: "doc/design/mizar-artifact/en/manifest.md",
+            ja_doc: "doc/design/mizar-artifact/ja/manifest.md",
+        },
+        PublicEnumPolicy {
+            source: "src/module_summary.rs",
+            name: "ModuleSummaryError",
+            en_doc: "doc/design/mizar-artifact/en/module_summary.md",
+            ja_doc: "doc/design/mizar-artifact/ja/module_summary.md",
+        },
+        PublicEnumPolicy {
+            source: "src/module_summary.rs",
+            name: "ProofStatusSummary",
+            en_doc: "doc/design/mizar-artifact/en/module_summary.md",
+            ja_doc: "doc/design/mizar-artifact/ja/module_summary.md",
+        },
+        PublicEnumPolicy {
+            source: "src/proof_witness.rs",
+            name: "EvidenceKind",
+            en_doc: "doc/design/mizar-artifact/en/proof_witness.md",
+            ja_doc: "doc/design/mizar-artifact/ja/proof_witness.md",
+        },
+        PublicEnumPolicy {
+            source: "src/proof_witness.rs",
+            name: "ProofStatus",
+            en_doc: "doc/design/mizar-artifact/en/proof_witness.md",
+            ja_doc: "doc/design/mizar-artifact/ja/proof_witness.md",
+        },
+        PublicEnumPolicy {
+            source: "src/proof_witness.rs",
+            name: "ProofWitnessError",
+            en_doc: "doc/design/mizar-artifact/en/proof_witness.md",
+            ja_doc: "doc/design/mizar-artifact/ja/proof_witness.md",
+        },
+        PublicEnumPolicy {
+            source: "src/registration_summary.rs",
+            name: "ArtifactHashClass",
+            en_doc: "doc/design/mizar-artifact/en/registration_summary.md",
+            ja_doc: "doc/design/mizar-artifact/ja/registration_summary.md",
+        },
+        PublicEnumPolicy {
+            source: "src/registration_summary.rs",
+            name: "RegistrationAcceptedStatus",
+            en_doc: "doc/design/mizar-artifact/en/registration_summary.md",
+            ja_doc: "doc/design/mizar-artifact/ja/registration_summary.md",
+        },
+        PublicEnumPolicy {
+            source: "src/registration_summary.rs",
+            name: "RegistrationContributionKind",
+            en_doc: "doc/design/mizar-artifact/en/registration_summary.md",
+            ja_doc: "doc/design/mizar-artifact/ja/registration_summary.md",
+        },
+        PublicEnumPolicy {
+            source: "src/registration_summary.rs",
+            name: "RegistrationKind",
+            en_doc: "doc/design/mizar-artifact/en/registration_summary.md",
+            ja_doc: "doc/design/mizar-artifact/ja/registration_summary.md",
+        },
+        PublicEnumPolicy {
+            source: "src/registration_summary.rs",
+            name: "RegistrationSummaryError",
+            en_doc: "doc/design/mizar-artifact/en/registration_summary.md",
+            ja_doc: "doc/design/mizar-artifact/ja/registration_summary.md",
+        },
+        PublicEnumPolicy {
+            source: "src/registration_summary.rs",
+            name: "RegistrationTraceKind",
+            en_doc: "doc/design/mizar-artifact/en/registration_summary.md",
+            ja_doc: "doc/design/mizar-artifact/ja/registration_summary.md",
+        },
+        PublicEnumPolicy {
+            source: "src/registration_summary.rs",
+            name: "RegistrationVisibility",
+            en_doc: "doc/design/mizar-artifact/en/registration_summary.md",
+            ja_doc: "doc/design/mizar-artifact/ja/registration_summary.md",
+        },
+        PublicEnumPolicy {
+            source: "src/store.rs",
+            name: "CanonicalJson",
+            en_doc: "doc/design/mizar-artifact/en/store.md",
+            ja_doc: "doc/design/mizar-artifact/ja/store.md",
+        },
+        PublicEnumPolicy {
+            source: "src/store.rs",
+            name: "CanonicalJsonError",
+            en_doc: "doc/design/mizar-artifact/en/store.md",
+            ja_doc: "doc/design/mizar-artifact/ja/store.md",
+        },
+        PublicEnumPolicy {
+            source: "src/store.rs",
+            name: "FieldPathError",
+            en_doc: "doc/design/mizar-artifact/en/store.md",
+            ja_doc: "doc/design/mizar-artifact/ja/store.md",
+        },
+        PublicEnumPolicy {
+            source: "src/store.rs",
+            name: "HashClass",
+            en_doc: "doc/design/mizar-artifact/en/store.md",
+            ja_doc: "doc/design/mizar-artifact/ja/store.md",
+        },
+        PublicEnumPolicy {
+            source: "src/store.rs",
+            name: "MinorVersionPolicy",
+            en_doc: "doc/design/mizar-artifact/en/store.md",
+            ja_doc: "doc/design/mizar-artifact/ja/store.md",
+        },
+        PublicEnumPolicy {
+            source: "src/store.rs",
+            name: "PublishedPathError",
+            en_doc: "doc/design/mizar-artifact/en/store.md",
+            ja_doc: "doc/design/mizar-artifact/ja/store.md",
+        },
+        PublicEnumPolicy {
+            source: "src/store.rs",
+            name: "SchemaVersionError",
+            en_doc: "doc/design/mizar-artifact/en/store.md",
+            ja_doc: "doc/design/mizar-artifact/ja/store.md",
+        },
+        PublicEnumPolicy {
+            source: "src/store.rs",
+            name: "SchemaVersionParseError",
+            en_doc: "doc/design/mizar-artifact/en/store.md",
+            ja_doc: "doc/design/mizar-artifact/ja/store.md",
+        },
+        PublicEnumPolicy {
+            source: "src/store.rs",
+            name: "StoreIoError",
+            en_doc: "doc/design/mizar-artifact/en/store.md",
+            ja_doc: "doc/design/mizar-artifact/ja/store.md",
+        },
+        PublicEnumPolicy {
+            source: "src/store.rs",
+            name: "StoreIoOperation",
+            en_doc: "doc/design/mizar-artifact/en/store.md",
+            ja_doc: "doc/design/mizar-artifact/ja/store.md",
+        },
+        PublicEnumPolicy {
+            source: "src/verified_artifact.rs",
+            name: "DiagnosticSeverity",
+            en_doc: "doc/design/mizar-artifact/en/verified_artifact.md",
+            ja_doc: "doc/design/mizar-artifact/ja/verified_artifact.md",
+        },
+        PublicEnumPolicy {
+            source: "src/verified_artifact.rs",
+            name: "ExportProofStatus",
+            en_doc: "doc/design/mizar-artifact/en/verified_artifact.md",
+            ja_doc: "doc/design/mizar-artifact/ja/verified_artifact.md",
+        },
+        PublicEnumPolicy {
+            source: "src/verified_artifact.rs",
+            name: "ExportVisibility",
+            en_doc: "doc/design/mizar-artifact/en/verified_artifact.md",
+            ja_doc: "doc/design/mizar-artifact/ja/verified_artifact.md",
+        },
+        PublicEnumPolicy {
+            source: "src/verified_artifact.rs",
+            name: "ObligationStatus",
+            en_doc: "doc/design/mizar-artifact/en/verified_artifact.md",
+            ja_doc: "doc/design/mizar-artifact/ja/verified_artifact.md",
+        },
+        PublicEnumPolicy {
+            source: "src/verified_artifact.rs",
+            name: "VerifiedArtifactError",
+            en_doc: "doc/design/mizar-artifact/en/verified_artifact.md",
+            ja_doc: "doc/design/mizar-artifact/ja/verified_artifact.md",
+        },
+    ]
+}
+
+fn source_files() -> Vec<String> {
+    let source_root = crate_root().join("src");
+    let mut sources = fs::read_dir(&source_root)
+        .unwrap_or_else(|error| panic!("{}: {error}", source_root.display()))
+        .map(|entry| entry.expect("source entry").path())
+        .filter(|path| path.extension().and_then(|ext| ext.to_str()) == Some("rs"))
+        .map(|path| {
+            let file_name = path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .expect("utf-8 source file name");
+            format!("src/{file_name}")
+        })
+        .collect::<Vec<_>>();
+    sources.sort();
+    sources
+}
+
+fn public_enum_declarations(source: &str) -> Vec<PublicEnumDeclaration> {
+    let path = crate_root().join(source);
+    let text = read_to_string(&path);
+    let lines = text.lines().collect::<Vec<_>>();
+    let mut declarations = Vec::new();
+
+    for (index, line) in lines.iter().enumerate() {
+        let Some(rest) = line.trim_start().strip_prefix("pub enum ") else {
+            continue;
+        };
+        let name = rest
+            .split(|character: char| character == '{' || character.is_whitespace())
+            .next()
+            .expect("enum name after pub enum")
+            .to_string();
+        let non_exhaustive = lines[..index]
+            .iter()
+            .rev()
+            .take_while(|previous| {
+                let trimmed = previous.trim();
+                trimmed.is_empty() || trimmed.starts_with("#[")
+            })
+            .any(|previous| previous.trim() == "#[non_exhaustive]");
+        declarations.push(PublicEnumDeclaration {
+            source: source.to_string(),
+            name,
+            non_exhaustive,
+        });
+    }
+
+    declarations
+}
+
+fn assert_documented_enum(doc: &str, heading: &str, enum_name: &str) {
+    let path = workspace_root().join(doc);
+    let text = read_to_string(&path);
+    assert!(
+        text.contains(heading),
+        "{} must contain the task-19 public enum policy section",
+        path.display()
+    );
+    assert!(
+        text.contains(&format!("`{enum_name}`")),
+        "{} must document the forward-compatibility decision for {enum_name}",
+        path.display()
+    );
 }

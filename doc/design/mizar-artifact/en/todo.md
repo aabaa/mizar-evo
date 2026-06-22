@@ -234,10 +234,14 @@ Keep `cargo test -p mizar-artifact` green after each task (see
       determinism remains an `external_dependency_gap` for upstream
       integration suites and task 17.
 
-19. **Public-enum forward-compatibility policy.** [ ]
+19. **Public-enum forward-compatibility policy.** [x]
     - Apply the `mizar-frontend` task-25 procedure to each public enum;
       schema enums additionally follow the artifact compatibility policy.
     - Deps: 16. Spec: all module specs.
+    - Status: all current public artifact enums are documented and guarded as
+      `#[non_exhaustive]` forward-compatible API surfaces; current readers still
+      reject unknown serialized enum values unless a future schema revision says
+      otherwise.
 
 20. **Source/spec correspondence audit.** [ ]
     - Trace every public API and promised behavior in the module specs to

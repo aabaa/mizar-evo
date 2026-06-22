@@ -234,10 +234,14 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       determinism は、upstream integration suite と task 17 に残る
       `external_dependency_gap`。
 
-19. **公開 enum の前方互換性ポリシー。** [ ]
+19. **公開 enum の前方互換性ポリシー。** [x]
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用する。
       スキーマ enum はさらに artifact 互換性ポリシーに従う。
     - 依存: 16。仕様: 全モジュール仕様。
+    - 状態: 現在のすべての public artifact enum は `#[non_exhaustive]` な
+      forward-compatible API surface として文書化され guard される。将来の
+      schema revision が明示しない限り、現在の reader は unknown serialized enum
+      value を拒否する。
 
 20. **ソース/仕様対応監査。** [ ]
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ

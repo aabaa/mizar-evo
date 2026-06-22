@@ -245,6 +245,32 @@ value.
 Read failures are artifact diagnostics. They do not silently fall back to
 internal cache records and do not establish proof authority.
 
+## Public Enum Forward Compatibility
+
+Task 19 applies the frontend task-25 public-enum procedure to store-owned
+artifact APIs. Every public enum owned by this module is a forward-compatible
+API surface and must remain `#[non_exhaustive]`; downstream consumers must keep
+wildcard fallback arms when matching them.
+
+This is an API compatibility decision, not a reader leniency rule. Artifact
+schema readers still reject unknown serialized enum values unless a later schema
+revision and version policy explicitly document how to accept them.
+
+| Enum | Forward-compatibility decision |
+|---|---|
+| `CanonicalJson` | Non-exhaustive so future canonical value carriers can be added without downstream exhaustive matches. |
+| `CanonicalJsonError` | Non-exhaustive so additional canonical construction failures can be reported. |
+| `SchemaVersionParseError` | Non-exhaustive so version spelling diagnostics can grow. |
+| `MinorVersionPolicy` | Non-exhaustive so schema-version compatibility modes can grow. |
+| `SchemaVersionError` | Non-exhaustive so schema-version validation failures can grow. |
+| `HashClass` | Non-exhaustive so artifact hash domains can add future classes under documented schema policy. |
+| `FieldPathError` | Non-exhaustive so hash-exclusion path validation failures can grow. |
+| `PublishedPathError` | Non-exhaustive so portable path safety checks can grow. |
+| `StoreIoOperation` | Non-exhaustive so atomic publication can name new filesystem stages. |
+| `StoreIoError` | Non-exhaustive so store I/O, corruption, and integrity diagnostics can grow. |
+
+This module has no exhaustive public enum exceptions.
+
 ## Implementation Staging
 
 Task 2 introduced this specification. Source implementation is staged across

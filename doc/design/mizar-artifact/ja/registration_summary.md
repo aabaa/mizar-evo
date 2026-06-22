@@ -290,6 +290,29 @@ artifact parse と duplicate-key detection は後続の artifact-store I/O task 
 reader failure は artifact diagnostic である。proof authority を確立せず、registration search を
 再実行せず、internal cache record へ黙って fallback してはならない。
 
+## 公開 enum の前方互換性
+
+task 19 は frontend task 25 の public-enum 手続きを registration summary API に適用する。
+この module が所有するすべての public enum は forward-compatible API surface であり、
+`#[non_exhaustive]` のままにしなければならない。downstream consumer は match 時に
+wildcard fallback arm を持たなければならない。
+
+これは API 互換性の判断であり、reader の寛容化ルールではない。artifact schema
+reader は、将来の schema revision と version policy が受け入れ方法を明示しない限り、
+unknown serialized enum value を引き続き拒否する。
+
+| Enum | 前方互換性の判断 |
+|---|---|
+| `ArtifactHashClass` | producer-owned artifact hash reference が文書化済み schema policy の下で将来 class を命名できるよう non-exhaustive。 |
+| `RegistrationKind` | exported registration category を拡張できるよう non-exhaustive。 |
+| `RegistrationVisibility` | task 7 が public registration だけを publish する現在の規則を保ちつつ、visibility category を downstream match 破壊なしに拡張できるよう non-exhaustive。 |
+| `RegistrationAcceptedStatus` | task 7 の acceptance rule を弱めず、accepted-status category を拡張できるよう non-exhaustive。 |
+| `RegistrationContributionKind` | generated contribution category を拡張できるよう non-exhaustive。 |
+| `RegistrationTraceKind` | referenced trace category を拡張できるよう non-exhaustive。 |
+| `RegistrationSummaryError` | registration-summary validation diagnostic を拡張できるよう non-exhaustive。 |
+
+この module は exhaustive な public enum 例外を所有しない。
+
 ## Deferred Implementation
 
 task 7 は `RegistrationSummary` schema、canonical value writer、validating `CanonicalJson` reader、

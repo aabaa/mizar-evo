@@ -461,6 +461,27 @@ emit する。reader は:
 reader failure は artifact diagnostic である。proof authority を確立せず、internal cache record へ
 黙って fallback せず、externally attested evidence を kernel-verified evidence に upgrade しない。
 
+## 公開 enum の前方互換性
+
+task 19 は frontend task 25 の public-enum 手続きを verified-artifact API に適用する。
+この module が所有するすべての public enum は forward-compatible API surface であり、
+`#[non_exhaustive]` のままにしなければならない。downstream consumer は match 時に
+wildcard fallback arm を持たなければならない。
+
+これは API 互換性の判断であり、reader の寛容化ルールではない。artifact schema
+reader は、将来の schema revision と version policy が受け入れ方法を明示しない限り、
+unknown serialized enum value を引き続き拒否する。
+
+| Enum | 前方互換性の判断 |
+|---|---|
+| `ExportVisibility` | export visibility category を拡張できるよう non-exhaustive。 |
+| `ExportProofStatus` | importer-visible export proof state を拡張できるよう non-exhaustive。 |
+| `ObligationStatus` | 現在の witness rule を弱めず obligation status category を拡張できるよう non-exhaustive。 |
+| `DiagnosticSeverity` | documented artifact policy の下で diagnostic severity を拡張できるよう non-exhaustive。 |
+| `VerifiedArtifactError` | verified-artifact validation diagnostic を拡張できるよう non-exhaustive。 |
+
+この module は exhaustive な public enum 例外を所有しない。
+
 ## Deferred Implementation
 
 task 10 はこの仕様だけを追加する。task 11 は `VerifiedArtifact` schema、projection-input contract、

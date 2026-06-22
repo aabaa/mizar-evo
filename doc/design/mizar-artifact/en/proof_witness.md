@@ -184,6 +184,25 @@ belong to artifact-store I/O. Readers:
 Reader failures are artifact diagnostics. They do not establish proof authority
 and do not silently downgrade to externally attested evidence.
 
+## Public Enum Forward Compatibility
+
+Task 19 applies the frontend task-25 public-enum procedure to proof-witness
+reference APIs. Every public enum owned by this module is a forward-compatible
+API surface and must remain `#[non_exhaustive]`; downstream consumers must keep
+wildcard fallback arms when matching them.
+
+This is an API compatibility decision, not a reader leniency rule. Artifact
+schema readers still reject unknown serialized enum values unless a later schema
+revision and version policy explicitly document how to accept them.
+
+| Enum | Forward-compatibility decision |
+|---|---|
+| `ProofStatus` | Non-exhaustive so accepted proof-status categories can grow under documented proof/kernel producer policy. |
+| `EvidenceKind` | Non-exhaustive so accepted evidence classes can grow under documented proof/kernel producer policy. |
+| `ProofWitnessError` | Non-exhaustive so proof-witness reference validation diagnostics can grow. |
+
+This module has no exhaustive public enum exceptions.
+
 ## Implementation Boundary
 
 Task 9 implements the `ProofWitnessRef` schema, canonical value writer,
