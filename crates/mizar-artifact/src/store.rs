@@ -1762,6 +1762,33 @@ mod tests {
     }
 
     #[test]
+    fn published_artifact_write_is_deterministic_for_identical_inputs() {
+        let root = TestArtifactRoot::new();
+        let path = PublishedArtifactPath::new("modules/alpha.mizir.json").expect("valid path");
+        let value = CanonicalJson::object([
+            ("schema_version", CanonicalJson::string("1.0")),
+            ("module", CanonicalJson::string("alpha")),
+            ("exports", CanonicalJson::array([])),
+        ])
+        .expect("unique keys");
+        let domain = artifact_hash_domain("store-test", SchemaVersion::new(1, 0));
+
+        let first_write = write_published_artifact(root.path(), &path, &value, &domain, &[])
+            .expect("first write succeeds");
+        let first_bytes = fs::read(root.path().join(path.as_str())).expect("first artifact bytes");
+        let second_write = write_published_artifact(root.path(), &path, &value, &domain, &[])
+            .expect("second write succeeds");
+        let second_bytes =
+            fs::read(root.path().join(path.as_str())).expect("second artifact bytes");
+
+        assert_eq!(first_write.path, second_write.path);
+        assert_eq!(first_write.artifact_hash, second_write.artifact_hash);
+        assert_eq!(first_write.artifact_hash, domain.hash(&value, &[]));
+        assert_eq!(first_bytes, second_bytes);
+        assert_eq!(first_bytes, canonical_json_string(&value).into_bytes());
+    }
+
+    #[test]
     fn atomic_write_replaces_previous_complete_artifact() {
         let root = TestArtifactRoot::new();
         let path = PublishedArtifactPath::new("modules/alpha.mizir.json").expect("valid path");

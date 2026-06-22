@@ -225,10 +225,14 @@ Keep `cargo test -p mizar-artifact` green after each task (see
 
 ### Hardening and cross-cutting follow-ups
 
-18. **Determinism suite.** [ ]
+18. **Determinism suite.** [x]
     - Property coverage that identical inputs produce byte-identical
       artifacts, manifests, and hashes across runs and platforms.
     - Deps: 16. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
+    - Status: covered for the crate-owned artifact-facing surface; broader
+      clean/incremental/parallel/cache-race/ATP-order and real-emission
+      determinism remains an `external_dependency_gap` for upstream
+      integration suites and task 17.
 
 19. **Public-enum forward-compatibility policy.** [ ]
     - Apply the `mizar-frontend` task-25 procedure to each public enum;

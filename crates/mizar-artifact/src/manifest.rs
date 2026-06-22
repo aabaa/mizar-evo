@@ -2344,6 +2344,36 @@ mod tests {
     }
 
     #[test]
+    fn manifest_writer_is_deterministic_for_identical_inputs() {
+        let module_a = identity("pkg", "articles/a", "2026");
+        let module_b = identity("pkg", "articles/b", "2026");
+        let mut manifest = sample_manifest();
+        manifest.modules = vec![
+            fake_entry(module_b.clone(), "artifacts/b.json", 20),
+            fake_entry(module_a.clone(), "artifacts/a.json", 10),
+        ];
+        manifest.development_artifacts = vec![
+            development_entry("trace", "dev/z.json", Some(module_b)),
+            development_entry("trace", "dev/a.json", Some(module_a)),
+        ];
+        let domain = manifest_hash_domain(manifest.schema_version);
+        let first_json = artifact_manifest_json(&manifest).expect("first canonical manifest JSON");
+        let first_bytes = write_artifact_manifest(&manifest).expect("first canonical bytes");
+        let first_hash = domain.hash(&first_json, &[]);
+
+        for _ in 0..3 {
+            let json = artifact_manifest_json(&manifest).expect("repeated canonical manifest JSON");
+            assert_eq!(json, first_json);
+            assert_eq!(canonical_json_string(&json).into_bytes(), first_bytes);
+            assert_eq!(
+                write_artifact_manifest(&manifest).expect("repeated canonical bytes"),
+                first_bytes
+            );
+            assert_eq!(domain.hash(&json, &[]), first_hash);
+        }
+    }
+
+    #[test]
     fn reader_rejects_unsorted_and_duplicate_manifest_collections() {
         let module_a = identity("pkg", "articles/a", "2026");
         let module_b = identity("pkg", "articles/b", "2026");
@@ -2519,6 +2549,48 @@ mod tests {
             replay_commit.write.artifact_hash
         );
         assert_eq!(first_text, replay_text);
+    }
+
+    #[test]
+    fn manifest_transaction_output_is_deterministic_for_identical_inputs() {
+        let module = identity("pkg", "articles/a", "2026");
+        let artifact = sample_verified_artifact(module, "articles/a.miz", hash(1), false);
+
+        let root_a = TestArtifactRoot::new();
+        let root_b = TestArtifactRoot::new();
+        let entry_a = publish_verified_artifact(root_a.path(), "artifacts/a.json", &artifact);
+        let entry_b = publish_verified_artifact(root_b.path(), "artifacts/a.json", &artifact);
+        assert_eq!(entry_a, entry_b);
+
+        let mut transaction_a =
+            ManifestTransaction::begin(root_a.path(), sample_manifest(), None).expect("begin a");
+        transaction_a
+            .stage_module(entry_a)
+            .expect("stage module into first transaction");
+        let commit_a = transaction_a
+            .commit(ManifestCommitOptions::default())
+            .expect("commit a");
+        let manifest_text_a = fs::read_to_string(root_a.path().join(ARTIFACT_MANIFEST_PATH))
+            .expect("first manifest text");
+
+        let mut transaction_b =
+            ManifestTransaction::begin(root_b.path(), sample_manifest(), None).expect("begin b");
+        transaction_b
+            .stage_module(entry_b)
+            .expect("stage module into second transaction");
+        let commit_b = transaction_b
+            .commit(ManifestCommitOptions::default())
+            .expect("commit b");
+        let manifest_text_b = fs::read_to_string(root_b.path().join(ARTIFACT_MANIFEST_PATH))
+            .expect("second manifest text");
+
+        assert_eq!(commit_a.manifest, commit_b.manifest);
+        assert_eq!(commit_a.write.artifact_hash, commit_b.write.artifact_hash);
+        assert_eq!(
+            write_artifact_manifest(&commit_a.manifest).expect("first committed manifest bytes"),
+            write_artifact_manifest(&commit_b.manifest).expect("second committed manifest bytes")
+        );
+        assert_eq!(manifest_text_a, manifest_text_b);
     }
 
     #[test]

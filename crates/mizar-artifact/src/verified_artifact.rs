@@ -3328,6 +3328,62 @@ mod tests {
     }
 
     #[test]
+    fn verified_artifact_writer_and_hash_inputs_are_deterministic_for_identical_inputs() {
+        let artifact = sample_artifact();
+        let excluded_paths = artifact_hash_excluded_paths();
+        let artifact_domain =
+            artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact.schema_version);
+        let first_json = verified_artifact_json(&artifact).expect("first canonical JSON");
+        let first_bytes = write_verified_artifact(&artifact).expect("first canonical bytes");
+        let first_artifact_hash = artifact_domain.hash(&first_json, &excluded_paths);
+        let first_interface_input =
+            interface_hash_input_json(&artifact).expect("first interface hash input");
+        let first_implementation_input =
+            implementation_hash_input_json(&artifact).expect("first implementation hash input");
+        let first_interface_hash = artifact
+            .compute_interface_hash()
+            .expect("first interface hash");
+        let first_implementation_hash = artifact
+            .compute_implementation_hash()
+            .expect("first implementation hash");
+
+        for _ in 0..3 {
+            let json = verified_artifact_json(&artifact).expect("repeated canonical JSON");
+            assert_eq!(json, first_json);
+            assert_eq!(canonical_json_string(&json).into_bytes(), first_bytes);
+            assert_eq!(
+                write_verified_artifact(&artifact).expect("repeated canonical bytes"),
+                first_bytes
+            );
+            assert_eq!(
+                artifact_domain.hash(&json, &excluded_paths),
+                first_artifact_hash
+            );
+            assert_eq!(
+                interface_hash_input_json(&artifact).expect("repeated interface hash input"),
+                first_interface_input
+            );
+            assert_eq!(
+                implementation_hash_input_json(&artifact)
+                    .expect("repeated implementation hash input"),
+                first_implementation_input
+            );
+            assert_eq!(
+                artifact
+                    .compute_interface_hash()
+                    .expect("repeated interface hash"),
+                first_interface_hash
+            );
+            assert_eq!(
+                artifact
+                    .compute_implementation_hash()
+                    .expect("repeated implementation hash"),
+                first_implementation_hash
+            );
+        }
+    }
+
+    #[test]
     fn public_hash_input_helpers_match_computed_hashes() {
         let artifact = sample_artifact();
         let interface_input = interface_hash_input_json(&artifact).expect("interface hash input");

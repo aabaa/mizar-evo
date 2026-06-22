@@ -1897,6 +1897,34 @@ mod tests {
     }
 
     #[test]
+    fn module_summary_writer_and_hash_are_deterministic_for_identical_inputs() {
+        let summary = sample_summary();
+        let first_json = module_summary_json(&summary).expect("first canonical JSON");
+        let first_bytes = write_module_summary(&summary).expect("first canonical bytes");
+        let first_projection =
+            interface_projection_json(&summary).expect("first interface projection");
+        let first_hash = summary.compute_interface_hash().expect("first hash");
+
+        for _ in 0..3 {
+            let json = module_summary_json(&summary).expect("repeated canonical JSON");
+            assert_eq!(json, first_json);
+            assert_eq!(canonical_json_string(&json).into_bytes(), first_bytes);
+            assert_eq!(
+                write_module_summary(&summary).expect("repeated canonical bytes"),
+                first_bytes
+            );
+            assert_eq!(
+                interface_projection_json(&summary).expect("repeated interface projection"),
+                first_projection
+            );
+            assert_eq!(
+                summary.compute_interface_hash().expect("repeated hash"),
+                first_hash
+            );
+        }
+    }
+
+    #[test]
     fn writer_sorts_collections_and_reader_rejects_unsorted_arrays() {
         let mut summary = sample_summary();
         summary.exported_symbols.reverse();

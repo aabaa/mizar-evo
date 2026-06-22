@@ -1014,6 +1014,23 @@ mod tests {
     }
 
     #[test]
+    fn proof_witness_ref_writer_is_deterministic_for_identical_inputs() {
+        let reference = sample_reference();
+        let first_json = proof_witness_ref_json(&reference).expect("first canonical JSON");
+        let first_bytes = write_proof_witness_ref(&reference).expect("first canonical bytes");
+
+        for _ in 0..3 {
+            let json = proof_witness_ref_json(&reference).expect("repeated canonical JSON");
+            assert_eq!(json, first_json);
+            assert_eq!(canonical_json_string(&json).into_bytes(), first_bytes);
+            assert_eq!(
+                write_proof_witness_ref(&reference).expect("repeated canonical bytes"),
+                first_bytes
+            );
+        }
+    }
+
+    #[test]
     fn supplied_witness_artifact_hash_mismatch_is_rejected() {
         let reference = sample_reference();
         let json = proof_witness_ref_json(&reference).expect("canonical JSON");

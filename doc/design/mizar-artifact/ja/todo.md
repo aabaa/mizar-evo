@@ -225,10 +225,14 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 
 ### 強化と横断フォローアップ
 
-18. **決定性スイート。** [ ]
+18. **決定性スイート。** [x]
     - 同一入力が実行/プラットフォームをまたいでバイト同一の artifact、
       manifest、ハッシュを生むことのプロパティ的検証。
     - 依存: 16。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
+    - 状態: crate が所有する artifact-facing surface については covered。
+      より広い clean/incremental/parallel/cache-race/ATP-order と real emission の
+      determinism は、upstream integration suite と task 17 に残る
+      `external_dependency_gap`。
 
 19. **公開 enum の前方互換性ポリシー。** [ ]
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用する。
