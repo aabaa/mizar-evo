@@ -252,10 +252,14 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       記録する。残る gap は upstream の `external_dependency_gap` または task 22 の
       source-layout deferral である。
 
-21. **二言語ドキュメント同期監査。** [ ]
+21. **二言語ドキュメント同期監査。** [x]
     - `doc/design/mizar-artifact/en/` の各英語正本と日本語版を比較し、
       内容を同期する。
     - 依存: 20。仕様: リポジトリのドキュメント方針。
+    - 状態:
+      [bilingual_documentation_sync.md](./bilingual_documentation_sync.md)
+      はすべての英語正本文書が同期済みの日本語 companion を持ち、未解決の
+      synchronization placeholder が残っていないことを記録する。
 
 22. **module 境界リファクタリング gate。** [ ]
     - crate を下流 consumer 向けに完了扱いにする前に、source layout を監査し、

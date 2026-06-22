@@ -252,11 +252,15 @@ Keep `cargo test -p mizar-artifact` green after each task (see
       `design_drift`; remaining gaps are upstream `external_dependency_gap`s or
       task-22 source-layout deferrals.
 
-21. **Bilingual documentation sync audit.** [ ]
+21. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under
       `doc/design/mizar-artifact/en/` with its Japanese companion and
       synchronize content.
     - Deps: 20. Spec: repository documentation policy.
+    - Status:
+      [bilingual_documentation_sync.md](./bilingual_documentation_sync.md)
+      records that every English canonical document has a synchronized Japanese
+      companion and that no unresolved synchronization placeholder remains.
 
 22. **Module-boundary refactor gate.** [ ]
     - Before treating the crate as ready for downstream consumers, audit the
