@@ -366,6 +366,37 @@ task 11 がこの section を実装する。
 type fact は declaration checking、inference、coercion checking、後続
 registration/overload phase が共有する local currency である。
 
+task 11 は declaration checking、term/formula inference、coercion checking が既に記録した
+fact を使う。source walker や新しい registration fact inference は追加しない。現在の
+resolver/checker boundary は、AST 全体の statement/proof assumption table、theorem acceptance
+payload、phase-7 `ResolutionTrace` fact をまだ公開していない。これらは後続 task の
+`external_dependency_gap` として残る。
+
+実装表面は `TypeFactQueryEngine` である。これは `TypeFactTable` と optional な
+`LocalTypeContextTable` を消費し、`TypeFactQuery` / `TypeFactQueryOutput` を通じて
+deterministic point query に答える。query output は explicit な `Satisfied`、`Missing`、
+`Contradicted` status、canonical order の matched fact id、contradiction 用 query-local
+diagnostic を持つ。context で active visible fact を列挙してよいが、新しい fact の導出や
+table entry の書き換えはしない。
+
+`TypeFactQuery` は subject、predicate、polarity、optional local context id で match する。
+provenance は point-query matching には参加しない。provenance は canonical output ordering、
+traceability、後続 explanation のために保持する。positive query は subject/predicate の
+active positive fact が少なくとも 1 つ visible で、同じ subject/predicate の active negative
+fact が visible でない場合に `Satisfied` になる。negative query は対称である。matching-polarity
+fact も opposite-polarity fact も active visible でない場合、query は `Missing` になる。
+
+contradiction は visibility/status filtering 後に、同じ subject と predicate に対して
+opposite polarity の active visible fact があることを意味し、provenance は無視する。
+contradicted query は両 polarity の active same subject/predicate fact id を canonical order で返し、
+query-local diagnostic を発行する。underlying fact table は変更しない。
+
+Assumed fact は、query が context id を supplied し、engine が `LocalTypeContextTable` を持ち、
+その context が fact を consume できる場合だけ visible である。engine が context table を持たない、
+query が context を省く、context id が missing、または fact がその context の visibility chain の外に
+ある場合、`Assumed` fact はその query では inactive である。これにより、local context を選んでいない
+registration、overload、dependency-summary consumer に assumption が漏れない。
+
 fact source:
 
 - `Declared`: binding declaration と type-expression site;
@@ -381,9 +412,11 @@ query rules:
 - `Assumed` fact は、`LocalTypeContextTable` に記録された introducing context または visible
   descendant でだけ consumable である;
 - `PendingObligation`、`Degraded`、`Rejected` fact は active evidence ではない;
-- fact key は subject、predicate、polarity、provenance class、assumption visibility を制御する
-  context を含む;
-- contradictory fact は insertion order で解決せず、diagnostic と explicit status を作る。
+- `TypeFactTable` の semantic key は subject、predicate、polarity、provenance を含む。
+  assumption visibility は insertion order ではなく `LocalTypeContextTable` の
+  `introduced_assumptions` / `visible_facts` で制御する;
+- contradictory active fact は insertion order で解決せず、query diagnostic と explicit な
+  `Contradicted` status を作る。
 
 phase 6 は後続 registration resolution が必要とする fact を記録してよいが、phase 7 が
 対応 derivation を所有する前に `Registration` provenance や trace step を作ってはならない。

@@ -647,6 +647,179 @@ pub enum InitialRequirementKind {
     Narrowing,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TypeFactQueryEngine<'a> {
+    facts: &'a TypeFactTable,
+    contexts: Option<&'a LocalTypeContextTable>,
+}
+
+impl<'a> TypeFactQueryEngine<'a> {
+    pub const fn new(facts: &'a TypeFactTable) -> Self {
+        Self {
+            facts,
+            contexts: None,
+        }
+    }
+
+    pub const fn with_contexts(
+        facts: &'a TypeFactTable,
+        contexts: &'a LocalTypeContextTable,
+    ) -> Self {
+        Self {
+            facts,
+            contexts: Some(contexts),
+        }
+    }
+
+    pub fn query(&self, query: TypeFactQuery) -> TypeFactQueryOutput {
+        let mut matched = Vec::new();
+        let mut opposite = Vec::new();
+        let mut active_same_predicate = Vec::new();
+        let mut diagnostics = TypeDiagnosticTable::new();
+        for (id, fact) in self.facts.canonical_iter() {
+            if fact.subject != query.subject || fact.predicate != query.predicate {
+                continue;
+            }
+            if !self.fact_is_active(id, fact, query.context) {
+                continue;
+            }
+            active_same_predicate.push(id);
+            if fact.polarity == query.polarity {
+                matched.push(id);
+            } else {
+                opposite.push(id);
+            }
+        }
+
+        let status = if !matched.is_empty() && opposite.is_empty() {
+            TypeFactQueryStatus::Satisfied
+        } else if matched.is_empty() && opposite.is_empty() {
+            TypeFactQueryStatus::Missing
+        } else {
+            diagnostics.insert(TypeDiagnosticDraft {
+                owner: Some(query.subject.clone()),
+                source_range: query.source_range,
+                class: TypeDiagnosticClass::TypeFact,
+                severity: TypeDiagnosticSeverity::Error,
+                message_key: "checker.fact.contradiction".to_owned(),
+                recovery: DiagnosticRecoveryState::Degraded,
+            });
+            matched = active_same_predicate;
+            TypeFactQueryStatus::Contradicted
+        };
+
+        TypeFactQueryOutput {
+            query,
+            status,
+            matched_facts: matched,
+            diagnostics,
+        }
+    }
+
+    pub fn active_facts(&self, context: Option<LocalTypeContextId>) -> Vec<TypeFactId> {
+        self.facts
+            .canonical_iter()
+            .filter_map(|(id, fact)| self.fact_is_active(id, fact, context).then_some(id))
+            .collect()
+    }
+
+    fn fact_is_active(
+        &self,
+        id: TypeFactId,
+        fact: &crate::typed_ast::TypeFact,
+        context: Option<LocalTypeContextId>,
+    ) -> bool {
+        match fact.status {
+            FactStatus::Known => true,
+            FactStatus::Assumed => context.is_some_and(|context| {
+                self.contexts.is_some_and(|contexts| {
+                    context_can_consume_fact(context, id, contexts, self.facts)
+                })
+            }),
+            FactStatus::PendingObligation | FactStatus::Degraded | FactStatus::Rejected => false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TypeFactQuery {
+    pub subject: TypedSubjectRef,
+    pub predicate: TypePredicateRef,
+    pub polarity: Polarity,
+    pub context: Option<LocalTypeContextId>,
+    pub source_range: SourceRange,
+}
+
+impl TypeFactQuery {
+    pub const fn new(
+        subject: TypedSubjectRef,
+        predicate: TypePredicateRef,
+        polarity: Polarity,
+        source_range: SourceRange,
+    ) -> Self {
+        Self {
+            subject,
+            predicate,
+            polarity,
+            context: None,
+            source_range,
+        }
+    }
+
+    pub const fn with_context(mut self, context: LocalTypeContextId) -> Self {
+        self.context = Some(context);
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TypeFactQueryOutput {
+    query: TypeFactQuery,
+    status: TypeFactQueryStatus,
+    matched_facts: Vec<TypeFactId>,
+    diagnostics: TypeDiagnosticTable,
+}
+
+impl TypeFactQueryOutput {
+    pub const fn query(&self) -> &TypeFactQuery {
+        &self.query
+    }
+
+    pub const fn status(&self) -> TypeFactQueryStatus {
+        self.status
+    }
+
+    pub fn matched_facts(&self) -> &[TypeFactId] {
+        &self.matched_facts
+    }
+
+    pub const fn diagnostics(&self) -> &TypeDiagnosticTable {
+        &self.diagnostics
+    }
+
+    pub fn debug_text(&self) -> String {
+        let mut output = String::from("type-fact-query-debug-v1\n");
+        write_type_fact_query(&mut output, &self.query);
+        let _ = write!(
+            output,
+            "status={} matched=",
+            type_fact_query_status_name(self.status)
+        );
+        write_fact_ids(&mut output, &self.matched_facts);
+        output.push('\n');
+        write_diagnostics(&mut output, &self.diagnostics);
+        output
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum TypeFactQueryStatus {
+    Satisfied,
+    Missing,
+    Contradicted,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum CoercionCheckingInput {
     Obligation(Box<InitialObligationInput>),
@@ -3255,6 +3428,46 @@ fn initial_obligation_status_rank(status: InitialObligationStatus) -> u8 {
     }
 }
 
+fn context_can_consume_fact(
+    context_id: LocalTypeContextId,
+    fact_id: TypeFactId,
+    contexts: &LocalTypeContextTable,
+    facts: &TypeFactTable,
+) -> bool {
+    let Some(fact) = facts.get(fact_id) else {
+        return false;
+    };
+    if fact.status.is_unconditionally_consumable() {
+        return true;
+    }
+    if fact.status != FactStatus::Assumed {
+        return false;
+    }
+
+    let Some(query_context) = contexts.get(context_id) else {
+        return false;
+    };
+    if query_context.visible_facts.binary_search(&fact_id).is_err() {
+        return false;
+    }
+
+    let mut active = Some(context_id);
+    while let Some(id) = active {
+        let Some(context) = contexts.get(id) else {
+            return false;
+        };
+        if context
+            .introduced_assumptions
+            .binary_search(&fact_id)
+            .is_ok()
+        {
+            return true;
+        }
+        active = context.parent;
+    }
+    false
+}
+
 fn type_entries_by_site(
     entries: &TypeTable,
 ) -> BTreeMap<TypedSiteRef, (NormalizedTypeId, TypeStatus)> {
@@ -5301,6 +5514,29 @@ fn write_fact_ids(output: &mut String, facts: &[TypeFactId]) {
     output.push(']');
 }
 
+fn write_type_fact_query(output: &mut String, query: &TypeFactQuery) {
+    output.push_str("query: subject=");
+    output.push_str(&site_key(&query.subject));
+    output.push_str(" predicate=\"");
+    write_escaped(output, query.predicate.as_str());
+    let _ = write!(
+        output,
+        "\" polarity={} context=",
+        polarity_name(query.polarity)
+    );
+    match query.context {
+        Some(context) => {
+            let _ = write!(output, "local_context#{}", context.index());
+        }
+        None => output.push_str("<none>"),
+    }
+    let _ = writeln!(
+        output,
+        " range={}..{}",
+        query.source_range.start, query.source_range.end
+    );
+}
+
 fn type_context_layer_name(layer: TypeContextLayer) -> &'static str {
     match layer {
         TypeContextLayer::Module => "module",
@@ -5333,6 +5569,14 @@ fn fact_status_name(status: FactStatus) -> &'static str {
         FactStatus::PendingObligation => "pending_obligation",
         FactStatus::Degraded => "degraded",
         FactStatus::Rejected => "rejected",
+    }
+}
+
+fn type_fact_query_status_name(status: TypeFactQueryStatus) -> &'static str {
+    match status {
+        TypeFactQueryStatus::Satisfied => "satisfied",
+        TypeFactQueryStatus::Missing => "missing",
+        TypeFactQueryStatus::Contradicted => "contradicted",
     }
 }
 
@@ -7600,6 +7844,381 @@ mod tests {
     }
 
     #[test]
+    fn type_fact_queries_are_deterministic_and_ignore_provenance_for_matching() {
+        let source = source_id();
+        let subject = site(70);
+        let predicate = TypePredicateRef::new("is_set_like");
+        let mut first_facts = TypeFactTable::new();
+        let inferred = first_facts.insert(TypeFactDraft {
+            subject: subject.clone(),
+            predicate: predicate.clone(),
+            polarity: Polarity::Positive,
+            provenance: FactProvenance::Inferred(TypeRuleId::new("z-rule")),
+            status: FactStatus::Known,
+        });
+        let builtin = first_facts.insert(TypeFactDraft {
+            subject: subject.clone(),
+            predicate: predicate.clone(),
+            polarity: Polarity::Positive,
+            provenance: FactProvenance::Builtin(BuiltinRuleId::new("a-builtin")),
+            status: FactStatus::Known,
+        });
+        let duplicate = first_facts.insert(TypeFactDraft {
+            subject: subject.clone(),
+            predicate: predicate.clone(),
+            polarity: Polarity::Positive,
+            provenance: FactProvenance::Builtin(BuiltinRuleId::new("a-builtin")),
+            status: FactStatus::Known,
+        });
+        assert_eq!(duplicate, builtin);
+        assert_eq!(first_facts.len(), 2);
+
+        let mut second_facts = TypeFactTable::new();
+        second_facts.insert(TypeFactDraft {
+            subject: subject.clone(),
+            predicate: predicate.clone(),
+            polarity: Polarity::Positive,
+            provenance: FactProvenance::Builtin(BuiltinRuleId::new("a-builtin")),
+            status: FactStatus::Known,
+        });
+        second_facts.insert(TypeFactDraft {
+            subject: subject.clone(),
+            predicate: predicate.clone(),
+            polarity: Polarity::Positive,
+            provenance: FactProvenance::Inferred(TypeRuleId::new("z-rule")),
+            status: FactStatus::Known,
+        });
+
+        let query = TypeFactQuery::new(
+            subject.clone(),
+            predicate.clone(),
+            Polarity::Positive,
+            range(source, 350, 355),
+        );
+        let first = TypeFactQueryEngine::new(&first_facts).query(query.clone());
+        let second = TypeFactQueryEngine::new(&second_facts).query(query);
+
+        assert_eq!(first.status(), TypeFactQueryStatus::Satisfied);
+        assert_eq!(first.matched_facts(), &[inferred, builtin]);
+        assert_eq!(second.status(), TypeFactQueryStatus::Satisfied);
+        assert_eq!(
+            second.matched_facts(),
+            &[TypeFactId::new(1), TypeFactId::new(0)]
+        );
+        assert!(first.debug_text().contains("status=satisfied"));
+        assert!(first.debug_text().contains("matched=[fact#0, fact#1]"));
+        assert!(first.diagnostics().is_empty());
+        assert!(!first.debug_text().contains("registration"));
+        assert!(!first.debug_text().contains(concat!("Proof", "Witness")));
+    }
+
+    #[test]
+    fn type_fact_queries_respect_assumption_visibility_and_context_absence() {
+        let source = source_id();
+        let symbols = symbol_env(Vec::new());
+        let binding_env = binding_env_for_declarations(
+            source,
+            vec![
+                binding_spec(
+                    "reserved_y",
+                    BindingKind::ReservedVariable,
+                    BindingStatus::Active,
+                ),
+                binding_spec(
+                    "given_w",
+                    BindingKind::QuantifierBinder,
+                    BindingStatus::Active,
+                ),
+            ],
+        );
+        let output = DeclarationChecker::default().check(
+            &symbols,
+            &binding_env,
+            vec![
+                DeclarationContextInput::new(
+                    BindingContextId::new(0),
+                    site(300),
+                    range(source, 0, 1),
+                ),
+                DeclarationContextInput::new(
+                    BindingContextId::new(1),
+                    site(301),
+                    range(source, 1, 2),
+                ),
+            ],
+            vec![
+                declaration_with_type_in_context(
+                    source,
+                    0,
+                    BindingContextId::new(0),
+                    DeclarationKind::ReservedVariable,
+                    80,
+                    180,
+                )
+                .with_reserved_default(ReservedDefaultPayload::new(site(180), false))
+                .with_assumptions(vec![DeclarationAssumptionInput::new(
+                    TypePredicateRef::new("module_assumption"),
+                    range(source, 350, 351),
+                )]),
+                declaration_with_type_in_context(
+                    source,
+                    1,
+                    BindingContextId::new(1),
+                    DeclarationKind::Given,
+                    81,
+                    181,
+                )
+                .with_assumptions(vec![DeclarationAssumptionInput::new(
+                    TypePredicateRef::new("block_assumption"),
+                    range(source, 351, 352),
+                )]),
+            ],
+        );
+        let module_query = TypeFactQuery::new(
+            site(80),
+            TypePredicateRef::new("module_assumption"),
+            Polarity::Positive,
+            range(source, 360, 361),
+        );
+        let block_query = TypeFactQuery::new(
+            site(81),
+            TypePredicateRef::new("block_assumption"),
+            Polarity::Positive,
+            range(source, 361, 362),
+        );
+        let contextless = TypeFactQueryEngine::new(output.facts()).query(module_query.clone());
+        let no_query_context =
+            TypeFactQueryEngine::with_contexts(output.facts(), output.contexts())
+                .query(module_query.clone());
+        let module_context = TypeFactQueryEngine::with_contexts(output.facts(), output.contexts())
+            .query(
+                module_query
+                    .clone()
+                    .with_context(LocalTypeContextId::new(0)),
+            );
+        let child_context = TypeFactQueryEngine::with_contexts(output.facts(), output.contexts())
+            .query(module_query.with_context(LocalTypeContextId::new(1)));
+        let block_from_parent =
+            TypeFactQueryEngine::with_contexts(output.facts(), output.contexts())
+                .query(block_query.clone().with_context(LocalTypeContextId::new(0)));
+        let block_from_child =
+            TypeFactQueryEngine::with_contexts(output.facts(), output.contexts())
+                .query(block_query.with_context(LocalTypeContextId::new(1)));
+
+        assert_eq!(contextless.status(), TypeFactQueryStatus::Missing);
+        assert_eq!(no_query_context.status(), TypeFactQueryStatus::Missing);
+        assert_eq!(module_context.status(), TypeFactQueryStatus::Satisfied);
+        assert_eq!(child_context.status(), TypeFactQueryStatus::Satisfied);
+        assert_eq!(block_from_parent.status(), TypeFactQueryStatus::Missing);
+        assert_eq!(block_from_child.status(), TypeFactQueryStatus::Satisfied);
+        assert_eq!(
+            TypeFactQueryEngine::with_contexts(output.facts(), output.contexts())
+                .active_facts(Some(LocalTypeContextId::new(1))),
+            vec![TypeFactId::new(0), TypeFactId::new(1)]
+        );
+        assert_eq!(
+            TypeFactQueryEngine::with_contexts(output.facts(), output.contexts())
+                .active_facts(None),
+            Vec::<TypeFactId>::new()
+        );
+        assert_eq!(
+            TypeFactQueryEngine::new(output.facts()).active_facts(Some(LocalTypeContextId::new(1))),
+            Vec::<TypeFactId>::new()
+        );
+        assert_eq!(
+            TypeFactQueryEngine::with_contexts(output.facts(), output.contexts())
+                .active_facts(Some(LocalTypeContextId::new(99))),
+            Vec::<TypeFactId>::new()
+        );
+
+        let mut hidden_facts = TypeFactTable::new();
+        let hidden_fact = hidden_facts.insert(TypeFactDraft {
+            subject: site(82),
+            predicate: TypePredicateRef::new("hidden_assumption"),
+            polarity: Polarity::Positive,
+            provenance: FactProvenance::Inferred(TypeRuleId::new("hidden")),
+            status: FactStatus::Assumed,
+        });
+        let mut hidden_contexts = LocalTypeContextTable::new();
+        let parent = hidden_contexts.insert(LocalTypeContextDraft {
+            owner: site(302),
+            parent: None,
+            layer: TypeContextLayer::Block,
+            bindings: Vec::new(),
+            introduced_assumptions: vec![hidden_fact],
+            visible_facts: vec![hidden_fact],
+            recovery: ContextRecoveryState::Normal,
+        });
+        let hidden_child = hidden_contexts.insert(LocalTypeContextDraft {
+            owner: site(303),
+            parent: Some(parent),
+            layer: TypeContextLayer::Block,
+            bindings: Vec::new(),
+            introduced_assumptions: Vec::new(),
+            visible_facts: Vec::new(),
+            recovery: ContextRecoveryState::Normal,
+        });
+        let hidden_query = TypeFactQuery::new(
+            site(82),
+            TypePredicateRef::new("hidden_assumption"),
+            Polarity::Positive,
+            range(source, 362, 363),
+        );
+        let hidden_engine = TypeFactQueryEngine::with_contexts(&hidden_facts, &hidden_contexts);
+
+        assert_eq!(
+            hidden_engine
+                .query(hidden_query.clone().with_context(parent))
+                .status(),
+            TypeFactQueryStatus::Satisfied
+        );
+        assert_eq!(
+            hidden_engine
+                .query(hidden_query.with_context(hidden_child))
+                .status(),
+            TypeFactQueryStatus::Missing
+        );
+        assert_eq!(hidden_engine.active_facts(Some(parent)), vec![hidden_fact]);
+        assert_eq!(
+            hidden_engine.active_facts(Some(hidden_child)),
+            Vec::<TypeFactId>::new()
+        );
+
+        let mut filtered_facts = TypeFactTable::new();
+        let visible_positive = filtered_facts.insert(TypeFactDraft {
+            subject: site(83),
+            predicate: TypePredicateRef::new("visibility_filtered_opposite"),
+            polarity: Polarity::Positive,
+            provenance: FactProvenance::Inferred(TypeRuleId::new("visible")),
+            status: FactStatus::Known,
+        });
+        let hidden_negative = filtered_facts.insert(TypeFactDraft {
+            subject: site(83),
+            predicate: TypePredicateRef::new("visibility_filtered_opposite"),
+            polarity: Polarity::Negative,
+            provenance: FactProvenance::Inferred(TypeRuleId::new("hidden-opposite")),
+            status: FactStatus::Assumed,
+        });
+        let mut filtered_contexts = LocalTypeContextTable::new();
+        let contradiction_parent = filtered_contexts.insert(LocalTypeContextDraft {
+            owner: site(304),
+            parent: None,
+            layer: TypeContextLayer::Block,
+            bindings: Vec::new(),
+            introduced_assumptions: vec![hidden_negative],
+            visible_facts: vec![hidden_negative],
+            recovery: ContextRecoveryState::Normal,
+        });
+        let filtered_child = filtered_contexts.insert(LocalTypeContextDraft {
+            owner: site(305),
+            parent: Some(contradiction_parent),
+            layer: TypeContextLayer::Block,
+            bindings: Vec::new(),
+            introduced_assumptions: Vec::new(),
+            visible_facts: Vec::new(),
+            recovery: ContextRecoveryState::Normal,
+        });
+        let filtered_query = TypeFactQuery::new(
+            site(83),
+            TypePredicateRef::new("visibility_filtered_opposite"),
+            Polarity::Positive,
+            range(source, 363, 364),
+        );
+        let filtered_engine =
+            TypeFactQueryEngine::with_contexts(&filtered_facts, &filtered_contexts);
+
+        assert_eq!(
+            filtered_engine
+                .query(filtered_query.clone().with_context(contradiction_parent))
+                .status(),
+            TypeFactQueryStatus::Contradicted
+        );
+        assert_eq!(
+            filtered_engine
+                .query(filtered_query.with_context(filtered_child))
+                .status(),
+            TypeFactQueryStatus::Satisfied
+        );
+        assert_eq!(
+            filtered_engine.active_facts(Some(filtered_child)),
+            vec![visible_positive]
+        );
+    }
+
+    #[test]
+    fn type_fact_queries_report_contradictions_without_mutating_facts() {
+        let source = source_id();
+        let subject = site(90);
+        let predicate = TypePredicateRef::new("contradictory");
+        let mut facts = TypeFactTable::new();
+        let negative = facts.insert(TypeFactDraft {
+            subject: subject.clone(),
+            predicate: predicate.clone(),
+            polarity: Polarity::Negative,
+            provenance: FactProvenance::Builtin(BuiltinRuleId::new("negative")),
+            status: FactStatus::Known,
+        });
+        let positive = facts.insert(TypeFactDraft {
+            subject: subject.clone(),
+            predicate: predicate.clone(),
+            polarity: Polarity::Positive,
+            provenance: FactProvenance::Inferred(TypeRuleId::new("positive")),
+            status: FactStatus::Known,
+        });
+        facts.insert(TypeFactDraft {
+            subject: subject.clone(),
+            predicate: predicate.clone(),
+            polarity: Polarity::Negative,
+            provenance: FactProvenance::Inferred(TypeRuleId::new("degraded-negative")),
+            status: FactStatus::Degraded,
+        });
+        facts.insert(TypeFactDraft {
+            subject: subject.clone(),
+            predicate: predicate.clone(),
+            polarity: Polarity::Positive,
+            provenance: FactProvenance::Obligation(InitialObligationId::new(7)),
+            status: FactStatus::PendingObligation,
+        });
+        facts.insert(TypeFactDraft {
+            subject: subject.clone(),
+            predicate: predicate.clone(),
+            polarity: Polarity::Negative,
+            provenance: FactProvenance::Inferred(TypeRuleId::new("rejected-negative")),
+            status: FactStatus::Rejected,
+        });
+        let query = TypeFactQuery::new(
+            subject.clone(),
+            predicate.clone(),
+            Polarity::Positive,
+            range(source, 400, 405),
+        );
+
+        let output = TypeFactQueryEngine::new(&facts).query(query);
+        let negative_output = TypeFactQueryEngine::new(&facts).query(TypeFactQuery::new(
+            subject.clone(),
+            predicate.clone(),
+            Polarity::Negative,
+            range(source, 405, 410),
+        ));
+
+        assert_eq!(output.status(), TypeFactQueryStatus::Contradicted);
+        assert_eq!(output.matched_facts(), &[positive, negative]);
+        assert_eq!(negative_output.status(), TypeFactQueryStatus::Contradicted);
+        assert_eq!(negative_output.matched_facts(), &[positive, negative]);
+        assert_eq!(facts.len(), 5);
+        assert_eq!(
+            TypeFactQueryEngine::new(&facts).active_facts(None),
+            vec![positive, negative]
+        );
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.fact.contradiction"),
+            vec![(400, 405)]
+        );
+        assert!(output.debug_text().contains("status=contradicted"));
+        assert!(output.debug_text().contains("class=TypeFact"));
+    }
+
+    #[test]
     fn attributes_are_sorted_deduplicated_and_contradictions_are_diagnosed() {
         let source = source_id();
         let attr_a = symbol_id("AttrA/1", "pkg::main::AttrA/1");
@@ -8362,6 +8981,12 @@ mod tests {
     }
 
     impl HasDiagnostics for CoercionCheckingOutput {
+        fn diagnostics(&self) -> &TypeDiagnosticTable {
+            self.diagnostics()
+        }
+    }
+
+    impl HasDiagnostics for TypeFactQueryOutput {
         fn diagnostics(&self) -> &TypeDiagnosticTable {
             self.diagnostics()
         }

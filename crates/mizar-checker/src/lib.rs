@@ -7,9 +7,10 @@
 //! normalization; task 8 exposes declaration and local-binding checking over
 //! checker-owned payloads; task 9 exposes term/formula inference over
 //! checker-owned payloads; task 10 exposes coercion candidate and initial
-//! obligation checking over checker-owned payloads. Later fact-query slices,
-//! cluster traces, overload resolution, and resolved typed AST APIs land in
-//! later task-scoped modules after their design specs are written.
+//! obligation checking over checker-owned payloads; task 11 exposes
+//! deterministic type-fact queries. Later cluster traces, overload resolution,
+//! and resolved typed AST APIs land in later task-scoped modules after their
+//! design specs are written.
 
 pub mod binding_env;
 pub mod type_checker;

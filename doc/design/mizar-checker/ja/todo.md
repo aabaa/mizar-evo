@@ -215,11 +215,18 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       input は `VcId` 割り当て、obligation discharge、inserted view 捏造ではなく
       external dependency gap として残す。
 
-11. **型事実の記録とクエリ。** [ ]
+11. **型事実の記録とクエリ。** [x]
     - 推論中の事実記録と、registration/overload の波が後で使う決定的
       クエリ API を実装する。
     - テスト: 事実の来歴。クエリの決定性。事実の重複なし。
     - 依存: 9, 10。仕様: `type_checker.md`（型事実の節）。
+    - task 11 で完了: `TypeFactQueryEngine` は既存 checker fact table 上で
+      deterministic point query に答え、optional `LocalTypeContextTable` を通じて
+      local assumption visibility を尊重し、explicit な `Satisfied` / `Missing` /
+      `Contradicted` status を返す。contradiction diagnostic は fact を mutate せず
+      報告し、provenance は point-query matching ではなく ordering / explanation のために
+      保持する。statement/proof assumption、theorem acceptance、phase-7 trace fact は
+      MC-G019 external dependency gap として残す。
 
 12. **stage `type_elaboration` のコーパスランナー。** [ ]
     - `tests/miz/{pass,fail}/` のケースを stage `type_elaboration` で

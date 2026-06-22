@@ -391,6 +391,44 @@ Task 11 implements this section.
 Type facts are the local currency shared by declaration checking, inference,
 coercion checking, and later registration/overload phases.
 
+Task 11 uses the facts already recorded by declaration checking, term/formula
+inference, and coercion checking. It does not add a source walker or infer new
+registration facts. The current resolver/checker boundary still does not expose
+an AST-wide statement/proof assumption table, theorem acceptance payload, or
+phase-7 `ResolutionTrace` facts; those remain `external_dependency_gap`s for
+later tasks.
+
+The implementation surface is `TypeFactQueryEngine`. It consumes a
+`TypeFactTable` plus an optional `LocalTypeContextTable` and answers
+deterministic point queries through `TypeFactQuery` /
+`TypeFactQueryOutput`. Query output carries explicit `Satisfied`, `Missing`, or
+`Contradicted` status, matched fact ids in canonical order, and query-local
+diagnostics for contradictions. It may list active visible facts for a context,
+but it must not derive new facts or rewrite table entries.
+
+`TypeFactQuery` matches by subject, predicate, polarity, and an optional local
+context id. Provenance does not participate in point-query matching; it is kept
+for canonical output ordering, traceability, and later explanation. A positive
+query is `Satisfied` when at least one active positive fact for the
+subject/predicate is visible and no active negative fact for the same
+subject/predicate is visible. A negative query is symmetric. A query is
+`Missing` when no active matching-polarity fact is visible and no active
+opposite-polarity fact is visible.
+
+Contradiction means active visible facts for the same subject and predicate with
+opposite polarity, ignoring provenance after visibility/status filtering. A
+contradicted query returns all active same subject/predicate fact ids for both
+polarities in canonical order and emits a query-local diagnostic; it does not
+mutate the underlying fact table.
+
+Assumed facts are visible only when the query supplies a context id and the
+engine has a `LocalTypeContextTable` where that context can consume the fact.
+If the engine has no context table, the query omits a context, the context id is
+missing, or the fact is outside that context's visibility chain, `Assumed` facts
+are inactive for that query. This prevents assumption leakage into
+registration, overload, or dependency-summary consumers that have not selected a
+local context.
+
 Fact sources:
 
 - `Declared`: binding declarations and type-expression sites;
@@ -409,10 +447,11 @@ Query rules:
 - `Assumed` facts are consumable only in the introducing context or visible
   descendants recorded in `LocalTypeContextTable`;
 - `PendingObligation`, `Degraded`, and `Rejected` facts are not active evidence;
-- fact keys include subject, predicate, polarity, provenance class, and the
-  context that controls assumption visibility;
-- contradictory facts produce diagnostics and explicit statuses instead of being
-  resolved by insertion order.
+- `TypeFactTable` semantic keys include subject, predicate, polarity, and
+  provenance. Assumption visibility is controlled by `LocalTypeContextTable`
+  `introduced_assumptions` / `visible_facts`, not by insertion order;
+- contradictory active facts produce query diagnostics and explicit
+  `Contradicted` status instead of being resolved by insertion order.
 
 Phase 6 may record facts needed by later registration resolution, but it must not
 create `Registration` provenance or trace steps before phase 7 owns the

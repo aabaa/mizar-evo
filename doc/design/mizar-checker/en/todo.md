@@ -222,11 +222,19 @@ Keep `cargo test -p mizar-checker` green after each task (see
       non-emptiness/proof-query inputs as external dependency gaps rather than
       assigning `VcId`s, discharging obligations, or fabricating inserted views.
 
-11. **Type-fact recording and queries.** [ ]
+11. **Type-fact recording and queries.** [x]
     - Implement fact recording during inference and the deterministic query
       API later used by registration and overload waves.
     - Tests: fact provenance; query determinism; no fact duplication.
     - Deps: 9, 10. Spec: `type_checker.md` (type-facts section).
+    - Completed by task 11: `TypeFactQueryEngine` answers deterministic
+      point queries over existing checker fact tables, respects local
+      assumption visibility through optional `LocalTypeContextTable`, returns
+      explicit `Satisfied` / `Missing` / `Contradicted` statuses, reports
+      contradiction diagnostics without mutating facts, preserves provenance
+      for ordering/explanation rather than point-query matching, and leaves
+      statement/proof assumption, theorem acceptance, and phase-7 trace facts
+      as MC-G019 external dependency gaps.
 
 12. **Corpus runner at stage `type_elaboration`.** [ ]
     - Wire `tests/miz/{pass,fail}/` cases at stage `type_elaboration` through
