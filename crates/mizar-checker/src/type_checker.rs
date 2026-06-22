@@ -1,9 +1,19 @@
-//! Type-expression normalization for checker phase 6.
+//! Type-expression normalization and declaration checking for checker phase 6.
 
-use crate::typed_ast::{
-    DiagnosticRecoveryState, NormalizedTypeId, TypeDiagnosticClass, TypeDiagnosticDraft,
-    TypeDiagnosticId, TypeDiagnosticSeverity, TypeDiagnosticTable, TypeEntryActual, TypeEntryDraft,
-    TypeProvenance, TypeRuleId, TypeStatus, TypeTable, TypedSiteRef,
+use crate::{
+    binding_env::{
+        BindingContextId, BindingContextLayer, BindingContextRecovery, BindingEnv, BindingId,
+        BindingKind, BindingStatus,
+    },
+    typed_ast::{
+        BindingTypeRef, ContextRecoveryState, DiagnosticRecoveryState, FactProvenance, FactStatus,
+        LocalTypeContextDraft, LocalTypeContextId, LocalTypeContextTable, NormalizedTypeId,
+        Polarity, SourceRangeKey as TypedSourceRangeKey, TypeAssumptionId, TypeContextLayer,
+        TypeDiagnostic, TypeDiagnosticClass, TypeDiagnosticDraft, TypeDiagnosticId,
+        TypeDiagnosticSeverity, TypeDiagnosticTable, TypeEntryActual, TypeEntryDraft, TypeEntryId,
+        TypeFactDraft, TypeFactId, TypeFactTable, TypePredicateRef, TypeProvenance, TypeRuleId,
+        TypeStatus, TypeTable, TypedSiteRef,
+    },
 };
 use mizar_resolve::{
     env::{SymbolEnv, SymbolKind},
@@ -128,6 +138,977 @@ impl TypeNormalizer {
             type_entries,
             diagnostics: state.diagnostics,
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeclarationCheckingOutput {
+    normalized_types: NormalizedTypeTable,
+    declarations: CheckedDeclarationTable,
+    contexts: LocalTypeContextTable,
+    type_entries: TypeTable,
+    facts: TypeFactTable,
+    diagnostics: TypeDiagnosticTable,
+}
+
+impl DeclarationCheckingOutput {
+    pub const fn normalized_types(&self) -> &NormalizedTypeTable {
+        &self.normalized_types
+    }
+
+    pub const fn declarations(&self) -> &CheckedDeclarationTable {
+        &self.declarations
+    }
+
+    pub const fn contexts(&self) -> &LocalTypeContextTable {
+        &self.contexts
+    }
+
+    pub const fn type_entries(&self) -> &TypeTable {
+        &self.type_entries
+    }
+
+    pub const fn facts(&self) -> &TypeFactTable {
+        &self.facts
+    }
+
+    pub const fn diagnostics(&self) -> &TypeDiagnosticTable {
+        &self.diagnostics
+    }
+
+    pub fn debug_text(&self) -> String {
+        let mut output = String::from("declaration-checking-debug-v1\n");
+        write_normalized_types(&mut output, &self.normalized_types);
+        write_checked_declarations(&mut output, &self.declarations);
+        write_local_contexts(&mut output, &self.contexts);
+        write_type_entries(&mut output, &self.type_entries);
+        write_type_facts(&mut output, &self.facts);
+        write_diagnostics(&mut output, &self.diagnostics);
+        output
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct DeclarationChecker {
+    normalizer: TypeNormalizer,
+}
+
+impl DeclarationChecker {
+    pub fn new(normalizer: TypeNormalizer) -> Self {
+        Self { normalizer }
+    }
+
+    pub fn check(
+        &self,
+        symbols: &SymbolEnv,
+        binding_env: &BindingEnv,
+        context_inputs: impl IntoIterator<Item = DeclarationContextInput>,
+        declaration_inputs: impl IntoIterator<Item = DeclarationInput>,
+    ) -> DeclarationCheckingOutput {
+        let mut context_inputs = context_inputs.into_iter().collect::<Vec<_>>();
+        context_inputs.sort_by_key(declaration_context_input_key);
+        let mut declarations = declaration_inputs.into_iter().collect::<Vec<_>>();
+        declarations.sort_by_key(declaration_input_key);
+
+        let type_inputs = declarations
+            .iter()
+            .filter(|declaration| declaration.uses_explicit_type_payload())
+            .filter_map(|declaration| declaration.type_expression.clone())
+            .collect::<Vec<_>>();
+        let normalized = self.normalizer.normalize(symbols, type_inputs);
+        let type_entries_by_site = type_entries_by_site(normalized.type_entries());
+
+        let mut state = DeclarationCheckingState {
+            binding_env,
+            normalized_types: normalized.normalized_types,
+            declarations: CheckedDeclarationTable::new(),
+            type_entries: normalized.type_entries,
+            facts: TypeFactTable::new(),
+            diagnostics: normalized.diagnostics,
+            seen_sites: BTreeSet::new(),
+            seen_bindings: BTreeSet::new(),
+            context_bindings: BTreeMap::new(),
+            context_facts: BTreeMap::new(),
+        };
+
+        for declaration in declarations {
+            state.check_declaration(declaration, &type_entries_by_site);
+        }
+
+        let contexts = build_local_contexts(
+            binding_env,
+            &context_inputs,
+            &state.context_bindings,
+            &state.context_facts,
+            &mut state.diagnostics,
+        );
+
+        DeclarationCheckingOutput {
+            normalized_types: state.normalized_types,
+            declarations: state.declarations,
+            contexts,
+            type_entries: state.type_entries,
+            facts: state.facts,
+            diagnostics: state.diagnostics,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeclarationContextInput {
+    pub binding_context: BindingContextId,
+    pub site: TypedSiteRef,
+    pub source_range: SourceRange,
+}
+
+impl DeclarationContextInput {
+    pub fn new(
+        binding_context: BindingContextId,
+        site: TypedSiteRef,
+        source_range: SourceRange,
+    ) -> Self {
+        Self {
+            binding_context,
+            site,
+            source_range,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeclarationInput {
+    pub binding: BindingId,
+    pub context: BindingContextId,
+    pub site: TypedSiteRef,
+    pub source_range: SourceRange,
+    pub kind: DeclarationKind,
+    pub type_expression: Option<TypeExpressionInput>,
+    pub reserved_default: Option<ReservedDefaultPayload>,
+    pub deferred: Vec<DeclarationDeferredReason>,
+    pub assumptions: Vec<DeclarationAssumptionInput>,
+}
+
+impl DeclarationInput {
+    pub fn new(
+        binding: BindingId,
+        context: BindingContextId,
+        site: TypedSiteRef,
+        source_range: SourceRange,
+        kind: DeclarationKind,
+    ) -> Self {
+        Self {
+            binding,
+            context,
+            site,
+            source_range,
+            kind,
+            type_expression: None,
+            reserved_default: None,
+            deferred: Vec::new(),
+            assumptions: Vec::new(),
+        }
+    }
+
+    pub fn with_type_expression(mut self, type_expression: TypeExpressionInput) -> Self {
+        self.type_expression = Some(type_expression);
+        self
+    }
+
+    pub fn with_reserved_default(mut self, reserved_default: ReservedDefaultPayload) -> Self {
+        self.reserved_default = Some(reserved_default);
+        self
+    }
+
+    pub fn with_deferred(mut self, deferred: Vec<DeclarationDeferredReason>) -> Self {
+        self.deferred = deferred;
+        self
+    }
+
+    pub fn with_assumptions(mut self, assumptions: Vec<DeclarationAssumptionInput>) -> Self {
+        self.assumptions = assumptions;
+        self
+    }
+
+    fn uses_explicit_type_payload(&self) -> bool {
+        if self.kind == DeclarationKind::ReservedVariable
+            && self
+                .reserved_default
+                .as_ref()
+                .is_some_and(|payload| payload.shadowed_by_local)
+        {
+            return false;
+        }
+        self.type_expression.is_some()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum DeclarationKind {
+    Let,
+    ReservedVariable,
+    QuantifiedVariable,
+    Given,
+    Consider,
+    Take,
+    Set,
+    DefinitionParameter,
+    DefFuncFormal,
+    DefPredFormal,
+    ReconsiderExisting,
+    ReconsiderNew,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReservedDefaultPayload {
+    pub type_site: TypedSiteRef,
+    pub shadowed_by_local: bool,
+}
+
+impl ReservedDefaultPayload {
+    pub const fn new(type_site: TypedSiteRef, shadowed_by_local: bool) -> Self {
+        Self {
+            type_site,
+            shadowed_by_local,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum DeclarationDeferredReason {
+    MissingTypePayload,
+    MissingReservedDefaultPayload,
+    MissingRightHandSidePayload,
+    MissingDefinitionBodyPayload,
+    MissingEvidenceQuery,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeclarationAssumptionInput {
+    pub predicate: TypePredicateRef,
+    pub source_range: SourceRange,
+}
+
+impl DeclarationAssumptionInput {
+    pub fn new(predicate: TypePredicateRef, source_range: SourceRange) -> Self {
+        Self {
+            predicate,
+            source_range,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct CheckedDeclarationTable {
+    entries: Vec<CheckedDeclaration>,
+}
+
+impl CheckedDeclarationTable {
+    pub const fn new() -> Self {
+        Self {
+            entries: Vec::new(),
+        }
+    }
+
+    fn insert(&mut self, draft: CheckedDeclarationDraft) -> CheckedDeclarationId {
+        let id = CheckedDeclarationId::new(self.entries.len());
+        self.entries.push(CheckedDeclaration {
+            id,
+            binding: draft.binding,
+            context: draft.context,
+            site: draft.site,
+            kind: draft.kind,
+            type_entry: draft.type_entry,
+            type_site: draft.type_site,
+            facts: draft.facts,
+            status: draft.status,
+            deferred: draft.deferred,
+        });
+        id
+    }
+
+    pub fn get(&self, id: CheckedDeclarationId) -> Option<&CheckedDeclaration> {
+        self.entries.get(id.index())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (CheckedDeclarationId, &CheckedDeclaration)> {
+        self.entries.iter().map(|entry| (entry.id, entry))
+    }
+
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct CheckedDeclarationId(usize);
+
+impl CheckedDeclarationId {
+    pub const fn new(index: usize) -> Self {
+        Self(index)
+    }
+
+    pub const fn index(self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CheckedDeclaration {
+    pub id: CheckedDeclarationId,
+    pub binding: BindingId,
+    pub context: BindingContextId,
+    pub site: TypedSiteRef,
+    pub kind: DeclarationKind,
+    pub type_entry: Option<TypeEntryId>,
+    pub type_site: Option<TypedSiteRef>,
+    pub facts: Vec<TypeFactId>,
+    pub status: DeclarationStatus,
+    pub deferred: Vec<DeclarationDeferredReason>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct CheckedDeclarationDraft {
+    binding: BindingId,
+    context: BindingContextId,
+    site: TypedSiteRef,
+    kind: DeclarationKind,
+    type_entry: Option<TypeEntryId>,
+    type_site: Option<TypedSiteRef>,
+    facts: Vec<TypeFactId>,
+    status: DeclarationStatus,
+    deferred: Vec<DeclarationDeferredReason>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum DeclarationStatus {
+    Checked,
+    Partial,
+    Error,
+}
+
+struct DeclarationCheckingState<'a> {
+    binding_env: &'a BindingEnv,
+    normalized_types: NormalizedTypeTable,
+    declarations: CheckedDeclarationTable,
+    type_entries: TypeTable,
+    facts: TypeFactTable,
+    diagnostics: TypeDiagnosticTable,
+    seen_sites: BTreeSet<TypedSiteRef>,
+    seen_bindings: BTreeSet<BindingId>,
+    context_bindings: BTreeMap<BindingContextId, BTreeSet<BindingTypeRef>>,
+    context_facts: BTreeMap<BindingContextId, BTreeSet<TypeFactId>>,
+}
+
+impl DeclarationCheckingState<'_> {
+    fn check_declaration(
+        &mut self,
+        input: DeclarationInput,
+        type_entries_by_site: &BTreeMap<TypedSiteRef, (NormalizedTypeId, TypeStatus)>,
+    ) {
+        let mut status = DeclarationStatus::Checked;
+        let mut recovery = None;
+        let mut type_entry = None;
+        let mut type_site = None;
+        let mut deferred = BTreeSet::new();
+        let mut facts = Vec::new();
+
+        if !self.seen_sites.insert(input.site.clone()) {
+            recovery = Some(self.diagnostic(
+                Some(input.site.clone()),
+                input.source_range,
+                TypeDiagnosticClass::TypeEntry,
+                TypeDiagnosticSeverity::Error,
+                "checker.declaration.duplicate_site",
+                DiagnosticRecoveryState::Degraded,
+            ));
+            status = DeclarationStatus::Partial;
+        }
+
+        if input.kind != DeclarationKind::ReconsiderExisting
+            && !self.seen_bindings.insert(input.binding)
+        {
+            recovery = Some(self.diagnostic(
+                Some(input.site.clone()),
+                input.source_range,
+                TypeDiagnosticClass::TypeEntry,
+                TypeDiagnosticSeverity::Error,
+                "checker.declaration.duplicate_binding",
+                DiagnosticRecoveryState::Degraded,
+            ));
+            status = DeclarationStatus::Partial;
+        }
+
+        match self.binding_env.bindings().get(input.binding) {
+            Some(binding) => {
+                if !binding_context_matches_declaration(
+                    self.binding_env,
+                    input.binding,
+                    binding.owner_context,
+                    input.context,
+                    input.kind,
+                ) {
+                    recovery = Some(self.diagnostic(
+                        Some(input.site.clone()),
+                        input.source_range,
+                        TypeDiagnosticClass::Context,
+                        TypeDiagnosticSeverity::Error,
+                        "checker.declaration.binding_context_mismatch",
+                        DiagnosticRecoveryState::Degraded,
+                    ));
+                    status = DeclarationStatus::Partial;
+                }
+                if !binding_kind_matches(input.kind, binding.kind) {
+                    recovery = Some(self.diagnostic(
+                        Some(input.site.clone()),
+                        binding.declaration_range,
+                        TypeDiagnosticClass::TypeEntry,
+                        TypeDiagnosticSeverity::Error,
+                        "checker.declaration.illegal_binding_kind",
+                        DiagnosticRecoveryState::Degraded,
+                    ));
+                    status = DeclarationStatus::Partial;
+                }
+                if binding.status == BindingStatus::Omitted {
+                    recovery = Some(self.diagnostic(
+                        Some(input.site.clone()),
+                        binding.declaration_range,
+                        TypeDiagnosticClass::TypeEntry,
+                        TypeDiagnosticSeverity::Error,
+                        "checker.declaration.omitted_binding",
+                        DiagnosticRecoveryState::Degraded,
+                    ));
+                    status = DeclarationStatus::Partial;
+                }
+            }
+            None => {
+                recovery = Some(self.diagnostic(
+                    Some(input.site.clone()),
+                    input.source_range,
+                    TypeDiagnosticClass::TypeEntry,
+                    TypeDiagnosticSeverity::Error,
+                    "checker.declaration.unknown_binding",
+                    DiagnosticRecoveryState::Degraded,
+                ));
+                status = DeclarationStatus::Error;
+            }
+        }
+
+        if self.binding_env.contexts().get(input.context).is_none() {
+            recovery = Some(self.diagnostic(
+                Some(input.site.clone()),
+                input.source_range,
+                TypeDiagnosticClass::Context,
+                TypeDiagnosticSeverity::Error,
+                "checker.declaration.unknown_context",
+                DiagnosticRecoveryState::Degraded,
+            ));
+            status = DeclarationStatus::Error;
+        }
+
+        for reason in input.deferred.iter().copied() {
+            deferred.insert(reason);
+            recovery = Some(self.deferred_diagnostic(&input, reason));
+            status = status.max_partial();
+        }
+
+        let reserved_shadowed = input.kind == DeclarationKind::ReservedVariable
+            && input
+                .reserved_default
+                .as_ref()
+                .is_some_and(|payload| payload.shadowed_by_local);
+        let reserved_default_type_site = input
+            .reserved_default
+            .as_ref()
+            .filter(|_| input.kind == DeclarationKind::ReservedVariable)
+            .filter(|payload| !payload.shadowed_by_local)
+            .map(|payload| payload.type_site.clone());
+        if input.kind == DeclarationKind::ReservedVariable {
+            match &input.reserved_default {
+                Some(payload) if payload.shadowed_by_local => {
+                    deferred.insert(DeclarationDeferredReason::MissingReservedDefaultPayload);
+                    recovery = Some(self.diagnostic(
+                        Some(input.site.clone()),
+                        input.source_range,
+                        TypeDiagnosticClass::TypeEntry,
+                        TypeDiagnosticSeverity::Note,
+                        "checker.declaration.reserved_default_shadowed",
+                        DiagnosticRecoveryState::Recovery,
+                    ));
+                    status = status.max_partial();
+                }
+                None => {
+                    deferred.insert(DeclarationDeferredReason::MissingReservedDefaultPayload);
+                    recovery = Some(self.deferred_diagnostic(
+                        &input,
+                        DeclarationDeferredReason::MissingReservedDefaultPayload,
+                    ));
+                    status = status.max_partial();
+                }
+                Some(_) => {}
+            }
+        }
+
+        if let Some(type_expression) = &input.type_expression {
+            if !reserved_shadowed {
+                let has_reserved_default_mismatch = reserved_default_type_site
+                    .as_ref()
+                    .is_some_and(|reserved_site| reserved_site != &type_expression.site);
+                if has_reserved_default_mismatch {
+                    recovery = Some(self.diagnostic(
+                        Some(input.site.clone()),
+                        input.source_range,
+                        TypeDiagnosticClass::TypeEntry,
+                        TypeDiagnosticSeverity::Error,
+                        "checker.declaration.reserved_default_type_site_mismatch",
+                        DiagnosticRecoveryState::Degraded,
+                    ));
+                    status = status.max_partial();
+                }
+                let effective_type_site = if has_reserved_default_mismatch {
+                    type_expression.site.clone()
+                } else {
+                    reserved_default_type_site
+                        .clone()
+                        .unwrap_or_else(|| type_expression.site.clone())
+                };
+                type_site = Some(effective_type_site.clone());
+                match type_entries_by_site.get(&effective_type_site) {
+                    Some((actual, type_status)) => {
+                        let entry_status =
+                            declaration_entry_status(status, *type_status, recovery, &deferred);
+                        if entry_status != TypeStatus::Known {
+                            status = status.max_partial();
+                        }
+                        type_entry = Some(self.type_entries.insert(TypeEntryDraft {
+                            owner: input.site.clone(),
+                            expected: None,
+                            actual: TypeEntryActual::Known(*actual),
+                            status: entry_status,
+                            provenance: declaration_provenance(input.source_range, recovery),
+                        }));
+                    }
+                    None => {
+                        recovery = Some(self.diagnostic(
+                            Some(input.site.clone()),
+                            input.source_range,
+                            TypeDiagnosticClass::TypeEntry,
+                            TypeDiagnosticSeverity::Error,
+                            "checker.declaration.missing_normalized_type",
+                            DiagnosticRecoveryState::Degraded,
+                        ));
+                        status = DeclarationStatus::Partial;
+                    }
+                }
+            }
+        } else if should_defer_missing_type_payload(&input, reserved_shadowed) {
+            deferred.insert(DeclarationDeferredReason::MissingTypePayload);
+            recovery = Some(
+                self.deferred_diagnostic(&input, DeclarationDeferredReason::MissingTypePayload),
+            );
+            status = status.max_partial();
+        }
+
+        if type_entry.is_none() {
+            type_entry = Some(self.type_entries.insert(TypeEntryDraft {
+                owner: input.site.clone(),
+                expected: None,
+                actual: TypeEntryActual::Absent,
+                status: if status == DeclarationStatus::Error {
+                    TypeStatus::Error
+                } else {
+                    TypeStatus::Unknown
+                },
+                provenance: declaration_provenance(input.source_range, recovery),
+            }));
+        }
+
+        if status != DeclarationStatus::Checked && !input.assumptions.is_empty() {
+            self.diagnostic(
+                Some(input.site.clone()),
+                input.source_range,
+                TypeDiagnosticClass::TypeFact,
+                TypeDiagnosticSeverity::Error,
+                "checker.declaration.assumption_dropped_after_recovery",
+                DiagnosticRecoveryState::Degraded,
+            );
+        } else {
+            for assumption in &input.assumptions {
+                let fact = self.facts.insert(TypeFactDraft {
+                    subject: input.site.clone(),
+                    predicate: assumption.predicate.clone(),
+                    polarity: Polarity::Positive,
+                    provenance: FactProvenance::Assumed(TypeAssumptionId::new(format!(
+                        "declaration:{}",
+                        declaration_kind_name(input.kind)
+                    ))),
+                    status: FactStatus::Assumed,
+                });
+                facts.push(fact);
+                self.context_facts
+                    .entry(input.context)
+                    .or_default()
+                    .insert(fact);
+            }
+        }
+
+        if status != DeclarationStatus::Error {
+            self.context_bindings
+                .entry(input.context)
+                .or_default()
+                .insert(BindingTypeRef::Site(input.site.clone()));
+        }
+
+        self.declarations.insert(CheckedDeclarationDraft {
+            binding: input.binding,
+            context: input.context,
+            site: input.site,
+            kind: input.kind,
+            type_entry,
+            type_site,
+            facts,
+            status,
+            deferred: deferred.into_iter().collect(),
+        });
+    }
+
+    fn deferred_diagnostic(
+        &mut self,
+        input: &DeclarationInput,
+        reason: DeclarationDeferredReason,
+    ) -> TypeDiagnosticId {
+        self.diagnostic(
+            Some(input.site.clone()),
+            input.source_range,
+            TypeDiagnosticClass::TypeEntry,
+            TypeDiagnosticSeverity::Note,
+            deferred_message_key(reason),
+            DiagnosticRecoveryState::Recovery,
+        )
+    }
+
+    fn diagnostic(
+        &mut self,
+        owner: Option<TypedSiteRef>,
+        source_range: SourceRange,
+        class: TypeDiagnosticClass,
+        severity: TypeDiagnosticSeverity,
+        message_key: &str,
+        recovery: DiagnosticRecoveryState,
+    ) -> TypeDiagnosticId {
+        self.diagnostics.insert(TypeDiagnosticDraft {
+            owner,
+            source_range,
+            class,
+            severity,
+            message_key: message_key.to_owned(),
+            recovery,
+        })
+    }
+}
+
+impl DeclarationStatus {
+    fn max_partial(self) -> Self {
+        match self {
+            Self::Checked => Self::Partial,
+            Self::Partial | Self::Error => self,
+        }
+    }
+}
+
+fn declaration_context_input_key(input: &DeclarationContextInput) -> (usize, String) {
+    (input.binding_context.index(), site_key(&input.site))
+}
+
+fn declaration_input_key(input: &DeclarationInput) -> (usize, String, DeclarationKind) {
+    (input.binding.index(), site_key(&input.site), input.kind)
+}
+
+fn type_entries_by_site(
+    entries: &TypeTable,
+) -> BTreeMap<TypedSiteRef, (NormalizedTypeId, TypeStatus)> {
+    entries
+        .iter()
+        .filter_map(|(_, entry)| match entry.actual {
+            TypeEntryActual::Known(id) => Some((entry.owner.clone(), (id, entry.status))),
+            TypeEntryActual::CandidateSet(_) | TypeEntryActual::Absent => None,
+        })
+        .collect()
+}
+
+fn declaration_provenance(
+    source_range: SourceRange,
+    recovery: Option<TypeDiagnosticId>,
+) -> TypeProvenance {
+    match recovery {
+        Some(diagnostic) => TypeProvenance::Recovery(diagnostic),
+        None => TypeProvenance::Declared(TypedSourceRangeKey::from(source_range)),
+    }
+}
+
+fn should_defer_missing_type_payload(input: &DeclarationInput, reserved_shadowed: bool) -> bool {
+    !(reserved_shadowed
+        || input.kind == DeclarationKind::ReservedVariable && input.reserved_default.is_none())
+}
+
+fn declaration_entry_status(
+    declaration_status: DeclarationStatus,
+    normalized_status: TypeStatus,
+    recovery: Option<TypeDiagnosticId>,
+    deferred: &BTreeSet<DeclarationDeferredReason>,
+) -> TypeStatus {
+    if declaration_status == DeclarationStatus::Error || normalized_status == TypeStatus::Error {
+        TypeStatus::Error
+    } else if recovery.is_some() || normalized_status != TypeStatus::Known || !deferred.is_empty() {
+        TypeStatus::Unknown
+    } else {
+        TypeStatus::Known
+    }
+}
+
+fn binding_kind_matches(kind: DeclarationKind, binding_kind: BindingKind) -> bool {
+    match kind {
+        DeclarationKind::Let => binding_kind == BindingKind::LetBinding,
+        DeclarationKind::ReservedVariable => binding_kind == BindingKind::ReservedVariable,
+        DeclarationKind::QuantifiedVariable
+        | DeclarationKind::Given
+        | DeclarationKind::Consider
+        | DeclarationKind::Take => binding_kind == BindingKind::QuantifierBinder,
+        DeclarationKind::Set => binding_kind == BindingKind::LocalAbbreviation,
+        DeclarationKind::DefinitionParameter
+        | DeclarationKind::DefFuncFormal
+        | DeclarationKind::DefPredFormal => binding_kind == BindingKind::DefinitionParameter,
+        DeclarationKind::ReconsiderExisting => {
+            !matches!(binding_kind, BindingKind::ReservedVariable)
+        }
+        DeclarationKind::ReconsiderNew => {
+            matches!(
+                binding_kind,
+                BindingKind::LetBinding | BindingKind::LocalAbbreviation | BindingKind::Generated
+            )
+        }
+    }
+}
+
+fn binding_context_matches_declaration(
+    binding_env: &BindingEnv,
+    binding: BindingId,
+    owner_context: BindingContextId,
+    declaration_context: BindingContextId,
+    kind: DeclarationKind,
+) -> bool {
+    owner_context == declaration_context
+        || (kind == DeclarationKind::ReconsiderExisting
+            && binding_env
+                .contexts()
+                .get(declaration_context)
+                .is_some_and(|context| context.visible_bindings.contains(&binding)))
+}
+
+fn build_local_contexts(
+    binding_env: &BindingEnv,
+    inputs: &[DeclarationContextInput],
+    context_bindings: &BTreeMap<BindingContextId, BTreeSet<BindingTypeRef>>,
+    context_facts: &BTreeMap<BindingContextId, BTreeSet<TypeFactId>>,
+    diagnostics: &mut TypeDiagnosticTable,
+) -> LocalTypeContextTable {
+    let mut local_contexts = LocalTypeContextTable::new();
+    let mut remap = BTreeMap::<BindingContextId, LocalTypeContextId>::new();
+    let input_by_context = inputs
+        .iter()
+        .map(|input| (input.binding_context, input))
+        .collect::<BTreeMap<_, _>>();
+    let mut remaining = input_by_context.keys().copied().collect::<BTreeSet<_>>();
+
+    while !remaining.is_empty() {
+        let mut inserted = Vec::new();
+        for binding_context_id in remaining.iter().copied().collect::<Vec<_>>() {
+            let Some(input) = input_by_context.get(&binding_context_id).copied() else {
+                inserted.push(binding_context_id);
+                continue;
+            };
+            let Some(binding_context) = binding_env.contexts().get(binding_context_id) else {
+                diagnostics.insert(TypeDiagnosticDraft {
+                    owner: Some(input.site.clone()),
+                    source_range: input.source_range,
+                    class: TypeDiagnosticClass::Context,
+                    severity: TypeDiagnosticSeverity::Error,
+                    message_key: "checker.declaration.unknown_context".to_owned(),
+                    recovery: DiagnosticRecoveryState::Degraded,
+                });
+                inserted.push(binding_context_id);
+                continue;
+            };
+            let parent_is_selected = binding_context
+                .parent
+                .is_some_and(|parent| input_by_context.contains_key(&parent));
+            if parent_is_selected
+                && !binding_context
+                    .parent
+                    .is_some_and(|parent| remap.contains_key(&parent))
+            {
+                continue;
+            }
+
+            insert_local_context(
+                &mut local_contexts,
+                &mut remap,
+                binding_context_id,
+                input,
+                binding_context,
+                context_bindings,
+                context_facts,
+            );
+            inserted.push(binding_context_id);
+        }
+
+        if inserted.is_empty() {
+            for binding_context_id in remaining.iter().copied().collect::<Vec<_>>() {
+                let Some(input) = input_by_context.get(&binding_context_id).copied() else {
+                    continue;
+                };
+                diagnostics.insert(TypeDiagnosticDraft {
+                    owner: Some(input.site.clone()),
+                    source_range: input.source_range,
+                    class: TypeDiagnosticClass::Context,
+                    severity: TypeDiagnosticSeverity::Error,
+                    message_key: "checker.declaration.context_parent_cycle".to_owned(),
+                    recovery: DiagnosticRecoveryState::Degraded,
+                });
+                inserted.push(binding_context_id);
+            }
+        }
+
+        for binding_context_id in inserted {
+            remaining.remove(&binding_context_id);
+        }
+    }
+
+    local_contexts
+}
+
+fn insert_local_context(
+    local_contexts: &mut LocalTypeContextTable,
+    remap: &mut BTreeMap<BindingContextId, LocalTypeContextId>,
+    binding_context_id: BindingContextId,
+    input: &DeclarationContextInput,
+    binding_context: &crate::binding_env::BindingContext,
+    context_bindings: &BTreeMap<BindingContextId, BTreeSet<BindingTypeRef>>,
+    context_facts: &BTreeMap<BindingContextId, BTreeSet<TypeFactId>>,
+) {
+    let parent = binding_context
+        .parent
+        .and_then(|parent| remap.get(&parent).copied());
+    let introduced = context_facts
+        .get(&binding_context_id)
+        .map(|facts| facts.iter().copied().collect::<Vec<_>>())
+        .unwrap_or_default();
+    let mut visible = parent
+        .and_then(|parent| local_contexts.get(parent))
+        .map(|context| {
+            context
+                .visible_facts
+                .iter()
+                .copied()
+                .collect::<BTreeSet<_>>()
+        })
+        .unwrap_or_default();
+    visible.extend(introduced.iter().copied());
+    let id = local_contexts.insert(LocalTypeContextDraft {
+        owner: input.site.clone(),
+        parent,
+        layer: type_context_layer(binding_context.layer),
+        bindings: context_bindings
+            .get(&binding_context_id)
+            .map(|bindings| bindings.iter().cloned().collect())
+            .unwrap_or_default(),
+        introduced_assumptions: introduced,
+        visible_facts: visible.into_iter().collect(),
+        recovery: context_recovery(binding_context.recovery),
+    });
+    remap.insert(binding_context_id, id);
+}
+
+fn type_context_layer(layer: BindingContextLayer) -> TypeContextLayer {
+    match layer {
+        BindingContextLayer::Module => TypeContextLayer::Module,
+        BindingContextLayer::Declaration => TypeContextLayer::Declaration,
+        BindingContextLayer::Proof => TypeContextLayer::Proof,
+        BindingContextLayer::Block => TypeContextLayer::Block,
+        BindingContextLayer::Expression => TypeContextLayer::Expression,
+    }
+}
+
+fn context_recovery(recovery: BindingContextRecovery) -> ContextRecoveryState {
+    match recovery {
+        BindingContextRecovery::Normal => ContextRecoveryState::Normal,
+        BindingContextRecovery::Recovered => ContextRecoveryState::Recovered,
+        BindingContextRecovery::Degraded => ContextRecoveryState::Degraded,
+    }
+}
+
+fn deferred_message_key(reason: DeclarationDeferredReason) -> &'static str {
+    match reason {
+        DeclarationDeferredReason::MissingTypePayload => {
+            "checker.declaration.deferred.type_payload"
+        }
+        DeclarationDeferredReason::MissingReservedDefaultPayload => {
+            "checker.declaration.deferred.reserved_default_payload"
+        }
+        DeclarationDeferredReason::MissingRightHandSidePayload => {
+            "checker.declaration.deferred.rhs_payload"
+        }
+        DeclarationDeferredReason::MissingDefinitionBodyPayload => {
+            "checker.declaration.deferred.definition_body_payload"
+        }
+        DeclarationDeferredReason::MissingEvidenceQuery => {
+            "checker.declaration.deferred.evidence_query"
+        }
+    }
+}
+
+fn declaration_kind_name(kind: DeclarationKind) -> &'static str {
+    match kind {
+        DeclarationKind::Let => "let",
+        DeclarationKind::ReservedVariable => "reserved_variable",
+        DeclarationKind::QuantifiedVariable => "quantified_variable",
+        DeclarationKind::Given => "given",
+        DeclarationKind::Consider => "consider",
+        DeclarationKind::Take => "take",
+        DeclarationKind::Set => "set",
+        DeclarationKind::DefinitionParameter => "definition_parameter",
+        DeclarationKind::DefFuncFormal => "deffunc_formal",
+        DeclarationKind::DefPredFormal => "defpred_formal",
+        DeclarationKind::ReconsiderExisting => "reconsider_existing",
+        DeclarationKind::ReconsiderNew => "reconsider_new",
+    }
+}
+
+fn declaration_status_name(status: DeclarationStatus) -> &'static str {
+    match status {
+        DeclarationStatus::Checked => "checked",
+        DeclarationStatus::Partial => "partial",
+        DeclarationStatus::Error => "error",
+    }
+}
+
+fn deferred_reason_name(reason: DeclarationDeferredReason) -> &'static str {
+    match reason {
+        DeclarationDeferredReason::MissingTypePayload => "missing_type_payload",
+        DeclarationDeferredReason::MissingReservedDefaultPayload => {
+            "missing_reserved_default_payload"
+        }
+        DeclarationDeferredReason::MissingRightHandSidePayload => "missing_rhs_payload",
+        DeclarationDeferredReason::MissingDefinitionBodyPayload => {
+            "missing_definition_body_payload"
+        }
+        DeclarationDeferredReason::MissingEvidenceQuery => "missing_evidence_query",
     }
 }
 
@@ -1167,6 +2148,220 @@ fn remapped_type_id(
     remap.get(&id).copied().unwrap_or(id)
 }
 
+fn write_checked_declarations(output: &mut String, declarations: &CheckedDeclarationTable) {
+    output.push_str("declarations:\n");
+    if declarations.is_empty() {
+        output.push_str("  <none>\n");
+        return;
+    }
+    let mut entries = declarations
+        .iter()
+        .map(|(_, declaration)| declaration)
+        .collect::<Vec<_>>();
+    entries.sort_by_key(|declaration| {
+        (
+            declaration.binding.index(),
+            site_key(&declaration.site),
+            declaration.kind,
+        )
+    });
+    for (ordinal, declaration) in entries.into_iter().enumerate() {
+        let _ = write!(
+            output,
+            "  declaration#{} binding#{} context#{} kind={} site={} status={} type_entry=",
+            ordinal,
+            declaration.binding.index(),
+            declaration.context.index(),
+            declaration_kind_name(declaration.kind),
+            site_key(&declaration.site),
+            declaration_status_name(declaration.status)
+        );
+        match declaration.type_entry {
+            Some(type_entry) => {
+                let _ = write!(output, "type_entry_id#{}", type_entry.index());
+            }
+            None => output.push_str("<none>"),
+        }
+        output.push_str(" type_site=");
+        match &declaration.type_site {
+            Some(site) => output.push_str(&site_key(site)),
+            None => output.push_str("<none>"),
+        }
+        output.push_str(" facts=");
+        write_fact_ids(output, &declaration.facts);
+        output.push_str(" deferred=");
+        write_deferred_reasons(output, &declaration.deferred);
+        output.push('\n');
+    }
+}
+
+fn write_local_contexts(output: &mut String, contexts: &LocalTypeContextTable) {
+    output.push_str("local_contexts:\n");
+    if contexts.is_empty() {
+        output.push_str("  <none>\n");
+        return;
+    }
+    for (id, context) in contexts.iter() {
+        let _ = write!(
+            output,
+            "  local_context#{} owner={} parent=",
+            id.index(),
+            site_key(&context.owner)
+        );
+        match context.parent {
+            Some(parent) => {
+                let _ = write!(output, "local_context#{}", parent.index());
+            }
+            None => output.push_str("<none>"),
+        }
+        let _ = write!(
+            output,
+            " layer={} recovery={} bindings=",
+            type_context_layer_name(context.layer),
+            context_recovery_name(context.recovery)
+        );
+        write_binding_refs(output, &context.bindings);
+        output.push_str(" introduced=");
+        write_fact_ids(output, &context.introduced_assumptions);
+        output.push_str(" visible=");
+        write_fact_ids(output, &context.visible_facts);
+        output.push('\n');
+    }
+}
+
+fn write_type_facts(output: &mut String, facts: &TypeFactTable) {
+    output.push_str("facts:\n");
+    if facts.is_empty() {
+        output.push_str("  <none>\n");
+        return;
+    }
+    for (id, fact) in facts.canonical_iter() {
+        let _ = write!(
+            output,
+            "  fact#{} subject={} predicate=\"",
+            id.index(),
+            site_key(&fact.subject)
+        );
+        write_escaped(output, fact.predicate.as_str());
+        let _ = write!(
+            output,
+            "\" polarity={} status={} provenance=",
+            polarity_name(fact.polarity),
+            fact_status_name(fact.status)
+        );
+        write_fact_provenance(output, &fact.provenance);
+        output.push('\n');
+    }
+}
+
+fn write_deferred_reasons(output: &mut String, deferred: &[DeclarationDeferredReason]) {
+    output.push('[');
+    for (index, reason) in deferred.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        output.push_str(deferred_reason_name(*reason));
+    }
+    output.push(']');
+}
+
+fn write_binding_refs(output: &mut String, bindings: &[BindingTypeRef]) {
+    output.push('[');
+    for (index, binding) in bindings.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        match binding {
+            BindingTypeRef::Symbol(symbol) => {
+                output.push_str("symbol=");
+                write_symbol_id(output, symbol);
+            }
+            BindingTypeRef::Site(site) => {
+                output.push_str("site=");
+                output.push_str(&site_key(site));
+            }
+        }
+    }
+    output.push(']');
+}
+
+fn write_fact_ids(output: &mut String, facts: &[TypeFactId]) {
+    output.push('[');
+    for (index, fact) in facts.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(output, "fact#{}", fact.index());
+    }
+    output.push(']');
+}
+
+fn type_context_layer_name(layer: TypeContextLayer) -> &'static str {
+    match layer {
+        TypeContextLayer::Module => "module",
+        TypeContextLayer::Declaration => "declaration",
+        TypeContextLayer::Proof => "proof",
+        TypeContextLayer::Block => "block",
+        TypeContextLayer::Expression => "expression",
+    }
+}
+
+fn context_recovery_name(recovery: ContextRecoveryState) -> &'static str {
+    match recovery {
+        ContextRecoveryState::Normal => "normal",
+        ContextRecoveryState::Recovered => "recovered",
+        ContextRecoveryState::Degraded => "degraded",
+    }
+}
+
+fn polarity_name(polarity: Polarity) -> &'static str {
+    match polarity {
+        Polarity::Positive => "positive",
+        Polarity::Negative => "negative",
+    }
+}
+
+fn fact_status_name(status: FactStatus) -> &'static str {
+    match status {
+        FactStatus::Known => "known",
+        FactStatus::Assumed => "assumed",
+        FactStatus::PendingObligation => "pending_obligation",
+        FactStatus::Degraded => "degraded",
+        FactStatus::Rejected => "rejected",
+    }
+}
+
+fn write_fact_provenance(output: &mut String, provenance: &FactProvenance) {
+    match provenance {
+        FactProvenance::Declared(range) => {
+            let _ = write!(output, "declared:{}..{}", range.start, range.end);
+        }
+        FactProvenance::Assumed(assumption) => {
+            output.push_str("assumed=\"");
+            write_escaped(output, assumption.as_str());
+            output.push('"');
+        }
+        FactProvenance::Inferred(rule) => {
+            output.push_str("inferred=\"");
+            write_escaped(output, rule.as_str());
+            output.push('"');
+        }
+        FactProvenance::Obligation(obligation) => {
+            let _ = write!(output, "obligation#{}", obligation.index());
+        }
+        FactProvenance::Builtin(rule) => {
+            output.push_str("builtin=\"");
+            write_escaped(output, rule.as_str());
+            output.push('"');
+        }
+        FactProvenance::Registration(step) => {
+            output.push_str("registration=\"");
+            write_escaped(output, step.as_str());
+            output.push('"');
+        }
+    }
+}
+
 fn write_normalized_types(output: &mut String, types: &NormalizedTypeTable) {
     output.push_str("normalized_types:\n");
     if types.is_empty() {
@@ -1249,7 +2444,7 @@ fn write_diagnostics(output: &mut String, diagnostics: &TypeDiagnosticTable) {
 }
 
 fn diagnostic_debug_key(
-    diagnostic: &crate::typed_ast::TypeDiagnostic,
+    diagnostic: &TypeDiagnostic,
 ) -> (
     String,
     usize,
@@ -1393,6 +2588,11 @@ fn write_escaped(output: &mut String, value: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::binding_env::{
+        BinderIdentity, BindingContextDraft, BindingContextOwner, BindingContextTable,
+        BindingDiagnosticTable, BindingDraft, BindingEnvParts, BindingRecoveryState, BindingTable,
+        BindingTypeSite, CapturedFreeVariables,
+    };
     use crate::typed_ast::{TypeRole, TypedNodeId};
     use mizar_resolve::{
         env::{
@@ -1401,12 +2601,872 @@ mod tests {
             ResolvedExportIndex, ResolvedImportIndex, SourceContributionIndex, SymbolEntry,
             SymbolEnvIndexes, SymbolIndex, Visibility,
         },
+        names::LocalTermScope,
         resolved_ast::{FullyQualifiedName, LocalSymbolId, ModuleId, SemanticOrigin},
     };
     use mizar_session::{
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
         SourceAnchor, SourceId,
     };
+
+    #[test]
+    fn declarations_attach_types_and_context_snapshots_are_deterministic() {
+        let source = source_id();
+        let symbols = symbol_env(Vec::new());
+        let binding_env = binding_env_for_declarations(
+            source,
+            vec![
+                binding_spec("let_x", BindingKind::LetBinding, BindingStatus::Active),
+                binding_spec(
+                    "reserved_y",
+                    BindingKind::ReservedVariable,
+                    BindingStatus::Reserved,
+                ),
+                binding_spec(
+                    "quant_z",
+                    BindingKind::QuantifierBinder,
+                    BindingStatus::Active,
+                ),
+                binding_spec(
+                    "given_w",
+                    BindingKind::QuantifierBinder,
+                    BindingStatus::Active,
+                ),
+                binding_spec(
+                    "set_a",
+                    BindingKind::LocalAbbreviation,
+                    BindingStatus::Active,
+                ),
+                binding_spec(
+                    "param_p",
+                    BindingKind::DefinitionParameter,
+                    BindingStatus::Active,
+                ),
+                binding_spec(
+                    "deffunc_arg",
+                    BindingKind::DefinitionParameter,
+                    BindingStatus::Active,
+                ),
+                binding_spec(
+                    "defpred_arg",
+                    BindingKind::DefinitionParameter,
+                    BindingStatus::Active,
+                ),
+                binding_spec(
+                    "reconsider_old",
+                    BindingKind::LetBinding,
+                    BindingStatus::Active,
+                ),
+                binding_spec(
+                    "reconsider_new",
+                    BindingKind::Generated,
+                    BindingStatus::Active,
+                ),
+                binding_spec(
+                    "consider_c",
+                    BindingKind::QuantifierBinder,
+                    BindingStatus::Active,
+                ),
+                binding_spec(
+                    "take_t",
+                    BindingKind::QuantifierBinder,
+                    BindingStatus::Active,
+                ),
+            ],
+        );
+        let contexts = vec![
+            DeclarationContextInput::new(BindingContextId::new(0), site(200), range(source, 0, 1)),
+            DeclarationContextInput::new(BindingContextId::new(1), site(201), range(source, 1, 2)),
+        ];
+        let declarations = vec![
+            declaration_with_type(source, 0, DeclarationKind::Let, 10, 100),
+            declaration_with_type_in_context(
+                source,
+                1,
+                BindingContextId::new(0),
+                DeclarationKind::ReservedVariable,
+                11,
+                101,
+            )
+            .with_reserved_default(ReservedDefaultPayload::new(site(101), false))
+            .with_assumptions(vec![DeclarationAssumptionInput::new(
+                TypePredicateRef::new("reserved_y_is_set"),
+                range(source, 11, 12),
+            )]),
+            declaration_with_type(source, 2, DeclarationKind::QuantifiedVariable, 12, 102),
+            declaration_with_type(source, 3, DeclarationKind::Given, 13, 103).with_assumptions(
+                vec![DeclarationAssumptionInput::new(
+                    TypePredicateRef::new("given_w_is_set"),
+                    range(source, 13, 14),
+                )],
+            ),
+            declaration_with_type(source, 4, DeclarationKind::Set, 14, 104)
+                .with_deferred(vec![DeclarationDeferredReason::MissingRightHandSidePayload]),
+            declaration_with_type(source, 5, DeclarationKind::DefinitionParameter, 15, 105),
+            declaration_with_type(source, 6, DeclarationKind::DefFuncFormal, 16, 106)
+                .with_deferred(vec![
+                    DeclarationDeferredReason::MissingDefinitionBodyPayload,
+                ]),
+            declaration_with_type(source, 7, DeclarationKind::DefPredFormal, 17, 107)
+                .with_deferred(vec![
+                    DeclarationDeferredReason::MissingDefinitionBodyPayload,
+                ]),
+            declaration_with_type(source, 8, DeclarationKind::ReconsiderExisting, 18, 108),
+            declaration_with_type(source, 9, DeclarationKind::ReconsiderNew, 19, 109),
+            declaration_with_type(source, 10, DeclarationKind::Consider, 20, 110),
+            declaration_with_type(source, 11, DeclarationKind::Take, 21, 111),
+        ];
+
+        let first = DeclarationChecker::default().check(
+            &symbols,
+            &binding_env,
+            contexts.clone(),
+            declarations.clone(),
+        );
+        let second = DeclarationChecker::default().check(
+            &symbols,
+            &binding_env,
+            contexts.into_iter().rev(),
+            declarations.into_iter().rev(),
+        );
+
+        assert_eq!(first.debug_text(), second.debug_text());
+        assert_eq!(first.declarations().len(), 12);
+        assert_eq!(first.contexts().len(), 2);
+        assert_eq!(first.facts().len(), 2);
+        let declarations_by_binding = declarations_by_binding(&first);
+        for binding_index in 0..12 {
+            let declaration = declarations_by_binding
+                .get(&BindingId::new(binding_index))
+                .copied()
+                .unwrap();
+            assert_eq!(declaration.binding, BindingId::new(binding_index));
+            assert_eq!(declaration.site, site(10 + binding_index));
+            assert_eq!(declaration.type_site, Some(site(100 + binding_index)));
+            let type_entry = first
+                .type_entries()
+                .get(declaration.type_entry.unwrap())
+                .unwrap();
+            assert_eq!(type_entry.owner, declaration.site);
+            assert!(matches!(type_entry.actual, TypeEntryActual::Known(_)));
+            if matches!(
+                declaration.kind,
+                DeclarationKind::Set
+                    | DeclarationKind::DefFuncFormal
+                    | DeclarationKind::DefPredFormal
+            ) {
+                assert_eq!(declaration.status, DeclarationStatus::Partial);
+                assert_eq!(type_entry.status, TypeStatus::Unknown);
+            } else {
+                assert_eq!(declaration.status, DeclarationStatus::Checked);
+                assert_eq!(type_entry.status, TypeStatus::Known);
+            }
+        }
+        assert_eq!(
+            declarations_by_binding
+                .get(&BindingId::new(1))
+                .unwrap()
+                .facts
+                .len(),
+            1
+        );
+        assert_eq!(
+            declarations_by_binding
+                .get(&BindingId::new(3))
+                .unwrap()
+                .facts
+                .len(),
+            1
+        );
+        let module_context = first.contexts().get(LocalTypeContextId::new(0)).unwrap();
+        let block_context = first.contexts().get(LocalTypeContextId::new(1)).unwrap();
+        assert_eq!(module_context.parent, None);
+        assert_eq!(block_context.parent, Some(LocalTypeContextId::new(0)));
+        assert_eq!(
+            module_context.bindings,
+            vec![BindingTypeRef::Site(site(11))]
+        );
+        assert_eq!(
+            module_context.introduced_assumptions,
+            vec![TypeFactId::new(0)]
+        );
+        assert_eq!(module_context.visible_facts, vec![TypeFactId::new(0)]);
+        assert_eq!(
+            block_context.introduced_assumptions,
+            vec![TypeFactId::new(1)]
+        );
+        assert_eq!(
+            block_context.visible_facts,
+            vec![TypeFactId::new(0), TypeFactId::new(1)]
+        );
+        assert_eq!(
+            block_context.bindings,
+            vec![
+                BindingTypeRef::Site(site(10)),
+                BindingTypeRef::Site(site(12)),
+                BindingTypeRef::Site(site(13)),
+                BindingTypeRef::Site(site(14)),
+                BindingTypeRef::Site(site(15)),
+                BindingTypeRef::Site(site(16)),
+                BindingTypeRef::Site(site(17)),
+                BindingTypeRef::Site(site(18)),
+                BindingTypeRef::Site(site(19)),
+                BindingTypeRef::Site(site(20)),
+                BindingTypeRef::Site(site(21)),
+            ]
+        );
+        let module_fact = first.facts().get(TypeFactId::new(0)).unwrap();
+        assert_eq!(module_fact.subject, site(11));
+        assert_eq!(module_fact.predicate.as_str(), "reserved_y_is_set");
+        assert_eq!(module_fact.polarity, Polarity::Positive);
+        assert_eq!(module_fact.status, FactStatus::Assumed);
+        assert!(matches!(module_fact.provenance, FactProvenance::Assumed(_)));
+        let block_fact = first.facts().get(TypeFactId::new(1)).unwrap();
+        assert_eq!(block_fact.subject, site(13));
+        assert_eq!(block_fact.predicate.as_str(), "given_w_is_set");
+        assert_eq!(block_fact.polarity, Polarity::Positive);
+        assert_eq!(block_fact.status, FactStatus::Assumed);
+        assert!(matches!(block_fact.provenance, FactProvenance::Assumed(_)));
+        assert!(first.debug_text().contains("kind=let"));
+        assert!(first.debug_text().contains("kind=reserved_variable"));
+        assert!(first.debug_text().contains("kind=quantified_variable"));
+        assert!(first.debug_text().contains("kind=given"));
+        assert!(first.debug_text().contains("kind=consider"));
+        assert!(first.debug_text().contains("kind=take"));
+        assert!(first.debug_text().contains("kind=set"));
+        assert!(first.debug_text().contains("kind=definition_parameter"));
+        assert!(first.debug_text().contains("kind=deffunc_formal"));
+        assert!(first.debug_text().contains("kind=defpred_formal"));
+        assert!(first.debug_text().contains("kind=reconsider_existing"));
+        assert!(first.debug_text().contains("kind=reconsider_new"));
+        assert!(
+            first
+                .debug_text()
+                .contains("checker.declaration.deferred.rhs_payload")
+        );
+        assert!(
+            first
+                .debug_text()
+                .contains("checker.declaration.deferred.definition_body_payload")
+        );
+        assert_eq!(
+            diagnostic_ranges(&first, "checker.declaration.deferred.rhs_payload"),
+            vec![(70, 75)]
+        );
+        assert_eq!(
+            diagnostic_ranges(
+                &first,
+                "checker.declaration.deferred.definition_body_payload"
+            ),
+            vec![(80, 85), (85, 90)]
+        );
+        assert!(!first.debug_text().contains("obligation#"));
+        assert!(!first.debug_text().contains("initial_obligation"));
+        assert!(!first.debug_text().contains(concat!("V", "cId")));
+        assert!(!first.debug_text().contains(concat!("Proof", "Witness")));
+        assert!(
+            !first
+                .debug_text()
+                .contains(concat!("active", "_refinement"))
+        );
+    }
+
+    #[test]
+    fn reserved_shadowing_and_missing_payloads_are_partial_with_ranges() {
+        let source = source_id();
+        let symbols = symbol_env(Vec::new());
+        let binding_env = binding_env_for_declarations(
+            source,
+            vec![
+                binding_spec(
+                    "reserved_y",
+                    BindingKind::ReservedVariable,
+                    BindingStatus::Reserved,
+                ),
+                binding_spec(
+                    "reserved_z",
+                    BindingKind::ReservedVariable,
+                    BindingStatus::Reserved,
+                ),
+                binding_spec(
+                    "reserved_bad",
+                    BindingKind::ReservedVariable,
+                    BindingStatus::Reserved,
+                ),
+                binding_spec("let_x", BindingKind::LetBinding, BindingStatus::Active),
+            ],
+        );
+        let contexts = vec![
+            DeclarationContextInput::new(BindingContextId::new(0), site(199), range(source, 0, 1)),
+            DeclarationContextInput::new(BindingContextId::new(1), site(200), range(source, 1, 2)),
+        ];
+        let shadowed = declaration_with_type_in_context(
+            source,
+            0,
+            BindingContextId::new(0),
+            DeclarationKind::ReservedVariable,
+            10,
+            100,
+        )
+        .with_reserved_default(ReservedDefaultPayload::new(site(100), true));
+        let missing = DeclarationInput::new(
+            BindingId::new(3),
+            BindingContextId::new(1),
+            site(11),
+            range(source, 40, 45),
+            DeclarationKind::Let,
+        );
+        let missing_reserved_default = DeclarationInput::new(
+            BindingId::new(1),
+            BindingContextId::new(0),
+            site(12),
+            range(source, 60, 65),
+            DeclarationKind::ReservedVariable,
+        );
+        let mismatched_default = declaration_with_type_in_context(
+            source,
+            2,
+            BindingContextId::new(0),
+            DeclarationKind::ReservedVariable,
+            13,
+            103,
+        )
+        .with_reserved_default(ReservedDefaultPayload::new(site(999), false));
+
+        let output = DeclarationChecker::default().check(
+            &symbols,
+            &binding_env,
+            contexts,
+            [
+                shadowed,
+                missing,
+                missing_reserved_default,
+                mismatched_default,
+            ],
+        );
+
+        assert_eq!(output.normalized_types().len(), 1);
+        assert_eq!(output.declarations().len(), 4);
+        assert!(
+            output
+                .declarations()
+                .iter()
+                .all(|(_, declaration)| { declaration.status == DeclarationStatus::Partial })
+        );
+        let declarations = declarations_by_binding(&output);
+        let shadowed_declaration = declarations.get(&BindingId::new(0)).copied().unwrap();
+        assert_eq!(shadowed_declaration.type_site, None);
+        let shadowed_entry = output
+            .type_entries()
+            .get(shadowed_declaration.type_entry.unwrap())
+            .unwrap();
+        assert_eq!(shadowed_entry.owner, site(10));
+        assert_eq!(shadowed_entry.actual, TypeEntryActual::Absent);
+        assert_eq!(shadowed_entry.status, TypeStatus::Unknown);
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.declaration.reserved_default_shadowed"),
+            vec![(50, 55)]
+        );
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.declaration.deferred.type_payload"),
+            vec![(40, 45)]
+        );
+        assert_eq!(
+            diagnostic_ranges(
+                &output,
+                "checker.declaration.deferred.reserved_default_payload"
+            ),
+            vec![(60, 65)]
+        );
+        assert_eq!(
+            diagnostic_ranges(
+                &output,
+                "checker.declaration.reserved_default_type_site_mismatch"
+            ),
+            vec![(65, 70)]
+        );
+        let mismatch_declaration = declarations_by_binding(&output)
+            .get(&BindingId::new(2))
+            .copied()
+            .unwrap();
+        assert_eq!(mismatch_declaration.type_site, Some(site(103)));
+        let mismatch_type_entry = output
+            .type_entries()
+            .get(mismatch_declaration.type_entry.unwrap())
+            .unwrap();
+        assert!(matches!(
+            mismatch_type_entry.actual,
+            TypeEntryActual::Known(_)
+        ));
+        assert_eq!(mismatch_type_entry.status, TypeStatus::Unknown);
+    }
+
+    #[test]
+    fn invalid_declarations_keep_partial_output_and_deterministic_diagnostics() {
+        let source = source_id();
+        let symbols = symbol_env(Vec::new());
+        let binding_env = binding_env_for_declarations(
+            source,
+            vec![
+                binding_spec("let_x", BindingKind::LetBinding, BindingStatus::Active),
+                binding_spec(
+                    "set_a",
+                    BindingKind::LocalAbbreviation,
+                    BindingStatus::Omitted,
+                ),
+                binding_spec("let_y", BindingKind::LetBinding, BindingStatus::Active),
+            ],
+        );
+        let contexts = vec![DeclarationContextInput::new(
+            BindingContextId::new(1),
+            site(200),
+            range(source, 0, 1),
+        )];
+        let declarations = vec![
+            declaration_with_type(source, 0, DeclarationKind::Set, 10, 100),
+            declaration_with_type(source, 1, DeclarationKind::Set, 11, 101),
+            declaration_with_type(source, 99, DeclarationKind::Let, 12, 102).with_assumptions(
+                vec![DeclarationAssumptionInput::new(
+                    TypePredicateRef::new("bad_assumption"),
+                    range(source, 60, 65),
+                )],
+            ),
+            DeclarationInput::new(
+                BindingId::new(0),
+                BindingContextId::new(99),
+                site(10),
+                range(source, 60, 65),
+                DeclarationKind::Let,
+            ),
+            declaration_with_type_in_context(
+                source,
+                2,
+                BindingContextId::new(0),
+                DeclarationKind::Let,
+                13,
+                103,
+            ),
+        ];
+
+        let output =
+            DeclarationChecker::default().check(&symbols, &binding_env, contexts, declarations);
+
+        assert_eq!(output.declarations().len(), 5);
+        assert!(output.type_entries().len() >= 4);
+        let declarations = declarations_by_binding(&output);
+        assert_eq!(
+            declarations.get(&BindingId::new(0)).unwrap().status,
+            DeclarationStatus::Partial
+        );
+        assert_eq!(
+            declarations.get(&BindingId::new(1)).unwrap().status,
+            DeclarationStatus::Partial
+        );
+        assert_eq!(
+            declarations.get(&BindingId::new(99)).unwrap().status,
+            DeclarationStatus::Error
+        );
+        for declaration in declarations.values().copied() {
+            let type_entry = output
+                .type_entries()
+                .get(declaration.type_entry.unwrap())
+                .unwrap();
+            assert_eq!(type_entry.owner, declaration.site);
+            if declaration.status == DeclarationStatus::Error {
+                assert_eq!(type_entry.status, TypeStatus::Error);
+            }
+        }
+        let unknown_context_declaration = output
+            .declarations()
+            .iter()
+            .map(|(_, declaration)| declaration)
+            .find(|declaration| {
+                declaration.binding == BindingId::new(0)
+                    && declaration.context == BindingContextId::new(99)
+                    && declaration.site == site(10)
+                    && declaration.kind == DeclarationKind::Let
+            })
+            .unwrap();
+        assert_eq!(unknown_context_declaration.status, DeclarationStatus::Error);
+        let unknown_context_type_entry = output
+            .type_entries()
+            .get(unknown_context_declaration.type_entry.unwrap())
+            .unwrap();
+        assert_eq!(unknown_context_type_entry.actual, TypeEntryActual::Absent);
+        assert_eq!(unknown_context_type_entry.status, TypeStatus::Error);
+        let duplicate_set_declaration = output
+            .declarations()
+            .iter()
+            .map(|(_, declaration)| declaration)
+            .find(|declaration| {
+                declaration.binding == BindingId::new(0)
+                    && declaration.context == BindingContextId::new(1)
+                    && declaration.site == site(10)
+                    && declaration.kind == DeclarationKind::Set
+            })
+            .unwrap();
+        assert_eq!(duplicate_set_declaration.status, DeclarationStatus::Partial);
+        let duplicate_set_type_entry = output
+            .type_entries()
+            .get(duplicate_set_declaration.type_entry.unwrap())
+            .unwrap();
+        assert!(matches!(
+            duplicate_set_type_entry.actual,
+            TypeEntryActual::Known(_)
+        ));
+        assert_eq!(duplicate_set_type_entry.status, TypeStatus::Unknown);
+        let context_mismatch_declaration = output
+            .declarations()
+            .iter()
+            .map(|(_, declaration)| declaration)
+            .find(|declaration| {
+                declaration.binding == BindingId::new(2)
+                    && declaration.context == BindingContextId::new(0)
+                    && declaration.site == site(13)
+                    && declaration.kind == DeclarationKind::Let
+            })
+            .unwrap();
+        assert_eq!(
+            context_mismatch_declaration.status,
+            DeclarationStatus::Partial
+        );
+        let context_mismatch_type_entry = output
+            .type_entries()
+            .get(context_mismatch_declaration.type_entry.unwrap())
+            .unwrap();
+        assert!(matches!(
+            context_mismatch_type_entry.actual,
+            TypeEntryActual::Known(_)
+        ));
+        assert_eq!(context_mismatch_type_entry.status, TypeStatus::Unknown);
+        assert!(output.facts().is_empty());
+        for expected in [
+            "checker.declaration.illegal_binding_kind",
+            "checker.declaration.omitted_binding",
+            "checker.declaration.unknown_binding",
+            "checker.declaration.unknown_context",
+            "checker.declaration.binding_context_mismatch",
+            "checker.declaration.duplicate_site",
+            "checker.declaration.duplicate_binding",
+            "checker.declaration.assumption_dropped_after_recovery",
+        ] {
+            assert!(output.debug_text().contains(expected), "{expected}");
+        }
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.declaration.unknown_context"),
+            vec![(60, 65)]
+        );
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.declaration.illegal_binding_kind"),
+            vec![(0, 5)]
+        );
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.declaration.omitted_binding"),
+            vec![(10, 15)]
+        );
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.declaration.unknown_binding"),
+            vec![(60, 65)]
+        );
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.declaration.binding_context_mismatch"),
+            vec![(60, 65), (65, 70)]
+        );
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.declaration.duplicate_site"),
+            vec![(50, 55)]
+        );
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.declaration.duplicate_binding"),
+            vec![(50, 55)]
+        );
+        assert_eq!(
+            diagnostic_ranges(
+                &output,
+                "checker.declaration.assumption_dropped_after_recovery"
+            ),
+            vec![(60, 65)]
+        );
+        assert_eq!(output.contexts().len(), 1);
+    }
+
+    #[test]
+    fn constrained_declarations_defer_obligations_without_fabricating_facts() {
+        let source = source_id();
+        let symbols = symbol_env(Vec::new());
+        let binding_env = binding_env_for_declarations(
+            source,
+            vec![binding_spec(
+                "let_x",
+                BindingKind::LetBinding,
+                BindingStatus::Active,
+            )],
+        );
+        let declaration = declaration_with_type(source, 0, DeclarationKind::Let, 10, 100)
+            .with_deferred(vec![DeclarationDeferredReason::MissingEvidenceQuery])
+            .with_assumptions(vec![DeclarationAssumptionInput::new(
+                TypePredicateRef::new("partial_assumption"),
+                range(source, 50, 55),
+            )]);
+
+        let output = DeclarationChecker::default().check(
+            &symbols,
+            &binding_env,
+            [DeclarationContextInput::new(
+                BindingContextId::new(1),
+                site(200),
+                range(source, 0, 1),
+            )],
+            [declaration],
+        );
+
+        assert!(output.facts().is_empty());
+        assert!(
+            output
+                .debug_text()
+                .contains("checker.declaration.deferred.evidence_query")
+        );
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.declaration.deferred.evidence_query"),
+            vec![(50, 55)]
+        );
+        assert_eq!(
+            diagnostic_ranges(
+                &output,
+                "checker.declaration.assumption_dropped_after_recovery"
+            ),
+            vec![(50, 55)]
+        );
+        assert!(output.debug_text().contains("status=partial"));
+        assert!(!output.debug_text().contains("obligation#"));
+        assert!(!output.debug_text().contains("registration"));
+    }
+
+    #[test]
+    fn set_declaration_missing_rhs_payload_is_partial_without_fabricated_type() {
+        let source = source_id();
+        let symbols = symbol_env(Vec::new());
+        let binding_env = binding_env_for_declarations(
+            source,
+            vec![binding_spec(
+                "set_a",
+                BindingKind::LocalAbbreviation,
+                BindingStatus::Active,
+            )],
+        );
+        let declaration = DeclarationInput::new(
+            BindingId::new(0),
+            BindingContextId::new(1),
+            site(10),
+            range(source, 50, 55),
+            DeclarationKind::Set,
+        )
+        .with_deferred(vec![DeclarationDeferredReason::MissingRightHandSidePayload]);
+
+        let output = DeclarationChecker::default().check(
+            &symbols,
+            &binding_env,
+            [DeclarationContextInput::new(
+                BindingContextId::new(1),
+                site(200),
+                range(source, 0, 1),
+            )],
+            [declaration],
+        );
+
+        let declaration = output.declarations().iter().next().unwrap().1;
+        assert_eq!(declaration.status, DeclarationStatus::Partial);
+        assert!(
+            declaration
+                .deferred
+                .contains(&DeclarationDeferredReason::MissingRightHandSidePayload)
+        );
+        assert_eq!(declaration.type_site, None);
+        let type_entry = output
+            .type_entries()
+            .get(declaration.type_entry.unwrap())
+            .unwrap();
+        assert_eq!(type_entry.owner, site(10));
+        assert_eq!(type_entry.actual, TypeEntryActual::Absent);
+        assert_eq!(type_entry.status, TypeStatus::Unknown);
+        assert!(output.facts().is_empty());
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.declaration.deferred.rhs_payload"),
+            vec![(50, 55)]
+        );
+        assert!(!output.debug_text().contains("obligation#"));
+        assert!(!output.debug_text().contains("registration"));
+    }
+
+    #[test]
+    fn attributed_declaration_defers_evidence_without_losing_normalized_type() {
+        let source = source_id();
+        let attr = symbol_id("Attr/1", "pkg::main::Attr/1");
+        let symbols = symbol_env(vec![symbol_entry(attr.clone(), SymbolKind::Attribute)]);
+        let binding_env = binding_env_for_declarations(
+            source,
+            vec![binding_spec(
+                "let_x",
+                BindingKind::LetBinding,
+                BindingStatus::Active,
+            )],
+        );
+        let declaration = DeclarationInput::new(
+            BindingId::new(0),
+            BindingContextId::new(1),
+            site(10),
+            range(source, 50, 55),
+            DeclarationKind::Let,
+        )
+        .with_type_expression(
+            TypeExpressionInput::new(
+                site(100),
+                range(source, 60, 70),
+                "set attr",
+                TypeHeadInput::BuiltinSet,
+            )
+            .with_attributes(vec![AttributeInput::new(
+                attr.clone(),
+                AttributePolarity::Positive,
+                range(source, 64, 68),
+                "Attr",
+            )]),
+        )
+        .with_deferred(vec![DeclarationDeferredReason::MissingEvidenceQuery]);
+
+        let output = DeclarationChecker::default().check(
+            &symbols,
+            &binding_env,
+            [DeclarationContextInput::new(
+                BindingContextId::new(1),
+                site(200),
+                range(source, 0, 1),
+            )],
+            [declaration],
+        );
+
+        let declaration = output.declarations().iter().next().unwrap().1;
+        assert_eq!(declaration.status, DeclarationStatus::Partial);
+        let type_entry = output
+            .type_entries()
+            .get(declaration.type_entry.unwrap())
+            .unwrap();
+        assert_eq!(type_entry.owner, site(10));
+        assert_eq!(type_entry.status, TypeStatus::Unknown);
+        let TypeEntryActual::Known(normalized_id) = type_entry.actual else {
+            panic!("attributed declaration should keep its normalized type");
+        };
+        let normalized = output.normalized_types().get(normalized_id).unwrap();
+        assert_eq!(normalized.status, NormalizedTypeStatus::Known);
+        assert_eq!(normalized.attributes.positive().len(), 1);
+        assert_eq!(normalized.attributes.positive()[0].symbol, attr);
+        assert!(normalized.attributes.negative().is_empty());
+        assert!(output.facts().is_empty());
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.declaration.deferred.evidence_query"),
+            vec![(50, 55)]
+        );
+        assert!(!output.debug_text().contains("obligation#"));
+        assert!(!output.debug_text().contains("registration"));
+    }
+
+    #[test]
+    fn reconsider_existing_allows_additional_type_view_for_same_binding() {
+        let source = source_id();
+        let symbols = symbol_env(Vec::new());
+        let binding_env = binding_env_for_declarations(
+            source,
+            vec![binding_spec(
+                "let_x",
+                BindingKind::LetBinding,
+                BindingStatus::Active,
+            )],
+        );
+        let original = declaration_with_type(source, 0, DeclarationKind::Let, 10, 100);
+        let reconsider =
+            declaration_with_type(source, 0, DeclarationKind::ReconsiderExisting, 11, 101);
+
+        let output = DeclarationChecker::default().check(
+            &symbols,
+            &binding_env,
+            [DeclarationContextInput::new(
+                BindingContextId::new(1),
+                site(200),
+                range(source, 0, 1),
+            )],
+            [original, reconsider],
+        );
+
+        assert_eq!(output.declarations().len(), 2);
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.declaration.duplicate_binding"),
+            Vec::<(usize, usize)>::new()
+        );
+        let reconsider = output
+            .declarations()
+            .iter()
+            .map(|(_, declaration)| declaration)
+            .find(|declaration| declaration.kind == DeclarationKind::ReconsiderExisting)
+            .unwrap();
+        assert_eq!(reconsider.binding, BindingId::new(0));
+        assert_eq!(reconsider.status, DeclarationStatus::Checked);
+        let type_entry = output
+            .type_entries()
+            .get(reconsider.type_entry.unwrap())
+            .unwrap();
+        assert_eq!(type_entry.owner, site(11));
+        assert_eq!(type_entry.status, TypeStatus::Known);
+        assert!(matches!(type_entry.actual, TypeEntryActual::Known(_)));
+    }
+
+    #[test]
+    fn reconsider_existing_accepts_visible_outer_binding_from_child_context() {
+        let source = source_id();
+        let symbols = symbol_env(Vec::new());
+        let binding_env = binding_env_with_outer_visible_binding(source);
+        let reconsider = declaration_with_type_in_context(
+            source,
+            0,
+            BindingContextId::new(1),
+            DeclarationKind::ReconsiderExisting,
+            11,
+            101,
+        );
+
+        let output = DeclarationChecker::default().check(
+            &symbols,
+            &binding_env,
+            [
+                DeclarationContextInput::new(
+                    BindingContextId::new(0),
+                    site(199),
+                    range(source, 0, 1),
+                ),
+                DeclarationContextInput::new(
+                    BindingContextId::new(1),
+                    site(200),
+                    range(source, 1, 2),
+                ),
+            ],
+            [reconsider],
+        );
+
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.declaration.binding_context_mismatch"),
+            Vec::<(usize, usize)>::new()
+        );
+        let declaration = output.declarations().iter().next().unwrap().1;
+        assert_eq!(declaration.binding, BindingId::new(0));
+        assert_eq!(declaration.context, BindingContextId::new(1));
+        assert_eq!(declaration.status, DeclarationStatus::Checked);
+        let type_entry = output
+            .type_entries()
+            .get(declaration.type_entry.unwrap())
+            .unwrap();
+        assert_eq!(type_entry.owner, site(11));
+        assert_eq!(type_entry.status, TypeStatus::Known);
+        assert!(matches!(type_entry.actual, TypeEntryActual::Known(_)));
+    }
 
     #[test]
     fn attributes_are_sorted_deduplicated_and_contradictions_are_diagnosed() {
@@ -2148,10 +4208,33 @@ mod tests {
         );
     }
 
-    fn diagnostic_ranges(
-        output: &TypeNormalizationOutput,
-        message_key: &str,
-    ) -> Vec<(usize, usize)> {
+    trait HasDiagnostics {
+        fn diagnostics(&self) -> &TypeDiagnosticTable;
+    }
+
+    impl HasDiagnostics for TypeNormalizationOutput {
+        fn diagnostics(&self) -> &TypeDiagnosticTable {
+            self.diagnostics()
+        }
+    }
+
+    impl HasDiagnostics for DeclarationCheckingOutput {
+        fn diagnostics(&self) -> &TypeDiagnosticTable {
+            self.diagnostics()
+        }
+    }
+
+    fn declarations_by_binding(
+        output: &DeclarationCheckingOutput,
+    ) -> BTreeMap<BindingId, &CheckedDeclaration> {
+        output
+            .declarations()
+            .iter()
+            .map(|(_, declaration)| (declaration.binding, declaration))
+            .collect()
+    }
+
+    fn diagnostic_ranges(output: &impl HasDiagnostics, message_key: &str) -> Vec<(usize, usize)> {
         output
             .diagnostics()
             .iter()
@@ -2160,6 +4243,199 @@ mod tests {
                     .then_some((diagnostic.source_range.start, diagnostic.source_range.end))
             })
             .collect()
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    struct BindingSpec {
+        spelling: &'static str,
+        kind: BindingKind,
+        status: BindingStatus,
+    }
+
+    fn binding_spec(
+        spelling: &'static str,
+        kind: BindingKind,
+        status: BindingStatus,
+    ) -> BindingSpec {
+        BindingSpec {
+            spelling,
+            kind,
+            status,
+        }
+    }
+
+    fn binding_env_for_declarations(source: SourceId, specs: Vec<BindingSpec>) -> BindingEnv {
+        let reserved = specs
+            .iter()
+            .enumerate()
+            .filter_map(|(index, spec)| {
+                (spec.kind == BindingKind::ReservedVariable).then_some(BindingId::new(index))
+            })
+            .collect::<Vec<_>>();
+        let local = specs
+            .iter()
+            .enumerate()
+            .filter_map(|(index, spec)| {
+                (spec.kind != BindingKind::ReservedVariable).then_some(BindingId::new(index))
+            })
+            .collect::<Vec<_>>();
+        let mut visible = reserved.clone();
+        visible.extend(local.iter().copied());
+
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: reserved.clone(),
+            visible_bindings: reserved,
+            recovery: BindingContextRecovery::Normal,
+        });
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Generated("block".to_owned()),
+            parent: Some(BindingContextId::new(0)),
+            layer: BindingContextLayer::Block,
+            lexical_scope: Some(LocalTermScope::new(vec![1])),
+            bindings: local,
+            visible_bindings: visible,
+            recovery: BindingContextRecovery::Normal,
+        });
+
+        let mut bindings = BindingTable::new();
+        for (index, spec) in specs.into_iter().enumerate() {
+            let owner_context = if spec.kind == BindingKind::ReservedVariable {
+                BindingContextId::new(0)
+            } else {
+                BindingContextId::new(1)
+            };
+            bindings.insert(binding_draft_for_spec(source, index, owner_context, spec));
+        }
+
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: source,
+            module_id: module_id(),
+            contexts,
+            bindings,
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .unwrap()
+    }
+
+    fn binding_env_with_outer_visible_binding(source: SourceId) -> BindingEnv {
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: vec![BindingId::new(0)],
+            visible_bindings: vec![BindingId::new(0)],
+            recovery: BindingContextRecovery::Normal,
+        });
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Generated("block".to_owned()),
+            parent: Some(BindingContextId::new(0)),
+            layer: BindingContextLayer::Block,
+            lexical_scope: Some(LocalTermScope::new(vec![1])),
+            bindings: Vec::new(),
+            visible_bindings: vec![BindingId::new(0)],
+            recovery: BindingContextRecovery::Normal,
+        });
+
+        let mut bindings = BindingTable::new();
+        bindings.insert(binding_draft_for_spec(
+            source,
+            0,
+            BindingContextId::new(0),
+            binding_spec("let_x", BindingKind::LetBinding, BindingStatus::Active),
+        ));
+
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: source,
+            module_id: module_id(),
+            contexts,
+            bindings,
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .unwrap()
+    }
+
+    fn binding_draft_for_spec(
+        source: SourceId,
+        index: usize,
+        owner_context: BindingContextId,
+        spec: BindingSpec,
+    ) -> BindingDraft {
+        let declaration_range = range(source, index * 10, index * 10 + spec.spelling.len());
+        let identity = match spec.kind {
+            BindingKind::ReservedVariable => BinderIdentity::ReservedVariable {
+                spelling: spec.spelling.to_owned(),
+                declaration_range,
+            },
+            BindingKind::Generated => BinderIdentity::Generated {
+                context: owner_context,
+                counter: index as u32,
+            },
+            _ => BinderIdentity::ResolverLocal {
+                scope: LocalTermScope::new(vec![1]),
+                ordinal: index,
+                declaration_range,
+            },
+        };
+        BindingDraft {
+            spelling: spec.spelling.to_owned(),
+            kind: spec.kind,
+            identity,
+            owner_context,
+            declaration_range,
+            visible_after_ordinal: index,
+            type_site: BindingTypeSite::Source(declaration_range),
+            status: spec.status,
+            captured: CapturedFreeVariables::default(),
+            diagnostics: Vec::new(),
+            recovery: BindingRecoveryState::Normal,
+        }
+    }
+
+    fn declaration_with_type(
+        source: SourceId,
+        binding_index: usize,
+        kind: DeclarationKind,
+        declaration_node: usize,
+        type_node: usize,
+    ) -> DeclarationInput {
+        declaration_with_type_in_context(
+            source,
+            binding_index,
+            BindingContextId::new(1),
+            kind,
+            declaration_node,
+            type_node,
+        )
+    }
+
+    fn declaration_with_type_in_context(
+        source: SourceId,
+        binding_index: usize,
+        context: BindingContextId,
+        kind: DeclarationKind,
+        declaration_node: usize,
+        type_node: usize,
+    ) -> DeclarationInput {
+        DeclarationInput::new(
+            BindingId::new(binding_index),
+            context,
+            site(declaration_node),
+            range(source, declaration_node * 5, declaration_node * 5 + 5),
+            kind,
+        )
+        .with_type_expression(TypeExpressionInput::new(
+            site(type_node),
+            range(source, type_node * 5, type_node * 5 + 3),
+            "set",
+            TypeHeadInput::BuiltinSet,
+        ))
     }
 
     fn symbol_env(entries: Vec<SymbolEntry>) -> SymbolEnv {

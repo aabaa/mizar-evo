@@ -173,11 +173,17 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      diagnostic、unsupported-payload recovery を実装した。resolver/source-walk
      site extraction と完全な signature payload は external dependency として残る。
 
-8. **宣言とローカル束縛の検査。** [ ]
+8. **宣言とローカル束縛の検査。** [x]
    - 宣言とローカル束縛（`let`、`reserve`、`set`、…）を正規化された型に
      対して検査し、不正な宣言を診断し、エラー後も部分出力を保つ。
    - テスト: 束縛ごとのフィクスチャ。診断が束縛範囲を保持する。
    - 依存: 7。仕様: `type_checker.md`（宣言の節）。
+   - task 8 で完了: `DeclarationChecker` が `BindingEnv` 上の checker-owned
+     declaration/context payload を受け取り、binding declaration site に normalized
+     type を attach し、local type-context snapshot を構築し、checked declaration の
+     assumption fact を記録し、invalid / degraded assumption payload は diagnostic とともに
+     drop し、illegal declaration 後も partial output を保持し、不足 RHS / body / reserve / evidence
+     payload を raw syntax walk や task-10 obligation の捏造なしに deferred diagnostic として発行する。
 
 9. **項と論理式の型推論。** [ ]
    - 項と論理式の型を `TypeTable` へ推論する。候補が残る箇所では

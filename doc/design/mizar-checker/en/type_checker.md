@@ -211,23 +211,36 @@ Task 8 implements this section.
 Declaration checking attaches normalized types to bindings and introduces local
 facts into the appropriate `LocalTypeContext` snapshot.
 
+Task 8 uses a checker-owned declaration payload. The payload identifies the
+`BindingEnv` binding/context ids, typed declaration sites, optional explicit
+type-expression payloads, and source ranges to check. The current resolver does
+not expose an AST-wide declaration/type-site table, reserve default payload,
+right-hand-side term payload, or definition body payload, so task 8 must not
+walk raw syntax to reconstruct them.
+
 Required behavior:
 
 - `let`, definition parameters, quantified variables, `given`, `consider`, and
   `take` binders receive `TypeEntry`s linked to their `BindingId` and
   `TypedSiteRef`;
-- reserved variables supply default type sites only when the occurrence is not
-  shadowed by a local binding;
-- `set` declarations infer the right-hand side type and store an abbreviation
-  binding with definition-time closure metadata from `BindingEnv`;
-- `deffunc` and `defpred` formals are checked as local definition parameters and
-  their bodies are checked under the definition-time context;
+- reserved variables use explicit default type-site payloads only when that
+  payload says the occurrence is not shadowed by a local binding;
+- `set` declarations attach an explicit normalized type when supplied, or record
+  a deferred diagnostic for right-hand-side inference when that payload is not
+  available yet;
+- `deffunc` and `defpred` formals are checked as local definition parameters
+  when explicit formal payloads are supplied; body checking is deferred to term
+  and formula inference;
 - `reconsider x as T` updates the type view of an existing binding at the
   current site, while `reconsider y = t as T` introduces a new local binding;
-- declarations with attributed or constrained types emit sethood or existence
-  `InitialObligation`s when the required evidence is not already a known fact;
-- `such that`, `given`, and assumption-like clauses add `Assumed` facts only to
-  the context that introduced them.
+- declarations with attributed or constrained types are marked as requiring
+  later sethood/existence handling; task 10 emits the corresponding
+  `InitialObligation`s once coercion and evidence checks exist;
+- `such that`, `given`, and assumption-like clauses on checked declarations add
+  `Assumed` facts only to the context that introduced them. If the introducing
+  declaration is partial or erroneous, task 8 drops those assumption payloads
+  with an explicit diagnostic rather than publishing active evidence. Task 11
+  owns the full fact query API.
 
 Invalid declarations must produce explicit diagnostics and partial entries. They
 must not fabricate known facts, silently activate registrations, or drop the
@@ -412,9 +425,11 @@ Task 8 must add Rust tests for:
 
 - binding type attachment for `let`, quantified binders, definition parameters,
   reserved variables, `set`, `deffunc`, `defpred`, and `reconsider`;
-- reserved-variable shadowing and definition-time closure metadata for `set`,
-  `deffunc`, and `defpred`;
-- both `reconsider` forms and obligation emission for constrained
+- explicit reserved-variable default payload handling and deferred diagnostics
+  when reserve/source payload is missing;
+- `set`, `deffunc`, and `defpred` deferred diagnostics when RHS or body payloads
+  are not yet available;
+- both `reconsider` forms and deferred obligation diagnostics for constrained
   declarations;
 - local assumption visibility and context snapshot updates;
 - partial entries after invalid declarations;

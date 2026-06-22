@@ -177,12 +177,20 @@ Keep `cargo test -p mizar-checker` green after each task (see
      payloads, and unsupported-payload recovery. Resolver/source-walk site
      extraction and full signature payloads remain external dependencies.
 
-8. **Declaration and local-binding checking.** [ ]
+8. **Declaration and local-binding checking.** [x]
    - Check declarations and local bindings (`let`, `reserve`, `set`, …)
      against normalized types; diagnose illegal declarations; keep partial
      output after errors.
    - Tests: per-binding fixtures; diagnostics carry binding ranges.
    - Deps: 7. Spec: `type_checker.md` (declaration section).
+   - Completed by task 8: `DeclarationChecker` accepts checker-owned
+     declaration/context payloads over `BindingEnv`, attaches normalized types
+     to binding declaration sites, builds local type-context snapshots, records
+     checked-declaration assumption facts, drops invalid/degraded assumption
+     payloads with diagnostics, preserves partial output after illegal
+     declarations, and
+     emits deferred diagnostics for missing RHS/body/reserve/evidence payloads
+     without walking raw syntax or fabricating task-10 obligations.
 
 9. **Term and formula type inference.** [ ]
    - Infer types for terms and formulas into `TypeTable`, leaving overload

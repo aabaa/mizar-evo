@@ -202,22 +202,32 @@ task 8 がこの section を実装する。
 declaration checking は binding に normalized type を付け、対応する
 `LocalTypeContext` snapshot へ local fact を導入する。
 
+task 8 は checker-owned declaration payload を使う。この payload は検査する
+`BindingEnv` の binding / context id、typed declaration site、optional explicit
+type-expression payload、source range を識別する。現在の resolver は AST 全体の
+declaration/type-site table、reserve default payload、right-hand-side term payload、
+definition body payload を公開しないため、task 8 は raw syntax を walk してそれらを
+再構成してはならない。
+
 必須 behavior:
 
 - `let`、definition parameter、quantified variable、`given`、`consider`、`take`
   binder は `BindingId` と `TypedSiteRef` に link された `TypeEntry` を受け取る;
-- reserved variable は、その occurrence が local binding に shadow されない場合だけ
-  default type site を提供する;
-- `set` declaration は right-hand side type を infer し、`BindingEnv` の definition-time
-  closure metadata を持つ abbreviation binding を保存する;
-- `deffunc` と `defpred` の formal は local definition parameter として check し、
-  body は definition-time context の下で check する;
+- reserved variable は、explicit default type-site payload がその occurrence は local
+  binding に shadow されていないと示す場合だけ、その payload を使う;
+- `set` declaration は explicit normalized type が供給される場合はそれを attach し、
+  payload がまだない場合は right-hand-side inference について deferred diagnostic を記録する;
+- `deffunc` と `defpred` の formal は explicit formal payload が供給される場合に local
+  definition parameter として check する。body checking は term / formula inference へ defer する;
 - `reconsider x as T` は current site で existing binding の type view を更新し、
   `reconsider y = t as T` は新しい local binding を導入する;
-- attributed / constrained type を持つ declaration は、必要な evidence が known fact
-  として既にない場合、sethood または existence `InitialObligation` を発行する;
-- `such that`、`given`、assumption-like clause は、導入元 context にだけ `Assumed`
-  fact を追加する。
+- attributed / constrained type を持つ declaration は、後続 sethood / existence handling
+  が必要であることを mark する。coercion と evidence check が存在してから、task 10 が対応する
+  `InitialObligation` を発行する;
+- checked declaration 上の `such that`、`given`、assumption-like clause は、導入元
+  context にだけ `Assumed` fact を追加する。導入元 declaration が partial または error
+  の場合、task 8 はそれらの assumption payload を explicit diagnostic とともに drop し、
+  active evidence として公開しない。full fact query API は task 11 が所有する。
 
 invalid declaration は explicit diagnostic と partial entry を生成しなければならない。
 known fact を捏造したり、registration を silently activate したり、source-shaped typed site
@@ -388,9 +398,10 @@ task 8 は Rust test で次を覆う。
 
 - `let`、quantified binder、definition parameter、reserved variable、`set`、
   `deffunc`、`defpred`、`reconsider` の binding type attachment;
-- reserved-variable shadowing と `set` / `deffunc` / `defpred` の definition-time
-  closure metadata;
-- `reconsider` の両形式と constrained declaration の obligation emission;
+- explicit reserved-variable default payload handling と reserve / source payload
+  欠落時の deferred diagnostic;
+- RHS または body payload がまだない場合の `set`、`deffunc`、`defpred` deferred diagnostic;
+- `reconsider` の両形式と constrained declaration の deferred obligation diagnostic;
 - local assumption visibility と context snapshot update;
 - invalid declaration 後の partial entry;
 - local-context、type-entry、diagnostic、debug-rendering order の determinism。
