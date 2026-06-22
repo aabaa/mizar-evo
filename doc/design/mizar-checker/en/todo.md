@@ -362,7 +362,7 @@ Keep `cargo test -p mizar-checker` green after each task (see
       rejected. Source extraction, accepted-status production/import, artifact
       reuse, and active `.miz` semantic fixtures remain deferred.
 
-20. **Existential gating of attributed type use.** [ ]
+20. **Existential gating of attributed type use.** [x]
     - Enforce that attributed types are usable only where existential
       registrations justify non-emptiness (architecture 04 "Existential
       Registrations Gate Attributed Type Use").
@@ -372,6 +372,15 @@ Keep `cargo test -p mizar-checker` green after each task (see
       facts after degraded recovery.
     - Deps: 19. Spec: `registration_resolution.md`,
       [17.clusters_and_registrations.md](../../../spec/en/17.clusters_and_registrations.md).
+    - Completed by task 20: `ExistentialGateOutput` evaluates explicit
+      checker-owned gate payloads against activated existential registrations,
+      binds candidates to accepted validation kind plus
+      pattern/correctness/evidence/fingerprint records, requires visible
+      consumable guard fact evidence, matches the full accepted attributed-type
+      pattern, applies deterministic result precedence, and ensures only
+      satisfied normal gates may seed verified facts. Source extraction,
+      artifact reuse, accepted-status production, and active `.miz` gate
+      fixtures remain deferred.
 
 ### Wave 3: overload resolution (phase 8)
 

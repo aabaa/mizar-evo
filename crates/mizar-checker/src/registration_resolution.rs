@@ -70,6 +70,7 @@ macro_rules! string_key {
 dense_id!(CheckerRegistrationId);
 dense_id!(RejectedRegistrationId);
 dense_id!(RegistrationDiagnosticId);
+dense_id!(ExistentialGateId);
 
 string_key!(RegistrationTriggerKey);
 string_key!(RegistrationLabelKey);
@@ -83,6 +84,7 @@ string_key!(RegistrationAttributeKey);
 string_key!(RegistrationFunctorKey);
 string_key!(RegistrationTermKey);
 string_key!(RegistrationVariableKey);
+string_key!(ExistentialGateGuardKey);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RegistrationDatabase {
@@ -242,11 +244,12 @@ impl RegistrationDatabaseBuilder {
                     source.clone(),
                     &validations,
                 ) {
-                    Ok(()) => match validate_activation(
+                    Ok(companion_validation_kind) => match validate_activation(
                         resolver_registration,
                         resolver_kind,
                         source.clone(),
                         activation,
+                        companion_validation_kind,
                     ) {
                         Ok(activated) => {
                             self.activated.push(activated);
@@ -520,6 +523,7 @@ pub struct ActivatedRegistration {
     trigger: RegistrationTriggerKey,
     label: Option<RegistrationLabelKey>,
     kind: ResolverRegistrationKind,
+    validation_kind: Option<RegistrationValidationKind>,
     pattern: RegistrationPatternKey,
     parameters: Vec<RegistrationParameterKey>,
     correctness: AcceptedCorrectnessKey,
@@ -550,6 +554,10 @@ impl ActivatedRegistration {
 
     pub const fn kind(&self) -> ResolverRegistrationKind {
         self.kind
+    }
+
+    pub const fn validation_kind(&self) -> Option<RegistrationValidationKind> {
+        self.validation_kind
     }
 
     pub const fn pattern(&self) -> &RegistrationPatternKey {
@@ -1095,6 +1103,7 @@ pub struct ActivationInput {
     trigger: RegistrationTriggerKey,
     label: Option<RegistrationLabelKey>,
     pattern: RegistrationPatternKey,
+    validation_kind: Option<RegistrationValidationKind>,
     parameters: Vec<RegistrationParameterKey>,
     correctness: AcceptedCorrectnessKey,
     evidence: ActivationEvidenceKey,
@@ -1117,6 +1126,7 @@ impl ActivationInput {
             trigger: trigger.into(),
             label: None,
             pattern: pattern.into(),
+            validation_kind: None,
             parameters: Vec::new(),
             correctness: correctness.into(),
             evidence: evidence.into(),
@@ -1157,6 +1167,11 @@ impl ActivationInput {
         self
     }
 
+    pub const fn with_validation_kind(mut self, kind: RegistrationValidationKind) -> Self {
+        self.validation_kind = Some(kind);
+        self
+    }
+
     pub fn with_fingerprint(mut self, fingerprint: impl Into<RegistrationFingerprint>) -> Self {
         self.fingerprint = Some(fingerprint.into());
         self
@@ -1178,6 +1193,371 @@ pub enum ActivationVerifierStatus {
     Accepted,
     Missing,
     Rejected,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExistentialGateInput {
+    owner: TypedSiteRef,
+    source_range: SourceRange,
+    pattern: RegistrationPatternKey,
+    trigger: RegistrationTriggerKey,
+    attributes: Vec<RegistrationAttributeKey>,
+    required_guards: Vec<ExistentialGateGuardKey>,
+    guard_evidence: Vec<ExistentialGateGuardEvidence>,
+    candidates: Vec<ExistentialGateCandidate>,
+    recovery: ExistentialGateRecovery,
+}
+
+impl ExistentialGateInput {
+    pub fn new(
+        owner: TypedSiteRef,
+        source_range: SourceRange,
+        pattern: impl Into<RegistrationPatternKey>,
+        trigger: impl Into<RegistrationTriggerKey>,
+        attributes: impl IntoIterator<Item = RegistrationAttributeKey>,
+    ) -> Self {
+        Self {
+            owner,
+            source_range,
+            pattern: pattern.into(),
+            trigger: trigger.into(),
+            attributes: attributes.into_iter().collect(),
+            required_guards: Vec::new(),
+            guard_evidence: Vec::new(),
+            candidates: Vec::new(),
+            recovery: ExistentialGateRecovery::Normal,
+        }
+    }
+
+    pub const fn owner(&self) -> &TypedSiteRef {
+        &self.owner
+    }
+
+    pub const fn source_range(&self) -> SourceRange {
+        self.source_range
+    }
+
+    pub const fn pattern(&self) -> &RegistrationPatternKey {
+        &self.pattern
+    }
+
+    pub const fn trigger(&self) -> &RegistrationTriggerKey {
+        &self.trigger
+    }
+
+    pub fn attributes(&self) -> &[RegistrationAttributeKey] {
+        &self.attributes
+    }
+
+    pub fn required_guards(&self) -> &[ExistentialGateGuardKey] {
+        &self.required_guards
+    }
+
+    pub fn guard_evidence(&self) -> &[ExistentialGateGuardEvidence] {
+        &self.guard_evidence
+    }
+
+    pub fn candidates(&self) -> &[ExistentialGateCandidate] {
+        &self.candidates
+    }
+
+    pub const fn recovery(&self) -> ExistentialGateRecovery {
+        self.recovery
+    }
+
+    pub fn with_required_guards(
+        mut self,
+        guards: impl IntoIterator<Item = ExistentialGateGuardKey>,
+    ) -> Self {
+        self.required_guards = guards.into_iter().collect();
+        self
+    }
+
+    pub fn with_guard_evidence(
+        mut self,
+        evidence: impl IntoIterator<Item = ExistentialGateGuardEvidence>,
+    ) -> Self {
+        self.guard_evidence = evidence.into_iter().collect();
+        self
+    }
+
+    pub fn with_candidates(
+        mut self,
+        candidates: impl IntoIterator<Item = ExistentialGateCandidate>,
+    ) -> Self {
+        self.candidates = candidates.into_iter().collect();
+        self
+    }
+
+    pub const fn with_recovery(mut self, recovery: ExistentialGateRecovery) -> Self {
+        self.recovery = recovery;
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExistentialGateCandidate {
+    registration: CheckerRegistrationId,
+    accepted_pattern: RegistrationPatternKey,
+    accepted_correctness: AcceptedCorrectnessKey,
+    activation_evidence: ActivationEvidenceKey,
+    trigger: RegistrationTriggerKey,
+    fingerprint: Option<RegistrationFingerprint>,
+    kind: RegistrationValidationKind,
+    attributes: Vec<RegistrationAttributeKey>,
+}
+
+impl ExistentialGateCandidate {
+    pub fn new(
+        registration: CheckerRegistrationId,
+        accepted_pattern: impl Into<RegistrationPatternKey>,
+        accepted_correctness: impl Into<AcceptedCorrectnessKey>,
+        activation_evidence: impl Into<ActivationEvidenceKey>,
+        trigger: impl Into<RegistrationTriggerKey>,
+        attributes: impl IntoIterator<Item = RegistrationAttributeKey>,
+    ) -> Self {
+        Self {
+            registration,
+            accepted_pattern: accepted_pattern.into(),
+            accepted_correctness: accepted_correctness.into(),
+            activation_evidence: activation_evidence.into(),
+            trigger: trigger.into(),
+            fingerprint: None,
+            kind: RegistrationValidationKind::Existential,
+            attributes: attributes.into_iter().collect(),
+        }
+    }
+
+    pub const fn registration(&self) -> CheckerRegistrationId {
+        self.registration
+    }
+
+    pub const fn accepted_pattern(&self) -> &RegistrationPatternKey {
+        &self.accepted_pattern
+    }
+
+    pub const fn accepted_correctness(&self) -> &AcceptedCorrectnessKey {
+        &self.accepted_correctness
+    }
+
+    pub const fn activation_evidence(&self) -> &ActivationEvidenceKey {
+        &self.activation_evidence
+    }
+
+    pub const fn trigger(&self) -> &RegistrationTriggerKey {
+        &self.trigger
+    }
+
+    pub const fn fingerprint(&self) -> Option<&RegistrationFingerprint> {
+        self.fingerprint.as_ref()
+    }
+
+    pub const fn kind(&self) -> RegistrationValidationKind {
+        self.kind
+    }
+
+    pub fn attributes(&self) -> &[RegistrationAttributeKey] {
+        &self.attributes
+    }
+
+    pub fn with_fingerprint(mut self, fingerprint: impl Into<RegistrationFingerprint>) -> Self {
+        self.fingerprint = Some(fingerprint.into());
+        self
+    }
+
+    pub const fn with_kind(mut self, kind: RegistrationValidationKind) -> Self {
+        self.kind = kind;
+        self
+    }
+
+    pub fn with_correctness(mut self, correctness: impl Into<AcceptedCorrectnessKey>) -> Self {
+        self.accepted_correctness = correctness.into();
+        self
+    }
+
+    pub fn with_activation_evidence(mut self, evidence: impl Into<ActivationEvidenceKey>) -> Self {
+        self.activation_evidence = evidence.into();
+        self
+    }
+
+    pub fn with_trigger(mut self, trigger: impl Into<RegistrationTriggerKey>) -> Self {
+        self.trigger = trigger.into();
+        self
+    }
+
+    pub fn with_attributes(
+        mut self,
+        attributes: impl IntoIterator<Item = RegistrationAttributeKey>,
+    ) -> Self {
+        self.attributes = attributes.into_iter().collect();
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExistentialGateGuardEvidence {
+    guard: ExistentialGateGuardKey,
+    fact: TypeFactId,
+    visible: bool,
+    consumable: bool,
+}
+
+impl ExistentialGateGuardEvidence {
+    pub fn new(guard: impl Into<ExistentialGateGuardKey>, fact: TypeFactId) -> Self {
+        Self {
+            guard: guard.into(),
+            fact,
+            visible: true,
+            consumable: true,
+        }
+    }
+
+    pub const fn guard(&self) -> &ExistentialGateGuardKey {
+        &self.guard
+    }
+
+    pub const fn fact(&self) -> TypeFactId {
+        self.fact
+    }
+
+    pub const fn is_visible(&self) -> bool {
+        self.visible
+    }
+
+    pub const fn is_consumable(&self) -> bool {
+        self.consumable
+    }
+
+    pub const fn with_visible(mut self, visible: bool) -> Self {
+        self.visible = visible;
+        self
+    }
+
+    pub const fn with_consumable(mut self, consumable: bool) -> Self {
+        self.consumable = consumable;
+        self
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum ExistentialGateRecovery {
+    Normal,
+    Degraded,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExistentialGateOutput {
+    entries: Vec<ExistentialGateResult>,
+    diagnostics: RegistrationDiagnosticTable,
+}
+
+impl ExistentialGateOutput {
+    pub fn evaluate(
+        database: &RegistrationDatabase,
+        inputs: impl IntoIterator<Item = ExistentialGateInput>,
+    ) -> Self {
+        let mut builder = ExistentialGateBuilder::new(database);
+        let mut inputs = inputs.into_iter().collect::<Vec<_>>();
+        inputs.sort_by_key(existential_gate_input_order_key);
+        for input in inputs {
+            builder.evaluate(input);
+        }
+        builder.finish()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &ExistentialGateResult> {
+        self.entries.iter()
+    }
+
+    pub const fn diagnostics(&self) -> &RegistrationDiagnosticTable {
+        &self.diagnostics
+    }
+
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    pub fn debug_text(&self) -> String {
+        let mut output = String::from("existential-gate-debug-v1\n");
+        write_existential_gates(&mut output, &self.entries);
+        write_diagnostics(&mut output, &self.diagnostics);
+        output
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExistentialGateResult {
+    id: ExistentialGateId,
+    owner: TypedSiteRef,
+    source_range: SourceRange,
+    pattern: RegistrationPatternKey,
+    trigger: RegistrationTriggerKey,
+    attributes: Vec<RegistrationAttributeKey>,
+    status: ExistentialGateStatus,
+    registration: Option<CheckerRegistrationId>,
+    facts: Vec<TypeFactId>,
+    diagnostics: Vec<RegistrationDiagnosticId>,
+}
+
+impl ExistentialGateResult {
+    pub const fn id(&self) -> ExistentialGateId {
+        self.id
+    }
+
+    pub const fn owner(&self) -> &TypedSiteRef {
+        &self.owner
+    }
+
+    pub const fn source_range(&self) -> SourceRange {
+        self.source_range
+    }
+
+    pub const fn pattern(&self) -> &RegistrationPatternKey {
+        &self.pattern
+    }
+
+    pub const fn trigger(&self) -> &RegistrationTriggerKey {
+        &self.trigger
+    }
+
+    pub fn attributes(&self) -> &[RegistrationAttributeKey] {
+        &self.attributes
+    }
+
+    pub const fn status(&self) -> ExistentialGateStatus {
+        self.status
+    }
+
+    pub const fn registration(&self) -> Option<CheckerRegistrationId> {
+        self.registration
+    }
+
+    pub fn facts(&self) -> &[TypeFactId] {
+        &self.facts
+    }
+
+    pub fn diagnostics(&self) -> &[RegistrationDiagnosticId] {
+        &self.diagnostics
+    }
+
+    pub const fn may_seed_verified_facts(&self) -> bool {
+        matches!(self.status, ExistentialGateStatus::Satisfied)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum ExistentialGateStatus {
+    Satisfied,
+    MissingExistential,
+    BlockedGuard,
+    InvalidCandidate,
+    DegradedRecovery,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1287,6 +1667,10 @@ pub enum RegistrationDiagnosticClass {
     InvalidReductionOrientation,
     InvalidActivation,
     UnacceptedActivationEvidence,
+    UnavailableExistentialRegistration,
+    BlockedExistentialGuard,
+    InvalidExistentialGateCandidate,
+    Recovery,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -1317,6 +1701,300 @@ type PendingValidationError = (
     &'static str,
     RegistrationDiagnosticClass,
 );
+type SiteOrderKey = (usize, u8, String);
+type ExistentialGateInputOrderKey = (
+    String,
+    usize,
+    usize,
+    SiteOrderKey,
+    String,
+    String,
+    Vec<String>,
+);
+type ExistentialGateResultOrderKey = (
+    String,
+    usize,
+    usize,
+    SiteOrderKey,
+    String,
+    String,
+    Vec<String>,
+    usize,
+);
+
+struct ExistentialGateBuilder<'a> {
+    database: &'a RegistrationDatabase,
+    entries: Vec<ExistentialGateResult>,
+    diagnostics: RegistrationDiagnosticTable,
+}
+
+impl<'a> ExistentialGateBuilder<'a> {
+    fn new(database: &'a RegistrationDatabase) -> Self {
+        Self {
+            database,
+            entries: Vec::new(),
+            diagnostics: RegistrationDiagnosticTable::new(),
+        }
+    }
+
+    fn evaluate(&mut self, input: ExistentialGateInput) {
+        let mut candidate_reports = input
+            .candidates()
+            .iter()
+            .map(|candidate| evaluate_existential_candidate(self.database, &input, candidate))
+            .collect::<Vec<_>>();
+        candidate_reports.sort_by_key(existential_candidate_report_order_key);
+
+        let status = existential_gate_status(&input, &candidate_reports);
+        let mut diagnostics = Vec::new();
+        if status != ExistentialGateStatus::Satisfied {
+            diagnostics.push(
+                self.diagnostics.insert(RegistrationDiagnosticDraft {
+                    resolver_registration: candidate_reports
+                        .iter()
+                        .find_map(|report| report.resolver_registration),
+                    class: existential_gate_diagnostic_class(status),
+                    severity: RegistrationDiagnosticSeverity::Error,
+                    message_key: existential_gate_message_key(status).to_owned(),
+                    recovery: RegistrationDiagnosticRecovery::Degraded,
+                }),
+            );
+        }
+
+        let registration = (status == ExistentialGateStatus::Satisfied)
+            .then(|| {
+                candidate_reports
+                    .iter()
+                    .find(|report| report.status == ExistentialCandidateStatus::Satisfied)
+                    .map(|report| report.registration)
+            })
+            .flatten();
+        let facts = if status == ExistentialGateStatus::Satisfied {
+            visible_guard_facts(input.required_guards(), input.guard_evidence())
+        } else {
+            Vec::new()
+        };
+        let id = ExistentialGateId::new(self.entries.len());
+        self.entries.push(ExistentialGateResult {
+            id,
+            owner: input.owner,
+            source_range: input.source_range,
+            pattern: input.pattern,
+            trigger: input.trigger,
+            attributes: canonical_attributes(input.attributes),
+            status,
+            registration,
+            facts,
+            diagnostics,
+        });
+    }
+
+    fn finish(mut self) -> ExistentialGateOutput {
+        self.entries.sort_by_key(existential_gate_result_order_key);
+        for (index, entry) in self.entries.iter_mut().enumerate() {
+            entry.id = ExistentialGateId::new(index);
+        }
+        ExistentialGateOutput {
+            entries: self.entries,
+            diagnostics: self.diagnostics,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ExistentialCandidateReport {
+    registration: CheckerRegistrationId,
+    resolver_registration: Option<ResolverRegistrationId>,
+    status: ExistentialCandidateStatus,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+enum ExistentialCandidateStatus {
+    Satisfied,
+    BlockedGuard,
+    Invalid,
+}
+
+fn evaluate_existential_candidate(
+    database: &RegistrationDatabase,
+    input: &ExistentialGateInput,
+    candidate: &ExistentialGateCandidate,
+) -> ExistentialCandidateReport {
+    let active = database.activated().get(candidate.registration());
+    let Some(active) = active else {
+        return ExistentialCandidateReport {
+            registration: candidate.registration(),
+            resolver_registration: None,
+            status: ExistentialCandidateStatus::Invalid,
+        };
+    };
+    let resolver_registration = Some(active.resolver_registration());
+    if active.kind() != ResolverRegistrationKind::Cluster
+        || candidate.kind() != RegistrationValidationKind::Existential
+        || active.validation_kind() != Some(RegistrationValidationKind::Existential)
+        || active.validation_kind() != Some(candidate.kind())
+        || active.pattern() != candidate.accepted_pattern()
+        || active.correctness() != candidate.accepted_correctness()
+        || active.evidence() != candidate.activation_evidence()
+        || active.trigger() != candidate.trigger()
+        || input.trigger() != candidate.trigger()
+        || !fingerprint_matches(active, candidate)
+        || active.pattern() != input.pattern()
+        || !candidate_covers_attributes(input.attributes(), candidate.attributes())
+    {
+        return ExistentialCandidateReport {
+            registration: candidate.registration(),
+            resolver_registration,
+            status: ExistentialCandidateStatus::Invalid,
+        };
+    }
+    if !guards_are_visible(input.required_guards(), input.guard_evidence()) {
+        return ExistentialCandidateReport {
+            registration: candidate.registration(),
+            resolver_registration,
+            status: ExistentialCandidateStatus::BlockedGuard,
+        };
+    }
+    ExistentialCandidateReport {
+        registration: candidate.registration(),
+        resolver_registration,
+        status: ExistentialCandidateStatus::Satisfied,
+    }
+}
+
+fn existential_gate_status(
+    input: &ExistentialGateInput,
+    reports: &[ExistentialCandidateReport],
+) -> ExistentialGateStatus {
+    if input.recovery() == ExistentialGateRecovery::Degraded {
+        return ExistentialGateStatus::DegradedRecovery;
+    }
+    if reports
+        .iter()
+        .any(|report| report.status == ExistentialCandidateStatus::Satisfied)
+    {
+        return ExistentialGateStatus::Satisfied;
+    }
+    if reports
+        .iter()
+        .any(|report| report.status == ExistentialCandidateStatus::BlockedGuard)
+    {
+        return ExistentialGateStatus::BlockedGuard;
+    }
+    if !reports.is_empty() {
+        return ExistentialGateStatus::InvalidCandidate;
+    }
+    ExistentialGateStatus::MissingExistential
+}
+
+fn fingerprint_matches(
+    active: &ActivatedRegistration,
+    candidate: &ExistentialGateCandidate,
+) -> bool {
+    match (active.fingerprint(), candidate.fingerprint()) {
+        (Some(active), Some(candidate)) => active == candidate,
+        (Some(_), None) | (None, Some(_)) => false,
+        (None, None) => true,
+    }
+}
+
+fn candidate_covers_attributes(
+    requested: &[RegistrationAttributeKey],
+    available: &[RegistrationAttributeKey],
+) -> bool {
+    requested
+        .iter()
+        .all(|attribute| available.contains(attribute))
+}
+
+fn guards_are_visible(
+    required: &[ExistentialGateGuardKey],
+    evidence: &[ExistentialGateGuardEvidence],
+) -> bool {
+    required.iter().all(|guard| {
+        evidence
+            .iter()
+            .any(|entry| entry.guard() == guard && entry.is_visible() && entry.is_consumable())
+    })
+}
+
+fn visible_guard_facts(
+    required: &[ExistentialGateGuardKey],
+    evidence: &[ExistentialGateGuardEvidence],
+) -> Vec<TypeFactId> {
+    let mut facts = required
+        .iter()
+        .filter_map(|guard| {
+            evidence
+                .iter()
+                .filter(|entry| {
+                    entry.guard() == guard && entry.is_visible() && entry.is_consumable()
+                })
+                .map(ExistentialGateGuardEvidence::fact)
+                .min()
+        })
+        .collect::<Vec<_>>();
+    facts.sort();
+    facts.dedup();
+    facts
+}
+
+fn canonical_attribute_key_strings(
+    attributes: impl IntoIterator<Item = RegistrationAttributeKey>,
+) -> Vec<String> {
+    canonical_attributes(attributes)
+        .into_iter()
+        .map(|attribute| attribute.as_str().to_owned())
+        .collect()
+}
+
+fn typed_site_order_key(site: &TypedSiteRef) -> SiteOrderKey {
+    match site {
+        TypedSiteRef::Node(node) => (node.index(), 0, String::new()),
+        TypedSiteRef::Role { node, role } => (node.index(), 1, role.as_str().to_owned()),
+    }
+}
+
+fn source_id_order_key(range: SourceRange) -> String {
+    format!("{:?}", range.source_id)
+}
+
+fn canonical_attributes(
+    attributes: impl IntoIterator<Item = RegistrationAttributeKey>,
+) -> Vec<RegistrationAttributeKey> {
+    let mut attributes = attributes.into_iter().collect::<Vec<_>>();
+    attributes.sort();
+    attributes.dedup();
+    attributes
+}
+
+fn existential_gate_diagnostic_class(status: ExistentialGateStatus) -> RegistrationDiagnosticClass {
+    match status {
+        ExistentialGateStatus::Satisfied => RegistrationDiagnosticClass::ExternalDependencyGap,
+        ExistentialGateStatus::MissingExistential => {
+            RegistrationDiagnosticClass::UnavailableExistentialRegistration
+        }
+        ExistentialGateStatus::BlockedGuard => RegistrationDiagnosticClass::BlockedExistentialGuard,
+        ExistentialGateStatus::InvalidCandidate => {
+            RegistrationDiagnosticClass::InvalidExistentialGateCandidate
+        }
+        ExistentialGateStatus::DegradedRecovery => RegistrationDiagnosticClass::Recovery,
+    }
+}
+
+fn existential_gate_message_key(status: ExistentialGateStatus) -> &'static str {
+    match status {
+        ExistentialGateStatus::Satisfied => "checker.registration.existential_gate_satisfied",
+        ExistentialGateStatus::MissingExistential => {
+            "checker.registration.unavailable_existential_registration"
+        }
+        ExistentialGateStatus::BlockedGuard => "checker.registration.blocked_existential_guard",
+        ExistentialGateStatus::InvalidCandidate => {
+            "checker.registration.invalid_existential_gate_candidate"
+        }
+        ExistentialGateStatus::DegradedRecovery => "checker.registration.degraded_existential_gate",
+    }
+}
 
 fn validate_pending_registration(
     resolver_registration: ResolverRegistrationId,
@@ -1619,10 +2297,11 @@ fn validate_activation_companion_validations(
     resolver_kind: ResolverRegistrationKind,
     source: RegistrationSource,
     validations: &[RegistrationValidationInput],
-) -> Result<(), PendingValidationError> {
+) -> Result<Option<RegistrationValidationKind>, PendingValidationError> {
     match validations {
-        [] => Ok(()),
+        [] => Ok(None),
         [validation] => {
+            let kind = validation.pattern.kind();
             let mut scratch_obligations = InitialObligationTable::new();
             validate_pending_registration(
                 resolver_registration,
@@ -1631,7 +2310,7 @@ fn validate_activation_companion_validations(
                 validation.clone(),
                 &mut scratch_obligations,
             )
-            .map(|_| ())
+            .map(|_| Some(kind))
         }
         _ => Err((
             Box::new(source),
@@ -1647,6 +2326,7 @@ fn validate_activation(
     resolver_kind: ResolverRegistrationKind,
     source: RegistrationSource,
     activation: ActivationInput,
+    companion_validation_kind: Option<RegistrationValidationKind>,
 ) -> Result<ActivatedRegistration, ActivationValidationError> {
     if source.recovery() == RecoveryState::Recovered {
         return Err((
@@ -1704,6 +2384,28 @@ fn validate_activation(
             RegistrationDiagnosticClass::UnacceptedActivationEvidence,
         ));
     }
+    if let Some(validation_kind) = activation.validation_kind
+        && resolver_kind_for_validation(validation_kind) != resolver_kind
+    {
+        return Err((
+            Box::new(source),
+            RejectedRegistrationReason::ValidationKindMismatch,
+            "checker.registration.validation_kind_mismatch",
+            RegistrationDiagnosticClass::InvalidActivation,
+        ));
+    }
+    if let (Some(explicit), Some(companion)) =
+        (activation.validation_kind, companion_validation_kind)
+        && explicit != companion
+    {
+        return Err((
+            Box::new(source),
+            RejectedRegistrationReason::ValidationKindMismatch,
+            "checker.registration.validation_kind_mismatch",
+            RegistrationDiagnosticClass::InvalidActivation,
+        ));
+    }
+    let validation_kind = activation.validation_kind.or(companion_validation_kind);
     Ok(ActivatedRegistration {
         id: CheckerRegistrationId::new(resolver_registration.index()),
         resolver_registration,
@@ -1711,6 +2413,7 @@ fn validate_activation(
         trigger: activation.trigger,
         label: activation.label,
         kind: activation.kind,
+        validation_kind,
         pattern: activation.pattern,
         parameters: activation.parameters,
         correctness: activation.correctness,
@@ -1852,7 +2555,7 @@ fn activated_order_key(
     )
 }
 
-fn activation_input_order_key(input: &ActivationInput) -> (String, String, String) {
+fn activation_input_order_key(input: &ActivationInput) -> (String, String, String, u8) {
     (
         input.trigger.as_str().to_owned(),
         input
@@ -1860,6 +2563,7 @@ fn activation_input_order_key(input: &ActivationInput) -> (String, String, Strin
             .as_ref()
             .map_or_else(String::new, |label| label.as_str().to_owned()),
         input.pattern.as_str().to_owned(),
+        input.validation_kind.map_or(255, validation_kind_rank),
     )
 }
 
@@ -1868,6 +2572,45 @@ fn validation_input_order_key(input: &RegistrationValidationInput) -> (u8, Strin
         validation_kind_rank(input.pattern.kind()),
         input.correctness_goal.as_str().to_owned(),
         input.source_range.start,
+    )
+}
+
+fn existential_gate_input_order_key(input: &ExistentialGateInput) -> ExistentialGateInputOrderKey {
+    (
+        source_id_order_key(input.source_range()),
+        input.source_range().start,
+        input.source_range().end,
+        typed_site_order_key(input.owner()),
+        input.pattern().as_str().to_owned(),
+        input.trigger().as_str().to_owned(),
+        canonical_attribute_key_strings(input.attributes().iter().cloned()),
+    )
+}
+
+fn existential_candidate_report_order_key(
+    report: &ExistentialCandidateReport,
+) -> (u8, usize, Option<usize>) {
+    (
+        existential_candidate_status_rank(report.status),
+        report.registration.index(),
+        report
+            .resolver_registration
+            .map(ResolverRegistrationId::index),
+    )
+}
+
+fn existential_gate_result_order_key(
+    result: &ExistentialGateResult,
+) -> ExistentialGateResultOrderKey {
+    (
+        source_id_order_key(result.source_range),
+        result.source_range.start,
+        result.source_range.end,
+        typed_site_order_key(&result.owner),
+        result.pattern.as_str().to_owned(),
+        result.trigger.as_str().to_owned(),
+        canonical_attribute_key_strings(result.attributes.iter().cloned()),
+        result.id.index(),
     )
 }
 
@@ -1951,6 +2694,10 @@ fn diagnostic_class_rank(class: RegistrationDiagnosticClass) -> u8 {
         RegistrationDiagnosticClass::InvalidReductionOrientation => 8,
         RegistrationDiagnosticClass::InvalidActivation => 9,
         RegistrationDiagnosticClass::UnacceptedActivationEvidence => 10,
+        RegistrationDiagnosticClass::UnavailableExistentialRegistration => 11,
+        RegistrationDiagnosticClass::BlockedExistentialGuard => 12,
+        RegistrationDiagnosticClass::InvalidExistentialGateCandidate => 13,
+        RegistrationDiagnosticClass::Recovery => 14,
     }
 }
 
@@ -1959,6 +2706,14 @@ fn diagnostic_severity_rank(severity: RegistrationDiagnosticSeverity) -> u8 {
         RegistrationDiagnosticSeverity::Error => 0,
         RegistrationDiagnosticSeverity::Warning => 1,
         RegistrationDiagnosticSeverity::Note => 2,
+    }
+}
+
+fn existential_candidate_status_rank(status: ExistentialCandidateStatus) -> u8 {
+    match status {
+        ExistentialCandidateStatus::Satisfied => 0,
+        ExistentialCandidateStatus::BlockedGuard => 1,
+        ExistentialCandidateStatus::Invalid => 2,
     }
 }
 
@@ -2007,6 +2762,8 @@ fn write_activated(output: &mut String, activated: &ActivatedRegistrationIndex) 
         );
         output.push_str(" kind=");
         output.push_str(registration_kind_name(entry.kind));
+        output.push_str(" validation_kind=");
+        write_optional_validation_kind(output, entry.validation_kind);
         output.push_str(" pattern=\"");
         write_escaped(output, entry.pattern.as_str());
         output.push_str("\" params=");
@@ -2066,6 +2823,39 @@ fn write_diagnostics(output: &mut String, diagnostics: &RegistrationDiagnosticTa
         write_escaped(output, &diagnostic.message_key);
         output.push_str("\" recovery=");
         output.push_str(diagnostic_recovery_name(diagnostic.recovery));
+        output.push('\n');
+    }
+}
+
+fn write_existential_gates(output: &mut String, gates: &[ExistentialGateResult]) {
+    output.push_str("gates:\n");
+    if gates.is_empty() {
+        output.push_str("  <none>\n");
+        return;
+    }
+    for gate in gates {
+        let _ = write!(
+            output,
+            "  gate#{} status={} seed={} registration=",
+            gate.id.index(),
+            existential_gate_status_name(gate.status),
+            gate.may_seed_verified_facts()
+        );
+        write_optional_checker_registration(output, gate.registration);
+        output.push_str(" pattern=\"");
+        write_escaped(output, gate.pattern.as_str());
+        output.push_str("\" trigger=\"");
+        write_escaped(output, gate.trigger.as_str());
+        output.push_str("\" attrs=");
+        write_attribute_keys(output, &gate.attributes);
+        output.push_str(" facts=");
+        write_type_fact_ids(output, &gate.facts);
+        output.push_str(" diagnostics=");
+        write_registration_diagnostic_ids(output, &gate.diagnostics);
+        output.push_str(" owner=");
+        write_typed_site_ref(output, &gate.owner);
+        output.push_str(" range=");
+        write_range(output, gate.source_range);
         output.push('\n');
     }
 }
@@ -2211,6 +3001,17 @@ fn write_optional_resolver_registration(
     }
 }
 
+fn write_optional_checker_registration(
+    output: &mut String,
+    registration: Option<CheckerRegistrationId>,
+) {
+    if let Some(registration) = registration {
+        let _ = write!(output, "checker-registration#{}", registration.index());
+    } else {
+        output.push_str("<none>");
+    }
+}
+
 fn write_parameter_keys(output: &mut String, parameters: &[RegistrationParameterKey]) {
     output.push('[');
     for (index, parameter) in parameters.iter().enumerate() {
@@ -2224,6 +3025,19 @@ fn write_parameter_keys(output: &mut String, parameters: &[RegistrationParameter
     output.push(']');
 }
 
+fn write_attribute_keys(output: &mut String, attributes: &[RegistrationAttributeKey]) {
+    output.push('[');
+    for (index, attribute) in attributes.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        output.push('"');
+        write_escaped(output, attribute.as_str());
+        output.push('"');
+    }
+    output.push(']');
+}
+
 fn write_obligation_ids(output: &mut String, obligations: &[InitialObligationId]) {
     output.push('[');
     for (index, obligation) in obligations.iter().enumerate() {
@@ -2231,6 +3045,20 @@ fn write_obligation_ids(output: &mut String, obligations: &[InitialObligationId]
             output.push_str(", ");
         }
         let _ = write!(output, "obligation#{}", obligation.index());
+    }
+    output.push(']');
+}
+
+fn write_registration_diagnostic_ids(
+    output: &mut String,
+    diagnostics: &[RegistrationDiagnosticId],
+) {
+    output.push('[');
+    for (index, diagnostic) in diagnostics.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(output, "diagnostic#{}", diagnostic.index());
     }
     output.push(']');
 }
@@ -2327,18 +3155,24 @@ fn recovery_name(recovery: RecoveryState) -> &'static str {
 fn pattern_status_name(status: RegistrationPatternStatus) -> &'static str {
     match status {
         RegistrationPatternStatus::ExternalDependencyGap => "external_dependency_gap",
-        RegistrationPatternStatus::Validated(RegistrationValidationKind::Existential) => {
-            "validated_existential"
-        }
-        RegistrationPatternStatus::Validated(RegistrationValidationKind::Conditional) => {
-            "validated_conditional"
-        }
-        RegistrationPatternStatus::Validated(RegistrationValidationKind::Functorial) => {
-            "validated_functorial"
-        }
-        RegistrationPatternStatus::Validated(RegistrationValidationKind::Reduction) => {
-            "validated_reduction"
-        }
+        RegistrationPatternStatus::Validated(kind) => validated_kind_name(kind),
+    }
+}
+
+fn write_optional_validation_kind(output: &mut String, kind: Option<RegistrationValidationKind>) {
+    if let Some(kind) = kind {
+        output.push_str(validated_kind_name(kind));
+    } else {
+        output.push_str("<none>");
+    }
+}
+
+fn validated_kind_name(kind: RegistrationValidationKind) -> &'static str {
+    match kind {
+        RegistrationValidationKind::Existential => "validated_existential",
+        RegistrationValidationKind::Conditional => "validated_conditional",
+        RegistrationValidationKind::Functorial => "validated_functorial",
+        RegistrationValidationKind::Reduction => "validated_reduction",
     }
 }
 
@@ -2403,6 +3237,14 @@ fn diagnostic_class_name(class: RegistrationDiagnosticClass) -> &'static str {
         RegistrationDiagnosticClass::UnacceptedActivationEvidence => {
             "unaccepted_activation_evidence"
         }
+        RegistrationDiagnosticClass::UnavailableExistentialRegistration => {
+            "unavailable_existential_registration"
+        }
+        RegistrationDiagnosticClass::BlockedExistentialGuard => "blocked_existential_guard",
+        RegistrationDiagnosticClass::InvalidExistentialGateCandidate => {
+            "invalid_existential_gate_candidate"
+        }
+        RegistrationDiagnosticClass::Recovery => "recovery",
     }
 }
 
@@ -2418,6 +3260,16 @@ fn diagnostic_recovery_name(recovery: RegistrationDiagnosticRecovery) -> &'stati
     match recovery {
         RegistrationDiagnosticRecovery::Normal => "normal",
         RegistrationDiagnosticRecovery::Degraded => "degraded",
+    }
+}
+
+fn existential_gate_status_name(status: ExistentialGateStatus) -> &'static str {
+    match status {
+        ExistentialGateStatus::Satisfied => "satisfied",
+        ExistentialGateStatus::MissingExistential => "missing_existential",
+        ExistentialGateStatus::BlockedGuard => "blocked_guard",
+        ExistentialGateStatus::InvalidCandidate => "invalid_candidate",
+        ExistentialGateStatus::DegradedRecovery => "degraded_recovery",
     }
 }
 
@@ -3418,10 +4270,498 @@ mod tests {
         );
     }
 
+    #[test]
+    fn existential_gate_missing_and_inactive_candidates_do_not_seed_facts() {
+        let fixture = env_fixture();
+        let database = RegistrationDatabase::from_symbol_env(&fixture.env, []);
+
+        let missing = ExistentialGateOutput::evaluate(&database, [gate_input("pattern:T")]);
+        let missing_gate = missing.iter().next().unwrap();
+        assert_eq!(
+            missing_gate.status(),
+            ExistentialGateStatus::MissingExistential
+        );
+        assert!(!missing_gate.may_seed_verified_facts());
+        assert!(missing_gate.facts().is_empty());
+        assert_diagnostic(
+            missing.diagnostics(),
+            "checker.registration.unavailable_existential_registration",
+        );
+
+        let inactive = ExistentialGateOutput::evaluate(
+            &database,
+            [gate_input("pattern:T").with_candidates([
+                gate_candidate(fixture.cluster_b, "pattern:T"),
+                gate_candidate(fixture.malformed_c, "pattern:T"),
+            ])],
+        );
+        let inactive_gate = inactive.iter().next().unwrap();
+        assert_eq!(
+            inactive_gate.status(),
+            ExistentialGateStatus::InvalidCandidate
+        );
+        assert!(!inactive_gate.may_seed_verified_facts());
+        assert_eq!(inactive_gate.registration(), None);
+        assert_diagnostic(
+            inactive.diagnostics(),
+            "checker.registration.invalid_existential_gate_candidate",
+        );
+    }
+
+    #[test]
+    fn existential_gate_pending_and_unaccepted_existentials_do_not_seed_facts() {
+        let fixture = env_fixture();
+
+        let pending = RegistrationDatabase::from_symbol_env_with_validation(
+            &fixture.env,
+            [validation(
+                fixture.cluster_b,
+                existential_pattern(),
+                "goal:existence",
+                "provenance:existence",
+            )],
+            [],
+        );
+        assert_eq!(pending.activated().len(), 0);
+        assert_eq!(
+            pending
+                .pending()
+                .get(CheckerRegistrationId::new(fixture.cluster_b.index()))
+                .unwrap()
+                .status(),
+            PendingRegistrationStatus::AwaitingVerifierAcceptance
+        );
+        let pending_gate = ExistentialGateOutput::evaluate(
+            &pending,
+            [gate_input("pattern:T")
+                .with_candidates([gate_candidate(fixture.cluster_b, "pattern:T")])],
+        );
+        let gate = pending_gate.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::InvalidCandidate);
+        assert!(!gate.may_seed_verified_facts());
+        assert_eq!(gate.registration(), None);
+        assert!(gate.facts().is_empty());
+
+        let unaccepted = RegistrationDatabase::from_symbol_env_with_validation(
+            &fixture.env,
+            [validation(
+                fixture.cluster_b,
+                existential_pattern(),
+                "goal:unaccepted",
+                "provenance:unaccepted",
+            )],
+            [ActivationInput::new(
+                fixture.cluster_b,
+                ResolverRegistrationKind::Cluster,
+                "trigger:existential",
+                "pattern:T",
+                "correctness:existential",
+                "evidence:existential",
+            )],
+        );
+        assert_eq!(unaccepted.activated().len(), 0);
+        assert_rejection(
+            &unaccepted,
+            RejectedRegistrationReason::UnacceptedActivationEvidence,
+            "checker.registration.unaccepted_activation_evidence",
+        );
+        let unaccepted_gate = ExistentialGateOutput::evaluate(
+            &unaccepted,
+            [gate_input("pattern:T")
+                .with_candidates([gate_candidate(fixture.cluster_b, "pattern:T")])],
+        );
+        let gate = unaccepted_gate.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::InvalidCandidate);
+        assert!(!gate.may_seed_verified_facts());
+        assert!(gate.facts().is_empty());
+
+        let rejected = RegistrationDatabase::from_symbol_env_with_validation(
+            &fixture.env,
+            [validation(
+                fixture.cluster_b,
+                existential_pattern(),
+                "goal:rejected",
+                "provenance:rejected",
+            )],
+            [ActivationInput::accepted(
+                fixture.cluster_b,
+                ResolverRegistrationKind::Cluster,
+                "trigger:existential",
+                "pattern:T",
+                "correctness:existential",
+                "evidence:existential",
+            )
+            .with_verifier_status(ActivationVerifierStatus::Rejected)],
+        );
+        assert_eq!(rejected.activated().len(), 0);
+        assert_rejection(
+            &rejected,
+            RejectedRegistrationReason::UnacceptedActivationEvidence,
+            "checker.registration.unaccepted_activation_evidence",
+        );
+        let rejected_gate = ExistentialGateOutput::evaluate(
+            &rejected,
+            [gate_input("pattern:T")
+                .with_candidates([gate_candidate(fixture.cluster_b, "pattern:T")])],
+        );
+        let gate = rejected_gate.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::InvalidCandidate);
+        assert!(!gate.may_seed_verified_facts());
+        assert!(gate.facts().is_empty());
+    }
+
+    #[test]
+    fn activated_existential_gate_requires_accepted_binding_and_visible_guards() {
+        let fixture = env_fixture();
+        let database = RegistrationDatabase::from_symbol_env(
+            &fixture.env,
+            [ActivationInput::accepted(
+                fixture.cluster_b,
+                ResolverRegistrationKind::Cluster,
+                "trigger:existential",
+                "pattern:subset:X",
+                "correctness:existential",
+                "evidence:existential",
+            )
+            .with_validation_kind(RegistrationValidationKind::Existential)
+            .with_fingerprint("fingerprint:existential")],
+        );
+
+        let satisfied = ExistentialGateOutput::evaluate(
+            &database,
+            [gate_input("pattern:subset:X")
+                .with_required_guards([ExistentialGateGuardKey::new("guard:X")])
+                .with_guard_evidence([ExistentialGateGuardEvidence::new(
+                    "guard:X",
+                    TypeFactId::new(2),
+                )])
+                .with_candidates([gate_candidate(fixture.cluster_b, "pattern:subset:X")
+                    .with_fingerprint("fingerprint:existential")])],
+        );
+        let gate = satisfied.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::Satisfied);
+        assert!(gate.may_seed_verified_facts());
+        assert_eq!(
+            gate.registration(),
+            Some(CheckerRegistrationId::new(fixture.cluster_b.index()))
+        );
+        assert_eq!(gate.facts(), &[TypeFactId::new(2)]);
+
+        let duplicate_evidence = ExistentialGateOutput::evaluate(
+            &database,
+            [gate_input("pattern:subset:X")
+                .with_required_guards([ExistentialGateGuardKey::new("guard:X")])
+                .with_guard_evidence([
+                    ExistentialGateGuardEvidence::new("guard:X", TypeFactId::new(7)),
+                    ExistentialGateGuardEvidence::new("guard:X", TypeFactId::new(2)),
+                ])
+                .with_candidates([gate_candidate(fixture.cluster_b, "pattern:subset:X")
+                    .with_fingerprint("fingerprint:existential")])],
+        );
+        let reversed_evidence = ExistentialGateOutput::evaluate(
+            &database,
+            [gate_input("pattern:subset:X")
+                .with_required_guards([ExistentialGateGuardKey::new("guard:X")])
+                .with_guard_evidence([
+                    ExistentialGateGuardEvidence::new("guard:X", TypeFactId::new(2)),
+                    ExistentialGateGuardEvidence::new("guard:X", TypeFactId::new(7)),
+                ])
+                .with_candidates([gate_candidate(fixture.cluster_b, "pattern:subset:X")
+                    .with_fingerprint("fingerprint:existential")])],
+        );
+        assert_eq!(
+            duplicate_evidence.debug_text(),
+            reversed_evidence.debug_text()
+        );
+        assert_eq!(
+            duplicate_evidence.iter().next().unwrap().facts(),
+            &[TypeFactId::new(2)]
+        );
+
+        let hidden_guard = ExistentialGateOutput::evaluate(
+            &database,
+            [gate_input("pattern:subset:X")
+                .with_required_guards([ExistentialGateGuardKey::new("guard:X")])
+                .with_guard_evidence([ExistentialGateGuardEvidence::new(
+                    "guard:X",
+                    TypeFactId::new(2),
+                )
+                .with_visible(false)])
+                .with_candidates([gate_candidate(fixture.cluster_b, "pattern:subset:X")
+                    .with_fingerprint("fingerprint:existential")])],
+        );
+        let gate = hidden_guard.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::BlockedGuard);
+        assert!(!gate.may_seed_verified_facts());
+        assert_diagnostic(
+            hidden_guard.diagnostics(),
+            "checker.registration.blocked_existential_guard",
+        );
+
+        let missing_guard = ExistentialGateOutput::evaluate(
+            &database,
+            [gate_input("pattern:subset:X")
+                .with_required_guards([ExistentialGateGuardKey::new("guard:X")])
+                .with_candidates([gate_candidate(fixture.cluster_b, "pattern:subset:X")
+                    .with_fingerprint("fingerprint:existential")])],
+        );
+        let gate = missing_guard.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::BlockedGuard);
+        assert!(!gate.may_seed_verified_facts());
+        assert!(gate.facts().is_empty());
+
+        let non_consumable_guard = ExistentialGateOutput::evaluate(
+            &database,
+            [gate_input("pattern:subset:X")
+                .with_required_guards([ExistentialGateGuardKey::new("guard:X")])
+                .with_guard_evidence([ExistentialGateGuardEvidence::new(
+                    "guard:X",
+                    TypeFactId::new(2),
+                )
+                .with_consumable(false)])
+                .with_candidates([gate_candidate(fixture.cluster_b, "pattern:subset:X")
+                    .with_fingerprint("fingerprint:existential")])],
+        );
+        let gate = non_consumable_guard.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::BlockedGuard);
+        assert!(!gate.may_seed_verified_facts());
+        assert!(gate.facts().is_empty());
+    }
+
+    #[test]
+    fn existential_gate_rejects_non_existential_or_mismatched_accepted_evidence() {
+        let fixture = env_fixture();
+        let database = RegistrationDatabase::from_symbol_env(
+            &fixture.env,
+            [
+                ActivationInput::accepted(
+                    fixture.cluster_b,
+                    ResolverRegistrationKind::Cluster,
+                    "trigger:existential",
+                    "pattern:subset:X",
+                    "correctness:existential",
+                    "evidence:existential",
+                )
+                .with_validation_kind(RegistrationValidationKind::Existential),
+                ActivationInput::accepted(
+                    fixture.reduction_a,
+                    ResolverRegistrationKind::Reduction,
+                    "trigger:reduction",
+                    "pattern:reduction",
+                    "correctness:reduction",
+                    "evidence:reduction",
+                ),
+            ],
+        );
+
+        let non_existential = ExistentialGateOutput::evaluate(
+            &database,
+            [gate_input("pattern:subset:X").with_candidates([
+                gate_candidate(fixture.cluster_b, "pattern:subset:X")
+                    .with_kind(RegistrationValidationKind::Conditional),
+                gate_candidate(fixture.reduction_a, "pattern:reduction"),
+            ])],
+        );
+        assert_eq!(
+            non_existential.iter().next().unwrap().status(),
+            ExistentialGateStatus::InvalidCandidate
+        );
+
+        let parameter_mismatch = ExistentialGateOutput::evaluate(
+            &database,
+            [gate_input("pattern:subset:Y")
+                .with_candidates([gate_candidate(fixture.cluster_b, "pattern:subset:X")])],
+        );
+        assert_eq!(
+            parameter_mismatch.iter().next().unwrap().status(),
+            ExistentialGateStatus::InvalidCandidate
+        );
+
+        let correctness_mismatch = ExistentialGateOutput::evaluate(
+            &database,
+            [
+                gate_input("pattern:subset:X").with_candidates([gate_candidate(
+                    fixture.cluster_b,
+                    "pattern:subset:X",
+                )
+                .with_correctness("correctness:other")]),
+            ],
+        );
+        assert_eq!(
+            correctness_mismatch.iter().next().unwrap().status(),
+            ExistentialGateStatus::InvalidCandidate
+        );
+
+        let conditional_database = RegistrationDatabase::from_symbol_env(
+            &fixture.env,
+            [ActivationInput::accepted(
+                fixture.cluster_b,
+                ResolverRegistrationKind::Cluster,
+                "trigger:existential",
+                "pattern:subset:X",
+                "correctness:existential",
+                "evidence:existential",
+            )
+            .with_validation_kind(RegistrationValidationKind::Conditional)],
+        );
+        let asserted_existential = ExistentialGateOutput::evaluate(
+            &conditional_database,
+            [gate_input("pattern:subset:X")
+                .with_candidates([gate_candidate(fixture.cluster_b, "pattern:subset:X")])],
+        );
+        assert_eq!(
+            asserted_existential.iter().next().unwrap().status(),
+            ExistentialGateStatus::InvalidCandidate
+        );
+
+        let evidence_mismatch = ExistentialGateOutput::evaluate(
+            &database,
+            [
+                gate_input("pattern:subset:X").with_candidates([gate_candidate(
+                    fixture.cluster_b,
+                    "pattern:subset:X",
+                )
+                .with_activation_evidence("evidence:other")]),
+            ],
+        );
+        assert_eq!(
+            evidence_mismatch.iter().next().unwrap().status(),
+            ExistentialGateStatus::InvalidCandidate
+        );
+
+        let trigger_mismatch = ExistentialGateOutput::evaluate(
+            &database,
+            [
+                gate_input("pattern:subset:X").with_candidates([gate_candidate(
+                    fixture.cluster_b,
+                    "pattern:subset:X",
+                )
+                .with_trigger("trigger:other")]),
+            ],
+        );
+        assert_eq!(
+            trigger_mismatch.iter().next().unwrap().status(),
+            ExistentialGateStatus::InvalidCandidate
+        );
+
+        let attribute_mismatch = ExistentialGateOutput::evaluate(
+            &database,
+            [
+                gate_input("pattern:subset:X").with_candidates([gate_candidate(
+                    fixture.cluster_b,
+                    "pattern:subset:X",
+                )
+                .with_attributes(Vec::<RegistrationAttributeKey>::new())]),
+            ],
+        );
+        assert_eq!(
+            attribute_mismatch.iter().next().unwrap().status(),
+            ExistentialGateStatus::InvalidCandidate
+        );
+
+        let fingerprinted_database = RegistrationDatabase::from_symbol_env(
+            &fixture.env,
+            [ActivationInput::accepted(
+                fixture.cluster_b,
+                ResolverRegistrationKind::Cluster,
+                "trigger:existential",
+                "pattern:subset:X",
+                "correctness:existential",
+                "evidence:existential",
+            )
+            .with_validation_kind(RegistrationValidationKind::Existential)
+            .with_fingerprint("fingerprint:existential")],
+        );
+        let fingerprint_mismatch = ExistentialGateOutput::evaluate(
+            &fingerprinted_database,
+            [
+                gate_input("pattern:subset:X").with_candidates([gate_candidate(
+                    fixture.cluster_b,
+                    "pattern:subset:X",
+                )
+                .with_fingerprint("fingerprint:other")]),
+            ],
+        );
+        assert_eq!(
+            fingerprint_mismatch.iter().next().unwrap().status(),
+            ExistentialGateStatus::InvalidCandidate
+        );
+    }
+
+    #[test]
+    fn existential_gate_degraded_recovery_and_ordering_are_deterministic() {
+        let fixture = env_fixture();
+        let database = RegistrationDatabase::from_symbol_env(
+            &fixture.env,
+            [ActivationInput::accepted(
+                fixture.cluster_b,
+                ResolverRegistrationKind::Cluster,
+                "trigger:existential",
+                "pattern:T",
+                "correctness:existential",
+                "evidence:existential",
+            )
+            .with_validation_kind(RegistrationValidationKind::Existential)],
+        );
+        let inputs = [
+            gate_input_with_range("pattern:Z", 60, 61),
+            gate_input_with_range("pattern:T", 50, 51)
+                .with_recovery(ExistentialGateRecovery::Degraded)
+                .with_candidates([gate_candidate(fixture.cluster_b, "pattern:T")]),
+        ];
+        let first = ExistentialGateOutput::evaluate(&database, inputs.clone()).debug_text();
+        let second =
+            ExistentialGateOutput::evaluate(&database, inputs.into_iter().rev()).debug_text();
+
+        assert_eq!(first, second);
+        assert_ordered_fragments(
+            &first,
+            &[
+                "gate#0 status=degraded_recovery seed=false",
+                "gate#1 status=missing_existential seed=false",
+            ],
+        );
+        assert!(first.contains("checker.registration.degraded_existential_gate"));
+
+        let tied_inputs = [
+            gate_input_with_owner_and_attrs(
+                "pattern:T",
+                70,
+                71,
+                TypedSiteRef::Role {
+                    node: TypedNodeId::new(2),
+                    role: TypeRole::new("zeta_gate"),
+                },
+                [RegistrationAttributeKey::new("attr:Z")],
+            )
+            .with_candidates([gate_candidate(fixture.cluster_b, "pattern:T")]),
+            gate_input_with_owner_and_attrs(
+                "pattern:T",
+                70,
+                71,
+                TypedSiteRef::Role {
+                    node: TypedNodeId::new(1),
+                    role: TypeRole::new("alpha_gate"),
+                },
+                [RegistrationAttributeKey::new("attr:A")],
+            )
+            .with_candidates([gate_candidate(fixture.cluster_b, "pattern:T")]),
+        ];
+        let first = ExistentialGateOutput::evaluate(&database, tied_inputs.clone()).debug_text();
+        let second =
+            ExistentialGateOutput::evaluate(&database, tied_inputs.into_iter().rev()).debug_text();
+        assert_eq!(first, second);
+        assert_ordered_fragments(
+            &first,
+            &["owner=node#1:alpha_gate", "owner=node#2:zeta_gate"],
+        );
+    }
+
     struct EnvFixture {
         env: SymbolEnv,
         reduction_a: ResolverRegistrationId,
         cluster_b: ResolverRegistrationId,
+        malformed_c: ResolverRegistrationId,
         contribution_a: SourceContributionId,
         contribution_b: SourceContributionId,
         contribution_c: SourceContributionId,
@@ -3463,6 +4803,15 @@ mod tests {
                 .any(|(_, diagnostic)| diagnostic.message_key() == message_key),
             "missing diagnostic {message_key} in\n{}",
             database.debug_text()
+        );
+    }
+
+    fn assert_diagnostic(diagnostics: &RegistrationDiagnosticTable, message_key: &str) {
+        assert!(
+            diagnostics
+                .canonical_iter()
+                .any(|(_, diagnostic)| diagnostic.message_key() == message_key),
+            "missing diagnostic {message_key}"
         );
     }
 
@@ -3555,6 +4904,53 @@ mod tests {
             pattern,
             goal,
             provenance,
+        )
+    }
+
+    fn gate_input(pattern: &str) -> ExistentialGateInput {
+        gate_input_with_range(pattern, 50, 51)
+    }
+
+    fn gate_input_with_range(pattern: &str, start: usize, end: usize) -> ExistentialGateInput {
+        gate_input_with_owner_and_attrs(
+            pattern,
+            start,
+            end,
+            TypedSiteRef::Role {
+                node: TypedNodeId::new(0),
+                role: TypeRole::new("existential_gate"),
+            },
+            [RegistrationAttributeKey::new("attr:inhabited")],
+        )
+    }
+
+    fn gate_input_with_owner_and_attrs(
+        pattern: &str,
+        start: usize,
+        end: usize,
+        owner: TypedSiteRef,
+        attributes: impl IntoIterator<Item = RegistrationAttributeKey>,
+    ) -> ExistentialGateInput {
+        ExistentialGateInput::new(
+            owner,
+            range(source_id(), start, end),
+            pattern,
+            "trigger:existential",
+            attributes,
+        )
+    }
+
+    fn gate_candidate(
+        resolver_registration: ResolverRegistrationId,
+        pattern: &str,
+    ) -> ExistentialGateCandidate {
+        ExistentialGateCandidate::new(
+            CheckerRegistrationId::new(resolver_registration.index()),
+            pattern,
+            "correctness:existential",
+            "evidence:existential",
+            "trigger:existential",
+            [RegistrationAttributeKey::new("attr:inhabited")],
         )
     }
 
@@ -3699,6 +5095,7 @@ mod tests {
             env: SymbolEnv::new(module, indexes),
             reduction_a,
             cluster_b,
+            malformed_c,
             contribution_a,
             contribution_b,
             contribution_c,

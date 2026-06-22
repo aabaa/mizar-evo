@@ -345,7 +345,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       activation input を rejected にする。source extraction、accepted-status
       production/import、artifact reuse、active `.miz` semantic fixture は deferred のまま。
 
-20. **attribute 付き型使用の existential ゲート。** [ ]
+20. **attribute 付き型使用の existential ゲート。** [x]
     - attribute 付き型は existential registration が非空性を正当化する
       箇所でのみ使用可能であることを強制する（アーキテクチャ 04
       「Existential Registrations Gate Attributed Type Use」）。
@@ -355,6 +355,14 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       seed しない。
     - 依存: 19。仕様: `registration_resolution.md`、
       [17.clusters_and_registrations.md](../../../spec/ja/17.clusters_and_registrations.md)。
+    - task 20 で完了: `ExistentialGateOutput` は explicit な checker-owned gate
+      payload を activated existential registration に照らして評価し、candidate を
+      accepted validation kind と pattern / correctness / evidence / fingerprint record に
+      bind し、visible consumable guard fact evidence を要求し、full accepted
+      attributed-type pattern を match し、deterministic result precedence を適用し、
+      satisfied normal gate だけが verified fact を seed できることを保証する。source
+      extraction、artifact reuse、accepted-status production、active `.miz` gate fixture は
+      deferred のまま。
 
 ### 第 3 波: オーバーロード解決（phase 8）
 

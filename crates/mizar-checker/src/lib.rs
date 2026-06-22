@@ -10,9 +10,10 @@
 //! obligation checking over checker-owned payloads; task 11 exposes
 //! deterministic type-fact queries; task 14 exposes registration database data
 //! shapes; task 16 exposes cluster closure and trace recording; task 19
-//! exposes pending-registration validation and activation gating. Later
-//! overload resolution and resolved typed AST APIs land in later task-scoped
-//! modules after their design specs are written.
+//! exposes pending-registration validation and activation gating; task 20
+//! exposes existential gates for attributed type use. Later overload resolution
+//! and resolved typed AST APIs land in later task-scoped modules after their
+//! design specs are written.
 
 pub mod binding_env;
 pub mod cluster_trace;
