@@ -302,6 +302,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
             || path == Path::new("src/binding_env.rs")
             || path == Path::new("src/type_checker.rs")
             || path == Path::new("src/registration_resolution.rs")
+            || path == Path::new("src/cluster_trace.rs")
     ) {
         return true;
     }
@@ -312,6 +313,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
                 | "pub mod binding_env;"
                 | "pub mod type_checker;"
                 | "pub mod registration_resolution;"
+                | "pub mod cluster_trace;"
         )
 }
 

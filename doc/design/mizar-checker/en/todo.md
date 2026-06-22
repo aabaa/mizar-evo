@@ -294,7 +294,7 @@ Keep `cargo test -p mizar-checker` green after each task (see
       planned tests for tasks 16-18. Source behavior remains deferred to task
       16, and real semantic payloads remain gated by MC-G021.
 
-16. **Cluster resolution closure with trace recording.** [ ]
+16. **Cluster resolution closure with trace recording.** [x]
     - Implement attribute propagation to closure (architecture 04 Step 5)
       with deterministic traversal, recording every application into
       `ResolutionTrace`.
@@ -302,6 +302,13 @@ Keep `cargo test -p mizar-checker` green after each task (see
       deterministic application order; subtype-compatible conditional
       clusters; pending/rejected/unaccepted registrations do not fire.
     - Deps: 14, 15. Spec: `cluster_trace.md`, `registration_resolution.md`.
+    - Completed by task 16: `cluster_trace` exposes a checker-owned cluster
+      closure data layer over explicit `ClusterRuleInput`/`ClusterFactInput`
+      payloads and task-14 activated registrations. It records replayable
+      cluster steps, derived closure facts with trace provenance, deterministic
+      traversal profiles, and checker-local diagnostics without reductions,
+      artifact emission, `TypeFactTable` mutation, or fabricated resolver-shell
+      semantics.
 
 17. **Cluster loop detection and bounded saturation.** [ ]
     - Detect cluster loops and emit bounded-saturation diagnostics instead of

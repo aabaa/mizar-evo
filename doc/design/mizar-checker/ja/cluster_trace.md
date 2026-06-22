@@ -76,6 +76,39 @@ pending、rejected、recovered、malformed、unaccepted registration は trace i
 後続 operation がそれらを trace builder に使わせようとした場合、active step を捏造せず、
 deterministic diagnostic で却下する。
 
+### task 16: cluster closure data layer
+
+task 16 はこの model の cluster 側を `src/cluster_trace.rs` として実装する。
+
+最初の実装は `ClusterTraceBuilder`、`ClusterRuleInput`、`ClusterFactInput`、
+`ClusterClosureOutput`、`ResolutionTrace`、cluster step、closure fact table、
+traversal profile、replay report、checker-local diagnostic を公開する。builder は
+task-14 `RegistrationDatabase` と explicit checker-owned rule / fact payload を消費する。
+resolver registration kind が `Cluster` で、activation trigger と activation
+fingerprint、または fingerprint が存在しない場合の accepted pattern fallback が
+checker-owned rule payload と一致する activated registration だけを発火させる。
+
+derived fact は checker-owned `ClusterFactTable` に記録し、canonical
+`ClusterFactFingerprint` で dedup する。すべての derived fact は
+`ClusterFactProvenance::TraceStep` を持つ。この task は phase-6 `TypeFactTable` を直接
+mutate しない。traced cluster fact を共有 type fact table に写す処理は、source-to-checker
+および registration payload seam が typed subject / predicate を捏造なしで供給できるまで
+deferred のままである。
+
+task 16 は pending、rejected、malformed、recovered、unknown、non-cluster、
+existential-gating、trigger mismatch、fingerprint mismatch の rule input を checker-local
+diagnostic で拒否する。diagnostic は `ResolutionTrace` schema の外側に保存する。emit される
+trace は cluster step、derived fact、reduction step count が zero の traversal profile を
+含む。
+replay は active な task-14 registration database を受け取り、derived fact を replay
+する前に accepted cluster identity、resolver id、fingerprint / pattern payload、audit
+key を再検証する。
+
+task 16 は reduction step、loop detection、bounded-saturation failure、contradiction
+failure、artifact JSON emission、cache reader、existential gating、proof acceptance、
+opaque resolver-shell parsing を実装しない。それらは tasks 17-20 と artifact/build
+integration が所有する。
+
 ## cluster step
 
 cluster step は architecture の `ClusterStep` field を精緻化する。

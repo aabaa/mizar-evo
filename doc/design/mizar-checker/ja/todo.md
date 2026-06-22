@@ -282,13 +282,19 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       diagnostic、tasks 16-18 の planned test を固定する。source behavior は task 16
       まで deferred のままで、real semantic payload は MC-G021 によって gate される。
 
-16. **trace 記録付き cluster 解決閉包。** [ ]
+16. **trace 記録付き cluster 解決閉包。** [x]
     - 決定的トラバーサルで attribute 伝播の閉包を実装し（アーキテクチャ 04
       Step 5）、すべての適用を `ResolutionTrace` に記録する。
     - テスト: 閉包フィクスチャ。trace の再生が同じ導出事実に到達する。
       決定的な適用順。subtype-compatible conditional cluster。
       pending/rejected/unaccepted registration は発火しない。
     - 依存: 14、15。仕様: `cluster_trace.md`、`registration_resolution.md`。
+    - task 16 で完了: `cluster_trace` は explicit `ClusterRuleInput` /
+      `ClusterFactInput` payload と task-14 activated registration 上の checker-owned
+      cluster closure data layer を公開する。replayable cluster step、trace provenance
+      付き derived closure fact、deterministic traversal profile、checker-local diagnostic
+      を記録し、reduction、artifact emission、`TypeFactTable` mutation、resolver shell
+      semantic の捏造は行わない。
 
 17. **cluster ループ検出と有界飽和。** [ ]
     - cluster ループを検出し、発散する代わりに有界飽和診断を発行する

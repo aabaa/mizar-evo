@@ -82,6 +82,40 @@ trace inputs. If a later operation asks the trace builder to use one, the
 operation is rejected with a deterministic diagnostic instead of fabricating an
 active step.
 
+### Task 16: Cluster Closure Data Layer
+
+Task 16 implements the cluster side of this model as `src/cluster_trace.rs`.
+
+The first implementation exposes `ClusterTraceBuilder`, `ClusterRuleInput`,
+`ClusterFactInput`, `ClusterClosureOutput`, `ResolutionTrace`, cluster steps,
+closure fact tables, traversal profiles, replay reports, and checker-local
+diagnostics. The builder consumes a task-14 `RegistrationDatabase` plus
+explicit checker-owned rule and fact payloads. It fires only activated resolver
+registrations whose kind is `Cluster` and whose activation trigger plus
+activation fingerprint, or accepted pattern fallback when no fingerprint is
+present, matches the checker-owned rule payload.
+
+Derived facts are recorded in a checker-owned `ClusterFactTable`, deduplicated
+by canonical `ClusterFactFingerprint`, and every derived fact has
+`ClusterFactProvenance::TraceStep`. This task does not mutate the phase-6
+`TypeFactTable` directly; mapping traced cluster facts into the shared type
+fact table remains deferred until the source-to-checker and registration
+payload seams can provide typed subjects and predicates without fabrication.
+
+Task 16 rejects pending, rejected, malformed, recovered, unknown, non-cluster,
+existential-gating, trigger-mismatched, and fingerprint-mismatched rule inputs
+with checker-local diagnostics. Diagnostics are stored outside the
+`ResolutionTrace` schema. The emitted trace contains cluster steps, derived
+facts, and a traversal profile with reduction step count fixed to zero.
+Replay takes the active task-14 registration database and revalidates the
+accepted cluster identity, resolver id, fingerprint/pattern payload, and audit
+key before replaying derived facts.
+
+Task 16 deliberately does not implement reduction steps, loop detection,
+bounded-saturation failure, contradiction failure, artifact JSON emission,
+cache readers, existential gating, proof acceptance, or opaque resolver-shell
+parsing. Those remain owned by tasks 17-20 and artifact/build integration.
+
 ## Cluster Steps
 
 A cluster step refines the architecture `ClusterStep` fields:
