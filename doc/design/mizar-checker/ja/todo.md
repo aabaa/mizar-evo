@@ -430,11 +430,19 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       する。新しい type inference、fact derivation、cluster firing、root selection、
       view insertion は行わない。
 
-25. **specificity グラフの構築。** [ ]
+25. **specificity グラフの構築。** [x]
     - viable 候補上にサイトごとの specificity グラフを構築する。
     - テスト: 順序フィクスチャ。比較不能な組は比較不能のまま。決定的な
       グラフレンダリング。
     - 依存: 24。仕様: `overload_resolution.md`（specificity の節）。
+    - task 25 で完了: `SpecificityGraphOutput::build` は
+      `CandidateViabilityOutput` と、viable candidate id で key 付けされた explicit
+      checker-owned pairwise comparison payload を消費する。site ごとに 1 graph、viable
+      concrete candidate ごとに 1 node、same-site pair の comparison row、accepted
+      at-least-as-specific relation だけの directed edge、edge を持たない explicit
+      incomparable row、missing / duplicate / unknown / cross-site comparison payload 用の
+      stable diagnostic を出力する。fact derivation、ordering 用の result type 参照、
+      root-selection tie-breaker 適用、refinement join、view insertion は行わない。
 
 26. **根の選択、refinement の結合、view の挿入。** [ ]
     - オーバーロード根を選択し、整合する refinement グループを結合し、

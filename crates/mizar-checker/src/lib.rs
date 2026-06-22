@@ -14,9 +14,10 @@
 //! exposes existential gates for attributed type use; task 22 exposes
 //! checker-owned overload site and candidate collection; task 23 exposes
 //! checker-owned template expansion over collected candidates; task 24 exposes
-//! checker-owned viability filtering over explicit recorded-evidence payloads.
-//! Later overload resolution phases and resolved typed AST APIs land in later
-//! task-scoped modules after their design specs are written.
+//! checker-owned viability filtering over explicit recorded-evidence payloads;
+//! task 25 exposes per-site specificity graph construction over viable
+//! candidates. Later overload resolution phases and resolved typed AST APIs
+//! land in later task-scoped modules after their design specs are written.
 
 pub mod binding_env;
 pub mod cluster_trace;

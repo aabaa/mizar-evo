@@ -457,11 +457,20 @@ Keep `cargo test -p mizar-checker` green after each task (see
       avoids new type inference, fact derivation, cluster firing, root
       selection, or view insertion.
 
-25. **Specificity graph construction.** [ ]
+25. **Specificity graph construction.** [x]
     - Build per-site specificity graphs over viable candidates.
     - Tests: ordering fixtures; incomparable pairs stay incomparable;
       deterministic graph rendering.
     - Deps: 24. Spec: `overload_resolution.md` (specificity section).
+    - Completed by task 25: `SpecificityGraphOutput::build` consumes
+      `CandidateViabilityOutput` and explicit checker-owned pairwise
+      comparison payloads keyed by viable candidate ids. It emits one graph per
+      site, one node per viable concrete candidate, comparison rows for same-
+      site pairs, directed edges only for accepted at-least-as-specific
+      relations, explicit incomparable rows without edges, and stable
+      diagnostics for missing, duplicate, unknown, and cross-site comparison
+      payloads. It does not derive facts, inspect result types for ordering,
+      apply root-selection tie-breakers, join refinements, or insert views.
 
 26. **Root selection, refinement joins, and view insertion.** [ ]
     - Select overload roots, join coherent refinement groups, insert `qua`

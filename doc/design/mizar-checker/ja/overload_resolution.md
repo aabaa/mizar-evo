@@ -320,6 +320,21 @@ comparison は normalized parameter type と recorded closure fact を使う。
 specificity graph rendering は deterministic である。edge は reason key を持ち、diagnostic と
 `@show_resolution` が comparison の成功、失敗、blocked 理由を説明できるようにする。
 
+### task 25 specificity graph data layer
+
+`SpecificityGraphOutput::build` は `CandidateViabilityOutput` と、viable candidate id で key
+付けされた explicit checker-owned pairwise comparison payload を消費する。各 payload は left
+candidate が at least as specific か、right candidate が at least as specific か、両者が
+equivalent か、その pair が incomparable か、または comparison が blocked/deferred かを記録する。
+task 25 は overload site ごとに 1 graph、viable concrete candidate ごとに 1 node、observed または
+missing same-site pair ごとの comparison row、accepted at-least-as-specific relation だけの
+directed edge を記録する。
+
+task 25 は closure fact の derivation、return type の参照、root selection、tie-breaker 適用、
+refinement join、view insertion を行わない。missing comparison payload、duplicate pair payload、
+cross-site pair payload、unknown candidate id は黙って消費せず stable reason で診断する。
+incomparable pair は explicit comparison row のまま残り、edge を作らない。
+
 ## root selection and refinement joins
 
 selected ordinary root は、allowed tie-breaker 適用後の per-site specificity graph における
@@ -425,10 +440,11 @@ deterministic rendering requirements:
 
 ## deferred and external gaps
 
-task 24 は以下を意図的に deferred のままにする。
+task 25 は以下を意図的に deferred のままにする。
 
-- tasks 25-26 の Rust implementation;
-- overload site、candidate、template payload、source `qua` path、viability evidence、scheme/theorem role の
+- task 26 の Rust implementation;
+- overload site、candidate、template payload、source `qua` path、viability evidence、
+  specificity comparison evidence、scheme/theorem role の
   AST-wide source-to-checker extraction;
 - MC-G006 が記録する unsupported template / scheme role の parser/resolver exposure;
 - public diagnostic-code allocation;
@@ -473,9 +489,10 @@ task 24 viability:
 task 25 specificity:
 
 - comparable、equivalent、incomparable candidate pair;
+- edge を作らない blocked / deferred comparison row;
 - per-site graph rendering;
-- allowed tie-breaker だけを使うこと;
-- return type が root ordering に参加しないこと。
+- missing、duplicate、unknown、cross-site comparison payload diagnostic;
+- root selection、tie-breaker application、return-type-based ordering を行わないこと。
 
 task 26 selection, refinement, and views:
 

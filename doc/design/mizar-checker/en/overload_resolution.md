@@ -349,6 +349,24 @@ Specificity graph rendering is deterministic. Edges carry reason keys so
 diagnostics and `@show_resolution` can explain why comparisons succeeded,
 failed, or were blocked.
 
+### Task 25 Specificity Graph Data Layer
+
+`SpecificityGraphOutput::build` consumes `CandidateViabilityOutput` plus
+explicit checker-owned pairwise comparison payloads keyed by viable candidate
+ids. Each payload records whether the left candidate is at least as specific,
+the right candidate is at least as specific, both are equivalent, the pair is
+incomparable, or the comparison is blocked/deferred. Task 25 records one graph
+per overload site, one node per viable concrete candidate, comparison rows for
+observed or missing same-site pairs, and directed edges only for accepted
+at-least-as-specific relationships.
+
+Task 25 does not derive closure facts, inspect return types, select roots,
+apply tie-breakers, join refinements, or insert views. Missing comparison
+payloads, duplicate pair payloads, cross-site pair payloads, and unknown
+candidate ids are diagnosed with stable reasons instead of being silently
+consumed. Incomparable pairs remain explicit comparison rows and do not create
+edges.
+
 ## Root Selection And Refinement Joins
 
 The selected ordinary root is the unique maximal root in the per-site
@@ -460,11 +478,12 @@ Deterministic rendering requirements:
 
 ## Deferred And External Gaps
 
-Task 24 deliberately keeps the following deferred:
+Task 25 deliberately keeps the following deferred:
 
-- Rust implementation for tasks 25-26;
+- Rust implementation for task 26;
 - AST-wide source-to-checker extraction of overload sites, candidates,
-  template payloads, source `qua` paths, viability evidence, and
+  template payloads, source `qua` paths, viability evidence, specificity
+  comparison evidence, and
   scheme/theorem roles;
 - parser/resolver exposure for unsupported template and scheme roles noted by
   MC-G006;
@@ -512,9 +531,10 @@ Task 24 viability:
 Task 25 specificity:
 
 - comparable, equivalent, and incomparable candidate pairs;
+- blocked and deferred comparison rows without edges;
 - per-site graph rendering;
-- allowed tie-breakers only;
-- return type never participates in root ordering.
+- missing, duplicate, unknown, and cross-site comparison payload diagnostics;
+- no root selection, tie-breaker application, or return-type-based ordering.
 
 Task 26 selection, refinement, and views:
 

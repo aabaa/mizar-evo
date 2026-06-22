@@ -59,6 +59,9 @@ dense_id!(OverloadCandidateId);
 dense_id!(OverloadDiagnosticId);
 dense_id!(TemplateExpansionId);
 dense_id!(CandidateViabilityId);
+dense_id!(SpecificityGraphId);
+dense_id!(SpecificityComparisonId);
+dense_id!(SpecificityEdgeId);
 
 string_key!(OverloadSiteKey);
 string_key!(OverloadNameKey);
@@ -68,6 +71,7 @@ string_key!(TemplateInstantiationKey);
 string_key!(TemplateParameterKey);
 string_key!(QuaPathKey);
 string_key!(ViabilityEvidenceKey);
+string_key!(SpecificityReasonKey);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OverloadCollectionOutput {
@@ -169,6 +173,42 @@ impl CandidateViabilityOutput {
         let mut output = String::from("candidate-viability-debug-v1\n");
         write_candidates(&mut output, &self.candidates);
         write_candidate_viability(&mut output, &self.decisions);
+        write_diagnostics(&mut output, &self.diagnostics);
+        output
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SpecificityGraphOutput {
+    candidates: OverloadCandidateTable,
+    graphs: SpecificityGraphTable,
+    diagnostics: OverloadDiagnosticTable,
+}
+
+impl SpecificityGraphOutput {
+    pub fn build(
+        viability: &CandidateViabilityOutput,
+        comparisons: impl IntoIterator<Item = SpecificityComparisonInput>,
+    ) -> Self {
+        SpecificityGraphBuilder::new(viability, comparisons).finish()
+    }
+
+    pub const fn candidates(&self) -> &OverloadCandidateTable {
+        &self.candidates
+    }
+
+    pub const fn graphs(&self) -> &SpecificityGraphTable {
+        &self.graphs
+    }
+
+    pub const fn diagnostics(&self) -> &OverloadDiagnosticTable {
+        &self.diagnostics
+    }
+
+    pub fn debug_text(&self) -> String {
+        let mut output = String::from("specificity-graph-debug-v1\n");
+        write_candidates(&mut output, &self.candidates);
+        write_specificity_graphs(&mut output, &self.graphs);
         write_diagnostics(&mut output, &self.diagnostics);
         output
     }
@@ -796,6 +836,127 @@ pub enum CandidateBlockedReasonKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SpecificityComparisonInput {
+    pub left: OverloadCandidateId,
+    pub right: OverloadCandidateId,
+    pub status: SpecificityComparisonStatus,
+    pub reasons: Vec<SpecificityReasonKey>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum SpecificityComparisonStatus {
+    LeftAtLeastRight,
+    RightAtLeastLeft,
+    Equivalent,
+    Incomparable,
+    Blocked(SpecificityBlockedReasonKind),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum SpecificityBlockedReasonKind {
+    DeferredExternalDependency,
+    MissingRecordedFacts,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SpecificityGraph {
+    pub id: SpecificityGraphId,
+    pub site: OverloadSiteId,
+    pub nodes: Vec<SpecificityNode>,
+    pub comparisons: Vec<SpecificityComparison>,
+    pub edges: Vec<SpecificityEdge>,
+    pub diagnostics: Vec<OverloadDiagnosticId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct SpecificityGraphTable {
+    entries: Vec<SpecificityGraph>,
+}
+
+impl SpecificityGraphTable {
+    pub const fn new() -> Self {
+        Self {
+            entries: Vec::new(),
+        }
+    }
+
+    pub fn get(&self, id: SpecificityGraphId) -> Option<&SpecificityGraph> {
+        self.entries.get(id.index())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (SpecificityGraphId, &SpecificityGraph)> {
+        self.entries.iter().map(|entry| (entry.id, entry))
+    }
+
+    pub fn canonical_iter(&self) -> impl Iterator<Item = (SpecificityGraphId, &SpecificityGraph)> {
+        let mut entries = self.entries.iter().collect::<Vec<_>>();
+        entries.sort_by_key(|entry| specificity_graph_order_key(entry));
+        entries.into_iter().map(|entry| (entry.id, entry))
+    }
+
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    fn push(&mut self, graph: SpecificityGraph) {
+        self.entries.push(graph);
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SpecificityNode {
+    pub candidate: OverloadCandidateId,
+    pub ordinary_root: SymbolId,
+    pub parameters: Vec<NormalizedTypeId>,
+    pub origin: CandidateOrigin,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SpecificityComparison {
+    pub id: SpecificityComparisonId,
+    pub left: OverloadCandidateId,
+    pub right: OverloadCandidateId,
+    pub status: SpecificityComparisonOutcome,
+    pub reasons: Vec<SpecificityReasonKey>,
+    pub diagnostics: Vec<OverloadDiagnosticId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum SpecificityComparisonOutcome {
+    LeftAtLeastRight,
+    RightAtLeastLeft,
+    Equivalent,
+    Incomparable,
+    Blocked(SpecificityFailureReason),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SpecificityEdge {
+    pub id: SpecificityEdgeId,
+    pub from: OverloadCandidateId,
+    pub to: OverloadCandidateId,
+    pub reasons: Vec<SpecificityReasonKey>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum SpecificityFailureReason {
+    MissingComparisonPayload,
+    DuplicateComparisonPayload,
+    CrossSiteComparison,
+    UnknownCandidate,
+    DeferredExternalDependency,
+    MissingRecordedFacts,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OverloadDiagnostic {
     pub id: OverloadDiagnosticId,
     pub site: Option<OverloadSiteId>,
@@ -904,6 +1065,7 @@ pub enum OverloadDiagnosticClass {
     UnsupportedCandidateRole,
     TemplateExpansion,
     Viability,
+    Specificity,
     Recovery,
     ExternalDependencyGap,
 }
@@ -975,6 +1137,9 @@ type DiagnosticOutputOrderKey = (
 );
 type TemplateExpansionOrderKey = (usize, String, usize);
 type CandidateViabilityOrderKey = (usize, usize);
+type SpecificityGraphOrderKey = (usize, usize);
+type SpecificityComparisonKey = (usize, usize);
+type SpecificityEdgeOrderKey = (usize, usize, usize);
 
 struct SiteInputWithOrder {
     input: OverloadSiteInput,
@@ -2085,6 +2250,323 @@ fn parameter_mismatch(
     })
 }
 
+struct SpecificityGraphBuilder {
+    comparisons: BTreeMap<SpecificityComparisonKey, SpecificityComparisonInput>,
+    duplicate_comparisons: BTreeSet<SpecificityComparisonKey>,
+    candidates: OverloadCandidateTable,
+    site_candidates: BTreeMap<OverloadSiteId, Vec<OverloadCandidateId>>,
+    graphs: SpecificityGraphTable,
+    diagnostics: OverloadDiagnosticTable,
+}
+
+impl SpecificityGraphBuilder {
+    fn new(
+        viability: &CandidateViabilityOutput,
+        comparisons: impl IntoIterator<Item = SpecificityComparisonInput>,
+    ) -> Self {
+        let mut comparison_map = BTreeMap::new();
+        let mut duplicate_comparisons = BTreeSet::new();
+        for comparison in comparisons {
+            let key = specificity_comparison_key(comparison.left, comparison.right);
+            if comparison_map.insert(key, comparison).is_some() {
+                duplicate_comparisons.insert(key);
+            }
+        }
+        let mut site_candidates = BTreeMap::<OverloadSiteId, Vec<OverloadCandidateId>>::new();
+        for (_, decision) in viability.decisions().canonical_iter() {
+            let candidates = site_candidates.entry(decision.site).or_default();
+            if let Some(candidate) = decision.output_candidate {
+                candidates.push(candidate);
+            }
+        }
+        Self {
+            comparisons: comparison_map,
+            duplicate_comparisons,
+            candidates: viability.candidates().clone(),
+            site_candidates,
+            graphs: SpecificityGraphTable::new(),
+            diagnostics: viability.diagnostics().clone(),
+        }
+    }
+
+    fn finish(mut self) -> SpecificityGraphOutput {
+        self.insert_global_input_diagnostics();
+        for (site, candidates) in std::mem::take(&mut self.site_candidates) {
+            self.build_site_graph(site, &candidates);
+        }
+        SpecificityGraphOutput {
+            candidates: self.candidates,
+            graphs: self.graphs,
+            diagnostics: self.diagnostics,
+        }
+    }
+
+    fn insert_global_input_diagnostics(&mut self) {
+        let candidate_ids = self
+            .candidates
+            .iter()
+            .map(|(id, _)| id)
+            .collect::<BTreeSet<_>>();
+        let duplicate_inputs = self
+            .duplicate_comparisons
+            .iter()
+            .copied()
+            .collect::<Vec<_>>();
+        for (left, right) in duplicate_inputs {
+            let left = self.candidates.get(OverloadCandidateId::new(left));
+            let right = self.candidates.get(OverloadCandidateId::new(right));
+            if !matches!((left, right), (Some(left), Some(right)) if left.site == right.site) {
+                self.insert_specificity_diagnostic(
+                    None,
+                    SpecificityFailureReason::DuplicateComparisonPayload,
+                );
+            }
+        }
+        let inputs = self.comparisons.values().cloned().collect::<Vec<_>>();
+        for input in inputs {
+            let left = self.candidates.get(input.left);
+            let right = self.candidates.get(input.right);
+            match (left, right) {
+                (Some(left), Some(right)) if left.site != right.site => {
+                    self.insert_specificity_diagnostic(
+                        None,
+                        SpecificityFailureReason::CrossSiteComparison,
+                    );
+                }
+                _ if !candidate_ids.contains(&input.left)
+                    || !candidate_ids.contains(&input.right) =>
+                {
+                    self.insert_specificity_diagnostic(
+                        None,
+                        SpecificityFailureReason::UnknownCandidate,
+                    );
+                }
+                _ => {}
+            }
+        }
+    }
+
+    fn build_site_graph(&mut self, site: OverloadSiteId, candidates: &[OverloadCandidateId]) {
+        let graph_id = SpecificityGraphId::new(self.graphs.len());
+        let nodes = candidates
+            .iter()
+            .filter_map(|candidate| {
+                self.candidates
+                    .get(*candidate)
+                    .map(|entry| (candidate, entry))
+            })
+            .map(|(candidate, entry)| SpecificityNode {
+                candidate: *candidate,
+                ordinary_root: entry.ordinary_root.clone(),
+                parameters: entry.parameters.clone(),
+                origin: entry.origin.clone(),
+            })
+            .collect::<Vec<_>>();
+        let mut comparisons = Vec::new();
+        let mut edges = Vec::new();
+        let mut diagnostics = Vec::new();
+
+        for left_index in 0..candidates.len() {
+            for right_index in (left_index + 1)..candidates.len() {
+                let left = candidates[left_index];
+                let right = candidates[right_index];
+                let comparison_id = SpecificityComparisonId::new(comparisons.len());
+                let (comparison, new_edges, new_diagnostics) =
+                    self.evaluate_pair(site, comparison_id, left, right);
+                for mut edge in new_edges {
+                    edge.id = SpecificityEdgeId::new(edges.len());
+                    edges.push(edge);
+                }
+                diagnostics.extend(new_diagnostics.iter().copied());
+                comparisons.push(comparison);
+            }
+        }
+
+        self.graphs.push(SpecificityGraph {
+            id: graph_id,
+            site,
+            nodes,
+            comparisons,
+            edges,
+            diagnostics,
+        });
+    }
+
+    fn evaluate_pair(
+        &mut self,
+        site: OverloadSiteId,
+        comparison_id: SpecificityComparisonId,
+        left: OverloadCandidateId,
+        right: OverloadCandidateId,
+    ) -> (
+        SpecificityComparison,
+        Vec<SpecificityEdge>,
+        Vec<OverloadDiagnosticId>,
+    ) {
+        let key = specificity_comparison_key(left, right);
+        if self.duplicate_comparisons.contains(&key) {
+            let diagnostic = self.insert_specificity_diagnostic(
+                Some(site),
+                SpecificityFailureReason::DuplicateComparisonPayload,
+            );
+            return (
+                blocked_specificity_comparison(
+                    comparison_id,
+                    left,
+                    right,
+                    SpecificityFailureReason::DuplicateComparisonPayload,
+                    vec![diagnostic],
+                ),
+                Vec::new(),
+                vec![diagnostic],
+            );
+        }
+
+        let Some(input) = self.comparisons.get(&key) else {
+            let diagnostic = self.insert_specificity_diagnostic(
+                Some(site),
+                SpecificityFailureReason::MissingComparisonPayload,
+            );
+            return (
+                blocked_specificity_comparison(
+                    comparison_id,
+                    left,
+                    right,
+                    SpecificityFailureReason::MissingComparisonPayload,
+                    vec![diagnostic],
+                ),
+                Vec::new(),
+                vec![diagnostic],
+            );
+        };
+
+        let (status, edges) = orient_specificity_status(input, left, right);
+        (
+            SpecificityComparison {
+                id: comparison_id,
+                left,
+                right,
+                status,
+                reasons: input.reasons.clone(),
+                diagnostics: Vec::new(),
+            },
+            edges,
+            Vec::new(),
+        )
+    }
+
+    fn insert_specificity_diagnostic(
+        &mut self,
+        site: Option<OverloadSiteId>,
+        reason: SpecificityFailureReason,
+    ) -> OverloadDiagnosticId {
+        self.diagnostics.insert(OverloadDiagnosticDraft {
+            site,
+            site_key: None,
+            candidate: None,
+            provenance: None,
+            class: OverloadDiagnosticClass::Specificity,
+            severity: OverloadDiagnosticSeverity::Note,
+            message_key: OverloadDiagnosticMessageKey::new(format!(
+                "overload.specificity.{}",
+                specificity_failure_name(&reason)
+            )),
+            recovery: OverloadDiagnosticRecovery::Degraded,
+        })
+    }
+}
+
+fn orient_specificity_status(
+    input: &SpecificityComparisonInput,
+    left: OverloadCandidateId,
+    right: OverloadCandidateId,
+) -> (SpecificityComparisonOutcome, Vec<SpecificityEdge>) {
+    let input_reversed = input.left == right && input.right == left;
+    let reasons = input.reasons.clone();
+    match &input.status {
+        SpecificityComparisonStatus::LeftAtLeastRight if input_reversed => (
+            SpecificityComparisonOutcome::RightAtLeastLeft,
+            vec![specificity_edge(right, left, reasons)],
+        ),
+        SpecificityComparisonStatus::LeftAtLeastRight => (
+            SpecificityComparisonOutcome::LeftAtLeastRight,
+            vec![specificity_edge(left, right, reasons)],
+        ),
+        SpecificityComparisonStatus::RightAtLeastLeft if input_reversed => (
+            SpecificityComparisonOutcome::LeftAtLeastRight,
+            vec![specificity_edge(left, right, reasons)],
+        ),
+        SpecificityComparisonStatus::RightAtLeastLeft => (
+            SpecificityComparisonOutcome::RightAtLeastLeft,
+            vec![specificity_edge(right, left, reasons)],
+        ),
+        SpecificityComparisonStatus::Equivalent => (
+            SpecificityComparisonOutcome::Equivalent,
+            vec![
+                specificity_edge(left, right, reasons.clone()),
+                specificity_edge(right, left, reasons),
+            ],
+        ),
+        SpecificityComparisonStatus::Incomparable => {
+            (SpecificityComparisonOutcome::Incomparable, Vec::new())
+        }
+        SpecificityComparisonStatus::Blocked(reason) => (
+            SpecificityComparisonOutcome::Blocked(match reason {
+                SpecificityBlockedReasonKind::DeferredExternalDependency => {
+                    SpecificityFailureReason::DeferredExternalDependency
+                }
+                SpecificityBlockedReasonKind::MissingRecordedFacts => {
+                    SpecificityFailureReason::MissingRecordedFacts
+                }
+            }),
+            Vec::new(),
+        ),
+    }
+}
+
+fn blocked_specificity_comparison(
+    id: SpecificityComparisonId,
+    left: OverloadCandidateId,
+    right: OverloadCandidateId,
+    reason: SpecificityFailureReason,
+    diagnostics: Vec<OverloadDiagnosticId>,
+) -> SpecificityComparison {
+    SpecificityComparison {
+        id,
+        left,
+        right,
+        status: SpecificityComparisonOutcome::Blocked(reason),
+        reasons: Vec::new(),
+        diagnostics,
+    }
+}
+
+fn specificity_edge(
+    from: OverloadCandidateId,
+    to: OverloadCandidateId,
+    reasons: Vec<SpecificityReasonKey>,
+) -> SpecificityEdge {
+    SpecificityEdge {
+        id: SpecificityEdgeId::new(0),
+        from,
+        to,
+        reasons,
+    }
+}
+
+fn specificity_comparison_key(
+    left: OverloadCandidateId,
+    right: OverloadCandidateId,
+) -> SpecificityComparisonKey {
+    let left = left.index();
+    let right = right.index();
+    if left <= right {
+        (left, right)
+    } else {
+        (right, left)
+    }
+}
+
 fn site_status(input: &OverloadSiteInput) -> OverloadSiteStatus {
     if !input.kind.is_supported() {
         OverloadSiteStatus::Deferred
@@ -2219,6 +2701,14 @@ fn template_expansion_order_key(expansion: &TemplateExpansion) -> TemplateExpans
 
 fn candidate_viability_order_key(viability: &CandidateViability) -> CandidateViabilityOrderKey {
     (viability.source_candidate.index(), viability.id.index())
+}
+
+fn specificity_graph_order_key(graph: &SpecificityGraph) -> SpecificityGraphOrderKey {
+    (graph.site.index(), graph.id.index())
+}
+
+fn specificity_edge_order_key(edge: &SpecificityEdge) -> SpecificityEdgeOrderKey {
+    (edge.from.index(), edge.to.index(), edge.id.index())
 }
 
 fn diagnostic_output_key(diagnostic: &OverloadDiagnostic) -> DiagnosticOutputOrderKey {
@@ -2550,6 +3040,118 @@ fn write_candidate_blocked_reason(output: &mut String, reason: &CandidateBlocked
         None => output.push_str("<none>"),
     }
     output.push('}');
+}
+
+fn write_specificity_graphs(output: &mut String, graphs: &SpecificityGraphTable) {
+    output.push_str("specificity_graphs:\n");
+    if graphs.is_empty() {
+        output.push_str("  <none>\n");
+        return;
+    }
+    for (id, graph) in graphs.canonical_iter() {
+        let _ = write!(
+            output,
+            "  graph#{} site=site#{} nodes=",
+            id.index(),
+            graph.site.index()
+        );
+        write_specificity_nodes(output, &graph.nodes);
+        output.push_str(" comparisons=");
+        write_specificity_comparisons(output, &graph.comparisons);
+        output.push_str(" edges=");
+        write_specificity_edges(output, &graph.edges);
+        output.push_str(" diagnostics=");
+        write_diagnostic_ids(output, &graph.diagnostics);
+        output.push('\n');
+    }
+}
+
+fn write_specificity_nodes(output: &mut String, nodes: &[SpecificityNode]) {
+    output.push('[');
+    for (index, node) in nodes.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(
+            output,
+            "{{candidate=candidate#{} root=",
+            node.candidate.index()
+        );
+        write_symbol_id(output, &node.ordinary_root);
+        output.push_str(" parameters=");
+        write_type_ids(output, &node.parameters);
+        output.push_str(" origin=");
+        write_origin(output, &node.origin);
+        output.push('}');
+    }
+    output.push(']');
+}
+
+fn write_specificity_comparisons(output: &mut String, comparisons: &[SpecificityComparison]) {
+    output.push('[');
+    for (index, comparison) in comparisons.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(
+            output,
+            "{{comparison#{} left=candidate#{} right=candidate#{} status=",
+            comparison.id.index(),
+            comparison.left.index(),
+            comparison.right.index()
+        );
+        write_specificity_outcome(output, &comparison.status);
+        output.push_str(" reasons=");
+        write_specificity_reasons(output, &comparison.reasons);
+        output.push_str(" diagnostics=");
+        write_diagnostic_ids(output, &comparison.diagnostics);
+        output.push('}');
+    }
+    output.push(']');
+}
+
+fn write_specificity_edges(output: &mut String, edges: &[SpecificityEdge]) {
+    let mut edges = edges.iter().collect::<Vec<_>>();
+    edges.sort_by_key(|edge| specificity_edge_order_key(edge));
+    output.push('[');
+    for (index, edge) in edges.into_iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(
+            output,
+            "{{edge#{} from=candidate#{} to=candidate#{} reasons=",
+            edge.id.index(),
+            edge.from.index(),
+            edge.to.index()
+        );
+        write_specificity_reasons(output, &edge.reasons);
+        output.push('}');
+    }
+    output.push(']');
+}
+
+fn write_specificity_outcome(output: &mut String, outcome: &SpecificityComparisonOutcome) {
+    match outcome {
+        SpecificityComparisonOutcome::LeftAtLeastRight => output.push_str("left_at_least_right"),
+        SpecificityComparisonOutcome::RightAtLeastLeft => output.push_str("right_at_least_left"),
+        SpecificityComparisonOutcome::Equivalent => output.push_str("equivalent"),
+        SpecificityComparisonOutcome::Incomparable => output.push_str("incomparable"),
+        SpecificityComparisonOutcome::Blocked(reason) => {
+            let _ = write!(output, "blocked({})", specificity_failure_name(reason));
+        }
+    }
+}
+
+fn write_specificity_reasons(output: &mut String, reasons: &[SpecificityReasonKey]) {
+    output.push('[');
+    for (index, reason) in reasons.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(output, "\"{}\"", escaped_display(reason.as_str()));
+    }
+    output.push(']');
 }
 
 fn write_diagnostics(output: &mut String, diagnostics: &OverloadDiagnosticTable) {
@@ -3126,6 +3728,7 @@ fn diagnostic_class_name(class: OverloadDiagnosticClass) -> &'static str {
         OverloadDiagnosticClass::UnsupportedCandidateRole => "unsupported_candidate_role",
         OverloadDiagnosticClass::TemplateExpansion => "template_expansion",
         OverloadDiagnosticClass::Viability => "viability",
+        OverloadDiagnosticClass::Specificity => "specificity",
         OverloadDiagnosticClass::Recovery => "recovery",
         OverloadDiagnosticClass::ExternalDependencyGap => "external_dependency_gap",
     }
@@ -3195,6 +3798,17 @@ fn viability_blocked_reason_name(reason: CandidateBlockedReasonKind) -> &'static
         CandidateBlockedReasonKind::AmbiguousInheritance => "ambiguous_inheritance",
         CandidateBlockedReasonKind::BlockedCoercion => "blocked_coercion",
         CandidateBlockedReasonKind::DeferredExternalDependency => "deferred_external_dependency",
+    }
+}
+
+fn specificity_failure_name(reason: &SpecificityFailureReason) -> &'static str {
+    match reason {
+        SpecificityFailureReason::MissingComparisonPayload => "missing_comparison_payload",
+        SpecificityFailureReason::DuplicateComparisonPayload => "duplicate_comparison_payload",
+        SpecificityFailureReason::CrossSiteComparison => "cross_site_comparison",
+        SpecificityFailureReason::UnknownCandidate => "unknown_candidate",
+        SpecificityFailureReason::DeferredExternalDependency => "deferred_external_dependency",
+        SpecificityFailureReason::MissingRecordedFacts => "missing_recorded_facts",
     }
 }
 
@@ -4325,6 +4939,291 @@ mod tests {
     }
 
     #[test]
+    fn specificity_graph_records_edges_equivalence_and_incomparability_deterministically() {
+        let source_id = source_id(46);
+        let viability = viable_output(
+            vec![site(
+                "call",
+                OverloadSiteKind::FunctorApplication,
+                source_id,
+                10,
+            )],
+            vec![
+                candidate("call", "root-a", "a", CandidateScope::Local, 0),
+                candidate("call", "root-b", "b", CandidateScope::Local, 1),
+                candidate("call", "root-c", "c", CandidateScope::Local, 2),
+            ],
+        );
+        let a = candidate_id_by_symbol_in_table(viability.candidates(), "a");
+        let b = candidate_id_by_symbol_in_table(viability.candidates(), "b");
+        let c = candidate_id_by_symbol_in_table(viability.candidates(), "c");
+        let comparisons = vec![
+            SpecificityComparisonInput {
+                left: a,
+                right: b,
+                status: SpecificityComparisonStatus::LeftAtLeastRight,
+                reasons: vec![SpecificityReasonKey::new("a-subsumes-b")],
+            },
+            SpecificityComparisonInput {
+                left: c,
+                right: a,
+                status: SpecificityComparisonStatus::Equivalent,
+                reasons: vec![SpecificityReasonKey::new("same-parameters")],
+            },
+            SpecificityComparisonInput {
+                left: b,
+                right: c,
+                status: SpecificityComparisonStatus::Incomparable,
+                reasons: vec![SpecificityReasonKey::new("distinct-attributes")],
+            },
+        ];
+        let mut reversed = comparisons.clone();
+        reversed.reverse();
+
+        let output = SpecificityGraphOutput::build(&viability, comparisons);
+        let reversed_output = SpecificityGraphOutput::build(&viability, reversed);
+
+        assert_eq!(output.debug_text(), reversed_output.debug_text());
+        assert_eq!(output.candidates().len(), 3);
+        assert_eq!(output.graphs().len(), 1);
+        assert!(output.diagnostics().is_empty());
+        let (_, graph) = output.graphs().iter().next().expect("graph");
+        assert_eq!(graph.nodes.len(), 3);
+        assert_eq!(graph.comparisons.len(), 3);
+        assert_eq!(graph.edges.len(), 3);
+        let debug = output.debug_text();
+        assert!(debug.contains("status=left_at_least_right"));
+        assert!(debug.contains("status=equivalent"));
+        assert!(debug.contains("status=incomparable"));
+        assert!(debug.contains("edge#0 from=candidate#0 to=candidate#1"));
+        assert!(debug.contains("edge#1 from=candidate#0 to=candidate#2"));
+        assert!(debug.contains("edge#2 from=candidate#2 to=candidate#0"));
+    }
+
+    #[test]
+    fn specificity_graphs_are_per_site_and_ignore_result_types() {
+        let source_id = source_id(47);
+        let mut left = candidate("call-a", "root-a", "left", CandidateScope::Local, 0);
+        left.result = Some(NormalizedTypeId::new(100));
+        let mut right = candidate("call-a", "root-b", "right", CandidateScope::Local, 1);
+        right.result = Some(NormalizedTypeId::new(200));
+        let other = candidate("call-b", "root-c", "other", CandidateScope::Local, 2);
+        let viability = viable_output(
+            vec![
+                site(
+                    "call-a",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    10,
+                ),
+                site(
+                    "call-b",
+                    OverloadSiteKind::PredicateApplication,
+                    source_id,
+                    30,
+                ),
+            ],
+            vec![left, right, other],
+        );
+        let left = candidate_id_by_symbol_in_table(viability.candidates(), "left");
+        let right = candidate_id_by_symbol_in_table(viability.candidates(), "right");
+
+        let output = SpecificityGraphOutput::build(
+            &viability,
+            [SpecificityComparisonInput {
+                left,
+                right,
+                status: SpecificityComparisonStatus::RightAtLeastLeft,
+                reasons: vec![SpecificityReasonKey::new("parameter-only-order")],
+            }],
+        );
+
+        assert_eq!(output.graphs().len(), 2);
+        let debug = output.debug_text();
+        assert!(debug.contains("graph#0 site=site#0"));
+        assert!(debug.contains("graph#1 site=site#1"));
+        assert!(debug.contains("parameter-only-order"));
+        assert!(debug.contains("edge#0 from=candidate#1 to=candidate#0"));
+    }
+
+    #[test]
+    fn specificity_keeps_empty_graph_for_sites_without_viable_candidates() {
+        let source_id = source_id(48);
+        let expansion = expanded_candidates(
+            vec![candidate(
+                "call",
+                "root",
+                "rejected",
+                CandidateScope::Local,
+                0,
+            )],
+            source_id,
+        );
+        let rejected = candidate_id_by_symbol(&expansion, "rejected");
+        let viability = CandidateViabilityOutput::filter(
+            &expansion,
+            [CandidateViabilityInput {
+                candidate: rejected,
+                arguments: vec![
+                    ArgumentViabilityEvidence::Exact {
+                        actual: NormalizedTypeId::new(1),
+                    },
+                    ArgumentViabilityEvidence::Missing {
+                        actual: Some(NormalizedTypeId::new(9)),
+                        target: NormalizedTypeId::new(2),
+                    },
+                ],
+            }],
+        );
+
+        let output = SpecificityGraphOutput::build(&viability, []);
+
+        assert!(output.candidates().is_empty());
+        assert_eq!(output.graphs().len(), 1);
+        let (_, graph) = output.graphs().iter().next().expect("graph");
+        assert!(graph.nodes.is_empty());
+        assert!(graph.comparisons.is_empty());
+        assert!(graph.edges.is_empty());
+        assert!(output.debug_text().contains("graph#0 site=site#0 nodes=[]"));
+    }
+
+    #[test]
+    fn specificity_blocked_comparison_rows_do_not_create_edges() {
+        let source_id = source_id(49);
+        let viability = viable_output(
+            vec![site(
+                "call",
+                OverloadSiteKind::FunctorApplication,
+                source_id,
+                10,
+            )],
+            vec![
+                candidate("call", "root-a", "a", CandidateScope::Local, 0),
+                candidate("call", "root-b", "b", CandidateScope::Local, 1),
+                candidate("call", "root-c", "c", CandidateScope::Local, 2),
+            ],
+        );
+        let a = candidate_id_by_symbol_in_table(viability.candidates(), "a");
+        let b = candidate_id_by_symbol_in_table(viability.candidates(), "b");
+        let c = candidate_id_by_symbol_in_table(viability.candidates(), "c");
+
+        let output = SpecificityGraphOutput::build(
+            &viability,
+            [
+                SpecificityComparisonInput {
+                    left: a,
+                    right: b,
+                    status: SpecificityComparisonStatus::Blocked(
+                        SpecificityBlockedReasonKind::DeferredExternalDependency,
+                    ),
+                    reasons: vec![SpecificityReasonKey::new("missing-comparison-summary")],
+                },
+                SpecificityComparisonInput {
+                    left: a,
+                    right: c,
+                    status: SpecificityComparisonStatus::Blocked(
+                        SpecificityBlockedReasonKind::MissingRecordedFacts,
+                    ),
+                    reasons: vec![SpecificityReasonKey::new("missing-fact")],
+                },
+                SpecificityComparisonInput {
+                    left: b,
+                    right: c,
+                    status: SpecificityComparisonStatus::Incomparable,
+                    reasons: vec![SpecificityReasonKey::new("incomparable")],
+                },
+            ],
+        );
+
+        let (_, graph) = output.graphs().iter().next().expect("graph");
+        assert!(graph.edges.is_empty());
+        let debug = output.debug_text();
+        assert!(debug.contains("blocked(deferred_external_dependency)"));
+        assert!(debug.contains("blocked(missing_recorded_facts)"));
+        assert!(debug.contains("missing-comparison-summary"));
+        assert!(debug.contains("missing-fact"));
+        assert!(output.diagnostics().is_empty());
+    }
+
+    #[test]
+    fn specificity_reports_missing_duplicate_unknown_and_cross_site_payloads() {
+        let source_id = source_id(50);
+        let viability = viable_output(
+            vec![
+                site(
+                    "call-a",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    10,
+                ),
+                site(
+                    "call-b",
+                    OverloadSiteKind::PredicateApplication,
+                    source_id,
+                    30,
+                ),
+            ],
+            vec![
+                candidate("call-a", "root-a", "a", CandidateScope::Local, 0),
+                candidate("call-a", "root-b", "b", CandidateScope::Local, 1),
+                candidate("call-a", "root-d", "d", CandidateScope::Local, 2),
+                candidate("call-b", "root-c", "c", CandidateScope::Local, 3),
+            ],
+        );
+        let a = candidate_id_by_symbol_in_table(viability.candidates(), "a");
+        let b = candidate_id_by_symbol_in_table(viability.candidates(), "b");
+        let c = candidate_id_by_symbol_in_table(viability.candidates(), "c");
+
+        let duplicate = SpecificityComparisonInput {
+            left: a,
+            right: b,
+            status: SpecificityComparisonStatus::LeftAtLeastRight,
+            reasons: vec![SpecificityReasonKey::new("first")],
+        };
+        let cross_site = SpecificityComparisonInput {
+            left: a,
+            right: c,
+            status: SpecificityComparisonStatus::LeftAtLeastRight,
+            reasons: vec![SpecificityReasonKey::new("cross-site")],
+        };
+        let cross_site_reversed = SpecificityComparisonInput {
+            left: c,
+            right: a,
+            status: SpecificityComparisonStatus::RightAtLeastLeft,
+            reasons: vec![SpecificityReasonKey::new("cross-site-reversed")],
+        };
+        let unknown = SpecificityComparisonInput {
+            left: OverloadCandidateId::new(99),
+            right: c,
+            status: SpecificityComparisonStatus::Incomparable,
+            reasons: vec![SpecificityReasonKey::new("unknown")],
+        };
+        let comparisons = vec![
+            duplicate.clone(),
+            duplicate,
+            cross_site,
+            cross_site_reversed,
+            unknown,
+        ];
+        let mut reversed = comparisons.clone();
+        reversed.reverse();
+
+        let output = SpecificityGraphOutput::build(&viability, comparisons);
+        let reversed_output = SpecificityGraphOutput::build(&viability, reversed);
+
+        assert_eq!(output.debug_text(), reversed_output.debug_text());
+        let debug = output.debug_text();
+        assert!(debug.contains("blocked(duplicate_comparison_payload)"));
+        assert!(debug.contains("blocked(missing_comparison_payload)"));
+        assert!(
+            debug.contains("message_key=\"overload.specificity.duplicate_comparison_payload\"")
+        );
+        assert!(debug.contains("message_key=\"overload.specificity.missing_comparison_payload\""));
+        assert!(debug.contains("message_key=\"overload.specificity.cross_site_comparison\""));
+        assert!(debug.contains("message_key=\"overload.specificity.unknown_candidate\""));
+    }
+
+    #[test]
     fn source_qua_and_recovery_site_provenance_are_retained() {
         let source_id = source_id(4);
         let mut input = site(
@@ -4616,12 +5515,42 @@ mod tests {
             .collect()
     }
 
+    fn viable_output(
+        sites: Vec<OverloadSiteInput>,
+        candidates: Vec<OverloadCandidateInput>,
+    ) -> CandidateViabilityOutput {
+        let collection = OverloadCollectionOutput::collect(sites, candidates);
+        let expansion = TemplateExpansionOutput::expand(&collection);
+        let inputs = expansion
+            .candidates()
+            .iter()
+            .map(|(candidate, _)| CandidateViabilityInput {
+                candidate,
+                arguments: vec![
+                    ArgumentViabilityEvidence::Exact {
+                        actual: NormalizedTypeId::new(1),
+                    },
+                    ArgumentViabilityEvidence::Exact {
+                        actual: NormalizedTypeId::new(2),
+                    },
+                ],
+            })
+            .collect::<Vec<_>>();
+        CandidateViabilityOutput::filter(&expansion, inputs)
+    }
+
     fn candidate_id_by_symbol(
         expansion: &TemplateExpansionOutput,
         symbol: &str,
     ) -> OverloadCandidateId {
-        expansion
-            .candidates()
+        candidate_id_by_symbol_in_table(expansion.candidates(), symbol)
+    }
+
+    fn candidate_id_by_symbol_in_table(
+        candidates: &OverloadCandidateTable,
+        symbol: &str,
+    ) -> OverloadCandidateId {
+        candidates
             .iter()
             .find_map(|(id, candidate)| (candidate.symbol.local().as_str() == symbol).then_some(id))
             .expect("candidate symbol")
