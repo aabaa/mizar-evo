@@ -63,15 +63,14 @@ crate ownership: [internal 07](../../internal/en/07.crate_module_layout.md).
   does not add a direct `mizar-syntax` dependency for node-kind storage; it uses
   a checker-local source-shape projection. `ResolvedTypedAst` revisits the same
   decision in task 28.
-- **Registration activation gating: open, resolved by task 19.** Local
+- **Registration activation gating: resolved by task 19.** Local
   registrations must not affect automatic inference until their proof
   obligations are accepted by the configured verifier policy (architecture 04
-  constraints). The first iteration needs an interim policy because phases
-  11-14 do not exist yet. The default interim policy is no unverified
-  activation: generated obligations are recorded with pending/unverified
-  status, and registrations do not enter the active database until an accepted
-  verifier status is available. Registered at the top level; revisited when
-  `mizar-vc`/`mizar-proof` land.
+  constraints). Task 19 implements the interim policy because phases 11-14 do
+  not exist yet: generated obligations are recorded with pending/unverified
+  status, and registrations do not enter the active database until an explicit
+  accepted verifier/artifact status input is available. Registered at the top
+  level; revisited when `mizar-vc`/`mizar-proof` land.
 - **Trace schema conformance: resolved.**
   [17.cluster_trace_format.md](../../architecture/en/17.cluster_trace_format.md)
   is the canonical `ResolutionTrace` schema; `cluster_trace.md` refines it,
@@ -343,7 +342,7 @@ Keep `cargo test -p mizar-checker` green after each task (see
       resolver-shell parsing, artifact/cache integration, and source-derived
       reduction extraction remain deferred.
 
-19. **Pending-registration validation and activation gating.** [ ]
+19. **Pending-registration validation and activation gating.** [x]
     - Validate pending registration declarations (architecture 04 Step 6),
       emit their obligations, and implement the interim activation-gating
       policy; record the decision here and at the top level.
@@ -354,6 +353,14 @@ Keep `cargo test -p mizar-checker` green after each task (see
       activation requires accepted verifier status from a later proof/artifact
       input.
     - Deps: 17, 18. Spec: `registration_resolution.md`.
+    - Completed by task 19: `RegistrationValidationInput` validates explicit
+      checker-ready pending payloads, emits checker-local
+      `InitialObligationId`s, keeps validated records pending with
+      `inference=false`, rejects recovered origins and malformed kind-specific
+      payloads, enforces fixed spec-17.6.4 reduction size/variable rules, and
+      rejects activation inputs whose verifier/artifact status is missing or
+      rejected. Source extraction, accepted-status production/import, artifact
+      reuse, and active `.miz` semantic fixtures remain deferred.
 
 20. **Existential gating of attributed type use.** [ ]
     - Enforce that attributed types are usable only where existential

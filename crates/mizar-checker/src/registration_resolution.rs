@@ -1,4 +1,11 @@
-//! Registration database data layer for checker phase 7.
+//! Registration database, validation, and activation-gating data layer for
+//! checker phase 7.
+
+use crate::typed_ast::{
+    InitialObligationDraft, InitialObligationGoal, InitialObligationId, InitialObligationKind,
+    InitialObligationProvenance, InitialObligationStatus, InitialObligationTable, TypeFactId,
+    TypedSiteRef,
+};
 
 use mizar_resolve::{
     env::{
@@ -71,6 +78,11 @@ string_key!(RegistrationParameterKey);
 string_key!(AcceptedCorrectnessKey);
 string_key!(ActivationEvidenceKey);
 string_key!(RegistrationFingerprint);
+string_key!(RegistrationTypeKey);
+string_key!(RegistrationAttributeKey);
+string_key!(RegistrationFunctorKey);
+string_key!(RegistrationTermKey);
+string_key!(RegistrationVariableKey);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RegistrationDatabase {
@@ -79,6 +91,7 @@ pub struct RegistrationDatabase {
     activated: ActivatedRegistrationIndex,
     rejected: RejectedRegistrationTable,
     diagnostics: RegistrationDiagnosticTable,
+    initial_obligations: InitialObligationTable,
 }
 
 impl RegistrationDatabase {
@@ -86,7 +99,20 @@ impl RegistrationDatabase {
         symbols: &SymbolEnv,
         activations: impl IntoIterator<Item = ActivationInput>,
     ) -> Self {
+        Self::from_symbol_env_with_validation(
+            symbols,
+            std::iter::empty::<RegistrationValidationInput>(),
+            activations,
+        )
+    }
+
+    pub fn from_symbol_env_with_validation(
+        symbols: &SymbolEnv,
+        validations: impl IntoIterator<Item = RegistrationValidationInput>,
+        activations: impl IntoIterator<Item = ActivationInput>,
+    ) -> Self {
         let mut builder = RegistrationDatabaseBuilder::new(symbols.module_id().clone());
+        let mut validation_inputs = validation_map(validations);
         let mut activation_inputs = activation_map(activations);
 
         let mut entries = symbols.registrations().iter().collect::<Vec<_>>();
@@ -96,8 +122,21 @@ impl RegistrationDatabase {
 
         for entry in entries {
             let source = RegistrationSource::from_entry(entry);
+            let validations = validation_inputs.remove(&entry.id()).unwrap_or_default();
             let inputs = activation_inputs.remove(&entry.id()).unwrap_or_default();
-            builder.ingest_resolver_registration(entry.id(), entry.kind(), source, inputs);
+            builder.ingest_resolver_registration(
+                entry.id(),
+                entry.kind(),
+                source,
+                validations,
+                inputs,
+            );
+        }
+
+        for inputs in validation_inputs.into_values() {
+            for input in inputs {
+                builder.reject_unknown_validation(input);
+            }
         }
 
         for inputs in activation_inputs.into_values() {
@@ -129,6 +168,10 @@ impl RegistrationDatabase {
         &self.diagnostics
     }
 
+    pub const fn initial_obligations(&self) -> &InitialObligationTable {
+        &self.initial_obligations
+    }
+
     pub fn debug_text(&self) -> String {
         let mut output = String::from("registration-database-debug-v1\n");
         output.push_str("module: ");
@@ -138,6 +181,7 @@ impl RegistrationDatabase {
         write_activated(&mut output, &self.activated);
         write_rejected(&mut output, &self.rejected);
         write_diagnostics(&mut output, &self.diagnostics);
+        write_initial_obligations(&mut output, &self.initial_obligations);
         output
     }
 }
@@ -148,6 +192,7 @@ struct RegistrationDatabaseBuilder {
     activated: Vec<ActivatedRegistration>,
     rejected: Vec<RejectedRegistration>,
     diagnostics: RegistrationDiagnosticTable,
+    initial_obligations: InitialObligationTable,
 }
 
 impl RegistrationDatabaseBuilder {
@@ -158,6 +203,7 @@ impl RegistrationDatabaseBuilder {
             activated: Vec::new(),
             rejected: Vec::new(),
             diagnostics: RegistrationDiagnosticTable::new(),
+            initial_obligations: InitialObligationTable::new(),
         }
     }
 
@@ -166,6 +212,7 @@ impl RegistrationDatabaseBuilder {
         resolver_registration: ResolverRegistrationId,
         resolver_kind: ResolverRegistrationKind,
         source: RegistrationSource,
+        validations: Vec<RegistrationValidationInput>,
         activations: Vec<ActivationInput>,
     ) {
         if matches!(source.target, ResolverTargetShell::Malformed { .. }) {
@@ -181,25 +228,59 @@ impl RegistrationDatabaseBuilder {
         }
 
         match activations.as_slice() {
-            [] => self.pending_external_gap(resolver_registration, source),
+            [] => self.ingest_pending_validation_or_gap(
+                resolver_registration,
+                resolver_kind,
+                source,
+                validations,
+            ),
             [activation] => {
                 let activation = activation.clone();
-                match validate_activation(resolver_registration, resolver_kind, source, activation)
-                {
-                    Ok(activated) => self.activated.push(activated),
-                    Err((source, reason, message_key, class)) => {
-                        self.reject(
-                            Some(resolver_registration),
-                            Some(*source),
-                            reason,
-                            message_key,
-                            class,
-                            RegistrationDiagnosticSeverity::Error,
-                        );
-                    }
+                match validate_activation_companion_validations(
+                    resolver_registration,
+                    resolver_kind,
+                    source.clone(),
+                    &validations,
+                ) {
+                    Ok(()) => match validate_activation(
+                        resolver_registration,
+                        resolver_kind,
+                        source.clone(),
+                        activation,
+                    ) {
+                        Ok(activated) => {
+                            self.activated.push(activated);
+                        }
+                        Err((source, reason, message_key, class)) => {
+                            let pending_source = (*source).clone();
+                            self.reject(
+                                Some(resolver_registration),
+                                Some(*source),
+                                reason,
+                                message_key,
+                                class,
+                                RegistrationDiagnosticSeverity::Error,
+                            );
+                            self.ingest_pending_validation_or_gap(
+                                resolver_registration,
+                                resolver_kind,
+                                pending_source,
+                                validations,
+                            );
+                        }
+                    },
+                    Err((source, reason, message_key, class)) => self.reject(
+                        Some(resolver_registration),
+                        Some(*source),
+                        reason,
+                        message_key,
+                        class,
+                        RegistrationDiagnosticSeverity::Error,
+                    ),
                 }
             }
             _ => {
+                let pending_source = source.clone();
                 self.reject(
                     Some(resolver_registration),
                     Some(source),
@@ -208,7 +289,53 @@ impl RegistrationDatabaseBuilder {
                     RegistrationDiagnosticClass::InvalidActivation,
                     RegistrationDiagnosticSeverity::Error,
                 );
+                self.ingest_pending_validation_or_gap(
+                    resolver_registration,
+                    resolver_kind,
+                    pending_source,
+                    validations,
+                );
             }
+        }
+    }
+
+    fn ingest_pending_validation_or_gap(
+        &mut self,
+        resolver_registration: ResolverRegistrationId,
+        resolver_kind: ResolverRegistrationKind,
+        source: RegistrationSource,
+        validations: Vec<RegistrationValidationInput>,
+    ) {
+        match validations.as_slice() {
+            [] => self.pending_external_gap(resolver_registration, source),
+            [validation] => {
+                let validation = validation.clone();
+                match validate_pending_registration(
+                    resolver_registration,
+                    resolver_kind,
+                    source,
+                    validation,
+                    &mut self.initial_obligations,
+                ) {
+                    Ok(pending) => self.pending.push(pending),
+                    Err((source, reason, message_key, class)) => self.reject(
+                        Some(resolver_registration),
+                        Some(*source),
+                        reason,
+                        message_key,
+                        class,
+                        RegistrationDiagnosticSeverity::Error,
+                    ),
+                }
+            }
+            _ => self.reject(
+                Some(resolver_registration),
+                Some(source),
+                RejectedRegistrationReason::DuplicateValidationInput,
+                "checker.registration.duplicate_validation_input",
+                RegistrationDiagnosticClass::InvalidValidation,
+                RegistrationDiagnosticSeverity::Error,
+            ),
         }
     }
 
@@ -230,6 +357,8 @@ impl RegistrationDatabaseBuilder {
             source,
             pattern_status: RegistrationPatternStatus::ExternalDependencyGap,
             status: PendingRegistrationStatus::BlockedExternalDependency,
+            parameters: Vec::new(),
+            obligations: Vec::new(),
         });
     }
 
@@ -240,6 +369,17 @@ impl RegistrationDatabaseBuilder {
             RejectedRegistrationReason::UnknownActivationOrigin,
             "checker.registration.unknown_activation_origin",
             RegistrationDiagnosticClass::InvalidActivation,
+            RegistrationDiagnosticSeverity::Error,
+        );
+    }
+
+    fn reject_unknown_validation(&mut self, input: RegistrationValidationInput) {
+        self.reject(
+            Some(input.resolver_registration),
+            None,
+            RejectedRegistrationReason::UnknownValidationOrigin,
+            "checker.registration.unknown_validation_origin",
+            RegistrationDiagnosticClass::InvalidValidation,
             RegistrationDiagnosticSeverity::Error,
         );
     }
@@ -285,6 +425,7 @@ impl RegistrationDatabaseBuilder {
                 entries: self.rejected,
             },
             diagnostics: self.diagnostics,
+            initial_obligations: self.initial_obligations,
         }
     }
 }
@@ -296,6 +437,8 @@ pub struct PendingRegistration {
     source: RegistrationSource,
     pattern_status: RegistrationPatternStatus,
     status: PendingRegistrationStatus,
+    parameters: Vec<RegistrationParameterKey>,
+    obligations: Vec<InitialObligationId>,
 }
 
 impl PendingRegistration {
@@ -317,6 +460,14 @@ impl PendingRegistration {
 
     pub const fn status(&self) -> PendingRegistrationStatus {
         self.status
+    }
+
+    pub fn parameters(&self) -> &[RegistrationParameterKey] {
+        &self.parameters
+    }
+
+    pub fn obligations(&self) -> &[InitialObligationId] {
+        &self.obligations
     }
 
     pub const fn may_contribute_to_inference(&self) -> bool {
@@ -351,12 +502,14 @@ impl PendingRegistrationTable {
 #[non_exhaustive]
 pub enum RegistrationPatternStatus {
     ExternalDependencyGap,
+    Validated(RegistrationValidationKind),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum PendingRegistrationStatus {
     BlockedExternalDependency,
+    AwaitingVerifierAcceptance,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -508,12 +661,25 @@ impl RejectedRegistrationTable {
 pub enum RejectedRegistrationReason {
     MalformedResolverTarget,
     RecoveredResolverOrigin,
+    UnknownValidationOrigin,
     UnknownActivationOrigin,
+    ValidationKindMismatch,
     ActivationKindMismatch,
+    MissingRegistrationLabel,
+    MissingRegistrationPayload,
+    MalformedRegistrationPattern,
+    MissingReferencedSymbol,
+    IncompatibleReferencedSymbol,
+    InvalidRegistrationParameter,
+    MissingCorrectnessCondition,
+    MissingSourceProvenance,
+    InvalidReductionOrientation,
     MissingActivationTrigger,
     MissingAcceptedPattern,
     MissingAcceptedCorrectness,
     MissingActivationEvidence,
+    UnacceptedActivationEvidence,
+    DuplicateValidationInput,
     DuplicateActivationInput,
 }
 
@@ -615,6 +781,313 @@ impl From<&SignatureShell> for ResolverTargetShell {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum RegistrationValidationKind {
+    Existential,
+    Conditional,
+    Functorial,
+    Reduction,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RegistrationValidationInput {
+    resolver_registration: ResolverRegistrationId,
+    owner: TypedSiteRef,
+    source_range: SourceRange,
+    pattern: RegistrationValidationPattern,
+    parameters: Vec<RegistrationValidationParameter>,
+    referenced_symbols: Vec<RegistrationReferencedSymbol>,
+    assumptions: Vec<TypeFactId>,
+    correctness_goal: InitialObligationGoal,
+    correctness_provenance: InitialObligationProvenance,
+}
+
+impl RegistrationValidationInput {
+    pub fn new(
+        resolver_registration: ResolverRegistrationId,
+        owner: TypedSiteRef,
+        source_range: SourceRange,
+        pattern: RegistrationValidationPattern,
+        correctness_goal: impl Into<InitialObligationGoal>,
+        correctness_provenance: impl Into<InitialObligationProvenance>,
+    ) -> Self {
+        Self {
+            resolver_registration,
+            owner,
+            source_range,
+            pattern,
+            parameters: Vec::new(),
+            referenced_symbols: Vec::new(),
+            assumptions: Vec::new(),
+            correctness_goal: correctness_goal.into(),
+            correctness_provenance: correctness_provenance.into(),
+        }
+    }
+
+    pub const fn resolver_registration(&self) -> ResolverRegistrationId {
+        self.resolver_registration
+    }
+
+    pub const fn owner(&self) -> &TypedSiteRef {
+        &self.owner
+    }
+
+    pub const fn source_range(&self) -> SourceRange {
+        self.source_range
+    }
+
+    pub const fn pattern(&self) -> &RegistrationValidationPattern {
+        &self.pattern
+    }
+
+    pub fn parameters(&self) -> &[RegistrationValidationParameter] {
+        &self.parameters
+    }
+
+    pub fn referenced_symbols(&self) -> &[RegistrationReferencedSymbol] {
+        &self.referenced_symbols
+    }
+
+    pub fn assumptions(&self) -> &[TypeFactId] {
+        &self.assumptions
+    }
+
+    pub const fn correctness_goal(&self) -> &InitialObligationGoal {
+        &self.correctness_goal
+    }
+
+    pub const fn correctness_provenance(&self) -> &InitialObligationProvenance {
+        &self.correctness_provenance
+    }
+
+    pub fn with_parameters(
+        mut self,
+        parameters: impl IntoIterator<Item = RegistrationValidationParameter>,
+    ) -> Self {
+        self.parameters = parameters.into_iter().collect();
+        self
+    }
+
+    pub fn with_referenced_symbols(
+        mut self,
+        referenced_symbols: impl IntoIterator<Item = RegistrationReferencedSymbol>,
+    ) -> Self {
+        self.referenced_symbols = referenced_symbols.into_iter().collect();
+        self
+    }
+
+    pub fn with_assumptions(mut self, assumptions: impl IntoIterator<Item = TypeFactId>) -> Self {
+        self.assumptions = assumptions.into_iter().collect();
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum RegistrationValidationPattern {
+    Existential {
+        type_head: RegistrationTypeKey,
+        attributes: Vec<RegistrationAttributeKey>,
+    },
+    Conditional {
+        type_head: RegistrationTypeKey,
+        antecedent: Vec<RegistrationAttributeKey>,
+        consequent: Vec<RegistrationAttributeKey>,
+    },
+    Functorial {
+        functor: RegistrationFunctorKey,
+        result_type: RegistrationTypeKey,
+        consequent: Vec<RegistrationAttributeKey>,
+    },
+    Reduction {
+        lhs: RegistrationTermPattern,
+        rhs: RegistrationTermPattern,
+    },
+}
+
+impl RegistrationValidationPattern {
+    pub const fn kind(&self) -> RegistrationValidationKind {
+        match self {
+            Self::Existential { .. } => RegistrationValidationKind::Existential,
+            Self::Conditional { .. } => RegistrationValidationKind::Conditional,
+            Self::Functorial { .. } => RegistrationValidationKind::Functorial,
+            Self::Reduction { .. } => RegistrationValidationKind::Reduction,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RegistrationTermPattern {
+    fingerprint: RegistrationTermKey,
+    size: usize,
+    free_variables: Vec<RegistrationVariableOccurrence>,
+    source_range: Option<SourceRange>,
+}
+
+impl RegistrationTermPattern {
+    pub fn new(
+        fingerprint: impl Into<RegistrationTermKey>,
+        size: usize,
+        free_variables: impl IntoIterator<Item = RegistrationVariableOccurrence>,
+        source_range: SourceRange,
+    ) -> Self {
+        Self {
+            fingerprint: fingerprint.into(),
+            size,
+            free_variables: free_variables.into_iter().collect(),
+            source_range: Some(source_range),
+        }
+    }
+
+    pub fn without_source_range(
+        fingerprint: impl Into<RegistrationTermKey>,
+        size: usize,
+        free_variables: impl IntoIterator<Item = RegistrationVariableOccurrence>,
+    ) -> Self {
+        Self {
+            fingerprint: fingerprint.into(),
+            size,
+            free_variables: free_variables.into_iter().collect(),
+            source_range: None,
+        }
+    }
+
+    pub const fn fingerprint(&self) -> &RegistrationTermKey {
+        &self.fingerprint
+    }
+
+    pub const fn size(&self) -> usize {
+        self.size
+    }
+
+    pub fn free_variables(&self) -> &[RegistrationVariableOccurrence] {
+        &self.free_variables
+    }
+
+    pub const fn source_range(&self) -> Option<SourceRange> {
+        self.source_range
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RegistrationVariableOccurrence {
+    variable: RegistrationVariableKey,
+    count: usize,
+}
+
+impl RegistrationVariableOccurrence {
+    pub fn new(variable: impl Into<RegistrationVariableKey>, count: usize) -> Self {
+        Self {
+            variable: variable.into(),
+            count,
+        }
+    }
+
+    pub const fn variable(&self) -> &RegistrationVariableKey {
+        &self.variable
+    }
+
+    pub const fn count(&self) -> usize {
+        self.count
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RegistrationValidationParameter {
+    key: RegistrationParameterKey,
+    typed: bool,
+    visible_facts: bool,
+}
+
+impl RegistrationValidationParameter {
+    pub fn new(key: impl Into<RegistrationParameterKey>) -> Self {
+        Self {
+            key: key.into(),
+            typed: true,
+            visible_facts: true,
+        }
+    }
+
+    pub fn with_typed(mut self, typed: bool) -> Self {
+        self.typed = typed;
+        self
+    }
+
+    pub fn with_visible_facts(mut self, visible_facts: bool) -> Self {
+        self.visible_facts = visible_facts;
+        self
+    }
+
+    pub const fn key(&self) -> &RegistrationParameterKey {
+        &self.key
+    }
+
+    pub const fn is_typed(&self) -> bool {
+        self.typed
+    }
+
+    pub const fn facts_are_visible(&self) -> bool {
+        self.visible_facts
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum RegistrationReferencedSymbolRole {
+    Attribute,
+    Mode,
+    Structure,
+    Functor,
+    Term,
+    TypeHead,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RegistrationReferencedSymbol {
+    role: RegistrationReferencedSymbolRole,
+    symbol: Option<SymbolId>,
+    compatible: bool,
+}
+
+impl RegistrationReferencedSymbol {
+    pub fn compatible(role: RegistrationReferencedSymbolRole, symbol: SymbolId) -> Self {
+        Self {
+            role,
+            symbol: Some(symbol),
+            compatible: true,
+        }
+    }
+
+    pub const fn missing(role: RegistrationReferencedSymbolRole) -> Self {
+        Self {
+            role,
+            symbol: None,
+            compatible: false,
+        }
+    }
+
+    pub fn incompatible(role: RegistrationReferencedSymbolRole, symbol: SymbolId) -> Self {
+        Self {
+            role,
+            symbol: Some(symbol),
+            compatible: false,
+        }
+    }
+
+    pub const fn role(&self) -> RegistrationReferencedSymbolRole {
+        self.role
+    }
+
+    pub const fn symbol(&self) -> Option<&SymbolId> {
+        self.symbol.as_ref()
+    }
+
+    pub const fn is_compatible(&self) -> bool {
+        self.compatible
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActivationInput {
     resolver_registration: ResolverRegistrationId,
@@ -625,6 +1098,7 @@ pub struct ActivationInput {
     parameters: Vec<RegistrationParameterKey>,
     correctness: AcceptedCorrectnessKey,
     evidence: ActivationEvidenceKey,
+    verifier_status: ActivationVerifierStatus,
     fingerprint: Option<RegistrationFingerprint>,
 }
 
@@ -646,8 +1120,28 @@ impl ActivationInput {
             parameters: Vec::new(),
             correctness: correctness.into(),
             evidence: evidence.into(),
+            verifier_status: ActivationVerifierStatus::Missing,
             fingerprint: None,
         }
+    }
+
+    pub fn accepted(
+        resolver_registration: ResolverRegistrationId,
+        kind: ResolverRegistrationKind,
+        trigger: impl Into<RegistrationTriggerKey>,
+        pattern: impl Into<RegistrationPatternKey>,
+        correctness: impl Into<AcceptedCorrectnessKey>,
+        evidence: impl Into<ActivationEvidenceKey>,
+    ) -> Self {
+        Self::new(
+            resolver_registration,
+            kind,
+            trigger,
+            pattern,
+            correctness,
+            evidence,
+        )
+        .with_verifier_status(ActivationVerifierStatus::Accepted)
     }
 
     pub fn with_label(mut self, label: impl Into<RegistrationLabelKey>) -> Self {
@@ -667,6 +1161,23 @@ impl ActivationInput {
         self.fingerprint = Some(fingerprint.into());
         self
     }
+
+    pub const fn with_verifier_status(mut self, status: ActivationVerifierStatus) -> Self {
+        self.verifier_status = status;
+        self
+    }
+
+    pub const fn verifier_status(&self) -> ActivationVerifierStatus {
+        self.verifier_status
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum ActivationVerifierStatus {
+    Accepted,
+    Missing,
+    Rejected,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -767,7 +1278,15 @@ impl RegistrationDiagnosticTable {
 pub enum RegistrationDiagnosticClass {
     ExternalDependencyGap,
     MalformedResolverTarget,
+    InvalidValidation,
+    MissingReferencedSymbol,
+    IncompatibleReferencedSymbol,
+    InvalidRegistrationParameter,
+    MissingCorrectnessCondition,
+    MissingSourceProvenance,
+    InvalidReductionOrientation,
     InvalidActivation,
+    UnacceptedActivationEvidence,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -791,6 +1310,337 @@ type ActivationValidationError = (
     &'static str,
     RegistrationDiagnosticClass,
 );
+
+type PendingValidationError = (
+    Box<RegistrationSource>,
+    RejectedRegistrationReason,
+    &'static str,
+    RegistrationDiagnosticClass,
+);
+
+fn validate_pending_registration(
+    resolver_registration: ResolverRegistrationId,
+    resolver_kind: ResolverRegistrationKind,
+    source: RegistrationSource,
+    validation: RegistrationValidationInput,
+    obligations: &mut InitialObligationTable,
+) -> Result<PendingRegistration, PendingValidationError> {
+    if source.recovery() == RecoveryState::Recovered {
+        return Err((
+            Box::new(source),
+            RejectedRegistrationReason::RecoveredResolverOrigin,
+            "checker.registration.recovered_resolver_origin",
+            RegistrationDiagnosticClass::InvalidValidation,
+        ));
+    }
+    if validation.resolver_registration != resolver_registration {
+        return Err((
+            Box::new(source),
+            RejectedRegistrationReason::UnknownValidationOrigin,
+            "checker.registration.validation_origin_mismatch",
+            RegistrationDiagnosticClass::InvalidValidation,
+        ));
+    }
+    let kind = validation.pattern.kind();
+    if resolver_kind_for_validation(kind) != resolver_kind {
+        return Err((
+            Box::new(source),
+            RejectedRegistrationReason::ValidationKindMismatch,
+            "checker.registration.validation_kind_mismatch",
+            RegistrationDiagnosticClass::InvalidValidation,
+        ));
+    }
+    if source.symbol().is_none() {
+        return Err((
+            Box::new(source),
+            RejectedRegistrationReason::MissingRegistrationLabel,
+            "checker.registration.missing_registration_label",
+            RegistrationDiagnosticClass::InvalidValidation,
+        ));
+    }
+    validate_referenced_symbols(&source, validation.referenced_symbols())?;
+    validate_parameters(&source, validation.parameters())?;
+    validate_correctness_condition(
+        &source,
+        validation.correctness_goal(),
+        validation.correctness_provenance(),
+    )?;
+    validate_source_provenance(&source, validation.source_range())?;
+    validate_registration_pattern(&source, validation.pattern())?;
+
+    let obligation = obligations.insert(InitialObligationDraft {
+        kind: InitialObligationKind::RegistrationCorrectness,
+        owner: validation.owner().clone(),
+        source_range: validation.source_range(),
+        assumptions: validation.assumptions().to_vec(),
+        goal: validation.correctness_goal().clone(),
+        provenance: validation.correctness_provenance().clone(),
+        status: InitialObligationStatus::Pending,
+    });
+
+    Ok(PendingRegistration {
+        id: CheckerRegistrationId::new(resolver_registration.index()),
+        resolver_registration,
+        source,
+        pattern_status: RegistrationPatternStatus::Validated(kind),
+        status: PendingRegistrationStatus::AwaitingVerifierAcceptance,
+        parameters: validation
+            .parameters()
+            .iter()
+            .map(|parameter| parameter.key().clone())
+            .collect(),
+        obligations: vec![obligation],
+    })
+}
+
+fn validate_referenced_symbols(
+    source: &RegistrationSource,
+    references: &[RegistrationReferencedSymbol],
+) -> Result<(), PendingValidationError> {
+    if references
+        .iter()
+        .any(|reference| reference.symbol().is_none())
+    {
+        return Err((
+            Box::new(source.clone()),
+            RejectedRegistrationReason::MissingReferencedSymbol,
+            "checker.registration.missing_referenced_symbol",
+            RegistrationDiagnosticClass::MissingReferencedSymbol,
+        ));
+    }
+    if references
+        .iter()
+        .any(|reference| !reference.is_compatible())
+    {
+        return Err((
+            Box::new(source.clone()),
+            RejectedRegistrationReason::IncompatibleReferencedSymbol,
+            "checker.registration.incompatible_referenced_symbol",
+            RegistrationDiagnosticClass::IncompatibleReferencedSymbol,
+        ));
+    }
+    Ok(())
+}
+
+fn validate_parameters(
+    source: &RegistrationSource,
+    parameters: &[RegistrationValidationParameter],
+) -> Result<(), PendingValidationError> {
+    if parameters
+        .iter()
+        .any(|parameter| key_is_missing(parameter.key().as_str()))
+    {
+        return Err((
+            Box::new(source.clone()),
+            RejectedRegistrationReason::InvalidRegistrationParameter,
+            "checker.registration.invalid_parameter",
+            RegistrationDiagnosticClass::InvalidRegistrationParameter,
+        ));
+    }
+    if parameters
+        .iter()
+        .any(|parameter| !parameter.is_typed() || !parameter.facts_are_visible())
+    {
+        return Err((
+            Box::new(source.clone()),
+            RejectedRegistrationReason::InvalidRegistrationParameter,
+            "checker.registration.invalid_parameter",
+            RegistrationDiagnosticClass::InvalidRegistrationParameter,
+        ));
+    }
+    Ok(())
+}
+
+fn validate_correctness_condition(
+    source: &RegistrationSource,
+    goal: &InitialObligationGoal,
+    provenance: &InitialObligationProvenance,
+) -> Result<(), PendingValidationError> {
+    if key_is_missing(goal.as_str()) || key_is_missing(provenance.as_str()) {
+        return Err((
+            Box::new(source.clone()),
+            RejectedRegistrationReason::MissingCorrectnessCondition,
+            "checker.registration.missing_correctness_condition",
+            RegistrationDiagnosticClass::MissingCorrectnessCondition,
+        ));
+    }
+    Ok(())
+}
+
+fn validate_source_provenance(
+    source: &RegistrationSource,
+    source_range: SourceRange,
+) -> Result<(), PendingValidationError> {
+    if source_range.start > source_range.end {
+        return Err((
+            Box::new(source.clone()),
+            RejectedRegistrationReason::MissingSourceProvenance,
+            "checker.registration.missing_source_provenance",
+            RegistrationDiagnosticClass::MissingSourceProvenance,
+        ));
+    }
+    Ok(())
+}
+
+fn validate_registration_pattern(
+    source: &RegistrationSource,
+    pattern: &RegistrationValidationPattern,
+) -> Result<(), PendingValidationError> {
+    match pattern {
+        RegistrationValidationPattern::Existential {
+            type_head,
+            attributes,
+        } => {
+            if key_is_missing(type_head.as_str()) || attributes.is_empty() {
+                return invalid_pattern(source);
+            }
+            validate_attribute_keys(source, attributes)
+        }
+        RegistrationValidationPattern::Conditional {
+            type_head,
+            antecedent,
+            consequent,
+        } => {
+            if key_is_missing(type_head.as_str()) || antecedent.is_empty() || consequent.is_empty()
+            {
+                return invalid_pattern(source);
+            }
+            validate_attribute_keys(source, antecedent)?;
+            validate_attribute_keys(source, consequent)
+        }
+        RegistrationValidationPattern::Functorial {
+            functor,
+            result_type,
+            consequent,
+        } => {
+            if key_is_missing(functor.as_str())
+                || key_is_missing(result_type.as_str())
+                || consequent.is_empty()
+            {
+                return invalid_pattern(source);
+            }
+            validate_attribute_keys(source, consequent)
+        }
+        RegistrationValidationPattern::Reduction { lhs, rhs } => {
+            validate_reduction_pattern(source, lhs, rhs)
+        }
+    }
+}
+
+fn validate_attribute_keys(
+    source: &RegistrationSource,
+    attributes: &[RegistrationAttributeKey],
+) -> Result<(), PendingValidationError> {
+    if attributes
+        .iter()
+        .any(|attribute| key_is_missing(attribute.as_str()))
+    {
+        invalid_pattern(source)
+    } else {
+        Ok(())
+    }
+}
+
+fn validate_reduction_pattern(
+    source: &RegistrationSource,
+    lhs: &RegistrationTermPattern,
+    rhs: &RegistrationTermPattern,
+) -> Result<(), PendingValidationError> {
+    if key_is_missing(lhs.fingerprint().as_str())
+        || key_is_missing(rhs.fingerprint().as_str())
+        || lhs.size() == 0
+        || rhs.size() == 0
+    {
+        return invalid_pattern(source);
+    }
+    if lhs.source_range().is_none() || rhs.source_range().is_none() {
+        return Err((
+            Box::new(source.clone()),
+            RejectedRegistrationReason::MissingSourceProvenance,
+            "checker.registration.missing_source_provenance",
+            RegistrationDiagnosticClass::MissingSourceProvenance,
+        ));
+    }
+    let lhs_vars = variable_occurrence_map(lhs.free_variables());
+    let rhs_vars = variable_occurrence_map(rhs.free_variables());
+    for (variable, rhs_count) in &rhs_vars {
+        let lhs_count = lhs_vars.get(variable).copied().unwrap_or_default();
+        if lhs_count == 0 || *rhs_count > lhs_count {
+            return Err((
+                Box::new(source.clone()),
+                RejectedRegistrationReason::InvalidReductionOrientation,
+                "checker.registration.invalid_reduction_orientation",
+                RegistrationDiagnosticClass::InvalidReductionOrientation,
+            ));
+        }
+    }
+    if lhs.size() <= rhs.size() {
+        return Err((
+            Box::new(source.clone()),
+            RejectedRegistrationReason::InvalidReductionOrientation,
+            "checker.registration.invalid_reduction_orientation",
+            RegistrationDiagnosticClass::InvalidReductionOrientation,
+        ));
+    }
+    Ok(())
+}
+
+fn invalid_pattern(source: &RegistrationSource) -> Result<(), PendingValidationError> {
+    Err((
+        Box::new(source.clone()),
+        RejectedRegistrationReason::MalformedRegistrationPattern,
+        "checker.registration.malformed_pattern",
+        RegistrationDiagnosticClass::InvalidValidation,
+    ))
+}
+
+fn variable_occurrence_map(
+    variables: &[RegistrationVariableOccurrence],
+) -> BTreeMap<String, usize> {
+    let mut map = BTreeMap::new();
+    for occurrence in variables {
+        *map.entry(occurrence.variable().as_str().to_owned())
+            .or_default() += occurrence.count();
+    }
+    map
+}
+
+fn resolver_kind_for_validation(kind: RegistrationValidationKind) -> ResolverRegistrationKind {
+    match kind {
+        RegistrationValidationKind::Existential
+        | RegistrationValidationKind::Conditional
+        | RegistrationValidationKind::Functorial => ResolverRegistrationKind::Cluster,
+        RegistrationValidationKind::Reduction => ResolverRegistrationKind::Reduction,
+    }
+}
+
+fn validate_activation_companion_validations(
+    resolver_registration: ResolverRegistrationId,
+    resolver_kind: ResolverRegistrationKind,
+    source: RegistrationSource,
+    validations: &[RegistrationValidationInput],
+) -> Result<(), PendingValidationError> {
+    match validations {
+        [] => Ok(()),
+        [validation] => {
+            let mut scratch_obligations = InitialObligationTable::new();
+            validate_pending_registration(
+                resolver_registration,
+                resolver_kind,
+                source,
+                validation.clone(),
+                &mut scratch_obligations,
+            )
+            .map(|_| ())
+        }
+        _ => Err((
+            Box::new(source),
+            RejectedRegistrationReason::DuplicateValidationInput,
+            "checker.registration.duplicate_validation_input",
+            RegistrationDiagnosticClass::InvalidValidation,
+        )),
+    }
+}
 
 fn validate_activation(
     resolver_registration: ResolverRegistrationId,
@@ -846,6 +1696,14 @@ fn validate_activation(
             RegistrationDiagnosticClass::InvalidActivation,
         ));
     }
+    if activation.verifier_status != ActivationVerifierStatus::Accepted {
+        return Err((
+            Box::new(source),
+            RejectedRegistrationReason::UnacceptedActivationEvidence,
+            "checker.registration.unaccepted_activation_evidence",
+            RegistrationDiagnosticClass::UnacceptedActivationEvidence,
+        ));
+    }
     Ok(ActivatedRegistration {
         id: CheckerRegistrationId::new(resolver_registration.index()),
         resolver_registration,
@@ -876,6 +1734,21 @@ fn activation_map(
     }
     for entries in map.values_mut() {
         entries.sort_by_key(activation_input_order_key);
+    }
+    map
+}
+
+fn validation_map(
+    validations: impl IntoIterator<Item = RegistrationValidationInput>,
+) -> BTreeMap<ResolverRegistrationId, Vec<RegistrationValidationInput>> {
+    let mut map: BTreeMap<_, Vec<_>> = BTreeMap::new();
+    for validation in validations {
+        map.entry(validation.resolver_registration)
+            .or_default()
+            .push(validation);
+    }
+    for entries in map.values_mut() {
+        entries.sort_by_key(validation_input_order_key);
     }
     map
 }
@@ -990,6 +1863,14 @@ fn activation_input_order_key(input: &ActivationInput) -> (String, String, Strin
     )
 }
 
+fn validation_input_order_key(input: &RegistrationValidationInput) -> (u8, String, usize) {
+    (
+        validation_kind_rank(input.pattern.kind()),
+        input.correctness_goal.as_str().to_owned(),
+        input.source_range.start,
+    )
+}
+
 fn diagnostic_order_key(
     diagnostic: &RegistrationDiagnostic,
 ) -> (Option<usize>, u8, u8, String, usize) {
@@ -1021,17 +1902,39 @@ fn registration_kind_rank(kind: ResolverRegistrationKind) -> u8 {
     }
 }
 
+fn validation_kind_rank(kind: RegistrationValidationKind) -> u8 {
+    match kind {
+        RegistrationValidationKind::Existential => 0,
+        RegistrationValidationKind::Conditional => 1,
+        RegistrationValidationKind::Functorial => 2,
+        RegistrationValidationKind::Reduction => 3,
+    }
+}
+
 fn rejected_reason_rank(reason: RejectedRegistrationReason) -> u8 {
     match reason {
         RejectedRegistrationReason::MalformedResolverTarget => 0,
         RejectedRegistrationReason::RecoveredResolverOrigin => 1,
-        RejectedRegistrationReason::UnknownActivationOrigin => 2,
-        RejectedRegistrationReason::ActivationKindMismatch => 3,
-        RejectedRegistrationReason::MissingActivationTrigger => 4,
-        RejectedRegistrationReason::MissingAcceptedPattern => 5,
-        RejectedRegistrationReason::MissingAcceptedCorrectness => 6,
-        RejectedRegistrationReason::MissingActivationEvidence => 7,
-        RejectedRegistrationReason::DuplicateActivationInput => 8,
+        RejectedRegistrationReason::UnknownValidationOrigin => 2,
+        RejectedRegistrationReason::UnknownActivationOrigin => 3,
+        RejectedRegistrationReason::ValidationKindMismatch => 4,
+        RejectedRegistrationReason::ActivationKindMismatch => 5,
+        RejectedRegistrationReason::MissingRegistrationLabel => 6,
+        RejectedRegistrationReason::MissingRegistrationPayload => 7,
+        RejectedRegistrationReason::MalformedRegistrationPattern => 8,
+        RejectedRegistrationReason::MissingReferencedSymbol => 9,
+        RejectedRegistrationReason::IncompatibleReferencedSymbol => 10,
+        RejectedRegistrationReason::InvalidRegistrationParameter => 11,
+        RejectedRegistrationReason::MissingCorrectnessCondition => 12,
+        RejectedRegistrationReason::MissingSourceProvenance => 13,
+        RejectedRegistrationReason::InvalidReductionOrientation => 14,
+        RejectedRegistrationReason::MissingActivationTrigger => 15,
+        RejectedRegistrationReason::MissingAcceptedPattern => 16,
+        RejectedRegistrationReason::MissingAcceptedCorrectness => 17,
+        RejectedRegistrationReason::MissingActivationEvidence => 18,
+        RejectedRegistrationReason::UnacceptedActivationEvidence => 19,
+        RejectedRegistrationReason::DuplicateValidationInput => 20,
+        RejectedRegistrationReason::DuplicateActivationInput => 21,
     }
 }
 
@@ -1039,7 +1942,15 @@ fn diagnostic_class_rank(class: RegistrationDiagnosticClass) -> u8 {
     match class {
         RegistrationDiagnosticClass::ExternalDependencyGap => 0,
         RegistrationDiagnosticClass::MalformedResolverTarget => 1,
-        RegistrationDiagnosticClass::InvalidActivation => 2,
+        RegistrationDiagnosticClass::InvalidValidation => 2,
+        RegistrationDiagnosticClass::MissingReferencedSymbol => 3,
+        RegistrationDiagnosticClass::IncompatibleReferencedSymbol => 4,
+        RegistrationDiagnosticClass::InvalidRegistrationParameter => 5,
+        RegistrationDiagnosticClass::MissingCorrectnessCondition => 6,
+        RegistrationDiagnosticClass::MissingSourceProvenance => 7,
+        RegistrationDiagnosticClass::InvalidReductionOrientation => 8,
+        RegistrationDiagnosticClass::InvalidActivation => 9,
+        RegistrationDiagnosticClass::UnacceptedActivationEvidence => 10,
     }
 }
 
@@ -1060,12 +1971,16 @@ fn write_pending(output: &mut String, pending: &PendingRegistrationTable) {
     for entry in pending.iter() {
         let _ = write!(
             output,
-            "  pending#{} resolver=registration#{} status={} pattern={} inference=false ",
+            "  pending#{} resolver=registration#{} status={} pattern={} params=",
             entry.id.index(),
             entry.resolver_registration.index(),
             pending_status_name(entry.status),
             pattern_status_name(entry.pattern_status)
         );
+        write_parameter_keys(output, &entry.parameters);
+        output.push_str(" obligations=");
+        write_obligation_ids(output, &entry.obligations);
+        output.push_str(" inference=false ");
         write_registration_source(output, &entry.source);
         output.push('\n');
     }
@@ -1152,6 +2067,33 @@ fn write_diagnostics(output: &mut String, diagnostics: &RegistrationDiagnosticTa
         output.push_str("\" recovery=");
         output.push_str(diagnostic_recovery_name(diagnostic.recovery));
         output.push('\n');
+    }
+}
+
+fn write_initial_obligations(output: &mut String, obligations: &InitialObligationTable) {
+    output.push_str("initial_obligations:\n");
+    if obligations.is_empty() {
+        output.push_str("  <none>\n");
+        return;
+    }
+    for (id, obligation) in obligations.iter() {
+        let _ = write!(
+            output,
+            "  obligation#{} kind={} status={} owner=",
+            id.index(),
+            initial_obligation_kind_name(obligation.kind),
+            initial_obligation_status_name(obligation.status)
+        );
+        write_typed_site_ref(output, &obligation.owner);
+        output.push_str(" range=");
+        write_range(output, obligation.source_range);
+        output.push_str(" assumptions=");
+        write_type_fact_ids(output, &obligation.assumptions);
+        output.push_str(" goal=\"");
+        write_escaped(output, obligation.goal.as_str());
+        output.push_str("\" provenance=\"");
+        write_escaped(output, obligation.provenance.as_str());
+        output.push_str("\"\n");
     }
 }
 
@@ -1282,6 +2224,28 @@ fn write_parameter_keys(output: &mut String, parameters: &[RegistrationParameter
     output.push(']');
 }
 
+fn write_obligation_ids(output: &mut String, obligations: &[InitialObligationId]) {
+    output.push('[');
+    for (index, obligation) in obligations.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(output, "obligation#{}", obligation.index());
+    }
+    output.push(']');
+}
+
+fn write_type_fact_ids(output: &mut String, facts: &[TypeFactId]) {
+    output.push('[');
+    for (index, fact) in facts.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(output, "fact#{}", fact.index());
+    }
+    output.push(']');
+}
+
 fn write_dependency_ids(output: &mut String, dependencies: &[DeclarationDependencyId]) {
     output.push('[');
     for (index, dependency) in dependencies.iter().enumerate() {
@@ -1291,6 +2255,17 @@ fn write_dependency_ids(output: &mut String, dependencies: &[DeclarationDependen
         let _ = write!(output, "dependency#{}", dependency.index());
     }
     output.push(']');
+}
+
+fn write_typed_site_ref(output: &mut String, site: &TypedSiteRef) {
+    match site {
+        TypedSiteRef::Node(node) => {
+            let _ = write!(output, "node#{}", node.index());
+        }
+        TypedSiteRef::Role { node, role } => {
+            let _ = write!(output, "node#{}:{}", node.index(), role.as_str());
+        }
+    }
 }
 
 fn write_u32_slice(output: &mut String, values: &[u32]) {
@@ -1352,12 +2327,25 @@ fn recovery_name(recovery: RecoveryState) -> &'static str {
 fn pattern_status_name(status: RegistrationPatternStatus) -> &'static str {
     match status {
         RegistrationPatternStatus::ExternalDependencyGap => "external_dependency_gap",
+        RegistrationPatternStatus::Validated(RegistrationValidationKind::Existential) => {
+            "validated_existential"
+        }
+        RegistrationPatternStatus::Validated(RegistrationValidationKind::Conditional) => {
+            "validated_conditional"
+        }
+        RegistrationPatternStatus::Validated(RegistrationValidationKind::Functorial) => {
+            "validated_functorial"
+        }
+        RegistrationPatternStatus::Validated(RegistrationValidationKind::Reduction) => {
+            "validated_reduction"
+        }
     }
 }
 
 fn pending_status_name(status: PendingRegistrationStatus) -> &'static str {
     match status {
         PendingRegistrationStatus::BlockedExternalDependency => "blocked_external_dependency",
+        PendingRegistrationStatus::AwaitingVerifierAcceptance => "awaiting_verifier_acceptance",
     }
 }
 
@@ -1365,12 +2353,33 @@ fn rejected_reason_name(reason: RejectedRegistrationReason) -> &'static str {
     match reason {
         RejectedRegistrationReason::MalformedResolverTarget => "malformed_resolver_target",
         RejectedRegistrationReason::RecoveredResolverOrigin => "recovered_resolver_origin",
+        RejectedRegistrationReason::UnknownValidationOrigin => "unknown_validation_origin",
         RejectedRegistrationReason::UnknownActivationOrigin => "unknown_activation_origin",
+        RejectedRegistrationReason::ValidationKindMismatch => "validation_kind_mismatch",
         RejectedRegistrationReason::ActivationKindMismatch => "activation_kind_mismatch",
+        RejectedRegistrationReason::MissingRegistrationLabel => "missing_registration_label",
+        RejectedRegistrationReason::MissingRegistrationPayload => "missing_registration_payload",
+        RejectedRegistrationReason::MalformedRegistrationPattern => {
+            "malformed_registration_pattern"
+        }
+        RejectedRegistrationReason::MissingReferencedSymbol => "missing_referenced_symbol",
+        RejectedRegistrationReason::IncompatibleReferencedSymbol => {
+            "incompatible_referenced_symbol"
+        }
+        RejectedRegistrationReason::InvalidRegistrationParameter => {
+            "invalid_registration_parameter"
+        }
+        RejectedRegistrationReason::MissingCorrectnessCondition => "missing_correctness_condition",
+        RejectedRegistrationReason::MissingSourceProvenance => "missing_source_provenance",
+        RejectedRegistrationReason::InvalidReductionOrientation => "invalid_reduction_orientation",
         RejectedRegistrationReason::MissingActivationTrigger => "missing_activation_trigger",
         RejectedRegistrationReason::MissingAcceptedPattern => "missing_accepted_pattern",
         RejectedRegistrationReason::MissingAcceptedCorrectness => "missing_accepted_correctness",
         RejectedRegistrationReason::MissingActivationEvidence => "missing_activation_evidence",
+        RejectedRegistrationReason::UnacceptedActivationEvidence => {
+            "unaccepted_activation_evidence"
+        }
+        RejectedRegistrationReason::DuplicateValidationInput => "duplicate_validation_input",
         RejectedRegistrationReason::DuplicateActivationInput => "duplicate_activation_input",
     }
 }
@@ -1379,7 +2388,21 @@ fn diagnostic_class_name(class: RegistrationDiagnosticClass) -> &'static str {
     match class {
         RegistrationDiagnosticClass::ExternalDependencyGap => "external_dependency_gap",
         RegistrationDiagnosticClass::MalformedResolverTarget => "malformed_resolver_target",
+        RegistrationDiagnosticClass::InvalidValidation => "invalid_validation",
+        RegistrationDiagnosticClass::MissingReferencedSymbol => "missing_referenced_symbol",
+        RegistrationDiagnosticClass::IncompatibleReferencedSymbol => {
+            "incompatible_referenced_symbol"
+        }
+        RegistrationDiagnosticClass::InvalidRegistrationParameter => {
+            "invalid_registration_parameter"
+        }
+        RegistrationDiagnosticClass::MissingCorrectnessCondition => "missing_correctness_condition",
+        RegistrationDiagnosticClass::MissingSourceProvenance => "missing_source_provenance",
+        RegistrationDiagnosticClass::InvalidReductionOrientation => "invalid_reduction_orientation",
         RegistrationDiagnosticClass::InvalidActivation => "invalid_activation",
+        RegistrationDiagnosticClass::UnacceptedActivationEvidence => {
+            "unaccepted_activation_evidence"
+        }
     }
 }
 
@@ -1395,6 +2418,23 @@ fn diagnostic_recovery_name(recovery: RegistrationDiagnosticRecovery) -> &'stati
     match recovery {
         RegistrationDiagnosticRecovery::Normal => "normal",
         RegistrationDiagnosticRecovery::Degraded => "degraded",
+    }
+}
+
+fn initial_obligation_kind_name(kind: InitialObligationKind) -> &'static str {
+    match kind {
+        InitialObligationKind::Sethood => "sethood",
+        InitialObligationKind::NonEmptiness => "non_emptiness",
+        InitialObligationKind::Narrowing => "narrowing",
+        InitialObligationKind::RegistrationCorrectness => "registration_correctness",
+    }
+}
+
+fn initial_obligation_status_name(status: InitialObligationStatus) -> &'static str {
+    match status {
+        InitialObligationStatus::Pending => "pending",
+        InitialObligationStatus::Blocked => "blocked",
+        InitialObligationStatus::Invalidated => "invalidated",
     }
 }
 
@@ -1420,6 +2460,7 @@ impl fmt::Display for CheckerRegistrationId {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::typed_ast::{TypeRole, TypedNodeId};
     use mizar_resolve::{
         env::{RegistrationIndex, SourceContributionIndex, SymbolEnvIndexes},
         resolved_ast::{FullyQualifiedName, LocalSymbolId},
@@ -1467,7 +2508,7 @@ mod tests {
     fn activation_moves_entries_into_deterministic_trigger_order() {
         let fixture = env_fixture();
         let activations = vec![
-            ActivationInput::new(
+            ActivationInput::accepted(
                 fixture.cluster_b,
                 ResolverRegistrationKind::Cluster,
                 "trigger:z",
@@ -1477,7 +2518,7 @@ mod tests {
             )
             .with_label("pkg::main::ZReg")
             .with_fingerprint("fingerprint:z"),
-            ActivationInput::new(
+            ActivationInput::accepted(
                 fixture.reduction_a,
                 ResolverRegistrationKind::Reduction,
                 "trigger:a",
@@ -1533,7 +2574,7 @@ mod tests {
     #[test]
     fn source_contributions_round_trip_through_all_tables() {
         let fixture = env_fixture();
-        let activation = ActivationInput::new(
+        let activation = ActivationInput::accepted(
             fixture.reduction_a,
             ResolverRegistrationKind::Reduction,
             "trigger:a",
@@ -1567,7 +2608,7 @@ mod tests {
     #[test]
     fn invalid_activation_inputs_do_not_fabricate_active_records() {
         let fixture = env_fixture();
-        let activation = ActivationInput::new(
+        let activation = ActivationInput::accepted(
             fixture.cluster_b,
             ResolverRegistrationKind::Reduction,
             "trigger:b",
@@ -1598,7 +2639,7 @@ mod tests {
     fn invalid_activation_inputs_cover_all_rejection_paths() {
         let fixture = env_fixture();
         assert_invalid_activation(
-            vec![ActivationInput::new(
+            vec![ActivationInput::accepted(
                 fixture.reduction_a,
                 ResolverRegistrationKind::Reduction,
                 " ",
@@ -1610,7 +2651,7 @@ mod tests {
             "checker.registration.missing_activation_trigger",
         );
         assert_invalid_activation(
-            vec![ActivationInput::new(
+            vec![ActivationInput::accepted(
                 fixture.reduction_a,
                 ResolverRegistrationKind::Reduction,
                 "trigger:a",
@@ -1622,7 +2663,7 @@ mod tests {
             "checker.registration.missing_accepted_pattern",
         );
         assert_invalid_activation(
-            vec![ActivationInput::new(
+            vec![ActivationInput::accepted(
                 fixture.reduction_a,
                 ResolverRegistrationKind::Reduction,
                 "trigger:a",
@@ -1634,7 +2675,7 @@ mod tests {
             "checker.registration.missing_accepted_correctness",
         );
         assert_invalid_activation(
-            vec![ActivationInput::new(
+            vec![ActivationInput::accepted(
                 fixture.reduction_a,
                 ResolverRegistrationKind::Reduction,
                 "trigger:a",
@@ -1647,7 +2688,7 @@ mod tests {
         );
         assert_invalid_activation(
             vec![
-                ActivationInput::new(
+                ActivationInput::accepted(
                     fixture.reduction_a,
                     ResolverRegistrationKind::Reduction,
                     "trigger:a",
@@ -1655,7 +2696,7 @@ mod tests {
                     "correctness:a",
                     "evidence:a",
                 ),
-                ActivationInput::new(
+                ActivationInput::accepted(
                     fixture.reduction_a,
                     ResolverRegistrationKind::Reduction,
                     "trigger:a",
@@ -1668,7 +2709,7 @@ mod tests {
             "checker.registration.duplicate_activation_input",
         );
         assert_invalid_activation(
-            vec![ActivationInput::new(
+            vec![ActivationInput::accepted(
                 detached_registration_id(),
                 ResolverRegistrationKind::Reduction,
                 "trigger:unknown",
@@ -1683,7 +2724,7 @@ mod tests {
         let recovered = recovered_env_fixture();
         let database = RegistrationDatabase::from_symbol_env(
             &recovered.env,
-            [ActivationInput::new(
+            [ActivationInput::accepted(
                 recovered.registration,
                 ResolverRegistrationKind::Cluster,
                 "trigger:recovered",
@@ -1698,6 +2739,24 @@ mod tests {
             RejectedRegistrationReason::RecoveredResolverOrigin,
             "checker.registration.recovered_resolver_origin",
         );
+
+        let no_label = no_label_env_fixture();
+        let database = RegistrationDatabase::from_symbol_env_with_validation(
+            &no_label.env,
+            [validation(
+                no_label.registration,
+                existential_pattern(),
+                "goal:no-label",
+                "provenance:no-label",
+            )],
+            [],
+        );
+        assert_eq!(database.initial_obligations().len(), 0);
+        assert_rejection(
+            &database,
+            RejectedRegistrationReason::MissingRegistrationLabel,
+            "checker.registration.missing_registration_label",
+        );
     }
 
     #[test]
@@ -1706,7 +2765,7 @@ mod tests {
         let database = RegistrationDatabase::from_symbol_env(
             &fixture.env,
             [
-                ActivationInput::new(
+                ActivationInput::accepted(
                     fixture.cluster_b,
                     ResolverRegistrationKind::Cluster,
                     "trigger:shared",
@@ -1715,7 +2774,7 @@ mod tests {
                     "evidence:b",
                 )
                 .with_label("pkg::main::BReg"),
-                ActivationInput::new(
+                ActivationInput::accepted(
                     fixture.reduction_a,
                     ResolverRegistrationKind::Reduction,
                     "trigger:shared",
@@ -1753,7 +2812,7 @@ mod tests {
         let first = RegistrationDatabase::from_symbol_env(
             &fixture.env,
             [
-                ActivationInput::new(
+                ActivationInput::accepted(
                     fixture.cluster_b,
                     ResolverRegistrationKind::Cluster,
                     "trigger:b",
@@ -1762,7 +2821,7 @@ mod tests {
                     "evidence:b",
                 )
                 .with_label("pkg::main::BReg"),
-                ActivationInput::new(
+                ActivationInput::accepted(
                     fixture.reduction_a,
                     ResolverRegistrationKind::Reduction,
                     "trigger:a",
@@ -1777,7 +2836,7 @@ mod tests {
         let second = RegistrationDatabase::from_symbol_env(
             &fixture.env,
             [
-                ActivationInput::new(
+                ActivationInput::accepted(
                     fixture.reduction_a,
                     ResolverRegistrationKind::Reduction,
                     "trigger:a",
@@ -1786,7 +2845,7 @@ mod tests {
                     "evidence:a",
                 )
                 .with_label("pkg::main::AReg"),
-                ActivationInput::new(
+                ActivationInput::accepted(
                     fixture.cluster_b,
                     ResolverRegistrationKind::Cluster,
                     "trigger:b",
@@ -1810,6 +2869,553 @@ mod tests {
             ],
         );
         assert!(first.contains("visibility=public export=exported"));
+    }
+
+    #[test]
+    fn validated_payloads_emit_pending_obligations_without_activation() {
+        let fixture = env_fixture();
+        let database = RegistrationDatabase::from_symbol_env_with_validation(
+            &fixture.env,
+            [validation(
+                fixture.cluster_b,
+                existential_pattern(),
+                "goal:existence",
+                "provenance:existential",
+            )
+            .with_parameters([RegistrationValidationParameter::new("param:T")])
+            .with_referenced_symbols([RegistrationReferencedSymbol::compatible(
+                RegistrationReferencedSymbolRole::Attribute,
+                symbol_id(module_id(), "inhabited", "pkg::main::inhabited"),
+            )])],
+            [],
+        );
+
+        assert_eq!(database.activated().len(), 0);
+        assert_eq!(database.initial_obligations().len(), 1);
+        let pending = database
+            .pending()
+            .get(CheckerRegistrationId::new(fixture.cluster_b.index()))
+            .unwrap();
+        assert_eq!(
+            pending.pattern_status(),
+            RegistrationPatternStatus::Validated(RegistrationValidationKind::Existential)
+        );
+        assert_eq!(
+            pending.status(),
+            PendingRegistrationStatus::AwaitingVerifierAcceptance
+        );
+        assert_eq!(
+            pending.parameters(),
+            &[RegistrationParameterKey::new("param:T")]
+        );
+        assert_eq!(pending.obligations(), &[InitialObligationId::new(0)]);
+        assert!(!pending.may_contribute_to_inference());
+
+        let (_, obligation) = database.initial_obligations().iter().next().unwrap();
+        assert_eq!(
+            obligation.kind,
+            InitialObligationKind::RegistrationCorrectness
+        );
+        assert_eq!(obligation.status, InitialObligationStatus::Pending);
+        assert_eq!(obligation.goal.as_str(), "goal:existence");
+        assert!(
+            !database.debug_text().contains(concat!("Vc", "Id")),
+            "registration validation must not allocate proof-owned ids"
+        );
+    }
+
+    #[test]
+    fn kind_specific_validation_accepts_existential_conditional_functorial_and_reduction() {
+        let fixture = env_fixture();
+        assert_validated_kind(
+            &fixture,
+            fixture.cluster_b,
+            existential_pattern(),
+            RegistrationValidationKind::Existential,
+        );
+        assert_validated_kind(
+            &fixture,
+            fixture.cluster_b,
+            conditional_pattern(),
+            RegistrationValidationKind::Conditional,
+        );
+        assert_validated_kind(
+            &fixture,
+            fixture.cluster_b,
+            functorial_pattern(),
+            RegistrationValidationKind::Functorial,
+        );
+        assert_validated_kind(
+            &fixture,
+            fixture.reduction_a,
+            valid_reduction_pattern(),
+            RegistrationValidationKind::Reduction,
+        );
+    }
+
+    #[test]
+    fn invalid_validation_payloads_are_diagnosed_without_obligations() {
+        let fixture = env_fixture();
+        assert_invalid_validation(
+            &fixture,
+            fixture.cluster_b,
+            validation(
+                fixture.cluster_b,
+                existential_pattern(),
+                "goal:missing-symbol",
+                "provenance:missing-symbol",
+            )
+            .with_referenced_symbols([RegistrationReferencedSymbol::missing(
+                RegistrationReferencedSymbolRole::Attribute,
+            )]),
+            RejectedRegistrationReason::MissingReferencedSymbol,
+            "checker.registration.missing_referenced_symbol",
+        );
+        assert_invalid_validation(
+            &fixture,
+            fixture.cluster_b,
+            validation(
+                fixture.cluster_b,
+                existential_pattern(),
+                "goal:incompatible-symbol",
+                "provenance:incompatible-symbol",
+            )
+            .with_referenced_symbols([RegistrationReferencedSymbol::incompatible(
+                RegistrationReferencedSymbolRole::Attribute,
+                symbol_id(module_id(), "wrong", "pkg::main::wrong"),
+            )]),
+            RejectedRegistrationReason::IncompatibleReferencedSymbol,
+            "checker.registration.incompatible_referenced_symbol",
+        );
+        assert_invalid_validation(
+            &fixture,
+            fixture.cluster_b,
+            validation(
+                fixture.cluster_b,
+                RegistrationValidationPattern::Existential {
+                    type_head: RegistrationTypeKey::new("type:T"),
+                    attributes: Vec::new(),
+                },
+                "goal:malformed",
+                "provenance:malformed",
+            ),
+            RejectedRegistrationReason::MalformedRegistrationPattern,
+            "checker.registration.malformed_pattern",
+        );
+        assert_invalid_validation(
+            &fixture,
+            fixture.cluster_b,
+            validation(
+                fixture.cluster_b,
+                conditional_pattern(),
+                "goal:param",
+                "provenance:param",
+            )
+            .with_parameters([RegistrationValidationParameter::new("param:x").with_typed(false)]),
+            RejectedRegistrationReason::InvalidRegistrationParameter,
+            "checker.registration.invalid_parameter",
+        );
+        assert_invalid_validation(
+            &fixture,
+            fixture.cluster_b,
+            validation(
+                fixture.cluster_b,
+                conditional_pattern(),
+                "goal:param-visibility",
+                "provenance:param-visibility",
+            )
+            .with_parameters([
+                RegistrationValidationParameter::new("param:x").with_visible_facts(false)
+            ]),
+            RejectedRegistrationReason::InvalidRegistrationParameter,
+            "checker.registration.invalid_parameter",
+        );
+        assert_invalid_validation(
+            &fixture,
+            fixture.cluster_b,
+            validation(
+                fixture.cluster_b,
+                functorial_pattern(),
+                " ",
+                "provenance:missing",
+            ),
+            RejectedRegistrationReason::MissingCorrectnessCondition,
+            "checker.registration.missing_correctness_condition",
+        );
+        assert_invalid_validation(
+            &fixture,
+            fixture.cluster_b,
+            validation(
+                fixture.cluster_b,
+                valid_reduction_pattern(),
+                "goal:kind",
+                "provenance:kind",
+            ),
+            RejectedRegistrationReason::ValidationKindMismatch,
+            "checker.registration.validation_kind_mismatch",
+        );
+        assert_invalid_validation(
+            &fixture,
+            fixture.cluster_b,
+            validation_with_range(
+                fixture.cluster_b,
+                existential_pattern(),
+                "goal:source-range",
+                "provenance:source-range",
+                SourceRange {
+                    source_id: source_id(),
+                    start: 10,
+                    end: 9,
+                },
+            ),
+            RejectedRegistrationReason::MissingSourceProvenance,
+            "checker.registration.missing_source_provenance",
+        );
+
+        let recovered = recovered_env_fixture();
+        let database = RegistrationDatabase::from_symbol_env_with_validation(
+            &recovered.env,
+            [validation(
+                recovered.registration,
+                existential_pattern(),
+                "goal:recovered",
+                "provenance:recovered",
+            )],
+            [],
+        );
+        assert_eq!(database.initial_obligations().len(), 0);
+        assert_rejection(
+            &database,
+            RejectedRegistrationReason::RecoveredResolverOrigin,
+            "checker.registration.recovered_resolver_origin",
+        );
+    }
+
+    #[test]
+    fn validation_input_routing_errors_are_diagnosed() {
+        let fixture = env_fixture();
+        let duplicate = RegistrationDatabase::from_symbol_env_with_validation(
+            &fixture.env,
+            [
+                validation(
+                    fixture.cluster_b,
+                    existential_pattern(),
+                    "goal:duplicate-a",
+                    "provenance:duplicate-a",
+                ),
+                validation(
+                    fixture.cluster_b,
+                    conditional_pattern(),
+                    "goal:duplicate-b",
+                    "provenance:duplicate-b",
+                ),
+            ],
+            [],
+        );
+        assert_eq!(duplicate.initial_obligations().len(), 0);
+        assert_rejection(
+            &duplicate,
+            RejectedRegistrationReason::DuplicateValidationInput,
+            "checker.registration.duplicate_validation_input",
+        );
+
+        let unknown = RegistrationDatabase::from_symbol_env_with_validation(
+            &fixture.env,
+            [validation(
+                detached_registration_id(),
+                existential_pattern(),
+                "goal:unknown",
+                "provenance:unknown",
+            )],
+            [],
+        );
+        assert_eq!(unknown.initial_obligations().len(), 0);
+        assert_rejection(
+            &unknown,
+            RejectedRegistrationReason::UnknownValidationOrigin,
+            "checker.registration.unknown_validation_origin",
+        );
+    }
+
+    #[test]
+    fn malformed_kind_specific_patterns_are_rejected() {
+        let fixture = env_fixture();
+        assert_invalid_validation(
+            &fixture,
+            fixture.cluster_b,
+            validation(
+                fixture.cluster_b,
+                RegistrationValidationPattern::Conditional {
+                    type_head: RegistrationTypeKey::new("type:T"),
+                    antecedent: Vec::new(),
+                    consequent: vec![RegistrationAttributeKey::new("attr:B")],
+                },
+                "goal:conditional-antecedent",
+                "provenance:conditional-antecedent",
+            ),
+            RejectedRegistrationReason::MalformedRegistrationPattern,
+            "checker.registration.malformed_pattern",
+        );
+        assert_invalid_validation(
+            &fixture,
+            fixture.cluster_b,
+            validation(
+                fixture.cluster_b,
+                RegistrationValidationPattern::Conditional {
+                    type_head: RegistrationTypeKey::new("type:T"),
+                    antecedent: vec![RegistrationAttributeKey::new("attr:A")],
+                    consequent: Vec::new(),
+                },
+                "goal:conditional-consequent",
+                "provenance:conditional-consequent",
+            ),
+            RejectedRegistrationReason::MalformedRegistrationPattern,
+            "checker.registration.malformed_pattern",
+        );
+        assert_invalid_validation(
+            &fixture,
+            fixture.cluster_b,
+            validation(
+                fixture.cluster_b,
+                RegistrationValidationPattern::Functorial {
+                    functor: RegistrationFunctorKey::new(" "),
+                    result_type: RegistrationTypeKey::new("type:Result"),
+                    consequent: vec![RegistrationAttributeKey::new("attr:computed")],
+                },
+                "goal:functorial-functor",
+                "provenance:functorial-functor",
+            ),
+            RejectedRegistrationReason::MalformedRegistrationPattern,
+            "checker.registration.malformed_pattern",
+        );
+        assert_invalid_validation(
+            &fixture,
+            fixture.cluster_b,
+            validation(
+                fixture.cluster_b,
+                RegistrationValidationPattern::Functorial {
+                    functor: RegistrationFunctorKey::new("functor:F"),
+                    result_type: RegistrationTypeKey::new("type:Result"),
+                    consequent: vec![RegistrationAttributeKey::new(" ")],
+                },
+                "goal:functorial-attribute",
+                "provenance:functorial-attribute",
+            ),
+            RejectedRegistrationReason::MalformedRegistrationPattern,
+            "checker.registration.malformed_pattern",
+        );
+        assert_invalid_validation(
+            &fixture,
+            fixture.reduction_a,
+            validation(
+                fixture.reduction_a,
+                reduction_pattern(
+                    term_pattern(" ", 2, [var("x", 1)]),
+                    term_pattern("term:x", 1, [var("x", 1)]),
+                ),
+                "goal:reduction-key",
+                "provenance:reduction-key",
+            ),
+            RejectedRegistrationReason::MalformedRegistrationPattern,
+            "checker.registration.malformed_pattern",
+        );
+        assert_invalid_validation(
+            &fixture,
+            fixture.reduction_a,
+            validation(
+                fixture.reduction_a,
+                reduction_pattern(
+                    term_pattern("term:F(x)", 0, [var("x", 1)]),
+                    term_pattern("term:x", 1, [var("x", 1)]),
+                ),
+                "goal:reduction-size",
+                "provenance:reduction-size",
+            ),
+            RejectedRegistrationReason::MalformedRegistrationPattern,
+            "checker.registration.malformed_pattern",
+        );
+    }
+
+    #[test]
+    fn reduction_validation_enforces_free_variables_size_order_and_provenance() {
+        let fixture = env_fixture();
+        assert_invalid_validation(
+            &fixture,
+            fixture.reduction_a,
+            validation(
+                fixture.reduction_a,
+                reduction_pattern(
+                    term_pattern("term:f", 2, [var("x", 1)]),
+                    term_pattern("term:g", 1, [var("y", 1)]),
+                ),
+                "goal:free-variable",
+                "provenance:free-variable",
+            ),
+            RejectedRegistrationReason::InvalidReductionOrientation,
+            "checker.registration.invalid_reduction_orientation",
+        );
+        assert_invalid_validation(
+            &fixture,
+            fixture.reduction_a,
+            validation(
+                fixture.reduction_a,
+                reduction_pattern(
+                    term_pattern("term:f", 3, [var("x", 1)]),
+                    term_pattern("term:g", 1, [var("x", 2)]),
+                ),
+                "goal:occurrence-count",
+                "provenance:occurrence-count",
+            ),
+            RejectedRegistrationReason::InvalidReductionOrientation,
+            "checker.registration.invalid_reduction_orientation",
+        );
+        assert_invalid_validation(
+            &fixture,
+            fixture.reduction_a,
+            validation(
+                fixture.reduction_a,
+                reduction_pattern(
+                    term_pattern("term:f", 2, [var("x", 1)]),
+                    term_pattern("term:g", 2, [var("x", 1)]),
+                ),
+                "goal:size",
+                "provenance:size",
+            ),
+            RejectedRegistrationReason::InvalidReductionOrientation,
+            "checker.registration.invalid_reduction_orientation",
+        );
+        assert_invalid_validation(
+            &fixture,
+            fixture.reduction_a,
+            validation(
+                fixture.reduction_a,
+                reduction_pattern(
+                    RegistrationTermPattern::without_source_range("term:f", 2, [var("x", 1)]),
+                    term_pattern("term:g", 1, [var("x", 1)]),
+                ),
+                "goal:source",
+                "provenance:source",
+            ),
+            RejectedRegistrationReason::MissingSourceProvenance,
+            "checker.registration.missing_source_provenance",
+        );
+    }
+
+    #[test]
+    fn accepted_activation_requires_valid_companion_validation_when_supplied() {
+        let fixture = env_fixture();
+        let active = RegistrationDatabase::from_symbol_env_with_validation(
+            &fixture.env,
+            [validation(
+                fixture.reduction_a,
+                valid_reduction_pattern(),
+                "goal:accepted",
+                "provenance:accepted",
+            )],
+            [ActivationInput::accepted(
+                fixture.reduction_a,
+                ResolverRegistrationKind::Reduction,
+                "trigger:a",
+                "pattern:a",
+                "correctness:a",
+                "evidence:a",
+            )],
+        );
+        assert_eq!(active.activated().len(), 1);
+        assert_eq!(active.pending().len(), 1);
+        assert_eq!(active.initial_obligations().len(), 0);
+
+        let invalid = RegistrationDatabase::from_symbol_env_with_validation(
+            &fixture.env,
+            [validation(
+                fixture.reduction_a,
+                reduction_pattern(
+                    term_pattern("term:f", 2, [var("x", 1)]),
+                    term_pattern("term:g", 2, [var("x", 1)]),
+                ),
+                "goal:invalid-companion",
+                "provenance:invalid-companion",
+            )],
+            [ActivationInput::accepted(
+                fixture.reduction_a,
+                ResolverRegistrationKind::Reduction,
+                "trigger:a",
+                "pattern:a",
+                "correctness:a",
+                "evidence:a",
+            )],
+        );
+        assert_eq!(invalid.activated().len(), 0);
+        assert_eq!(invalid.initial_obligations().len(), 0);
+        assert_rejection(
+            &invalid,
+            RejectedRegistrationReason::InvalidReductionOrientation,
+            "checker.registration.invalid_reduction_orientation",
+        );
+    }
+
+    #[test]
+    fn unaccepted_activation_evidence_keeps_validated_registration_pending() {
+        let fixture = env_fixture();
+        let database = RegistrationDatabase::from_symbol_env_with_validation(
+            &fixture.env,
+            [validation(
+                fixture.reduction_a,
+                valid_reduction_pattern(),
+                "goal:reducibility",
+                "provenance:reducibility",
+            )],
+            [ActivationInput::new(
+                fixture.reduction_a,
+                ResolverRegistrationKind::Reduction,
+                "trigger:a",
+                "pattern:a",
+                "correctness:a",
+                "evidence:a",
+            )],
+        );
+
+        assert_eq!(database.activated().len(), 0);
+        assert_eq!(database.initial_obligations().len(), 1);
+        assert_eq!(
+            database
+                .pending()
+                .get(CheckerRegistrationId::new(fixture.reduction_a.index()))
+                .unwrap()
+                .status(),
+            PendingRegistrationStatus::AwaitingVerifierAcceptance
+        );
+        assert_rejection(
+            &database,
+            RejectedRegistrationReason::UnacceptedActivationEvidence,
+            "checker.registration.unaccepted_activation_evidence",
+        );
+
+        let rejected = RegistrationDatabase::from_symbol_env_with_validation(
+            &fixture.env,
+            [validation(
+                fixture.reduction_a,
+                valid_reduction_pattern(),
+                "goal:rejected",
+                "provenance:rejected",
+            )],
+            [ActivationInput::accepted(
+                fixture.reduction_a,
+                ResolverRegistrationKind::Reduction,
+                "trigger:a",
+                "pattern:a",
+                "correctness:a",
+                "evidence:a",
+            )
+            .with_verifier_status(ActivationVerifierStatus::Rejected)],
+        );
+        assert_eq!(rejected.activated().len(), 0);
+        assert_eq!(rejected.initial_obligations().len(), 1);
+        assert_rejection(
+            &rejected,
+            RejectedRegistrationReason::UnacceptedActivationEvidence,
+            "checker.registration.unaccepted_activation_evidence",
+        );
     }
 
     struct EnvFixture {
@@ -1858,6 +3464,147 @@ mod tests {
             "missing diagnostic {message_key} in\n{}",
             database.debug_text()
         );
+    }
+
+    fn assert_validated_kind(
+        fixture: &EnvFixture,
+        resolver_registration: ResolverRegistrationId,
+        pattern: RegistrationValidationPattern,
+        kind: RegistrationValidationKind,
+    ) {
+        let database = RegistrationDatabase::from_symbol_env_with_validation(
+            &fixture.env,
+            [validation(
+                resolver_registration,
+                pattern,
+                "goal:valid",
+                "provenance:valid",
+            )],
+            [],
+        );
+
+        let pending = database
+            .pending()
+            .get(CheckerRegistrationId::new(resolver_registration.index()))
+            .unwrap_or_else(|| {
+                panic!("missing pending registration in\n{}", database.debug_text())
+            });
+        assert_eq!(
+            pending.pattern_status(),
+            RegistrationPatternStatus::Validated(kind)
+        );
+        assert_eq!(pending.obligations(), &[InitialObligationId::new(0)]);
+        assert_eq!(database.initial_obligations().len(), 1);
+    }
+
+    fn assert_invalid_validation(
+        fixture: &EnvFixture,
+        resolver_registration: ResolverRegistrationId,
+        input: RegistrationValidationInput,
+        reason: RejectedRegistrationReason,
+        message_key: &str,
+    ) {
+        let database =
+            RegistrationDatabase::from_symbol_env_with_validation(&fixture.env, [input], []);
+        assert_eq!(
+            database.initial_obligations().len(),
+            0,
+            "invalid validation must not emit obligations:\n{}",
+            database.debug_text()
+        );
+        assert!(
+            database
+                .pending()
+                .get(CheckerRegistrationId::new(resolver_registration.index()))
+                .is_none(),
+            "invalid validation must not leave a usable pending payload:\n{}",
+            database.debug_text()
+        );
+        assert_rejection(&database, reason, message_key);
+    }
+
+    fn validation(
+        resolver_registration: ResolverRegistrationId,
+        pattern: RegistrationValidationPattern,
+        goal: &str,
+        provenance: &str,
+    ) -> RegistrationValidationInput {
+        validation_with_range(
+            resolver_registration,
+            pattern,
+            goal,
+            provenance,
+            range(source_id(), 30, 31),
+        )
+    }
+
+    fn validation_with_range(
+        resolver_registration: ResolverRegistrationId,
+        pattern: RegistrationValidationPattern,
+        goal: &str,
+        provenance: &str,
+        source_range: SourceRange,
+    ) -> RegistrationValidationInput {
+        RegistrationValidationInput::new(
+            resolver_registration,
+            TypedSiteRef::Role {
+                node: TypedNodeId::new(0),
+                role: TypeRole::new("registration"),
+            },
+            source_range,
+            pattern,
+            goal,
+            provenance,
+        )
+    }
+
+    fn existential_pattern() -> RegistrationValidationPattern {
+        RegistrationValidationPattern::Existential {
+            type_head: RegistrationTypeKey::new("type:T"),
+            attributes: vec![RegistrationAttributeKey::new("attr:inhabited")],
+        }
+    }
+
+    fn conditional_pattern() -> RegistrationValidationPattern {
+        RegistrationValidationPattern::Conditional {
+            type_head: RegistrationTypeKey::new("type:T"),
+            antecedent: vec![RegistrationAttributeKey::new("attr:A")],
+            consequent: vec![RegistrationAttributeKey::new("attr:B")],
+        }
+    }
+
+    fn functorial_pattern() -> RegistrationValidationPattern {
+        RegistrationValidationPattern::Functorial {
+            functor: RegistrationFunctorKey::new("functor:F"),
+            result_type: RegistrationTypeKey::new("type:Result"),
+            consequent: vec![RegistrationAttributeKey::new("attr:computed")],
+        }
+    }
+
+    fn valid_reduction_pattern() -> RegistrationValidationPattern {
+        reduction_pattern(
+            term_pattern("term:F(x)", 2, [var("x", 1)]),
+            term_pattern("term:x", 1, [var("x", 1)]),
+        )
+    }
+
+    fn reduction_pattern(
+        lhs: RegistrationTermPattern,
+        rhs: RegistrationTermPattern,
+    ) -> RegistrationValidationPattern {
+        RegistrationValidationPattern::Reduction { lhs, rhs }
+    }
+
+    fn term_pattern(
+        fingerprint: &str,
+        size: usize,
+        variables: impl IntoIterator<Item = RegistrationVariableOccurrence>,
+    ) -> RegistrationTermPattern {
+        RegistrationTermPattern::new(fingerprint, size, variables, range(source_id(), 40, 41))
+    }
+
+    fn var(variable: &str, count: usize) -> RegistrationVariableOccurrence {
+        RegistrationVariableOccurrence::new(variable, count)
     }
 
     fn env_fixture() -> EnvFixture {
@@ -1981,6 +3728,42 @@ mod tests {
                 "RecoveredReg",
                 "pkg::main::RecoveredReg",
             )),
+            ResolverRegistrationKind::Cluster,
+            SignatureShell::Pending,
+            origin,
+            contribution,
+        );
+        contributions.add_registration(contribution, registration);
+
+        let indexes = SymbolEnvIndexes {
+            registrations,
+            contributions,
+            ..SymbolEnvIndexes::default()
+        };
+        RecoveredEnvFixture {
+            env: SymbolEnv::new(module, indexes),
+            registration,
+        }
+    }
+
+    fn no_label_env_fixture() -> RecoveredEnvFixture {
+        let source = source_id();
+        let module = module_id();
+        let origin = SemanticOrigin::new(
+            source,
+            module.clone(),
+            SourceAnchor::Range(range(source, 15, 16)),
+            vec![15],
+        );
+        let mut contributions = SourceContributionIndex::new();
+        let contribution = contributions.insert(
+            module.clone(),
+            mizar_resolve::env::ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 15, 16)),
+        );
+        let mut registrations = RegistrationIndex::new();
+        let registration = registrations.insert(
+            None,
             ResolverRegistrationKind::Cluster,
             SignatureShell::Pending,
             origin,

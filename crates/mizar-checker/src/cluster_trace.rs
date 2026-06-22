@@ -3504,7 +3504,7 @@ mod tests {
         let database = RegistrationDatabase::from_symbol_env(
             &env,
             [
-                ActivationInput::new(
+                ActivationInput::accepted(
                     missing_pattern,
                     ResolverRegistrationKind::Cluster,
                     "trigger:missing",
@@ -3512,7 +3512,7 @@ mod tests {
                     "correctness:missing",
                     "evidence:missing",
                 ),
-                ActivationInput::new(
+                ActivationInput::accepted(
                     recovered,
                     ResolverRegistrationKind::Cluster,
                     "trigger:recovered",
@@ -3581,7 +3581,7 @@ mod tests {
         let database = RegistrationDatabase::from_symbol_env(
             &env,
             [
-                ActivationInput::new(
+                ActivationInput::accepted(
                     missing_pattern,
                     ResolverRegistrationKind::Reduction,
                     "trigger:missing-reduction",
@@ -3589,7 +3589,7 @@ mod tests {
                     "correctness:missing-reduction",
                     "evidence:missing-reduction",
                 ),
-                ActivationInput::new(
+                ActivationInput::accepted(
                     recovered,
                     ResolverRegistrationKind::Reduction,
                     "trigger:recovered-reduction",
@@ -3638,7 +3638,7 @@ mod tests {
         let env = SymbolEnv::new(module.clone(), indexes);
         let database = RegistrationDatabase::from_symbol_env(
             &env,
-            [ActivationInput::new(
+            [ActivationInput::accepted(
                 cluster,
                 ResolverRegistrationKind::Cluster,
                 "trigger:no-fingerprint",
@@ -3662,7 +3662,7 @@ mod tests {
         trigger: &str,
         fingerprint: &str,
     ) -> ActivationInput {
-        ActivationInput::new(
+        ActivationInput::accepted(
             id,
             kind,
             trigger,

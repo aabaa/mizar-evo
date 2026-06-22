@@ -62,13 +62,13 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
   node-kind storage のための direct `mizar-syntax` dependency を追加せず、
   checker-local な source-shape projection を使う。`ResolvedTypedAst` は task 28
   で同じ決定を再訪する。
-- **registration の活性化ゲート: 未解決。task 19 で解決する。** ローカル
+- **registration の活性化ゲート: task 19 で解決済み。** ローカル
   registration は、その証明義務が設定済み verifier ポリシーに受理される
   まで自動推論に影響してはならない（アーキテクチャ 04 の制約）。phase
-  11-14 がまだ存在しないため最初のイテレーションには暫定ポリシーが必要
-  である。既定の暫定ポリシーは未検証 registration を活性化しない:
-  生成された義務は pending / unverified status として記録し、accepted verifier
-  status が利用可能になるまで registration は active database に入らない。
+  11-14 がまだ存在しないため、task 19 は暫定ポリシーを実装する。
+  生成された義務は pending / unverified status として記録し、explicit な
+  accepted verifier/artifact status input が利用可能になるまで registration は
+  active database に入らない。
   トップレベルに登録済み。`mizar-vc`/`mizar-proof` 着地時に再訪する。
 - **trace スキーマ準拠: 解決済み。**
   [17.cluster_trace_format.md](../../architecture/ja/17.cluster_trace_format.md)
@@ -327,7 +327,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       matching、resolver-shell parsing、artifact/cache integration、source-derived
       reduction extraction は deferred のまま。
 
-19. **pending registration の検証と活性化ゲート。** [ ]
+19. **pending registration の検証と活性化ゲート。** [x]
     - pending registration 宣言を検証し（アーキテクチャ 04 Step 6）、その
       義務を発行し、暫定の活性化ゲートポリシーを実装する。決定をここと
       トップレベルに記録する。
@@ -337,6 +337,13 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       未検証 registration は推論に影響せず、policy-admitted activation には後続
       proof/artifact input からの accepted verifier status を要求する。
     - 依存: 17、18。仕様: `registration_resolution.md`。
+    - task 19 で完了: `RegistrationValidationInput` は explicit な checker-ready
+      pending payload を検証し、checker-local `InitialObligationId` を発行し、validated
+      record を `inference=false` の pending として保持し、recovered origin と malformed
+      kind-specific payload を rejected にし、spec 17.6.4 固定の reduction size /
+      variable rule を強制し、verifier/artifact status が missing または rejected の
+      activation input を rejected にする。source extraction、accepted-status
+      production/import、artifact reuse、active `.miz` semantic fixture は deferred のまま。
 
 20. **attribute 付き型使用の existential ゲート。** [ ]
     - attribute 付き型は existential registration が非空性を正当化する
