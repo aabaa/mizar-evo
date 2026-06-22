@@ -85,12 +85,15 @@ Keep `cargo test -p mizar-checker` green after each task (see
 
 ### Wave 1: type checking (phase 6)
 
-1. **Crate scaffold and lint-policy guard.** [ ]
+1. **Crate scaffold and lint-policy guard.** [x]
    - Add the `mizar-checker` workspace member depending on `mizar-session`
      and `mizar-resolve`; add `tests/lint_policy.rs` mirroring the
      `mizar-frontend` guard.
    - Tests: lint-policy guard passes; workspace builds.
    - Deps: `mizar-resolve` task 5. Spec: architecture 04.
+   - Completed by task 1: the crate scaffold, minimal crate root, dependency
+     boundary, and lint-policy guard are in place; no checker semantics or
+     public APIs beyond the crate boundary were introduced.
 
 2. **Spec: `typed_ast.md`.** [ ]
    - Write the `TypedAst` data-shape spec (English and Japanese, no code):

@@ -83,12 +83,15 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 
 ### 第 1 波: 型検査（phase 6）
 
-1. **crate の足場と lint 方針のガード。** [ ]
+1. **crate の足場と lint 方針のガード。** [x]
    - `mizar-session` と `mizar-resolve` に依存する workspace メンバー
      `mizar-checker` を追加し、`mizar-frontend` のガードに倣った
      `tests/lint_policy.rs` を追加する。
    - テスト: lint 方針ガードが通る。workspace がビルドできる。
    - 依存: `mizar-resolve` task 5。仕様: アーキテクチャ 04。
+   - task 1 で完了: crate scaffold、最小 crate root、dependency boundary、
+     lint-policy guard を追加した。crate boundary を超える checker semantics や
+     public API は導入していない。
 
 2. **仕様: `typed_ast.md`。** [ ]
    - `TypedAst` のデータ形状仕様を執筆する（英語と日本語、コードなし）:
