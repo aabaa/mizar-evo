@@ -20,7 +20,7 @@
 | typed_ast | `typed_ast.md`（task 2） | `src/typed_ast.rs` | [x] |
 | binding_env | `binding_env.md`（task 4） | `src/binding_env.rs` | [x] |
 | type_checker | `type_checker.md`（task 6） | `src/type_checker.rs` | [~] |
-| registration_resolution | `registration_resolution.md`（task 13） | `src/registration_resolution.rs` | [ ] |
+| registration_resolution | `registration_resolution.md`（task 13） | `src/registration_resolution.rs` | [~] |
 | cluster_trace | `cluster_trace.md`（task 15） | `src/cluster_trace.rs` | [ ] |
 | overload_resolution | `overload_resolution.md`（task 21） | `src/overload_resolution.rs` | [ ] |
 | resolved_typed_ast | `resolved_typed_ast.md`（task 27） | `src/resolved_typed_ast.rs` | [ ] |
@@ -243,12 +243,18 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 
 ### 第 2 波: cluster と registration の解決（phase 7）
 
-13. **仕様: `registration_resolution.md`。** [ ]
+13. **仕様: `registration_resolution.md`。** [x]
     - registration の仕様を執筆する（英語と日本語、コードなし）: pending
       と activated のデータベース分離、existential ゲート、来歴付き
       reduction 書き換え、検証義務（アーキテクチャ 04 Step 5-6）。
     - 依存: 2。仕様: アーキテクチャ 04「Registration Databases」、
       [17.clusters_and_registrations.md](../../../spec/ja/17.clusters_and_registrations.md)。
+    - task 13 で完了: `registration_resolution.md` は phase-7 境界、
+      pending/activated registration database 分離、validation と
+      `InitialObligationId` rule、existential gating、cluster closure、
+      reduction provenance、deterministic diagnostic/recovery、task 14 と
+      16-20 の planned test、MC-G021 external/deferred payload gap を、source
+      behavior を追加せず定義する。
 
 14. **registration 索引。** [ ]
     - `SymbolEnv` の registration 宣言上に pending/activated データベースを
@@ -269,20 +275,26 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - 決定的トラバーサルで attribute 伝播の閉包を実装し（アーキテクチャ 04
       Step 5）、すべての適用を `ResolutionTrace` に記録する。
     - テスト: 閉包フィクスチャ。trace の再生が同じ導出事実に到達する。
-      決定的な適用順。
+      決定的な適用順。subtype-compatible conditional cluster。
+      pending/rejected/unaccepted registration は発火しない。
     - 依存: 14、15。仕様: `cluster_trace.md`、`registration_resolution.md`。
 
 17. **cluster ループ検出と有界飽和。** [ ]
     - cluster ループを検出し、発散する代わりに有界飽和診断を発行する
       （アーキテクチャ 17「Cluster Loop Detection」）。
     - テスト: ループフィクスチャが安定した診断で停止する。上限が設定として
-      可視である。
+      可視である。矛盾する導出は fatal であり、degraded verified fact を export しない。
     - 依存: 16。仕様: [17.cluster_trace_format.md](../../architecture/ja/17.cluster_trace_format.md)。
 
 18. **reduction の適用。** [ ]
     - reduction 書き換え（redex パス、置換、ガード証拠）を、完全な来歴を
       `ResolutionTrace` に記録しつつ実装する。
-    - テスト: redex パスの正しさ。ガード証拠の必須化。再生可能な trace。
+    - テスト: redex パスの正しさ。ガード証拠の必須化。source redex、
+      target term、rule FQN、rule-view fingerprint、selection key、
+      enclosing-term fingerprint、source provenance の記録。`such` side condition は
+      applicability-only。pending/rejected/unaccepted reduction は rewrite しない。
+      invalid substitution と mismatched strategy-audit key を診断する。再生可能な
+      trace。
     - 依存: 16。仕様: `registration_resolution.md`（reduction の節）、
       アーキテクチャ 17「Reduction Step」。
 
@@ -290,9 +302,11 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - pending registration 宣言を検証し（アーキテクチャ 04 Step 6）、その
       義務を発行し、暫定の活性化ゲートポリシーを実装する。決定をここと
       トップレベルに記録する。
-    - テスト: 不正な registration の診断。未検証 registration は推論に影響せず、
-      policy-admitted activation には後続 proof/artifact input からの accepted
-      verifier status を要求する。
+    - テスト: 不正な registration の診断。kind-specific validation は existential、
+      conditional、functorial、reduction pattern を cover し、reduction の
+      free-variable / occurrence / orientation / source-provenance check を含む。
+      未検証 registration は推論に影響せず、policy-admitted activation には後続
+      proof/artifact input からの accepted verifier status を要求する。
     - 依存: 17、18。仕様: `registration_resolution.md`。
 
 20. **attribute 付き型使用の existential ゲート。** [ ]
@@ -300,6 +314,9 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       箇所でのみ使用可能であることを強制する（アーキテクチャ 04
       「Existential Registrations Gate Attributed Type Use」）。
     - テスト: existential 欠落フィクスチャが安定した診断で失敗する。
+      pending/rejected/unaccepted existential registration は gate を満たさない。
+      activated gate は visible guard を要求し、degraded recovery 後に verified fact を
+      seed しない。
     - 依存: 19。仕様: `registration_resolution.md`、
       [17.clusters_and_registrations.md](../../../spec/ja/17.clusters_and_registrations.md)。
 

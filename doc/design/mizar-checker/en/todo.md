@@ -21,7 +21,7 @@ architecture 04, 05, 16, 17, 18, and 19.
 | typed_ast | `typed_ast.md` (task 2) | `src/typed_ast.rs` | [x] |
 | binding_env | `binding_env.md` (task 4) | `src/binding_env.rs` | [x] |
 | type_checker | `type_checker.md` (task 6) | `src/type_checker.rs` | [~] |
-| registration_resolution | `registration_resolution.md` (task 13) | `src/registration_resolution.rs` | [ ] |
+| registration_resolution | `registration_resolution.md` (task 13) | `src/registration_resolution.rs` | [~] |
 | cluster_trace | `cluster_trace.md` (task 15) | `src/cluster_trace.rs` | [ ] |
 | overload_resolution | `overload_resolution.md` (task 21) | `src/overload_resolution.rs` | [ ] |
 | resolved_typed_ast | `resolved_typed_ast.md` (task 27) | `src/resolved_typed_ast.rs` | [ ] |
@@ -251,12 +251,18 @@ Keep `cargo test -p mizar-checker` green after each task (see
 
 ### Wave 2: cluster and registration resolution (phase 7)
 
-13. **Spec: `registration_resolution.md`.** [ ]
+13. **Spec: `registration_resolution.md`.** [x]
     - Write the registration spec (English and Japanese, no code): pending
       versus activated databases, existential gating, reduction rewrites
       with provenance, validation obligations (architecture 04 Steps 5-6).
     - Deps: 2. Spec: architecture 04 "Registration Databases",
       [17.clusters_and_registrations.md](../../../spec/en/17.clusters_and_registrations.md).
+    - Completed by task 13: `registration_resolution.md` now defines the
+      phase-7 boundary, pending/activated registration database split,
+      validation and `InitialObligationId` rules, existential gating, cluster
+      closure, reduction provenance, deterministic diagnostics/recovery,
+      planned tests for tasks 14 and 16-20, and MC-G021 external/deferred
+      payload gaps without adding source behavior.
 
 14. **Registration index.** [ ]
     - Implement the pending/activated registration databases over
@@ -279,21 +285,27 @@ Keep `cargo test -p mizar-checker` green after each task (see
       with deterministic traversal, recording every application into
       `ResolutionTrace`.
     - Tests: closure fixtures; traces replay to the same derived facts;
-      deterministic application order.
+      deterministic application order; subtype-compatible conditional
+      clusters; pending/rejected/unaccepted registrations do not fire.
     - Deps: 14, 15. Spec: `cluster_trace.md`, `registration_resolution.md`.
 
 17. **Cluster loop detection and bounded saturation.** [ ]
     - Detect cluster loops and emit bounded-saturation diagnostics instead of
       diverging (architecture 17 "Cluster Loop Detection").
     - Tests: loop fixtures terminate with stable diagnostics; bound is
-      configuration-visible.
+      configuration-visible; contradictory derivations are fatal and do not
+      export degraded verified facts.
     - Deps: 16. Spec: [17.cluster_trace_format.md](../../architecture/en/17.cluster_trace_format.md).
 
 18. **Reduction applications.** [ ]
     - Implement reduction rewrites (redex paths, substitutions, guard
       evidence) with full provenance recorded into `ResolutionTrace`.
-    - Tests: redex path correctness; guard evidence required; replayable
-      traces.
+    - Tests: redex path correctness; guard evidence required; source redex,
+      target term, rule FQN, rule-view fingerprint, selection key,
+      enclosing-term fingerprint, and source provenance recorded; `such` side
+      conditions are applicability-only; pending/rejected/unaccepted
+      reductions do not rewrite; invalid substitutions and mismatched
+      strategy-audit keys are diagnosed; replayable traces.
     - Deps: 16. Spec: `registration_resolution.md` (reduction section),
       architecture 17 "Reduction Step".
 
@@ -301,16 +313,22 @@ Keep `cargo test -p mizar-checker` green after each task (see
     - Validate pending registration declarations (architecture 04 Step 6),
       emit their obligations, and implement the interim activation-gating
       policy; record the decision here and at the top level.
-    - Tests: invalid registrations diagnosed; unverified registrations never
-      affect inference; policy-admitted activation requires accepted verifier
-      status from a later proof/artifact input.
+    - Tests: invalid registrations diagnosed; kind-specific validation covers
+      existential, conditional, functorial, and reduction patterns, including
+      reduction free-variable/occurrence/orientation/source-provenance checks;
+      unverified registrations never affect inference; policy-admitted
+      activation requires accepted verifier status from a later proof/artifact
+      input.
     - Deps: 17, 18. Spec: `registration_resolution.md`.
 
 20. **Existential gating of attributed type use.** [ ]
     - Enforce that attributed types are usable only where existential
       registrations justify non-emptiness (architecture 04 "Existential
       Registrations Gate Attributed Type Use").
-    - Tests: missing-existential fixtures fail with stable diagnostics.
+    - Tests: missing-existential fixtures fail with stable diagnostics;
+      pending/rejected/unaccepted existential registrations do not satisfy
+      gates; activated gates require visible guards and do not seed verified
+      facts after degraded recovery.
     - Deps: 19. Spec: `registration_resolution.md`,
       [17.clusters_and_registrations.md](../../../spec/en/17.clusters_and_registrations.md).
 
