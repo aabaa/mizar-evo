@@ -6,24 +6,26 @@
 
 - [ ] 未着手
 - [~] 進行中
+- [~ deferred: external dependency] 明示された upstream dependency が存在する
+  まで deferred。代替の仮実装はしない
 - [x] 完了
 
 ## モジュール実装
 
-モジュール仕様はまだ存在しない。各仕様は、それを引用する実装タスクより前に、
-専用の仕様タスクが（英語と日本語を同じ変更で）執筆する。モジュール名は
+モジュール仕様は、それを引用する実装タスクより前に、専用の仕様タスクが
+（英語と日本語を同じ変更で）作成する。モジュール名は
 [internal 07](../../internal/ja/07.crate_module_layout.md) の最小分割
 （に加えて resolver と checker が消費する summary スキーマ）に従う。
 この crate はアーキテクチャ 11、18 と internal 02、06 を精緻化する。
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| store | `store.md`（task 2） | `src/store.rs` | [ ] |
-| module_summary | `module_summary.md`（task 4） | `src/module_summary.rs` | [ ] |
-| registration_summary | `registration_summary.md`（task 6） | `src/registration_summary.rs` | [ ] |
-| proof_witness | `proof_witness.md`（task 8） | `src/proof_witness.rs` | [ ] |
-| verified_artifact | `verified_artifact.md`（task 10） | `src/verified_artifact.rs` | [ ] |
-| manifest | `manifest.md`（task 12） | `src/manifest.rs` | [ ] |
+| store | `store.md`（task 2） | `src/store.rs` | spec [x], source [x] |
+| module_summary | `module_summary.md`（task 4） | `src/module_summary.rs` | spec [x], source [x] |
+| registration_summary | `registration_summary.md`（task 6） | `src/registration_summary.rs` | spec [x], source [x] |
+| proof_witness | `proof_witness.md`（task 8） | `src/proof_witness.rs` | spec [x], source [x] |
+| verified_artifact | `verified_artifact.md`（task 10） | `src/verified_artifact.rs` | spec [x], source [x] |
+| manifest | `manifest.md`（task 12） | `src/manifest.rs` | spec [x], source [x] |
 
 `mizar-artifact` はパイプラインの安定した外部射影を所有する: artifact
 スキーマ（`ModuleSummary`、`RegistrationSummary`、`ProofWitnessRef`、
@@ -77,14 +79,14 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 
 ### 第 A 波: 正準形と summary スキーマ
 
-1. **crate の足場と lint 方針のガード。** [ ]
+1. **crate の足場と lint 方針のガード。** [x]
    - `mizar-session` にのみ依存する workspace メンバー `mizar-artifact` を
      追加し、`mizar-frontend` のガードに倣った `tests/lint_policy.rs` を
      追加する。
    - テスト: lint 方針ガードが通る。workspace がビルドできる。
    - 依存: なし。仕様: アーキテクチャ 11。
 
-2. **仕様: `store.md`。** [ ]
+2. **仕様: `store.md`。** [x]
    - ストア/正準形の仕様を執筆する（英語と日本語、コードなし）: internal
      02 に従うストアレイアウト、決定的順序を持つ正準 UTF-8 JSON
      シリアライゼーション、`schema_version` と互換性チェック、意味論
@@ -93,7 +95,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
    - 依存: 1。仕様: [internal 02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
      アーキテクチャ 11「Deterministic Artifact Output」「Atomic Writes」。
 
-3. **正準シリアライゼーションと schema-version チェック。** [ ]
+3. **正準シリアライゼーションと schema-version チェック。** [x]
    - 全スキーマが共有する正準シリアライゼーション、ハッシュ規則、
      schema-version 互換性チェックを実装する。
    - テスト: 実行/プラットフォームをまたぐバイト同一のシリアライ
@@ -101,7 +103,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
      影響しない。
    - 依存: 2。仕様: `store.md`。
 
-4. **仕様: `module_summary.md`。** [ ]
+4. **仕様: `module_summary.md`。** [x]
    - `ModuleSummary` スキーマの仕様を執筆する（英語と日本語、コード
      なし）: アーキテクチャ 03「Module Summary」に従う export 済み
      インターフェース射影。`interface_hash` でキー付けされ
@@ -110,21 +112,21 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
    - 依存: 2。仕様: アーキテクチャ 03、
      [18.dependency_fingerprint.md](../../architecture/ja/18.dependency_fingerprint.md)。
 
-5. **`ModuleSummary` スキーマ、writer、reader。** [ ]
+5. **`ModuleSummary` スキーマ、writer、reader。** [x]
    - writer と検証つき reader を備えたスキーマを実装する。これにより
      `mizar-resolve` task 24（summary 経由の解決）のブロックが外れる。
    - テスト: ラウンドトリップ。本体のみの変更に対する interface-hash の
      安定性。非互換バージョンの読み込みが明確に失敗する。
    - 依存: 3、4。仕様: `module_summary.md`。
 
-6. **仕様: `registration_summary.md`。** [ ]
+6. **仕様: `registration_summary.md`。** [x]
    - `RegistrationSummary` スキーマの仕様を執筆する（英語と日本語、
      コードなし）: アーキテクチャ 04 と 17 に従う export 済み
      registration と cluster trace artifact への参照。
    - 依存: 2。仕様: アーキテクチャ 04、
      [17.cluster_trace_format.md](../../architecture/ja/17.cluster_trace_format.md)。
 
-7. **`RegistrationSummary` スキーマ、writer、reader。** [ ]
+7. **`RegistrationSummary` スキーマ、writer、reader。** [x]
    - checker のクロスモジュール再利用のために、writer と検証つき reader を
      備えたスキーマを実装する。
    - テスト: ラウンドトリップ。trace 参照がハッシュで解決される。決定的な
@@ -133,7 +135,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 
 ### 第 A/B 波の境界: witness と verified artifact
 
-8. **仕様: `proof_witness.md`。** [ ]
+8. **仕様: `proof_witness.md`。** [x]
    - proof witness 参照の仕様を執筆する（英語と日本語、コードなし）:
      ハッシュで参照される witness ファイル、kernel 受理メタデータ、
      「witness は主 artifact の外部に留まる」規則（resident-set 規律）。
@@ -141,19 +143,19 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
      [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
      「Proof Witness Store」。
 
-9. **`ProofWitnessRef` スキーマ。** [ ]
+9. **`ProofWitnessRef` スキーマ。** [x]
    - ハッシュ検証つきの witness 参照を実装する。
    - テスト: ラウンドトリップ。ハッシュ不一致の検出。
    - 依存: 3、8。仕様: `proof_witness.md`。
 
-10. **仕様: `verified_artifact.md`。** [ ]
+10. **仕様: `verified_artifact.md`。** [x]
     - `VerifiedArtifact` スキーマの仕様を執筆する（英語と日本語、コード
       なし）: export、式メタデータ、義務状態、witness 参照、射影された
       診断、互換性ポリシー。
     - 依存: 4、8。仕様: アーキテクチャ 11「Verified Artifact Schema」、
       [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 
-11. **`VerifiedArtifact` スキーマと射影入力。** [ ]
+11. **`VerifiedArtifact` スキーマと射影入力。** [x]
     - スキーマと、生産者 crate が埋める射影入力契約を実装する（実際の
       生産者が揃うまではテスト用スタブ生産者を使う）。
     - テスト: ラウンドトリップ。生 IR 形のペイロードの拒否。射影された
@@ -162,14 +164,14 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 
 ### 第 B 波: ストア、manifest、emission
 
-12. **仕様: `manifest.md`。** [ ]
+12. **仕様: `manifest.md`。** [x]
     - manifest の仕様を執筆する（英語と日本語、コードなし）: パッケージ
       artifact manifest、manifest トランザクションプロトコル
       （begin/commit、reader の可視性）、中断されたコミットからの回復。
     - 依存: 2。仕様: [internal 02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)
       「Manifest Transaction」、アーキテクチャ 11「Artifact Manifest」。
 
-13. **atomic write を備えた artifact ストア。** [ ]
+13. **atomic write を備えた artifact ストア。** [x]
     - ストアを実装する: content-addressed な blob 書き込み、temp-and-
       rename の原子性、読み込み時の破損検出。中断された書き込みが完全な
       出力に見えることは決してない。
@@ -177,14 +179,14 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       残さない。破損 blob の読み込みが位置付きで失敗する。
     - 依存: 3、12。仕様: `store.md`、`manifest.md`。
 
-14. **manifest トランザクション。** [ ]
+14. **manifest トランザクション。** [x]
     - 決定的な項目順と reader 側検証を備えたトランザクショナルな
       manifest 更新を実装する。
     - テスト: 並行 reader は旧か新を見る（混在しない）。コミットの再生は
       冪等である。
     - 依存: 13。仕様: `manifest.md`。
 
-15. **来歴と再現性メタデータ。** [ ]
+15. **来歴と再現性メタデータ。** [x]
     - 発行された artifact に付くビルド来歴レコード（ツールチェーン、
       edition、設定、依存ハッシュ）を実装する。ハッシュ除外のローカル
       フィールドは task 2 に従って扱う。
@@ -193,7 +195,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
     - 依存: 11、14。仕様: アーキテクチャ 11「VerifiedArtifact Is a
       Projection」、[18.dependency_fingerprint.md](../../architecture/ja/18.dependency_fingerprint.md)。
 
-16. **interface/implementation ハッシュ入力。** [ ]
+16. **interface/implementation ハッシュ入力。** [x]
     - `mizar-cache` の fingerprint が消費する interface-hash と
       implementation-hash の入力を計算・公開する（アーキテクチャ 18）。
       ハッシュごとに正準順序を文書化する。
@@ -202,7 +204,12 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
     - 依存: 15。仕様: アーキテクチャ 11「Interface Hashes and
       Implementation Hashes」。
 
-17. **phase 15 emission 統合。** [ ]
+17. **phase 15 emission 統合。** [~ deferred: external dependency]
+    - `external_dependency_gap` として deferred: real `mizar-kernel` task 16
+      outputs と `mizar-proof` task 11 witness staging/publication が存在する
+      まで、この task を実装してはならない。これ以前に実装すると
+      `mizar-artifact` が proof status、witness production、kernel acceptance
+      を fake または所有する必要があり、boundary violation になる。
     - kernel/proof の出力が存在するようになったら、実際の生産者射影から
       完全な `VerifiedArtifact` emission を接続する。emission はストアと
       manifest トランザクションのみを通す。
@@ -214,27 +221,27 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 
 ### 強化と横断フォローアップ
 
-18. **決定性スイート。** [ ]
+18. **決定性スイート。** [x]
     - 同一入力が実行/プラットフォームをまたいでバイト同一の artifact、
       manifest、ハッシュを生むことのプロパティ的検証。
     - 依存: 16。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
 
-19. **公開 enum の前方互換性ポリシー。** [ ]
+19. **公開 enum の前方互換性ポリシー。** [x]
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用する。
       スキーマ enum はさらに artifact 互換性ポリシーに従う。
     - 依存: 16。仕様: 全モジュール仕様。
 
-20. **ソース/仕様対応監査。** [ ]
+20. **ソース/仕様対応監査。** [x]
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ
       トレースし、ギャップをフォローアップタスクとして記録する。
     - 依存: 19。仕様: 全モジュール仕様と本 TODO。
 
-21. **二言語ドキュメント同期監査。** [ ]
+21. **二言語ドキュメント同期監査。** [x]
     - `doc/design/mizar-artifact/en/` の各英語正本と日本語版を比較し、
       内容を同期する。
     - 依存: 20。仕様: リポジトリのドキュメント方針。
 
-22. **module 境界リファクタリング gate。** [ ]
+22. **module 境界リファクタリング gate。** [x]
     - crate を下流 consumer 向けに完了扱いにする前に、source layout を監査し、
       oversized file、混在した責務、module table と module spec 境界に沿って
       分割すべき private helper を洗い出す。review bottleneck になった実装

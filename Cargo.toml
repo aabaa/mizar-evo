@@ -8,6 +8,7 @@ members = [
     "crates/mizar-resolve",
     "crates/mizar-session",
     "crates/mizar-syntax",
+    "crates/mizar-artifact",
     "crates/mizar-test",
 ]
 exclude = ["fuzz"]
