@@ -19,7 +19,7 @@ architecture 04, 05, 16, 17, 18, and 19.
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | typed_ast | `typed_ast.md` (task 2) | `src/typed_ast.rs` | [x] |
-| binding_env | `binding_env.md` (task 4) | `src/binding_env.rs` | [~] |
+| binding_env | `binding_env.md` (task 4) | `src/binding_env.rs` | [x] |
 | type_checker | `type_checker.md` (task 6) | `src/type_checker.rs` | [ ] |
 | registration_resolution | `registration_resolution.md` (task 13) | `src/registration_resolution.rs` | [ ] |
 | cluster_trace | `cluster_trace.md` (task 15) | `src/cluster_trace.rs` | [ ] |
@@ -134,12 +134,18 @@ Keep `cargo test -p mizar-checker` green after each task (see
      diagnostics, deterministic rendering, task-5 test obligations, and
      external dependency gaps.
 
-5. **Binding environment and context build.** [ ]
+5. **Binding environment and context build.** [x]
    - Implement context construction over `SymbolEnv` and `ResolvedAst`
      bindings per task 4.
    - Tests: lookup order across layers; reserved-variable contexts; binder
      scoping fixtures; deterministic iteration.
    - Deps: 3, 4, `mizar-resolve` task 20. Spec: `binding_env.md`.
+   - Completed by task 5: `src/binding_env.rs` implements the checker-owned
+     binding-env data layer, validation, module-shell construction over
+     `ResolvedAst` plus `SymbolEnv`, local lookup over explicit binding
+     payloads, resolver `NameRefEntry::resolution()` fallback, deterministic
+     `binding-env-debug-v1` rendering, and external-gap diagnostics for
+     resolver/source-walk payloads that are not currently exposed.
 
 6. **Spec: `type_checker.md`.** [ ]
    - Write the checking/inference spec (English and Japanese, no code) with

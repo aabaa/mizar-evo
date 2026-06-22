@@ -95,8 +95,8 @@ fn checker_source_does_not_import_syntax_directly() {
 
     assert!(
         violations.is_empty(),
-        "mizar-checker must keep task-3 typed AST source-shape storage \
-         checker-local instead of importing mizar-syntax directly:\n{}",
+        "mizar-checker must keep checker-local semantic source-shape and \
+         binding-env boundaries instead of importing mizar-syntax directly:\n{}",
         violations.join("\n")
     );
 }
@@ -296,10 +296,11 @@ fn public_declaration_name(line: &str) -> Option<&str> {
 
 fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> bool {
     let relative = path.strip_prefix(root).unwrap_or(path);
-    if relative == Path::new("src/typed_ast.rs") {
+    if relative == Path::new("src/typed_ast.rs") || relative == Path::new("src/binding_env.rs") {
         return true;
     }
-    relative == Path::new("src/lib.rs") && line.trim() == "pub mod typed_ast;"
+    relative == Path::new("src/lib.rs")
+        && matches!(line.trim(), "pub mod typed_ast;" | "pub mod binding_env;")
 }
 
 fn undocumented_allow_line_numbers(source: &str) -> Vec<usize> {

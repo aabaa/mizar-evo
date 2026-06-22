@@ -18,7 +18,7 @@
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | typed_ast | `typed_ast.md`（task 2） | `src/typed_ast.rs` | [x] |
-| binding_env | `binding_env.md`（task 4） | `src/binding_env.rs` | [~] |
+| binding_env | `binding_env.md`（task 4） | `src/binding_env.rs` | [x] |
 | type_checker | `type_checker.md`（task 6） | `src/type_checker.rs` | [ ] |
 | registration_resolution | `registration_resolution.md`（task 13） | `src/registration_resolution.rs` | [ ] |
 | cluster_trace | `cluster_trace.md`（task 15） | `src/cluster_trace.rs` | [ ] |
@@ -131,12 +131,18 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      handling、closure metadata expectation、diagnostic、deterministic rendering、
      task 5 の test obligation、external dependency gap を定義した。
 
-5. **束縛環境とコンテキストの構築。** [ ]
+5. **束縛環境とコンテキストの構築。** [x]
    - task 4 に従って `SymbolEnv` と `ResolvedAst` の束縛上にコンテキスト
      構築を実装する。
    - テスト: 層をまたぐ参照順序。reserve された変数のコンテキスト。binder
      スコープのフィクスチャ。決定的な反復順。
    - 依存: 3、4、`mizar-resolve` task 20。仕様: `binding_env.md`。
+   - task 5 で完了: `src/binding_env.rs` が checker-owned binding-env data
+     layer、validation、`ResolvedAst` と `SymbolEnv` 上の module-shell
+     construction、明示 binding payload 上の local lookup、resolver
+     `NameRefEntry::resolution()` fallback、決定的な `binding-env-debug-v1`
+     rendering、現時点で未公開の resolver/source-walk payload に対する
+     external-gap diagnostic を実装した。
 
 6. **仕様: `type_checker.md`。** [ ]
    - 検査/推論の仕様を、実装タスクが引用する名前付き節とともに執筆する

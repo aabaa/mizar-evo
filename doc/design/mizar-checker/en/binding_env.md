@@ -50,21 +50,35 @@ builder described here.
 
 ## Inputs And Outputs
 
-Task 5 constructs a `BindingEnv` from:
+Task 5 constructs a `BindingEnv` from the resolver payload that is available
+at the time of the task:
 
 - one `ResolvedAst` source-shaped snapshot;
 - its resolver-owned `SymbolEnv`;
+- explicit local binding records supplied by resolver/source-walk payloads
+  when those payloads exist;
 - dependency module summaries as read-only inputs when available;
 - checker configuration that controls recovery, but not semantic inference.
+
+The current resolver surface exposes `LocalTermScope`, `LocalTermBinding`,
+`NameRefEntry::resolution()`, definition shell binders, and `SymbolEnv`, but it
+does not expose a complete AST-wide table of local binding declarations,
+use-site scopes, use-site ordinals, reserve payloads, or captured-free-variable
+payloads for closure replay. Task 5 must therefore implement the binding-env
+data layer, validation, deterministic rendering, and module-level shell over the
+available payloads. Missing local source-walk or closure payload is recorded as
+an `external_dependency_gap` diagnostic instead of being reconstructed from raw
+syntax.
 
 The output is a checker-local snapshot:
 
 ```rust
 struct BindingEnv {
-    module: ModuleId,
+    source_id: SourceId,
+    module_id: ModuleId,
     contexts: BindingContextTable,
     bindings: BindingTable,
-    diagnostics: BindingEnvDiagnosticTable,
+    diagnostics: BindingDiagnosticTable,
 }
 ```
 
@@ -77,6 +91,11 @@ to populate `TypedAst::contexts()` and to attach `BindingTypeRef` entries:
   typed node or role exists;
 - facts and assumptions are inserted by later type-checking tasks, not by the
   binding builder itself.
+
+Task 5 must not add a direct `mizar-syntax` dependency or inspect
+`ResolvedNode::kind()` to reverse-engineer binding constructs. Source-shape
+roles needed for bindings must arrive through resolver-owned projections or be
+reported as external dependency gaps.
 
 ## Context Graph
 
@@ -117,10 +136,14 @@ Layer meanings follow architecture 04:
 Required invariants:
 
 - context ids are dense and deterministic for equivalent resolver inputs;
+- `context#0` is the single module root context with `BindingContextOwner::Module`;
+  every other context must have a parent;
 - parent links form an acyclic chain;
 - child contexts may read visible outer bindings but may write only to their
   own `bindings`;
-- `visible_bindings` is sorted by binding lookup priority, then `BindingId`;
+- `visible_bindings` is sorted by deterministic `BindingId`; semantic lookup
+  priority is computed during lookup from scope depth, visibility ordinal, and
+  declaration range;
 - leaving a context freezes only the bindings and later facts that are allowed
   to escape under the source construct that introduced them;
 - recovered contexts are explicit and must not fabricate missing source
@@ -135,29 +158,32 @@ introduces a local checker binding.
 ```rust
 struct BindingEntry {
     id: BindingId,
-    spelling: Option<String>,
-    identity: BinderIdentity,
+    spelling: String,
     kind: BindingKind,
+    identity: BinderIdentity,
     owner_context: BindingContextId,
     declaration_range: SourceRange,
     visible_after_ordinal: usize,
-    type_site: Option<BindingTypeSite>,
-    capture: CapturedFreeVariables,
+    type_site: BindingTypeSite,
     status: BindingStatus,
+    captured: CapturedFreeVariables,
+    diagnostics: Vec<BindingDiagnosticId>,
+    recovery: BindingRecoveryState,
 }
 
 enum BindingKind {
-    Value,
-    ReservedVariable,
     QuantifierBinder,
     DefinitionParameter,
     LocalAbbreviation,
-    GeneratedRecovery,
+    ReservedVariable,
+    LetBinding,
+    Generated,
 }
 ```
 
-`spelling` is diagnostic-only. Semantic equality and lookup identity use
-`BinderIdentity`.
+`spelling` is the source key used to prefilter candidate bindings and to render
+diagnostics. Once candidates are selected, semantic equality, alpha-equivalence,
+and capture checks use `BinderIdentity`.
 
 `type_site` records where a later type-checking task should attach or discover
 the binding's type. It may point to resolver syntax or to a future typed site,
@@ -213,8 +239,10 @@ Required invariants:
 
 Local lookup is deterministic:
 
-1. Search the active context and its ancestors from innermost to outermost.
-2. Within a context, first restrict candidates to bindings whose resolver
+1. Search only the active context's `visible_bindings` snapshot. That snapshot
+   is the under-approximation boundary selected by the builder; lookup must not
+   recover omitted ancestor bindings by walking parents.
+2. Within that snapshot, first restrict candidates to bindings whose resolver
    local-binding key matches the use-site key. For source local terms, this
    includes the use-site spelling exposed by resolver scope data.
 3. Among matching candidates, consider only bindings whose
@@ -222,11 +250,34 @@ Local lookup is deterministic:
 4. Partition visible bindings by semantic priority: deepest lexical scope
    containing the use-site scope, then greatest visibility ordinal, then source
    range.
-5. If the best partition has more than one binding, emit a degraded diagnostic
-   and do not choose one arbitrarily.
-6. Otherwise select the only binding in the best partition.
-7. If no local binding matches, fall back to the resolver-owned `SymbolEnv`
-   candidate set. The checker must not redo global name lookup.
+5. If a same-spelling resolver-local candidate is visible but the use site does
+   not carry enough lexical payload to compare its scope, do not select another
+   textual candidate. Consume an extracted resolver `NameResolution` when one is
+   available; otherwise return an `external_dependency_gap` missing-payload
+   result.
+6. If the best partition has more than one binding, return a degraded
+   ambiguity result with an `AmbiguousLocalBinding` diagnostic draft and do not
+   choose one arbitrarily.
+7. Otherwise select the only binding in the best partition.
+8. If no local binding matches and the use site has a resolver
+   `NameRefEntry`, consume that entry's `NameResolution`.
+   `BindingLookupSite` stores this already extracted `NameResolution`; the
+   checker does not construct or persist resolver-owned `ReferenceSite` or
+   `ResolvedNodeId` values.
+9. Use `SymbolEnv` only to inspect `SymbolId`s already referenced by resolver
+   outcomes. The checker must not call symbol indexes to redo or widen global
+   name lookup.
+10. If lexical payload is sufficient to decide that no visible local binding
+   matches and no resolver outcome is supplied, return `Unresolved`.
+11. If neither local binding payload nor a resolver name-reference outcome is
+   available, return a degraded result carrying an `external_dependency_gap`
+   diagnostic draft instead of fabricating a fallback.
+
+Task 5 keeps lookup pure: `BindingEnv::lookup()` returns local, resolver,
+ambiguous, forward-reference, missing-payload, or unresolved result states.
+Ambiguity, forward-reference, and missing-payload results carry diagnostic
+drafts. Builders or later semantic tasks record those drafts in
+`BindingDiagnosticTable` when they materialize the affected site.
 
 `BindingId` is never semantic lookup priority. It may be used only as a
 deterministic storage, iteration, or rendering tie-breaker after ambiguity has
@@ -252,6 +303,10 @@ default type sites for later occurrences of the reserved spelling.
 
 Reserved-variable rules:
 
+- task 5 records reserved bindings only from explicit resolver/source-walk
+  payloads; current `SymbolEnv` does not expose reserve payloads;
+- task 5 validation rejects `ReservedVariable` bindings owned by non-module
+  contexts;
 - nested `reserve` declarations are recovery cases until resolver/source
   support proves a narrower legal scope;
 - a reserved variable is not a witness and does not create a type fact by
@@ -283,15 +338,18 @@ architecture 16.
 
 ## Diagnostics And Recovery
 
-`BindingEnvDiagnosticTable` records checker-local diagnostics with stable
-message keys. Diagnostics are sorted by source range, class, message key, then
-id.
+`BindingDiagnosticTable` records checker-local diagnostics with stable
+message keys. The id-order iterator preserves deterministic insertion order;
+`canonical_iter()` renders and queries diagnostics sorted by source range,
+class, message key, then id.
 
 Required diagnostic classes:
 
 - duplicate local binding in the same lexical scope;
 - local binding used before it is visible;
 - unsupported or ambiguous binding source shape;
+- missing local binding table, use-site scope/ordinal, reserve payload, or
+  closure payload from resolver/source-walk integration;
 - missing resolver identity or closure payload;
 - illegal nested `reserve`;
 - recovered context boundary after malformed source.
@@ -321,6 +379,8 @@ Task 5 must add Rust tests that cover:
 - deterministic dense ids for contexts, bindings, diagnostics, and debug text;
 - module, declaration, proof, block, and expression layer creation;
 - lookup order across nested layers, including shadowing;
+- fallback from local lookup to existing `NameRefEntry::resolution()` without
+  redoing global `SymbolEnv` lookup;
 - no forward local references before `visible_after_ordinal`;
 - `reserve` declarations visible after their declaration and shadowed by local
   binders;
@@ -330,14 +390,19 @@ Task 5 must add Rust tests that cover:
   bindings;
 - definition-time closure metadata for exposed resolver payloads, plus
   external-gap diagnostics when the payload is missing;
+- external-gap diagnostics and deterministic module-shell output when current
+  resolver payload lacks local binding/use-site/reserve/closure extraction data;
+- the public `module_shell(&ResolvedAst, &SymbolEnv)` signature and its
+  syntax-free module-match seam;
 - deterministic iteration and rendering;
 - boundary guards that no binding-env data shape stores `VcId`, proof witness,
   verifier status, active registration state, final overload roots, or inserted
-  overload-disambiguating `qua` views.
+  overload-disambiguating `qua` views, resolver-owned `ReferenceSite` values, or
+  resolver-owned `ResolvedNodeId` values.
 
-No `.miz` checker-stage fixtures are required by task 4 because it is
-documentation-only. Task 12 still owns the first active `type_elaboration`
-corpus runner.
+No `.miz` checker-stage fixtures are required by task 5 because task-local
+Rust tests cover its executable scope. Task 12 still owns the first active
+`type_elaboration` corpus runner.
 
 ## Task 4 Classification
 
@@ -347,5 +412,16 @@ corpus runner.
 | `test_gap` | No `binding_env` Rust tests exist yet because task 5 owns implementation. | This spec records the required task-5 tests; no executable test is added in task 4. |
 | `design_drift` | Architecture 04 names a checker `TypeContext`, while `typed_ast.md` stores immutable `LocalTypeContextTable` snapshots. | This spec separates mutable/context-building `BindingEnv` from later `TypedAst` snapshots and defines the bridge. |
 | `source_drift` | No `src/binding_env.rs` source exists yet. | Expected before task 5; no source repair belongs to task 4. |
-| `external_dependency_gap` | Current resolver data exposes `LocalTermScope`, visibility ordinals, definition shell binders, and `SymbolEnv`, but richer stable binder ids and captured-free-variable payloads may still be incomplete for full substitution replay. | Task 5 may implement the available context skeleton, but missing closure or binder payload must be recorded as external dependency gaps. |
+| `external_dependency_gap` | Current resolver data exposes `LocalTermScope`, `LocalTermBinding` as a type, `NameRefEntry::resolution()`, definition shell binders, and `SymbolEnv`, but it does not expose a complete AST-wide local binding table, use-site scope/ordinal table, reserve payload, or captured-free-variable payload for full substitution replay. | Task 5 may implement the available binding-env data layer and module shell. Missing local extraction, reserve payload, closure payload, or binder payload must be recorded as external dependency gaps; do not add a direct `mizar-syntax` dependency or reconstruct bindings from raw syntax. |
 | `deferred` | Type normalization, local type facts, registration activation, overload resolution, abbreviation expansion, substitution replay, and proof/VC behavior are outside task 4. | Keep task 4 and task 5 focused on binding/context construction only. |
+
+## task 5 implementation classification
+
+| Class | Finding | Action |
+|---|---|---|
+| `spec_gap` | No task-5 blocking spec gap remains for the data layer, explicit-payload lookup, module shell, diagnostics, or deterministic rendering. | Continue to task 6 after task-5 review, verification, and commit. |
+| `test_gap` | Task 5 adds Rust unit tests for context layers, lookup priority, forward-reference handling, reserved-variable shadowing, resolver-resolution fallback, closure identity metadata, diagnostics, deterministic ordering, module shell gaps, the public module-shell signature, and boundary guards. Active `.miz` checker-stage coverage still does not exist. | Rust tests cover the task-5 executable scope. A fully constructed `ResolvedAst` fixture remains external to checker until resolver exposes a syntax-free fixture; task 12 still owns active `type_elaboration` corpus coverage. |
+| `design_drift` | Architecture 04 names a checker `TypeContext`; the implementation keeps this task as `BindingEnv` and later bridges into `TypedAst::contexts()`. | No code drift remains for task 5; keep the bridge deferred to type-checking tasks. |
+| `source_drift` | `src/binding_env.rs` now exists and is exposed through the documented `binding_env` module. | Resolved for task 5. |
+| `external_dependency_gap` | The resolver still does not expose a complete AST-wide local binding table, use-site scope/ordinal table, reserve payload, captured-free-variable payload, or syntax-free empty `ResolvedAst` fixture for checker-owned tests. | Task 5 records module-shell external-gap diagnostics, accepts explicit binding payloads when available, and type-checks the public module-shell signature without adding a direct `mizar-syntax` dependency. Later resolver/source-walk integration must provide the missing payload and fixture before full source extraction and closure replay. |
+| `deferred` | Type normalization, local type facts, registration activation, overload resolution, abbreviation expansion, substitution replay, VC generation, proof acceptance, and kernel replay remain outside task 5. | Covered by later checker tasks and downstream crates. |
