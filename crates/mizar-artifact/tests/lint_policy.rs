@@ -83,8 +83,8 @@ fn public_artifact_enums_are_non_exhaustive_and_documented() {
 
     assert_eq!(
         actual_pairs, expected_pairs,
-        "every public enum in src/*.rs must be recorded in the task-19 \
-         forward-compatibility policy table"
+        "every public enum in non-test src/**/*.rs must be recorded in the \
+         task-19 forward-compatibility policy table"
     );
 
     for entry in expected {
@@ -376,20 +376,38 @@ fn public_enum_policy() -> &'static [PublicEnumPolicy] {
 
 fn source_files() -> Vec<String> {
     let source_root = crate_root().join("src");
-    let mut sources = fs::read_dir(&source_root)
-        .unwrap_or_else(|error| panic!("{}: {error}", source_root.display()))
-        .map(|entry| entry.expect("source entry").path())
-        .filter(|path| path.extension().and_then(|ext| ext.to_str()) == Some("rs"))
-        .map(|path| {
-            let file_name = path
-                .file_name()
-                .and_then(|name| name.to_str())
-                .expect("utf-8 source file name");
-            format!("src/{file_name}")
-        })
-        .collect::<Vec<_>>();
+    let mut sources = Vec::new();
+    collect_source_files(&source_root, &source_root, &mut sources);
     sources.sort();
     sources
+}
+
+fn collect_source_files(
+    root: &std::path::Path,
+    directory: &std::path::Path,
+    sources: &mut Vec<String>,
+) {
+    for entry in
+        fs::read_dir(directory).unwrap_or_else(|error| panic!("{}: {error}", directory.display()))
+    {
+        let path = entry.expect("source entry").path();
+        if path.is_dir() {
+            collect_source_files(root, &path, sources);
+            continue;
+        }
+        if path.extension().and_then(|ext| ext.to_str()) != Some("rs") {
+            continue;
+        }
+        if path.file_name().and_then(|name| name.to_str()) == Some("tests.rs") {
+            continue;
+        }
+        let relative = path
+            .strip_prefix(root)
+            .expect("source path is under source root")
+            .to_string_lossy()
+            .replace('\\', "/");
+        sources.push(format!("src/{relative}"));
+    }
 }
 
 fn public_enum_declarations(source: &str) -> Vec<PublicEnumDeclaration> {

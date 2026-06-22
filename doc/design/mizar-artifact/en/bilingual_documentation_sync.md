@@ -25,8 +25,8 @@ Japanese companion has a same-name English canonical document.
 
 | English canonical | Japanese companion | Synchronization result |
 |---|---|---|
-| [00.crate_plan.md](./00.crate_plan.md) | [../ja/00.crate_plan.md](../ja/00.crate_plan.md) | Task results through task 21, active gaps, verification expectations, and exit criteria are synchronized. |
-| [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Task statuses through task 21, task 17 deferral, task 18-20 status notes, and task 22 handoff scope are synchronized. |
+| [00.crate_plan.md](./00.crate_plan.md) | [../ja/00.crate_plan.md](../ja/00.crate_plan.md) | Task results through task 22, active gaps, verification expectations, and exit criteria are synchronized. |
+| [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Task statuses through task 22, task 17 deferral, and task 18-22 status notes are synchronized. |
 | [store.md](./store.md) | [../ja/store.md](../ja/store.md) | Store ownership, canonical JSON, schema-version policy, hash separation/exclusions, atomic writes, validating reads, public-enum policy, and implementation staging are synchronized. |
 | [module_summary.md](./module_summary.md) | [../ja/module_summary.md](../ja/module_summary.md) | Summary shape, identity/export/label/lexical/reexport/dependency fields, interface hash, ordering, reader/writer rules, public-enum policy, and implementation status are synchronized. |
 | [registration_summary.md](./registration_summary.md) | [../ja/registration_summary.md](../ja/registration_summary.md) | Registration shape, hash domains, trace/dependency references, registration interface hash, ordering, reader/writer rules, public-enum policy, and implementation status are synchronized. |
@@ -34,7 +34,8 @@ Japanese companion has a same-name English canonical document.
 | [verified_artifact.md](./verified_artifact.md) | [../ja/verified_artifact.md](../ja/verified_artifact.md) | Ownership, top-level shape, exports, expression metadata, obligations/witnesses, diagnostics, provenance, hash domains/participation, ordering, reader/writer rules, public-enum policy, and implementation status are synchronized. |
 | [manifest.md](./manifest.md) | [../ja/manifest.md](../ja/manifest.md) | Manifest scope, file/version, top-level shape, module/witness/development entries, hash domains, ordering, reader requirements, transaction protocol, recovery, public-enum policy, and implementation status are synchronized. |
 | [source_spec_correspondence.md](./source_spec_correspondence.md) | [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md) | Task 20 scope, classification result, public API trace, promised behavior trace, remaining gaps, and verification note are synchronized. |
-| [bilingual_documentation_sync.md](./bilingual_documentation_sync.md) | [../ja/bilingual_documentation_sync.md](../ja/bilingual_documentation_sync.md) | Task 21 scope, pair inventory, audit notes, and verification note are synchronized. |
+| [bilingual_documentation_sync.md](./bilingual_documentation_sync.md) | [../ja/bilingual_documentation_sync.md](../ja/bilingual_documentation_sync.md) | Task 21 audit scope, pair inventory through task 22, audit notes, and verification note are synchronized. |
+| [module_boundary_refactor.md](./module_boundary_refactor.md) | [../ja/module_boundary_refactor.md](../ja/module_boundary_refactor.md) | Task 22 source-layout audit, behavior-preserving test split, production-root rationale, re-run audit notes, and verification commands are synchronized. |
 
 ## Audit Notes
 

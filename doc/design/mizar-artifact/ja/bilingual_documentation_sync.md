@@ -25,8 +25,8 @@ diagnostics、public API は変更しない。
 
 | 英語正本 | 日本語 companion | 同期結果 |
 |---|---|---|
-| [../en/00.crate_plan.md](../en/00.crate_plan.md) | [00.crate_plan.md](./00.crate_plan.md) | task 21 までの task result、active gap、verification expectation、exit criteria が同期している。 |
-| [../en/todo.md](../en/todo.md) | [todo.md](./todo.md) | task 21 までの task status、task 17 deferral、task 18-20 status note、task 22 handoff scope が同期している。 |
+| [../en/00.crate_plan.md](../en/00.crate_plan.md) | [00.crate_plan.md](./00.crate_plan.md) | task 22 までの task result、active gap、verification expectation、exit criteria が同期している。 |
+| [../en/todo.md](../en/todo.md) | [todo.md](./todo.md) | task 22 までの task status、task 17 deferral、task 18-22 status note が同期している。 |
 | [../en/store.md](../en/store.md) | [store.md](./store.md) | Store ownership、canonical JSON、schema-version policy、hash separation/exclusion、atomic write、validating read、public-enum policy、implementation staging が同期している。 |
 | [../en/module_summary.md](../en/module_summary.md) | [module_summary.md](./module_summary.md) | summary shape、identity/export/label/lexical/reexport/dependency field、interface hash、ordering、reader/writer rule、public-enum policy、implementation status が同期している。 |
 | [../en/registration_summary.md](../en/registration_summary.md) | [registration_summary.md](./registration_summary.md) | registration shape、hash domain、trace/dependency reference、registration interface hash、ordering、reader/writer rule、public-enum policy、implementation status が同期している。 |
@@ -34,7 +34,8 @@ diagnostics、public API は変更しない。
 | [../en/verified_artifact.md](../en/verified_artifact.md) | [verified_artifact.md](./verified_artifact.md) | ownership、top-level shape、export、expression metadata、obligation/witness、diagnostic、provenance、hash domain/participation、ordering、reader/writer rule、public-enum policy、implementation status が同期している。 |
 | [../en/manifest.md](../en/manifest.md) | [manifest.md](./manifest.md) | manifest scope、file/version、top-level shape、module/witness/development entry、hash domain、ordering、reader requirement、transaction protocol、recovery、public-enum policy、implementation status が同期している。 |
 | [../en/source_spec_correspondence.md](../en/source_spec_correspondence.md) | [source_spec_correspondence.md](./source_spec_correspondence.md) | task 20 scope、classification result、public API trace、promised behavior trace、remaining gaps、verification note が同期している。 |
-| [../en/bilingual_documentation_sync.md](../en/bilingual_documentation_sync.md) | [bilingual_documentation_sync.md](./bilingual_documentation_sync.md) | task 21 scope、pair inventory、audit note、verification note が同期している。 |
+| [../en/bilingual_documentation_sync.md](../en/bilingual_documentation_sync.md) | [bilingual_documentation_sync.md](./bilingual_documentation_sync.md) | task 21 audit scope、task 22 までの pair inventory、audit note、verification note が同期している。 |
+| [../en/module_boundary_refactor.md](../en/module_boundary_refactor.md) | [module_boundary_refactor.md](./module_boundary_refactor.md) | task 22 source-layout audit、behavior-preserving test split、production-root rationale、再実行した audit note、verification command が同期している。 |
 
 ## 監査メモ
 

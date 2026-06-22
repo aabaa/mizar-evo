@@ -261,7 +261,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       はすべての英語正本文書が同期済みの日本語 companion を持ち、未解決の
       synchronization placeholder が残っていないことを記録する。
 
-22. **module 境界リファクタリング gate。** [ ]
+22. **module 境界リファクタリング gate。** [x]
     - crate を下流 consumer 向けに完了扱いにする前に、source layout を監査し、
       oversized file、混在した責務、module table と module spec 境界に沿って
       分割すべき private helper を洗い出す。review bottleneck になった実装
@@ -273,6 +273,11 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       spec task を要求する。
     - 依存: 21。仕様: 本 TODO、
       [internal 07](../../internal/ja/07.crate_module_layout.md)、全モジュール仕様。
+    - 状態: [module_boundary_refactor.md](./module_boundary_refactor.md) は inline unit
+      test block を private `tests.rs` module へ移した behavior-preserving split を
+      記録する。public module root、schema、diagnostic、deterministic rendering、
+      API path は変わらず、production root は module/spec boundary に合わせて
+      意図的に維持する。
 
 ## 推奨検証
 

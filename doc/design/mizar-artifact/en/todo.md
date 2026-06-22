@@ -262,7 +262,7 @@ Keep `cargo test -p mizar-artifact` green after each task (see
       records that every English canonical document has a synchronized Japanese
       companion and that no unresolved synchronization placeholder remains.
 
-22. **Module-boundary refactor gate.** [ ]
+22. **Module-boundary refactor gate.** [x]
     - Before treating the crate as ready for downstream consumers, audit the
       source layout for oversized files, mixed responsibilities, and private
       helpers that should be split along the module table and spec boundaries.
@@ -276,6 +276,11 @@ Keep `cargo test -p mizar-artifact` green after each task (see
     - Deps: 21. Spec: this TODO,
       [internal 07](../../internal/en/07.crate_module_layout.md), all module
       specs.
+    - Status: [module_boundary_refactor.md](./module_boundary_refactor.md)
+      records the behavior-preserving split of inline unit-test blocks into
+      private `tests.rs` modules. Public module roots, schemas, diagnostics,
+      deterministic renderings, and API paths stayed unchanged; production
+      roots remain intentionally aligned with the module/spec boundaries.
 
 ## Recommended Verification
 
