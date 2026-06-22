@@ -244,8 +244,9 @@ dependency_registration = {
 
 `registration_interface_hash` is the canonical dependency-facing key for the
 importer-visible registration projection. It is not the byte identity of the
-summary file. The manifest path and store-level `artifact_hash` identify and
-validate the published file bytes.
+summary file. The manifest path identifies the published summary file, and the
+store-level `artifact_hash` validates its publication-equivalent canonical
+content after declared hash exclusions.
 
 The hash is computed with task-3 `HashClass::Interface`, schema family
 `mizar-artifact/registration-summary`, and the current schema version.

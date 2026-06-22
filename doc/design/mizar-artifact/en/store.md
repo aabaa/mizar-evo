@@ -213,11 +213,9 @@ published artifact. If a write fails before the manifest commits, the previous
 manifest remains authoritative; newly written unreferenced files are ignored by
 readers and may be cleaned up later.
 
-The manifest transaction protocol remains deferred to task 12, which will add
-`manifest.md`; until then, internal 02 is the manifest transaction reference.
-This store spec only requires that files referenced by a manifest entry have
-already been written, flushed, and hash-validated before the manifest can
-publish them.
+The manifest transaction protocol is specified by [manifest.md](./manifest.md).
+This store spec requires that files referenced by a manifest entry have already
+been written, flushed, and hash-validated before the manifest can publish them.
 
 ## Validating Reads
 

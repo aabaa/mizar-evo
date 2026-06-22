@@ -25,7 +25,7 @@ and 18 and internal 02 and 06.
 | registration_summary | `registration_summary.md` (task 6) | `src/registration_summary.rs` | [x] |
 | proof_witness | `proof_witness.md` (task 8) | `src/proof_witness.rs` | [x] |
 | verified_artifact | `verified_artifact.md` (task 10) | `src/verified_artifact.rs` | [x] |
-| manifest | `manifest.md` (task 12) | `src/manifest.rs` | [ ] |
+| manifest | `manifest.md` (task 12) | `src/manifest.rs` | [~] |
 
 `mizar-artifact` owns the stable external projections of the pipeline:
 artifact schemas (`ModuleSummary`, `RegistrationSummary`, `ProofWitnessRef`,
@@ -169,7 +169,7 @@ Keep `cargo test -p mizar-artifact` green after each task (see
 
 ### Wave B: store, manifest, and emission
 
-12. **Spec: `manifest.md`.** [ ]
+12. **Spec: `manifest.md`.** [x]
     - Write the manifest spec (English and Japanese, no code): package
       artifact manifest, manifest transaction protocol (begin/commit,
       reader visibility), and recovery from interrupted commits.

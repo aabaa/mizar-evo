@@ -24,7 +24,7 @@ source task が始まる前に file を追加する。モジュール名は
 | registration_summary | `registration_summary.md`（task 6） | `src/registration_summary.rs` | [x] |
 | proof_witness | `proof_witness.md`（task 8） | `src/proof_witness.rs` | [x] |
 | verified_artifact | `verified_artifact.md`（task 10） | `src/verified_artifact.rs` | [x] |
-| manifest | `manifest.md`（task 12） | `src/manifest.rs` | [ ] |
+| manifest | `manifest.md`（task 12） | `src/manifest.rs` | [~] |
 
 `mizar-artifact` はパイプラインの安定した外部射影を所有する: artifact
 スキーマ（`ModuleSummary`、`RegistrationSummary`、`ProofWitnessRef`、
@@ -168,7 +168,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 
 ### 第 B 波: ストア、manifest、emission
 
-12. **仕様: `manifest.md`。** [ ]
+12. **仕様: `manifest.md`。** [x]
     - manifest の仕様を執筆する（英語と日本語、コードなし）: パッケージ
       artifact manifest、manifest トランザクションプロトコル
       （begin/commit、reader の可視性）、中断されたコミットからの回復。

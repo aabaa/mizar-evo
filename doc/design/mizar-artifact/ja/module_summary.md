@@ -231,8 +231,9 @@ dependency_interface = {
 ## Interface Hash
 
 `interface_hash` は `ModuleSummary` 内の importer-visible projection に対する canonical
-dependency-facing key である。summary file の byte identity ではない。公開 file byte は manifest
-path と store-level の `artifact_hash` が識別・検証する。
+dependency-facing key である。summary file の byte identity ではない。manifest path は公開 summary
+file を識別し、store-level の `artifact_hash` は宣言済み hash exclusion 後の
+publication-equivalent canonical content を検証する。
 
 `interface_hash` は task 3 の `HashClass::Interface` domain により、canonical interface projection
 から計算する。

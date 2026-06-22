@@ -202,10 +202,9 @@ build error であり、公開 artifact として受理してはならない。m
 場合、以前の manifest が authoritative のまま残る。新しく書かれた参照されない file は reader に
 無視され、後で clean up してよい。
 
-manifest transaction protocol は task 12 に deferred されており、その task が
-`manifest.md` を追加する。それまでは internal 02 を manifest transaction の参照元とする。
-この store spec は、manifest entry が参照する file が manifest により公開される前に、すでに
-write、flush、hash validation 済みであることだけを要求する。
+manifest transaction protocol は [manifest.md](./manifest.md) が仕様化する。この store spec は、
+manifest entry が参照する file が manifest により公開される前に、すでに write、flush、
+hash validation 済みであることを要求する。
 
 ## Validating Reads
 

@@ -418,7 +418,9 @@ and `implementation_hash` fields themselves, `cache_key`, and any future
 local/cache-only provenance field.
 
 Both hashes use task-3 artifact-framed hash strings and domain-separated hash
-classes. The manifest's artifact hash validates the published file bytes.
+classes. The manifest's artifact hash validates the store-level
+publication-equivalent content: canonical JSON after declared hash exclusions,
+not raw filesystem bytes.
 
 ## Canonical Ordering
 

@@ -252,8 +252,9 @@ dependency_interface = {
 
 `interface_hash` is the canonical dependency-facing key for the importer-visible
 projection in a `ModuleSummary`. It is not the byte identity of the summary file.
-The manifest path and store-level `artifact_hash` identify and validate the
-published file bytes.
+The manifest path identifies the published summary file, and the store-level
+`artifact_hash` validates its publication-equivalent canonical content after
+declared hash exclusions.
 
 `interface_hash` is computed with the task-3 `HashClass::Interface` domain over
 the canonical interface projection.

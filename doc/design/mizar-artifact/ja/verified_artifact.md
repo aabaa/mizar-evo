@@ -388,7 +388,8 @@ local/cache-only provenance field を除外する。
 field 自身、`cache_key`、将来の local/cache-only provenance field だけを除外する。
 
 どちらの hash も task 3 の artifact-framed hash string と domain-separated hash class を使う。
-manifest の artifact hash が published file byte を検証する。
+manifest の artifact hash は store-level publication-equivalent content、すなわち宣言済み
+hash exclusion 後の canonical JSON を検証する。raw filesystem byte は検証しない。
 
 ## Canonical Ordering
 
