@@ -79,7 +79,7 @@ Keep `cargo test -p mizar-artifact` green after each task (see
 
 ### Wave A: canonical form and summary schemas
 
-1. **Crate scaffold and lint-policy guard.** [ ]
+1. **Crate scaffold and lint-policy guard.** [x]
    - Add the `mizar-artifact` workspace member depending on `mizar-session`
      only; add `tests/lint_policy.rs` mirroring the `mizar-frontend` guard.
    - Tests: lint-policy guard passes; workspace builds.

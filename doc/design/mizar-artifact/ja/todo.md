@@ -77,7 +77,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 
 ### 第 A 波: 正準形と summary スキーマ
 
-1. **crate の足場と lint 方針のガード。** [ ]
+1. **crate の足場と lint 方針のガード。** [x]
    - `mizar-session` にのみ依存する workspace メンバー `mizar-artifact` を
      追加し、`mizar-frontend` のガードに倣った `tests/lint_policy.rs` を
      追加する。
