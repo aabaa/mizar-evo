@@ -28,7 +28,7 @@ manifest が所有しないもの:
 - `VerifiedArtifact`、`ModuleSummary`、`RegistrationSummary`、`ProofWitnessRef` object schema。
 - raw compiler IR dump、scheduler state、internal cache record、`mizar-cache` content-addressed blob。
 - proof authority、witness replay、kernel acceptance、verifier policy decision。
-- store file I/O implementation。これは task 13 に残る。
+- store file I/O implementation。これは `store.md` と `src/store.rs` が所有する。
 - Rust の manifest reader/writer と transaction manager。これは task 14 に残る。
 
 manifest は integrity と reachability metadata である。manifest entry は、参照先 artifact が

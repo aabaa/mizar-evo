@@ -20,7 +20,7 @@ and 18 and internal 02 and 06.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| store | `store.md` (task 2) | `src/store.rs` | [~] |
+| store | `store.md` (task 2) | `src/store.rs` | [x] |
 | module_summary | `module_summary.md` (task 4) | `src/module_summary.rs` | [x] |
 | registration_summary | `registration_summary.md` (task 6) | `src/registration_summary.rs` | [x] |
 | proof_witness | `proof_witness.md` (task 8) | `src/proof_witness.rs` | [x] |
@@ -176,7 +176,7 @@ Keep `cargo test -p mizar-artifact` green after each task (see
     - Deps: 2. Spec: [internal 02](../../internal/en/02.artifact_store_cache_key_and_manifest.md)
       "Manifest Transaction", architecture 11 "Artifact Manifest".
 
-13. **Artifact store with atomic writes.** [ ]
+13. **Artifact store with atomic writes.** [x]
     - Implement the store: stable published artifact writes, schema-required
       hash-addressed published files such as witnesses, temp-and-rename
       atomicity, and corruption detection on read; interrupted writes never

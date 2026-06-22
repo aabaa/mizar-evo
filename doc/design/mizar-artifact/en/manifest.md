@@ -35,7 +35,8 @@ The manifest does not own:
   `mizar-cache` content-addressed blobs;
 - proof authority, witness replay, kernel acceptance, or verifier policy
   decisions;
-- the store file I/O implementation, which remains task 13 work;
+- the store file I/O implementation, which is owned by `store.md` and
+  `src/store.rs`;
 - the Rust manifest reader/writer and transaction manager, which remain task 14
   work.
 

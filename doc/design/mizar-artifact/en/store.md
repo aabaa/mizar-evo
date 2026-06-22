@@ -213,6 +213,12 @@ published artifact. If a write fails before the manifest commits, the previous
 manifest remains authoritative; newly written unreferenced files are ignored by
 readers and may be cleaned up later.
 
+A platform that reports directory flush as unsupported may continue without a
+directory-flush guarantee. A supported directory-flush failure is a path-aware
+artifact I/O error; if it happens after rename but before manifest commit, the
+final file remains unreferenced and the writer must not report durable
+publication.
+
 The manifest transaction protocol is specified by [manifest.md](./manifest.md).
 This store spec requires that files referenced by a manifest entry have already
 been written, flushed, and hash-validated before the manifest can publish them.
@@ -223,12 +229,18 @@ Published artifact readers:
 
 - resolve paths through the manifest, not by scanning the artifact root;
 - reject paths outside the package artifact root after normalization;
+- reject final-path symlinks before reading published files;
 - parse UTF-8 JSON and report parse failures with the artifact path and a
   useful byte, line, or column location when available;
 - check `schema_version` before interpreting schema-specific fields;
 - reject duplicate object keys;
 - validate hashes requested by the manifest entry or consuming command;
 - reject missing proof witness files when publication policy requires them.
+
+The shared store read primitive returns canonical JSON plus path context and an
+optional computed artifact hash. Schema-specific readers then perform
+path-aware schema-version checks and semantic validation from that canonical
+value.
 
 Read failures are artifact diagnostics. They do not silently fall back to
 internal cache records and do not establish proof authority.
@@ -240,6 +252,7 @@ later tasks:
 
 - task 3 implements shared canonical serialization, hash domains, hash
   exclusions, and version checks;
-- task 13 implements store writes, atomicity, and corruption-detecting reads;
+- task 13 implements store writes, atomicity, root-safe published-path
+  validation, and corruption-detecting reads;
 - task 14 implements manifest transactions;
 - schema-specific reader/writer behavior is implemented by each schema task.

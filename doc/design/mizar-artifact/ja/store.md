@@ -202,6 +202,10 @@ build error であり、公開 artifact として受理してはならない。m
 場合、以前の manifest が authoritative のまま残る。新しく書かれた参照されない file は reader に
 無視され、後で clean up してよい。
 
+platform が directory flush を unsupported と報告する場合は、directory-flush guarantee なしで続行してよい。
+対応済み directory flush の失敗は path-aware artifact I/O error である。rename 後かつ manifest commit 前に
+それが起きた場合、final file は unreferenced のままであり、writer は durable publication を報告してはならない。
+
 manifest transaction protocol は [manifest.md](./manifest.md) が仕様化する。この store spec は、
 manifest entry が参照する file が manifest により公開される前に、すでに write、flush、
 hash validation 済みであることを要求する。
@@ -212,12 +216,17 @@ hash validation 済みであることを要求する。
 
 - artifact root の走査ではなく manifest を通じて path を解決する。
 - normalization 後に package artifact root の外へ出る path を拒否する。
+- published file を読む前に final-path symlink を拒否する。
 - UTF-8 JSON を parse し、parse failure には artifact path と、利用可能なら有用な byte、line、column
   location を報告する。
 - schema-specific field を解釈する前に `schema_version` を検査する。
 - 重複 object key を拒否する。
 - manifest entry または consuming command が要求する hash を検証する。
 - publication policy が要求する場合、欠落した proof witness file を拒否する。
+
+共有 store read primitive は canonical JSON、path context、optional な computed artifact hash を返す。
+schema-specific reader はその canonical value から path-aware schema-version check と semantic validation を
+行う。
 
 read failure は artifact diagnostic である。internal cache record へ黙って fallback してはならず、
 proof authority も確立しない。
@@ -227,6 +236,6 @@ proof authority も確立しない。
 task 2 はこの仕様を導入した。source implementation は後続 task に分けて進める。
 
 - task 3 は共有の canonical serialization、hash domain、hash exclusion、version check を実装する。
-- task 13 は store write、atomicity、corruption-detecting read を実装する。
+- task 13 は store write、atomicity、root-safe published-path validation、corruption-detecting read を実装する。
 - task 14 は manifest transaction を実装する。
 - schema-specific reader/writer behavior は各 schema task で実装する。

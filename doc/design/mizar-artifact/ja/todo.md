@@ -19,7 +19,7 @@ source task が始まる前に file を追加する。モジュール名は
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| store | `store.md`（task 2） | `src/store.rs` | [~] |
+| store | `store.md`（task 2） | `src/store.rs` | [x] |
 | module_summary | `module_summary.md`（task 4） | `src/module_summary.rs` | [x] |
 | registration_summary | `registration_summary.md`（task 6） | `src/registration_summary.rs` | [x] |
 | proof_witness | `proof_witness.md`（task 8） | `src/proof_witness.rs` | [x] |
@@ -175,7 +175,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
     - 依存: 2。仕様: [internal 02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)
       「Manifest Transaction」、アーキテクチャ 11「Artifact Manifest」。
 
-13. **atomic write を備えた artifact ストア。** [ ]
+13. **atomic write を備えた artifact ストア。** [x]
     - ストアを実装する: 安定した公開 artifact 書き込み、witness など
       schema が要求する hash-addressed published file、temp-and-rename の
       原子性、読み込み時の破損検出。中断された書き込みが完全な出力に
