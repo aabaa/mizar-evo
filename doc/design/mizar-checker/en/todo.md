@@ -18,7 +18,7 @@ architecture 04, 05, 16, 17, 18, and 19.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| typed_ast | `typed_ast.md` (task 2) | `src/typed_ast.rs` | [ ] |
+| typed_ast | `typed_ast.md` (task 2) | `src/typed_ast.rs` | [~] |
 | binding_env | `binding_env.md` (task 4) | `src/binding_env.rs` | [ ] |
 | type_checker | `type_checker.md` (task 6) | `src/type_checker.rs` | [ ] |
 | registration_resolution | `registration_resolution.md` (task 13) | `src/registration_resolution.rs` | [ ] |
@@ -95,13 +95,17 @@ Keep `cargo test -p mizar-checker` green after each task (see
      boundary, and lint-policy guard are in place; no checker semantics or
      public APIs beyond the crate boundary were introduced.
 
-2. **Spec: `typed_ast.md`.** [ ]
+2. **Spec: `typed_ast.md`.** [x]
    - Write the `TypedAst` data-shape spec (English and Japanese, no code):
      node arena, `TypeTable`, `TypeFactTable`, `CoercionTable`,
      `InitialObligation` with `InitialObligationId` (never `VcId`), and the
      partial-typing-after-error contract.
    - Deps: 1. Spec: architecture 04 "Typed AST",
      [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
+   - Completed by task 2: `typed_ast.md` now defines the logical data shape,
+     local context snapshots, table/status invariants, `InitialObligationId`
+     boundary, partial-typing recovery, task-3 test obligations, and deferred
+     arena-representation decision.
 
 3. **Implement `typed_ast` data shapes.** [ ]
    - Implement the arena and tables per task 2, resolving the arena

@@ -17,7 +17,7 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| typed_ast | `typed_ast.md`（task 2） | `src/typed_ast.rs` | [ ] |
+| typed_ast | `typed_ast.md`（task 2） | `src/typed_ast.rs` | [~] |
 | binding_env | `binding_env.md`（task 4） | `src/binding_env.rs` | [ ] |
 | type_checker | `type_checker.md`（task 6） | `src/type_checker.rs` | [ ] |
 | registration_resolution | `registration_resolution.md`（task 13） | `src/registration_resolution.rs` | [ ] |
@@ -93,13 +93,17 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      lint-policy guard を追加した。crate boundary を超える checker semantics や
      public API は導入していない。
 
-2. **仕様: `typed_ast.md`。** [ ]
+2. **仕様: `typed_ast.md`。** [x]
    - `TypedAst` のデータ形状仕様を執筆する（英語と日本語、コードなし）:
      ノード arena、`TypeTable`、`TypeFactTable`、`CoercionTable`、
      `InitialObligationId` を持つ `InitialObligation`（`VcId` は決して
      使わない）、エラー後の部分型付け契約。
    - 依存: 1。仕様: アーキテクチャ 04「Typed AST」、
      [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
+   - task 2 で完了: `typed_ast.md` が論理データ形状、local context snapshot、
+     table/status invariant、`InitialObligationId` boundary、partial-typing
+     recovery、task 3 のテスト義務、deferred arena-representation decision を
+     定義した。
 
 3. **`typed_ast` データ形状の実装。** [ ]
    - task 2 に従って arena とテーブルを実装し、arena 表現の決定を解決し、
