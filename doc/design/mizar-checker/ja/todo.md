@@ -199,19 +199,27 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      overload selection、raw syntax walk、`CoercionTable` 発行、
      `InitialObligation` の捏造は行わない。
 
-10. **coercion 候補、sethood、narrowing 義務。** [ ]
+10. **coercion 候補、sethood、non-emptiness、narrowing 義務。** [x]
     - widening/narrowing/`qua` の coercion 候補を `CoercionTable` に記録し、
-      sethood/narrowing の `InitialObligation` を発行する。
+      sethood/non-emptiness/narrowing の `InitialObligation` を発行する。
     - テスト: coercion 種別ごとの候補集合。義務が `InitialObligationId` と
-      ソース範囲を保持する。comprehension の sethood evidence 欠落と不正な
+      ソース範囲を保持する。sethood/non-emptiness evidence 欠落と不正な
       `qua` narrowing の fail fixture も含める。
     - 依存: 9。仕様: `type_checker.md`（coercion/義務の節）。
+    - task 10 で完了: `CoercionObligationChecker` は checker-owned な
+      coercion / initial-obligation payload を受け取り、widening/source-`qua`/
+      narrowing candidate を記録し、deterministic local id と source range を持つ
+      sethood/non-emptiness/narrowing `InitialObligation` を作る。supporting fact
+      のため input fact id を保持し、obligation-backed fact を追加する。不足する
+      inheritance / summary / cluster / sethood / non-emptiness / proof-query
+      input は `VcId` 割り当て、obligation discharge、inserted view 捏造ではなく
+      external dependency gap として残す。
 
 11. **型事実の記録とクエリ。** [ ]
     - 推論中の事実記録と、registration/overload の波が後で使う決定的
       クエリ API を実装する。
     - テスト: 事実の来歴。クエリの決定性。事実の重複なし。
-    - 依存: 9。仕様: `type_checker.md`（型事実の節）。
+    - 依存: 9, 10。仕様: `type_checker.md`（型事実の節）。
 
 12. **stage `type_elaboration` のコーパスランナー。** [ ]
     - `tests/miz/{pass,fail}/` のケースを stage `type_elaboration` で

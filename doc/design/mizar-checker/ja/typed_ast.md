@@ -337,8 +337,9 @@ renderer text から推測せずに `Candidate` と `RequiresObligation` を
 
 - widening candidate は、記録済み type fact によって正当化される proof-free な
   semantic view でなければならず、その根拠は `supporting_facts` に保存する。
-- narrowing candidate は、後続 spec が VC generation なしで局所的に discharge
-  できると証明しない限り、`InitialObligationId` を必要とする。
+- narrowing candidate は、task 10 の known-fact support または後続 spec により
+  VC generation なしで局所的に discharge できると示されない限り、
+  `InitialObligationId` を必要とする。
 - `Candidate` entry は、参照する fact と type の status に従って後続 phase から
   利用可能であり、provenance も保持する。
 - `RequiresObligation` entry は `InitialObligationId` を持ち、verified coercion
@@ -385,6 +386,7 @@ obligation にだけ公開する。`Blocked` と `Invalidated` obligation は、
 必須 obligation kind:
 
 - type expression と witness を導入する構文が必要とする sethood obligation
+- `the T` のような choice term の non-emptiness obligation
 - `reconsider` や不正または非自明な narrowing claim の narrowing obligation
 - registration validation task が table を精緻化した後の registration
   correctness obligation

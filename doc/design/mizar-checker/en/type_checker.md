@@ -39,7 +39,8 @@ the named sections below.
 - term and formula type inference before final overload root selection;
 - expected-type constraints and unresolved typed candidate groups;
 - widening, source-written `qua`, and narrowing coercion candidates;
-- checker-local `InitialObligation`s for sethood and narrowing claims;
+- checker-local `InitialObligation`s for sethood, non-emptiness, and
+  narrowing claims;
 - type facts, local assumptions, and deterministic fact queries;
 - partial typing and diagnostic recovery for recoverable semantic errors.
 
@@ -341,15 +342,38 @@ Task 10 implements this section.
 
 Coercion entries are checker-discovered candidates, not final inserted views.
 
+Task 10 uses checker-owned coercion and initial-obligation payloads. The current
+resolver/checker boundary still does not expose an AST-wide coercion request
+table, active dependency-summary fact database, structure inheritance graph,
+cluster-closure evidence, sethood evidence, non-emptiness evidence, or
+proof-query results. Task 10 consumes explicit source sites, normalized source
+and target type payloads, supporting fact ids, and obligation request payloads.
+Missing resolver/dependency payloads are `external_dependency_gap`s and produce
+blocked or rejected entries with diagnostics; they must not be repaired by raw
+syntax walking, registration closure, proof search, or invented facts.
+
+The implementation surface is `CoercionObligationChecker`. It produces a
+`CoercionCheckingOutput` containing normalized type expressions, `TypeEntry`s,
+`CoercionTable`, `InitialObligationTable`, optional obligation-backed facts,
+and diagnostics. Supporting facts are accepted only when explicitly supplied
+and present with a consumable status in the input fact table. The output
+preserves the input facts and appends local obligation facts so coercion support
+ids remain valid for handoff. Built-in radix widening may append a
+checker-local builtin fact; structure-inheritance and activated-summary
+evidence require supplied consumable supporting fact ids and are not accepted
+from an enum marker alone. Task 11 still owns the full fact query API.
+
 Required behavior:
 
 - widening candidates are proof-free only when supported by known type facts,
-  built-in radix widening, structure inheritance payload, or already activated
-  dependency summaries available through a task-scoped seam;
+  built-in radix widening recorded as a local builtin fact, structure
+  inheritance payload represented by supplied facts, or already activated
+  dependency summaries represented by supplied facts through a task-scoped seam;
 - source-written `qua` is valid only for statically checkable upcasts or
   compatible views; it must not be used as narrowing proof;
-- narrowing to a more specific type creates an `InitialObligation` unless a
-  later task explicitly specifies a local discharge rule;
+- narrowing to a more specific type creates an `InitialObligation` unless the
+  task-10 input supplies consumable known facts that already support the target
+  type or a later task explicitly specifies another local discharge rule;
 - `reconsider` creates narrowing obligations for both existing-binding and
   new-binding forms when the target type is not already supported by known facts;
 - sethood and non-emptiness requirements create `InitialObligation`s with source

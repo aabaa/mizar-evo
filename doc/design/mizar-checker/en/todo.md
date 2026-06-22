@@ -206,19 +206,27 @@ Keep `cargo test -p mizar-checker` green after each task (see
      without final overload selection, raw syntax walking, `CoercionTable`
      emission, or `InitialObligation` fabrication.
 
-10. **Coercion candidates, sethood, and narrowing obligations.** [ ]
+10. **Coercion candidates, sethood, non-emptiness, and narrowing obligations.** [x]
     - Record widening/narrowing/`qua` coercion candidates in `CoercionTable`
-      and emit sethood/narrowing `InitialObligation`s.
+      and emit sethood/non-emptiness/narrowing `InitialObligation`s.
     - Tests: candidate sets per coercion kind; obligations carry
       `InitialObligationId` and source ranges. Include fail fixtures for
-      missing sethood evidence on comprehensions and invalid `qua` narrowing.
+      missing sethood/non-emptiness evidence and invalid `qua` narrowing.
     - Deps: 9. Spec: `type_checker.md` (coercion/obligation section).
+    - Completed by task 10: `CoercionObligationChecker` accepts checker-owned
+      coercion and initial-obligation payloads, records widening/source-`qua`/
+      narrowing candidates, creates sethood/non-emptiness/narrowing
+      `InitialObligation`s with deterministic local ids and source ranges,
+      preserves input fact ids for supporting facts, appends obligation-backed
+      facts, and leaves missing inheritance/summary/cluster/sethood/
+      non-emptiness/proof-query inputs as external dependency gaps rather than
+      assigning `VcId`s, discharging obligations, or fabricating inserted views.
 
 11. **Type-fact recording and queries.** [ ]
     - Implement fact recording during inference and the deterministic query
       API later used by registration and overload waves.
     - Tests: fact provenance; query determinism; no fact duplication.
-    - Deps: 9. Spec: `type_checker.md` (type-facts section).
+    - Deps: 9, 10. Spec: `type_checker.md` (type-facts section).
 
 12. **Corpus runner at stage `type_elaboration`.** [ ]
     - Wire `tests/miz/{pass,fail}/` cases at stage `type_elaboration` through

@@ -874,6 +874,7 @@ impl InitialObligationTable {
 #[non_exhaustive]
 pub enum InitialObligationKind {
     Sethood,
+    NonEmptiness,
     Narrowing,
     RegistrationCorrectness,
 }
@@ -2317,6 +2318,7 @@ fn coercion_status_name(status: CoercionStatus) -> &'static str {
 fn initial_obligation_kind_name(kind: InitialObligationKind) -> &'static str {
     match kind {
         InitialObligationKind::Sethood => "sethood",
+        InitialObligationKind::NonEmptiness => "non_emptiness",
         InitialObligationKind::Narrowing => "narrowing",
         InitialObligationKind::RegistrationCorrectness => "registration_correctness",
     }

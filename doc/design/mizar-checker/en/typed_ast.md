@@ -342,8 +342,9 @@ Required behavior:
 
 - widening candidates must be proof-free semantic views justified by recorded
   type facts stored in `supporting_facts`;
-- narrowing candidates require an `InitialObligationId` unless a later spec
-  proves they are locally discharged without VC generation;
+- narrowing candidates require an `InitialObligationId` unless task-10
+  known-fact support or a later spec proves they are locally discharged without
+  VC generation;
 - `Candidate` entries are available to later phases subject to the status of
   their referenced facts, types, and provenance;
 - `RequiresObligation` entries carry an `InitialObligationId` and are not
@@ -391,6 +392,7 @@ Required obligation kinds include:
 
 - sethood obligations for type expressions and constructs that introduce
   witnesses;
+- non-emptiness obligations for choice terms such as `the T`;
 - narrowing obligations for `reconsider` and invalid or non-trivial narrowing
   claims;
 - registration correctness obligations once registration validation tasks

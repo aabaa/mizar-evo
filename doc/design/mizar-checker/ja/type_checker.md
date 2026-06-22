@@ -38,7 +38,8 @@ VC generation、proof acceptance は追加しない。task 7-11 が以下の nam
 - final overload root selection 前の term / formula type inference;
 - expected-type constraint と未確定 typed candidate group;
 - widening、source-written `qua`、narrowing coercion candidate;
-- sethood と narrowing claim の checker-local `InitialObligation`;
+- sethood、non-emptiness、narrowing claim の checker-local
+  `InitialObligation`;
 - type fact、local assumption、deterministic fact query;
 - recoverable semantic error の partial typing と diagnostic recovery。
 
@@ -319,15 +320,36 @@ task 10 がこの section を実装する。
 
 coercion entry は checker が見つけた candidate であり、final inserted view ではない。
 
+task 10 は checker-owned な coercion と initial-obligation payload を使う。現在の
+resolver/checker boundary は、AST 全体の coercion request table、active dependency-summary
+fact database、structure inheritance graph、cluster-closure evidence、sethood evidence、
+non-emptiness evidence、proof-query result をまだ公開していない。task 10 は明示された
+source site、normalized source / target type payload、supporting fact id、obligation request
+payload を消費する。不足する resolver/dependency payload は `external_dependency_gap` であり、
+diagnostic 付きの blocked または rejected entry を生成する。raw syntax walk、registration
+closure、proof search、fact の捏造によって修復してはならない。
+
+実装表面は `CoercionObligationChecker` である。これは normalized type expression、
+`TypeEntry`、`CoercionTable`、`InitialObligationTable`、必要なら obligation-backed fact、
+diagnostic を含む `CoercionCheckingOutput` を生成する。supporting fact は明示的に渡され、
+input fact table に consumable status で存在する場合だけ受け入れる。output は input fact を
+保持し、coercion support id が handoff で有効なままになるよう local obligation fact を
+追加する。built-in radix widening は checker-local builtin fact を追加してよい。
+structure-inheritance と activated-summary evidence は supplied consumable supporting
+fact id を必要とし、enum marker だけでは受け入れない。full fact query API は引き続き
+task 11 が所有する。
+
 必須 behavior:
 
-- widening candidate が proof-free であるのは、known type fact、built-in radix widening、
-  structure inheritance payload、または task-scoped seam を通じて利用可能な already
-  activated dependency summary に支えられる場合だけである;
+- widening candidate が proof-free であるのは、known type fact、local builtin fact として
+  記録された built-in radix widening、supplied fact で表された structure inheritance
+  payload、または task-scoped seam を通じた supplied fact で表された already activated
+  dependency summary に支えられる場合だけである;
 - source-written `qua` は statically checkable upcast または compatible view に対してだけ
   valid であり、narrowing proof として使ってはならない;
-- より specific な type への narrowing は、後続 task が local discharge rule を明示しない限り
-  `InitialObligation` を作る;
+- より specific な type への narrowing は、task 10 input が target type を既に支える
+  consumable known fact を supplied している場合、または後続 task が別の local discharge
+  rule を明示する場合を除き、`InitialObligation` を作る;
 - `reconsider` は target type が known fact で既に支えられていない場合、existing-binding
   form と new-binding form の両方で narrowing obligation を作る;
 - sethood と non-emptiness requirement は source assumption と deterministic local id を持つ
