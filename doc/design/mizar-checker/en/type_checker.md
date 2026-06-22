@@ -251,7 +251,47 @@ source-shaped typed site.
 Task 9 implements this section.
 
 Term inference records a `TypeEntry` for each typed term site. Formula inference
-records well-formedness and any type facts introduced by formula structure.
+records well-formedness and task-9-local facts introduced by formula structure.
+Task 11 keeps responsibility for the complete deterministic fact query API and
+for expanding fact recording beyond the minimal inference records needed by
+task 9.
+
+Task 9 uses a checker-owned term/formula payload. The current resolver does not
+yet expose an AST-wide typed term/formula table, built-in numeric type payload,
+functor/predicate candidate signatures, selector and structure-field payloads,
+source `qua` coercion evidence, or sethood/non-emptiness evidence queries. Task
+9 must therefore not walk raw syntax to reconstruct those inputs. It consumes
+explicit payloads supplied by the caller: term/formula sites, binding ids or
+resolver symbols for references, explicit result/expected type expressions,
+current-result type payloads for `it`, and unresolved candidate groups when a
+later overload phase must finish root selection. Missing resolver/source
+payloads are classified as `external_dependency_gap` or deferred diagnostics.
+
+The implementation surface is `TermFormulaChecker`. It produces a
+`TermFormulaInferenceOutput` containing normalized type expressions, checked
+term and formula records, a task-local `OpenCandidateSetTable`, `TypeTable`,
+`TypeFactTable`, and diagnostics. `TypedAst` already reserves
+`TypeEntryActual::CandidateSet(OpenCandidateSetId)`, but task 9 owns the first
+candidate-set payload table in `type_checker`; later overload and
+`ResolvedTypedAst` tasks consume or project that table rather than treating the
+candidate id alone as a final overload decision.
+
+Formula well-formedness is recorded in checked-formula status and linked facts,
+not as a fabricated successful term type. Source-written `qua`, sethood checks,
+and non-emptiness checks may record deferred diagnostics and open type views in
+task 9, but `CoercionTable` entries and `InitialObligation`s are emitted only by
+task 10.
+
+Task 9 classification:
+
+- `external_dependency_gap`: missing resolver/source payloads for AST-wide
+  term/formula extraction, numeric built-ins, functor/predicate signatures,
+  selector/structure signatures, or source `qua` evidence. These are recorded
+  as degraded diagnostics and partial/skipped checked terms or formulas.
+- `deferred`: sethood, non-emptiness, and source-`qua` coercion/obligation
+  emission that is intentionally owned by task 10. These are recorded as
+  deferred requirement markers or diagnostics, not as `CoercionTable` or
+  `InitialObligationTable` entries.
 
 Term rules:
 
@@ -263,17 +303,20 @@ Term rules:
   degraded external-gap type when that payload is absent;
 - functor applications may keep candidate groups when final overload root
   selection is not phase-6-deterministic;
-- selector access checks that the selected field or property is visible on the
-  current type view and records a candidate group if overload resolution must
-  finish the choice;
-- structure constructors check field coverage and field value types against
-  resolver-exposed structure signatures;
-- set enumeration and set comprehension produce set-like types and sethood
-  obligations for generator domains when required by spec chapter 13;
-- `the T` records a choice-like typed term and a non-emptiness obligation for
-  `T` without assigning a proof-owned id;
-- source-written `qua` creates a `SourceQua` coercion candidate and changes only
-  the type view used by later checking.
+- selector access records supplied result or candidate payloads and degrades
+  missing selector/signature payloads as MC-G017; field/property visibility
+  validation waits for resolver-exposed selector signatures;
+- structure constructors record supplied result payloads and degrade missing
+  structure-field payloads as MC-G017; field coverage and value-type checking
+  wait for resolver-exposed structure signatures;
+- set enumeration and set comprehension produce set-like types and record
+  deferred sethood requirements for generator domains when spec chapter 13
+  requires them;
+- `the T` records a choice-like typed term and a deferred non-emptiness
+  requirement for `T` without assigning a proof-owned id;
+- source-written `qua` records the source view needed by later checking and a
+  deferred source-`qua` requirement; task 10 creates the `SourceQua` coercion
+  candidate.
 
 Formula rules:
 

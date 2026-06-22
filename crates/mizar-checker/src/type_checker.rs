@@ -8,11 +8,11 @@ use crate::{
     typed_ast::{
         BindingTypeRef, ContextRecoveryState, DiagnosticRecoveryState, FactProvenance, FactStatus,
         LocalTypeContextDraft, LocalTypeContextId, LocalTypeContextTable, NormalizedTypeId,
-        Polarity, SourceRangeKey as TypedSourceRangeKey, TypeAssumptionId, TypeContextLayer,
-        TypeDiagnostic, TypeDiagnosticClass, TypeDiagnosticDraft, TypeDiagnosticId,
-        TypeDiagnosticSeverity, TypeDiagnosticTable, TypeEntryActual, TypeEntryDraft, TypeEntryId,
-        TypeFactDraft, TypeFactId, TypeFactTable, TypePredicateRef, TypeProvenance, TypeRuleId,
-        TypeStatus, TypeTable, TypedSiteRef,
+        OpenCandidateSetId, Polarity, SourceRangeKey as TypedSourceRangeKey, TypeAssumptionId,
+        TypeContextLayer, TypeDiagnostic, TypeDiagnosticClass, TypeDiagnosticDraft,
+        TypeDiagnosticId, TypeDiagnosticSeverity, TypeDiagnosticTable, TypeEntryActual,
+        TypeEntryDraft, TypeEntryId, TypeFactDraft, TypeFactId, TypeFactTable, TypePredicateRef,
+        TypeProvenance, TypeRuleId, TypeStatus, TypeTable, TypedSiteRef, TypedSubjectRef,
     },
 };
 use mizar_resolve::{
@@ -251,6 +251,1537 @@ impl DeclarationChecker {
             facts: state.facts,
             diagnostics: state.diagnostics,
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TermFormulaInferenceOutput {
+    normalized_types: NormalizedTypeTable,
+    terms: CheckedTermTable,
+    formulas: CheckedFormulaTable,
+    candidate_sets: OpenCandidateSetTable,
+    type_entries: TypeTable,
+    facts: TypeFactTable,
+    diagnostics: TypeDiagnosticTable,
+}
+
+impl TermFormulaInferenceOutput {
+    pub const fn normalized_types(&self) -> &NormalizedTypeTable {
+        &self.normalized_types
+    }
+
+    pub const fn terms(&self) -> &CheckedTermTable {
+        &self.terms
+    }
+
+    pub const fn formulas(&self) -> &CheckedFormulaTable {
+        &self.formulas
+    }
+
+    pub const fn candidate_sets(&self) -> &OpenCandidateSetTable {
+        &self.candidate_sets
+    }
+
+    pub const fn type_entries(&self) -> &TypeTable {
+        &self.type_entries
+    }
+
+    pub const fn facts(&self) -> &TypeFactTable {
+        &self.facts
+    }
+
+    pub const fn diagnostics(&self) -> &TypeDiagnosticTable {
+        &self.diagnostics
+    }
+
+    pub fn debug_text(&self) -> String {
+        let mut output = String::from("term-formula-inference-debug-v1\n");
+        write_normalized_types(&mut output, &self.normalized_types);
+        write_checked_terms(&mut output, &self.terms);
+        write_checked_formulas(&mut output, &self.formulas);
+        write_candidate_sets(&mut output, &self.candidate_sets);
+        write_type_entries(&mut output, &self.type_entries);
+        write_type_facts(&mut output, &self.facts);
+        write_diagnostics(&mut output, &self.diagnostics);
+        output
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct TermFormulaChecker {
+    normalizer: TypeNormalizer,
+}
+
+impl TermFormulaChecker {
+    pub fn new(normalizer: TypeNormalizer) -> Self {
+        Self { normalizer }
+    }
+
+    pub fn infer(
+        &self,
+        symbols: &SymbolEnv,
+        binding_env: &BindingEnv,
+        term_inputs: impl IntoIterator<Item = TermInput>,
+        formula_inputs: impl IntoIterator<Item = FormulaInput>,
+    ) -> TermFormulaInferenceOutput {
+        let mut terms = term_inputs.into_iter().collect::<Vec<_>>();
+        terms.sort_by_key(term_input_key);
+        let mut formulas = formula_inputs.into_iter().collect::<Vec<_>>();
+        formulas.sort_by_key(formula_input_key);
+
+        let mut type_inputs = Vec::new();
+        for term in &terms {
+            term.collect_type_inputs(&mut type_inputs);
+        }
+        for formula in &formulas {
+            formula.collect_type_inputs(&mut type_inputs);
+        }
+        let normalized = self.normalizer.normalize(symbols, type_inputs);
+        let type_entries_by_site = type_entries_by_site(normalized.type_entries());
+
+        let mut state = TermFormulaCheckingState {
+            symbols,
+            binding_env,
+            normalized_types: normalized.normalized_types,
+            terms: CheckedTermTable::new(),
+            formulas: CheckedFormulaTable::new(),
+            candidate_sets: OpenCandidateSetTable::new(),
+            type_entries: normalized.type_entries,
+            facts: TypeFactTable::new(),
+            diagnostics: normalized.diagnostics,
+            seen_terms: BTreeSet::new(),
+            seen_formulas: BTreeSet::new(),
+        };
+
+        for term in terms {
+            state.check_term(term, &type_entries_by_site);
+        }
+        for formula in formulas {
+            state.check_formula(formula, &type_entries_by_site);
+        }
+
+        TermFormulaInferenceOutput {
+            normalized_types: state.normalized_types,
+            terms: state.terms,
+            formulas: state.formulas,
+            candidate_sets: state.candidate_sets,
+            type_entries: state.type_entries,
+            facts: state.facts,
+            diagnostics: state.diagnostics,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TermInput {
+    pub site: TypedSiteRef,
+    pub context: BindingContextId,
+    pub source_range: SourceRange,
+    pub kind: TermKind,
+    pub reference: Option<TermReference>,
+    pub result_type: Option<TypeExpressionInput>,
+    pub expected_type: Option<TypeExpressionInput>,
+    pub candidates: Vec<OpenCandidateInput>,
+    pub deferred: Vec<TermDeferredReason>,
+}
+
+impl TermInput {
+    pub fn new(
+        site: TypedSiteRef,
+        context: BindingContextId,
+        source_range: SourceRange,
+        kind: TermKind,
+    ) -> Self {
+        Self {
+            site,
+            context,
+            source_range,
+            kind,
+            reference: None,
+            result_type: None,
+            expected_type: None,
+            candidates: Vec::new(),
+            deferred: Vec::new(),
+        }
+    }
+
+    pub fn with_reference(mut self, reference: TermReference) -> Self {
+        self.reference = Some(reference);
+        self
+    }
+
+    pub fn with_result_type(mut self, result_type: TypeExpressionInput) -> Self {
+        self.result_type = Some(result_type);
+        self
+    }
+
+    pub fn with_expected_type(mut self, expected_type: TypeExpressionInput) -> Self {
+        self.expected_type = Some(expected_type);
+        self
+    }
+
+    pub fn with_candidates(mut self, candidates: Vec<OpenCandidateInput>) -> Self {
+        self.candidates = candidates;
+        self
+    }
+
+    pub fn with_deferred(mut self, deferred: Vec<TermDeferredReason>) -> Self {
+        self.deferred = deferred;
+        self
+    }
+
+    fn collect_type_inputs(&self, output: &mut Vec<TypeExpressionInput>) {
+        if let Some(result_type) = &self.result_type {
+            output.push(result_type.clone());
+        }
+        if let Some(expected_type) = &self.expected_type {
+            output.push(expected_type.clone());
+        }
+        for candidate in &self.candidates {
+            candidate.collect_type_inputs(output);
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum TermKind {
+    Variable,
+    It,
+    Numeral,
+    FunctorApplication,
+    SelectorAccess,
+    StructureConstructor,
+    SetEnumeration,
+    SetComprehension,
+    Choice,
+    SourceQua,
+    Parenthesized,
+    Unsupported,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum TermReference {
+    Binding(BindingId),
+    Symbol(SymbolId),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum TermDeferredReason {
+    MissingReferencePayload,
+    MissingNumericTypePayload,
+    MissingSignaturePayload,
+    MissingSelectorPayload,
+    MissingStructurePayload,
+    MissingResultTypePayload,
+    SethoodRequirement,
+    NonEmptinessRequirement,
+    SourceQuaRequirement,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FormulaInput {
+    pub site: TypedSiteRef,
+    pub context: BindingContextId,
+    pub source_range: SourceRange,
+    pub kind: FormulaKind,
+    pub terms: Vec<TypedSiteRef>,
+    pub asserted_type: Option<TypeExpressionInput>,
+    pub expected_types: Vec<ExpectedTypeInput>,
+    pub candidates: Vec<OpenCandidateInput>,
+    pub facts: Vec<FormulaFactInput>,
+    pub deferred: Vec<FormulaDeferredReason>,
+}
+
+impl FormulaInput {
+    pub fn new(
+        site: TypedSiteRef,
+        context: BindingContextId,
+        source_range: SourceRange,
+        kind: FormulaKind,
+    ) -> Self {
+        Self {
+            site,
+            context,
+            source_range,
+            kind,
+            terms: Vec::new(),
+            asserted_type: None,
+            expected_types: Vec::new(),
+            candidates: Vec::new(),
+            facts: Vec::new(),
+            deferred: Vec::new(),
+        }
+    }
+
+    pub fn with_terms(mut self, terms: Vec<TypedSiteRef>) -> Self {
+        self.terms = terms;
+        self
+    }
+
+    pub fn with_asserted_type(mut self, asserted_type: TypeExpressionInput) -> Self {
+        self.asserted_type = Some(asserted_type);
+        self
+    }
+
+    pub fn with_expected_types(mut self, expected_types: Vec<ExpectedTypeInput>) -> Self {
+        self.expected_types = expected_types;
+        self
+    }
+
+    pub fn with_candidates(mut self, candidates: Vec<OpenCandidateInput>) -> Self {
+        self.candidates = candidates;
+        self
+    }
+
+    pub fn with_facts(mut self, facts: Vec<FormulaFactInput>) -> Self {
+        self.facts = facts;
+        self
+    }
+
+    pub fn with_deferred(mut self, deferred: Vec<FormulaDeferredReason>) -> Self {
+        self.deferred = deferred;
+        self
+    }
+
+    fn collect_type_inputs(&self, output: &mut Vec<TypeExpressionInput>) {
+        if let Some(asserted_type) = &self.asserted_type {
+            output.push(asserted_type.clone());
+        }
+        for expected_type in &self.expected_types {
+            output.push(expected_type.expected.clone());
+        }
+        for candidate in &self.candidates {
+            candidate.collect_type_inputs(output);
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum FormulaKind {
+    PredicateApplication,
+    Equality,
+    Inequality,
+    Membership,
+    TypeAssertion,
+    AttributeAssertion,
+    Negation,
+    Conjunction,
+    Disjunction,
+    Implication,
+    Biconditional,
+    Quantified,
+    Unsupported,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum FormulaDeferredReason {
+    MissingPredicateSignaturePayload,
+    MissingExpectedTypePayload,
+    MissingQuantifierPayload,
+    MissingFormulaPayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExpectedTypeInput {
+    pub term: TypedSiteRef,
+    pub expected: TypeExpressionInput,
+    pub source_range: SourceRange,
+}
+
+impl ExpectedTypeInput {
+    pub fn new(
+        term: TypedSiteRef,
+        expected: TypeExpressionInput,
+        source_range: SourceRange,
+    ) -> Self {
+        Self {
+            term,
+            expected,
+            source_range,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FormulaFactInput {
+    pub subject: TypedSubjectRef,
+    pub predicate: TypePredicateRef,
+    pub polarity: Polarity,
+    pub source_range: SourceRange,
+}
+
+impl FormulaFactInput {
+    pub fn new(
+        subject: TypedSubjectRef,
+        predicate: TypePredicateRef,
+        polarity: Polarity,
+        source_range: SourceRange,
+    ) -> Self {
+        Self {
+            subject,
+            predicate,
+            polarity,
+            source_range,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OpenCandidateInput {
+    pub identity: CandidateIdentity,
+    pub source_range: SourceRange,
+    pub result_type: Option<TypeExpressionInput>,
+    pub required_types: Vec<TypeExpressionInput>,
+}
+
+impl OpenCandidateInput {
+    pub fn new(identity: CandidateIdentity, source_range: SourceRange) -> Self {
+        Self {
+            identity,
+            source_range,
+            result_type: None,
+            required_types: Vec::new(),
+        }
+    }
+
+    pub fn with_result_type(mut self, result_type: TypeExpressionInput) -> Self {
+        self.result_type = Some(result_type);
+        self
+    }
+
+    pub fn with_required_types(mut self, required_types: Vec<TypeExpressionInput>) -> Self {
+        self.required_types = required_types;
+        self
+    }
+
+    fn collect_type_inputs(&self, output: &mut Vec<TypeExpressionInput>) {
+        if let Some(result_type) = &self.result_type {
+            output.push(result_type.clone());
+        }
+        output.extend(self.required_types.iter().cloned());
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum CandidateIdentity {
+    Symbol(SymbolId),
+    Builtin(String),
+    External(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct OpenCandidateSetTable {
+    entries: Vec<OpenCandidateSet>,
+}
+
+impl OpenCandidateSetTable {
+    pub const fn new() -> Self {
+        Self {
+            entries: Vec::new(),
+        }
+    }
+
+    fn insert(&mut self, draft: OpenCandidateSetDraft) -> OpenCandidateSetId {
+        let id = OpenCandidateSetId::new(self.entries.len());
+        let mut candidates = draft.candidates;
+        candidates.sort_by_key(open_candidate_key);
+        self.entries.push(OpenCandidateSet {
+            id,
+            owner: draft.owner,
+            kind: draft.kind,
+            candidates,
+            status: draft.status,
+            source_range: draft.source_range,
+        });
+        id
+    }
+
+    pub fn get(&self, id: OpenCandidateSetId) -> Option<&OpenCandidateSet> {
+        self.entries.get(id.index())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (OpenCandidateSetId, &OpenCandidateSet)> {
+        self.entries.iter().map(|entry| (entry.id, entry))
+    }
+
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OpenCandidateSet {
+    pub id: OpenCandidateSetId,
+    pub owner: TypedSiteRef,
+    pub kind: CandidateSetKind,
+    pub candidates: Vec<OpenCandidate>,
+    pub status: CandidateSetStatus,
+    pub source_range: SourceRange,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct OpenCandidateSetDraft {
+    owner: TypedSiteRef,
+    kind: CandidateSetKind,
+    candidates: Vec<OpenCandidate>,
+    status: CandidateSetStatus,
+    source_range: SourceRange,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OpenCandidate {
+    pub identity: CandidateIdentity,
+    pub result_type: Option<NormalizedTypeId>,
+    pub required_types: Vec<NormalizedTypeId>,
+    pub source_range: SourceRange,
+    pub status: CandidateStatus,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum CandidateSetKind {
+    Functor,
+    Predicate,
+    Selector,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum CandidateSetStatus {
+    Open,
+    Degraded,
+    Rejected,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum CandidateStatus {
+    Viable,
+    Degraded,
+    Rejected,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct CheckedTermTable {
+    entries: Vec<CheckedTerm>,
+}
+
+impl CheckedTermTable {
+    pub const fn new() -> Self {
+        Self {
+            entries: Vec::new(),
+        }
+    }
+
+    fn insert(&mut self, draft: CheckedTermDraft) -> CheckedTermId {
+        let id = CheckedTermId::new(self.entries.len());
+        self.entries.push(CheckedTerm {
+            id,
+            site: draft.site,
+            context: draft.context,
+            kind: draft.kind,
+            reference: draft.reference,
+            type_entry: draft.type_entry,
+            expected_type: draft.expected_type,
+            candidate_set: draft.candidate_set,
+            status: draft.status,
+            deferred: draft.deferred,
+        });
+        id
+    }
+
+    pub fn get(&self, id: CheckedTermId) -> Option<&CheckedTerm> {
+        self.entries.get(id.index())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (CheckedTermId, &CheckedTerm)> {
+        self.entries.iter().map(|entry| (entry.id, entry))
+    }
+
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct CheckedTermId(usize);
+
+impl CheckedTermId {
+    pub const fn new(index: usize) -> Self {
+        Self(index)
+    }
+
+    pub const fn index(self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CheckedTerm {
+    pub id: CheckedTermId,
+    pub site: TypedSiteRef,
+    pub context: BindingContextId,
+    pub kind: TermKind,
+    pub reference: Option<TermReference>,
+    pub type_entry: TypeEntryId,
+    pub expected_type: Option<NormalizedTypeId>,
+    pub candidate_set: Option<OpenCandidateSetId>,
+    pub status: TermStatus,
+    pub deferred: Vec<TermDeferredReason>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct CheckedTermDraft {
+    site: TypedSiteRef,
+    context: BindingContextId,
+    kind: TermKind,
+    reference: Option<TermReference>,
+    type_entry: TypeEntryId,
+    expected_type: Option<NormalizedTypeId>,
+    candidate_set: Option<OpenCandidateSetId>,
+    status: TermStatus,
+    deferred: Vec<TermDeferredReason>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum TermStatus {
+    Inferred,
+    Partial,
+    Error,
+    Skipped,
+}
+
+impl TermStatus {
+    const fn max_partial(self) -> Self {
+        match self {
+            Self::Inferred => Self::Partial,
+            Self::Partial | Self::Error | Self::Skipped => self,
+        }
+    }
+
+    const fn max_error(self) -> Self {
+        match self {
+            Self::Skipped => Self::Skipped,
+            Self::Inferred | Self::Partial | Self::Error => Self::Error,
+        }
+    }
+
+    const fn skip(self) -> Self {
+        match self {
+            Self::Error => Self::Error,
+            Self::Inferred | Self::Partial | Self::Skipped => Self::Skipped,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct CheckedFormulaTable {
+    entries: Vec<CheckedFormula>,
+}
+
+impl CheckedFormulaTable {
+    pub const fn new() -> Self {
+        Self {
+            entries: Vec::new(),
+        }
+    }
+
+    fn insert(&mut self, draft: CheckedFormulaDraft) -> CheckedFormulaId {
+        let id = CheckedFormulaId::new(self.entries.len());
+        self.entries.push(CheckedFormula {
+            id,
+            site: draft.site,
+            context: draft.context,
+            kind: draft.kind,
+            terms: draft.terms,
+            asserted_type: draft.asserted_type,
+            expected_types: draft.expected_types,
+            candidate_set: draft.candidate_set,
+            facts: draft.facts,
+            status: draft.status,
+            deferred: draft.deferred,
+        });
+        id
+    }
+
+    pub fn get(&self, id: CheckedFormulaId) -> Option<&CheckedFormula> {
+        self.entries.get(id.index())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (CheckedFormulaId, &CheckedFormula)> {
+        self.entries.iter().map(|entry| (entry.id, entry))
+    }
+
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct CheckedFormulaId(usize);
+
+impl CheckedFormulaId {
+    pub const fn new(index: usize) -> Self {
+        Self(index)
+    }
+
+    pub const fn index(self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CheckedFormula {
+    pub id: CheckedFormulaId,
+    pub site: TypedSiteRef,
+    pub context: BindingContextId,
+    pub kind: FormulaKind,
+    pub terms: Vec<TypedSiteRef>,
+    pub asserted_type: Option<NormalizedTypeId>,
+    pub expected_types: Vec<ExpectedTypeConstraint>,
+    pub candidate_set: Option<OpenCandidateSetId>,
+    pub facts: Vec<TypeFactId>,
+    pub status: FormulaStatus,
+    pub deferred: Vec<FormulaDeferredReason>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct CheckedFormulaDraft {
+    site: TypedSiteRef,
+    context: BindingContextId,
+    kind: FormulaKind,
+    terms: Vec<TypedSiteRef>,
+    asserted_type: Option<NormalizedTypeId>,
+    expected_types: Vec<ExpectedTypeConstraint>,
+    candidate_set: Option<OpenCandidateSetId>,
+    facts: Vec<TypeFactId>,
+    status: FormulaStatus,
+    deferred: Vec<FormulaDeferredReason>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum FormulaStatus {
+    Checked,
+    Partial,
+    Error,
+    Skipped,
+}
+
+impl FormulaStatus {
+    const fn max_partial(self) -> Self {
+        match self {
+            Self::Checked => Self::Partial,
+            Self::Partial | Self::Error | Self::Skipped => self,
+        }
+    }
+
+    const fn max_error(self) -> Self {
+        match self {
+            Self::Skipped => Self::Skipped,
+            Self::Checked | Self::Partial | Self::Error => Self::Error,
+        }
+    }
+
+    const fn skip(self) -> Self {
+        match self {
+            Self::Error => Self::Error,
+            Self::Checked | Self::Partial | Self::Skipped => Self::Skipped,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExpectedTypeConstraint {
+    pub term: TypedSiteRef,
+    pub expected: NormalizedTypeId,
+    pub status: TypeStatus,
+    pub source_range: SourceRange,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CheckedTermState {
+    context: BindingContextId,
+    readiness: CheckedTermReadiness,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CheckedTermReadiness {
+    Ready,
+    Partial,
+    NotWellFormed,
+}
+
+struct TermFormulaCheckingState<'a> {
+    symbols: &'a SymbolEnv,
+    binding_env: &'a BindingEnv,
+    normalized_types: NormalizedTypeTable,
+    terms: CheckedTermTable,
+    formulas: CheckedFormulaTable,
+    candidate_sets: OpenCandidateSetTable,
+    type_entries: TypeTable,
+    facts: TypeFactTable,
+    diagnostics: TypeDiagnosticTable,
+    seen_terms: BTreeSet<TypedSiteRef>,
+    seen_formulas: BTreeSet<TypedSiteRef>,
+}
+
+impl TermFormulaCheckingState<'_> {
+    fn check_term(
+        &mut self,
+        input: TermInput,
+        type_entries_by_site: &BTreeMap<TypedSiteRef, (NormalizedTypeId, TypeStatus)>,
+    ) {
+        let mut status = TermStatus::Inferred;
+        let mut recovery = None;
+        let mut deferred = BTreeSet::new();
+
+        if !self.seen_terms.insert(input.site.clone()) {
+            recovery = Some(self.diagnostic(
+                Some(input.site.clone()),
+                input.source_range,
+                TypeDiagnosticClass::TypeEntry,
+                TypeDiagnosticSeverity::Error,
+                "checker.term.duplicate_site",
+                DiagnosticRecoveryState::Degraded,
+            ));
+            status = status.max_partial();
+        }
+
+        if self.binding_env.contexts().get(input.context).is_none() {
+            recovery = Some(self.diagnostic(
+                Some(input.site.clone()),
+                input.source_range,
+                TypeDiagnosticClass::Context,
+                TypeDiagnosticSeverity::Error,
+                "checker.term.unknown_context",
+                DiagnosticRecoveryState::Degraded,
+            ));
+            status = status.max_error();
+        }
+
+        self.check_term_kind(&input, &mut status, &mut recovery);
+
+        for reason in input.deferred.iter().copied() {
+            deferred.insert(reason);
+            recovery = Some(self.term_deferred_diagnostic(&input, reason));
+            status = status.max_partial();
+        }
+
+        if input.kind == TermKind::Unsupported {
+            recovery = Some(self.diagnostic(
+                Some(input.site.clone()),
+                input.source_range,
+                TypeDiagnosticClass::Recovery,
+                TypeDiagnosticSeverity::Error,
+                "checker.term.unsupported_payload",
+                DiagnosticRecoveryState::Degraded,
+            ));
+            status = status.skip();
+        }
+
+        let expected_type = input.expected_type.as_ref().and_then(|expected| {
+            self.normalized_type_for_site(
+                &input.site,
+                expected,
+                type_entries_by_site,
+                "checker.term.missing_expected_type",
+                &mut status,
+                &mut recovery,
+            )
+        });
+
+        let candidate_set = if input.candidates.is_empty() {
+            None
+        } else {
+            let (id, candidate_status) = self.build_candidate_set(
+                input.site.clone(),
+                candidate_kind_for_term(input.kind),
+                input.source_range,
+                input.candidates,
+                type_entries_by_site,
+            );
+            if candidate_status != CandidateSetStatus::Open || status == TermStatus::Inferred {
+                status = status.max_partial();
+            }
+            Some(id)
+        };
+
+        let (actual, normalized_status) = if let Some(candidate_set) = candidate_set {
+            (
+                TypeEntryActual::CandidateSet(candidate_set),
+                TypeStatus::Unknown,
+            )
+        } else if let Some(result_type) = &input.result_type {
+            match type_entries_by_site.get(&result_type.site) {
+                Some((id, type_status)) => (TypeEntryActual::Known(*id), *type_status),
+                None => {
+                    recovery = Some(self.diagnostic(
+                        Some(input.site.clone()),
+                        input.source_range,
+                        TypeDiagnosticClass::TypeEntry,
+                        TypeDiagnosticSeverity::Error,
+                        "checker.term.missing_normalized_result_type",
+                        DiagnosticRecoveryState::Degraded,
+                    ));
+                    status = status.max_partial();
+                    (TypeEntryActual::Absent, TypeStatus::Unknown)
+                }
+            }
+        } else {
+            (TypeEntryActual::Absent, TypeStatus::Unknown)
+        };
+
+        let type_status = term_type_status(status, normalized_status, &actual, &deferred);
+        let type_entry = self.type_entries.insert(TypeEntryDraft {
+            owner: input.site.clone(),
+            expected: expected_type,
+            actual,
+            status: type_status,
+            provenance: term_provenance(input.kind, recovery),
+        });
+
+        self.terms.insert(CheckedTermDraft {
+            site: input.site,
+            context: input.context,
+            kind: input.kind,
+            reference: input.reference,
+            type_entry,
+            expected_type,
+            candidate_set,
+            status,
+            deferred: deferred.into_iter().collect(),
+        });
+    }
+
+    fn check_formula(
+        &mut self,
+        input: FormulaInput,
+        type_entries_by_site: &BTreeMap<TypedSiteRef, (NormalizedTypeId, TypeStatus)>,
+    ) {
+        let mut status = FormulaStatus::Checked;
+        let mut recovery = None;
+        let mut deferred = BTreeSet::new();
+
+        if !self.seen_formulas.insert(input.site.clone()) {
+            recovery = Some(self.diagnostic(
+                Some(input.site.clone()),
+                input.source_range,
+                TypeDiagnosticClass::TypeEntry,
+                TypeDiagnosticSeverity::Error,
+                "checker.formula.duplicate_site",
+                DiagnosticRecoveryState::Degraded,
+            ));
+            status = status.max_partial();
+        }
+
+        if self.binding_env.contexts().get(input.context).is_none() {
+            recovery = Some(self.diagnostic(
+                Some(input.site.clone()),
+                input.source_range,
+                TypeDiagnosticClass::Context,
+                TypeDiagnosticSeverity::Error,
+                "checker.formula.unknown_context",
+                DiagnosticRecoveryState::Degraded,
+            ));
+            status = status.max_error();
+        }
+
+        if input.kind == FormulaKind::Unsupported {
+            recovery = Some(self.diagnostic(
+                Some(input.site.clone()),
+                input.source_range,
+                TypeDiagnosticClass::Recovery,
+                TypeDiagnosticSeverity::Error,
+                "checker.formula.unsupported_payload",
+                DiagnosticRecoveryState::Degraded,
+            ));
+            status = status.skip();
+        }
+
+        self.check_formula_terms(&input, &mut status, &mut recovery);
+
+        for reason in input.deferred.iter().copied() {
+            deferred.insert(reason);
+            recovery = Some(self.formula_deferred_diagnostic(&input, reason));
+            status = status.max_partial();
+        }
+
+        let asserted_type = input.asserted_type.as_ref().and_then(|asserted| {
+            self.normalized_type_for_formula(
+                &input.site,
+                asserted,
+                type_entries_by_site,
+                "checker.formula.missing_asserted_type",
+                &mut status,
+                &mut recovery,
+            )
+        });
+
+        let expected_types = input
+            .expected_types
+            .iter()
+            .filter_map(|expected| {
+                self.expected_type_constraint(
+                    &input.site,
+                    expected,
+                    type_entries_by_site,
+                    &mut status,
+                    &mut recovery,
+                )
+            })
+            .collect::<Vec<_>>();
+
+        if input.kind == FormulaKind::PredicateApplication
+            && input.candidates.is_empty()
+            && !input
+                .deferred
+                .contains(&FormulaDeferredReason::MissingPredicateSignaturePayload)
+        {
+            recovery = Some(self.diagnostic(
+                Some(input.site.clone()),
+                input.source_range,
+                TypeDiagnosticClass::TypeEntry,
+                TypeDiagnosticSeverity::Note,
+                "checker.formula.external.predicate_signature_payload",
+                DiagnosticRecoveryState::Degraded,
+            ));
+            status = status.max_partial();
+        }
+
+        let candidate_set = if input.candidates.is_empty() {
+            None
+        } else {
+            let (id, candidate_status) = self.build_candidate_set(
+                input.site.clone(),
+                candidate_kind_for_formula(input.kind),
+                input.source_range,
+                input.candidates,
+                type_entries_by_site,
+            );
+            if candidate_status != CandidateSetStatus::Open || status == FormulaStatus::Checked {
+                status = status.max_partial();
+            }
+            Some(id)
+        };
+
+        let mut facts = Vec::new();
+        let fact_status = if status == FormulaStatus::Checked {
+            FactStatus::Known
+        } else {
+            FactStatus::Degraded
+        };
+        for fact in &input.facts {
+            facts.push(self.facts.insert(TypeFactDraft {
+                subject: fact.subject.clone(),
+                predicate: fact.predicate.clone(),
+                polarity: fact.polarity,
+                provenance: FactProvenance::Inferred(TypeRuleId::new(format!(
+                    "formula-{}",
+                    formula_kind_name(input.kind)
+                ))),
+                status: fact_status,
+            }));
+        }
+
+        self.formulas.insert(CheckedFormulaDraft {
+            site: input.site,
+            context: input.context,
+            kind: input.kind,
+            terms: input.terms,
+            asserted_type,
+            expected_types,
+            candidate_set,
+            facts,
+            status,
+            deferred: deferred.into_iter().collect(),
+        });
+        let _ = recovery;
+    }
+
+    fn check_formula_terms(
+        &mut self,
+        input: &FormulaInput,
+        status: &mut FormulaStatus,
+        recovery: &mut Option<TypeDiagnosticId>,
+    ) {
+        for term in &input.terms {
+            match self.checked_term_state(term) {
+                Some(term_state) => {
+                    if !self.context_can_see_term(input.context, term_state.context) {
+                        *recovery = Some(self.diagnostic(
+                            Some(input.site.clone()),
+                            input.source_range,
+                            TypeDiagnosticClass::Context,
+                            TypeDiagnosticSeverity::Error,
+                            "checker.formula.term.context_not_visible",
+                            DiagnosticRecoveryState::Degraded,
+                        ));
+                        *status = status.max_error();
+                    }
+                    match term_state.readiness {
+                        CheckedTermReadiness::Ready => {}
+                        CheckedTermReadiness::Partial => {
+                            *recovery = Some(self.diagnostic(
+                                Some(input.site.clone()),
+                                input.source_range,
+                                TypeDiagnosticClass::TypeEntry,
+                                TypeDiagnosticSeverity::Note,
+                                "checker.formula.term.partial",
+                                DiagnosticRecoveryState::Degraded,
+                            ));
+                            *status = status.max_partial();
+                        }
+                        CheckedTermReadiness::NotWellFormed => {
+                            *recovery = Some(self.diagnostic(
+                                Some(input.site.clone()),
+                                input.source_range,
+                                TypeDiagnosticClass::TypeEntry,
+                                TypeDiagnosticSeverity::Error,
+                                "checker.formula.term.not_well_formed",
+                                DiagnosticRecoveryState::Degraded,
+                            ));
+                            *status = status.max_error();
+                        }
+                    }
+                }
+                None => {
+                    *recovery = Some(self.diagnostic(
+                        Some(input.site.clone()),
+                        input.source_range,
+                        TypeDiagnosticClass::TypeEntry,
+                        TypeDiagnosticSeverity::Error,
+                        "checker.formula.term.missing",
+                        DiagnosticRecoveryState::Degraded,
+                    ));
+                    *status = status.max_error();
+                }
+            }
+        }
+    }
+
+    fn checked_term_state(&self, site: &TypedSiteRef) -> Option<CheckedTermState> {
+        let term = self
+            .terms
+            .iter()
+            .map(|(_, term)| term)
+            .find(|term| &term.site == site)?;
+        let type_entry = self.type_entries.get(term.type_entry);
+        let readiness = match (term.status, type_entry.map(|entry| entry.status)) {
+            (TermStatus::Inferred, Some(TypeStatus::Known | TypeStatus::Assumed)) => {
+                CheckedTermReadiness::Ready
+            }
+            (TermStatus::Inferred | TermStatus::Partial, Some(TypeStatus::Unknown)) => {
+                CheckedTermReadiness::Partial
+            }
+            (TermStatus::Inferred | TermStatus::Partial, Some(TypeStatus::Error)) => {
+                CheckedTermReadiness::NotWellFormed
+            }
+            (TermStatus::Inferred | TermStatus::Partial, Some(TypeStatus::Skipped) | None) => {
+                CheckedTermReadiness::NotWellFormed
+            }
+            (TermStatus::Partial, Some(TypeStatus::Known | TypeStatus::Assumed)) => {
+                CheckedTermReadiness::Partial
+            }
+            (TermStatus::Error | TermStatus::Skipped, _) => CheckedTermReadiness::NotWellFormed,
+        };
+        Some(CheckedTermState {
+            context: term.context,
+            readiness,
+        })
+    }
+
+    fn context_can_see_term(
+        &self,
+        formula_context: BindingContextId,
+        term_context: BindingContextId,
+    ) -> bool {
+        let mut cursor = Some(formula_context);
+        while let Some(context) = cursor {
+            if context == term_context {
+                return true;
+            }
+            cursor = self
+                .binding_env
+                .contexts()
+                .get(context)
+                .and_then(|context| context.parent);
+        }
+        false
+    }
+
+    fn check_term_kind(
+        &mut self,
+        input: &TermInput,
+        status: &mut TermStatus,
+        recovery: &mut Option<TypeDiagnosticId>,
+    ) {
+        match input.kind {
+            TermKind::Variable => match &input.reference {
+                Some(TermReference::Binding(binding)) => {
+                    self.check_term_binding_reference(input, *binding, status, recovery);
+                }
+                Some(TermReference::Symbol(symbol)) => {
+                    if self.symbols.symbols().get(symbol).is_none() {
+                        *recovery = Some(self.diagnostic(
+                            Some(input.site.clone()),
+                            input.source_range,
+                            TypeDiagnosticClass::TypeEntry,
+                            TypeDiagnosticSeverity::Error,
+                            "checker.term.reference.unknown_symbol",
+                            DiagnosticRecoveryState::Degraded,
+                        ));
+                        *status = status.max_error();
+                    }
+                }
+                None => {
+                    *recovery = Some(self.diagnostic(
+                        Some(input.site.clone()),
+                        input.source_range,
+                        TypeDiagnosticClass::TypeEntry,
+                        TypeDiagnosticSeverity::Note,
+                        "checker.term.external.reference_payload",
+                        DiagnosticRecoveryState::Degraded,
+                    ));
+                    *status = status.max_partial();
+                }
+            },
+            TermKind::It if input.result_type.is_none() => {
+                *recovery = Some(self.diagnostic(
+                    Some(input.site.clone()),
+                    input.source_range,
+                    TypeDiagnosticClass::TypeEntry,
+                    TypeDiagnosticSeverity::Error,
+                    "checker.term.it.missing_current_result_type",
+                    DiagnosticRecoveryState::Degraded,
+                ));
+                *status = status.max_error();
+            }
+            TermKind::Numeral if input.result_type.is_none() => {
+                *recovery = Some(self.diagnostic(
+                    Some(input.site.clone()),
+                    input.source_range,
+                    TypeDiagnosticClass::TypeEntry,
+                    TypeDiagnosticSeverity::Note,
+                    "checker.term.external.numeric_type_payload",
+                    DiagnosticRecoveryState::Degraded,
+                ));
+                *status = status.max_partial();
+            }
+            TermKind::FunctorApplication
+            | TermKind::SelectorAccess
+            | TermKind::StructureConstructor
+                if input.result_type.is_none() && input.candidates.is_empty() =>
+            {
+                *recovery = Some(self.diagnostic(
+                    Some(input.site.clone()),
+                    input.source_range,
+                    TypeDiagnosticClass::TypeEntry,
+                    TypeDiagnosticSeverity::Note,
+                    "checker.term.external.signature_payload",
+                    DiagnosticRecoveryState::Degraded,
+                ));
+                *status = status.max_partial();
+            }
+            TermKind::Parenthesized
+            | TermKind::SetEnumeration
+            | TermKind::SetComprehension
+            | TermKind::Choice
+            | TermKind::SourceQua
+                if input.result_type.is_none() && input.candidates.is_empty() =>
+            {
+                *recovery = Some(self.diagnostic(
+                    Some(input.site.clone()),
+                    input.source_range,
+                    TypeDiagnosticClass::TypeEntry,
+                    TypeDiagnosticSeverity::Note,
+                    "checker.term.external.result_type_payload",
+                    DiagnosticRecoveryState::Degraded,
+                ));
+                *status = status.max_partial();
+            }
+            _ => {}
+        }
+    }
+
+    fn check_term_binding_reference(
+        &mut self,
+        input: &TermInput,
+        binding: BindingId,
+        status: &mut TermStatus,
+        recovery: &mut Option<TypeDiagnosticId>,
+    ) {
+        if self.binding_env.bindings().get(binding).is_none() {
+            *recovery = Some(self.diagnostic(
+                Some(input.site.clone()),
+                input.source_range,
+                TypeDiagnosticClass::TypeEntry,
+                TypeDiagnosticSeverity::Error,
+                "checker.term.reference.unknown_binding",
+                DiagnosticRecoveryState::Degraded,
+            ));
+            *status = status.max_error();
+            return;
+        }
+        let is_visible = self
+            .binding_env
+            .contexts()
+            .get(input.context)
+            .is_some_and(|context| context.visible_bindings.contains(&binding));
+        if !is_visible {
+            *recovery = Some(self.diagnostic(
+                Some(input.site.clone()),
+                input.source_range,
+                TypeDiagnosticClass::Context,
+                TypeDiagnosticSeverity::Error,
+                "checker.term.reference.binding_not_visible",
+                DiagnosticRecoveryState::Degraded,
+            ));
+            *status = status.max_error();
+        }
+    }
+
+    fn normalized_type_for_site(
+        &mut self,
+        owner: &TypedSiteRef,
+        input: &TypeExpressionInput,
+        type_entries_by_site: &BTreeMap<TypedSiteRef, (NormalizedTypeId, TypeStatus)>,
+        message_key: &str,
+        status: &mut TermStatus,
+        recovery: &mut Option<TypeDiagnosticId>,
+    ) -> Option<NormalizedTypeId> {
+        match type_entries_by_site.get(&input.site) {
+            Some((id, type_status)) => {
+                if *type_status != TypeStatus::Known {
+                    *status = status.max_partial();
+                }
+                Some(*id)
+            }
+            None => {
+                *recovery = Some(self.diagnostic(
+                    Some(owner.clone()),
+                    input.source_range,
+                    TypeDiagnosticClass::TypeEntry,
+                    TypeDiagnosticSeverity::Error,
+                    message_key,
+                    DiagnosticRecoveryState::Degraded,
+                ));
+                *status = status.max_partial();
+                None
+            }
+        }
+    }
+
+    fn normalized_type_for_formula(
+        &mut self,
+        owner: &TypedSiteRef,
+        input: &TypeExpressionInput,
+        type_entries_by_site: &BTreeMap<TypedSiteRef, (NormalizedTypeId, TypeStatus)>,
+        message_key: &str,
+        status: &mut FormulaStatus,
+        recovery: &mut Option<TypeDiagnosticId>,
+    ) -> Option<NormalizedTypeId> {
+        match type_entries_by_site.get(&input.site) {
+            Some((id, type_status)) => {
+                if *type_status != TypeStatus::Known {
+                    *status = status.max_partial();
+                }
+                Some(*id)
+            }
+            None => {
+                *recovery = Some(self.diagnostic(
+                    Some(owner.clone()),
+                    input.source_range,
+                    TypeDiagnosticClass::TypeEntry,
+                    TypeDiagnosticSeverity::Error,
+                    message_key,
+                    DiagnosticRecoveryState::Degraded,
+                ));
+                *status = status.max_partial();
+                None
+            }
+        }
+    }
+
+    fn expected_type_constraint(
+        &mut self,
+        owner: &TypedSiteRef,
+        input: &ExpectedTypeInput,
+        type_entries_by_site: &BTreeMap<TypedSiteRef, (NormalizedTypeId, TypeStatus)>,
+        status: &mut FormulaStatus,
+        recovery: &mut Option<TypeDiagnosticId>,
+    ) -> Option<ExpectedTypeConstraint> {
+        match type_entries_by_site.get(&input.expected.site) {
+            Some((id, type_status)) => {
+                if *type_status != TypeStatus::Known {
+                    *status = status.max_partial();
+                }
+                Some(ExpectedTypeConstraint {
+                    term: input.term.clone(),
+                    expected: *id,
+                    status: *type_status,
+                    source_range: input.source_range,
+                })
+            }
+            None => {
+                *recovery = Some(self.diagnostic(
+                    Some(owner.clone()),
+                    input.source_range,
+                    TypeDiagnosticClass::TypeEntry,
+                    TypeDiagnosticSeverity::Error,
+                    "checker.formula.missing_expected_type",
+                    DiagnosticRecoveryState::Degraded,
+                ));
+                *status = status.max_partial();
+                None
+            }
+        }
+    }
+
+    fn build_candidate_set(
+        &mut self,
+        owner: TypedSiteRef,
+        kind: CandidateSetKind,
+        source_range: SourceRange,
+        candidates: Vec<OpenCandidateInput>,
+        type_entries_by_site: &BTreeMap<TypedSiteRef, (NormalizedTypeId, TypeStatus)>,
+    ) -> (OpenCandidateSetId, CandidateSetStatus) {
+        let mut set_status = CandidateSetStatus::Open;
+        let mut open_candidates = Vec::new();
+        for candidate in candidates {
+            let mut candidate_status = CandidateStatus::Viable;
+            let result_type = candidate.result_type.as_ref().and_then(|result_type| {
+                match type_entries_by_site.get(&result_type.site) {
+                    Some((id, status)) => {
+                        if *status != TypeStatus::Known {
+                            candidate_status = CandidateStatus::Degraded;
+                            set_status = CandidateSetStatus::Degraded;
+                        }
+                        Some(*id)
+                    }
+                    None => {
+                        candidate_status = CandidateStatus::Degraded;
+                        set_status = CandidateSetStatus::Degraded;
+                        self.diagnostic(
+                            Some(owner.clone()),
+                            result_type.source_range,
+                            TypeDiagnosticClass::TypeEntry,
+                            TypeDiagnosticSeverity::Error,
+                            "checker.candidate.missing_result_type",
+                            DiagnosticRecoveryState::Degraded,
+                        );
+                        None
+                    }
+                }
+            });
+            let mut required_types = Vec::new();
+            for required in &candidate.required_types {
+                match type_entries_by_site.get(&required.site) {
+                    Some((id, status)) => {
+                        if *status != TypeStatus::Known {
+                            candidate_status = CandidateStatus::Degraded;
+                            set_status = CandidateSetStatus::Degraded;
+                        }
+                        required_types.push(*id);
+                    }
+                    None => {
+                        candidate_status = CandidateStatus::Degraded;
+                        set_status = CandidateSetStatus::Degraded;
+                        self.diagnostic(
+                            Some(owner.clone()),
+                            required.source_range,
+                            TypeDiagnosticClass::TypeEntry,
+                            TypeDiagnosticSeverity::Error,
+                            "checker.candidate.missing_required_type",
+                            DiagnosticRecoveryState::Degraded,
+                        );
+                    }
+                }
+            }
+            open_candidates.push(OpenCandidate {
+                identity: candidate.identity,
+                result_type,
+                required_types,
+                source_range: candidate.source_range,
+                status: candidate_status,
+            });
+        }
+        let id = self.candidate_sets.insert(OpenCandidateSetDraft {
+            owner,
+            kind,
+            candidates: open_candidates,
+            status: set_status,
+            source_range,
+        });
+        (id, set_status)
+    }
+
+    fn term_deferred_diagnostic(
+        &mut self,
+        input: &TermInput,
+        reason: TermDeferredReason,
+    ) -> TypeDiagnosticId {
+        self.diagnostic(
+            Some(input.site.clone()),
+            input.source_range,
+            TypeDiagnosticClass::TypeEntry,
+            TypeDiagnosticSeverity::Note,
+            term_deferred_message_key(reason),
+            DiagnosticRecoveryState::Recovery,
+        )
+    }
+
+    fn formula_deferred_diagnostic(
+        &mut self,
+        input: &FormulaInput,
+        reason: FormulaDeferredReason,
+    ) -> TypeDiagnosticId {
+        self.diagnostic(
+            Some(input.site.clone()),
+            input.source_range,
+            TypeDiagnosticClass::TypeFact,
+            TypeDiagnosticSeverity::Note,
+            formula_deferred_message_key(reason),
+            DiagnosticRecoveryState::Recovery,
+        )
+    }
+
+    fn diagnostic(
+        &mut self,
+        owner: Option<TypedSiteRef>,
+        source_range: SourceRange,
+        class: TypeDiagnosticClass,
+        severity: TypeDiagnosticSeverity,
+        message_key: &str,
+        recovery: DiagnosticRecoveryState,
+    ) -> TypeDiagnosticId {
+        self.diagnostics.insert(TypeDiagnosticDraft {
+            owner,
+            source_range,
+            class,
+            severity,
+            message_key: message_key.to_owned(),
+            recovery,
+        })
     }
 }
 
@@ -822,6 +2353,14 @@ impl DeclarationStatus {
     }
 }
 
+fn term_input_key(input: &TermInput) -> (String, TermKind) {
+    (site_key(&input.site), input.kind)
+}
+
+fn formula_input_key(input: &FormulaInput) -> (String, FormulaKind) {
+    (site_key(&input.site), input.kind)
+}
+
 fn declaration_context_input_key(input: &DeclarationContextInput) -> (usize, String) {
     (input.binding_context.index(), site_key(&input.site))
 }
@@ -850,6 +2389,49 @@ fn declaration_provenance(
         Some(diagnostic) => TypeProvenance::Recovery(diagnostic),
         None => TypeProvenance::Declared(TypedSourceRangeKey::from(source_range)),
     }
+}
+
+fn term_provenance(kind: TermKind, recovery: Option<TypeDiagnosticId>) -> TypeProvenance {
+    match recovery {
+        Some(diagnostic) => TypeProvenance::Recovery(diagnostic),
+        None => TypeProvenance::Inferred(TypeRuleId::new(format!("term-{}", term_kind_name(kind)))),
+    }
+}
+
+fn term_type_status(
+    status: TermStatus,
+    normalized_status: TypeStatus,
+    actual: &TypeEntryActual,
+    deferred: &BTreeSet<TermDeferredReason>,
+) -> TypeStatus {
+    match status {
+        TermStatus::Error => TypeStatus::Error,
+        TermStatus::Skipped => TypeStatus::Skipped,
+        TermStatus::Partial => TypeStatus::Unknown,
+        TermStatus::Inferred => {
+            if normalized_status == TypeStatus::Error {
+                TypeStatus::Error
+            } else if !deferred.is_empty()
+                || normalized_status != TypeStatus::Known
+                || !matches!(actual, TypeEntryActual::Known(_))
+            {
+                TypeStatus::Unknown
+            } else {
+                TypeStatus::Known
+            }
+        }
+    }
+}
+
+fn candidate_kind_for_term(kind: TermKind) -> CandidateSetKind {
+    match kind {
+        TermKind::SelectorAccess => CandidateSetKind::Selector,
+        _ => CandidateSetKind::Functor,
+    }
+}
+
+fn candidate_kind_for_formula(_kind: FormulaKind) -> CandidateSetKind {
+    CandidateSetKind::Predicate
 }
 
 fn should_defer_missing_type_payload(input: &DeclarationInput, reserved_shadowed: bool) -> bool {
@@ -1073,6 +2655,116 @@ fn deferred_message_key(reason: DeclarationDeferredReason) -> &'static str {
     }
 }
 
+fn term_deferred_message_key(reason: TermDeferredReason) -> &'static str {
+    match reason {
+        TermDeferredReason::MissingReferencePayload => "checker.term.external.reference_payload",
+        TermDeferredReason::MissingNumericTypePayload => {
+            "checker.term.external.numeric_type_payload"
+        }
+        TermDeferredReason::MissingSignaturePayload => "checker.term.external.signature_payload",
+        TermDeferredReason::MissingSelectorPayload => "checker.term.external.selector_payload",
+        TermDeferredReason::MissingStructurePayload => "checker.term.external.structure_payload",
+        TermDeferredReason::MissingResultTypePayload => "checker.term.external.result_type_payload",
+        TermDeferredReason::SethoodRequirement => "checker.term.deferred.sethood_requirement",
+        TermDeferredReason::NonEmptinessRequirement => {
+            "checker.term.deferred.non_empty_requirement"
+        }
+        TermDeferredReason::SourceQuaRequirement => "checker.term.deferred.source_qua_requirement",
+    }
+}
+
+fn formula_deferred_message_key(reason: FormulaDeferredReason) -> &'static str {
+    match reason {
+        FormulaDeferredReason::MissingPredicateSignaturePayload => {
+            "checker.formula.external.predicate_signature_payload"
+        }
+        FormulaDeferredReason::MissingExpectedTypePayload => {
+            "checker.formula.external.expected_type_payload"
+        }
+        FormulaDeferredReason::MissingQuantifierPayload => {
+            "checker.formula.external.quantifier_payload"
+        }
+        FormulaDeferredReason::MissingFormulaPayload => "checker.formula.external.formula_payload",
+    }
+}
+
+fn term_kind_name(kind: TermKind) -> &'static str {
+    match kind {
+        TermKind::Variable => "variable",
+        TermKind::It => "it",
+        TermKind::Numeral => "numeral",
+        TermKind::FunctorApplication => "functor_application",
+        TermKind::SelectorAccess => "selector_access",
+        TermKind::StructureConstructor => "structure_constructor",
+        TermKind::SetEnumeration => "set_enumeration",
+        TermKind::SetComprehension => "set_comprehension",
+        TermKind::Choice => "choice",
+        TermKind::SourceQua => "source_qua",
+        TermKind::Parenthesized => "parenthesized",
+        TermKind::Unsupported => "unsupported",
+    }
+}
+
+fn formula_kind_name(kind: FormulaKind) -> &'static str {
+    match kind {
+        FormulaKind::PredicateApplication => "predicate_application",
+        FormulaKind::Equality => "equality",
+        FormulaKind::Inequality => "inequality",
+        FormulaKind::Membership => "membership",
+        FormulaKind::TypeAssertion => "type_assertion",
+        FormulaKind::AttributeAssertion => "attribute_assertion",
+        FormulaKind::Negation => "negation",
+        FormulaKind::Conjunction => "conjunction",
+        FormulaKind::Disjunction => "disjunction",
+        FormulaKind::Implication => "implication",
+        FormulaKind::Biconditional => "biconditional",
+        FormulaKind::Quantified => "quantified",
+        FormulaKind::Unsupported => "unsupported",
+    }
+}
+
+fn term_status_name(status: TermStatus) -> &'static str {
+    match status {
+        TermStatus::Inferred => "inferred",
+        TermStatus::Partial => "partial",
+        TermStatus::Error => "error",
+        TermStatus::Skipped => "skipped",
+    }
+}
+
+fn formula_status_name(status: FormulaStatus) -> &'static str {
+    match status {
+        FormulaStatus::Checked => "checked",
+        FormulaStatus::Partial => "partial",
+        FormulaStatus::Error => "error",
+        FormulaStatus::Skipped => "skipped",
+    }
+}
+
+fn candidate_set_kind_name(kind: CandidateSetKind) -> &'static str {
+    match kind {
+        CandidateSetKind::Functor => "functor",
+        CandidateSetKind::Predicate => "predicate",
+        CandidateSetKind::Selector => "selector",
+    }
+}
+
+fn candidate_set_status_name(status: CandidateSetStatus) -> &'static str {
+    match status {
+        CandidateSetStatus::Open => "open",
+        CandidateSetStatus::Degraded => "degraded",
+        CandidateSetStatus::Rejected => "rejected",
+    }
+}
+
+fn candidate_status_name(status: CandidateStatus) -> &'static str {
+    match status {
+        CandidateStatus::Viable => "viable",
+        CandidateStatus::Degraded => "degraded",
+        CandidateStatus::Rejected => "rejected",
+    }
+}
+
 fn declaration_kind_name(kind: DeclarationKind) -> &'static str {
     match kind {
         DeclarationKind::Let => "let",
@@ -1109,6 +2801,31 @@ fn deferred_reason_name(reason: DeclarationDeferredReason) -> &'static str {
             "missing_definition_body_payload"
         }
         DeclarationDeferredReason::MissingEvidenceQuery => "missing_evidence_query",
+    }
+}
+
+fn term_deferred_reason_name(reason: TermDeferredReason) -> &'static str {
+    match reason {
+        TermDeferredReason::MissingReferencePayload => "missing_reference_payload",
+        TermDeferredReason::MissingNumericTypePayload => "missing_numeric_type_payload",
+        TermDeferredReason::MissingSignaturePayload => "missing_signature_payload",
+        TermDeferredReason::MissingSelectorPayload => "missing_selector_payload",
+        TermDeferredReason::MissingStructurePayload => "missing_structure_payload",
+        TermDeferredReason::MissingResultTypePayload => "missing_result_type_payload",
+        TermDeferredReason::SethoodRequirement => "sethood_requirement",
+        TermDeferredReason::NonEmptinessRequirement => "non_empty_requirement",
+        TermDeferredReason::SourceQuaRequirement => "source_qua_requirement",
+    }
+}
+
+fn formula_deferred_reason_name(reason: FormulaDeferredReason) -> &'static str {
+    match reason {
+        FormulaDeferredReason::MissingPredicateSignaturePayload => {
+            "missing_predicate_signature_payload"
+        }
+        FormulaDeferredReason::MissingExpectedTypePayload => "missing_expected_type_payload",
+        FormulaDeferredReason::MissingQuantifierPayload => "missing_quantifier_payload",
+        FormulaDeferredReason::MissingFormulaPayload => "missing_formula_payload",
     }
 }
 
@@ -2148,6 +3865,152 @@ fn remapped_type_id(
     remap.get(&id).copied().unwrap_or(id)
 }
 
+fn open_candidate_key(
+    candidate: &OpenCandidate,
+) -> (
+    CandidateIdentity,
+    Vec<usize>,
+    Option<usize>,
+    SourceRangeKey,
+    CandidateStatus,
+) {
+    (
+        candidate.identity.clone(),
+        candidate
+            .required_types
+            .iter()
+            .map(|id| id.index())
+            .collect(),
+        candidate.result_type.map(|id| id.index()),
+        candidate.source_range.into(),
+        candidate.status,
+    )
+}
+
+fn write_checked_terms(output: &mut String, terms: &CheckedTermTable) {
+    output.push_str("terms:\n");
+    if terms.is_empty() {
+        output.push_str("  <none>\n");
+        return;
+    }
+    let mut entries = terms.iter().map(|(_, term)| term).collect::<Vec<_>>();
+    entries.sort_by_key(|term| (site_key(&term.site), term.kind));
+    for (ordinal, term) in entries.into_iter().enumerate() {
+        let _ = write!(
+            output,
+            "  term#{} context#{} kind={} site={} status={} reference=",
+            ordinal,
+            term.context.index(),
+            term_kind_name(term.kind),
+            site_key(&term.site),
+            term_status_name(term.status)
+        );
+        write_term_reference(output, term.reference.as_ref());
+        let _ = write!(
+            output,
+            " type_entry=type_entry_id#{}",
+            term.type_entry.index()
+        );
+        output.push_str(" expected=");
+        match term.expected_type {
+            Some(id) => {
+                let _ = write!(output, "normalized_type#{}", id.index());
+            }
+            None => output.push_str("<none>"),
+        }
+        output.push_str(" candidate_set=");
+        match term.candidate_set {
+            Some(id) => {
+                let _ = write!(output, "candidate_set#{}", id.index());
+            }
+            None => output.push_str("<none>"),
+        }
+        output.push_str(" deferred=");
+        write_term_deferred_reasons(output, &term.deferred);
+        output.push('\n');
+    }
+}
+
+fn write_checked_formulas(output: &mut String, formulas: &CheckedFormulaTable) {
+    output.push_str("formulas:\n");
+    if formulas.is_empty() {
+        output.push_str("  <none>\n");
+        return;
+    }
+    let mut entries = formulas
+        .iter()
+        .map(|(_, formula)| formula)
+        .collect::<Vec<_>>();
+    entries.sort_by_key(|formula| (site_key(&formula.site), formula.kind));
+    for (ordinal, formula) in entries.into_iter().enumerate() {
+        let _ = write!(
+            output,
+            "  formula#{} context#{} kind={} site={} status={} terms=",
+            ordinal,
+            formula.context.index(),
+            formula_kind_name(formula.kind),
+            site_key(&formula.site),
+            formula_status_name(formula.status)
+        );
+        write_sites(output, &formula.terms);
+        output.push_str(" asserted=");
+        match formula.asserted_type {
+            Some(id) => {
+                let _ = write!(output, "normalized_type#{}", id.index());
+            }
+            None => output.push_str("<none>"),
+        }
+        output.push_str(" expected=");
+        write_expected_type_constraints(output, &formula.expected_types);
+        output.push_str(" candidate_set=");
+        match formula.candidate_set {
+            Some(id) => {
+                let _ = write!(output, "candidate_set#{}", id.index());
+            }
+            None => output.push_str("<none>"),
+        }
+        output.push_str(" facts=");
+        write_fact_ids(output, &formula.facts);
+        output.push_str(" deferred=");
+        write_formula_deferred_reasons(output, &formula.deferred);
+        output.push('\n');
+    }
+}
+
+fn write_candidate_sets(output: &mut String, candidate_sets: &OpenCandidateSetTable) {
+    output.push_str("candidate_sets:\n");
+    if candidate_sets.is_empty() {
+        output.push_str("  <none>\n");
+        return;
+    }
+    let mut entries = candidate_sets
+        .iter()
+        .map(|(_, candidate_set)| candidate_set)
+        .collect::<Vec<_>>();
+    entries.sort_by_key(|candidate_set| {
+        (
+            site_key(&candidate_set.owner),
+            candidate_set.kind,
+            candidate_set.status,
+            SourceRangeKey::from(candidate_set.source_range),
+        )
+    });
+    for candidate_set in entries {
+        let _ = write!(
+            output,
+            "  candidate_set#{} owner={} kind={} status={} range={}..{} candidates=",
+            candidate_set.id.index(),
+            site_key(&candidate_set.owner),
+            candidate_set_kind_name(candidate_set.kind),
+            candidate_set_status_name(candidate_set.status),
+            candidate_set.source_range.start,
+            candidate_set.source_range.end
+        );
+        write_open_candidates(output, &candidate_set.candidates);
+        output.push('\n');
+    }
+}
+
 fn write_checked_declarations(output: &mut String, declarations: &CheckedDeclarationTable) {
     output.push_str("declarations:\n");
     if declarations.is_empty() {
@@ -2263,6 +4126,117 @@ fn write_deferred_reasons(output: &mut String, deferred: &[DeclarationDeferredRe
         output.push_str(deferred_reason_name(*reason));
     }
     output.push(']');
+}
+
+fn write_term_deferred_reasons(output: &mut String, deferred: &[TermDeferredReason]) {
+    output.push('[');
+    for (index, reason) in deferred.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        output.push_str(term_deferred_reason_name(*reason));
+    }
+    output.push(']');
+}
+
+fn write_formula_deferred_reasons(output: &mut String, deferred: &[FormulaDeferredReason]) {
+    output.push('[');
+    for (index, reason) in deferred.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        output.push_str(formula_deferred_reason_name(*reason));
+    }
+    output.push(']');
+}
+
+fn write_term_reference(output: &mut String, reference: Option<&TermReference>) {
+    match reference {
+        Some(TermReference::Binding(binding)) => {
+            let _ = write!(output, "binding#{}", binding.index());
+        }
+        Some(TermReference::Symbol(symbol)) => {
+            output.push_str("symbol=");
+            write_symbol_id(output, symbol);
+        }
+        None => output.push_str("<none>"),
+    }
+}
+
+fn write_sites(output: &mut String, sites: &[TypedSiteRef]) {
+    output.push('[');
+    for (index, site) in sites.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        output.push_str(&site_key(site));
+    }
+    output.push(']');
+}
+
+fn write_expected_type_constraints(output: &mut String, constraints: &[ExpectedTypeConstraint]) {
+    output.push('[');
+    for (index, constraint) in constraints.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(
+            output,
+            "{}=>normalized_type#{}({:?}, range={}..{})",
+            site_key(&constraint.term),
+            constraint.expected.index(),
+            constraint.status,
+            constraint.source_range.start,
+            constraint.source_range.end
+        );
+    }
+    output.push(']');
+}
+
+fn write_open_candidates(output: &mut String, candidates: &[OpenCandidate]) {
+    output.push('[');
+    for (index, candidate) in candidates.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        write_candidate_identity(output, &candidate.identity);
+        output.push_str(" result=");
+        match candidate.result_type {
+            Some(id) => {
+                let _ = write!(output, "normalized_type#{}", id.index());
+            }
+            None => output.push_str("<none>"),
+        }
+        output.push_str(" required=");
+        write_type_ids(output, &candidate.required_types);
+        let _ = write!(
+            output,
+            " status={} range={}..{}",
+            candidate_status_name(candidate.status),
+            candidate.source_range.start,
+            candidate.source_range.end
+        );
+    }
+    output.push(']');
+}
+
+fn write_candidate_identity(output: &mut String, identity: &CandidateIdentity) {
+    match identity {
+        CandidateIdentity::Symbol(symbol) => {
+            output.push_str("symbol=");
+            write_symbol_id(output, symbol);
+        }
+        CandidateIdentity::Builtin(name) => {
+            output.push_str("builtin=\"");
+            write_escaped(output, name);
+            output.push('"');
+        }
+        CandidateIdentity::External(name) => {
+            output.push_str("external=\"");
+            write_escaped(output, name);
+            output.push('"');
+        }
+    }
 }
 
 fn write_binding_refs(output: &mut String, bindings: &[BindingTypeRef]) {
@@ -3469,6 +5443,569 @@ mod tests {
     }
 
     #[test]
+    fn term_inference_covers_term_kinds_and_open_candidates_deterministically() {
+        let source = source_id();
+        let functor = symbol_id("F/1", "pkg::main::F/1");
+        let selector = symbol_id("sel", "pkg::main::sel");
+        let structure = symbol_id("Struct", "pkg::main::Struct");
+        let symbols = symbol_env(vec![
+            symbol_entry(functor.clone(), SymbolKind::Functor),
+            symbol_entry(selector.clone(), SymbolKind::Selector),
+            symbol_entry(structure.clone(), SymbolKind::Structure),
+        ]);
+        let binding_env = binding_env_for_declarations(
+            source,
+            vec![binding_spec(
+                "let_x",
+                BindingKind::LetBinding,
+                BindingStatus::Active,
+            )],
+        );
+        let terms = vec![
+            term_with_type(source, 10, TermKind::Variable, 100)
+                .with_reference(TermReference::Binding(BindingId::new(0))),
+            term_with_type(source, 11, TermKind::Numeral, 101),
+            term_with_type(source, 12, TermKind::It, 102),
+            TermInput::new(
+                site(13),
+                BindingContextId::new(1),
+                range(source, 65, 70),
+                TermKind::FunctorApplication,
+            )
+            .with_candidates(vec![
+                OpenCandidateInput::new(
+                    CandidateIdentity::Builtin("zeta".to_owned()),
+                    range(source, 80, 81),
+                )
+                .with_result_type(type_expression(
+                    source,
+                    103,
+                    TypeHeadInput::BuiltinSet,
+                )),
+                OpenCandidateInput::new(
+                    CandidateIdentity::Builtin("alpha".to_owned()),
+                    range(source, 70, 71),
+                )
+                .with_result_type(type_expression(
+                    source,
+                    104,
+                    TypeHeadInput::BuiltinObject,
+                )),
+            ]),
+            TermInput::new(
+                site(14),
+                BindingContextId::new(1),
+                range(source, 70, 75),
+                TermKind::SelectorAccess,
+            )
+            .with_candidates(vec![
+                OpenCandidateInput::new(CandidateIdentity::Symbol(selector), range(source, 75, 76))
+                    .with_result_type(type_expression(source, 105, TypeHeadInput::BuiltinSet)),
+            ]),
+            term_with_type(source, 15, TermKind::StructureConstructor, 106).with_result_type(
+                type_expression(source, 106, TypeHeadInput::Symbol(structure)),
+            ),
+            term_with_type(source, 16, TermKind::SetEnumeration, 107)
+                .with_deferred(vec![TermDeferredReason::SethoodRequirement]),
+            term_with_type(source, 17, TermKind::SetComprehension, 108)
+                .with_deferred(vec![TermDeferredReason::SethoodRequirement]),
+            term_with_type(source, 18, TermKind::Choice, 109)
+                .with_deferred(vec![TermDeferredReason::NonEmptinessRequirement]),
+            term_with_type(source, 19, TermKind::SourceQua, 110)
+                .with_deferred(vec![TermDeferredReason::SourceQuaRequirement]),
+            term_with_type(source, 20, TermKind::Parenthesized, 111),
+        ];
+
+        let first =
+            TermFormulaChecker::default().infer(&symbols, &binding_env, terms.clone(), Vec::new());
+        let second = TermFormulaChecker::default().infer(
+            &symbols,
+            &binding_env,
+            terms.into_iter().rev(),
+            Vec::new(),
+        );
+
+        assert_eq!(first.debug_text(), second.debug_text());
+        assert_eq!(first.terms().len(), 11);
+        assert_eq!(first.candidate_sets().len(), 2);
+        let variable = term_by_site(&first, site(10));
+        assert_eq!(variable.status, TermStatus::Inferred);
+        assert!(matches!(
+            first
+                .type_entries()
+                .get(variable.type_entry)
+                .unwrap()
+                .actual,
+            TypeEntryActual::Known(_)
+        ));
+        let functor = term_by_site(&first, site(13));
+        assert_eq!(functor.status, TermStatus::Partial);
+        assert!(matches!(
+            first.type_entries().get(functor.type_entry).unwrap().actual,
+            TypeEntryActual::CandidateSet(_)
+        ));
+        let set_enum = term_by_site(&first, site(16));
+        assert_eq!(
+            set_enum.deferred,
+            vec![TermDeferredReason::SethoodRequirement]
+        );
+        let choice = term_by_site(&first, site(18));
+        assert_eq!(
+            choice.deferred,
+            vec![TermDeferredReason::NonEmptinessRequirement]
+        );
+        let source_qua = term_by_site(&first, site(19));
+        assert_eq!(
+            source_qua.deferred,
+            vec![TermDeferredReason::SourceQuaRequirement]
+        );
+        let debug = first.debug_text();
+        assert!(debug.contains("kind=selector_access"));
+        assert!(debug.contains("kind=structure_constructor"));
+        assert!(debug.contains("kind=parenthesized"));
+        assert!(debug.contains("candidate_set#"));
+        assert!(debug.find("builtin=\"alpha\"") < debug.find("builtin=\"zeta\""));
+        assert!(!debug.contains("obligation#"));
+        assert!(!debug.contains("registration"));
+    }
+
+    #[test]
+    fn formula_inference_records_expected_constraints_facts_and_open_candidates() {
+        let source = source_id();
+        let predicate = symbol_id("P/1", "pkg::main::P/1");
+        let attr = symbol_id("Attr/1", "pkg::main::Attr/1");
+        let symbols = symbol_env(vec![
+            symbol_entry(predicate.clone(), SymbolKind::Predicate),
+            symbol_entry(attr.clone(), SymbolKind::Attribute),
+        ]);
+        let binding_env = binding_env_for_declarations(
+            source,
+            vec![binding_spec(
+                "let_x",
+                BindingKind::LetBinding,
+                BindingStatus::Active,
+            )],
+        );
+        let terms = vec![
+            term_with_type(source, 10, TermKind::Variable, 100)
+                .with_reference(TermReference::Binding(BindingId::new(0))),
+            term_with_type(source, 11, TermKind::Numeral, 101),
+        ];
+        let formulas = vec![
+            FormulaInput::new(
+                site(30),
+                BindingContextId::new(1),
+                range(source, 150, 155),
+                FormulaKind::Equality,
+            )
+            .with_terms(vec![site(10), site(11)])
+            .with_expected_types(vec![
+                ExpectedTypeInput::new(
+                    site(10),
+                    type_expression(source, 200, TypeHeadInput::BuiltinSet),
+                    range(source, 150, 151),
+                ),
+                ExpectedTypeInput::new(
+                    site(11),
+                    type_expression(source, 201, TypeHeadInput::BuiltinSet),
+                    range(source, 152, 153),
+                ),
+            ]),
+            FormulaInput::new(
+                site(31),
+                BindingContextId::new(1),
+                range(source, 155, 160),
+                FormulaKind::Inequality,
+            )
+            .with_terms(vec![site(10), site(11)])
+            .with_expected_types(vec![
+                ExpectedTypeInput::new(
+                    site(10),
+                    type_expression(source, 205, TypeHeadInput::BuiltinSet),
+                    range(source, 155, 156),
+                ),
+                ExpectedTypeInput::new(
+                    site(11),
+                    type_expression(source, 206, TypeHeadInput::BuiltinSet),
+                    range(source, 157, 158),
+                ),
+            ]),
+            FormulaInput::new(
+                site(32),
+                BindingContextId::new(1),
+                range(source, 160, 165),
+                FormulaKind::Membership,
+            )
+            .with_terms(vec![site(10), site(11)])
+            .with_expected_types(vec![ExpectedTypeInput::new(
+                site(11),
+                type_expression(source, 202, TypeHeadInput::BuiltinSet),
+                range(source, 162, 163),
+            )]),
+            FormulaInput::new(
+                site(33),
+                BindingContextId::new(1),
+                range(source, 165, 170),
+                FormulaKind::PredicateApplication,
+            )
+            .with_terms(vec![site(10)])
+            .with_candidates(vec![
+                OpenCandidateInput::new(
+                    CandidateIdentity::Builtin("z-pred".to_owned()),
+                    range(source, 166, 167),
+                ),
+                OpenCandidateInput::new(
+                    CandidateIdentity::Symbol(predicate),
+                    range(source, 165, 166),
+                ),
+            ]),
+            FormulaInput::new(
+                site(42),
+                BindingContextId::new(1),
+                range(source, 190, 195),
+                FormulaKind::PredicateApplication,
+            )
+            .with_terms(vec![site(10)]),
+            FormulaInput::new(
+                site(34),
+                BindingContextId::new(1),
+                range(source, 170, 175),
+                FormulaKind::TypeAssertion,
+            )
+            .with_terms(vec![site(10)])
+            .with_asserted_type(type_expression(source, 203, TypeHeadInput::BuiltinSet))
+            .with_facts(vec![FormulaFactInput::new(
+                site(10),
+                TypePredicateRef::new("type_asserted_set"),
+                Polarity::Positive,
+                range(source, 170, 175),
+            )]),
+            FormulaInput::new(
+                site(35),
+                BindingContextId::new(1),
+                range(source, 175, 180),
+                FormulaKind::AttributeAssertion,
+            )
+            .with_terms(vec![site(10)])
+            .with_asserted_type(
+                type_expression(source, 204, TypeHeadInput::BuiltinSet).with_attributes(vec![
+                    AttributeInput::new(
+                        attr,
+                        AttributePolarity::Positive,
+                        range(source, 176, 177),
+                        "Attr",
+                    ),
+                ]),
+            )
+            .with_facts(vec![FormulaFactInput::new(
+                site(10),
+                TypePredicateRef::new("attr_asserted"),
+                Polarity::Positive,
+                range(source, 175, 180),
+            )]),
+            FormulaInput::new(
+                site(36),
+                BindingContextId::new(1),
+                range(source, 180, 181),
+                FormulaKind::Negation,
+            ),
+            FormulaInput::new(
+                site(37),
+                BindingContextId::new(1),
+                range(source, 181, 182),
+                FormulaKind::Conjunction,
+            ),
+            FormulaInput::new(
+                site(38),
+                BindingContextId::new(1),
+                range(source, 182, 183),
+                FormulaKind::Disjunction,
+            ),
+            FormulaInput::new(
+                site(39),
+                BindingContextId::new(1),
+                range(source, 183, 184),
+                FormulaKind::Implication,
+            ),
+            FormulaInput::new(
+                site(40),
+                BindingContextId::new(1),
+                range(source, 184, 185),
+                FormulaKind::Biconditional,
+            ),
+            FormulaInput::new(
+                site(41),
+                BindingContextId::new(1),
+                range(source, 185, 190),
+                FormulaKind::Quantified,
+            )
+            .with_deferred(vec![FormulaDeferredReason::MissingQuantifierPayload]),
+        ];
+
+        let first = TermFormulaChecker::default().infer(
+            &symbols,
+            &binding_env,
+            terms.clone(),
+            formulas.clone(),
+        );
+        let second = TermFormulaChecker::default().infer(
+            &symbols,
+            &binding_env,
+            terms.into_iter().rev(),
+            formulas.into_iter().rev(),
+        );
+        assert_eq!(first.debug_text(), second.debug_text());
+        let output = first;
+
+        assert_eq!(output.formulas().len(), 13);
+        assert_eq!(output.facts().len(), 2);
+        let equality = formula_by_site(&output, site(30));
+        assert_eq!(equality.expected_types.len(), 2);
+        assert_eq!(equality.status, FormulaStatus::Checked);
+        let inequality = formula_by_site(&output, site(31));
+        assert_eq!(inequality.expected_types.len(), 2);
+        assert_eq!(inequality.status, FormulaStatus::Checked);
+        let membership = formula_by_site(&output, site(32));
+        assert_eq!(membership.expected_types.len(), 1);
+        assert_eq!(membership.expected_types[0].term, site(11));
+        assert_eq!(membership.status, FormulaStatus::Checked);
+        let predicate = formula_by_site(&output, site(33));
+        assert_eq!(predicate.status, FormulaStatus::Partial);
+        assert!(predicate.candidate_set.is_some());
+        let missing_predicate_payload = formula_by_site(&output, site(42));
+        assert_eq!(missing_predicate_payload.status, FormulaStatus::Partial);
+        assert_eq!(
+            diagnostic_ranges(
+                &output,
+                "checker.formula.external.predicate_signature_payload"
+            ),
+            vec![(190, 195)]
+        );
+        let type_assertion = formula_by_site(&output, site(34));
+        assert_eq!(type_assertion.facts.len(), 1);
+        let fact = output.facts().get(type_assertion.facts[0]).unwrap();
+        assert_eq!(fact.status, FactStatus::Known);
+        assert!(matches!(fact.provenance, FactProvenance::Inferred(_)));
+        let quantified = formula_by_site(&output, site(41));
+        assert_eq!(quantified.status, FormulaStatus::Partial);
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.formula.external.quantifier_payload"),
+            vec![(185, 190)]
+        );
+        let debug = output.debug_text();
+        for expected in [
+            "kind=equality",
+            "kind=inequality",
+            "kind=membership",
+            "kind=predicate_application",
+            "kind=type_assertion",
+            "kind=attribute_assertion",
+            "kind=negation",
+            "kind=conjunction",
+            "kind=disjunction",
+            "kind=implication",
+            "kind=biconditional",
+            "kind=quantified",
+        ] {
+            assert!(debug.contains(expected), "{expected}");
+        }
+        assert!(!debug.contains("obligation#"));
+        assert!(!debug.contains("registration"));
+    }
+
+    #[test]
+    fn term_formula_recovery_keeps_partial_entries_without_successful_types() {
+        let source = source_id();
+        let symbols = symbol_env(Vec::new());
+        let binding_env = binding_env_for_declarations(
+            source,
+            vec![binding_spec(
+                "let_x",
+                BindingKind::LetBinding,
+                BindingStatus::Active,
+            )],
+        );
+        let terms = vec![
+            TermInput::new(
+                site(50),
+                BindingContextId::new(1),
+                range(source, 250, 255),
+                TermKind::It,
+            ),
+            TermInput::new(
+                site(51),
+                BindingContextId::new(1),
+                range(source, 255, 260),
+                TermKind::Unsupported,
+            ),
+            TermInput::new(
+                site(52),
+                BindingContextId::new(1),
+                range(source, 260, 265),
+                TermKind::Variable,
+            )
+            .with_reference(TermReference::Binding(BindingId::new(99))),
+            TermInput::new(
+                site(53),
+                BindingContextId::new(1),
+                range(source, 265, 270),
+                TermKind::Numeral,
+            ),
+            TermInput::new(
+                site(54),
+                BindingContextId::new(1),
+                range(source, 270, 275),
+                TermKind::Variable,
+            )
+            .with_reference(TermReference::Binding(BindingId::new(0)))
+            .with_result_type(type_expression(
+                source,
+                120,
+                TypeHeadInput::Unresolved("MissingMode".to_owned()),
+            )),
+        ];
+        let formulas = vec![
+            FormulaInput::new(
+                site(60),
+                BindingContextId::new(1),
+                range(source, 300, 305),
+                FormulaKind::Unsupported,
+            ),
+            FormulaInput::new(
+                site(61),
+                BindingContextId::new(1),
+                range(source, 305, 310),
+                FormulaKind::Equality,
+            )
+            .with_terms(vec![site(50), site(99)]),
+            FormulaInput::new(
+                site(62),
+                BindingContextId::new(1),
+                range(source, 310, 315),
+                FormulaKind::Membership,
+            )
+            .with_terms(vec![site(51)]),
+            FormulaInput::new(
+                site(63),
+                BindingContextId::new(1),
+                range(source, 315, 320),
+                FormulaKind::Inequality,
+            )
+            .with_terms(vec![site(53)]),
+            FormulaInput::new(
+                site(64),
+                BindingContextId::new(1),
+                range(source, 320, 325),
+                FormulaKind::TypeAssertion,
+            )
+            .with_terms(vec![site(54)])
+            .with_facts(vec![FormulaFactInput::new(
+                site(54),
+                TypePredicateRef::new("degraded_term_fact"),
+                Polarity::Positive,
+                range(source, 320, 325),
+            )]),
+        ];
+
+        let output = TermFormulaChecker::default().infer(&symbols, &binding_env, terms, formulas);
+
+        let it = term_by_site(&output, site(50));
+        assert_eq!(it.status, TermStatus::Error);
+        let it_entry = output.type_entries().get(it.type_entry).unwrap();
+        assert_eq!(it_entry.actual, TypeEntryActual::Absent);
+        assert_eq!(it_entry.status, TypeStatus::Error);
+        let unsupported = term_by_site(&output, site(51));
+        assert_eq!(unsupported.status, TermStatus::Skipped);
+        assert_eq!(
+            output
+                .type_entries()
+                .get(unsupported.type_entry)
+                .unwrap()
+                .status,
+            TypeStatus::Skipped
+        );
+        let unknown_binding = term_by_site(&output, site(52));
+        assert_eq!(unknown_binding.status, TermStatus::Error);
+        let numeral = term_by_site(&output, site(53));
+        assert_eq!(numeral.status, TermStatus::Partial);
+        assert_eq!(
+            output
+                .type_entries()
+                .get(numeral.type_entry)
+                .unwrap()
+                .actual,
+            TypeEntryActual::Absent
+        );
+        let degraded_type_term = term_by_site(&output, site(54));
+        assert_eq!(degraded_type_term.status, TermStatus::Inferred);
+        assert_eq!(
+            output
+                .type_entries()
+                .get(degraded_type_term.type_entry)
+                .unwrap()
+                .status,
+            TypeStatus::Unknown
+        );
+        assert_eq!(
+            formula_by_site(&output, site(60)).status,
+            FormulaStatus::Skipped
+        );
+        assert_eq!(
+            formula_by_site(&output, site(61)).status,
+            FormulaStatus::Error
+        );
+        assert_eq!(
+            formula_by_site(&output, site(62)).status,
+            FormulaStatus::Error
+        );
+        assert_eq!(
+            formula_by_site(&output, site(63)).status,
+            FormulaStatus::Partial
+        );
+        let degraded_fact_formula = formula_by_site(&output, site(64));
+        assert_eq!(degraded_fact_formula.status, FormulaStatus::Partial);
+        assert_eq!(degraded_fact_formula.facts.len(), 1);
+        assert_eq!(
+            output
+                .facts()
+                .get(degraded_fact_formula.facts[0])
+                .unwrap()
+                .status,
+            FactStatus::Degraded
+        );
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.formula.term.not_well_formed"),
+            vec![(305, 310), (310, 315)]
+        );
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.formula.term.missing"),
+            vec![(305, 310)]
+        );
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.formula.term.partial"),
+            vec![(315, 320), (320, 325)]
+        );
+        for key in [
+            "checker.term.it.missing_current_result_type",
+            "checker.term.unsupported_payload",
+            "checker.term.reference.unknown_binding",
+            "checker.term.external.numeric_type_payload",
+            "checker.formula.unsupported_payload",
+            "checker.formula.term.not_well_formed",
+            "checker.formula.term.missing",
+            "checker.formula.term.partial",
+        ] {
+            assert!(output.debug_text().contains(key), "{key}");
+        }
+        assert_eq!(output.facts().len(), 1);
+        assert!(
+            !output
+                .debug_text()
+                .contains("status=Known actual=normalized_type")
+        );
+    }
+
+    #[test]
     fn attributes_are_sorted_deduplicated_and_contradictions_are_diagnosed() {
         let source = source_id();
         let attr_a = symbol_id("AttrA/1", "pkg::main::AttrA/1");
@@ -4224,6 +6761,12 @@ mod tests {
         }
     }
 
+    impl HasDiagnostics for TermFormulaInferenceOutput {
+        fn diagnostics(&self) -> &TypeDiagnosticTable {
+            self.diagnostics()
+        }
+    }
+
     fn declarations_by_binding(
         output: &DeclarationCheckingOutput,
     ) -> BTreeMap<BindingId, &CheckedDeclaration> {
@@ -4232,6 +6775,24 @@ mod tests {
             .iter()
             .map(|(_, declaration)| (declaration.binding, declaration))
             .collect()
+    }
+
+    fn term_by_site(output: &TermFormulaInferenceOutput, site: TypedSiteRef) -> &CheckedTerm {
+        output
+            .terms()
+            .iter()
+            .map(|(_, term)| term)
+            .find(|term| term.site == site)
+            .unwrap()
+    }
+
+    fn formula_by_site(output: &TermFormulaInferenceOutput, site: TypedSiteRef) -> &CheckedFormula {
+        output
+            .formulas()
+            .iter()
+            .map(|(_, formula)| formula)
+            .find(|formula| formula.site == site)
+            .unwrap()
     }
 
     fn diagnostic_ranges(output: &impl HasDiagnostics, message_key: &str) -> Vec<(usize, usize)> {
@@ -4436,6 +6997,38 @@ mod tests {
             "set",
             TypeHeadInput::BuiltinSet,
         ))
+    }
+
+    fn term_with_type(
+        source: SourceId,
+        term_node: usize,
+        kind: TermKind,
+        type_node: usize,
+    ) -> TermInput {
+        TermInput::new(
+            site(term_node),
+            BindingContextId::new(1),
+            range(source, term_node * 5, term_node * 5 + 5),
+            kind,
+        )
+        .with_result_type(type_expression(
+            source,
+            type_node,
+            TypeHeadInput::BuiltinSet,
+        ))
+    }
+
+    fn type_expression(
+        source: SourceId,
+        type_node: usize,
+        head: TypeHeadInput,
+    ) -> TypeExpressionInput {
+        TypeExpressionInput::new(
+            site(type_node),
+            range(source, type_node * 5, type_node * 5 + 3),
+            "set",
+            head,
+        )
     }
 
     fn symbol_env(entries: Vec<SymbolEntry>) -> SymbolEnv {

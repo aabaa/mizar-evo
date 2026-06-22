@@ -185,13 +185,19 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      drop し、illegal declaration 後も partial output を保持し、不足 RHS / body / reserve / evidence
      payload を raw syntax walk や task-10 obligation の捏造なしに deferred diagnostic として発行する。
 
-9. **項と論理式の型推論。** [ ]
+9. **項と論理式の型推論。** [x]
    - 項と論理式の型を `TypeTable` へ推論する。候補が残る箇所では
      オーバーロード根を未確定のまま残す（アーキテクチャ 04「Overload
      Candidate Filtering Is Allowed, Root Selection Is Deferred」）。
    - テスト: パーサーが生成する項/論理式種別ごとの推論フィクスチャ。
      型エラー時の部分推論結果。
    - 依存: 8。仕様: `type_checker.md`（推論の節）。
+   - task 9 で完了: `TermFormulaChecker` が checker-owned term/formula
+     payload を受け取り、term ごとの `TypeEntry`、checked-formula
+     well-formedness、task-local inference fact、決定的な open candidate set、
+     expected-type constraint、partial/error/skipped recovery を記録する。final
+     overload selection、raw syntax walk、`CoercionTable` 発行、
+     `InitialObligation` の捏造は行わない。
 
 10. **coercion 候補、sethood、narrowing 義務。** [ ]
     - widening/narrowing/`qua` の coercion 候補を `CoercionTable` に記録し、

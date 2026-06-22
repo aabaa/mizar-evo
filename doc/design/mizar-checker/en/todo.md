@@ -192,13 +192,19 @@ Keep `cargo test -p mizar-checker` green after each task (see
      emits deferred diagnostics for missing RHS/body/reserve/evidence payloads
      without walking raw syntax or fabricating task-10 obligations.
 
-9. **Term and formula type inference.** [ ]
+9. **Term and formula type inference.** [x]
    - Infer types for terms and formulas into `TypeTable`, leaving overload
      roots open where candidates remain (architecture 04 "Overload Candidate
      Filtering Is Allowed, Root Selection Is Deferred").
    - Tests: inference fixtures per term/formula kind the parser produces;
      partially inferred results on type errors.
    - Deps: 8. Spec: `type_checker.md` (inference section).
+   - Completed by task 9: `TermFormulaChecker` accepts checker-owned
+     term/formula payloads, records per-term `TypeEntry`s, checked-formula
+     well-formedness, task-local inference facts, deterministic open candidate
+     sets, expected-type constraints, and partial/error/skipped recovery
+     without final overload selection, raw syntax walking, `CoercionTable`
+     emission, or `InitialObligation` fabrication.
 
 10. **Coercion candidates, sethood, and narrowing obligations.** [ ]
     - Record widening/narrowing/`qua` coercion candidates in `CoercionTable`

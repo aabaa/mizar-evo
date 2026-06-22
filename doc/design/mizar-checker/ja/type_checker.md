@@ -238,7 +238,43 @@ known fact を捏造したり、registration を silently activate したり、s
 task 9 がこの section を実装する。
 
 term inference は各 typed term site に `TypeEntry` を記録する。formula inference は
-well-formedness と formula structure が導入する type fact を記録する。
+well-formedness と formula structure が導入する task-9-local fact を記録する。
+task 11 は、完全な deterministic fact query API と、task 9 に必要な最小 inference record を
+超えた fact recording の拡張に責任を持ち続ける。
+
+task 9 は checker-owned な term/formula payload を使う。現在の resolver は
+AST 全体の typed term/formula table、built-in numeric type payload、
+functor/predicate の candidate signature、selector と structure field payload、
+source `qua` の coercion evidence、sethood / non-emptiness の evidence query をまだ
+公開していない。そのため task 9 は raw syntax を歩いてこれらの入力を再構築してはならない。
+caller が渡す明示 payload、すなわち term/formula site、reference 用の binding id または
+resolver symbol、明示 result / expected type expression、`it` 用の current-result type
+payload、後続 overload phase が root selection を完了する必要がある unresolved candidate
+group を消費する。不足している resolver/source payload は `external_dependency_gap` または
+deferred diagnostic として分類する。
+
+実装表面は `TermFormulaChecker` である。これは normalized type expression、checked term /
+formula record、task-local な `OpenCandidateSetTable`、`TypeTable`、`TypeFactTable`、
+diagnostic を含む `TermFormulaInferenceOutput` を生成する。`TypedAst` はすでに
+`TypeEntryActual::CandidateSet(OpenCandidateSetId)` を予約しているが、candidate-set payload
+table を最初に所有するのは task 9 の `type_checker` である。後続の overload と
+`ResolvedTypedAst` task は、その table を消費または投影し、candidate id だけを final overload
+decision として扱わない。
+
+formula の well-formedness は checked-formula status と linked fact に記録し、成功した
+term type を捏造しない。source-written `qua`、sethood check、non-emptiness check は task 9 で
+deferred diagnostic と open type view を記録してよいが、`CoercionTable` entry と
+`InitialObligation` を発行するのは task 10 だけである。
+
+task 9 の分類:
+
+- `external_dependency_gap`: AST 全体の term/formula extraction、numeric builtin、
+  functor/predicate signature、selector/structure signature、source `qua` evidence の
+  resolver/source payload 欠落。これらは degraded diagnostic と partial/skipped checked
+  term または formula として記録する。
+- `deferred`: task 10 が意図的に所有する sethood、non-emptiness、source-`qua` の
+  coercion/obligation 発行。これらは deferred requirement marker または diagnostic として
+  記録し、`CoercionTable` / `InitialObligationTable` entry としては記録しない。
 
 term rules:
 
@@ -249,16 +285,18 @@ term rules:
   欠ける場合は degraded external-gap type を受け取る;
 - functor application は、final overload root selection が phase 6 で決定的でない場合、
   candidate group を保持してよい;
-- selector access は、current type view 上で selected field/property が visible かを check し、
-  overload resolution が choice を完了する必要がある場合は candidate group を記録する;
-- structure constructor は resolver-exposed structure signature に対して field coverage と
-  field value type を check する;
+- selector access は、供給された result または candidate payload を記録し、selector/signature
+  payload 欠落を MC-G017 として degrade する。field/property visibility validation は
+  resolver-exposed selector signature を待つ;
+- structure constructor は、供給された result payload を記録し、structure-field payload 欠落を
+  MC-G017 として degrade する。field coverage と value-type checking は resolver-exposed
+  structure signature を待つ;
 - set enumeration / set comprehension は set-like type を生成し、spec chapter 13 が要求する
-  場合 generator domain の sethood obligation を作る;
-- `the T` は choice-like typed term と `T` の non-emptiness obligation を記録するが、
+  場合 generator domain の deferred sethood requirement を記録する;
+- `the T` は choice-like typed term と `T` の deferred non-emptiness requirement を記録するが、
   proof-owned id は割り当てない;
-- source-written `qua` は `SourceQua` coercion candidate を作り、後続 checking が使う
-  type view だけを変える。
+- source-written `qua` は後続 checking が必要とする source view と deferred source-`qua`
+  requirement を記録する。`SourceQua` coercion candidate を作るのは task 10 である。
 
 formula rules:
 
