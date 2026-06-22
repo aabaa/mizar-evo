@@ -17,3 +17,6 @@ pub mod registration_summary;
 
 /// Published proof-witness reference schema and validating reader/writer.
 pub mod proof_witness;
+
+/// Published verified-artifact schema and validating reader/writer.
+pub mod verified_artifact;

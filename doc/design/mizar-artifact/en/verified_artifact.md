@@ -183,6 +183,7 @@ obligation_metadata = {
   "source_range": source_range,
   "obligation_kind": string,
   "statement_summary": string,
+  "obligation_fingerprint": interface_hash_string,
   "vc_fingerprint": interface_hash_string,
   "local_context_fingerprint": interface_hash_string,
   "dependency_slice_fingerprint": interface_hash_string,
@@ -199,6 +200,14 @@ is a best-effort cross-edit identity used for diagnostics, repair, and cache
 candidate matching. It is not proof evidence, not sufficient for reuse, and not
 trusted by the kernel.
 
+`obligation_fingerprint` is the producer-owned composite proof-reuse input
+fingerprint. It commits to the VC semantic fingerprint, local proof context
+fingerprint, dependency-slice fingerprint, verifier-policy fingerprint, and any
+producer-owned evidence requirement that affects whether an existing witness may
+be reused. `VerifiedArtifact` validates the field's hash class and spelling and
+uses it for witness consistency; the VC/proof producer remains responsible for
+constructing the composite value until real producer integration lands.
+
 Every obligation with `status = "accepted"` must set
 `accepted_witness_obligation_id` to the same string as its own `obligation_id`.
 That id must resolve to exactly one `ProofWitnessRef.obligation_id` in
@@ -209,13 +218,16 @@ accepted evidence classes as `ProofWitnessRef` values.
 Task 11 validates the accepted-witness consistency tuple:
 
 - the witness `obligation_id` equals the obligation `obligation_id`;
-- the witness `obligation_fingerprint` equals the obligation `vc_fingerprint`;
+- the witness `obligation_fingerprint` equals the obligation
+  `obligation_fingerprint`;
 - the witness
   `kernel_acceptance.verifier_policy_fingerprint` equals the obligation
   `verifier_policy_fingerprint`;
-- the obligation `local_context_fingerprint` and
-  `dependency_slice_fingerprint` are present as interface fingerprints in the
-  obligation metadata and are included in `implementation_hash` participation;
+- the obligation `vc_fingerprint`, `local_context_fingerprint`,
+  `dependency_slice_fingerprint`, and `verifier_policy_fingerprint` are present
+  as interface fingerprints in the obligation metadata and participate in the
+  composite `obligation_fingerprint` contract and in `implementation_hash`
+  participation;
 - the witness `kernel_acceptance.accepted_result_hash` is an interface hash
   supplied by the proof/kernel producer and is included through the referenced
   `ProofWitnessRef`.
@@ -343,6 +355,7 @@ Task 11 validates the following domains:
 | `implementation_hash` | artifact-framed `implementation` | `mizar-artifact/verified-artifact`, the artifact `schema_version` | Stored full stable projection hash; readers recompute and compare it. |
 | `verified_export.interface_fingerprint` | artifact-framed `interface` | producer-owned, valid grammar | Export fingerprint. |
 | `verified_export.documentation_ref` | artifact-framed `diagnostic` | producer-owned, valid grammar | Optional documentation/diagnostic payload reference. |
+| `obligation_metadata.obligation_fingerprint` | artifact-framed `interface` | producer-owned, valid grammar | Composite proof-reuse input fingerprint. |
 | `obligation_metadata.vc_fingerprint` | artifact-framed `interface` | producer-owned, valid grammar | VC semantic fingerprint. |
 | `obligation_metadata.local_context_fingerprint` | artifact-framed `interface` | producer-owned, valid grammar | Local proof context fingerprint. |
 | `obligation_metadata.dependency_slice_fingerprint` | artifact-framed `interface` | producer-owned, valid grammar | Dependency slice fingerprint. |
@@ -367,27 +380,41 @@ from [proof_witness.md](./proof_witness.md).
 
 ## Hash Participation
 
-`interface_hash` is computed over the importer-visible projection:
+Task 11 computes and validates both top-level hashes from filtered canonical JSON
+projections. Task 16 may expose these projection builders as reusable helpers,
+but it does not change the task-11 participation rules.
 
-- module identity fields that affect import interpretation;
-- exported signatures, visibility, and dependency-facing fingerprints;
-- accepted proof status for exported theorem/registration facts that importers
-  can observe;
-- dependency interface hashes and schema versions that affect importers.
+`interface_hash` is computed over exactly these importer-visible fields:
 
-It excludes expression metadata, local diagnostics, implementation bodies,
-diagnostic/navigation `source_range` fields, source path metadata,
-`source_hash`, `verified_at`, proof witness paths and byte hashes except where
-an accepted exported status requires a dependency-facing fingerprint, local
-provenance, `cache_key`, and `implementation_hash`.
+- `schema_version`;
+- `module`;
+- each export's `origin_id`, `fully_qualified_name`, `namespace_path`,
+  `visibility`, `export_kind`, `rendered_signature`,
+  `interface_fingerprint`, and `proof_status`;
+- each dependency entry's `module` and `interface_hash`.
 
-`implementation_hash` is computed over the full stable published projection for
-the source file, excluding hash-excluded local fields and the stored
-`interface_hash` / `implementation_hash` fields themselves to avoid
-self-reference. It includes expression metadata, obligations, diagnostics,
-stable provenance inputs (`toolchain`, `language_edition`, `lockfile_hash`,
-`verifier_config_hash`, and `dependency_artifact_hashes`), and
-`ProofWitnessRef` values. It excludes `verified_at`, `cache_key`, and any future
+`interface_hash` excludes `source_file`, `source_hash`, `verified_at`, the
+stored `interface_hash` and `implementation_hash`, export `source_range`,
+export `documentation_ref`, expression metadata, obligations, proof witness
+paths and byte hashes, diagnostics, `lockfile_hash`, `verifier_config_hash`,
+dependency `implementation_hash`, dependency `artifact_hash`, `toolchain`,
+`language_edition`, `cache_key`, and any future local/cache-only provenance
+field.
+
+`implementation_hash` is computed over exactly these stable published fields:
+
+- `schema_version`, `module`, `source_file`, and `source_hash`;
+- full `exports`, including `source_range` and `documentation_ref`;
+- full `expressions`;
+- full `obligations`, including `obligation_fingerprint` and its component
+  fingerprints;
+- full `proof_witnesses`;
+- full `diagnostics`, including diagnostic ranges and related entries;
+- stable provenance fields: `toolchain`, `language_edition`, `lockfile_hash`,
+  `verifier_config_hash`, and the full `dependency_artifact_hashes` entries.
+
+`implementation_hash` excludes only `verified_at`, the stored `interface_hash`
+and `implementation_hash` fields themselves, `cache_key`, and any future
 local/cache-only provenance field.
 
 Both hashes use task-3 artifact-framed hash strings and domain-separated hash
@@ -398,6 +425,9 @@ classes. The manifest's artifact hash validates the published file bytes.
 Writers sort collections deterministically before serialization. Readers reject
 unsorted collections and duplicate identity keys.
 
+Nullable ranges sort with `null` before non-null ranges. Non-null ranges sort by
+`start_byte` and then `end_byte`.
+
 The initial ordering keys are:
 
 - `exports`: `origin_id`, `fully_qualified_name`, `export_kind`,
@@ -406,11 +436,24 @@ The initial ordering keys are:
 - `obligations`: `obligation_id`, `source_range`;
 - `proof_witnesses`: the order specified by `proof_witness.md`;
 - `diagnostics`: `diagnostic_id`, `code`, `primary_range`;
+- `diagnostic.related`: `source_range`, `message_key`, `rendered_message`;
+- `provenance.dependency_artifact_hashes`: module identity.
+
+The initial duplicate identity keys are:
+
+- `exports`: `origin_id`;
+- `expressions`: `expression_id`;
+- `obligations`: `obligation_id`;
+- `proof_witnesses`: `obligation_id`, as specified by `proof_witness.md`;
+- `diagnostics`: `diagnostic_id`;
+- `diagnostic.related`: `source_range`, `message_key`, `rendered_message`;
 - `provenance.dependency_artifact_hashes`: module identity.
 
 Source traversal order, hash map iteration order, ATP completion order,
 diagnostic emission race timing, and filesystem order must not affect serialized
 bytes.
+
+Readers reject duplicate identity keys at each listed collection boundary.
 
 ## Reader And Writer Requirements
 
@@ -423,9 +466,13 @@ and emit the current schema version. Readers:
 - reject empty required strings, malformed source ranges, invalid path shapes,
   malformed hash strings, wrong hash classes, duplicate identities, and unsorted
   collections;
+- recompute `interface_hash` and `implementation_hash` from the filtered
+  projections above and reject mismatches;
 - validate that `accepted_witness_obligation_id` values resolve to matching
   `ProofWitnessRef.obligation_id` values when a trusted witness is required,
-  and that the accepted witness id equals the containing obligation id;
+  that the accepted witness id equals the containing obligation id, and that the
+  witness `obligation_fingerprint` equals the obligation
+  `obligation_fingerprint`;
 - require every accepted obligation to name exactly one matching trusted witness;
 - reject trusted witness references for open, rejected, externally attested, or
   not-required obligations, and allow deterministic discharge hashes only for
