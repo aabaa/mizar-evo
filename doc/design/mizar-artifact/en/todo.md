@@ -135,7 +135,7 @@ Keep `cargo test -p mizar-artifact` green after each task (see
 
 ### Wave A/B boundary: witnesses and the verified artifact
 
-8. **Spec: `proof_witness.md`.** [ ]
+8. **Spec: `proof_witness.md`.** [x]
    - Write the proof-witness reference spec (English and Japanese, no
      code): witness files referenced by hash, kernel acceptance metadata,
      and the rule that witnesses stay external to the main artifact

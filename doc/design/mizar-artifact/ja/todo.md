@@ -136,7 +136,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 
 ### 第 A/B 波の境界: witness と verified artifact
 
-8. **仕様: `proof_witness.md`。** [ ]
+8. **仕様: `proof_witness.md`。** [x]
    - proof witness 参照の仕様を執筆する（英語と日本語、コードなし）:
      ハッシュで参照される witness ファイル、kernel 受理メタデータ、
      「witness は主 artifact の外部に留まる」規則（resident-set 規律）。
