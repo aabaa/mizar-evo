@@ -18,7 +18,7 @@
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | typed_ast | `typed_ast.md`（task 2） | `src/typed_ast.rs` | [x] |
-| binding_env | `binding_env.md`（task 4） | `src/binding_env.rs` | [ ] |
+| binding_env | `binding_env.md`（task 4） | `src/binding_env.rs` | [~] |
 | type_checker | `type_checker.md`（task 6） | `src/type_checker.rs` | [ ] |
 | registration_resolution | `registration_resolution.md`（task 13） | `src/registration_resolution.rs` | [ ] |
 | cluster_trace | `cluster_trace.md`（task 15） | `src/cluster_trace.rs` | [ ] |
@@ -119,13 +119,17 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      determinism、table round-trip、context/status invariant、proof-boundary
      guard、stable rendering を覆う。
 
-4. **仕様: `binding_env.md`。** [ ]
+4. **仕様: `binding_env.md`。** [x]
    - 束縛/コンテキストの仕様を執筆する（英語と日本語、コードなし）:
      `SymbolEnv` 上の階層化ローカル型コンテキスト（モジュール層、ブロック
      層、束縛層。アーキテクチャ 04 Step 1）と、アーキテクチャ 16 と整合
      する checker 側の束縛変数の扱い（binder の識別、捕獲なし）。
    - 依存: 1。仕様: アーキテクチャ 04「Step 1」、
      [16.substitution_and_binding.md](../../architecture/ja/16.substitution_and_binding.md)。
+   - task 4 で完了: `binding_env.md` が checker-owned binding/context boundary、
+     layered context graph、binding identity、lookup order、reserved-variable
+     handling、closure metadata expectation、diagnostic、deterministic rendering、
+     task 5 の test obligation、external dependency gap を定義した。
 
 5. **束縛環境とコンテキストの構築。** [ ]
    - task 4 に従って `SymbolEnv` と `ResolvedAst` の束縛上にコンテキスト

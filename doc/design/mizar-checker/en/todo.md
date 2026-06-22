@@ -19,7 +19,7 @@ architecture 04, 05, 16, 17, 18, and 19.
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | typed_ast | `typed_ast.md` (task 2) | `src/typed_ast.rs` | [x] |
-| binding_env | `binding_env.md` (task 4) | `src/binding_env.rs` | [ ] |
+| binding_env | `binding_env.md` (task 4) | `src/binding_env.rs` | [~] |
 | type_checker | `type_checker.md` (task 6) | `src/type_checker.rs` | [ ] |
 | registration_resolution | `registration_resolution.md` (task 13) | `src/registration_resolution.rs` | [ ] |
 | cluster_trace | `cluster_trace.md` (task 15) | `src/cluster_trace.rs` | [ ] |
@@ -121,13 +121,18 @@ Keep `cargo test -p mizar-checker` green after each task (see
      round-trips, context/status invariants, proof-boundary guards, and stable
      rendering.
 
-4. **Spec: `binding_env.md`.** [ ]
+4. **Spec: `binding_env.md`.** [x]
    - Write the binding/context spec (English and Japanese, no code): layered
      local type contexts over `SymbolEnv` (module, block, binding layers;
      architecture 04 Step 1) and checker-side bound-variable handling
      consistent with architecture 16 (binder identity, no capture).
    - Deps: 1. Spec: architecture 04 "Step 1",
      [16.substitution_and_binding.md](../../architecture/en/16.substitution_and_binding.md).
+   - Completed by task 4: `binding_env.md` now defines the checker-owned
+     binding/context boundary, layered context graph, binding identities,
+     lookup order, reserved-variable handling, closure metadata expectations,
+     diagnostics, deterministic rendering, task-5 test obligations, and
+     external dependency gaps.
 
 5. **Binding environment and context build.** [ ]
    - Implement context construction over `SymbolEnv` and `ResolvedAst`
