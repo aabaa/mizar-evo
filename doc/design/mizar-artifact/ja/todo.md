@@ -220,6 +220,8 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
     - 依存: 14、15、`mizar-kernel` task 16、`mizar-proof` task 11
       （witness の stage/公開）。仕様: `verified_artifact.md`、
       `manifest.md`。
+    - 状態: task 16 後も、必要な producer output が存在しないため
+      `external_dependency_gap` として deferred。この crate で stub しない。
 
 ### 強化と横断フォローアップ
 

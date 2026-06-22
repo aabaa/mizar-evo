@@ -220,6 +220,8 @@ Keep `cargo test -p mizar-artifact` green after each task (see
     - Deps: 14, 15, `mizar-kernel` task 16, `mizar-proof` task 11
       (witness staging/publication). Spec: `verified_artifact.md`,
       `manifest.md`.
+    - Status: deferred as `external_dependency_gap` after task 16 because the
+      required producer outputs are not present; do not stub them here.
 
 ### Hardening and cross-cutting follow-ups
 
