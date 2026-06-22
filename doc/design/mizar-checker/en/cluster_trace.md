@@ -116,6 +116,50 @@ bounded-saturation failure, contradiction failure, artifact JSON emission,
 cache readers, existential gating, proof acceptance, or opaque resolver-shell
 parsing. Those remain owned by tasks 17-20 and artifact/build integration.
 
+### Task 17: Cluster Loop And Bound Data Layer
+
+Task 17 extends the task-16 cluster closure data layer without changing the
+canonical artifact schema. It implements checker-local loop, bound, and
+contradiction failure handling over explicit `ClusterRuleInput` and
+`ClusterFactInput` payloads.
+
+The builder tracks derivation ancestry by canonical `ClusterFactFingerprint`.
+If an applicable rule would derive a fact that is already on an antecedent's
+active ancestry path, the rule is rejected with a deterministic `cluster_loop`
+diagnostic. Repeated already-derived facts that are not on the active ancestry
+path remain ordinary duplicate closure facts and are ignored only after
+fingerprint equality.
+
+`ClusterTraversalConfig` bounds are enforced during closure. A candidate whose
+derived depth would exceed `max_cluster_depth`, or whose insertion would exceed
+`max_generated_facts`, is rejected with a deterministic
+`cluster_bound_exceeded` diagnostic. The traversal profile records the
+configured bounds, whether bounded saturation was reached, and stable cache-key
+material derived from the ordering version and bound settings. The rejected
+candidate is not inserted into `closure_facts`, `derived_facts`, or trace steps.
+Depth is measured over the explicit fact-dependency hypergraph: input facts
+have depth `0`; a derived fact with antecedents has depth
+`1 + max(antecedent depths)`; and a zero-antecedent cluster-generated fact has
+depth `1`.
+Loop, bound, and contradiction failures set the checker-local
+`ClusterClosureOutput` status to incomplete. An incomplete output may still
+carry facts that were derived before the fatal candidate, but those facts must
+not be exported as a verified closure result.
+
+Contradiction handling remains checker-owned at this seam. Task 17 allows an
+explicit rule payload to list already-visible fact fingerprints that conflict
+with the generated fact. If any listed fact is present when the rule would fire,
+the builder emits `cluster_contradiction` and does not export a verified or
+degraded closure fact for the contradictory generated fact. A contradiction is
+a fatal closure result for verified export: the checker must not publish a
+truncated or degraded verified fact set from that closure. Source-derived
+incompatibility checks against the shared `TypeFactTable` remain deferred until
+source-to-checker payload extraction and registration payloads are available.
+
+Task 17 does not implement reduction steps, artifact JSON emission, cache
+readers, existential gating, proof acceptance, or opaque resolver-shell parsing.
+Those remain owned by later tasks and external integration work.
+
 ## Cluster Steps
 
 A cluster step refines the architecture `ClusterStep` fields:

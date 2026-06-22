@@ -69,15 +69,21 @@ string_key!(ClusterAttributeFingerprint);
 string_key!(ClusterRuleFingerprint);
 string_key!(ClusterAuditKey);
 string_key!(ClusterOrderingVersion);
+string_key!(ClusterTraversalCacheKey);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ClusterClosureOutput {
+    status: ClusterClosureStatus,
     trace: ResolutionTrace,
     closure_facts: ClusterFactTable,
     diagnostics: ClusterDiagnosticTable,
 }
 
 impl ClusterClosureOutput {
+    pub const fn status(&self) -> ClusterClosureStatus {
+        self.status
+    }
+
     pub const fn trace(&self) -> &ResolutionTrace {
         &self.trace
     }
@@ -92,11 +98,23 @@ impl ClusterClosureOutput {
 
     pub fn debug_text(&self) -> String {
         let mut output = String::from("cluster-closure-debug-v1\n");
+        let _ = writeln!(
+            output,
+            "status={}",
+            cluster_closure_status_name(self.status)
+        );
         write_trace(&mut output, &self.trace);
         write_facts(&mut output, "closure-facts", &self.closure_facts);
         write_diagnostics(&mut output, &self.diagnostics);
         output
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum ClusterClosureStatus {
+    Complete,
+    Incomplete,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -140,14 +158,24 @@ impl ClusterTraceBuilder {
         let mut steps = Vec::new();
         let mut derived_facts = ClusterFactTable::new();
         let mut present = facts.fingerprint_set();
+        let mut closure_state = present
+            .iter()
+            .cloned()
+            .map(|fingerprint| {
+                (
+                    fingerprint.clone(),
+                    ClusterFactClosureState::input(fingerprint),
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+        let mut failed_candidates = BTreeSet::new();
+        let mut bounded_saturation_reached = false;
+        let mut fatal_failure_seen = false;
         let mut changed = true;
 
-        while changed {
+        'closure: while changed {
             changed = false;
             for rule in &rules {
-                if present.contains(&rule.input.generated_fact) {
-                    continue;
-                }
                 if !rule
                     .input
                     .antecedents
@@ -155,6 +183,85 @@ impl ClusterTraceBuilder {
                     .all(|antecedent| present.contains(antecedent))
                 {
                     continue;
+                }
+
+                let candidate_key = cluster_candidate_key(rule);
+                if failed_candidates.contains(&candidate_key) {
+                    continue;
+                }
+                if let Some(loop_fact) = active_loop_fact(&closure_state, rule) {
+                    diagnostics.insert(ClusterDiagnosticDraft {
+                        registration: Some(rule.input.registration),
+                        class: ClusterDiagnosticClass::ClusterLoop,
+                        severity: ClusterDiagnosticSeverity::Error,
+                        message_key: "checker.cluster_trace.cluster_loop".to_owned(),
+                        detail: Some(loop_fact.as_str().to_owned()),
+                        source_range: rule.input.source_range,
+                        recovery: ClusterDiagnosticRecovery::Fatal,
+                    });
+                    failed_candidates.insert(candidate_key);
+                    fatal_failure_seen = true;
+                    break 'closure;
+                }
+                if present.contains(&rule.input.generated_fact) {
+                    continue;
+                }
+                if let Some(conflict) = rule
+                    .input
+                    .conflicts
+                    .iter()
+                    .find(|conflict| present.contains(*conflict))
+                {
+                    diagnostics.insert(ClusterDiagnosticDraft {
+                        registration: Some(rule.input.registration),
+                        class: ClusterDiagnosticClass::ClusterContradiction,
+                        severity: ClusterDiagnosticSeverity::Error,
+                        message_key: "checker.cluster_trace.cluster_contradiction".to_owned(),
+                        detail: Some(conflict.as_str().to_owned()),
+                        source_range: rule.input.source_range,
+                        recovery: ClusterDiagnosticRecovery::Fatal,
+                    });
+                    failed_candidates.insert(candidate_key);
+                    fatal_failure_seen = true;
+                    break 'closure;
+                }
+                let candidate_depth = candidate_depth(&closure_state, &rule.input.antecedents);
+                if candidate_depth > self.config.max_cluster_depth {
+                    diagnostics.insert(ClusterDiagnosticDraft {
+                        registration: Some(rule.input.registration),
+                        class: ClusterDiagnosticClass::ClusterBoundExceeded,
+                        severity: ClusterDiagnosticSeverity::Error,
+                        message_key: "checker.cluster_trace.cluster_bound_exceeded".to_owned(),
+                        detail: Some(format!(
+                            "depth:{candidate_depth}>max:{}",
+                            self.config.max_cluster_depth
+                        )),
+                        source_range: rule.input.source_range,
+                        recovery: ClusterDiagnosticRecovery::Fatal,
+                    });
+                    failed_candidates.insert(candidate_key);
+                    bounded_saturation_reached = true;
+                    fatal_failure_seen = true;
+                    break 'closure;
+                }
+                if derived_facts.len() >= self.config.max_generated_facts {
+                    diagnostics.insert(ClusterDiagnosticDraft {
+                        registration: Some(rule.input.registration),
+                        class: ClusterDiagnosticClass::ClusterBoundExceeded,
+                        severity: ClusterDiagnosticSeverity::Error,
+                        message_key: "checker.cluster_trace.cluster_bound_exceeded".to_owned(),
+                        detail: Some(format!(
+                            "generated:{}>=max:{}",
+                            derived_facts.len(),
+                            self.config.max_generated_facts
+                        )),
+                        source_range: rule.input.source_range,
+                        recovery: ClusterDiagnosticRecovery::Fatal,
+                    });
+                    failed_candidates.insert(candidate_key);
+                    bounded_saturation_reached = true;
+                    fatal_failure_seen = true;
+                    break 'closure;
                 }
 
                 let step_id = ClusterStepId::new(steps.len());
@@ -182,6 +289,15 @@ impl ClusterTraceBuilder {
                 facts.insert(fact.clone());
                 derived_facts.insert(fact);
                 present.insert(rule.input.generated_fact.clone());
+                closure_state.insert(
+                    rule.input.generated_fact.clone(),
+                    candidate_closure_state(
+                        &closure_state,
+                        &rule.input.antecedents,
+                        rule.input.generated_fact.clone(),
+                        candidate_depth,
+                    ),
+                );
                 steps.push(ResolutionTraceStep::Cluster(ClusterStep {
                     id: step_id,
                     source_type: rule.input.source_type.clone(),
@@ -203,9 +319,10 @@ impl ClusterTraceBuilder {
 
         let profile = ClusterTraversalProfile {
             ordering_version: ClusterOrderingVersion::new("cluster-trace-order-v1"),
+            cache_key_material: traversal_cache_key_material(&self.config),
             max_cluster_depth: self.config.max_cluster_depth,
             max_generated_facts: self.config.max_generated_facts,
-            bounded_saturation_reached: false,
+            bounded_saturation_reached,
             input_fact_count,
             derived_fact_count: derived_facts.len(),
             cluster_step_count: steps.len(),
@@ -213,6 +330,11 @@ impl ClusterTraceBuilder {
             diagnostic_count: diagnostics.len(),
         };
         ClusterClosureOutput {
+            status: if fatal_failure_seen {
+                ClusterClosureStatus::Incomplete
+            } else {
+                ClusterClosureStatus::Complete
+            },
             trace: ResolutionTrace {
                 source_id,
                 module_id,
@@ -524,6 +646,7 @@ impl ClusterAntecedentRef {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ClusterTraversalProfile {
     ordering_version: ClusterOrderingVersion,
+    cache_key_material: ClusterTraversalCacheKey,
     max_cluster_depth: usize,
     max_generated_facts: usize,
     bounded_saturation_reached: bool,
@@ -537,6 +660,10 @@ pub struct ClusterTraversalProfile {
 impl ClusterTraversalProfile {
     pub const fn ordering_version(&self) -> &ClusterOrderingVersion {
         &self.ordering_version
+    }
+
+    pub const fn cache_key_material(&self) -> &ClusterTraversalCacheKey {
+        &self.cache_key_material
     }
 
     pub const fn max_cluster_depth(&self) -> usize {
@@ -634,6 +761,7 @@ pub struct ClusterRuleInput {
     trigger: RegistrationTriggerKey,
     source_type: ClusterTypeFingerprint,
     antecedents: Vec<ClusterFactFingerprint>,
+    conflicts: Vec<ClusterFactFingerprint>,
     generated_attribute: ClusterAttributeFingerprint,
     generated_type: ClusterTypeFingerprint,
     generated_fact: ClusterFactFingerprint,
@@ -649,6 +777,7 @@ impl ClusterRuleInput {
             trigger: draft.trigger,
             source_type: draft.source_type,
             antecedents: Vec::new(),
+            conflicts: Vec::new(),
             generated_attribute: draft.generated_attribute,
             generated_type: draft.generated_type,
             generated_fact: draft.generated_fact,
@@ -664,6 +793,16 @@ impl ClusterRuleInput {
         self.antecedents = antecedents.into_iter().collect();
         self.antecedents.sort();
         self.antecedents.dedup();
+        self
+    }
+
+    pub fn with_conflicts(
+        mut self,
+        conflicts: impl IntoIterator<Item = ClusterFactFingerprint>,
+    ) -> Self {
+        self.conflicts = conflicts.into_iter().collect();
+        self.conflicts.sort();
+        self.conflicts.dedup();
         self
     }
 }
@@ -941,6 +1080,9 @@ impl ClusterDiagnosticTable {
 pub enum ClusterDiagnosticClass {
     InvisibleRegistration,
     InvalidRulePayload,
+    ClusterLoop,
+    ClusterBoundExceeded,
+    ClusterContradiction,
     ReplayFailure,
 }
 
@@ -957,6 +1099,29 @@ pub enum ClusterDiagnosticSeverity {
 pub enum ClusterDiagnosticRecovery {
     Normal,
     Degraded,
+    Fatal,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ClusterFactClosureState {
+    depth: usize,
+    ancestry: BTreeSet<ClusterFactFingerprint>,
+}
+
+impl ClusterFactClosureState {
+    fn input(fingerprint: ClusterFactFingerprint) -> Self {
+        Self {
+            depth: 0,
+            ancestry: BTreeSet::from([fingerprint]),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct ClusterCandidateKey {
+    registration: CheckerRegistrationId,
+    rule_fingerprint: ClusterRuleFingerprint,
+    generated_fact: ClusterFactFingerprint,
 }
 
 fn validate_rule(
@@ -1062,6 +1227,61 @@ fn valid_rule_order_key(
     )
 }
 
+fn active_loop_fact(
+    closure_state: &BTreeMap<ClusterFactFingerprint, ClusterFactClosureState>,
+    rule: &ValidClusterRule,
+) -> Option<ClusterFactFingerprint> {
+    rule.input.antecedents.iter().find_map(|antecedent| {
+        closure_state
+            .get(antecedent)
+            .filter(|state| state.ancestry.contains(&rule.input.generated_fact))
+            .map(|_| antecedent.clone())
+    })
+}
+
+fn candidate_depth(
+    closure_state: &BTreeMap<ClusterFactFingerprint, ClusterFactClosureState>,
+    antecedents: &[ClusterFactFingerprint],
+) -> usize {
+    antecedents
+        .iter()
+        .filter_map(|antecedent| closure_state.get(antecedent).map(|state| state.depth))
+        .max()
+        .unwrap_or(0)
+        + 1
+}
+
+fn candidate_closure_state(
+    closure_state: &BTreeMap<ClusterFactFingerprint, ClusterFactClosureState>,
+    antecedents: &[ClusterFactFingerprint],
+    generated_fact: ClusterFactFingerprint,
+    depth: usize,
+) -> ClusterFactClosureState {
+    let mut ancestry = BTreeSet::new();
+    for antecedent in antecedents {
+        if let Some(state) = closure_state.get(antecedent) {
+            ancestry.extend(state.ancestry.iter().cloned());
+        }
+    }
+    ancestry.insert(generated_fact);
+    ClusterFactClosureState { depth, ancestry }
+}
+
+fn cluster_candidate_key(rule: &ValidClusterRule) -> ClusterCandidateKey {
+    ClusterCandidateKey {
+        registration: rule.input.registration,
+        rule_fingerprint: rule.rule_fingerprint.clone(),
+        generated_fact: rule.input.generated_fact.clone(),
+    }
+}
+
+fn traversal_cache_key_material(config: &ClusterTraversalConfig) -> ClusterTraversalCacheKey {
+    ClusterTraversalCacheKey::new(format!(
+        "order=cluster-trace-order-v1;max_depth={};max_generated={}",
+        config.max_cluster_depth, config.max_generated_facts
+    ))
+}
+
 fn diagnostic_order_key(diagnostic: &ClusterDiagnostic) -> (Option<usize>, u8, u8, String, String) {
     (
         diagnostic.registration.map(CheckerRegistrationId::index),
@@ -1122,7 +1342,10 @@ fn diagnostic_class_rank(class: ClusterDiagnosticClass) -> u8 {
     match class {
         ClusterDiagnosticClass::InvisibleRegistration => 0,
         ClusterDiagnosticClass::InvalidRulePayload => 1,
-        ClusterDiagnosticClass::ReplayFailure => 2,
+        ClusterDiagnosticClass::ClusterLoop => 2,
+        ClusterDiagnosticClass::ClusterBoundExceeded => 3,
+        ClusterDiagnosticClass::ClusterContradiction => 4,
+        ClusterDiagnosticClass::ReplayFailure => 5,
     }
 }
 
@@ -1131,6 +1354,13 @@ fn diagnostic_severity_rank(severity: ClusterDiagnosticSeverity) -> u8 {
         ClusterDiagnosticSeverity::Error => 0,
         ClusterDiagnosticSeverity::Warning => 1,
         ClusterDiagnosticSeverity::Note => 2,
+    }
+}
+
+fn cluster_closure_status_name(status: ClusterClosureStatus) -> &'static str {
+    match status {
+        ClusterClosureStatus::Complete => "complete",
+        ClusterClosureStatus::Incomplete => "incomplete",
     }
 }
 
@@ -1179,8 +1409,9 @@ fn write_trace(output: &mut String, trace: &ResolutionTrace) {
 fn write_profile(output: &mut String, profile: &ClusterTraversalProfile) {
     let _ = writeln!(
         output,
-        "  profile order=\"{}\" max_depth={} max_generated={} bounded={} input={} derived={} cluster_steps={} reduction_steps={} diagnostics={}",
+        "  profile order=\"{}\" cache=\"{}\" max_depth={} max_generated={} bounded={} input={} derived={} cluster_steps={} reduction_steps={} diagnostics={}",
         escaped_display(profile.ordering_version.as_str()),
+        escaped_display(profile.cache_key_material.as_str()),
         profile.max_cluster_depth,
         profile.max_generated_facts,
         profile.bounded_saturation_reached,
@@ -1290,6 +1521,9 @@ fn diagnostic_class_name(class: ClusterDiagnosticClass) -> &'static str {
     match class {
         ClusterDiagnosticClass::InvisibleRegistration => "invisible_registration",
         ClusterDiagnosticClass::InvalidRulePayload => "invalid_rule_payload",
+        ClusterDiagnosticClass::ClusterLoop => "cluster_loop",
+        ClusterDiagnosticClass::ClusterBoundExceeded => "cluster_bound_exceeded",
+        ClusterDiagnosticClass::ClusterContradiction => "cluster_contradiction",
         ClusterDiagnosticClass::ReplayFailure => "replay_failure",
     }
 }
@@ -1306,6 +1540,7 @@ fn diagnostic_recovery_name(recovery: ClusterDiagnosticRecovery) -> &'static str
     match recovery {
         ClusterDiagnosticRecovery::Normal => "normal",
         ClusterDiagnosticRecovery::Degraded => "degraded",
+        ClusterDiagnosticRecovery::Fatal => "fatal",
     }
 }
 
@@ -1358,6 +1593,7 @@ mod tests {
         );
 
         assert!(output.diagnostics().is_empty());
+        assert_eq!(output.status(), ClusterClosureStatus::Complete);
         assert_eq!(output.trace().steps().len(), 1);
         assert!(
             output
@@ -1633,6 +1869,8 @@ mod tests {
         );
 
         assert_eq!(output.trace().steps().len(), 1);
+        assert!(output.diagnostics().is_empty());
+        assert_eq!(output.status(), ClusterClosureStatus::Complete);
         assert_eq!(
             fact_fingerprints(output.trace().derived_facts()),
             vec!["fact:B"]
@@ -1641,6 +1879,248 @@ mod tests {
             panic!("expected one cluster step");
         };
         assert_eq!(step.applied_cluster(), fixture.cluster_a);
+    }
+
+    #[test]
+    fn distinct_generated_fingerprints_are_not_deduplicated_by_payload_collision() {
+        let fixture = env_fixture();
+        let output = ClusterTraceBuilder::default().close(
+            &fixture.database,
+            fixture.source_id,
+            fixture.module.clone(),
+            [fact("fact:A", "type:T", "attr:A", 10)],
+            [
+                rule(fixture.cluster_a, "trigger:A", "fact:A", "fact:B-left", 23)
+                    .with_generated_attribute("attr:shared"),
+                rule(fixture.cluster_b, "trigger:B", "fact:A", "fact:B-right", 24)
+                    .with_generated_attribute("attr:shared"),
+            ],
+        );
+
+        assert!(output.diagnostics().is_empty());
+        assert_eq!(output.status(), ClusterClosureStatus::Complete);
+        assert_eq!(
+            generated_facts(output.trace()),
+            vec!["fact:B-left", "fact:B-right"]
+        );
+        assert_eq!(
+            fact_fingerprints(output.trace().derived_facts()),
+            vec!["fact:B-left", "fact:B-right"]
+        );
+    }
+
+    #[test]
+    fn direct_and_indirect_cluster_loops_are_diagnosed_without_insertion() {
+        let fixture = env_fixture();
+        let direct = ClusterTraceBuilder::default().close(
+            &fixture.database,
+            fixture.source_id,
+            fixture.module.clone(),
+            [fact("fact:A", "type:T", "attr:A", 10)],
+            [rule(fixture.cluster_a, "trigger:A", "fact:A", "fact:A", 70)],
+        );
+
+        assert_eq!(direct.status(), ClusterClosureStatus::Incomplete);
+        assert_eq!(direct.trace().steps().len(), 0);
+        assert_messages(
+            direct.diagnostics(),
+            &["checker.cluster_trace.cluster_loop"],
+        );
+        assert_eq!(fact_fingerprints(direct.closure_facts()), vec!["fact:A"]);
+
+        let indirect = ClusterTraceBuilder::default().close(
+            &fixture.database,
+            fixture.source_id,
+            fixture.module.clone(),
+            [fact("fact:A", "type:T", "attr:A", 10)],
+            [
+                rule(fixture.cluster_a, "trigger:A", "fact:A", "fact:B", 71),
+                rule(fixture.cluster_b, "trigger:B", "fact:B", "fact:A", 72),
+            ],
+        );
+
+        assert_eq!(indirect.status(), ClusterClosureStatus::Incomplete);
+        assert_eq!(generated_facts(indirect.trace()), vec!["fact:B"]);
+        assert_messages(
+            indirect.diagnostics(),
+            &["checker.cluster_trace.cluster_loop"],
+        );
+        assert_eq!(
+            fact_fingerprints(indirect.closure_facts()),
+            vec!["fact:A", "fact:B"]
+        );
+    }
+
+    #[test]
+    fn cluster_depth_and_generated_fact_bounds_are_visible_and_do_not_truncate() {
+        let fixture = env_fixture();
+        let depth_limited = ClusterTraceBuilder::new(ClusterTraversalConfig {
+            max_cluster_depth: 1,
+            max_generated_facts: 8,
+        })
+        .close(
+            &fixture.database,
+            fixture.source_id,
+            fixture.module.clone(),
+            [fact("fact:A", "type:T", "attr:A", 10)],
+            [
+                rule(fixture.cluster_a, "trigger:A", "fact:A", "fact:B", 80),
+                rule(fixture.cluster_b, "trigger:B", "fact:B", "fact:C", 81),
+                rule(fixture.cluster_b, "trigger:B", "fact:A", "fact:D", 82),
+            ],
+        );
+
+        assert_eq!(depth_limited.status(), ClusterClosureStatus::Incomplete);
+        assert_eq!(generated_facts(depth_limited.trace()), vec!["fact:B"]);
+        assert_eq!(
+            depth_limited
+                .trace()
+                .traversal_profile()
+                .cache_key_material()
+                .as_str(),
+            "order=cluster-trace-order-v1;max_depth=1;max_generated=8"
+        );
+        assert_eq!(
+            depth_limited
+                .trace()
+                .traversal_profile()
+                .max_cluster_depth(),
+            1
+        );
+        assert!(
+            depth_limited
+                .trace()
+                .traversal_profile()
+                .bounded_saturation_reached()
+        );
+        assert_messages(
+            depth_limited.diagnostics(),
+            &["checker.cluster_trace.cluster_bound_exceeded"],
+        );
+        assert_eq!(
+            fact_fingerprints(depth_limited.closure_facts()),
+            vec!["fact:A", "fact:B"]
+        );
+        assert!(
+            !depth_limited
+                .closure_facts()
+                .contains(&ClusterFactFingerprint::new("fact:D"))
+        );
+
+        let generated_limited = ClusterTraceBuilder::new(ClusterTraversalConfig {
+            max_cluster_depth: 8,
+            max_generated_facts: 1,
+        })
+        .close(
+            &fixture.database,
+            fixture.source_id,
+            fixture.module.clone(),
+            [fact("fact:A", "type:T", "attr:A", 10)],
+            [
+                rule(fixture.cluster_a, "trigger:A", "fact:A", "fact:B", 82),
+                rule(fixture.cluster_b, "trigger:B", "fact:A", "fact:C", 83),
+            ],
+        );
+
+        assert_eq!(generated_limited.status(), ClusterClosureStatus::Incomplete);
+        assert_eq!(generated_facts(generated_limited.trace()), vec!["fact:B"]);
+        assert_eq!(
+            generated_limited
+                .trace()
+                .traversal_profile()
+                .cache_key_material()
+                .as_str(),
+            "order=cluster-trace-order-v1;max_depth=8;max_generated=1"
+        );
+        assert_eq!(
+            generated_limited
+                .trace()
+                .traversal_profile()
+                .max_generated_facts(),
+            1
+        );
+        assert!(
+            generated_limited
+                .trace()
+                .traversal_profile()
+                .bounded_saturation_reached()
+        );
+        assert_messages(
+            generated_limited.diagnostics(),
+            &["checker.cluster_trace.cluster_bound_exceeded"],
+        );
+        assert_eq!(
+            fact_fingerprints(generated_limited.closure_facts()),
+            vec!["fact:A", "fact:B"]
+        );
+    }
+
+    #[test]
+    fn zero_antecedent_clusters_have_depth_one_for_bounds() {
+        let fixture = env_fixture();
+        let output = ClusterTraceBuilder::new(ClusterTraversalConfig {
+            max_cluster_depth: 0,
+            max_generated_facts: 8,
+        })
+        .close(
+            &fixture.database,
+            fixture.source_id,
+            fixture.module.clone(),
+            [],
+            [rule(fixture.cluster_a, "trigger:A", "unused", "fact:B", 84).with_antecedents([])],
+        );
+
+        assert_eq!(output.status(), ClusterClosureStatus::Incomplete);
+        assert_eq!(output.trace().steps().len(), 0);
+        assert!(
+            output
+                .trace()
+                .traversal_profile()
+                .bounded_saturation_reached()
+        );
+        assert_messages(
+            output.diagnostics(),
+            &["checker.cluster_trace.cluster_bound_exceeded"],
+        );
+    }
+
+    #[test]
+    fn explicit_cluster_contradictions_are_fatal_without_degraded_facts() {
+        let fixture = env_fixture();
+        let output = ClusterTraceBuilder::default().close(
+            &fixture.database,
+            fixture.source_id,
+            fixture.module.clone(),
+            [fact("fact:A", "type:T", "attr:A", 10)],
+            [
+                rule(fixture.cluster_a, "trigger:A", "fact:A", "fact:not-B", 89),
+                rule(fixture.cluster_b, "trigger:B", "fact:A", "fact:B", 90)
+                    .with_conflicts([ClusterFactFingerprint::new("fact:not-B")]),
+            ],
+        );
+
+        assert_eq!(output.status(), ClusterClosureStatus::Incomplete);
+        assert_eq!(generated_facts(output.trace()), vec!["fact:not-B"]);
+        assert!(
+            output
+                .closure_facts()
+                .contains(&ClusterFactFingerprint::new("fact:not-B"))
+        );
+        assert!(
+            !output
+                .closure_facts()
+                .contains(&ClusterFactFingerprint::new("fact:B"))
+        );
+        assert!(
+            !output
+                .trace()
+                .derived_facts()
+                .contains(&ClusterFactFingerprint::new("fact:B"))
+        );
+        assert_messages(
+            output.diagnostics(),
+            &["checker.cluster_trace.cluster_contradiction"],
+        );
     }
 
     #[test]
@@ -1736,6 +2216,7 @@ mod tests {
     trait RuleInputTestExt {
         fn with_kind(self, kind: ClusterRuleKind) -> Self;
         fn with_rule_fingerprint(self, fingerprint: &str) -> Self;
+        fn with_generated_attribute(self, attribute: &str) -> Self;
     }
 
     impl RuleInputTestExt for ClusterRuleInput {
@@ -1746,6 +2227,11 @@ mod tests {
 
         fn with_rule_fingerprint(mut self, fingerprint: &str) -> Self {
             self.rule_fingerprint = ClusterRuleFingerprint::new(fingerprint);
+            self
+        }
+
+        fn with_generated_attribute(mut self, attribute: &str) -> Self {
+            self.generated_attribute = ClusterAttributeFingerprint::new(attribute);
             self
         }
     }

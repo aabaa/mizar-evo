@@ -296,12 +296,18 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       を記録し、reduction、artifact emission、`TypeFactTable` mutation、resolver shell
       semantic の捏造は行わない。
 
-17. **cluster ループ検出と有界飽和。** [ ]
+17. **cluster ループ検出と有界飽和。** [x]
     - cluster ループを検出し、発散する代わりに有界飽和診断を発行する
       （アーキテクチャ 17「Cluster Loop Detection」）。
     - テスト: ループフィクスチャが安定した診断で停止する。上限が設定として
       可視である。矛盾する導出は fatal であり、degraded verified fact を export しない。
     - 依存: 16。仕様: [17.cluster_trace_format.md](../../architecture/ja/17.cluster_trace_format.md)。
+    - task 17 で完了: cluster closure は fact ancestry/depth を追跡し、
+      direct / indirect loop を診断し、traversal profile / cache-key visibility 付きで
+      depth / generated-fact bound を強制し、explicit conflict-fingerprint contradiction を
+      incomplete closure result として報告し、拒否された degraded fact は挿入しない。
+      source-derived `TypeFactTable` contradiction check と artifact/cache integration は
+      deferred のまま。
 
 18. **reduction の適用。** [ ]
     - reduction 書き換え（redex パス、置換、ガード証拠）を、完全な来歴を

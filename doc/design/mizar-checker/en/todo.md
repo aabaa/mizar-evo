@@ -310,13 +310,19 @@ Keep `cargo test -p mizar-checker` green after each task (see
       artifact emission, `TypeFactTable` mutation, or fabricated resolver-shell
       semantics.
 
-17. **Cluster loop detection and bounded saturation.** [ ]
+17. **Cluster loop detection and bounded saturation.** [x]
     - Detect cluster loops and emit bounded-saturation diagnostics instead of
       diverging (architecture 17 "Cluster Loop Detection").
     - Tests: loop fixtures terminate with stable diagnostics; bound is
       configuration-visible; contradictory derivations are fatal and do not
       export degraded verified facts.
     - Deps: 16. Spec: [17.cluster_trace_format.md](../../architecture/en/17.cluster_trace_format.md).
+    - Completed by task 17: cluster closure now tracks fact ancestry/depth,
+      diagnoses direct and indirect loops, enforces depth and generated-fact
+      bounds with traversal profile/cache-key visibility, reports explicit
+      conflict-fingerprint contradictions as incomplete closure results, and
+      avoids inserting rejected degraded facts. Source-derived `TypeFactTable`
+      contradiction checks and artifact/cache integration remain deferred.
 
 18. **Reduction applications.** [ ]
     - Implement reduction rewrites (redex paths, substitutions, guard

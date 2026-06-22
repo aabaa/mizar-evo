@@ -109,6 +109,45 @@ failure、artifact JSON emission、cache reader、existential gating、proof acc
 opaque resolver-shell parsing を実装しない。それらは tasks 17-20 と artifact/build
 integration が所有する。
 
+### task 17: cluster loop / bound data layer
+
+task 17 は canonical artifact schema を変えずに、task 16 の cluster closure data
+layer を拡張する。explicit `ClusterRuleInput` / `ClusterFactInput` payload 上で
+checker-local な loop、bound、contradiction failure handling を実装する。
+
+builder は canonical `ClusterFactFingerprint` ごとに derivation ancestry を追跡する。
+適用可能な rule が antecedent の active ancestry path 上に既にある fact を導出しようとした
+場合、その rule は deterministic な `cluster_loop` diagnostic で拒否する。active ancestry
+path 上にない already-derived fact の重複は通常の duplicate closure fact とし、
+fingerprint equality を確認した後にだけ無視する。
+
+`ClusterTraversalConfig` の bound は closure 中に強制する。candidate の derived depth が
+`max_cluster_depth` を超える場合、または insertion が `max_generated_facts` を超える場合、
+deterministic な `cluster_bound_exceeded` diagnostic で拒否する。traversal profile は
+configured bound、bounded saturation に到達したか、ordering version と bound setting から
+導いた stable cache-key material を記録する。拒否された candidate は `closure_facts`、
+`derived_facts`、trace step へ挿入しない。
+depth は explicit fact-dependency hypergraph 上で測る。input fact の depth は `0`、
+antecedent を持つ derived fact の depth は `1 + max(antecedent depths)`、antecedent を
+持たない cluster-generated fact の depth は `1` とする。
+loop、bound、contradiction failure は checker-local な `ClusterClosureOutput` status を
+incomplete にする。incomplete output は fatal candidate より前に導出された fact を保持して
+よいが、それらを verified closure result として export してはならない。
+
+contradiction handling はこの seam では checker-owned のままである。task 17 では explicit
+rule payload が、generated fact と conflict する already-visible fact fingerprint を列挙
+できる。rule が発火しようとした時点で列挙された fact が存在する場合、builder は
+`cluster_contradiction` を emit し、その contradictory generated fact を verified または
+degraded closure fact として export しない。contradiction は verified export に対する fatal
+closure result であり、checker はその closure から truncated または degraded verified fact
+set を publish してはならない。shared `TypeFactTable` に対する source-derived
+incompatibility check は、source-to-checker payload extraction と registration payload が
+利用可能になるまで deferred のままである。
+
+task 17 は reduction step、artifact JSON emission、cache reader、existential gating、
+proof acceptance、opaque resolver-shell parsing を実装しない。それらは later task と
+external integration work が所有する。
+
 ## cluster step
 
 cluster step は architecture の `ClusterStep` field を精緻化する。
