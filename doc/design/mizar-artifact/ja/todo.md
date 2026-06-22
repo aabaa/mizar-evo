@@ -23,7 +23,7 @@ source task が始まる前に file を追加する。モジュール名は
 | module_summary | `module_summary.md`（task 4） | `src/module_summary.rs` | [x] |
 | registration_summary | `registration_summary.md`（task 6） | `src/registration_summary.rs` | [x] |
 | proof_witness | `proof_witness.md`（task 8） | `src/proof_witness.rs` | [x] |
-| verified_artifact | `verified_artifact.md`（task 10） | `src/verified_artifact.rs` | [ ] |
+| verified_artifact | `verified_artifact.md`（task 10） | `src/verified_artifact.rs` | [~] |
 | manifest | `manifest.md`（task 12） | `src/manifest.rs` | [ ] |
 
 `mizar-artifact` はパイプラインの安定した外部射影を所有する: artifact
@@ -149,7 +149,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
    - テスト: ラウンドトリップ。ハッシュ不一致の検出。
    - 依存: 3、8。仕様: `proof_witness.md`。
 
-10. **仕様: `verified_artifact.md`。** [ ]
+10. **仕様: `verified_artifact.md`。** [x]
     - `VerifiedArtifact` スキーマの仕様を執筆する（英語と日本語、コード
       なし）: export、式メタデータ、義務状態、witness 参照、射影された
       診断、互換性ポリシー。
@@ -159,8 +159,10 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 11. **`VerifiedArtifact` スキーマと射影入力。** [ ]
     - スキーマと、生産者 crate が埋める射影入力契約を実装する（実際の
       生産者が揃うまではテスト用スタブ生産者を使う）。
-    - テスト: ラウンドトリップ。生 IR 形のペイロードの拒否。射影された
-      診断が安定したコードと順序を保つ。
+    - テスト: ラウンドトリップ。schema-version compatibility。source-range
+      validation。hash class/domain validation と hash participation。
+      witness-reference consistency。生 IR 形の payload と ownership-boundary field
+      の拒否。射影された診断が安定したコードと順序を保つ。
     - 依存: 9、10。仕様: `verified_artifact.md`。
 
 ### 第 B 波: ストア、manifest、emission

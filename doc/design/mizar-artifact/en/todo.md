@@ -24,7 +24,7 @@ and 18 and internal 02 and 06.
 | module_summary | `module_summary.md` (task 4) | `src/module_summary.rs` | [x] |
 | registration_summary | `registration_summary.md` (task 6) | `src/registration_summary.rs` | [x] |
 | proof_witness | `proof_witness.md` (task 8) | `src/proof_witness.rs` | [x] |
-| verified_artifact | `verified_artifact.md` (task 10) | `src/verified_artifact.rs` | [ ] |
+| verified_artifact | `verified_artifact.md` (task 10) | `src/verified_artifact.rs` | [~] |
 | manifest | `manifest.md` (task 12) | `src/manifest.rs` | [ ] |
 
 `mizar-artifact` owns the stable external projections of the pipeline:
@@ -149,7 +149,7 @@ Keep `cargo test -p mizar-artifact` green after each task (see
    - Tests: round-trips; hash mismatch detection.
    - Deps: 3, 8. Spec: `proof_witness.md`.
 
-10. **Spec: `verified_artifact.md`.** [ ]
+10. **Spec: `verified_artifact.md`.** [x]
     - Write the `VerifiedArtifact` schema spec (English and Japanese, no
       code): exports, expression metadata, obligation statuses, witness
       references, projected diagnostics, and the compatibility policy.
@@ -159,8 +159,11 @@ Keep `cargo test -p mizar-artifact` green after each task (see
 11. **`VerifiedArtifact` schema and projection inputs.** [ ]
     - Implement the schema and the projection-input contract that producer
       crates fill (stub producers in tests until the real ones land).
-    - Tests: round-trips; schema rejects raw-IR-shaped payloads; projected
-      diagnostics keep stable codes and order.
+    - Tests: round-trips; schema-version compatibility; source-range
+      validation; hash class/domain validation and hash participation;
+      witness-reference consistency; schema rejects raw-IR-shaped payloads and
+      ownership-boundary fields; projected diagnostics keep stable codes and
+      order.
     - Deps: 9, 10. Spec: `verified_artifact.md`.
 
 ### Wave B: store, manifest, and emission
