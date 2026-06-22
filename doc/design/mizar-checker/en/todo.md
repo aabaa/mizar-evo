@@ -324,7 +324,7 @@ Keep `cargo test -p mizar-checker` green after each task (see
       avoids inserting rejected degraded facts. Source-derived `TypeFactTable`
       contradiction checks and artifact/cache integration remain deferred.
 
-18. **Reduction applications.** [ ]
+18. **Reduction applications.** [x]
     - Implement reduction rewrites (redex paths, substitutions, guard
       evidence) with full provenance recorded into `ResolutionTrace`.
     - Tests: redex path correctness; guard evidence required; source redex,
@@ -335,6 +335,13 @@ Keep `cargo test -p mizar-checker` green after each task (see
       strategy-audit keys are diagnosed; replayable traces.
     - Deps: 16. Spec: `registration_resolution.md` (reduction section),
       architecture 17 "Reduction Step".
+    - Completed by task 18: `ReductionTraceBuilder` records replayable
+      reduction steps over explicit payloads, preserves architecture-17
+      provenance fields, validates active reduction registrations, rule-view
+      fingerprints, substitutions, guard evidence, and strategy-audit keys, and
+      treats `such` guards as applicability-only evidence. Raw syntax matching,
+      resolver-shell parsing, artifact/cache integration, and source-derived
+      reduction extraction remain deferred.
 
 19. **Pending-registration validation and activation gating.** [ ]
     - Validate pending registration declarations (architecture 04 Step 6),

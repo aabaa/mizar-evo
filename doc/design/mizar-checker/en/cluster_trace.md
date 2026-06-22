@@ -235,6 +235,50 @@ rule-view fingerprint, and the specificity/FQN selection key required by
 spec 17.6.4. A mismatched audit key is a trace validation failure even when the
 local rewrite could be replayed.
 
+### Task 18: Reduction Step Data Layer
+
+Task 18 implements the reduction side of `ResolutionTrace` as a checker-owned
+data layer over explicit `ReductionInput` payloads. It does not perform parser
+rewrites, source walking, term matching against raw syntax, rule search, or
+opaque resolver-shell parsing. Source-derived reduction payload extraction
+remains deferred by MC-G020 and MC-G021.
+
+The reduction builder consumes the task-14 `RegistrationDatabase` and records
+only activated resolver registrations whose kind is `Reduction`, whose
+activation trigger matches the input trigger, and whose activation fingerprint,
+or accepted pattern fallback when no fingerprint is present, matches the active
+rule-view fingerprint supplied by the input. Pending, rejected, recovered,
+malformed, unknown, unaccepted, or non-reduction registrations do not produce a
+rewrite step.
+
+Each valid input records a `ReductionStep` with the architecture-17 fields:
+applied reduction fingerprint, rule FQN, enclosing term before normalization,
+redex path, source redex fingerprint, target term fingerprint, valid
+substitution bindings, discharged guard evidence, rule-view fingerprint,
+selection key, resolver/checker registration provenance, and source range.
+Substitutions and guard evidence are explicit checker-owned payloads. Invalid
+substitution bindings, missing type/attribute/`such` guard evidence, or a
+selection key that disagrees with the deterministic strategy-audit material are
+diagnosed and do not emit a reduction step.
+
+The in-memory checker step additionally carries `required_guards` as a
+checker-local replay-only refinement so task 18 can verify that every required
+type, attribute, and `such` guard has discharged evidence without reconstructing
+rule payloads from opaque resolver shells. This is not a canonical artifact
+schema fork; artifact projection must either omit it or replace it with the
+canonical rule payload once MC-G021 lands.
+
+Task 18 treats `such` guards as applicability side conditions only. They must
+have stable evidence before a rewrite step can be recorded, but they do not
+contribute to the strategy-audit selection key and therefore cannot make a rule
+more specific.
+
+Replay of task-18 reduction steps checks the active reduction registration,
+resolver id, rule-view fingerprint/pattern fallback, deterministic selection
+key, valid substitution bindings, and discharged guard evidence. Replay does
+not search for matching reductions, reselect a rule, or apply additional
+normalization steps absent from the trace.
+
 ## Determinism
 
 Cluster traversal order is the architecture-17 order:
@@ -358,7 +402,8 @@ Task 18:
 - `such` side conditions are applicability-only;
 - pending, rejected, recovered, malformed, or unaccepted reductions do not
   rewrite terms;
-- replay reaches the same term fingerprints as the emitted trace.
+- replay reports successful reduction step ids without searching for or adding
+  extra rewrites.
 
 Later tasks:
 

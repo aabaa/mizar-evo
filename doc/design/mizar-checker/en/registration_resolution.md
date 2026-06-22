@@ -332,9 +332,12 @@ to export a truncated verified fact set.
 
 ## Reduction Rewrites
 
-Task 18 implements reduction normalization over activated reduction
-registrations. Reductions are semantic rewrites; they are not parser rewrites
-and they must preserve source provenance.
+Reduction normalization over activated reduction registrations is the eventual
+phase-7 contract. Reductions are semantic rewrites; they are not parser
+rewrites and they must preserve source provenance. Task 18 implements the
+checker-local reduction trace data layer over explicit reduction payloads only;
+full typed-term matching, traversal, rule search/selection from source terms,
+and source-derived guard extraction remain deferred behind MC-G020 and MC-G021.
 
 Required behavior:
 

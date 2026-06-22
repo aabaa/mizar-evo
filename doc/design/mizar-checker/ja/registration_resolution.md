@@ -305,8 +305,11 @@ failure であり、truncated verified fact set の export を許可しない。
 
 ## reduction rewrite
 
-task 18 が activated reduction registration 上の reduction normalization を実装する。
+activated reduction registration 上の reduction normalization は最終的な phase-7 contract である。
 reduction は semantic rewrite であり parser rewrite ではない。source provenance を保持する。
+task 18 は explicit reduction payload 上の checker-local reduction trace data layer だけを
+実装する。source term からの full typed-term matching、traversal、rule search/selection、
+source-derived guard extraction は MC-G020 と MC-G021 により deferred のままである。
 
 必須挙動:
 

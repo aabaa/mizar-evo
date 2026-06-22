@@ -219,6 +219,44 @@ strategy-audit key は leftmost-innermost redex path、active rule-view fingerpr
 spec 17.6.4 が要求する specificity/FQN selection key を記録する。local rewrite を replay
 できる場合でも audit key が合わなければ trace validation failure である。
 
+### task 18: reduction step data layer
+
+task 18 は explicit `ReductionInput` payload 上の checker-owned data layer として、
+`ResolutionTrace` の reduction 側を実装する。parser rewrite、source walk、raw syntax
+に対する term matching、rule search、opaque resolver-shell parsing は実行しない。
+source-derived reduction payload extraction は MC-G020 と MC-G021 により deferred のままである。
+
+reduction builder は task-14 `RegistrationDatabase` を消費し、resolver registration kind が
+`Reduction`、activation trigger が input trigger と一致し、activation fingerprint または
+fingerprint が存在しない場合の accepted pattern fallback が input の active rule-view
+fingerprint と一致する activated resolver registration だけを記録する。pending、rejected、
+recovered、malformed、unknown、unaccepted、non-reduction registration は rewrite step を
+生成しない。
+
+valid input は architecture-17 field を持つ `ReductionStep` を記録する。すなわち applied
+reduction fingerprint、rule FQN、normalization 前の enclosing term、redex path、source
+redex fingerprint、target term fingerprint、valid substitution binding、discharged guard
+evidence、rule-view fingerprint、selection key、resolver/checker registration provenance、
+source range である。substitution と guard evidence は explicit checker-owned payload である。
+invalid substitution binding、type / attribute / `such` guard evidence の欠落、または
+deterministic strategy-audit material と合わない selection key は diagnostic となり、
+reduction step を emit しない。
+
+in-memory checker step はさらに `required_guards` を checker-local replay-only refinement
+として保持する。これにより task 18 は、opaque resolver shell から rule payload を復元せずに、
+すべての required type / attribute / `such` guard に discharged evidence があることを検査できる。
+これは canonical artifact schema fork ではない。artifact projection はこれを省略するか、
+MC-G021 が解消された後の canonical rule payload に置き換えなければならない。
+
+task 18 は `such` guard を applicability side condition としてだけ扱う。rewrite step を
+記録する前に stable evidence が必要だが、strategy-audit selection key には寄与せず、rule を
+より specific にすることはできない。
+
+task-18 reduction step の replay は、active reduction registration、resolver id、rule-view
+fingerprint / pattern fallback、deterministic selection key、valid substitution binding、
+discharged guard evidence を検査する。replay は matching reduction を探索せず、rule を再選択
+せず、trace にない追加 normalization step を適用しない。
+
 ## determinism
 
 cluster traversal order は architecture 17 の order である。
@@ -333,7 +371,7 @@ task 18:
 - invalid substitution、missing guard evidence、mismatched strategy-audit key を診断する;
 - `such` side condition は applicability-only である;
 - pending、rejected、recovered、malformed、unaccepted reduction は term を rewrite しない;
-- replay は emitted trace と同じ term fingerprint に到達する。
+- replay は successful reduction step id を報告し、追加 rewrite を探索・追加しない。
 
 後続 task:
 

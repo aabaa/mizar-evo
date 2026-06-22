@@ -61,6 +61,7 @@ macro_rules! string_key {
 
 dense_id!(ClusterFactId);
 dense_id!(ClusterStepId);
+dense_id!(ReductionStepId);
 dense_id!(ClusterDiagnosticId);
 
 string_key!(ClusterFactFingerprint);
@@ -70,6 +71,16 @@ string_key!(ClusterRuleFingerprint);
 string_key!(ClusterAuditKey);
 string_key!(ClusterOrderingVersion);
 string_key!(ClusterTraversalCacheKey);
+string_key!(ReductionFingerprint);
+string_key!(ReductionRuleFqn);
+string_key!(ReductionTermFingerprint);
+string_key!(ReductionRedexPath);
+string_key!(ReductionBindingKey);
+string_key!(ReductionGuardKey);
+string_key!(ReductionGuardEvidenceKey);
+string_key!(ReductionRuleViewFingerprint);
+string_key!(ReductionSelectionKey);
+string_key!(ReductionStrategyAuditKey);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ClusterClosureOutput {
@@ -115,6 +126,29 @@ impl ClusterClosureOutput {
 pub enum ClusterClosureStatus {
     Complete,
     Incomplete,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReductionTraceOutput {
+    trace: ResolutionTrace,
+    diagnostics: ClusterDiagnosticTable,
+}
+
+impl ReductionTraceOutput {
+    pub const fn trace(&self) -> &ResolutionTrace {
+        &self.trace
+    }
+
+    pub const fn diagnostics(&self) -> &ClusterDiagnosticTable {
+        &self.diagnostics
+    }
+
+    pub fn debug_text(&self) -> String {
+        let mut output = String::from("reduction-trace-debug-v1\n");
+        write_trace(&mut output, &self.trace);
+        write_diagnostics(&mut output, &self.diagnostics);
+        output
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -354,6 +388,74 @@ impl Default for ClusterTraceBuilder {
     }
 }
 
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct ReductionTraceBuilder;
+
+impl ReductionTraceBuilder {
+    pub const fn new() -> Self {
+        Self
+    }
+
+    pub fn record(
+        &self,
+        database: &RegistrationDatabase,
+        source_id: SourceId,
+        module_id: ModuleId,
+        reductions: impl IntoIterator<Item = ReductionInput>,
+    ) -> ReductionTraceOutput {
+        let mut diagnostics = ClusterDiagnosticTable::new();
+        let mut steps = Vec::new();
+        for reduction in reductions {
+            let Some(valid) = validate_reduction(database, reduction, &mut diagnostics) else {
+                continue;
+            };
+            let id = ReductionStepId::new(steps.len());
+            steps.push(ResolutionTraceStep::Reduction(ReductionStep {
+                id,
+                applied_reduction: valid.input.applied_reduction,
+                registration: valid.input.registration,
+                resolver_registration: valid.active.resolver_registration(),
+                trigger: valid.input.trigger,
+                rule_fqn: valid.input.rule_fqn,
+                enclosing_term_before: valid.input.enclosing_term_before,
+                redex_path: valid.input.redex_path,
+                source_redex: valid.input.source_redex,
+                target_term: valid.input.target_term,
+                substitution: valid.input.substitution,
+                required_guards: valid.input.required_guards,
+                discharged_guards: valid.input.discharged_guards,
+                rule_view: valid.input.rule_view,
+                selection_key: valid.input.selection_key,
+                strategy_audit_key: valid.strategy_audit_key,
+                source_range: valid.input.source_range,
+            }));
+        }
+
+        let profile = ClusterTraversalProfile {
+            ordering_version: ClusterOrderingVersion::new("cluster-trace-order-v1"),
+            cache_key_material: traversal_cache_key_material(&ClusterTraversalConfig::default()),
+            max_cluster_depth: ClusterTraversalConfig::default().max_cluster_depth,
+            max_generated_facts: ClusterTraversalConfig::default().max_generated_facts,
+            bounded_saturation_reached: false,
+            input_fact_count: 0,
+            derived_fact_count: 0,
+            cluster_step_count: 0,
+            reduction_step_count: steps.len(),
+            diagnostic_count: diagnostics.len(),
+        };
+        ReductionTraceOutput {
+            trace: ResolutionTrace {
+                source_id,
+                module_id,
+                steps,
+                derived_facts: ClusterFactTable::new(),
+                traversal_profile: profile,
+            },
+            diagnostics,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ClusterTraversalConfig {
     pub max_cluster_depth: usize,
@@ -418,124 +520,140 @@ impl ResolutionTrace {
 
         let mut diagnostics = ClusterDiagnosticTable::new();
         let mut present = facts.fingerprint_set();
+        let mut replayed_reductions = Vec::new();
         for step in &self.steps {
-            let ResolutionTraceStep::Cluster(step) = step;
-            let Some(active) = database.activated().get(step.applied_cluster) else {
-                diagnostics.insert(ClusterDiagnosticDraft {
-                    registration: Some(step.applied_cluster),
-                    class: ClusterDiagnosticClass::ReplayFailure,
-                    severity: ClusterDiagnosticSeverity::Error,
-                    message_key: "checker.cluster_trace.replay_invisible_registration".to_owned(),
-                    detail: None,
-                    source_range: step.rule_source_range,
-                    recovery: ClusterDiagnosticRecovery::Degraded,
-                });
-                continue;
-            };
-            if active.kind() != ResolverRegistrationKind::Cluster {
-                diagnostics.insert(ClusterDiagnosticDraft {
-                    registration: Some(step.applied_cluster),
-                    class: ClusterDiagnosticClass::ReplayFailure,
-                    severity: ClusterDiagnosticSeverity::Error,
-                    message_key: "checker.cluster_trace.replay_non_cluster_registration".to_owned(),
-                    detail: Some(registration_kind_name(active.kind()).to_owned()),
-                    source_range: step.rule_source_range,
-                    recovery: ClusterDiagnosticRecovery::Degraded,
-                });
-                continue;
+            match step {
+                ResolutionTraceStep::Cluster(step) => {
+                    let Some(active) = database.activated().get(step.applied_cluster) else {
+                        diagnostics.insert(ClusterDiagnosticDraft {
+                            registration: Some(step.applied_cluster),
+                            class: ClusterDiagnosticClass::ReplayFailure,
+                            severity: ClusterDiagnosticSeverity::Error,
+                            message_key: "checker.cluster_trace.replay_invisible_registration"
+                                .to_owned(),
+                            detail: None,
+                            source_range: step.rule_source_range,
+                            recovery: ClusterDiagnosticRecovery::Degraded,
+                        });
+                        continue;
+                    };
+                    if active.kind() != ResolverRegistrationKind::Cluster {
+                        diagnostics.insert(ClusterDiagnosticDraft {
+                            registration: Some(step.applied_cluster),
+                            class: ClusterDiagnosticClass::ReplayFailure,
+                            severity: ClusterDiagnosticSeverity::Error,
+                            message_key: "checker.cluster_trace.replay_non_cluster_registration"
+                                .to_owned(),
+                            detail: Some(registration_kind_name(active.kind()).to_owned()),
+                            source_range: step.rule_source_range,
+                            recovery: ClusterDiagnosticRecovery::Degraded,
+                        });
+                        continue;
+                    }
+                    if active.resolver_registration() != step.resolver_registration {
+                        diagnostics.insert(ClusterDiagnosticDraft {
+                            registration: Some(step.applied_cluster),
+                            class: ClusterDiagnosticClass::ReplayFailure,
+                            severity: ClusterDiagnosticSeverity::Error,
+                            message_key: "checker.cluster_trace.replay_resolver_mismatch"
+                                .to_owned(),
+                            detail: Some(format!(
+                                "{} != {}",
+                                active.resolver_registration().index(),
+                                step.resolver_registration.index()
+                            )),
+                            source_range: step.rule_source_range,
+                            recovery: ClusterDiagnosticRecovery::Degraded,
+                        });
+                        continue;
+                    }
+                    if active_rule_fingerprint(active) != step.rule_fingerprint.as_str() {
+                        diagnostics.insert(ClusterDiagnosticDraft {
+                            registration: Some(step.applied_cluster),
+                            class: ClusterDiagnosticClass::ReplayFailure,
+                            severity: ClusterDiagnosticSeverity::Error,
+                            message_key: "checker.cluster_trace.replay_fingerprint_mismatch"
+                                .to_owned(),
+                            detail: Some(format!(
+                                "{} != {}",
+                                active_rule_fingerprint(active),
+                                step.rule_fingerprint.as_str()
+                            )),
+                            source_range: step.rule_source_range,
+                            recovery: ClusterDiagnosticRecovery::Degraded,
+                        });
+                        continue;
+                    }
+                    let expected_audit = cluster_audit_key_for(
+                        &step.source_type,
+                        &step.generated_attribute,
+                        &step.rule_fingerprint,
+                        active,
+                    );
+                    if expected_audit != step.audit_key {
+                        diagnostics.insert(ClusterDiagnosticDraft {
+                            registration: Some(step.applied_cluster),
+                            class: ClusterDiagnosticClass::ReplayFailure,
+                            severity: ClusterDiagnosticSeverity::Error,
+                            message_key: "checker.cluster_trace.replay_audit_key_mismatch"
+                                .to_owned(),
+                            detail: Some(format!(
+                                "{} != {}",
+                                expected_audit.as_str(),
+                                step.audit_key.as_str()
+                            )),
+                            source_range: step.rule_source_range,
+                            recovery: ClusterDiagnosticRecovery::Degraded,
+                        });
+                        continue;
+                    }
+                    if let Some(missing) = step
+                        .antecedents
+                        .iter()
+                        .find(|antecedent| !present.contains(*antecedent))
+                    {
+                        diagnostics.insert(ClusterDiagnosticDraft {
+                            registration: Some(step.applied_cluster),
+                            class: ClusterDiagnosticClass::ReplayFailure,
+                            severity: ClusterDiagnosticSeverity::Error,
+                            message_key: "checker.cluster_trace.replay_missing_antecedent"
+                                .to_owned(),
+                            detail: Some(missing.as_str().to_owned()),
+                            source_range: step.rule_source_range,
+                            recovery: ClusterDiagnosticRecovery::Degraded,
+                        });
+                        continue;
+                    }
+                    if !self.derived_facts.contains(&step.generated_fact) {
+                        diagnostics.insert(ClusterDiagnosticDraft {
+                            registration: Some(step.applied_cluster),
+                            class: ClusterDiagnosticClass::ReplayFailure,
+                            severity: ClusterDiagnosticSeverity::Error,
+                            message_key: "checker.cluster_trace.replay_missing_derived_fact"
+                                .to_owned(),
+                            detail: Some(step.generated_fact.as_str().to_owned()),
+                            source_range: step.rule_source_range,
+                            recovery: ClusterDiagnosticRecovery::Degraded,
+                        });
+                        continue;
+                    }
+                    let fact = ClusterFactDraft {
+                        fingerprint: step.generated_fact.clone(),
+                        source_type: step.source_type.clone(),
+                        attribute: step.generated_attribute.clone(),
+                        generated_type: step.generated_type.clone(),
+                        provenance: ClusterFactProvenance::TraceStep(step.id),
+                        source_range: step.rule_source_range,
+                    };
+                    facts.insert(fact);
+                    present.insert(step.generated_fact.clone());
+                }
+                ResolutionTraceStep::Reduction(step) => {
+                    if replay_reduction_step(database, step, &mut diagnostics) {
+                        replayed_reductions.push(step.id);
+                    }
+                }
             }
-            if active.resolver_registration() != step.resolver_registration {
-                diagnostics.insert(ClusterDiagnosticDraft {
-                    registration: Some(step.applied_cluster),
-                    class: ClusterDiagnosticClass::ReplayFailure,
-                    severity: ClusterDiagnosticSeverity::Error,
-                    message_key: "checker.cluster_trace.replay_resolver_mismatch".to_owned(),
-                    detail: Some(format!(
-                        "{} != {}",
-                        active.resolver_registration().index(),
-                        step.resolver_registration.index()
-                    )),
-                    source_range: step.rule_source_range,
-                    recovery: ClusterDiagnosticRecovery::Degraded,
-                });
-                continue;
-            }
-            if active_rule_fingerprint(active) != step.rule_fingerprint.as_str() {
-                diagnostics.insert(ClusterDiagnosticDraft {
-                    registration: Some(step.applied_cluster),
-                    class: ClusterDiagnosticClass::ReplayFailure,
-                    severity: ClusterDiagnosticSeverity::Error,
-                    message_key: "checker.cluster_trace.replay_fingerprint_mismatch".to_owned(),
-                    detail: Some(format!(
-                        "{} != {}",
-                        active_rule_fingerprint(active),
-                        step.rule_fingerprint.as_str()
-                    )),
-                    source_range: step.rule_source_range,
-                    recovery: ClusterDiagnosticRecovery::Degraded,
-                });
-                continue;
-            }
-            let expected_audit = cluster_audit_key_for(
-                &step.source_type,
-                &step.generated_attribute,
-                &step.rule_fingerprint,
-                active,
-            );
-            if expected_audit != step.audit_key {
-                diagnostics.insert(ClusterDiagnosticDraft {
-                    registration: Some(step.applied_cluster),
-                    class: ClusterDiagnosticClass::ReplayFailure,
-                    severity: ClusterDiagnosticSeverity::Error,
-                    message_key: "checker.cluster_trace.replay_audit_key_mismatch".to_owned(),
-                    detail: Some(format!(
-                        "{} != {}",
-                        expected_audit.as_str(),
-                        step.audit_key.as_str()
-                    )),
-                    source_range: step.rule_source_range,
-                    recovery: ClusterDiagnosticRecovery::Degraded,
-                });
-                continue;
-            }
-            if let Some(missing) = step
-                .antecedents
-                .iter()
-                .find(|antecedent| !present.contains(*antecedent))
-            {
-                diagnostics.insert(ClusterDiagnosticDraft {
-                    registration: Some(step.applied_cluster),
-                    class: ClusterDiagnosticClass::ReplayFailure,
-                    severity: ClusterDiagnosticSeverity::Error,
-                    message_key: "checker.cluster_trace.replay_missing_antecedent".to_owned(),
-                    detail: Some(missing.as_str().to_owned()),
-                    source_range: step.rule_source_range,
-                    recovery: ClusterDiagnosticRecovery::Degraded,
-                });
-                continue;
-            }
-            if !self.derived_facts.contains(&step.generated_fact) {
-                diagnostics.insert(ClusterDiagnosticDraft {
-                    registration: Some(step.applied_cluster),
-                    class: ClusterDiagnosticClass::ReplayFailure,
-                    severity: ClusterDiagnosticSeverity::Error,
-                    message_key: "checker.cluster_trace.replay_missing_derived_fact".to_owned(),
-                    detail: Some(step.generated_fact.as_str().to_owned()),
-                    source_range: step.rule_source_range,
-                    recovery: ClusterDiagnosticRecovery::Degraded,
-                });
-                continue;
-            }
-            let fact = ClusterFactDraft {
-                fingerprint: step.generated_fact.clone(),
-                source_type: step.source_type.clone(),
-                attribute: step.generated_attribute.clone(),
-                generated_type: step.generated_type.clone(),
-                provenance: ClusterFactProvenance::TraceStep(step.id),
-                source_range: step.rule_source_range,
-            };
-            facts.insert(fact);
-            present.insert(step.generated_fact.clone());
         }
 
         ClusterReplayReport {
@@ -545,6 +663,7 @@ impl ResolutionTrace {
                 ClusterReplayStatus::Invalid
             },
             replayed_facts: facts,
+            replayed_reductions,
             diagnostics,
         }
     }
@@ -554,6 +673,7 @@ impl ResolutionTrace {
 #[non_exhaustive]
 pub enum ResolutionTraceStep {
     Cluster(ClusterStep),
+    Reduction(ReductionStep),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -624,6 +744,97 @@ impl ClusterStep {
 
     pub const fn rule_source_range(&self) -> SourceRange {
         self.rule_source_range
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReductionStep {
+    id: ReductionStepId,
+    applied_reduction: ReductionFingerprint,
+    registration: CheckerRegistrationId,
+    resolver_registration: ResolverRegistrationId,
+    trigger: RegistrationTriggerKey,
+    rule_fqn: ReductionRuleFqn,
+    enclosing_term_before: ReductionTermFingerprint,
+    redex_path: ReductionRedexPath,
+    source_redex: ReductionTermFingerprint,
+    target_term: ReductionTermFingerprint,
+    substitution: Vec<ReductionBinding>,
+    required_guards: Vec<ReductionGuardRequirement>,
+    discharged_guards: Vec<ReductionGuardEvidenceRef>,
+    rule_view: ReductionRuleViewFingerprint,
+    selection_key: ReductionSelectionKey,
+    strategy_audit_key: ReductionStrategyAuditKey,
+    source_range: SourceRange,
+}
+
+impl ReductionStep {
+    pub const fn id(&self) -> ReductionStepId {
+        self.id
+    }
+
+    pub const fn applied_reduction(&self) -> &ReductionFingerprint {
+        &self.applied_reduction
+    }
+
+    pub const fn registration(&self) -> CheckerRegistrationId {
+        self.registration
+    }
+
+    pub const fn resolver_registration(&self) -> ResolverRegistrationId {
+        self.resolver_registration
+    }
+
+    pub const fn trigger(&self) -> &RegistrationTriggerKey {
+        &self.trigger
+    }
+
+    pub const fn rule_fqn(&self) -> &ReductionRuleFqn {
+        &self.rule_fqn
+    }
+
+    pub const fn enclosing_term_before(&self) -> &ReductionTermFingerprint {
+        &self.enclosing_term_before
+    }
+
+    pub const fn redex_path(&self) -> &ReductionRedexPath {
+        &self.redex_path
+    }
+
+    pub const fn source_redex(&self) -> &ReductionTermFingerprint {
+        &self.source_redex
+    }
+
+    pub const fn target_term(&self) -> &ReductionTermFingerprint {
+        &self.target_term
+    }
+
+    pub fn substitution(&self) -> &[ReductionBinding] {
+        &self.substitution
+    }
+
+    pub fn required_guards(&self) -> &[ReductionGuardRequirement] {
+        &self.required_guards
+    }
+
+    pub fn discharged_guards(&self) -> &[ReductionGuardEvidenceRef] {
+        &self.discharged_guards
+    }
+
+    pub const fn rule_view(&self) -> &ReductionRuleViewFingerprint {
+        &self.rule_view
+    }
+
+    pub const fn selection_key(&self) -> &ReductionSelectionKey {
+        &self.selection_key
+    }
+
+    pub const fn strategy_audit_key(&self) -> &ReductionStrategyAuditKey {
+        &self.strategy_audit_key
+    }
+
+    pub const fn source_range(&self) -> SourceRange {
+        self.source_range
     }
 }
 
@@ -703,6 +914,7 @@ impl ClusterTraversalProfile {
 pub struct ClusterReplayReport {
     status: ClusterReplayStatus,
     replayed_facts: ClusterFactTable,
+    replayed_reductions: Vec<ReductionStepId>,
     diagnostics: ClusterDiagnosticTable,
 }
 
@@ -713,6 +925,10 @@ impl ClusterReplayReport {
 
     pub const fn replayed_facts(&self) -> &ClusterFactTable {
         &self.replayed_facts
+    }
+
+    pub fn replayed_reductions(&self) -> &[ReductionStepId] {
+        &self.replayed_reductions
     }
 
     pub const fn diagnostics(&self) -> &ClusterDiagnosticTable {
@@ -821,11 +1037,193 @@ pub struct ClusterRuleDraft {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReductionInput {
+    registration: CheckerRegistrationId,
+    trigger: RegistrationTriggerKey,
+    applied_reduction: ReductionFingerprint,
+    rule_fqn: ReductionRuleFqn,
+    enclosing_term_before: ReductionTermFingerprint,
+    redex_path: ReductionRedexPath,
+    source_redex: ReductionTermFingerprint,
+    target_term: ReductionTermFingerprint,
+    substitution: Vec<ReductionBinding>,
+    required_guards: Vec<ReductionGuardRequirement>,
+    discharged_guards: Vec<ReductionGuardEvidenceRef>,
+    rule_view: ReductionRuleViewFingerprint,
+    selection_key: ReductionSelectionKey,
+    strategy_audit_key: ReductionStrategyAuditKey,
+    source_range: SourceRange,
+}
+
+impl ReductionInput {
+    pub fn new(draft: ReductionDraft) -> Self {
+        Self {
+            registration: draft.registration,
+            trigger: draft.trigger,
+            applied_reduction: draft.applied_reduction,
+            rule_fqn: draft.rule_fqn,
+            enclosing_term_before: draft.enclosing_term_before,
+            redex_path: draft.redex_path,
+            source_redex: draft.source_redex,
+            target_term: draft.target_term,
+            substitution: Vec::new(),
+            required_guards: Vec::new(),
+            discharged_guards: Vec::new(),
+            rule_view: draft.rule_view,
+            selection_key: draft.selection_key,
+            strategy_audit_key: draft.strategy_audit_key,
+            source_range: draft.source_range,
+        }
+    }
+
+    pub fn with_substitution(
+        mut self,
+        substitution: impl IntoIterator<Item = ReductionBinding>,
+    ) -> Self {
+        self.substitution = substitution.into_iter().collect();
+        self
+    }
+
+    pub fn with_required_guards(
+        mut self,
+        guards: impl IntoIterator<Item = ReductionGuardRequirement>,
+    ) -> Self {
+        self.required_guards = guards.into_iter().collect();
+        self.required_guards.sort();
+        self.required_guards.dedup();
+        self
+    }
+
+    pub fn with_discharged_guards(
+        mut self,
+        guards: impl IntoIterator<Item = ReductionGuardEvidenceRef>,
+    ) -> Self {
+        self.discharged_guards = guards.into_iter().collect();
+        self.discharged_guards.sort();
+        self.discharged_guards.dedup();
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReductionDraft {
+    pub registration: CheckerRegistrationId,
+    pub trigger: RegistrationTriggerKey,
+    pub applied_reduction: ReductionFingerprint,
+    pub rule_fqn: ReductionRuleFqn,
+    pub enclosing_term_before: ReductionTermFingerprint,
+    pub redex_path: ReductionRedexPath,
+    pub source_redex: ReductionTermFingerprint,
+    pub target_term: ReductionTermFingerprint,
+    pub rule_view: ReductionRuleViewFingerprint,
+    pub selection_key: ReductionSelectionKey,
+    pub strategy_audit_key: ReductionStrategyAuditKey,
+    pub source_range: SourceRange,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ReductionBinding {
+    variable: ReductionBindingKey,
+    replacement: ReductionTermFingerprint,
+}
+
+impl ReductionBinding {
+    pub fn new(
+        variable: impl Into<ReductionBindingKey>,
+        replacement: impl Into<ReductionTermFingerprint>,
+    ) -> Self {
+        Self {
+            variable: variable.into(),
+            replacement: replacement.into(),
+        }
+    }
+
+    pub const fn variable(&self) -> &ReductionBindingKey {
+        &self.variable
+    }
+
+    pub const fn replacement(&self) -> &ReductionTermFingerprint {
+        &self.replacement
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum ReductionGuardKind {
+    Type,
+    Attribute,
+    Such,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ReductionGuardRequirement {
+    kind: ReductionGuardKind,
+    guard: ReductionGuardKey,
+}
+
+impl ReductionGuardRequirement {
+    pub fn new(kind: ReductionGuardKind, guard: impl Into<ReductionGuardKey>) -> Self {
+        Self {
+            kind,
+            guard: guard.into(),
+        }
+    }
+
+    pub const fn kind(&self) -> ReductionGuardKind {
+        self.kind
+    }
+
+    pub const fn guard(&self) -> &ReductionGuardKey {
+        &self.guard
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ReductionGuardEvidenceRef {
+    kind: ReductionGuardKind,
+    guard: ReductionGuardKey,
+    evidence: ReductionGuardEvidenceKey,
+}
+
+impl ReductionGuardEvidenceRef {
+    pub fn new(
+        kind: ReductionGuardKind,
+        guard: impl Into<ReductionGuardKey>,
+        evidence: impl Into<ReductionGuardEvidenceKey>,
+    ) -> Self {
+        Self {
+            kind,
+            guard: guard.into(),
+            evidence: evidence.into(),
+        }
+    }
+
+    pub const fn kind(&self) -> ReductionGuardKind {
+        self.kind
+    }
+
+    pub const fn guard(&self) -> &ReductionGuardKey {
+        &self.guard
+    }
+
+    pub const fn evidence(&self) -> &ReductionGuardEvidenceKey {
+        &self.evidence
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct ValidClusterRule {
     input: ClusterRuleInput,
     active: ActivatedRegistration,
     rule_fingerprint: ClusterRuleFingerprint,
     audit_key: ClusterAuditKey,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ValidReductionInput {
+    input: ReductionInput,
+    active: ActivatedRegistration,
+    strategy_audit_key: ReductionStrategyAuditKey,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -1083,6 +1481,9 @@ pub enum ClusterDiagnosticClass {
     ClusterLoop,
     ClusterBoundExceeded,
     ClusterContradiction,
+    InvalidReductionSubstitution,
+    MissingGuardEvidence,
+    StrategyAuditMismatch,
     ReplayFailure,
 }
 
@@ -1122,6 +1523,127 @@ struct ClusterCandidateKey {
     registration: CheckerRegistrationId,
     rule_fingerprint: ClusterRuleFingerprint,
     generated_fact: ClusterFactFingerprint,
+}
+
+fn validate_reduction(
+    database: &RegistrationDatabase,
+    input: ReductionInput,
+    diagnostics: &mut ClusterDiagnosticTable,
+) -> Option<ValidReductionInput> {
+    let Some(active) = database.activated().get(input.registration).cloned() else {
+        diagnostics.insert(ClusterDiagnosticDraft {
+            registration: Some(input.registration),
+            class: ClusterDiagnosticClass::InvisibleRegistration,
+            severity: ClusterDiagnosticSeverity::Error,
+            message_key: "checker.cluster_trace.invisible_registration".to_owned(),
+            detail: None,
+            source_range: input.source_range,
+            recovery: ClusterDiagnosticRecovery::Degraded,
+        });
+        return None;
+    };
+
+    if active.kind() != ResolverRegistrationKind::Reduction {
+        diagnostics.insert(ClusterDiagnosticDraft {
+            registration: Some(input.registration),
+            class: ClusterDiagnosticClass::InvalidRulePayload,
+            severity: ClusterDiagnosticSeverity::Error,
+            message_key: "checker.cluster_trace.non_reduction_registration".to_owned(),
+            detail: Some(registration_kind_name(active.kind()).to_owned()),
+            source_range: input.source_range,
+            recovery: ClusterDiagnosticRecovery::Degraded,
+        });
+        return None;
+    }
+
+    if active.trigger().as_str() != input.trigger.as_str() {
+        diagnostics.insert(ClusterDiagnosticDraft {
+            registration: Some(input.registration),
+            class: ClusterDiagnosticClass::InvalidRulePayload,
+            severity: ClusterDiagnosticSeverity::Error,
+            message_key: "checker.cluster_trace.reduction_trigger_mismatch".to_owned(),
+            detail: Some(format!(
+                "{} != {}",
+                active.trigger().as_str(),
+                input.trigger.as_str()
+            )),
+            source_range: input.source_range,
+            recovery: ClusterDiagnosticRecovery::Degraded,
+        });
+        return None;
+    }
+
+    if active_rule_fingerprint(&active) != input.rule_view.as_str() {
+        diagnostics.insert(ClusterDiagnosticDraft {
+            registration: Some(input.registration),
+            class: ClusterDiagnosticClass::InvalidRulePayload,
+            severity: ClusterDiagnosticSeverity::Error,
+            message_key: "checker.cluster_trace.reduction_rule_view_mismatch".to_owned(),
+            detail: Some(format!(
+                "{} != {}",
+                active_rule_fingerprint(&active),
+                input.rule_view.as_str()
+            )),
+            source_range: input.source_range,
+            recovery: ClusterDiagnosticRecovery::Degraded,
+        });
+        return None;
+    }
+
+    if let Some(detail) = invalid_substitution_detail(&input.substitution) {
+        diagnostics.insert(ClusterDiagnosticDraft {
+            registration: Some(input.registration),
+            class: ClusterDiagnosticClass::InvalidReductionSubstitution,
+            severity: ClusterDiagnosticSeverity::Error,
+            message_key: "checker.cluster_trace.invalid_reduction_substitution".to_owned(),
+            detail: Some(detail),
+            source_range: input.source_range,
+            recovery: ClusterDiagnosticRecovery::Degraded,
+        });
+        return None;
+    }
+
+    if let Some(detail) = missing_guard_detail(&input.required_guards, &input.discharged_guards) {
+        diagnostics.insert(ClusterDiagnosticDraft {
+            registration: Some(input.registration),
+            class: ClusterDiagnosticClass::MissingGuardEvidence,
+            severity: ClusterDiagnosticSeverity::Error,
+            message_key: "checker.cluster_trace.missing_guard_evidence".to_owned(),
+            detail: Some(detail),
+            source_range: input.source_range,
+            recovery: ClusterDiagnosticRecovery::Degraded,
+        });
+        return None;
+    }
+
+    let expected_audit = reduction_strategy_audit_key_for(
+        &input.enclosing_term_before,
+        &input.redex_path,
+        &input.rule_view,
+        &input.selection_key,
+    );
+    if expected_audit != input.strategy_audit_key {
+        diagnostics.insert(ClusterDiagnosticDraft {
+            registration: Some(input.registration),
+            class: ClusterDiagnosticClass::StrategyAuditMismatch,
+            severity: ClusterDiagnosticSeverity::Error,
+            message_key: "checker.cluster_trace.strategy_audit_mismatch".to_owned(),
+            detail: Some(format!(
+                "{} != {}",
+                expected_audit.as_str(),
+                input.strategy_audit_key.as_str()
+            )),
+            source_range: input.source_range,
+            recovery: ClusterDiagnosticRecovery::Degraded,
+        });
+        return None;
+    }
+
+    Some(ValidReductionInput {
+        input,
+        active,
+        strategy_audit_key: expected_audit,
+    })
 }
 
 fn validate_rule(
@@ -1275,6 +1797,71 @@ fn cluster_candidate_key(rule: &ValidClusterRule) -> ClusterCandidateKey {
     }
 }
 
+fn invalid_substitution_detail(substitution: &[ReductionBinding]) -> Option<String> {
+    let mut seen = BTreeSet::new();
+    for binding in substitution {
+        if key_is_missing(binding.variable.as_str()) {
+            return Some("missing-variable".to_owned());
+        }
+        if key_is_missing(binding.replacement.as_str()) {
+            return Some(format!("missing-replacement:{}", binding.variable.as_str()));
+        }
+        if !seen.insert(binding.variable.clone()) {
+            return Some(format!("duplicate-variable:{}", binding.variable.as_str()));
+        }
+    }
+    None
+}
+
+fn missing_guard_detail(
+    required_guards: &[ReductionGuardRequirement],
+    discharged_guards: &[ReductionGuardEvidenceRef],
+) -> Option<String> {
+    for evidence in discharged_guards {
+        if key_is_missing(evidence.guard.as_str()) {
+            return Some("missing-guard-key".to_owned());
+        }
+        if key_is_missing(evidence.evidence.as_str()) {
+            return Some(format!("missing-evidence:{}", evidence.guard.as_str()));
+        }
+    }
+    for required in required_guards {
+        if key_is_missing(required.guard.as_str()) {
+            return Some("missing-required-guard-key".to_owned());
+        }
+        if !discharged_guards
+            .iter()
+            .any(|evidence| evidence.kind == required.kind && evidence.guard == required.guard)
+        {
+            return Some(format!(
+                "undischarged:{}:{}",
+                reduction_guard_kind_name(required.kind),
+                required.guard.as_str()
+            ));
+        }
+    }
+    None
+}
+
+fn reduction_strategy_audit_key_for(
+    enclosing_term_before: &ReductionTermFingerprint,
+    redex_path: &ReductionRedexPath,
+    rule_view: &ReductionRuleViewFingerprint,
+    selection_key: &ReductionSelectionKey,
+) -> ReductionStrategyAuditKey {
+    ReductionStrategyAuditKey::new(format!(
+        "enclosing={};redex_path={};rule_view={};selection={}",
+        enclosing_term_before.as_str(),
+        redex_path.as_str(),
+        rule_view.as_str(),
+        selection_key.as_str()
+    ))
+}
+
+fn key_is_missing(value: &str) -> bool {
+    value.trim().is_empty()
+}
+
 fn traversal_cache_key_material(config: &ClusterTraversalConfig) -> ClusterTraversalCacheKey {
     ClusterTraversalCacheKey::new(format!(
         "order=cluster-trace-order-v1;max_depth={};max_generated={}",
@@ -1320,6 +1907,116 @@ fn cluster_audit_key_for(
     ))
 }
 
+fn replay_reduction_step(
+    database: &RegistrationDatabase,
+    step: &ReductionStep,
+    diagnostics: &mut ClusterDiagnosticTable,
+) -> bool {
+    let Some(active) = database.activated().get(step.registration) else {
+        diagnostics.insert(ClusterDiagnosticDraft {
+            registration: Some(step.registration),
+            class: ClusterDiagnosticClass::ReplayFailure,
+            severity: ClusterDiagnosticSeverity::Error,
+            message_key: "checker.cluster_trace.replay_invisible_registration".to_owned(),
+            detail: None,
+            source_range: step.source_range,
+            recovery: ClusterDiagnosticRecovery::Degraded,
+        });
+        return false;
+    };
+    if active.kind() != ResolverRegistrationKind::Reduction {
+        diagnostics.insert(ClusterDiagnosticDraft {
+            registration: Some(step.registration),
+            class: ClusterDiagnosticClass::ReplayFailure,
+            severity: ClusterDiagnosticSeverity::Error,
+            message_key: "checker.cluster_trace.replay_non_reduction_registration".to_owned(),
+            detail: Some(registration_kind_name(active.kind()).to_owned()),
+            source_range: step.source_range,
+            recovery: ClusterDiagnosticRecovery::Degraded,
+        });
+        return false;
+    }
+    if active.resolver_registration() != step.resolver_registration {
+        diagnostics.insert(ClusterDiagnosticDraft {
+            registration: Some(step.registration),
+            class: ClusterDiagnosticClass::ReplayFailure,
+            severity: ClusterDiagnosticSeverity::Error,
+            message_key: "checker.cluster_trace.replay_resolver_mismatch".to_owned(),
+            detail: Some(format!(
+                "{} != {}",
+                active.resolver_registration().index(),
+                step.resolver_registration.index()
+            )),
+            source_range: step.source_range,
+            recovery: ClusterDiagnosticRecovery::Degraded,
+        });
+        return false;
+    }
+    if active_rule_fingerprint(active) != step.rule_view.as_str() {
+        diagnostics.insert(ClusterDiagnosticDraft {
+            registration: Some(step.registration),
+            class: ClusterDiagnosticClass::ReplayFailure,
+            severity: ClusterDiagnosticSeverity::Error,
+            message_key: "checker.cluster_trace.replay_rule_view_mismatch".to_owned(),
+            detail: Some(format!(
+                "{} != {}",
+                active_rule_fingerprint(active),
+                step.rule_view.as_str()
+            )),
+            source_range: step.source_range,
+            recovery: ClusterDiagnosticRecovery::Degraded,
+        });
+        return false;
+    }
+    if let Some(detail) = invalid_substitution_detail(&step.substitution) {
+        diagnostics.insert(ClusterDiagnosticDraft {
+            registration: Some(step.registration),
+            class: ClusterDiagnosticClass::ReplayFailure,
+            severity: ClusterDiagnosticSeverity::Error,
+            message_key: "checker.cluster_trace.replay_invalid_reduction_substitution".to_owned(),
+            detail: Some(detail),
+            source_range: step.source_range,
+            recovery: ClusterDiagnosticRecovery::Degraded,
+        });
+        return false;
+    }
+    if let Some(detail) = missing_guard_detail(&step.required_guards, &step.discharged_guards) {
+        diagnostics.insert(ClusterDiagnosticDraft {
+            registration: Some(step.registration),
+            class: ClusterDiagnosticClass::ReplayFailure,
+            severity: ClusterDiagnosticSeverity::Error,
+            message_key: "checker.cluster_trace.replay_missing_guard_evidence".to_owned(),
+            detail: Some(detail),
+            source_range: step.source_range,
+            recovery: ClusterDiagnosticRecovery::Degraded,
+        });
+        return false;
+    }
+    let expected_audit = reduction_strategy_audit_key_for(
+        &step.enclosing_term_before,
+        &step.redex_path,
+        &step.rule_view,
+        &step.selection_key,
+    );
+    if expected_audit != step.strategy_audit_key {
+        diagnostics.insert(ClusterDiagnosticDraft {
+            registration: Some(step.registration),
+            class: ClusterDiagnosticClass::ReplayFailure,
+            severity: ClusterDiagnosticSeverity::Error,
+            message_key: "checker.cluster_trace.replay_strategy_audit_mismatch".to_owned(),
+            detail: Some(format!(
+                "{} != {}",
+                expected_audit.as_str(),
+                step.strategy_audit_key.as_str()
+            )),
+            source_range: step.source_range,
+            recovery: ClusterDiagnosticRecovery::Degraded,
+        });
+        return false;
+    }
+    true
+}
+
 fn active_rule_fingerprint(active: &ActivatedRegistration) -> &str {
     active.fingerprint().map_or_else(
         || active.pattern().as_str(),
@@ -1345,7 +2042,10 @@ fn diagnostic_class_rank(class: ClusterDiagnosticClass) -> u8 {
         ClusterDiagnosticClass::ClusterLoop => 2,
         ClusterDiagnosticClass::ClusterBoundExceeded => 3,
         ClusterDiagnosticClass::ClusterContradiction => 4,
-        ClusterDiagnosticClass::ReplayFailure => 5,
+        ClusterDiagnosticClass::InvalidReductionSubstitution => 5,
+        ClusterDiagnosticClass::MissingGuardEvidence => 6,
+        ClusterDiagnosticClass::StrategyAuditMismatch => 7,
+        ClusterDiagnosticClass::ReplayFailure => 8,
     }
 }
 
@@ -1379,29 +2079,63 @@ fn write_trace(output: &mut String, trace: &ResolutionTrace) {
         output.push_str("    <none>\n");
     }
     for step in &trace.steps {
-        let ResolutionTraceStep::Cluster(step) = step;
-        let _ = write!(
-            output,
-            "    cluster#{} registration#{} resolver#{} kind={} source=\"",
-            step.id.index(),
-            step.applied_cluster.index(),
-            step.resolver_registration.index(),
-            cluster_rule_kind_name(step.rule_kind)
-        );
-        write_escaped(output, step.source_type.as_str());
-        output.push_str("\" antecedents=");
-        write_fact_fingerprints(output, &step.antecedents);
-        output.push_str(" generated=\"");
-        write_escaped(output, step.generated_fact.as_str());
-        output.push_str("\" attribute=\"");
-        write_escaped(output, step.generated_attribute.as_str());
-        output.push_str("\" type=\"");
-        write_escaped(output, step.generated_type.as_str());
-        output.push_str("\" fingerprint=\"");
-        write_escaped(output, step.rule_fingerprint.as_str());
-        output.push_str("\" audit=\"");
-        write_escaped(output, step.audit_key.as_str());
-        output.push_str("\"\n");
+        match step {
+            ResolutionTraceStep::Cluster(step) => {
+                let _ = write!(
+                    output,
+                    "    cluster#{} registration#{} resolver#{} kind={} source=\"",
+                    step.id.index(),
+                    step.applied_cluster.index(),
+                    step.resolver_registration.index(),
+                    cluster_rule_kind_name(step.rule_kind)
+                );
+                write_escaped(output, step.source_type.as_str());
+                output.push_str("\" antecedents=");
+                write_fact_fingerprints(output, &step.antecedents);
+                output.push_str(" generated=\"");
+                write_escaped(output, step.generated_fact.as_str());
+                output.push_str("\" attribute=\"");
+                write_escaped(output, step.generated_attribute.as_str());
+                output.push_str("\" type=\"");
+                write_escaped(output, step.generated_type.as_str());
+                output.push_str("\" fingerprint=\"");
+                write_escaped(output, step.rule_fingerprint.as_str());
+                output.push_str("\" audit=\"");
+                write_escaped(output, step.audit_key.as_str());
+                output.push_str("\"\n");
+            }
+            ResolutionTraceStep::Reduction(step) => {
+                let _ = write!(
+                    output,
+                    "    reduction#{} registration#{} resolver#{} applied=\"",
+                    step.id.index(),
+                    step.registration.index(),
+                    step.resolver_registration.index()
+                );
+                write_escaped(output, step.applied_reduction.as_str());
+                output.push_str("\" rule=\"");
+                write_escaped(output, step.rule_fqn.as_str());
+                output.push_str("\" enclosing=\"");
+                write_escaped(output, step.enclosing_term_before.as_str());
+                output.push_str("\" redex_path=\"");
+                write_escaped(output, step.redex_path.as_str());
+                output.push_str("\" source_redex=\"");
+                write_escaped(output, step.source_redex.as_str());
+                output.push_str("\" target=\"");
+                write_escaped(output, step.target_term.as_str());
+                output.push_str("\" substitution=");
+                write_reduction_bindings(output, &step.substitution);
+                output.push_str(" guards=");
+                write_guard_evidence(output, &step.discharged_guards);
+                output.push_str(" rule_view=\"");
+                write_escaped(output, step.rule_view.as_str());
+                output.push_str("\" selection=\"");
+                write_escaped(output, step.selection_key.as_str());
+                output.push_str("\" audit=\"");
+                write_escaped(output, step.strategy_audit_key.as_str());
+                output.push_str("\"\n");
+            }
+        }
     }
     write_facts(output, "  derived-facts", &trace.derived_facts);
 }
@@ -1490,6 +2224,38 @@ fn write_fact_fingerprints(output: &mut String, facts: &[ClusterFactFingerprint]
     output.push(']');
 }
 
+fn write_reduction_bindings(output: &mut String, bindings: &[ReductionBinding]) {
+    output.push('[');
+    for (index, binding) in bindings.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        output.push('"');
+        write_escaped(output, binding.variable.as_str());
+        output.push_str(":=");
+        write_escaped(output, binding.replacement.as_str());
+        output.push('"');
+    }
+    output.push(']');
+}
+
+fn write_guard_evidence(output: &mut String, guards: &[ReductionGuardEvidenceRef]) {
+    output.push('[');
+    for (index, guard) in guards.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        output.push('"');
+        output.push_str(reduction_guard_kind_name(guard.kind));
+        output.push(':');
+        write_escaped(output, guard.guard.as_str());
+        output.push('=');
+        write_escaped(output, guard.evidence.as_str());
+        output.push('"');
+    }
+    output.push(']');
+}
+
 fn write_fact_provenance(output: &mut String, provenance: &ClusterFactProvenance) {
     match provenance {
         ClusterFactProvenance::Input => output.push_str("input"),
@@ -1517,6 +2283,14 @@ fn cluster_rule_kind_name(kind: ClusterRuleKind) -> &'static str {
     }
 }
 
+fn reduction_guard_kind_name(kind: ReductionGuardKind) -> &'static str {
+    match kind {
+        ReductionGuardKind::Type => "type",
+        ReductionGuardKind::Attribute => "attribute",
+        ReductionGuardKind::Such => "such",
+    }
+}
+
 fn diagnostic_class_name(class: ClusterDiagnosticClass) -> &'static str {
     match class {
         ClusterDiagnosticClass::InvisibleRegistration => "invisible_registration",
@@ -1524,6 +2298,9 @@ fn diagnostic_class_name(class: ClusterDiagnosticClass) -> &'static str {
         ClusterDiagnosticClass::ClusterLoop => "cluster_loop",
         ClusterDiagnosticClass::ClusterBoundExceeded => "cluster_bound_exceeded",
         ClusterDiagnosticClass::ClusterContradiction => "cluster_contradiction",
+        ClusterDiagnosticClass::InvalidReductionSubstitution => "invalid_reduction_substitution",
+        ClusterDiagnosticClass::MissingGuardEvidence => "missing_guard_evidence",
+        ClusterDiagnosticClass::StrategyAuditMismatch => "strategy_audit_mismatch",
         ClusterDiagnosticClass::ReplayFailure => "replay_failure",
     }
 }
@@ -2187,6 +2964,257 @@ mod tests {
         );
     }
 
+    #[test]
+    fn reduction_steps_record_replayable_strategy_and_kernel_fields() {
+        let fixture = env_fixture();
+        let output = ReductionTraceBuilder::new().record(
+            &fixture.database,
+            fixture.source_id,
+            fixture.module.clone(),
+            [reduction(fixture.reduction, "trigger:R", 100)],
+        );
+
+        assert!(output.diagnostics().is_empty());
+        assert_eq!(output.trace().traversal_profile().reduction_step_count(), 1);
+        assert_eq!(output.trace().traversal_profile().cluster_step_count(), 0);
+        let [ResolutionTraceStep::Reduction(step)] = output.trace().steps() else {
+            panic!("expected one reduction step");
+        };
+        assert_eq!(output.trace().source_id(), fixture.source_id);
+        assert_eq!(output.trace().module_id(), &fixture.module);
+        assert_eq!(step.id(), ReductionStepId::new(0));
+        assert_eq!(step.registration(), fixture.reduction);
+        assert_eq!(
+            step.resolver_registration().index(),
+            fixture.reduction.index()
+        );
+        assert_eq!(step.rule_fqn().as_str(), "pkg::main::ReduceR");
+        assert_eq!(step.source_range(), range(source_id(), 100, 101));
+        assert_eq!(step.enclosing_term_before().as_str(), "term:before:R");
+        assert_eq!(step.redex_path().as_str(), "path:0.1");
+        assert_eq!(step.source_redex().as_str(), "term:redex:R");
+        assert_eq!(step.target_term().as_str(), "term:target:R");
+        assert_eq!(step.rule_view().as_str(), "fingerprint:R");
+        assert_eq!(step.selection_key().as_str(), "selection:R");
+        assert_eq!(
+            step.strategy_audit_key().as_str(),
+            "enclosing=term:before:R;redex_path=path:0.1;rule_view=fingerprint:R;selection=selection:R"
+        );
+        assert_eq!(
+            step.substitution(),
+            &[ReductionBinding::new("var:x", "term:x")]
+        );
+        assert_eq!(
+            step.discharged_guards(),
+            &[
+                ReductionGuardEvidenceRef::new(
+                    ReductionGuardKind::Type,
+                    "guard:type:T",
+                    "evidence:type:T",
+                ),
+                ReductionGuardEvidenceRef::new(
+                    ReductionGuardKind::Attribute,
+                    "guard:attr:A",
+                    "evidence:attr:A",
+                ),
+                ReductionGuardEvidenceRef::new(
+                    ReductionGuardKind::Such,
+                    "guard:such:P",
+                    "evidence:such:P",
+                ),
+            ]
+        );
+        assert_ordered_fragments(
+            &output.debug_text(),
+            &[
+                "reduction#0 registration#4",
+                "rule=\"pkg::main::ReduceR\"",
+                "redex_path=\"path:0.1\"",
+                "target=\"term:target:R\"",
+                "guards=[\"type:guard:type:T=evidence:type:T\", \"attribute:guard:attr:A=evidence:attr:A\", \"such:guard:such:P=evidence:such:P\"]",
+            ],
+        );
+
+        let replay = output
+            .trace()
+            .replay(&fixture.database, std::iter::empty::<ClusterFactInput>());
+        assert_eq!(replay.status(), ClusterReplayStatus::Valid);
+        assert_eq!(replay.replayed_reductions(), &[ReductionStepId::new(0)]);
+    }
+
+    #[test]
+    fn inactive_and_non_reduction_registrations_do_not_rewrite() {
+        let fixture = env_fixture();
+        let output = ReductionTraceBuilder::new().record(
+            &fixture.database,
+            fixture.source_id,
+            fixture.module.clone(),
+            [
+                reduction(fixture.pending_reduction, "trigger:pending-reduction", 110),
+                reduction(
+                    fixture.malformed_reduction,
+                    "trigger:malformed-reduction",
+                    111,
+                ),
+                reduction(fixture.cluster_a, "trigger:A", 112)
+                    .with_rule_view("fingerprint:A")
+                    .with_strategy_audit_key_for_view("fingerprint:A"),
+            ],
+        );
+
+        assert_eq!(output.trace().steps().len(), 0);
+        assert_messages(
+            output.diagnostics(),
+            &[
+                "checker.cluster_trace.non_reduction_registration",
+                "checker.cluster_trace.invisible_registration",
+                "checker.cluster_trace.invisible_registration",
+            ],
+        );
+    }
+
+    #[test]
+    fn rejected_and_recovered_reduction_activations_do_not_rewrite() {
+        let fixture = rejected_reduction_env_fixture();
+        let output = ReductionTraceBuilder::new().record(
+            &fixture.database,
+            fixture.source_id,
+            fixture.module.clone(),
+            [
+                reduction(fixture.missing_pattern, "trigger:missing-reduction", 113),
+                reduction(fixture.recovered, "trigger:recovered-reduction", 114),
+            ],
+        );
+
+        assert_eq!(output.trace().steps().len(), 0);
+        assert_messages(
+            output.diagnostics(),
+            &[
+                "checker.cluster_trace.invisible_registration",
+                "checker.cluster_trace.invisible_registration",
+            ],
+        );
+    }
+
+    #[test]
+    fn invalid_reduction_payloads_are_diagnosed_before_step_emission() {
+        let fixture = env_fixture();
+        let duplicate_substitution = ReductionTraceBuilder::new().record(
+            &fixture.database,
+            fixture.source_id,
+            fixture.module.clone(),
+            [
+                reduction(fixture.reduction, "trigger:R", 120).with_substitution([
+                    ReductionBinding::new("var:x", "term:x"),
+                    ReductionBinding::new("var:x", "term:y"),
+                ]),
+            ],
+        );
+        assert_eq!(duplicate_substitution.trace().steps().len(), 0);
+        assert_messages(
+            duplicate_substitution.diagnostics(),
+            &["checker.cluster_trace.invalid_reduction_substitution"],
+        );
+
+        let missing_guard = ReductionTraceBuilder::new().record(
+            &fixture.database,
+            fixture.source_id,
+            fixture.module.clone(),
+            [
+                reduction(fixture.reduction, "trigger:R", 121).with_discharged_guards([
+                    ReductionGuardEvidenceRef::new(
+                        ReductionGuardKind::Type,
+                        "guard:type:T",
+                        "evidence:type:T",
+                    ),
+                ]),
+            ],
+        );
+        assert_eq!(missing_guard.trace().steps().len(), 0);
+        assert_messages(
+            missing_guard.diagnostics(),
+            &["checker.cluster_trace.missing_guard_evidence"],
+        );
+
+        let missing_such_guard = ReductionTraceBuilder::new().record(
+            &fixture.database,
+            fixture.source_id,
+            fixture.module.clone(),
+            [
+                reduction(fixture.reduction, "trigger:R", 123).with_discharged_guards([
+                    ReductionGuardEvidenceRef::new(
+                        ReductionGuardKind::Type,
+                        "guard:type:T",
+                        "evidence:type:T",
+                    ),
+                    ReductionGuardEvidenceRef::new(
+                        ReductionGuardKind::Attribute,
+                        "guard:attr:A",
+                        "evidence:attr:A",
+                    ),
+                ]),
+            ],
+        );
+        assert_eq!(missing_such_guard.trace().steps().len(), 0);
+        assert_messages(
+            missing_such_guard.diagnostics(),
+            &["checker.cluster_trace.missing_guard_evidence"],
+        );
+
+        let audit_mismatch =
+            ReductionTraceBuilder::new().record(
+                &fixture.database,
+                fixture.source_id,
+                fixture.module.clone(),
+                [reduction(fixture.reduction, "trigger:R", 122)
+                    .with_strategy_audit_key("wrong:audit")],
+            );
+        assert_eq!(audit_mismatch.trace().steps().len(), 0);
+        assert_messages(
+            audit_mismatch.diagnostics(),
+            &["checker.cluster_trace.strategy_audit_mismatch"],
+        );
+    }
+
+    #[test]
+    fn such_guards_are_applicability_only_for_strategy_audit() {
+        let fixture = env_fixture();
+        let output = ReductionTraceBuilder::new().record(
+            &fixture.database,
+            fixture.source_id,
+            fixture.module.clone(),
+            [
+                reduction(fixture.reduction, "trigger:R", 130).with_discharged_guards([
+                    ReductionGuardEvidenceRef::new(
+                        ReductionGuardKind::Type,
+                        "guard:type:T",
+                        "evidence:type:T",
+                    ),
+                    ReductionGuardEvidenceRef::new(
+                        ReductionGuardKind::Attribute,
+                        "guard:attr:A",
+                        "evidence:attr:A",
+                    ),
+                    ReductionGuardEvidenceRef::new(
+                        ReductionGuardKind::Such,
+                        "guard:such:P",
+                        "evidence:such:alternate",
+                    ),
+                ]),
+            ],
+        );
+
+        assert!(output.diagnostics().is_empty());
+        let [ResolutionTraceStep::Reduction(step)] = output.trace().steps() else {
+            panic!("expected one reduction step");
+        };
+        assert_eq!(
+            step.strategy_audit_key().as_str(),
+            "enclosing=term:before:R;redex_path=path:0.1;rule_view=fingerprint:R;selection=selection:R"
+        );
+        assert!(!step.strategy_audit_key().as_str().contains("such"));
+    }
+
     struct EnvFixture {
         database: RegistrationDatabase,
         source_id: SourceId,
@@ -2196,6 +3224,8 @@ mod tests {
         pending_cluster: CheckerRegistrationId,
         malformed_cluster: CheckerRegistrationId,
         reduction: CheckerRegistrationId,
+        pending_reduction: CheckerRegistrationId,
+        malformed_reduction: CheckerRegistrationId,
     }
 
     struct RejectedEnvFixture {
@@ -2219,6 +3249,12 @@ mod tests {
         fn with_generated_attribute(self, attribute: &str) -> Self;
     }
 
+    trait ReductionInputTestExt {
+        fn with_rule_view(self, rule_view: &str) -> Self;
+        fn with_strategy_audit_key(self, audit_key: &str) -> Self;
+        fn with_strategy_audit_key_for_view(self, rule_view: &str) -> Self;
+    }
+
     impl RuleInputTestExt for ClusterRuleInput {
         fn with_kind(mut self, kind: ClusterRuleKind) -> Self {
             self.kind = kind;
@@ -2236,6 +3272,29 @@ mod tests {
         }
     }
 
+    impl ReductionInputTestExt for ReductionInput {
+        fn with_rule_view(mut self, rule_view: &str) -> Self {
+            self.rule_view = ReductionRuleViewFingerprint::new(rule_view);
+            self
+        }
+
+        fn with_strategy_audit_key(mut self, audit_key: &str) -> Self {
+            self.strategy_audit_key = ReductionStrategyAuditKey::new(audit_key);
+            self
+        }
+
+        fn with_strategy_audit_key_for_view(mut self, rule_view: &str) -> Self {
+            self.rule_view = ReductionRuleViewFingerprint::new(rule_view);
+            self.strategy_audit_key = reduction_strategy_audit_key_for(
+                &self.enclosing_term_before,
+                &self.redex_path,
+                &self.rule_view,
+                &self.selection_key,
+            );
+            self
+        }
+    }
+
     fn env_fixture() -> EnvFixture {
         env_fixture_with_activation_order(false)
     }
@@ -2249,6 +3308,10 @@ mod tests {
         let contribution_pending = contribution(&mut contributions, module.clone(), source_id, 2);
         let contribution_malformed = contribution(&mut contributions, module.clone(), source_id, 3);
         let contribution_reduction = contribution(&mut contributions, module.clone(), source_id, 4);
+        let contribution_pending_reduction =
+            contribution(&mut contributions, module.clone(), source_id, 5);
+        let contribution_malformed_reduction =
+            contribution(&mut contributions, module.clone(), source_id, 6);
 
         let mut registrations = RegistrationIndex::new();
         let cluster_a = insert_registration(
@@ -2313,11 +3376,39 @@ mod tests {
                 SignatureShell::Pending,
             ),
         );
+        let pending_reduction = insert_registration(
+            &mut registrations,
+            module.clone(),
+            source_id,
+            contribution_pending_reduction,
+            RegistrationSpec::new(
+                ResolverRegistrationKind::Reduction,
+                "PendingReduction",
+                5,
+                SignatureShell::Pending,
+            ),
+        );
+        let malformed_reduction = insert_registration(
+            &mut registrations,
+            module.clone(),
+            source_id,
+            contribution_malformed_reduction,
+            RegistrationSpec::new(
+                ResolverRegistrationKind::Reduction,
+                "MalformedReduction",
+                6,
+                SignatureShell::Malformed {
+                    class: "recovered-target".to_owned(),
+                },
+            ),
+        );
         contributions.add_registration(contribution_a, cluster_a);
         contributions.add_registration(contribution_b, cluster_b);
         contributions.add_registration(contribution_pending, pending_cluster);
         contributions.add_registration(contribution_malformed, malformed_cluster);
         contributions.add_registration(contribution_reduction, reduction);
+        contributions.add_registration(contribution_pending_reduction, pending_reduction);
+        contributions.add_registration(contribution_malformed_reduction, malformed_reduction);
 
         let indexes = SymbolEnvIndexes {
             registrations,
@@ -2359,6 +3450,8 @@ mod tests {
             pending_cluster: CheckerRegistrationId::new(pending_cluster.index()),
             malformed_cluster: CheckerRegistrationId::new(malformed_cluster.index()),
             reduction: CheckerRegistrationId::new(reduction.index()),
+            pending_reduction: CheckerRegistrationId::new(pending_reduction.index()),
+            malformed_reduction: CheckerRegistrationId::new(malformed_reduction.index()),
         }
     }
 
@@ -2426,6 +3519,83 @@ mod tests {
                     "pattern:recovered",
                     "correctness:recovered",
                     "evidence:recovered",
+                ),
+            ],
+        );
+
+        RejectedEnvFixture {
+            database,
+            source_id,
+            module,
+            missing_pattern: CheckerRegistrationId::new(missing_pattern.index()),
+            recovered: CheckerRegistrationId::new(recovered.index()),
+        }
+    }
+
+    fn rejected_reduction_env_fixture() -> RejectedEnvFixture {
+        let source_id = source_id();
+        let module = module_id();
+        let mut contributions = SourceContributionIndex::new();
+        let contribution_missing = contribution(&mut contributions, module.clone(), source_id, 0);
+        let contribution_recovered = contribution(&mut contributions, module.clone(), source_id, 1);
+
+        let mut registrations = RegistrationIndex::new();
+        let missing_pattern = insert_registration(
+            &mut registrations,
+            module.clone(),
+            source_id,
+            contribution_missing,
+            RegistrationSpec::new(
+                ResolverRegistrationKind::Reduction,
+                "MissingPatternReduction",
+                0,
+                SignatureShell::Pending,
+            ),
+        );
+        let recovered = registrations.insert(
+            Some(symbol_id(
+                module.clone(),
+                "RecoveredReduction",
+                "pkg::main::RecoveredReduction",
+            )),
+            ResolverRegistrationKind::Reduction,
+            SignatureShell::Pending,
+            SemanticOrigin::new(
+                source_id,
+                module.clone(),
+                SourceAnchor::Range(range(source_id, 1, 2)),
+                vec![1],
+            )
+            .recovered(),
+            contribution_recovered,
+        );
+        contributions.add_registration(contribution_missing, missing_pattern);
+        contributions.add_registration(contribution_recovered, recovered);
+
+        let indexes = SymbolEnvIndexes {
+            registrations,
+            contributions,
+            ..SymbolEnvIndexes::default()
+        };
+        let env = SymbolEnv::new(module.clone(), indexes);
+        let database = RegistrationDatabase::from_symbol_env(
+            &env,
+            [
+                ActivationInput::new(
+                    missing_pattern,
+                    ResolverRegistrationKind::Reduction,
+                    "trigger:missing-reduction",
+                    " ",
+                    "correctness:missing-reduction",
+                    "evidence:missing-reduction",
+                ),
+                ActivationInput::new(
+                    recovered,
+                    ResolverRegistrationKind::Reduction,
+                    "trigger:recovered-reduction",
+                    "pattern:recovered-reduction",
+                    "correctness:recovered-reduction",
+                    "evidence:recovered-reduction",
                 ),
             ],
         );
@@ -2639,6 +3809,62 @@ mod tests {
         .with_antecedents(vec![ClusterFactFingerprint::new(antecedent)])
     }
 
+    fn reduction(
+        registration: CheckerRegistrationId,
+        trigger: &str,
+        start: usize,
+    ) -> ReductionInput {
+        let suffix = trigger.trim_start_matches("trigger:");
+        let rule_view = match trigger {
+            "trigger:R" => "fingerprint:R",
+            "trigger:A" => "fingerprint:A",
+            _ => "fingerprint:unknown",
+        };
+        let enclosing = ReductionTermFingerprint::new(format!("term:before:{suffix}"));
+        let redex_path = ReductionRedexPath::new("path:0.1");
+        let rule_view = ReductionRuleViewFingerprint::new(rule_view);
+        let selection_key = ReductionSelectionKey::new(format!("selection:{suffix}"));
+        let strategy_audit_key =
+            reduction_strategy_audit_key_for(&enclosing, &redex_path, &rule_view, &selection_key);
+        ReductionInput::new(ReductionDraft {
+            registration,
+            trigger: RegistrationTriggerKey::new(trigger),
+            applied_reduction: ReductionFingerprint::new(format!("reduction:{suffix}")),
+            rule_fqn: ReductionRuleFqn::new(format!("pkg::main::Reduce{suffix}")),
+            enclosing_term_before: enclosing,
+            redex_path,
+            source_redex: ReductionTermFingerprint::new(format!("term:redex:{suffix}")),
+            target_term: ReductionTermFingerprint::new(format!("term:target:{suffix}")),
+            rule_view,
+            selection_key,
+            strategy_audit_key,
+            source_range: range(source_id(), start, start + 1),
+        })
+        .with_substitution([ReductionBinding::new("var:x", "term:x")])
+        .with_required_guards([
+            ReductionGuardRequirement::new(ReductionGuardKind::Type, "guard:type:T"),
+            ReductionGuardRequirement::new(ReductionGuardKind::Attribute, "guard:attr:A"),
+            ReductionGuardRequirement::new(ReductionGuardKind::Such, "guard:such:P"),
+        ])
+        .with_discharged_guards([
+            ReductionGuardEvidenceRef::new(
+                ReductionGuardKind::Type,
+                "guard:type:T",
+                "evidence:type:T",
+            ),
+            ReductionGuardEvidenceRef::new(
+                ReductionGuardKind::Attribute,
+                "guard:attr:A",
+                "evidence:attr:A",
+            ),
+            ReductionGuardEvidenceRef::new(
+                ReductionGuardKind::Such,
+                "guard:such:P",
+                "evidence:such:P",
+            ),
+        ])
+    }
+
     fn fact_fingerprints(facts: &ClusterFactTable) -> Vec<&str> {
         facts
             .canonical_iter()
@@ -2650,9 +3876,12 @@ mod tests {
         trace
             .steps()
             .iter()
-            .map(|step| {
-                let ResolutionTraceStep::Cluster(step) = step;
-                step.generated_fact().as_str()
+            .filter_map(|step| {
+                if let ResolutionTraceStep::Cluster(step) = step {
+                    Some(step.generated_fact().as_str())
+                } else {
+                    None
+                }
             })
             .collect()
     }

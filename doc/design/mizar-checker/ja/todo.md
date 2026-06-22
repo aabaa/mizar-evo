@@ -309,7 +309,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       source-derived `TypeFactTable` contradiction check と artifact/cache integration は
       deferred のまま。
 
-18. **reduction の適用。** [ ]
+18. **reduction の適用。** [x]
     - reduction 書き換え（redex パス、置換、ガード証拠）を、完全な来歴を
       `ResolutionTrace` に記録しつつ実装する。
     - テスト: redex パスの正しさ。ガード証拠の必須化。source redex、
@@ -320,6 +320,12 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       trace。
     - 依存: 16。仕様: `registration_resolution.md`（reduction の節）、
       アーキテクチャ 17「Reduction Step」。
+    - task 18 で完了: `ReductionTraceBuilder` は explicit payload 上で replayable
+      reduction step を記録し、architecture-17 provenance field を保持し、active reduction
+      registration、rule-view fingerprint、substitution、guard evidence、strategy-audit
+      key を検証し、`such` guard を applicability-only evidence として扱う。raw syntax
+      matching、resolver-shell parsing、artifact/cache integration、source-derived
+      reduction extraction は deferred のまま。
 
 19. **pending registration の検証と活性化ゲート。** [ ]
     - pending registration 宣言を検証し（アーキテクチャ 04 Step 6）、その
