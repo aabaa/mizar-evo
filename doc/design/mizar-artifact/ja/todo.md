@@ -102,7 +102,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
      影響しない。
    - 依存: 2。仕様: `store.md`。
 
-4. **仕様: `module_summary.md`。** [ ]
+4. **仕様: `module_summary.md`。** [x]
    - `ModuleSummary` スキーマの仕様を執筆する（英語と日本語、コード
      なし）: アーキテクチャ 03「Module Summary」に従う export 済み
      インターフェース射影。`interface_hash` でキー付けされ

@@ -102,7 +102,7 @@ Keep `cargo test -p mizar-artifact` green after each task (see
      mismatch detection; excluded fields do not affect hashes.
    - Deps: 2. Spec: `store.md`.
 
-4. **Spec: `module_summary.md`.** [ ]
+4. **Spec: `module_summary.md`.** [x]
    - Write the `ModuleSummary` schema spec (English and Japanese, no code):
      exported interface projection per architecture 03 "Module Summary",
      keyed by `interface_hash` (architecture 18), excluding bodies and
