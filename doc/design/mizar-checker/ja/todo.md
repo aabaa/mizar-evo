@@ -21,7 +21,7 @@
 | binding_env | `binding_env.md`（task 4） | `src/binding_env.rs` | [x] |
 | type_checker | `type_checker.md`（task 6） | `src/type_checker.rs` | [~] |
 | registration_resolution | `registration_resolution.md`（task 13） | `src/registration_resolution.rs` | [~] |
-| cluster_trace | `cluster_trace.md`（task 15） | `src/cluster_trace.rs` | [ ] |
+| cluster_trace | `cluster_trace.md`（task 15） | `src/cluster_trace.rs` | [~] |
 | overload_resolution | `overload_resolution.md`（task 21） | `src/overload_resolution.rs` | [ ] |
 | resolved_typed_ast | `resolved_typed_ast.md`（task 27） | `src/resolved_typed_ast.rs` | [ ] |
 
@@ -270,12 +270,17 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       deterministic diagnostic/debug output に残り、MC-G021 semantic payload gap は
       deferred のまま。
 
-15. **仕様: `cluster_trace.md`。** [ ]
+15. **仕様: `cluster_trace.md`。** [x]
     - 正準スキーマの精緻化として `ResolutionTrace` の仕様を執筆する
       （英語と日本語、コードなし）: cluster step、reduction step、前件
       事実、監査キー、決定的トラバーサル、再生コスト上限。
     - 依存: 13。仕様:
       [17.cluster_trace_format.md](../../architecture/ja/17.cluster_trace_format.md)。
+    - task 15 で完了: `cluster_trace.md` は architecture 17 の正準 schema を
+      fork せず精緻化し、checker-local な cluster / reduction step ownership、
+      antecedent fact reference、audit key、deterministic traversal、replay-cost bound、
+      diagnostic、tasks 16-18 の planned test を固定する。source behavior は task 16
+      まで deferred のままで、real semantic payload は MC-G021 によって gate される。
 
 16. **trace 記録付き cluster 解決閉包。** [ ]
     - 決定的トラバーサルで attribute 伝播の閉包を実装し（アーキテクチャ 04

@@ -22,7 +22,7 @@ architecture 04, 05, 16, 17, 18, and 19.
 | binding_env | `binding_env.md` (task 4) | `src/binding_env.rs` | [x] |
 | type_checker | `type_checker.md` (task 6) | `src/type_checker.rs` | [~] |
 | registration_resolution | `registration_resolution.md` (task 13) | `src/registration_resolution.rs` | [~] |
-| cluster_trace | `cluster_trace.md` (task 15) | `src/cluster_trace.rs` | [ ] |
+| cluster_trace | `cluster_trace.md` (task 15) | `src/cluster_trace.rs` | [~] |
 | overload_resolution | `overload_resolution.md` (task 21) | `src/overload_resolution.rs` | [ ] |
 | resolved_typed_ast | `resolved_typed_ast.md` (task 27) | `src/resolved_typed_ast.rs` | [ ] |
 
@@ -280,13 +280,19 @@ Keep `cargo test -p mizar-checker` green after each task (see
       renders deterministic checker-owned ordering without parsing opaque
       resolver shells.
 
-15. **Spec: `cluster_trace.md`.** [ ]
+15. **Spec: `cluster_trace.md`.** [x]
     - Write the `ResolutionTrace` spec (English and Japanese, no code) as a
       refinement of the canonical schema: cluster steps, reduction steps,
       antecedent facts, audit keys, deterministic traversal, and replay cost
       bounds.
     - Deps: 13. Spec:
       [17.cluster_trace_format.md](../../architecture/en/17.cluster_trace_format.md).
+    - Completed by task 15: `cluster_trace.md` refines the canonical
+      architecture-17 schema without forking it, fixes checker-local
+      cluster/reduction step ownership, antecedent fact references, audit
+      keys, deterministic traversal, replay-cost bounds, diagnostics, and
+      planned tests for tasks 16-18. Source behavior remains deferred to task
+      16, and real semantic payloads remain gated by MC-G021.
 
 16. **Cluster resolution closure with trace recording.** [ ]
     - Implement attribute propagation to closure (architecture 04 Step 5)
