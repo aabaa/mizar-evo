@@ -548,10 +548,14 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       `tests/lint_policy.rs` はその inventory と gap reconciliation を guard する。
       この audit task では source/API behavior、`.miz` fixture、expectation を変更していない。
 
-33. **二言語ドキュメント同期監査。** [ ]
+33. **二言語ドキュメント同期監査。** [x]
     - `doc/design/mizar-checker/en/` の各英語正本と日本語版を比較し、
       内容を同期する。
     - 依存: 32。仕様: リポジトリのドキュメント方針。
+    - task 33 で完了: [bilingual_sync_audit.md](./bilingual_sync_audit.md) は
+      現在の英日 checker design document pair をすべて inventory し、companion
+      link と comparison basis を記録し、各 pair の sync debt を `none` と記録する。
+      `tests/lint_policy.rs` は今後の pair inventory drift を guard する。
 
 34. **module 境界リファクタリング gate。** [ ]
     - crate を下流 consumer 向けに完了扱いにする前に、source layout を監査し、

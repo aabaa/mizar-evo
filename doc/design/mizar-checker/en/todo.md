@@ -579,11 +579,16 @@ Keep `cargo test -p mizar-checker` green after each task (see
       source/API behavior, `.miz` fixture, or expectation changed in this audit
       task.
 
-33. **Bilingual documentation sync audit.** [ ]
+33. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under
       `doc/design/mizar-checker/en/` with its Japanese companion and
       synchronize content.
     - Deps: 32. Spec: repository documentation policy.
+    - Completed by task 33: [bilingual_sync_audit.md](./bilingual_sync_audit.md)
+      inventories every current English/Japanese checker design document pair,
+      records companion links and comparison basis, records `none` sync debt
+      for each pair, and `tests/lint_policy.rs` guards future pair inventory
+      drift.
 
 34. **Module-boundary refactor gate.** [ ]
     - Before treating the crate as ready for downstream consumers, audit the

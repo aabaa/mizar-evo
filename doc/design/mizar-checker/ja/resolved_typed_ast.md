@@ -1,5 +1,8 @@
 # Resolved Typed AST
 
+> 正本は英語です。英語版:
+> [../en/resolved_typed_ast.md](../en/resolved_typed_ast.md)。
+
 ## 目的
 
 `ResolvedTypedAst` は、elaboration の前に置かれる最終の checker-owned な

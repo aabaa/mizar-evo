@@ -423,6 +423,108 @@ fn checker_source_spec_audit_covers_public_surface_and_gaps() {
 }
 
 #[test]
+fn checker_bilingual_sync_audit_covers_design_doc_pairs() {
+    let docs_root = workspace_root().join("doc/design/mizar-checker");
+    let en_dir = docs_root.join("en");
+    let ja_dir = docs_root.join("ja");
+    let expected_pairs = markdown_file_names(&en_dir);
+    let ja_pairs = markdown_file_names(&ja_dir);
+    let mut violations = Vec::new();
+
+    if !expected_pairs.contains("bilingual_sync_audit.md") {
+        violations.push(format!(
+            "{}: task 33 audit must include its own English document",
+            en_dir.display()
+        ));
+    }
+    for missing in expected_pairs.difference(&ja_pairs) {
+        violations.push(format!(
+            "{}: missing Japanese companion for `{missing}`",
+            ja_dir.display()
+        ));
+    }
+    for stale in ja_pairs.difference(&expected_pairs) {
+        violations.push(format!(
+            "{}: stale Japanese companion `{stale}` has no English canonical file",
+            ja_dir.display()
+        ));
+    }
+
+    for audit_path in [
+        docs_root.join("en/bilingual_sync_audit.md"),
+        docs_root.join("ja/bilingual_sync_audit.md"),
+    ] {
+        let audit = read_to_string(&audit_path);
+        let rows = bilingual_pair_audit_rows(&audit_path, &audit, &mut violations);
+        push_bilingual_pair_inventory_drift(&audit_path, &expected_pairs, &rows, &mut violations);
+
+        for row in &rows {
+            let expected_en_companion = format!("../ja/{}", row.pair);
+            let expected_ja_companion = format!("../en/{}", row.pair);
+            if row.en_companion != expected_en_companion {
+                violations.push(format!(
+                    "{}: Pair Inventory row `{}` must use EN companion `{}`",
+                    audit_path.display(),
+                    row.pair,
+                    expected_en_companion
+                ));
+            }
+            if row.ja_companion != expected_ja_companion {
+                violations.push(format!(
+                    "{}: Pair Inventory row `{}` must use JA companion `{}`",
+                    audit_path.display(),
+                    row.pair,
+                    expected_ja_companion
+                ));
+            }
+            if row.comparison_basis.trim().is_empty() {
+                violations.push(format!(
+                    "{}: Pair Inventory row `{}` must record a comparison basis",
+                    audit_path.display(),
+                    row.pair
+                ));
+            }
+            if row.sync_debt != "none" {
+                violations.push(format!(
+                    "{}: Pair Inventory row `{}` must not defer bilingual sync debt: {}",
+                    audit_path.display(),
+                    row.pair,
+                    row.sync_debt
+                ));
+            }
+        }
+    }
+
+    for pair in &expected_pairs {
+        let en_path = en_dir.join(pair);
+        let ja_path = ja_dir.join(pair);
+        let en_doc = read_to_string(&en_path);
+        let ja_doc = read_to_string(&ja_path);
+        let en_link = format!("../ja/{pair}");
+        let ja_link = format!("../en/{pair}");
+
+        if !en_doc.contains(&en_link) {
+            violations.push(format!(
+                "{}: English canonical document must link to `{en_link}`",
+                en_path.display()
+            ));
+        }
+        if !ja_doc.contains(&ja_link) {
+            violations.push(format!(
+                "{}: Japanese companion must link to `{ja_link}`",
+                ja_path.display()
+            ));
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "checker bilingual documentation sync audit drift:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
 fn workspace_lint_baseline_denies_rustc_warnings_and_clippy_all() {
     let manifest_path = workspace_root().join("Cargo.toml");
     let manifest = read_to_string(&manifest_path);
@@ -826,6 +928,169 @@ fn push_gap_reconciliation_drift(
     for extra in actual_set.difference(expected) {
         violations.push(format!(
             "{}: Gap Reconciliation must not include stale {extra}",
+            path.display()
+        ));
+    }
+}
+
+fn markdown_file_names(dir: &Path) -> BTreeSet<String> {
+    let entries = fs::read_dir(dir).unwrap_or_else(|error| panic!("{}: {error}", dir.display()));
+    let mut names = BTreeSet::new();
+
+    for entry in entries {
+        let entry = entry.unwrap_or_else(|error| panic!("{}: {error}", dir.display()));
+        let path = entry.path();
+        if path.extension().and_then(|extension| extension.to_str()) != Some("md") {
+            continue;
+        }
+        let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+            continue;
+        };
+        names.insert(name.to_owned());
+    }
+
+    names
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct BilingualPairAuditRow {
+    pair: String,
+    en_companion: String,
+    ja_companion: String,
+    comparison_basis: String,
+    sync_debt: String,
+}
+
+fn bilingual_pair_audit_rows(
+    path: &Path,
+    document: &str,
+    violations: &mut Vec<String>,
+) -> Vec<BilingualPairAuditRow> {
+    let Some(section) = markdown_heading_section(document, "## Pair Inventory") else {
+        violations.push(format!(
+            "{}: bilingual sync audit must contain `## Pair Inventory`",
+            path.display()
+        ));
+        return Vec::new();
+    };
+    let mut rows = Vec::new();
+    let mut saw_header = false;
+    let mut saw_delimiter = false;
+
+    for line in section.lines() {
+        let Some(cells) = markdown_table_cells(line) else {
+            continue;
+        };
+        if cells
+            == [
+                "Pair",
+                "EN companion",
+                "JA companion",
+                "Comparison basis",
+                "Sync debt",
+            ]
+        {
+            saw_header = true;
+            continue;
+        }
+        if cells == ["---", "---", "---", "---", "---"] {
+            saw_delimiter = true;
+            continue;
+        }
+        if cells.len() != 5 {
+            violations.push(format!(
+                "{}: Pair Inventory row must have exactly 5 columns: {}",
+                path.display(),
+                line.trim()
+            ));
+            continue;
+        }
+        let Some(pair) = single_code_span(&cells[0]) else {
+            violations.push(format!(
+                "{}: Pair Inventory first column must be a code-spanned filename: {}",
+                path.display(),
+                line.trim()
+            ));
+            continue;
+        };
+        let Some(en_companion) = single_code_span(&cells[1]) else {
+            violations.push(format!(
+                "{}: Pair Inventory EN companion must be code-spanned for `{pair}`",
+                path.display()
+            ));
+            continue;
+        };
+        let Some(ja_companion) = single_code_span(&cells[2]) else {
+            violations.push(format!(
+                "{}: Pair Inventory JA companion must be code-spanned for `{pair}`",
+                path.display()
+            ));
+            continue;
+        };
+        rows.push(BilingualPairAuditRow {
+            pair,
+            en_companion,
+            ja_companion,
+            comparison_basis: cells[3].clone(),
+            sync_debt: cells[4].clone(),
+        });
+    }
+
+    if !saw_header {
+        violations.push(format!(
+            "{}: Pair Inventory must use exact header `| Pair | EN companion | JA companion | Comparison basis | Sync debt |`",
+            path.display()
+        ));
+    }
+    if !saw_delimiter {
+        violations.push(format!(
+            "{}: Pair Inventory must use exact delimiter `|---|---|---|---|---|`",
+            path.display()
+        ));
+    }
+
+    rows
+}
+
+fn markdown_table_cells(line: &str) -> Option<Vec<String>> {
+    let trimmed = line.trim();
+    if !trimmed.starts_with('|') || !trimmed.ends_with('|') {
+        return None;
+    }
+
+    Some(
+        trimmed
+            .trim_matches('|')
+            .split('|')
+            .map(str::trim)
+            .map(str::to_owned)
+            .collect(),
+    )
+}
+
+fn single_code_span(cell: &str) -> Option<String> {
+    cell.strip_prefix('`')?.strip_suffix('`').map(str::to_owned)
+}
+
+fn push_bilingual_pair_inventory_drift(
+    path: &Path,
+    expected: &BTreeSet<String>,
+    rows: &[BilingualPairAuditRow],
+    violations: &mut Vec<String>,
+) {
+    let actual = rows.iter().map(|row| row.pair.clone()).collect::<Vec<_>>();
+    let actual_set = actual.iter().cloned().collect::<BTreeSet<_>>();
+    push_duplicate_entries(path, "Pair Inventory rows", &actual, violations);
+
+    for missing in expected.difference(&actual_set) {
+        violations.push(format!(
+            "{}: Pair Inventory must include `{missing}`",
+            path.display()
+        ));
+    }
+    for stale in actual_set.difference(expected) {
+        violations.push(format!(
+            "{}: Pair Inventory must not include stale `{stale}`",
             path.display()
         ));
     }

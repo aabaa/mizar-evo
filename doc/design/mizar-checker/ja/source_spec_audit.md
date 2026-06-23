@@ -341,7 +341,7 @@ literal top-level public item:
 
 | 根拠 | coverage |
 |---|---|
-| `crates/mizar-checker/tests/lint_policy.rs` | workspace lint opt-in、dependency boundary、no direct syntax import、documented public module、explicit overload/resolved-AST boundary guard、public enum forward-compatibility policy、source/spec audit の public-surface と MC-G reconciliation guard、documented `allow` exception。 |
+| `crates/mizar-checker/tests/lint_policy.rs` | workspace lint opt-in、dependency boundary、no direct syntax import、documented public module、explicit overload/resolved-AST boundary guard、public enum forward-compatibility policy、source/spec audit の public-surface と MC-G reconciliation guard、bilingual documentation sync の pair-inventory / companion-link guard、documented `allow` exception。 |
 | `crates/mizar-checker/src/determinism_suite.rs` | type normalization、fact query、cluster closure、overload pipeline、final `ResolvedTypedAst` projection の cross-module deterministic rerun と equivalent-order permutation。 |
 | 各 source module の unit tests | 実装済み checker seam に対する task-local behavior tests。source-to-checker extraction と後続 semantic corpus runner が存在するまで、これが active executable coverage。 |
 | `tests/coverage/spec_trace.toml` deferred rows | formula/statement、cluster/reduction、overload/refinement、review-audit semantic corpus obligation を active fixture と偽らずに記録する。 |
@@ -394,5 +394,6 @@ MC-G013、MC-G015、MC-G022、MC-G024、MC-G028、MC-G029 は task commit を持
 
 task 32 は、この English audit と Japanese companion、crate plan / todo update、
 lint-policy audit guard が同じ commit に含まれた時点で完了する。この audit は
-crate completion を主張しない。final crate exit report の前に、task 33 の
-bilingual synchronization と task 34 の module-boundary refactor gate review がまだ必要である。
+crate completion を主張しない。task 33 は bilingual synchronization audit をすでに
+記録しており、final crate exit report の前には task 34 の module-boundary refactor
+gate review がまだ必要である。

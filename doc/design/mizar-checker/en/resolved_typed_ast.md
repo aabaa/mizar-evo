@@ -1,5 +1,8 @@
 # Resolved Typed AST
 
+> Canonical language: English. Japanese companion:
+> [../ja/resolved_typed_ast.md](../ja/resolved_typed_ast.md).
+
 ## Purpose
 
 `ResolvedTypedAst` is the final checker-owned, source-shaped semantic AST
