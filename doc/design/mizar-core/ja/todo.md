@@ -19,7 +19,7 @@
 |---|---|---|---|
 | core_ir | `core_ir.md`（task 2） | `src/core_ir.rs` | [x] |
 | binder_normalization | `binder_normalization.md`（task 4） | `src/binder_normalization.rs` | [x] |
-| elaborator | `elaborator.md`（task 7） | `src/elaborator.rs` | [ ] |
+| elaborator | `elaborator.md`（task 7） | `src/elaborator.rs` | [~] |
 | control_flow | `control_flow.md`（task 14） | `src/control_flow.rs` | [ ] |
 
 `mizar-core` はパイプライン phase 9（elaboration）と phase 10（制御フロー
@@ -128,7 +128,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      lowering。
    - 依存: 2、4。仕様: アーキテクチャ 06「Step 1」〜「Step 6」。
 
-8. **core コンテキストの準備。** [ ]
+8. **core コンテキストの準備。** [x]
    - Step 1 を実装する: 正準シンボル識別、定義境界レジストリ、
      `ResolvedTypedAst` 上の elaboration コンテキスト。
    - テスト: コンテキストのフィクスチャ。生の綴りではなく必ず正準 id。

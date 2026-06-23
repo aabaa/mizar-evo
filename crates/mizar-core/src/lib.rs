@@ -5,3 +5,4 @@
 
 pub mod binder_normalization;
 pub mod core_ir;
+pub mod elaborator;

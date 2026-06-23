@@ -20,7 +20,7 @@ architecture 06 and 16.
 |---|---|---|---|
 | core_ir | `core_ir.md` (task 2) | `src/core_ir.rs` | [x] |
 | binder_normalization | `binder_normalization.md` (task 4) | `src/binder_normalization.rs` | [x] |
-| elaborator | `elaborator.md` (task 7) | `src/elaborator.rs` | [ ] |
+| elaborator | `elaborator.md` (task 7) | `src/elaborator.rs` | [~] |
 | control_flow | `control_flow.md` (task 14) | `src/control_flow.rs` | [ ] |
 
 `mizar-core` implements pipeline phase 9 (elaboration) and phase 10
@@ -134,7 +134,7 @@ Keep `cargo test -p mizar-core` green after each task (see
      lowering, and algorithm-shell lowering.
    - Deps: 2, 4. Spec: architecture 06 "Step 1"-"Step 6".
 
-8. **Core context preparation.** [ ]
+8. **Core context preparation.** [x]
    - Implement Step 1: canonical symbol identities, definition boundary
      registry, and the elaboration context over `ResolvedTypedAst`.
    - Tests: context fixtures; canonical ids never raw spellings.
