@@ -4,9 +4,10 @@
 
 `ResolvedTypedAst` is the final checker-owned, source-shaped semantic AST
 before elaboration. It projects the phase-6 typed source shape plus phase-7
-facts/traces and phase-8 overload selections into one immutable layer that LSP,
-artifacts, VC generation, and elaboration can consume without re-running name
-resolution, type checking, registration closure, or overload resolution.
+cluster fact rows/provenance ids and phase-8 overload selections into one
+immutable layer that LSP, artifacts, VC generation, and elaboration can consume
+without re-running name resolution, type checking, registration closure, or
+overload resolution.
 
 This document specifies the task-28 data shape. It does not implement assembly,
 artifact emission, proof acceptance, or source-to-checker extraction.
@@ -54,18 +55,31 @@ Task 28 assembly consumes explicit checker-owned outputs:
 
 - `TypedAst` nodes, statuses, local contexts, and typed-site references;
 - final `TypeFactTable` / type-fact query output from phase 6;
-- accepted cluster closure facts and replayable resolution traces;
-- overload collection, viability, and specificity graph outputs that provide
-  site owners, source ranges, candidate tables, and graph ids;
+- accepted cluster closure fact rows with their existing provenance ids;
+- overload collection, template expansion, viability, and specificity graph
+  outputs that provide site owners, source ranges, pre-filter and viable
+  candidate tables, rejection/blocking reasons, and graph ids;
 - selected overload results and inserted views from
   `OverloadSelectionOutput`, including inserted-view kind, reason, evidence,
   and path;
-- checker-local diagnostics already produced by preceding phases.
+- checker-local diagnostics already produced by preceding phases;
+- caller-supplied `ExpressionMetadataInput` rows that map stable source
+  expression ids to `TypedSiteRef` owners and already-computed cluster fact
+  references;
+- optional `ResolvedNodeKindHint` rows for source-preserved, resolved-use, or
+  degraded node roles that cannot yet be inferred from the checker tables.
 
 Missing source-derived inputs are `external_dependency_gap` records. Missing
 checker-owned precursor tables are task-28 assembly blockers, not permission to
 scan raw syntax. Assembly must not inspect raw syntax or opaque resolver shells
 to fill either kind of gap.
+
+Expression metadata inputs are canonicalized by expression id before dense ids
+are assigned. Duplicate expression ids or duplicate `TypedSiteRef` owners are
+assembly errors because site-based lookup and resolved-node attachment must be
+unambiguous. Sites without an `ExpressionMetadataInput` row simply have no
+expression metadata entry in task 28; AST-wide extraction of all source
+expression ids remains a deferred source-to-checker integration task.
 
 ## Data Shape
 
@@ -77,6 +91,12 @@ struct ResolvedTypedAst {
     module_id: ModuleId,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
+    collection_candidates: OverloadCandidateSummaryTable,
+    expanded_candidates: OverloadCandidateSummaryTable,
+    template_expansions: TemplateExpansionSummaryTable,
+    viable_candidates: OverloadCandidateSummaryTable,
+    viability_decisions: CandidateViabilitySummaryTable,
+    specificity_graphs: ResolvedSpecificityGraphTable,
     resolved_overloads: OverloadResolutionTable,
     inserted_coercions: CoercionInsertionTable,
     cluster_facts: ClusterFactTable,
@@ -91,6 +111,7 @@ struct ResolvedTypedNode {
     id: ResolvedTypedNodeId,
     typed_node: TypedNodeId,
     source_range: SourceRange,
+    children: Vec<ResolvedTypedNodeId>,
     kind: ResolvedTypedNodeKind,
     final_type: Option<NormalizedTypeId>,
     metadata: Option<ExpressionMetadataId>,
@@ -138,6 +159,100 @@ choices.
 `ExpressionMetadataId` lookup, and `ExpressionMetadataId` is only the dense row
 id inside this `ResolvedTypedAst`. Task 28 tests should assert lookup by
 `ExprId` and should not treat table insertion order as expression identity.
+
+`final_type` is resolved by final semantic precedence. If the expression has a
+successful overload result, assembly first uses `exposed_result.result` when it
+is present, then the selected root candidate's result type when available. If
+there is no successful overload result, assembly uses a handoff-available
+`TypeEntryActual::Known` type from `TypedAst`. Open
+`TypeEntryActual::CandidateSet` entries are not final types by themselves; if
+they are not resolved through a successful overload result, `final_type` remains
+`None` and the failed/open state remains visible through diagnostics and
+overload metadata.
+
+### Overload Candidate And Graph Summaries
+
+`ResolvedTypedAst` copies the candidate and specificity graph summaries needed
+for `@show_resolution`, diagnostics, artifacts, and downstream elaboration. It
+does not require later consumers to retain the task-22 through task-25
+precursor outputs.
+
+Candidate ids are dense inside their owning predecessor table, so task 28 keeps
+three explicit candidate namespaces. `collection_candidates` copies the task-22
+collection table. `expanded_candidates` copies the task-23 template-expansion
+candidate table used by viability decisions, including non-template candidates
+and instantiated template candidates. `viable_candidates` copies the
+viability/specificity candidate table used by specificity graphs, overload
+selections, and inserted views. `TemplateExpansionSummary` is the explicit
+bridge from collection `source_candidate` ids to optional expanded
+`instantiated_candidate` ids. `CandidateViabilitySummary` is the explicit bridge
+from expanded `source_candidate` ids to optional viable `output_candidate` ids.
+All `OverloadResolutionRecord`, `ResolvedSpecificityGraph`, and
+`CoercionInsertion` candidate references use the viable namespace.
+
+```rust
+struct OverloadCandidateSummary {
+    candidate: OverloadCandidateId,
+    site: OverloadSiteId,
+    symbol: SymbolId,
+    ordinary_root: SymbolId,
+    declaration_kind: CandidateDeclarationKind,
+    parameters: Vec<NormalizedTypeId>,
+    result: Option<NormalizedTypeId>,
+    origin: CandidateOrigin,
+    template: Option<TemplateCandidatePayload>,
+    coherence: Option<CoherenceStatus>,
+    provenance: CandidateProvenance,
+    status: OverloadCandidateStatus,
+    diagnostics: Vec<ResolvedTypedDiagnosticId>,
+}
+
+struct TemplateExpansionSummary {
+    id: TemplateExpansionId,
+    source_candidate: OverloadCandidateId,
+    site: OverloadSiteId,
+    template: SymbolId,
+    instantiation_key: TemplateInstantiationKey,
+    substitutions: Vec<TemplateSubstitution>,
+    instantiated_candidate: Option<OverloadCandidateId>,
+    status: TemplateExpansionStatus,
+    diagnostics: Vec<ResolvedTypedDiagnosticId>,
+}
+
+struct CandidateViabilitySummary {
+    id: CandidateViabilityId,
+    source_candidate: OverloadCandidateId,
+    site: OverloadSiteId,
+    output_candidate: Option<OverloadCandidateId>,
+    status: CandidateViabilityStatus,
+    diagnostics: Vec<ResolvedTypedDiagnosticId>,
+}
+
+struct ResolvedSpecificityComparison {
+    id: SpecificityComparisonId,
+    left: OverloadCandidateId,
+    right: OverloadCandidateId,
+    status: SpecificityComparisonOutcome,
+    reasons: Vec<SpecificityReasonKey>,
+    diagnostics: Vec<ResolvedTypedDiagnosticId>,
+}
+
+struct ResolvedSpecificityGraph {
+    graph: SpecificityGraphId,
+    site: OverloadSiteId,
+    nodes: Vec<SpecificityNode>,
+    comparisons: Vec<ResolvedSpecificityComparison>,
+    edges: Vec<SpecificityEdge>,
+    diagnostics: Vec<ResolvedTypedDiagnosticId>,
+}
+```
+
+These summaries preserve candidate status, template payload, coherence status,
+declaration spans/import provenance from candidate provenance, template
+substitutions/skipped-template status, viability rejection/blocking reasons for
+failed/no-match sites, and stable comparison evidence from the graph. All
+diagnostic references are translated to `ResolvedTypedDiagnosticId`s. The
+summaries are copied metadata, not a second overload-resolution engine.
 
 ### Overload Resolution Table
 
@@ -213,7 +328,10 @@ ids, but the fact fingerprint, source/attribute/generated-type payload, and
 
 Assembly does not fire registrations, close clusters, replay reductions, or
 translate cluster facts into new `TypeFactId`s. Any future artifact-oriented
-projection of cluster facts is a separate schema task.
+projection of cluster facts or full `ResolutionTrace` material is a separate
+schema task. Task 28 preserves `ClusterFactProvenance::TraceStep` ids as part
+of the reused fact rows but does not validate or store the full trace step
+payload.
 
 ## Failure And Recovery
 
@@ -244,6 +362,12 @@ Task 28 should add Rust coverage for:
 
 - source-shaped assembly from explicit `TypedAst` and checker outputs;
 - metadata lookup by `TypedSiteRef` / expression id;
+- final-type precedence for successful overload results over open candidate
+  sets;
+- separate collection, expanded, and viable candidate namespaces, including a
+  rejected expanded candidate that shifts viable output ids;
+- template expansion summaries for instantiated, rejected, and deferred
+  templates;
 - resolved overload projection, including active refinements and inserted
   views;
 - failed overload site preservation for `NoMatch`, `Ambiguous`, incompatible
@@ -255,12 +379,12 @@ Task 28 should add Rust coverage for:
 
 ## Deferred And External Gaps
 
-The following remain deferred after task 27:
+The following remain deferred after task 28:
 
-- Rust implementation of `ResolvedTypedAst` assembly in task 28;
 - AST-wide source-to-checker extraction of task-26 selection payloads and
   source expression metadata;
 - artifact emission/reuse and stable artifact schemas;
+- full `ResolutionTrace` artifact projection/validation;
 - public diagnostic-code allocation;
 - active `.miz` semantic fixtures for final overload and cluster projection.
 

@@ -17,12 +17,13 @@
 //! checker-owned viability filtering over explicit recorded-evidence payloads;
 //! task 25 exposes per-site specificity graph construction over viable
 //! candidates; task 26 exposes root selection, refinement-join validation,
-//! inserted-view recording, and failed-site preservation. Resolved typed AST
-//! APIs land in later task-scoped modules after their design specs are written.
+//! inserted-view recording, and failed-site preservation; task 28 exposes
+//! final resolved typed AST assembly over explicit checker-owned outputs.
 
 pub mod binding_env;
 pub mod cluster_trace;
 pub mod overload_resolution;
 pub mod registration_resolution;
+pub mod resolved_typed_ast;
 pub mod type_checker;
 pub mod typed_ast;

@@ -4,9 +4,9 @@
 
 `ResolvedTypedAst` は、elaboration の前に置かれる最終の checker-owned な
 source-shaped semantic AST である。phase 6 の typed source shape、phase 7 の
-fact/trace、phase 8 の overload selection を 1 つの immutable layer に射影し、
-LSP、artifact、VC generation、elaboration が name resolution、type checking、
-registration closure、overload resolution を再実行せずに消費できるようにする。
+cluster fact row / provenance id、phase 8 の overload selection を 1 つの immutable
+layer に射影し、LSP、artifact、VC generation、elaboration が name resolution、type
+checking、registration closure、overload resolution を再実行せずに消費できるようにする。
 
 本書は task 28 の data shape を仕様化する。assembly、artifact emission、proof
 acceptance、source-to-checker extraction は実装しない。
@@ -52,16 +52,27 @@ task 28 assembly は explicit checker-owned output を消費する。
 
 - `TypedAst` node、status、local context、typed-site reference;
 - phase 6 の final `TypeFactTable` / type-fact query output;
-- accepted cluster closure fact と replayable resolution trace;
-- site owner、source range、candidate table、graph id を提供する overload
-  collection、viability、specificity graph output;
+- existing provenance id を持つ accepted cluster closure fact row;
+- site owner、source range、filter 前と viable の candidate table、rejection / blocking reason、
+  graph id を提供する overload collection、template expansion、viability、specificity graph output;
 - inserted-view kind、reason、evidence、path を含む
   `OverloadSelectionOutput` の selected overload result と inserted view;
-- 先行 phase が生成した checker-local diagnostic。
+- 先行 phase が生成した checker-local diagnostic;
+- stable source expression id を `TypedSiteRef` owner と計算済み cluster fact
+  reference に対応付ける caller-supplied `ExpressionMetadataInput` row;
+- checker table からまだ推論できない source-preserved / resolved-use / degraded
+  node role のための optional `ResolvedNodeKindHint` row。
 
 不足する source-derived input は `external_dependency_gap` record である。不足する
 checker-owned precursor table は task 28 assembly blocker であり、raw syntax を scan する許可では
 ない。assembly は raw syntax や opaque resolver shell を調べて、いずれの gap も補完してはならない。
+
+Expression metadata input は dense id を割り当てる前に expression id で canonicalize
+される。site-based lookup と resolved-node attachment を曖昧にしないため、duplicate
+expression id または duplicate `TypedSiteRef` owner は assembly error である。
+`ExpressionMetadataInput` row がない site は task 28 では expression metadata entry を持たない。
+全 source expression id の AST-wide extraction は deferred の source-to-checker integration task
+のままである。
 
 ## データ形状
 
@@ -73,6 +84,12 @@ struct ResolvedTypedAst {
     module_id: ModuleId,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
+    collection_candidates: OverloadCandidateSummaryTable,
+    expanded_candidates: OverloadCandidateSummaryTable,
+    template_expansions: TemplateExpansionSummaryTable,
+    viable_candidates: OverloadCandidateSummaryTable,
+    viability_decisions: CandidateViabilitySummaryTable,
+    specificity_graphs: ResolvedSpecificityGraphTable,
     resolved_overloads: OverloadResolutionTable,
     inserted_coercions: CoercionInsertionTable,
     cluster_facts: ClusterFactTable,
@@ -87,6 +104,7 @@ struct ResolvedTypedNode {
     id: ResolvedTypedNodeId,
     typed_node: TypedNodeId,
     source_range: SourceRange,
+    children: Vec<ResolvedTypedNodeId>,
     kind: ResolvedTypedNodeKind,
     final_type: Option<NormalizedTypeId>,
     metadata: Option<ExpressionMetadataId>,
@@ -132,6 +150,94 @@ overload choice を再計算しない。
 を提供しなければならない。`ExpressionMetadataId` はこの `ResolvedTypedAst` 内の dense row id
 にすぎない。task 28 の test は `ExprId` lookup を assert し、table insertion order を expression
 identity として扱ってはならない。
+
+`final_type` は final semantic precedence に従って解決する。expression が successful overload
+result を持つ場合、assembly はまず `exposed_result.result` が存在すればそれを使い、次に
+selected root candidate の result type があればそれを使う。successful overload result がない場合は、
+`TypedAst` の handoff-available な `TypeEntryActual::Known` type を使う。open な
+`TypeEntryActual::CandidateSet` entry はそれだけでは final type ではない。successful overload result で
+解決されない場合、`final_type` は `None` のままとし、failed / open state は diagnostic と overload
+metadata を通じて可視のままにする。
+
+### Overload Candidate And Graph Summary
+
+`ResolvedTypedAst` は `@show_resolution`、diagnostic、artifact、downstream elaboration に必要な
+candidate summary と specificity graph summary をコピーする。後続 consumer が task 22 から task 25 の
+precursor output を保持していることを要求しない。
+
+candidate id は owning predecessor table 内で dense なので、task 28 は 3 つの明示的な candidate
+namespace を保持する。`collection_candidates` は task 22 collection table をコピーする。
+`expanded_candidates` は non-template candidate と instantiated template candidate を含む、viability
+decision 用の task 23 template-expansion candidate table をコピーする。`viable_candidates` は
+specificity graph、overload selection、inserted view が使う viability / specificity candidate table をコピーする。
+`TemplateExpansionSummary` は collection の `source_candidate` id から optional な expanded
+`instantiated_candidate` id への明示的な橋渡しである。`CandidateViabilitySummary` は expanded の
+`source_candidate` id から optional な viable `output_candidate` id への明示的な橋渡しである。
+`OverloadResolutionRecord`、`ResolvedSpecificityGraph`、`CoercionInsertion` の candidate reference は
+すべて viable namespace を使う。
+
+```rust
+struct OverloadCandidateSummary {
+    candidate: OverloadCandidateId,
+    site: OverloadSiteId,
+    symbol: SymbolId,
+    ordinary_root: SymbolId,
+    declaration_kind: CandidateDeclarationKind,
+    parameters: Vec<NormalizedTypeId>,
+    result: Option<NormalizedTypeId>,
+    origin: CandidateOrigin,
+    template: Option<TemplateCandidatePayload>,
+    coherence: Option<CoherenceStatus>,
+    provenance: CandidateProvenance,
+    status: OverloadCandidateStatus,
+    diagnostics: Vec<ResolvedTypedDiagnosticId>,
+}
+
+struct TemplateExpansionSummary {
+    id: TemplateExpansionId,
+    source_candidate: OverloadCandidateId,
+    site: OverloadSiteId,
+    template: SymbolId,
+    instantiation_key: TemplateInstantiationKey,
+    substitutions: Vec<TemplateSubstitution>,
+    instantiated_candidate: Option<OverloadCandidateId>,
+    status: TemplateExpansionStatus,
+    diagnostics: Vec<ResolvedTypedDiagnosticId>,
+}
+
+struct CandidateViabilitySummary {
+    id: CandidateViabilityId,
+    source_candidate: OverloadCandidateId,
+    site: OverloadSiteId,
+    output_candidate: Option<OverloadCandidateId>,
+    status: CandidateViabilityStatus,
+    diagnostics: Vec<ResolvedTypedDiagnosticId>,
+}
+
+struct ResolvedSpecificityComparison {
+    id: SpecificityComparisonId,
+    left: OverloadCandidateId,
+    right: OverloadCandidateId,
+    status: SpecificityComparisonOutcome,
+    reasons: Vec<SpecificityReasonKey>,
+    diagnostics: Vec<ResolvedTypedDiagnosticId>,
+}
+
+struct ResolvedSpecificityGraph {
+    graph: SpecificityGraphId,
+    site: OverloadSiteId,
+    nodes: Vec<SpecificityNode>,
+    comparisons: Vec<ResolvedSpecificityComparison>,
+    edges: Vec<SpecificityEdge>,
+    diagnostics: Vec<ResolvedTypedDiagnosticId>,
+}
+```
+
+これらの summary は candidate status、template payload、coherence status、candidate provenance の
+declaration span / import provenance、template substitution / skipped-template status、failed /
+no-match site 向け viability rejection / blocking reason、graph の stable comparison evidence を保持する。
+すべての diagnostic reference は `ResolvedTypedDiagnosticId` に変換する。これは copied metadata であり、
+2 つ目の overload-resolution engine ではない。
 
 ### Overload Resolution Table
 
@@ -206,7 +312,8 @@ source/attribute/generated-type payload、`ClusterFactProvenance` は `cluster_t
 
 assembly は registration firing、cluster closure、reduction replay、cluster fact から新しい
 `TypeFactId` への変換を行わない。artifact 向けの cluster fact projection が将来必要な場合は、
-別の schema task とする。
+別の schema task とする。task 28 は reused fact row の一部として
+`ClusterFactProvenance::TraceStep` id を保持するが、full trace step payload の validation や storage は行わない。
 
 ## Failure And Recovery
 
@@ -236,6 +343,10 @@ task 28 は Rust coverage を追加すべきである。
 
 - explicit `TypedAst` と checker output からの source-shaped assembly;
 - `TypedSiteRef` / expression id による metadata lookup;
+- successful overload result が open candidate set より優先される final-type precedence;
+- rejected expanded candidate により viable output id がずれる case を含む、collection、expanded、
+  viable candidate namespace の分離;
+- instantiated / rejected / deferred template の template expansion summary;
 - active refinement と inserted view を含む resolved overload projection;
 - `NoMatch`、`Ambiguous`、incompatible refinement join、blocked status の
   failed overload site preservation;
@@ -245,12 +356,12 @@ task 28 は Rust coverage を追加すべきである。
 
 ## Deferred And External Gaps
 
-task 27 後も以下は deferred のままである。
+task 28 後も以下は deferred のままである。
 
-- task 28 の `ResolvedTypedAst` assembly の Rust implementation;
 - task 26 selection payload と source expression metadata の AST-wide
   source-to-checker extraction;
 - artifact emission/reuse と stable artifact schema;
+- full `ResolutionTrace` artifact projection / validation;
 - public diagnostic-code allocation;
 - final overload / cluster projection の active `.miz` semantic fixture。
 

@@ -23,7 +23,7 @@
 | registration_resolution | `registration_resolution.md`（task 13） | `src/registration_resolution.rs` | [~] |
 | cluster_trace | `cluster_trace.md`（task 15） | `src/cluster_trace.rs` | [~] |
 | overload_resolution | `overload_resolution.md`（task 21） | `src/overload_resolution.rs` | [~] |
-| resolved_typed_ast | `resolved_typed_ast.md`（task 27） | `src/resolved_typed_ast.rs` | [ ] |
+| resolved_typed_ast | `resolved_typed_ast.md`（task 27） | `src/resolved_typed_ast.rs` | [~] |
 
 `mizar-checker` はパイプライン phase 6-8 を実装する。入力は `ResolvedAst` と
 `SymbolEnv`、出力は `TypedAst`、`ResolutionTrace`、`ResolvedTypedAst` で
@@ -478,12 +478,20 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       failed-site preservation、deterministic rendering expectation、task 28 の
       planned tests、source-extraction / artifact gap を code なしで定義する。
 
-28. **`ResolvedTypedAst` の組み立て。** [ ]
+28. **`ResolvedTypedAst` の組み立て。** [x]
     - LSP と artifact のための式メタデータを備えた最終の source 形状
       意味論 AST を組み立て、決定的 debug レンダリングを加える。
     - テスト: 組み立てフィクスチャ。`ExprId` によるメタデータ参照。
       レンダリングの安定性。
     - 依存: 26、27。仕様: `resolved_typed_ast.md`。
+    - task 28 で完了: `ResolvedTypedAst::assemble` は explicit checker-owned
+      typed AST、cluster fact、overload collection / template / viability /
+      specificity、selection output を source-shaped resolved node、expression
+      metadata、collection / expanded / viable candidate summary、template
+      expansion summary、viability decision、specificity graph summary、overload
+      record、inserted coercion、diagnostic、deterministic rendering へ射影する。
+      failed site を保持し、source extraction、artifact、public diagnostic code、
+      active `.miz` fixture は deferred のままにする。
 
 ### 強化と横断フォローアップ
 

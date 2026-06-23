@@ -24,7 +24,7 @@ architecture 04, 05, 16, 17, 18, and 19.
 | registration_resolution | `registration_resolution.md` (task 13) | `src/registration_resolution.rs` | [~] |
 | cluster_trace | `cluster_trace.md` (task 15) | `src/cluster_trace.rs` | [~] |
 | overload_resolution | `overload_resolution.md` (task 21) | `src/overload_resolution.rs` | [~] |
-| resolved_typed_ast | `resolved_typed_ast.md` (task 27) | `src/resolved_typed_ast.rs` | [ ] |
+| resolved_typed_ast | `resolved_typed_ast.md` (task 27) | `src/resolved_typed_ast.rs` | [~] |
 
 `mizar-checker` implements pipeline phases 6-8: `ResolvedAst` plus `SymbolEnv`
 in, `TypedAst`, `ResolutionTrace`, and `ResolvedTypedAst` out. It is built in
@@ -506,12 +506,21 @@ Keep `cargo test -p mizar-checker` green after each task (see
       expectations, task-28 planned tests, and deferred source-extraction /
       artifact gaps without code.
 
-28. **`ResolvedTypedAst` assembly.** [ ]
+28. **`ResolvedTypedAst` assembly.** [x]
     - Assemble the final source-shaped semantic AST with expression metadata
       for LSP and artifacts, plus a deterministic debug rendering.
     - Tests: assembly fixtures; metadata lookup by `ExprId`; rendering
       stability.
     - Deps: 26, 27. Spec: `resolved_typed_ast.md`.
+    - Completed by task 28: `ResolvedTypedAst::assemble` projects explicit
+      checker-owned typed AST, cluster fact, overload
+      collection/template/viability/specificity, and selection outputs into
+      source-shaped resolved nodes, expression metadata, collection/expanded/
+      viable candidate summaries, template expansion summaries, viability
+      decisions, specificity graph summaries, overload records, inserted
+      coercions, diagnostics, and deterministic rendering while preserving
+      failed sites and keeping source extraction, artifacts, public diagnostic
+      codes, and active `.miz` fixtures deferred.
 
 ### Hardening and cross-cutting follow-ups
 
