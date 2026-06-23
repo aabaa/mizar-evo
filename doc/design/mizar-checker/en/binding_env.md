@@ -372,6 +372,33 @@ priority keys, diagnostics, and external dependency gaps in stable order. It
 must not include memory addresses, host paths, hash-map iteration order, `VcId`,
 proof witnesses, verifier status, or final overload information.
 
+## Public Enum Policy
+
+Task 31 applies the frontend task-25 public-enum decision procedure to this
+module. All public checker-owned enums in `binding_env` are forward-compatible
+API surfaces and must remain `#[non_exhaustive]`; downstream consumers must
+keep wildcard or fallback arms. Checker-internal matches may remain exhaustive
+over the currently represented variants when implementing the specified
+behavior.
+
+| enum | decision |
+|---|---|
+| `BindingContextOwner` | Forward-compatible; context owners may grow with richer source-to-checker extraction. |
+| `BindingContextLayer` | Forward-compatible; context layer categories may grow with statement, proof, and definition scopes. |
+| `BindingContextRecovery` | Forward-compatible; context recovery states may grow with partial binding recovery. |
+| `BindingKind` | Forward-compatible; binding forms may grow as more Mizar declarations are extracted. |
+| `BinderIdentity` | Forward-compatible; binder identity payloads may grow with closure and substitution evidence. |
+| `BindingTypeSite` | Forward-compatible; binding type references may gain additional checker-owned anchors. |
+| `BindingStatus` | Forward-compatible; binding status may grow with deferred/external dependency states. |
+| `BindingRecoveryState` | Forward-compatible; binding recovery states may grow with richer resolver payloads. |
+| `BindingDiagnosticClass` | Forward-compatible; diagnostic classes may grow before public checker diagnostic codes are allocated. |
+| `BindingDiagnosticSeverity` | Forward-compatible; diagnostic severity policy may grow with IDE/artifact consumers. |
+| `BindingDiagnosticRecovery` | Forward-compatible; diagnostic recovery states may grow with partial binding policy. |
+| `BindingLookupResult` | Forward-compatible; lookup results may grow with additional ambiguity and external-gap handling. |
+| `BindingEnvError` | Forward-compatible; binding-env construction errors may gain new validation cases. |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## Planned Tests For Task 5
 
 Task 5 must add Rust tests that cover:

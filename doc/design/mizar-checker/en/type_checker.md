@@ -511,6 +511,44 @@ Task 7-11 implementations must preserve deterministic output:
 - equivalent `ResolvedAst`, `SymbolEnv`, `BindingEnv`, dependency summaries, and
   checker configuration produce equivalent `TypedAst` tables.
 
+## Public Enum Policy
+
+Task 31 applies the frontend task-25 public-enum decision procedure to this
+module. All public checker-owned enums in `type_checker` are forward-compatible
+API surfaces and must remain `#[non_exhaustive]`; downstream consumers must
+keep wildcard or fallback arms. Checker-internal matches may remain exhaustive
+over the currently represented variants when implementing the specified
+behavior.
+
+| enum | decision |
+|---|---|
+| `CoercionRequestKind` | Forward-compatible; coercion request categories may grow with later view and obligation forms. |
+| `CoercionEvidence` | Forward-compatible; coercion evidence may grow with proof, registration, and artifact sources. |
+| `CoercionDeferredReason` | Forward-compatible; deferred coercion reasons may grow as external payload gaps close. |
+| `InitialRequirementKind` | Forward-compatible; initial requirement categories may grow with VC/proof integration. |
+| `TypeFactQueryStatus` | Forward-compatible; fact query outcomes may grow as contradiction and evidence policy matures. |
+| `TermKind` | Forward-compatible; term categories may grow with source-to-checker extraction. |
+| `TermReference` | Forward-compatible; term references may gain additional checker-owned identity anchors. |
+| `TermDeferredReason` | Forward-compatible; deferred term reasons may grow as source payloads land. |
+| `FormulaKind` | Forward-compatible; formula categories may grow with statement/proof extraction. |
+| `FormulaDeferredReason` | Forward-compatible; deferred formula reasons may grow as source payloads land. |
+| `CandidateIdentity` | Forward-compatible; open candidate identities may grow with richer overload extraction. |
+| `CandidateSetKind` | Forward-compatible; candidate-set categories may grow with later overload phases. |
+| `CandidateSetStatus` | Forward-compatible; candidate-set states may grow with deferred and failed-site handling. |
+| `CandidateStatus` | Forward-compatible; candidate states may grow with evidence and recovery handling. |
+| `TermStatus` | Forward-compatible; checked-term states may grow with partial inference policy. |
+| `FormulaStatus` | Forward-compatible; checked-formula states may grow with partial inference policy. |
+| `DeclarationKind` | Forward-compatible; declaration kinds may grow with more Mizar binding forms. |
+| `DeclarationDeferredReason` | Forward-compatible; deferred declaration reasons may grow as extraction gaps close. |
+| `DeclarationStatus` | Forward-compatible; declaration states may grow with local recovery and handoff policy. |
+| `TypeHeadInput` | Forward-compatible; input type heads may grow with resolver and built-in payloads. |
+| `AttributePolarity` | Forward-compatible; attribute polarity may grow if type predicates gain richer qualifiers. |
+| `TypeHeadRef` | Forward-compatible; normalized type heads may grow with structures, modes, and built-ins. |
+| `TypeHeadErrorKind` | Forward-compatible; type-head error categories may grow with resolver diagnostics. |
+| `NormalizedTypeStatus` | Forward-compatible; normalized type states may grow with recovery and artifact handoff policy. |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## Planned Tests For Tasks 7-11
 
 Task 7 must add Rust tests for:

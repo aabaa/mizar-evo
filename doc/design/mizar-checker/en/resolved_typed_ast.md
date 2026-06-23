@@ -356,6 +356,30 @@ Assembly must be deterministic:
   `TypedSiteRef`, `ClusterFactId`, and existing provenance;
 - equivalent inputs produce byte-identical debug rendering.
 
+## Public Enum Policy
+
+Task 31 applies the frontend task-25 public-enum decision procedure to this
+module. All public checker-owned enums in `resolved_typed_ast` are
+forward-compatible API surfaces and must remain `#[non_exhaustive]`;
+downstream consumers must keep wildcard or fallback arms. Checker-internal
+matches may remain exhaustive over the currently represented variants when
+implementing the specified behavior.
+
+| enum | decision |
+|---|---|
+| `ResolvedNodeKindHintKind` | Forward-compatible; source-shaped node hints may grow with downstream presentation needs. |
+| `ResolvedTypedNodeKind` | Forward-compatible; resolved node categories may grow with later source-shaped projections. |
+| `ResolvedNodeRecovery` | Forward-compatible; node recovery states may grow with partial assembly policy. |
+| `ResolvedNodeRecoveryReason` | Forward-compatible; recovery reasons may grow as source extraction and failed-site handling expand. |
+| `OverloadResolutionStatus` | Forward-compatible; projected overload statuses may grow with phase-8 result handling. |
+| `CoercionInsertionSource` | Forward-compatible; insertion sources may grow with accepted coercion/view forms. |
+| `ResolvedTypedDiagnosticSource` | Forward-compatible; diagnostic sources may grow with additional projection stages. |
+| `ResolvedTypedDiagnosticSeverity` | Forward-compatible; diagnostic severity policy may grow with IDE/artifact consumers. |
+| `CandidateSummaryNamespace` | Forward-compatible; candidate-summary namespaces may grow with additional overload tables. |
+| `ResolvedTypedAstError` | Forward-compatible; assembly validation errors may grow with new projection invariants. |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## Planned Task 28 Tests
 
 Task 28 should add Rust coverage for:

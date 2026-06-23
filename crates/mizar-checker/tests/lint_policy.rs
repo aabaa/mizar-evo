@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
 };
@@ -184,6 +185,125 @@ fn checker_public_semantic_api_matches_documented_modules() {
     assert!(
         violations.is_empty(),
         "public checker APIs require their owning module spec first:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn checker_public_enums_are_forward_compatible_and_documented() {
+    let root = crate_root();
+    let docs_root = workspace_root().join("doc/design/mizar-checker");
+    let modules = [
+        ("src/typed_ast.rs", "typed_ast.md"),
+        ("src/binding_env.rs", "binding_env.md"),
+        ("src/type_checker.rs", "type_checker.md"),
+        (
+            "src/registration_resolution.rs",
+            "registration_resolution.md",
+        ),
+        ("src/cluster_trace.rs", "cluster_trace.md"),
+        ("src/overload_resolution.rs", "overload_resolution.md"),
+        ("src/resolved_typed_ast.rs", "resolved_typed_ast.md"),
+    ];
+    let mut violations = Vec::new();
+
+    for (source_path, spec_name) in modules {
+        let source_path = root.join(source_path);
+        let source = read_to_string(&source_path);
+        let public_enums = public_enums(&source);
+        let public_enum_names = public_enums
+            .iter()
+            .map(|public_enum| public_enum.name.as_str())
+            .collect::<BTreeSet<_>>();
+        assert!(
+            !public_enums.is_empty(),
+            "{} should have checker-owned public enums for task-31 policy coverage",
+            source_path.display()
+        );
+
+        let en_path = docs_root.join("en").join(spec_name);
+        let ja_path = docs_root.join("ja").join(spec_name);
+        let en_doc = read_to_string(&en_path);
+        let ja_doc = read_to_string(&ja_path);
+        let en_section = public_enum_policy_section(&en_doc).unwrap_or_else(|| {
+            panic!(
+                "{} must contain a Public Enum Policy section",
+                en_path.display()
+            )
+        });
+        let ja_section = public_enum_policy_section(&ja_doc).unwrap_or_else(|| {
+            panic!(
+                "{} must contain a Public Enum Policy section",
+                ja_path.display()
+            )
+        });
+        let en_policy_enums = public_enum_policy_entries(en_section);
+        let ja_policy_enums = public_enum_policy_entries(ja_section);
+        push_duplicate_policy_entries(&en_path, &en_policy_enums, &mut violations);
+        push_duplicate_policy_entries(&ja_path, &ja_policy_enums, &mut violations);
+
+        if !en_section.contains("No exhaustive public enum exceptions are owned by this module.") {
+            violations.push(format!(
+                "{}: Public Enum Policy must state there are no exhaustive public enum exceptions",
+                en_path.display()
+            ));
+        }
+        if !ja_section.contains("この module が所有する exhaustive public enum exception はない。")
+        {
+            violations.push(format!(
+                "{}: Public Enum Policy must state there are no exhaustive public enum exceptions",
+                ja_path.display()
+            ));
+        }
+
+        for documented_enum in &en_policy_enums {
+            if !public_enum_names.contains(documented_enum.as_str()) {
+                violations.push(format!(
+                    "{}: Public Enum Policy table must not include unknown `{}` row",
+                    en_path.display(),
+                    documented_enum
+                ));
+            }
+        }
+        for documented_enum in &ja_policy_enums {
+            if !public_enum_names.contains(documented_enum.as_str()) {
+                violations.push(format!(
+                    "{}: Public Enum Policy table must not include unknown `{}` row",
+                    ja_path.display(),
+                    documented_enum
+                ));
+            }
+        }
+
+        for public_enum in &public_enums {
+            if !public_enum.has_non_exhaustive {
+                violations.push(format!(
+                    "{}:{} public enum {} must be #[non_exhaustive]",
+                    source_path.display(),
+                    public_enum.line_number,
+                    public_enum.name
+                ));
+            }
+            if !en_policy_enums.contains(&public_enum.name) {
+                violations.push(format!(
+                    "{}: Public Enum Policy table must include `{}` as a first-column entry",
+                    en_path.display(),
+                    public_enum.name
+                ));
+            }
+            if !ja_policy_enums.contains(&public_enum.name) {
+                violations.push(format!(
+                    "{}: Public Enum Policy table must include `{}` as a first-column entry",
+                    ja_path.display(),
+                    public_enum.name
+                ));
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "checker public enum policy/source drift:\n{}",
         violations.join("\n")
     );
 }
@@ -382,6 +502,107 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
                 | "pub mod overload_resolution;"
                 | "pub mod resolved_typed_ast;"
         )
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PublicEnum {
+    name: String,
+    line_number: usize,
+    has_non_exhaustive: bool,
+}
+
+fn public_enums(source: &str) -> Vec<PublicEnum> {
+    let lines = source.lines().collect::<Vec<_>>();
+    let mut public_enums = Vec::new();
+
+    for (line_index, line) in lines.iter().enumerate() {
+        let Some(name) = plain_public_enum_name(line) else {
+            continue;
+        };
+        public_enums.push(PublicEnum {
+            name: name.to_owned(),
+            line_number: line_index + 1,
+            has_non_exhaustive: has_non_exhaustive_attribute_before(&lines, line_index),
+        });
+    }
+
+    public_enums
+}
+
+fn plain_public_enum_name(line: &str) -> Option<&str> {
+    let rest = line.trim_start().strip_prefix("pub enum ")?;
+    rest.split(|character: char| character.is_whitespace() || matches!(character, '<' | '{' | '('))
+        .find(|part| !part.is_empty())
+}
+
+fn has_non_exhaustive_attribute_before(lines: &[&str], enum_line_index: usize) -> bool {
+    for line in lines[..enum_line_index].iter().rev() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if trimmed == "#[non_exhaustive]" {
+            return true;
+        }
+        if trimmed.starts_with("#[") || trimmed.starts_with("#!") || trimmed.starts_with(']') {
+            continue;
+        }
+        break;
+    }
+
+    false
+}
+
+fn public_enum_policy_section(document: &str) -> Option<&str> {
+    let start = document
+        .lines()
+        .scan(0, |offset, line| {
+            let current = *offset;
+            *offset += line.len() + 1;
+            Some((current, line))
+        })
+        .find_map(|(offset, line)| (line.trim() == "## Public Enum Policy").then_some(offset))?;
+    let rest = &document[start..];
+    let end = rest
+        .lines()
+        .scan(0, |offset, line| {
+            let current = *offset;
+            *offset += line.len() + 1;
+            Some((current, line))
+        })
+        .skip(1)
+        .find_map(|(offset, line)| {
+            (line.starts_with("## ") && line.trim() != "## Public Enum Policy").then_some(offset)
+        })
+        .unwrap_or(rest.len());
+
+    Some(&rest[..end])
+}
+
+fn public_enum_policy_entries(section: &str) -> Vec<String> {
+    section
+        .lines()
+        .filter_map(|line| {
+            let trimmed = line.trim();
+            let rest = trimmed.strip_prefix("| `")?;
+            let (name, _) = rest.split_once("` |")?;
+            Some(name.to_owned())
+        })
+        .collect()
+}
+
+fn push_duplicate_policy_entries(path: &Path, entries: &[String], violations: &mut Vec<String>) {
+    let mut seen = BTreeSet::new();
+
+    for entry in entries {
+        if !seen.insert(entry) {
+            violations.push(format!(
+                "{}: Public Enum Policy table must not duplicate `{}` rows",
+                path.display(),
+                entry
+            ));
+        }
+    }
 }
 
 fn undocumented_allow_line_numbers(source: &str) -> Vec<usize> {

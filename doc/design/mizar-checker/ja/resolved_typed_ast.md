@@ -337,6 +337,29 @@ assembly は deterministic でなければならない。
   existing provenance で sort する;
 - equivalent input は byte-identical debug rendering を生成する。
 
+## Public Enum Policy
+
+task 31 は frontend task-25 の public-enum decision procedure をこの module に適用する。
+`resolved_typed_ast` の public checker-owned enum はすべて forward-compatible API surface
+であり、`#[non_exhaustive]` を維持しなければならない。downstream consumer は wildcard
+または fallback arm を保持する。checker 内部の match は、仕様化済み behavior を実装するために
+現在表現されている variant へ exhaustive のままにしてよい。
+
+| enum | decision |
+|---|---|
+| `ResolvedNodeKindHintKind` | 前方互換; source-shaped node hint は downstream presentation need とともに増える可能性がある。 |
+| `ResolvedTypedNodeKind` | 前方互換; resolved node category は後続 source-shaped projection とともに増える可能性がある。 |
+| `ResolvedNodeRecovery` | 前方互換; node recovery state は partial assembly policy とともに増える可能性がある。 |
+| `ResolvedNodeRecoveryReason` | 前方互換; recovery reason は source extraction と failed-site handling の拡大に伴い増える可能性がある。 |
+| `OverloadResolutionStatus` | 前方互換; projected overload status は phase-8 result handling とともに増える可能性がある。 |
+| `CoercionInsertionSource` | 前方互換; insertion source は accepted coercion/view form とともに増える可能性がある。 |
+| `ResolvedTypedDiagnosticSource` | 前方互換; diagnostic source は追加 projection stage とともに増える可能性がある。 |
+| `ResolvedTypedDiagnosticSeverity` | 前方互換; diagnostic severity policy は IDE/artifact consumer とともに増える可能性がある。 |
+| `CandidateSummaryNamespace` | 前方互換; candidate-summary namespace は追加 overload table とともに増える可能性がある。 |
+| `ResolvedTypedAstError` | 前方互換; assembly validation error は新しい projection invariant とともに増える可能性がある。 |
+
+この module が所有する exhaustive public enum exception はない。
+
 ## task 28 の planned tests
 
 task 28 は Rust coverage を追加すべきである。

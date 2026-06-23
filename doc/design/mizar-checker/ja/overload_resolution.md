@@ -466,6 +466,57 @@ deterministic rendering requirements:
    view、diagnostic はすべて canonical order で render する。
 4. equivalent input は byte-identical debug rendering を生成する。
 
+## Public Enum Policy
+
+task 31 は frontend task-25 の public-enum decision procedure をこの module に適用する。
+`overload_resolution` の public checker-owned enum はすべて forward-compatible API
+surface であり、`#[non_exhaustive]` を維持しなければならない。downstream consumer は
+wildcard または fallback arm を保持する。checker 内部の match は、仕様化済み behavior を
+実装するために現在表現されている variant へ exhaustive のままにしてよい。
+
+| enum | decision |
+|---|---|
+| `OverloadSiteKind` | 前方互換; overload site role は source extraction の拡大に伴い増える可能性がある。 |
+| `UnsupportedOverloadRole` | 前方互換; unsupported role category は parser/checker surface とともに増える可能性がある。 |
+| `OverloadSiteRecovery` | 前方互換; site recovery state は source recovery integration とともに増える可能性がある。 |
+| `CandidateDeclarationKind` | 前方互換; candidate declaration family は Mizar declaration とともに増える可能性がある。 |
+| `CandidateOrigin` | 前方互換; candidate origin は summary、artifact、recovery source とともに増える可能性がある。 |
+| `CoherenceStatus` | 前方互換; coherence state は proof/artifact status の接続に伴い増える可能性がある。 |
+| `TemplateArgument` | 前方互換; template argument form は parser/template semantics とともに増える可能性がある。 |
+| `TemplateQuaStatus` | 前方互換; template `qua` state は view evidence policy とともに増える可能性がある。 |
+| `TemplateConstraintEvidenceStatus` | 前方互換; constraint evidence state は proof/artifact input とともに増える可能性がある。 |
+| `CandidateScope` | 前方互換; candidate scope は dependency と summary source とともに増える可能性がある。 |
+| `OverloadSiteStatus` | 前方互換; site state は recovery と deferred input とともに増える可能性がある。 |
+| `OverloadCandidateStatus` | 前方互換; candidate state は collection と filtering をまたいで増える可能性がある。 |
+| `TemplateSubstitutionSource` | 前方互換; substitution source は inference payload とともに増える可能性がある。 |
+| `TemplateExpansionStatus` | 前方互換; expansion outcome は template semantics とともに増える可能性がある。 |
+| `TemplateExpansionFailure` | 前方互換; expansion failure は新しい template check とともに増える可能性がある。 |
+| `ArgumentViabilityEvidence` | 前方互換; viability evidence は fact、view、proof とともに増える可能性がある。 |
+| `ViabilityFactStatus` | 前方互換; fact evidence state は fact-query policy とともに増える可能性がある。 |
+| `ViabilityCoercionKind` | 前方互換; viability coercion category は view insertion とともに増える可能性がある。 |
+| `ViabilityCoercionStatus` | 前方互換; viability coercion state は evidence handling とともに増える可能性がある。 |
+| `CandidateViabilityStatus` | 前方互換; candidate viability state は rejection/blocking policy とともに増える可能性がある。 |
+| `ArgumentViewKind` | 前方互換; argument view kind は追加 coercion form とともに増える可能性がある。 |
+| `CandidateRejectionReason` | 前方互換; rejection reason は semantic check とともに増える可能性がある。 |
+| `CandidateBlockedReasonKind` | 前方互換; blocked reason は external dependency とともに増える可能性がある。 |
+| `SpecificityComparisonStatus` | 前方互換; comparison input status は specificity evidence とともに増える可能性がある。 |
+| `SpecificityBlockedReasonKind` | 前方互換; blocked comparison reason は payload validation とともに増える可能性がある。 |
+| `SpecificityComparisonOutcome` | 前方互換; comparison outcome は ordering policy とともに増える可能性がある。 |
+| `SpecificityFailureReason` | 前方互換; specificity failure reason は graph validation とともに増える可能性がある。 |
+| `RefinementJoinStatus` | 前方互換; refinement join state は result-type policy とともに増える可能性がある。 |
+| `RefinementJoinFailure` | 前方互換; refinement join failure は compatibility check とともに増える可能性がある。 |
+| `ExposedResultSource` | 前方互換; exposed-result source は selection policy とともに増える可能性がある。 |
+| `InsertedViewKind` | 前方互換; inserted view kind は accepted coercion form とともに増える可能性がある。 |
+| `InsertedViewStatus` | 前方互換; inserted view state は validation policy とともに増える可能性がある。 |
+| `OverloadResultStatus` | 前方互換; overload result state は failed-site handling とともに増える可能性がある。 |
+| `OverloadBlockedReason` | 前方互換; blocked overload reason は selection validation とともに増える可能性がある。 |
+| `OverloadDiagnosticProvenance` | 前方互換; diagnostic provenance は追加 payload stage とともに増える可能性がある。 |
+| `OverloadDiagnosticClass` | 前方互換; diagnostic class は public checker diagnostic code が割り当てられる前に増える可能性がある。 |
+| `OverloadDiagnosticSeverity` | 前方互換; diagnostic severity policy は IDE/artifact consumer とともに増える可能性がある。 |
+| `OverloadDiagnosticRecovery` | 前方互換; diagnostic recovery state は partial overload policy とともに増える可能性がある。 |
+
+この module が所有する exhaustive public enum exception はない。
+
 ## deferred and external gaps
 
 task 26 は以下を意図的に deferred のままにする。

@@ -508,6 +508,58 @@ Deterministic rendering requirements:
    refinements, inserted views, and diagnostics all render in canonical order.
 4. Equivalent inputs produce byte-identical debug rendering.
 
+## Public Enum Policy
+
+Task 31 applies the frontend task-25 public-enum decision procedure to this
+module. All public checker-owned enums in `overload_resolution` are
+forward-compatible API surfaces and must remain `#[non_exhaustive]`;
+downstream consumers must keep wildcard or fallback arms. Checker-internal
+matches may remain exhaustive over the currently represented variants when
+implementing the specified behavior.
+
+| enum | decision |
+|---|---|
+| `OverloadSiteKind` | Forward-compatible; overload site roles may grow as source extraction expands. |
+| `UnsupportedOverloadRole` | Forward-compatible; unsupported role categories may grow with parser/checker surfaces. |
+| `OverloadSiteRecovery` | Forward-compatible; site recovery states may grow with source recovery integration. |
+| `CandidateDeclarationKind` | Forward-compatible; candidate declaration families may grow with Mizar declarations. |
+| `CandidateOrigin` | Forward-compatible; candidate origins may grow with summaries, artifacts, and recovery sources. |
+| `CoherenceStatus` | Forward-compatible; coherence states may grow when proof/artifact status is connected. |
+| `TemplateArgument` | Forward-compatible; template argument forms may grow with parser/template semantics. |
+| `TemplateQuaStatus` | Forward-compatible; template `qua` states may grow with view evidence policy. |
+| `TemplateConstraintEvidenceStatus` | Forward-compatible; constraint evidence states may grow with proof/artifact inputs. |
+| `CandidateScope` | Forward-compatible; candidate scopes may grow with dependency and summary sources. |
+| `OverloadSiteStatus` | Forward-compatible; site states may grow with recovery and deferred inputs. |
+| `OverloadCandidateStatus` | Forward-compatible; candidate states may grow across collection and filtering. |
+| `TemplateSubstitutionSource` | Forward-compatible; substitution sources may grow with inference payloads. |
+| `TemplateExpansionStatus` | Forward-compatible; expansion outcomes may grow with template semantics. |
+| `TemplateExpansionFailure` | Forward-compatible; expansion failures may grow with new template checks. |
+| `ArgumentViabilityEvidence` | Forward-compatible; viability evidence may grow with facts, views, and proofs. |
+| `ViabilityFactStatus` | Forward-compatible; fact evidence states may grow with fact-query policy. |
+| `ViabilityCoercionKind` | Forward-compatible; viability coercion categories may grow with view insertion. |
+| `ViabilityCoercionStatus` | Forward-compatible; viability coercion states may grow with evidence handling. |
+| `CandidateViabilityStatus` | Forward-compatible; candidate viability states may grow with rejection/blocking policy. |
+| `ArgumentViewKind` | Forward-compatible; argument view kinds may grow with additional coercion forms. |
+| `CandidateRejectionReason` | Forward-compatible; rejection reasons may grow with semantic checks. |
+| `CandidateBlockedReasonKind` | Forward-compatible; blocked reasons may grow with external dependencies. |
+| `SpecificityComparisonStatus` | Forward-compatible; comparison input statuses may grow with specificity evidence. |
+| `SpecificityBlockedReasonKind` | Forward-compatible; blocked comparison reasons may grow with payload validation. |
+| `SpecificityComparisonOutcome` | Forward-compatible; comparison outcomes may grow with ordering policy. |
+| `SpecificityFailureReason` | Forward-compatible; specificity failure reasons may grow with graph validation. |
+| `RefinementJoinStatus` | Forward-compatible; refinement join states may grow with result-type policy. |
+| `RefinementJoinFailure` | Forward-compatible; refinement join failures may grow with compatibility checks. |
+| `ExposedResultSource` | Forward-compatible; exposed-result sources may grow with selection policy. |
+| `InsertedViewKind` | Forward-compatible; inserted view kinds may grow with accepted coercion forms. |
+| `InsertedViewStatus` | Forward-compatible; inserted view states may grow with validation policy. |
+| `OverloadResultStatus` | Forward-compatible; overload result states may grow with failed-site handling. |
+| `OverloadBlockedReason` | Forward-compatible; blocked overload reasons may grow with selection validation. |
+| `OverloadDiagnosticProvenance` | Forward-compatible; diagnostic provenance may grow with additional payload stages. |
+| `OverloadDiagnosticClass` | Forward-compatible; diagnostic classes may grow before public checker diagnostic codes are allocated. |
+| `OverloadDiagnosticSeverity` | Forward-compatible; diagnostic severity policy may grow with IDE/artifact consumers. |
+| `OverloadDiagnosticRecovery` | Forward-compatible; diagnostic recovery states may grow with partial overload policy. |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## Deferred And External Gaps
 
 Task 26 deliberately keeps the following deferred:

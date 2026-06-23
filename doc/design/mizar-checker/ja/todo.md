@@ -526,10 +526,15 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       source-to-checker payload extraction は既存 external gap の下で deferred
       のままなので、active `.miz` fixture は追加していない。
 
-31. **公開 enum の前方互換性ポリシー。** [ ]
+31. **公開 enum の前方互換性ポリシー。** [x]
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用し、所有
       モジュール仕様に決定を記録する。
     - 依存: 28。仕様: 全モジュール仕様。
+    - task 31 で完了: 現在の checker-owned public enum はすべて downstream
+      forward-compatible API surface として分類し、`#[non_exhaustive]` を維持する。
+      各 owning EN/JA module spec は `Public Enum Policy` table と
+      no-exhaustive-exceptions statement を記録し、`tests/lint_policy.rs` は今後の
+      public enum attribute と policy row の source/spec drift を guard する。
 
 32. **ソース/仕様対応監査。** [ ]
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ

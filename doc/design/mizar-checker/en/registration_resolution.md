@@ -511,6 +511,33 @@ activated registrations, trace steps, or exported facts.
 Cluster contradictions are excluded from recoverable diagnostic handling. They
 are fatal soundness failures and stop export of the affected phase-7 output.
 
+## Public Enum Policy
+
+Task 31 applies the frontend task-25 public-enum decision procedure to this
+module. All public checker-owned enums in `registration_resolution` are
+forward-compatible API surfaces and must remain `#[non_exhaustive]`;
+downstream consumers must keep wildcard or fallback arms. Checker-internal
+matches may remain exhaustive over the currently represented variants when
+implementing the specified behavior.
+
+| enum | decision |
+|---|---|
+| `RegistrationPatternStatus` | Forward-compatible; pattern extraction states may grow as checker-ready payloads land. |
+| `PendingRegistrationStatus` | Forward-compatible; pending states may grow with validation and artifact handoff policy. |
+| `RejectedRegistrationReason` | Forward-compatible; rejection reasons may grow as validation surfaces expand. |
+| `ResolverTargetShell` | Forward-compatible; resolver shell projections may grow with resolver payloads. |
+| `RegistrationValidationKind` | Forward-compatible; validation categories may grow with additional registration families. |
+| `RegistrationValidationPattern` | Forward-compatible; validation patterns may grow with richer semantic payloads. |
+| `RegistrationReferencedSymbolRole` | Forward-compatible; referenced-symbol roles may grow as validation checks expand. |
+| `ActivationVerifierStatus` | Forward-compatible; verifier/artifact status may grow when proof handoff is connected. |
+| `ExistentialGateRecovery` | Forward-compatible; existential-gate recovery states may grow with source extraction. |
+| `ExistentialGateStatus` | Forward-compatible; existential-gate outcomes may grow with evidence and artifact reuse. |
+| `RegistrationDiagnosticClass` | Forward-compatible; diagnostic classes may grow before public checker diagnostic codes are allocated. |
+| `RegistrationDiagnosticSeverity` | Forward-compatible; diagnostic severity policy may grow with IDE/artifact consumers. |
+| `RegistrationDiagnosticRecovery` | Forward-compatible; diagnostic recovery states may grow with partial registration policy. |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## External Dependency Gaps And Deferrals
 
 | ID | Class | Evidence | Required action |

@@ -474,6 +474,41 @@ task 3 は、exact な `typed-ast-debug-v1` header を持つ決定的な debug r
 debug format はテストとレビューの補助であり、stable public artifact schema では
 ない。
 
+## Public Enum Policy
+
+task 31 は frontend task-25 の public-enum decision procedure をこの module に適用する。
+`typed_ast` の public checker-owned enum はすべて forward-compatible API surface であり、
+`#[non_exhaustive]` を維持しなければならない。downstream consumer は wildcard または
+fallback arm を保持する。checker 内部の match は、仕様化済み behavior を実装するために
+現在表現されている variant へ exhaustive のままにしてよい。
+
+| enum | decision |
+|---|---|
+| `TypingState` | 前方互換; phase-6 node typing state は recovery と handoff state の精緻化に伴い増える可能性がある。 |
+| `NodeRecoveryState` | 前方互換; node recovery category は parser/checker recovery integration に伴い増える可能性がある。 |
+| `TypedArenaError` | 前方互換; arena validation failure は新しい structural check を追加する可能性がある。 |
+| `TypedSiteRef` | 前方互換; typed-site ownership は追加の checker-owned role を得る可能性がある。 |
+| `TypeContextLayer` | 前方互換; local context layer は statement/proof extraction が入るにつれて増える可能性がある。 |
+| `BindingTypeRef` | 前方互換; binding type reference は追加の checker-owned anchor を得る可能性がある。 |
+| `ContextRecoveryState` | 前方互換; context recovery category はより豊かな partial checking とともに増える可能性がある。 |
+| `TypeStatus` | 前方互換; type availability state は downstream handoff policy の精緻化に伴い増える可能性がある。 |
+| `TypeEntryActual` | 前方互換; type-entry actual payload は後続 checker phase とともに増える可能性がある。 |
+| `TypeProvenance` | 前方互換; type provenance は追加の checker-owned evidence class を得る可能性がある。 |
+| `Polarity` | 前方互換; checker がより豊かな logical qualifier を記録する場合、predicate polarity は増える可能性がある。 |
+| `FactProvenance` | 前方互換; fact provenance は proof、registration、artifact input とともに増える可能性がある。 |
+| `FactStatus` | 前方互換; fact consumption state は obligation と artifact flow の成熟に伴い増える可能性がある。 |
+| `CoercionKind` | 前方互換; coercion category は source と inserted-view handling に伴い増える可能性がある。 |
+| `CoercionStatus` | 前方互換; coercion state は proof/artifact validation の接続に伴い増える可能性がある。 |
+| `CoercionProvenance` | 前方互換; coercion provenance は追加の evidence source を得る可能性がある。 |
+| `InitialObligationKind` | 前方互換; initial obligation category は VC と proof integration に伴い増える可能性がある。 |
+| `InitialObligationStatus` | 前方互換; obligation status は proof/artifact handoff の接続に伴い増える可能性がある。 |
+| `TypeDiagnosticClass` | 前方互換; diagnostic class は public checker diagnostic code が割り当てられる前に増える可能性がある。 |
+| `TypeDiagnosticSeverity` | 前方互換; diagnostic severity policy は IDE/artifact consumer とともに増える可能性がある。 |
+| `DiagnosticRecoveryState` | 前方互換; diagnostic recovery state は partial-checking policy に伴い増える可能性がある。 |
+| `TypedAstError` | 前方互換; top-level typed-AST validation failure は新しい variant を得る可能性がある。 |
+
+この module が所有する exhaustive public enum exception はない。
+
 ## task 3 の予定テスト
 
 task 3 は次を覆う Rust test を追加しなければならない。

@@ -469,6 +469,32 @@ successful type、accepted obligation、activated registration、trace step、ex
 cluster contradiction は recoverable diagnostic handling から除外する。これは fatal な
 soundness failure であり、影響を受けた phase-7 output の export を停止する。
 
+## Public Enum Policy
+
+task 31 は frontend task-25 の public-enum decision procedure をこの module に適用する。
+`registration_resolution` の public checker-owned enum はすべて forward-compatible API
+surface であり、`#[non_exhaustive]` を維持しなければならない。downstream consumer は
+wildcard または fallback arm を保持する。checker 内部の match は、仕様化済み behavior を
+実装するために現在表現されている variant へ exhaustive のままにしてよい。
+
+| enum | decision |
+|---|---|
+| `RegistrationPatternStatus` | 前方互換; pattern extraction state は checker-ready payload が入るにつれて増える可能性がある。 |
+| `PendingRegistrationStatus` | 前方互換; pending state は validation と artifact handoff policy とともに増える可能性がある。 |
+| `RejectedRegistrationReason` | 前方互換; rejection reason は validation surface の拡大とともに増える可能性がある。 |
+| `ResolverTargetShell` | 前方互換; resolver shell projection は resolver payload とともに増える可能性がある。 |
+| `RegistrationValidationKind` | 前方互換; validation category は追加の registration family とともに増える可能性がある。 |
+| `RegistrationValidationPattern` | 前方互換; validation pattern はより豊かな semantic payload とともに増える可能性がある。 |
+| `RegistrationReferencedSymbolRole` | 前方互換; referenced-symbol role は validation check の拡大とともに増える可能性がある。 |
+| `ActivationVerifierStatus` | 前方互換; verifier/artifact status は proof handoff の接続に伴い増える可能性がある。 |
+| `ExistentialGateRecovery` | 前方互換; existential-gate recovery state は source extraction とともに増える可能性がある。 |
+| `ExistentialGateStatus` | 前方互換; existential-gate outcome は evidence と artifact reuse とともに増える可能性がある。 |
+| `RegistrationDiagnosticClass` | 前方互換; diagnostic class は public checker diagnostic code が割り当てられる前に増える可能性がある。 |
+| `RegistrationDiagnosticSeverity` | 前方互換; diagnostic severity policy は IDE/artifact consumer とともに増える可能性がある。 |
+| `RegistrationDiagnosticRecovery` | 前方互換; diagnostic recovery state は partial registration policy とともに増える可能性がある。 |
+
+この module が所有する exhaustive public enum exception はない。
+
 ## external dependency gap と deferral
 
 | ID | class | evidence | required action |

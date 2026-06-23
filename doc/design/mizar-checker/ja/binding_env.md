@@ -359,6 +359,32 @@ diagnostic、external dependency gap を stable order で含める。memory addr
 host path、hash-map iteration order、`VcId`、proof witness、verifier status、final
 overload information を含めてはならない。
 
+## Public Enum Policy
+
+task 31 は frontend task-25 の public-enum decision procedure をこの module に適用する。
+`binding_env` の public checker-owned enum はすべて forward-compatible API surface であり、
+`#[non_exhaustive]` を維持しなければならない。downstream consumer は wildcard または
+fallback arm を保持する。checker 内部の match は、仕様化済み behavior を実装するために
+現在表現されている variant へ exhaustive のままにしてよい。
+
+| enum | decision |
+|---|---|
+| `BindingContextOwner` | 前方互換; context owner はより豊かな source-to-checker extraction とともに増える可能性がある。 |
+| `BindingContextLayer` | 前方互換; context layer category は statement、proof、definition scope とともに増える可能性がある。 |
+| `BindingContextRecovery` | 前方互換; context recovery state は partial binding recovery とともに増える可能性がある。 |
+| `BindingKind` | 前方互換; binding form はより多くの Mizar declaration extraction とともに増える可能性がある。 |
+| `BinderIdentity` | 前方互換; binder identity payload は closure と substitution evidence とともに増える可能性がある。 |
+| `BindingTypeSite` | 前方互換; binding type reference は追加の checker-owned anchor を得る可能性がある。 |
+| `BindingStatus` | 前方互換; binding status は deferred/external dependency state とともに増える可能性がある。 |
+| `BindingRecoveryState` | 前方互換; binding recovery state はより豊かな resolver payload とともに増える可能性がある。 |
+| `BindingDiagnosticClass` | 前方互換; diagnostic class は public checker diagnostic code が割り当てられる前に増える可能性がある。 |
+| `BindingDiagnosticSeverity` | 前方互換; diagnostic severity policy は IDE/artifact consumer とともに増える可能性がある。 |
+| `BindingDiagnosticRecovery` | 前方互換; diagnostic recovery state は partial binding policy とともに増える可能性がある。 |
+| `BindingLookupResult` | 前方互換; lookup result は追加の ambiguity と external-gap handling とともに増える可能性がある。 |
+| `BindingEnvError` | 前方互換; binding-env construction error は新しい validation case を得る可能性がある。 |
+
+この module が所有する exhaustive public enum exception はない。
+
 ## Task 5 の予定テスト
 
 task 5 は Rust test で次を覆わなければならない。

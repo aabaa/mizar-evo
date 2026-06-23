@@ -473,6 +473,43 @@ task 7-11 implementation は deterministic output を保たなければならな
 - 同等の `ResolvedAst`、`SymbolEnv`、`BindingEnv`、dependency summary、checker configuration は
   同等の `TypedAst` table を生成する。
 
+## Public Enum Policy
+
+task 31 は frontend task-25 の public-enum decision procedure をこの module に適用する。
+`type_checker` の public checker-owned enum はすべて forward-compatible API surface であり、
+`#[non_exhaustive]` を維持しなければならない。downstream consumer は wildcard または
+fallback arm を保持する。checker 内部の match は、仕様化済み behavior を実装するために
+現在表現されている variant へ exhaustive のままにしてよい。
+
+| enum | decision |
+|---|---|
+| `CoercionRequestKind` | 前方互換; coercion request category は後続の view と obligation form とともに増える可能性がある。 |
+| `CoercionEvidence` | 前方互換; coercion evidence は proof、registration、artifact source とともに増える可能性がある。 |
+| `CoercionDeferredReason` | 前方互換; deferred coercion reason は external payload gap が閉じるにつれて増える可能性がある。 |
+| `InitialRequirementKind` | 前方互換; initial requirement category は VC/proof integration とともに増える可能性がある。 |
+| `TypeFactQueryStatus` | 前方互換; fact query outcome は contradiction と evidence policy の成熟に伴い増える可能性がある。 |
+| `TermKind` | 前方互換; term category は source-to-checker extraction とともに増える可能性がある。 |
+| `TermReference` | 前方互換; term reference は追加の checker-owned identity anchor を得る可能性がある。 |
+| `TermDeferredReason` | 前方互換; deferred term reason は source payload が入るにつれて増える可能性がある。 |
+| `FormulaKind` | 前方互換; formula category は statement/proof extraction とともに増える可能性がある。 |
+| `FormulaDeferredReason` | 前方互換; deferred formula reason は source payload が入るにつれて増える可能性がある。 |
+| `CandidateIdentity` | 前方互換; open candidate identity はより豊かな overload extraction とともに増える可能性がある。 |
+| `CandidateSetKind` | 前方互換; candidate-set category は後続 overload phase とともに増える可能性がある。 |
+| `CandidateSetStatus` | 前方互換; candidate-set state は deferred と failed-site handling とともに増える可能性がある。 |
+| `CandidateStatus` | 前方互換; candidate state は evidence と recovery handling とともに増える可能性がある。 |
+| `TermStatus` | 前方互換; checked-term state は partial inference policy とともに増える可能性がある。 |
+| `FormulaStatus` | 前方互換; checked-formula state は partial inference policy とともに増える可能性がある。 |
+| `DeclarationKind` | 前方互換; declaration kind はより多くの Mizar binding form とともに増える可能性がある。 |
+| `DeclarationDeferredReason` | 前方互換; deferred declaration reason は extraction gap が閉じるにつれて増える可能性がある。 |
+| `DeclarationStatus` | 前方互換; declaration state は local recovery と handoff policy とともに増える可能性がある。 |
+| `TypeHeadInput` | 前方互換; input type head は resolver と built-in payload とともに増える可能性がある。 |
+| `AttributePolarity` | 前方互換; type predicate がより豊かな qualifier を得る場合、attribute polarity は増える可能性がある。 |
+| `TypeHeadRef` | 前方互換; normalized type head は structure、mode、built-in とともに増える可能性がある。 |
+| `TypeHeadErrorKind` | 前方互換; type-head error category は resolver diagnostic とともに増える可能性がある。 |
+| `NormalizedTypeStatus` | 前方互換; normalized type state は recovery と artifact handoff policy とともに増える可能性がある。 |
+
+この module が所有する exhaustive public enum exception はない。
+
 ## task 7-11 の予定テスト
 
 task 7 は Rust test で次を覆う。

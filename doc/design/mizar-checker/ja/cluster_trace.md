@@ -328,6 +328,28 @@ replay consumer が行ってよいこと:
 replay consumer は追加の cluster fact を推論したり、追加 reduction を適用したり、不足
 step を修復したりしてはならない。
 
+## Public Enum Policy
+
+task 31 は frontend task-25 の public-enum decision procedure をこの module に適用する。
+`cluster_trace` の public checker-owned enum はすべて forward-compatible API surface であり、
+`#[non_exhaustive]` を維持しなければならない。downstream consumer は wildcard または
+fallback arm を保持する。checker 内部の match は、仕様化済み behavior を実装するために
+現在表現されている variant へ exhaustive のままにしてよい。
+
+| enum | decision |
+|---|---|
+| `ClusterClosureStatus` | 前方互換; closure outcome は artifact と export handling とともに増える可能性がある。 |
+| `ResolutionTraceStep` | 前方互換; trace step family は追加の checker-owned replay event とともに増える可能性がある。 |
+| `ClusterReplayStatus` | 前方互換; replay outcome は artifact/cache validation とともに増える可能性がある。 |
+| `ReductionGuardKind` | 前方互換; guard category は reduction proof payload とともに増える可能性がある。 |
+| `ClusterRuleKind` | 前方互換; rule family は registration semantics とともに増える可能性がある。 |
+| `ClusterFactProvenance` | 前方互換; fact provenance は registration、proof、artifact source とともに増える可能性がある。 |
+| `ClusterDiagnosticClass` | 前方互換; diagnostic class は public checker diagnostic code が割り当てられる前に増える可能性がある。 |
+| `ClusterDiagnosticSeverity` | 前方互換; diagnostic severity policy は IDE/artifact consumer とともに増える可能性がある。 |
+| `ClusterDiagnosticRecovery` | 前方互換; diagnostic recovery state は partial trace policy とともに増える可能性がある。 |
+
+この module が所有する exhaustive public enum exception はない。
+
 ## external / deferred input
 
 task 15 は以下を open として分類する。

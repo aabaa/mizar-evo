@@ -482,6 +482,41 @@ with the exact `typed-ast-debug-v1` header. The rendering contract is:
 The debug format is a test and review aid, not a stable public artifact
 schema.
 
+## Public Enum Policy
+
+Task 31 applies the frontend task-25 public-enum decision procedure to this
+module. All public checker-owned enums in `typed_ast` are forward-compatible API
+surfaces and must remain `#[non_exhaustive]`; downstream consumers must keep
+wildcard or fallback arms. Checker-internal matches may remain exhaustive over
+the currently represented variants when implementing the specified behavior.
+
+| enum | decision |
+|---|---|
+| `TypingState` | Forward-compatible; phase-6 node typing states may grow as recovery and handoff states are refined. |
+| `NodeRecoveryState` | Forward-compatible; node recovery categories may grow with parser/checker recovery integration. |
+| `TypedArenaError` | Forward-compatible; arena validation failures may add new structural checks. |
+| `TypedSiteRef` | Forward-compatible; typed-site ownership may gain additional checker-owned roles. |
+| `TypeContextLayer` | Forward-compatible; local context layers may grow as statement/proof extraction lands. |
+| `BindingTypeRef` | Forward-compatible; binding type references may gain additional checker-owned anchors. |
+| `ContextRecoveryState` | Forward-compatible; context recovery categories may grow with richer partial checking. |
+| `TypeStatus` | Forward-compatible; type availability states may grow as downstream handoff policy is refined. |
+| `TypeEntryActual` | Forward-compatible; type-entry actual payloads may grow with later checker phases. |
+| `TypeProvenance` | Forward-compatible; type provenance may gain additional checker-owned evidence classes. |
+| `Polarity` | Forward-compatible; predicate polarity may grow if the checker records richer logical qualifiers. |
+| `FactProvenance` | Forward-compatible; fact provenance may grow with proof, registration, and artifact inputs. |
+| `FactStatus` | Forward-compatible; fact consumption states may grow as obligation and artifact flows mature. |
+| `CoercionKind` | Forward-compatible; coercion categories may grow with source and inserted-view handling. |
+| `CoercionStatus` | Forward-compatible; coercion state may grow as proof/artifact validation is connected. |
+| `CoercionProvenance` | Forward-compatible; coercion provenance may gain additional evidence sources. |
+| `InitialObligationKind` | Forward-compatible; initial obligation categories may grow with VC and proof integration. |
+| `InitialObligationStatus` | Forward-compatible; obligation status may grow when proof/artifact handoff is connected. |
+| `TypeDiagnosticClass` | Forward-compatible; diagnostic classes may grow before public checker diagnostic codes are allocated. |
+| `TypeDiagnosticSeverity` | Forward-compatible; diagnostic severity policy may grow with IDE/artifact consumers. |
+| `DiagnosticRecoveryState` | Forward-compatible; diagnostic recovery states may grow with partial-checking policy. |
+| `TypedAstError` | Forward-compatible; top-level typed-AST validation failures may gain new variants. |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## Planned Tests For Task 3
 
 Task 3 must add Rust tests that cover:

@@ -352,6 +352,29 @@ Replay consumers may:
 Replay consumers must not infer additional cluster facts, apply additional
 reductions, or repair missing steps.
 
+## Public Enum Policy
+
+Task 31 applies the frontend task-25 public-enum decision procedure to this
+module. All public checker-owned enums in `cluster_trace` are forward-compatible
+API surfaces and must remain `#[non_exhaustive]`; downstream consumers must
+keep wildcard or fallback arms. Checker-internal matches may remain exhaustive
+over the currently represented variants when implementing the specified
+behavior.
+
+| enum | decision |
+|---|---|
+| `ClusterClosureStatus` | Forward-compatible; closure outcomes may grow with artifact and export handling. |
+| `ResolutionTraceStep` | Forward-compatible; trace step families may grow with additional checker-owned replay events. |
+| `ClusterReplayStatus` | Forward-compatible; replay outcomes may grow with artifact/cache validation. |
+| `ReductionGuardKind` | Forward-compatible; guard categories may grow with reduction proof payloads. |
+| `ClusterRuleKind` | Forward-compatible; rule families may grow with registration semantics. |
+| `ClusterFactProvenance` | Forward-compatible; fact provenance may grow with registration, proof, and artifact sources. |
+| `ClusterDiagnosticClass` | Forward-compatible; diagnostic classes may grow before public checker diagnostic codes are allocated. |
+| `ClusterDiagnosticSeverity` | Forward-compatible; diagnostic severity policy may grow with IDE/artifact consumers. |
+| `ClusterDiagnosticRecovery` | Forward-compatible; diagnostic recovery states may grow with partial trace policy. |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## External And Deferred Inputs
 
 Task 15 classifies the following as open:

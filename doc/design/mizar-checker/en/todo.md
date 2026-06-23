@@ -555,10 +555,16 @@ Keep `cargo test -p mizar-checker` green after each task (see
       added because stage runners and source-to-checker payload extraction
       remain deferred under the existing external gaps.
 
-31. **Public-enum forward-compatibility policy.** [ ]
+31. **Public-enum forward-compatibility policy.** [x]
     - Apply the `mizar-frontend` task-25 procedure to each public enum;
       record decisions in the owning module specs.
     - Deps: 28. Spec: all module specs.
+    - Completed by task 31: every current checker-owned public enum is
+      classified as a downstream forward-compatible API surface that must
+      remain `#[non_exhaustive]`. Each owning EN/JA module spec records a
+      `Public Enum Policy` table and no-exhaustive-exceptions statement, and
+      `tests/lint_policy.rs` guards future source/spec drift for public enum
+      attributes and policy rows.
 
 32. **Source/spec correspondence audit.** [ ]
     - Trace every public API and promised behavior in the module specs to
