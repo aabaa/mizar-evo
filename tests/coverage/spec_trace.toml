@@ -1326,7 +1326,7 @@ id = "spec.en.elaboration.choice_comprehension.lowering"
 source = "doc/design/architecture/en/06.elaboration_and_core_ir.md"
 section = "Surface Terms Lower Through Canonical Core Symbols"
 stage = "type_elaboration"
-status = "planned"
+status = "deferred"
 required = true
 coverage = "property"
 deferred_reason = "Core elaboration is not implemented yet. Add semantic tests that stable `the T` lowers to generated Apply symbols, theorem propositions own stable choice symbols, exported definition choices are reused on unfolding, executable algorithm statement `the` sites lower to Pick bindings, and Fraenkel comprehensions require sethood evidence."
@@ -1337,10 +1337,43 @@ id = "spec.en.binding.substitution.capture_avoidance"
 source = "doc/design/architecture/en/16.substitution_and_binding.md"
 section = "Definition-Time Closures"
 stage = "advanced_semantics"
-status = "planned"
+status = "deferred"
 required = true
 coverage = "pass_and_fail"
 deferred_reason = "Substitution replay and proof-local abbreviation expansion are not implemented yet. Add regression coverage for the `defpred P(n be Nat) means n < m` shadowing example and malformed capture-producing substitutions."
+tests = []
+
+[[requirement]]
+id = "spec.en.checker.formula_statement.source_payloads"
+source = "doc/design/mizar-checker/en/00.crate_plan.md"
+section = "Task 29; MC-G019 and MC-G020 statement/formula source-to-checker gaps"
+stage = "formula_statement"
+status = "deferred"
+required = true
+coverage = "pass_and_fail"
+deferred_reason = "Task 29 cannot add active formula_statement `.miz` cases yet: mizar-test has no active formula_statement runner/tag gate, and mizar-checker still lacks AST-wide source-to-checker extraction for statement assumptions, formula payloads, local proof contexts, and recorded facts. Add equality, predicate, quantifier, assumption, label, and statement-failure corpus cases only after MC-G019/MC-G020 and runner support are implemented."
+tests = []
+
+[[requirement]]
+id = "spec.en.checker.advanced_semantics.registration_cluster_reduction_corpus"
+source = "doc/design/mizar-checker/en/00.crate_plan.md"
+section = "Task 29; MC-G021 and MC-G023 registration, cluster, and reduction corpus gaps"
+stage = "advanced_semantics"
+status = "deferred"
+required = true
+coverage = "pass_and_fail"
+deferred_reason = "Task 29 cannot add active cluster/reduction `.miz` semantic cases yet: mizar-test has no active advanced_semantics runner/tag gate, checker-ready registration payload extraction is missing, accepted verifier/artifact status is not wired, source-derived cluster/reduction trace extraction is unavailable, and artifact emission/reuse remains deferred. Add cluster activation, loop/bound/contradiction, reduction trace, and registration guard corpus cases after MC-G020/MC-G021/MC-G023 prerequisites exist."
+tests = []
+
+[[requirement]]
+id = "spec.en.checker.advanced_semantics.overload_resolution_corpus"
+source = "doc/design/mizar-checker/en/00.crate_plan.md"
+section = "Task 29; MC-G027 overload and resolved typed AST corpus gaps"
+stage = "advanced_semantics"
+status = "deferred"
+required = true
+coverage = "pass_and_fail"
+deferred_reason = "Task 29 cannot add active overload `.miz` semantic cases yet: mizar-test has no active advanced_semantics runner/tag gate, and source-to-checker extraction for overload sites, candidate groups, template payloads, source qua evidence, viability evidence, specificity comparisons, selection/refinement payloads, inserted views, and expression metadata remains unavailable. Add ambiguity, no-match, refinement-join, invalid narrowing, and successful overload corpus cases after MC-G020/MC-G027 prerequisites exist."
 tests = []
 
 [[requirement]]
@@ -1359,8 +1392,8 @@ id = "spec.en.type_soundness.escape_and_guard_failures"
 source = "doc/spec/en/16.theorems_and_proofs.md"
 section = "16.3.3 Skeleton Decomposition Rules"
 stage = "advanced_semantics"
-status = "planned"
+status = "deferred"
 required = true
 coverage = "fail"
-deferred_reason = "Name/type/proof checking is not implemented yet. Add fail coverage for witness leakage from now/proof blocks, unmet deffunc/defpred guards, missing sethood for comprehension, and invalid qua narrowing."
+deferred_reason = "Task 29 records this review-audit negative suite as deferred rather than adding fake active fixtures: mizar-test has no active advanced_semantics runner/tag gate, statement/proof assumption payload extraction and proof-owned acceptance inputs are missing, source-derived sethood evidence is unavailable, and overload source qua evidence is not extracted. Add fail coverage for witness leakage from now/proof blocks, unmet deffunc/defpred guards, missing sethood for comprehension, and invalid qua narrowing after MC-G019/MC-G020/MC-G021/MC-G027 and runner support exist."
 tests = []

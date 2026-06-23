@@ -524,14 +524,23 @@ Keep `cargo test -p mizar-checker` green after each task (see
 
 ### Hardening and cross-cutting follow-ups
 
-29. **Corpus growth at stages `formula_statement` and `advanced_semantics`.** [ ]
-    - Add registration/overload corpus cases (clusters, reductions,
-      ambiguity, refinement joins) with `spec_trace.toml` entries; grow
-      toward the 40/60 pass/fail mix.
-    - Include the review-audit advanced-semantics negative cases: witness
-      leakage from `now`/`proof` blocks, unmet `deffunc`/`defpred` guards,
-      missing sethood for comprehensions, and invalid `qua` narrowing.
+29. **Deferred corpus obligations at stages `formula_statement` and `advanced_semantics`.** [x]
+    - Record deferred registration/overload corpus obligations (clusters,
+      reductions, ambiguity, refinement joins) with `spec_trace.toml` entries;
+      active 40/60 pass/fail growth remains future work.
+    - Record the review-audit advanced-semantics negative obligations as
+      deferred: witness leakage from `now`/`proof` blocks, unmet
+      `deffunc`/`defpred` guards, missing sethood for comprehensions, and
+      invalid `qua` narrowing.
     - Deps: 20, 28. Spec: [staged_model.md](../../mizar-test/en/staged_model.md).
+    - Completed by task 29 as a deferred corpus-record task: `spec_trace.toml`
+      now records deferred formula/statement, cluster/reduction,
+      overload/refinement, and review-audit negative obligations with concrete
+      MC-G019/MC-G020/MC-G021/MC-G023/MC-G027 and runner blockers. No active
+      `.miz` fixtures were added because `mizar-test` has no active
+      `formula_statement` / `advanced_semantics` runner and mizar-checker still
+      lacks the source-to-checker semantic payload extraction needed for those
+      cases.
 
 30. **Determinism suite.** [ ]
     - Property coverage that identical inputs produce identical types,

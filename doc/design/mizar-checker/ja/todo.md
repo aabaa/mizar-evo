@@ -495,14 +495,23 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 
 ### 強化と横断フォローアップ
 
-29. **stage `formula_statement` / `advanced_semantics` のコーパス拡大。** [ ]
-    - registration/overload のコーパスケース（cluster、reduction、曖昧性、
-      refinement 結合）を `spec_trace.toml` 項目付きで追加し、40/60 の
-      pass/fail 比率へ向けて拡大する。
-    - レビュー監査由来の advanced-semantics negative case として、
-      `now`/`proof` block からの witness leakage、未充足の `deffunc`/`defpred`
-      guard、comprehension の sethood 欠落、不正な `qua` narrowing を含める。
+29. **stage `formula_statement` / `advanced_semantics` の deferred corpus obligation。** [x]
+    - registration/overload の deferred corpus obligation（cluster、reduction、
+      曖昧性、refinement 結合）を `spec_trace.toml` 項目付きで記録する。
+      active な 40/60 pass/fail 拡大は future work として残る。
+    - レビュー監査由来の advanced-semantics negative obligation として、
+      `now`/`proof` block からの witness leakage、未充足の
+      `deffunc`/`defpred` guard、comprehension の sethood 欠落、不正な
+      `qua` narrowing を deferred として記録する。
     - 依存: 20、28。仕様: [staged_model.md](../../mizar-test/ja/staged_model.md)。
+    - task 29 では deferred corpus-record task として完了:
+      `spec_trace.toml` は formula/statement、cluster/reduction、
+      overload/refinement、review-audit negative obligation を、具体的な
+      MC-G019/MC-G020/MC-G021/MC-G023/MC-G027 と runner blocker 付きで
+      deferred として記録する。`mizar-test` に active `formula_statement` /
+      `advanced_semantics` runner がなく、それらの case に必要な
+      source-to-checker semantic payload extraction も mizar-checker にまだ
+      存在しないため、active `.miz` fixture は追加していない。
 
 30. **決定性スイート。** [ ]
     - 同一入力が同一の型、事実、trace、候補順、診断を生むことの
