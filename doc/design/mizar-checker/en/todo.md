@@ -566,10 +566,18 @@ Keep `cargo test -p mizar-checker` green after each task (see
       `tests/lint_policy.rs` guards future source/spec drift for public enum
       attributes and policy rows.
 
-32. **Source/spec correspondence audit.** [ ]
+32. **Source/spec correspondence audit.** [x]
     - Trace every public API and promised behavior in the module specs to
       implementation and tests; record gaps as follow-up tasks.
     - Deps: 31. Spec: all module specs and this TODO.
+    - Completed by task 32: [source_spec_audit.md](./source_spec_audit.md)
+      inventories every current checker `pub mod` export, top-level public
+      item, and public `dense_id!` / `string_key!` newtype, then traces module
+      behavior promises to implementation, Rust tests, or explicit MC-G
+      `external_dependency_gap` / `test_gap` / `deferred` rows.
+      `tests/lint_policy.rs` guards that inventory and gap reconciliation. No
+      source/API behavior, `.miz` fixture, or expectation changed in this audit
+      task.
 
 33. **Bilingual documentation sync audit.** [ ]
     - Compare each English canonical document under

@@ -309,6 +309,120 @@ fn checker_public_enums_are_forward_compatible_and_documented() {
 }
 
 #[test]
+fn checker_source_spec_audit_covers_public_surface_and_gaps() {
+    let root = crate_root();
+    let docs_root = workspace_root().join("doc/design/mizar-checker");
+    let en_path = docs_root.join("en/source_spec_audit.md");
+    let ja_path = docs_root.join("ja/source_spec_audit.md");
+    let en_audit = read_to_string(&en_path);
+    let ja_audit = read_to_string(&ja_path);
+    let modules = [
+        ("src/typed_ast.rs", "typed_ast"),
+        ("src/binding_env.rs", "binding_env"),
+        ("src/type_checker.rs", "type_checker"),
+        ("src/registration_resolution.rs", "registration_resolution"),
+        ("src/cluster_trace.rs", "cluster_trace"),
+        ("src/overload_resolution.rs", "overload_resolution"),
+        ("src/resolved_typed_ast.rs", "resolved_typed_ast"),
+    ];
+    let mut violations = Vec::new();
+
+    let public_modules = public_module_exports(&read_to_string(&root.join("src/lib.rs")));
+    let public_module_set = public_modules.iter().cloned().collect::<BTreeSet<_>>();
+    push_module_export_drift(
+        &en_path,
+        &public_module_set,
+        &audit_module_exports(&en_audit),
+        &mut violations,
+    );
+    push_module_export_drift(
+        &ja_path,
+        &public_module_set,
+        &audit_module_exports(&ja_audit),
+        &mut violations,
+    );
+
+    for (source_path, module_name) in modules {
+        let source_path = root.join(source_path);
+        let public_items = public_surface_names(&read_to_string(&source_path));
+        assert!(
+            !public_items.is_empty(),
+            "{} should expose audited public items",
+            source_path.display()
+        );
+
+        let heading = format!("### `{module_name}`");
+        let en_section = markdown_heading_section(&en_audit, &heading).unwrap_or_else(|| {
+            panic!(
+                "{} must contain a source/spec audit section for `{module_name}`",
+                en_path.display()
+            )
+        });
+        let ja_section = markdown_heading_section(&ja_audit, &heading).unwrap_or_else(|| {
+            panic!(
+                "{} must contain a source/spec audit section for `{module_name}`",
+                ja_path.display()
+            )
+        });
+
+        let public_item_set = public_items.iter().cloned().collect::<BTreeSet<_>>();
+        push_audit_inventory_drift(
+            &en_path,
+            module_name,
+            &public_item_set,
+            &audit_inventory_entries(en_section),
+            &mut violations,
+        );
+        push_audit_inventory_drift(
+            &ja_path,
+            module_name,
+            &public_item_set,
+            &audit_inventory_entries(ja_section),
+            &mut violations,
+        );
+
+        for public_item in &public_items {
+            let needle = format!("`{public_item}`");
+            if !en_section.contains(&needle) {
+                violations.push(format!(
+                    "{}: `{module_name}` audit must include public item {needle}",
+                    en_path.display()
+                ));
+            }
+            if !ja_section.contains(&needle) {
+                violations.push(format!(
+                    "{}: `{module_name}` audit must include public item {needle}",
+                    ja_path.display()
+                ));
+            }
+        }
+    }
+
+    let en_plan = read_to_string(&docs_root.join("en/00.crate_plan.md"));
+    let expected_gap_ids = mc_gap_ids(&en_plan);
+    let en_reconciled_gap_ids = reconciled_mc_gap_ids(&en_audit);
+    let ja_reconciled_gap_ids = reconciled_mc_gap_ids(&ja_audit);
+    push_gap_reconciliation_drift(
+        &en_path,
+        &expected_gap_ids,
+        &en_reconciled_gap_ids,
+        &mut violations,
+    );
+    push_gap_reconciliation_drift(
+        &ja_path,
+        &expected_gap_ids,
+        &ja_reconciled_gap_ids,
+        &mut violations,
+    );
+
+    assert!(
+        violations.is_empty(),
+        "checker source/spec audit drift:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
 fn workspace_lint_baseline_denies_rustc_warnings_and_clippy_all() {
     let manifest_path = workspace_root().join("Cargo.toml");
     let manifest = read_to_string(&manifest_path);
@@ -504,6 +618,244 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
         )
 }
 
+fn public_module_exports(source: &str) -> Vec<String> {
+    source
+        .lines()
+        .filter_map(|line| {
+            line.trim()
+                .strip_prefix("pub mod ")
+                .and_then(|rest| rest.strip_suffix(';'))
+                .map(str::to_owned)
+        })
+        .collect()
+}
+
+fn audit_module_exports(document: &str) -> Vec<String> {
+    let section = markdown_heading_section(document, "## Crate Module Exports")
+        .expect("source/spec audit must contain Crate Module Exports section");
+    let inventory = section
+        .split("\nEvidence:")
+        .next()
+        .unwrap_or(section)
+        .split("\n根拠:")
+        .next()
+        .unwrap_or(section);
+
+    inventory
+        .lines()
+        .filter_map(|line| {
+            let trimmed = line.trim();
+            let rest = trimmed.strip_prefix("- `")?;
+            let (name, _) = rest.split_once('`')?;
+            Some(name.to_owned())
+        })
+        .collect()
+}
+
+fn push_module_export_drift(
+    path: &Path,
+    expected: &BTreeSet<String>,
+    actual: &[String],
+    violations: &mut Vec<String>,
+) {
+    let actual_set = actual.iter().cloned().collect::<BTreeSet<_>>();
+    push_duplicate_entries(path, "Crate Module Exports inventory", actual, violations);
+
+    for missing in expected.difference(&actual_set) {
+        violations.push(format!(
+            "{}: Crate Module Exports inventory must include `{missing}`",
+            path.display()
+        ));
+    }
+    for extra in actual_set.difference(expected) {
+        violations.push(format!(
+            "{}: Crate Module Exports inventory must not include stale `{extra}`",
+            path.display()
+        ));
+    }
+}
+
+fn public_surface_names(source: &str) -> Vec<String> {
+    let mut names = BTreeSet::new();
+
+    for line in source.lines() {
+        if let Some(name) = macro_public_newtype_name(line.trim()) {
+            names.insert(name.to_owned());
+            continue;
+        }
+
+        let Some(rest) = line.strip_prefix("pub ") else {
+            continue;
+        };
+        let mut parts = rest.split_whitespace();
+        let Some(kind) = parts.next() else {
+            continue;
+        };
+        if !matches!(kind, "struct" | "enum" | "type" | "trait" | "fn" | "const") {
+            continue;
+        }
+        let Some(raw_name) = parts.next() else {
+            continue;
+        };
+        let name = raw_name
+            .split(['<', '(', '{', ':', '=', ';'])
+            .find(|part| !part.is_empty());
+        if let Some(name) = name {
+            names.insert(name.to_owned());
+        }
+    }
+
+    names.into_iter().collect()
+}
+
+fn audit_inventory_entries(section: &str) -> Vec<String> {
+    let inventory = section
+        .split("\nCorrespondence:")
+        .next()
+        .unwrap_or(section)
+        .split("\n対応:")
+        .next()
+        .unwrap_or(section);
+
+    code_spans(
+        inventory
+            .lines()
+            .skip(1)
+            .collect::<Vec<_>>()
+            .join("\n")
+            .as_str(),
+    )
+}
+
+fn code_spans(text: &str) -> Vec<String> {
+    let mut entries = Vec::new();
+    let mut rest = text;
+
+    while let Some(start) = rest.find('`') {
+        rest = &rest[start + 1..];
+        let Some(end) = rest.find('`') else {
+            break;
+        };
+        entries.push(rest[..end].to_owned());
+        rest = &rest[end + 1..];
+    }
+
+    entries
+}
+
+fn push_audit_inventory_drift(
+    path: &Path,
+    module_name: &str,
+    expected: &BTreeSet<String>,
+    actual: &[String],
+    violations: &mut Vec<String>,
+) {
+    let actual_set = actual.iter().cloned().collect::<BTreeSet<_>>();
+    push_duplicate_entries(
+        path,
+        &format!("`{module_name}` source/spec audit inventory"),
+        actual,
+        violations,
+    );
+
+    for missing in expected.difference(&actual_set) {
+        violations.push(format!(
+            "{}: `{module_name}` source/spec audit inventory must include `{missing}`",
+            path.display()
+        ));
+    }
+    for extra in actual_set.difference(expected) {
+        violations.push(format!(
+            "{}: `{module_name}` source/spec audit inventory must not include stale `{extra}`",
+            path.display()
+        ));
+    }
+}
+
+fn reconciled_mc_gap_ids(document: &str) -> Vec<String> {
+    let gap_section = markdown_heading_section(document, "## Gap Reconciliation")
+        .or_else(|| markdown_heading_section(document, "## Gap Reconciliation"))
+        .expect("source/spec audit must contain Gap Reconciliation section");
+    let mut ids = Vec::new();
+
+    for line in gap_section.lines() {
+        let trimmed = line.trim();
+        let Some(rest) = trimmed.strip_prefix("| MC-G") else {
+            continue;
+        };
+        let Some((digits, _)) = rest.split_once(" |") else {
+            continue;
+        };
+        if digits.len() == 3 && digits.chars().all(|character| character.is_ascii_digit()) {
+            ids.push(format!("MC-G{digits}"));
+        }
+    }
+
+    for resolved_prefix in [
+        "Resolved setup-history rows remain closed:",
+        "Resolved setup-history row は closed のまま:",
+    ] {
+        let Some((_, resolved)) = gap_section.split_once(resolved_prefix) else {
+            continue;
+        };
+        let resolved = resolved
+            .split("\n## Task 32 Classification")
+            .next()
+            .unwrap_or(resolved);
+        ids.extend(mc_gap_ids(resolved));
+    }
+
+    ids
+}
+
+fn push_gap_reconciliation_drift(
+    path: &Path,
+    expected: &BTreeSet<String>,
+    actual: &[String],
+    violations: &mut Vec<String>,
+) {
+    let actual_set = actual.iter().cloned().collect::<BTreeSet<_>>();
+    push_duplicate_entries(path, "Gap Reconciliation MC-G rows", actual, violations);
+
+    for missing in expected.difference(&actual_set) {
+        violations.push(format!(
+            "{}: Gap Reconciliation must include {missing}",
+            path.display()
+        ));
+    }
+    for extra in actual_set.difference(expected) {
+        violations.push(format!(
+            "{}: Gap Reconciliation must not include stale {extra}",
+            path.display()
+        ));
+    }
+}
+
+fn push_duplicate_entries(
+    path: &Path,
+    label: &str,
+    entries: &[String],
+    violations: &mut Vec<String>,
+) {
+    let mut seen = BTreeSet::new();
+
+    for entry in entries {
+        if !seen.insert(entry) {
+            violations.push(format!(
+                "{}: {label} must not duplicate `{entry}`",
+                path.display()
+            ));
+        }
+    }
+}
+
+fn macro_public_newtype_name(line: &str) -> Option<&str> {
+    line.strip_prefix("dense_id!(")
+        .or_else(|| line.strip_prefix("string_key!("))
+        .and_then(|rest| rest.split_once(')'))
+        .map(|(name, _)| name)
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct PublicEnum {
     name: String,
@@ -603,6 +955,54 @@ fn push_duplicate_policy_entries(path: &Path, entries: &[String], violations: &m
             ));
         }
     }
+}
+
+fn markdown_heading_section<'a>(document: &'a str, heading: &str) -> Option<&'a str> {
+    let start = document
+        .lines()
+        .scan(0, |offset, line| {
+            let current = *offset;
+            *offset += line.len() + 1;
+            Some((current, line))
+        })
+        .find_map(|(offset, line)| (line.trim() == heading).then_some(offset))?;
+    let rest = &document[start..];
+    let heading_level = markdown_heading_level(heading)?;
+    let end = rest
+        .lines()
+        .scan(0, |offset, line| {
+            let current = *offset;
+            *offset += line.len() + 1;
+            Some((current, line))
+        })
+        .skip(1)
+        .find_map(|(offset, line)| {
+            let level = markdown_heading_level(line)?;
+            (level <= heading_level).then_some(offset)
+        })
+        .unwrap_or(rest.len());
+
+    Some(&rest[..end])
+}
+
+fn markdown_heading_level(line: &str) -> Option<usize> {
+    let trimmed = line.trim_start();
+    let level = trimmed.bytes().take_while(|byte| *byte == b'#').count();
+    (level > 0 && trimmed.as_bytes().get(level) == Some(&b' ')).then_some(level)
+}
+
+fn mc_gap_ids(document: &str) -> BTreeSet<String> {
+    document
+        .split(|character: char| !(character.is_ascii_alphanumeric() || character == '-'))
+        .filter(|token| {
+            token.len() == "MC-G000".len()
+                && token.starts_with("MC-G")
+                && token["MC-G".len()..]
+                    .chars()
+                    .all(|character| character.is_ascii_digit())
+        })
+        .map(str::to_owned)
+        .collect()
 }
 
 fn undocumented_allow_line_numbers(source: &str) -> Vec<usize> {

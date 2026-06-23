@@ -536,10 +536,17 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       no-exhaustive-exceptions statement を記録し、`tests/lint_policy.rs` は今後の
       public enum attribute と policy row の source/spec drift を guard する。
 
-32. **ソース/仕様対応監査。** [ ]
+32. **ソース/仕様対応監査。** [x]
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ
       トレースし、ギャップをフォローアップタスクとして記録する。
     - 依存: 31。仕様: 全モジュール仕様と本 TODO。
+    - task 32 で完了: [source_spec_audit.md](./source_spec_audit.md) は
+      現在の checker `pub mod` export、top-level public item、public
+      `dense_id!` / `string_key!` newtype をすべて inventory し、module behavior
+      promise を implementation、Rust tests、または明示的な MC-G
+      `external_dependency_gap` / `test_gap` / `deferred` row へ trace する。
+      `tests/lint_policy.rs` はその inventory と gap reconciliation を guard する。
+      この audit task では source/API behavior、`.miz` fixture、expectation を変更していない。
 
 33. **二言語ドキュメント同期監査。** [ ]
     - `doc/design/mizar-checker/en/` の各英語正本と日本語版を比較し、
