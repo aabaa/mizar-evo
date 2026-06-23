@@ -56,5 +56,5 @@ remain aligned with their owning specifications.
 Task 34 is complete when this English audit and its Japanese companion, the
 crate plan and todo updates, the source/spec and bilingual audit updates, and
 the lint-policy module-boundary guard are committed together. Task 34 does not
-claim crate completion by itself; the crate exit report and read-only quality
-review still need to close the autonomous crate development protocol.
+claim crate completion by itself; the closeout task has since recorded the
+crate exit report, and the report records the read-only quality review result.

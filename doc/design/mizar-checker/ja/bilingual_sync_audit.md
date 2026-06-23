@@ -32,6 +32,7 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `binding_env.md` | `../ja/binding_env.md` | `../en/binding_env.md` | purpose/boundary、context and binding tables、lookup/reserve/closure behavior、diagnostics、public enum policy、task classification | none |
 | `bilingual_sync_audit.md` | `../ja/bilingual_sync_audit.md` | `../en/bilingual_sync_audit.md` | pair inventory、synchronization definition、task classification、completion decision | none |
 | `cluster_trace.md` | `../ja/cluster_trace.md` | `../en/cluster_trace.md` | authority/scope、trace model、cluster/reduction steps、determinism、bounds/failures、public enum policy、deferred inputs | none |
+| `crate_exit_report.md` | `../ja/crate_exit_report.md` | `../en/crate_exit_report.md` | result、scope、task commit、hard gate、score breakdown、deferred item、verification、handoff | none |
 | `module_boundary_audit.md` | `../ja/module_boundary_audit.md` | `../en/module_boundary_audit.md` | split gate、source layout inventory、task classification、completion decision | none |
 | `overload_resolution.md` | `../ja/overload_resolution.md` | `../en/overload_resolution.md` | phase-8 boundary、site/candidate collection、template expansion、viability、specificity、selection/views、diagnostics、public enum policy、deferred gaps | none |
 | `registration_resolution.md` | `../ja/registration_resolution.md` | `../en/registration_resolution.md` | registration model、pending/activated database、validation、existential gates、cluster/reduction handoff、diagnostics、public enum policy、gap table | none |
@@ -57,6 +58,5 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 
 task 33 は、この English audit と Japanese companion、crate plan / todo update、
 lint-policy bilingual sync guard が同じ commit に含まれた時点で完了する。task 33
-は crate completion を主張しない。task 34 は module-boundary refactor gate を
-すでに記録しており、autonomous crate development protocol を閉じるには crate
-exit report と read-only quality review がまだ必要である。
+単体では crate completion を主張しない。task 34 と closeout task はすでに
+module-boundary refactor gate と crate exit report を記録している。

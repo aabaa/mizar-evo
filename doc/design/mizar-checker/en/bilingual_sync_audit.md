@@ -33,6 +33,7 @@ after this task.
 | `binding_env.md` | `../ja/binding_env.md` | `../en/binding_env.md` | purpose/boundary, context and binding tables, lookup/reserve/closure behavior, diagnostics, public enum policy, task classification | none |
 | `bilingual_sync_audit.md` | `../ja/bilingual_sync_audit.md` | `../en/bilingual_sync_audit.md` | pair inventory, synchronization definition, task classification, completion decision | none |
 | `cluster_trace.md` | `../ja/cluster_trace.md` | `../en/cluster_trace.md` | authority/scope, trace model, cluster/reduction steps, determinism, bounds/failures, public enum policy, deferred inputs | none |
+| `crate_exit_report.md` | `../ja/crate_exit_report.md` | `../en/crate_exit_report.md` | result, scope, task commits, hard gates, score breakdown, deferred items, verification, handoff | none |
 | `module_boundary_audit.md` | `../ja/module_boundary_audit.md` | `../en/module_boundary_audit.md` | split gate, source layout inventory, task classification, completion decision | none |
 | `overload_resolution.md` | `../ja/overload_resolution.md` | `../en/overload_resolution.md` | phase-8 boundary, site/candidate collection, template expansion, viability, specificity, selection/views, diagnostics, public enum policy, deferred gaps | none |
 | `registration_resolution.md` | `../ja/registration_resolution.md` | `../en/registration_resolution.md` | registration model, pending/activated database, validation, existential gates, cluster/reduction handoff, diagnostics, public enum policy, gap table | none |
@@ -58,7 +59,6 @@ after this task.
 
 Task 33 is complete when this English audit and its Japanese companion, the
 crate plan and todo updates, and the lint-policy bilingual sync guard are
-committed together. Task 33 does not claim crate completion; task 34 has since
-recorded the module-boundary refactor gate, and the crate exit report plus
-read-only quality review still need to close the autonomous crate development
-protocol.
+committed together. Task 33 does not claim crate completion by itself; task 34
+and the closeout task have since recorded the module-boundary refactor gate and
+crate exit report.

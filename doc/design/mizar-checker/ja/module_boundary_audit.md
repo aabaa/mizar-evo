@@ -55,5 +55,5 @@ note として記録する。
 task 34 は、この English audit と Japanese companion、crate plan / todo update、
 source/spec audit と bilingual audit の更新、lint-policy module-boundary guard が
 同じ commit に含まれた時点で完了する。task 34 単体では crate completion を主張しない。
-autonomous crate development protocol を閉じるには、crate exit report と read-only
-quality review がまだ必要である。
+closeout task は crate exit report をすでに記録しており、その report が read-only
+quality review result を記録している。

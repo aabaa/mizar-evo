@@ -396,7 +396,6 @@ and no reopened source/spec mismatch in this audit.
 
 Task 32 is complete when this English audit and its Japanese companion are
 committed with the crate plan, todo updates, and the lint-policy audit guard.
-The audit does not claim crate completion; tasks 33 and 34 have since recorded
-the bilingual synchronization audit and module-boundary refactor gate. The
-crate exit report and read-only quality review still need to close the
-autonomous crate development protocol.
+The audit does not claim crate completion by itself; tasks 33, 34, and the
+closeout task have since recorded the bilingual synchronization audit,
+module-boundary refactor gate, and crate exit report.

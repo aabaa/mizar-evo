@@ -394,6 +394,6 @@ MC-G013、MC-G015、MC-G022、MC-G024、MC-G028、MC-G029 は task commit を持
 
 task 32 は、この English audit と Japanese companion、crate plan / todo update、
 lint-policy audit guard が同じ commit に含まれた時点で完了する。この audit は
-crate completion を主張しない。task 33 と task 34 は bilingual synchronization audit
-と module-boundary refactor gate をすでに記録している。autonomous crate development
-protocol を閉じるには、crate exit report と read-only quality review がまだ必要である。
+単体では crate completion を主張しない。task 33、task 34、closeout task は
+bilingual synchronization audit、module-boundary refactor gate、crate exit report を
+すでに記録している。
