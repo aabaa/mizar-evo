@@ -6,9 +6,10 @@
 use crate::core_ir::{
     CoreAlgorithm, CoreAlgorithmId, CoreAlgorithmMatchArm, CoreAlgorithmStmt, CoreAlgorithmStmtId,
     CoreAlgorithmStmtKind, CoreBinder, CoreDiagnosticId, CoreFormulaId, CoreFormulaKind, CoreIr,
-    CoreItemId, CorePlace, CoreProvenance, CoreProvenanceKey, CoreProvenancePhase,
+    CoreItemId, CoreNodeRef, CorePlace, CoreProvenance, CoreProvenanceKey, CoreProvenancePhase,
     CoreSourceAnchor, CoreSourceRef, CoreTermId, CoreTermKind, CoreVarId, CoreVarRole,
-    GhostEffectKey,
+    GhostEffectKey, LocalProofOrProgramPath, NormalizedSemanticOrigin, ObligationSeed,
+    ObligationSeedId, ObligationSeedKind, ObligationSeedStatus,
 };
 use mizar_resolve::resolved_ast::SymbolId;
 use std::{
@@ -94,6 +95,7 @@ dense_id!(ContextFactId);
 dense_id!(AssignmentEffectId);
 dense_id!(CallSiteId);
 dense_id!(ControlFlowDiagnosticId);
+dense_id!(ObligationHandoffId);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ControlFlowOutput {
@@ -111,6 +113,67 @@ impl ControlFlowOutput {
         }
         output
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ObligationSeedHandoff {
+    pub entries: ObligationHandoffTable,
+    pub source_map: BTreeMap<ObligationHandoffId, CoreSourceRef>,
+}
+
+impl ObligationSeedHandoff {
+    pub fn debug_text(&self) -> String {
+        let mut output = String::from("obligation-seed-handoff-debug-v1\n");
+        write_table(&mut output, "entries", self.entries.iter());
+        writeln!(&mut output, "source-map: {:?}", self.source_map).expect("write string");
+        output
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ObligationHandoffEntry {
+    pub seed: ObligationSeed,
+    pub origin: ObligationHandoffOrigin,
+    pub flow_site: Option<ControlFlowObligationSite>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+pub enum ObligationHandoffOrigin {
+    ExistingCore {
+        seed: ObligationSeedId,
+    },
+    FlowDerived {
+        flow: ControlFlowId,
+        algorithm: CoreAlgorithmId,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ControlFlowObligationSite {
+    pub kind: ControlFlowObligationSiteKind,
+    pub ordinal: usize,
+    pub statement: Option<CoreAlgorithmStmtId>,
+    pub block: Option<BasicBlockId>,
+    pub loop_id: Option<LoopId>,
+    pub exit: Option<ControlFlowExitId>,
+    pub local: Option<LocalId>,
+    pub assignment_effect: Option<AssignmentEffectId>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum ControlFlowObligationSiteKind {
+    Requires,
+    Ensures,
+    AlgorithmAssertion,
+    StatementAssertion,
+    AlgorithmInvariant,
+    LoopInvariant,
+    TerminationMeasure,
+    PartialTermination,
+    GhostPick,
+    GhostAssignment,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -583,6 +646,11 @@ table!(
     ControlFlowDiagnosticId,
     ControlFlowDiagnostic
 );
+table!(
+    ObligationHandoffTable,
+    ObligationHandoffId,
+    ObligationHandoffEntry
+);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct BlockCursor {
@@ -616,6 +684,472 @@ pub fn build_control_flow_ir(core: &CoreIr) -> ControlFlowOutput {
     }
 
     ControlFlowOutput { flows, flow_map }
+}
+
+pub fn build_obligation_seed_handoff(
+    core: &CoreIr,
+    control_flow: &ControlFlowOutput,
+) -> ObligationSeedHandoff {
+    let mut entries = Vec::new();
+
+    for seed_id in core.obligation_seeds().canonical_order() {
+        let seed = core
+            .obligation_seeds()
+            .get(seed_id)
+            .expect("canonical seed id")
+            .clone();
+        entries.push(ObligationHandoffEntry {
+            seed,
+            origin: ObligationHandoffOrigin::ExistingCore { seed: seed_id },
+            flow_site: None,
+        });
+    }
+
+    for (flow_id, flow) in control_flow.flows.iter() {
+        collect_flow_obligation_entries(&mut entries, flow_id, flow);
+    }
+
+    entries.sort_by(handoff_entry_cmp);
+
+    let mut table = ObligationHandoffTable::new();
+    let mut source_map = BTreeMap::new();
+    for entry in entries {
+        let source = entry.seed.source.clone();
+        let id = table.insert(entry);
+        source_map.insert(id, source);
+    }
+
+    ObligationSeedHandoff {
+        entries: table,
+        source_map,
+    }
+}
+
+fn collect_flow_obligation_entries(
+    entries: &mut Vec<ObligationHandoffEntry>,
+    flow_id: ControlFlowId,
+    flow: &ControlFlowIr,
+) {
+    for (ordinal, site) in flow.contracts.requires.iter().enumerate() {
+        let (block, statement) = match site.placement {
+            ContractSitePlacement::Entry { block, .. } => (Some(block), None),
+            ContractSitePlacement::Return { block, exit } => (
+                Some(block),
+                flow.exits
+                    .get(exit)
+                    .and_then(|flow_exit| flow_exit.statement),
+            ),
+        };
+        entries.push(flow_obligation_entry(
+            flow_id,
+            flow,
+            ObligationSeedKind::AlgorithmContract,
+            FlowSeedPayload {
+                goal: Some(site.formula),
+                term: None,
+                source: site.source.clone(),
+                local_path: format!(
+                    "program/{}/contract/requires/{ordinal}",
+                    flow.algorithm.index()
+                ),
+                semantic_origin: format!("flow:{}:requires:{ordinal}", flow.algorithm.index()),
+                provenance: format!("flow-handoff:requires:{ordinal}"),
+                statement,
+                site: ControlFlowObligationSite {
+                    kind: ControlFlowObligationSiteKind::Requires,
+                    ordinal,
+                    statement,
+                    block,
+                    loop_id: None,
+                    exit: None,
+                    local: None,
+                    assignment_effect: None,
+                },
+            },
+        ));
+    }
+
+    for (ordinal, site) in flow.contracts.ensures.iter().enumerate() {
+        let (block, exit, statement) = match site.placement {
+            ContractSitePlacement::Return { block, exit } => (
+                Some(block),
+                Some(exit),
+                flow.exits
+                    .get(exit)
+                    .and_then(|flow_exit| flow_exit.statement),
+            ),
+            ContractSitePlacement::Entry { block, .. } => (Some(block), None, None),
+        };
+        entries.push(flow_obligation_entry(
+            flow_id,
+            flow,
+            ObligationSeedKind::AlgorithmContract,
+            FlowSeedPayload {
+                goal: Some(site.formula),
+                term: None,
+                source: site.source.clone(),
+                local_path: format!(
+                    "program/{}/contract/ensures/{ordinal}",
+                    flow.algorithm.index()
+                ),
+                semantic_origin: format!("flow:{}:ensures:{ordinal}", flow.algorithm.index()),
+                provenance: format!("flow-handoff:ensures:{ordinal}"),
+                statement,
+                site: ControlFlowObligationSite {
+                    kind: ControlFlowObligationSiteKind::Ensures,
+                    ordinal,
+                    statement,
+                    block,
+                    loop_id: None,
+                    exit,
+                    local: None,
+                    assignment_effect: None,
+                },
+            },
+        ));
+    }
+
+    for (ordinal, site) in flow.contracts.assertions.iter().enumerate() {
+        let (kind, statement, block) = match site.placement {
+            AssertionPlacement::AlgorithmContract { block, .. } => (
+                ControlFlowObligationSiteKind::AlgorithmAssertion,
+                None,
+                Some(block),
+            ),
+            AssertionPlacement::Statement {
+                statement, block, ..
+            } => (
+                ControlFlowObligationSiteKind::StatementAssertion,
+                Some(statement),
+                Some(block),
+            ),
+        };
+        entries.push(flow_obligation_entry(
+            flow_id,
+            flow,
+            ObligationSeedKind::AlgorithmContract,
+            FlowSeedPayload {
+                goal: Some(site.formula),
+                term: None,
+                source: site.source.clone(),
+                local_path: format!("program/{}/assertion/{ordinal}", flow.algorithm.index()),
+                semantic_origin: format!("flow:{}:assertion:{ordinal}", flow.algorithm.index()),
+                provenance: format!("flow-handoff:assertion:{ordinal}"),
+                statement,
+                site: ControlFlowObligationSite {
+                    kind,
+                    ordinal,
+                    statement,
+                    block,
+                    loop_id: None,
+                    exit: None,
+                    local: None,
+                    assignment_effect: None,
+                },
+            },
+        ));
+    }
+
+    for (ordinal, site) in flow.contracts.loop_invariants.iter().enumerate() {
+        let (kind, block, loop_id, exit) = match site.placement {
+            LoopInvariantPlacement::AlgorithmContract { block, .. } => (
+                ControlFlowObligationSiteKind::AlgorithmInvariant,
+                Some(block),
+                None,
+                None,
+            ),
+            LoopInvariantPlacement::Header { loop_id, block } => (
+                ControlFlowObligationSiteKind::LoopInvariant,
+                Some(block),
+                Some(loop_id),
+                None,
+            ),
+            LoopInvariantPlacement::NormalBackedge { loop_id, from, .. } => (
+                ControlFlowObligationSiteKind::LoopInvariant,
+                Some(from),
+                Some(loop_id),
+                None,
+            ),
+            LoopInvariantPlacement::BreakExit { loop_id, exit }
+            | LoopInvariantPlacement::ContinueExit { loop_id, exit } => (
+                ControlFlowObligationSiteKind::LoopInvariant,
+                flow.exits.get(exit).map(|flow_exit| flow_exit.from),
+                Some(loop_id),
+                Some(exit),
+            ),
+        };
+        entries.push(flow_obligation_entry(
+            flow_id,
+            flow,
+            ObligationSeedKind::AlgorithmContract,
+            FlowSeedPayload {
+                goal: Some(site.formula),
+                term: None,
+                source: site.source.clone(),
+                local_path: format!("program/{}/invariant/{ordinal}", flow.algorithm.index()),
+                semantic_origin: format!("flow:{}:invariant:{ordinal}", flow.algorithm.index()),
+                provenance: format!("flow-handoff:invariant:{ordinal}"),
+                statement: None,
+                site: ControlFlowObligationSite {
+                    kind,
+                    ordinal,
+                    statement: None,
+                    block,
+                    loop_id,
+                    exit,
+                    local: None,
+                    assignment_effect: None,
+                },
+            },
+        ));
+    }
+
+    for (ordinal, site) in flow.contracts.decreasing.iter().enumerate() {
+        let (block, loop_id, exit) = match site.placement {
+            TerminationMeasurePlacement::AlgorithmHeader { block } => (Some(block), None, None),
+            TerminationMeasurePlacement::LoopHeader { loop_id, header } => {
+                (Some(header), Some(loop_id), None)
+            }
+            TerminationMeasurePlacement::ContinueEdge { loop_id, exit } => (
+                flow.exits.get(exit).map(|flow_exit| flow_exit.from),
+                Some(loop_id),
+                Some(exit),
+            ),
+        };
+        entries.push(flow_obligation_entry(
+            flow_id,
+            flow,
+            ObligationSeedKind::AlgorithmTermination,
+            FlowSeedPayload {
+                goal: None,
+                term: Some(site.term),
+                source: site.source.clone(),
+                local_path: format!(
+                    "program/{}/termination/measure/{ordinal}",
+                    flow.algorithm.index()
+                ),
+                semantic_origin: format!(
+                    "flow:{}:termination:measure:{ordinal}",
+                    flow.algorithm.index()
+                ),
+                provenance: format!("flow-handoff:termination-measure:{ordinal}"),
+                statement: None,
+                site: ControlFlowObligationSite {
+                    kind: ControlFlowObligationSiteKind::TerminationMeasure,
+                    ordinal,
+                    statement: None,
+                    block,
+                    loop_id,
+                    exit,
+                    local: None,
+                    assignment_effect: None,
+                },
+            },
+        ));
+    }
+
+    for (ordinal, site) in flow.termination.partial_sites.iter().enumerate() {
+        let (block, loop_id) = match site.kind {
+            TerminationSiteKind::Algorithm => (Some(flow.entry), None),
+            TerminationSiteKind::Loop(loop_id) => (
+                flow.loops.get(loop_id).map(|flow_loop| flow_loop.header),
+                Some(loop_id),
+            ),
+        };
+        entries.push(flow_obligation_entry(
+            flow_id,
+            flow,
+            ObligationSeedKind::AlgorithmTermination,
+            FlowSeedPayload {
+                goal: None,
+                term: None,
+                source: site.source.clone(),
+                local_path: format!(
+                    "program/{}/termination/partial/{ordinal}",
+                    flow.algorithm.index()
+                ),
+                semantic_origin: format!(
+                    "flow:{}:termination:partial:{ordinal}",
+                    flow.algorithm.index()
+                ),
+                provenance: format!("flow-handoff:partial-termination:{ordinal}"),
+                statement: None,
+                site: ControlFlowObligationSite {
+                    kind: ControlFlowObligationSiteKind::PartialTermination,
+                    ordinal,
+                    statement: None,
+                    block,
+                    loop_id,
+                    exit: None,
+                    local: None,
+                    assignment_effect: None,
+                },
+            },
+        ));
+    }
+
+    for (ordinal, local) in flow
+        .ghost_effects
+        .ghost_pick_locals
+        .iter()
+        .copied()
+        .enumerate()
+    {
+        let Some(local_row) = flow.locals.get(local) else {
+            continue;
+        };
+        entries.push(flow_obligation_entry(
+            flow_id,
+            flow,
+            ObligationSeedKind::GhostErasure,
+            FlowSeedPayload {
+                goal: None,
+                term: None,
+                source: local_row.source.clone(),
+                local_path: format!("program/{}/ghost/pick/{ordinal}", flow.algorithm.index()),
+                semantic_origin: format!("flow:{}:ghost:pick:{ordinal}", flow.algorithm.index()),
+                provenance: format!("flow-handoff:ghost-pick:{ordinal}"),
+                statement: local_row.initialized_at,
+                site: ControlFlowObligationSite {
+                    kind: ControlFlowObligationSiteKind::GhostPick,
+                    ordinal,
+                    statement: local_row.initialized_at,
+                    block: local_row
+                        .initialized_at
+                        .and_then(|statement| flow.source_map.statement_placements.get(&statement))
+                        .map(ControlFlowStatementPlacement::block),
+                    loop_id: None,
+                    exit: None,
+                    local: Some(local),
+                    assignment_effect: None,
+                },
+            },
+        ));
+    }
+
+    for (ordinal, effect) in flow
+        .ghost_effects
+        .ghost_assignment_effects
+        .iter()
+        .copied()
+        .enumerate()
+    {
+        let Some(effect_row) = flow.assignment_effects.get(effect) else {
+            continue;
+        };
+        let local = match effect_row.target {
+            AssignmentEffectTarget::Local(local) => Some(local),
+            AssignmentEffectTarget::Place(_) => None,
+        };
+        entries.push(flow_obligation_entry(
+            flow_id,
+            flow,
+            ObligationSeedKind::GhostErasure,
+            FlowSeedPayload {
+                goal: None,
+                term: None,
+                source: effect_row.source.clone(),
+                local_path: format!(
+                    "program/{}/ghost/assignment/{ordinal}",
+                    flow.algorithm.index()
+                ),
+                semantic_origin: format!(
+                    "flow:{}:ghost:assignment:{ordinal}",
+                    flow.algorithm.index()
+                ),
+                provenance: format!("flow-handoff:ghost-assignment:{ordinal}"),
+                statement: Some(effect_row.statement),
+                site: ControlFlowObligationSite {
+                    kind: ControlFlowObligationSiteKind::GhostAssignment,
+                    ordinal,
+                    statement: Some(effect_row.statement),
+                    block: flow
+                        .source_map
+                        .statement_placements
+                        .get(&effect_row.statement)
+                        .map(ControlFlowStatementPlacement::block),
+                    loop_id: None,
+                    exit: None,
+                    local,
+                    assignment_effect: Some(effect),
+                },
+            },
+        ));
+    }
+}
+
+struct FlowSeedPayload {
+    goal: Option<CoreFormulaId>,
+    term: Option<CoreTermId>,
+    source: CoreSourceRef,
+    local_path: String,
+    semantic_origin: String,
+    provenance: String,
+    statement: Option<CoreAlgorithmStmtId>,
+    site: ControlFlowObligationSite,
+}
+
+fn flow_obligation_entry(
+    flow_id: ControlFlowId,
+    flow: &ControlFlowIr,
+    kind: ObligationSeedKind,
+    payload: FlowSeedPayload,
+) -> ObligationHandoffEntry {
+    let source = synthetic_source(&payload.source, payload.provenance.clone());
+    let mut provenance = source.provenance.clone();
+    provenance.push(CoreProvenance::new(
+        CoreProvenancePhase::Generated,
+        payload.provenance,
+    ));
+    provenance.sort();
+    provenance.dedup();
+    let mut core_refs = vec![
+        CoreNodeRef::Item(flow.item),
+        CoreNodeRef::Algorithm(flow.algorithm),
+    ];
+    if let Some(goal) = payload.goal {
+        core_refs.push(CoreNodeRef::Formula(goal));
+    }
+    if let Some(term) = payload.term {
+        core_refs.push(CoreNodeRef::Term(term));
+    }
+    if let Some(statement) = payload.statement {
+        core_refs.push(CoreNodeRef::AlgorithmStmt(statement));
+    }
+    sort_and_dedup(&mut core_refs);
+
+    ObligationHandoffEntry {
+        seed: ObligationSeed {
+            owner: flow.item,
+            kind,
+            goal: payload.goal,
+            context: Vec::new(),
+            local_path: LocalProofOrProgramPath::new(payload.local_path),
+            label: None,
+            semantic_origin: NormalizedSemanticOrigin::new(payload.semantic_origin),
+            provenance,
+            source,
+            core_refs,
+            status: ObligationSeedStatus::Deferred,
+            diagnostics: Vec::new(),
+        },
+        origin: ObligationHandoffOrigin::FlowDerived {
+            flow: flow_id,
+            algorithm: flow.algorithm,
+        },
+        flow_site: Some(payload.site),
+    }
+}
+
+fn handoff_entry_cmp(
+    left: &ObligationHandoffEntry,
+    right: &ObligationHandoffEntry,
+) -> std::cmp::Ordering {
+    left.seed
+        .canonical_key()
+        .cmp(&right.seed.canonical_key())
+        .then_with(|| left.origin.cmp(&right.origin))
+        .then_with(|| left.flow_site.cmp(&right.flow_site))
 }
 
 struct FlowBuilder<'a> {
@@ -2387,8 +2921,9 @@ mod tests {
     use crate::core_ir::{
         CoreAlgorithmTable, CoreContractSet, CoreDiagnostic, CoreDiagnosticClass,
         CoreDiagnosticTable, CoreFormula, CoreFormulaKind, CoreFormulaTable, CoreIrParts, CoreItem,
-        CoreItemKind, CoreItemTable, CoreNodeRef, CoreSourceMap, CoreTerm, CoreTermKind,
-        CoreTermTable, CoreVarId, CoreVisibility, GeneratedOriginTable, ObligationSeedTable,
+        CoreItemKind, CoreItemTable, CoreLabelRef, CoreNodeRef, CoreSourceMap, CoreTerm,
+        CoreTermKind, CoreTermTable, CoreVarId, CoreVisibility, GeneratedOrigin, GeneratedOriginId,
+        GeneratedOriginKey, GeneratedOriginKind, GeneratedOriginTable, ObligationSeedTable,
     };
     use mizar_resolve::resolved_ast::{FullyQualifiedName, LocalSymbolId, ModuleId};
     use mizar_session::{
@@ -2478,6 +3013,38 @@ mod tests {
             direct(self.source_id, start, end)
         }
 
+        fn generated_origin(
+            &mut self,
+            kind: GeneratedOriginKind,
+            key: &str,
+            start: usize,
+        ) -> GeneratedOriginId {
+            let source = self.source(start, start + 1);
+            let id = self.parts.generated.insert(GeneratedOrigin {
+                owner: self.item,
+                kind,
+                key: GeneratedOriginKey::new(key),
+                functor: None,
+                params: Vec::new(),
+                evidence: vec![CoreProvenance::new(
+                    CoreProvenancePhase::Generated,
+                    format!("{key}:evidence"),
+                )],
+                source: source.clone(),
+            });
+            self.parts.source_map.generated_sources.insert(id, source);
+            id
+        }
+
+        fn diagnostic(&mut self, message_key: &str, start: usize) -> CoreDiagnosticId {
+            let source = self.source(start, start + 1);
+            self.parts.diagnostics.insert(CoreDiagnostic::error(
+                CoreDiagnosticClass::UnsupportedLowering,
+                message_key,
+                source,
+            ))
+        }
+
         fn term_var(&mut self, var: usize, start: usize) -> CoreTermId {
             self.term(CoreTermKind::Var(CoreVarId::new(var)), start)
         }
@@ -2519,6 +3086,62 @@ mod tests {
             });
             self.parts.source_map.algorithm_sources.insert(id, source);
             id
+        }
+
+        fn obligation_seed(
+            &mut self,
+            kind: ObligationSeedKind,
+            goal: Option<CoreFormulaId>,
+            path: &str,
+            label: Option<&str>,
+            origin: &str,
+            start: usize,
+        ) -> ObligationSeedId {
+            let source = self.source(start, start + 1);
+            let seed = self.parts.obligation_seeds.insert(ObligationSeed {
+                owner: self.item,
+                kind,
+                goal,
+                context: goal.into_iter().collect(),
+                local_path: LocalProofOrProgramPath::new(path),
+                label: label.map(CoreLabelRef::new),
+                semantic_origin: NormalizedSemanticOrigin::new(origin),
+                provenance: vec![CoreProvenance::new(CoreProvenancePhase::Checker, origin)],
+                source: source.clone(),
+                core_refs: goal
+                    .map(|formula| {
+                        vec![CoreNodeRef::Item(self.item), CoreNodeRef::Formula(formula)]
+                    })
+                    .unwrap_or_else(|| vec![CoreNodeRef::Item(self.item)]),
+                status: ObligationSeedStatus::Active,
+                diagnostics: Vec::new(),
+            });
+            self.parts
+                .source_map
+                .obligation_sources
+                .insert(seed, source);
+            seed
+        }
+
+        fn enrich_obligation_seed(
+            &mut self,
+            seed: ObligationSeedId,
+            status: ObligationSeedStatus,
+            diagnostics: Vec<CoreDiagnosticId>,
+            extra_refs: Vec<CoreNodeRef>,
+            extra_provenance: Vec<CoreProvenance>,
+        ) {
+            let row = self
+                .parts
+                .obligation_seeds
+                .get_mut(seed)
+                .expect("obligation seed");
+            row.status = status;
+            row.diagnostics = diagnostics;
+            row.core_refs.extend(extra_refs);
+            sort_and_dedup(&mut row.core_refs);
+            row.provenance.extend(extra_provenance);
+            sort_and_dedup(&mut row.provenance);
         }
 
         fn error_stmt(&mut self, start: usize) -> CoreAlgorithmStmtId {
@@ -2576,6 +3199,13 @@ mod tests {
         }
     }
 
+    fn empty_control_flow_output() -> ControlFlowOutput {
+        ControlFlowOutput {
+            flows: ControlFlowTable::new(),
+            flow_map: BTreeMap::new(),
+        }
+    }
+
     fn only_flow(output: &ControlFlowOutput) -> &ControlFlowIr {
         output
             .flows
@@ -2599,6 +3229,1582 @@ mod tests {
                 let fact = flow.context_facts.get(*fact).expect("context fact");
                 fact.formula == formula && fact.source == *source && fact.kind == kind
             })
+    }
+
+    fn flow_handoff_entries(
+        handoff: &ObligationSeedHandoff,
+    ) -> Vec<(ObligationHandoffId, &ObligationHandoffEntry)> {
+        handoff
+            .entries
+            .iter()
+            .filter(|(_, entry)| {
+                matches!(entry.origin, ObligationHandoffOrigin::FlowDerived { .. })
+            })
+            .collect()
+    }
+
+    fn source_map_matches_seed(
+        handoff: &ObligationSeedHandoff,
+        id: ObligationHandoffId,
+        entry: &ObligationHandoffEntry,
+    ) -> bool {
+        handoff.source_map.get(&id) == Some(&entry.seed.source)
+    }
+
+    fn assert_flow_seed_core_refs(
+        flow: &ControlFlowIr,
+        entry: &ObligationHandoffEntry,
+        extra_refs: &[CoreNodeRef],
+    ) {
+        let mut expected = vec![
+            CoreNodeRef::Item(flow.item),
+            CoreNodeRef::Algorithm(flow.algorithm),
+        ];
+        expected.extend_from_slice(extra_refs);
+        sort_and_dedup(&mut expected);
+        assert_eq!(entry.seed.core_refs, expected);
+    }
+
+    fn flow_entry_by_kind<'a>(
+        entries: &'a [(ObligationHandoffId, &ObligationHandoffEntry)],
+        kind: ControlFlowObligationSiteKind,
+        ordinal: usize,
+    ) -> &'a ObligationHandoffEntry {
+        entries
+            .iter()
+            .find(|(_, entry)| {
+                entry
+                    .flow_site
+                    .as_ref()
+                    .is_some_and(|site| site.kind == kind && site.ordinal == ordinal)
+            })
+            .map(|(_, entry)| *entry)
+            .unwrap_or_else(|| panic!("missing {kind:?} ordinal {ordinal}"))
+    }
+
+    fn assert_flow_seed_source(
+        handoff: &ObligationSeedHandoff,
+        entry: &ObligationHandoffEntry,
+        expected: &CoreSourceRef,
+        expected_generated_key: &str,
+    ) {
+        let handoff_id = handoff
+            .entries
+            .iter()
+            .find_map(|(id, candidate)| (candidate == entry).then_some(id))
+            .expect("entry id");
+        assert_eq!(entry.seed.source.anchor, expected.anchor);
+        assert_eq!(
+            handoff.source_map.get(&handoff_id),
+            Some(&entry.seed.source)
+        );
+        assert_eq!(
+            entry.seed.source.provenance,
+            vec![CoreProvenance::new(
+                CoreProvenancePhase::Generated,
+                expected_generated_key
+            )]
+        );
+        let generated_seed_keys = entry
+            .seed
+            .provenance
+            .iter()
+            .filter_map(|provenance| {
+                (provenance.phase == CoreProvenancePhase::Generated)
+                    .then_some(provenance.key.as_str())
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(generated_seed_keys, vec![expected_generated_key]);
+    }
+
+    #[test]
+    fn obligation_handoff_preserves_existing_core_seeds() {
+        let mut fixture = CoreFixture::new();
+        let theorem_goal = fixture.formula(CoreFormulaKind::True, 10);
+        let definition_goal = fixture.formula(CoreFormulaKind::False, 11);
+        let checker_goal = fixture.formula(
+            CoreFormulaKind::Iff {
+                left: theorem_goal,
+                right: definition_goal,
+            },
+            12,
+        );
+        let theorem_seed = fixture.obligation_seed(
+            ObligationSeedKind::TheoremProof,
+            Some(theorem_goal),
+            "proof/terminal/0",
+            Some("Thesis"),
+            "pkg::main::AlgorithmOwner.proof.terminal",
+            20,
+        );
+        let definition_seed = fixture.obligation_seed(
+            ObligationSeedKind::DefinitionCorrectness,
+            Some(definition_goal),
+            "definition/correctness/0",
+            None,
+            "pkg::main::AlgorithmOwner.definition.correctness",
+            21,
+        );
+        let checker_seed = fixture.obligation_seed(
+            ObligationSeedKind::CheckerInitial,
+            Some(checker_goal),
+            "checker/initial/0",
+            Some("C1"),
+            "pkg::main::AlgorithmOwner.checker.initial",
+            22,
+        );
+        let generated_comprehension = fixture.generated_origin(
+            GeneratedOriginKind::FraenkelComprehension,
+            "fraenkel:comprehension:0",
+            23,
+        );
+        let deferred_diagnostic = fixture.diagnostic("generated-sethood-deferred", 24);
+        let generated_deferred_seed = fixture.obligation_seed(
+            ObligationSeedKind::GeneratedSethood,
+            Some(checker_goal),
+            "generated/fraenkel/sethood/0",
+            None,
+            "pkg::main::AlgorithmOwner.generated.fraenkel.sethood",
+            25,
+        );
+        fixture.enrich_obligation_seed(
+            generated_deferred_seed,
+            ObligationSeedStatus::Deferred,
+            vec![deferred_diagnostic],
+            vec![
+                CoreNodeRef::Generated(generated_comprehension),
+                CoreNodeRef::Diagnostic(deferred_diagnostic),
+            ],
+            vec![CoreProvenance::new(
+                CoreProvenancePhase::Generated,
+                "fraenkel:comprehension:0",
+            )],
+        );
+        let generated_choice =
+            fixture.generated_origin(GeneratedOriginKind::StableChoice, "choice:0", 26);
+        let error_diagnostic = fixture.diagnostic("generated-nonempty-error", 27);
+        let generated_error_seed = fixture.obligation_seed(
+            ObligationSeedKind::GeneratedNonEmptiness,
+            None,
+            "generated/choice/nonempty/0",
+            None,
+            "pkg::main::AlgorithmOwner.generated.choice.nonempty",
+            28,
+        );
+        fixture.enrich_obligation_seed(
+            generated_error_seed,
+            ObligationSeedStatus::Error,
+            vec![error_diagnostic],
+            vec![
+                CoreNodeRef::Generated(generated_choice),
+                CoreNodeRef::Diagnostic(error_diagnostic),
+            ],
+            vec![CoreProvenance::new(
+                CoreProvenancePhase::Generated,
+                "choice:0",
+            )],
+        );
+        let owner_item = fixture.item;
+        let core = fixture.finish(Vec::new(), None, Vec::new());
+
+        let handoff = build_obligation_seed_handoff(&core, &empty_control_flow_output());
+        assert_eq!(handoff.entries.len(), 5);
+        assert_eq!(handoff.source_map.len(), handoff.entries.len());
+        let expected_existing_seeds = [
+            theorem_seed,
+            definition_seed,
+            checker_seed,
+            generated_deferred_seed,
+            generated_error_seed,
+        ];
+
+        for (handoff_id, entry) in handoff.entries.iter() {
+            let ObligationHandoffOrigin::ExistingCore { seed } = entry.origin else {
+                panic!("existing core seed expected");
+            };
+            assert!(expected_existing_seeds.contains(&seed));
+            let original = core.obligation_seeds().get(seed).expect("original seed");
+            assert_eq!(&entry.seed, original);
+            assert_eq!(
+                handoff.source_map.get(&handoff_id),
+                Some(&core.source_map().obligation_sources[&seed])
+            );
+            assert!(entry.flow_site.is_none());
+        }
+
+        let theorem = handoff
+            .entries
+            .iter()
+            .map(|(_, entry)| entry)
+            .find(|entry| entry.seed.kind == ObligationSeedKind::TheoremProof)
+            .expect("theorem seed");
+        assert_eq!(
+            theorem.seed.label.as_ref().map(CoreLabelRef::as_str),
+            Some("Thesis")
+        );
+        assert_eq!(theorem.seed.local_path.as_str(), "proof/terminal/0");
+        assert!(
+            theorem
+                .seed
+                .core_refs
+                .contains(&CoreNodeRef::Formula(theorem_goal))
+        );
+
+        let generated_deferred = handoff
+            .entries
+            .iter()
+            .map(|(_, entry)| entry)
+            .find(|entry| {
+                matches!(
+                    entry.origin,
+                    ObligationHandoffOrigin::ExistingCore { seed }
+                        if seed == generated_deferred_seed
+                )
+            })
+            .expect("generated deferred seed");
+        assert_eq!(
+            generated_deferred.seed.kind,
+            ObligationSeedKind::GeneratedSethood
+        );
+        assert_eq!(
+            generated_deferred.seed.status,
+            ObligationSeedStatus::Deferred
+        );
+        assert_eq!(
+            generated_deferred.seed.diagnostics,
+            vec![deferred_diagnostic]
+        );
+        assert!(
+            generated_deferred
+                .seed
+                .provenance
+                .contains(&CoreProvenance::new(
+                    CoreProvenancePhase::Generated,
+                    "fraenkel:comprehension:0"
+                ))
+        );
+        let mut expected_deferred_refs = vec![
+            CoreNodeRef::Item(owner_item),
+            CoreNodeRef::Formula(checker_goal),
+            CoreNodeRef::Generated(generated_comprehension),
+            CoreNodeRef::Diagnostic(deferred_diagnostic),
+        ];
+        sort_and_dedup(&mut expected_deferred_refs);
+        assert_eq!(generated_deferred.seed.core_refs, expected_deferred_refs);
+
+        let generated_error = handoff
+            .entries
+            .iter()
+            .map(|(_, entry)| entry)
+            .find(|entry| {
+                matches!(
+                    entry.origin,
+                    ObligationHandoffOrigin::ExistingCore { seed } if seed == generated_error_seed
+                )
+            })
+            .expect("generated error seed");
+        assert_eq!(
+            generated_error.seed.kind,
+            ObligationSeedKind::GeneratedNonEmptiness
+        );
+        assert_eq!(generated_error.seed.status, ObligationSeedStatus::Error);
+        assert_eq!(generated_error.seed.diagnostics, vec![error_diagnostic]);
+        assert!(
+            generated_error
+                .seed
+                .provenance
+                .contains(&CoreProvenance::new(
+                    CoreProvenancePhase::Generated,
+                    "choice:0"
+                ))
+        );
+        let mut expected_error_refs = vec![
+            CoreNodeRef::Item(owner_item),
+            CoreNodeRef::Generated(generated_choice),
+            CoreNodeRef::Diagnostic(error_diagnostic),
+        ];
+        sort_and_dedup(&mut expected_error_refs);
+        assert_eq!(generated_error.seed.core_refs, expected_error_refs);
+    }
+
+    #[test]
+    fn obligation_handoff_emits_flow_contract_termination_and_ghost_seeds() {
+        let mut fixture = CoreFixture::new();
+        let term = fixture.term_var(0, 10);
+        let requires = fixture.formula(CoreFormulaKind::True, 11);
+        let ensures = fixture.formula(CoreFormulaKind::False, 12);
+        let statement_assertion = fixture.formula(
+            CoreFormulaKind::Equals {
+                left: term,
+                right: term,
+            },
+            13,
+        );
+        let contract_assertion = fixture.formula(CoreFormulaKind::True, 14);
+        let contract_invariant = fixture.formula(CoreFormulaKind::False, 15);
+        let decreasing = fixture.term_var(0, 16);
+        let ghost_pick_binder = fixture.binder(1, "ghost-var", 17);
+        let ghost_let_binder = fixture.binder(2, "ghost-const", 18);
+        let ghost_pick = fixture.stmt(
+            CoreAlgorithmStmtKind::Pick {
+                binder: ghost_pick_binder,
+                witness_ty: Some(requires),
+                ghost: true,
+            },
+            20,
+        );
+        let ghost_let = fixture.stmt(
+            CoreAlgorithmStmtKind::Let {
+                binder: ghost_let_binder,
+                value: Some(term),
+                ghost: true,
+            },
+            21,
+        );
+        let assert_stmt = fixture.stmt(
+            CoreAlgorithmStmtKind::Assert {
+                formula: statement_assertion,
+            },
+            22,
+        );
+        let return_stmt = fixture.stmt(CoreAlgorithmStmtKind::Return(Some(term)), 23);
+        let core = fixture.finish_with_contracts(
+            Vec::new(),
+            None,
+            vec![ghost_pick, ghost_let, assert_stmt, return_stmt],
+            CoreContractSet {
+                requires: vec![requires],
+                ensures: vec![ensures],
+                invariants: vec![contract_invariant],
+                assertions: vec![contract_assertion],
+                decreasing: vec![decreasing],
+            },
+        );
+        let first_flow = build_control_flow_ir(&core);
+        let second_flow = build_control_flow_ir(&core);
+        let flow = only_flow(&first_flow);
+
+        let first = build_obligation_seed_handoff(&core, &first_flow);
+        let second = build_obligation_seed_handoff(&core, &second_flow);
+        assert_eq!(first, second);
+        assert_eq!(first.debug_text(), second.debug_text());
+        assert_eq!(first.source_map.len(), first.entries.len());
+
+        let flow_entries = flow_handoff_entries(&first);
+        assert_eq!(flow_entries.len(), 9);
+        assert!(
+            flow_entries
+                .iter()
+                .all(|(id, entry)| source_map_matches_seed(&first, *id, entry))
+        );
+        assert!(flow_entries.iter().all(|(_, entry)| {
+            matches!(
+                entry.origin,
+                ObligationHandoffOrigin::FlowDerived {
+                    flow,
+                    algorithm
+                } if flow == ControlFlowId::new(0) && algorithm == CoreAlgorithmId::new(0)
+            )
+        }));
+        assert!(
+            flow_entries
+                .iter()
+                .all(|(_, entry)| entry.seed.status == ObligationSeedStatus::Deferred)
+        );
+        assert!(
+            flow_entries
+                .iter()
+                .all(|(_, entry)| entry.seed.context.is_empty())
+        );
+        assert!(
+            flow_entries
+                .iter()
+                .all(|(_, entry)| entry.seed.diagnostics.is_empty())
+        );
+
+        let site_kinds = flow_entries
+            .iter()
+            .map(|(_, entry)| entry.flow_site.as_ref().expect("flow site").kind)
+            .collect::<Vec<_>>();
+        for expected in [
+            ControlFlowObligationSiteKind::Requires,
+            ControlFlowObligationSiteKind::Ensures,
+            ControlFlowObligationSiteKind::AlgorithmAssertion,
+            ControlFlowObligationSiteKind::StatementAssertion,
+            ControlFlowObligationSiteKind::AlgorithmInvariant,
+            ControlFlowObligationSiteKind::TerminationMeasure,
+            ControlFlowObligationSiteKind::GhostPick,
+            ControlFlowObligationSiteKind::GhostAssignment,
+        ] {
+            assert!(
+                site_kinds.contains(&expected),
+                "missing site kind {expected:?}"
+            );
+        }
+        assert_eq!(
+            site_kinds
+                .iter()
+                .filter(|kind| **kind == ControlFlowObligationSiteKind::GhostAssignment)
+                .count(),
+            2
+        );
+
+        let requires_seed =
+            flow_entry_by_kind(&flow_entries, ControlFlowObligationSiteKind::Requires, 0);
+        assert_eq!(
+            requires_seed.seed.kind,
+            ObligationSeedKind::AlgorithmContract
+        );
+        assert_eq!(requires_seed.seed.goal, Some(requires));
+        assert_eq!(
+            requires_seed.seed.semantic_origin.as_str(),
+            "flow:0:requires:0"
+        );
+        assert_flow_seed_source(
+            &first,
+            requires_seed,
+            &core.source_map().formula_sources[&requires],
+            "flow-handoff:requires:0",
+        );
+        assert_flow_seed_core_refs(flow, requires_seed, &[CoreNodeRef::Formula(requires)]);
+        assert_eq!(
+            requires_seed.seed.local_path.as_str(),
+            "program/0/contract/requires/0"
+        );
+        assert_eq!(
+            requires_seed.flow_site.as_ref().expect("requires site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::Requires,
+                ordinal: 0,
+                statement: None,
+                block: Some(BasicBlockId::new(0)),
+                loop_id: None,
+                exit: None,
+                local: None,
+                assignment_effect: None,
+            }
+        );
+
+        let ensures_seed =
+            flow_entry_by_kind(&flow_entries, ControlFlowObligationSiteKind::Ensures, 0);
+        assert_eq!(ensures_seed.seed.goal, Some(ensures));
+        assert_eq!(
+            ensures_seed.seed.semantic_origin.as_str(),
+            "flow:0:ensures:0"
+        );
+        assert_flow_seed_source(
+            &first,
+            ensures_seed,
+            &core.source_map().formula_sources[&ensures],
+            "flow-handoff:ensures:0",
+        );
+        assert_flow_seed_core_refs(
+            flow,
+            ensures_seed,
+            &[
+                CoreNodeRef::Formula(ensures),
+                CoreNodeRef::AlgorithmStmt(return_stmt),
+            ],
+        );
+        assert_eq!(
+            ensures_seed.seed.local_path.as_str(),
+            "program/0/contract/ensures/0"
+        );
+        let (return_exit_id, return_exit) = flow
+            .exits
+            .iter()
+            .find(|(_, exit)| exit.statement == Some(return_stmt))
+            .expect("return exit");
+        assert_eq!(return_exit.kind, ControlFlowExitKind::Return);
+        assert_eq!(
+            ensures_seed.flow_site.as_ref().expect("ensures site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::Ensures,
+                ordinal: 0,
+                statement: Some(return_stmt),
+                block: Some(return_exit.from),
+                loop_id: None,
+                exit: Some(return_exit_id),
+                local: None,
+                assignment_effect: None,
+            }
+        );
+
+        let algorithm_assertion_seed = flow_entry_by_kind(
+            &flow_entries,
+            ControlFlowObligationSiteKind::AlgorithmAssertion,
+            0,
+        );
+        assert_eq!(algorithm_assertion_seed.seed.goal, Some(contract_assertion));
+        assert_eq!(
+            algorithm_assertion_seed.seed.semantic_origin.as_str(),
+            "flow:0:assertion:0"
+        );
+        assert_eq!(
+            algorithm_assertion_seed.seed.local_path.as_str(),
+            "program/0/assertion/0"
+        );
+        assert_flow_seed_source(
+            &first,
+            algorithm_assertion_seed,
+            &core.source_map().formula_sources[&contract_assertion],
+            "flow-handoff:assertion:0",
+        );
+        assert_flow_seed_core_refs(
+            flow,
+            algorithm_assertion_seed,
+            &[CoreNodeRef::Formula(contract_assertion)],
+        );
+        assert_eq!(
+            algorithm_assertion_seed
+                .flow_site
+                .as_ref()
+                .expect("algorithm assertion site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::AlgorithmAssertion,
+                ordinal: 0,
+                statement: None,
+                block: Some(BasicBlockId::new(0)),
+                loop_id: None,
+                exit: None,
+                local: None,
+                assignment_effect: None,
+            }
+        );
+
+        let statement_assertion_seed = flow_entry_by_kind(
+            &flow_entries,
+            ControlFlowObligationSiteKind::StatementAssertion,
+            1,
+        );
+        assert_eq!(
+            statement_assertion_seed.seed.goal,
+            Some(statement_assertion)
+        );
+        assert_eq!(
+            statement_assertion_seed.seed.semantic_origin.as_str(),
+            "flow:0:assertion:1"
+        );
+        assert_eq!(
+            statement_assertion_seed.seed.local_path.as_str(),
+            "program/0/assertion/1"
+        );
+        assert_flow_seed_source(
+            &first,
+            statement_assertion_seed,
+            &core.source_map().algorithm_sources[&assert_stmt],
+            "flow-handoff:assertion:1",
+        );
+        assert_flow_seed_core_refs(
+            flow,
+            statement_assertion_seed,
+            &[
+                CoreNodeRef::Formula(statement_assertion),
+                CoreNodeRef::AlgorithmStmt(assert_stmt),
+            ],
+        );
+        assert_eq!(
+            statement_assertion_seed
+                .flow_site
+                .as_ref()
+                .expect("statement assertion site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::StatementAssertion,
+                ordinal: 1,
+                statement: Some(assert_stmt),
+                block: Some(BasicBlockId::new(0)),
+                loop_id: None,
+                exit: None,
+                local: None,
+                assignment_effect: None,
+            }
+        );
+
+        let algorithm_invariant_seed = flow_entry_by_kind(
+            &flow_entries,
+            ControlFlowObligationSiteKind::AlgorithmInvariant,
+            0,
+        );
+        assert_eq!(algorithm_invariant_seed.seed.goal, Some(contract_invariant));
+        assert_eq!(
+            algorithm_invariant_seed.seed.semantic_origin.as_str(),
+            "flow:0:invariant:0"
+        );
+        assert_eq!(
+            algorithm_invariant_seed.seed.local_path.as_str(),
+            "program/0/invariant/0"
+        );
+        assert_flow_seed_source(
+            &first,
+            algorithm_invariant_seed,
+            &core.source_map().formula_sources[&contract_invariant],
+            "flow-handoff:invariant:0",
+        );
+        assert_flow_seed_core_refs(
+            flow,
+            algorithm_invariant_seed,
+            &[CoreNodeRef::Formula(contract_invariant)],
+        );
+        assert_eq!(
+            algorithm_invariant_seed
+                .flow_site
+                .as_ref()
+                .expect("algorithm invariant site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::AlgorithmInvariant,
+                ordinal: 0,
+                statement: None,
+                block: Some(BasicBlockId::new(0)),
+                loop_id: None,
+                exit: None,
+                local: None,
+                assignment_effect: None,
+            }
+        );
+
+        let termination_seed = flow_entry_by_kind(
+            &flow_entries,
+            ControlFlowObligationSiteKind::TerminationMeasure,
+            0,
+        );
+        assert_eq!(
+            termination_seed.seed.kind,
+            ObligationSeedKind::AlgorithmTermination
+        );
+        assert_eq!(termination_seed.seed.goal, None);
+        assert_eq!(
+            termination_seed.seed.semantic_origin.as_str(),
+            "flow:0:termination:measure:0"
+        );
+        assert_flow_seed_source(
+            &first,
+            termination_seed,
+            &core.source_map().term_sources[&decreasing],
+            "flow-handoff:termination-measure:0",
+        );
+        assert_flow_seed_core_refs(flow, termination_seed, &[CoreNodeRef::Term(decreasing)]);
+        assert_eq!(
+            termination_seed.seed.local_path.as_str(),
+            "program/0/termination/measure/0"
+        );
+        assert_eq!(
+            termination_seed
+                .flow_site
+                .as_ref()
+                .expect("termination site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::TerminationMeasure,
+                ordinal: 0,
+                statement: None,
+                block: Some(BasicBlockId::new(0)),
+                loop_id: None,
+                exit: None,
+                local: None,
+                assignment_effect: None,
+            }
+        );
+
+        let ghost_pick_seed =
+            flow_entry_by_kind(&flow_entries, ControlFlowObligationSiteKind::GhostPick, 0);
+        let expected_ghost_pick_local = flow.ghost_effects.ghost_pick_locals[0];
+        assert_eq!(flow.ghost_effects.ghost_pick_locals, vec![LocalId::new(0)]);
+        assert_eq!(expected_ghost_pick_local, LocalId::new(0));
+        let expected_ghost_pick_row = flow
+            .locals
+            .get(expected_ghost_pick_local)
+            .expect("ghost pick local row");
+        assert_eq!(ghost_pick_seed.seed.kind, ObligationSeedKind::GhostErasure);
+        assert_eq!(ghost_pick_seed.seed.goal, None);
+        assert_eq!(
+            ghost_pick_seed.seed.semantic_origin.as_str(),
+            "flow:0:ghost:pick:0"
+        );
+        assert_eq!(
+            ghost_pick_seed.seed.local_path.as_str(),
+            "program/0/ghost/pick/0"
+        );
+        assert_flow_seed_source(
+            &first,
+            ghost_pick_seed,
+            &expected_ghost_pick_row.source,
+            "flow-handoff:ghost-pick:0",
+        );
+        assert_flow_seed_core_refs(
+            flow,
+            ghost_pick_seed,
+            &[CoreNodeRef::AlgorithmStmt(ghost_pick)],
+        );
+        assert_eq!(
+            ghost_pick_seed.flow_site.as_ref().expect("ghost pick site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::GhostPick,
+                ordinal: 0,
+                statement: Some(ghost_pick),
+                block: Some(BasicBlockId::new(0)),
+                loop_id: None,
+                exit: None,
+                local: Some(LocalId::new(0)),
+                assignment_effect: None,
+            }
+        );
+        let ghost_assignment_pick = flow_entry_by_kind(
+            &flow_entries,
+            ControlFlowObligationSiteKind::GhostAssignment,
+            0,
+        );
+        let expected_pick_effect = flow
+            .assignment_effects
+            .iter()
+            .find_map(|(effect_id, effect)| {
+                (effect.statement == ghost_pick).then_some((effect_id, effect))
+            })
+            .expect("ghost pick assignment effect");
+        let expected_pick_local = match expected_pick_effect.1.target {
+            AssignmentEffectTarget::Local(local) => local,
+            AssignmentEffectTarget::Place(_) => panic!("ghost pick should assign a local"),
+        };
+        assert_eq!(
+            ghost_assignment_pick.seed.local_path.as_str(),
+            "program/0/ghost/assignment/0"
+        );
+        assert_eq!(
+            ghost_assignment_pick.seed.semantic_origin.as_str(),
+            "flow:0:ghost:assignment:0"
+        );
+        assert_flow_seed_source(
+            &first,
+            ghost_assignment_pick,
+            &core.source_map().algorithm_sources[&ghost_pick],
+            "flow-handoff:ghost-assignment:0",
+        );
+        assert_flow_seed_core_refs(
+            flow,
+            ghost_assignment_pick,
+            &[CoreNodeRef::AlgorithmStmt(ghost_pick)],
+        );
+        assert_eq!(
+            ghost_assignment_pick
+                .flow_site
+                .as_ref()
+                .expect("ghost assignment site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::GhostAssignment,
+                ordinal: 0,
+                statement: Some(ghost_pick),
+                block: Some(BasicBlockId::new(0)),
+                loop_id: None,
+                exit: None,
+                local: Some(expected_pick_local),
+                assignment_effect: Some(expected_pick_effect.0),
+            }
+        );
+        let ghost_assignment_let = flow_entry_by_kind(
+            &flow_entries,
+            ControlFlowObligationSiteKind::GhostAssignment,
+            1,
+        );
+        let expected_let_effect = flow
+            .assignment_effects
+            .iter()
+            .find_map(|(effect_id, effect)| {
+                (effect.statement == ghost_let).then_some((effect_id, effect))
+            })
+            .expect("ghost let assignment effect");
+        let expected_let_local = match expected_let_effect.1.target {
+            AssignmentEffectTarget::Local(local) => local,
+            AssignmentEffectTarget::Place(_) => panic!("ghost let should assign a local"),
+        };
+        assert_eq!(
+            ghost_assignment_let.seed.local_path.as_str(),
+            "program/0/ghost/assignment/1"
+        );
+        assert_eq!(
+            ghost_assignment_let.seed.semantic_origin.as_str(),
+            "flow:0:ghost:assignment:1"
+        );
+        assert_flow_seed_source(
+            &first,
+            ghost_assignment_let,
+            &core.source_map().algorithm_sources[&ghost_let],
+            "flow-handoff:ghost-assignment:1",
+        );
+        assert_flow_seed_core_refs(
+            flow,
+            ghost_assignment_let,
+            &[CoreNodeRef::AlgorithmStmt(ghost_let)],
+        );
+        assert_eq!(
+            ghost_assignment_let
+                .flow_site
+                .as_ref()
+                .expect("ghost assignment site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::GhostAssignment,
+                ordinal: 1,
+                statement: Some(ghost_let),
+                block: Some(BasicBlockId::new(0)),
+                loop_id: None,
+                exit: None,
+                local: Some(expected_let_local),
+                assignment_effect: Some(expected_let_effect.0),
+            }
+        );
+        assert!(
+            flow_entries
+                .iter()
+                .filter(|(_, entry)| entry.seed.kind == ObligationSeedKind::GhostErasure)
+                .all(
+                    |(_, entry)| !entry.seed.semantic_origin.as_str().contains("VcId")
+                        && !entry
+                            .seed
+                            .semantic_origin
+                            .as_str()
+                            .contains("ObligationAnchor")
+                )
+        );
+    }
+
+    #[test]
+    fn obligation_handoff_covers_loop_partial_and_combined_ordering() {
+        let mut fixture = CoreFixture::new();
+        let existing_goal = fixture.formula(CoreFormulaKind::True, 5);
+        let early_seed = fixture.obligation_seed(
+            ObligationSeedKind::CheckerInitial,
+            Some(existing_goal),
+            "checker/early",
+            Some("Early"),
+            "pkg::main::AlgorithmOwner.checker.early",
+            0,
+        );
+        let term = fixture.term_var(0, 10);
+        let condition = fixture.formula(CoreFormulaKind::True, 11);
+        let continue_invariant = fixture.formula(CoreFormulaKind::False, 12);
+        let partial_invariant = fixture.formula(CoreFormulaKind::True, 13);
+        let loop_decreasing = fixture.term_var(0, 14);
+        let continue_stmt = fixture.stmt(CoreAlgorithmStmtKind::Continue, 20);
+        let continue_loop = fixture.stmt(
+            CoreAlgorithmStmtKind::While {
+                condition,
+                invariants: vec![continue_invariant],
+                decreasing: vec![loop_decreasing],
+                body: vec![continue_stmt],
+            },
+            21,
+        );
+        let normal_assign = fixture.stmt(
+            CoreAlgorithmStmtKind::Assign {
+                target: CorePlace::new("loop_target"),
+                value: term,
+            },
+            30,
+        );
+        let partial_loop = fixture.stmt(
+            CoreAlgorithmStmtKind::While {
+                condition,
+                invariants: vec![partial_invariant],
+                decreasing: Vec::new(),
+                body: vec![normal_assign],
+            },
+            31,
+        );
+        let late_seed = fixture.obligation_seed(
+            ObligationSeedKind::TheoremProof,
+            Some(existing_goal),
+            "proof/late",
+            Some("Late"),
+            "pkg::main::AlgorithmOwner.proof.late",
+            90,
+        );
+        let core = fixture.finish(Vec::new(), None, vec![continue_loop, partial_loop]);
+        let flow_output = build_control_flow_ir(&core);
+        let flow = only_flow(&flow_output);
+        let handoff = build_obligation_seed_handoff(&core, &flow_output);
+
+        assert_eq!(handoff.entries.len(), 10);
+        assert_eq!(handoff.source_map.len(), handoff.entries.len());
+        for (id, entry) in handoff.entries.iter() {
+            assert!(source_map_matches_seed(&handoff, id, entry));
+        }
+        let ordered_origins = handoff
+            .entries
+            .iter()
+            .map(|(_, entry)| &entry.origin)
+            .collect::<Vec<_>>();
+        assert!(matches!(
+            ordered_origins.first(),
+            Some(ObligationHandoffOrigin::ExistingCore { seed }) if *seed == early_seed
+        ));
+        assert!(matches!(
+            ordered_origins.last(),
+            Some(ObligationHandoffOrigin::ExistingCore { seed }) if *seed == late_seed
+        ));
+        let (continue_exit_id, _) = flow
+            .exits
+            .iter()
+            .find(|(_, exit)| exit.statement == Some(continue_stmt))
+            .expect("continue exit");
+        let ordered_signature = handoff
+            .entries
+            .iter()
+            .map(|(_, entry)| match &entry.origin {
+                ObligationHandoffOrigin::ExistingCore { seed } => {
+                    format!("core:{}:{}", seed.index(), entry.seed.local_path.as_str())
+                }
+                ObligationHandoffOrigin::FlowDerived { flow, algorithm } => {
+                    let site = entry.flow_site.as_ref().expect("flow site");
+                    format!(
+                        "flow:{}:{}:{:?}:{}:stmt={:?}:block={:?}:loop={:?}:exit={:?}:local={:?}:effect={:?}",
+                        flow.index(),
+                        algorithm.index(),
+                        site.kind,
+                        entry.seed.local_path.as_str(),
+                        site.statement.map(CoreAlgorithmStmtId::index),
+                        site.block.map(BasicBlockId::index),
+                        site.loop_id.map(LoopId::index),
+                        site.exit.map(ControlFlowExitId::index),
+                        site.local.map(LocalId::index),
+                        site.assignment_effect.map(AssignmentEffectId::index),
+                    )
+                }
+            })
+            .collect::<Vec<_>>();
+        let loop0 = flow.loops.get(LoopId::new(0)).expect("loop 0");
+        let loop1 = flow.loops.get(LoopId::new(1)).expect("loop 1");
+        let algorithm_partial_block = flow.entry.index();
+        let partial_loop_block = loop1.header.index();
+        let header0 = loop0.header.index();
+        let body0 = loop0.body.index();
+        let header1 = loop1.header.index();
+        let body1 = loop1.body.index();
+        let continue_exit_index = continue_exit_id.index();
+        assert_eq!(
+            ordered_signature,
+            vec![
+                format!("core:{}:checker/early", early_seed.index()),
+                format!(
+                    "flow:0:0:PartialTermination:program/0/termination/partial/0:stmt=None:block=Some({algorithm_partial_block}):loop=None:exit=None:local=None:effect=None"
+                ),
+                format!(
+                    "flow:0:0:LoopInvariant:program/0/invariant/0:stmt=None:block=Some({header0}):loop=Some(0):exit=None:local=None:effect=None"
+                ),
+                format!(
+                    "flow:0:0:LoopInvariant:program/0/invariant/1:stmt=None:block=Some({body0}):loop=Some(0):exit=Some({continue_exit_index}):local=None:effect=None"
+                ),
+                format!(
+                    "flow:0:0:LoopInvariant:program/0/invariant/2:stmt=None:block=Some({header1}):loop=Some(1):exit=None:local=None:effect=None"
+                ),
+                format!(
+                    "flow:0:0:LoopInvariant:program/0/invariant/3:stmt=None:block=Some({body1}):loop=Some(1):exit=None:local=None:effect=None"
+                ),
+                format!(
+                    "flow:0:0:TerminationMeasure:program/0/termination/measure/0:stmt=None:block=Some({header0}):loop=Some(0):exit=None:local=None:effect=None"
+                ),
+                format!(
+                    "flow:0:0:TerminationMeasure:program/0/termination/measure/1:stmt=None:block=Some({body0}):loop=Some(0):exit=Some({continue_exit_index}):local=None:effect=None"
+                ),
+                format!(
+                    "flow:0:0:PartialTermination:program/0/termination/partial/1:stmt=None:block=Some({partial_loop_block}):loop=Some(1):exit=None:local=None:effect=None"
+                ),
+                format!("core:{}:proof/late", late_seed.index()),
+            ]
+        );
+
+        let flow_entries = flow_handoff_entries(&handoff);
+        assert_eq!(flow_entries.len(), 8);
+        assert!(
+            flow_entries
+                .iter()
+                .all(|(_, entry)| entry.seed.status == ObligationSeedStatus::Deferred)
+        );
+        assert!(
+            flow_entries
+                .iter()
+                .all(|(_, entry)| entry.seed.context.is_empty())
+        );
+        assert!(
+            flow_entries
+                .iter()
+                .all(|(id, entry)| source_map_matches_seed(&handoff, *id, entry))
+        );
+        assert_eq!(
+            flow_entries
+                .iter()
+                .filter(|(_, entry)| entry
+                    .flow_site
+                    .as_ref()
+                    .is_some_and(|site| site.kind == ControlFlowObligationSiteKind::LoopInvariant))
+                .count(),
+            4
+        );
+        assert_eq!(
+            flow_entries
+                .iter()
+                .filter(|(_, entry)| entry.flow_site.as_ref().is_some_and(|site| {
+                    site.kind == ControlFlowObligationSiteKind::TerminationMeasure
+                }))
+                .count(),
+            2
+        );
+        assert_eq!(
+            flow_entries
+                .iter()
+                .filter(|(_, entry)| entry.flow_site.as_ref().is_some_and(|site| {
+                    site.kind == ControlFlowObligationSiteKind::PartialTermination
+                }))
+                .count(),
+            2
+        );
+
+        let algorithm_partial_entry = flow_entry_by_kind(
+            &flow_entries,
+            ControlFlowObligationSiteKind::PartialTermination,
+            0,
+        );
+        assert_eq!(
+            algorithm_partial_entry.seed.kind,
+            ObligationSeedKind::AlgorithmTermination
+        );
+        assert_eq!(algorithm_partial_entry.seed.goal, None);
+        assert_eq!(
+            algorithm_partial_entry.seed.semantic_origin.as_str(),
+            "flow:0:termination:partial:0"
+        );
+        assert_flow_seed_core_refs(flow, algorithm_partial_entry, &[]);
+        assert_flow_seed_source(
+            &handoff,
+            algorithm_partial_entry,
+            &core
+                .algorithms()
+                .get(flow.algorithm)
+                .expect("algorithm")
+                .source,
+            "flow-handoff:partial-termination:0",
+        );
+        assert_eq!(
+            algorithm_partial_entry
+                .flow_site
+                .as_ref()
+                .expect("algorithm partial site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::PartialTermination,
+                ordinal: 0,
+                statement: None,
+                block: Some(flow.entry),
+                loop_id: None,
+                exit: None,
+                local: None,
+                assignment_effect: None,
+            }
+        );
+
+        let header_invariant_entry = flow_entry_by_kind(
+            &flow_entries,
+            ControlFlowObligationSiteKind::LoopInvariant,
+            0,
+        );
+        assert_eq!(header_invariant_entry.seed.goal, Some(continue_invariant));
+        assert_eq!(
+            header_invariant_entry.seed.semantic_origin.as_str(),
+            "flow:0:invariant:0"
+        );
+        assert_flow_seed_core_refs(
+            flow,
+            header_invariant_entry,
+            &[CoreNodeRef::Formula(continue_invariant)],
+        );
+        assert_flow_seed_source(
+            &handoff,
+            header_invariant_entry,
+            &core.source_map().formula_sources[&continue_invariant],
+            "flow-handoff:invariant:0",
+        );
+        assert_eq!(
+            header_invariant_entry
+                .flow_site
+                .as_ref()
+                .expect("header invariant site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::LoopInvariant,
+                ordinal: 0,
+                statement: None,
+                block: Some(loop0.header),
+                loop_id: Some(LoopId::new(0)),
+                exit: None,
+                local: None,
+                assignment_effect: None,
+            }
+        );
+
+        let continue_invariant_ordinal = flow
+            .contracts
+            .loop_invariants
+            .iter()
+            .position(|site| {
+                matches!(
+                    site.placement,
+                    LoopInvariantPlacement::ContinueExit { loop_id, exit }
+                        if loop_id == LoopId::new(0) && exit == continue_exit_id
+                )
+            })
+            .expect("continue invariant site");
+        let continue_invariant_entry = flow_entries
+            .iter()
+            .find(|(_, entry)| {
+                entry.flow_site.as_ref().is_some_and(|site| {
+                    site.kind == ControlFlowObligationSiteKind::LoopInvariant
+                        && site.loop_id == Some(LoopId::new(0))
+                        && site.exit == Some(continue_exit_id)
+                })
+            })
+            .map(|(_, entry)| *entry)
+            .expect("continue invariant handoff");
+        assert_eq!(continue_invariant_entry.seed.goal, Some(continue_invariant));
+        assert_eq!(
+            continue_invariant_entry.seed.semantic_origin.as_str(),
+            format!("flow:0:invariant:{continue_invariant_ordinal}")
+        );
+        assert_flow_seed_core_refs(
+            flow,
+            continue_invariant_entry,
+            &[CoreNodeRef::Formula(continue_invariant)],
+        );
+        assert_flow_seed_source(
+            &handoff,
+            continue_invariant_entry,
+            &core.source_map().formula_sources[&continue_invariant],
+            &format!("flow-handoff:invariant:{continue_invariant_ordinal}"),
+        );
+        assert_eq!(
+            continue_invariant_entry.seed.local_path.as_str(),
+            format!("program/0/invariant/{continue_invariant_ordinal}")
+        );
+        assert_eq!(
+            continue_invariant_entry
+                .flow_site
+                .as_ref()
+                .expect("continue invariant site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::LoopInvariant,
+                ordinal: continue_invariant_ordinal,
+                statement: None,
+                block: Some(loop0.body),
+                loop_id: Some(LoopId::new(0)),
+                exit: Some(continue_exit_id),
+                local: None,
+                assignment_effect: None,
+            }
+        );
+
+        let partial_header_invariant_entry = flow_entry_by_kind(
+            &flow_entries,
+            ControlFlowObligationSiteKind::LoopInvariant,
+            2,
+        );
+        assert_eq!(
+            partial_header_invariant_entry.seed.goal,
+            Some(partial_invariant)
+        );
+        assert_eq!(
+            partial_header_invariant_entry.seed.semantic_origin.as_str(),
+            "flow:0:invariant:2"
+        );
+        assert_flow_seed_core_refs(
+            flow,
+            partial_header_invariant_entry,
+            &[CoreNodeRef::Formula(partial_invariant)],
+        );
+        assert_flow_seed_source(
+            &handoff,
+            partial_header_invariant_entry,
+            &core.source_map().formula_sources[&partial_invariant],
+            "flow-handoff:invariant:2",
+        );
+        assert_eq!(
+            partial_header_invariant_entry
+                .flow_site
+                .as_ref()
+                .expect("partial header invariant site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::LoopInvariant,
+                ordinal: 2,
+                statement: None,
+                block: Some(loop1.header),
+                loop_id: Some(LoopId::new(1)),
+                exit: None,
+                local: None,
+                assignment_effect: None,
+            }
+        );
+
+        let normal_backedge_invariant_entry = flow_entry_by_kind(
+            &flow_entries,
+            ControlFlowObligationSiteKind::LoopInvariant,
+            3,
+        );
+        assert_eq!(
+            normal_backedge_invariant_entry.seed.goal,
+            Some(partial_invariant)
+        );
+        assert_eq!(
+            normal_backedge_invariant_entry
+                .seed
+                .semantic_origin
+                .as_str(),
+            "flow:0:invariant:3"
+        );
+        assert_flow_seed_core_refs(
+            flow,
+            normal_backedge_invariant_entry,
+            &[CoreNodeRef::Formula(partial_invariant)],
+        );
+        assert_flow_seed_source(
+            &handoff,
+            normal_backedge_invariant_entry,
+            &core.source_map().formula_sources[&partial_invariant],
+            "flow-handoff:invariant:3",
+        );
+        assert_eq!(
+            normal_backedge_invariant_entry
+                .flow_site
+                .as_ref()
+                .expect("normal backedge invariant site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::LoopInvariant,
+                ordinal: 3,
+                statement: None,
+                block: Some(loop1.body),
+                loop_id: Some(LoopId::new(1)),
+                exit: None,
+                local: None,
+                assignment_effect: None,
+            }
+        );
+
+        let loop_header_measure_entry = flow_entry_by_kind(
+            &flow_entries,
+            ControlFlowObligationSiteKind::TerminationMeasure,
+            0,
+        );
+        assert_eq!(
+            loop_header_measure_entry.seed.kind,
+            ObligationSeedKind::AlgorithmTermination
+        );
+        assert_eq!(loop_header_measure_entry.seed.goal, None);
+        assert_eq!(
+            loop_header_measure_entry.seed.semantic_origin.as_str(),
+            "flow:0:termination:measure:0"
+        );
+        assert_flow_seed_core_refs(
+            flow,
+            loop_header_measure_entry,
+            &[CoreNodeRef::Term(loop_decreasing)],
+        );
+        assert_flow_seed_source(
+            &handoff,
+            loop_header_measure_entry,
+            &core.source_map().term_sources[&loop_decreasing],
+            "flow-handoff:termination-measure:0",
+        );
+        assert_eq!(
+            loop_header_measure_entry
+                .flow_site
+                .as_ref()
+                .expect("loop header measure site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::TerminationMeasure,
+                ordinal: 0,
+                statement: None,
+                block: Some(loop0.header),
+                loop_id: Some(LoopId::new(0)),
+                exit: None,
+                local: None,
+                assignment_effect: None,
+            }
+        );
+
+        let continue_measure_ordinal = flow
+            .contracts
+            .decreasing
+            .iter()
+            .position(|site| {
+                matches!(
+                    site.placement,
+                    TerminationMeasurePlacement::ContinueEdge { loop_id, exit }
+                        if loop_id == LoopId::new(0) && exit == continue_exit_id
+                )
+            })
+            .expect("continue termination measure");
+        let continue_measure_entry = flow_entries
+            .iter()
+            .find(|(_, entry)| {
+                entry.flow_site.as_ref().is_some_and(|site| {
+                    site.kind == ControlFlowObligationSiteKind::TerminationMeasure
+                        && site.loop_id == Some(LoopId::new(0))
+                        && site.exit == Some(continue_exit_id)
+                })
+            })
+            .map(|(_, entry)| *entry)
+            .expect("continue termination handoff");
+        assert_eq!(
+            continue_measure_entry.seed.kind,
+            ObligationSeedKind::AlgorithmTermination
+        );
+        assert_eq!(continue_measure_entry.seed.goal, None);
+        assert_eq!(
+            continue_measure_entry.seed.semantic_origin.as_str(),
+            format!("flow:0:termination:measure:{continue_measure_ordinal}")
+        );
+        assert_flow_seed_core_refs(
+            flow,
+            continue_measure_entry,
+            &[CoreNodeRef::Term(loop_decreasing)],
+        );
+        assert_flow_seed_source(
+            &handoff,
+            continue_measure_entry,
+            &core.source_map().term_sources[&loop_decreasing],
+            &format!("flow-handoff:termination-measure:{continue_measure_ordinal}"),
+        );
+        assert_eq!(
+            continue_measure_entry.seed.local_path.as_str(),
+            format!("program/0/termination/measure/{continue_measure_ordinal}")
+        );
+        assert_eq!(
+            continue_measure_entry
+                .flow_site
+                .as_ref()
+                .expect("continue termination site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::TerminationMeasure,
+                ordinal: continue_measure_ordinal,
+                statement: None,
+                block: Some(loop0.body),
+                loop_id: Some(LoopId::new(0)),
+                exit: Some(continue_exit_id),
+                local: None,
+                assignment_effect: None,
+            }
+        );
+
+        let partial_loop_ordinal = flow
+            .termination
+            .partial_sites
+            .iter()
+            .position(|site| {
+                matches!(site.kind, TerminationSiteKind::Loop(loop_id) if loop_id == LoopId::new(1))
+            })
+            .expect("partial loop site");
+        let partial_loop_entry = flow_entries
+            .iter()
+            .find(|(_, entry)| {
+                entry.flow_site.as_ref().is_some_and(|site| {
+                    site.kind == ControlFlowObligationSiteKind::PartialTermination
+                        && site.loop_id == Some(LoopId::new(1))
+                })
+            })
+            .map(|(_, entry)| *entry)
+            .expect("partial loop handoff");
+        assert_eq!(
+            partial_loop_entry.seed.kind,
+            ObligationSeedKind::AlgorithmTermination
+        );
+        assert_eq!(partial_loop_entry.seed.goal, None);
+        assert_eq!(
+            partial_loop_entry.seed.semantic_origin.as_str(),
+            format!("flow:0:termination:partial:{partial_loop_ordinal}")
+        );
+        assert_flow_seed_core_refs(flow, partial_loop_entry, &[]);
+        assert_flow_seed_source(
+            &handoff,
+            partial_loop_entry,
+            &core.source_map().algorithm_sources[&partial_loop],
+            &format!("flow-handoff:partial-termination:{partial_loop_ordinal}"),
+        );
+        assert_eq!(
+            partial_loop_entry.seed.local_path.as_str(),
+            format!("program/0/termination/partial/{partial_loop_ordinal}")
+        );
+        assert_eq!(
+            partial_loop_entry
+                .flow_site
+                .as_ref()
+                .expect("partial loop site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::PartialTermination,
+                ordinal: partial_loop_ordinal,
+                statement: None,
+                block: Some(flow.loops.get(LoopId::new(1)).expect("partial loop").header),
+                loop_id: Some(LoopId::new(1)),
+                exit: None,
+                local: None,
+                assignment_effect: None,
+            }
+        );
+
+        assert!(flow_entries.iter().all(|(_, entry)| {
+            !entry.seed.semantic_origin.as_str().contains("VcId")
+                && !entry
+                    .seed
+                    .semantic_origin
+                    .as_str()
+                    .contains("ObligationAnchor")
+                && !entry.seed.semantic_origin.as_str().contains("SourceRange")
+        }));
+    }
+
+    #[test]
+    fn obligation_handoff_covers_break_exit_loop_invariant() {
+        let mut fixture = CoreFixture::new();
+        let condition = fixture.formula(CoreFormulaKind::True, 10);
+        let break_invariant = fixture.formula(CoreFormulaKind::False, 11);
+        let algorithm_decreasing = fixture.term_var(0, 12);
+        let loop_decreasing = fixture.term_var(0, 13);
+        let break_stmt = fixture.stmt(CoreAlgorithmStmtKind::Break, 20);
+        let break_loop = fixture.stmt(
+            CoreAlgorithmStmtKind::While {
+                condition,
+                invariants: vec![break_invariant],
+                decreasing: vec![loop_decreasing],
+                body: vec![break_stmt],
+            },
+            21,
+        );
+        let core = fixture.finish_with_contracts(
+            Vec::new(),
+            None,
+            vec![break_loop],
+            CoreContractSet {
+                decreasing: vec![algorithm_decreasing],
+                ..CoreContractSet::default()
+            },
+        );
+        let flow_output = build_control_flow_ir(&core);
+        let flow = only_flow(&flow_output);
+        let handoff = build_obligation_seed_handoff(&core, &flow_output);
+        let flow_entries = flow_handoff_entries(&handoff);
+
+        assert_eq!(flow_entries.len(), 4);
+        assert!(
+            flow_entries
+                .iter()
+                .all(|(_, entry)| entry.seed.status == ObligationSeedStatus::Deferred)
+        );
+        assert!(
+            flow_entries
+                .iter()
+                .all(|(_, entry)| entry.seed.context.is_empty())
+        );
+        assert!(
+            flow_entries
+                .iter()
+                .all(|(id, entry)| source_map_matches_seed(&handoff, *id, entry))
+        );
+        let (break_exit_id, break_exit) = flow
+            .exits
+            .iter()
+            .find(|(_, exit)| {
+                exit.statement == Some(break_stmt)
+                    && matches!(exit.kind, ControlFlowExitKind::Break { .. })
+            })
+            .expect("break exit");
+        assert!(matches!(
+            break_exit.kind,
+            ControlFlowExitKind::Break {
+                loop_id
+            } if loop_id == LoopId::new(0)
+        ));
+
+        let break_invariant_ordinal = flow
+            .contracts
+            .loop_invariants
+            .iter()
+            .position(|site| {
+                matches!(
+                    site.placement,
+                    LoopInvariantPlacement::BreakExit { loop_id, exit }
+                        if loop_id == LoopId::new(0) && exit == break_exit_id
+                )
+            })
+            .expect("break invariant site");
+        let break_invariant_entry = flow_entry_by_kind(
+            &flow_entries,
+            ControlFlowObligationSiteKind::LoopInvariant,
+            break_invariant_ordinal,
+        );
+        assert_eq!(break_invariant_entry.seed.goal, Some(break_invariant));
+        assert_eq!(
+            break_invariant_entry.seed.semantic_origin.as_str(),
+            format!("flow:0:invariant:{break_invariant_ordinal}")
+        );
+        assert_eq!(
+            break_invariant_entry.seed.local_path.as_str(),
+            format!("program/0/invariant/{break_invariant_ordinal}")
+        );
+        assert_flow_seed_core_refs(
+            flow,
+            break_invariant_entry,
+            &[CoreNodeRef::Formula(break_invariant)],
+        );
+        assert_flow_seed_source(
+            &handoff,
+            break_invariant_entry,
+            &core.source_map().formula_sources[&break_invariant],
+            &format!("flow-handoff:invariant:{break_invariant_ordinal}"),
+        );
+        assert_eq!(
+            break_invariant_entry
+                .flow_site
+                .as_ref()
+                .expect("break invariant site"),
+            &ControlFlowObligationSite {
+                kind: ControlFlowObligationSiteKind::LoopInvariant,
+                ordinal: break_invariant_ordinal,
+                statement: None,
+                block: Some(break_exit.from),
+                loop_id: Some(LoopId::new(0)),
+                exit: Some(break_exit_id),
+                local: None,
+                assignment_effect: None,
+            }
+        );
+
+        let algorithm_measure = flow_entry_by_kind(
+            &flow_entries,
+            ControlFlowObligationSiteKind::TerminationMeasure,
+            0,
+        );
+        assert_eq!(
+            algorithm_measure.seed.semantic_origin.as_str(),
+            "flow:0:termination:measure:0"
+        );
+        assert_flow_seed_core_refs(
+            flow,
+            algorithm_measure,
+            &[CoreNodeRef::Term(algorithm_decreasing)],
+        );
+        assert_flow_seed_source(
+            &handoff,
+            algorithm_measure,
+            &core.source_map().term_sources[&algorithm_decreasing],
+            "flow-handoff:termination-measure:0",
+        );
+
+        let loop_measure = flow_entry_by_kind(
+            &flow_entries,
+            ControlFlowObligationSiteKind::TerminationMeasure,
+            1,
+        );
+        assert_eq!(
+            loop_measure.seed.semantic_origin.as_str(),
+            "flow:0:termination:measure:1"
+        );
+        assert_flow_seed_core_refs(flow, loop_measure, &[CoreNodeRef::Term(loop_decreasing)]);
+        assert_flow_seed_source(
+            &handoff,
+            loop_measure,
+            &core.source_map().term_sources[&loop_decreasing],
+            "flow-handoff:termination-measure:1",
+        );
     }
 
     #[test]

@@ -215,13 +215,15 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 
 ### 強化と横断フォローアップ
 
-18. **obligation seed の受け渡し契約。** [ ]
+18. **obligation seed の受け渡し契約。** [x]
     - `mizar-vc` が消費する obligation seed 出力を定義・実装する（seed
-      のみ。具体的な `VcId` は phase 11 が割り当てる）。定理本体、
-      correctness condition、checker の initial obligation、アルゴリズム
-      契約を網羅する。seed は anchor-ready な局所 proof / program path、
-      label、正規化された semantic origin、source/core provenance を持つが、
-      編集をまたぐ reuse identity は `mizar-vc` に委ねる。
+      のみ。具体的な `VcId` は phase 11 が割り当てる）。既存の定理本体、
+      correctness condition、checker の initial obligation、generated /
+      deferred / error traceability row、flow-derived algorithm contract、
+      termination、ghost-erasure site を網羅する。seed は anchor-ready な
+      局所 proof / program path、label、正規化された semantic origin、
+      source/core provenance、局所 CFG site metadata を持つが、編集をまたぐ
+      reuse identity は `mizar-vc` に委ねる。
     - テスト: seed カバレッジのフィクスチャ。seed が
       `CoreIr`/`ControlFlowIr` ノード、ソース範囲、局所 proof / program
       path、label、provenance を参照する。

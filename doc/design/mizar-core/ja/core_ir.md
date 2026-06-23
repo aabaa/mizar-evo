@@ -419,6 +419,7 @@ struct ObligationSeed {
     source: CoreSourceRef,
     core_refs: Vec<CoreNodeRef>,
     status: ObligationSeedStatus,
+    diagnostics: Vec<CoreDiagnosticId>,
 }
 ```
 
@@ -465,6 +466,74 @@ checker-origin row を識別する。
 
 seed は owner item、source range、local path、kind、label、normalized semantic origin、
 dense id tie-breaker により決定的に並ぶ。
+
+### obligation seed handoff
+
+Task 18 は、`mizar-vc` の seed intake が消費する `ObligationSeedHandoff` view を公開する。
+handoff は引き続き core が所有する phase-9/10 metadata である。`VcId` の割り当て、
+`ObligationAnchor` の計算、`VcIr` の構築、context fingerprint、proof acceptance の判定は行わない。
+
+handoff は snapshot-local な独立 id 空間を持つ。
+
+```rust
+struct ObligationSeedHandoff {
+    entries: ObligationHandoffTable,
+    source_map: Map<ObligationHandoffId, CoreSourceRef>,
+}
+
+struct ObligationHandoffEntry {
+    seed: ObligationSeed,
+    origin: ObligationHandoffOrigin,
+    flow_site: Option<ControlFlowObligationSite>,
+}
+
+enum ObligationHandoffOrigin {
+    ExistingCore { seed: ObligationSeedId },
+    FlowDerived { flow: ControlFlowId, algorithm: CoreAlgorithmId },
+}
+```
+
+`ObligationHandoffId` はこの handoff value に局所的である。`ObligationSeedId` でも
+`VcId` でもない。handoff source map は `ObligationHandoffId` を key にする。既存 core seed は、
+`ObligationHandoffOrigin::ExistingCore` を通じて元の `CoreSourceMap.obligation_sources` entry も保持する。
+
+`ControlFlowObligationSite` は、control-flow id を `CoreNodeRef` に埋め込まずに CFG-local site を
+識別する。site class と、関連する flow-local index を記録する。たとえば contract-site ordinal、
+assertion-site ordinal、loop-invariant-site ordinal、termination-measure-site ordinal、
+partial-termination-site ordinal、`LocalId`、`AssignmentEffectId`、`LoopId`、`BasicBlockId`、
+`ControlFlowExitId`、該当する場合の statement id である。
+
+handoff は次を含む。
+
+- 既存の `CoreIr.obligation_seeds` row すべて。canonical seed order で sort し、元の
+  `ObligationSeedId` へ link する。
+- `ControlFlowIr` の contract、termination、ghost-erasure site から導出した追加の
+  phase-10 seed row。origin となる `ControlFlowId`、`CoreAlgorithmId`、局所 CFG site へ link する。
+- handoff seed id 用の source map。これにより `mizar-vc` は raw syntax を見ずに各 seed を
+  source へ trace できる。
+
+既存 core seed は、元の `kind`、`status`、goal、context、local path、label、normalized
+semantic origin、provenance、source、diagnostic、`CoreNodeRef` を保存する。これにより
+theorem / lemma terminal goal、definition correctness、checker-initial obligation、
+generated choice / comprehension obligation、elaboration 中に作られた deferred/error traceability row
+を覆う。
+
+flow 由来 seed は、明示的な `ControlFlowIr` metadata からのみ生成する。対象は entry
+`requires`、return `ensures`、algorithm / statement assertion、loop invariant、
+decreasing / partial termination site、ghost-only local / assignment site である。seed は
+`CoreNodeRef::Item`、`CoreNodeRef::Algorithm`、存在する場合は formula または term、statement-owned
+site では statement ref を含む。CFG-local id は handoff entry の flow-site metadata に残し、
+`CoreNodeRef` には入れない。`CoreIr` が `ControlFlowIr` table id から独立である必要があるためである。
+
+task 18 の flow 由来 seed は、formula goal を持つ場合でも `Deferred` とする。assertion /
+invariant の具体的な VC context、`requires` の caller-side substitution、`ensures` の result
+substitution、termination well-foundedness schema、ghost-erasure proof shape は `mizar-vc` の責務である。
+deferred seed は、その obligation がすでに VC generation 可能であると見せかけずに、anchor-ready な
+program path、source/core/CFG provenance、status を保存する。
+
+handoff order は core seed と flow-derived seed を合わせて決定的である。各 seed の canonical key を
+比較し、同順位の場合は origin class、flow id、site kind、local site index で tie-break する。
+handoff id は handoff snapshot に局所的であり、`VcId` ではない。
 
 ## source map と provenance
 

@@ -524,6 +524,30 @@ Diagnostics are sorted by source order, then algorithm id, then block id, then
 diagnostic class. A diagnostic may mark an algorithm as partial/error for
 downstream consumers, but it must not pretend the algorithm is verified.
 
+## Obligation Handoff Sites
+
+Task 18 converts explicit `ControlFlowIr` metadata into deferred
+flow-derived obligation seeds for the `core_ir.md` handoff view. The conversion
+uses only CFG tables and core ids already present in `ControlFlowIr`; it never
+walks source text and never invents checker-owned payloads.
+
+Flow-derived handoff sites include:
+
+- each entry `requires` site as a caller-side precondition seed;
+- each return `ensures` site as a postcondition seed;
+- algorithm-level and statement-level assertion sites;
+- algorithm-level and loop-level invariant sites;
+- algorithm and loop decreasing measure sites plus partial termination sites;
+- ghost-only pick locals and ghost assignment effects as ghost-erasure safety
+  seeds.
+
+These seeds are `Deferred` in task 18. `mizar-vc` owns the exact VC context,
+call/result substitution, well-foundedness goal schemas, ghost-erasure proof
+shape, `VcId` assignment, and cross-edit `ObligationAnchor` construction. The
+core handoff records source refs, core refs, CFG-local site refs, normalized
+semantic origins, and anchor-ready program paths so those later phases do not
+need raw source spelling.
+
 ## Determinism
 
 For identical `CoreIr` input, construction must produce byte-stable debug
@@ -586,5 +610,16 @@ Task 17 tests must cover:
   snapshot/claim, or alias/lvalue diagnostics are fabricated while their
   checker-owned payloads remain unavailable.
 
+Task 18 tests must cover:
+
+- existing core theorem, definition correctness, and checker-initial seeds are
+  preserved in the handoff with labels, paths, source refs, provenance, and
+  original-seed backreferences;
+- flow-derived contract, termination, and ghost-erasure sites produce deferred
+  seeds with formula/term refs where available, CFG-site backreferences, and
+  deterministic handoff ordering;
+- no `VcId`, `ObligationAnchor`, source-derived call/pattern/snapshot/claim
+  payload, or concrete termination goal schema is fabricated.
+
 Spec-only task 14 is verified by bilingual documentation review and diff
-checks. Rust implementation and tests are deferred to tasks 15-17.
+checks. Rust implementation and tests are deferred to tasks 15-18.

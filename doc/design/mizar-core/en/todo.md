@@ -224,14 +224,15 @@ Keep `cargo test -p mizar-core` green after each task (see
 
 ### Hardening and cross-cutting follow-ups
 
-18. **Obligation-seed handoff contract.** [ ]
+18. **Obligation-seed handoff contract.** [x]
     - Define and implement the obligation-seed output consumed by `mizar-vc`
       (seeds only; concrete `VcId`s are assigned by phase 11), covering
-      theorem bodies, correctness conditions, checker-initial obligations,
-      and algorithm contracts. Seeds must carry anchor-ready local
-      proof/program paths, labels, normalized semantic origins, and
-      source/core provenance, while leaving cross-edit reuse identity to
-      `mizar-vc`.
+      existing theorem bodies, correctness conditions, checker-initial
+      obligations, generated/deferred/error traceability rows, and
+      flow-derived algorithm contracts, termination, and ghost-erasure sites.
+      Seeds must carry anchor-ready local proof/program paths, labels,
+      normalized semantic origins, source/core provenance, and local CFG site
+      metadata, while leaving cross-edit reuse identity to `mizar-vc`.
     - Tests: seed coverage fixtures; seeds reference `CoreIr`/`ControlFlowIr`
       nodes, source ranges, local proof/program paths, labels, and provenance.
     - Deps: 12, 16, coordinated with `mizar-vc` tasks 2 and 4. Spec:

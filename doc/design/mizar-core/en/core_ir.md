@@ -440,6 +440,7 @@ struct ObligationSeed {
     source: CoreSourceRef,
     core_refs: Vec<CoreNodeRef>,
     status: ObligationSeedStatus,
+    diagnostics: Vec<CoreDiagnosticId>,
 }
 ```
 
@@ -489,6 +490,85 @@ or checker-origin row that caused the seed.
 
 Seeds are ordered deterministically by owner item, source range, local path,
 kind, label, normalized semantic origin, and dense id tie-breaker.
+
+### Obligation Seed Handoff
+
+Task 18 exposes an `ObligationSeedHandoff` view for `mizar-vc` seed intake.
+The handoff is still core-owned phase-9/10 metadata. It does not assign
+`VcId`s, compute `ObligationAnchor`s, build `VcIr`, fingerprint contexts, or
+decide proof acceptance.
+
+The handoff has a distinct, snapshot-local id space:
+
+```rust
+struct ObligationSeedHandoff {
+    entries: ObligationHandoffTable,
+    source_map: Map<ObligationHandoffId, CoreSourceRef>,
+}
+
+struct ObligationHandoffEntry {
+    seed: ObligationSeed,
+    origin: ObligationHandoffOrigin,
+    flow_site: Option<ControlFlowObligationSite>,
+}
+
+enum ObligationHandoffOrigin {
+    ExistingCore { seed: ObligationSeedId },
+    FlowDerived { flow: ControlFlowId, algorithm: CoreAlgorithmId },
+}
+```
+
+`ObligationHandoffId` is local to this handoff value. It is not an
+`ObligationSeedId` and not a `VcId`. The handoff source map is keyed by
+`ObligationHandoffId`; existing core seeds also retain their original
+`CoreSourceMap.obligation_sources` entry through
+`ObligationHandoffOrigin::ExistingCore`.
+
+`ControlFlowObligationSite` identifies a CFG-local site without embedding
+control-flow ids into `CoreNodeRef`. It records the site class and the relevant
+flow-local indexes, such as contract-site ordinal, assertion-site ordinal,
+loop-invariant-site ordinal, termination-measure-site ordinal,
+partial-termination-site ordinal, `LocalId`, `AssignmentEffectId`, `LoopId`,
+`BasicBlockId`, `ControlFlowExitId`, and statement id when applicable.
+
+The handoff contains:
+
+- every existing `CoreIr.obligation_seeds` row, sorted by the canonical seed
+  order and linked back to its original `ObligationSeedId`;
+- additional phase-10 seed rows derived from `ControlFlowIr` contract,
+  termination, and ghost-erasure sites, linked to the originating
+  `ControlFlowId`, `CoreAlgorithmId`, and local CFG site;
+- a source map for the handoff seed ids so `mizar-vc` can trace every seed to
+  source without inspecting raw syntax.
+
+Existing core seeds preserve their original `kind`, `status`, goal, context,
+local path, label, normalized semantic origin, provenance, source, diagnostics,
+and `CoreNodeRef`s. This covers theorem/lemma terminal goals, definition
+correctness, checker-initial obligations, generated choice/comprehension
+obligations, and deferred/error traceability rows already created during
+elaboration.
+
+Flow-derived seeds are generated only from explicit `ControlFlowIr` metadata:
+entry `requires`, return `ensures`, algorithm and statement assertions, loop
+invariants, decreasing/partial termination sites, and ghost-only local or
+assignment sites. They include `CoreNodeRef::Item`, `CoreNodeRef::Algorithm`,
+the formula or term when one exists, and the statement ref when the site is
+statement-owned. CFG-local ids stay in the handoff entry's flow-site metadata,
+not in `CoreNodeRef`, because `CoreIr` must remain independent of
+`ControlFlowIr` table ids.
+
+Flow-derived seeds are `Deferred` in task 18, even when they carry a formula
+goal. The concrete VC context for assertions and invariants, caller-side
+substitution for `requires`, result substitution for `ensures`, termination
+well-foundedness schemas, and ghost-erasure proof shape belong to `mizar-vc`.
+The deferred seed preserves the anchor-ready program path, source/core/CFG
+provenance, and status without pretending the obligation is already ready for
+VC generation.
+
+The handoff order is deterministic across the combined core and flow-derived
+seed set: compare each seed's canonical key, then the origin class, flow id,
+site kind, and local site indexes as tie-breakers. Handoff ids are local to
+the handoff snapshot and are not `VcId`s.
 
 ## Source Map And Provenance
 
