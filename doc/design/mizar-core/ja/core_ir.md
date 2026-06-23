@@ -275,8 +275,10 @@ enum CoreProofNodeKind {
     IntroduceBinder { binder: CoreBinder, child: CoreProofNodeId },
     Assume { label: Option<CoreLabelRef>, formula: CoreFormulaId, child: CoreProofNodeId },
     Step { label: Option<CoreLabelRef>, formula: CoreFormulaId, justification: CoreJustification },
+    CurrentGoal { thesis: CoreFormulaId, child: CoreProofNodeId },
+    Sequence { children: Vec<CoreProofNodeId> },
     Branch { kind: ProofBranchKind, children: Vec<CoreProofNodeId> },
-    TerminalGoal(ObligationSeedId),
+    TerminalGoal { obligation: ObligationSeedId, citations: Vec<CoreCitation> },
     Error(CoreDiagnosticId),
 }
 ```
@@ -284,13 +286,22 @@ enum CoreProofNodeKind {
 規則:
 
 - `thesis` は現在の `CoreFormulaId` へ解決され、magic identifier としては保持しない。
-- citation は label、theorem symbol、dependency fact への symbolic reference のまま
-  保持する。core は ATP premise selection を決めない。
+  明示的な current-goal transition は `CurrentGoal` node で表す。
+- `Sequence` node は順序付き proof block を保存し、1 つの proof path 上で label を伝播する。
+  `Branch` child は sibling scope を分離する。
+- citation は label、current module または dependency summary にある proof-like symbol
+  （`Theorem`、`Lemma`、`Scheme`）、または generated origin への symbolic reference のまま
+  保持する。core は ATP premise selection を決めず、functor や mode など proof でない local symbol は
+  proof citation として valid ではない。raw `CoreIr` validation は item table に存在する local symbol の
+  kind を検証する。external dependency-symbol citation の kind は Core IR 構築前の elaborator/context
+  validation が保証し、この table set では symbolic なまま保持する。
+- terminal goal は生成された theorem-proof obligation seed を参照し、durable な citation list を
+  terminal proof node にも保存する。
 - `open`、`assumed`、`conditional` status は policy input として保持する。core は proof
   を accept/reject しない。
 - `error` は recovery status に限る。malformed proof skeleton input を記録するが、
   proof を accept/reject しない。
-- terminal proof obligation はすべて `ObligationSeedId`。
+- terminal proof obligation はすべて `ObligationSeedId` を参照する。
 
 ### algorithm shell
 

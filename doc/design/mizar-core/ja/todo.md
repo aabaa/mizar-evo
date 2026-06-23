@@ -161,12 +161,14 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       再生成せず再利用できるようにする。
     - 依存: 10。仕様: `elaborator.md`（定義の節）。
 
-12. **証明骨格の lowering。** [ ]
+12. **証明骨格の lowering。** [x]
     - Step 5 を実装する: 証明構造（`proof`/`now`/`per cases`、結論
       ステップ、引用）を thesis 追跡付きの core 証明木へ下ろす。
     - テスト: 証明形ごとの骨格フィクスチャ。thesis 遷移の記録。引用参照は
-      シンボリックに保持される。定理/補題命題が自身の stable choice
-      シンボルを所有するケースも含める。
+      シンボリックに保持される。invalid citation、missing / wrong-owner proof item、
+      malformed error root、active path formula、terminal-goal back-reference、external
+      dependency citation を覆う。定理/補題命題が自身の stable choice シンボルを所有する
+      ケースも含める。
     - 依存: 11。仕様: `elaborator.md`（証明の節）。
 
 13. **アルゴリズムシェルの lowering。** [ ]

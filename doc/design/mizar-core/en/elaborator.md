@@ -376,6 +376,7 @@ Input:
 - checker proof skeleton payloads when available;
 - proof labels and citations;
 - lowered formulas and binder contexts.
+- generated-origin and definition outputs from earlier steps.
 
 Output:
 
@@ -383,29 +384,74 @@ Output:
 - core proof nodes;
 - theorem/proof status metadata;
 - terminal proof goal obligation seeds.
+- proof diagnostics and source-map entries for proof nodes and terminal
+  obligations.
 
 Rules:
 
 - `thesis` is replaced by the current core formula. It is not preserved as a
-  magic identifier.
+  magic identifier. Task 12 lowers checker-owned thesis references to the
+  proposition/current-goal `CoreFormulaId` supplied by the skeleton payload and
+  records explicit current-goal transitions as proof nodes.
 - Introduced variables become `CoreBinder`s with type guards.
 - Assumptions and labeled steps become explicit proof nodes with source/core
   provenance.
+- Sequential proof blocks preserve order and carry earlier step labels to
+  later nodes in the same proof path; branch children receive isolated label
+  scopes so sibling labels do not leak across cases.
 - Citations reference labels, canonical symbols, or generated origins already
-  present in the semantic input.
+  present in the semantic input. mizar-core validates that symbol citations are
+  proof-like current-module items or dependency summaries (`Theorem`, `Lemma`,
+  or `Scheme`), rejects non-proof item kinds such as functors or modes, and
+  validates that generated citations are existing generated origins; it does
+  not perform premise selection.
+- Label citations are local to the proof skeleton. A labeled assumption or
+  step introduces a label after its node has been lowered; citations may only
+  reference earlier labels in the same proof path. Duplicate labels in one
+  proof, forward labels, labels from sibling branches, malformed label
+  payloads, and missing cited symbols/generated origins are rejected as
+  proof-seed validation errors before a proof row is emitted.
 - Branching proof forms such as cases, suppose, and now preserve structure and
   produce terminal goal seeds at open proof leaves.
 - `open`, `assumed`, `conditional`, and `error` statuses are recorded; none of
-  them proves a theorem in `mizar-core`.
-- Malformed or missing proof skeleton payloads produce
+  them proves a theorem in `mizar-core`. Task 12 validates only that the
+  checker-owned skeleton status maps to a `CoreProofStatus`; item/proof status
+  deltas remain metadata for downstream phases. `Open` and `Conditional`
+  proofs may produce active terminal obligations, `Assumed` proofs record an
+  assumed proof skeleton without terminal proof acceptance, and `Error` proofs
+  use an error root plus diagnostics. Acceptance, discharge, and dependency
+  soundness checks remain external/deferred.
+- Explicit malformed or missing proof skeleton payloads produce
   `MalformedProofSkeleton` diagnostics and error proof nodes.
+- Terminal proof goals become `ObligationSeedKind::TheoremProof` seeds with
+  back-references to the owning `CoreProof`, terminal proof node, theorem item,
+  goal formula, and surrounding proof formulas. These seeds are not accepted by
+  this crate.
+- A justified conclusion step with citations lowers to a `Step` node. It is
+  not itself a terminal obligation when the checker payload marks it as already
+  justified. Open proof leaves and omitted justification payloads must be
+  represented by checker extraction as explicit terminal-goal seeds; mizar-core
+  does not synthesize them by scanning source text. Explicit terminal-goal
+  seeds lower to `TerminalGoal` nodes and `TheoremProof` obligations. Terminal
+  obligation `core_refs` include the owning proof, the terminal node, the
+  theorem item, the goal formula, active path formulas, and cited generated
+  origins or cited local proof-like symbols as `Generated`/`Item` references.
+  The original citation list is preserved on the durable terminal proof node
+  and on a terminal-obligation citation record so label citations and external
+  proof-like symbol citations remain available to downstream VC/proof phases
+  without fabricating core refs for external symbols.
+- Proof skeleton lowering does not build VCs, invoke proof search, call the
+  kernel, or allocate artifact schema ids.
 
-Tests for task 12 must cover thesis replacement, introduced binders,
-assumptions, labels/citations, branch kinds, terminal goal seeds, theorem
-statuses, and malformed proof skeleton diagnostics. Theorem and lemma
-proposition fixtures must include stable choices whose generated symbols are
-owned by the theorem/lemma proposition context and are preserved through
-proof-skeleton lowering.
+Tests for task 12 must cover thesis replacement and current-goal transitions,
+sequential label propagation, introduced binders, assumptions, labels/citations,
+branch kinds, terminal goal seeds, theorem statuses, and malformed proof
+skeleton diagnostics. Theorem and lemma proposition fixtures must include
+stable choices whose generated symbols are owned by the theorem/lemma
+proposition context and are preserved through proof-skeleton lowering. Tests
+must also cover invalid citations, missing or wrong-owner proof items, active
+path formulas, external dependency citations, and terminal-goal obligation
+back-references.
 
 ## Step 6: Algorithm-Shell Lowering
 

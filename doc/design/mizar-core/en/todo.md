@@ -167,13 +167,15 @@ Keep `cargo test -p mizar-core` green after each task (see
       definition-owned symbols rather than regenerating them.
     - Deps: 10. Spec: `elaborator.md` (definitions section).
 
-12. **Proof-skeleton lowering.** [ ]
+12. **Proof-skeleton lowering.** [x]
     - Implement Step 5: lower proof structures (`proof`/`now`/`per cases`,
       conclusion steps, citations) into core proof trees with thesis
       tracking.
     - Tests: skeleton fixtures per proof form; thesis transitions recorded;
-      citation references preserved symbolically. Include theorem/lemma
-      propositions that own their stable choice symbols.
+      citation references preserved symbolically; invalid citations, missing
+      or wrong-owner proof items, malformed error roots, active path formulas,
+      terminal-goal back-references, and external dependency citations covered.
+      Include theorem/lemma propositions that own their stable choice symbols.
     - Deps: 11. Spec: `elaborator.md` (proofs section).
 
 13. **Algorithm-shell lowering.** [ ]

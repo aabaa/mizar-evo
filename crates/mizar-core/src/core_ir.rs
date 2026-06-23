@@ -477,11 +477,21 @@ pub enum CoreProofNodeKind {
         formula: CoreFormulaId,
         justification: CoreJustification,
     },
+    CurrentGoal {
+        thesis: CoreFormulaId,
+        child: CoreProofNodeId,
+    },
+    Sequence {
+        children: Vec<CoreProofNodeId>,
+    },
     Branch {
         kind: ProofBranchKind,
         children: Vec<CoreProofNodeId>,
     },
-    TerminalGoal(ObligationSeedId),
+    TerminalGoal {
+        obligation: ObligationSeedId,
+        citations: Vec<CoreCitation>,
+    },
     Error(CoreDiagnosticId),
 }
 
@@ -1105,6 +1115,10 @@ pub enum CoreIrError {
     InactiveObligationSeedWithoutReason {
         seed: ObligationSeedId,
     },
+    InvalidProofCitationSymbol {
+        symbol: Box<SymbolId>,
+        kind: CoreItemKind,
+    },
 }
 
 impl fmt::Display for CoreIrError {
@@ -1213,6 +1227,12 @@ impl fmt::Display for CoreIrError {
                     seed.index()
                 )
             }
+            Self::InvalidProofCitationSymbol { symbol, kind } => {
+                write!(
+                    formatter,
+                    "proof citation references non-proof symbol {symbol:?} with kind {kind:?}"
+                )
+            }
         }
     }
 }
@@ -1308,8 +1328,10 @@ fn normalize_proof_node(kind: &mut CoreProofNodeKind) {
             normalize_source_ref(&mut justification.source);
         }
         CoreProofNodeKind::Assume { .. }
+        | CoreProofNodeKind::CurrentGoal { .. }
+        | CoreProofNodeKind::Sequence { .. }
         | CoreProofNodeKind::Branch { .. }
-        | CoreProofNodeKind::TerminalGoal(_)
+        | CoreProofNodeKind::TerminalGoal { .. }
         | CoreProofNodeKind::Error(_) => {}
     }
 }
@@ -1710,17 +1732,32 @@ fn validate_proof_node(
                 parts,
             )?;
         }
+        CoreProofNodeKind::CurrentGoal { thesis, child } => {
+            validate_index("formula", thesis.index(), parts.formulas.len())?;
+            validate_index("proof node", child.index(), parts.proof_nodes.len())?;
+        }
+        CoreProofNodeKind::Sequence { children } => {
+            for child in children {
+                validate_index("proof node", child.index(), parts.proof_nodes.len())?;
+            }
+        }
         CoreProofNodeKind::Branch { children, .. } => {
             for child in children {
                 validate_index("proof node", child.index(), parts.proof_nodes.len())?;
             }
         }
-        CoreProofNodeKind::TerminalGoal(seed) => {
+        CoreProofNodeKind::TerminalGoal {
+            obligation,
+            citations,
+        } => {
             validate_index(
                 "obligation seed",
-                seed.index(),
+                obligation.index(),
                 parts.obligation_seeds.len(),
             )?;
+            for citation in citations {
+                validate_citation(citation, parts)?;
+            }
         }
         CoreProofNodeKind::Error(diagnostic) => {
             validate_error_diagnostic(
@@ -1841,11 +1878,32 @@ fn validate_contracts(contracts: &CoreContractSet, parts: &CoreIrParts) -> Resul
 
 fn validate_citation(citation: &CoreCitation, parts: &CoreIrParts) -> Result<(), CoreIrError> {
     match citation {
-        CoreCitation::Label(_) | CoreCitation::Symbol(_) => Ok(()),
+        CoreCitation::Label(_) => Ok(()),
+        CoreCitation::Symbol(symbol) => {
+            if let Some((_, item)) = parts.items.iter().find(|(_, item)| item.symbol == *symbol) {
+                if proof_citation_kind_allowed(&item.kind) {
+                    Ok(())
+                } else {
+                    Err(CoreIrError::InvalidProofCitationSymbol {
+                        symbol: Box::new(symbol.clone()),
+                        kind: item.kind.clone(),
+                    })
+                }
+            } else {
+                Ok(())
+            }
+        }
         CoreCitation::Generated(id) => {
             validate_index("generated", id.index(), parts.generated.len())
         }
     }
+}
+
+fn proof_citation_kind_allowed(kind: &CoreItemKind) -> bool {
+    matches!(
+        kind,
+        CoreItemKind::Theorem | CoreItemKind::Lemma | CoreItemKind::Scheme
+    )
 }
 
 fn validate_binders(binders: &[CoreBinder], parts: &CoreIrParts) -> Result<(), CoreIrError> {
@@ -2168,12 +2226,25 @@ mod tests {
         ModuleId::new(PackageId::new("pkg"), ModulePath::new("main"))
     }
 
+    fn external_module_id() -> ModuleId {
+        ModuleId::new(PackageId::new("pkg"), ModulePath::new("dep"))
+    }
+
     fn symbol(name: &str) -> SymbolId {
         let module = module_id();
         SymbolId::new(
             module,
             LocalSymbolId::new(name),
             FullyQualifiedName::new(format!("pkg::main::{name}")),
+        )
+    }
+
+    fn external_symbol(name: &str) -> SymbolId {
+        let module = external_module_id();
+        SymbolId::new(
+            module,
+            LocalSymbolId::new(name),
+            FullyQualifiedName::new(format!("pkg::dep::{name}")),
         )
     }
 
@@ -2231,7 +2302,10 @@ mod tests {
 
         let mut proof_nodes = CoreProofNodeTable::new();
         let proof_node = proof_nodes.insert(CoreProofNode {
-            kind: CoreProofNodeKind::TerminalGoal(seed),
+            kind: CoreProofNodeKind::TerminalGoal {
+                obligation: seed,
+                citations: Vec::new(),
+            },
             source: source.clone(),
             diagnostics: Vec::new(),
         });
@@ -2490,7 +2564,10 @@ mod tests {
         let mut parts = minimal_parts();
         let source = direct(parts.source_id, 10, 11);
         let node = parts.proof_nodes.insert(CoreProofNode {
-            kind: CoreProofNodeKind::TerminalGoal(ObligationSeedId::new(99)),
+            kind: CoreProofNodeKind::TerminalGoal {
+                obligation: ObligationSeedId::new(99),
+                citations: Vec::new(),
+            },
             source: source.clone(),
             diagnostics: Vec::new(),
         });
@@ -2578,6 +2655,57 @@ mod tests {
         diagnostic.owner = Some(CoreNodeRef::Term(CoreTermId::new(99)));
         parts.diagnostics.insert(diagnostic);
         assert_invalid_reference(parts, "term", 99);
+    }
+
+    #[test]
+    fn validation_rejects_non_proof_local_symbol_citations() {
+        let mut parts = minimal_parts();
+        let source = direct(parts.source_id, 50, 51);
+        let functor = symbol("LocalFunctor");
+        let item = parts.items.insert(CoreItem::new(
+            functor.clone(),
+            CoreItemKind::Functor,
+            "public",
+            source.clone(),
+        ));
+        parts.source_map.item_sources.insert(item, source.clone());
+        let node = parts.proof_nodes.insert(CoreProofNode {
+            kind: CoreProofNodeKind::Step {
+                label: None,
+                formula: CoreFormulaId::new(0),
+                justification: CoreJustification {
+                    citations: vec![CoreCitation::Symbol(functor.clone())],
+                    source: source.clone(),
+                },
+            },
+            source: source.clone(),
+            diagnostics: Vec::new(),
+        });
+        parts.source_map.proof_sources.insert(node, source);
+
+        assert!(matches!(
+            CoreIr::try_new(parts),
+            Err(CoreIrError::InvalidProofCitationSymbol { symbol, kind })
+                if symbol.as_ref() == &functor && kind == CoreItemKind::Functor
+        ));
+
+        let mut parts = minimal_parts();
+        let source = direct(parts.source_id, 52, 53);
+        let node = parts.proof_nodes.insert(CoreProofNode {
+            kind: CoreProofNodeKind::Step {
+                label: None,
+                formula: CoreFormulaId::new(0),
+                justification: CoreJustification {
+                    citations: vec![CoreCitation::Symbol(external_symbol("ExternalTheorem"))],
+                    source: source.clone(),
+                },
+            },
+            source: source.clone(),
+            diagnostics: Vec::new(),
+        });
+        parts.source_map.proof_sources.insert(node, source);
+
+        CoreIr::try_new(parts).expect("external symbolic citations stay durable in CoreIr");
     }
 
     #[test]

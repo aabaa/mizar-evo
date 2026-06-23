@@ -1,22 +1,24 @@
 //! Core elaboration context preparation.
 //!
-//! Implements the task-8, task-9, and task-10 elaboration slices specified in
+//! Implements the task-8 through task-12 elaboration slices specified in
 //! [elaborator.md](../../../../doc/design/mizar-core/en/elaborator.md).
 
 use crate::{
     binder_normalization::{BinderContext, NormalizedVarClass, NormalizedVarSort},
     core_ir::{
-        CoreBinder, CoreDefinition, CoreDefinitionId, CoreDefinitionTable, CoreDiagnostic,
-        CoreDiagnosticClass, CoreDiagnosticId, CoreDiagnosticMessageKey, CoreDiagnosticRecovery,
-        CoreDiagnosticSeverity, CoreDiagnosticTable, CoreFormula, CoreFormulaId, CoreFormulaKind,
-        CoreFormulaTable, CoreItem, CoreItemId, CoreItemKind, CoreItemStatus, CoreItemTable,
-        CoreNodeRef, CoreProvenance, CoreProvenanceKey, CoreProvenancePhase, CoreSourceAnchor,
-        CoreSourceMap, CoreSourceRef, CoreTerm, CoreTermId, CoreTermKind, CoreTermTable,
-        CoreTypePredicate, CoreVarId, CoreVarRole, CoreVisibility, DefinitionBody,
+        CoreBinder, CoreCitation, CoreDefinition, CoreDefinitionId, CoreDefinitionTable,
+        CoreDiagnostic, CoreDiagnosticClass, CoreDiagnosticId, CoreDiagnosticMessageKey,
+        CoreDiagnosticRecovery, CoreDiagnosticSeverity, CoreDiagnosticTable, CoreFormula,
+        CoreFormulaId, CoreFormulaKind, CoreFormulaTable, CoreItem, CoreItemId, CoreItemKind,
+        CoreItemStatus, CoreItemTable, CoreJustification, CoreLabelRef, CoreNodeRef, CoreProof,
+        CoreProofId, CoreProofNode, CoreProofNodeId, CoreProofNodeKind, CoreProofNodeTable,
+        CoreProofStatus, CoreProofTable, CoreProvenance, CoreProvenanceKey, CoreProvenancePhase,
+        CoreSourceAnchor, CoreSourceMap, CoreSourceRef, CoreTerm, CoreTermId, CoreTermKind,
+        CoreTermTable, CoreTypePredicate, CoreVarId, CoreVarRole, CoreVisibility, DefinitionBody,
         DefinitionBranchBody, ExpansionPolicy, GeneratedOrigin, GeneratedOriginId,
         GeneratedOriginKey, GeneratedOriginKind, GeneratedOriginTable, GuardedDefinitionBranch,
         LocalProofOrProgramPath, NormalizedSemanticOrigin, ObligationSeed, ObligationSeedId,
-        ObligationSeedKind, ObligationSeedStatus, ObligationSeedTable,
+        ObligationSeedKind, ObligationSeedStatus, ObligationSeedTable, ProofBranchKind,
     },
 };
 use mizar_checker::{
@@ -4678,6 +4680,1242 @@ fn definition_body_refs(body: &DefinitionBodySeed) -> DefinitionBodyRefs {
     refs
 }
 
+pub type ProofLoweringResult<T> = Result<T, ProofLoweringError>;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ProofLoweringError {
+    MissingOwnerItem {
+        owner: CoreItemId,
+    },
+    UnsupportedProofItemKind {
+        owner: CoreItemId,
+        kind: CoreItemKind,
+    },
+    ProofSymbolMismatch {
+        owner: CoreItemId,
+        expected: Box<SymbolId>,
+        actual: Box<SymbolId>,
+    },
+    DuplicateProofOwner {
+        owner: CoreItemId,
+    },
+    MissingProposition {
+        proposition: CoreFormulaId,
+    },
+    MissingProofFormula {
+        formula: CoreFormulaId,
+    },
+    UndeclaredIntroducedBinder {
+        var: CoreVarId,
+    },
+    NonTermIntroducedBinder {
+        var: CoreVarId,
+        sort: NormalizedVarSort,
+    },
+    InvalidProofLabel {
+        label: CoreLabelRef,
+    },
+    DuplicateProofLabel {
+        label: CoreLabelRef,
+    },
+    UnknownProofLabel {
+        label: CoreLabelRef,
+    },
+    InvalidSymbolCitation {
+        symbol: Box<SymbolId>,
+    },
+    MissingGeneratedCitation {
+        origin: GeneratedOriginId,
+    },
+    MalformedSkeletonRequiresErrorStatus {
+        status: CoreProofStatus,
+    },
+    ErrorStatusRequiresMalformedSkeleton,
+    AssumedProofCannotHaveTerminalGoals {
+        owner: CoreItemId,
+    },
+    InvalidSeedProvenance(CoreContextError),
+}
+
+impl fmt::Display for ProofLoweringError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MissingOwnerItem { owner } => {
+                write!(formatter, "missing proof owner item {}", owner.index())
+            }
+            Self::UnsupportedProofItemKind { owner, kind } => {
+                write!(
+                    formatter,
+                    "proof owner item {} has unsupported kind {kind:?}",
+                    owner.index()
+                )
+            }
+            Self::ProofSymbolMismatch {
+                owner,
+                expected,
+                actual,
+            } => {
+                write!(
+                    formatter,
+                    "proof seed for item {} used symbol {actual:?}; expected {expected:?}",
+                    owner.index()
+                )
+            }
+            Self::DuplicateProofOwner { owner } => {
+                write!(
+                    formatter,
+                    "proof input contains duplicate owner item {}",
+                    owner.index()
+                )
+            }
+            Self::MissingProposition { proposition } => {
+                write!(
+                    formatter,
+                    "proof proposition formula {} is missing",
+                    proposition.index()
+                )
+            }
+            Self::MissingProofFormula { formula } => {
+                write!(
+                    formatter,
+                    "proof references missing formula {}",
+                    formula.index()
+                )
+            }
+            Self::UndeclaredIntroducedBinder { var } => {
+                write!(
+                    formatter,
+                    "proof introduces undeclared binder {}",
+                    var.index()
+                )
+            }
+            Self::NonTermIntroducedBinder { var, sort } => {
+                write!(
+                    formatter,
+                    "proof introduced binder {} has non-term sort {sort:?}",
+                    var.index()
+                )
+            }
+            Self::InvalidProofLabel { label } => {
+                write!(formatter, "invalid empty proof label {}", label.as_str())
+            }
+            Self::DuplicateProofLabel { label } => {
+                write!(formatter, "duplicate proof label {}", label.as_str())
+            }
+            Self::UnknownProofLabel { label } => {
+                write!(formatter, "unknown proof label citation {}", label.as_str())
+            }
+            Self::InvalidSymbolCitation { symbol } => {
+                write!(
+                    formatter,
+                    "proof citation references unknown symbol {symbol:?}"
+                )
+            }
+            Self::MissingGeneratedCitation { origin } => {
+                write!(
+                    formatter,
+                    "proof citation references missing generated origin {}",
+                    origin.index()
+                )
+            }
+            Self::MalformedSkeletonRequiresErrorStatus { status } => {
+                write!(
+                    formatter,
+                    "malformed or missing proof skeleton requires Error status, got {status:?}"
+                )
+            }
+            Self::ErrorStatusRequiresMalformedSkeleton => {
+                write!(
+                    formatter,
+                    "Error proof status requires a malformed skeleton root"
+                )
+            }
+            Self::AssumedProofCannotHaveTerminalGoals { owner } => {
+                write!(
+                    formatter,
+                    "assumed proof for item {} cannot emit terminal proof goals",
+                    owner.index()
+                )
+            }
+            Self::InvalidSeedProvenance(error) => write!(formatter, "{error}"),
+        }
+    }
+}
+
+impl Error for ProofLoweringError {}
+
+impl From<CoreContextError> for ProofLoweringError {
+    fn from(value: CoreContextError) -> Self {
+        Self::InvalidSeedProvenance(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProofLoweringInput {
+    pub proofs: Vec<ProofSeed>,
+}
+
+impl ProofLoweringInput {
+    pub const fn new() -> Self {
+        Self { proofs: Vec::new() }
+    }
+}
+
+impl Default for ProofLoweringInput {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProofSeed {
+    pub owner: CoreItemId,
+    pub symbol: SymbolId,
+    pub proposition: CoreFormulaId,
+    pub status: CoreProofStatus,
+    pub skeleton: ProofSkeletonSeed,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ProofSkeletonSeed {
+    Node(ProofNodeSeed),
+    Missing(MalformedProofSkeletonSeed),
+}
+
+impl ProofSkeletonSeed {
+    const fn is_malformed_root(&self) -> bool {
+        matches!(self, Self::Missing(_) | Self::Node(ProofNodeSeed::Error(_)))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ProofNodeSeed {
+    IntroduceBinder {
+        binder: CoreBinder,
+        child: Box<ProofNodeSeed>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
+    Assume {
+        label: Option<CoreLabelRef>,
+        formula: ProofFormulaRef,
+        child: Box<ProofNodeSeed>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
+    Step {
+        label: Option<CoreLabelRef>,
+        formula: ProofFormulaRef,
+        justification: ProofJustificationSeed,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
+    CurrentGoal {
+        thesis: ProofFormulaRef,
+        child: Box<ProofNodeSeed>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
+    Sequence {
+        children: Vec<ProofNodeSeed>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
+    Branch {
+        kind: ProofBranchKind,
+        children: Vec<ProofNodeSeed>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
+    TerminalGoal(ProofTerminalGoalSeed),
+    Error(MalformedProofSkeletonSeed),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ProofFormulaRef {
+    Formula(CoreFormulaId),
+    Thesis,
+}
+
+impl From<CoreFormulaId> for ProofFormulaRef {
+    fn from(value: CoreFormulaId) -> Self {
+        Self::Formula(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProofJustificationSeed {
+    pub citations: Vec<CoreCitation>,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+impl ProofJustificationSeed {
+    pub fn new(
+        citations: Vec<CoreCitation>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    ) -> Self {
+        Self {
+            citations,
+            source,
+            provenance,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProofTerminalGoalSeed {
+    pub goal: ProofFormulaRef,
+    pub context: Vec<CoreFormulaId>,
+    pub citations: Vec<CoreCitation>,
+    pub local_path: LocalProofOrProgramPath,
+    pub label: Option<CoreLabelRef>,
+    pub semantic_origin: NormalizedSemanticOrigin,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+impl ProofTerminalGoalSeed {
+    pub fn active(
+        goal: impl Into<ProofFormulaRef>,
+        local_path: impl Into<LocalProofOrProgramPath>,
+        semantic_origin: impl Into<NormalizedSemanticOrigin>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    ) -> Self {
+        Self {
+            goal: goal.into(),
+            context: Vec::new(),
+            citations: Vec::new(),
+            local_path: local_path.into(),
+            label: None,
+            semantic_origin: semantic_origin.into(),
+            source,
+            provenance,
+        }
+    }
+
+    pub fn with_context(mut self, context: Vec<CoreFormulaId>) -> Self {
+        self.context = context;
+        self
+    }
+
+    pub fn with_citations(mut self, citations: Vec<CoreCitation>) -> Self {
+        self.citations = citations;
+        self
+    }
+
+    pub fn with_label(mut self, label: CoreLabelRef) -> Self {
+        self.label = Some(label);
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MalformedProofSkeletonSeed {
+    pub message_key: CoreDiagnosticMessageKey,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+impl MalformedProofSkeletonSeed {
+    pub fn error(
+        message_key: impl Into<CoreDiagnosticMessageKey>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    ) -> Self {
+        Self {
+            message_key: message_key.into(),
+            source,
+            provenance,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProofLoweringOutput {
+    pub proofs: CoreProofTable,
+    pub proof_nodes: CoreProofNodeTable,
+    pub obligation_seeds: ObligationSeedTable,
+    pub source_map: CoreSourceMap,
+    pub diagnostics: CoreDiagnosticTable,
+    pub proof_map: BTreeMap<CoreItemId, CoreProofId>,
+    pub proof_statuses: Vec<ProofStatusRecord>,
+    pub terminal_obligations: Vec<ProofTerminalObligationRecord>,
+    pub terminal_citations: Vec<ProofTerminalCitationRecord>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProofStatusRecord {
+    pub proof: CoreProofId,
+    pub item: CoreItemId,
+    pub status: CoreProofStatus,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProofTerminalObligationRecord {
+    pub proof: CoreProofId,
+    pub node: CoreProofNodeId,
+    pub obligation: ObligationSeedId,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProofTerminalCitationRecord {
+    pub proof: CoreProofId,
+    pub node: CoreProofNodeId,
+    pub obligation: ObligationSeedId,
+    pub citations: Vec<CoreCitation>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PendingProofTerminalObligation {
+    node: CoreProofNodeId,
+    obligation: ObligationSeedId,
+    citations: Vec<CoreCitation>,
+}
+
+#[derive(Debug, Clone)]
+struct ProofLoweringState {
+    proofs: CoreProofTable,
+    proof_nodes: CoreProofNodeTable,
+    obligation_seeds: ObligationSeedTable,
+    initial_obligation_len: usize,
+    source_map: CoreSourceMap,
+    diagnostics: CoreDiagnosticTable,
+    proof_map: BTreeMap<CoreItemId, CoreProofId>,
+    proof_statuses: Vec<ProofStatusRecord>,
+    terminal_obligations: Vec<ProofTerminalObligationRecord>,
+    terminal_citations: Vec<ProofTerminalCitationRecord>,
+}
+
+impl ProofLoweringState {
+    fn new(definitions: &DefinitionLoweringOutput) -> Self {
+        Self {
+            proofs: CoreProofTable::new(),
+            proof_nodes: CoreProofNodeTable::new(),
+            obligation_seeds: definitions.obligation_seeds.clone(),
+            initial_obligation_len: definitions.obligation_seeds.len(),
+            source_map: definitions.source_map.clone(),
+            diagnostics: definitions.diagnostics.clone(),
+            proof_map: BTreeMap::new(),
+            proof_statuses: Vec::new(),
+            terminal_obligations: Vec::new(),
+            terminal_citations: Vec::new(),
+        }
+    }
+
+    fn insert_proof_node(
+        &mut self,
+        kind: CoreProofNodeKind,
+        source: CoreSourceRef,
+        diagnostics: Vec<CoreDiagnosticId>,
+    ) -> CoreProofNodeId {
+        let source = normalized_source(source);
+        let id = self.proof_nodes.insert(CoreProofNode {
+            kind,
+            source: source.clone(),
+            diagnostics,
+        });
+        self.source_map.proof_sources.insert(id, source);
+        id
+    }
+
+    fn insert_malformed_error_node(&mut self, site: MalformedProofSkeletonSeed) -> CoreProofNodeId {
+        let source = source_with_provenance(site.source, &site.provenance);
+        let diagnostic_id = self.diagnostics.insert(diagnostic(
+            CoreDiagnosticClass::MalformedProofSkeleton,
+            CoreDiagnosticSeverity::Error,
+            CoreDiagnosticRecovery::Fatal,
+            site.message_key,
+            source.clone(),
+            None,
+        ));
+        let node = self.insert_proof_node(
+            CoreProofNodeKind::Error(diagnostic_id),
+            source,
+            vec![diagnostic_id],
+        );
+        if let Some(diagnostic) = self.diagnostics.get_mut(diagnostic_id) {
+            diagnostic.owner = Some(CoreNodeRef::ProofNode(node));
+        }
+        node
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+struct ProofLabelScope {
+    all_labels: BTreeSet<CoreLabelRef>,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct ProofLoweringEnv<'a> {
+    context: &'a CoreContext,
+    term_formula: &'a TermAndFormulaLoweringOutput,
+    owner: CoreItemId,
+    thesis: CoreFormulaId,
+}
+
+pub fn lower_proof_inputs(
+    context: &CoreContext,
+    term_formula: &TermAndFormulaLoweringOutput,
+    definitions: &DefinitionLoweringOutput,
+    input: ProofLoweringInput,
+) -> ProofLoweringResult<ProofLoweringOutput> {
+    validate_proof_input(context, term_formula, &input)?;
+    let mut state = ProofLoweringState::new(definitions);
+
+    for seed in input.proofs {
+        let mut terminal_obligations = Vec::new();
+        let root = match seed.skeleton {
+            ProofSkeletonSeed::Missing(site) => state.insert_malformed_error_node(site),
+            ProofSkeletonSeed::Node(node) => {
+                let mut label_scope = ProofLabelScope::default();
+                let env = ProofLoweringEnv {
+                    context,
+                    term_formula,
+                    owner: seed.owner,
+                    thesis: seed.proposition,
+                };
+                let mut path_labels = BTreeSet::new();
+                let mut path_formulas = BTreeSet::new();
+                lower_proof_node(
+                    &mut state,
+                    &env,
+                    &mut label_scope,
+                    &mut path_labels,
+                    &mut path_formulas,
+                    &mut terminal_obligations,
+                    node,
+                )?
+            }
+        };
+        if seed.status == CoreProofStatus::Assumed && !terminal_obligations.is_empty() {
+            return Err(ProofLoweringError::AssumedProofCannotHaveTerminalGoals {
+                owner: seed.owner,
+            });
+        }
+
+        let source = normalized_source(source_with_provenance(seed.source, &seed.provenance));
+        let proof = CoreProof {
+            item: seed.owner,
+            proposition: seed.proposition,
+            root,
+            status: seed.status,
+            source,
+        };
+        let proof_id = state.proofs.insert(proof);
+        state.proof_map.insert(seed.owner, proof_id);
+        state.proof_statuses.push(ProofStatusRecord {
+            proof: proof_id,
+            item: seed.owner,
+            status: seed.status,
+        });
+        attach_proof_backrefs(&mut state, proof_id, &terminal_obligations);
+    }
+
+    Ok(ProofLoweringOutput {
+        proofs: state.proofs,
+        proof_nodes: state.proof_nodes,
+        obligation_seeds: state.obligation_seeds,
+        source_map: state.source_map,
+        diagnostics: state.diagnostics,
+        proof_map: state.proof_map,
+        proof_statuses: state.proof_statuses,
+        terminal_obligations: state.terminal_obligations,
+        terminal_citations: state.terminal_citations,
+    })
+}
+
+fn validate_proof_input(
+    context: &CoreContext,
+    term_formula: &TermAndFormulaLoweringOutput,
+    input: &ProofLoweringInput,
+) -> ProofLoweringResult<()> {
+    let mut seen_owners = BTreeSet::new();
+    for seed in &input.proofs {
+        if !seen_owners.insert(seed.owner) {
+            return Err(ProofLoweringError::DuplicateProofOwner { owner: seed.owner });
+        }
+        validate_checker_owned_provenance("proof seed", seed.provenance.as_slice())?;
+        let item = context
+            .item_registry()
+            .items()
+            .get(seed.owner)
+            .ok_or(ProofLoweringError::MissingOwnerItem { owner: seed.owner })?;
+        if item.symbol != seed.symbol {
+            return Err(ProofLoweringError::ProofSymbolMismatch {
+                owner: seed.owner,
+                expected: Box::new(item.symbol.clone()),
+                actual: Box::new(seed.symbol.clone()),
+            });
+        }
+        if !matches!(item.kind, CoreItemKind::Theorem | CoreItemKind::Lemma) {
+            return Err(ProofLoweringError::UnsupportedProofItemKind {
+                owner: seed.owner,
+                kind: item.kind.clone(),
+            });
+        }
+        term_formula.formulas.get(seed.proposition).ok_or(
+            ProofLoweringError::MissingProposition {
+                proposition: seed.proposition,
+            },
+        )?;
+        match (seed.status, seed.skeleton.is_malformed_root()) {
+            (CoreProofStatus::Error, false) => {
+                return Err(ProofLoweringError::ErrorStatusRequiresMalformedSkeleton);
+            }
+            (status, true) if status != CoreProofStatus::Error => {
+                return Err(ProofLoweringError::MalformedSkeletonRequiresErrorStatus { status });
+            }
+            _ => {}
+        }
+        let mut labels = ProofLabelScope::default();
+        if let ProofSkeletonSeed::Node(node) = &seed.skeleton {
+            let mut path_labels = BTreeSet::new();
+            let mut path_formulas = BTreeSet::new();
+            validate_proof_node_seed(
+                context,
+                term_formula,
+                seed.proposition,
+                &mut labels,
+                &mut path_labels,
+                &mut path_formulas,
+                node,
+            )?;
+        } else if let ProofSkeletonSeed::Missing(site) = &seed.skeleton {
+            validate_checker_owned_provenance(
+                "malformed proof skeleton",
+                site.provenance.as_slice(),
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn validate_proof_node_seed(
+    context: &CoreContext,
+    term_formula: &TermAndFormulaLoweringOutput,
+    current_thesis: CoreFormulaId,
+    labels: &mut ProofLabelScope,
+    path_labels: &mut BTreeSet<CoreLabelRef>,
+    path_formulas: &mut BTreeSet<CoreFormulaId>,
+    node: &ProofNodeSeed,
+) -> ProofLoweringResult<()> {
+    match node {
+        ProofNodeSeed::IntroduceBinder {
+            binder,
+            child,
+            provenance,
+            ..
+        } => {
+            validate_checker_owned_provenance("proof introduced binder", provenance.as_slice())?;
+            validate_proof_binder(context, term_formula, binder)?;
+            let mut child_labels = path_labels.clone();
+            let mut child_path_formulas = path_formulas.clone();
+            validate_proof_node_seed(
+                context,
+                term_formula,
+                current_thesis,
+                labels,
+                &mut child_labels,
+                &mut child_path_formulas,
+                child,
+            )
+        }
+        ProofNodeSeed::Assume {
+            label,
+            formula,
+            child,
+            provenance,
+            ..
+        } => {
+            validate_checker_owned_provenance("proof assumption", provenance.as_slice())?;
+            let resolved = resolve_proof_formula(term_formula, current_thesis, *formula)?;
+            let mut child_labels = path_labels.clone();
+            let mut child_path_formulas = path_formulas.clone();
+            if let Some(label) = label {
+                introduce_proof_label(labels, &mut child_labels, label)?;
+            }
+            child_path_formulas.insert(resolved);
+            validate_proof_node_seed(
+                context,
+                term_formula,
+                current_thesis,
+                labels,
+                &mut child_labels,
+                &mut child_path_formulas,
+                child,
+            )
+        }
+        ProofNodeSeed::Step {
+            label,
+            formula,
+            justification,
+            provenance,
+            ..
+        } => {
+            validate_checker_owned_provenance("proof step", provenance.as_slice())?;
+            resolve_proof_formula(term_formula, current_thesis, *formula)?;
+            validate_proof_justification(context, term_formula, path_labels, justification)?;
+            if let Some(label) = label {
+                introduce_proof_label(labels, path_labels, label)?;
+            }
+            Ok(())
+        }
+        ProofNodeSeed::CurrentGoal {
+            thesis,
+            child,
+            provenance,
+            ..
+        } => {
+            validate_checker_owned_provenance("proof current goal", provenance.as_slice())?;
+            let thesis = resolve_proof_formula(term_formula, current_thesis, *thesis)?;
+            let mut child_labels = path_labels.clone();
+            let mut child_path_formulas = path_formulas.clone();
+            validate_proof_node_seed(
+                context,
+                term_formula,
+                thesis,
+                labels,
+                &mut child_labels,
+                &mut child_path_formulas,
+                child,
+            )
+        }
+        ProofNodeSeed::Sequence {
+            children,
+            provenance,
+            ..
+        } => {
+            validate_checker_owned_provenance("proof sequence", provenance.as_slice())?;
+            for child in children {
+                validate_proof_node_seed(
+                    context,
+                    term_formula,
+                    current_thesis,
+                    labels,
+                    path_labels,
+                    path_formulas,
+                    child,
+                )?;
+            }
+            Ok(())
+        }
+        ProofNodeSeed::Branch {
+            children,
+            provenance,
+            ..
+        } => {
+            validate_checker_owned_provenance("proof branch", provenance.as_slice())?;
+            for child in children {
+                let mut child_labels = path_labels.clone();
+                let mut child_path_formulas = path_formulas.clone();
+                validate_proof_node_seed(
+                    context,
+                    term_formula,
+                    current_thesis,
+                    labels,
+                    &mut child_labels,
+                    &mut child_path_formulas,
+                    child,
+                )?;
+            }
+            Ok(())
+        }
+        ProofNodeSeed::TerminalGoal(seed) => {
+            validate_terminal_goal_seed(context, term_formula, current_thesis, path_labels, seed)
+        }
+        ProofNodeSeed::Error(site) => validate_checker_owned_provenance(
+            "malformed proof skeleton",
+            site.provenance.as_slice(),
+        )
+        .map_err(Into::into),
+    }
+}
+
+fn validate_proof_binder(
+    context: &CoreContext,
+    term_formula: &TermAndFormulaLoweringOutput,
+    binder: &CoreBinder,
+) -> ProofLoweringResult<()> {
+    match context.binder_context().variable_sorts.get(&binder.var) {
+        Some(NormalizedVarSort::Term) => {}
+        Some(sort) => {
+            return Err(ProofLoweringError::NonTermIntroducedBinder {
+                var: binder.var,
+                sort: *sort,
+            });
+        }
+        None => {
+            return Err(ProofLoweringError::UndeclaredIntroducedBinder { var: binder.var });
+        }
+    }
+    if let Some(guard) = binder.ty_guard {
+        validate_proof_formula(term_formula, guard)?;
+    }
+    Ok(())
+}
+
+fn validate_terminal_goal_seed(
+    context: &CoreContext,
+    term_formula: &TermAndFormulaLoweringOutput,
+    current_thesis: CoreFormulaId,
+    path_labels: &BTreeSet<CoreLabelRef>,
+    seed: &ProofTerminalGoalSeed,
+) -> ProofLoweringResult<()> {
+    validate_checker_owned_provenance("terminal proof goal", seed.provenance.as_slice())?;
+    resolve_proof_formula(term_formula, current_thesis, seed.goal)?;
+    for formula in &seed.context {
+        validate_proof_formula(term_formula, *formula)?;
+    }
+    validate_proof_citations(context, term_formula, path_labels, &seed.citations)?;
+    if let Some(label) = &seed.label {
+        validate_proof_label(label)?;
+    }
+    Ok(())
+}
+
+fn validate_proof_justification(
+    context: &CoreContext,
+    term_formula: &TermAndFormulaLoweringOutput,
+    path_labels: &BTreeSet<CoreLabelRef>,
+    justification: &ProofJustificationSeed,
+) -> ProofLoweringResult<()> {
+    validate_checker_owned_provenance("proof justification", justification.provenance.as_slice())?;
+    validate_proof_citations(context, term_formula, path_labels, &justification.citations)
+}
+
+fn validate_proof_citations(
+    context: &CoreContext,
+    term_formula: &TermAndFormulaLoweringOutput,
+    path_labels: &BTreeSet<CoreLabelRef>,
+    citations: &[CoreCitation],
+) -> ProofLoweringResult<()> {
+    for citation in citations {
+        citation_core_refs(context, term_formula, path_labels, citation)?;
+    }
+    Ok(())
+}
+
+fn validate_proof_formula(
+    term_formula: &TermAndFormulaLoweringOutput,
+    formula: CoreFormulaId,
+) -> ProofLoweringResult<()> {
+    term_formula
+        .formulas
+        .get(formula)
+        .map(|_| ())
+        .ok_or(ProofLoweringError::MissingProofFormula { formula })
+}
+
+fn resolve_proof_formula(
+    term_formula: &TermAndFormulaLoweringOutput,
+    current_thesis: CoreFormulaId,
+    formula: ProofFormulaRef,
+) -> ProofLoweringResult<CoreFormulaId> {
+    match formula {
+        ProofFormulaRef::Formula(formula) => {
+            validate_proof_formula(term_formula, formula)?;
+            Ok(formula)
+        }
+        ProofFormulaRef::Thesis => {
+            validate_proof_formula(term_formula, current_thesis)?;
+            Ok(current_thesis)
+        }
+    }
+}
+
+fn validate_proof_label(label: &CoreLabelRef) -> ProofLoweringResult<()> {
+    if label.as_str().is_empty() {
+        Err(ProofLoweringError::InvalidProofLabel {
+            label: label.clone(),
+        })
+    } else {
+        Ok(())
+    }
+}
+
+fn introduce_proof_label(
+    labels: &mut ProofLabelScope,
+    path_labels: &mut BTreeSet<CoreLabelRef>,
+    label: &CoreLabelRef,
+) -> ProofLoweringResult<()> {
+    validate_proof_label(label)?;
+    if !labels.all_labels.insert(label.clone()) {
+        return Err(ProofLoweringError::DuplicateProofLabel {
+            label: label.clone(),
+        });
+    }
+    path_labels.insert(label.clone());
+    Ok(())
+}
+
+fn citation_core_refs(
+    context: &CoreContext,
+    term_formula: &TermAndFormulaLoweringOutput,
+    path_labels: &BTreeSet<CoreLabelRef>,
+    citation: &CoreCitation,
+) -> ProofLoweringResult<Vec<CoreNodeRef>> {
+    match citation {
+        CoreCitation::Label(label) => {
+            validate_proof_label(label)?;
+            if !path_labels.contains(label) {
+                return Err(ProofLoweringError::UnknownProofLabel {
+                    label: label.clone(),
+                });
+            }
+            Ok(Vec::new())
+        }
+        CoreCitation::Symbol(symbol) => {
+            if let Some(item) = context.item_registry().id_for_symbol(symbol) {
+                let item_kind = &context
+                    .item_registry()
+                    .items()
+                    .get(item)
+                    .expect("registered symbol id must resolve to an item")
+                    .kind;
+                if proof_citation_kind_allowed(item_kind) {
+                    Ok(vec![CoreNodeRef::Item(item)])
+                } else {
+                    Err(ProofLoweringError::InvalidSymbolCitation {
+                        symbol: Box::new(symbol.clone()),
+                    })
+                }
+            } else if let Some(summary) = context.dependency_summaries().get(symbol) {
+                if proof_citation_kind_allowed(summary.kind()) {
+                    Ok(Vec::new())
+                } else {
+                    Err(ProofLoweringError::InvalidSymbolCitation {
+                        symbol: Box::new(symbol.clone()),
+                    })
+                }
+            } else {
+                Err(ProofLoweringError::InvalidSymbolCitation {
+                    symbol: Box::new(symbol.clone()),
+                })
+            }
+        }
+        CoreCitation::Generated(origin) => term_formula
+            .generated
+            .get(*origin)
+            .map(|_| vec![CoreNodeRef::Generated(*origin)])
+            .ok_or(ProofLoweringError::MissingGeneratedCitation { origin: *origin }),
+    }
+}
+
+fn proof_citation_kind_allowed(kind: &CoreItemKind) -> bool {
+    matches!(
+        kind,
+        CoreItemKind::Theorem | CoreItemKind::Lemma | CoreItemKind::Scheme
+    )
+}
+
+fn lower_proof_node(
+    state: &mut ProofLoweringState,
+    env: &ProofLoweringEnv<'_>,
+    labels: &mut ProofLabelScope,
+    path_labels: &mut BTreeSet<CoreLabelRef>,
+    path_formulas: &mut BTreeSet<CoreFormulaId>,
+    terminal_obligations: &mut Vec<PendingProofTerminalObligation>,
+    node: ProofNodeSeed,
+) -> ProofLoweringResult<CoreProofNodeId> {
+    match node {
+        ProofNodeSeed::IntroduceBinder {
+            binder,
+            child,
+            source,
+            provenance,
+        } => {
+            validate_proof_binder(env.context, env.term_formula, &binder)?;
+            let mut child_labels = path_labels.clone();
+            let mut child_path_formulas = path_formulas.clone();
+            let child = lower_proof_node(
+                state,
+                env,
+                labels,
+                &mut child_labels,
+                &mut child_path_formulas,
+                terminal_obligations,
+                *child,
+            )?;
+            Ok(state.insert_proof_node(
+                CoreProofNodeKind::IntroduceBinder { binder, child },
+                source_with_provenance(source, &provenance),
+                Vec::new(),
+            ))
+        }
+        ProofNodeSeed::Assume {
+            label,
+            formula,
+            child,
+            source,
+            provenance,
+        } => {
+            let formula = resolve_proof_formula(env.term_formula, env.thesis, formula)?;
+            let mut child_labels = path_labels.clone();
+            let mut child_path_formulas = path_formulas.clone();
+            if let Some(label) = &label {
+                introduce_proof_label(labels, &mut child_labels, label)?;
+            }
+            child_path_formulas.insert(formula);
+            let child = lower_proof_node(
+                state,
+                env,
+                labels,
+                &mut child_labels,
+                &mut child_path_formulas,
+                terminal_obligations,
+                *child,
+            )?;
+            Ok(state.insert_proof_node(
+                CoreProofNodeKind::Assume {
+                    label,
+                    formula,
+                    child,
+                },
+                source_with_provenance(source, &provenance),
+                Vec::new(),
+            ))
+        }
+        ProofNodeSeed::Step {
+            label,
+            formula,
+            justification,
+            source,
+            provenance,
+        } => {
+            let formula = resolve_proof_formula(env.term_formula, env.thesis, formula)?;
+            validate_proof_justification(
+                env.context,
+                env.term_formula,
+                path_labels,
+                &justification,
+            )?;
+            if let Some(label) = &label {
+                introduce_proof_label(labels, path_labels, label)?;
+            }
+            Ok(state.insert_proof_node(
+                CoreProofNodeKind::Step {
+                    label,
+                    formula,
+                    justification: CoreJustification {
+                        citations: justification.citations,
+                        source: normalized_source(source_with_provenance(
+                            justification.source,
+                            &justification.provenance,
+                        )),
+                    },
+                },
+                source_with_provenance(source, &provenance),
+                Vec::new(),
+            ))
+        }
+        ProofNodeSeed::CurrentGoal {
+            thesis,
+            child,
+            source,
+            provenance,
+        } => {
+            let thesis = resolve_proof_formula(env.term_formula, env.thesis, thesis)?;
+            let child_env = ProofLoweringEnv { thesis, ..*env };
+            let mut child_labels = path_labels.clone();
+            let mut child_path_formulas = path_formulas.clone();
+            let child = lower_proof_node(
+                state,
+                &child_env,
+                labels,
+                &mut child_labels,
+                &mut child_path_formulas,
+                terminal_obligations,
+                *child,
+            )?;
+            Ok(state.insert_proof_node(
+                CoreProofNodeKind::CurrentGoal { thesis, child },
+                source_with_provenance(source, &provenance),
+                Vec::new(),
+            ))
+        }
+        ProofNodeSeed::Sequence {
+            children,
+            source,
+            provenance,
+        } => {
+            let mut lowered = Vec::new();
+            for child in children {
+                lowered.push(lower_proof_node(
+                    state,
+                    env,
+                    labels,
+                    path_labels,
+                    path_formulas,
+                    terminal_obligations,
+                    child,
+                )?);
+            }
+            Ok(state.insert_proof_node(
+                CoreProofNodeKind::Sequence { children: lowered },
+                source_with_provenance(source, &provenance),
+                Vec::new(),
+            ))
+        }
+        ProofNodeSeed::Branch {
+            kind,
+            children,
+            source,
+            provenance,
+        } => {
+            let mut lowered = Vec::new();
+            for child in children {
+                let mut child_labels = path_labels.clone();
+                let mut child_path_formulas = path_formulas.clone();
+                lowered.push(lower_proof_node(
+                    state,
+                    env,
+                    labels,
+                    &mut child_labels,
+                    &mut child_path_formulas,
+                    terminal_obligations,
+                    child,
+                )?);
+            }
+            Ok(state.insert_proof_node(
+                CoreProofNodeKind::Branch {
+                    kind,
+                    children: lowered,
+                },
+                source_with_provenance(source, &provenance),
+                Vec::new(),
+            ))
+        }
+        ProofNodeSeed::TerminalGoal(seed) => insert_terminal_goal(
+            state,
+            env,
+            path_labels,
+            path_formulas,
+            seed,
+            terminal_obligations,
+        ),
+        ProofNodeSeed::Error(site) => Ok(state.insert_malformed_error_node(site)),
+    }
+}
+
+fn insert_terminal_goal(
+    state: &mut ProofLoweringState,
+    env: &ProofLoweringEnv<'_>,
+    path_labels: &BTreeSet<CoreLabelRef>,
+    path_formulas: &BTreeSet<CoreFormulaId>,
+    seed: ProofTerminalGoalSeed,
+    terminal_obligations: &mut Vec<PendingProofTerminalObligation>,
+) -> ProofLoweringResult<CoreProofNodeId> {
+    let goal = resolve_proof_formula(env.term_formula, env.thesis, seed.goal)?;
+    let mut context_formulas = path_formulas.iter().copied().collect::<Vec<_>>();
+    context_formulas.extend(seed.context);
+    context_formulas.sort();
+    context_formulas.dedup();
+    for formula in &context_formulas {
+        validate_proof_formula(env.term_formula, *formula)?;
+    }
+    let mut citation_refs = Vec::new();
+    let citations = seed.citations;
+    for citation in &citations {
+        citation_refs.extend(citation_core_refs(
+            env.context,
+            env.term_formula,
+            path_labels,
+            citation,
+        )?);
+    }
+    let source = source_with_provenance(seed.source.clone(), &seed.provenance);
+    let mut provenance = seed.provenance.as_slice().to_vec();
+    provenance.sort();
+    provenance.dedup();
+    let mut core_refs = vec![CoreNodeRef::Item(env.owner), CoreNodeRef::Formula(goal)];
+    for formula in &context_formulas {
+        core_refs.push(CoreNodeRef::Formula(*formula));
+    }
+    core_refs.extend(citation_refs);
+    core_refs.sort();
+    core_refs.dedup();
+    let obligation = ObligationSeed {
+        owner: env.owner,
+        kind: ObligationSeedKind::TheoremProof,
+        goal: Some(goal),
+        context: context_formulas,
+        local_path: seed.local_path,
+        label: seed.label,
+        semantic_origin: seed.semantic_origin,
+        provenance,
+        source: normalized_source(source.clone()),
+        core_refs,
+        status: ObligationSeedStatus::Active,
+        diagnostics: Vec::new(),
+    };
+    let obligation_id = state.obligation_seeds.insert(obligation);
+    state
+        .source_map
+        .obligation_sources
+        .insert(obligation_id, normalized_source(source.clone()));
+    let node = state.insert_proof_node(
+        CoreProofNodeKind::TerminalGoal {
+            obligation: obligation_id,
+            citations: citations.clone(),
+        },
+        source,
+        Vec::new(),
+    );
+    if let Some(obligation) = state.obligation_seeds.get_mut(obligation_id) {
+        obligation.core_refs.push(CoreNodeRef::ProofNode(node));
+        obligation.core_refs.sort();
+        obligation.core_refs.dedup();
+    }
+    terminal_obligations.push(PendingProofTerminalObligation {
+        node,
+        obligation: obligation_id,
+        citations,
+    });
+    Ok(node)
+}
+
+fn attach_proof_backrefs(
+    state: &mut ProofLoweringState,
+    proof: CoreProofId,
+    terminal_obligations: &[PendingProofTerminalObligation],
+) {
+    debug_assert!(
+        terminal_obligations
+            .iter()
+            .all(|pending| pending.obligation.index() >= state.initial_obligation_len)
+    );
+    for pending in terminal_obligations {
+        if let Some(seed) = state.obligation_seeds.get_mut(pending.obligation) {
+            seed.core_refs.push(CoreNodeRef::Proof(proof));
+            seed.core_refs.push(CoreNodeRef::ProofNode(pending.node));
+            seed.core_refs.sort();
+            seed.core_refs.dedup();
+        }
+        state
+            .terminal_obligations
+            .push(ProofTerminalObligationRecord {
+                proof,
+                node: pending.node,
+                obligation: pending.obligation,
+            });
+        state.terminal_citations.push(ProofTerminalCitationRecord {
+            proof,
+            node: pending.node,
+            obligation: pending.obligation,
+            citations: pending.citations.clone(),
+        });
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -4991,6 +6229,31 @@ mod tests {
         CoreIr::try_new(parts).expect("step 4 delta validates when merged with prior lowering");
     }
 
+    fn assert_step5_delta_valid(
+        context: &CoreContext,
+        term_formula: &TermAndFormulaLoweringOutput,
+        definitions: &DefinitionLoweringOutput,
+        output: &ProofLoweringOutput,
+    ) {
+        let parts = CoreIrParts {
+            source_id: context.source_id(),
+            module_id: context.module_id().clone(),
+            items: context.item_registry().items().clone(),
+            terms: term_formula.terms.clone(),
+            formulas: term_formula.formulas.clone(),
+            definitions: definitions.definitions.clone(),
+            proofs: output.proofs.clone(),
+            proof_nodes: output.proof_nodes.clone(),
+            algorithms: CoreAlgorithmTable::new(),
+            algorithm_statements: CoreAlgorithmStmtTable::new(),
+            generated: term_formula.generated.clone(),
+            obligation_seeds: output.obligation_seeds.clone(),
+            source_map: output.source_map.clone(),
+            diagnostics: output.diagnostics.clone(),
+        };
+        CoreIr::try_new(parts).expect("step 5 delta validates when merged with prior lowering");
+    }
+
     fn test_binder(var: CoreVarId, ty_guard: Option<CoreFormulaId>, start: usize) -> CoreBinder {
         CoreBinder {
             var,
@@ -5013,6 +6276,14 @@ mod tests {
         lower_term_and_formula_inputs(context, input).expect("term/formula lowering")
     }
 
+    fn empty_definition_output(
+        context: &CoreContext,
+        term_formula: &TermAndFormulaLoweringOutput,
+    ) -> DefinitionLoweringOutput {
+        lower_definition_inputs(context, term_formula, DefinitionLoweringInput::new())
+            .expect("empty definition lowering")
+    }
+
     fn definition_seed(
         owner: CoreItemId,
         symbol: SymbolId,
@@ -5030,6 +6301,51 @@ mod tests {
             source: direct(start, start + 1),
             provenance: provenance(format!("checker:definition:{start}").as_str()),
         }
+    }
+
+    fn proof_seed(
+        owner: CoreItemId,
+        symbol: SymbolId,
+        proposition: CoreFormulaId,
+        status: CoreProofStatus,
+        skeleton: ProofSkeletonSeed,
+        start: usize,
+    ) -> ProofSeed {
+        ProofSeed {
+            owner,
+            symbol,
+            proposition,
+            status,
+            skeleton,
+            source: direct(start, start + 1),
+            provenance: provenance(format!("checker:proof:{start}").as_str()),
+        }
+    }
+
+    fn malformed_proof(message: &str, start: usize) -> MalformedProofSkeletonSeed {
+        MalformedProofSkeletonSeed::error(
+            message,
+            direct(start, start + 1),
+            provenance(format!("checker:proof:malformed:{message}").as_str()),
+        )
+    }
+
+    fn proof_step_node(start: usize) -> ProofNodeSeed {
+        ProofNodeSeed::Step {
+            label: None,
+            formula: ProofFormulaRef::Thesis,
+            justification: ProofJustificationSeed::new(
+                Vec::new(),
+                direct(start, start + 1),
+                provenance(format!("checker:proof:step:{start}:justification").as_str()),
+            ),
+            source: direct(start + 1, start + 2),
+            provenance: provenance(format!("checker:proof:step:{start}").as_str()),
+        }
+    }
+
+    fn proof_step_skeleton(start: usize) -> ProofSkeletonSeed {
+        ProofSkeletonSeed::Node(proof_step_node(start))
     }
 
     fn assert_type_predicate(
@@ -7144,6 +8460,1398 @@ mod tests {
             Err(DefinitionLoweringError::InvalidCorrectnessObligation { kind, status })
                 if kind == ObligationSeedKind::TheoremProof
                     && status == ObligationSeedStatus::Active
+        ));
+    }
+
+    #[test]
+    fn proof_lowering_replaces_thesis_and_emits_terminal_obligation_backrefs() {
+        let x = CoreVarId::new(0);
+        let (context, owner) = context_with_var(x);
+        let term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            Vec::new(),
+            vec![formula_seed(CoreFormulaSeedKind::True, 160)],
+        );
+        let definitions = empty_definition_output(&context, &term_formula);
+        let proposition = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let assumption_label = CoreLabelRef::new("A1");
+        let terminal_citations = vec![CoreCitation::Label(assumption_label.clone())];
+        let terminal = ProofNodeSeed::TerminalGoal(
+            ProofTerminalGoalSeed::active(
+                ProofFormulaRef::Thesis,
+                "proof/terminal",
+                "pkg::main::Owner.proof.terminal",
+                direct(164, 165),
+                provenance("checker:proof:terminal"),
+            )
+            .with_context(vec![proposition])
+            .with_citations(terminal_citations.clone()),
+        );
+        let skeleton = ProofSkeletonSeed::Node(ProofNodeSeed::IntroduceBinder {
+            binder: test_binder(x, Some(proposition), 161),
+            child: Box::new(ProofNodeSeed::Assume {
+                label: Some(assumption_label.clone()),
+                formula: ProofFormulaRef::Thesis,
+                child: Box::new(terminal),
+                source: direct(162, 163),
+                provenance: provenance("checker:proof:assume"),
+            }),
+            source: direct(161, 162),
+            provenance: provenance("checker:proof:introduce"),
+        });
+
+        let output = lower_proof_inputs(
+            &context,
+            &term_formula,
+            &definitions,
+            ProofLoweringInput {
+                proofs: vec![proof_seed(
+                    owner,
+                    symbol("Owner"),
+                    proposition,
+                    CoreProofStatus::Open,
+                    skeleton,
+                    165,
+                )],
+            },
+        )
+        .expect("proof lowering");
+        let proof_id = output.proof_map[&owner];
+        let proof = output.proofs.get(proof_id).expect("proof");
+        let CoreProofNodeKind::IntroduceBinder {
+            binder,
+            child: assume,
+        } = &output.proof_nodes.get(proof.root).expect("root").kind
+        else {
+            panic!("expected introduced binder root");
+        };
+        let CoreProofNodeKind::Assume {
+            label,
+            formula,
+            child: terminal,
+        } = &output.proof_nodes.get(*assume).expect("assume").kind
+        else {
+            panic!("expected assumption node");
+        };
+        let CoreProofNodeKind::TerminalGoal {
+            obligation: obligation_id,
+            citations,
+        } = &output.proof_nodes.get(*terminal).expect("terminal").kind
+        else {
+            panic!("expected terminal goal");
+        };
+        let obligation = output
+            .obligation_seeds
+            .get(*obligation_id)
+            .expect("terminal obligation");
+
+        assert_eq!(proof.status, CoreProofStatus::Open);
+        assert_eq!(proof.proposition, proposition);
+        assert_eq!(binder.var, x);
+        assert_eq!(binder.ty_guard, Some(proposition));
+        assert_eq!(label.as_ref(), Some(&assumption_label));
+        assert_eq!(*formula, proposition);
+        assert_eq!(obligation.kind, ObligationSeedKind::TheoremProof);
+        assert_eq!(obligation.status, ObligationSeedStatus::Active);
+        assert_eq!(obligation.goal, Some(proposition));
+        assert_eq!(obligation.context, vec![proposition]);
+        assert!(obligation.core_refs.contains(&CoreNodeRef::Item(owner)));
+        assert!(obligation.core_refs.contains(&CoreNodeRef::Proof(proof_id)));
+        assert!(
+            obligation
+                .core_refs
+                .contains(&CoreNodeRef::ProofNode(*terminal))
+        );
+        assert!(
+            obligation
+                .core_refs
+                .contains(&CoreNodeRef::Formula(proposition))
+        );
+        assert_eq!(output.terminal_obligations.len(), 1);
+        assert_eq!(output.terminal_citations.len(), 1);
+        assert_eq!(output.terminal_citations[0].proof, proof_id);
+        assert_eq!(output.terminal_citations[0].node, *terminal);
+        assert_eq!(output.terminal_citations[0].obligation, *obligation_id);
+        assert_eq!(citations, &terminal_citations);
+        assert_eq!(output.terminal_citations[0].citations, terminal_citations);
+        assert_step5_delta_valid(&context, &term_formula, &definitions, &output);
+    }
+
+    #[test]
+    fn proof_lowering_tracks_current_goal_sequence_labels_and_active_formulas() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+        let term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            Vec::new(),
+            vec![
+                formula_seed(CoreFormulaSeedKind::True, 166),
+                formula_seed(CoreFormulaSeedKind::False, 167),
+                formula_seed(CoreFormulaSeedKind::True, 168),
+            ],
+        );
+        let definitions = empty_definition_output(&context, &term_formula);
+        let proposition = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let current_goal = term_formula.formula_map[&CoreFormulaSeedId::new(1)];
+        let assumption_formula = term_formula.formula_map[&CoreFormulaSeedId::new(2)];
+        let step_label = CoreLabelRef::new("SEQ1");
+        let terminal_citations = vec![CoreCitation::Label(step_label.clone())];
+        let skeleton = ProofSkeletonSeed::Node(ProofNodeSeed::Sequence {
+            children: vec![
+                ProofNodeSeed::Step {
+                    label: Some(step_label.clone()),
+                    formula: ProofFormulaRef::Formula(assumption_formula),
+                    justification: ProofJustificationSeed::new(
+                        Vec::new(),
+                        direct(169, 170),
+                        provenance("checker:proof:sequence-step:justification"),
+                    ),
+                    source: direct(170, 171),
+                    provenance: provenance("checker:proof:sequence-step"),
+                },
+                ProofNodeSeed::CurrentGoal {
+                    thesis: ProofFormulaRef::Formula(current_goal),
+                    child: Box::new(ProofNodeSeed::Assume {
+                        label: None,
+                        formula: ProofFormulaRef::Formula(assumption_formula),
+                        child: Box::new(ProofNodeSeed::TerminalGoal(
+                            ProofTerminalGoalSeed::active(
+                                ProofFormulaRef::Thesis,
+                                "proof/current-goal/terminal",
+                                "pkg::main::Owner.proof.current-goal.terminal",
+                                direct(171, 172),
+                                provenance("checker:proof:current-goal-terminal"),
+                            )
+                            .with_citations(terminal_citations.clone()),
+                        )),
+                        source: direct(172, 173),
+                        provenance: provenance("checker:proof:current-goal-assume"),
+                    }),
+                    source: direct(173, 174),
+                    provenance: provenance("checker:proof:current-goal"),
+                },
+            ],
+            source: direct(174, 175),
+            provenance: provenance("checker:proof:sequence"),
+        });
+
+        let output = lower_proof_inputs(
+            &context,
+            &term_formula,
+            &definitions,
+            ProofLoweringInput {
+                proofs: vec![proof_seed(
+                    owner,
+                    symbol("Owner"),
+                    proposition,
+                    CoreProofStatus::Conditional,
+                    skeleton,
+                    175,
+                )],
+            },
+        )
+        .expect("proof lowering");
+        let proof_id = output.proof_map[&owner];
+        let proof = output.proofs.get(proof_id).expect("proof");
+        let CoreProofNodeKind::Sequence { children } =
+            &output.proof_nodes.get(proof.root).expect("sequence").kind
+        else {
+            panic!("expected sequence root");
+        };
+        let CoreProofNodeKind::CurrentGoal {
+            thesis,
+            child: assume,
+        } = &output
+            .proof_nodes
+            .get(children[1])
+            .expect("current goal")
+            .kind
+        else {
+            panic!("expected current-goal child");
+        };
+        let CoreProofNodeKind::Assume {
+            child: terminal, ..
+        } = output.proof_nodes.get(*assume).expect("assume").kind
+        else {
+            panic!("expected assumption child");
+        };
+        let CoreProofNodeKind::TerminalGoal {
+            obligation,
+            citations,
+        } = &output.proof_nodes.get(terminal).expect("terminal").kind
+        else {
+            panic!("expected terminal goal");
+        };
+        let obligation = output
+            .obligation_seeds
+            .get(*obligation)
+            .expect("terminal obligation");
+
+        assert_eq!(*thesis, current_goal);
+        assert_eq!(obligation.goal, Some(current_goal));
+        assert_eq!(obligation.context, vec![assumption_formula]);
+        assert!(
+            obligation
+                .core_refs
+                .contains(&CoreNodeRef::Formula(current_goal))
+        );
+        assert!(
+            obligation
+                .core_refs
+                .contains(&CoreNodeRef::Formula(assumption_formula))
+        );
+        assert_eq!(citations, &terminal_citations);
+        assert_eq!(output.terminal_citations[0].citations, terminal_citations);
+        assert_step5_delta_valid(&context, &term_formula, &definitions, &output);
+    }
+
+    #[test]
+    fn proof_lowering_preserves_branches_steps_citations_and_generated_refs() {
+        let x = CoreVarId::new(0);
+        let key = GeneratedOriginKey::new("choice:proof");
+        let (context, owner, existing_origin) = context_with_existing_choice_origin(x, key.clone());
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 166),
+            term_seed(
+                CoreTermSeedKind::StableChoice {
+                    functor: symbol("choice_existing"),
+                    origin_functor: symbol("choice_existing"),
+                    key,
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    evidence: vec![CoreProvenance::new(
+                        CoreProvenancePhase::Checker,
+                        "checker:proof:choice",
+                    )],
+                },
+                167,
+            ),
+        ];
+        input.formulas = vec![formula_seed(
+            CoreFormulaSeedKind::Atom {
+                predicate: symbol("ProofPredicate"),
+                args: vec![CoreTermSeedId::new(1)],
+            },
+            168,
+        )];
+        let term_formula = lower_term_and_formula_inputs(&context, input).expect("lowering");
+        let definitions = empty_definition_output(&context, &term_formula);
+        let proposition = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let label = CoreLabelRef::new("A1");
+        let step = ProofNodeSeed::Assume {
+            label: Some(label.clone()),
+            formula: ProofFormulaRef::Thesis,
+            child: Box::new(ProofNodeSeed::Step {
+                label: Some(CoreLabelRef::new("S1")),
+                formula: ProofFormulaRef::Thesis,
+                justification: ProofJustificationSeed::new(
+                    vec![
+                        CoreCitation::Label(label.clone()),
+                        CoreCitation::Generated(existing_origin),
+                        CoreCitation::Symbol(symbol("Owner")),
+                    ],
+                    direct(169, 170),
+                    provenance("checker:proof:justification"),
+                ),
+                source: direct(170, 171),
+                provenance: provenance("checker:proof:step"),
+            }),
+            source: direct(171, 172),
+            provenance: provenance("checker:proof:assume:branch"),
+        };
+        let terminal = ProofNodeSeed::TerminalGoal(
+            ProofTerminalGoalSeed::active(
+                ProofFormulaRef::Thesis,
+                "proof/branch/open",
+                "pkg::main::Owner.proof.branch.open",
+                direct(172, 173),
+                provenance("checker:proof:branch-terminal"),
+            )
+            .with_citations(vec![
+                CoreCitation::Generated(existing_origin),
+                CoreCitation::Symbol(symbol("Owner")),
+            ]),
+        );
+        let skeleton = ProofSkeletonSeed::Node(ProofNodeSeed::Branch {
+            kind: ProofBranchKind::Cases,
+            children: vec![step, terminal],
+            source: direct(173, 174),
+            provenance: provenance("checker:proof:cases"),
+        });
+
+        let output = lower_proof_inputs(
+            &context,
+            &term_formula,
+            &definitions,
+            ProofLoweringInput {
+                proofs: vec![proof_seed(
+                    owner,
+                    symbol("Owner"),
+                    proposition,
+                    CoreProofStatus::Conditional,
+                    skeleton,
+                    174,
+                )],
+            },
+        )
+        .expect("proof lowering");
+        let proof = output.proofs.get(output.proof_map[&owner]).expect("proof");
+        let CoreProofNodeKind::Branch { kind, children } =
+            &output.proof_nodes.get(proof.root).expect("branch").kind
+        else {
+            panic!("expected branch root");
+        };
+        let CoreProofNodeKind::Assume { child: step_id, .. } = output
+            .proof_nodes
+            .get(children[0])
+            .expect("branch child")
+            .kind
+        else {
+            panic!("expected assumption child");
+        };
+        let CoreProofNodeKind::Step { justification, .. } =
+            &output.proof_nodes.get(step_id).expect("step").kind
+        else {
+            panic!("expected step");
+        };
+        let terminal_record = &output.terminal_obligations[0];
+        let obligation = output
+            .obligation_seeds
+            .get(terminal_record.obligation)
+            .expect("terminal obligation");
+        let terminal_citation_record = &output.terminal_citations[0];
+
+        assert_eq!(proof.status, CoreProofStatus::Conditional);
+        assert_eq!(kind, &ProofBranchKind::Cases);
+        assert_eq!(children.len(), 2);
+        assert_eq!(
+            justification.citations,
+            vec![
+                CoreCitation::Label(label),
+                CoreCitation::Generated(existing_origin),
+                CoreCitation::Symbol(symbol("Owner"))
+            ]
+        );
+        assert!(term_formula.generated_delta.is_empty());
+        assert!(term_formula.generated_origin_refs[0].reused_existing);
+        assert!(
+            obligation
+                .core_refs
+                .contains(&CoreNodeRef::Generated(existing_origin))
+        );
+        assert!(obligation.core_refs.contains(&CoreNodeRef::Item(owner)));
+        assert_eq!(terminal_citation_record.proof, output.proof_map[&owner]);
+        assert_eq!(terminal_citation_record.node, terminal_record.node);
+        assert_eq!(
+            terminal_citation_record.obligation,
+            terminal_record.obligation
+        );
+        assert_eq!(
+            terminal_citation_record.citations,
+            vec![
+                CoreCitation::Generated(existing_origin),
+                CoreCitation::Symbol(symbol("Owner"))
+            ]
+        );
+        assert_step5_delta_valid(&context, &term_formula, &definitions, &output);
+    }
+
+    #[test]
+    fn proof_lowering_lowers_lemma_stable_choice_terminal_citations() {
+        let x = CoreVarId::new(0);
+        let key = GeneratedOriginKey::new("choice:lemma-proof");
+        let mut context_input = input_with_items(vec![
+            CoreItemSeed::new(
+                symbol("LemmaOwner"),
+                CoreItemKind::Lemma,
+                "public",
+                direct(175, 176),
+                provenance("checker:item:lemma-owner"),
+            )
+            .with_definition_boundary(DefinitionBoundaryKind::Lemma),
+        ]);
+        context_input.variable_seeds = vec![CoreVariableSeed::new(
+            x,
+            NormalizedVarClass::Free,
+            "term-binder",
+            NormalizedVarSort::Term,
+            provenance("checker:lemma-choice-var"),
+        )];
+        context_input.binder_seeds = vec![CoreBinderSeed::new(
+            x,
+            direct(176, 177),
+            provenance("checker:lemma-choice-binder"),
+        )];
+        context_input.generated_origin_seeds = vec![
+            GeneratedOriginSeed::new(
+                symbol("LemmaOwner"),
+                GeneratedOriginKind::StableChoice,
+                key.clone(),
+                direct(177, 178),
+                provenance("checker:lemma-existing-choice"),
+            )
+            .with_functor(symbol("lemma_choice"))
+            .with_params(vec![x])
+            .with_evidence(vec![CoreProvenance::new(
+                CoreProvenancePhase::Checker,
+                "checker:lemma-existing-choice:evidence",
+            )]),
+        ];
+        let context = prepare_core_context(context_input).expect("context");
+        let owner = context
+            .item_registry()
+            .id_for_symbol(&symbol("LemmaOwner"))
+            .expect("lemma owner");
+        let existing_origin = context
+            .generated_origins()
+            .get_by_key(owner, GeneratedOriginKind::StableChoice, &key)
+            .expect("existing generated origin");
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 178),
+            term_seed(
+                CoreTermSeedKind::StableChoice {
+                    functor: symbol("lemma_choice"),
+                    origin_functor: symbol("lemma_choice"),
+                    key,
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    evidence: vec![CoreProvenance::new(
+                        CoreProvenancePhase::Checker,
+                        "checker:lemma-proof:choice",
+                    )],
+                },
+                179,
+            ),
+        ];
+        input.formulas = vec![formula_seed(
+            CoreFormulaSeedKind::Atom {
+                predicate: symbol("LemmaProofPredicate"),
+                args: vec![CoreTermSeedId::new(1)],
+            },
+            180,
+        )];
+        let term_formula = lower_term_and_formula_inputs(&context, input).expect("lowering");
+        let definitions = empty_definition_output(&context, &term_formula);
+        let proposition = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let skeleton = ProofSkeletonSeed::Node(ProofNodeSeed::TerminalGoal(
+            ProofTerminalGoalSeed::active(
+                ProofFormulaRef::Thesis,
+                "proof/lemma/stable-choice",
+                "pkg::main::LemmaOwner.proof.stable-choice",
+                direct(181, 182),
+                provenance("checker:proof:lemma-terminal"),
+            )
+            .with_citations(vec![CoreCitation::Generated(existing_origin)]),
+        ));
+
+        let output = lower_proof_inputs(
+            &context,
+            &term_formula,
+            &definitions,
+            ProofLoweringInput {
+                proofs: vec![proof_seed(
+                    owner,
+                    symbol("LemmaOwner"),
+                    proposition,
+                    CoreProofStatus::Conditional,
+                    skeleton,
+                    182,
+                )],
+            },
+        )
+        .expect("lemma proof lowering");
+        let terminal_record = &output.terminal_obligations[0];
+        let obligation = output
+            .obligation_seeds
+            .get(terminal_record.obligation)
+            .expect("terminal obligation");
+
+        assert!(term_formula.generated_delta.is_empty());
+        assert!(term_formula.generated_origin_refs[0].reused_existing);
+        assert!(
+            obligation
+                .core_refs
+                .contains(&CoreNodeRef::Generated(existing_origin))
+        );
+        assert_eq!(output.terminal_citations.len(), 1);
+        assert_eq!(
+            output.terminal_citations[0].citations,
+            vec![CoreCitation::Generated(existing_origin)]
+        );
+        assert_step5_delta_valid(&context, &term_formula, &definitions, &output);
+    }
+
+    #[test]
+    fn proof_lowering_reports_malformed_and_status_boundaries() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+        let term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            Vec::new(),
+            vec![formula_seed(CoreFormulaSeedKind::True, 175)],
+        );
+        let definitions = empty_definition_output(&context, &term_formula);
+        let proposition = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let output = lower_proof_inputs(
+            &context,
+            &term_formula,
+            &definitions,
+            ProofLoweringInput {
+                proofs: vec![proof_seed(
+                    owner,
+                    symbol("Owner"),
+                    proposition,
+                    CoreProofStatus::Error,
+                    ProofSkeletonSeed::Missing(malformed_proof("missing-proof-skeleton", 176)),
+                    177,
+                )],
+            },
+        )
+        .expect("proof lowering");
+        let proof = output.proofs.get(output.proof_map[&owner]).expect("proof");
+        let CoreProofNodeKind::Error(diagnostic_id) =
+            output.proof_nodes.get(proof.root).expect("error root").kind
+        else {
+            panic!("expected error root");
+        };
+        let diagnostic = output.diagnostics.get(diagnostic_id).expect("diagnostic");
+
+        assert_eq!(proof.status, CoreProofStatus::Error);
+        assert_eq!(
+            diagnostic.class,
+            CoreDiagnosticClass::MalformedProofSkeleton
+        );
+        assert!(output.terminal_obligations.is_empty());
+        assert_step5_delta_valid(&context, &term_formula, &definitions, &output);
+
+        let explicit_error = lower_proof_inputs(
+            &context,
+            &term_formula,
+            &definitions,
+            ProofLoweringInput {
+                proofs: vec![proof_seed(
+                    owner,
+                    symbol("Owner"),
+                    proposition,
+                    CoreProofStatus::Error,
+                    ProofSkeletonSeed::Node(ProofNodeSeed::Error(malformed_proof(
+                        "explicit-error-proof",
+                        178,
+                    ))),
+                    179,
+                )],
+            },
+        )
+        .expect("explicit error proof lowering");
+        let proof = explicit_error
+            .proofs
+            .get(explicit_error.proof_map[&owner])
+            .expect("proof");
+        let CoreProofNodeKind::Error(diagnostic_id) = explicit_error
+            .proof_nodes
+            .get(proof.root)
+            .expect("error")
+            .kind
+        else {
+            panic!("expected explicit error root");
+        };
+        let diagnostic = explicit_error
+            .diagnostics
+            .get(diagnostic_id)
+            .expect("diagnostic");
+
+        assert_eq!(
+            diagnostic.class,
+            CoreDiagnosticClass::MalformedProofSkeleton
+        );
+        assert!(explicit_error.terminal_obligations.is_empty());
+        assert_step5_delta_valid(&context, &term_formula, &definitions, &explicit_error);
+
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        owner,
+                        symbol("Owner"),
+                        proposition,
+                        CoreProofStatus::Open,
+                        ProofSkeletonSeed::Missing(malformed_proof("missing-open-proof", 180)),
+                        181,
+                    )],
+                },
+            ),
+            Err(ProofLoweringError::MalformedSkeletonRequiresErrorStatus {
+                status: CoreProofStatus::Open
+            })
+        ));
+
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        owner,
+                        symbol("Owner"),
+                        proposition,
+                        CoreProofStatus::Open,
+                        ProofSkeletonSeed::Node(ProofNodeSeed::Error(malformed_proof(
+                            "open-error-root",
+                            182,
+                        ))),
+                        183,
+                    )],
+                },
+            ),
+            Err(ProofLoweringError::MalformedSkeletonRequiresErrorStatus {
+                status: CoreProofStatus::Open
+            })
+        ));
+
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        owner,
+                        symbol("Owner"),
+                        proposition,
+                        CoreProofStatus::Error,
+                        ProofSkeletonSeed::Node(ProofNodeSeed::Step {
+                            label: None,
+                            formula: ProofFormulaRef::Thesis,
+                            justification: ProofJustificationSeed::new(
+                                Vec::new(),
+                                direct(184, 185),
+                                provenance("checker:proof:error-status-justification"),
+                            ),
+                            source: direct(185, 186),
+                            provenance: provenance("checker:proof:error-status-step"),
+                        }),
+                        186,
+                    )],
+                },
+            ),
+            Err(ProofLoweringError::ErrorStatusRequiresMalformedSkeleton)
+        ));
+    }
+
+    #[test]
+    fn proof_lowering_validates_introduced_binders() {
+        let x = CoreVarId::new(0);
+        let y = CoreVarId::new(1);
+        let (context, owner) = context_with_var(x);
+        let term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            Vec::new(),
+            vec![formula_seed(CoreFormulaSeedKind::True, 183)],
+        );
+        let definitions = empty_definition_output(&context, &term_formula);
+        let proposition = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let undeclared = ProofSkeletonSeed::Node(ProofNodeSeed::IntroduceBinder {
+            binder: test_binder(y, None, 184),
+            child: Box::new(proof_step_node(185)),
+            source: direct(186, 187),
+            provenance: provenance("checker:proof:undeclared-binder"),
+        });
+
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        owner,
+                        symbol("Owner"),
+                        proposition,
+                        CoreProofStatus::Open,
+                        undeclared,
+                        187,
+                    )],
+                },
+            ),
+            Err(ProofLoweringError::UndeclaredIntroducedBinder { var }) if var == y
+        ));
+
+        let (context, owner) = context_with_var_sort(x, NormalizedVarSort::Formula);
+        let term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            Vec::new(),
+            vec![formula_seed(CoreFormulaSeedKind::True, 188)],
+        );
+        let definitions = empty_definition_output(&context, &term_formula);
+        let proposition = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let nonterm = ProofSkeletonSeed::Node(ProofNodeSeed::IntroduceBinder {
+            binder: test_binder(x, None, 189),
+            child: Box::new(proof_step_node(190)),
+            source: direct(191, 192),
+            provenance: provenance("checker:proof:nonterm-binder"),
+        });
+
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        owner,
+                        symbol("Owner"),
+                        proposition,
+                        CoreProofStatus::Open,
+                        nonterm,
+                        192,
+                    )],
+                },
+            ),
+            Err(ProofLoweringError::NonTermIntroducedBinder { var, sort })
+                if var == x && sort == NormalizedVarSort::Formula
+        ));
+    }
+
+    #[test]
+    fn proof_lowering_accepts_assumed_steps_and_now_suppose_branches() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+        let term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            Vec::new(),
+            vec![formula_seed(CoreFormulaSeedKind::True, 193)],
+        );
+        let definitions = empty_definition_output(&context, &term_formula);
+        let proposition = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let assumed = lower_proof_inputs(
+            &context,
+            &term_formula,
+            &definitions,
+            ProofLoweringInput {
+                proofs: vec![proof_seed(
+                    owner,
+                    symbol("Owner"),
+                    proposition,
+                    CoreProofStatus::Assumed,
+                    proof_step_skeleton(194),
+                    195,
+                )],
+            },
+        )
+        .expect("assumed proof without terminal goals is accepted");
+        let proof = assumed
+            .proofs
+            .get(assumed.proof_map[&owner])
+            .expect("assumed proof");
+
+        assert_eq!(proof.status, CoreProofStatus::Assumed);
+        assert!(assumed.terminal_obligations.is_empty());
+        assert!(assumed.terminal_citations.is_empty());
+        assert_step5_delta_valid(&context, &term_formula, &definitions, &assumed);
+
+        for (kind, start) in [(ProofBranchKind::Now, 196), (ProofBranchKind::Suppose, 200)] {
+            let skeleton = ProofSkeletonSeed::Node(ProofNodeSeed::Branch {
+                kind: kind.clone(),
+                children: vec![proof_step_node(start)],
+                source: direct(start + 2, start + 3),
+                provenance: provenance(format!("checker:proof:branch:{start}").as_str()),
+            });
+            let output = lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        owner,
+                        symbol("Owner"),
+                        proposition,
+                        CoreProofStatus::Open,
+                        skeleton,
+                        start + 3,
+                    )],
+                },
+            )
+            .expect("branch proof lowering");
+            let proof = output.proofs.get(output.proof_map[&owner]).expect("proof");
+            let CoreProofNodeKind::Branch {
+                kind: actual,
+                children,
+            } = &output.proof_nodes.get(proof.root).expect("branch").kind
+            else {
+                panic!("expected branch root");
+            };
+
+            assert_eq!(actual, &kind);
+            assert_eq!(children.len(), 1);
+            assert_step5_delta_valid(&context, &term_formula, &definitions, &output);
+        }
+    }
+
+    #[test]
+    fn proof_lowering_validates_labels_citations_and_owners() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+        let term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            Vec::new(),
+            vec![formula_seed(CoreFormulaSeedKind::True, 183)],
+        );
+        let definitions = empty_definition_output(&context, &term_formula);
+        let proposition = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let duplicate = ProofSkeletonSeed::Node(ProofNodeSeed::Branch {
+            kind: ProofBranchKind::Now,
+            children: vec![
+                ProofNodeSeed::Step {
+                    label: Some(CoreLabelRef::new("DUP")),
+                    formula: ProofFormulaRef::Thesis,
+                    justification: ProofJustificationSeed::new(
+                        Vec::new(),
+                        direct(184, 185),
+                        provenance("checker:proof:dup:left:justification"),
+                    ),
+                    source: direct(185, 186),
+                    provenance: provenance("checker:proof:dup:left"),
+                },
+                ProofNodeSeed::Step {
+                    label: Some(CoreLabelRef::new("DUP")),
+                    formula: ProofFormulaRef::Thesis,
+                    justification: ProofJustificationSeed::new(
+                        Vec::new(),
+                        direct(186, 187),
+                        provenance("checker:proof:dup:right:justification"),
+                    ),
+                    source: direct(187, 188),
+                    provenance: provenance("checker:proof:dup:right"),
+                },
+            ],
+            source: direct(188, 189),
+            provenance: provenance("checker:proof:dup:branch"),
+        });
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        owner,
+                        symbol("Owner"),
+                        proposition,
+                        CoreProofStatus::Open,
+                        duplicate,
+                        189,
+                    )],
+                },
+            ),
+            Err(ProofLoweringError::DuplicateProofLabel { label })
+                if label.as_str() == "DUP"
+        ));
+
+        let sibling_label = CoreLabelRef::new("SIB");
+        let sibling_citation = ProofSkeletonSeed::Node(ProofNodeSeed::Branch {
+            kind: ProofBranchKind::Cases,
+            children: vec![
+                ProofNodeSeed::Step {
+                    label: Some(sibling_label.clone()),
+                    formula: ProofFormulaRef::Thesis,
+                    justification: ProofJustificationSeed::new(
+                        Vec::new(),
+                        direct(190, 191),
+                        provenance("checker:proof:sibling:left:justification"),
+                    ),
+                    source: direct(191, 192),
+                    provenance: provenance("checker:proof:sibling:left"),
+                },
+                ProofNodeSeed::Step {
+                    label: None,
+                    formula: ProofFormulaRef::Thesis,
+                    justification: ProofJustificationSeed::new(
+                        vec![CoreCitation::Label(sibling_label.clone())],
+                        direct(192, 193),
+                        provenance("checker:proof:sibling:right:justification"),
+                    ),
+                    source: direct(193, 194),
+                    provenance: provenance("checker:proof:sibling:right"),
+                },
+            ],
+            source: direct(194, 195),
+            provenance: provenance("checker:proof:sibling:branch"),
+        });
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        owner,
+                        symbol("Owner"),
+                        proposition,
+                        CoreProofStatus::Open,
+                        sibling_citation,
+                        195,
+                    )],
+                },
+            ),
+            Err(ProofLoweringError::UnknownProofLabel { label })
+                if label == sibling_label
+        ));
+
+        let bad_symbol = ProofSkeletonSeed::Node(ProofNodeSeed::Step {
+            label: None,
+            formula: ProofFormulaRef::Thesis,
+            justification: ProofJustificationSeed::new(
+                vec![CoreCitation::Symbol(symbol("MissingTheorem"))],
+                direct(196, 197),
+                provenance("checker:proof:bad-symbol:justification"),
+            ),
+            source: direct(197, 198),
+            provenance: provenance("checker:proof:bad-symbol"),
+        });
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        owner,
+                        symbol("Owner"),
+                        proposition,
+                        CoreProofStatus::Open,
+                        bad_symbol,
+                        198,
+                    )],
+                },
+            ),
+            Err(ProofLoweringError::InvalidSymbolCitation { symbol: cited })
+                if cited.as_ref() == &symbol("MissingTheorem")
+        ));
+
+        let empty_label = ProofSkeletonSeed::Node(ProofNodeSeed::Step {
+            label: Some(CoreLabelRef::new("")),
+            formula: ProofFormulaRef::Thesis,
+            justification: ProofJustificationSeed::new(
+                Vec::new(),
+                direct(199, 200),
+                provenance("checker:proof:empty-label:justification"),
+            ),
+            source: direct(200, 201),
+            provenance: provenance("checker:proof:empty-label"),
+        });
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        owner,
+                        symbol("Owner"),
+                        proposition,
+                        CoreProofStatus::Open,
+                        empty_label,
+                        201,
+                    )],
+                },
+            ),
+            Err(ProofLoweringError::InvalidProofLabel { label })
+                if label.as_str().is_empty()
+        ));
+
+        let forward_label = CoreLabelRef::new("FWD");
+        let forward_citation = ProofSkeletonSeed::Node(ProofNodeSeed::Step {
+            label: Some(forward_label.clone()),
+            formula: ProofFormulaRef::Thesis,
+            justification: ProofJustificationSeed::new(
+                vec![CoreCitation::Label(forward_label.clone())],
+                direct(202, 203),
+                provenance("checker:proof:forward-label:justification"),
+            ),
+            source: direct(203, 204),
+            provenance: provenance("checker:proof:forward-label"),
+        });
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        owner,
+                        symbol("Owner"),
+                        proposition,
+                        CoreProofStatus::Open,
+                        forward_citation,
+                        204,
+                    )],
+                },
+            ),
+            Err(ProofLoweringError::UnknownProofLabel { label })
+                if label == forward_label
+        ));
+
+        let missing_generated = GeneratedOriginId::new(99);
+        let bad_generated = ProofSkeletonSeed::Node(ProofNodeSeed::Step {
+            label: None,
+            formula: ProofFormulaRef::Thesis,
+            justification: ProofJustificationSeed::new(
+                vec![CoreCitation::Generated(missing_generated)],
+                direct(205, 206),
+                provenance("checker:proof:bad-generated:justification"),
+            ),
+            source: direct(206, 207),
+            provenance: provenance("checker:proof:bad-generated"),
+        });
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        owner,
+                        symbol("Owner"),
+                        proposition,
+                        CoreProofStatus::Open,
+                        bad_generated,
+                        207,
+                    )],
+                },
+            ),
+            Err(ProofLoweringError::MissingGeneratedCitation { origin })
+                if origin == missing_generated
+        ));
+    }
+
+    #[test]
+    fn proof_lowering_rejects_wrong_owner_kind_and_assumed_terminal_goals() {
+        let mut context_input = input_with_items(vec![
+            item_seed("Owner", 199),
+            CoreItemSeed::new(
+                symbol("FunctorOwner"),
+                CoreItemKind::Functor,
+                "public",
+                direct(200, 201),
+                provenance("checker:item:functor-owner"),
+            )
+            .with_definition_boundary(DefinitionBoundaryKind::DefinitionalItem),
+        ]);
+        context_input.variable_seeds = Vec::new();
+        context_input.dependency_summaries = vec![
+            CoreDependencySummary::new(
+                external_symbol("ExternalTheorem"),
+                CoreItemKind::Theorem,
+                "public",
+                provenance("checker:dependency:external-theorem"),
+            ),
+            CoreDependencySummary::new(
+                external_symbol("ExternalFunctor"),
+                CoreItemKind::Functor,
+                "public",
+                provenance("checker:dependency:external-functor"),
+            ),
+        ];
+        let context = prepare_core_context(context_input).expect("context");
+        let owner = context
+            .item_registry()
+            .id_for_symbol(&symbol("Owner"))
+            .expect("owner");
+        let functor_owner = context
+            .item_registry()
+            .id_for_symbol(&symbol("FunctorOwner"))
+            .expect("functor owner");
+        let term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            Vec::new(),
+            vec![formula_seed(CoreFormulaSeedKind::True, 201)],
+        );
+        let definitions = empty_definition_output(&context, &term_formula);
+        let proposition = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let terminal =
+            ProofSkeletonSeed::Node(ProofNodeSeed::TerminalGoal(ProofTerminalGoalSeed::active(
+                ProofFormulaRef::Thesis,
+                "proof/assumed-terminal",
+                "pkg::main::Owner.proof.assumed-terminal",
+                direct(202, 203),
+                provenance("checker:proof:assumed-terminal"),
+            )));
+
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        functor_owner,
+                        symbol("FunctorOwner"),
+                        proposition,
+                        CoreProofStatus::Open,
+                        ProofSkeletonSeed::Node(ProofNodeSeed::Step {
+                            label: None,
+                            formula: ProofFormulaRef::Thesis,
+                            justification: ProofJustificationSeed::new(
+                                Vec::new(),
+                                direct(203, 204),
+                                provenance("checker:proof:functor:justification"),
+                            ),
+                            source: direct(204, 205),
+                            provenance: provenance("checker:proof:functor"),
+                        }),
+                        205,
+                    )],
+                },
+            ),
+            Err(ProofLoweringError::UnsupportedProofItemKind { owner: actual, .. })
+                if actual == functor_owner
+        ));
+
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        CoreItemId::new(99),
+                        symbol("MissingOwner"),
+                        proposition,
+                        CoreProofStatus::Open,
+                        proof_step_skeleton(208),
+                        209,
+                    )],
+                },
+            ),
+            Err(ProofLoweringError::MissingOwnerItem { owner })
+                if owner == CoreItemId::new(99)
+        ));
+
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        owner,
+                        symbol("WrongOwnerSymbol"),
+                        proposition,
+                        CoreProofStatus::Open,
+                        proof_step_skeleton(210),
+                        211,
+                    )],
+                },
+            ),
+            Err(ProofLoweringError::ProofSymbolMismatch { owner: actual, .. })
+                if actual == owner
+        ));
+
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![
+                        proof_seed(
+                            owner,
+                            symbol("Owner"),
+                            proposition,
+                            CoreProofStatus::Open,
+                            proof_step_skeleton(212),
+                            213,
+                        ),
+                        proof_seed(
+                            owner,
+                            symbol("Owner"),
+                            proposition,
+                            CoreProofStatus::Open,
+                            proof_step_skeleton(214),
+                            215,
+                        ),
+                    ],
+                },
+            ),
+            Err(ProofLoweringError::DuplicateProofOwner { owner: actual })
+                if actual == owner
+        ));
+
+        let external_theorem = ProofSkeletonSeed::Node(ProofNodeSeed::Step {
+            label: None,
+            formula: ProofFormulaRef::Thesis,
+            justification: ProofJustificationSeed::new(
+                vec![CoreCitation::Symbol(external_symbol("ExternalTheorem"))],
+                direct(216, 217),
+                provenance("checker:proof:external-theorem:justification"),
+            ),
+            source: direct(217, 218),
+            provenance: provenance("checker:proof:external-theorem"),
+        });
+        lower_proof_inputs(
+            &context,
+            &term_formula,
+            &definitions,
+            ProofLoweringInput {
+                proofs: vec![proof_seed(
+                    owner,
+                    symbol("Owner"),
+                    proposition,
+                    CoreProofStatus::Assumed,
+                    external_theorem,
+                    218,
+                )],
+            },
+        )
+        .expect("external theorem citations from dependency summaries are accepted");
+
+        let external_terminal = ProofSkeletonSeed::Node(ProofNodeSeed::TerminalGoal(
+            ProofTerminalGoalSeed::active(
+                ProofFormulaRef::Thesis,
+                "proof/external-terminal",
+                "pkg::main::Owner.proof.external-terminal",
+                direct(219, 220),
+                provenance("checker:proof:external-terminal"),
+            )
+            .with_citations(vec![CoreCitation::Symbol(external_symbol(
+                "ExternalTheorem",
+            ))]),
+        ));
+        let output = lower_proof_inputs(
+            &context,
+            &term_formula,
+            &definitions,
+            ProofLoweringInput {
+                proofs: vec![proof_seed(
+                    owner,
+                    symbol("Owner"),
+                    proposition,
+                    CoreProofStatus::Conditional,
+                    external_terminal,
+                    220,
+                )],
+            },
+        )
+        .expect("external theorem terminal citations are accepted");
+        let terminal_record = &output.terminal_obligations[0];
+        let obligation = output
+            .obligation_seeds
+            .get(terminal_record.obligation)
+            .expect("terminal obligation");
+        let terminal_node = output
+            .proof_nodes
+            .get(terminal_record.node)
+            .expect("terminal node");
+        let external_citation = CoreCitation::Symbol(external_symbol("ExternalTheorem"));
+        let CoreProofNodeKind::TerminalGoal { citations, .. } = &terminal_node.kind else {
+            panic!("expected terminal goal");
+        };
+
+        assert_eq!(citations, &vec![external_citation.clone()]);
+        assert_eq!(
+            output.terminal_citations[0].citations,
+            vec![external_citation]
+        );
+        assert_eq!(
+            obligation
+                .core_refs
+                .iter()
+                .filter(|reference| matches!(reference, CoreNodeRef::Item(_)))
+                .count(),
+            1
+        );
+        assert!(obligation.core_refs.contains(&CoreNodeRef::Item(owner)));
+
+        let local_functor_citation = ProofSkeletonSeed::Node(ProofNodeSeed::Step {
+            label: None,
+            formula: ProofFormulaRef::Thesis,
+            justification: ProofJustificationSeed::new(
+                vec![CoreCitation::Symbol(symbol("FunctorOwner"))],
+                direct(221, 222),
+                provenance("checker:proof:local-functor-citation:justification"),
+            ),
+            source: direct(222, 223),
+            provenance: provenance("checker:proof:local-functor-citation"),
+        });
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        owner,
+                        symbol("Owner"),
+                        proposition,
+                        CoreProofStatus::Open,
+                        local_functor_citation,
+                        223,
+                    )],
+                },
+            ),
+            Err(ProofLoweringError::InvalidSymbolCitation { symbol: cited })
+                if cited.as_ref() == &symbol("FunctorOwner")
+        ));
+
+        let external_functor_citation = ProofSkeletonSeed::Node(ProofNodeSeed::Step {
+            label: None,
+            formula: ProofFormulaRef::Thesis,
+            justification: ProofJustificationSeed::new(
+                vec![CoreCitation::Symbol(external_symbol("ExternalFunctor"))],
+                direct(224, 225),
+                provenance("checker:proof:external-functor-citation:justification"),
+            ),
+            source: direct(225, 226),
+            provenance: provenance("checker:proof:external-functor-citation"),
+        });
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        owner,
+                        symbol("Owner"),
+                        proposition,
+                        CoreProofStatus::Open,
+                        external_functor_citation,
+                        226,
+                    )],
+                },
+            ),
+            Err(ProofLoweringError::InvalidSymbolCitation { symbol: cited })
+                if cited.as_ref() == &external_symbol("ExternalFunctor")
+        ));
+
+        assert!(matches!(
+            lower_proof_inputs(
+                &context,
+                &term_formula,
+                &definitions,
+                ProofLoweringInput {
+                    proofs: vec![proof_seed(
+                        owner,
+                        symbol("Owner"),
+                        proposition,
+                        CoreProofStatus::Assumed,
+                        terminal,
+                        206,
+                    )],
+                },
+            ),
+            Err(ProofLoweringError::AssumedProofCannotHaveTerminalGoals { owner: actual })
+                if actual == owner
         ));
     }
 

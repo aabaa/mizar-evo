@@ -343,6 +343,7 @@ task 12 がこの section を実装する。
 - 利用可能な checker proof skeleton payload。
 - proof label と citation。
 - lowered formula と binder context。
+- 先行 step の generated-origin output と definition output。
 
 出力:
 
@@ -350,24 +351,59 @@ task 12 がこの section を実装する。
 - core proof node。
 - theorem/proof status metadata。
 - terminal proof goal obligation seed。
+- proof diagnostic と、proof node / terminal obligation 用 source-map entry。
 
 規則:
 
-- `thesis` は current core formula に置き換える。magic identifier として保存しない。
+- `thesis` は current core formula に置き換える。magic identifier として保存しない。task 12 は
+  checker-owned thesis reference を、skeleton payload が供給する proposition/current-goal
+  `CoreFormulaId` へ lower し、明示的な current-goal transition を proof node として記録する。
 - introduced variable は type guard 付き `CoreBinder` になる。
 - assumption と labeled step は source/core provenance を持つ明示的 proof node になる。
+- sequential proof block は順序を保存し、同じ proof path の earlier step label を後続 node へ渡す。
+  branch child は label scope を分離し、sibling case の label は漏らさない。
 - citation は semantic input に既にある label、canonical symbol、generated origin を参照する。
+  mizar-core は symbol citation が proof-like な current-module item または dependency summary
+  （`Theorem`、`Lemma`、`Scheme`）であることを検証し、functor や mode など proof でない item kind は
+  reject する。また generated citation が既存 generated origin であることを検証するが、premise
+  selection は行わない。
+- label citation は proof skeleton に local である。labeled assumption または step は、その node を
+  lower した後に label を導入する。citation は同じ proof path の earlier label だけを参照できる。
+  同一 proof 内の duplicate label、forward label、sibling branch 由来の label、malformed label payload、
+  存在しない cited symbol/generated origin は proof row を emit する前の proof-seed validation error として
+  reject する。
 - cases、suppose、now などの branching proof form は構造を保存し、open proof leaf に terminal goal
   seed を生成する。
 - `open`、`assumed`、`conditional`、`error` status を記録する。このいずれも `mizar-core` で theorem を
-  証明しない。
-- malformed / missing proof skeleton payload は `MalformedProofSkeleton` diagnostic と error proof node を
-  生成する。
+  証明しない。task 12 は checker-owned skeleton status が `CoreProofStatus` へ map できることだけを
+  検証する。item/proof status delta は downstream phase 用 metadata のままである。`Open` と
+  `Conditional` proof は active terminal obligation を生成してよい。`Assumed` proof は terminal proof
+  acceptance なしの assumed proof skeleton を記録する。`Error` proof は error root と diagnostic を使う。
+  acceptance、discharge、dependency soundness check は external/deferred のままである。
+- 明示的な malformed / missing proof skeleton payload は `MalformedProofSkeleton` diagnostic と error
+  proof node を生成する。
+- terminal proof goal は `ObligationSeedKind::TheoremProof` seed になる。seed には owning
+  `CoreProof`、terminal proof node、theorem item、goal formula、周辺 proof formula への back-reference を
+  入れる。この crate ではこれらを accept しない。
+- citation 付きの justified conclusion step は `Step` node へ lower する。checker payload が既に
+  justified と mark している場合、それ自体は terminal obligation ではない。open proof leaf と omitted
+  justification payload は checker extraction が明示 terminal-goal seed として表現しなければならず、
+  mizar-core は source text を scan して合成しない。明示 terminal-goal seed は `TerminalGoal` node と
+  `TheoremProof` obligation へ lower する。terminal obligation の `core_refs` には owning proof、
+  terminal node、theorem item、goal formula、active path formula、local に参照できる cited generated origin
+  または proof-like symbol を `Generated` / `Item` reference として含める。元の citation list は durable
+  terminal proof node と terminal-obligation citation record に保存し、label citation と external
+  proof-like symbol citation は downstream VC/proof phase が使える symbolic citation として残す。external
+  symbol のために fabricated core ref を作らない。
+- proof skeleton lowering は VC を作らず、proof search や kernel 呼び出しを行わず、artifact schema id も
+  割り当てない。
 
-task 12 の test は thesis replacement、introduced binder、assumption、label/citation、branch kind、
-terminal goal seed、theorem status、malformed proof skeleton diagnostic を扱う。theorem / lemma
-proposition fixture は、generated symbol が theorem/lemma proposition context に owned され、
-proof-skeleton lowering を通して保存される stable choice を含めなければならない。
+task 12 の test は thesis replacement と current-goal transition、sequential label propagation、
+introduced binder、assumption、label/citation、branch kind、terminal goal seed、theorem status、
+malformed proof skeleton diagnostic を扱う。theorem / lemma proposition fixture は、generated symbol が
+theorem/lemma proposition context に owned され、proof-skeleton lowering を通して保存される stable choice を
+含めなければならない。invalid citation、missing または wrong-owner proof item、active path formula、
+external dependency citation、terminal-goal obligation back-reference も test で扱う。
 
 ## Step 6: algorithm-shell lowering
 

@@ -290,8 +290,10 @@ enum CoreProofNodeKind {
     IntroduceBinder { binder: CoreBinder, child: CoreProofNodeId },
     Assume { label: Option<CoreLabelRef>, formula: CoreFormulaId, child: CoreProofNodeId },
     Step { label: Option<CoreLabelRef>, formula: CoreFormulaId, justification: CoreJustification },
+    CurrentGoal { thesis: CoreFormulaId, child: CoreProofNodeId },
+    Sequence { children: Vec<CoreProofNodeId> },
     Branch { kind: ProofBranchKind, children: Vec<CoreProofNodeId> },
-    TerminalGoal(ObligationSeedId),
+    TerminalGoal { obligation: ObligationSeedId, citations: Vec<CoreCitation> },
     Error(CoreDiagnosticId),
 }
 ```
@@ -299,14 +301,25 @@ enum CoreProofNodeKind {
 Rules:
 
 - `thesis` is resolved to the current `CoreFormulaId`; it is not preserved as a
-  magic identifier.
-- Citations remain symbolic references to labels, theorem symbols, or
-  dependency facts. Core does not decide ATP premise selection.
+  magic identifier. Explicit current-goal transitions are represented by
+  `CurrentGoal` nodes.
+- `Sequence` nodes preserve ordered proof blocks and carry labels along one
+  proof path; `Branch` children keep isolated sibling scopes.
+- Citations remain symbolic references to labels, proof-like symbols
+  (`Theorem`, `Lemma`, or `Scheme`) from the current module or dependency
+  summaries, or generated origins. Core does not decide ATP premise selection,
+  and non-proof local symbols such as functors or modes are not valid proof
+  citations. Raw `CoreIr` validation enforces the kind of local symbols present
+  in the item table; external dependency-symbol citation kinds are guaranteed
+  by elaborator/context validation before Core IR construction and remain
+  symbolic in this table set.
+- Terminal goals store their durable citation list on the terminal proof node
+  as well as referencing the generated theorem-proof obligation seed.
 - `open`, `assumed`, and `conditional` statuses are preserved as policy input.
   Core does not accept or reject the proof.
 - `error` is a recovery status only; it records malformed proof skeleton input
   without accepting or rejecting the proof.
-- Every terminal proof obligation is an `ObligationSeedId`.
+- Every terminal proof obligation references an `ObligationSeedId`.
 
 ### Algorithm Shells
 
