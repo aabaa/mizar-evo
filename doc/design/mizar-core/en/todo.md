@@ -260,9 +260,14 @@ Keep `cargo test -p mizar-core` green after each task (see
       `#[non_exhaustive]`; no exhaustive exceptions are owned by this crate.
     - Deps: 18. Spec: all module specs.
 
-22. **Source/spec correspondence audit.** [ ]
+22. **Source/spec correspondence audit.** [x]
     - Trace every public API and promised behavior in the module specs to
-      implementation and tests; record gaps as follow-up tasks.
+      implementation and tests; record gaps as follow-up tasks. Current result:
+      `source_spec_audit.md` records item-level public API groups, no remaining
+      `source_undocumented_behavior` for the current public surface, and
+      CORE-AUDIT follow-up records for external/deferred seams.
+    - Tests: lint-policy audit guard for EN/JA module sections, public-item
+      mentions, gap id/class synchronization, and non-empty follow-up details.
     - Deps: 21. Spec: all module specs and this TODO.
 
 23. **Bilingual documentation sync audit.** [ ]

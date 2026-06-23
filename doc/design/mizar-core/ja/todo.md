@@ -252,9 +252,14 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       `#[non_exhaustive]` を維持する。crate が所有する exhaustive exception はない。
     - 依存: 18。仕様: 全モジュール仕様。
 
-22. **ソース/仕様対応監査。** [ ]
+22. **ソース/仕様対応監査。** [x]
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ
-      トレースし、ギャップをフォローアップタスクとして記録する。
+      トレースし、ギャップをフォローアップタスクとして記録する。現在の結果:
+      `source_spec_audit.md` が item-level public API group、現在の public
+      surface に `source_undocumented_behavior` が残っていないこと、external/deferred
+      seam の CORE-AUDIT follow-up record を記録する。
+    - Tests: 英日 module section、public item mention、gap id/class sync、non-empty
+      follow-up detail を lint-policy audit guard で検査する。
     - 依存: 21。仕様: 全モジュール仕様と本 TODO。
 
 23. **二言語ドキュメント同期監査。** [ ]

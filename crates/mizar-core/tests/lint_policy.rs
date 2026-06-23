@@ -424,6 +424,154 @@ fn public_core_enums_are_forward_compatible_and_documented() {
     );
 }
 
+#[test]
+fn source_spec_audit_covers_public_modules_and_deferred_gaps() {
+    let lib_path = crate_root().join("src/lib.rs");
+    let source = read_to_string(&lib_path);
+    let modules = public_module_exports(&source);
+    let expected_modules = modules.iter().copied().collect::<BTreeSet<_>>();
+    let expected_gaps = [
+        (
+            "CORE-AUDIT-G001".to_owned(),
+            "external_dependency_gap".to_owned(),
+        ),
+        (
+            "CORE-AUDIT-G002".to_owned(),
+            "external_dependency_gap".to_owned(),
+        ),
+        (
+            "CORE-AUDIT-G003".to_owned(),
+            "external_dependency_gap".to_owned(),
+        ),
+        (
+            "CORE-AUDIT-G004".to_owned(),
+            "external_dependency_gap".to_owned(),
+        ),
+        (
+            "CORE-AUDIT-G005".to_owned(),
+            "external_dependency_gap".to_owned(),
+        ),
+        ("CORE-AUDIT-G006".to_owned(), "deferred".to_owned()),
+    ]
+    .into_iter()
+    .collect::<BTreeMap<_, _>>();
+    let mut gaps_by_language = BTreeMap::new();
+    let mut violations = Vec::new();
+
+    if modules
+        != [
+            "binder_normalization",
+            "control_flow",
+            "core_ir",
+            "elaborator",
+        ]
+    {
+        violations.push(format!(
+            "{} must expose exactly the source/spec audited public modules, found {:?}",
+            lib_path.display(),
+            modules
+        ));
+    }
+
+    for language in ["en", "ja"] {
+        let audit_path = workspace_root()
+            .join("doc/design/mizar-core")
+            .join(language)
+            .join("source_spec_audit.md");
+        let audit = read_to_string(&audit_path);
+        let audit_modules = audit_public_module_sections(&audit);
+        if audit_modules != expected_modules {
+            violations.push(format!(
+                "{}: source/spec audit module sections must exactly match public modules; source={:?}, audit={:?}",
+                audit_path.display(),
+                expected_modules,
+                audit_modules
+            ));
+        }
+        let audit_gaps = audit_gap_classes(&audit);
+        if audit_gaps != expected_gaps {
+            violations.push(format!(
+                "{}: source/spec audit gap ids/classes must exactly match expected follow-up register; expected={:?}, audit={:?}",
+                audit_path.display(),
+                expected_gaps,
+                audit_gaps
+            ));
+        }
+        gaps_by_language.insert(language, audit_gaps);
+        for module in &modules {
+            let module_source_path = crate_root().join("src").join(format!("{module}.rs"));
+            let module_source = read_to_string(&module_source_path);
+            let expected_public_items = audited_public_items(&module_source);
+            let module_section = audit_module_section(&audit, module).unwrap_or_else(|| {
+                violations.push(format!(
+                    "{}: source/spec audit must include a section for `{module}`",
+                    audit_path.display()
+                ));
+                ""
+            });
+            for marker in [
+                format!("`{module}`"),
+                format!("src/{module}.rs"),
+                format!("{module}.md"),
+            ] {
+                if !audit.contains(&marker) {
+                    violations.push(format!(
+                        "{}: source/spec audit must mention {marker}",
+                        audit_path.display()
+                    ));
+                }
+            }
+            for public_item in expected_public_items {
+                let marker = format!("`{public_item}`");
+                if !module_section.contains(&marker) {
+                    violations.push(format!(
+                        "{}: source/spec audit section `{module}` must mention public item {marker} from {}",
+                        audit_path.display(),
+                        module_source_path.display()
+                    ));
+                }
+            }
+        }
+        for gap_detail in audit_gap_detail_violations(&audit) {
+            violations.push(format!("{}: {gap_detail}", audit_path.display()));
+        }
+        for marker in [
+            "No source/spec drift",
+            "source-to-checker extraction",
+            "type_elaboration",
+            "proof_verification",
+            "artifact schema",
+            "proof acceptance",
+            "VC generation",
+            "kernel checking",
+            "VcId",
+            "ObligationAnchor",
+            "source_undocumented_behavior",
+        ] {
+            if !audit.contains(marker) {
+                violations.push(format!(
+                    "{}: source/spec audit must record deferred/external marker `{marker}`",
+                    audit_path.display()
+                ));
+            }
+        }
+    }
+
+    if gaps_by_language.get("en") != gaps_by_language.get("ja") {
+        violations.push(format!(
+            "EN/JA source/spec audit gap ids/classes must stay synchronized; en={:?}, ja={:?}",
+            gaps_by_language.get("en"),
+            gaps_by_language.get("ja")
+        ));
+    }
+
+    assert!(
+        violations.is_empty(),
+        "mizar-core source/spec audit drift:\n{}",
+        violations.join("\n")
+    );
+}
+
 fn crate_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 }
@@ -677,6 +825,175 @@ fn policy_enum_names(policy: &str) -> BTreeSet<String> {
 fn policy_contains_no_exhaustive_exception(policy: &str) -> bool {
     policy.contains("No exhaustive public enum exceptions are owned by this module")
         || policy.contains("この module が所有する exhaustive public enum exception はない")
+}
+
+fn audit_public_module_sections(document: &str) -> BTreeSet<&str> {
+    document
+        .lines()
+        .filter_map(|line| {
+            let module = line.trim().strip_prefix("### `")?.split('`').next()?;
+            (!module.is_empty()).then_some(module)
+        })
+        .collect()
+}
+
+fn audit_module_section<'a>(document: &'a str, module: &str) -> Option<&'a str> {
+    let header = format!("### `{module}`");
+    let start = document.find(&header)?;
+    let rest = &document[start..];
+    let end = rest
+        .find("\n### `")
+        .or_else(|| rest.find("\n## "))
+        .map_or(document.len(), |offset| start + offset);
+    Some(&document[start..end])
+}
+
+fn audit_gap_classes(document: &str) -> BTreeMap<String, String> {
+    audit_gap_rows(document)
+        .into_iter()
+        .filter_map(|(id, cells)| {
+            let class = cells.get(1)?.trim_matches('`').to_owned();
+            Some((id, class))
+        })
+        .collect()
+}
+
+fn audit_gap_detail_violations(document: &str) -> Vec<String> {
+    audit_gap_rows(document)
+        .into_iter()
+        .flat_map(|(id, cells)| {
+            let mut violations = Vec::new();
+            if cells.len() < 6 {
+                violations.push(format!(
+                    "follow-up row {id} must include ID, Class, Evidence, Owner, Unblock condition, and Target follow-up / downstream phase"
+                ));
+                return violations;
+            }
+            for (index, label) in [
+                "Evidence",
+                "Owner",
+                "Unblock condition",
+                "Target follow-up / downstream phase",
+            ]
+            .iter()
+            .enumerate()
+            {
+                let cell = cells[index + 2].trim();
+                if cell.is_empty() || cell == "-" {
+                    violations.push(format!(
+                        "follow-up row {id} must have a non-empty {label} cell"
+                    ));
+                }
+            }
+            violations
+        })
+        .collect()
+}
+
+fn audit_gap_rows(document: &str) -> BTreeMap<String, Vec<String>> {
+    document
+        .lines()
+        .filter_map(|line| {
+            let trimmed = line.trim();
+            if !trimmed.starts_with("| CORE-AUDIT-") {
+                return None;
+            }
+            let cells = trimmed
+                .trim_matches('|')
+                .split('|')
+                .map(str::trim)
+                .collect::<Vec<_>>();
+            let id = cells.first()?;
+            Some((
+                (*id).to_owned(),
+                cells.into_iter().map(str::to_owned).collect(),
+            ))
+        })
+        .collect()
+}
+
+fn audited_public_items(source: &str) -> BTreeSet<String> {
+    let mut items = BTreeSet::new();
+    let mut brace_depth = 0_i32;
+    let mut pending_macro = None::<String>;
+
+    for line in source.lines() {
+        let trimmed = line.trim();
+        if let Some(invocation) = &mut pending_macro {
+            invocation.push(' ');
+            invocation.push_str(trimmed);
+            if trimmed.ends_with(");") {
+                collect_generated_public_item(invocation, &mut items);
+                pending_macro = None;
+            }
+            brace_depth += brace_delta(line);
+            continue;
+        }
+
+        if brace_depth == 0 {
+            if let Some(name) = public_item_name(trimmed) {
+                items.insert(name);
+            }
+            if macro_invocation_starts_public_item(trimmed) {
+                if trimmed.ends_with(");") {
+                    collect_generated_public_item(trimmed, &mut items);
+                } else {
+                    pending_macro = Some(trimmed.to_owned());
+                }
+            }
+        }
+        brace_depth += brace_delta(line);
+    }
+
+    items
+}
+
+fn public_item_name(line: &str) -> Option<String> {
+    for prefix in [
+        "pub struct ",
+        "pub enum ",
+        "pub type ",
+        "pub fn ",
+        "pub const ",
+        "pub static ",
+        "pub trait ",
+        "pub macro ",
+    ] {
+        let Some(rest) = line.strip_prefix(prefix) else {
+            continue;
+        };
+        let name = rest
+            .chars()
+            .take_while(|character| character.is_ascii_alphanumeric() || *character == '_')
+            .collect::<String>();
+        if !name.is_empty() {
+            return Some(name);
+        }
+    }
+    None
+}
+
+fn macro_invocation_starts_public_item(line: &str) -> bool {
+    ["dense_id!(", "string_key!(", "table!("]
+        .iter()
+        .any(|prefix| line.starts_with(prefix))
+}
+
+fn collect_generated_public_item(invocation: &str, items: &mut BTreeSet<String>) {
+    for prefix in ["dense_id!(", "string_key!(", "table!("] {
+        let Some(rest) = invocation.trim().strip_prefix(prefix) else {
+            continue;
+        };
+        let name = rest
+            .trim_start()
+            .chars()
+            .take_while(|character| character.is_ascii_alphanumeric() || *character == '_')
+            .collect::<String>();
+        if !name.is_empty() {
+            items.insert(name);
+        }
+        return;
+    }
 }
 
 fn brace_delta(line: &str) -> i32 {
