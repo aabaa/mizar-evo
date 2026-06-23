@@ -103,9 +103,9 @@ fn public_semantic_modules_have_owning_specs() {
     let modules = public_module_exports(&source);
     let mut violations = Vec::new();
 
-    if modules != ["core_ir"] {
+    if modules != ["binder_normalization", "core_ir"] {
         violations.push(format!(
-            "{} must expose exactly the task-3 documented `core_ir` module, found {:?}",
+            "{} must expose exactly the documented task-3/task-5 modules, found {:?}",
             lib_path.display(),
             modules
         ));
@@ -290,9 +290,12 @@ fn public_api_scanner_catches_common_public_surface_shapes() {
 
 #[test]
 fn public_module_export_scanner_finds_core_ir_module() {
-    let source = "//! docs\n\npub mod core_ir;\n";
+    let source = "//! docs\n\npub mod binder_normalization;\npub mod core_ir;\n";
 
-    assert_eq!(public_module_exports(source), ["core_ir"]);
+    assert_eq!(
+        public_module_exports(source),
+        ["binder_normalization", "core_ir",]
+    );
 }
 
 fn crate_root() -> PathBuf {

@@ -18,7 +18,7 @@
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | core_ir | `core_ir.md`（task 2） | `src/core_ir.rs` | [x] |
-| binder_normalization | `binder_normalization.md`（task 4） | `src/binder_normalization.rs` | [ ] |
+| binder_normalization | `binder_normalization.md`（task 4） | `src/binder_normalization.rs` | [x] |
 | elaborator | `elaborator.md`（task 7） | `src/elaborator.rs` | [ ] |
 | control_flow | `control_flow.md`（task 14） | `src/control_flow.rs` | [ ] |
 
@@ -104,7 +104,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      [16.substitution_and_binding.md](../../architecture/ja/16.substitution_and_binding.md)、
      `core_ir.md`。
 
-5. **binder 表現と置換。** [ ]
+5. **binder 表現と置換。** [x]
    - 選ばれた表現と、core の項/論理式上の捕獲回避置換を実装する。
    - テスト: シャドーイングと捕獲ケースを含む置換フィクスチャ。置換の
      合成則。置換 coverage を完了扱いする前に、レビュー監査由来の

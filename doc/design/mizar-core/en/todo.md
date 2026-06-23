@@ -19,7 +19,7 @@ architecture 06 and 16.
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | core_ir | `core_ir.md` (task 2) | `src/core_ir.rs` | [x] |
-| binder_normalization | `binder_normalization.md` (task 4) | `src/binder_normalization.rs` | [ ] |
+| binder_normalization | `binder_normalization.md` (task 4) | `src/binder_normalization.rs` | [x] |
 | elaborator | `elaborator.md` (task 7) | `src/elaborator.rs` | [ ] |
 | control_flow | `control_flow.md` (task 14) | `src/control_flow.rs` | [ ] |
 
@@ -107,7 +107,7 @@ Keep `cargo test -p mizar-core` green after each task (see
      [16.substitution_and_binding.md](../../architecture/en/16.substitution_and_binding.md),
      `core_ir.md`.
 
-5. **Binder representation and substitution.** [ ]
+5. **Binder representation and substitution.** [x]
    - Implement the chosen representation and capture-avoiding substitution
      over core terms/formulas.
    - Tests: substitution fixtures including shadowing and capture cases;
