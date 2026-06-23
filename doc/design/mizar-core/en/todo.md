@@ -117,7 +117,7 @@ Keep `cargo test -p mizar-core` green after each task (see
      coverage complete.
    - Deps: 3, 4. Spec: `binder_normalization.md`.
 
-6. **Alpha-equivalence and normalization utilities.** [ ]
+6. **Alpha-equivalence and normalization utilities.** [x]
    - Implement alpha-equivalence checking and binder normalization with
      deterministic canonical forms.
    - Tests: property tests (equivalence is reflexive/symmetric/transitive;

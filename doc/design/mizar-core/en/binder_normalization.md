@@ -118,9 +118,39 @@ struct BinderFrame {
     source: CoreSourceRef,
 }
 
+struct NormalizedBinderEntry {
+    frame: BinderFrame,
+    ty_guard: Option<Box<NormalizedFormula>>,
+}
+
+struct GeneratedOriginRecord {
+    owner: CoreItemId,
+    kind: GeneratedOriginKind,
+    key: GeneratedOriginKey,
+    params: Vec<NormalizedVar>,
+}
+
+enum NormalizedTermKind {
+    Var(NormalizedVar),
+    Const(SymbolId),
+    Apply { functor: SymbolId, args: Vec<NormalizedTerm> },
+    Select { selector: SymbolId, base: Box<NormalizedTerm> },
+    Tuple(Vec<NormalizedTerm>),
+    SetEnum(Vec<NormalizedTerm>),
+    Generated { origin: GeneratedOriginRecord, args: Vec<NormalizedTerm> },
+    Error(CoreDiagnosticId),
+}
+
 struct NormalizedTerm {
     kind: NormalizedTermKind,
     free_variables: BTreeSet<CoreVarId>,
+}
+
+enum NormalizedFormulaKind {
+    // Non-binder logical nodes omitted here follow `CoreFormulaKind`.
+    Forall { binders: Vec<NormalizedBinderEntry>, body: Box<NormalizedFormula> },
+    Exists { binders: Vec<NormalizedBinderEntry>, body: Box<NormalizedFormula> },
+    Error(CoreDiagnosticId),
 }
 
 struct NormalizedFormula {
@@ -143,7 +173,13 @@ role-sensitive checks, and term/formula compatibility. Task 5 must either
 implement these maps or an equivalent context object. A
 `CoreTermKind::Var(CoreVarId)` occurrence not in the binder stack is classified
 by this context; absent class entries default to `Free` only for ordinary local
-core variables. Schematic or generated ids must be explicit context entries.
+core variables during raw normalization. Schematic or generated ids must be
+explicit context entries. Validation and canonicalization require explicit
+class/role/sort metadata for every non-bound normalized variable; the
+normalization-only default is not reused after a normalized object has been
+constructed. Binder frames carry their own role and source, so a freshened
+binder frame remains valid when no context metadata exists for its fresh id; if
+context metadata is present, it must be complete and agree with the frame.
 
 ## Binder Normalization
 
@@ -177,6 +213,28 @@ and substitution. Type guards must never rely on display-name lookup.
 Normalization output must be deterministic across platforms, worker counts,
 hash-map iteration orders, and diagnostic display names.
 
+The public task-6 normalization API is:
+
+```rust
+fn normalize_core_term(
+    core: &CoreIr,
+    term_id: CoreTermId,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<NormalizedTerm>;
+
+fn normalize_core_formula(
+    core: &CoreIr,
+    formula_id: CoreFormulaId,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<NormalizedFormula>;
+```
+
+Missing dense-id rows, generated-origin rows, or diagnostic rows are malformed
+binding evidence and must return `BinderDiagnosticClass::MalformedEvidence`.
+The functions do not call resolver, checker, VC, proof, or kernel services.
+
 ## Alpha-Equivalence
 
 Two normalized terms or formulas are alpha-equivalent exactly when their
@@ -205,6 +263,80 @@ Alpha-equivalence must include:
 Task 6 must expose an alpha-equivalence API that is a pure comparison of
 normalized structures. It must not re-run name resolution or consult source
 text.
+
+Task 6 also exposes:
+
+```rust
+fn validate_normalized_term(
+    term: &NormalizedTerm,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<()>;
+
+fn validate_normalized_formula(
+    formula: &NormalizedFormula,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<()>;
+
+fn canonical_term(
+    term: &NormalizedTerm,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<CanonicalTerm>;
+
+fn canonical_formula(
+    formula: &NormalizedFormula,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<CanonicalFormula>;
+
+fn alpha_equivalent_terms(
+    left: &NormalizedTerm,
+    right: &NormalizedTerm,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<bool>;
+
+fn alpha_equivalent_formulas(
+    left: &NormalizedFormula,
+    right: &NormalizedFormula,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<bool>;
+```
+
+Validation starts at `context.frames.len()` so terms and formulas normalized
+under an ambient binder context remain valid. It must reject invalid de Bruijn
+indices, malformed binder metadata, later-binder references in guards, and any
+public `free_variables` cache that does not match the normalized structure.
+
+Canonical keys exclude source names, source ranges, provenance, and diagnostic
+display text; they include bound indices, free/schematic/generated ids and
+classes, symbol ids, binder roles and guards, generated semantic origin
+records, child order, and recovery diagnostic ids. The key shape is equivalent
+to:
+
+```rust
+enum CanonicalVar {
+    Bound(u32),
+    Free(CoreVarId),
+    Schematic(CoreVarId),
+    Generated(CoreVarId),
+}
+
+struct CanonicalBinderEntry {
+    role: CoreVarRole,
+    ty_guard: Option<Box<CanonicalFormula>>,
+}
+
+struct CanonicalGeneratedOrigin {
+    owner: CoreItemId,
+    kind: GeneratedOriginKind,
+    key: GeneratedOriginKey,
+    params: Vec<CanonicalVar>,
+}
+```
 
 ## Free Variables
 

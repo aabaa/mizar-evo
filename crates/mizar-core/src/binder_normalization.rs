@@ -1,11 +1,12 @@
-//! Binder normalization and capture-avoiding substitution.
+//! Binder normalization, alpha-equivalence, and capture-avoiding substitution.
 //!
-//! Implements the task-5 slice of
+//! Implements the task-5 and task-6 slices of
 //! [binder_normalization.md](../../../../doc/design/mizar-core/en/binder_normalization.md).
 
 use crate::core_ir::{
-    CoreDiagnosticMessageKey, CoreItemId, CoreNodeRef, CoreSourceRef, CoreTypePredicate, CoreVarId,
-    CoreVarRole,
+    CoreBinder, CoreDiagnosticId, CoreDiagnosticMessageKey, CoreFormulaId, CoreFormulaKind, CoreIr,
+    CoreItemId, CoreNodeRef, CoreSourceRef, CoreTermId, CoreTermKind, CoreTypePredicate, CoreVarId,
+    CoreVarRole, GeneratedOriginKey, GeneratedOriginKind,
 };
 use mizar_resolve::resolved_ast::SymbolId;
 use mizar_session::SourceId;
@@ -85,6 +86,34 @@ impl BinderFrame {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NormalizedBinderEntry {
+    pub frame: BinderFrame,
+    pub ty_guard: Option<Box<NormalizedFormula>>,
+}
+
+impl NormalizedBinderEntry {
+    pub fn new(frame: BinderFrame) -> Self {
+        Self {
+            frame,
+            ty_guard: None,
+        }
+    }
+
+    pub fn with_guard(frame: BinderFrame, ty_guard: NormalizedFormula) -> Self {
+        Self {
+            frame,
+            ty_guard: Some(Box::new(ty_guard)),
+        }
+    }
+}
+
+impl From<BinderFrame> for NormalizedBinderEntry {
+    fn from(frame: BinderFrame) -> Self {
+        Self::new(frame)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct BinderContext {
     pub frames: Vec<BinderFrame>,
@@ -150,8 +179,17 @@ pub enum NormalizedTermKind {
         functor: SymbolId,
         args: Vec<NormalizedTerm>,
     },
+    Select {
+        selector: SymbolId,
+        base: Box<NormalizedTerm>,
+    },
     Tuple(Vec<NormalizedTerm>),
-    Error(CoreDiagnosticMessageKey),
+    SetEnum(Vec<NormalizedTerm>),
+    Generated {
+        origin: GeneratedOriginRecord,
+        args: Vec<NormalizedTerm>,
+    },
+    Error(CoreDiagnosticId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -174,7 +212,22 @@ impl NormalizedFormula {
     }
 
     pub fn forall(binders: Vec<BinderFrame>, body: NormalizedFormula) -> Self {
+        Self::forall_entries(binders.into_iter().map(Into::into).collect(), body)
+    }
+
+    pub fn forall_entries(binders: Vec<NormalizedBinderEntry>, body: NormalizedFormula) -> Self {
         Self::new(NormalizedFormulaKind::Forall {
+            binders,
+            body: Box::new(body),
+        })
+    }
+
+    pub fn exists(binders: Vec<BinderFrame>, body: NormalizedFormula) -> Self {
+        Self::exists_entries(binders.into_iter().map(Into::into).collect(), body)
+    }
+
+    pub fn exists_entries(binders: Vec<NormalizedBinderEntry>, body: NormalizedFormula) -> Self {
+        Self::new(NormalizedFormulaKind::Exists {
             binders,
             body: Box::new(body),
         })
@@ -211,14 +264,129 @@ pub enum NormalizedFormulaKind {
         right: Box<NormalizedFormula>,
     },
     Forall {
-        binders: Vec<BinderFrame>,
+        binders: Vec<NormalizedBinderEntry>,
         body: Box<NormalizedFormula>,
     },
     Exists {
-        binders: Vec<BinderFrame>,
+        binders: Vec<NormalizedBinderEntry>,
         body: Box<NormalizedFormula>,
     },
-    Error(CoreDiagnosticMessageKey),
+    Error(CoreDiagnosticId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GeneratedOriginRecord {
+    pub owner: CoreItemId,
+    pub kind: GeneratedOriginKind,
+    pub key: GeneratedOriginKey,
+    pub params: Vec<NormalizedVar>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct CanonicalTerm {
+    kind: CanonicalTermKind,
+}
+
+impl CanonicalTerm {
+    pub fn kind(&self) -> &CanonicalTermKind {
+        &self.kind
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum CanonicalTermKind {
+    Var(CanonicalVar),
+    Const(SymbolId),
+    Apply {
+        functor: SymbolId,
+        args: Vec<CanonicalTerm>,
+    },
+    Select {
+        selector: SymbolId,
+        base: Box<CanonicalTerm>,
+    },
+    Tuple(Vec<CanonicalTerm>),
+    SetEnum(Vec<CanonicalTerm>),
+    Generated {
+        origin: CanonicalGeneratedOrigin,
+        args: Vec<CanonicalTerm>,
+    },
+    Error(CoreDiagnosticId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct CanonicalFormula {
+    kind: CanonicalFormulaKind,
+}
+
+impl CanonicalFormula {
+    pub fn kind(&self) -> &CanonicalFormulaKind {
+        &self.kind
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum CanonicalFormulaKind {
+    Var(CanonicalVar),
+    True,
+    False,
+    Atom {
+        predicate: SymbolId,
+        args: Vec<CanonicalTerm>,
+    },
+    Equals {
+        left: CanonicalTerm,
+        right: CanonicalTerm,
+    },
+    TypePred {
+        subject: CanonicalTerm,
+        ty: CoreTypePredicate,
+    },
+    Not(Box<CanonicalFormula>),
+    And(Vec<CanonicalFormula>),
+    Or(Vec<CanonicalFormula>),
+    Implies {
+        premise: Box<CanonicalFormula>,
+        conclusion: Box<CanonicalFormula>,
+    },
+    Iff {
+        left: Box<CanonicalFormula>,
+        right: Box<CanonicalFormula>,
+    },
+    Forall {
+        binders: Vec<CanonicalBinderEntry>,
+        body: Box<CanonicalFormula>,
+    },
+    Exists {
+        binders: Vec<CanonicalBinderEntry>,
+        body: Box<CanonicalFormula>,
+    },
+    Error(CoreDiagnosticId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum CanonicalVar {
+    Bound(u32),
+    Free(CoreVarId),
+    Schematic(CoreVarId),
+    Generated(CoreVarId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct CanonicalBinderEntry {
+    pub role: CoreVarRole,
+    pub ty_guard: Option<Box<CanonicalFormula>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct CanonicalGeneratedOrigin {
+    pub owner: CoreItemId,
+    pub kind: GeneratedOriginKind,
+    pub key: GeneratedOriginKey,
+    pub params: Vec<CanonicalVar>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -548,8 +716,15 @@ pub fn expand_definition_closure(
         ));
     }
 
+    let base_depth = match context_depth(context, &closure.source) {
+        Ok(depth) => depth,
+        Err(diagnostic) => return SubstitutionResult::Rejected(diagnostic),
+    };
+    if let Err(diagnostic) = validate_context_frames(context, &closure.source) {
+        return SubstitutionResult::Rejected(diagnostic);
+    }
     for actual in actuals {
-        if let Err(diagnostic) = validate_term_shape(actual, context, &closure.source, 0) {
+        if let Err(diagnostic) = validate_term_shape(actual, context, &closure.source, base_depth) {
             return SubstitutionResult::Rejected(diagnostic);
         }
     }
@@ -604,6 +779,572 @@ pub fn expand_definition_closure(
         },
         freshness_witnesses: state.freshness_witnesses,
     })
+}
+
+pub fn normalize_core_term(
+    core: &CoreIr,
+    term_id: CoreTermId,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<NormalizedTerm> {
+    let mut state = RawNormalizationState::new(core, context, diagnostic_source);
+    state.normalize_term(term_id)
+}
+
+pub fn normalize_core_formula(
+    core: &CoreIr,
+    formula_id: CoreFormulaId,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<NormalizedFormula> {
+    let mut state = RawNormalizationState::new(core, context, diagnostic_source);
+    state.normalize_formula(formula_id)
+}
+
+pub fn validate_normalized_term(
+    term: &NormalizedTerm,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<()> {
+    validate_context_frames(context, diagnostic_source)?;
+    validate_term_shape(
+        term,
+        context,
+        diagnostic_source,
+        context_depth(context, diagnostic_source)?,
+    )
+}
+
+pub fn validate_normalized_formula(
+    formula: &NormalizedFormula,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<()> {
+    validate_context_frames(context, diagnostic_source)?;
+    validate_formula_shape(
+        formula,
+        context,
+        diagnostic_source,
+        context_depth(context, diagnostic_source)?,
+    )
+}
+
+pub fn canonical_term(
+    term: &NormalizedTerm,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<CanonicalTerm> {
+    validate_normalized_term(term, context, diagnostic_source)?;
+    Ok(canonicalize_term(term))
+}
+
+pub fn canonical_formula(
+    formula: &NormalizedFormula,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<CanonicalFormula> {
+    validate_normalized_formula(formula, context, diagnostic_source)?;
+    Ok(canonicalize_formula(formula))
+}
+
+pub fn alpha_equivalent_terms(
+    left: &NormalizedTerm,
+    right: &NormalizedTerm,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<bool> {
+    Ok(canonical_term(left, context, diagnostic_source)?
+        == canonical_term(right, context, diagnostic_source)?)
+}
+
+pub fn alpha_equivalent_formulas(
+    left: &NormalizedFormula,
+    right: &NormalizedFormula,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<bool> {
+    Ok(canonical_formula(left, context, diagnostic_source)?
+        == canonical_formula(right, context, diagnostic_source)?)
+}
+
+struct RawNormalizationState<'a> {
+    core: &'a CoreIr,
+    context: &'a BinderContext,
+    diagnostic_source: &'a CoreSourceRef,
+    stack: Vec<BinderFrame>,
+    next_canonical_index: u32,
+}
+
+impl<'a> RawNormalizationState<'a> {
+    fn new(
+        core: &'a CoreIr,
+        context: &'a BinderContext,
+        diagnostic_source: &'a CoreSourceRef,
+    ) -> Self {
+        Self {
+            core,
+            context,
+            diagnostic_source,
+            stack: context.frames.clone(),
+            next_canonical_index: 0,
+        }
+    }
+
+    fn normalize_term(&mut self, term_id: CoreTermId) -> BinderResult<NormalizedTerm> {
+        let term = self
+            .core
+            .terms()
+            .get(term_id)
+            .ok_or_else(|| self.malformed("missing-core-term"))?;
+        let kind = term.kind.clone();
+        match kind {
+            CoreTermKind::Var(var) => Ok(NormalizedTerm::var(self.normalize_var(var))),
+            CoreTermKind::Const(symbol) => {
+                Ok(NormalizedTerm::new(NormalizedTermKind::Const(symbol)))
+            }
+            CoreTermKind::Apply { functor, args } => {
+                Ok(NormalizedTerm::new(NormalizedTermKind::Apply {
+                    functor,
+                    args: self.normalize_terms(&args)?,
+                }))
+            }
+            CoreTermKind::Select { selector, base } => {
+                Ok(NormalizedTerm::new(NormalizedTermKind::Select {
+                    selector,
+                    base: Box::new(self.normalize_term(base)?),
+                }))
+            }
+            CoreTermKind::Tuple(items) => Ok(NormalizedTerm::new(NormalizedTermKind::Tuple(
+                self.normalize_terms(&items)?,
+            ))),
+            CoreTermKind::SetEnum(items) => Ok(NormalizedTerm::new(NormalizedTermKind::SetEnum(
+                self.normalize_terms(&items)?,
+            ))),
+            CoreTermKind::Generated { origin, args } => {
+                let origin = self.normalize_generated_origin(origin)?;
+                Ok(NormalizedTerm::new(NormalizedTermKind::Generated {
+                    origin,
+                    args: self.normalize_terms(&args)?,
+                }))
+            }
+            CoreTermKind::Error(diagnostic) => {
+                self.ensure_diagnostic(diagnostic, "missing-term-error-diagnostic")?;
+                Ok(NormalizedTerm::new(NormalizedTermKind::Error(diagnostic)))
+            }
+        }
+    }
+
+    fn normalize_formula(&mut self, formula_id: CoreFormulaId) -> BinderResult<NormalizedFormula> {
+        let formula = self
+            .core
+            .formulas()
+            .get(formula_id)
+            .ok_or_else(|| self.malformed("missing-core-formula"))?;
+        let kind = formula.kind.clone();
+        match kind {
+            CoreFormulaKind::True => Ok(NormalizedFormula::new(NormalizedFormulaKind::True)),
+            CoreFormulaKind::False => Ok(NormalizedFormula::new(NormalizedFormulaKind::False)),
+            CoreFormulaKind::Atom { predicate, args } => {
+                Ok(NormalizedFormula::new(NormalizedFormulaKind::Atom {
+                    predicate,
+                    args: self.normalize_terms(&args)?,
+                }))
+            }
+            CoreFormulaKind::Equals { left, right } => {
+                Ok(NormalizedFormula::new(NormalizedFormulaKind::Equals {
+                    left: self.normalize_term(left)?,
+                    right: self.normalize_term(right)?,
+                }))
+            }
+            CoreFormulaKind::TypePred { subject, ty } => {
+                Ok(NormalizedFormula::new(NormalizedFormulaKind::TypePred {
+                    subject: self.normalize_term(subject)?,
+                    ty,
+                }))
+            }
+            CoreFormulaKind::Not(inner) => Ok(NormalizedFormula::new(NormalizedFormulaKind::Not(
+                Box::new(self.normalize_formula(inner)?),
+            ))),
+            CoreFormulaKind::And(items) => Ok(NormalizedFormula::new(NormalizedFormulaKind::And(
+                self.normalize_formulas(&items)?,
+            ))),
+            CoreFormulaKind::Or(items) => Ok(NormalizedFormula::new(NormalizedFormulaKind::Or(
+                self.normalize_formulas(&items)?,
+            ))),
+            CoreFormulaKind::Implies {
+                premise,
+                conclusion,
+            } => Ok(NormalizedFormula::new(NormalizedFormulaKind::Implies {
+                premise: Box::new(self.normalize_formula(premise)?),
+                conclusion: Box::new(self.normalize_formula(conclusion)?),
+            })),
+            CoreFormulaKind::Iff { left, right } => {
+                Ok(NormalizedFormula::new(NormalizedFormulaKind::Iff {
+                    left: Box::new(self.normalize_formula(left)?),
+                    right: Box::new(self.normalize_formula(right)?),
+                }))
+            }
+            CoreFormulaKind::Forall { binders, body } => {
+                self.normalize_quantifier(NormalizedQuantifierKind::Forall, &binders, body)
+            }
+            CoreFormulaKind::Exists { binders, body } => {
+                self.normalize_quantifier(NormalizedQuantifierKind::Exists, &binders, body)
+            }
+            CoreFormulaKind::Error(diagnostic) => {
+                self.ensure_diagnostic(diagnostic, "missing-formula-error-diagnostic")?;
+                Ok(NormalizedFormula::new(NormalizedFormulaKind::Error(
+                    diagnostic,
+                )))
+            }
+        }
+    }
+
+    fn normalize_terms(&mut self, terms: &[CoreTermId]) -> BinderResult<Vec<NormalizedTerm>> {
+        terms
+            .iter()
+            .map(|term| self.normalize_term(*term))
+            .collect()
+    }
+
+    fn normalize_formulas(
+        &mut self,
+        formulas: &[CoreFormulaId],
+    ) -> BinderResult<Vec<NormalizedFormula>> {
+        formulas
+            .iter()
+            .map(|formula| self.normalize_formula(*formula))
+            .collect()
+    }
+
+    fn normalize_quantifier(
+        &mut self,
+        quantifier: NormalizedQuantifierKind,
+        binders: &[CoreBinder],
+        body: CoreFormulaId,
+    ) -> BinderResult<NormalizedFormula> {
+        let base_stack_len = self.stack.len();
+        let base_next_index = self.next_canonical_index;
+        let mut entries = Vec::with_capacity(binders.len());
+        for (index, binder) in binders.iter().enumerate() {
+            if let Some(guard) = binder.ty_guard {
+                let later_vars = binders
+                    .iter()
+                    .skip(index + 1)
+                    .map(|later| later.var)
+                    .collect::<BTreeSet<_>>();
+                if !later_vars.is_empty()
+                    && core_formula_mentions_vars(self.core, guard, &later_vars, self)?
+                {
+                    self.stack.truncate(base_stack_len);
+                    self.next_canonical_index = base_next_index;
+                    return Err(self.malformed("binder-guard-references-later-binder"));
+                }
+            }
+            let frame = self.frame_for_binder(binder)?;
+            self.stack.push(frame.clone());
+            let ty_guard = binder
+                .ty_guard
+                .map(|guard| self.normalize_formula(guard).map(Box::new))
+                .transpose()?;
+            entries.push(NormalizedBinderEntry { frame, ty_guard });
+        }
+        let body = self.normalize_formula(body);
+        self.stack.truncate(base_stack_len);
+        self.next_canonical_index = base_next_index;
+        let body = body?;
+        let kind = match quantifier {
+            NormalizedQuantifierKind::Forall => NormalizedFormulaKind::Forall {
+                binders: entries,
+                body: Box::new(body),
+            },
+            NormalizedQuantifierKind::Exists => NormalizedFormulaKind::Exists {
+                binders: entries,
+                body: Box::new(body),
+            },
+        };
+        Ok(NormalizedFormula::new(kind))
+    }
+
+    fn normalize_generated_origin(
+        &self,
+        origin_id: crate::core_ir::GeneratedOriginId,
+    ) -> BinderResult<GeneratedOriginRecord> {
+        let origin = self
+            .core
+            .generated()
+            .get(origin_id)
+            .ok_or_else(|| self.malformed("missing-generated-origin"))?;
+        Ok(GeneratedOriginRecord {
+            owner: origin.owner,
+            kind: origin.kind,
+            key: origin.key.clone(),
+            params: origin
+                .params
+                .iter()
+                .map(|param| self.normalize_var(*param))
+                .collect(),
+        })
+    }
+
+    fn frame_for_binder(&mut self, binder: &CoreBinder) -> BinderResult<BinderFrame> {
+        let canonical_index = self.next_canonical_index;
+        self.next_canonical_index = self
+            .next_canonical_index
+            .checked_add(1)
+            .ok_or_else(|| self.malformed("binder-canonical-index-overflow"))?;
+        Ok(BinderFrame {
+            canonical_index,
+            original_var: binder.var,
+            role: binder.role.clone(),
+            source_name: binder.source_name.clone(),
+            source: binder.source.clone(),
+        })
+    }
+
+    fn normalize_var(&self, var: CoreVarId) -> NormalizedVar {
+        if let Some(index) = self
+            .stack
+            .iter()
+            .rev()
+            .position(|frame| frame.original_var == var)
+        {
+            return NormalizedVar::Bound(BoundVar::new(index as u32));
+        }
+        match self
+            .context
+            .variable_classes
+            .get(&var)
+            .copied()
+            .unwrap_or(NormalizedVarClass::Free)
+        {
+            NormalizedVarClass::Free => NormalizedVar::Free(var),
+            NormalizedVarClass::Schematic => NormalizedVar::Schematic(var),
+            NormalizedVarClass::Generated => NormalizedVar::Generated(var),
+        }
+    }
+
+    fn ensure_diagnostic(
+        &self,
+        diagnostic: CoreDiagnosticId,
+        message_key: &'static str,
+    ) -> BinderResult<()> {
+        if self.core.diagnostics().get(diagnostic).is_some() {
+            Ok(())
+        } else {
+            Err(self.malformed(message_key))
+        }
+    }
+
+    fn malformed(&self, message_key: &'static str) -> BinderDiagnostic {
+        BinderDiagnostic::new(
+            BinderDiagnosticClass::MalformedEvidence,
+            self.diagnostic_source.clone(),
+            message_key,
+        )
+    }
+}
+
+fn canonicalize_term(term: &NormalizedTerm) -> CanonicalTerm {
+    let kind = match &term.kind {
+        NormalizedTermKind::Var(var) => CanonicalTermKind::Var(canonicalize_var(var)),
+        NormalizedTermKind::Const(symbol) => CanonicalTermKind::Const(symbol.clone()),
+        NormalizedTermKind::Apply { functor, args } => CanonicalTermKind::Apply {
+            functor: functor.clone(),
+            args: args.iter().map(canonicalize_term).collect(),
+        },
+        NormalizedTermKind::Select { selector, base } => CanonicalTermKind::Select {
+            selector: selector.clone(),
+            base: Box::new(canonicalize_term(base)),
+        },
+        NormalizedTermKind::Tuple(items) => {
+            CanonicalTermKind::Tuple(items.iter().map(canonicalize_term).collect())
+        }
+        NormalizedTermKind::SetEnum(items) => {
+            CanonicalTermKind::SetEnum(items.iter().map(canonicalize_term).collect())
+        }
+        NormalizedTermKind::Generated { origin, args } => CanonicalTermKind::Generated {
+            origin: canonicalize_generated_origin(origin),
+            args: args.iter().map(canonicalize_term).collect(),
+        },
+        NormalizedTermKind::Error(diagnostic) => CanonicalTermKind::Error(*diagnostic),
+    };
+    CanonicalTerm { kind }
+}
+
+fn canonicalize_formula(formula: &NormalizedFormula) -> CanonicalFormula {
+    let kind = match &formula.kind {
+        NormalizedFormulaKind::Var(var) => CanonicalFormulaKind::Var(canonicalize_var(var)),
+        NormalizedFormulaKind::True => CanonicalFormulaKind::True,
+        NormalizedFormulaKind::False => CanonicalFormulaKind::False,
+        NormalizedFormulaKind::Atom { predicate, args } => CanonicalFormulaKind::Atom {
+            predicate: predicate.clone(),
+            args: args.iter().map(canonicalize_term).collect(),
+        },
+        NormalizedFormulaKind::Equals { left, right } => CanonicalFormulaKind::Equals {
+            left: canonicalize_term(left),
+            right: canonicalize_term(right),
+        },
+        NormalizedFormulaKind::TypePred { subject, ty } => CanonicalFormulaKind::TypePred {
+            subject: canonicalize_term(subject),
+            ty: ty.clone(),
+        },
+        NormalizedFormulaKind::Not(inner) => {
+            CanonicalFormulaKind::Not(Box::new(canonicalize_formula(inner)))
+        }
+        NormalizedFormulaKind::And(items) => {
+            CanonicalFormulaKind::And(items.iter().map(canonicalize_formula).collect())
+        }
+        NormalizedFormulaKind::Or(items) => {
+            CanonicalFormulaKind::Or(items.iter().map(canonicalize_formula).collect())
+        }
+        NormalizedFormulaKind::Implies {
+            premise,
+            conclusion,
+        } => CanonicalFormulaKind::Implies {
+            premise: Box::new(canonicalize_formula(premise)),
+            conclusion: Box::new(canonicalize_formula(conclusion)),
+        },
+        NormalizedFormulaKind::Iff { left, right } => CanonicalFormulaKind::Iff {
+            left: Box::new(canonicalize_formula(left)),
+            right: Box::new(canonicalize_formula(right)),
+        },
+        NormalizedFormulaKind::Forall { binders, body } => CanonicalFormulaKind::Forall {
+            binders: binders.iter().map(canonicalize_binder_entry).collect(),
+            body: Box::new(canonicalize_formula(body)),
+        },
+        NormalizedFormulaKind::Exists { binders, body } => CanonicalFormulaKind::Exists {
+            binders: binders.iter().map(canonicalize_binder_entry).collect(),
+            body: Box::new(canonicalize_formula(body)),
+        },
+        NormalizedFormulaKind::Error(diagnostic) => CanonicalFormulaKind::Error(*diagnostic),
+    };
+    CanonicalFormula { kind }
+}
+
+fn canonicalize_var(var: &NormalizedVar) -> CanonicalVar {
+    match var {
+        NormalizedVar::Bound(bound) => CanonicalVar::Bound(bound.index_from_innermost),
+        NormalizedVar::Free(id) => CanonicalVar::Free(*id),
+        NormalizedVar::Schematic(id) => CanonicalVar::Schematic(*id),
+        NormalizedVar::Generated(id) => CanonicalVar::Generated(*id),
+    }
+}
+
+fn canonicalize_binder_entry(entry: &NormalizedBinderEntry) -> CanonicalBinderEntry {
+    CanonicalBinderEntry {
+        role: entry.frame.role.clone(),
+        ty_guard: entry
+            .ty_guard
+            .as_ref()
+            .map(|guard| Box::new(canonicalize_formula(guard))),
+    }
+}
+
+fn canonicalize_generated_origin(origin: &GeneratedOriginRecord) -> CanonicalGeneratedOrigin {
+    CanonicalGeneratedOrigin {
+        owner: origin.owner,
+        kind: origin.kind,
+        key: origin.key.clone(),
+        params: origin.params.iter().map(canonicalize_var).collect(),
+    }
+}
+
+fn core_formula_mentions_vars(
+    core: &CoreIr,
+    formula_id: CoreFormulaId,
+    vars: &BTreeSet<CoreVarId>,
+    state: &RawNormalizationState<'_>,
+) -> BinderResult<bool> {
+    let formula = core
+        .formulas()
+        .get(formula_id)
+        .ok_or_else(|| state.malformed("missing-core-formula"))?;
+    match &formula.kind {
+        CoreFormulaKind::True | CoreFormulaKind::False | CoreFormulaKind::Error(_) => Ok(false),
+        CoreFormulaKind::Atom { args, .. } => core_terms_mention_vars(core, args, vars, state),
+        CoreFormulaKind::Equals { left, right } => {
+            Ok(core_term_mentions_vars(core, *left, vars, state)?
+                || core_term_mentions_vars(core, *right, vars, state)?)
+        }
+        CoreFormulaKind::TypePred { subject, .. } => {
+            core_term_mentions_vars(core, *subject, vars, state)
+        }
+        CoreFormulaKind::Not(inner) => core_formula_mentions_vars(core, *inner, vars, state),
+        CoreFormulaKind::And(items) | CoreFormulaKind::Or(items) => {
+            for item in items {
+                if core_formula_mentions_vars(core, *item, vars, state)? {
+                    return Ok(true);
+                }
+            }
+            Ok(false)
+        }
+        CoreFormulaKind::Implies {
+            premise,
+            conclusion,
+        } => Ok(core_formula_mentions_vars(core, *premise, vars, state)?
+            || core_formula_mentions_vars(core, *conclusion, vars, state)?),
+        CoreFormulaKind::Iff { left, right } => {
+            Ok(core_formula_mentions_vars(core, *left, vars, state)?
+                || core_formula_mentions_vars(core, *right, vars, state)?)
+        }
+        CoreFormulaKind::Forall { binders, body } | CoreFormulaKind::Exists { binders, body } => {
+            for binder in binders {
+                if vars.contains(&binder.var) {
+                    return Ok(true);
+                }
+                if let Some(guard) = binder.ty_guard
+                    && core_formula_mentions_vars(core, guard, vars, state)?
+                {
+                    return Ok(true);
+                }
+            }
+            core_formula_mentions_vars(core, *body, vars, state)
+        }
+    }
+}
+
+fn core_terms_mention_vars(
+    core: &CoreIr,
+    terms: &[CoreTermId],
+    vars: &BTreeSet<CoreVarId>,
+    state: &RawNormalizationState<'_>,
+) -> BinderResult<bool> {
+    for term in terms {
+        if core_term_mentions_vars(core, *term, vars, state)? {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+fn core_term_mentions_vars(
+    core: &CoreIr,
+    term_id: CoreTermId,
+    vars: &BTreeSet<CoreVarId>,
+    state: &RawNormalizationState<'_>,
+) -> BinderResult<bool> {
+    let term = core
+        .terms()
+        .get(term_id)
+        .ok_or_else(|| state.malformed("missing-core-term"))?;
+    match &term.kind {
+        CoreTermKind::Var(var) => Ok(vars.contains(var)),
+        CoreTermKind::Const(_) | CoreTermKind::Error(_) => Ok(false),
+        CoreTermKind::Apply { args, .. }
+        | CoreTermKind::Tuple(args)
+        | CoreTermKind::SetEnum(args) => core_terms_mention_vars(core, args, vars, state),
+        CoreTermKind::Generated { origin, args } => {
+            let origin = core
+                .generated()
+                .get(*origin)
+                .ok_or_else(|| state.malformed("missing-generated-origin"))?;
+            if origin.params.iter().any(|param| vars.contains(param)) {
+                return Ok(true);
+            }
+            core_terms_mention_vars(core, args, vars, state)
+        }
+        CoreTermKind::Select { base, .. } => core_term_mentions_vars(core, *base, vars, state),
+    }
 }
 
 fn apply_substitution<Input, Output>(
@@ -826,6 +1567,7 @@ fn validate_substitution(substitution: &Substitution) -> BinderResult<()> {
             "malformed-substitution-evidence",
         ));
     }
+    validate_context_frames(&substitution.context, &substitution.diagnostic_source)?;
 
     if substitution.target.sort() != substitution.replacement.sort() {
         return Err(BinderDiagnostic::new(
@@ -855,18 +1597,19 @@ fn validate_substitution(substitution: &Substitution) -> BinderResult<()> {
         ));
     }
 
+    let base_depth = context_depth(&substitution.context, &substitution.diagnostic_source)?;
     match &substitution.replacement {
         SubstitutionReplacement::Term(term) => validate_term_shape(
             term,
             &substitution.context,
             &substitution.diagnostic_source,
-            0,
+            base_depth,
         )?,
         SubstitutionReplacement::Formula(formula) => validate_formula_shape(
             formula,
             &substitution.context,
             &substitution.diagnostic_source,
-            0,
+            base_depth,
         )?,
     }
 
@@ -904,7 +1647,7 @@ fn validate_term_substitution_input(
         term,
         &substitution.context,
         &substitution.diagnostic_source,
-        0,
+        context_depth(&substitution.context, &substitution.diagnostic_source)?,
     )
 }
 
@@ -916,7 +1659,7 @@ fn validate_formula_substitution_input(
         formula,
         &substitution.context,
         &substitution.diagnostic_source,
-        0,
+        context_depth(&substitution.context, &substitution.diagnostic_source)?,
     )
 }
 
@@ -973,7 +1716,12 @@ fn collect_formula_binders(formula: &NormalizedFormula, used: &mut BTreeSet<Core
         }
         NormalizedFormulaKind::Forall { binders, body }
         | NormalizedFormulaKind::Exists { binders, body } => {
-            used.extend(binders.iter().map(|frame| frame.original_var));
+            used.extend(binders.iter().map(|entry| entry.frame.original_var));
+            for entry in binders {
+                if let Some(guard) = &entry.ty_guard {
+                    collect_formula_binders(guard, used);
+                }
+            }
             collect_formula_binders(body, used);
         }
     }
@@ -994,13 +1742,26 @@ fn validate_term_shape(
             depth,
         ),
         NormalizedTermKind::Const(_) | NormalizedTermKind::Error(_) => Ok(()),
-        NormalizedTermKind::Apply { args, .. } | NormalizedTermKind::Tuple(args) => {
+        NormalizedTermKind::Select { base, .. } => {
+            validate_term_shape(base, context, diagnostic_source, depth)
+        }
+        NormalizedTermKind::Apply { args, .. }
+        | NormalizedTermKind::Tuple(args)
+        | NormalizedTermKind::SetEnum(args) => {
+            for arg in args {
+                validate_term_shape(arg, context, diagnostic_source, depth)?;
+            }
+            Ok(())
+        }
+        NormalizedTermKind::Generated { origin, args } => {
+            validate_generated_origin_shape(origin, context, diagnostic_source, depth)?;
             for arg in args {
                 validate_term_shape(arg, context, diagnostic_source, depth)?;
             }
             Ok(())
         }
     }
+    .and_then(|()| validate_term_free_cache(term, diagnostic_source))
 }
 
 fn validate_formula_shape(
@@ -1055,24 +1816,153 @@ fn validate_formula_shape(
         }
         NormalizedFormulaKind::Forall { binders, body }
         | NormalizedFormulaKind::Exists { binders, body } => {
-            let nested_depth = depth
-                .checked_add(u32::try_from(binders.len()).map_err(|_| {
-                    BinderDiagnostic::new(
-                        BinderDiagnosticClass::InvalidBoundIndex,
-                        diagnostic_source.clone(),
-                        "binder-depth-overflow",
-                    )
-                })?)
-                .ok_or_else(|| {
-                    BinderDiagnostic::new(
-                        BinderDiagnosticClass::InvalidBoundIndex,
-                        diagnostic_source.clone(),
-                        "binder-depth-overflow",
-                    )
-                })?;
-            validate_formula_shape(body, context, diagnostic_source, nested_depth)
+            for (index, entry) in binders.iter().enumerate() {
+                validate_binder_frame_shape(&entry.frame, context, diagnostic_source)?;
+                let guard_depth = close_nested_depth(depth, index + 1, diagnostic_source)?;
+                if let Some(guard) = &entry.ty_guard {
+                    validate_formula_shape(guard, context, diagnostic_source, guard_depth)?;
+                    let in_scope_binder_mentions = binders
+                        .iter()
+                        .take(index + 1)
+                        .any(|scoped| guard.free_variables.contains(&scoped.frame.original_var));
+                    if in_scope_binder_mentions {
+                        return Err(BinderDiagnostic::new(
+                            BinderDiagnosticClass::MalformedEvidence,
+                            diagnostic_source.clone(),
+                            "binder-guard-uses-free-original-var",
+                        ));
+                    }
+                    let later_binder_mentions = binders
+                        .iter()
+                        .skip(index + 1)
+                        .any(|later| guard.free_variables.contains(&later.frame.original_var));
+                    if later_binder_mentions {
+                        return Err(BinderDiagnostic::new(
+                            BinderDiagnosticClass::MalformedEvidence,
+                            diagnostic_source.clone(),
+                            "binder-guard-references-later-binder",
+                        ));
+                    }
+                }
+            }
+            let nested_depth = close_nested_depth(depth, binders.len(), diagnostic_source)?;
+            validate_formula_shape(body, context, diagnostic_source, nested_depth)?;
+            if binders
+                .iter()
+                .any(|entry| body.free_variables.contains(&entry.frame.original_var))
+            {
+                return Err(BinderDiagnostic::new(
+                    BinderDiagnosticClass::MalformedEvidence,
+                    diagnostic_source.clone(),
+                    "binder-body-uses-free-original-var",
+                ));
+            }
+            Ok(())
         }
     }
+    .and_then(|()| validate_formula_free_cache(formula, diagnostic_source))
+}
+
+fn validate_term_free_cache(
+    term: &NormalizedTerm,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<()> {
+    let expected = term_free_variables(&term.kind);
+    if term.free_variables == expected {
+        Ok(())
+    } else {
+        Err(BinderDiagnostic::new(
+            BinderDiagnosticClass::MalformedEvidence,
+            diagnostic_source.clone(),
+            "term-free-variable-cache-mismatch",
+        ))
+    }
+}
+
+fn validate_formula_free_cache(
+    formula: &NormalizedFormula,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<()> {
+    let expected = formula_free_variables(&formula.kind);
+    if formula.free_variables == expected {
+        Ok(())
+    } else {
+        Err(BinderDiagnostic::new(
+            BinderDiagnosticClass::MalformedEvidence,
+            diagnostic_source.clone(),
+            "formula-free-variable-cache-mismatch",
+        ))
+    }
+}
+
+fn validate_generated_origin_shape(
+    origin: &GeneratedOriginRecord,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+    depth: u32,
+) -> BinderResult<()> {
+    for param in &origin.params {
+        validate_var_shape(
+            param,
+            NormalizedVarSort::Term,
+            context,
+            diagnostic_source,
+            depth,
+        )?;
+    }
+    Ok(())
+}
+
+fn validate_context_frames(
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<()> {
+    for frame in &context.frames {
+        validate_binder_frame_shape(frame, context, diagnostic_source)?;
+    }
+    Ok(())
+}
+
+fn validate_binder_frame_shape(
+    frame: &BinderFrame,
+    context: &BinderContext,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<()> {
+    let class = context.variable_classes.get(&frame.original_var);
+    let role = context.variable_roles.get(&frame.original_var);
+    let sort = context.variable_sorts.get(&frame.original_var);
+    if class.is_none() && role.is_none() && sort.is_none() {
+        return Ok(());
+    }
+    let Some(role) = role else {
+        return Err(BinderDiagnostic::new(
+            BinderDiagnosticClass::MissingVariableMetadata,
+            diagnostic_source.clone(),
+            "missing-binder-role",
+        ));
+    };
+    if role != &frame.role {
+        return Err(BinderDiagnostic::new(
+            BinderDiagnosticClass::RoleMismatch,
+            diagnostic_source.clone(),
+            "binder-role-mismatch",
+        ));
+    }
+    if class.is_none() || sort.is_none() {
+        return Err(BinderDiagnostic::new(
+            BinderDiagnosticClass::MissingVariableMetadata,
+            diagnostic_source.clone(),
+            "missing-binder-metadata",
+        ));
+    }
+    if sort != Some(&NormalizedVarSort::Term) {
+        return Err(BinderDiagnostic::new(
+            BinderDiagnosticClass::SortMismatch,
+            diagnostic_source.clone(),
+            "binder-sort-mismatch",
+        ));
+    }
+    Ok(())
 }
 
 fn validate_var_shape(
@@ -1160,7 +2050,7 @@ fn deterministic_fresh_id(
         }
     }
 
-    fn feed_usize(hash: &mut u64, value: usize) {
+    fn feed_u64(hash: &mut u64, value: u64) {
         feed_bytes(hash, &value.to_le_bytes());
     }
 
@@ -1170,14 +2060,14 @@ fn deterministic_fresh_id(
 
     let mut hash = FNV_OFFSET;
     feed_bytes(&mut hash, format!("{source_id:?}").as_bytes());
-    feed_usize(&mut hash, owner.index());
-    feed_usize(&mut hash, original.index());
+    feed_u64(&mut hash, owner.index() as u64);
+    feed_u64(&mut hash, original.index() as u64);
     feed_bytes(&mut hash, role.as_str().as_bytes());
     for segment in binder_path.segments() {
         feed_u32(&mut hash, *segment);
     }
     feed_u32(&mut hash, counter);
-    CoreVarId::new(hash as usize)
+    CoreVarId::new((hash & 0x7fff_ffff) as usize)
 }
 
 fn depth_delta(depth: u32, diagnostic_source: &CoreSourceRef) -> BinderResult<i32> {
@@ -1214,6 +2104,12 @@ fn substitute_term_inner(
         NormalizedTermKind::Var(_)
         | NormalizedTermKind::Const(_)
         | NormalizedTermKind::Error(_) => Ok(term.clone()),
+        NormalizedTermKind::Select { selector, base } => {
+            Ok(NormalizedTerm::new(NormalizedTermKind::Select {
+                selector: selector.clone(),
+                base: Box::new(substitute_term_inner(base, state, depth, _path)?),
+            }))
+        }
         NormalizedTermKind::Apply { functor, args } => {
             Ok(NormalizedTerm::new(NormalizedTermKind::Apply {
                 functor: functor.clone(),
@@ -1223,6 +2119,16 @@ fn substitute_term_inner(
         NormalizedTermKind::Tuple(items) => Ok(NormalizedTerm::new(NormalizedTermKind::Tuple(
             substitute_terms(items, state, depth)?,
         ))),
+        NormalizedTermKind::SetEnum(items) => Ok(NormalizedTerm::new(NormalizedTermKind::SetEnum(
+            substitute_terms(items, state, depth)?,
+        ))),
+        NormalizedTermKind::Generated { origin, args } => {
+            let origin = substitute_generated_origin(origin, state, depth)?;
+            Ok(NormalizedTerm::new(NormalizedTermKind::Generated {
+                origin,
+                args: substitute_terms(args, state, depth)?,
+            }))
+        }
     }
 }
 
@@ -1320,7 +2226,7 @@ enum NormalizedQuantifierKind {
 
 fn substitute_under_binders(
     quantifier: NormalizedQuantifierKind,
-    binders: &[BinderFrame],
+    binders: &[NormalizedBinderEntry],
     body: &NormalizedFormula,
     state: &mut SubstitutionState<'_>,
     depth: u32,
@@ -1332,24 +2238,47 @@ fn substitute_under_binders(
         .extend(body.free_variables.iter().copied());
     state
         .used_variables
-        .extend(binders.iter().map(|frame| frame.original_var));
-    let target_shadowed = binders
-        .iter()
-        .any(|frame| frame.original_var == state.target_var());
-
-    if !target_shadowed {
-        let replacement_free = state.substitution.replacement.free_variables().clone();
-        for frame in &mut binders {
-            if replacement_free.contains(&frame.original_var) {
-                let frame_path = path.child(frame.canonical_index);
-                state.freshen_frame(frame, &frame_path)?;
-            }
+        .extend(binders.iter().map(|entry| entry.frame.original_var));
+    for entry in &binders {
+        if let Some(guard) = &entry.ty_guard {
+            state
+                .used_variables
+                .extend(guard.free_variables.iter().copied());
         }
     }
 
+    let replacement_free = state.substitution.replacement.free_variables().clone();
+    let mut target_shadowed = false;
+    for (index, entry) in binders.iter_mut().enumerate() {
+        let entry_shadows_target = entry.frame.original_var == state.target_var();
+        if !target_shadowed
+            && !entry_shadows_target
+            && replacement_free.contains(&entry.frame.original_var)
+        {
+            let frame_path = path.child(entry.frame.canonical_index);
+            state.freshen_frame(&mut entry.frame, &frame_path)?;
+        }
+
+        if let Some(guard) = &entry.ty_guard {
+            let guard_depth = add_depth(depth, index + 1, state)?;
+            let guard_path = path.child(entry.frame.canonical_index);
+            if target_shadowed || entry_shadows_target {
+                entry.ty_guard = Some(guard.clone());
+            } else {
+                entry.ty_guard = Some(Box::new(substitute_formula_inner(
+                    guard,
+                    state,
+                    guard_depth,
+                    &guard_path,
+                )?));
+            }
+        }
+        target_shadowed |= entry_shadows_target;
+    }
+
     let nested_depth = add_depth(depth, binders.len(), state)?;
-    let nested_path = binders.iter().fold(path.clone(), |path, frame| {
-        path.child(frame.canonical_index)
+    let nested_path = binders.iter().fold(path.clone(), |path, entry| {
+        path.child(entry.frame.canonical_index)
     });
     let body = if target_shadowed {
         body.clone()
@@ -1407,6 +2336,12 @@ fn shift_term_inner(
             diagnostic_source,
         )?)),
         NormalizedTermKind::Const(_) | NormalizedTermKind::Error(_) => Ok(term.clone()),
+        NormalizedTermKind::Select { selector, base } => {
+            Ok(NormalizedTerm::new(NormalizedTermKind::Select {
+                selector: selector.clone(),
+                base: Box::new(shift_term_inner(base, cutoff, delta, diagnostic_source)?),
+            }))
+        }
         NormalizedTermKind::Apply { functor, args } => {
             let args = args
                 .iter()
@@ -1423,6 +2358,24 @@ fn shift_term_inner(
                 .map(|item| shift_term_inner(item, cutoff, delta, diagnostic_source))
                 .collect::<BinderResult<Vec<_>>>()?;
             Ok(NormalizedTerm::new(NormalizedTermKind::Tuple(items)))
+        }
+        NormalizedTermKind::SetEnum(items) => {
+            let items = items
+                .iter()
+                .map(|item| shift_term_inner(item, cutoff, delta, diagnostic_source))
+                .collect::<BinderResult<Vec<_>>>()?;
+            Ok(NormalizedTerm::new(NormalizedTermKind::SetEnum(items)))
+        }
+        NormalizedTermKind::Generated { origin, args } => {
+            let origin = shift_generated_origin(origin, cutoff, delta, diagnostic_source)?;
+            let args = args
+                .iter()
+                .map(|arg| shift_term_inner(arg, cutoff, delta, diagnostic_source))
+                .collect::<BinderResult<Vec<_>>>()?;
+            Ok(NormalizedTerm::new(NormalizedTermKind::Generated {
+                origin,
+                args,
+            }))
         }
     }
 }
@@ -1560,29 +2513,32 @@ fn shift_formula_list(
 
 fn shift_under_formula_binders(
     quantifier: NormalizedQuantifierKind,
-    binders: &[BinderFrame],
+    binders: &[NormalizedBinderEntry],
     body: &NormalizedFormula,
     cutoff: u32,
     delta: i32,
     diagnostic_source: &CoreSourceRef,
 ) -> BinderResult<NormalizedFormula> {
-    let nested_cutoff = cutoff
-        .checked_add(u32::try_from(binders.len()).map_err(|_| {
-            BinderDiagnostic::new(
-                BinderDiagnosticClass::InvalidBoundIndex,
-                diagnostic_source.clone(),
-                "binder-depth-overflow",
-            )
-        })?)
-        .ok_or_else(|| {
-            BinderDiagnostic::new(
-                BinderDiagnosticClass::InvalidBoundIndex,
-                diagnostic_source.clone(),
-                "binder-depth-overflow",
-            )
-        })?;
+    let binders = binders
+        .iter()
+        .enumerate()
+        .map(|(index, entry)| {
+            let guard_cutoff = close_nested_depth(cutoff, index + 1, diagnostic_source)?;
+            let ty_guard = entry
+                .ty_guard
+                .as_ref()
+                .map(|guard| {
+                    shift_formula_inner(guard, guard_cutoff, delta, diagnostic_source).map(Box::new)
+                })
+                .transpose()?;
+            Ok(NormalizedBinderEntry {
+                frame: entry.frame.clone(),
+                ty_guard,
+            })
+        })
+        .collect::<BinderResult<Vec<_>>>()?;
+    let nested_cutoff = close_nested_depth(cutoff, binders.len(), diagnostic_source)?;
     let body = shift_formula_inner(body, nested_cutoff, delta, diagnostic_source)?;
-    let binders = binders.to_vec();
     let kind = match quantifier {
         NormalizedQuantifierKind::Forall => NormalizedFormulaKind::Forall {
             binders,
@@ -1620,6 +2576,198 @@ fn shift_var(
     Ok(NormalizedVar::Bound(BoundVar::new(shifted as u32)))
 }
 
+fn substitute_generated_origin(
+    origin: &GeneratedOriginRecord,
+    state: &SubstitutionState<'_>,
+    depth: u32,
+) -> BinderResult<GeneratedOriginRecord> {
+    let params = origin
+        .params
+        .iter()
+        .map(|param| {
+            if matches!(state.substitution.target, SubstitutionTarget::TermVar(_))
+                && param.free_id() == Some(state.target_var())
+            {
+                let replacement = state
+                    .replacement_term()
+                    .expect("validated term replacement for term target");
+                let shifted = shift_term_inner(
+                    replacement,
+                    0,
+                    depth_delta(depth, &state.substitution.diagnostic_source)?,
+                    &state.substitution.diagnostic_source,
+                )?;
+                replacement_term_as_var(&shifted, &state.substitution.diagnostic_source)
+            } else {
+                Ok(param.clone())
+            }
+        })
+        .collect::<BinderResult<Vec<_>>>()?;
+    Ok(GeneratedOriginRecord {
+        owner: origin.owner,
+        kind: origin.kind,
+        key: origin.key.clone(),
+        params,
+    })
+}
+
+fn shift_generated_origin(
+    origin: &GeneratedOriginRecord,
+    cutoff: u32,
+    delta: i32,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<GeneratedOriginRecord> {
+    let params = origin
+        .params
+        .iter()
+        .map(|param| shift_var(param, cutoff, delta, diagnostic_source))
+        .collect::<BinderResult<Vec<_>>>()?;
+    Ok(GeneratedOriginRecord {
+        owner: origin.owner,
+        kind: origin.kind,
+        key: origin.key.clone(),
+        params,
+    })
+}
+
+fn open_generated_origin(
+    origin: &GeneratedOriginRecord,
+    depth: u32,
+    replacement: &NormalizedTerm,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<GeneratedOriginRecord> {
+    let params = origin
+        .params
+        .iter()
+        .map(|param| open_var_with_term(param, depth, replacement, diagnostic_source))
+        .collect::<BinderResult<Vec<_>>>()?;
+    Ok(GeneratedOriginRecord {
+        owner: origin.owner,
+        kind: origin.kind,
+        key: origin.key.clone(),
+        params,
+    })
+}
+
+fn close_generated_origin(
+    origin: &GeneratedOriginRecord,
+    depth: u32,
+    variable: CoreVarId,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<GeneratedOriginRecord> {
+    let params = origin
+        .params
+        .iter()
+        .map(|param| close_var(param, depth, variable, diagnostic_source))
+        .collect::<BinderResult<Vec<_>>>()?;
+    Ok(GeneratedOriginRecord {
+        owner: origin.owner,
+        kind: origin.kind,
+        key: origin.key.clone(),
+        params,
+    })
+}
+
+fn subst_bound_generated_origin(
+    origin: &GeneratedOriginRecord,
+    depth: u32,
+    replacement: &NormalizedTerm,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<GeneratedOriginRecord> {
+    let params = origin
+        .params
+        .iter()
+        .map(|param| subst_bound_var(param, depth, replacement, diagnostic_source))
+        .collect::<BinderResult<Vec<_>>>()?;
+    Ok(GeneratedOriginRecord {
+        owner: origin.owner,
+        kind: origin.kind,
+        key: origin.key.clone(),
+        params,
+    })
+}
+
+fn open_var_with_term(
+    var: &NormalizedVar,
+    depth: u32,
+    replacement: &NormalizedTerm,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<NormalizedVar> {
+    match var {
+        NormalizedVar::Bound(bound) if bound.index_from_innermost == depth => {
+            let shifted = shift_term_inner(
+                replacement,
+                0,
+                depth_delta(depth, diagnostic_source)?,
+                diagnostic_source,
+            )?;
+            replacement_term_as_var(&shifted, diagnostic_source)
+        }
+        NormalizedVar::Bound(bound) if bound.index_from_innermost > depth => Ok(
+            NormalizedVar::Bound(BoundVar::new(bound.index_from_innermost - 1)),
+        ),
+        _ => Ok(var.clone()),
+    }
+}
+
+fn close_var(
+    var: &NormalizedVar,
+    depth: u32,
+    variable: CoreVarId,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<NormalizedVar> {
+    match var {
+        NormalizedVar::Free(id) if *id == variable => {
+            Ok(NormalizedVar::Bound(BoundVar::new(depth)))
+        }
+        NormalizedVar::Bound(bound) if bound.index_from_innermost >= depth => {
+            let shifted = bound.index_from_innermost.checked_add(1).ok_or_else(|| {
+                BinderDiagnostic::new(
+                    BinderDiagnosticClass::InvalidBoundIndex,
+                    diagnostic_source.clone(),
+                    "invalid-bound-close",
+                )
+            })?;
+            Ok(NormalizedVar::Bound(BoundVar::new(shifted)))
+        }
+        _ => Ok(var.clone()),
+    }
+}
+
+fn subst_bound_var(
+    var: &NormalizedVar,
+    depth: u32,
+    replacement: &NormalizedTerm,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<NormalizedVar> {
+    match var {
+        NormalizedVar::Bound(bound) if bound.index_from_innermost == depth => {
+            let shifted = shift_term_inner(
+                replacement,
+                0,
+                depth_delta(depth, diagnostic_source)?,
+                diagnostic_source,
+            )?;
+            replacement_term_as_var(&shifted, diagnostic_source)
+        }
+        _ => Ok(var.clone()),
+    }
+}
+
+fn replacement_term_as_var(
+    term: &NormalizedTerm,
+    diagnostic_source: &CoreSourceRef,
+) -> BinderResult<NormalizedVar> {
+    let NormalizedTermKind::Var(var) = &term.kind else {
+        return Err(BinderDiagnostic::new(
+            BinderDiagnosticClass::MalformedEvidence,
+            diagnostic_source.clone(),
+            "generated-origin-param-non-var-replacement",
+        ));
+    };
+    Ok(var.clone())
+}
+
 fn open_rec_term_inner(
     term: &NormalizedTerm,
     depth: u32,
@@ -1645,6 +2793,17 @@ fn open_rec_term_inner(
         NormalizedTermKind::Var(_)
         | NormalizedTermKind::Const(_)
         | NormalizedTermKind::Error(_) => Ok(term.clone()),
+        NormalizedTermKind::Select { selector, base } => {
+            Ok(NormalizedTerm::new(NormalizedTermKind::Select {
+                selector: selector.clone(),
+                base: Box::new(open_rec_term_inner(
+                    base,
+                    depth,
+                    replacement,
+                    diagnostic_source,
+                )?),
+            }))
+        }
         NormalizedTermKind::Apply { functor, args } => {
             let args = args
                 .iter()
@@ -1661,6 +2820,24 @@ fn open_rec_term_inner(
                 .map(|item| open_rec_term_inner(item, depth, replacement, diagnostic_source))
                 .collect::<BinderResult<Vec<_>>>()?;
             Ok(NormalizedTerm::new(NormalizedTermKind::Tuple(items)))
+        }
+        NormalizedTermKind::SetEnum(items) => {
+            let items = items
+                .iter()
+                .map(|item| open_rec_term_inner(item, depth, replacement, diagnostic_source))
+                .collect::<BinderResult<Vec<_>>>()?;
+            Ok(NormalizedTerm::new(NormalizedTermKind::SetEnum(items)))
+        }
+        NormalizedTermKind::Generated { origin, args } => {
+            let origin = open_generated_origin(origin, depth, replacement, diagnostic_source)?;
+            let args = args
+                .iter()
+                .map(|arg| open_rec_term_inner(arg, depth, replacement, diagnostic_source))
+                .collect::<BinderResult<Vec<_>>>()?;
+            Ok(NormalizedTerm::new(NormalizedTermKind::Generated {
+                origin,
+                args,
+            }))
         }
     }
 }
@@ -1792,30 +2969,39 @@ fn open_formula_list_with_term(
 
 fn open_under_formula_binders(
     quantifier: NormalizedQuantifierKind,
-    binders: &[BinderFrame],
+    binders: &[NormalizedBinderEntry],
     body: &NormalizedFormula,
     depth: u32,
     replacement: &NormalizedTerm,
     diagnostic_source: &CoreSourceRef,
 ) -> BinderResult<NormalizedFormula> {
-    let nested_depth = depth
-        .checked_add(u32::try_from(binders.len()).map_err(|_| {
-            BinderDiagnostic::new(
-                BinderDiagnosticClass::InvalidBoundIndex,
-                diagnostic_source.clone(),
-                "binder-depth-overflow",
-            )
-        })?)
-        .ok_or_else(|| {
-            BinderDiagnostic::new(
-                BinderDiagnosticClass::InvalidBoundIndex,
-                diagnostic_source.clone(),
-                "binder-depth-overflow",
-            )
-        })?;
+    let binders = binders
+        .iter()
+        .enumerate()
+        .map(|(index, entry)| {
+            let guard_depth = close_nested_depth(depth, index + 1, diagnostic_source)?;
+            let ty_guard = entry
+                .ty_guard
+                .as_ref()
+                .map(|guard| {
+                    open_rec_formula_with_term_inner(
+                        guard,
+                        guard_depth,
+                        replacement,
+                        diagnostic_source,
+                    )
+                    .map(Box::new)
+                })
+                .transpose()?;
+            Ok(NormalizedBinderEntry {
+                frame: entry.frame.clone(),
+                ty_guard,
+            })
+        })
+        .collect::<BinderResult<Vec<_>>>()?;
+    let nested_depth = close_nested_depth(depth, binders.len(), diagnostic_source)?;
     let body =
         open_rec_formula_with_term_inner(body, nested_depth, replacement, diagnostic_source)?;
-    let binders = binders.to_vec();
     let kind = match quantifier {
         NormalizedQuantifierKind::Forall => NormalizedFormulaKind::Forall {
             binders,
@@ -1978,7 +3164,7 @@ fn open_formula_list_with_term_capture_avoiding(
 
 fn open_capture_avoiding_under_formula_binders(
     quantifier: NormalizedQuantifierKind,
-    binders: &[BinderFrame],
+    binders: &[NormalizedBinderEntry],
     body: &NormalizedFormula,
     depth: u32,
     replacement: &NormalizedTerm,
@@ -1991,28 +3177,37 @@ fn open_capture_avoiding_under_formula_binders(
         .extend(body.free_variables.iter().copied());
     state
         .used_variables
-        .extend(binders.iter().map(|frame| frame.original_var));
-    for frame in &mut binders {
-        if replacement.free_variables.contains(&frame.original_var) {
-            let frame_path = path.child(frame.canonical_index);
-            state.freshen_frame(frame, &frame_path)?;
+        .extend(binders.iter().map(|entry| entry.frame.original_var));
+    for entry in &binders {
+        if let Some(guard) = &entry.ty_guard {
+            state
+                .used_variables
+                .extend(guard.free_variables.iter().copied());
         }
     }
-    let nested_depth = depth
-        .checked_add(u32::try_from(binders.len()).map_err(|_| {
-            state.diagnostic(
-                BinderDiagnosticClass::InvalidBoundIndex,
-                "binder-depth-overflow",
-            )
-        })?)
-        .ok_or_else(|| {
-            state.diagnostic(
-                BinderDiagnosticClass::InvalidBoundIndex,
-                "binder-depth-overflow",
-            )
-        })?;
-    let nested_path = binders.iter().fold(path.clone(), |path, frame| {
-        path.child(frame.canonical_index)
+    for (index, entry) in binders.iter_mut().enumerate() {
+        if replacement
+            .free_variables
+            .contains(&entry.frame.original_var)
+        {
+            let frame_path = path.child(entry.frame.canonical_index);
+            state.freshen_frame(&mut entry.frame, &frame_path)?;
+        }
+        if let Some(guard) = &entry.ty_guard {
+            let guard_depth = close_nested_depth_with_state(depth, index + 1, state)?;
+            let guard_path = path.child(entry.frame.canonical_index);
+            entry.ty_guard = Some(Box::new(open_rec_formula_with_term_capture_avoiding(
+                guard,
+                guard_depth,
+                replacement,
+                state,
+                &guard_path,
+            )?));
+        }
+    }
+    let nested_depth = close_nested_depth_with_state(depth, binders.len(), state)?;
+    let nested_path = binders.iter().fold(path.clone(), |path, entry| {
+        path.child(entry.frame.canonical_index)
     });
     let body = open_rec_formula_with_term_capture_avoiding(
         body,
@@ -2161,30 +3356,39 @@ fn open_formula_list_with_formula(
 
 fn open_formula_under_formula_binders(
     quantifier: NormalizedQuantifierKind,
-    binders: &[BinderFrame],
+    binders: &[NormalizedBinderEntry],
     body: &NormalizedFormula,
     depth: u32,
     replacement: &NormalizedFormula,
     diagnostic_source: &CoreSourceRef,
 ) -> BinderResult<NormalizedFormula> {
-    let nested_depth = depth
-        .checked_add(u32::try_from(binders.len()).map_err(|_| {
-            BinderDiagnostic::new(
-                BinderDiagnosticClass::InvalidBoundIndex,
-                diagnostic_source.clone(),
-                "binder-depth-overflow",
-            )
-        })?)
-        .ok_or_else(|| {
-            BinderDiagnostic::new(
-                BinderDiagnosticClass::InvalidBoundIndex,
-                diagnostic_source.clone(),
-                "binder-depth-overflow",
-            )
-        })?;
+    let binders = binders
+        .iter()
+        .enumerate()
+        .map(|(index, entry)| {
+            let guard_depth = close_nested_depth(depth, index + 1, diagnostic_source)?;
+            let ty_guard = entry
+                .ty_guard
+                .as_ref()
+                .map(|guard| {
+                    open_rec_formula_with_formula_inner(
+                        guard,
+                        guard_depth,
+                        replacement,
+                        diagnostic_source,
+                    )
+                    .map(Box::new)
+                })
+                .transpose()?;
+            Ok(NormalizedBinderEntry {
+                frame: entry.frame.clone(),
+                ty_guard,
+            })
+        })
+        .collect::<BinderResult<Vec<_>>>()?;
+    let nested_depth = close_nested_depth(depth, binders.len(), diagnostic_source)?;
     let body =
         open_rec_formula_with_formula_inner(body, nested_depth, replacement, diagnostic_source)?;
-    let binders = binders.to_vec();
     let kind = match quantifier {
         NormalizedQuantifierKind::Forall => NormalizedFormulaKind::Forall {
             binders,
@@ -2223,6 +3427,17 @@ fn close_rec_term_inner(
         NormalizedTermKind::Var(_)
         | NormalizedTermKind::Const(_)
         | NormalizedTermKind::Error(_) => Ok(term.clone()),
+        NormalizedTermKind::Select { selector, base } => {
+            Ok(NormalizedTerm::new(NormalizedTermKind::Select {
+                selector: selector.clone(),
+                base: Box::new(close_rec_term_inner(
+                    base,
+                    depth,
+                    variable,
+                    diagnostic_source,
+                )?),
+            }))
+        }
         NormalizedTermKind::Apply { functor, args } => {
             let args = args
                 .iter()
@@ -2239,6 +3454,24 @@ fn close_rec_term_inner(
                 .map(|item| close_rec_term_inner(item, depth, variable, diagnostic_source))
                 .collect::<BinderResult<Vec<_>>>()?;
             Ok(NormalizedTerm::new(NormalizedTermKind::Tuple(items)))
+        }
+        NormalizedTermKind::SetEnum(items) => {
+            let items = items
+                .iter()
+                .map(|item| close_rec_term_inner(item, depth, variable, diagnostic_source))
+                .collect::<BinderResult<Vec<_>>>()?;
+            Ok(NormalizedTerm::new(NormalizedTermKind::SetEnum(items)))
+        }
+        NormalizedTermKind::Generated { origin, args } => {
+            let origin = close_generated_origin(origin, depth, variable, diagnostic_source)?;
+            let args = args
+                .iter()
+                .map(|arg| close_rec_term_inner(arg, depth, variable, diagnostic_source))
+                .collect::<BinderResult<Vec<_>>>()?;
+            Ok(NormalizedTerm::new(NormalizedTermKind::Generated {
+                origin,
+                args,
+            }))
         }
     }
 }
@@ -2349,9 +3582,28 @@ fn close_rec_formula_inner(
             }))
         }
         NormalizedFormulaKind::Forall { binders, body } => {
+            let binders = binders
+                .iter()
+                .enumerate()
+                .map(|(index, entry)| {
+                    let guard_depth = close_nested_depth(depth, index + 1, diagnostic_source)?;
+                    let ty_guard = entry
+                        .ty_guard
+                        .as_ref()
+                        .map(|guard| {
+                            close_rec_formula_inner(guard, guard_depth, variable, diagnostic_source)
+                                .map(Box::new)
+                        })
+                        .transpose()?;
+                    Ok(NormalizedBinderEntry {
+                        frame: entry.frame.clone(),
+                        ty_guard,
+                    })
+                })
+                .collect::<BinderResult<Vec<_>>>()?;
             let nested_depth = close_nested_depth(depth, binders.len(), diagnostic_source)?;
             Ok(NormalizedFormula::new(NormalizedFormulaKind::Forall {
-                binders: binders.to_vec(),
+                binders,
                 body: Box::new(close_rec_formula_inner(
                     body,
                     nested_depth,
@@ -2361,9 +3613,28 @@ fn close_rec_formula_inner(
             }))
         }
         NormalizedFormulaKind::Exists { binders, body } => {
+            let binders = binders
+                .iter()
+                .enumerate()
+                .map(|(index, entry)| {
+                    let guard_depth = close_nested_depth(depth, index + 1, diagnostic_source)?;
+                    let ty_guard = entry
+                        .ty_guard
+                        .as_ref()
+                        .map(|guard| {
+                            close_rec_formula_inner(guard, guard_depth, variable, diagnostic_source)
+                                .map(Box::new)
+                        })
+                        .transpose()?;
+                    Ok(NormalizedBinderEntry {
+                        frame: entry.frame.clone(),
+                        ty_guard,
+                    })
+                })
+                .collect::<BinderResult<Vec<_>>>()?;
             let nested_depth = close_nested_depth(depth, binders.len(), diagnostic_source)?;
             Ok(NormalizedFormula::new(NormalizedFormulaKind::Exists {
-                binders: binders.to_vec(),
+                binders,
                 body: Box::new(close_rec_formula_inner(
                     body,
                     nested_depth,
@@ -2397,6 +3668,36 @@ fn close_nested_depth(
         })
 }
 
+fn context_depth(context: &BinderContext, diagnostic_source: &CoreSourceRef) -> BinderResult<u32> {
+    u32::try_from(context.frames.len()).map_err(|_| {
+        BinderDiagnostic::new(
+            BinderDiagnosticClass::InvalidBoundIndex,
+            diagnostic_source.clone(),
+            "context-depth-overflow",
+        )
+    })
+}
+
+fn close_nested_depth_with_state(
+    depth: u32,
+    binders: usize,
+    state: &ClosureExpansionState,
+) -> BinderResult<u32> {
+    depth
+        .checked_add(u32::try_from(binders).map_err(|_| {
+            state.diagnostic(
+                BinderDiagnosticClass::InvalidBoundIndex,
+                "binder-depth-overflow",
+            )
+        })?)
+        .ok_or_else(|| {
+            state.diagnostic(
+                BinderDiagnosticClass::InvalidBoundIndex,
+                "binder-depth-overflow",
+            )
+        })
+}
+
 fn subst_bound_term_inner(
     term: &NormalizedTerm,
     depth: u32,
@@ -2417,6 +3718,17 @@ fn subst_bound_term_inner(
         NormalizedTermKind::Var(_)
         | NormalizedTermKind::Const(_)
         | NormalizedTermKind::Error(_) => Ok(term.clone()),
+        NormalizedTermKind::Select { selector, base } => {
+            Ok(NormalizedTerm::new(NormalizedTermKind::Select {
+                selector: selector.clone(),
+                base: Box::new(subst_bound_term_inner(
+                    base,
+                    depth,
+                    replacement,
+                    diagnostic_source,
+                )?),
+            }))
+        }
         NormalizedTermKind::Apply { functor, args } => {
             let args = args
                 .iter()
@@ -2433,6 +3745,25 @@ fn subst_bound_term_inner(
                 .map(|item| subst_bound_term_inner(item, depth, replacement, diagnostic_source))
                 .collect::<BinderResult<Vec<_>>>()?;
             Ok(NormalizedTerm::new(NormalizedTermKind::Tuple(items)))
+        }
+        NormalizedTermKind::SetEnum(items) => {
+            let items = items
+                .iter()
+                .map(|item| subst_bound_term_inner(item, depth, replacement, diagnostic_source))
+                .collect::<BinderResult<Vec<_>>>()?;
+            Ok(NormalizedTerm::new(NormalizedTermKind::SetEnum(items)))
+        }
+        NormalizedTermKind::Generated { origin, args } => {
+            let origin =
+                subst_bound_generated_origin(origin, depth, replacement, diagnostic_source)?;
+            let args = args
+                .iter()
+                .map(|arg| subst_bound_term_inner(arg, depth, replacement, diagnostic_source))
+                .collect::<BinderResult<Vec<_>>>()?;
+            Ok(NormalizedTerm::new(NormalizedTermKind::Generated {
+                origin,
+                args,
+            }))
         }
     }
 }
@@ -2571,9 +3902,33 @@ fn subst_bound_formula_inner(
             }))
         }
         NormalizedFormulaKind::Forall { binders, body } => {
+            let binders = binders
+                .iter()
+                .enumerate()
+                .map(|(index, entry)| {
+                    let guard_depth = close_nested_depth(depth, index + 1, diagnostic_source)?;
+                    let ty_guard = entry
+                        .ty_guard
+                        .as_ref()
+                        .map(|guard| {
+                            subst_bound_formula_inner(
+                                guard,
+                                guard_depth,
+                                replacement,
+                                diagnostic_source,
+                            )
+                            .map(Box::new)
+                        })
+                        .transpose()?;
+                    Ok(NormalizedBinderEntry {
+                        frame: entry.frame.clone(),
+                        ty_guard,
+                    })
+                })
+                .collect::<BinderResult<Vec<_>>>()?;
             let nested_depth = close_nested_depth(depth, binders.len(), diagnostic_source)?;
             Ok(NormalizedFormula::new(NormalizedFormulaKind::Forall {
-                binders: binders.to_vec(),
+                binders,
                 body: Box::new(subst_bound_formula_inner(
                     body,
                     nested_depth,
@@ -2583,9 +3938,33 @@ fn subst_bound_formula_inner(
             }))
         }
         NormalizedFormulaKind::Exists { binders, body } => {
+            let binders = binders
+                .iter()
+                .enumerate()
+                .map(|(index, entry)| {
+                    let guard_depth = close_nested_depth(depth, index + 1, diagnostic_source)?;
+                    let ty_guard = entry
+                        .ty_guard
+                        .as_ref()
+                        .map(|guard| {
+                            subst_bound_formula_inner(
+                                guard,
+                                guard_depth,
+                                replacement,
+                                diagnostic_source,
+                            )
+                            .map(Box::new)
+                        })
+                        .transpose()?;
+                    Ok(NormalizedBinderEntry {
+                        frame: entry.frame.clone(),
+                        ty_guard,
+                    })
+                })
+                .collect::<BinderResult<Vec<_>>>()?;
             let nested_depth = close_nested_depth(depth, binders.len(), diagnostic_source)?;
             Ok(NormalizedFormula::new(NormalizedFormulaKind::Exists {
-                binders: binders.to_vec(),
+                binders,
                 body: Box::new(subst_bound_formula_inner(
                     body,
                     nested_depth,
@@ -2647,7 +4026,22 @@ fn term_free_variables(kind: &NormalizedTermKind) -> BTreeSet<CoreVarId> {
             }
         }
         NormalizedTermKind::Const(_) | NormalizedTermKind::Error(_) => {}
-        NormalizedTermKind::Apply { args, .. } | NormalizedTermKind::Tuple(args) => {
+        NormalizedTermKind::Select { base, .. } => {
+            free.extend(base.free_variables.iter().copied());
+        }
+        NormalizedTermKind::Apply { args, .. }
+        | NormalizedTermKind::Tuple(args)
+        | NormalizedTermKind::SetEnum(args) => {
+            for arg in args {
+                free.extend(arg.free_variables.iter().copied());
+            }
+        }
+        NormalizedTermKind::Generated { origin, args } => {
+            for param in &origin.params {
+                if let Some(id) = param.free_id() {
+                    free.insert(id);
+                }
+            }
             for arg in args {
                 free.extend(arg.free_variables.iter().copied());
             }
@@ -2700,10 +4094,22 @@ fn formula_free_variables(kind: &NormalizedFormulaKind) -> BTreeSet<CoreVarId> {
         }
         NormalizedFormulaKind::Forall { binders, body }
         | NormalizedFormulaKind::Exists { binders, body } => {
-            free.extend(body.free_variables.iter().copied());
-            for binder in binders {
-                free.remove(&binder.original_var);
+            let mut scoped_free = BTreeSet::new();
+            for (index, entry) in binders.iter().enumerate() {
+                if let Some(guard) = &entry.ty_guard {
+                    let mut guard_free = guard.free_variables.clone();
+                    for scoped in binders.iter().take(index + 1) {
+                        guard_free.remove(&scoped.frame.original_var);
+                    }
+                    scoped_free.extend(guard_free);
+                }
             }
+            let mut body_free = body.free_variables.clone();
+            for binder in binders {
+                body_free.remove(&binder.frame.original_var);
+            }
+            scoped_free.extend(body_free);
+            free.extend(scoped_free);
         }
     }
     free
@@ -2728,6 +4134,7 @@ fn add_depth(depth: u32, binders: usize, state: &SubstitutionState<'_>) -> Binde
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core_ir::*;
     use mizar_resolve::resolved_ast::{FullyQualifiedName, LocalSymbolId, ModuleId};
     use mizar_session::{
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
@@ -2816,6 +4223,82 @@ mod tests {
         }
     }
 
+    fn core_parts() -> CoreIrParts {
+        let source_id = source_id();
+        let source = source();
+        let mut items = CoreItemTable::new();
+        let item = items.insert(CoreItem::new(
+            symbol("Th1"),
+            CoreItemKind::Theorem,
+            "public",
+            source.clone(),
+        ));
+        let mut source_map = CoreSourceMap::new();
+        source_map.item_sources.insert(item, source);
+
+        CoreIrParts {
+            source_id,
+            module_id: module_id(),
+            items,
+            terms: CoreTermTable::new(),
+            formulas: CoreFormulaTable::new(),
+            definitions: CoreDefinitionTable::new(),
+            proofs: CoreProofTable::new(),
+            proof_nodes: CoreProofNodeTable::new(),
+            algorithms: CoreAlgorithmTable::new(),
+            algorithm_statements: CoreAlgorithmStmtTable::new(),
+            generated: GeneratedOriginTable::new(),
+            obligation_seeds: ObligationSeedTable::new(),
+            source_map,
+            diagnostics: CoreDiagnosticTable::new(),
+        }
+    }
+
+    fn push_term(parts: &mut CoreIrParts, kind: CoreTermKind) -> CoreTermId {
+        let source = source();
+        let id = parts.terms.insert(CoreTerm::new(kind, source.clone()));
+        parts.source_map.term_sources.insert(id, source);
+        id
+    }
+
+    fn push_formula(parts: &mut CoreIrParts, kind: CoreFormulaKind) -> CoreFormulaId {
+        let source = source();
+        let id = parts
+            .formulas
+            .insert(CoreFormula::new(kind, source.clone()));
+        parts.source_map.formula_sources.insert(id, source);
+        id
+    }
+
+    fn push_generated(
+        parts: &mut CoreIrParts,
+        kind: GeneratedOriginKind,
+        key: &str,
+        params: Vec<CoreVarId>,
+    ) -> GeneratedOriginId {
+        let source = source();
+        let id = parts.generated.insert(GeneratedOrigin {
+            owner: CoreItemId::new(0),
+            kind,
+            key: GeneratedOriginKey::new(key),
+            params,
+            evidence: vec![CoreProvenance::new(CoreProvenancePhase::Generated, "test")],
+            source: source.clone(),
+        });
+        parts.source_map.generated_sources.insert(id, source);
+        id
+    }
+
+    fn core_binder(var: CoreVarId, guard: Option<CoreFormulaId>, source_name: &str) -> CoreBinder {
+        CoreBinder {
+            var,
+            role: role("term"),
+            ty_guard: guard,
+            source_name: Some(source_name.to_owned()),
+            source: source(),
+        }
+    }
+
     fn term_substitution(
         target: CoreVarId,
         replacement: NormalizedTerm,
@@ -2882,7 +4365,7 @@ mod tests {
             role: role("term"),
             counter: 0,
         };
-        assert_eq!(binders[0].original_var, expected_witness.fresh);
+        assert_eq!(binders[0].frame.original_var, expected_witness.fresh);
         assert_eq!(
             recompute_fresh_id(&expected_witness),
             expected_witness.fresh
@@ -2936,7 +4419,7 @@ mod tests {
             0,
         );
 
-        assert_eq!(binders[0].original_var, expected_fresh);
+        assert_eq!(binders[0].frame.original_var, expected_fresh);
         assert_eq!(
             output.freshness_witnesses,
             vec![FreshnessWitness {
@@ -2977,8 +4460,8 @@ mod tests {
             panic!("expected forall");
         };
 
-        assert_eq!(binders[0].original_var, shadow_x);
-        assert_eq!(binders[0].source_name.as_deref(), Some("x"));
+        assert_eq!(binders[0].frame.original_var, shadow_x);
+        assert_eq!(binders[0].frame.source_name.as_deref(), Some("x"));
         assert_eq!(body.free_variables, BTreeSet::from([replacement]));
         assert!(output.freshness_witnesses.is_empty());
     }
@@ -3292,12 +4775,12 @@ mod tests {
         let NormalizedFormulaKind::Forall { binders, body } = expanded.kind else {
             panic!("expected forall");
         };
-        assert_ne!(binders[0].original_var, capture_z);
+        assert_ne!(binders[0].frame.original_var, capture_z);
         assert_eq!(body.free_variables, BTreeSet::from([capture_z]));
         assert_eq!(expansion.value.freshness_witnesses.len(), 1);
         assert_eq!(
             recompute_fresh_id(&expansion.value.freshness_witnesses[0]),
-            binders[0].original_var
+            binders[0].frame.original_var
         );
     }
 
@@ -3508,5 +4991,837 @@ mod tests {
             substituted_term_formula,
             equals(NormalizedTerm::free(var(31)), NormalizedTerm::bound(1))
         );
+    }
+
+    #[test]
+    fn alpha_equivalence_is_canonical_reflexive_symmetric_and_transitive() {
+        let x = var(0);
+        let y = var(1);
+        let z = var(2);
+        let formula_x = NormalizedFormula::forall(
+            vec![frame(0, x, "x")],
+            NormalizedFormula::new(NormalizedFormulaKind::Atom {
+                predicate: symbol("P"),
+                args: vec![NormalizedTerm::bound(0)],
+            }),
+        );
+        let formula_y = NormalizedFormula::forall(
+            vec![frame(9, y, "renamed")],
+            NormalizedFormula::new(NormalizedFormulaKind::Atom {
+                predicate: symbol("P"),
+                args: vec![NormalizedTerm::bound(0)],
+            }),
+        );
+        let formula_z = NormalizedFormula::forall(
+            vec![frame(2, z, "z")],
+            NormalizedFormula::new(NormalizedFormulaKind::Atom {
+                predicate: symbol("P"),
+                args: vec![NormalizedTerm::bound(0)],
+            }),
+        );
+        let context = context_for(&[
+            (x, NormalizedVarSort::Term),
+            (y, NormalizedVarSort::Term),
+            (z, NormalizedVarSort::Term),
+        ]);
+
+        assert!(alpha_equivalent_formulas(&formula_x, &formula_x, &context, &source()).unwrap());
+        assert!(alpha_equivalent_formulas(&formula_x, &formula_y, &context, &source()).unwrap());
+        assert!(alpha_equivalent_formulas(&formula_y, &formula_x, &context, &source()).unwrap());
+        assert!(alpha_equivalent_formulas(&formula_y, &formula_z, &context, &source()).unwrap());
+        assert!(alpha_equivalent_formulas(&formula_x, &formula_z, &context, &source()).unwrap());
+        assert_eq!(
+            canonical_formula(&formula_x, &context, &source()).unwrap(),
+            canonical_formula(&formula_y, &context, &source()).unwrap()
+        );
+        assert_eq!(
+            canonical_formula(&formula_x, &context, &source()).unwrap(),
+            canonical_formula(&formula_x, &context, &source()).unwrap(),
+            "canonical form is deterministic across repeated runs"
+        );
+    }
+
+    #[test]
+    fn canonical_forms_differ_exactly_when_alpha_equivalence_differs() {
+        let x = var(0);
+        let y = var(1);
+        let context = context_for(&[(x, NormalizedVarSort::Term), (y, NormalizedVarSort::Term)]);
+        let first = NormalizedTerm::new(NormalizedTermKind::Apply {
+            functor: symbol("F"),
+            args: vec![NormalizedTerm::free(x), NormalizedTerm::free(y)],
+        });
+        let same = NormalizedTerm::new(NormalizedTermKind::Apply {
+            functor: symbol("F"),
+            args: vec![NormalizedTerm::free(x), NormalizedTerm::free(y)],
+        });
+        let different_order = NormalizedTerm::new(NormalizedTermKind::Apply {
+            functor: symbol("F"),
+            args: vec![NormalizedTerm::free(y), NormalizedTerm::free(x)],
+        });
+
+        assert!(alpha_equivalent_terms(&first, &same, &context, &source()).unwrap());
+        assert_eq!(
+            canonical_term(&first, &context, &source()).unwrap(),
+            canonical_term(&same, &context, &source()).unwrap()
+        );
+        assert!(!alpha_equivalent_terms(&first, &different_order, &context, &source()).unwrap());
+        assert_ne!(
+            canonical_term(&first, &context, &source()).unwrap(),
+            canonical_term(&different_order, &context, &source()).unwrap()
+        );
+    }
+
+    #[test]
+    fn canonical_formula_iff_includes_binders_guards_and_iff_nodes() {
+        let x = var(0);
+        let y = var(1);
+        let context = context_for(&[(x, NormalizedVarSort::Term), (y, NormalizedVarSort::Term)]);
+        let guard_x = NormalizedFormula::new(NormalizedFormulaKind::TypePred {
+            subject: NormalizedTerm::bound(0),
+            ty: predicate_ty("Nat"),
+        });
+        let guard_y = NormalizedFormula::new(NormalizedFormulaKind::TypePred {
+            subject: NormalizedTerm::bound(0),
+            ty: predicate_ty("Nat"),
+        });
+        let left = NormalizedFormula::forall_entries(
+            vec![NormalizedBinderEntry::with_guard(frame(0, x, "x"), guard_x)],
+            NormalizedFormula::new(NormalizedFormulaKind::Iff {
+                left: Box::new(NormalizedFormula::new(NormalizedFormulaKind::True)),
+                right: Box::new(NormalizedFormula::new(NormalizedFormulaKind::False)),
+            }),
+        );
+        let same = NormalizedFormula::forall_entries(
+            vec![NormalizedBinderEntry::with_guard(
+                frame(7, y, "renamed"),
+                guard_y,
+            )],
+            NormalizedFormula::new(NormalizedFormulaKind::Iff {
+                left: Box::new(NormalizedFormula::new(NormalizedFormulaKind::True)),
+                right: Box::new(NormalizedFormula::new(NormalizedFormulaKind::False)),
+            }),
+        );
+        let different_guard = NormalizedFormula::forall_entries(
+            vec![NormalizedBinderEntry::with_guard(
+                frame(0, x, "x"),
+                NormalizedFormula::new(NormalizedFormulaKind::True),
+            )],
+            NormalizedFormula::new(NormalizedFormulaKind::Iff {
+                left: Box::new(NormalizedFormula::new(NormalizedFormulaKind::True)),
+                right: Box::new(NormalizedFormula::new(NormalizedFormulaKind::False)),
+            }),
+        );
+
+        assert!(alpha_equivalent_formulas(&left, &same, &context, &source()).unwrap());
+        assert_eq!(
+            canonical_formula(&left, &context, &source()).unwrap(),
+            canonical_formula(&same, &context, &source()).unwrap()
+        );
+        assert!(!alpha_equivalent_formulas(&left, &different_guard, &context, &source()).unwrap());
+        assert_ne!(
+            canonical_formula(&left, &context, &source()).unwrap(),
+            canonical_formula(&different_guard, &context, &source()).unwrap()
+        );
+    }
+
+    #[test]
+    fn free_variables_remove_binders_from_guards_and_body_in_sorted_order() {
+        let x = var(0);
+        let y = var(1);
+        let z = var(2);
+        let guard = NormalizedFormula::new(NormalizedFormulaKind::And(vec![
+            NormalizedFormula::new(NormalizedFormulaKind::TypePred {
+                subject: NormalizedTerm::bound(0),
+                ty: predicate_ty("Nat"),
+            }),
+            equals(NormalizedTerm::free(z), NormalizedTerm::bound(0)),
+        ]));
+        let entry = NormalizedBinderEntry::with_guard(frame(0, x, "x"), guard);
+        let formula = NormalizedFormula::forall_entries(
+            vec![entry],
+            equals(NormalizedTerm::free(y), NormalizedTerm::bound(0)),
+        );
+
+        assert_eq!(
+            formula.free_variables.iter().copied().collect::<Vec<_>>(),
+            vec![y, z]
+        );
+    }
+
+    #[test]
+    fn hand_built_guard_later_binder_remains_free_and_is_rejected() {
+        let x = var(0);
+        let y = var(1);
+        let guard_mentions_later = equals(NormalizedTerm::free(y), NormalizedTerm::bound(0));
+        let formula = NormalizedFormula::forall_entries(
+            vec![
+                NormalizedBinderEntry::with_guard(frame(0, x, "x"), guard_mentions_later),
+                NormalizedBinderEntry::new(frame(1, y, "y")),
+            ],
+            NormalizedFormula::new(NormalizedFormulaKind::True),
+        );
+        assert_eq!(formula.free_variables, BTreeSet::from([y]));
+        assert!(matches!(
+            validate_normalized_formula(
+                &formula,
+                &context_for(&[(x, NormalizedVarSort::Term), (y, NormalizedVarSort::Term)]),
+                &source()
+            ),
+            Err(BinderDiagnostic {
+                class: BinderDiagnosticClass::MalformedEvidence,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_invalid_de_bruijn_and_malformed_binder_contexts() {
+        assert!(matches!(
+            validate_normalized_term(&NormalizedTerm::bound(0), &BinderContext::new(), &source()),
+            Err(BinderDiagnostic {
+                class: BinderDiagnosticClass::InvalidBoundIndex,
+                ..
+            })
+        ));
+
+        let x = var(0);
+        let formula = NormalizedFormula::forall(
+            vec![frame(0, x, "x")],
+            NormalizedFormula::new(NormalizedFormulaKind::True),
+        );
+        let mut malformed_context = BinderContext::new();
+        malformed_context
+            .variable_roles
+            .insert(x, role("unexpected"));
+        assert!(matches!(
+            validate_normalized_formula(&formula, &malformed_context, &source()),
+            Err(BinderDiagnostic {
+                class: BinderDiagnosticClass::RoleMismatch,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn validation_and_canonicalization_honor_ambient_context_frames() {
+        let ambient = var(20);
+        let mut context = context_for(&[(ambient, NormalizedVarSort::Term)]);
+        context.frames.push(frame(0, ambient, "ambient"));
+        let term = NormalizedTerm::bound(0);
+
+        validate_normalized_term(&term, &context, &source()).expect("ambient bound validates");
+        assert_eq!(
+            canonical_term(&term, &context, &source()).unwrap().kind(),
+            &CanonicalTermKind::Var(CanonicalVar::Bound(0))
+        );
+
+        let mut malformed_context = context.clone();
+        malformed_context
+            .variable_roles
+            .insert(ambient, role("wrong"));
+        assert!(matches!(
+            validate_normalized_term(&term, &malformed_context, &source()),
+            Err(BinderDiagnostic {
+                class: BinderDiagnosticClass::RoleMismatch,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn substitution_under_ambient_context_keeps_replacement_depth_local() {
+        let target = var(0);
+        let ambient = var(20);
+        let mut context = context_for(&[
+            (target, NormalizedVarSort::Term),
+            (ambient, NormalizedVarSort::Term),
+        ]);
+        context.frames.push(frame(0, ambient, "ambient"));
+        let substitution = term_substitution(target, NormalizedTerm::bound(0), context.clone());
+
+        let output = expect_applied(
+            apply_substitution_to_term(&NormalizedTerm::free(target), &substitution),
+            "ambient substitution",
+        );
+        assert_eq!(output.value, NormalizedTerm::bound(0));
+        validate_normalized_term(&output.value, &context, &source()).unwrap();
+    }
+
+    #[test]
+    fn closure_validation_does_not_borrow_use_site_ambient_depth() {
+        let formal = var(0);
+        let actual = var(1);
+        let ambient = var(20);
+        let closure = DefinitionClosure {
+            formals: vec![frame(0, formal, "n")],
+            body: NormalizedTermOrFormula::Term(NormalizedTerm::bound(1)),
+            captured_free_variables: BTreeSet::new(),
+            formal_type_guards: Vec::new(),
+            source: source(),
+        };
+        let mut context = context_for(&[
+            (formal, NormalizedVarSort::Term),
+            (actual, NormalizedVarSort::Term),
+            (ambient, NormalizedVarSort::Term),
+        ]);
+        context.frames.push(frame(0, ambient, "ambient"));
+
+        assert!(matches!(
+            expand_definition_closure(
+                &closure,
+                &[NormalizedTerm::free(actual)],
+                &context,
+                freshness(10),
+            ),
+            SubstitutionResult::Rejected(BinderDiagnostic {
+                class: BinderDiagnosticClass::InvalidBoundIndex,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_free_original_var_inside_binder_scope() {
+        let x = var(0);
+        let context = context_for(&[(x, NormalizedVarSort::Term)]);
+        let body_bad = NormalizedFormula::forall(
+            vec![frame(0, x, "x")],
+            equals(NormalizedTerm::free(x), NormalizedTerm::bound(0)),
+        );
+        assert!(matches!(
+            validate_normalized_formula(&body_bad, &context, &source()),
+            Err(BinderDiagnostic {
+                class: BinderDiagnosticClass::MalformedEvidence,
+                ..
+            })
+        ));
+
+        let guard_bad = NormalizedFormula::forall_entries(
+            vec![NormalizedBinderEntry::with_guard(
+                frame(0, x, "x"),
+                equals(NormalizedTerm::free(x), NormalizedTerm::bound(0)),
+            )],
+            NormalizedFormula::new(NormalizedFormulaKind::True),
+        );
+        assert!(matches!(
+            validate_normalized_formula(&guard_bad, &context, &source()),
+            Err(BinderDiagnostic {
+                class: BinderDiagnosticClass::MalformedEvidence,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_free_variable_cache_tampering_before_capture() {
+        let x = var(0);
+        let z = var(2);
+        let mut replacement = NormalizedTerm::free(z);
+        replacement.free_variables.clear();
+        let formula = NormalizedFormula::forall(
+            vec![frame(0, z, "z")],
+            equals(NormalizedTerm::free(x), NormalizedTerm::bound(0)),
+        );
+        let substitution = term_substitution(
+            x,
+            replacement,
+            context_for(&[(x, NormalizedVarSort::Term), (z, NormalizedVarSort::Term)]),
+        );
+
+        assert!(matches!(
+            apply_substitution_to_formula(&formula, &substitution),
+            SubstitutionResult::Rejected(BinderDiagnostic {
+                class: BinderDiagnosticClass::MalformedEvidence,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn freshened_substitution_outputs_revalidate_with_original_context() {
+        let target = var(0);
+        let captured_name = var(2);
+        let body = equals(NormalizedTerm::free(target), NormalizedTerm::bound(0));
+        let formula = NormalizedFormula::forall(vec![frame(0, captured_name, "z")], body);
+        let context = context_for(&[
+            (target, NormalizedVarSort::Term),
+            (captured_name, NormalizedVarSort::Term),
+        ]);
+        let substitution =
+            term_substitution(target, NormalizedTerm::free(captured_name), context.clone());
+        let output = expect_applied(
+            apply_substitution_to_formula(&formula, &substitution),
+            "substitution",
+        );
+
+        validate_normalized_formula(&output.value, &context, &source())
+            .expect("freshened binder frame carries enough metadata to revalidate");
+    }
+
+    #[test]
+    fn nested_de_bruijn_helpers_distinguish_open_and_subst_at_nonzero_depth() {
+        let replacement = NormalizedTerm::free(var(10));
+        let tuple = NormalizedTerm::new(NormalizedTermKind::Tuple(vec![
+            NormalizedTerm::bound(2),
+            NormalizedTerm::bound(1),
+            NormalizedTerm::bound(0),
+        ]));
+
+        let opened = open_rec_term(&tuple, 1, &replacement, &source()).expect("open");
+        assert_eq!(
+            opened,
+            NormalizedTerm::new(NormalizedTermKind::Tuple(vec![
+                NormalizedTerm::bound(1),
+                NormalizedTerm::free(var(10)),
+                NormalizedTerm::bound(0),
+            ]))
+        );
+
+        let substituted =
+            subst_bound_term(&tuple, 1, &replacement, &source()).expect("subst bound");
+        assert_eq!(
+            substituted,
+            NormalizedTerm::new(NormalizedTermKind::Tuple(vec![
+                NormalizedTerm::bound(2),
+                NormalizedTerm::free(var(10)),
+                NormalizedTerm::bound(0),
+            ]))
+        );
+    }
+
+    #[test]
+    fn nested_de_bruijn_helpers_cover_close_shift_and_guards() {
+        let x = var(0);
+        let y = var(1);
+        let guard = equals(NormalizedTerm::free(y), NormalizedTerm::bound(0));
+        let formula = NormalizedFormula::forall_entries(
+            vec![NormalizedBinderEntry::with_guard(frame(0, x, "x"), guard)],
+            equals(NormalizedTerm::free(y), NormalizedTerm::bound(0)),
+        );
+
+        let closed = close_rec_formula(&formula, 1, y, &source()).expect("close nonzero");
+        let NormalizedFormulaKind::Forall { binders, body } = closed.kind else {
+            panic!("expected forall");
+        };
+        assert_eq!(
+            binders[0].ty_guard.as_ref().unwrap().as_ref(),
+            &equals(NormalizedTerm::bound(2), NormalizedTerm::bound(0))
+        );
+        assert_eq!(
+            body.as_ref(),
+            &equals(NormalizedTerm::bound(2), NormalizedTerm::bound(0))
+        );
+
+        let shifted = shift_formula(
+            &NormalizedFormula::forall(
+                vec![frame(0, x, "x")],
+                equals(NormalizedTerm::bound(1), NormalizedTerm::bound(0)),
+            ),
+            0,
+            1,
+            &source(),
+        )
+        .expect("shift formula");
+        let NormalizedFormulaKind::Forall { body, .. } = shifted.kind else {
+            panic!("expected forall");
+        };
+        assert_eq!(
+            body.as_ref(),
+            &equals(NormalizedTerm::bound(2), NormalizedTerm::bound(0))
+        );
+    }
+
+    #[test]
+    fn generated_terms_compare_by_semantic_origin_record_not_dense_id_or_source() {
+        let x = var(0);
+        let y = var(1);
+        let context = context_for(&[(x, NormalizedVarSort::Term), (y, NormalizedVarSort::Term)]);
+        let origin = GeneratedOriginRecord {
+            owner: CoreItemId::new(0),
+            kind: GeneratedOriginKind::LocalAbbreviation,
+            key: GeneratedOriginKey::new("abbr"),
+            params: vec![NormalizedVar::Free(x)],
+        };
+        let same_record = GeneratedOriginRecord {
+            owner: CoreItemId::new(0),
+            kind: GeneratedOriginKind::LocalAbbreviation,
+            key: GeneratedOriginKey::new("abbr"),
+            params: vec![NormalizedVar::Free(x)],
+        };
+        let differing_payload = GeneratedOriginRecord {
+            owner: CoreItemId::new(0),
+            kind: GeneratedOriginKind::LocalAbbreviation,
+            key: GeneratedOriginKey::new("abbr"),
+            params: vec![NormalizedVar::Free(y)],
+        };
+        let differing_owner = GeneratedOriginRecord {
+            owner: CoreItemId::new(1),
+            kind: GeneratedOriginKind::LocalAbbreviation,
+            key: GeneratedOriginKey::new("abbr"),
+            params: vec![NormalizedVar::Free(x)],
+        };
+        let differing_kind = GeneratedOriginRecord {
+            owner: CoreItemId::new(0),
+            kind: GeneratedOriginKind::FraenkelComprehension,
+            key: GeneratedOriginKey::new("abbr"),
+            params: vec![NormalizedVar::Free(x)],
+        };
+        let differing_key = GeneratedOriginRecord {
+            owner: CoreItemId::new(0),
+            kind: GeneratedOriginKind::LocalAbbreviation,
+            key: GeneratedOriginKey::new("other"),
+            params: vec![NormalizedVar::Free(x)],
+        };
+        let first = NormalizedTerm::new(NormalizedTermKind::Generated {
+            origin,
+            args: vec![NormalizedTerm::free(x), NormalizedTerm::free(y)],
+        });
+        let same = NormalizedTerm::new(NormalizedTermKind::Generated {
+            origin: same_record,
+            args: vec![NormalizedTerm::free(x), NormalizedTerm::free(y)],
+        });
+        let different = NormalizedTerm::new(NormalizedTermKind::Generated {
+            origin: differing_payload,
+            args: vec![NormalizedTerm::free(x), NormalizedTerm::free(y)],
+        });
+        let different_order = NormalizedTerm::new(NormalizedTermKind::Generated {
+            origin: GeneratedOriginRecord {
+                owner: CoreItemId::new(0),
+                kind: GeneratedOriginKind::LocalAbbreviation,
+                key: GeneratedOriginKey::new("abbr"),
+                params: vec![NormalizedVar::Free(x)],
+            },
+            args: vec![NormalizedTerm::free(y), NormalizedTerm::free(x)],
+        });
+        let different_owner = NormalizedTerm::new(NormalizedTermKind::Generated {
+            origin: differing_owner,
+            args: vec![NormalizedTerm::free(x), NormalizedTerm::free(y)],
+        });
+        let different_kind = NormalizedTerm::new(NormalizedTermKind::Generated {
+            origin: differing_kind,
+            args: vec![NormalizedTerm::free(x), NormalizedTerm::free(y)],
+        });
+        let different_key = NormalizedTerm::new(NormalizedTermKind::Generated {
+            origin: differing_key,
+            args: vec![NormalizedTerm::free(x), NormalizedTerm::free(y)],
+        });
+
+        assert!(alpha_equivalent_terms(&first, &same, &context, &source()).unwrap());
+        assert!(!alpha_equivalent_terms(&first, &different, &context, &source()).unwrap());
+        assert!(!alpha_equivalent_terms(&first, &different_order, &context, &source()).unwrap());
+        assert!(!alpha_equivalent_terms(&first, &different_owner, &context, &source()).unwrap());
+        assert!(!alpha_equivalent_terms(&first, &different_kind, &context, &source()).unwrap());
+        assert!(!alpha_equivalent_terms(&first, &different_key, &context, &source()).unwrap());
+    }
+
+    #[test]
+    fn generated_raw_terms_with_distinct_dense_ids_compare_by_semantic_record() {
+        let x = var(0);
+        let context = context_for(&[(x, NormalizedVarSort::Term)]);
+
+        fn generated_fixture(x: CoreVarId, add_dummy: bool) -> (CoreIr, CoreTermId) {
+            let mut parts = core_parts();
+            if add_dummy {
+                push_generated(
+                    &mut parts,
+                    GeneratedOriginKind::LocalAbbreviation,
+                    "dummy",
+                    Vec::new(),
+                );
+            }
+            let origin = push_generated(
+                &mut parts,
+                GeneratedOriginKind::LocalAbbreviation,
+                "same",
+                vec![x],
+            );
+            let arg = push_term(&mut parts, CoreTermKind::Var(x));
+            let term = push_term(
+                &mut parts,
+                CoreTermKind::Generated {
+                    origin,
+                    args: vec![arg],
+                },
+            );
+            (CoreIr::try_new(parts).expect("core fixture"), term)
+        }
+
+        let (left_core, left_term) = generated_fixture(x, true);
+        let (right_core, right_term) = generated_fixture(x, false);
+        let left = normalize_core_term(&left_core, left_term, &context, &source()).unwrap();
+        let right = normalize_core_term(&right_core, right_term, &context, &source()).unwrap();
+
+        assert!(alpha_equivalent_terms(&left, &right, &context, &source()).unwrap());
+    }
+
+    #[test]
+    fn error_nodes_are_canonical_by_diagnostic_id_only() {
+        let first = NormalizedTerm::new(NormalizedTermKind::Error(CoreDiagnosticId::new(0)));
+        let same = NormalizedTerm::new(NormalizedTermKind::Error(CoreDiagnosticId::new(0)));
+        let different = NormalizedTerm::new(NormalizedTermKind::Error(CoreDiagnosticId::new(1)));
+        let context = BinderContext::new();
+
+        assert!(alpha_equivalent_terms(&first, &same, &context, &source()).unwrap());
+        assert!(!alpha_equivalent_terms(&first, &different, &context, &source()).unwrap());
+    }
+
+    #[test]
+    fn raw_core_normalization_covers_select_set_enum_generated_and_error_nodes() {
+        let x = var(0);
+        let mut parts = core_parts();
+        let base = push_term(&mut parts, CoreTermKind::Const(symbol("base")));
+        let selected = push_term(
+            &mut parts,
+            CoreTermKind::Select {
+                selector: symbol("sel"),
+                base,
+            },
+        );
+        let var_x = push_term(&mut parts, CoreTermKind::Var(x));
+        let set_enum = push_term(&mut parts, CoreTermKind::SetEnum(vec![selected, var_x]));
+        let origin = push_generated(
+            &mut parts,
+            GeneratedOriginKind::LocalAbbreviation,
+            "gen",
+            vec![x],
+        );
+        let generated = push_term(
+            &mut parts,
+            CoreTermKind::Generated {
+                origin,
+                args: vec![set_enum],
+            },
+        );
+        let diagnostic = parts.diagnostics.insert(CoreDiagnostic::error(
+            CoreDiagnosticClass::UnsupportedLowering,
+            "recovered",
+            source(),
+        ));
+        let error = push_term(&mut parts, CoreTermKind::Error(diagnostic));
+        let core = CoreIr::try_new(parts).expect("core fixture");
+        let context = context_for(&[(x, NormalizedVarSort::Term)]);
+
+        let normalized = normalize_core_term(&core, generated, &context, &source()).unwrap();
+        let NormalizedTermKind::Generated { origin, args } = normalized.kind else {
+            panic!("expected generated term");
+        };
+        assert_eq!(origin.params, vec![NormalizedVar::Free(x)]);
+        assert!(matches!(args[0].kind, NormalizedTermKind::SetEnum(_)));
+        let normalized_error = normalize_core_term(&core, error, &context, &source()).unwrap();
+        assert_eq!(
+            normalized_error,
+            NormalizedTerm::new(NormalizedTermKind::Error(diagnostic))
+        );
+    }
+
+    #[test]
+    fn raw_core_normalization_is_idempotent_across_repeated_runs() {
+        let x = var(0);
+        let mut parts = core_parts();
+        let term_x = push_term(&mut parts, CoreTermKind::Var(x));
+        let true_formula = push_formula(&mut parts, CoreFormulaKind::True);
+        let type_formula = push_formula(
+            &mut parts,
+            CoreFormulaKind::TypePred {
+                subject: term_x,
+                ty: predicate_ty("Nat"),
+            },
+        );
+        let body = push_formula(
+            &mut parts,
+            CoreFormulaKind::Iff {
+                left: true_formula,
+                right: type_formula,
+            },
+        );
+        let forall = push_formula(
+            &mut parts,
+            CoreFormulaKind::Forall {
+                binders: vec![core_binder(x, None, "x")],
+                body,
+            },
+        );
+        let core = CoreIr::try_new(parts).expect("core fixture");
+        let context = context_for(&[(x, NormalizedVarSort::Term)]);
+
+        let first = normalize_core_formula(&core, forall, &context, &source()).unwrap();
+        let second = normalize_core_formula(&core, forall, &context, &source()).unwrap();
+        assert_eq!(first, second);
+        assert_eq!(
+            canonical_formula(&first, &context, &source()).unwrap(),
+            canonical_formula(&second, &context, &source()).unwrap()
+        );
+    }
+
+    #[test]
+    fn raw_core_normalization_reports_missing_root_rows_as_malformed_evidence() {
+        let core = CoreIr::try_new(core_parts()).expect("core fixture");
+        let context = BinderContext::new();
+
+        assert!(matches!(
+            normalize_core_term(&core, CoreTermId::new(99), &context, &source()),
+            Err(BinderDiagnostic {
+                class: BinderDiagnosticClass::MalformedEvidence,
+                ..
+            })
+        ));
+        assert!(matches!(
+            normalize_core_formula(&core, CoreFormulaId::new(99), &context, &source()),
+            Err(BinderDiagnostic {
+                class: BinderDiagnosticClass::MalformedEvidence,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn raw_core_normalization_enforces_guard_scope_and_normalizes_guards() {
+        let x = var(0);
+        let y = var(1);
+        let mut parts = core_parts();
+        let term_x = push_term(&mut parts, CoreTermKind::Var(x));
+        let term_y = push_term(&mut parts, CoreTermKind::Var(y));
+        let guard_x = push_formula(
+            &mut parts,
+            CoreFormulaKind::TypePred {
+                subject: term_x,
+                ty: predicate_ty("Nat"),
+            },
+        );
+        let guard_y = push_formula(
+            &mut parts,
+            CoreFormulaKind::Equals {
+                left: term_x,
+                right: term_y,
+            },
+        );
+        let body = push_formula(
+            &mut parts,
+            CoreFormulaKind::Equals {
+                left: term_x,
+                right: term_y,
+            },
+        );
+        let forall = push_formula(
+            &mut parts,
+            CoreFormulaKind::Forall {
+                binders: vec![
+                    core_binder(x, Some(guard_x), "display-x"),
+                    core_binder(y, Some(guard_y), "display-y"),
+                ],
+                body,
+            },
+        );
+        let core = CoreIr::try_new(parts).expect("core fixture");
+        let context = context_for(&[(x, NormalizedVarSort::Term), (y, NormalizedVarSort::Term)]);
+        let normalized = normalize_core_formula(&core, forall, &context, &source()).unwrap();
+        validate_normalized_formula(&normalized, &context, &source()).unwrap();
+        assert!(normalized.free_variables.is_empty());
+
+        let NormalizedFormulaKind::Forall { binders, body } = normalized.kind else {
+            panic!("expected forall");
+        };
+        assert_eq!(binders[0].frame.source_name.as_deref(), Some("display-x"));
+        let guard_x = binders[0].ty_guard.as_ref().expect("guard x");
+        assert!(matches!(
+            &guard_x.kind,
+            NormalizedFormulaKind::TypePred {
+                subject,
+                ..
+            } if subject == &NormalizedTerm::bound(0)
+        ));
+        let guard_y = binders[1].ty_guard.as_ref().expect("guard y");
+        assert_eq!(
+            guard_y.as_ref(),
+            &equals(NormalizedTerm::bound(1), NormalizedTerm::bound(0))
+        );
+        assert_eq!(
+            body.as_ref(),
+            &equals(NormalizedTerm::bound(1), NormalizedTerm::bound(0))
+        );
+    }
+
+    #[test]
+    fn raw_core_normalization_rejects_guard_references_to_later_binders() {
+        let x = var(0);
+        let y = var(1);
+        let mut parts = core_parts();
+        let term_y = push_term(&mut parts, CoreTermKind::Var(y));
+        let guard_x = push_formula(
+            &mut parts,
+            CoreFormulaKind::TypePred {
+                subject: term_y,
+                ty: predicate_ty("Nat"),
+            },
+        );
+        let body = push_formula(&mut parts, CoreFormulaKind::True);
+        let forall = push_formula(
+            &mut parts,
+            CoreFormulaKind::Forall {
+                binders: vec![
+                    core_binder(x, Some(guard_x), "x"),
+                    core_binder(y, None, "y"),
+                ],
+                body,
+            },
+        );
+        let core = CoreIr::try_new(parts).expect("core fixture");
+        let context = context_for(&[(x, NormalizedVarSort::Term), (y, NormalizedVarSort::Term)]);
+
+        assert!(matches!(
+            normalize_core_formula(&core, forall, &context, &source()),
+            Err(BinderDiagnostic {
+                class: BinderDiagnosticClass::MalformedEvidence,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn raw_core_normalization_rejects_later_binders_in_generated_origin_params() {
+        let x = var(0);
+        let y = var(1);
+        let mut parts = core_parts();
+        let origin = push_generated(
+            &mut parts,
+            GeneratedOriginKind::LocalAbbreviation,
+            "leaky",
+            vec![y],
+        );
+        let generated = push_term(
+            &mut parts,
+            CoreTermKind::Generated {
+                origin,
+                args: Vec::new(),
+            },
+        );
+        let guard_x = push_formula(
+            &mut parts,
+            CoreFormulaKind::TypePred {
+                subject: generated,
+                ty: predicate_ty("Nat"),
+            },
+        );
+        let body = push_formula(&mut parts, CoreFormulaKind::True);
+        let forall = push_formula(
+            &mut parts,
+            CoreFormulaKind::Forall {
+                binders: vec![
+                    core_binder(x, Some(guard_x), "x"),
+                    core_binder(y, None, "y"),
+                ],
+                body,
+            },
+        );
+        let core = CoreIr::try_new(parts).expect("core fixture");
+        let context = context_for(&[(x, NormalizedVarSort::Term), (y, NormalizedVarSort::Term)]);
+
+        assert!(matches!(
+            normalize_core_formula(&core, forall, &context, &source()),
+            Err(BinderDiagnostic {
+                class: BinderDiagnosticClass::MalformedEvidence,
+                ..
+            })
+        ));
     }
 }

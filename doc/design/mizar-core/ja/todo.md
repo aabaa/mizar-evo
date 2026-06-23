@@ -112,7 +112,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      置換のリグレッションを含める。
    - 依存: 3、4。仕様: `binder_normalization.md`。
 
-6. **alpha 同値と正規化ユーティリティ。** [ ]
+6. **alpha 同値と正規化ユーティリティ。** [x]
    - 決定的な正準形を持つ alpha 同値検査と binder 正規化を実装する。
    - テスト: プロパティテスト（同値の反射・対称・推移性。正規化の冪等性。
      正準形が等しい ⇔ alpha 同値）。
