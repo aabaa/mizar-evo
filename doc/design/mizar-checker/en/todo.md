@@ -493,12 +493,18 @@ Keep `cargo test -p mizar-checker` green after each task (see
       view evidence, or blocked specificity graphs without fabricating success
       or applying additional root-selection tie-breakers.
 
-27. **Spec: `resolved_typed_ast.md`.** [ ]
+27. **Spec: `resolved_typed_ast.md`.** [x]
     - Write the `ResolvedTypedAst` data-shape spec (English and Japanese, no
       code): final types, `OverloadResolutionTable`,
       `CoercionInsertionTable`, `ClusterFactTable`, expression metadata.
     - Deps: 21. Spec: [01.ir_layers.md](../../architecture/en/01.ir_layers.md),
       architecture 05 "Step 6".
+    - Completed by task 27: `resolved_typed_ast.md` defines the final
+      source-shaped semantic AST boundary, node and expression metadata tables,
+      overload resolution projection, coercion insertion metadata, cluster fact
+      references/provenance preservation, failed-site preservation, deterministic rendering
+      expectations, task-28 planned tests, and deferred source-extraction /
+      artifact gaps without code.
 
 28. **`ResolvedTypedAst` assembly.** [ ]
     - Assemble the final source-shaped semantic AST with expression metadata

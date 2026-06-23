@@ -466,12 +466,17 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       blocked specificity graph は成功を捏造せず、additional root-selection
       tie-breaker も適用せず拒否する。
 
-27. **仕様: `resolved_typed_ast.md`。** [ ]
+27. **仕様: `resolved_typed_ast.md`。** [x]
     - `ResolvedTypedAst` のデータ形状仕様を執筆する（英語と日本語、コード
       なし）: 最終型、`OverloadResolutionTable`、`CoercionInsertionTable`、
       `ClusterFactTable`、式メタデータ。
     - 依存: 21。仕様: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)、
       アーキテクチャ 05「Step 6」。
+    - task 27 で完了: `resolved_typed_ast.md` は final source-shaped semantic
+      AST boundary、node / expression metadata table、overload resolution
+      projection、coercion insertion metadata、cluster fact reference / provenance preservation、
+      failed-site preservation、deterministic rendering expectation、task 28 の
+      planned tests、source-extraction / artifact gap を code なしで定義する。
 
 28. **`ResolvedTypedAst` の組み立て。** [ ]
     - LSP と artifact のための式メタデータを備えた最終の source 形状
