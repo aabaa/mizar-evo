@@ -1,24 +1,35 @@
 //! Core elaboration context preparation.
 //!
-//! Implements the task-8 context-preparation slice specified in
+//! Implements the task-8 and task-9 elaboration slices specified in
 //! [elaborator.md](../../../../doc/design/mizar-core/en/elaborator.md).
 
 use crate::{
     binder_normalization::{BinderContext, NormalizedVarClass, NormalizedVarSort},
     core_ir::{
-        CoreDiagnostic, CoreDiagnosticClass, CoreDiagnosticId, CoreDiagnosticMessageKey,
-        CoreDiagnosticRecovery, CoreDiagnosticSeverity, CoreDiagnosticTable, CoreItem, CoreItemId,
-        CoreItemKind, CoreItemStatus, CoreItemTable, CoreNodeRef, CoreProvenance,
-        CoreProvenanceKey, CoreProvenancePhase, CoreSourceAnchor, CoreSourceMap, CoreSourceRef,
+        CoreBinder, CoreDiagnostic, CoreDiagnosticClass, CoreDiagnosticId,
+        CoreDiagnosticMessageKey, CoreDiagnosticRecovery, CoreDiagnosticSeverity,
+        CoreDiagnosticTable, CoreFormula, CoreFormulaId, CoreFormulaKind, CoreFormulaTable,
+        CoreItem, CoreItemId, CoreItemKind, CoreItemStatus, CoreItemTable, CoreNodeRef,
+        CoreProvenance, CoreProvenanceKey, CoreProvenancePhase, CoreSourceAnchor, CoreSourceMap,
+        CoreSourceRef, CoreTerm, CoreTermId, CoreTermKind, CoreTermTable, CoreTypePredicate,
         CoreVarId, CoreVarRole, CoreVisibility, GeneratedOrigin, GeneratedOriginId,
-        GeneratedOriginKey, GeneratedOriginKind, GeneratedOriginTable,
+        GeneratedOriginKey, GeneratedOriginKind, GeneratedOriginTable, LocalProofOrProgramPath,
+        NormalizedSemanticOrigin, ObligationSeed, ObligationSeedId, ObligationSeedKind,
+        ObligationSeedStatus, ObligationSeedTable,
     },
 };
-use mizar_checker::resolved_typed_ast::{
-    OverloadResolutionId, ResolvedNodeRecovery, ResolvedTypedAst, ResolvedTypedDiagnosticId,
-    ResolvedTypedDiagnosticSeverity, ResolvedTypedNodeId, ResolvedTypedNodeKind,
+use mizar_checker::{
+    cluster_trace::ClusterFactId,
+    resolved_typed_ast::{
+        CoercionInsertionId, OverloadResolutionId, ResolvedNodeRecovery, ResolvedTypedAst,
+        ResolvedTypedDiagnosticId, ResolvedTypedDiagnosticSeverity, ResolvedTypedNodeId,
+        ResolvedTypedNodeKind,
+    },
+    typed_ast::{
+        InitialObligationId, InitialObligationKind, NormalizedTypeId, Polarity, TypeDiagnosticId,
+        TypeFactId,
+    },
 };
-use mizar_checker::typed_ast::TypeFactId;
 use mizar_resolve::resolved_ast::{ModuleId, SymbolId};
 use mizar_session::{SourceId, SourceRange};
 use std::{
@@ -1191,9 +1202,890 @@ fn source_order_key(source: &CoreSourceRef) -> SourceOrderKey {
     }
 }
 
+pub type TypeAndFactResult<T> = Result<T, TypeAndFactLoweringError>;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum TypeAndFactLoweringError {
+    MissingOwnerItem {
+        owner: CoreItemId,
+    },
+    UndeclaredSubject {
+        var: CoreVarId,
+    },
+    NonTermSubject {
+        var: CoreVarId,
+        sort: NormalizedVarSort,
+    },
+    ClusterFactMissingCheckerFact {
+        cluster_fact: ClusterFactId,
+    },
+    MissingActiveObligationGoal {
+        obligation: Option<InitialObligationId>,
+    },
+    InactiveObligationWithoutReason {
+        obligation: Option<InitialObligationId>,
+    },
+    UnsupportedPolarity,
+    InvalidSeedProvenance(CoreContextError),
+}
+
+impl fmt::Display for TypeAndFactLoweringError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MissingOwnerItem { owner } => {
+                write!(formatter, "missing core item owner {}", owner.index())
+            }
+            Self::UndeclaredSubject { var } => {
+                write!(
+                    formatter,
+                    "undeclared type/fact subject variable {}",
+                    var.index()
+                )
+            }
+            Self::NonTermSubject { var, sort } => {
+                write!(
+                    formatter,
+                    "type/fact subject variable {} has non-term sort {sort:?}",
+                    var.index()
+                )
+            }
+            Self::ClusterFactMissingCheckerFact { cluster_fact } => {
+                write!(
+                    formatter,
+                    "cluster fact {} is missing its accepted checker type fact",
+                    cluster_fact.index()
+                )
+            }
+            Self::MissingActiveObligationGoal { obligation } => {
+                write!(
+                    formatter,
+                    "active carried obligation {obligation:?} is missing an explicit core goal"
+                )
+            }
+            Self::InactiveObligationWithoutReason { obligation } => {
+                write!(
+                    formatter,
+                    "inactive carried obligation {obligation:?} needs a diagnostic or provenance reason"
+                )
+            }
+            Self::UnsupportedPolarity => write!(formatter, "unsupported checker polarity"),
+            Self::InvalidSeedProvenance(error) => write!(formatter, "{error}"),
+        }
+    }
+}
+
+impl Error for TypeAndFactLoweringError {}
+
+impl From<CoreContextError> for TypeAndFactLoweringError {
+    fn from(value: CoreContextError) -> Self {
+        Self::InvalidSeedProvenance(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TypeAndFactLoweringInput {
+    pub owner: CoreItemId,
+    pub declared_binders: Vec<DeclaredBinderTypeSeed>,
+    pub formula_assertions: Vec<TypePredicateSeed>,
+    pub attribute_chains: Vec<AttributeChainSeed>,
+    pub mode_expansions: Vec<ModeExpansionSeed>,
+    pub cluster_facts: Vec<ClusterFactSeed>,
+    pub view_explanations: Vec<ViewExplanationSeed>,
+    pub reconsiderings: Vec<ReconsideringSeed>,
+    pub carried_obligations: Vec<CarriedInitialObligationSeed>,
+    pub missing_evidence: Vec<MissingEvidenceSeed>,
+}
+
+impl TypeAndFactLoweringInput {
+    pub const fn new(owner: CoreItemId) -> Self {
+        Self {
+            owner,
+            declared_binders: Vec::new(),
+            formula_assertions: Vec::new(),
+            attribute_chains: Vec::new(),
+            mode_expansions: Vec::new(),
+            cluster_facts: Vec::new(),
+            view_explanations: Vec::new(),
+            reconsiderings: Vec::new(),
+            carried_obligations: Vec::new(),
+            missing_evidence: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TypePredicateSeed {
+    pub subject: CoreVarId,
+    pub predicate: CoreTypePredicate,
+    pub polarity: Polarity,
+    pub checker_fact: Option<TypeFactId>,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+impl TypePredicateSeed {
+    pub fn positive(
+        subject: CoreVarId,
+        predicate: impl Into<CoreTypePredicate>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    ) -> Self {
+        Self {
+            subject,
+            predicate: predicate.into(),
+            polarity: Polarity::Positive,
+            checker_fact: None,
+            source,
+            provenance,
+        }
+    }
+
+    pub fn with_checker_fact(mut self, fact: TypeFactId) -> Self {
+        self.checker_fact = Some(fact);
+        self
+    }
+
+    pub fn with_polarity(mut self, polarity: Polarity) -> Self {
+        self.polarity = polarity;
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeclaredBinderTypeSeed {
+    pub var: CoreVarId,
+    pub role: CoreVarRole,
+    pub predicate: CoreTypePredicate,
+    pub source_name: Option<String>,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+impl DeclaredBinderTypeSeed {
+    pub fn new(
+        var: CoreVarId,
+        role: impl Into<CoreVarRole>,
+        predicate: impl Into<CoreTypePredicate>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    ) -> Self {
+        Self {
+            var,
+            role: role.into(),
+            predicate: predicate.into(),
+            source_name: None,
+            source,
+            provenance,
+        }
+    }
+
+    pub fn with_source_name(mut self, source_name: impl Into<String>) -> Self {
+        self.source_name = Some(source_name.into());
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AttributeChainSeed {
+    pub facts: Vec<TypePredicateSeed>,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ModeExpansionSeed {
+    pub subject: CoreVarId,
+    pub normalized_type: NormalizedTypeId,
+    pub predicate: CoreTypePredicate,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ClusterFactSeed {
+    pub cluster_fact: ClusterFactId,
+    pub fact: TypePredicateSeed,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum ViewExplanationKind {
+    SourceQua,
+    InsertedView,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ViewExplanationSeed {
+    pub kind: ViewExplanationKind,
+    pub inserted_view: Option<CoercionInsertionId>,
+    pub target_type: Option<NormalizedTypeId>,
+    pub evidence_facts: Vec<TypeFactId>,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReconsideringSeed {
+    pub var: CoreVarId,
+    pub role: CoreVarRole,
+    pub predicate: Option<CoreTypePredicate>,
+    pub obligation: Option<CarriedInitialObligationSeed>,
+    pub source_name: Option<String>,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+impl ReconsideringSeed {
+    pub fn new(
+        var: CoreVarId,
+        role: impl Into<CoreVarRole>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    ) -> Self {
+        Self {
+            var,
+            role: role.into(),
+            predicate: None,
+            obligation: None,
+            source_name: None,
+            source,
+            provenance,
+        }
+    }
+
+    pub fn with_predicate(mut self, predicate: impl Into<CoreTypePredicate>) -> Self {
+        self.predicate = Some(predicate.into());
+        self
+    }
+
+    pub fn with_obligation(mut self, obligation: CarriedInitialObligationSeed) -> Self {
+        self.obligation = Some(obligation);
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ObligationFormulaSeed {
+    pub subject: CoreVarId,
+    pub predicate: CoreTypePredicate,
+    pub polarity: Polarity,
+    pub source: CoreSourceRef,
+}
+
+impl ObligationFormulaSeed {
+    pub fn positive(
+        subject: CoreVarId,
+        predicate: impl Into<CoreTypePredicate>,
+        source: CoreSourceRef,
+    ) -> Self {
+        Self {
+            subject,
+            predicate: predicate.into(),
+            polarity: Polarity::Positive,
+            source,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CarriedInitialObligationSeed {
+    pub checker_obligation: Option<InitialObligationId>,
+    pub checker_kind: InitialObligationKind,
+    pub status: ObligationSeedStatus,
+    pub goal: Option<ObligationFormulaSeed>,
+    pub context: Vec<ObligationFormulaSeed>,
+    pub local_path: LocalProofOrProgramPath,
+    pub semantic_origin: NormalizedSemanticOrigin,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+impl CarriedInitialObligationSeed {
+    pub fn active(
+        checker_obligation: InitialObligationId,
+        checker_kind: InitialObligationKind,
+        goal: ObligationFormulaSeed,
+        local_path: impl Into<LocalProofOrProgramPath>,
+        semantic_origin: impl Into<NormalizedSemanticOrigin>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    ) -> Self {
+        Self {
+            checker_obligation: Some(checker_obligation),
+            checker_kind,
+            status: ObligationSeedStatus::Active,
+            goal: Some(goal),
+            context: Vec::new(),
+            local_path: local_path.into(),
+            semantic_origin: semantic_origin.into(),
+            source,
+            provenance,
+        }
+    }
+
+    pub fn with_context(mut self, context: Vec<ObligationFormulaSeed>) -> Self {
+        self.context = context;
+        self
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum MissingEvidenceKind {
+    Sethood,
+    NonEmptiness,
+    Coercion,
+    Cluster,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MissingEvidenceSeed {
+    pub kind: MissingEvidenceKind,
+    pub diagnostic: Option<TypeDiagnosticId>,
+    pub deferred_obligation: Option<CarriedInitialObligationSeed>,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TypeAndFactLoweringOutput {
+    pub terms: CoreTermTable,
+    pub formulas: CoreFormulaTable,
+    pub obligation_seeds: ObligationSeedTable,
+    pub source_map: CoreSourceMap,
+    pub diagnostics: CoreDiagnosticTable,
+    pub binder_guards: Vec<LoweredBinderGuard>,
+    pub assumptions: Vec<CoreFormulaId>,
+    pub assertions: Vec<CoreFormulaId>,
+    pub attribute_formulas: Vec<CoreFormulaId>,
+    pub mode_expansions: Vec<LoweredModeExpansion>,
+    pub cluster_facts: Vec<LoweredClusterFact>,
+    pub view_explanations: Vec<ViewExplanation>,
+    pub reconsidered_binders: Vec<ReconsideredBinding>,
+    pub carried_obligations: Vec<ObligationSeedId>,
+    pub missing_evidence: Vec<MissingEvidenceRecord>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LoweredBinderGuard {
+    pub binder: CoreBinder,
+    pub assumption: CoreFormulaId,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LoweredModeExpansion {
+    pub normalized_type: NormalizedTypeId,
+    pub formula: CoreFormulaId,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LoweredClusterFact {
+    pub cluster_fact: ClusterFactId,
+    pub formula: CoreFormulaId,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ViewExplanation {
+    pub kind: ViewExplanationKind,
+    pub inserted_view: Option<CoercionInsertionId>,
+    pub target_type: Option<NormalizedTypeId>,
+    pub evidence_facts: Vec<TypeFactId>,
+    pub source: CoreSourceRef,
+    pub provenance: Vec<CoreProvenance>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReconsideredBinding {
+    pub binder: CoreBinder,
+    pub obligation: Option<ObligationSeedId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MissingEvidenceRecord {
+    pub kind: MissingEvidenceKind,
+    pub checker_diagnostic: Option<TypeDiagnosticId>,
+    pub diagnostic: CoreDiagnosticId,
+    pub obligation: Option<ObligationSeedId>,
+    pub provenance: Vec<CoreProvenance>,
+}
+
+#[derive(Debug, Clone)]
+struct TypeAndFactLoweringState {
+    owner: CoreItemId,
+    terms: CoreTermTable,
+    formulas: CoreFormulaTable,
+    obligation_seeds: ObligationSeedTable,
+    source_map: CoreSourceMap,
+    diagnostics: CoreDiagnosticTable,
+}
+
+impl TypeAndFactLoweringState {
+    fn new(owner: CoreItemId) -> Self {
+        Self {
+            owner,
+            terms: CoreTermTable::new(),
+            formulas: CoreFormulaTable::new(),
+            obligation_seeds: ObligationSeedTable::new(),
+            source_map: CoreSourceMap::new(),
+            diagnostics: CoreDiagnosticTable::new(),
+        }
+    }
+
+    fn insert_var_term(&mut self, var: CoreVarId, source: CoreSourceRef) -> CoreTermId {
+        let source = normalized_source(source);
+        let id = self
+            .terms
+            .insert(CoreTerm::new(CoreTermKind::Var(var), source.clone()));
+        self.source_map.term_sources.insert(id, source);
+        id
+    }
+
+    fn insert_formula(&mut self, kind: CoreFormulaKind, source: CoreSourceRef) -> CoreFormulaId {
+        let source = normalized_source(source);
+        let id = self.formulas.insert(CoreFormula::new(kind, source.clone()));
+        self.source_map.formula_sources.insert(id, source);
+        id
+    }
+
+    fn insert_type_predicate(
+        &mut self,
+        seed: &TypePredicateSeed,
+    ) -> TypeAndFactResult<CoreFormulaId> {
+        let subject = self.insert_var_term(seed.subject, seed.source.clone());
+        let positive = self.insert_formula(
+            CoreFormulaKind::TypePred {
+                subject,
+                ty: seed.predicate.clone(),
+            },
+            seed.source.clone(),
+        );
+        Ok(match seed.polarity {
+            Polarity::Positive => positive,
+            Polarity::Negative => {
+                self.insert_formula(CoreFormulaKind::Not(positive), seed.source.clone())
+            }
+            _ => return Err(TypeAndFactLoweringError::UnsupportedPolarity),
+        })
+    }
+
+    fn insert_obligation_formula(
+        &mut self,
+        seed: &ObligationFormulaSeed,
+    ) -> TypeAndFactResult<CoreFormulaId> {
+        let fact = TypePredicateSeed {
+            subject: seed.subject,
+            predicate: seed.predicate.clone(),
+            polarity: seed.polarity,
+            checker_fact: None,
+            source: seed.source.clone(),
+            provenance: CheckerOwnedProvenance::checker("obligation-formula"),
+        };
+        self.insert_type_predicate(&fact)
+    }
+
+    fn insert_diagnostic(
+        &mut self,
+        class: CoreDiagnosticClass,
+        severity: CoreDiagnosticSeverity,
+        recovery: CoreDiagnosticRecovery,
+        message_key: impl Into<CoreDiagnosticMessageKey>,
+        source: CoreSourceRef,
+    ) -> CoreDiagnosticId {
+        self.diagnostics.insert(diagnostic(
+            class,
+            severity,
+            recovery,
+            message_key,
+            source,
+            Some(CoreNodeRef::Item(self.owner)),
+        ))
+    }
+}
+
+pub fn lower_type_and_fact_inputs(
+    context: &CoreContext,
+    input: TypeAndFactLoweringInput,
+) -> TypeAndFactResult<TypeAndFactLoweringOutput> {
+    if context.item_registry().items().get(input.owner).is_none() {
+        return Err(TypeAndFactLoweringError::MissingOwnerItem { owner: input.owner });
+    }
+    validate_type_and_fact_input(context, &input)?;
+
+    let mut state = TypeAndFactLoweringState::new(input.owner);
+    let mut binder_guards = Vec::new();
+    let mut assumptions = Vec::new();
+    for seed in input.declared_binders {
+        let predicate = TypePredicateSeed::positive(
+            seed.var,
+            seed.predicate.clone(),
+            seed.source.clone(),
+            seed.provenance.clone(),
+        );
+        let guard = state.insert_type_predicate(&predicate)?;
+        let binder = CoreBinder {
+            var: seed.var,
+            role: seed.role,
+            ty_guard: Some(guard),
+            source_name: seed.source_name,
+            source: normalized_source(seed.source),
+        };
+        assumptions.push(guard);
+        binder_guards.push(LoweredBinderGuard {
+            binder,
+            assumption: guard,
+        });
+    }
+
+    let mut assertions = Vec::new();
+    for seed in input.formula_assertions {
+        assertions.push(state.insert_type_predicate(&seed)?);
+    }
+
+    let mut attribute_formulas = Vec::new();
+    for mut chain in input.attribute_chains {
+        chain.facts.sort_by(attribute_fact_cmp);
+        let mut formulas = Vec::new();
+        for fact in &chain.facts {
+            formulas.push(state.insert_type_predicate(fact)?);
+        }
+        let lowered = match formulas.as_slice() {
+            [] => state.insert_formula(CoreFormulaKind::True, chain.source.clone()),
+            [single] => *single,
+            _ => state.insert_formula(CoreFormulaKind::And(formulas), chain.source.clone()),
+        };
+        attribute_formulas.push(lowered);
+    }
+
+    let mut mode_expansions = Vec::new();
+    for seed in input.mode_expansions {
+        let fact =
+            TypePredicateSeed::positive(seed.subject, seed.predicate, seed.source, seed.provenance);
+        let formula = state.insert_type_predicate(&fact)?;
+        mode_expansions.push(LoweredModeExpansion {
+            normalized_type: seed.normalized_type,
+            formula,
+        });
+    }
+
+    let mut cluster_facts = Vec::new();
+    for seed in input.cluster_facts {
+        let formula = state.insert_type_predicate(&seed.fact)?;
+        cluster_facts.push(LoweredClusterFact {
+            cluster_fact: seed.cluster_fact,
+            formula,
+        });
+    }
+
+    let mut view_explanations = Vec::new();
+    for mut seed in input.view_explanations {
+        seed.evidence_facts.sort();
+        seed.evidence_facts.dedup();
+        view_explanations.push(ViewExplanation {
+            kind: seed.kind,
+            inserted_view: seed.inserted_view,
+            target_type: seed.target_type,
+            evidence_facts: seed.evidence_facts,
+            source: normalized_source(seed.source),
+            provenance: seed.provenance.as_slice().to_vec(),
+        });
+    }
+
+    let mut reconsidered_binders = Vec::new();
+    for seed in input.reconsiderings {
+        let guard = if let Some(predicate) = seed.predicate {
+            let fact = TypePredicateSeed::positive(
+                seed.var,
+                predicate,
+                seed.source.clone(),
+                seed.provenance.clone(),
+            );
+            Some(state.insert_type_predicate(&fact)?)
+        } else {
+            None
+        };
+        let obligation = if let Some(obligation) = seed.obligation {
+            Some(insert_carried_obligation(&mut state, obligation)?)
+        } else {
+            None
+        };
+        reconsidered_binders.push(ReconsideredBinding {
+            binder: CoreBinder {
+                var: seed.var,
+                role: seed.role,
+                ty_guard: guard,
+                source_name: seed.source_name,
+                source: normalized_source(seed.source),
+            },
+            obligation,
+        });
+    }
+
+    let mut carried_obligations = Vec::new();
+    for seed in input.carried_obligations {
+        carried_obligations.push(insert_carried_obligation(&mut state, seed)?);
+    }
+
+    let mut missing_evidence = Vec::new();
+    for seed in input.missing_evidence {
+        let diagnostic_id = state.insert_diagnostic(
+            CoreDiagnosticClass::UnresolvedSemanticInput,
+            CoreDiagnosticSeverity::Error,
+            CoreDiagnosticRecovery::Partial,
+            missing_evidence_message_key(seed.kind),
+            seed.source.clone(),
+        );
+        let obligation = if let Some(mut obligation) = seed.deferred_obligation {
+            obligation.status = match obligation.status {
+                ObligationSeedStatus::Active => ObligationSeedStatus::Deferred,
+                status => status,
+            };
+            Some(insert_carried_obligation_with_diagnostics(
+                &mut state,
+                obligation,
+                vec![diagnostic_id],
+            )?)
+        } else {
+            None
+        };
+        missing_evidence.push(MissingEvidenceRecord {
+            kind: seed.kind,
+            checker_diagnostic: seed.diagnostic,
+            diagnostic: diagnostic_id,
+            obligation,
+            provenance: seed.provenance.as_slice().to_vec(),
+        });
+    }
+
+    Ok(TypeAndFactLoweringOutput {
+        terms: state.terms,
+        formulas: state.formulas,
+        obligation_seeds: state.obligation_seeds,
+        source_map: state.source_map,
+        diagnostics: state.diagnostics,
+        binder_guards,
+        assumptions,
+        assertions,
+        attribute_formulas,
+        mode_expansions,
+        cluster_facts,
+        view_explanations,
+        reconsidered_binders,
+        carried_obligations,
+        missing_evidence,
+    })
+}
+
+fn validate_type_and_fact_input(
+    context: &CoreContext,
+    input: &TypeAndFactLoweringInput,
+) -> TypeAndFactResult<()> {
+    for seed in &input.declared_binders {
+        ensure_declared_subject(context, seed.var)?;
+        validate_checker_owned_provenance("declared binder type seed", seed.provenance.as_slice())?;
+    }
+    for seed in &input.formula_assertions {
+        validate_predicate_seed(context, "formula assertion seed", seed)?;
+    }
+    for chain in &input.attribute_chains {
+        validate_checker_owned_provenance("attribute chain seed", chain.provenance.as_slice())?;
+        for fact in &chain.facts {
+            validate_predicate_seed(context, "attribute fact seed", fact)?;
+        }
+    }
+    for seed in &input.mode_expansions {
+        ensure_declared_subject(context, seed.subject)?;
+        validate_checker_owned_provenance("mode expansion seed", seed.provenance.as_slice())?;
+    }
+    for seed in &input.cluster_facts {
+        validate_predicate_seed(context, "cluster fact seed", &seed.fact)?;
+        if seed.fact.checker_fact.is_none() {
+            return Err(TypeAndFactLoweringError::ClusterFactMissingCheckerFact {
+                cluster_fact: seed.cluster_fact,
+            });
+        }
+    }
+    for seed in &input.view_explanations {
+        validate_checker_owned_provenance("view explanation seed", seed.provenance.as_slice())?;
+    }
+    for seed in &input.reconsiderings {
+        validate_checker_owned_provenance("reconsidering seed", seed.provenance.as_slice())?;
+        ensure_declared_subject(context, seed.var)?;
+        if let Some(obligation) = &seed.obligation {
+            validate_carried_obligation_seed(context, obligation, true)?;
+        }
+    }
+    for seed in &input.carried_obligations {
+        validate_carried_obligation_seed(context, seed, true)?;
+    }
+    for seed in &input.missing_evidence {
+        validate_checker_owned_provenance("missing evidence seed", seed.provenance.as_slice())?;
+        if let Some(obligation) = &seed.deferred_obligation {
+            validate_carried_obligation_seed(context, obligation, true)?;
+        }
+    }
+    Ok(())
+}
+
+fn validate_predicate_seed(
+    context: &CoreContext,
+    input: &'static str,
+    seed: &TypePredicateSeed,
+) -> TypeAndFactResult<()> {
+    ensure_declared_subject(context, seed.subject)?;
+    validate_checker_owned_provenance(input, seed.provenance.as_slice())?;
+    Ok(())
+}
+
+fn validate_carried_obligation_seed(
+    context: &CoreContext,
+    seed: &CarriedInitialObligationSeed,
+    allow_goal_subjects_from_context: bool,
+) -> TypeAndFactResult<()> {
+    validate_checker_owned_provenance("carried obligation seed", seed.provenance.as_slice())?;
+    if seed.status == ObligationSeedStatus::Active && seed.goal.is_none() {
+        return Err(TypeAndFactLoweringError::MissingActiveObligationGoal {
+            obligation: seed.checker_obligation,
+        });
+    }
+    if seed.status != ObligationSeedStatus::Active
+        && seed.goal.is_none()
+        && seed.provenance.as_slice().is_empty()
+    {
+        return Err(TypeAndFactLoweringError::InactiveObligationWithoutReason {
+            obligation: seed.checker_obligation,
+        });
+    }
+    if allow_goal_subjects_from_context {
+        if let Some(goal) = &seed.goal {
+            ensure_declared_subject(context, goal.subject)?;
+        }
+        for fact in &seed.context {
+            ensure_declared_subject(context, fact.subject)?;
+        }
+    }
+    Ok(())
+}
+
+fn ensure_declared_subject(context: &CoreContext, var: CoreVarId) -> TypeAndFactResult<()> {
+    if !context.binder_context().free_variables.contains(&var) {
+        return Err(TypeAndFactLoweringError::UndeclaredSubject { var });
+    }
+    match context.binder_context().variable_sorts.get(&var) {
+        Some(NormalizedVarSort::Term) => Ok(()),
+        Some(sort) => Err(TypeAndFactLoweringError::NonTermSubject { var, sort: *sort }),
+        None => Err(TypeAndFactLoweringError::UndeclaredSubject { var }),
+    }
+}
+
+fn insert_carried_obligation(
+    state: &mut TypeAndFactLoweringState,
+    seed: CarriedInitialObligationSeed,
+) -> TypeAndFactResult<ObligationSeedId> {
+    insert_carried_obligation_with_diagnostics(state, seed, Vec::new())
+}
+
+fn insert_carried_obligation_with_diagnostics(
+    state: &mut TypeAndFactLoweringState,
+    seed: CarriedInitialObligationSeed,
+    diagnostics: Vec<CoreDiagnosticId>,
+) -> TypeAndFactResult<ObligationSeedId> {
+    if seed.status == ObligationSeedStatus::Active && seed.goal.is_none() {
+        return Err(TypeAndFactLoweringError::MissingActiveObligationGoal {
+            obligation: seed.checker_obligation,
+        });
+    }
+    if seed.status != ObligationSeedStatus::Active
+        && seed.goal.is_none()
+        && diagnostics.is_empty()
+        && seed.provenance.as_slice().is_empty()
+    {
+        return Err(TypeAndFactLoweringError::InactiveObligationWithoutReason {
+            obligation: seed.checker_obligation,
+        });
+    }
+
+    let goal = seed
+        .goal
+        .as_ref()
+        .map(|goal| state.insert_obligation_formula(goal))
+        .transpose()?;
+    let mut context_formulas = Vec::new();
+    for fact in &seed.context {
+        context_formulas.push(state.insert_obligation_formula(fact)?);
+    }
+    let mut provenance = seed.provenance.as_slice().to_vec();
+    if let Some(obligation) = seed.checker_obligation {
+        provenance.push(CoreProvenance::new(
+            CoreProvenancePhase::Checker,
+            format!("initial-obligation#{}", obligation.index()),
+        ));
+    }
+    provenance.sort();
+    provenance.dedup();
+    let mut core_refs = vec![CoreNodeRef::Item(state.owner)];
+    if let Some(goal) = goal {
+        core_refs.push(CoreNodeRef::Formula(goal));
+    }
+    for formula in &context_formulas {
+        core_refs.push(CoreNodeRef::Formula(*formula));
+    }
+
+    let source = normalized_source(seed.source);
+    let obligation = ObligationSeed {
+        owner: state.owner,
+        kind: map_initial_obligation_kind(seed.checker_kind),
+        goal,
+        context: context_formulas,
+        local_path: seed.local_path,
+        label: None,
+        semantic_origin: seed.semantic_origin,
+        provenance,
+        source: source.clone(),
+        core_refs,
+        status: seed.status,
+        diagnostics,
+    };
+    let id = state.obligation_seeds.insert(obligation);
+    state.source_map.obligation_sources.insert(id, source);
+    Ok(id)
+}
+
+fn attribute_fact_cmp(left: &TypePredicateSeed, right: &TypePredicateSeed) -> std::cmp::Ordering {
+    left.predicate
+        .cmp(&right.predicate)
+        .then_with(|| left.polarity.cmp(&right.polarity))
+        .then_with(|| source_order_key(&left.source).cmp(&source_order_key(&right.source)))
+        .then_with(|| left.checker_fact.cmp(&right.checker_fact))
+}
+
+fn map_initial_obligation_kind(kind: InitialObligationKind) -> ObligationSeedKind {
+    match kind {
+        InitialObligationKind::Sethood => ObligationSeedKind::GeneratedSethood,
+        InitialObligationKind::NonEmptiness => ObligationSeedKind::GeneratedNonEmptiness,
+        InitialObligationKind::Narrowing | InitialObligationKind::RegistrationCorrectness => {
+            ObligationSeedKind::CheckerInitial
+        }
+        _ => ObligationSeedKind::CheckerInitial,
+    }
+}
+
+fn missing_evidence_message_key(kind: MissingEvidenceKind) -> &'static str {
+    match kind {
+        MissingEvidenceKind::Sethood => "missing-sethood-evidence",
+        MissingEvidenceKind::NonEmptiness => "missing-non-emptiness-evidence",
+        MissingEvidenceKind::Coercion => "missing-coercion-evidence",
+        MissingEvidenceKind::Cluster => "missing-cluster-evidence",
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core_ir::{
+        CoreAlgorithmStmtTable, CoreAlgorithmTable, CoreDefinitionTable, CoreIr, CoreIrParts,
+        CoreProofNodeTable, CoreProofTable,
+    };
     use mizar_resolve::resolved_ast::{FullyQualifiedName, LocalSymbolId};
     use mizar_session::{
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
@@ -1273,6 +2165,527 @@ mod tests {
             provenance(format!("checker:item:{name}").as_str()),
         )
         .with_definition_boundary(DefinitionBoundaryKind::Theorem)
+    }
+
+    fn context_with_var(var: CoreVarId) -> (CoreContext, CoreItemId) {
+        context_with_var_sort(var, NormalizedVarSort::Term)
+    }
+
+    fn context_with_var_sort(var: CoreVarId, sort: NormalizedVarSort) -> (CoreContext, CoreItemId) {
+        let mut input = input_with_items(vec![item_seed("Owner", 0)]);
+        input.variable_seeds = vec![CoreVariableSeed::new(
+            var,
+            NormalizedVarClass::Free,
+            "term-binder",
+            sort,
+            provenance("checker:var"),
+        )];
+        input.binder_seeds = vec![CoreBinderSeed::new(
+            var,
+            direct(1, 2),
+            provenance("checker:binder"),
+        )];
+        let context = prepare_core_context(input).expect("context");
+        let owner = context
+            .item_registry()
+            .id_for_symbol(&symbol("Owner"))
+            .expect("owner id");
+        (context, owner)
+    }
+
+    fn type_fact(
+        subject: CoreVarId,
+        predicate: &str,
+        start: usize,
+        polarity: Polarity,
+    ) -> TypePredicateSeed {
+        TypePredicateSeed::positive(
+            subject,
+            CoreTypePredicate::new(predicate),
+            direct(start, start + 1),
+            provenance(format!("checker:fact:{predicate}").as_str()),
+        )
+        .with_polarity(polarity)
+    }
+
+    fn active_obligation(
+        subject: CoreVarId,
+        predicate: &str,
+        start: usize,
+    ) -> CarriedInitialObligationSeed {
+        CarriedInitialObligationSeed::active(
+            InitialObligationId::new(start),
+            InitialObligationKind::Narrowing,
+            ObligationFormulaSeed::positive(subject, predicate, direct(start, start + 1)),
+            format!("type-obligation/{start}"),
+            format!("pkg::main::Owner.type-obligation.{start}"),
+            direct(start, start + 1),
+            provenance(format!("checker:obligation:{start}").as_str()),
+        )
+    }
+
+    fn assert_step2_delta_valid(context: &CoreContext, output: &TypeAndFactLoweringOutput) {
+        let mut source_map = output.source_map.clone();
+        source_map.item_sources = context.source_map().item_sources.clone();
+        let parts = CoreIrParts {
+            source_id: context.source_id(),
+            module_id: context.module_id().clone(),
+            items: context.item_registry().items().clone(),
+            terms: output.terms.clone(),
+            formulas: output.formulas.clone(),
+            definitions: CoreDefinitionTable::new(),
+            proofs: CoreProofTable::new(),
+            proof_nodes: CoreProofNodeTable::new(),
+            algorithms: CoreAlgorithmTable::new(),
+            algorithm_statements: CoreAlgorithmStmtTable::new(),
+            generated: GeneratedOriginTable::new(),
+            obligation_seeds: output.obligation_seeds.clone(),
+            source_map,
+            diagnostics: output.diagnostics.clone(),
+        };
+        CoreIr::try_new(parts).expect("step 2 delta validates when merged with context items");
+    }
+
+    fn assert_type_predicate(
+        output: &TypeAndFactLoweringOutput,
+        formula: CoreFormulaId,
+        expected_var: CoreVarId,
+        expected_predicate: &str,
+    ) {
+        let CoreFormulaKind::TypePred { subject, ty } =
+            &output.formulas.get(formula).expect("type predicate").kind
+        else {
+            panic!("expected TypePred");
+        };
+        assert_eq!(ty.as_str(), expected_predicate);
+        assert!(matches!(
+            output.terms.get(*subject).expect("subject term").kind,
+            CoreTermKind::Var(var) if var == expected_var
+        ));
+    }
+
+    #[test]
+    fn declared_binder_type_lowers_to_guard_and_assumption() {
+        let var = CoreVarId::new(0);
+        let (context, owner) = context_with_var(var);
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.declared_binders = vec![
+            DeclaredBinderTypeSeed::new(
+                var,
+                "term-binder",
+                "Nat",
+                direct(2, 5),
+                provenance("checker:declared-type"),
+            )
+            .with_source_name("x"),
+        ];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+        let guard = output.binder_guards[0].binder.ty_guard.expect("guard");
+
+        assert_eq!(output.assumptions, vec![guard]);
+        assert_eq!(output.binder_guards[0].assumption, guard);
+        assert_eq!(
+            output.binder_guards[0].binder.source_name.as_deref(),
+            Some("x")
+        );
+        assert_type_predicate(&output, guard, var, "Nat");
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn formula_assertion_lowers_to_type_predicate_formula() {
+        let var = CoreVarId::new(0);
+        let (context, owner) = context_with_var(var);
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.formula_assertions = vec![type_fact(var, "set", 6, Polarity::Positive)];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+        let assertion = output.assertions[0];
+
+        assert_type_predicate(&output, assertion, var, "set");
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn attribute_chains_lower_polarity_and_deterministic_conjunction_order() {
+        let var = CoreVarId::new(0);
+        let (context, owner) = context_with_var(var);
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.attribute_chains = vec![AttributeChainSeed {
+            facts: vec![
+                type_fact(var, "Z", 10, Polarity::Positive),
+                type_fact(var, "A", 8, Polarity::Negative),
+            ],
+            source: direct(8, 12),
+            provenance: provenance("checker:attribute-chain"),
+        }];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+        let conjunction = output.attribute_formulas[0];
+        let CoreFormulaKind::And(children) = &output.formulas.get(conjunction).expect("and").kind
+        else {
+            panic!("expected conjunction");
+        };
+        assert_eq!(children.len(), 2);
+        let CoreFormulaKind::Not(negative_atom) =
+            output.formulas.get(children[0]).expect("negative").kind
+        else {
+            panic!("expected negative attribute");
+        };
+        assert_type_predicate(&output, negative_atom, var, "A");
+        assert_type_predicate(&output, children[1], var, "Z");
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn mode_expansion_uses_checker_normalized_type_id() {
+        let var = CoreVarId::new(0);
+        let (context, owner) = context_with_var(var);
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.mode_expansions = vec![ModeExpansionSeed {
+            subject: var,
+            normalized_type: NormalizedTypeId::new(42),
+            predicate: CoreTypePredicate::new("mode:Element"),
+            source: direct(12, 15),
+            provenance: provenance("checker:mode-expansion"),
+        }];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+        let lowered = &output.mode_expansions[0];
+
+        assert_eq!(lowered.normalized_type, NormalizedTypeId::new(42));
+        assert_type_predicate(&output, lowered.formula, var, "mode:Element");
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn cluster_facts_lower_without_registration_activation() {
+        let var = CoreVarId::new(0);
+        let (context, owner) = context_with_var(var);
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.cluster_facts = vec![ClusterFactSeed {
+            cluster_fact: ClusterFactId::new(3),
+            fact: type_fact(var, "cluster:inhabited", 16, Polarity::Positive)
+                .with_checker_fact(TypeFactId::new(5)),
+        }];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+
+        assert_eq!(output.cluster_facts.len(), 1);
+        assert_eq!(output.cluster_facts[0].cluster_fact, ClusterFactId::new(3));
+        assert_type_predicate(
+            &output,
+            output.cluster_facts[0].formula,
+            var,
+            "cluster:inhabited",
+        );
+        assert!(output.obligation_seeds.is_empty());
+        assert!(output.diagnostics.is_empty());
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn qua_and_inserted_views_record_provenance_without_cast_or_proof_steps() {
+        let var = CoreVarId::new(0);
+        let (context, owner) = context_with_var(var);
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.view_explanations = vec![
+            ViewExplanationSeed {
+                kind: ViewExplanationKind::SourceQua,
+                inserted_view: None,
+                target_type: Some(NormalizedTypeId::new(1)),
+                evidence_facts: vec![TypeFactId::new(2), TypeFactId::new(1), TypeFactId::new(1)],
+                source: direct(20, 23),
+                provenance: provenance("checker:view:source-qua"),
+            },
+            ViewExplanationSeed {
+                kind: ViewExplanationKind::InsertedView,
+                inserted_view: Some(CoercionInsertionId::new(0)),
+                target_type: Some(NormalizedTypeId::new(2)),
+                evidence_facts: vec![TypeFactId::new(4)],
+                source: direct(24, 25),
+                provenance: provenance("checker:view:inserted"),
+            },
+        ];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+
+        assert!(output.terms.is_empty());
+        assert!(output.formulas.is_empty());
+        assert!(output.obligation_seeds.is_empty());
+        assert_eq!(
+            output.view_explanations[0].kind,
+            ViewExplanationKind::SourceQua
+        );
+        assert_eq!(
+            output.view_explanations[0].target_type,
+            Some(NormalizedTypeId::new(1))
+        );
+        assert_eq!(output.view_explanations[0].source, direct(20, 23));
+        assert_eq!(
+            output.view_explanations[0].provenance,
+            vec![CoreProvenance::new(
+                CoreProvenancePhase::Checker,
+                "checker:view:source-qua"
+            )]
+        );
+        assert_eq!(
+            output.view_explanations[0].evidence_facts,
+            vec![TypeFactId::new(1), TypeFactId::new(2)]
+        );
+        assert_eq!(
+            output.view_explanations[1].kind,
+            ViewExplanationKind::InsertedView
+        );
+        assert_eq!(
+            output.view_explanations[1].inserted_view,
+            Some(CoercionInsertionId::new(0))
+        );
+        assert_eq!(
+            output.view_explanations[1].target_type,
+            Some(NormalizedTypeId::new(2))
+        );
+        assert_eq!(
+            output.view_explanations[1].evidence_facts,
+            vec![TypeFactId::new(4)]
+        );
+        assert_eq!(output.view_explanations[1].source, direct(24, 25));
+        assert_eq!(
+            output.view_explanations[1].provenance,
+            vec![CoreProvenance::new(
+                CoreProvenancePhase::Checker,
+                "checker:view:inserted"
+            )]
+        );
+    }
+
+    #[test]
+    fn reconsidering_carries_checker_obligation_seed() {
+        let var = CoreVarId::new(0);
+        let (context, owner) = context_with_var(var);
+        let obligation = active_obligation(var, "narrowed:Nat", 30);
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.reconsiderings = vec![
+            ReconsideringSeed::new(
+                var,
+                "term-binder",
+                direct(28, 31),
+                provenance("checker:reconsider"),
+            )
+            .with_predicate("narrowed:Nat")
+            .with_obligation(obligation),
+        ];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+        let reconsidered = &output.reconsidered_binders[0];
+        let obligation = reconsidered.obligation.expect("obligation");
+        let seed = output
+            .obligation_seeds
+            .get(obligation)
+            .expect("obligation seed");
+
+        assert_eq!(reconsidered.binder.var, var);
+        assert_eq!(reconsidered.binder.role, CoreVarRole::new("term-binder"));
+        assert_eq!(reconsidered.binder.source, direct(28, 31));
+        assert!(reconsidered.binder.ty_guard.is_some());
+        assert_type_predicate(
+            &output,
+            reconsidered.binder.ty_guard.expect("guard"),
+            var,
+            "narrowed:Nat",
+        );
+        assert_eq!(seed.status, ObligationSeedStatus::Active);
+        assert_eq!(seed.kind, ObligationSeedKind::CheckerInitial);
+        assert!(seed.goal.is_some());
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn standalone_carried_obligations_populate_output_vector() {
+        let var = CoreVarId::new(0);
+        let (context, owner) = context_with_var(var);
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.carried_obligations = vec![active_obligation(var, "standalone:goal", 34)];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+        let obligation = output.carried_obligations[0];
+        let seed = output
+            .obligation_seeds
+            .get(obligation)
+            .expect("obligation seed");
+
+        assert_eq!(output.carried_obligations, vec![obligation]);
+        assert_eq!(seed.status, ObligationSeedStatus::Active);
+        assert!(seed.goal.is_some());
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn missing_evidence_emits_diagnostic_and_deferred_seed_without_proving() {
+        let var = CoreVarId::new(0);
+        let (context, owner) = context_with_var(var);
+        let deferred = CarriedInitialObligationSeed {
+            checker_obligation: Some(InitialObligationId::new(99)),
+            checker_kind: InitialObligationKind::Sethood,
+            status: ObligationSeedStatus::Deferred,
+            goal: None,
+            context: vec![ObligationFormulaSeed::positive(var, "set", direct(35, 36))],
+            local_path: LocalProofOrProgramPath::new("type/missing/sethood"),
+            semantic_origin: NormalizedSemanticOrigin::new("pkg::main::Owner.missing-sethood"),
+            source: direct(35, 36),
+            provenance: provenance("checker:missing:sethood"),
+        };
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.missing_evidence = vec![MissingEvidenceSeed {
+            kind: MissingEvidenceKind::Sethood,
+            diagnostic: Some(TypeDiagnosticId::new(7)),
+            deferred_obligation: Some(deferred),
+            source: direct(35, 36),
+            provenance: provenance("checker:missing-evidence"),
+        }];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+        let missing = &output.missing_evidence[0];
+        let diagnostic = output
+            .diagnostics
+            .get(missing.diagnostic)
+            .expect("diagnostic");
+        let obligation = missing.obligation.expect("deferred seed");
+        let seed = output
+            .obligation_seeds
+            .get(obligation)
+            .expect("obligation seed");
+
+        assert_eq!(missing.checker_diagnostic, Some(TypeDiagnosticId::new(7)));
+        assert!(!missing.provenance.is_empty());
+        assert_eq!(diagnostic.message_key.as_str(), "missing-sethood-evidence");
+        assert_eq!(seed.status, ObligationSeedStatus::Deferred);
+        assert_eq!(seed.kind, ObligationSeedKind::GeneratedSethood);
+        assert!(seed.goal.is_none());
+        assert_eq!(seed.diagnostics, vec![missing.diagnostic]);
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn missing_evidence_matrix_preserves_each_required_category() {
+        let var = CoreVarId::new(0);
+        let (context, owner) = context_with_var(var);
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.missing_evidence = vec![
+            MissingEvidenceSeed {
+                kind: MissingEvidenceKind::NonEmptiness,
+                diagnostic: Some(TypeDiagnosticId::new(11)),
+                deferred_obligation: None,
+                source: direct(40, 41),
+                provenance: provenance("checker:missing:non-empty"),
+            },
+            MissingEvidenceSeed {
+                kind: MissingEvidenceKind::Coercion,
+                diagnostic: Some(TypeDiagnosticId::new(12)),
+                deferred_obligation: None,
+                source: direct(42, 43),
+                provenance: provenance("checker:missing:coercion"),
+            },
+            MissingEvidenceSeed {
+                kind: MissingEvidenceKind::Cluster,
+                diagnostic: Some(TypeDiagnosticId::new(13)),
+                deferred_obligation: None,
+                source: direct(44, 45),
+                provenance: provenance("checker:missing:cluster"),
+            },
+        ];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+        let messages = output
+            .missing_evidence
+            .iter()
+            .map(|missing| {
+                output
+                    .diagnostics
+                    .get(missing.diagnostic)
+                    .expect("diagnostic")
+                    .message_key
+                    .as_str()
+                    .to_owned()
+            })
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            messages,
+            vec![
+                "missing-non-emptiness-evidence",
+                "missing-coercion-evidence",
+                "missing-cluster-evidence"
+            ]
+        );
+        assert_eq!(
+            output
+                .missing_evidence
+                .iter()
+                .map(|missing| missing.checker_diagnostic)
+                .collect::<Vec<_>>(),
+            vec![
+                Some(TypeDiagnosticId::new(11)),
+                Some(TypeDiagnosticId::new(12)),
+                Some(TypeDiagnosticId::new(13))
+            ]
+        );
+        assert!(output.obligation_seeds.is_empty());
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn type_fact_subject_must_be_declared_term_variable() {
+        let var = CoreVarId::new(0);
+        let (formula_context, owner) = context_with_var_sort(var, NormalizedVarSort::Formula);
+        let mut formula_input = TypeAndFactLoweringInput::new(owner);
+        formula_input.formula_assertions = vec![type_fact(var, "set", 50, Polarity::Positive)];
+
+        assert!(matches!(
+            lower_type_and_fact_inputs(&formula_context, formula_input),
+            Err(TypeAndFactLoweringError::NonTermSubject { var: actual, sort: NormalizedVarSort::Formula })
+                if actual == var
+        ));
+
+        let (context, owner) = context_with_var(CoreVarId::new(1));
+        let mut undeclared_input = TypeAndFactLoweringInput::new(owner);
+        undeclared_input.formula_assertions =
+            vec![type_fact(CoreVarId::new(99), "set", 51, Polarity::Positive)];
+
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, undeclared_input),
+            Err(TypeAndFactLoweringError::UndeclaredSubject { var }) if var == CoreVarId::new(99)
+        ));
+    }
+
+    #[test]
+    fn reconsidering_and_cluster_facts_enforce_checker_boundaries() {
+        let var = CoreVarId::new(0);
+        let (context, owner) = context_with_var(var);
+
+        let mut reconsidering_input = TypeAndFactLoweringInput::new(owner);
+        reconsidering_input.reconsiderings = vec![ReconsideringSeed::new(
+            CoreVarId::new(77),
+            "term-binder",
+            direct(52, 53),
+            provenance("checker:bad-reconsider"),
+        )];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, reconsidering_input),
+            Err(TypeAndFactLoweringError::UndeclaredSubject { var }) if var == CoreVarId::new(77)
+        ));
+
+        let mut cluster_input = TypeAndFactLoweringInput::new(owner);
+        cluster_input.cluster_facts = vec![ClusterFactSeed {
+            cluster_fact: ClusterFactId::new(9),
+            fact: type_fact(var, "cluster:accepted-only", 54, Polarity::Positive),
+        }];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, cluster_input),
+            Err(TypeAndFactLoweringError::ClusterFactMissingCheckerFact { cluster_fact })
+                if cluster_fact == ClusterFactId::new(9)
+        ));
     }
 
     #[test]

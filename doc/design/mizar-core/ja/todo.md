@@ -135,7 +135,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
    - 依存: 3、7、`mizar-checker` task 28。仕様: `elaborator.md`
      （コンテキストの節）。
 
-9. **型と事実の lowering。** [ ]
+9. **型と事実の lowering。** [x]
    - Step 2 を実装する: soft type と型事実を消去規則に従って明示的な
      型述語と仮定へ下ろす。
    - テスト: 各消去規則にフィクスチャがある。黙った消去がない（捨てられる

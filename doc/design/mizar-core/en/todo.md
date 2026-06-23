@@ -141,7 +141,7 @@ Keep `cargo test -p mizar-core` green after each task (see
    - Deps: 3, 7, `mizar-checker` task 28. Spec: `elaborator.md` (context
      section).
 
-9. **Type and fact lowering.** [ ]
+9. **Type and fact lowering.** [x]
    - Implement Step 2: lower soft types and type facts into explicit type
      predicates and assumptions per the erasure rules.
    - Tests: each erasure rule has a fixture; no silent erasure (every

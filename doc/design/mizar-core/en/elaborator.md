@@ -127,7 +127,7 @@ or formula.
 | ELAB-G004 | `external_dependency_gap` | Artifact schema and cache reuse anchors are outside `mizar-core`. | Preserve provenance and dependency summaries only. |
 | ELAB-G005 | `external_dependency_gap` | Proof acceptance, VC generation, kernel checking, and certificate schemas are downstream crates. | Emit obligation seeds and proof skeletons only. |
 | ELAB-G006 | `deferred` | Source-derived `.miz` core snapshots require mizar-test stage support. | Use Rust fixtures until staged source-to-core snapshots exist. |
-| ELAB-G007 | `source_drift` | Current source has no `elaborator` module. | Task 8 introduces the implementation after this spec. |
+| ELAB-G007 | `source_drift` | Before task 8, source had no `elaborator` module. | Task 8 introduced the module; tasks 9-13 keep closing the remaining implementation slices. |
 
 ## Step 1: Core Context Preparation
 
@@ -196,9 +196,10 @@ Erasure rules:
   deterministic predicate order. Negative polarity lowers to `Not(TypePred)`.
 - Mode/radix expansions lower through the checker-normalized type head and
   must not reconstruct type syntax.
-- A source-written `qua` and an inserted view both lower to the underlying term
-  plus view provenance and already-established type facts. They are not new
-  proof steps.
+- A source-written `qua` and an inserted view lower in this step only to view
+  provenance and already-established type facts for the variable-subject fact
+  being erased. The underlying term remains a Step 3 lowering responsibility.
+  They are not new proof steps.
 - Reconsider/narrowing payloads become a fresh or narrowed core binding plus
   a carried obligation seed when the checker supplied one.
 - Missing sethood, non-emptiness, coercion, or cluster evidence becomes a
