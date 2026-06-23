@@ -513,10 +513,18 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       source-to-checker semantic payload extraction も mizar-checker にまだ
       存在しないため、active `.miz` fixture は追加していない。
 
-30. **決定性スイート。** [ ]
+30. **決定性スイート。** [x]
     - 同一入力が同一の型、事実、trace、候補順、診断を生むことの
       プロパティ的検証。
     - 依存: 28。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
+    - task 30 で完了: `crates/mizar-checker/src/determinism_suite.rs` は
+      checker-owned Rust regression として、同一 input の rerun と
+      canonicalized equivalent-input permutation を、type normalization、
+      type-fact contradiction query、cluster closure trace、overload
+      collection/template/viability/specificity/selection output、final
+      `ResolvedTypedAst::assemble` projection に対して追加する。stage runner と
+      source-to-checker payload extraction は既存 external gap の下で deferred
+      のままなので、active `.miz` fixture は追加していない。
 
 31. **公開 enum の前方互換性ポリシー。** [ ]
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用し、所有

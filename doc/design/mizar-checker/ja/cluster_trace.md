@@ -375,8 +375,8 @@ task 18:
 
 後続 task:
 
-- task 29 は checker-owned cluster/reduction payload が存在した後に active `.miz` coverage
-  を追加する;
-- task 30 は trace ordering と diagnostic ordering の determinism regression/property
-  coverage を追加する;
+- task 29 は checker-owned cluster/reduction payload extraction と active runner が
+  存在するまで、`.miz` cluster/reduction coverage obligation を deferred として記録する;
+- task 30 は crate-level determinism suite の一部として、cluster trace ordering の
+  cross-checker determinism regression coverage を追加する;
 - task 32 は source、docs、tests がまだ一致していることを audit する。

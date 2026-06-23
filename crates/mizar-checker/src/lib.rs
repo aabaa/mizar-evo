@@ -27,3 +27,6 @@ pub mod registration_resolution;
 pub mod resolved_typed_ast;
 pub mod type_checker;
 pub mod typed_ast;
+
+#[cfg(test)]
+mod determinism_suite;

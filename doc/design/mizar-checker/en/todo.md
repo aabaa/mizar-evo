@@ -542,10 +542,18 @@ Keep `cargo test -p mizar-checker` green after each task (see
       lacks the source-to-checker semantic payload extraction needed for those
       cases.
 
-30. **Determinism suite.** [ ]
+30. **Determinism suite.** [x]
     - Property coverage that identical inputs produce identical types,
       facts, traces, candidate orders, and diagnostics.
     - Deps: 28. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
+    - Completed by task 30: `crates/mizar-checker/src/determinism_suite.rs`
+      adds checker-owned Rust regressions for exact same-input reruns and
+      canonicalized equivalent-input permutations across type normalization,
+      type-fact contradiction queries, cluster closure traces, overload
+      collection/template/viability/specificity/selection outputs, and final
+      `ResolvedTypedAst::assemble` projection. No active `.miz` fixtures were
+      added because stage runners and source-to-checker payload extraction
+      remain deferred under the existing external gaps.
 
 31. **Public-enum forward-compatibility policy.** [ ]
     - Apply the `mizar-frontend` task-25 procedure to each public enum;

@@ -407,8 +407,8 @@ Task 18:
 
 Later tasks:
 
-- task 29 adds active `.miz` coverage after checker-owned cluster/reduction
-  payloads exist;
-- task 30 adds determinism regression/property coverage for trace ordering and
-  diagnostic ordering;
+- task 29 records deferred `.miz` cluster/reduction coverage obligations until
+  checker-owned cluster/reduction payload extraction and active runners exist;
+- task 30 adds cross-checker determinism regression coverage for cluster trace
+  ordering as part of the crate-level determinism suite;
 - task 32 audits that source, docs, and tests still agree.
