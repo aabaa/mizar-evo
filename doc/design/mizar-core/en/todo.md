@@ -82,7 +82,7 @@ Keep `cargo test -p mizar-core` green after each task (see
    - Tests: lint-policy guard passes; workspace builds.
    - Deps: `mizar-checker` task 1. Spec: architecture 06.
 
-2. **Spec: `core_ir.md`.** [ ]
+2. **Spec: `core_ir.md`.** [x]
    - Write the `CoreIr` data-shape spec (English and Japanese, no code):
      `CoreItem`, core terms/formulas, `CoreDefinitionTable` with stable
      expansion boundaries, `CoreProofTable`, `CoreSourceMap` with

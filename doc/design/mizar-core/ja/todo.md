@@ -80,7 +80,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
    - テスト: lint 方針ガードが通る。workspace がビルドできる。
    - 依存: `mizar-checker` task 1。仕様: アーキテクチャ 06。
 
-2. **仕様: `core_ir.md`。** [ ]
+2. **仕様: `core_ir.md`。** [x]
    - `CoreIr` のデータ形状仕様を執筆する（英語と日本語、コードなし）:
      `CoreItem`、core の項/論理式、安定した展開境界を持つ
      `CoreDefinitionTable`、`CoreProofTable`、`GeneratedFrom` マーカーを
