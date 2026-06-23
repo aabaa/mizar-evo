@@ -270,10 +270,13 @@ Keep `cargo test -p mizar-core` green after each task (see
       mentions, gap id/class synchronization, and non-empty follow-up details.
     - Deps: 21. Spec: all module specs and this TODO.
 
-23. **Bilingual documentation sync audit.** [ ]
+23. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under
       `doc/design/mizar-core/en/` with its Japanese companion and
-      synchronize content.
+      synchronize content. Current result: `bilingual_sync_audit.md` records
+      the current paired file set, allowed language-specific differences, and
+      no blocking bilingual documentation drift.
+    - Tests: docs-only diff checks.
     - Deps: 22. Spec: repository documentation policy.
 
 24. **Module-boundary refactor gate.** [ ]

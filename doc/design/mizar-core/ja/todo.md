@@ -262,9 +262,11 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       follow-up detail を lint-policy audit guard で検査する。
     - 依存: 21。仕様: 全モジュール仕様と本 TODO。
 
-23. **二言語ドキュメント同期監査。** [ ]
+23. **二言語ドキュメント同期監査。** [x]
     - `doc/design/mizar-core/en/` の各英語正本と日本語版を比較し、内容を
-      同期する。
+      同期する。現在の結果: `bilingual_sync_audit.md` が現在の paired file set、
+      言語固有の許容差分、blocking bilingual documentation drift がないことを記録する。
+    - Tests: docs-only diff checks。
     - 依存: 22。仕様: リポジトリのドキュメント方針。
 
 24. **module 境界リファクタリング gate。** [ ]
