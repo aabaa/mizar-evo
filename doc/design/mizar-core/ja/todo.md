@@ -50,12 +50,11 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 
 ## 解決済みおよび保留中の決定
 
-- **binder 表現: 未解決。task 4 で解決する。**
-  [16.substitution_and_binding.md](../../architecture/ja/16.substitution_and_binding.md)
-  の制約の中で具体表現（de Bruijn インデックス、locally nameless、または
-  alpha 付き名前）を選び、kernel 再生への含意とともに決定を
-  `binder_normalization.md` に記録する。kernel は置換を独立に再検査する
-  ため、その検査が線形時間になる表現でなければならない。
+- **binder 表現: task 4 で解決済み。** `binder_normalization.md` は bound
+  variable に de Bruijn index、free / schematic / generated variable に安定
+  `CoreVarId` を使う locally nameless representation を選ぶ。kernel は置換を
+  独立に再検査する。選んだ表現は、明示的 freshness witness と guard side
+  condition により線形 replay を保つ。
 - **ControlFlowIr 構築の所有権: internal 07 により解決済み。**
   `mizar-core` が `ControlFlowIr` 構築を含む制御フロー準備（phase 10）を
   所有し、`mizar-vc` はアルゴリズム VC 生成のために `ControlFlowIr` を
@@ -97,12 +96,13 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      ソースへ写像されるか `GeneratedFrom` を持つ。レンダリングの安定性。
    - 依存: 2。仕様: `core_ir.md`。
 
-4. **仕様: `binder_normalization.md`。** [ ]
+4. **仕様: `binder_normalization.md`。** [x]
    - binder の仕様を執筆する（英語と日本語、コードなし）: 表現の決定
      （根拠と kernel 再生への含意付き）、alpha 同値、捕獲回避置換 API、
      自由変数条件、正規化規則。
-   - 依存: 1。仕様:
-     [16.substitution_and_binding.md](../../architecture/ja/16.substitution_and_binding.md)。
+   - 依存: 3。仕様:
+     [16.substitution_and_binding.md](../../architecture/ja/16.substitution_and_binding.md)、
+     `core_ir.md`。
 
 5. **binder 表現と置換。** [ ]
    - 選ばれた表現と、core の項/論理式上の捕獲回避置換を実装する。

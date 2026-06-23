@@ -51,13 +51,12 @@ crate ownership: [internal 07](../../internal/en/07.crate_module_layout.md).
 
 ## Resolved And Open Decisions
 
-- **Binder representation: open, resolved by task 4.** Choose the concrete
-  representation (de Bruijn indices, locally nameless, or named-with-alpha)
-  within the constraints of
-  [16.substitution_and_binding.md](../../architecture/en/16.substitution_and_binding.md),
-  and record the decision with kernel-replay implications in
-  `binder_normalization.md`. The kernel re-checks substitutions
-  independently; the representation must make that check linear-time.
+- **Binder representation: resolved by task 4.** `binder_normalization.md`
+  chooses a locally nameless representation with de Bruijn indices for bound
+  variables and stable `CoreVarId`s for free, schematic, and generated
+  variables. The kernel re-checks substitutions independently; the chosen
+  representation preserves linear replay with explicit freshness witnesses and
+  guard side conditions.
 - **ControlFlowIr construction ownership: resolved by internal 07.**
   `mizar-core` owns control-flow preparation (phase 10) including
   `ControlFlowIr` construction; `mizar-vc` consumes `ControlFlowIr` for
@@ -99,13 +98,14 @@ Keep `cargo test -p mizar-core` green after each task (see
      back to source or carries `GeneratedFrom`; rendering stability.
    - Deps: 2. Spec: `core_ir.md`.
 
-4. **Spec: `binder_normalization.md`.** [ ]
+4. **Spec: `binder_normalization.md`.** [x]
    - Write the binder spec (English and Japanese, no code): representation
      decision (with rationale and kernel-replay implications),
      alpha-equivalence, capture-avoiding substitution API, free-variable
      conditions, and normalization rules.
-   - Deps: 1. Spec:
-     [16.substitution_and_binding.md](../../architecture/en/16.substitution_and_binding.md).
+   - Deps: 3. Spec:
+     [16.substitution_and_binding.md](../../architecture/en/16.substitution_and_binding.md),
+     `core_ir.md`.
 
 5. **Binder representation and substitution.** [ ]
    - Implement the chosen representation and capture-avoiding substitution
