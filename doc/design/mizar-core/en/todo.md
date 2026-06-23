@@ -126,7 +126,7 @@ Keep `cargo test -p mizar-core` green after each task (see
 
 ### Elaboration (phase 9)
 
-7. **Spec: `elaborator.md`.** [ ]
+7. **Spec: `elaborator.md`.** [x]
    - Write the elaboration spec (English and Japanese, no code) with named
      sections the implementation tasks cite: core context preparation,
      type/fact lowering and the case-by-case erasure rules, term/formula

@@ -120,7 +120,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 
 ### elaboration（phase 9）
 
-7. **仕様: `elaborator.md`。** [ ]
+7. **仕様: `elaborator.md`。** [x]
    - elaboration の仕様を、実装タスクが引用する名前付き節とともに執筆する
      （英語と日本語、コードなし）: core コンテキスト準備、型/事実の
      lowering とケースごとの消去規則、項/論理式の lowering、展開境界を
