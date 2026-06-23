@@ -246,9 +246,11 @@ Keep `cargo test -p mizar-core` green after each task (see
     - Deps: 12, 15. Spec: [staged_model.md](../../mizar-test/en/staged_model.md),
       [snapshot.md](../../mizar-test/en/snapshot.md).
 
-20. **Determinism suite.** [ ]
-    - Property coverage that identical `ResolvedTypedAst` inputs produce
-      identical core items, binder numbering, CFGs, and renderings.
+20. **Determinism suite.** [x]
+    - Property-style coverage that identical public-API core fixtures produce
+      identical core items, binder numbering, CFGs, obligation-seed handoff, and
+      renderings. Full source-derived `ResolvedTypedAst` determinism remains
+      deferred until source-to-checker extraction exists.
     - Deps: 18. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 
 21. **Public-enum forward-compatibility policy.** [ ]

@@ -238,9 +238,11 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - 依存: 12、15。仕様: [staged_model.md](../../mizar-test/ja/staged_model.md)、
       [snapshot.md](../../mizar-test/ja/snapshot.md)。
 
-20. **決定性スイート。** [ ]
-    - 同一の `ResolvedTypedAst` 入力が同一の core item、binder 番号付け、
-      CFG、レンダリングを生むことのプロパティ的検証。
+20. **決定性スイート。** [x]
+    - 同一の public-API core fixture が同一の core item、binder 番号付け、
+      CFG、obligation-seed handoff、レンダリングを生むことの property-style 検証。
+      完全な source-derived `ResolvedTypedAst` determinism は source-to-checker
+      extraction ができるまで deferred。
     - 依存: 18。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
 
 21. **公開 enum の前方互換性ポリシー。** [ ]
