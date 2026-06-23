@@ -190,12 +190,12 @@ Keep `cargo test -p mizar-core` green after each task (see
 
 ### Control-flow preparation (phase 10)
 
-14. **Spec: `control_flow.md`.** [ ]
+14. **Spec: `control_flow.md`.** [x]
     - Write the `ControlFlowIr` spec (English and Japanese, no code): basic
       blocks, local binding tables, contract sets, ghost-effect tables,
       termination measures, and the core→CFG construction contract;
       record the internal-07 ownership boundary with `mizar-vc`.
-    - Deps: 2. Spec: architecture 06 "Step 6", architecture 07 "Step 1",
+    - Deps: 2, 13. Spec: architecture 06 "Step 6", architecture 07 "Step 1",
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 
 15. **`ControlFlowIr` construction.** [ ]

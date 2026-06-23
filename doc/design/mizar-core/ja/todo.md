@@ -182,12 +182,12 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 
 ### 制御フロー準備（phase 10）
 
-14. **仕様: `control_flow.md`。** [ ]
+14. **仕様: `control_flow.md`。** [x]
     - `ControlFlowIr` の仕様を執筆する（英語と日本語、コードなし）: basic
       block、ローカル束縛テーブル、契約集合、ghost 効果テーブル、停止性
       測度、core→CFG 構築契約。internal 07 による `mizar-vc` との所有権
       境界を記録する。
-    - 依存: 2。仕様: アーキテクチャ 06「Step 6」、アーキテクチャ 07
+    - 依存: 2、13。仕様: アーキテクチャ 06「Step 6」、アーキテクチャ 07
       「Step 1」、[20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)。
 
 15. **`ControlFlowIr` の構築。** [ ]
