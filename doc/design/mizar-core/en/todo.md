@@ -178,13 +178,14 @@ Keep `cargo test -p mizar-core` green after each task (see
       Include theorem/lemma propositions that own their stable choice symbols.
     - Deps: 11. Spec: `elaborator.md` (proofs section).
 
-13. **Algorithm-shell lowering.** [ ]
+13. **Algorithm-shell lowering.** [x]
     - Implement Step 6: lower algorithm bodies to core items (no CFG yet),
       preserving contracts and ghost annotations for phase 10.
     - Tests: shell fixtures; ghost/runtime distinction preserved. Include
       executable algorithm statement `the` sites lowering to `Pick` bindings
       and ghost-only `Pick` sites staying marked for later erasure.
-    - Deps: 11, `mizar-parser` tasks 32-34 coverage. Spec: `elaborator.md`
+    - Deps: 12. `mizar-parser` tasks 32-34 coverage remains an external
+      source-to-checker extraction gap for this task. Spec: `elaborator.md`
       (algorithms section).
 
 ### Control-flow preparation (phase 10)

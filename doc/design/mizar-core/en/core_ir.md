@@ -335,8 +335,9 @@ struct CoreAlgorithm {
     result: Option<CoreBinder>,
     contracts: CoreContractSet,
     statements: Vec<CoreAlgorithmStmtId>,
-    ghost_effects: Vec<GhostEffectId>,
+    ghost_effects: Vec<GhostEffectKey>,
     source: CoreSourceRef,
+    diagnostics: Vec<CoreDiagnosticId>,
 }
 ```
 
@@ -406,7 +407,10 @@ struct GeneratedOrigin {
 
 Kinds include stable choices, Fraenkel comprehensions, local abbreviation
 expansion entries, generated type predicates, skipped/error placeholders, and
-algorithm `Pick` bindings.
+other generated bookkeeping records. Executable algorithm `Pick` bindings are
+statement-local `CoreAlgorithmStmtKind::Pick` rows, not generated origins.
+`GeneratedOriginKind::AlgorithmPick` is reserved for future non-executable
+algorithm bookkeeping and is not emitted by task-13 shell lowering.
 
 Generated keys use normalized semantic origins and alpha-normalized payloads.
 They must not use source display names as identity. Generated names are

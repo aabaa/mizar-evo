@@ -171,14 +171,14 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       ケースも含める。
     - 依存: 11。仕様: `elaborator.md`（証明の節）。
 
-13. **アルゴリズムシェルの lowering。** [ ]
+13. **アルゴリズムシェルの lowering。** [x]
     - Step 6 を実装する: アルゴリズム本体を core item へ下ろす（CFG は
       まだ作らない）。契約と ghost 注釈は phase 10 のために保持する。
     - テスト: シェルのフィクスチャ。ghost/実行時の区別の保持。実行可能な
       algorithm 文中の `the` サイトが `Pick` 束縛へ lower されることと、
       ghost-only `Pick` サイトが後続 erasure 用に印付けされることを含める。
-    - 依存: 11、`mizar-parser` task 32-34 のカバレッジ。仕様:
-      `elaborator.md`（アルゴリズムの節）。
+    - 依存: 12。`mizar-parser` task 32-34 のカバレッジはこの task では external な
+      source-to-checker extraction gap のままにする。仕様: `elaborator.md`（アルゴリズムの節）。
 
 ### 制御フロー準備（phase 10）
 

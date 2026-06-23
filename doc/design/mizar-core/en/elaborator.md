@@ -109,7 +109,9 @@ Successful elaboration produces a `CoreIr` with:
 - proof records with terminal goal seeds, not accepted proof status;
 - algorithm records with statement shells, not CFG blocks;
 - generated origins for local abbreviations, comprehensions, type predicates,
-  error placeholders, and algorithm picks where the core shape requires them;
+  and error placeholders where the core shape requires them; algorithm `pick`
+  sites are represented as local statement-shell binders, not generated
+  symbols;
 - structured diagnostics for unsupported or malformed lowering.
 
 Failed semantic sites remain explicit `Error` nodes or skipped/error items. A
@@ -469,7 +471,19 @@ Output:
 - `CoreAlgorithmTable` rows;
 - `CoreAlgorithmStmtTable` statement shells;
 - contract sets;
-- algorithm diagnostics and generated pick origins.
+- algorithm diagnostics and local `Pick` statement-shell bindings.
+
+Task 13 classification:
+
+- `external_dependency_gap`: source-to-checker extraction of full algorithm
+  statement payloads, including mizar-parser task 32-34 coverage, remains
+  outside this task. Tests use explicit checker-owned Rust fixtures.
+- `deferred`: CFG construction, control-flow diagnostics, use-before-
+  assignment, reachability, VC generation, and proof/kernel handoff stay in
+  phase 10+ tasks.
+- `design_drift`: earlier wording that described generated pick origins is
+  repaired here; executable `the` sites lower to local `Pick` statements, not
+  reusable stable-choice/generated symbols.
 
 Rules:
 
@@ -488,6 +502,8 @@ Rules:
   `CoreAlgorithmStmtKind::Pick`; they do not reuse stable choice symbols.
 - Ghost/runtime classification is preserved as metadata. The elaborator does
   not perform extraction-oriented erasure.
+- Missing or malformed algorithm payloads become `AlgorithmShell` diagnostics
+  plus error statement shells; they do not produce valid executable bodies.
 
 Tests for task 13 must cover parameters/results, contracts, assertions,
 invariants, decreasing terms, statement nesting/order, pick bindings,

@@ -317,8 +317,9 @@ struct CoreAlgorithm {
     result: Option<CoreBinder>,
     contracts: CoreContractSet,
     statements: Vec<CoreAlgorithmStmtId>,
-    ghost_effects: Vec<GhostEffectId>,
+    ghost_effects: Vec<GhostEffectKey>,
     source: CoreSourceRef,
+    diagnostics: Vec<CoreDiagnosticId>,
 }
 ```
 
@@ -387,7 +388,11 @@ struct GeneratedOrigin {
 ```
 
 kind には stable choice、Fraenkel comprehension、local abbreviation expansion entry、
-generated type predicate、skipped/error placeholder、algorithm `Pick` binding を含める。
+generated type predicate、skipped/error placeholder、その他の generated bookkeeping record を含める。
+実行可能 algorithm の `Pick` binding は generated origin ではなく、statement-local な
+`CoreAlgorithmStmtKind::Pick` row である。
+`GeneratedOriginKind::AlgorithmPick` は将来の非実行 algorithm bookkeeping 用の予約 variant であり、
+task 13 の shell lowering は emit しない。
 
 generated key は normalized semantic origin と alpha-normalized payload を使う。
 source display name を identity に使ってはならない。owning module spec が stable

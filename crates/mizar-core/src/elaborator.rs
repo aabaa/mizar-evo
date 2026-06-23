@@ -1,22 +1,25 @@
 //! Core elaboration context preparation.
 //!
-//! Implements the task-8 through task-12 elaboration slices specified in
+//! Implements the task-8 through task-13 elaboration slices specified in
 //! [elaborator.md](../../../../doc/design/mizar-core/en/elaborator.md).
 
 use crate::{
     binder_normalization::{BinderContext, NormalizedVarClass, NormalizedVarSort},
     core_ir::{
-        CoreBinder, CoreCitation, CoreDefinition, CoreDefinitionId, CoreDefinitionTable,
-        CoreDiagnostic, CoreDiagnosticClass, CoreDiagnosticId, CoreDiagnosticMessageKey,
-        CoreDiagnosticRecovery, CoreDiagnosticSeverity, CoreDiagnosticTable, CoreFormula,
-        CoreFormulaId, CoreFormulaKind, CoreFormulaTable, CoreItem, CoreItemId, CoreItemKind,
-        CoreItemStatus, CoreItemTable, CoreJustification, CoreLabelRef, CoreNodeRef, CoreProof,
-        CoreProofId, CoreProofNode, CoreProofNodeId, CoreProofNodeKind, CoreProofNodeTable,
-        CoreProofStatus, CoreProofTable, CoreProvenance, CoreProvenanceKey, CoreProvenancePhase,
-        CoreSourceAnchor, CoreSourceMap, CoreSourceRef, CoreTerm, CoreTermId, CoreTermKind,
-        CoreTermTable, CoreTypePredicate, CoreVarId, CoreVarRole, CoreVisibility, DefinitionBody,
-        DefinitionBranchBody, ExpansionPolicy, GeneratedOrigin, GeneratedOriginId,
-        GeneratedOriginKey, GeneratedOriginKind, GeneratedOriginTable, GuardedDefinitionBranch,
+        CoreAlgorithm, CoreAlgorithmId, CoreAlgorithmMatchArm, CoreAlgorithmStmt,
+        CoreAlgorithmStmtId, CoreAlgorithmStmtKind, CoreAlgorithmStmtTable, CoreAlgorithmTable,
+        CoreBinder, CoreCitation, CoreContractSet, CoreDefinition, CoreDefinitionId,
+        CoreDefinitionTable, CoreDiagnostic, CoreDiagnosticClass, CoreDiagnosticId,
+        CoreDiagnosticMessageKey, CoreDiagnosticRecovery, CoreDiagnosticSeverity,
+        CoreDiagnosticTable, CoreFormula, CoreFormulaId, CoreFormulaKind, CoreFormulaTable,
+        CoreItem, CoreItemId, CoreItemKind, CoreItemStatus, CoreItemTable, CoreJustification,
+        CoreLabelRef, CoreNodeRef, CorePlace, CoreProof, CoreProofId, CoreProofNode,
+        CoreProofNodeId, CoreProofNodeKind, CoreProofNodeTable, CoreProofStatus, CoreProofTable,
+        CoreProvenance, CoreProvenanceKey, CoreProvenancePhase, CoreSourceAnchor, CoreSourceMap,
+        CoreSourceRef, CoreTerm, CoreTermId, CoreTermKind, CoreTermTable, CoreTypePredicate,
+        CoreVarId, CoreVarRole, CoreVisibility, DefinitionBody, DefinitionBranchBody,
+        ExpansionPolicy, GeneratedOrigin, GeneratedOriginId, GeneratedOriginKey,
+        GeneratedOriginKind, GeneratedOriginTable, GhostEffectKey, GuardedDefinitionBranch,
         LocalProofOrProgramPath, NormalizedSemanticOrigin, ObligationSeed, ObligationSeedId,
         ObligationSeedKind, ObligationSeedStatus, ObligationSeedTable, ProofBranchKind,
     },
@@ -5916,6 +5919,906 @@ fn attach_proof_backrefs(
     }
 }
 
+pub type AlgorithmLoweringResult<T> = Result<T, AlgorithmLoweringError>;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum AlgorithmLoweringError {
+    MissingOwnerItem {
+        owner: CoreItemId,
+    },
+    DuplicateAlgorithmOwner {
+        owner: CoreItemId,
+    },
+    UnsupportedAlgorithmItemKind {
+        owner: CoreItemId,
+        kind: CoreItemKind,
+    },
+    MissingAlgorithmBoundary {
+        owner: CoreItemId,
+    },
+    AlgorithmBoundaryMismatch {
+        owner: CoreItemId,
+        kind: DefinitionBoundaryKind,
+    },
+    AlgorithmBoundaryNotPending {
+        owner: CoreItemId,
+        status: DefinitionBoundaryStatus,
+    },
+    AlgorithmSymbolMismatch {
+        owner: CoreItemId,
+        expected: Box<SymbolId>,
+        actual: Box<SymbolId>,
+    },
+    MissingAlgorithmTerm {
+        term: CoreTermId,
+    },
+    MissingAlgorithmFormula {
+        formula: CoreFormulaId,
+    },
+    UndeclaredAlgorithmBinder {
+        var: CoreVarId,
+    },
+    NonTermAlgorithmBinder {
+        var: CoreVarId,
+        sort: NormalizedVarSort,
+    },
+    InvalidAlgorithmTarget {
+        target: CorePlace,
+    },
+    InvalidSeedProvenance(CoreContextError),
+}
+
+impl fmt::Display for AlgorithmLoweringError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MissingOwnerItem { owner } => {
+                write!(formatter, "missing algorithm owner item {}", owner.index())
+            }
+            Self::DuplicateAlgorithmOwner { owner } => {
+                write!(
+                    formatter,
+                    "algorithm input contains duplicate owner item {}",
+                    owner.index()
+                )
+            }
+            Self::UnsupportedAlgorithmItemKind { owner, kind } => {
+                write!(
+                    formatter,
+                    "algorithm owner item {} has unsupported kind {kind:?}",
+                    owner.index()
+                )
+            }
+            Self::MissingAlgorithmBoundary { owner } => {
+                write!(
+                    formatter,
+                    "missing algorithm boundary for item {}",
+                    owner.index()
+                )
+            }
+            Self::AlgorithmBoundaryMismatch { owner, kind } => {
+                write!(
+                    formatter,
+                    "algorithm boundary for item {} has non-algorithm kind {kind:?}",
+                    owner.index()
+                )
+            }
+            Self::AlgorithmBoundaryNotPending { owner, status } => {
+                write!(
+                    formatter,
+                    "algorithm boundary for item {} has status {status:?}",
+                    owner.index()
+                )
+            }
+            Self::AlgorithmSymbolMismatch {
+                owner,
+                expected,
+                actual,
+            } => {
+                write!(
+                    formatter,
+                    "algorithm seed for item {} used symbol {actual:?}; expected {expected:?}",
+                    owner.index()
+                )
+            }
+            Self::MissingAlgorithmTerm { term } => {
+                write!(
+                    formatter,
+                    "algorithm references missing term {}",
+                    term.index()
+                )
+            }
+            Self::MissingAlgorithmFormula { formula } => {
+                write!(
+                    formatter,
+                    "algorithm references missing formula {}",
+                    formula.index()
+                )
+            }
+            Self::UndeclaredAlgorithmBinder { var } => {
+                write!(
+                    formatter,
+                    "algorithm uses undeclared binder {}",
+                    var.index()
+                )
+            }
+            Self::NonTermAlgorithmBinder { var, sort } => {
+                write!(
+                    formatter,
+                    "algorithm binder {} has non-term sort {sort:?}",
+                    var.index()
+                )
+            }
+            Self::InvalidAlgorithmTarget { target } => {
+                write!(
+                    formatter,
+                    "algorithm assignment has invalid target {}",
+                    target.as_str()
+                )
+            }
+            Self::InvalidSeedProvenance(error) => write!(formatter, "{error}"),
+        }
+    }
+}
+
+impl Error for AlgorithmLoweringError {}
+
+impl From<CoreContextError> for AlgorithmLoweringError {
+    fn from(value: CoreContextError) -> Self {
+        Self::InvalidSeedProvenance(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AlgorithmLoweringInput {
+    pub algorithms: Vec<AlgorithmSeed>,
+}
+
+impl AlgorithmLoweringInput {
+    pub const fn new() -> Self {
+        Self {
+            algorithms: Vec::new(),
+        }
+    }
+}
+
+impl Default for AlgorithmLoweringInput {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AlgorithmSeed {
+    pub owner: CoreItemId,
+    pub symbol: SymbolId,
+    pub params: Vec<CoreBinder>,
+    pub result: Option<CoreBinder>,
+    pub contracts: CoreContractSet,
+    pub payload: AlgorithmPayloadSeed,
+    pub ghost_effects: Vec<GhostEffectKey>,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum AlgorithmPayloadSeed {
+    Statements(Vec<AlgorithmStmtSeed>),
+    Missing(FailedSemanticSiteSeed),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum AlgorithmStmtSeed {
+    Let {
+        binder: CoreBinder,
+        value: Option<CoreTermId>,
+        ghost: bool,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
+    Assign {
+        target: CorePlace,
+        value: CoreTermId,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
+    Assert {
+        formula: CoreFormulaId,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
+    If {
+        condition: CoreFormulaId,
+        then_body: Vec<AlgorithmStmtSeed>,
+        else_body: Vec<AlgorithmStmtSeed>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
+    While {
+        condition: CoreFormulaId,
+        invariants: Vec<CoreFormulaId>,
+        decreasing: Vec<CoreTermId>,
+        body: Vec<AlgorithmStmtSeed>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
+    Match {
+        scrutinee: CoreTermId,
+        arms: Vec<AlgorithmMatchArmSeed>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
+    Return {
+        value: Option<CoreTermId>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
+    Break {
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
+    Continue {
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
+    Pick {
+        binder: CoreBinder,
+        witness_ty: Option<CoreFormulaId>,
+        ghost: bool,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
+    Error(FailedSemanticSiteSeed),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AlgorithmMatchArmSeed {
+    pub pattern: CoreProvenanceKey,
+    pub body: Vec<AlgorithmStmtSeed>,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AlgorithmLoweringOutput {
+    pub algorithms: CoreAlgorithmTable,
+    pub algorithm_statements: CoreAlgorithmStmtTable,
+    pub source_map: CoreSourceMap,
+    pub diagnostics: CoreDiagnosticTable,
+    pub algorithm_map: BTreeMap<CoreItemId, CoreAlgorithmId>,
+}
+
+#[derive(Debug, Clone)]
+struct AlgorithmLoweringState {
+    algorithms: CoreAlgorithmTable,
+    algorithm_statements: CoreAlgorithmStmtTable,
+    source_map: CoreSourceMap,
+    diagnostics: CoreDiagnosticTable,
+    algorithm_map: BTreeMap<CoreItemId, CoreAlgorithmId>,
+}
+
+impl AlgorithmLoweringState {
+    fn new(proofs: &ProofLoweringOutput) -> Self {
+        Self {
+            algorithms: CoreAlgorithmTable::new(),
+            algorithm_statements: CoreAlgorithmStmtTable::new(),
+            source_map: proofs.source_map.clone(),
+            diagnostics: proofs.diagnostics.clone(),
+            algorithm_map: BTreeMap::new(),
+        }
+    }
+
+    fn insert_statement(
+        &mut self,
+        owner: CoreAlgorithmId,
+        kind: CoreAlgorithmStmtKind,
+        source: CoreSourceRef,
+        diagnostics: Vec<CoreDiagnosticId>,
+    ) -> CoreAlgorithmStmtId {
+        let source = normalized_source(source);
+        let id = self.algorithm_statements.insert(CoreAlgorithmStmt {
+            owner,
+            kind,
+            source: source.clone(),
+            diagnostics,
+        });
+        self.source_map.algorithm_sources.insert(id, source);
+        id
+    }
+}
+
+pub fn lower_algorithm_inputs(
+    context: &CoreContext,
+    term_formula: &TermAndFormulaLoweringOutput,
+    proofs: &ProofLoweringOutput,
+    input: AlgorithmLoweringInput,
+) -> AlgorithmLoweringResult<AlgorithmLoweringOutput> {
+    validate_algorithm_input(context, term_formula, &input)?;
+    let mut state = AlgorithmLoweringState::new(proofs);
+
+    for seed in input.algorithms {
+        let algorithm_id = CoreAlgorithmId::new(state.algorithms.len());
+        let (statements, diagnostics) =
+            lower_algorithm_payload(&mut state, algorithm_id, &seed.payload)?;
+        let source = normalized_source(source_with_provenance(seed.source, &seed.provenance));
+        let algorithm = CoreAlgorithm {
+            item: seed.owner,
+            symbol: seed.symbol,
+            params: seed.params,
+            result: seed.result,
+            contracts: seed.contracts,
+            statements,
+            ghost_effects: seed.ghost_effects,
+            source,
+            diagnostics,
+        };
+        let inserted = state.algorithms.insert(algorithm);
+        debug_assert_eq!(inserted, algorithm_id);
+        state.algorithm_map.insert(seed.owner, inserted);
+    }
+
+    Ok(AlgorithmLoweringOutput {
+        algorithms: state.algorithms,
+        algorithm_statements: state.algorithm_statements,
+        source_map: state.source_map,
+        diagnostics: state.diagnostics,
+        algorithm_map: state.algorithm_map,
+    })
+}
+
+fn validate_algorithm_input(
+    context: &CoreContext,
+    term_formula: &TermAndFormulaLoweringOutput,
+    input: &AlgorithmLoweringInput,
+) -> AlgorithmLoweringResult<()> {
+    let mut seen_owners = BTreeSet::new();
+    for seed in &input.algorithms {
+        if !seen_owners.insert(seed.owner) {
+            return Err(AlgorithmLoweringError::DuplicateAlgorithmOwner { owner: seed.owner });
+        }
+        validate_checker_owned_provenance("algorithm seed", seed.provenance.as_slice())?;
+        let item = context
+            .item_registry()
+            .items()
+            .get(seed.owner)
+            .ok_or(AlgorithmLoweringError::MissingOwnerItem { owner: seed.owner })?;
+        if item.symbol != seed.symbol {
+            return Err(AlgorithmLoweringError::AlgorithmSymbolMismatch {
+                owner: seed.owner,
+                expected: Box::new(item.symbol.clone()),
+                actual: Box::new(seed.symbol.clone()),
+            });
+        }
+        if item.kind != CoreItemKind::Algorithm {
+            return Err(AlgorithmLoweringError::UnsupportedAlgorithmItemKind {
+                owner: seed.owner,
+                kind: item.kind.clone(),
+            });
+        }
+        let boundary = context
+            .definition_boundaries()
+            .get_by_item(seed.owner)
+            .ok_or(AlgorithmLoweringError::MissingAlgorithmBoundary { owner: seed.owner })?;
+        if boundary.kind != DefinitionBoundaryKind::Algorithm {
+            return Err(AlgorithmLoweringError::AlgorithmBoundaryMismatch {
+                owner: seed.owner,
+                kind: boundary.kind,
+            });
+        }
+        if boundary.status != DefinitionBoundaryStatus::PendingBody {
+            return Err(AlgorithmLoweringError::AlgorithmBoundaryNotPending {
+                owner: seed.owner,
+                status: boundary.status,
+            });
+        }
+        validate_algorithm_binders(context, term_formula, &seed.params)?;
+        if let Some(result) = &seed.result {
+            validate_algorithm_binder(context, term_formula, result)?;
+        }
+        validate_algorithm_contracts(term_formula, &seed.contracts)?;
+        match &seed.payload {
+            AlgorithmPayloadSeed::Statements(statements) => {
+                validate_algorithm_statements(context, term_formula, statements)?;
+            }
+            AlgorithmPayloadSeed::Missing(site) => {
+                validate_checker_owned_provenance(
+                    "missing algorithm payload",
+                    site.provenance.as_slice(),
+                )?;
+            }
+        }
+    }
+    Ok(())
+}
+
+fn validate_algorithm_binders(
+    context: &CoreContext,
+    term_formula: &TermAndFormulaLoweringOutput,
+    binders: &[CoreBinder],
+) -> AlgorithmLoweringResult<()> {
+    for binder in binders {
+        validate_algorithm_binder(context, term_formula, binder)?;
+    }
+    Ok(())
+}
+
+fn validate_algorithm_binder(
+    context: &CoreContext,
+    term_formula: &TermAndFormulaLoweringOutput,
+    binder: &CoreBinder,
+) -> AlgorithmLoweringResult<()> {
+    match context.binder_context().variable_sorts.get(&binder.var) {
+        Some(NormalizedVarSort::Term) => {}
+        Some(sort) => {
+            return Err(AlgorithmLoweringError::NonTermAlgorithmBinder {
+                var: binder.var,
+                sort: *sort,
+            });
+        }
+        None => {
+            return Err(AlgorithmLoweringError::UndeclaredAlgorithmBinder { var: binder.var });
+        }
+    }
+    if let Some(guard) = binder.ty_guard {
+        validate_algorithm_formula(term_formula, guard)?;
+    }
+    Ok(())
+}
+
+fn validate_algorithm_contracts(
+    term_formula: &TermAndFormulaLoweringOutput,
+    contracts: &CoreContractSet,
+) -> AlgorithmLoweringResult<()> {
+    for formula in contracts
+        .requires
+        .iter()
+        .chain(contracts.ensures.iter())
+        .chain(contracts.invariants.iter())
+        .chain(contracts.assertions.iter())
+    {
+        validate_algorithm_formula(term_formula, *formula)?;
+    }
+    for term in &contracts.decreasing {
+        validate_algorithm_term(term_formula, *term)?;
+    }
+    Ok(())
+}
+
+fn validate_algorithm_statements(
+    context: &CoreContext,
+    term_formula: &TermAndFormulaLoweringOutput,
+    statements: &[AlgorithmStmtSeed],
+) -> AlgorithmLoweringResult<()> {
+    for statement in statements {
+        validate_algorithm_statement_seed(context, term_formula, statement)?;
+    }
+    Ok(())
+}
+
+fn validate_algorithm_statement_seed(
+    context: &CoreContext,
+    term_formula: &TermAndFormulaLoweringOutput,
+    statement: &AlgorithmStmtSeed,
+) -> AlgorithmLoweringResult<()> {
+    match statement {
+        AlgorithmStmtSeed::Let {
+            binder,
+            value,
+            provenance,
+            ..
+        } => {
+            validate_checker_owned_provenance("algorithm let", provenance.as_slice())?;
+            validate_algorithm_binder(context, term_formula, binder)?;
+            if let Some(value) = value {
+                validate_algorithm_term(term_formula, *value)?;
+            }
+        }
+        AlgorithmStmtSeed::Assign {
+            target,
+            value,
+            provenance,
+            ..
+        } => {
+            validate_checker_owned_provenance("algorithm assignment", provenance.as_slice())?;
+            validate_algorithm_target(target)?;
+            validate_algorithm_term(term_formula, *value)?;
+        }
+        AlgorithmStmtSeed::Assert {
+            formula,
+            provenance,
+            ..
+        } => {
+            validate_checker_owned_provenance("algorithm assertion", provenance.as_slice())?;
+            validate_algorithm_formula(term_formula, *formula)?;
+        }
+        AlgorithmStmtSeed::If {
+            condition,
+            then_body,
+            else_body,
+            provenance,
+            ..
+        } => {
+            validate_checker_owned_provenance("algorithm if", provenance.as_slice())?;
+            validate_algorithm_formula(term_formula, *condition)?;
+            validate_algorithm_statements(context, term_formula, then_body)?;
+            validate_algorithm_statements(context, term_formula, else_body)?;
+        }
+        AlgorithmStmtSeed::While {
+            condition,
+            invariants,
+            decreasing,
+            body,
+            provenance,
+            ..
+        } => {
+            validate_checker_owned_provenance("algorithm while", provenance.as_slice())?;
+            validate_algorithm_formula(term_formula, *condition)?;
+            for invariant in invariants {
+                validate_algorithm_formula(term_formula, *invariant)?;
+            }
+            for term in decreasing {
+                validate_algorithm_term(term_formula, *term)?;
+            }
+            validate_algorithm_statements(context, term_formula, body)?;
+        }
+        AlgorithmStmtSeed::Match {
+            scrutinee,
+            arms,
+            provenance,
+            ..
+        } => {
+            validate_checker_owned_provenance("algorithm match", provenance.as_slice())?;
+            validate_algorithm_term(term_formula, *scrutinee)?;
+            for arm in arms {
+                validate_checker_owned_provenance(
+                    "algorithm match arm",
+                    arm.provenance.as_slice(),
+                )?;
+                validate_algorithm_statements(context, term_formula, &arm.body)?;
+            }
+        }
+        AlgorithmStmtSeed::Return {
+            value, provenance, ..
+        } => {
+            validate_checker_owned_provenance("algorithm return", provenance.as_slice())?;
+            if let Some(value) = value {
+                validate_algorithm_term(term_formula, *value)?;
+            }
+        }
+        AlgorithmStmtSeed::Break { provenance, .. } => {
+            validate_checker_owned_provenance("algorithm break", provenance.as_slice())?;
+        }
+        AlgorithmStmtSeed::Continue { provenance, .. } => {
+            validate_checker_owned_provenance("algorithm continue", provenance.as_slice())?;
+        }
+        AlgorithmStmtSeed::Pick {
+            binder,
+            witness_ty,
+            provenance,
+            ..
+        } => {
+            validate_checker_owned_provenance("algorithm pick", provenance.as_slice())?;
+            validate_algorithm_binder(context, term_formula, binder)?;
+            if let Some(witness_ty) = witness_ty {
+                validate_algorithm_formula(term_formula, *witness_ty)?;
+            }
+        }
+        AlgorithmStmtSeed::Error(site) => {
+            validate_checker_owned_provenance(
+                "malformed algorithm statement",
+                site.provenance.as_slice(),
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn validate_algorithm_target(target: &CorePlace) -> AlgorithmLoweringResult<()> {
+    if target.as_str().is_empty() {
+        Err(AlgorithmLoweringError::InvalidAlgorithmTarget {
+            target: target.clone(),
+        })
+    } else {
+        Ok(())
+    }
+}
+
+fn validate_algorithm_term(
+    term_formula: &TermAndFormulaLoweringOutput,
+    term: CoreTermId,
+) -> AlgorithmLoweringResult<()> {
+    term_formula
+        .terms
+        .get(term)
+        .map(|_| ())
+        .ok_or(AlgorithmLoweringError::MissingAlgorithmTerm { term })
+}
+
+fn validate_algorithm_formula(
+    term_formula: &TermAndFormulaLoweringOutput,
+    formula: CoreFormulaId,
+) -> AlgorithmLoweringResult<()> {
+    term_formula
+        .formulas
+        .get(formula)
+        .map(|_| ())
+        .ok_or(AlgorithmLoweringError::MissingAlgorithmFormula { formula })
+}
+
+fn lower_algorithm_payload(
+    state: &mut AlgorithmLoweringState,
+    owner: CoreAlgorithmId,
+    payload: &AlgorithmPayloadSeed,
+) -> AlgorithmLoweringResult<(Vec<CoreAlgorithmStmtId>, Vec<CoreDiagnosticId>)> {
+    match payload {
+        AlgorithmPayloadSeed::Statements(statements) => {
+            lower_algorithm_statement_block(state, owner, statements).map(|statements| {
+                let diagnostics = collect_algorithm_statement_diagnostics(
+                    &state.algorithm_statements,
+                    &statements,
+                );
+                (statements, diagnostics)
+            })
+        }
+        AlgorithmPayloadSeed::Missing(site) => {
+            let (statement, diagnostic) = insert_algorithm_error_statement(state, owner, site);
+            Ok((vec![statement], vec![diagnostic]))
+        }
+    }
+}
+
+fn lower_algorithm_statement_block(
+    state: &mut AlgorithmLoweringState,
+    owner: CoreAlgorithmId,
+    statements: &[AlgorithmStmtSeed],
+) -> AlgorithmLoweringResult<Vec<CoreAlgorithmStmtId>> {
+    statements
+        .iter()
+        .map(|statement| lower_algorithm_statement(state, owner, statement))
+        .collect()
+}
+
+fn lower_algorithm_statement(
+    state: &mut AlgorithmLoweringState,
+    owner: CoreAlgorithmId,
+    statement: &AlgorithmStmtSeed,
+) -> AlgorithmLoweringResult<CoreAlgorithmStmtId> {
+    match statement {
+        AlgorithmStmtSeed::Let {
+            binder,
+            value,
+            ghost,
+            source,
+            provenance,
+        } => Ok(state.insert_statement(
+            owner,
+            CoreAlgorithmStmtKind::Let {
+                binder: binder.clone(),
+                value: *value,
+                ghost: *ghost,
+            },
+            source_with_provenance(source.clone(), provenance),
+            Vec::new(),
+        )),
+        AlgorithmStmtSeed::Assign {
+            target,
+            value,
+            source,
+            provenance,
+        } => Ok(state.insert_statement(
+            owner,
+            CoreAlgorithmStmtKind::Assign {
+                target: target.clone(),
+                value: *value,
+            },
+            source_with_provenance(source.clone(), provenance),
+            Vec::new(),
+        )),
+        AlgorithmStmtSeed::Assert {
+            formula,
+            source,
+            provenance,
+        } => Ok(state.insert_statement(
+            owner,
+            CoreAlgorithmStmtKind::Assert { formula: *formula },
+            source_with_provenance(source.clone(), provenance),
+            Vec::new(),
+        )),
+        AlgorithmStmtSeed::If {
+            condition,
+            then_body,
+            else_body,
+            source,
+            provenance,
+        } => {
+            let then_body = lower_algorithm_statement_block(state, owner, then_body)?;
+            let else_body = lower_algorithm_statement_block(state, owner, else_body)?;
+            Ok(state.insert_statement(
+                owner,
+                CoreAlgorithmStmtKind::If {
+                    condition: *condition,
+                    then_body,
+                    else_body,
+                },
+                source_with_provenance(source.clone(), provenance),
+                Vec::new(),
+            ))
+        }
+        AlgorithmStmtSeed::While {
+            condition,
+            invariants,
+            decreasing,
+            body,
+            source,
+            provenance,
+        } => {
+            let body = lower_algorithm_statement_block(state, owner, body)?;
+            Ok(state.insert_statement(
+                owner,
+                CoreAlgorithmStmtKind::While {
+                    condition: *condition,
+                    invariants: invariants.clone(),
+                    decreasing: decreasing.clone(),
+                    body,
+                },
+                source_with_provenance(source.clone(), provenance),
+                Vec::new(),
+            ))
+        }
+        AlgorithmStmtSeed::Match {
+            scrutinee,
+            arms,
+            source,
+            provenance,
+        } => {
+            let mut lowered_arms = Vec::new();
+            for arm in arms {
+                lowered_arms.push(CoreAlgorithmMatchArm {
+                    pattern: arm.pattern.clone(),
+                    body: lower_algorithm_statement_block(state, owner, &arm.body)?,
+                });
+            }
+            Ok(state.insert_statement(
+                owner,
+                CoreAlgorithmStmtKind::Match {
+                    scrutinee: *scrutinee,
+                    arms: lowered_arms,
+                },
+                source_with_provenance(source.clone(), provenance),
+                Vec::new(),
+            ))
+        }
+        AlgorithmStmtSeed::Return {
+            value,
+            source,
+            provenance,
+        } => Ok(state.insert_statement(
+            owner,
+            CoreAlgorithmStmtKind::Return(*value),
+            source_with_provenance(source.clone(), provenance),
+            Vec::new(),
+        )),
+        AlgorithmStmtSeed::Break { source, provenance } => Ok(state.insert_statement(
+            owner,
+            CoreAlgorithmStmtKind::Break,
+            source_with_provenance(source.clone(), provenance),
+            Vec::new(),
+        )),
+        AlgorithmStmtSeed::Continue { source, provenance } => Ok(state.insert_statement(
+            owner,
+            CoreAlgorithmStmtKind::Continue,
+            source_with_provenance(source.clone(), provenance),
+            Vec::new(),
+        )),
+        AlgorithmStmtSeed::Pick {
+            binder,
+            witness_ty,
+            ghost,
+            source,
+            provenance,
+        } => Ok(state.insert_statement(
+            owner,
+            CoreAlgorithmStmtKind::Pick {
+                binder: binder.clone(),
+                witness_ty: *witness_ty,
+                ghost: *ghost,
+            },
+            source_with_provenance(source.clone(), provenance),
+            Vec::new(),
+        )),
+        AlgorithmStmtSeed::Error(site) => {
+            let (statement, _) = insert_algorithm_error_statement(state, owner, site);
+            Ok(statement)
+        }
+    }
+}
+
+fn collect_algorithm_statement_diagnostics(
+    table: &CoreAlgorithmStmtTable,
+    statements: &[CoreAlgorithmStmtId],
+) -> Vec<CoreDiagnosticId> {
+    let mut diagnostics = Vec::new();
+    let mut seen = BTreeSet::new();
+    collect_algorithm_statement_diagnostics_into(table, statements, &mut diagnostics, &mut seen);
+    diagnostics
+}
+
+fn collect_algorithm_statement_diagnostics_into(
+    table: &CoreAlgorithmStmtTable,
+    statements: &[CoreAlgorithmStmtId],
+    diagnostics: &mut Vec<CoreDiagnosticId>,
+    seen: &mut BTreeSet<CoreDiagnosticId>,
+) {
+    for statement_id in statements {
+        let Some(statement) = table.get(*statement_id) else {
+            continue;
+        };
+        for diagnostic in &statement.diagnostics {
+            if seen.insert(*diagnostic) {
+                diagnostics.push(*diagnostic);
+            }
+        }
+        match &statement.kind {
+            CoreAlgorithmStmtKind::If {
+                then_body,
+                else_body,
+                ..
+            } => {
+                collect_algorithm_statement_diagnostics_into(table, then_body, diagnostics, seen);
+                collect_algorithm_statement_diagnostics_into(table, else_body, diagnostics, seen);
+            }
+            CoreAlgorithmStmtKind::While { body, .. } => {
+                collect_algorithm_statement_diagnostics_into(table, body, diagnostics, seen);
+            }
+            CoreAlgorithmStmtKind::Match { arms, .. } => {
+                for arm in arms {
+                    collect_algorithm_statement_diagnostics_into(
+                        table,
+                        &arm.body,
+                        diagnostics,
+                        seen,
+                    );
+                }
+            }
+            CoreAlgorithmStmtKind::Let { .. }
+            | CoreAlgorithmStmtKind::Assign { .. }
+            | CoreAlgorithmStmtKind::Assert { .. }
+            | CoreAlgorithmStmtKind::Return(_)
+            | CoreAlgorithmStmtKind::Break
+            | CoreAlgorithmStmtKind::Continue
+            | CoreAlgorithmStmtKind::Pick { .. }
+            | CoreAlgorithmStmtKind::Error(_) => {}
+        }
+    }
+}
+
+fn insert_algorithm_error_statement(
+    state: &mut AlgorithmLoweringState,
+    owner: CoreAlgorithmId,
+    site: &FailedSemanticSiteSeed,
+) -> (CoreAlgorithmStmtId, CoreDiagnosticId) {
+    let source = source_with_provenance(site.source.clone(), &site.provenance);
+    let diagnostic_id = state.diagnostics.insert(diagnostic(
+        CoreDiagnosticClass::AlgorithmShell,
+        CoreDiagnosticSeverity::Error,
+        CoreDiagnosticRecovery::Fatal,
+        site.message_key.clone(),
+        source.clone(),
+        None,
+    ));
+    let statement = state.insert_statement(
+        owner,
+        CoreAlgorithmStmtKind::Error(diagnostic_id),
+        source,
+        vec![diagnostic_id],
+    );
+    if let Some(diagnostic) = state.diagnostics.get_mut(diagnostic_id) {
+        diagnostic.owner = Some(CoreNodeRef::AlgorithmStmt(statement));
+    }
+    (statement, diagnostic_id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -6002,6 +6905,51 @@ mod tests {
             provenance(format!("checker:item:{name}").as_str()),
         )
         .with_definition_boundary(DefinitionBoundaryKind::Theorem)
+    }
+
+    fn algorithm_item_seed(name: &str, start: usize) -> CoreItemSeed {
+        CoreItemSeed::new(
+            symbol(name),
+            CoreItemKind::Algorithm,
+            "public",
+            direct(start, start + 3),
+            provenance(format!("checker:item:{name}").as_str()),
+        )
+        .with_definition_boundary(DefinitionBoundaryKind::Algorithm)
+    }
+
+    fn context_with_algorithm_var_sorts(
+        vars: Vec<(CoreVarId, NormalizedVarSort)>,
+    ) -> (CoreContext, CoreItemId) {
+        let mut input = input_with_items(vec![algorithm_item_seed("Owner", 0)]);
+        input.variable_seeds = vars
+            .iter()
+            .map(|(var, sort)| {
+                CoreVariableSeed::new(
+                    *var,
+                    NormalizedVarClass::Free,
+                    "term-binder",
+                    *sort,
+                    provenance(format!("checker:algorithm-var:{}", var.index()).as_str()),
+                )
+            })
+            .collect();
+        input.binder_seeds = vars
+            .iter()
+            .map(|(var, _)| {
+                CoreBinderSeed::new(
+                    *var,
+                    direct(var.index() + 1, var.index() + 2),
+                    provenance(format!("checker:algorithm-binder:{}", var.index()).as_str()),
+                )
+            })
+            .collect();
+        let context = prepare_core_context(input).expect("context");
+        let owner = context
+            .item_registry()
+            .id_for_symbol(&symbol("Owner"))
+            .expect("owner id");
+        (context, owner)
     }
 
     fn context_with_var(var: CoreVarId) -> (CoreContext, CoreItemId) {
@@ -6163,6 +7111,10 @@ mod tests {
         )
     }
 
+    fn expected_checker_source(start: usize, end: usize, key: &str) -> CoreSourceRef {
+        source_with_provenance(direct(start, end), &provenance(key))
+    }
+
     fn assert_step2_delta_valid(context: &CoreContext, output: &TypeAndFactLoweringOutput) {
         let mut source_map = output.source_map.clone();
         source_map.item_sources = context.source_map().item_sources.clone();
@@ -6254,6 +7206,32 @@ mod tests {
         CoreIr::try_new(parts).expect("step 5 delta validates when merged with prior lowering");
     }
 
+    fn assert_step6_delta_valid(
+        context: &CoreContext,
+        term_formula: &TermAndFormulaLoweringOutput,
+        definitions: &DefinitionLoweringOutput,
+        proofs: &ProofLoweringOutput,
+        output: &AlgorithmLoweringOutput,
+    ) {
+        let parts = CoreIrParts {
+            source_id: context.source_id(),
+            module_id: context.module_id().clone(),
+            items: context.item_registry().items().clone(),
+            terms: term_formula.terms.clone(),
+            formulas: term_formula.formulas.clone(),
+            definitions: definitions.definitions.clone(),
+            proofs: proofs.proofs.clone(),
+            proof_nodes: proofs.proof_nodes.clone(),
+            algorithms: output.algorithms.clone(),
+            algorithm_statements: output.algorithm_statements.clone(),
+            generated: term_formula.generated.clone(),
+            obligation_seeds: proofs.obligation_seeds.clone(),
+            source_map: output.source_map.clone(),
+            diagnostics: output.diagnostics.clone(),
+        };
+        CoreIr::try_new(parts).expect("step 6 delta validates when merged with prior lowering");
+    }
+
     fn test_binder(var: CoreVarId, ty_guard: Option<CoreFormulaId>, start: usize) -> CoreBinder {
         CoreBinder {
             var,
@@ -6284,6 +7262,20 @@ mod tests {
             .expect("empty definition lowering")
     }
 
+    fn empty_proof_output(
+        context: &CoreContext,
+        term_formula: &TermAndFormulaLoweringOutput,
+        definitions: &DefinitionLoweringOutput,
+    ) -> ProofLoweringOutput {
+        lower_proof_inputs(
+            context,
+            term_formula,
+            definitions,
+            ProofLoweringInput::new(),
+        )
+        .expect("empty proof lowering")
+    }
+
     fn definition_seed(
         owner: CoreItemId,
         symbol: SymbolId,
@@ -6300,6 +7292,25 @@ mod tests {
             generated_dependencies: Vec::new(),
             source: direct(start, start + 1),
             provenance: provenance(format!("checker:definition:{start}").as_str()),
+        }
+    }
+
+    fn algorithm_seed(
+        owner: CoreItemId,
+        symbol: SymbolId,
+        payload: AlgorithmPayloadSeed,
+        start: usize,
+    ) -> AlgorithmSeed {
+        AlgorithmSeed {
+            owner,
+            symbol,
+            params: Vec::new(),
+            result: None,
+            contracts: CoreContractSet::default(),
+            payload,
+            ghost_effects: Vec::new(),
+            source: direct(start, start + 1),
+            provenance: provenance(format!("checker:algorithm:{start}").as_str()),
         }
     }
 
@@ -9852,6 +10863,983 @@ mod tests {
             ),
             Err(ProofLoweringError::AssumedProofCannotHaveTerminalGoals { owner: actual })
                 if actual == owner
+        ));
+    }
+
+    #[test]
+    fn algorithm_lowering_preserves_shells_contracts_pick_and_nested_order() {
+        let x = CoreVarId::new(0);
+        let y = CoreVarId::new(1);
+        let z = CoreVarId::new(2);
+        let result = CoreVarId::new(3);
+        let ghost_pick = CoreVarId::new(4);
+        let (context, owner) = context_with_algorithm_var_sorts(vec![
+            (x, NormalizedVarSort::Term),
+            (y, NormalizedVarSort::Term),
+            (z, NormalizedVarSort::Term),
+            (result, NormalizedVarSort::Term),
+            (ghost_pick, NormalizedVarSort::Term),
+        ]);
+        let term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            vec![
+                term_seed(CoreTermSeedKind::Var(x), 230),
+                term_seed(CoreTermSeedKind::Var(y), 231),
+            ],
+            vec![
+                formula_seed(CoreFormulaSeedKind::True, 232),
+                formula_seed(CoreFormulaSeedKind::False, 233),
+                formula_seed(
+                    CoreFormulaSeedKind::TypePred {
+                        subject: CoreTermSeedId::new(0),
+                        ty: CoreTypePredicate::new("set"),
+                    },
+                    234,
+                ),
+            ],
+        );
+        let definitions = empty_definition_output(&context, &term_formula);
+        let proofs = empty_proof_output(&context, &term_formula, &definitions);
+        let term_x = term_formula.term_map[&CoreTermSeedId::new(0)];
+        let term_y = term_formula.term_map[&CoreTermSeedId::new(1)];
+        let requires = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let ensures = term_formula.formula_map[&CoreFormulaSeedId::new(1)];
+        let invariant = term_formula.formula_map[&CoreFormulaSeedId::new(2)];
+        let param = test_binder(x, Some(requires), 235);
+        let result_binder = test_binder(result, Some(ensures), 236);
+        let runtime_pick = test_binder(z, Some(invariant), 237);
+        let ghost_pick_binder = test_binder(ghost_pick, Some(requires), 238);
+        let mut seed = algorithm_seed(
+            owner,
+            symbol("Owner"),
+            AlgorithmPayloadSeed::Statements(vec![
+                AlgorithmStmtSeed::Let {
+                    binder: test_binder(y, Some(invariant), 239),
+                    value: Some(term_x),
+                    ghost: false,
+                    source: direct(240, 241),
+                    provenance: provenance("checker:algorithm:let"),
+                },
+                AlgorithmStmtSeed::Pick {
+                    binder: runtime_pick.clone(),
+                    witness_ty: Some(invariant),
+                    ghost: false,
+                    source: direct(241, 242),
+                    provenance: provenance("checker:algorithm:pick:runtime"),
+                },
+                AlgorithmStmtSeed::Pick {
+                    binder: ghost_pick_binder.clone(),
+                    witness_ty: Some(requires),
+                    ghost: true,
+                    source: direct(242, 243),
+                    provenance: provenance("checker:algorithm:pick:ghost"),
+                },
+                AlgorithmStmtSeed::If {
+                    condition: requires,
+                    then_body: vec![AlgorithmStmtSeed::Assert {
+                        formula: ensures,
+                        source: direct(243, 244),
+                        provenance: provenance("checker:algorithm:if:assert"),
+                    }],
+                    else_body: vec![AlgorithmStmtSeed::Break {
+                        source: direct(244, 245),
+                        provenance: provenance("checker:algorithm:if:break"),
+                    }],
+                    source: direct(245, 246),
+                    provenance: provenance("checker:algorithm:if"),
+                },
+                AlgorithmStmtSeed::While {
+                    condition: ensures,
+                    invariants: vec![invariant],
+                    decreasing: vec![term_x],
+                    body: vec![AlgorithmStmtSeed::Continue {
+                        source: direct(246, 247),
+                        provenance: provenance("checker:algorithm:while:continue"),
+                    }],
+                    source: direct(247, 248),
+                    provenance: provenance("checker:algorithm:while"),
+                },
+                AlgorithmStmtSeed::Match {
+                    scrutinee: term_x,
+                    arms: vec![AlgorithmMatchArmSeed {
+                        pattern: CoreProvenanceKey::new("case:some"),
+                        body: vec![AlgorithmStmtSeed::Return {
+                            value: Some(term_y),
+                            source: direct(248, 249),
+                            provenance: provenance("checker:algorithm:match:return"),
+                        }],
+                        provenance: provenance("checker:algorithm:match:arm"),
+                    }],
+                    source: direct(249, 250),
+                    provenance: provenance("checker:algorithm:match"),
+                },
+                AlgorithmStmtSeed::Assign {
+                    target: CorePlace::new("result"),
+                    value: term_y,
+                    source: direct(250, 251),
+                    provenance: provenance("checker:algorithm:assign"),
+                },
+                AlgorithmStmtSeed::Return {
+                    value: None,
+                    source: direct(251, 252),
+                    provenance: provenance("checker:algorithm:return"),
+                },
+            ]),
+            252,
+        );
+        seed.params = vec![param.clone()];
+        seed.result = Some(result_binder.clone());
+        seed.contracts = CoreContractSet {
+            requires: vec![requires],
+            ensures: vec![ensures],
+            invariants: vec![invariant],
+            assertions: vec![ensures],
+            decreasing: vec![term_x],
+        };
+        seed.ghost_effects = vec![
+            GhostEffectKey::new("runtime-state"),
+            GhostEffectKey::new("ghost-proof"),
+        ];
+
+        let output = lower_algorithm_inputs(
+            &context,
+            &term_formula,
+            &proofs,
+            AlgorithmLoweringInput {
+                algorithms: vec![seed],
+            },
+        )
+        .expect("algorithm lowering");
+        let algorithm_id = output.algorithm_map[&owner];
+        let algorithm = output.algorithms.get(algorithm_id).expect("algorithm");
+
+        assert_eq!(algorithm_id, CoreAlgorithmId::new(0));
+        assert_eq!(algorithm.item, owner);
+        assert_eq!(algorithm.symbol, symbol("Owner"));
+        assert_eq!(
+            algorithm.source,
+            expected_checker_source(252, 253, "checker:algorithm:252")
+        );
+        assert_eq!(algorithm.params, vec![param]);
+        assert_eq!(algorithm.result.as_ref(), Some(&result_binder));
+        assert_eq!(algorithm.contracts.requires, vec![requires]);
+        assert_eq!(algorithm.contracts.ensures, vec![ensures]);
+        assert_eq!(algorithm.contracts.invariants, vec![invariant]);
+        assert_eq!(algorithm.contracts.assertions, vec![ensures]);
+        assert_eq!(algorithm.contracts.decreasing, vec![term_x]);
+        assert_eq!(
+            algorithm.ghost_effects,
+            vec![
+                GhostEffectKey::new("runtime-state"),
+                GhostEffectKey::new("ghost-proof")
+            ]
+        );
+        assert_eq!(algorithm.statements.len(), 8);
+        assert!(algorithm.diagnostics.is_empty());
+        assert!(term_formula.generated_delta.is_empty());
+        assert_eq!(
+            output.source_map.algorithm_sources.len(),
+            output.algorithm_statements.len()
+        );
+        for (_, statement) in output.algorithm_statements.iter() {
+            assert_eq!(statement.owner, algorithm_id);
+        }
+
+        let let_statement = output
+            .algorithm_statements
+            .get(algorithm.statements[0])
+            .expect("let statement");
+        let expected_let_source = expected_checker_source(240, 241, "checker:algorithm:let");
+        assert_eq!(let_statement.source, expected_let_source);
+        assert_eq!(
+            output.source_map.algorithm_sources[&algorithm.statements[0]],
+            expected_let_source
+        );
+        let CoreAlgorithmStmtKind::Let {
+            value,
+            ghost,
+            binder,
+        } = &let_statement.kind
+        else {
+            panic!("expected let statement");
+        };
+        assert_eq!(binder.var, y);
+        assert_eq!(*value, Some(term_x));
+        assert!(!ghost);
+
+        let pick_statement = output
+            .algorithm_statements
+            .get(algorithm.statements[1])
+            .expect("runtime pick statement");
+        assert_eq!(
+            pick_statement.source,
+            expected_checker_source(241, 242, "checker:algorithm:pick:runtime")
+        );
+        let CoreAlgorithmStmtKind::Pick {
+            binder,
+            witness_ty,
+            ghost,
+        } = &pick_statement.kind
+        else {
+            panic!("expected pick statement");
+        };
+        assert_eq!(binder, &runtime_pick);
+        assert_eq!(*witness_ty, Some(invariant));
+        assert!(!ghost);
+
+        let ghost_pick_statement = output
+            .algorithm_statements
+            .get(algorithm.statements[2])
+            .expect("ghost pick statement");
+        let CoreAlgorithmStmtKind::Pick { binder, ghost, .. } = &ghost_pick_statement.kind else {
+            panic!("expected ghost pick statement");
+        };
+        assert_eq!(binder, &ghost_pick_binder);
+        assert!(ghost);
+
+        let if_statement = output
+            .algorithm_statements
+            .get(algorithm.statements[3])
+            .expect("if statement");
+        assert_eq!(
+            if_statement.source,
+            expected_checker_source(245, 246, "checker:algorithm:if")
+        );
+        let CoreAlgorithmStmtKind::If {
+            condition,
+            then_body,
+            else_body,
+        } = &if_statement.kind
+        else {
+            panic!("expected if statement");
+        };
+        assert_eq!(*condition, requires);
+        assert_eq!(then_body.len(), 1);
+        assert_eq!(else_body.len(), 1);
+        assert!(matches!(
+            output
+                .algorithm_statements
+                .get(then_body[0])
+                .expect("then assertion")
+                .kind,
+            CoreAlgorithmStmtKind::Assert { formula } if formula == ensures
+        ));
+        assert!(matches!(
+            output
+                .algorithm_statements
+                .get(else_body[0])
+                .expect("else break")
+                .kind,
+            CoreAlgorithmStmtKind::Break
+        ));
+
+        let while_statement = output
+            .algorithm_statements
+            .get(algorithm.statements[4])
+            .expect("while statement");
+        assert_eq!(
+            while_statement.source,
+            expected_checker_source(247, 248, "checker:algorithm:while")
+        );
+        let CoreAlgorithmStmtKind::While {
+            condition,
+            invariants,
+            decreasing,
+            body,
+        } = &while_statement.kind
+        else {
+            panic!("expected while statement");
+        };
+        assert_eq!(*condition, ensures);
+        assert_eq!(invariants, &vec![invariant]);
+        assert_eq!(decreasing, &vec![term_x]);
+        assert_eq!(body.len(), 1);
+        assert!(matches!(
+            output
+                .algorithm_statements
+                .get(body[0])
+                .expect("while continue")
+                .kind,
+            CoreAlgorithmStmtKind::Continue
+        ));
+
+        let match_statement = output
+            .algorithm_statements
+            .get(algorithm.statements[5])
+            .expect("match statement");
+        let CoreAlgorithmStmtKind::Match { scrutinee, arms } = &match_statement.kind else {
+            panic!("expected match statement");
+        };
+        assert_eq!(*scrutinee, term_x);
+        assert_eq!(arms.len(), 1);
+        assert_eq!(arms[0].pattern, CoreProvenanceKey::new("case:some"));
+        assert_eq!(arms[0].body.len(), 1);
+        assert!(matches!(
+            output
+                .algorithm_statements
+                .get(arms[0].body[0])
+                .expect("match return")
+                .kind,
+            CoreAlgorithmStmtKind::Return(Some(term)) if term == term_y
+        ));
+
+        assert!(matches!(
+            &output
+                .algorithm_statements
+                .get(algorithm.statements[6])
+                .expect("assignment")
+                .kind,
+            CoreAlgorithmStmtKind::Assign { target, value }
+                if target == &CorePlace::new("result") && *value == term_y
+        ));
+        assert!(matches!(
+            output
+                .algorithm_statements
+                .get(algorithm.statements[7])
+                .expect("return")
+                .kind,
+            CoreAlgorithmStmtKind::Return(None)
+        ));
+        assert_step6_delta_valid(&context, &term_formula, &definitions, &proofs, &output);
+    }
+
+    #[test]
+    fn algorithm_lowering_missing_payload_records_error_statement_and_diagnostic() {
+        let (context, owner) = context_with_algorithm_var_sorts(Vec::new());
+        let term_formula = lower_test_terms_and_formulas(&context, owner, Vec::new(), Vec::new());
+        let definitions = empty_definition_output(&context, &term_formula);
+        let proofs = empty_proof_output(&context, &term_formula, &definitions);
+
+        let output = lower_algorithm_inputs(
+            &context,
+            &term_formula,
+            &proofs,
+            AlgorithmLoweringInput {
+                algorithms: vec![algorithm_seed(
+                    owner,
+                    symbol("Owner"),
+                    AlgorithmPayloadSeed::Missing(failed_site("algorithm-payload-missing", 260)),
+                    261,
+                )],
+            },
+        )
+        .expect("algorithm lowering");
+        let algorithm_id = output.algorithm_map[&owner];
+        let algorithm = output.algorithms.get(algorithm_id).expect("algorithm");
+        let statement_id = algorithm.statements[0];
+        let statement = output
+            .algorithm_statements
+            .get(statement_id)
+            .expect("error statement");
+        let expected_source =
+            expected_checker_source(260, 261, "checker:failed:algorithm-payload-missing");
+        assert_eq!(statement.source, expected_source);
+        assert_eq!(
+            output.source_map.algorithm_sources[&statement_id],
+            expected_source
+        );
+        let CoreAlgorithmStmtKind::Error(diagnostic_id) = &statement.kind else {
+            panic!("expected error statement");
+        };
+        let diagnostic_id = *diagnostic_id;
+        let diagnostic = output
+            .diagnostics
+            .get(diagnostic_id)
+            .expect("algorithm diagnostic");
+
+        assert_eq!(algorithm.statements, vec![statement_id]);
+        assert_eq!(algorithm.diagnostics, vec![diagnostic_id]);
+        assert_eq!(statement.diagnostics, vec![diagnostic_id]);
+        assert_eq!(diagnostic.class, CoreDiagnosticClass::AlgorithmShell);
+        assert_eq!(diagnostic.severity, CoreDiagnosticSeverity::Error);
+        assert_eq!(diagnostic.recovery, CoreDiagnosticRecovery::Fatal);
+        assert_eq!(diagnostic.message_key.as_str(), "algorithm-payload-missing");
+        assert_eq!(diagnostic.primary_source, expected_source);
+        assert_eq!(
+            diagnostic.owner,
+            Some(CoreNodeRef::AlgorithmStmt(statement_id))
+        );
+        assert_step6_delta_valid(&context, &term_formula, &definitions, &proofs, &output);
+    }
+
+    #[test]
+    fn algorithm_lowering_malformed_statement_records_parent_diagnostic() {
+        let (context, owner) = context_with_algorithm_var_sorts(Vec::new());
+        let term_formula = lower_test_terms_and_formulas(&context, owner, Vec::new(), Vec::new());
+        let definitions = empty_definition_output(&context, &term_formula);
+        let proofs = empty_proof_output(&context, &term_formula, &definitions);
+
+        let output = lower_algorithm_inputs(
+            &context,
+            &term_formula,
+            &proofs,
+            AlgorithmLoweringInput {
+                algorithms: vec![algorithm_seed(
+                    owner,
+                    symbol("Owner"),
+                    AlgorithmPayloadSeed::Statements(vec![AlgorithmStmtSeed::Error(failed_site(
+                        "algorithm-statement-malformed",
+                        262,
+                    ))]),
+                    263,
+                )],
+            },
+        )
+        .expect("algorithm lowering");
+        let algorithm_id = output.algorithm_map[&owner];
+        let algorithm = output.algorithms.get(algorithm_id).expect("algorithm");
+        let statement_id = algorithm.statements[0];
+        let statement = output
+            .algorithm_statements
+            .get(statement_id)
+            .expect("error statement");
+        let expected_source =
+            expected_checker_source(262, 263, "checker:failed:algorithm-statement-malformed");
+        assert_eq!(statement.source, expected_source);
+        assert_eq!(
+            output.source_map.algorithm_sources[&statement_id],
+            expected_source
+        );
+        let CoreAlgorithmStmtKind::Error(diagnostic_id) = statement.kind else {
+            panic!("expected error statement");
+        };
+        let diagnostic = output
+            .diagnostics
+            .get(diagnostic_id)
+            .expect("algorithm diagnostic");
+
+        assert_eq!(algorithm.statements, vec![statement_id]);
+        assert_eq!(algorithm.diagnostics, vec![diagnostic_id]);
+        assert_eq!(statement.diagnostics, vec![diagnostic_id]);
+        assert_eq!(diagnostic.class, CoreDiagnosticClass::AlgorithmShell);
+        assert_eq!(diagnostic.severity, CoreDiagnosticSeverity::Error);
+        assert_eq!(diagnostic.recovery, CoreDiagnosticRecovery::Fatal);
+        assert_eq!(
+            diagnostic.message_key.as_str(),
+            "algorithm-statement-malformed"
+        );
+        assert_eq!(diagnostic.primary_source, expected_source);
+        assert_eq!(
+            diagnostic.owner,
+            Some(CoreNodeRef::AlgorithmStmt(statement_id))
+        );
+        assert_step6_delta_valid(&context, &term_formula, &definitions, &proofs, &output);
+    }
+
+    #[test]
+    fn algorithm_lowering_rejects_owner_symbol_and_boundary_mismatches() {
+        let context = prepare_core_context(input_with_items(vec![
+            item_seed("TheoremOwner", 270),
+            algorithm_item_seed("AlgorithmOwner", 271),
+            CoreItemSeed::new(
+                symbol("NoBoundary"),
+                CoreItemKind::Algorithm,
+                "public",
+                direct(272, 273),
+                provenance("checker:item:no-boundary"),
+            ),
+            CoreItemSeed::new(
+                symbol("WrongBoundary"),
+                CoreItemKind::Algorithm,
+                "public",
+                direct(273, 274),
+                provenance("checker:item:wrong-boundary"),
+            )
+            .with_definition_boundary(DefinitionBoundaryKind::DefinitionalItem),
+        ]))
+        .expect("context");
+        let theorem_owner = context
+            .item_registry()
+            .id_for_symbol(&symbol("TheoremOwner"))
+            .expect("theorem owner");
+        let algorithm_owner = context
+            .item_registry()
+            .id_for_symbol(&symbol("AlgorithmOwner"))
+            .expect("algorithm owner");
+        let no_boundary = context
+            .item_registry()
+            .id_for_symbol(&symbol("NoBoundary"))
+            .expect("no boundary");
+        let wrong_boundary = context
+            .item_registry()
+            .id_for_symbol(&symbol("WrongBoundary"))
+            .expect("wrong boundary");
+        let term_formula =
+            lower_test_terms_and_formulas(&context, algorithm_owner, Vec::new(), Vec::new());
+        let definitions = empty_definition_output(&context, &term_formula);
+        let proofs = empty_proof_output(&context, &term_formula, &definitions);
+        let valid_seed = algorithm_seed(
+            algorithm_owner,
+            symbol("AlgorithmOwner"),
+            AlgorithmPayloadSeed::Statements(Vec::new()),
+            274,
+        );
+
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![valid_seed.clone(), valid_seed],
+                },
+            ),
+            Err(AlgorithmLoweringError::DuplicateAlgorithmOwner { owner })
+                if owner == algorithm_owner
+        ));
+
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![algorithm_seed(
+                        CoreItemId::new(99),
+                        symbol("MissingOwner"),
+                        AlgorithmPayloadSeed::Statements(Vec::new()),
+                        275,
+                    )],
+                },
+            ),
+            Err(AlgorithmLoweringError::MissingOwnerItem { owner })
+                if owner == CoreItemId::new(99)
+        ));
+
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![algorithm_seed(
+                        theorem_owner,
+                        symbol("TheoremOwner"),
+                        AlgorithmPayloadSeed::Statements(Vec::new()),
+                        276,
+                    )],
+                },
+            ),
+            Err(AlgorithmLoweringError::UnsupportedAlgorithmItemKind { owner, kind })
+                if owner == theorem_owner && kind == CoreItemKind::Theorem
+        ));
+
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![algorithm_seed(
+                        algorithm_owner,
+                        symbol("WrongOwnerSymbol"),
+                        AlgorithmPayloadSeed::Statements(Vec::new()),
+                        277,
+                    )],
+                },
+            ),
+            Err(AlgorithmLoweringError::AlgorithmSymbolMismatch { owner, .. })
+                if owner == algorithm_owner
+        ));
+
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![algorithm_seed(
+                        no_boundary,
+                        symbol("NoBoundary"),
+                        AlgorithmPayloadSeed::Statements(Vec::new()),
+                        278,
+                    )],
+                },
+            ),
+            Err(AlgorithmLoweringError::MissingAlgorithmBoundary { owner })
+                if owner == no_boundary
+        ));
+
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![algorithm_seed(
+                        wrong_boundary,
+                        symbol("WrongBoundary"),
+                        AlgorithmPayloadSeed::Statements(Vec::new()),
+                        279,
+                    )],
+                },
+            ),
+            Err(AlgorithmLoweringError::AlgorithmBoundaryMismatch { owner, kind })
+                if owner == wrong_boundary && kind == DefinitionBoundaryKind::DefinitionalItem
+        ));
+
+        let mut skipped_context = context.clone();
+        skipped_context
+            .definition_boundaries
+            .by_item
+            .get_mut(&algorithm_owner)
+            .expect("algorithm boundary")
+            .status = DefinitionBoundaryStatus::Skipped;
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &skipped_context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![algorithm_seed(
+                        algorithm_owner,
+                        symbol("AlgorithmOwner"),
+                        AlgorithmPayloadSeed::Statements(Vec::new()),
+                        280,
+                    )],
+                },
+            ),
+            Err(AlgorithmLoweringError::AlgorithmBoundaryNotPending { owner, status })
+                if owner == algorithm_owner && status == DefinitionBoundaryStatus::Skipped
+        ));
+    }
+
+    #[test]
+    fn algorithm_lowering_rejects_invalid_binders_terms_formulas_and_targets() {
+        let x = CoreVarId::new(0);
+        let formula_var = CoreVarId::new(1);
+        let (context, owner) = context_with_algorithm_var_sorts(vec![
+            (x, NormalizedVarSort::Term),
+            (formula_var, NormalizedVarSort::Formula),
+        ]);
+        let term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            vec![term_seed(CoreTermSeedKind::Var(x), 280)],
+            vec![formula_seed(CoreFormulaSeedKind::True, 281)],
+        );
+        let definitions = empty_definition_output(&context, &term_formula);
+        let proofs = empty_proof_output(&context, &term_formula, &definitions);
+        let term = term_formula.term_map[&CoreTermSeedId::new(0)];
+        let formula = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+
+        let mut non_term_binder = algorithm_seed(
+            owner,
+            symbol("Owner"),
+            AlgorithmPayloadSeed::Statements(Vec::new()),
+            282,
+        );
+        non_term_binder.params = vec![test_binder(formula_var, None, 283)];
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![non_term_binder],
+                },
+            ),
+            Err(AlgorithmLoweringError::NonTermAlgorithmBinder { var, sort })
+                if var == formula_var && sort == NormalizedVarSort::Formula
+        ));
+
+        let undeclared = CoreVarId::new(99);
+        let mut undeclared_binder = algorithm_seed(
+            owner,
+            symbol("Owner"),
+            AlgorithmPayloadSeed::Statements(Vec::new()),
+            284,
+        );
+        undeclared_binder.result = Some(test_binder(undeclared, None, 285));
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![undeclared_binder],
+                },
+            ),
+            Err(AlgorithmLoweringError::UndeclaredAlgorithmBinder { var })
+                if var == undeclared
+        ));
+
+        let missing_formula = CoreFormulaId::new(99);
+        let mut bad_contract_formula = algorithm_seed(
+            owner,
+            symbol("Owner"),
+            AlgorithmPayloadSeed::Statements(Vec::new()),
+            286,
+        );
+        bad_contract_formula.contracts.requires = vec![missing_formula];
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![bad_contract_formula],
+                },
+            ),
+            Err(AlgorithmLoweringError::MissingAlgorithmFormula { formula })
+                if formula == missing_formula
+        ));
+
+        let missing_term = CoreTermId::new(99);
+        let mut bad_contract_term = algorithm_seed(
+            owner,
+            symbol("Owner"),
+            AlgorithmPayloadSeed::Statements(Vec::new()),
+            287,
+        );
+        bad_contract_term.contracts.decreasing = vec![missing_term];
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![bad_contract_term],
+                },
+            ),
+            Err(AlgorithmLoweringError::MissingAlgorithmTerm { term })
+                if term == missing_term
+        ));
+
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![algorithm_seed(
+                        owner,
+                        symbol("Owner"),
+                        AlgorithmPayloadSeed::Statements(vec![AlgorithmStmtSeed::If {
+                            condition: missing_formula,
+                            then_body: Vec::new(),
+                            else_body: Vec::new(),
+                            source: direct(288, 289),
+                            provenance: provenance("checker:algorithm:bad-if"),
+                        }]),
+                        289,
+                    )],
+                },
+            ),
+            Err(AlgorithmLoweringError::MissingAlgorithmFormula { formula })
+                if formula == missing_formula
+        ));
+
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![algorithm_seed(
+                        owner,
+                        symbol("Owner"),
+                        AlgorithmPayloadSeed::Statements(vec![AlgorithmStmtSeed::While {
+                            condition: formula,
+                            invariants: vec![missing_formula],
+                            decreasing: Vec::new(),
+                            body: Vec::new(),
+                            source: direct(290, 291),
+                            provenance: provenance("checker:algorithm:bad-while-invariant"),
+                        }]),
+                        291,
+                    )],
+                },
+            ),
+            Err(AlgorithmLoweringError::MissingAlgorithmFormula { formula })
+                if formula == missing_formula
+        ));
+
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![algorithm_seed(
+                        owner,
+                        symbol("Owner"),
+                        AlgorithmPayloadSeed::Statements(vec![AlgorithmStmtSeed::While {
+                            condition: formula,
+                            invariants: Vec::new(),
+                            decreasing: vec![missing_term],
+                            body: Vec::new(),
+                            source: direct(292, 293),
+                            provenance: provenance("checker:algorithm:bad-while-decreasing"),
+                        }]),
+                        293,
+                    )],
+                },
+            ),
+            Err(AlgorithmLoweringError::MissingAlgorithmTerm { term })
+                if term == missing_term
+        ));
+
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![algorithm_seed(
+                        owner,
+                        symbol("Owner"),
+                        AlgorithmPayloadSeed::Statements(vec![AlgorithmStmtSeed::Match {
+                            scrutinee: missing_term,
+                            arms: Vec::new(),
+                            source: direct(294, 295),
+                            provenance: provenance("checker:algorithm:bad-match"),
+                        }]),
+                        295,
+                    )],
+                },
+            ),
+            Err(AlgorithmLoweringError::MissingAlgorithmTerm { term })
+                if term == missing_term
+        ));
+
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![algorithm_seed(
+                        owner,
+                        symbol("Owner"),
+                        AlgorithmPayloadSeed::Statements(vec![AlgorithmStmtSeed::Return {
+                            value: Some(missing_term),
+                            source: direct(296, 297),
+                            provenance: provenance("checker:algorithm:bad-return"),
+                        }]),
+                        297,
+                    )],
+                },
+            ),
+            Err(AlgorithmLoweringError::MissingAlgorithmTerm { term })
+                if term == missing_term
+        ));
+
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![algorithm_seed(
+                        owner,
+                        symbol("Owner"),
+                        AlgorithmPayloadSeed::Statements(vec![AlgorithmStmtSeed::Assign {
+                            target: CorePlace::new("result"),
+                            value: missing_term,
+                            source: direct(298, 299),
+                            provenance: provenance("checker:algorithm:missing-term"),
+                        }]),
+                        299,
+                    )],
+                },
+            ),
+            Err(AlgorithmLoweringError::MissingAlgorithmTerm { term })
+                if term == missing_term
+        ));
+
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![algorithm_seed(
+                        owner,
+                        symbol("Owner"),
+                        AlgorithmPayloadSeed::Statements(vec![AlgorithmStmtSeed::Assert {
+                            formula: missing_formula,
+                            source: direct(300, 301),
+                            provenance: provenance("checker:algorithm:missing-formula"),
+                        }]),
+                        301,
+                    )],
+                },
+            ),
+            Err(AlgorithmLoweringError::MissingAlgorithmFormula { formula })
+                if formula == missing_formula
+        ));
+
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![algorithm_seed(
+                        owner,
+                        symbol("Owner"),
+                        AlgorithmPayloadSeed::Statements(vec![AlgorithmStmtSeed::Assign {
+                            target: CorePlace::new(""),
+                            value: term,
+                            source: direct(302, 303),
+                            provenance: provenance("checker:algorithm:bad-target"),
+                        }]),
+                        303,
+                    )],
+                },
+            ),
+            Err(AlgorithmLoweringError::InvalidAlgorithmTarget { target })
+                if target.as_str().is_empty()
+        ));
+
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![algorithm_seed(
+                        owner,
+                        symbol("Owner"),
+                        AlgorithmPayloadSeed::Statements(vec![AlgorithmStmtSeed::Pick {
+                            binder: test_binder(x, None, 304),
+                            witness_ty: Some(missing_formula),
+                            ghost: false,
+                            source: direct(304, 305),
+                            provenance: provenance("checker:algorithm:bad-pick-witness"),
+                        }]),
+                        305,
+                    )],
+                },
+            ),
+            Err(AlgorithmLoweringError::MissingAlgorithmFormula { formula })
+                if formula == missing_formula
+        ));
+
+        assert!(matches!(
+            lower_algorithm_inputs(
+                &context,
+                &term_formula,
+                &proofs,
+                AlgorithmLoweringInput {
+                    algorithms: vec![algorithm_seed(
+                        owner,
+                        symbol("Owner"),
+                        AlgorithmPayloadSeed::Statements(vec![AlgorithmStmtSeed::Pick {
+                            binder: test_binder(x, Some(missing_formula), 306),
+                            witness_ty: Some(formula),
+                            ghost: false,
+                            source: direct(306, 307),
+                            provenance: provenance("checker:algorithm:bad-pick-binder"),
+                        }]),
+                        307,
+                    )],
+                },
+            ),
+            Err(AlgorithmLoweringError::MissingAlgorithmFormula { formula })
+                if formula == missing_formula
         ));
     }
 

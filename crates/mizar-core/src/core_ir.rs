@@ -613,6 +613,9 @@ pub enum GeneratedOriginKind {
     LocalAbbreviation,
     TypePredicate,
     ErrorPlaceholder,
+    /// Reserved for future non-executable algorithm bookkeeping. Step-6
+    /// executable picks use `CoreAlgorithmStmtKind::Pick` and do not emit this
+    /// generated-origin kind.
     AlgorithmPick,
 }
 
