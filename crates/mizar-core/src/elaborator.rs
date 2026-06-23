@@ -6,16 +6,17 @@
 use crate::{
     binder_normalization::{BinderContext, NormalizedVarClass, NormalizedVarSort},
     core_ir::{
-        CoreBinder, CoreDiagnostic, CoreDiagnosticClass, CoreDiagnosticId,
-        CoreDiagnosticMessageKey, CoreDiagnosticRecovery, CoreDiagnosticSeverity,
-        CoreDiagnosticTable, CoreFormula, CoreFormulaId, CoreFormulaKind, CoreFormulaTable,
-        CoreItem, CoreItemId, CoreItemKind, CoreItemStatus, CoreItemTable, CoreNodeRef,
-        CoreProvenance, CoreProvenanceKey, CoreProvenancePhase, CoreSourceAnchor, CoreSourceMap,
-        CoreSourceRef, CoreTerm, CoreTermId, CoreTermKind, CoreTermTable, CoreTypePredicate,
-        CoreVarId, CoreVarRole, CoreVisibility, GeneratedOrigin, GeneratedOriginId,
-        GeneratedOriginKey, GeneratedOriginKind, GeneratedOriginTable, LocalProofOrProgramPath,
-        NormalizedSemanticOrigin, ObligationSeed, ObligationSeedId, ObligationSeedKind,
-        ObligationSeedStatus, ObligationSeedTable,
+        CoreBinder, CoreDefinition, CoreDefinitionId, CoreDefinitionTable, CoreDiagnostic,
+        CoreDiagnosticClass, CoreDiagnosticId, CoreDiagnosticMessageKey, CoreDiagnosticRecovery,
+        CoreDiagnosticSeverity, CoreDiagnosticTable, CoreFormula, CoreFormulaId, CoreFormulaKind,
+        CoreFormulaTable, CoreItem, CoreItemId, CoreItemKind, CoreItemStatus, CoreItemTable,
+        CoreNodeRef, CoreProvenance, CoreProvenanceKey, CoreProvenancePhase, CoreSourceAnchor,
+        CoreSourceMap, CoreSourceRef, CoreTerm, CoreTermId, CoreTermKind, CoreTermTable,
+        CoreTypePredicate, CoreVarId, CoreVarRole, CoreVisibility, DefinitionBody,
+        DefinitionBranchBody, ExpansionPolicy, GeneratedOrigin, GeneratedOriginId,
+        GeneratedOriginKey, GeneratedOriginKind, GeneratedOriginTable, GuardedDefinitionBranch,
+        LocalProofOrProgramPath, NormalizedSemanticOrigin, ObligationSeed, ObligationSeedId,
+        ObligationSeedKind, ObligationSeedStatus, ObligationSeedTable,
     },
 };
 use mizar_checker::{
@@ -3573,6 +3574,1110 @@ fn source_with_provenance(
     source.with_provenance(entries)
 }
 
+pub type DefinitionLoweringResult<T> = Result<T, DefinitionLoweringError>;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum DefinitionLoweringError {
+    MissingOwnerItem {
+        owner: CoreItemId,
+    },
+    DuplicateDefinitionOwner {
+        owner: CoreItemId,
+    },
+    UndeclaredDefinitionParam {
+        var: CoreVarId,
+    },
+    NonTermDefinitionParam {
+        var: CoreVarId,
+        sort: NormalizedVarSort,
+    },
+    MissingDefinitionBoundary {
+        owner: CoreItemId,
+    },
+    DefinitionBoundaryNotPending {
+        owner: CoreItemId,
+        status: DefinitionBoundaryStatus,
+    },
+    DefinitionSymbolMismatch {
+        owner: CoreItemId,
+        expected: Box<SymbolId>,
+        actual: Box<SymbolId>,
+    },
+    MissingTermBody {
+        term: CoreTermId,
+    },
+    MissingFormulaBody {
+        formula: CoreFormulaId,
+    },
+    MissingGeneratedDependency {
+        origin: GeneratedOriginId,
+    },
+    SpuriousGeneratedDependency {
+        origin: GeneratedOriginId,
+    },
+    MissingOtherwiseExcludes {
+        branch: usize,
+    },
+    OtherwiseExcludesMismatch {
+        branch: usize,
+    },
+    AlgorithmBodyDeferred,
+    AlgorithmBoundaryRequiresDeferredBody {
+        owner: CoreItemId,
+    },
+    InvalidCorrectnessObligation {
+        kind: ObligationSeedKind,
+        status: ObligationSeedStatus,
+    },
+    ExistingCorrectnessOwnerMismatch {
+        obligation: ObligationSeedId,
+        expected: CoreItemId,
+        actual: CoreItemId,
+    },
+    MissingActiveCorrectnessGoal,
+    InvalidSeedProvenance(CoreContextError),
+}
+
+impl fmt::Display for DefinitionLoweringError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MissingOwnerItem { owner } => {
+                write!(formatter, "missing definition owner item {}", owner.index())
+            }
+            Self::DuplicateDefinitionOwner { owner } => {
+                write!(
+                    formatter,
+                    "definition input contains duplicate owner item {}",
+                    owner.index()
+                )
+            }
+            Self::UndeclaredDefinitionParam { var } => {
+                write!(formatter, "undeclared definition parameter {}", var.index())
+            }
+            Self::NonTermDefinitionParam { var, sort } => {
+                write!(
+                    formatter,
+                    "definition parameter {} has non-term sort {sort:?}",
+                    var.index()
+                )
+            }
+            Self::MissingDefinitionBoundary { owner } => {
+                write!(
+                    formatter,
+                    "missing pending definition boundary for item {}",
+                    owner.index()
+                )
+            }
+            Self::DefinitionBoundaryNotPending { owner, status } => {
+                write!(
+                    formatter,
+                    "definition boundary for item {} has status {status:?}",
+                    owner.index()
+                )
+            }
+            Self::DefinitionSymbolMismatch {
+                owner,
+                expected,
+                actual,
+            } => {
+                write!(
+                    formatter,
+                    "definition seed for item {} used symbol {actual:?}; expected {expected:?}",
+                    owner.index()
+                )
+            }
+            Self::MissingTermBody { term } => {
+                write!(
+                    formatter,
+                    "definition references missing term {}",
+                    term.index()
+                )
+            }
+            Self::MissingFormulaBody { formula } => {
+                write!(
+                    formatter,
+                    "definition references missing formula {}",
+                    formula.index()
+                )
+            }
+            Self::MissingGeneratedDependency { origin } => {
+                write!(
+                    formatter,
+                    "definition references missing generated dependency {}",
+                    origin.index()
+                )
+            }
+            Self::SpuriousGeneratedDependency { origin } => {
+                write!(
+                    formatter,
+                    "definition dependency {} is not reachable from generated term uses",
+                    origin.index()
+                )
+            }
+            Self::MissingOtherwiseExcludes { branch } => {
+                write!(
+                    formatter,
+                    "otherwise branch {branch} has no excluded guards"
+                )
+            }
+            Self::OtherwiseExcludesMismatch { branch } => {
+                write!(
+                    formatter,
+                    "otherwise branch {branch} exclusions do not match prior guards"
+                )
+            }
+            Self::AlgorithmBodyDeferred => {
+                write!(
+                    formatter,
+                    "algorithm-backed definition body is deferred to Task 13"
+                )
+            }
+            Self::AlgorithmBoundaryRequiresDeferredBody { owner } => {
+                write!(
+                    formatter,
+                    "algorithm boundary item {} must use a deferred or unavailable body in Task 11",
+                    owner.index()
+                )
+            }
+            Self::InvalidCorrectnessObligation { kind, status } => {
+                write!(
+                    formatter,
+                    "definition correctness obligation must be DefinitionCorrectness with a valid status, got {kind:?}/{status:?}"
+                )
+            }
+            Self::ExistingCorrectnessOwnerMismatch {
+                obligation,
+                expected,
+                actual,
+            } => {
+                write!(
+                    formatter,
+                    "existing definition correctness obligation {} is owned by item {}, expected item {}",
+                    obligation.index(),
+                    actual.index(),
+                    expected.index()
+                )
+            }
+            Self::MissingActiveCorrectnessGoal => {
+                write!(
+                    formatter,
+                    "active definition correctness obligation needs a goal"
+                )
+            }
+            Self::InvalidSeedProvenance(error) => write!(formatter, "{error}"),
+        }
+    }
+}
+
+impl Error for DefinitionLoweringError {}
+
+impl From<CoreContextError> for DefinitionLoweringError {
+    fn from(value: CoreContextError) -> Self {
+        Self::InvalidSeedProvenance(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DefinitionLoweringInput {
+    pub definitions: Vec<DefinitionSeed>,
+}
+
+impl DefinitionLoweringInput {
+    pub const fn new() -> Self {
+        Self {
+            definitions: Vec::new(),
+        }
+    }
+}
+
+impl Default for DefinitionLoweringInput {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DefinitionSeed {
+    pub owner: CoreItemId,
+    pub symbol: SymbolId,
+    pub params: Vec<CoreBinder>,
+    pub body: DefinitionBodySeed,
+    pub expansion: ExpansionPolicy,
+    pub correctness: Vec<DefinitionCorrectnessSeed>,
+    pub generated_dependencies: Vec<GeneratedOriginId>,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum DefinitionBodySeed {
+    Term(CoreTermId),
+    Formula(CoreFormulaId),
+    Guarded(Vec<GuardedDefinitionBranchSeed>),
+    AlgorithmDeferred(FailedSemanticSiteSeed),
+    Unavailable(FailedSemanticSiteSeed),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GuardedDefinitionBranchSeed {
+    pub guard: DefinitionGuardSeed,
+    pub body: DefinitionBranchBody,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum DefinitionGuardSeed {
+    Explicit(CoreFormulaId),
+    Otherwise {
+        guard: CoreFormulaId,
+        excludes: Vec<CoreFormulaId>,
+        provenance: CheckerOwnedProvenance,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum DefinitionCorrectnessSeed {
+    New(Box<DefinitionObligationSeed>),
+    Existing(ObligationSeedId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DefinitionObligationSeed {
+    pub kind: ObligationSeedKind,
+    pub status: ObligationSeedStatus,
+    pub goal: Option<CoreFormulaId>,
+    pub context: Vec<CoreFormulaId>,
+    pub local_path: LocalProofOrProgramPath,
+    pub label: Option<crate::core_ir::CoreLabelRef>,
+    pub semantic_origin: NormalizedSemanticOrigin,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+impl DefinitionObligationSeed {
+    pub fn active(
+        goal: CoreFormulaId,
+        local_path: impl Into<LocalProofOrProgramPath>,
+        semantic_origin: impl Into<NormalizedSemanticOrigin>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    ) -> Self {
+        Self {
+            kind: ObligationSeedKind::DefinitionCorrectness,
+            status: ObligationSeedStatus::Active,
+            goal: Some(goal),
+            context: Vec::new(),
+            local_path: local_path.into(),
+            label: None,
+            semantic_origin: semantic_origin.into(),
+            source,
+            provenance,
+        }
+    }
+
+    pub fn deferred(
+        local_path: impl Into<LocalProofOrProgramPath>,
+        semantic_origin: impl Into<NormalizedSemanticOrigin>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    ) -> Self {
+        Self {
+            kind: ObligationSeedKind::DefinitionCorrectness,
+            status: ObligationSeedStatus::Deferred,
+            goal: None,
+            context: Vec::new(),
+            local_path: local_path.into(),
+            label: None,
+            semantic_origin: semantic_origin.into(),
+            source,
+            provenance,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DefinitionLoweringOutput {
+    pub definitions: CoreDefinitionTable,
+    pub obligation_seeds: ObligationSeedTable,
+    pub source_map: CoreSourceMap,
+    pub diagnostics: CoreDiagnosticTable,
+    pub definition_map: BTreeMap<CoreItemId, CoreDefinitionId>,
+    pub item_status_updates: Vec<DefinitionItemStatusUpdate>,
+    pub correctness_obligations: Vec<DefinitionCorrectnessRecord>,
+    pub generated_dependencies: Vec<DefinitionGeneratedDependencyRecord>,
+    pub otherwise_guards: Vec<OtherwiseGuardRecord>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DefinitionItemStatusUpdate {
+    pub item: CoreItemId,
+    pub status: CoreItemStatus,
+    pub diagnostics: Vec<CoreDiagnosticId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DefinitionCorrectnessRecord {
+    pub definition: CoreDefinitionId,
+    pub obligation: ObligationSeedId,
+    pub is_new: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DefinitionGeneratedDependencyRecord {
+    pub definition: CoreDefinitionId,
+    pub origin: GeneratedOriginId,
+    pub use_terms: Vec<CoreTermId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OtherwiseGuardRecord {
+    pub definition: CoreDefinitionId,
+    pub branch_index: usize,
+    pub guard: CoreFormulaId,
+    pub excludes: Vec<CoreFormulaId>,
+    pub provenance: Vec<CoreProvenance>,
+}
+
+#[derive(Debug, Clone)]
+struct DefinitionLoweringState {
+    definitions: CoreDefinitionTable,
+    obligation_seeds: ObligationSeedTable,
+    initial_obligation_len: usize,
+    source_map: CoreSourceMap,
+    diagnostics: CoreDiagnosticTable,
+    definition_map: BTreeMap<CoreItemId, CoreDefinitionId>,
+    item_status_updates: Vec<DefinitionItemStatusUpdate>,
+    correctness_obligations: Vec<DefinitionCorrectnessRecord>,
+    generated_dependencies: Vec<DefinitionGeneratedDependencyRecord>,
+    otherwise_guards: Vec<OtherwiseGuardRecord>,
+}
+
+impl DefinitionLoweringState {
+    fn new(context: &CoreContext, term_formula: &TermAndFormulaLoweringOutput) -> Self {
+        let mut source_map = CoreSourceMap::new();
+        source_map.item_sources = context.source_map().item_sources.clone();
+        source_map.term_sources = term_formula.source_map.term_sources.clone();
+        source_map.formula_sources = term_formula.source_map.formula_sources.clone();
+        source_map.generated_sources = context.source_map().generated_sources.clone();
+        source_map
+            .generated_sources
+            .extend(term_formula.source_map.generated_sources.clone());
+        source_map.obligation_sources = term_formula.source_map.obligation_sources.clone();
+        Self {
+            definitions: CoreDefinitionTable::new(),
+            obligation_seeds: term_formula.obligation_seeds.clone(),
+            initial_obligation_len: term_formula.obligation_seeds.len(),
+            source_map,
+            diagnostics: term_formula.diagnostics.clone(),
+            definition_map: BTreeMap::new(),
+            item_status_updates: Vec::new(),
+            correctness_obligations: Vec::new(),
+            generated_dependencies: Vec::new(),
+            otherwise_guards: Vec::new(),
+        }
+    }
+
+    fn insert_definition(
+        &mut self,
+        seed: DefinitionSeed,
+        body: DefinitionBody,
+        correctness: Vec<ObligationSeedId>,
+    ) -> CoreDefinitionId {
+        let source = source_with_provenance(seed.source, &seed.provenance);
+        let definition = CoreDefinition {
+            item: seed.owner,
+            symbol: seed.symbol,
+            params: seed.params,
+            body,
+            expansion: seed.expansion,
+            correctness,
+            generated_dependencies: seed.generated_dependencies,
+            source: normalized_source(source.clone()),
+        };
+        let id = self.definitions.insert(definition);
+        self.source_map
+            .definition_sources
+            .insert(id, normalized_source(source));
+        self.definition_map.insert(seed.owner, id);
+        id
+    }
+
+    fn insert_failed_site(
+        &mut self,
+        owner: CoreItemId,
+        site: FailedSemanticSiteSeed,
+    ) -> CoreDiagnosticId {
+        self.diagnostics.insert(diagnostic(
+            site.class,
+            site.severity,
+            site.recovery,
+            site.message_key,
+            source_with_provenance(site.source, &site.provenance),
+            Some(CoreNodeRef::Item(owner)),
+        ))
+    }
+}
+
+pub fn lower_definition_inputs(
+    context: &CoreContext,
+    term_formula: &TermAndFormulaLoweringOutput,
+    input: DefinitionLoweringInput,
+) -> DefinitionLoweringResult<DefinitionLoweringOutput> {
+    validate_definition_input(context, term_formula, &input)?;
+    let mut state = DefinitionLoweringState::new(context, term_formula);
+
+    for seed in input.definitions {
+        let body_refs = definition_body_refs(&seed.body);
+        let body = lower_definition_body(&mut state, seed.owner, &seed.body)?;
+        let generated_records = validate_generated_dependencies(
+            term_formula,
+            &body_refs,
+            &seed.generated_dependencies,
+        )?;
+        let correctness = insert_definition_correctness(
+            &mut state,
+            term_formula,
+            seed.owner,
+            &seed.correctness,
+            &body_refs,
+        )?;
+        let definition_id = state.insert_definition(seed, body, correctness.clone());
+        attach_definition_backrefs(
+            &mut state,
+            term_formula,
+            definition_id,
+            &correctness,
+            &body_refs,
+        );
+        for record in generated_records {
+            state
+                .generated_dependencies
+                .push(DefinitionGeneratedDependencyRecord {
+                    definition: definition_id,
+                    origin: record.origin,
+                    use_terms: record.use_terms,
+                });
+        }
+    }
+
+    Ok(DefinitionLoweringOutput {
+        definitions: state.definitions,
+        obligation_seeds: state.obligation_seeds,
+        source_map: state.source_map,
+        diagnostics: state.diagnostics,
+        definition_map: state.definition_map,
+        item_status_updates: state.item_status_updates,
+        correctness_obligations: state.correctness_obligations,
+        generated_dependencies: state.generated_dependencies,
+        otherwise_guards: state.otherwise_guards,
+    })
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+struct DefinitionBodyRefs {
+    terms: BTreeSet<CoreTermId>,
+    formulas: BTreeSet<CoreFormulaId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct DefinitionGeneratedDependencyUse {
+    origin: GeneratedOriginId,
+    use_terms: Vec<CoreTermId>,
+}
+
+fn validate_definition_input(
+    context: &CoreContext,
+    term_formula: &TermAndFormulaLoweringOutput,
+    input: &DefinitionLoweringInput,
+) -> DefinitionLoweringResult<()> {
+    let mut seen_owners = BTreeSet::new();
+    for seed in &input.definitions {
+        if !seen_owners.insert(seed.owner) {
+            return Err(DefinitionLoweringError::DuplicateDefinitionOwner { owner: seed.owner });
+        }
+        validate_checker_owned_provenance("definition seed", seed.provenance.as_slice())?;
+        let item = context
+            .item_registry()
+            .items()
+            .get(seed.owner)
+            .ok_or(DefinitionLoweringError::MissingOwnerItem { owner: seed.owner })?;
+        if item.symbol != seed.symbol {
+            return Err(DefinitionLoweringError::DefinitionSymbolMismatch {
+                owner: seed.owner,
+                expected: Box::new(item.symbol.clone()),
+                actual: Box::new(seed.symbol.clone()),
+            });
+        }
+        let boundary = context
+            .definition_boundaries()
+            .get_by_item(seed.owner)
+            .ok_or(DefinitionLoweringError::MissingDefinitionBoundary { owner: seed.owner })?;
+        if boundary.status != DefinitionBoundaryStatus::PendingBody {
+            return Err(DefinitionLoweringError::DefinitionBoundaryNotPending {
+                owner: seed.owner,
+                status: boundary.status,
+            });
+        }
+        if boundary.kind == DefinitionBoundaryKind::Algorithm
+            && !matches!(
+                &seed.body,
+                DefinitionBodySeed::AlgorithmDeferred(_) | DefinitionBodySeed::Unavailable(_)
+            )
+        {
+            return Err(
+                DefinitionLoweringError::AlgorithmBoundaryRequiresDeferredBody {
+                    owner: seed.owner,
+                },
+            );
+        }
+        validate_definition_params(context, term_formula, &seed.params)?;
+        validate_definition_body_seed(term_formula, &seed.body)?;
+        validate_generated_dependencies(
+            term_formula,
+            &definition_body_refs(&seed.body),
+            &seed.generated_dependencies,
+        )?;
+        for correctness in &seed.correctness {
+            validate_definition_correctness_seed(term_formula, seed.owner, correctness)?;
+        }
+    }
+    Ok(())
+}
+
+fn validate_definition_params(
+    context: &CoreContext,
+    term_formula: &TermAndFormulaLoweringOutput,
+    params: &[CoreBinder],
+) -> DefinitionLoweringResult<()> {
+    for binder in params {
+        match context.binder_context().variable_sorts.get(&binder.var) {
+            Some(NormalizedVarSort::Term) => {}
+            Some(sort) => {
+                return Err(DefinitionLoweringError::NonTermDefinitionParam {
+                    var: binder.var,
+                    sort: *sort,
+                });
+            }
+            None => {
+                return Err(DefinitionLoweringError::UndeclaredDefinitionParam { var: binder.var });
+            }
+        }
+        if let Some(guard) = binder.ty_guard {
+            validate_definition_formula(term_formula, guard)?;
+        }
+    }
+    Ok(())
+}
+
+fn validate_definition_body_seed(
+    term_formula: &TermAndFormulaLoweringOutput,
+    body: &DefinitionBodySeed,
+) -> DefinitionLoweringResult<()> {
+    match body {
+        DefinitionBodySeed::Term(term) => validate_definition_term(term_formula, *term),
+        DefinitionBodySeed::Formula(formula) => validate_definition_formula(term_formula, *formula),
+        DefinitionBodySeed::Guarded(branches) => {
+            let mut prior_guards = Vec::new();
+            for (index, branch) in branches.iter().enumerate() {
+                match &branch.guard {
+                    DefinitionGuardSeed::Explicit(guard) => {
+                        validate_definition_formula(term_formula, *guard)?;
+                        prior_guards.push(*guard);
+                    }
+                    DefinitionGuardSeed::Otherwise {
+                        guard,
+                        excludes,
+                        provenance,
+                    } => {
+                        validate_checker_owned_provenance(
+                            "otherwise definition guard",
+                            provenance.as_slice(),
+                        )?;
+                        validate_definition_formula(term_formula, *guard)?;
+                        if excludes.is_empty() {
+                            return Err(DefinitionLoweringError::MissingOtherwiseExcludes {
+                                branch: index,
+                            });
+                        }
+                        if excludes != &prior_guards {
+                            return Err(DefinitionLoweringError::OtherwiseExcludesMismatch {
+                                branch: index,
+                            });
+                        }
+                        prior_guards.push(*guard);
+                    }
+                }
+                validate_definition_branch_body(term_formula, &branch.body)?;
+            }
+            Ok(())
+        }
+        DefinitionBodySeed::AlgorithmDeferred(site) | DefinitionBodySeed::Unavailable(site) => {
+            validate_checker_owned_provenance(
+                "definition unavailable site",
+                site.provenance.as_slice(),
+            )?;
+            Ok(())
+        }
+    }
+}
+
+fn validate_definition_branch_body(
+    term_formula: &TermAndFormulaLoweringOutput,
+    body: &DefinitionBranchBody,
+) -> DefinitionLoweringResult<()> {
+    match body {
+        DefinitionBranchBody::Term(term) => validate_definition_term(term_formula, *term),
+        DefinitionBranchBody::Formula(formula) => {
+            validate_definition_formula(term_formula, *formula)
+        }
+    }
+}
+
+fn validate_definition_term(
+    term_formula: &TermAndFormulaLoweringOutput,
+    term: CoreTermId,
+) -> DefinitionLoweringResult<()> {
+    term_formula
+        .terms
+        .get(term)
+        .map(|_| ())
+        .ok_or(DefinitionLoweringError::MissingTermBody { term })
+}
+
+fn validate_definition_formula(
+    term_formula: &TermAndFormulaLoweringOutput,
+    formula: CoreFormulaId,
+) -> DefinitionLoweringResult<()> {
+    term_formula
+        .formulas
+        .get(formula)
+        .map(|_| ())
+        .ok_or(DefinitionLoweringError::MissingFormulaBody { formula })
+}
+
+fn validate_definition_correctness_seed(
+    term_formula: &TermAndFormulaLoweringOutput,
+    owner: CoreItemId,
+    seed: &DefinitionCorrectnessSeed,
+) -> DefinitionLoweringResult<()> {
+    match seed {
+        DefinitionCorrectnessSeed::New(seed) => {
+            validate_checker_owned_provenance(
+                "definition correctness seed",
+                seed.provenance.as_slice(),
+            )?;
+            if seed.kind != ObligationSeedKind::DefinitionCorrectness {
+                return Err(DefinitionLoweringError::InvalidCorrectnessObligation {
+                    kind: seed.kind.clone(),
+                    status: seed.status,
+                });
+            }
+            match (seed.status, seed.goal) {
+                (ObligationSeedStatus::Active, Some(goal)) => {
+                    validate_definition_formula(term_formula, goal)?;
+                }
+                (ObligationSeedStatus::Active, None) => {
+                    return Err(DefinitionLoweringError::MissingActiveCorrectnessGoal);
+                }
+                (_, Some(goal)) => {
+                    validate_definition_formula(term_formula, goal)?;
+                }
+                (_, None) => {}
+            }
+            for formula in &seed.context {
+                validate_definition_formula(term_formula, *formula)?;
+            }
+            Ok(())
+        }
+        DefinitionCorrectnessSeed::Existing(obligation) => {
+            let seed = term_formula.obligation_seeds.get(*obligation).ok_or(
+                DefinitionLoweringError::InvalidCorrectnessObligation {
+                    kind: ObligationSeedKind::DefinitionCorrectness,
+                    status: ObligationSeedStatus::Error,
+                },
+            )?;
+            if seed.owner != owner {
+                return Err(DefinitionLoweringError::ExistingCorrectnessOwnerMismatch {
+                    obligation: *obligation,
+                    expected: owner,
+                    actual: seed.owner,
+                });
+            }
+            if seed.kind != ObligationSeedKind::DefinitionCorrectness {
+                return Err(DefinitionLoweringError::InvalidCorrectnessObligation {
+                    kind: seed.kind.clone(),
+                    status: seed.status,
+                });
+            }
+            if seed.status == ObligationSeedStatus::Active && seed.goal.is_none() {
+                return Err(DefinitionLoweringError::MissingActiveCorrectnessGoal);
+            }
+            if let Some(goal) = seed.goal {
+                validate_definition_formula(term_formula, goal)?;
+            }
+            for formula in &seed.context {
+                validate_definition_formula(term_formula, *formula)?;
+            }
+            Ok(())
+        }
+    }
+}
+
+fn collect_reachable_term_refs(
+    term_formula: &TermAndFormulaLoweringOutput,
+    term: CoreTermId,
+    refs: &mut DefinitionBodyRefs,
+) {
+    if !refs.terms.insert(term) {
+        return;
+    }
+    let Some(term_row) = term_formula.terms.get(term) else {
+        return;
+    };
+    match &term_row.kind {
+        CoreTermKind::Var(_) | CoreTermKind::Const(_) | CoreTermKind::Error(_) => {}
+        CoreTermKind::Apply { args, .. }
+        | CoreTermKind::Tuple(args)
+        | CoreTermKind::SetEnum(args) => {
+            for arg in args {
+                collect_reachable_term_refs(term_formula, *arg, refs);
+            }
+        }
+        CoreTermKind::Select { base, .. } => {
+            collect_reachable_term_refs(term_formula, *base, refs);
+        }
+        CoreTermKind::Generated { args, .. } => {
+            for arg in args {
+                collect_reachable_term_refs(term_formula, *arg, refs);
+            }
+        }
+    }
+}
+
+fn collect_reachable_formula_refs(
+    term_formula: &TermAndFormulaLoweringOutput,
+    formula: CoreFormulaId,
+    refs: &mut DefinitionBodyRefs,
+) {
+    if !refs.formulas.insert(formula) {
+        return;
+    }
+    let Some(formula_row) = term_formula.formulas.get(formula) else {
+        return;
+    };
+    match &formula_row.kind {
+        CoreFormulaKind::True | CoreFormulaKind::False | CoreFormulaKind::Error(_) => {}
+        CoreFormulaKind::Atom { args, .. } => {
+            for arg in args {
+                collect_reachable_term_refs(term_formula, *arg, refs);
+            }
+        }
+        CoreFormulaKind::Equals { left, right } => {
+            collect_reachable_term_refs(term_formula, *left, refs);
+            collect_reachable_term_refs(term_formula, *right, refs);
+        }
+        CoreFormulaKind::TypePred { subject, .. } => {
+            collect_reachable_term_refs(term_formula, *subject, refs);
+        }
+        CoreFormulaKind::Not(child) => {
+            collect_reachable_formula_refs(term_formula, *child, refs);
+        }
+        CoreFormulaKind::And(children) | CoreFormulaKind::Or(children) => {
+            for child in children {
+                collect_reachable_formula_refs(term_formula, *child, refs);
+            }
+        }
+        CoreFormulaKind::Implies {
+            premise,
+            conclusion,
+        } => {
+            collect_reachable_formula_refs(term_formula, *premise, refs);
+            collect_reachable_formula_refs(term_formula, *conclusion, refs);
+        }
+        CoreFormulaKind::Iff { left, right } => {
+            collect_reachable_formula_refs(term_formula, *left, refs);
+            collect_reachable_formula_refs(term_formula, *right, refs);
+        }
+        CoreFormulaKind::Forall { binders, body } | CoreFormulaKind::Exists { binders, body } => {
+            for binder in binders {
+                if let Some(guard) = binder.ty_guard {
+                    collect_reachable_formula_refs(term_formula, guard, refs);
+                }
+            }
+            collect_reachable_formula_refs(term_formula, *body, refs);
+        }
+    }
+}
+
+fn reachable_definition_body_refs(
+    term_formula: &TermAndFormulaLoweringOutput,
+    direct_refs: &DefinitionBodyRefs,
+) -> DefinitionBodyRefs {
+    let mut refs = DefinitionBodyRefs::default();
+    for term in &direct_refs.terms {
+        collect_reachable_term_refs(term_formula, *term, &mut refs);
+    }
+    for formula in &direct_refs.formulas {
+        collect_reachable_formula_refs(term_formula, *formula, &mut refs);
+    }
+    refs
+}
+
+fn validate_generated_dependencies(
+    term_formula: &TermAndFormulaLoweringOutput,
+    body_refs: &DefinitionBodyRefs,
+    dependencies: &[GeneratedOriginId],
+) -> DefinitionLoweringResult<Vec<DefinitionGeneratedDependencyUse>> {
+    let reachable_refs = reachable_definition_body_refs(term_formula, body_refs);
+    let mut reachable: BTreeMap<GeneratedOriginId, Vec<CoreTermId>> = BTreeMap::new();
+    for use_record in &term_formula.generated_origin_refs {
+        if reachable_refs.terms.contains(&use_record.term) {
+            reachable
+                .entry(use_record.origin)
+                .or_default()
+                .push(use_record.term);
+        }
+    }
+    for term in &reachable_refs.terms {
+        if let Some(CoreTerm {
+            kind: CoreTermKind::Generated { origin, .. },
+            ..
+        }) = term_formula.terms.get(*term)
+        {
+            reachable.entry(*origin).or_default().push(*term);
+        }
+    }
+
+    let dependencies = dependencies.iter().copied().collect::<BTreeSet<_>>();
+    for (origin, use_terms) in &reachable {
+        term_formula
+            .generated
+            .get(*origin)
+            .ok_or(DefinitionLoweringError::MissingGeneratedDependency { origin: *origin })?;
+        if !dependencies.contains(origin) {
+            return Err(DefinitionLoweringError::MissingGeneratedDependency { origin: *origin });
+        }
+        debug_assert!(!use_terms.is_empty());
+    }
+
+    let mut records = Vec::new();
+    for dependency in dependencies {
+        term_formula
+            .generated
+            .get(dependency)
+            .ok_or(DefinitionLoweringError::MissingGeneratedDependency { origin: dependency })?;
+        let Some(use_terms) = reachable.get(&dependency) else {
+            return Err(DefinitionLoweringError::SpuriousGeneratedDependency {
+                origin: dependency,
+            });
+        };
+        let mut use_terms = use_terms.clone();
+        use_terms.sort();
+        use_terms.dedup();
+        records.push(DefinitionGeneratedDependencyUse {
+            origin: dependency,
+            use_terms,
+        });
+    }
+    Ok(records)
+}
+
+fn insert_definition_correctness(
+    state: &mut DefinitionLoweringState,
+    term_formula: &TermAndFormulaLoweringOutput,
+    owner: CoreItemId,
+    seeds: &[DefinitionCorrectnessSeed],
+    body_refs: &DefinitionBodyRefs,
+) -> DefinitionLoweringResult<Vec<ObligationSeedId>> {
+    let mut lowered = Vec::new();
+    let reachable_refs = reachable_definition_body_refs(term_formula, body_refs);
+    for seed in seeds {
+        match seed {
+            DefinitionCorrectnessSeed::Existing(obligation) => {
+                let existing = term_formula.obligation_seeds.get(*obligation).ok_or(
+                    DefinitionLoweringError::InvalidCorrectnessObligation {
+                        kind: ObligationSeedKind::DefinitionCorrectness,
+                        status: ObligationSeedStatus::Error,
+                    },
+                )?;
+                if existing.owner != owner {
+                    return Err(DefinitionLoweringError::ExistingCorrectnessOwnerMismatch {
+                        obligation: *obligation,
+                        expected: owner,
+                        actual: existing.owner,
+                    });
+                }
+                if existing.kind != ObligationSeedKind::DefinitionCorrectness {
+                    return Err(DefinitionLoweringError::InvalidCorrectnessObligation {
+                        kind: existing.kind.clone(),
+                        status: existing.status,
+                    });
+                }
+                lowered.push(*obligation);
+            }
+            DefinitionCorrectnessSeed::New(seed) => {
+                let source = source_with_provenance(seed.source.clone(), &seed.provenance);
+                let mut provenance = seed.provenance.as_slice().to_vec();
+                provenance.sort();
+                provenance.dedup();
+                let mut core_refs = vec![CoreNodeRef::Item(owner)];
+                if let Some(goal) = seed.goal {
+                    core_refs.push(CoreNodeRef::Formula(goal));
+                }
+                for formula in &seed.context {
+                    core_refs.push(CoreNodeRef::Formula(*formula));
+                }
+                for term in &reachable_refs.terms {
+                    core_refs.push(CoreNodeRef::Term(*term));
+                }
+                for formula in &reachable_refs.formulas {
+                    core_refs.push(CoreNodeRef::Formula(*formula));
+                }
+                core_refs.sort();
+                core_refs.dedup();
+                let obligation = ObligationSeed {
+                    owner,
+                    kind: seed.kind.clone(),
+                    goal: seed.goal,
+                    context: seed.context.clone(),
+                    local_path: seed.local_path.clone(),
+                    label: seed.label.clone(),
+                    semantic_origin: seed.semantic_origin.clone(),
+                    provenance,
+                    source: normalized_source(source.clone()),
+                    core_refs,
+                    status: seed.status,
+                    diagnostics: Vec::new(),
+                };
+                let id = state.obligation_seeds.insert(obligation);
+                state
+                    .source_map
+                    .obligation_sources
+                    .insert(id, normalized_source(source));
+                lowered.push(id);
+            }
+        }
+    }
+    Ok(lowered)
+}
+
+fn attach_definition_backrefs(
+    state: &mut DefinitionLoweringState,
+    term_formula: &TermAndFormulaLoweringOutput,
+    definition: CoreDefinitionId,
+    correctness: &[ObligationSeedId],
+    body_refs: &DefinitionBodyRefs,
+) {
+    let reachable_refs = reachable_definition_body_refs(term_formula, body_refs);
+    for obligation in correctness {
+        if let Some(seed) = state.obligation_seeds.get_mut(*obligation) {
+            seed.core_refs.push(CoreNodeRef::Definition(definition));
+            for term in &reachable_refs.terms {
+                seed.core_refs.push(CoreNodeRef::Term(*term));
+            }
+            for formula in &reachable_refs.formulas {
+                seed.core_refs.push(CoreNodeRef::Formula(*formula));
+            }
+            seed.core_refs.sort();
+            seed.core_refs.dedup();
+        }
+        state
+            .correctness_obligations
+            .push(DefinitionCorrectnessRecord {
+                definition,
+                obligation: *obligation,
+                is_new: obligation.index() >= state.initial_obligation_len,
+            });
+    }
+}
+
+fn lower_definition_body(
+    state: &mut DefinitionLoweringState,
+    owner: CoreItemId,
+    body: &DefinitionBodySeed,
+) -> DefinitionLoweringResult<DefinitionBody> {
+    match body {
+        DefinitionBodySeed::Term(term) => Ok(DefinitionBody::Term(*term)),
+        DefinitionBodySeed::Formula(formula) => Ok(DefinitionBody::Formula(*formula)),
+        DefinitionBodySeed::Guarded(branches) => {
+            let mut lowered = Vec::new();
+            for (index, branch) in branches.iter().enumerate() {
+                let guard = match &branch.guard {
+                    DefinitionGuardSeed::Explicit(guard) => *guard,
+                    DefinitionGuardSeed::Otherwise {
+                        guard,
+                        excludes,
+                        provenance,
+                    } => {
+                        state.otherwise_guards.push(OtherwiseGuardRecord {
+                            definition: CoreDefinitionId::new(state.definitions.len()),
+                            branch_index: index,
+                            guard: *guard,
+                            excludes: excludes.clone(),
+                            provenance: provenance.as_slice().to_vec(),
+                        });
+                        *guard
+                    }
+                };
+                lowered.push(GuardedDefinitionBranch {
+                    guard,
+                    body: branch.body.clone(),
+                });
+            }
+            Ok(DefinitionBody::Guarded(lowered))
+        }
+        DefinitionBodySeed::AlgorithmDeferred(site) | DefinitionBodySeed::Unavailable(site) => {
+            let diagnostic_id = state.insert_failed_site(owner, site.clone());
+            let status = match body {
+                DefinitionBodySeed::AlgorithmDeferred(_) => CoreItemStatus::Skipped,
+                DefinitionBodySeed::Unavailable(_) => CoreItemStatus::Error,
+                _ => unreachable!("covered by outer match"),
+            };
+            state.item_status_updates.push(DefinitionItemStatusUpdate {
+                item: owner,
+                status,
+                diagnostics: vec![diagnostic_id],
+            });
+            Ok(DefinitionBody::Unavailable(diagnostic_id))
+        }
+    }
+}
+
+fn definition_body_refs(body: &DefinitionBodySeed) -> DefinitionBodyRefs {
+    let mut refs = DefinitionBodyRefs::default();
+    match body {
+        DefinitionBodySeed::Term(term) => {
+            refs.terms.insert(*term);
+        }
+        DefinitionBodySeed::Formula(formula) => {
+            refs.formulas.insert(*formula);
+        }
+        DefinitionBodySeed::Guarded(branches) => {
+            for branch in branches {
+                match &branch.guard {
+                    DefinitionGuardSeed::Explicit(guard)
+                    | DefinitionGuardSeed::Otherwise { guard, .. } => {
+                        refs.formulas.insert(*guard);
+                    }
+                }
+                match branch.body {
+                    DefinitionBranchBody::Term(term) => {
+                        refs.terms.insert(term);
+                    }
+                    DefinitionBranchBody::Formula(formula) => {
+                        refs.formulas.insert(formula);
+                    }
+                }
+            }
+        }
+        DefinitionBodySeed::AlgorithmDeferred(_) | DefinitionBodySeed::Unavailable(_) => {}
+    }
+    refs
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -3860,6 +4965,71 @@ mod tests {
             diagnostics: output.diagnostics.clone(),
         };
         CoreIr::try_new(parts).expect("step 3 delta validates when merged with context items");
+    }
+
+    fn assert_step4_delta_valid(
+        context: &CoreContext,
+        term_formula: &TermAndFormulaLoweringOutput,
+        output: &DefinitionLoweringOutput,
+    ) {
+        let parts = CoreIrParts {
+            source_id: context.source_id(),
+            module_id: context.module_id().clone(),
+            items: context.item_registry().items().clone(),
+            terms: term_formula.terms.clone(),
+            formulas: term_formula.formulas.clone(),
+            definitions: output.definitions.clone(),
+            proofs: CoreProofTable::new(),
+            proof_nodes: CoreProofNodeTable::new(),
+            algorithms: CoreAlgorithmTable::new(),
+            algorithm_statements: CoreAlgorithmStmtTable::new(),
+            generated: term_formula.generated.clone(),
+            obligation_seeds: output.obligation_seeds.clone(),
+            source_map: output.source_map.clone(),
+            diagnostics: output.diagnostics.clone(),
+        };
+        CoreIr::try_new(parts).expect("step 4 delta validates when merged with prior lowering");
+    }
+
+    fn test_binder(var: CoreVarId, ty_guard: Option<CoreFormulaId>, start: usize) -> CoreBinder {
+        CoreBinder {
+            var,
+            role: CoreVarRole::new("term-binder"),
+            ty_guard,
+            source_name: Some(format!("v{}", var.index())),
+            source: direct(start, start + 1),
+        }
+    }
+
+    fn lower_test_terms_and_formulas(
+        context: &CoreContext,
+        owner: CoreItemId,
+        terms: Vec<CoreTermSeed>,
+        formulas: Vec<CoreFormulaSeed>,
+    ) -> TermAndFormulaLoweringOutput {
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.terms = terms;
+        input.formulas = formulas;
+        lower_term_and_formula_inputs(context, input).expect("term/formula lowering")
+    }
+
+    fn definition_seed(
+        owner: CoreItemId,
+        symbol: SymbolId,
+        body: DefinitionBodySeed,
+        start: usize,
+    ) -> DefinitionSeed {
+        DefinitionSeed {
+            owner,
+            symbol,
+            params: Vec::new(),
+            body,
+            expansion: ExpansionPolicy::Opaque,
+            correctness: Vec::new(),
+            generated_dependencies: Vec::new(),
+            source: direct(start, start + 1),
+            provenance: provenance(format!("checker:definition:{start}").as_str()),
+        }
     }
 
     fn assert_type_predicate(
@@ -5186,6 +6356,795 @@ mod tests {
         assert_eq!(output.failed_sites.len(), 1);
         assert_eq!(output.diagnostics.len(), 3);
         assert_step3_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn definition_lowering_records_boundary_policy_params_and_correctness() {
+        let x = CoreVarId::new(0);
+        let (context, owner) = context_with_var(x);
+        let term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            vec![term_seed(CoreTermSeedKind::Var(x), 112)],
+            vec![formula_seed(CoreFormulaSeedKind::True, 113)],
+        );
+        let term = term_formula.term_map[&CoreTermSeedId::new(0)];
+        let goal = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let mut seed = definition_seed(owner, symbol("Owner"), DefinitionBodySeed::Term(term), 114);
+        seed.params = vec![test_binder(x, Some(goal), 115)];
+        seed.correctness = vec![DefinitionCorrectnessSeed::New(Box::new(
+            DefinitionObligationSeed::active(
+                goal,
+                "definition/owner/coherence",
+                "pkg::main::Owner.definition.coherence",
+                direct(116, 117),
+                provenance("checker:definition:coherence"),
+            ),
+        ))];
+
+        let output = lower_definition_inputs(
+            &context,
+            &term_formula,
+            DefinitionLoweringInput {
+                definitions: vec![seed],
+            },
+        )
+        .expect("definition lowering");
+        let definition_id = output.definition_map[&owner];
+        let definition = output
+            .definitions
+            .get(definition_id)
+            .expect("definition row");
+        let obligation_id = definition.correctness[0];
+        let obligation = output
+            .obligation_seeds
+            .get(obligation_id)
+            .expect("correctness obligation");
+
+        assert!(matches!(definition.body, DefinitionBody::Term(actual) if actual == term));
+        assert_eq!(definition.expansion, ExpansionPolicy::Opaque);
+        assert_eq!(definition.params[0].ty_guard, Some(goal));
+        assert_eq!(output.correctness_obligations.len(), 1);
+        assert!(output.correctness_obligations[0].is_new);
+        assert_eq!(obligation.kind, ObligationSeedKind::DefinitionCorrectness);
+        assert_eq!(obligation.status, ObligationSeedStatus::Active);
+        assert!(obligation.core_refs.contains(&CoreNodeRef::Item(owner)));
+        assert!(
+            obligation
+                .core_refs
+                .contains(&CoreNodeRef::Definition(definition_id))
+        );
+        assert!(obligation.core_refs.contains(&CoreNodeRef::Term(term)));
+        assert!(obligation.core_refs.contains(&CoreNodeRef::Formula(goal)));
+        assert_step4_delta_valid(&context, &term_formula, &output);
+    }
+
+    #[test]
+    fn definition_correctness_handles_deferred_and_existing_seeds_with_backrefs() {
+        let x = CoreVarId::new(0);
+        let (context, owner) = context_with_var(x);
+        let mut term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            vec![term_seed(CoreTermSeedKind::Var(x), 118)],
+            vec![formula_seed(CoreFormulaSeedKind::True, 119)],
+        );
+        let term = term_formula.term_map[&CoreTermSeedId::new(0)];
+        let goal = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let existing_source = direct(120, 121);
+        let existing = term_formula.obligation_seeds.insert(ObligationSeed {
+            owner,
+            kind: ObligationSeedKind::DefinitionCorrectness,
+            goal: Some(goal),
+            context: Vec::new(),
+            local_path: LocalProofOrProgramPath::new("definition/existing"),
+            label: None,
+            semantic_origin: NormalizedSemanticOrigin::new("pkg::main::Owner.definition.existing"),
+            provenance: vec![CoreProvenance::new(
+                CoreProvenancePhase::Checker,
+                "checker:definition:existing",
+            )],
+            source: existing_source.clone(),
+            core_refs: vec![CoreNodeRef::Item(owner), CoreNodeRef::Formula(goal)],
+            status: ObligationSeedStatus::Active,
+            diagnostics: Vec::new(),
+        });
+        term_formula
+            .source_map
+            .obligation_sources
+            .insert(existing, existing_source);
+
+        let mut seed = definition_seed(owner, symbol("Owner"), DefinitionBodySeed::Term(term), 121);
+        seed.correctness = vec![
+            DefinitionCorrectnessSeed::Existing(existing),
+            DefinitionCorrectnessSeed::New(Box::new(DefinitionObligationSeed::deferred(
+                "definition/deferred",
+                "pkg::main::Owner.definition.deferred",
+                direct(122, 123),
+                provenance("checker:definition:deferred"),
+            ))),
+        ];
+
+        let output = lower_definition_inputs(
+            &context,
+            &term_formula,
+            DefinitionLoweringInput {
+                definitions: vec![seed],
+            },
+        )
+        .expect("definition lowering");
+        let definition = output.definition_map[&owner];
+        let row = output.definitions.get(definition).expect("definition");
+        let existing_seed = output
+            .obligation_seeds
+            .get(existing)
+            .expect("existing obligation");
+        let deferred = row.correctness[1];
+        let deferred_seed = output
+            .obligation_seeds
+            .get(deferred)
+            .expect("deferred obligation");
+
+        assert_eq!(row.correctness[0], existing);
+        assert_eq!(output.correctness_obligations.len(), 2);
+        assert!(!output.correctness_obligations[0].is_new);
+        assert!(output.correctness_obligations[1].is_new);
+        assert!(
+            existing_seed
+                .core_refs
+                .contains(&CoreNodeRef::Definition(definition))
+        );
+        assert!(existing_seed.core_refs.contains(&CoreNodeRef::Term(term)));
+        assert_eq!(deferred_seed.status, ObligationSeedStatus::Deferred);
+        assert!(deferred_seed.goal.is_none());
+        assert!(
+            deferred_seed
+                .core_refs
+                .contains(&CoreNodeRef::Definition(definition))
+        );
+        assert!(deferred_seed.core_refs.contains(&CoreNodeRef::Term(term)));
+        assert_step4_delta_valid(&context, &term_formula, &output);
+    }
+
+    #[test]
+    fn definition_correctness_existing_seed_must_match_definition_owner() {
+        let context = prepare_core_context(input_with_items(vec![
+            item_seed("Owner", 118),
+            item_seed("OtherOwner", 119),
+        ]))
+        .expect("context");
+        let owner = context
+            .item_registry()
+            .id_for_symbol(&symbol("Owner"))
+            .expect("owner");
+        let other_owner = context
+            .item_registry()
+            .id_for_symbol(&symbol("OtherOwner"))
+            .expect("other owner");
+        let mut term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            Vec::new(),
+            vec![formula_seed(CoreFormulaSeedKind::True, 120)],
+        );
+        let goal = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let source = direct(121, 122);
+        let existing = term_formula.obligation_seeds.insert(ObligationSeed {
+            owner: other_owner,
+            kind: ObligationSeedKind::DefinitionCorrectness,
+            goal: Some(goal),
+            context: Vec::new(),
+            local_path: LocalProofOrProgramPath::new("definition/other-owner"),
+            label: None,
+            semantic_origin: NormalizedSemanticOrigin::new(
+                "pkg::main::OtherOwner.definition.correctness",
+            ),
+            provenance: vec![CoreProvenance::new(
+                CoreProvenancePhase::Checker,
+                "checker:definition:other-owner",
+            )],
+            source: source.clone(),
+            core_refs: vec![CoreNodeRef::Item(other_owner), CoreNodeRef::Formula(goal)],
+            status: ObligationSeedStatus::Active,
+            diagnostics: Vec::new(),
+        });
+        term_formula
+            .source_map
+            .obligation_sources
+            .insert(existing, source);
+        let mut seed = definition_seed(
+            owner,
+            symbol("Owner"),
+            DefinitionBodySeed::Formula(goal),
+            122,
+        );
+        seed.correctness = vec![DefinitionCorrectnessSeed::Existing(existing)];
+
+        assert!(matches!(
+            lower_definition_inputs(
+                &context,
+                &term_formula,
+                DefinitionLoweringInput {
+                    definitions: vec![seed],
+                },
+            ),
+            Err(DefinitionLoweringError::ExistingCorrectnessOwnerMismatch {
+                obligation,
+                expected,
+                actual,
+            }) if obligation == existing && expected == owner && actual == other_owner
+        ));
+    }
+
+    #[test]
+    fn definition_lowering_preserves_all_expansion_policies() {
+        let mut input = input_with_items(vec![
+            CoreItemSeed::new(
+                symbol("OpaqueDef"),
+                CoreItemKind::Functor,
+                "public",
+                direct(120, 121),
+                provenance("checker:item:opaque-def"),
+            )
+            .with_definition_boundary(DefinitionBoundaryKind::DefinitionalItem),
+            CoreItemSeed::new(
+                symbol("TransparentDef"),
+                CoreItemKind::Predicate,
+                "public",
+                direct(121, 122),
+                provenance("checker:item:transparent-def"),
+            )
+            .with_definition_boundary(DefinitionBoundaryKind::DefinitionalItem),
+            CoreItemSeed::new(
+                symbol("ReducibleDef"),
+                CoreItemKind::Reduction,
+                "public",
+                direct(122, 123),
+                provenance("checker:item:reducible-def"),
+            )
+            .with_definition_boundary(DefinitionBoundaryKind::Reduction),
+            CoreItemSeed::new(
+                symbol("ComputableDef"),
+                CoreItemKind::Functor,
+                "public",
+                direct(123, 124),
+                provenance("checker:item:computable-def"),
+            )
+            .with_definition_boundary(DefinitionBoundaryKind::DefinitionalItem),
+        ]);
+        input.variable_seeds = Vec::new();
+        let context = prepare_core_context(input).expect("context");
+        let owner = context
+            .item_registry()
+            .id_for_symbol(&symbol("OpaqueDef"))
+            .expect("owner");
+        let term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            vec![term_seed(CoreTermSeedKind::Const(symbol("Const")), 125)],
+            vec![formula_seed(CoreFormulaSeedKind::True, 126)],
+        );
+        let term = term_formula.term_map[&CoreTermSeedId::new(0)];
+        let formula = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let mut definitions = Vec::new();
+        for (name, body, expansion, start) in [
+            (
+                "OpaqueDef",
+                DefinitionBodySeed::Term(term),
+                ExpansionPolicy::Opaque,
+                127,
+            ),
+            (
+                "TransparentDef",
+                DefinitionBodySeed::Formula(formula),
+                ExpansionPolicy::Transparent,
+                128,
+            ),
+            (
+                "ReducibleDef",
+                DefinitionBodySeed::Term(term),
+                ExpansionPolicy::Reducible {
+                    registration: symbol("ReduceRegistration"),
+                },
+                129,
+            ),
+            (
+                "ComputableDef",
+                DefinitionBodySeed::Term(term),
+                ExpansionPolicy::Computable {
+                    algorithm: symbol("RuntimeAlgorithm"),
+                },
+                130,
+            ),
+        ] {
+            let item = context
+                .item_registry()
+                .id_for_symbol(&symbol(name))
+                .expect("definition item");
+            let mut seed = definition_seed(item, symbol(name), body, start);
+            seed.expansion = expansion;
+            definitions.push(seed);
+        }
+
+        let output = lower_definition_inputs(
+            &context,
+            &term_formula,
+            DefinitionLoweringInput { definitions },
+        )
+        .expect("definition lowering");
+        let policies = [
+            "OpaqueDef",
+            "TransparentDef",
+            "ReducibleDef",
+            "ComputableDef",
+        ]
+        .iter()
+        .map(|name| {
+            let item = context
+                .item_registry()
+                .id_for_symbol(&symbol(name))
+                .expect("definition item");
+            output
+                .definitions
+                .get(output.definition_map[&item])
+                .expect("definition")
+                .expansion
+                .clone()
+        })
+        .collect::<Vec<_>>();
+
+        assert!(matches!(policies[0], ExpansionPolicy::Opaque));
+        assert!(matches!(policies[1], ExpansionPolicy::Transparent));
+        assert!(matches!(policies[2], ExpansionPolicy::Reducible { .. }));
+        assert!(matches!(policies[3], ExpansionPolicy::Computable { .. }));
+        assert_step4_delta_valid(&context, &term_formula, &output);
+    }
+
+    #[test]
+    fn definition_lowering_rejects_invalid_definition_boundaries() {
+        let context = prepare_core_context(input_with_items(vec![
+            item_seed("HasBoundary", 131),
+            CoreItemSeed::new(
+                symbol("NoBoundary"),
+                CoreItemKind::Functor,
+                "public",
+                direct(132, 133),
+                provenance("checker:item:no-boundary"),
+            ),
+            CoreItemSeed::new(
+                symbol("AlgorithmBoundary"),
+                CoreItemKind::Algorithm,
+                "public",
+                direct(133, 134),
+                provenance("checker:item:algorithm-boundary"),
+            )
+            .with_definition_boundary(DefinitionBoundaryKind::Algorithm),
+        ]))
+        .expect("context");
+        let owner = context
+            .item_registry()
+            .id_for_symbol(&symbol("HasBoundary"))
+            .expect("owner");
+        let no_boundary = context
+            .item_registry()
+            .id_for_symbol(&symbol("NoBoundary"))
+            .expect("no boundary");
+        let algorithm = context
+            .item_registry()
+            .id_for_symbol(&symbol("AlgorithmBoundary"))
+            .expect("algorithm boundary");
+        let term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            Vec::new(),
+            vec![formula_seed(CoreFormulaSeedKind::True, 134)],
+        );
+        let formula = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+
+        let duplicate = definition_seed(
+            owner,
+            symbol("HasBoundary"),
+            DefinitionBodySeed::Formula(formula),
+            135,
+        );
+        assert!(matches!(
+            lower_definition_inputs(
+                &context,
+                &term_formula,
+                DefinitionLoweringInput {
+                    definitions: vec![duplicate.clone(), duplicate],
+                },
+            ),
+            Err(DefinitionLoweringError::DuplicateDefinitionOwner { owner: actual })
+                if actual == owner
+        ));
+
+        assert!(matches!(
+            lower_definition_inputs(
+                &context,
+                &term_formula,
+                DefinitionLoweringInput {
+                    definitions: vec![definition_seed(
+                        owner,
+                        symbol("WrongSymbol"),
+                        DefinitionBodySeed::Formula(formula),
+                        136,
+                    )],
+                },
+            ),
+            Err(DefinitionLoweringError::DefinitionSymbolMismatch { owner: actual, .. })
+                if actual == owner
+        ));
+
+        assert!(matches!(
+            lower_definition_inputs(
+                &context,
+                &term_formula,
+                DefinitionLoweringInput {
+                    definitions: vec![definition_seed(
+                        no_boundary,
+                        symbol("NoBoundary"),
+                        DefinitionBodySeed::Formula(formula),
+                        137,
+                    )],
+                },
+            ),
+            Err(DefinitionLoweringError::MissingDefinitionBoundary { owner: actual })
+                if actual == no_boundary
+        ));
+
+        assert!(matches!(
+            lower_definition_inputs(
+                &context,
+                &term_formula,
+                DefinitionLoweringInput {
+                    definitions: vec![definition_seed(
+                        algorithm,
+                        symbol("AlgorithmBoundary"),
+                        DefinitionBodySeed::Formula(formula),
+                        138,
+                    )],
+                },
+            ),
+            Err(DefinitionLoweringError::AlgorithmBoundaryRequiresDeferredBody { owner: actual })
+                if actual == algorithm
+        ));
+    }
+
+    #[test]
+    fn guarded_definition_otherwise_records_checker_owned_exclusions() {
+        let x = CoreVarId::new(0);
+        let (context, owner) = context_with_var(x);
+        let term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            vec![term_seed(CoreTermSeedKind::Var(x), 132)],
+            vec![
+                formula_seed(CoreFormulaSeedKind::True, 133),
+                formula_seed(CoreFormulaSeedKind::False, 134),
+                formula_seed(CoreFormulaSeedKind::True, 135),
+            ],
+        );
+        let term = term_formula.term_map[&CoreTermSeedId::new(0)];
+        let guard_a = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let guard_b = term_formula.formula_map[&CoreFormulaSeedId::new(1)];
+        let otherwise = term_formula.formula_map[&CoreFormulaSeedId::new(2)];
+        let guarded = DefinitionBodySeed::Guarded(vec![
+            GuardedDefinitionBranchSeed {
+                guard: DefinitionGuardSeed::Explicit(guard_a),
+                body: DefinitionBranchBody::Term(term),
+            },
+            GuardedDefinitionBranchSeed {
+                guard: DefinitionGuardSeed::Explicit(guard_b),
+                body: DefinitionBranchBody::Formula(guard_b),
+            },
+            GuardedDefinitionBranchSeed {
+                guard: DefinitionGuardSeed::Otherwise {
+                    guard: otherwise,
+                    excludes: vec![guard_a, guard_b],
+                    provenance: provenance("checker:otherwise"),
+                },
+                body: DefinitionBranchBody::Term(term),
+            },
+        ]);
+
+        let output = lower_definition_inputs(
+            &context,
+            &term_formula,
+            DefinitionLoweringInput {
+                definitions: vec![definition_seed(owner, symbol("Owner"), guarded, 136)],
+            },
+        )
+        .expect("definition lowering");
+        let definition = output
+            .definitions
+            .get(output.definition_map[&owner])
+            .expect("definition");
+
+        assert!(matches!(
+            &definition.body,
+            DefinitionBody::Guarded(branches)
+                if branches.len() == 3 && branches[2].guard == otherwise
+        ));
+        assert_eq!(output.otherwise_guards.len(), 1);
+        assert_eq!(output.otherwise_guards[0].excludes, vec![guard_a, guard_b]);
+        assert_step4_delta_valid(&context, &term_formula, &output);
+
+        let bad_guarded = DefinitionBodySeed::Guarded(vec![
+            GuardedDefinitionBranchSeed {
+                guard: DefinitionGuardSeed::Explicit(guard_a),
+                body: DefinitionBranchBody::Term(term),
+            },
+            GuardedDefinitionBranchSeed {
+                guard: DefinitionGuardSeed::Otherwise {
+                    guard: otherwise,
+                    excludes: vec![guard_b],
+                    provenance: provenance("checker:otherwise:bad"),
+                },
+                body: DefinitionBranchBody::Term(term),
+            },
+        ]);
+        assert!(matches!(
+            lower_definition_inputs(
+                &context,
+                &term_formula,
+                DefinitionLoweringInput {
+                    definitions: vec![definition_seed(owner, symbol("Owner"), bad_guarded, 137)],
+                },
+            ),
+            Err(DefinitionLoweringError::OtherwiseExcludesMismatch { branch: 1 })
+        ));
+    }
+
+    #[test]
+    fn definition_generated_dependencies_are_reachable_through_formula_bodies() {
+        let x = CoreVarId::new(0);
+        let key = GeneratedOriginKey::new("choice:exported");
+        let (context, owner, existing_origin) = context_with_existing_choice_origin(x, key.clone());
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 138),
+            term_seed(
+                CoreTermSeedKind::StableChoice {
+                    functor: symbol("choice_existing"),
+                    origin_functor: symbol("choice_existing"),
+                    key,
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    evidence: vec![CoreProvenance::new(
+                        CoreProvenancePhase::Checker,
+                        "checker:exported-choice",
+                    )],
+                },
+                139,
+            ),
+        ];
+        input.formulas = vec![
+            formula_seed(
+                CoreFormulaSeedKind::Atom {
+                    predicate: symbol("HasChoice"),
+                    args: vec![CoreTermSeedId::new(1)],
+                },
+                140,
+            ),
+            formula_seed(CoreFormulaSeedKind::True, 141),
+        ];
+        let term_formula = lower_term_and_formula_inputs(&context, input).expect("lowering");
+        let body = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let unreachable_body = term_formula.formula_map[&CoreFormulaSeedId::new(1)];
+        let choice_term = term_formula.term_map[&CoreTermSeedId::new(1)];
+        let mut seed = definition_seed(
+            owner,
+            symbol("Owner"),
+            DefinitionBodySeed::Formula(body),
+            142,
+        );
+        seed.generated_dependencies = vec![existing_origin];
+
+        let output = lower_definition_inputs(
+            &context,
+            &term_formula,
+            DefinitionLoweringInput {
+                definitions: vec![seed],
+            },
+        )
+        .expect("definition lowering");
+
+        assert_eq!(output.generated_dependencies.len(), 1);
+        assert_eq!(output.generated_dependencies[0].origin, existing_origin);
+        assert!(term_formula.generated_delta.is_empty());
+        assert!(term_formula.generated_origin_refs[0].reused_existing);
+        assert_eq!(
+            output.generated_dependencies[0].use_terms,
+            vec![choice_term]
+        );
+        assert_step4_delta_valid(&context, &term_formula, &output);
+
+        let missing_dependency = definition_seed(
+            owner,
+            symbol("Owner"),
+            DefinitionBodySeed::Formula(body),
+            143,
+        );
+        assert!(matches!(
+            lower_definition_inputs(
+                &context,
+                &term_formula,
+                DefinitionLoweringInput {
+                    definitions: vec![missing_dependency],
+                },
+            ),
+            Err(DefinitionLoweringError::MissingGeneratedDependency { origin })
+                if origin == existing_origin
+        ));
+
+        let mut spurious_dependency = definition_seed(
+            owner,
+            symbol("Owner"),
+            DefinitionBodySeed::Formula(unreachable_body),
+            144,
+        );
+        spurious_dependency.generated_dependencies = vec![existing_origin];
+        assert!(matches!(
+            lower_definition_inputs(
+                &context,
+                &term_formula,
+                DefinitionLoweringInput {
+                    definitions: vec![spurious_dependency],
+                },
+            ),
+            Err(DefinitionLoweringError::SpuriousGeneratedDependency { origin })
+                if origin == existing_origin
+        ));
+    }
+
+    #[test]
+    fn algorithm_and_unavailable_definition_bodies_remain_deferred_or_error() {
+        let context = prepare_core_context(input_with_items(vec![
+            CoreItemSeed::new(
+                symbol("AlgorithmDef"),
+                CoreItemKind::Algorithm,
+                "public",
+                direct(144, 145),
+                provenance("checker:item:algorithm-def"),
+            )
+            .with_definition_boundary(DefinitionBoundaryKind::Algorithm),
+            CoreItemSeed::new(
+                symbol("UnavailableDef"),
+                CoreItemKind::Functor,
+                "public",
+                direct(146, 147),
+                provenance("checker:item:unavailable-def"),
+            )
+            .with_definition_boundary(DefinitionBoundaryKind::DefinitionalItem),
+        ]))
+        .expect("context");
+        let owner = context
+            .item_registry()
+            .id_for_symbol(&symbol("AlgorithmDef"))
+            .expect("algorithm owner");
+        let other_owner = context
+            .item_registry()
+            .id_for_symbol(&symbol("UnavailableDef"))
+            .expect("unavailable owner");
+        let term_formula = lower_test_terms_and_formulas(&context, owner, Vec::new(), Vec::new());
+        let definitions = vec![
+            definition_seed(
+                owner,
+                symbol("AlgorithmDef"),
+                DefinitionBodySeed::AlgorithmDeferred(failed_site("algorithm-body-deferred", 148)),
+                148,
+            ),
+            definition_seed(
+                other_owner,
+                symbol("UnavailableDef"),
+                DefinitionBodySeed::Unavailable(failed_site("definition-prerequisite-error", 149)),
+                149,
+            ),
+        ];
+
+        let output = lower_definition_inputs(
+            &context,
+            &term_formula,
+            DefinitionLoweringInput { definitions },
+        )
+        .expect("definition lowering");
+
+        assert_eq!(
+            output
+                .item_status_updates
+                .iter()
+                .map(|update| (update.item, update.status))
+                .collect::<Vec<_>>(),
+            vec![
+                (owner, CoreItemStatus::Skipped),
+                (other_owner, CoreItemStatus::Error)
+            ]
+        );
+        for item in [owner, other_owner] {
+            let definition = output
+                .definitions
+                .get(output.definition_map[&item])
+                .expect("definition");
+            assert!(matches!(definition.body, DefinitionBody::Unavailable(_)));
+        }
+        assert_eq!(output.diagnostics.len(), 2);
+        assert_step4_delta_valid(&context, &term_formula, &output);
+    }
+
+    #[test]
+    fn definition_lowering_rejects_nonterm_params_and_wrong_obligations() {
+        let x = CoreVarId::new(0);
+        let (context, owner) = context_with_var_sort(x, NormalizedVarSort::Formula);
+        let term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            Vec::new(),
+            vec![formula_seed(CoreFormulaSeedKind::True, 150)],
+        );
+        let formula = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let mut bad_param = definition_seed(
+            owner,
+            symbol("Owner"),
+            DefinitionBodySeed::Formula(formula),
+            151,
+        );
+        bad_param.params = vec![test_binder(x, None, 152)];
+
+        assert!(matches!(
+            lower_definition_inputs(
+                &context,
+                &term_formula,
+                DefinitionLoweringInput {
+                    definitions: vec![bad_param],
+                },
+            ),
+            Err(DefinitionLoweringError::NonTermDefinitionParam { var, sort })
+                if var == x && sort == NormalizedVarSort::Formula
+        ));
+
+        let (context, owner) = context_with_var(CoreVarId::new(1));
+        let term_formula = lower_test_terms_and_formulas(
+            &context,
+            owner,
+            Vec::new(),
+            vec![formula_seed(CoreFormulaSeedKind::True, 153)],
+        );
+        let formula = term_formula.formula_map[&CoreFormulaSeedId::new(0)];
+        let mut wrong_obligation = definition_seed(
+            owner,
+            symbol("Owner"),
+            DefinitionBodySeed::Formula(formula),
+            154,
+        );
+        wrong_obligation.correctness = vec![DefinitionCorrectnessSeed::New(Box::new(
+            DefinitionObligationSeed {
+                kind: ObligationSeedKind::TheoremProof,
+                status: ObligationSeedStatus::Active,
+                goal: Some(formula),
+                context: Vec::new(),
+                local_path: LocalProofOrProgramPath::new("definition/wrong-kind"),
+                label: None,
+                semantic_origin: NormalizedSemanticOrigin::new(
+                    "pkg::main::Owner.definition.wrong-kind",
+                ),
+                source: direct(155, 156),
+                provenance: provenance("checker:definition:wrong-kind"),
+            },
+        ))];
+
+        assert!(matches!(
+            lower_definition_inputs(
+                &context,
+                &term_formula,
+                DefinitionLoweringInput {
+                    definitions: vec![wrong_obligation],
+                },
+            ),
+            Err(DefinitionLoweringError::InvalidCorrectnessObligation { kind, status })
+                if kind == ObligationSeedKind::TheoremProof
+                    && status == ObligationSeedStatus::Active
+        ));
     }
 
     #[test]

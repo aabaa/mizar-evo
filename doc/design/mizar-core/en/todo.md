@@ -158,12 +158,13 @@ Keep `cargo test -p mizar-core` green after each task (see
       required sethood evidence.
     - Deps: 9. Spec: `elaborator.md` (terms/formulas section).
 
-11. **Definition lowering.** [ ]
+11. **Definition lowering.** [x]
     - Implement Step 4: lower definitions with stable expansion boundaries
       (no eager inlining), including correctness-condition bodies.
     - Tests: expansion boundary fixtures; definition unfolding is explicit,
-      never accidental. Include exported definition choices being reused on
-      unfolding rather than regenerated.
+      never accidental. Record exported definition choices as generated
+      dependencies so the later explicit unfolding surface reuses
+      definition-owned symbols rather than regenerating them.
     - Deps: 10. Spec: `elaborator.md` (definitions section).
 
 12. **Proof-skeleton lowering.** [ ]

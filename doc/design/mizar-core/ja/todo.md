@@ -152,12 +152,13 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       Fraenkel comprehension は必要な sethood evidence を保持する。
     - 依存: 9。仕様: `elaborator.md`（項/論理式の節）。
 
-11. **定義の lowering。** [ ]
+11. **定義の lowering。** [x]
     - Step 4 を実装する: 安定した展開境界を持つ定義の lowering（先行
       インライン化なし）。correctness condition の本体を含む。
     - テスト: 展開境界のフィクスチャ。定義の unfold は明示的であり、
-      偶発的には起こらない。export された定義 choice が unfold 時に再生成
-      されず再利用されることも含める。
+      偶発的には起こらない。export された定義 choice は generated dependency
+      として記録し、後続の明示 unfold surface が definition-owned symbol を
+      再生成せず再利用できるようにする。
     - 依存: 10。仕様: `elaborator.md`（定義の節）。
 
 12. **証明骨格の lowering。** [ ]

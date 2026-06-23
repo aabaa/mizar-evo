@@ -292,11 +292,11 @@ task 11 がこの section を実装する。
 
 出力:
 
-- structure、mode、attribute、predicate、functor、theorem、scheme、registration、reduction、
-  generated definition、algorithm 用 `CoreItem` row。
+- Step 1 で準備した `CoreItem` row に対する stable な definition-to-item mapping と
+  status/diagnostic delta。
 - `CoreDefinitionTable` row。
 - correctness obligation seed。
-- generated dependency。
+- generated origin use に結び付いた generated dependency record。
 
 規則:
 
@@ -307,18 +307,31 @@ task 11 がこの section を実装する。
   definition を eager inline しない。
 - formal binder は binder-scope rule の下で normalize された type guard を含む。
 - `set`、`deffunc`、`defpred` の使用は、definition-time closure から capture-avoiding substitution で
-  展開する。captured free variable は display name ではなく stable id である。
-- conditional definition は ordered guarded branch に lower する。`otherwise` は prior guard の否定として
-  表現し、coverage 欠落は明示的 obligation/diagnostic のままにする。
+  展開する。この処理は binder-normalization の closure 機構を使う。captured free variable は
+  display name ではなく stable id である。task 11 はすでに lowered された term/formula body を受け取る。
+  closure use payload の source-to-checker extraction は、外部 checker payload が利用可能になるまで
+  deferred のままである。
+- conditional definition は ordered guarded branch に lower する。`otherwise` は checker-owned guard と、
+  それが除外する prior guard の ordered list として表す。mizar-core はその payload を記録し、
+  否定を合成または証明しない。coverage 欠落は明示的 obligation/diagnostic のままにする。
 - existence、uniqueness、coherence、compatibility、reducibility、coverage check は obligation seed になる。
-  この crate では accept しない。
+  seed には owning `CoreDefinition` と関連 body node への back-reference を入れる。この crate では accept しない。
 - prerequisite が失敗した item は structured diagnostic 付きで skipped または error にする。
+- algorithm-backed definition body は Step 4 では lower しない。`DefinitionBody::Unavailable` と
+  skipped/error status delta を生成し、Step 6 まで deferred とする。
+- generated dependency は、その dependency id が存在し、definition body の generated origin use record
+  から到達可能な場合にだけ受け付ける。formula body 経由で到達する term も含める。
 
 task 11 の test は definition boundary order、expansion policy、formal guard、
-local abbreviation closure expansion、conditional branch、correctness seed emission、
-generated dependency、skipped/error item preservation を扱う。stable choice を含む exported
-definition は、unfolding 時に definition-owned generated choice symbol を再利用しなければならない。
-use site で fresh choice symbol を再生成してはならない。
+conditional branch、correctness seed emission、generated dependency、skipped/error item preservation、
+local-abbreviation closure-use payload extraction の deferred boundary を扱う。task 11 実装 test は
+Step 4 の seed boundary として、expansion policy、formal guard、checker-owned `otherwise` record、
+definition correctness seed、formula body 経由で到達する generated dependency、skipped/error body、
+invalid boundary input、deferred/existing correctness metadata を覆う。closure expansion 自体は
+`binder_normalization` test で扱い、明示 closure-use body を checker payload から供給できるようになるまでは
+source-extraction handoff とする。
+stable choice を含む exported definition は、unfolding 時に definition-owned generated choice symbol を
+再利用しなければならない。use site で fresh choice symbol を再生成してはならない。
 
 ## Step 5: proof-skeleton lowering
 

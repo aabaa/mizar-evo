@@ -313,12 +313,11 @@ Input:
 
 Output:
 
-- `CoreItem` rows for structures, modes, attributes, predicates, functors,
-  theorems, schemes, registrations, reductions, generated definitions, and
-  algorithms;
+- stable definition-to-item mappings and status/diagnostic deltas for the
+  `CoreItem` rows prepared in Step 1;
 - `CoreDefinitionTable` rows;
 - correctness obligation seeds;
-- generated dependencies.
+- generated dependency records tied to generated origin uses.
 
 Rules:
 
@@ -329,20 +328,41 @@ Rules:
   `Reducible`, or `Computable`) but does not eagerly inline definitions.
 - Formal binders include type guards normalized under the binder-scope rule.
 - `set`, `deffunc`, and `defpred` uses expand from definition-time closures
-  using capture-avoiding substitution. Captured free variables are stable ids,
-  not display names.
+  using the binder-normalization closure machinery and capture-avoiding
+  substitution. Captured free variables are stable ids, not display names. Task
+  11 accepts already lowered term/formula bodies; source-to-checker extraction
+  of these closure-use payloads remains deferred until the external checker
+  payload is available.
 - Conditional definitions lower to ordered guarded branches. `otherwise` is
-  represented as the negation of earlier guards, and missing coverage remains
-  an explicit obligation/diagnostic.
+  represented by a checker-owned guard plus the ordered list of earlier guards
+  it excludes; mizar-core records that payload and does not synthesize or prove
+  the negation itself. Missing coverage remains an explicit
+  obligation/diagnostic.
 - Existence, uniqueness, coherence, compatibility, reducibility, and coverage
-  checks become obligation seeds. They are not accepted in this crate.
+  checks become obligation seeds with back-references to the owning
+  `CoreDefinition` and relevant body nodes. They are not accepted in this
+  crate.
 - Items with failed prerequisites are skipped or marked error with structured
   diagnostics.
+- Algorithm-backed definition bodies are not lowered in Step 4. They produce
+  `DefinitionBody::Unavailable` plus skipped/error status deltas and remain
+  deferred to Step 6.
+- Generated dependencies are accepted only when the dependency id exists and is
+  reachable from generated origin use records in the definition body, including
+  terms reached through formula bodies.
 
 Tests for task 11 must cover definition boundary ordering, expansion policies,
-formal guards, local abbreviation closure expansion, conditional branches,
-correctness seed emission, generated dependencies, and skipped/error item
-preservation. Exported definitions that contain stable choices must reuse the
+formal guards, conditional branches, correctness seed emission, generated
+dependencies, skipped/error item preservation, and the deferred boundary for
+local-abbreviation closure-use payload extraction. The Task 11 implementation
+tests cover the Step 4 seed boundary: expansion policies, formal guards,
+checker-owned `otherwise` records, definition correctness seeds, generated
+dependencies reachable through formula bodies, skipped/error bodies, invalid
+boundary inputs, and deferred/existing correctness metadata. Closure expansion
+itself is covered by `binder_normalization` tests and remains a
+source-extraction handoff until checker payloads can supply explicit
+closure-use bodies.
+Exported definitions that contain stable choices must reuse the
 definition-owned generated choice symbols when unfolded; uses must not
 regenerate fresh choice symbols at the unfolding site.
 
