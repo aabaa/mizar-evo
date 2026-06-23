@@ -247,8 +247,9 @@ Task 15 は CFG construction に必要な最小 context を記録する。parame
 initialized、result local は存在するが definitely initialized ではない。initializer を持つ `Let` と
 すべての `Pick` local は successor context に追加し、`Assign` statement は place write を記録する。
 branch / loop condition は対応する successor context の path condition として保持し、assertion、
-contract、ghost、call、termination fact は Task 16 と Task 17 が semantics を取り付けるまで
-empty または placement-only のままにする。
+call fact は checker-owned call payload が存在するまで empty または placement-only のままにする。
+Task 16 は contract、ghost、assertion、invariant、termination metadata を取り付ける。
+Task 17 はそれらの context の不正利用に対する flow diagnostic を追加する。
 
 join point は definitely initialized set を交差し、path condition を symbolic に join する。
 後続 task が精密な join を表現できない場合は、保守的な context を保持し、すべての path で保証されない
@@ -260,7 +261,7 @@ fact を主張せず、unsupported precision diagnostic を出す。
 struct ControlFlowContractSet {
     requires: Vec<ContractSite>,
     ensures: Vec<ContractSite>,
-    calls: Vec<CallSite>,
+    calls: Vec<CallSiteId>,
     assertions: Vec<AssertionSite>,
     loop_invariants: Vec<LoopInvariantSite>,
     decreasing: Vec<TerminationMeasureSite>,
@@ -269,35 +270,50 @@ struct ControlFlowContractSet {
 
 `requires` clause は entry assumption と、後続 `mizar-vc` generation 用の caller-side
 obligation になる。`ensures` clause はすべての `Return` terminator に付く。`Assert`
-statement は checkpoint site になり、後続 VC が生成された後で normal successor context の fact になる。
+statement は checkpoint site になり、normal successor context の fact になる。
 loop invariant は仕様 20.5.1 の要求通り、loop header、normal back edge、`break`、`continue`
 exit に付く。
 
-`CallSite` は resolved algorithm / functor call、argument term、後続で caller-side obligation になる
-instantiated `requires` formula、return value が束縛されたとき normal successor context に入る
-instantiated `ensures` fact を記録するが、それが normal successor fact になるのは停止が既知の場合だけである。
-したがって call-site row は `KnownTerminating`、`KnownPartial`、`UnknownTermination` などの
-termination availability metadata と checker-owned evidence reference を記録する。partial または unknown
-call では、`ensures` は後続 `mizar-vc` obligation generation 用の conditional metadata のままであり、
-phase 10 は unconditional context に追加してはならない。この site は control-flow metadata にすぎない。
-phase 10 は source-mapped instantiation を記録し、phase 11 が具体的な `VcId` を割り当てる。
-checker payload が call target と contract instantiation を識別しない場合、phase 10 は spelling から
-推測してはならない。unsupported-call diagnostic を記録するか、explicit fixture では call-site table を
-空に保つ。
+`ContractSite` row は kind (`Requires` または `Ensures`)、lowered formula、exact source、
+entry または return placement を運ぶ。`AssertionSite` row は formula、source、
+aggregate algorithm-contract payload または block / successor context を持つ statement checkpoint の
+placement を運ぶ。`LoopInvariantSite` row は formula、source、aggregate algorithm-contract payload
+または loop header / normal backedge / break exit / continue exit の placement を運ぶ。loop placement は
+owning `LoopId` を持つ。`TerminationMeasureSite` row は term、source、algorithm header / loop header /
+loop continue edge の placement を運ぶ。
 
-task 14 は placement だけを仕様化する。task 16 が具体 table を取り付ける。task 18 が最終的な
-obligation-seed handoff を定義する。
+`CoreContractSet.assertions` と `CoreContractSet.invariants` は aggregate `AlgorithmContract`
+placement として保存する。これらは後続 obligation generation 用の metadata anchor であり、それだけで
+unconditional successor fact を追加しない。statement `Assert` と loop `While` annotation が flow-local
+fact と edge site を与える。
+
+`CallSiteId` は flow-level call-site table への link である。現在の Task 16 surface では、
+`CallSite` は明示 checker-owned call payload の statement と source だけを記録する。
+resolved callee、argument term、instantiated `requires` / `ensures`、termination availability は、
+checker payload がその data を公開するまで deferred である。phase 10 は call contract を spelling から
+推測してはならず、明示 payload がなければ call-site table は empty のままにする。後続 task で
+その payload が存在するときも、partial または unknown call の `ensures` は後続 `mizar-vc`
+obligation generation 用の conditional metadata に留め、unconditional successor fact にしてはならない。
+phase 11 が具体的な `VcId` を割り当てる。
+
+task 14 は placement を仕様化する。task 16 は call 以外の具体 table を取り付け、
+明示 checker-owned call payload がない限り call row は empty のままにする。task 18 が
+最終的な obligation-seed handoff を定義する。
 
 ### ghost effect
 
-ghost table は local、place write、pick、assertion、contract site が runtime-visible か
-specification-only かを記録する。ghost value は specification context (`requires`、`ensures`、
-`assert`、`invariant`、`decreasing`) には流れてよいが、runtime assignment、runtime return value、
-non-ghost call へ流れてはならない。違反は flow diagnostic である。
+ghost table は local visibility を記録し、assignment effect と pick local を runtime / ghost-only の
+別 list に分ける。assertion、contract、invariant、decreasing site は specification-only として
+construction され、ghost table の別 row ではなく contract / termination table に記録される。
+ghost value は specification context (`requires`、`ensures`、`assert`、`invariant`、`decreasing`) には
+流れてよいが、runtime assignment、runtime return value、non-ghost call へ流れてはならない。
+違反は flow diagnostic である。
 
 ghost-only pick も non-emptiness obligation を作るが、その runtime effect は後続 extraction で消去される。
 runtime pick は local `Pick` binding として表す。どちらの形も generated stable-choice origin を
 emit しない。
+Task 16 は assignment effect と pick local を runtime / ghost-only の別 list に記録し、
+後続 erasure と diagnostic が statement を再解析せずにこの分離を消費できるようにする。
 
 ### termination
 
@@ -307,6 +323,11 @@ emit しない。
 - loop header に付く loop-level decreasing term。
 - measure が既に減少したことを証明しなければならない `continue` edge。
 - decreasing measure が存在しないため partial である site。
+
+algorithm-level decreasing term がない場合、phase 10 は algorithm partial site を記録する。
+loop-level decreasing term がない場合、phase 10 は loop partial site を記録する。
+明示 payload を持つ decreasing term は algorithm header、loop header、到達可能な continue edge に
+取り付ける。
 
 この plan は後続 VC generation 用 metadata である。phase 10 は well-foundedness を証明せず、
 `VcId` を割り当てず、algorithm を terminating functor に昇格しない。
@@ -373,8 +394,8 @@ composition は `Normal` からだけ継続する。
   ghost/runtime に分類し、後続 handoff 用の non-emptiness obligation site を記録する。
 - `Assign` は `CorePlace` への write を記録する。use-before-assignment と alias precision は
   diagnostic であり、source-string guess ではない。
-- `Assert` は assertion site を作り、後続 VC 生成後に asserted formula を normal successor
-  context に追加する。
+- `Assert` は assertion site を作り、後続 VC 生成用に asserted formula を normal successor
+  context の fact として記録する。
 - `If` は condition block、then/else block、normal exit 用の deterministic join を作る。
   `else` がない branch は false path として表す。
 - `While` は loop header、body entry、normal exit、back edge を作る。invariant と decreasing term
@@ -464,13 +485,12 @@ termination payload から導出される hidden local は deferred とする。
 task 16 の test は次を覆う。
 
 - `requires` と `ensures` の配置。
-- checker-owned call payload が利用できる場合は call-site contract instantiation。
-  利用できない場合は明示 deferred / unsupported diagnostic fixture。
-- partial または unknown termination 用の conditional call-site `ensures` availability。
-- assertion と invariant site。
-- header と loop `continue` edge の decreasing measure。
+- successor / header / exit context の assertion fact と invariant site。
+- algorithm header、loop header、loop `continue` edge の decreasing measure。
+- decreasing payload がない場合の algorithm / loop partial site。
 - contract、call、assertion、invariant、decreasing、statement-placement site の exact
   source/provenance preservation。
+- checker-owned call payload がない間は call-site table が empty であること。
 - explicit core shell が存在する場合に限る、将来の range / collection `for` metadata。
 - ghost-only state が runtime effect table に現れないこと。
 - runtime と ghost の `Pick` distinction。

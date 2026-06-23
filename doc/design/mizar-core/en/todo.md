@@ -208,7 +208,7 @@ Keep `cargo test -p mizar-core` green after each task (see
       carry, and unreachable-join context regressions.
     - Deps: 13, 14. Spec: `control_flow.md`.
 
-16. **Contracts, ghost effects, and termination measures.** [ ]
+16. **Contracts, ghost effects, and termination measures.** [x]
     - Attach preconditions, postconditions, assertions, invariants,
       ghost-effect tracking, and termination measures to the CFG.
     - Tests: attachment fixtures; ghost state never leaks into runtime

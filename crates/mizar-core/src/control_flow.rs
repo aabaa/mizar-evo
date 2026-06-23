@@ -314,29 +314,107 @@ pub struct ControlFlowContractSet {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ContractSite {
+    pub kind: ContractSiteKind,
     pub formula: CoreFormulaId,
+    pub placement: ContractSitePlacement,
     pub source: CoreSourceRef,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ContractSiteKind {
+    Requires,
+    Ensures,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ContractSitePlacement {
+    Entry {
+        block: BasicBlockId,
+        context: ProgramContextId,
+    },
+    Return {
+        block: BasicBlockId,
+        exit: ControlFlowExitId,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AssertionSite {
-    pub statement: CoreAlgorithmStmtId,
     pub formula: CoreFormulaId,
+    pub placement: AssertionPlacement,
     pub source: CoreSourceRef,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum AssertionPlacement {
+    AlgorithmContract {
+        block: BasicBlockId,
+        context: ProgramContextId,
+    },
+    Statement {
+        statement: CoreAlgorithmStmtId,
+        block: BasicBlockId,
+        successor_context: ProgramContextId,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LoopInvariantSite {
-    pub loop_id: LoopId,
     pub formula: CoreFormulaId,
+    pub placement: LoopInvariantPlacement,
     pub source: CoreSourceRef,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum LoopInvariantPlacement {
+    AlgorithmContract {
+        block: BasicBlockId,
+        context: ProgramContextId,
+    },
+    Header {
+        loop_id: LoopId,
+        block: BasicBlockId,
+    },
+    NormalBackedge {
+        loop_id: LoopId,
+        from: BasicBlockId,
+        to: BasicBlockId,
+    },
+    BreakExit {
+        loop_id: LoopId,
+        exit: ControlFlowExitId,
+    },
+    ContinueExit {
+        loop_id: LoopId,
+        exit: ControlFlowExitId,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TerminationMeasureSite {
-    pub loop_id: Option<LoopId>,
     pub term: CoreTermId,
+    pub placement: TerminationMeasurePlacement,
     pub source: CoreSourceRef,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum TerminationMeasurePlacement {
+    AlgorithmHeader {
+        block: BasicBlockId,
+    },
+    LoopHeader {
+        loop_id: LoopId,
+        header: BasicBlockId,
+    },
+    ContinueEdge {
+        loop_id: LoopId,
+        exit: ControlFlowExitId,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -374,6 +452,10 @@ pub enum ControlFlowExitKind {
 pub struct ControlFlowGhostTable {
     pub declared_algorithm_effects: Vec<GhostEffectKey>,
     pub local_visibility: BTreeMap<LocalId, GhostVisibility>,
+    pub runtime_assignment_effects: Vec<AssignmentEffectId>,
+    pub ghost_assignment_effects: Vec<AssignmentEffectId>,
+    pub runtime_pick_locals: Vec<LocalId>,
+    pub ghost_pick_locals: Vec<LocalId>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -530,7 +612,7 @@ impl<'a> FlowBuilder<'a> {
             exits: ControlFlowExitTable::new(),
             ghost_effects: ControlFlowGhostTable {
                 declared_algorithm_effects: algorithm.ghost_effects.clone(),
-                local_visibility: BTreeMap::new(),
+                ..ControlFlowGhostTable::default()
             },
             termination: ControlFlowTerminationPlan {
                 algorithm_decreasing: algorithm.contracts.decreasing.clone(),
@@ -600,6 +682,9 @@ impl<'a> FlowBuilder<'a> {
         );
         debug_assert_eq!(entry, BasicBlockId::new(0));
         self.flow.entry = entry;
+        self.attach_entry_requires(entry, entry_context);
+        self.attach_entry_contract_payloads(entry, entry_context);
+        self.attach_algorithm_termination(entry);
 
         let cursor = BlockCursor {
             block: entry,
@@ -630,6 +715,7 @@ impl<'a> FlowBuilder<'a> {
                     .clone(),
             });
         }
+        self.attach_return_ensures();
         self.flow
     }
 
@@ -709,7 +795,7 @@ impl<'a> FlowBuilder<'a> {
                 let context = self.add_context(context);
                 Some(BlockCursor { context, ..cursor })
             }
-            CoreAlgorithmStmtKind::Assert { .. } => {
+            CoreAlgorithmStmtKind::Assert { formula } => {
                 self.flow.source_map.statement_placements.insert(
                     statement_id,
                     ControlFlowStatementPlacement::Checkpoint {
@@ -717,7 +803,24 @@ impl<'a> FlowBuilder<'a> {
                     },
                 );
                 self.append_statement(cursor.block, statement_id);
-                Some(cursor)
+                let fact = self.add_context_fact(ContextFact {
+                    formula: *formula,
+                    source: self.formula_source(*formula),
+                    kind: ContextFactKind::Assertion,
+                });
+                let mut context = self.context(cursor.context).clone();
+                push_unique(&mut context.available_facts, fact);
+                let context = self.add_context(context);
+                self.flow.contracts.assertions.push(AssertionSite {
+                    formula: *formula,
+                    placement: AssertionPlacement::Statement {
+                        statement: statement_id,
+                        block: cursor.block,
+                        successor_context: context,
+                    },
+                    source: statement.source.clone(),
+                });
+                Some(BlockCursor { context, ..cursor })
             }
             CoreAlgorithmStmtKind::If {
                 condition,
@@ -1044,13 +1147,41 @@ impl<'a> FlowBuilder<'a> {
         body: &[CoreAlgorithmStmtId],
         loop_stack: &[LoopTarget],
     ) -> BlockCursor {
-        let header_context = self.add_context(self.context(cursor.context).clone());
+        let invariant_facts = invariants
+            .iter()
+            .copied()
+            .map(|formula| {
+                self.add_context_fact(ContextFact {
+                    formula,
+                    source: self.formula_source(formula),
+                    kind: ContextFactKind::LoopInvariant,
+                })
+            })
+            .collect::<Vec<_>>();
+        let mut header_context = self.context(cursor.context).clone();
+        header_context
+            .active_invariants
+            .extend(invariants.iter().copied());
+        header_context
+            .available_facts
+            .extend(invariant_facts.iter().copied());
+        let header_context = self.add_context(header_context);
         let mut body_context = self.context(cursor.context).clone();
         push_unique(&mut body_context.path_conditions, condition);
         body_context
             .active_invariants
             .extend(invariants.iter().copied());
-        let condition_exit_context = self.add_context(self.context(cursor.context).clone());
+        body_context
+            .available_facts
+            .extend(invariant_facts.iter().copied());
+        let mut condition_exit_context = self.context(cursor.context).clone();
+        condition_exit_context
+            .active_invariants
+            .extend(invariants.iter().copied());
+        condition_exit_context
+            .available_facts
+            .extend(invariant_facts.iter().copied());
+        let condition_exit_context = self.add_context(condition_exit_context);
 
         let header_block = self.add_block(
             synthetic_source(&statement.source, "while-header"),
@@ -1095,6 +1226,33 @@ impl<'a> FlowBuilder<'a> {
             .termination
             .loop_decreasing
             .insert(loop_id, decreasing.to_vec());
+        for invariant in invariants {
+            self.flow.contracts.loop_invariants.push(LoopInvariantSite {
+                formula: *invariant,
+                placement: LoopInvariantPlacement::Header {
+                    loop_id,
+                    block: header_block,
+                },
+                source: self.formula_source(*invariant),
+            });
+        }
+        if decreasing.is_empty() {
+            self.flow.termination.partial_sites.push(TerminationSite {
+                kind: TerminationSiteKind::Loop(loop_id),
+                source: statement.source.clone(),
+            });
+        } else {
+            for term in decreasing {
+                self.flow.contracts.decreasing.push(TerminationMeasureSite {
+                    term: *term,
+                    placement: TerminationMeasurePlacement::LoopHeader {
+                        loop_id,
+                        header: header_block,
+                    },
+                    source: self.term_source(*term),
+                });
+            }
+        }
         self.terminate(
             cursor.block,
             ControlFlowTerminator::Goto(header_block),
@@ -1132,6 +1290,21 @@ impl<'a> FlowBuilder<'a> {
                 vec![exit.context],
             );
         }
+        if let Some(exit) = body_exit
+            && exit.reachable == Reachability::Reachable
+        {
+            for invariant in invariants {
+                self.flow.contracts.loop_invariants.push(LoopInvariantSite {
+                    formula: *invariant,
+                    placement: LoopInvariantPlacement::NormalBackedge {
+                        loop_id,
+                        from: exit.block,
+                        to: header_block,
+                    },
+                    source: self.formula_source(*invariant),
+                });
+            }
+        }
         let mut exit_contexts = vec![condition_exit_context];
         if let Some(exit) = body_exit
             && exit.reachable == Reachability::Reachable
@@ -1149,6 +1322,22 @@ impl<'a> FlowBuilder<'a> {
                 let break_block = self.flow.blocks.get(exit.from).expect("break block");
                 if break_block.reachable == Reachability::Reachable {
                     exit_contexts.extend(break_block.context_out.iter().copied());
+                    let exit_id = self
+                        .flow
+                        .exits
+                        .iter()
+                        .find_map(|(id, candidate)| (candidate == exit).then_some(id))
+                        .expect("exit from iteration");
+                    for invariant in invariants {
+                        self.flow.contracts.loop_invariants.push(LoopInvariantSite {
+                            formula: *invariant,
+                            placement: LoopInvariantPlacement::BreakExit {
+                                loop_id,
+                                exit: exit_id,
+                            },
+                            source: self.formula_source(*invariant),
+                        });
+                    }
                 }
             }
             if matches!(
@@ -1161,6 +1350,32 @@ impl<'a> FlowBuilder<'a> {
                 let continue_block = self.flow.blocks.get(exit.from).expect("continue block");
                 if continue_block.reachable == Reachability::Reachable {
                     exit_contexts.extend(continue_block.context_out.iter().copied());
+                    let exit_id = self
+                        .flow
+                        .exits
+                        .iter()
+                        .find_map(|(id, candidate)| (candidate == exit).then_some(id))
+                        .expect("exit from iteration");
+                    for invariant in invariants {
+                        self.flow.contracts.loop_invariants.push(LoopInvariantSite {
+                            formula: *invariant,
+                            placement: LoopInvariantPlacement::ContinueExit {
+                                loop_id,
+                                exit: exit_id,
+                            },
+                            source: self.formula_source(*invariant),
+                        });
+                    }
+                    for term in decreasing {
+                        self.flow.contracts.decreasing.push(TerminationMeasureSite {
+                            term: *term,
+                            placement: TerminationMeasurePlacement::ContinueEdge {
+                                loop_id,
+                                exit: exit_id,
+                            },
+                            source: self.term_source(*term),
+                        });
+                    }
                 }
             }
         }
@@ -1376,6 +1591,7 @@ impl<'a> FlowBuilder<'a> {
     fn add_local(&mut self, local: ControlFlowLocal) -> LocalId {
         let source = local.source.clone();
         let ghost = local.ghost;
+        let is_pick = matches!(local.kind, LocalKind::Pick { .. });
         let id = self.flow.locals.insert(local);
         self.flow.source_map.local_sources.insert(id, source);
         self.flow.ghost_effects.local_visibility.insert(
@@ -1386,6 +1602,13 @@ impl<'a> FlowBuilder<'a> {
                 GhostVisibility::Runtime
             },
         );
+        if is_pick {
+            if ghost {
+                push_unique(&mut self.flow.ghost_effects.ghost_pick_locals, id);
+            } else {
+                push_unique(&mut self.flow.ghost_effects.runtime_pick_locals, id);
+            }
+        }
         id
     }
 
@@ -1398,6 +1621,20 @@ impl<'a> FlowBuilder<'a> {
         sort_and_dedup(&mut context.active_invariants);
         sort_and_dedup(&mut context.ghost_visible);
         self.flow.contexts.insert(context)
+    }
+
+    fn add_context_fact(&mut self, fact: ContextFact) -> ContextFactId {
+        self.flow.context_facts.insert(fact)
+    }
+
+    fn push_context_fact(&mut self, context: ProgramContextId, fact: ContextFactId) {
+        let context = self
+            .flow
+            .contexts
+            .get_mut(context)
+            .expect("builder context id");
+        push_unique(&mut context.available_facts, fact);
+        sort_and_dedup(&mut context.available_facts);
     }
 
     fn add_loop(&mut self, loop_record: ControlFlowLoop) -> LoopId {
@@ -1422,7 +1659,26 @@ impl<'a> FlowBuilder<'a> {
     }
 
     fn add_assignment_effect(&mut self, effect: AssignmentEffect) -> AssignmentEffectId {
-        self.flow.assignment_effects.insert(effect)
+        let visibility = match &effect.target {
+            AssignmentEffectTarget::Local(local) => self
+                .flow
+                .ghost_effects
+                .local_visibility
+                .get(local)
+                .copied()
+                .unwrap_or(GhostVisibility::Runtime),
+            AssignmentEffectTarget::Place(_) => GhostVisibility::Runtime,
+        };
+        let id = self.flow.assignment_effects.insert(effect);
+        match visibility {
+            GhostVisibility::Runtime => {
+                push_unique(&mut self.flow.ghost_effects.runtime_assignment_effects, id);
+            }
+            GhostVisibility::GhostOnly => {
+                push_unique(&mut self.flow.ghost_effects.ghost_assignment_effects, id);
+            }
+        }
+        id
     }
 
     fn append_statement(&mut self, block: BasicBlockId, statement: CoreAlgorithmStmtId) {
@@ -1454,6 +1710,124 @@ impl<'a> FlowBuilder<'a> {
                 .terminator,
             ControlFlowTerminator::Unreachable
         )
+    }
+
+    fn attach_entry_requires(&mut self, entry: BasicBlockId, entry_context: ProgramContextId) {
+        for formula in self.algorithm.contracts.requires.clone() {
+            let source = self.formula_source(formula);
+            let fact = self.add_context_fact(ContextFact {
+                formula,
+                source: source.clone(),
+                kind: ContextFactKind::Requirement,
+            });
+            self.push_context_fact(entry_context, fact);
+            self.flow.contracts.requires.push(ContractSite {
+                kind: ContractSiteKind::Requires,
+                formula,
+                placement: ContractSitePlacement::Entry {
+                    block: entry,
+                    context: entry_context,
+                },
+                source,
+            });
+        }
+    }
+
+    fn attach_entry_contract_payloads(
+        &mut self,
+        entry: BasicBlockId,
+        entry_context: ProgramContextId,
+    ) {
+        for formula in self.algorithm.contracts.assertions.clone() {
+            self.flow.contracts.assertions.push(AssertionSite {
+                formula,
+                placement: AssertionPlacement::AlgorithmContract {
+                    block: entry,
+                    context: entry_context,
+                },
+                source: self.formula_source(formula),
+            });
+        }
+        for formula in self.algorithm.contracts.invariants.clone() {
+            self.flow.contracts.loop_invariants.push(LoopInvariantSite {
+                formula,
+                placement: LoopInvariantPlacement::AlgorithmContract {
+                    block: entry,
+                    context: entry_context,
+                },
+                source: self.formula_source(formula),
+            });
+        }
+    }
+
+    fn attach_algorithm_termination(&mut self, entry: BasicBlockId) {
+        if self.algorithm.contracts.decreasing.is_empty() {
+            self.flow.termination.partial_sites.push(TerminationSite {
+                kind: TerminationSiteKind::Algorithm,
+                source: self.algorithm.source.clone(),
+            });
+            return;
+        }
+        for term in self.algorithm.contracts.decreasing.clone() {
+            self.flow.contracts.decreasing.push(TerminationMeasureSite {
+                term,
+                placement: TerminationMeasurePlacement::AlgorithmHeader { block: entry },
+                source: self.term_source(term),
+            });
+        }
+    }
+
+    fn attach_return_ensures(&mut self) {
+        let returns = self
+            .flow
+            .exits
+            .iter()
+            .filter_map(|(exit_id, exit)| {
+                matches!(exit.kind, ControlFlowExitKind::Return).then_some((exit_id, exit.from))
+            })
+            .collect::<Vec<_>>();
+        for (exit, block) in returns {
+            for formula in self.algorithm.contracts.ensures.clone() {
+                self.flow.contracts.ensures.push(ContractSite {
+                    kind: ContractSiteKind::Ensures,
+                    formula,
+                    placement: ContractSitePlacement::Return { block, exit },
+                    source: self.formula_source(formula),
+                });
+            }
+        }
+    }
+
+    fn formula_source(&self, formula: CoreFormulaId) -> CoreSourceRef {
+        self.core
+            .source_map()
+            .formula_sources
+            .get(&formula)
+            .cloned()
+            .unwrap_or_else(|| {
+                self.core
+                    .formulas()
+                    .get(formula)
+                    .expect("validated CoreIr formula id")
+                    .source
+                    .clone()
+            })
+    }
+
+    fn term_source(&self, term: CoreTermId) -> CoreSourceRef {
+        self.core
+            .source_map()
+            .term_sources
+            .get(&term)
+            .cloned()
+            .unwrap_or_else(|| {
+                self.core
+                    .terms()
+                    .get(term)
+                    .expect("validated CoreIr term id")
+                    .source
+                    .clone()
+            })
     }
 
     fn join_context(
@@ -1776,17 +2150,27 @@ mod tests {
         }
 
         fn finish(
+            self,
+            params: Vec<CoreBinder>,
+            result: Option<CoreBinder>,
+            statements: Vec<CoreAlgorithmStmtId>,
+        ) -> CoreIr {
+            self.finish_with_contracts(params, result, statements, CoreContractSet::default())
+        }
+
+        fn finish_with_contracts(
             mut self,
             params: Vec<CoreBinder>,
             result: Option<CoreBinder>,
             statements: Vec<CoreAlgorithmStmtId>,
+            contracts: CoreContractSet,
         ) -> CoreIr {
             let algorithm = CoreAlgorithm {
                 item: self.item,
                 symbol: symbol("AlgorithmOwner"),
                 params,
                 result,
-                contracts: CoreContractSet::default(),
+                contracts,
                 statements,
                 ghost_effects: Vec::new(),
                 source: self.source(1, 2),
@@ -1803,6 +2187,24 @@ mod tests {
             .flows
             .get(ControlFlowId::new(0))
             .expect("single flow")
+    }
+
+    fn context_has_fact(
+        flow: &ControlFlowIr,
+        context: ProgramContextId,
+        formula: CoreFormulaId,
+        source: &CoreSourceRef,
+        kind: ContextFactKind,
+    ) -> bool {
+        flow.contexts
+            .get(context)
+            .expect("context")
+            .available_facts
+            .iter()
+            .any(|fact| {
+                let fact = flow.context_facts.get(*fact).expect("context fact");
+                fact.formula == formula && fact.source == *source && fact.kind == kind
+            })
     }
 
     #[test]
@@ -1840,24 +2242,33 @@ mod tests {
             },
             35,
         );
-        let unsupported_binder = fixture.binder(5, "checker:future-local", 36);
+        let ghost_let_binder = fixture.binder(5, "local:const", 36);
+        let ghost_let = fixture.stmt(
+            CoreAlgorithmStmtKind::Let {
+                binder: ghost_let_binder.clone(),
+                value: Some(term_y),
+                ghost: true,
+            },
+            37,
+        );
+        let unsupported_binder = fixture.binder(6, "checker:future-local", 38);
         let unsupported = fixture.stmt(
             CoreAlgorithmStmtKind::Let {
                 binder: unsupported_binder.clone(),
                 value: None,
                 ghost: false,
             },
-            37,
+            39,
         );
         let assign = fixture.stmt(
             CoreAlgorithmStmtKind::Assign {
                 target: CorePlace::new("result"),
                 value: term_y,
             },
-            38,
+            40,
         );
-        let assert_stmt = fixture.stmt(CoreAlgorithmStmtKind::Assert { formula: condition }, 39);
-        let return_stmt = fixture.stmt(CoreAlgorithmStmtKind::Return(Some(term_y)), 40);
+        let assert_stmt = fixture.stmt(CoreAlgorithmStmtKind::Assert { formula: condition }, 41);
+        let return_stmt = fixture.stmt(CoreAlgorithmStmtKind::Return(Some(term_y)), 42);
         let core = fixture.finish(
             vec![param.clone()],
             Some(result.clone()),
@@ -1865,6 +2276,7 @@ mod tests {
                 let_stmt,
                 runtime_pick,
                 ghost_pick,
+                ghost_let,
                 unsupported,
                 assign,
                 assert_stmt,
@@ -1878,7 +2290,7 @@ mod tests {
         assert_eq!(first.debug_text(), second.debug_text());
         let flow = only_flow(&first);
         assert!(flow.debug_text().contains("control-flow-ir-debug-v1"));
-        assert_eq!(flow.locals.len(), 6);
+        assert_eq!(flow.locals.len(), 7);
         assert!(
             flow.locals
                 .iter()
@@ -1949,14 +2361,24 @@ mod tests {
             flow.source_map.local_sources[&LocalId::new(4)],
             ghost_pick_binder.source
         );
-        let unsupported_local = flow.locals.get(LocalId::new(5)).expect("unsupported");
+        let ghost_let_local = flow.locals.get(LocalId::new(5)).expect("ghost let");
+        assert_eq!(ghost_let_local.kind, LocalKind::Let);
+        assert_eq!(ghost_let_local.declaration, LocalDeclaration::GhostConst);
+        assert_eq!(ghost_let_local.mutability, LocalMutability::Immutable);
+        assert_eq!(ghost_let_local.initialized_at, Some(ghost_let));
+        assert!(ghost_let_local.ghost);
+        assert_eq!(
+            flow.source_map.local_sources[&LocalId::new(5)],
+            ghost_let_binder.source
+        );
+        let unsupported_local = flow.locals.get(LocalId::new(6)).expect("unsupported");
         assert!(matches!(
             &unsupported_local.declaration,
             LocalDeclaration::Unsupported(role) if role.as_str() == "checker:future-local"
         ));
         assert_eq!(unsupported_local.mutability, LocalMutability::Unknown);
         assert_eq!(
-            flow.source_map.local_sources[&LocalId::new(5)],
+            flow.source_map.local_sources[&LocalId::new(6)],
             unsupported_binder.source
         );
         assert_eq!(flow.diagnostics.len(), 1);
@@ -1966,7 +2388,7 @@ mod tests {
                 .expect("diagnostic")
                 .kind,
             ControlFlowDiagnosticKind::UnsupportedLocalDeclaration { local, .. }
-                if local == LocalId::new(5)
+                if local == LocalId::new(6)
         ));
         let entry_block = flow.blocks.get(flow.entry).expect("entry block");
         assert_eq!(
@@ -1986,6 +2408,7 @@ mod tests {
                 let_stmt,
                 runtime_pick,
                 ghost_pick,
+                ghost_let,
                 unsupported,
                 assign,
                 assert_stmt
@@ -2035,15 +2458,236 @@ mod tests {
                 LocalId::new(0),
                 LocalId::new(2),
                 LocalId::new(3),
-                LocalId::new(4)
+                LocalId::new(4),
+                LocalId::new(5)
             ]
         );
         assert_eq!(
             return_context.maybe_assigned,
             vec![CorePlace::new("result")]
         );
-        assert_eq!(return_context.ghost_visible, vec![LocalId::new(4)]);
-        assert_eq!(return_context.assignment_effects.len(), 4);
+        assert_eq!(
+            return_context.ghost_visible,
+            vec![LocalId::new(4), LocalId::new(5)]
+        );
+        assert_eq!(return_context.assignment_effects.len(), 5);
+        assert_eq!(
+            flow.ghost_effects.runtime_pick_locals,
+            vec![LocalId::new(3)]
+        );
+        assert_eq!(flow.ghost_effects.ghost_pick_locals, vec![LocalId::new(4)]);
+        assert_eq!(
+            flow.ghost_effects.runtime_assignment_effects,
+            vec![
+                AssignmentEffectId::new(0),
+                AssignmentEffectId::new(1),
+                AssignmentEffectId::new(4)
+            ]
+        );
+        assert_eq!(
+            flow.ghost_effects.ghost_assignment_effects,
+            vec![AssignmentEffectId::new(2), AssignmentEffectId::new(3)]
+        );
+        assert!(flow.call_sites.is_empty());
+        assert!(flow.contracts.calls.is_empty());
+    }
+
+    #[test]
+    fn control_flow_attaches_contracts_assertions_and_algorithm_termination() {
+        let mut fixture = CoreFixture::new();
+        let term = fixture.term_var(0, 10);
+        let requires = fixture.formula(CoreFormulaKind::True, 11);
+        let ensures = fixture.formula(CoreFormulaKind::False, 12);
+        let assertion = fixture.formula(
+            CoreFormulaKind::Equals {
+                left: term,
+                right: term,
+            },
+            13,
+        );
+        let decreasing = fixture.term_var(1, 14);
+        let contract_assertion = fixture.formula(CoreFormulaKind::True, 15);
+        let contract_invariant = fixture.formula(CoreFormulaKind::False, 16);
+        let assert_stmt = fixture.stmt(CoreAlgorithmStmtKind::Assert { formula: assertion }, 20);
+        let return_stmt = fixture.stmt(CoreAlgorithmStmtKind::Return(Some(term)), 21);
+        let core = fixture.finish_with_contracts(
+            Vec::new(),
+            None,
+            vec![assert_stmt, return_stmt],
+            CoreContractSet {
+                requires: vec![requires],
+                ensures: vec![ensures],
+                invariants: vec![contract_invariant],
+                assertions: vec![contract_assertion],
+                decreasing: vec![decreasing],
+            },
+        );
+
+        let output = build_control_flow_ir(&core);
+        let flow = only_flow(&output);
+        assert_eq!(flow.contracts.requires.len(), 1);
+        let require_site = &flow.contracts.requires[0];
+        assert_eq!(require_site.kind, ContractSiteKind::Requires);
+        assert_eq!(require_site.formula, requires);
+        assert_eq!(
+            require_site.source,
+            core.source_map().formula_sources[&requires]
+        );
+        let entry_context_id = flow.blocks.get(flow.entry).expect("entry").context_in;
+        assert!(matches!(
+            require_site.placement,
+            ContractSitePlacement::Entry { block, context }
+                if block == flow.entry && context == entry_context_id
+        ));
+        let entry_context = flow.contexts.get(entry_context_id).expect("entry context");
+        let require_fact = entry_context.available_facts[0];
+        let require_fact = flow.context_facts.get(require_fact).expect("requires fact");
+        assert_eq!(require_fact.formula, requires);
+        assert_eq!(
+            require_fact.source,
+            core.source_map().formula_sources[&requires]
+        );
+        assert_eq!(require_fact.kind, ContextFactKind::Requirement);
+
+        assert_eq!(flow.contracts.assertions.len(), 2);
+        let contract_assertion_site = flow
+            .contracts
+            .assertions
+            .iter()
+            .find(|site| {
+                site.formula == contract_assertion
+                    && matches!(
+                        site.placement,
+                        AssertionPlacement::AlgorithmContract { block, context }
+                            if block == flow.entry && context == entry_context_id
+                    )
+            })
+            .expect("algorithm contract assertion site");
+        assert_eq!(
+            contract_assertion_site.source,
+            core.source_map().formula_sources[&contract_assertion]
+        );
+        let assertion_site = flow
+            .contracts
+            .assertions
+            .iter()
+            .find(|site| {
+                matches!(
+                    site.placement,
+                    AssertionPlacement::Statement { statement, .. } if statement == assert_stmt
+                )
+            })
+            .expect("statement assertion site");
+        assert_eq!(assertion_site.formula, assertion);
+        assert_eq!(
+            assertion_site.source,
+            core.source_map().algorithm_sources[&assert_stmt]
+        );
+        assert!(matches!(
+            assertion_site.placement,
+            AssertionPlacement::Statement {
+                block,
+                successor_context,
+                ..
+            } if block == flow.entry
+                && successor_context == flow.blocks.get(flow.entry).expect("entry").context_out[0]
+                && context_has_fact(
+                    flow,
+                    successor_context,
+                    assertion,
+                    &core.source_map().formula_sources[&assertion],
+                    ContextFactKind::Assertion
+                )
+        ));
+
+        assert_eq!(flow.contracts.loop_invariants.len(), 1);
+        let contract_invariant_site = &flow.contracts.loop_invariants[0];
+        assert_eq!(contract_invariant_site.formula, contract_invariant);
+        assert_eq!(
+            contract_invariant_site.source,
+            core.source_map().formula_sources[&contract_invariant]
+        );
+        assert!(matches!(
+            contract_invariant_site.placement,
+            LoopInvariantPlacement::AlgorithmContract { block, context }
+                if block == flow.entry && context == entry_context_id
+        ));
+
+        assert_eq!(flow.contracts.ensures.len(), 1);
+        let ensure_site = &flow.contracts.ensures[0];
+        assert_eq!(ensure_site.kind, ContractSiteKind::Ensures);
+        assert_eq!(ensure_site.formula, ensures);
+        assert_eq!(
+            ensure_site.source,
+            core.source_map().formula_sources[&ensures]
+        );
+        assert!(matches!(
+            ensure_site.placement,
+            ContractSitePlacement::Return { block, exit }
+                if block == flow.entry
+                    && matches!(
+                        flow.exits.get(exit).expect("return exit").statement,
+                        Some(statement) if statement == return_stmt
+                    )
+        ));
+
+        assert_eq!(flow.contracts.decreasing.len(), 1);
+        let measure = &flow.contracts.decreasing[0];
+        assert_eq!(measure.term, decreasing);
+        assert_eq!(measure.source, core.source_map().term_sources[&decreasing]);
+        assert!(matches!(
+            measure.placement,
+            TerminationMeasurePlacement::AlgorithmHeader { block } if block == flow.entry
+        ));
+        assert!(flow.termination.partial_sites.is_empty());
+    }
+
+    #[test]
+    fn control_flow_attaches_implicit_ensures_and_partial_algorithm_termination() {
+        let mut fixture = CoreFixture::new();
+        let term = fixture.term_var(0, 10);
+        let ensures = fixture.formula(CoreFormulaKind::True, 11);
+        let assign = fixture.stmt(
+            CoreAlgorithmStmtKind::Assign {
+                target: CorePlace::new("result"),
+                value: term,
+            },
+            20,
+        );
+        let core = fixture.finish_with_contracts(
+            Vec::new(),
+            None,
+            vec![assign],
+            CoreContractSet {
+                ensures: vec![ensures],
+                ..CoreContractSet::default()
+            },
+        );
+
+        let output = build_control_flow_ir(&core);
+        let flow = only_flow(&output);
+        assert_eq!(flow.contracts.ensures.len(), 1);
+        let implicit_exit = flow
+            .exits
+            .iter()
+            .find(|(_, exit)| exit.statement.is_none())
+            .map(|(id, _)| id)
+            .expect("implicit return exit");
+        assert!(matches!(
+            flow.contracts.ensures[0].placement,
+            ContractSitePlacement::Return { exit, .. } if exit == implicit_exit
+        ));
+        assert!(flow.termination.partial_sites.iter().any(|site| {
+            matches!(site.kind, TerminationSiteKind::Algorithm)
+                && site.source
+                    == core
+                        .algorithms()
+                        .get(flow.algorithm)
+                        .expect("algorithm")
+                        .source
+        }));
+        assert!(flow.call_sites.is_empty());
+        assert!(flow.contracts.calls.is_empty());
     }
 
     #[test]
@@ -2264,6 +2908,28 @@ mod tests {
         assert_eq!(body_context.path_conditions, vec![condition]);
         assert_eq!(body_context.active_invariants, vec![condition]);
         assert_eq!(body_context.loop_stack, vec![LoopId::new(0)]);
+        let invariant_source = core.source_map().formula_sources[&condition].clone();
+        assert!(context_has_fact(
+            flow,
+            header.context_in,
+            condition,
+            &invariant_source,
+            ContextFactKind::LoopInvariant
+        ));
+        assert!(context_has_fact(
+            flow,
+            header.context_out[0],
+            condition,
+            &invariant_source,
+            ContextFactKind::LoopInvariant
+        ));
+        assert!(context_has_fact(
+            flow,
+            header.context_out[1],
+            condition,
+            &invariant_source,
+            ContextFactKind::LoopInvariant
+        ));
         let body_block = flow.blocks.get(loop_record.body).expect("body block");
         let ControlFlowTerminator::Branch {
             then_block,
@@ -2300,11 +2966,10 @@ mod tests {
             unreachable_join.terminator,
             ControlFlowTerminator::Goto(target) if target == BasicBlockId::new(1)
         ));
-        let continue_exit = flow
+        let (continue_exit_id, continue_exit) = flow
             .exits
             .iter()
             .find(|(_, exit)| exit.statement == Some(continue_stmt))
-            .map(|(_, exit)| exit)
             .expect("continue exit");
         assert_eq!(continue_exit.target, Some(loop_record.header));
         assert!(matches!(
@@ -2313,13 +2978,198 @@ mod tests {
                 loop_id
             } if loop_id == LoopId::new(0)
         ));
-        let break_exit = flow
+        let (break_exit_id, break_exit) = flow
             .exits
             .iter()
             .find(|(_, exit)| exit.statement == Some(break_stmt))
-            .map(|(_, exit)| exit)
             .expect("break exit");
         assert_eq!(break_exit.target, Some(loop_record.exit));
+        assert!(context_has_fact(
+            flow,
+            flow.blocks
+                .get(continue_exit.from)
+                .expect("continue block")
+                .context_out[0],
+            condition,
+            &invariant_source,
+            ContextFactKind::LoopInvariant
+        ));
+        assert!(context_has_fact(
+            flow,
+            flow.blocks
+                .get(break_exit.from)
+                .expect("break block")
+                .context_out[0],
+            condition,
+            &invariant_source,
+            ContextFactKind::LoopInvariant
+        ));
+        assert!(context_has_fact(
+            flow,
+            flow.blocks
+                .get(loop_record.exit)
+                .expect("loop exit")
+                .context_in,
+            condition,
+            &invariant_source,
+            ContextFactKind::LoopInvariant
+        ));
+        assert!(flow.termination.partial_sites.iter().any(|site| {
+            matches!(site.kind, TerminationSiteKind::Loop(loop_id) if loop_id == LoopId::new(0))
+                && site.source == loop_record.source
+        }));
+        assert!(flow.contracts.loop_invariants.iter().any(|site| {
+            site.formula == condition
+                && matches!(
+                    site.placement,
+                    LoopInvariantPlacement::Header { loop_id, block }
+                        if loop_id == LoopId::new(0) && block == loop_record.header
+                )
+        }));
+        assert!(flow.contracts.loop_invariants.iter().any(|site| {
+            site.formula == condition
+                && matches!(
+                    site.placement,
+                    LoopInvariantPlacement::BreakExit { loop_id, exit }
+                        if loop_id == LoopId::new(0) && exit == break_exit_id
+                )
+        }));
+        assert!(flow.contracts.loop_invariants.iter().any(|site| {
+            site.formula == condition
+                && matches!(
+                    site.placement,
+                    LoopInvariantPlacement::ContinueExit { loop_id, exit }
+                        if loop_id == LoopId::new(0) && exit == continue_exit_id
+                )
+        }));
+    }
+
+    #[test]
+    fn control_flow_attaches_loop_invariants_and_decreasing_sites() {
+        let mut fixture = CoreFixture::new();
+        let term = fixture.term_var(0, 10);
+        let first_decreasing = fixture.term_var(1, 11);
+        let second_decreasing = fixture.term_var(2, 12);
+        let condition = fixture.formula(CoreFormulaKind::True, 13);
+        let first_invariant = fixture.formula(CoreFormulaKind::False, 14);
+        let second_invariant = fixture.formula(CoreFormulaKind::True, 15);
+        let normal_assign = fixture.stmt(
+            CoreAlgorithmStmtKind::Assign {
+                target: CorePlace::new("normal_loop"),
+                value: term,
+            },
+            20,
+        );
+        let normal_loop = fixture.stmt(
+            CoreAlgorithmStmtKind::While {
+                condition,
+                invariants: vec![first_invariant],
+                decreasing: vec![first_decreasing],
+                body: vec![normal_assign],
+            },
+            21,
+        );
+        let continue_stmt = fixture.stmt(CoreAlgorithmStmtKind::Continue, 22);
+        let continue_loop = fixture.stmt(
+            CoreAlgorithmStmtKind::While {
+                condition,
+                invariants: vec![second_invariant],
+                decreasing: vec![second_decreasing],
+                body: vec![continue_stmt],
+            },
+            23,
+        );
+        let core = fixture.finish(Vec::new(), None, vec![normal_loop, continue_loop]);
+
+        let output = build_control_flow_ir(&core);
+        let flow = only_flow(&output);
+        assert_eq!(flow.loops.len(), 2);
+        let first_loop = flow.loops.get(LoopId::new(0)).expect("first loop");
+        let second_loop = flow.loops.get(LoopId::new(1)).expect("second loop");
+        let (continue_exit_id, continue_exit) = flow
+            .exits
+            .iter()
+            .find(|(_, exit)| exit.statement == Some(continue_stmt))
+            .expect("continue exit");
+        assert_eq!(continue_exit.from, second_loop.body);
+        assert!(context_has_fact(
+            flow,
+            flow.blocks
+                .get(first_loop.header)
+                .expect("first header")
+                .context_in,
+            first_invariant,
+            &core.source_map().formula_sources[&first_invariant],
+            ContextFactKind::LoopInvariant
+        ));
+        assert!(context_has_fact(
+            flow,
+            flow.blocks
+                .get(first_loop.exit)
+                .expect("first loop exit")
+                .context_in,
+            first_invariant,
+            &core.source_map().formula_sources[&first_invariant],
+            ContextFactKind::LoopInvariant
+        ));
+        assert!(context_has_fact(
+            flow,
+            flow.blocks
+                .get(continue_exit.from)
+                .expect("continue block")
+                .context_out[0],
+            second_invariant,
+            &core.source_map().formula_sources[&second_invariant],
+            ContextFactKind::LoopInvariant
+        ));
+        assert!(flow.contracts.loop_invariants.iter().any(|site| {
+            site.formula == first_invariant
+                && site.source == core.source_map().formula_sources[&first_invariant]
+                && matches!(
+                    site.placement,
+                    LoopInvariantPlacement::NormalBackedge { loop_id, from, to }
+                        if loop_id == LoopId::new(0)
+                            && from == first_loop.body
+                            && to == first_loop.header
+                )
+        }));
+        assert!(flow.contracts.loop_invariants.iter().any(|site| {
+            site.formula == second_invariant
+                && site.source == core.source_map().formula_sources[&second_invariant]
+                && matches!(
+                    site.placement,
+                    LoopInvariantPlacement::ContinueExit { loop_id, exit }
+                        if loop_id == LoopId::new(1) && exit == continue_exit_id
+                )
+        }));
+        assert!(flow.contracts.decreasing.iter().any(|site| {
+            site.term == first_decreasing
+                && site.source == core.source_map().term_sources[&first_decreasing]
+                && matches!(
+                    site.placement,
+                    TerminationMeasurePlacement::LoopHeader {
+                        loop_id,
+                        header
+                    } if loop_id == LoopId::new(0) && header == first_loop.header
+                )
+        }));
+        assert!(flow.contracts.decreasing.iter().any(|site| {
+            site.term == second_decreasing
+                && site.source == core.source_map().term_sources[&second_decreasing]
+                && matches!(
+                    site.placement,
+                    TerminationMeasurePlacement::ContinueEdge {
+                        loop_id,
+                        exit
+                    } if loop_id == LoopId::new(1) && exit == continue_exit_id
+                )
+        }));
+        assert!(
+            flow.termination
+                .partial_sites
+                .iter()
+                .any(|site| { matches!(site.kind, TerminationSiteKind::Algorithm) })
+        );
     }
 
     #[test]

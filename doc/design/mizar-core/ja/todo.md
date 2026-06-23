@@ -200,7 +200,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       loop carry、unreachable-join context regression。
     - 依存: 13、14。仕様: `control_flow.md`。
 
-16. **契約、ghost 効果、停止性測度。** [ ]
+16. **契約、ghost 効果、停止性測度。** [x]
     - 事前条件、事後条件、assert、不変条件、ghost 効果追跡、停止性測度を
       CFG に取り付ける。
     - テスト: 取り付けのフィクスチャ。ghost 状態が実行時効果テーブルへ

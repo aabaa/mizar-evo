@@ -267,8 +267,9 @@ definitely initialized at entry, result locals are present but not definitely
 initialized, initialized `Let` and all `Pick` locals are added to successor
 contexts, `Assign` statements record a place write, branch/loop conditions are
 kept as path conditions on the corresponding successor contexts, and assertion,
-contract, ghost, call, and termination facts remain empty or placed-only until
-Tasks 16 and 17 attach their semantics.
+call facts remain empty or placed-only until checker-owned call payloads exist.
+Task 16 attaches contract, ghost, assertion, invariant, and termination
+metadata. Task 17 adds flow diagnostics for invalid use of those contexts.
 
 Join points intersect definitely initialized sets and join path conditions
 symbolically. If a later task cannot represent a precise join, it must keep a
@@ -281,7 +282,7 @@ claiming facts that are not guaranteed on every path.
 struct ControlFlowContractSet {
     requires: Vec<ContractSite>,
     ensures: Vec<ContractSite>,
-    calls: Vec<CallSite>,
+    calls: Vec<CallSiteId>,
     assertions: Vec<AssertionSite>,
     loop_invariants: Vec<LoopInvariantSite>,
     decreasing: Vec<TerminationMeasureSite>,
@@ -294,34 +295,52 @@ terminator. `Assert` statements become checkpoint sites and then facts in the
 normal successor context. Loop invariants attach to loop headers, normal back
 edges, `break`, and `continue` exits as required by specification 20.5.1.
 
-`CallSite` records a resolved algorithm/functor call, its argument terms, the
-instantiated `requires` formulas that later become caller-side obligations, and
-the instantiated `ensures` facts that may become normal successor facts only
-when termination is known. A call-site row therefore records termination
-availability metadata such as `KnownTerminating`, `KnownPartial`, or
-`UnknownTermination`, plus any checker-owned evidence reference. For partial or
-unknown calls, `ensures` remains conditional metadata for later `mizar-vc`
-obligation generation; phase 10 must not add it to the unconditional context.
-The site is control-flow metadata only: phase 10 records the source-mapped
-instantiation, while phase 11 assigns concrete `VcId`s. If the checker payload
-does not identify a call target and contract instantiation, phase 10 must not
-infer it from spelling; it records an unsupported-call diagnostic or leaves the
-call-site table empty for explicit fixtures.
+`ContractSite` rows carry a kind (`Requires` or `Ensures`), the lowered formula,
+the exact source, and an entry or return placement. `AssertionSite` rows carry
+the formula, source, and a placement for either an aggregate algorithm-contract
+payload or a statement checkpoint with its block and successor context.
+`LoopInvariantSite` rows carry the formula, source, and a placement for either
+an aggregate algorithm-contract payload or a loop header, normal backedge, break
+exit, or continue exit; loop placements carry the owning `LoopId`.
+`TerminationMeasureSite` rows carry the term, source, and a placement for the
+algorithm header, loop header, or loop continue edge.
 
-Task 14 only specifies placement. Task 16 attaches the concrete tables. Task 18
-defines the final obligation-seed handoff.
+`CoreContractSet.assertions` and `CoreContractSet.invariants` are preserved as
+aggregate `AlgorithmContract` placements. They are metadata anchors for later
+obligation generation and do not by themselves add unconditional successor
+facts; statement `Assert` and loop `While` annotations provide the flow-local
+facts and edge sites.
+
+`CallSiteId` links to the flow-level call-site table. In the current Task 16
+surface, `CallSite` only records the statement and source of an explicit
+checker-owned call payload. Resolved callees, argument terms, instantiated
+`requires`/`ensures`, and termination availability remain deferred until the
+checker payload exposes that data. Phase 10 must not infer call contracts from
+spelling; without an explicit payload, the call-site table stays empty. When
+that payload exists in a later task, partial or unknown call `ensures` must
+remain conditional metadata for later `mizar-vc` obligation generation rather
+than unconditional successor facts, and phase 11 assigns concrete `VcId`s`.
+
+Task 14 specifies placement. Task 16 attaches the concrete non-call tables and
+keeps call rows empty unless an explicit checker-owned call payload exists.
+Task 18 defines the final obligation-seed handoff.
 
 ### Ghost Effects
 
-The ghost table records whether each local, place write, pick, assertion, and
-contract site is runtime-visible or specification-only. A ghost value may feed
-specification contexts (`requires`, `ensures`, `assert`, `invariant`,
-`decreasing`) but must not flow into runtime assignments, runtime return values,
-or non-ghost calls. Violations are flow diagnostics.
+The ghost table records local visibility and separates assignment effects and
+pick locals into runtime and ghost-only lists. Assertion, contract, invariant,
+and decreasing sites are specification-only by construction and are recorded in
+the contract/termination tables rather than as separate ghost-table rows. A
+ghost value may feed specification contexts (`requires`, `ensures`, `assert`,
+`invariant`, `decreasing`) but must not flow into runtime assignments, runtime
+return values, or non-ghost calls. Violations are flow diagnostics.
 
 Ghost-only picks still create non-emptiness obligations, but their runtime
 effect is erased by later extraction. Runtime picks are represented as local
 `Pick` bindings; neither form emits a generated stable-choice origin.
+Task 16 records assignment effects and pick locals in separate runtime and
+ghost-only lists so later erasure and diagnostics can consume the split without
+re-parsing statements.
 
 ### Termination
 
@@ -332,6 +351,11 @@ effect is erased by later extraction. Runtime picks are represented as local
 - loop-level decreasing terms attached to loop headers;
 - `continue` edges that must prove the measure has already decreased;
 - sites that are partial because no decreasing measure is present.
+
+When an algorithm has no algorithm-level decreasing term, phase 10 records an
+algorithm partial site. When a loop has no loop-level decreasing term, phase 10
+records a loop partial site. Decreasing terms with explicit payloads are attached
+to the algorithm header, loop header, and reachable continue edges.
 
 The plan is metadata for later VC generation. Phase 10 does not prove
 well-foundedness, assign `VcId`s, or promote an algorithm to a terminating
@@ -404,8 +428,8 @@ Rules:
   non-emptiness obligation site for later handoff.
 - `Assign` records a write to `CorePlace`; use-before-assignment and alias
   precision are diagnostics, not source-string guesses.
-- `Assert` creates an assertion site and adds the asserted formula to the
-  normal successor context after the later VC is generated.
+- `Assert` creates an assertion site and records the asserted formula as a
+  normal successor-context fact for later VC generation.
 - `If` creates a condition block, then/else blocks, and a deterministic join
   for normal exits. The absent branch is represented by the false path.
 - `While` creates a loop header, body entry, normal exit, and back edge. It
@@ -507,14 +531,13 @@ locals for future `for`, snapshot, and termination payloads.
 Task 16 tests must cover:
 
 - `requires` and `ensures` placement;
-- call-site contract instantiation when checker-owned call payloads are
-  available, or an explicit deferred/unsupported diagnostic fixture otherwise;
-- conditional call-site `ensures` availability for partial or unknown
-  termination;
-- assertion and invariant sites;
-- decreasing measures at headers and loop `continue` edges;
+- assertion facts and invariant sites in successor/header/exit contexts;
+- decreasing measures at algorithm headers, loop headers, and loop `continue`
+  edges;
+- algorithm and loop partial sites when decreasing payloads are absent;
 - exact source/provenance preservation for contract, call, assertion,
   invariant, decreasing, and statement-placement sites;
+- empty call-site tables while checker-owned call payloads are unavailable;
 - future range/collection `for` metadata only when explicit core shells exist;
 - ghost-only state not appearing in runtime effect tables;
 - runtime and ghost `Pick` distinction.
