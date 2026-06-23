@@ -230,10 +230,11 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - 依存: 12、16。`mizar-vc` task 2 と 4 と調整する。仕様: `core_ir.md`
       （seed の節）、アーキテクチャ 06 の制約。
 
-19. **snapshot ダンプとコーパス寄与。** [ ]
-    - 決定的な `CoreIr`/`ControlFlowIr` レンダリングを stage
-      `type_elaboration` と `proof_verification` のコーパス snapshot
-      ベースラインへ接続する。
+19. **snapshot ダンプとコーパス寄与。** [x]
+    - `mizar-test` が該当 snapshot runner と source-derived payload seam を
+      公開するまで、stage `type_elaboration` と `proof_verification` の決定的
+      `CoreIr`/`ControlFlowIr` レンダリング用 corpus snapshot baseline を
+      deferred として記録する。
     - 依存: 12、15。仕様: [staged_model.md](../../mizar-test/ja/staged_model.md)、
       [snapshot.md](../../mizar-test/ja/snapshot.md)。
 

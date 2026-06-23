@@ -238,10 +238,11 @@ Keep `cargo test -p mizar-core` green after each task (see
     - Deps: 12, 16, coordinated with `mizar-vc` tasks 2 and 4. Spec:
       `core_ir.md` (seed section), architecture 06 constraints.
 
-19. **Snapshot dumps and corpus contributions.** [ ]
-    - Wire deterministic `CoreIr`/`ControlFlowIr` renderings into corpus
-      snapshot baselines at stages `type_elaboration` and
-      `proof_verification`.
+19. **Snapshot dumps and corpus contributions.** [x]
+    - Record deferred corpus snapshot baselines for deterministic
+      `CoreIr`/`ControlFlowIr` renderings at stages `type_elaboration` and
+      `proof_verification` until `mizar-test` exposes those snapshot runners and
+      source-derived payload seams.
     - Deps: 12, 15. Spec: [staged_model.md](../../mizar-test/en/staged_model.md),
       [snapshot.md](../../mizar-test/en/snapshot.md).
 

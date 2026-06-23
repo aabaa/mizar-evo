@@ -1333,6 +1333,28 @@ deferred_reason = "Core elaboration is not implemented yet. Add semantic tests t
 tests = []
 
 [[requirement]]
+id = "spec.en.mizar_core.core_ir.type_elaboration_snapshots"
+source = "doc/design/mizar-core/en/00.crate_plan.md"
+section = "Task 19; CoreIr corpus snapshot baselines at type_elaboration"
+stage = "type_elaboration"
+status = "deferred"
+required = true
+coverage = "snapshot"
+deferred_reason = "Task 19 records this as an external_dependency_gap rather than adding fake active baselines: mizar-test currently compares committed snapshots only for parse-only SurfaceAst output, the active type_elaboration runner stops at the source-to-checker payload extraction gap instead of producing CoreIr, and source-derived checker payload extraction is still unavailable. Add CoreIr corpus snapshots only after mizar-test supports type_elaboration snapshot comparison and source-to-core payload seams exist."
+tests = []
+
+[[requirement]]
+id = "spec.en.mizar_core.control_flow.proof_verification_snapshots"
+source = "doc/design/mizar-core/en/00.crate_plan.md"
+section = "Task 19; ControlFlowIr corpus snapshot baselines at proof_verification"
+stage = "proof_verification"
+status = "deferred"
+required = true
+coverage = "snapshot"
+deferred_reason = "Task 19 records this as an external_dependency_gap rather than adding fake active baselines: mizar-test has no proof_verification runner or snapshot comparison command, VC/proof/kernel handoff crates are not available, and source-to-checker extraction cannot yet feed proof/algorithm payloads through CoreIr into ControlFlowIr. Add ControlFlowIr proof_verification snapshots only after the runner, source-to-core extraction, and downstream verification seams exist."
+tests = []
+
+[[requirement]]
 id = "spec.en.binding.substitution.capture_avoidance"
 source = "doc/design/architecture/en/16.substitution_and_binding.md"
 section = "Definition-Time Closures"
