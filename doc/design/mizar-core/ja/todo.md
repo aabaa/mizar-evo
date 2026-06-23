@@ -19,7 +19,7 @@
 |---|---|---|---|
 | core_ir | `core_ir.md`（task 2） | `src/core_ir.rs` | [x] |
 | binder_normalization | `binder_normalization.md`（task 4） | `src/binder_normalization.rs` | [x] |
-| elaborator | `elaborator.md`（task 7） | `src/elaborator.rs` | [~] |
+| elaborator | `elaborator.md`（task 7） | `src/elaborator.rs` | [x] |
 | control_flow | `control_flow.md`（task 14） | `src/control_flow.rs` | [x] |
 
 `mizar-core` はパイプライン phase 9（elaboration）と phase 10（制御フロー
@@ -285,6 +285,17 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - 依存: 23。仕様: 本 TODO、
       [internal 07](../../internal/ja/07.crate_module_layout.md)、全モジュール仕様。
     - Tests: Rust source を移動しないため docs-only diff checks。
+
+25. **closeout report と quality review。** [x]
+    - 英日 `crate_exit_report.md` pair を追加し、ledger に task commit hash を
+      backfill し、closeout bilingual audit row を解消し、broad verification を実行し、
+      final quality review score を記録する。
+    - Tests: `cargo fmt --check`、
+      `cargo clippy --all-targets --all-features -- -D warnings`、
+      `cargo test`、`git diff --check`、staged `git diff --cached --check`。
+    - 依存: 24。仕様:
+      [autonomous_crate_development.md](../../autonomous_crate_development.md)、
+      本 TODO、crate exit criteria。
 
 ## 推奨検証
 

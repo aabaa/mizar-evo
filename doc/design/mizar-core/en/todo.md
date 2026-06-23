@@ -20,7 +20,7 @@ architecture 06 and 16.
 |---|---|---|---|
 | core_ir | `core_ir.md` (task 2) | `src/core_ir.rs` | [x] |
 | binder_normalization | `binder_normalization.md` (task 4) | `src/binder_normalization.rs` | [x] |
-| elaborator | `elaborator.md` (task 7) | `src/elaborator.rs` | [~] |
+| elaborator | `elaborator.md` (task 7) | `src/elaborator.rs` | [x] |
 | control_flow | `control_flow.md` (task 14) | `src/control_flow.rs` | [x] |
 
 `mizar-core` implements pipeline phase 9 (elaboration) and phase 10
@@ -297,6 +297,17 @@ Keep `cargo test -p mizar-core` green after each task (see
       [internal 07](../../internal/en/07.crate_module_layout.md), all module
       specs.
     - Tests: docs-only diff checks because no Rust source is moved.
+
+25. **Closeout report and quality review.** [x]
+    - Add the English/Japanese `crate_exit_report.md` pair, backfill task
+      commit hashes in the ledgers, resolve the closeout bilingual audit row,
+      run broad verification, and record the final quality review score.
+    - Tests: `cargo fmt --check`,
+      `cargo clippy --all-targets --all-features -- -D warnings`,
+      `cargo test`, `git diff --check`, and staged `git diff --cached --check`.
+    - Deps: 24. Spec:
+      [autonomous_crate_development.md](../../autonomous_crate_development.md),
+      this TODO, and the crate exit criteria.
 
 ## Recommended Verification
 
