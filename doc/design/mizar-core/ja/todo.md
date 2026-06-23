@@ -190,11 +190,14 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - 依存: 2、13。仕様: アーキテクチャ 06「Step 6」、アーキテクチャ 07
       「Step 1」、[20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)。
 
-15. **`ControlFlowIr` の構築。** [ ]
-    - core のアルゴリズム item から制御フローグラフを構築する: block、
-      辺、ローカル束縛情報。
-    - テスト: 制御構文ごとの CFG フィクスチャ（`while`、`if`、`match`、
-      `break`/`continue`）。決定的な block 順。
+15. **`ControlFlowIr` の構築。** [x]
+    - core のアルゴリズム item から制御フローグラフを構築する: block、辺、
+      ローカル束縛情報、最小 context、statement placement / source map、
+      valid flow に必要な structural diagnostic。
+    - テスト: straight-line flow、制御構文ごとの CFG フィクスチャ
+      （`while`、`if`、`match`、`break`/`continue`）、deterministic block
+      order / debug rendering、local/source-map fidelity、fallthrough、break、
+      loop carry、unreachable-join context regression。
     - 依存: 13、14。仕様: `control_flow.md`。
 
 16. **契約、ghost 効果、停止性測度。** [ ]

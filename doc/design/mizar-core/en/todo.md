@@ -198,11 +198,14 @@ Keep `cargo test -p mizar-core` green after each task (see
     - Deps: 2, 13. Spec: architecture 06 "Step 6", architecture 07 "Step 1",
       [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 
-15. **`ControlFlowIr` construction.** [ ]
+15. **`ControlFlowIr` construction.** [x]
     - Build control-flow graphs from core algorithm items: blocks, edges,
-      and local binding information.
-    - Tests: CFG fixtures per control construct (`while`, `if`, `match`,
-      `break`/`continue`); deterministic block ordering.
+      local binding information, minimal contexts, statement placement/source
+      maps, and structural diagnostics required to form valid flow.
+    - Tests: straight-line flow; CFG fixtures per control construct (`while`,
+      `if`, `match`, `break`/`continue`); deterministic block ordering and
+      debug rendering; local/source-map fidelity; fallthrough, break, loop
+      carry, and unreachable-join context regressions.
     - Deps: 13, 14. Spec: `control_flow.md`.
 
 16. **Contracts, ghost effects, and termination measures.** [ ]

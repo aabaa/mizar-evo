@@ -103,9 +103,16 @@ fn public_semantic_modules_have_owning_specs() {
     let modules = public_module_exports(&source);
     let mut violations = Vec::new();
 
-    if modules != ["binder_normalization", "core_ir", "elaborator"] {
+    if modules
+        != [
+            "binder_normalization",
+            "control_flow",
+            "core_ir",
+            "elaborator",
+        ]
+    {
         violations.push(format!(
-            "{} must expose exactly the documented task-3/task-5/task-8 modules, found {:?}",
+            "{} must expose exactly the documented task-3/task-5/task-8/task-15 modules, found {:?}",
             lib_path.display(),
             modules
         ));

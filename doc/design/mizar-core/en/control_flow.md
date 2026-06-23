@@ -104,12 +104,15 @@ struct ControlFlowIr {
     ghost_effects: ControlFlowGhostTable,
     termination: ControlFlowTerminationPlan,
     source_map: ControlFlowSourceMap,
-    diagnostics: Vec<CoreDiagnosticId>,
+    diagnostics: ControlFlowDiagnosticTable,
 }
 ```
 
 A module-level output contains one `ControlFlowIr` per successfully lowered
-algorithm and diagnostic records for skipped/error algorithms.
+algorithm and diagnostic records for skipped/error algorithms. Phase-9
+diagnostics carried by `CoreAlgorithmStmtKind::Error` are preserved by
+reference, while phase-10-only diagnostics use control-flow diagnostic rows so
+the builder never mutates `CoreIr`.
 
 ### Basic Blocks
 
@@ -141,7 +144,7 @@ enum ControlFlowTerminator {
     Break { loop_id: LoopId, target: BasicBlockId },
     Continue { loop_id: LoopId, target: BasicBlockId },
     Unreachable,
-    Error(CoreDiagnosticId),
+    Error(ControlFlowDiagnosticId),
 }
 ```
 
@@ -187,11 +190,13 @@ enum LocalDeclaration {
     PickRuntime,
     PickGhost,
     HiddenLoopValue,
+    Unsupported(CoreVarRole),
 }
 
 enum LocalMutability {
     Immutable,
     Mutable,
+    Unknown,
 }
 ```
 
@@ -206,8 +211,11 @@ when later statement forms require them.
 `CoreBinder.role` may carry that semantic role in explicit fixtures, and
 statement `ghost` flags refine runtime versus ghost state, but phase 10 must
 not parse source spelling such as `var` or `ghost const`. If a local declaration
-does not identify mutability and ghostness, construction emits an unsupported
-local-declaration diagnostic instead of defaulting to mutable runtime state.
+does not identify mutability and ghostness, construction records the original
+role as `LocalDeclaration::Unsupported`, sets mutability to `Unknown`, and emits
+an unsupported local-declaration diagnostic instead of defaulting to mutable
+runtime state. This diagnostic is a structural construction diagnostic owned by
+Task 15, not a replacement for the later data-flow diagnostics in Task 17.
 Parameters and result locals are immutable runtime locals unless checker-owned
 metadata explicitly marks a later extension as ghost-only.
 
@@ -253,6 +261,14 @@ assignment transformers and hidden values needed for later Hoare-style VCs.
 `call_effects` references call-site rows so phase 11 can distinguish
 unconditional facts from conditional partial-call metadata without
 reconstructing calls from source syntax.
+
+Task 15 records the minimum context needed for CFG construction: parameters are
+definitely initialized at entry, result locals are present but not definitely
+initialized, initialized `Let` and all `Pick` locals are added to successor
+contexts, `Assign` statements record a place write, branch/loop conditions are
+kept as path conditions on the corresponding successor contexts, and assertion,
+contract, ghost, call, and termination facts remain empty or placed-only until
+Tasks 16 and 17 attach their semantics.
 
 Join points intersect definitely initialized sets and join path conditions
 symbolically. If a later task cannot represent a precise join, it must keep a
@@ -344,6 +360,34 @@ contract/checkpoint site, or error site. Structured statements that disappear
 into synthetic blocks are therefore still traceable from source statement id to
 CFG ownership.
 
+### Diagnostics
+
+```rust
+struct ControlFlowDiagnosticId(usize);
+
+struct ControlFlowDiagnostic {
+    kind: ControlFlowDiagnosticKind,
+    algorithm: CoreAlgorithmId,
+    statement: Option<CoreAlgorithmStmtId>,
+    source: CoreSourceRef,
+    carried_core_diagnostic: Option<CoreDiagnosticId>,
+}
+
+enum ControlFlowDiagnosticKind {
+    UnsupportedLocalDeclaration,
+    IllegalBreak,
+    IllegalContinue,
+    Phase9Error,
+    FlowDiagnostic,
+}
+```
+
+`ControlFlowTerminator::Error` references a control-flow diagnostic row. For a
+phase-9 error statement, that row carries the original `CoreDiagnosticId`.
+Illegal `break` / `continue` and unsupported local declarations are produced
+during Task 15 because CFG construction cannot represent them as ordinary valid
+edges or locals. Broader flow diagnostics remain Task 17 work.
+
 ## Core-to-CFG Construction
 
 Construction traverses `CoreAlgorithm.statements` in source order. A statement
@@ -353,7 +397,8 @@ builder returns exit contexts: `Normal`, `Return`, `Break(loop)`, and
 Rules:
 
 - `Let` creates a local and, when an initializer exists, records a normal
-  assignment effect.
+  assignment effect. Unsupported declaration metadata is preserved on the local
+  and reported with a construction diagnostic.
 - `Pick` creates a site-local local with `Pick` metadata, records the witness
   type when present, classifies it as ghost/runtime, and records a
   non-emptiness obligation site for later handoff.
@@ -405,6 +450,7 @@ Task 17 implements flow diagnostics, but the spec fixes the diagnostic classes
 and ordering:
 
 - illegal `break` or `continue` outside a loop;
+- unsupported local-declaration metadata;
 - unreachable statement;
 - use before definite assignment;
 - assignment to immutable parameter or const local;
@@ -439,6 +485,7 @@ semantic ids.
 Task 15 tests must cover:
 
 - deterministic block ordering;
+- byte-stable control-flow debug rendering and key-ordered source-map output;
 - straight-line let/assign/assert/return flow;
 - `if` with and without `else`;
 - `while` with `break`/`continue`;
@@ -446,7 +493,16 @@ Task 15 tests must cover:
 - local table contents: parameter/result/let/pick/hidden-local kinds, source
   order, mutability, ghost flags, initialization sites, and unsupported
   declaration metadata;
+- structural diagnostic rows for unsupported local declarations and illegal
+  `break` / `continue`, including source refs, error terminators, carried
+  phase-9 diagnostic refs when present, and deterministic diagnostic ordering;
 - source-map preservation for blocks, locals, and statement placements.
+
+The current `CoreAlgorithmStmtKind` surface has no checker-owned payload that
+requires a source-derived hidden loop local. Task 15 therefore keeps
+`HiddenLoopValue` as an explicit representation, tests that current `While`
+construction does not fabricate hidden locals, and defers source-derived hidden
+locals for future `for`, snapshot, and termination payloads.
 
 Task 16 tests must cover:
 
@@ -465,7 +521,6 @@ Task 16 tests must cover:
 
 Task 17 tests must cover:
 
-- illegal `break`/`continue`;
 - unreachable statements;
 - use before assignment;
 - immutable-local assignment;

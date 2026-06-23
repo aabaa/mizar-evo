@@ -4,5 +4,6 @@
 //! after their owning English/Japanese design specifications exist.
 
 pub mod binder_normalization;
+pub mod control_flow;
 pub mod core_ir;
 pub mod elaborator;

@@ -93,12 +93,14 @@ struct ControlFlowIr {
     ghost_effects: ControlFlowGhostTable,
     termination: ControlFlowTerminationPlan,
     source_map: ControlFlowSourceMap,
-    diagnostics: Vec<CoreDiagnosticId>,
+    diagnostics: ControlFlowDiagnosticTable,
 }
 ```
 
 module-level output は、lowering に成功した algorithm ごとに 1 つの `ControlFlowIr` を持ち、
-skipped/error algorithm 用の diagnostic record を持つ。
+skipped/error algorithm 用の diagnostic record を持つ。`CoreAlgorithmStmtKind::Error` が運ぶ
+phase 9 diagnostic は参照として保持し、phase 10 だけの diagnostic は control-flow diagnostic row
+として表すため、builder は `CoreIr` を変更しない。
 
 ### basic block
 
@@ -130,7 +132,7 @@ enum ControlFlowTerminator {
     Break { loop_id: LoopId, target: BasicBlockId },
     Continue { loop_id: LoopId, target: BasicBlockId },
     Unreachable,
-    Error(CoreDiagnosticId),
+    Error(ControlFlowDiagnosticId),
 }
 ```
 
@@ -175,11 +177,13 @@ enum LocalDeclaration {
     PickRuntime,
     PickGhost,
     HiddenLoopValue,
+    Unsupported(CoreVarRole),
 }
 
 enum LocalMutability {
     Immutable,
     Mutable,
+    Unknown,
 }
 ```
 
@@ -193,8 +197,11 @@ collection domain などの old-state value を表してよい。
 `CoreBinder.role` がその semantic role を運んでよく、statement の `ghost` flag は runtime / ghost
 state の区別を補う。ただし phase 10 は `var` や `ghost const` のような source spelling を解析しては
 ならない。local declaration が mutability と ghostness を識別しない場合、construction は mutable
-runtime state を既定値にせず、unsupported local-declaration diagnostic を出す。parameter と result
-local は、将来拡張で checker-owned metadata が ghost-only と明示しない限り immutable runtime local である。
+runtime state を既定値にせず、元の role を `LocalDeclaration::Unsupported` として記録し、
+mutability を `Unknown` にして、unsupported local-declaration diagnostic を出す。この diagnostic は
+Task 15 が所有する structural construction diagnostic であり、Task 17 の後続 data-flow diagnostic
+を置き換えるものではない。parameter と result local は、将来拡張で checker-owned metadata が
+ghost-only と明示しない限り immutable runtime local である。
 
 `CorePlace` への assignment は、checker-owned place metadata が利用できる場合それを通じて
 解決する。source-to-checker extraction がより豊かな lvalue identity を提供するまでは、
@@ -235,6 +242,13 @@ checkpoint 後の asserted formula、loop fact、known-terminating call の `ens
 `assignment_effects` は後続の Hoare-style VC が必要にする old-state assignment transformer と
 hidden value を記録する。`call_effects` は call-site row を参照し、phase 11 が source syntax から
 call を再構築せずに unconditional fact と partial-call conditional metadata を区別できるようにする。
+
+Task 15 は CFG construction に必要な最小 context を記録する。parameter は entry で definitely
+initialized、result local は存在するが definitely initialized ではない。initializer を持つ `Let` と
+すべての `Pick` local は successor context に追加し、`Assign` statement は place write を記録する。
+branch / loop condition は対応する successor context の path condition として保持し、assertion、
+contract、ghost、call、termination fact は Task 16 と Task 17 が semantics を取り付けるまで
+empty または placement-only のままにする。
 
 join point は definitely initialized set を交差し、path condition を symbolic に join する。
 後続 task が精密な join を表現できない場合は、保守的な context を保持し、すべての path で保証されない
@@ -318,6 +332,33 @@ block statement、terminator、loop header、switch arm、local binding、contra
 error site のいずれかである。synthetic block に展開される structured statement も、source
 statement id から CFG ownership へ追跡できる。
 
+### diagnostic
+
+```rust
+struct ControlFlowDiagnosticId(usize);
+
+struct ControlFlowDiagnostic {
+    kind: ControlFlowDiagnosticKind,
+    algorithm: CoreAlgorithmId,
+    statement: Option<CoreAlgorithmStmtId>,
+    source: CoreSourceRef,
+    carried_core_diagnostic: Option<CoreDiagnosticId>,
+}
+
+enum ControlFlowDiagnosticKind {
+    UnsupportedLocalDeclaration,
+    IllegalBreak,
+    IllegalContinue,
+    Phase9Error,
+    FlowDiagnostic,
+}
+```
+
+`ControlFlowTerminator::Error` は control-flow diagnostic row を参照する。phase 9 error statement
+の場合、その row は元の `CoreDiagnosticId` を運ぶ。illegal `break` / `continue` と unsupported
+local declaration は、CFG construction が通常の valid edge や local として表せないため Task 15 で
+生成する。より広い flow diagnostic は Task 17 に残す。
+
 ## Core-to-CFG construction
 
 construction は `CoreAlgorithm.statements` を source order で走査する。statement builder は
@@ -327,6 +368,7 @@ composition は `Normal` からだけ継続する。
 規則:
 
 - `Let` は local を作り、initializer がある場合は normal assignment effect を記録する。
+  unsupported declaration metadata は local に保持し、construction diagnostic として報告する。
 - `Pick` は `Pick` metadata 付きの site-local local を作り、witness type があれば記録し、
   ghost/runtime に分類し、後続 handoff 用の non-emptiness obligation site を記録する。
 - `Assign` は `CorePlace` への write を記録する。use-before-assignment と alias precision は
@@ -369,6 +411,7 @@ terminating `Return`、`Break`、`Continue`、`Error` の後にある unreachabl
 task 17 が flow diagnostic を実装するが、この spec は diagnostic class と ordering を固定する。
 
 - loop 外の illegal `break` / `continue`。
+- unsupported local-declaration metadata。
 - unreachable statement。
 - definite assignment 前の use。
 - immutable parameter または const local への assignment。
@@ -401,13 +444,22 @@ hash-map iteration、filesystem order、source spelling fallback が semantic id
 task 15 の test は次を覆う。
 
 - deterministic block ordering。
+- byte-stable control-flow debug rendering と key-ordered source-map output。
 - straight-line let/assign/assert/return flow。
 - `else` あり/なしの `if`。
 - `break` / `continue` を持つ `while`。
 - `match` arm ordering。
 - local table contents: parameter/result/let/pick/hidden-local kind、source order、
   mutability、ghost flag、initialization site、unsupported declaration metadata。
+- unsupported local declaration と illegal `break` / `continue` の structural diagnostic row。
+  source ref、error terminator、存在する場合の carried phase-9 diagnostic ref、deterministic
+  diagnostic ordering を含む。
 - block、local、statement placement の source-map preservation。
+
+現在の `CoreAlgorithmStmtKind` surface には、source-derived hidden loop local を必要とする
+checker-owned payload がない。そのため Task 15 は `HiddenLoopValue` を明示的な表現として保持し、
+現在の `While` construction が hidden local を仮造しないことを test し、将来の `for`、snapshot、
+termination payload から導出される hidden local は deferred とする。
 
 task 16 の test は次を覆う。
 
@@ -425,7 +477,6 @@ task 16 の test は次を覆う。
 
 task 17 の test は次を覆う。
 
-- illegal `break` / `continue`。
 - unreachable statement。
 - use before assignment。
 - immutable-local assignment。
