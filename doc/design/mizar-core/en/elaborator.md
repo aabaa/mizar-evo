@@ -541,6 +541,46 @@ and diagnostic rendering:
 - diagnostics are emitted in source/core order with stable message keys;
 - skipped/error nodes are preserved in traversal order.
 
+## Public Enum Policy
+
+Task 21 classifies every `elaborator` public enum as a downstream
+forward-compatible API surface. Each enum must remain `#[non_exhaustive]` so
+future context, lowering, seed, evidence, diagnostic, proof, and algorithm
+payload categories can be added without breaking downstream exhaustive matches.
+
+| Public enum | Decision |
+|---|---|
+| `CoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CheckerSiteSeverity` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `ElaborationWorkItemKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `ElaborationWorkStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `TypeAndFactLoweringError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `ViewExplanationKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `MissingEvidenceKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `TermAndFormulaLoweringError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CoreTermSeedKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CoreFormulaSeedKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `FraenkelMembershipObligationSeed` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `GeneratedOriginReuseSource` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `DefinitionLoweringError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `DefinitionBodySeed` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `DefinitionGuardSeed` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `DefinitionCorrectnessSeed` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `ProofLoweringError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `ProofSkeletonSeed` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `ProofNodeSeed` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `ProofFormulaRef` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `AlgorithmLoweringError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `AlgorithmPayloadSeed` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `AlgorithmStmtSeed` | `#[non_exhaustive]` downstream forward-compatible surface. |
+
+No exhaustive public enum exceptions are owned by this module. Internal
+`mizar-core` matches may remain exhaustive where they deliberately enumerate the
+current variants.
+
 ## Forbidden Behavior
 
 `elaborator` must not:

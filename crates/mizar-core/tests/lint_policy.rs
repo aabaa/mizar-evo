@@ -1,4 +1,5 @@
 use std::{
+    collections::{BTreeMap, BTreeSet},
     fs,
     path::{Path, PathBuf},
 };
@@ -305,6 +306,124 @@ fn public_module_export_scanner_finds_core_ir_module() {
     );
 }
 
+#[test]
+fn public_core_enums_are_forward_compatible_and_documented() {
+    let crate_root = crate_root();
+    let modules = [
+        "binder_normalization",
+        "control_flow",
+        "core_ir",
+        "elaborator",
+    ];
+    let mut violations = Vec::new();
+    let mut enums_by_module = BTreeMap::new();
+
+    for module in modules {
+        let source_path = crate_root.join("src").join(format!("{module}.rs"));
+        let source = read_to_string(&source_path);
+        for (line_number, line) in source.lines().enumerate() {
+            let trimmed = line.trim();
+            if trimmed.starts_with("pub mod ") || trimmed.starts_with("pub use ") {
+                violations.push(format!(
+                    "{}:{}: public nested modules or re-exports must update the public enum policy guard before exposing additional enum surfaces",
+                    source_path.display(),
+                    line_number + 1
+                ));
+            }
+        }
+        let public_enums = public_enums(&source);
+        if public_enums.is_empty() {
+            violations.push(format!(
+                "{}: expected at least one public enum to classify",
+                source_path.display()
+            ));
+        }
+        for public_enum in &public_enums {
+            if !public_enum.has_non_exhaustive {
+                violations.push(format!(
+                    "{}:{}: public enum `{}` must keep #[non_exhaustive]",
+                    source_path.display(),
+                    public_enum.line_number,
+                    public_enum.name
+                ));
+            }
+        }
+        enums_by_module.insert(module, public_enums);
+    }
+
+    for (module, public_enums) in &enums_by_module {
+        for language in ["en", "ja"] {
+            let spec_path = workspace_root()
+                .join("doc/design/mizar-core")
+                .join(language)
+                .join(format!("{module}.md"));
+            let spec = read_to_string(&spec_path);
+            let Some(policy) = public_enum_policy_section(&spec) else {
+                violations.push(format!(
+                    "{}: missing public enum policy section",
+                    spec_path.display()
+                ));
+                continue;
+            };
+            if !policy_contains_no_exhaustive_exception(policy) {
+                violations.push(format!(
+                    "{}: public enum policy must state that there are no exhaustive public enum exceptions",
+                    spec_path.display()
+                ));
+            }
+            if !policy.contains("Internal")
+                && !policy.contains("内部 match")
+                && !policy.contains("内部の match")
+            {
+                violations.push(format!(
+                    "{}: public enum policy must say internal mizar-core matches may remain exhaustive",
+                    spec_path.display()
+                ));
+            }
+            let source_enum_names = public_enums
+                .iter()
+                .map(|public_enum| public_enum.name.clone())
+                .collect::<BTreeSet<_>>();
+            let policy_enum_names = policy_enum_names(policy);
+            if policy_enum_names != source_enum_names {
+                violations.push(format!(
+                    "{}: public enum policy rows must exactly match source enums; source={:?}, policy={:?}",
+                    spec_path.display(),
+                    source_enum_names,
+                    policy_enum_names
+                ));
+            }
+            for public_enum in public_enums {
+                let enum_name = format!("`{}`", public_enum.name);
+                if !policy.contains(&enum_name) {
+                    violations.push(format!(
+                        "{}: public enum policy must list `{}`",
+                        spec_path.display(),
+                        public_enum.name
+                    ));
+                    continue;
+                }
+                if !policy
+                    .lines()
+                    .any(|line| line.contains(&enum_name) && line.contains("#[non_exhaustive]"))
+                {
+                    violations.push(format!(
+                        "{}: public enum policy row for `{}` must record #[non_exhaustive]",
+                        spec_path.display(),
+                        public_enum.name
+                    ));
+                }
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "public core enum forward-compatibility policy drift:\n{}",
+        violations.join("\n")
+    );
+}
+
 fn crate_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 }
@@ -452,6 +571,143 @@ fn public_function_with_qualifier(line: &str) -> bool {
                 .strip_prefix("fn")
                 .is_some_and(|rest| rest.starts_with('('))
     })
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PublicEnum {
+    name: String,
+    line_number: usize,
+    has_non_exhaustive: bool,
+}
+
+fn public_enums(source: &str) -> Vec<PublicEnum> {
+    let lines = source.lines().collect::<Vec<_>>();
+    let mut enums = Vec::new();
+    let mut brace_depth = 0_i32;
+
+    for (index, line) in lines.iter().enumerate() {
+        let trimmed = line.trim();
+        let Some(rest) = trimmed.strip_prefix("pub enum ") else {
+            brace_depth += brace_delta(line);
+            continue;
+        };
+        if brace_depth != 0 {
+            brace_depth += brace_delta(line);
+            continue;
+        }
+        let name = rest
+            .chars()
+            .take_while(|character| character.is_ascii_alphanumeric() || *character == '_')
+            .collect::<String>();
+        if name.is_empty() {
+            continue;
+        }
+        let has_non_exhaustive = contiguous_outer_attributes(&lines, index)
+            .iter()
+            .any(|attribute| attribute.trim() == "#[non_exhaustive]");
+        enums.push(PublicEnum {
+            name,
+            line_number: index + 1,
+            has_non_exhaustive,
+        });
+        brace_depth += brace_delta(line);
+    }
+
+    enums
+}
+
+fn contiguous_outer_attributes<'a>(lines: &'a [&str], enum_index: usize) -> Vec<&'a str> {
+    let mut attributes = Vec::new();
+    let mut index = enum_index;
+    while index > 0 {
+        let previous = lines[index - 1].trim();
+        if previous.starts_with("#[") || previous.starts_with("///") {
+            attributes.push(previous);
+            index -= 1;
+        } else {
+            break;
+        }
+    }
+    attributes.reverse();
+    attributes
+}
+
+fn public_enum_policy_section(document: &str) -> Option<&str> {
+    let mut start = None;
+    for (index, line) in document.match_indices('\n') {
+        let next_start = index + line.len();
+        let remaining = &document[next_start..];
+        if remaining.starts_with("## Public Enum Policy")
+            || remaining.starts_with("## public enum policy")
+        {
+            start = Some(next_start);
+            break;
+        }
+    }
+    let start = start.or_else(|| {
+        (document.starts_with("## Public Enum Policy")
+            || document.starts_with("## public enum policy"))
+        .then_some(0)
+    })?;
+    let rest = &document[start..];
+    let end = rest
+        .find("\n## ")
+        .map_or(document.len(), |offset| start + offset);
+    Some(&document[start..end])
+}
+
+fn policy_enum_names(policy: &str) -> BTreeSet<String> {
+    policy
+        .lines()
+        .filter_map(|line| {
+            let trimmed = line.trim();
+            if !trimmed.starts_with('|') || trimmed.starts_with("|---") {
+                return None;
+            }
+            let first_cell = trimmed.trim_matches('|').split('|').next()?.trim();
+            let name = first_cell.strip_prefix('`')?.split('`').next()?;
+            if name.is_empty() || name == "Public enum" || name == "public enum" {
+                return None;
+            }
+            Some(name.to_owned())
+        })
+        .collect()
+}
+
+fn policy_contains_no_exhaustive_exception(policy: &str) -> bool {
+    policy.contains("No exhaustive public enum exceptions are owned by this module")
+        || policy.contains("この module が所有する exhaustive public enum exception はない")
+}
+
+fn brace_delta(line: &str) -> i32 {
+    let mut delta = 0_i32;
+    let mut chars = line.chars().peekable();
+    let mut in_string = false;
+    let mut escaped = false;
+
+    while let Some(character) = chars.next() {
+        if in_string {
+            if escaped {
+                escaped = false;
+            } else if character == '\\' {
+                escaped = true;
+            } else if character == '"' {
+                in_string = false;
+            }
+            continue;
+        }
+        if character == '/' && chars.peek() == Some(&'/') {
+            break;
+        }
+        match character {
+            '"' => in_string = true,
+            '{' => delta += 1,
+            '}' => delta -= 1,
+            _ => {}
+        }
+    }
+
+    delta
 }
 
 fn resolver_braced_import_contains_forbidden_api(compact_source: &str) -> bool {

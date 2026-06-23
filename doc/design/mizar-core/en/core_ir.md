@@ -689,11 +689,39 @@ core lowering without fabrication.
 
 ## Public Enum Policy
 
-Task 21 records final public enum compatibility decisions after the public
-surface exists. Until then, implementation tasks must default to
-`#[non_exhaustive]` for public enums unless the owning module spec explicitly
-documents an exhaustive exception. No exhaustive public enum exception is owned
-by this task-2 specification.
+Task 21 classifies every `core_ir` public enum as a downstream
+forward-compatible API surface. Each enum must remain `#[non_exhaustive]` so
+future semantic categories can be added without breaking downstream exhaustive
+matches.
+
+| Public enum | Decision |
+|---|---|
+| `CoreItemKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CoreItemStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CoreTermKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CoreFormulaKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `DefinitionBody` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `DefinitionBranchBody` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `ExpansionPolicy` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CoreProofStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CoreProofNodeKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CoreCitation` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `ProofBranchKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CoreAlgorithmStmtKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `GeneratedOriginKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `ObligationSeedKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `ObligationSeedStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CoreSourceAnchor` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CoreProvenancePhase` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CoreDiagnosticClass` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CoreDiagnosticSeverity` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CoreDiagnosticRecovery` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CoreNodeRef` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CoreIrError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+
+No exhaustive public enum exceptions are owned by this module. Internal
+`mizar-core` matches may remain exhaustive where they deliberately enumerate the
+current variants.
 
 ## Drift And Gap Classification
 

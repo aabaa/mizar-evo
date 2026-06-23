@@ -253,9 +253,11 @@ Keep `cargo test -p mizar-core` green after each task (see
       deferred until source-to-checker extraction exists.
     - Deps: 18. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 
-21. **Public-enum forward-compatibility policy.** [ ]
+21. **Public-enum forward-compatibility policy.** [x]
     - Apply the `mizar-frontend` task-25 procedure to each public enum;
-      record decisions in the owning module specs.
+      record decisions in the owning module specs. Current result: every
+      public `mizar-core` enum is downstream forward-compatible and must remain
+      `#[non_exhaustive]`; no exhaustive exceptions are owned by this crate.
     - Deps: 18. Spec: all module specs.
 
 22. **Source/spec correspondence audit.** [ ]

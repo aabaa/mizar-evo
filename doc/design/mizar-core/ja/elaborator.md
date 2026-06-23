@@ -484,6 +484,45 @@ elaboration は worker count、map iteration order、diagnostic rendering に依
 - diagnostic は stable message key を持ち source/core order で emit する。
 - skipped/error node は traversal order で保存する。
 
+## public enum policy
+
+task 21 は `elaborator` の public enum をすべて downstream forward-compatible API
+surface として分類する。将来の context、lowering、seed、evidence、diagnostic、proof、
+algorithm payload category を下流 crate の exhaustive match を壊さずに追加できるよう、
+各 enum は `#[non_exhaustive]` を維持しなければならない。
+
+| public enum | decision |
+|---|---|
+| `CoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `CheckerSiteSeverity` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ElaborationWorkItemKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ElaborationWorkStatus` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `TypeAndFactLoweringError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ViewExplanationKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `MissingEvidenceKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `TermAndFormulaLoweringError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `CoreTermSeedKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `CoreFormulaSeedKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `FraenkelMembershipObligationSeed` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `GeneratedOriginReuseSource` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `DefinitionLoweringError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `DefinitionBodySeed` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `DefinitionGuardSeed` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `DefinitionCorrectnessSeed` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ProofLoweringError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ProofSkeletonSeed` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ProofNodeSeed` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ProofFormulaRef` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `AlgorithmLoweringError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `AlgorithmPayloadSeed` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `AlgorithmStmtSeed` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+
+この module が所有する exhaustive public enum exception はない。現在の variant を意図的に
+列挙する `mizar-core` 内部 match は exhaustive のままでよい。
+
 ## 禁止事項
 
 `elaborator` は以下をしてはならない。

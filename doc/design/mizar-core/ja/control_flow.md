@@ -510,6 +510,38 @@ semantic origin、anchor-ready な program path を記録する。
 
 hash-map iteration、filesystem order、source spelling fallback が semantic id に影響してはならない。
 
+## public enum policy
+
+task 21 は `control_flow` の public enum をすべて downstream forward-compatible API
+surface として分類する。将来の CFG、local-state、contract-site、termination、handoff、
+diagnostic category を下流 crate の exhaustive match を壊さずに追加できるよう、各 enum
+は `#[non_exhaustive]` を維持しなければならない。
+
+| public enum | decision |
+|---|---|
+| `ObligationHandoffOrigin` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ControlFlowObligationSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ControlFlowTerminator` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `Reachability` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `LocalKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `LocalDeclaration` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `LocalMutability` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ContextFactKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `AssignmentEffectTarget` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ContractSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ContractSitePlacement` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `AssertionPlacement` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `LoopInvariantPlacement` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `TerminationMeasurePlacement` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ControlFlowExitKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `GhostVisibility` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `TerminationSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ControlFlowStatementPlacement` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ControlFlowDiagnosticKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+
+この module が所有する exhaustive public enum exception はない。現在の variant を意図的に
+列挙する `mizar-core` 内部 match は exhaustive のままでよい。
+
 ## validation と test
 
 task 15 の test は次を覆う。

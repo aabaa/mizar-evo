@@ -610,6 +610,34 @@ No `.miz` fixture is required for task 4. Source-derived substitution coverage
 remains deferred until checker payload extraction and mizar-test stage support
 can feed `mizar-core` without fabricated inputs.
 
+## Public Enum Policy
+
+Task 21 classifies every `binder_normalization` public enum as a downstream
+forward-compatible API surface. Each enum must remain `#[non_exhaustive]` so
+future binder, substitution, canonicalization, and diagnostic categories can be
+added without breaking downstream exhaustive matches.
+
+| Public enum | Decision |
+|---|---|
+| `NormalizedVar` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `NormalizedVarClass` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `NormalizedVarSort` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `NormalizedTermKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `NormalizedFormulaKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CanonicalTermKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CanonicalFormulaKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CanonicalVar` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `NormalizedTermOrFormula` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SubstitutionTarget` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SubstitutionReplacement` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CapturePolicy` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SubstitutionResult` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `BinderDiagnosticClass` | `#[non_exhaustive]` downstream forward-compatible surface. |
+
+No exhaustive public enum exceptions are owned by this module. Internal
+`mizar-core` matches may remain exhaustive where they deliberately enumerate the
+current variants.
+
 ## Forbidden Behavior
 
 `binder_normalization` must not:

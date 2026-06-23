@@ -245,9 +245,11 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       extraction ができるまで deferred。
     - 依存: 18。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
 
-21. **公開 enum の前方互換性ポリシー。** [ ]
+21. **公開 enum の前方互換性ポリシー。** [x]
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用し、所有
-      モジュール仕様に決定を記録する。
+      モジュール仕様に決定を記録する。現在の結果: すべての public
+      `mizar-core` enum は downstream forward-compatible であり、
+      `#[non_exhaustive]` を維持する。crate が所有する exhaustive exception はない。
     - 依存: 18。仕様: 全モジュール仕様。
 
 22. **ソース/仕様対応監査。** [ ]
