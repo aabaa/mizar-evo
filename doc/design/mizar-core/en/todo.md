@@ -21,7 +21,7 @@ architecture 06 and 16.
 | core_ir | `core_ir.md` (task 2) | `src/core_ir.rs` | [x] |
 | binder_normalization | `binder_normalization.md` (task 4) | `src/binder_normalization.rs` | [x] |
 | elaborator | `elaborator.md` (task 7) | `src/elaborator.rs` | [~] |
-| control_flow | `control_flow.md` (task 14) | `src/control_flow.rs` | [ ] |
+| control_flow | `control_flow.md` (task 14) | `src/control_flow.rs` | [x] |
 
 `mizar-core` implements pipeline phase 9 (elaboration) and phase 10
 (control-flow preparation): `ResolvedTypedAst` in, `CoreIr` and
@@ -215,7 +215,7 @@ Keep `cargo test -p mizar-core` green after each task (see
       effect tables.
     - Deps: 15. Spec: `control_flow.md`.
 
-17. **Flow diagnostics.** [ ]
+17. **Flow diagnostics.** [x]
     - Implement use-before-assignment and unreachable-code diagnostics over
       the CFG.
     - Tests: pass/fail fixtures per diagnostic; stable diagnostic order.

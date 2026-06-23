@@ -429,7 +429,30 @@ terminating `Return`、`Break`、`Continue`、`Error` の後にある unreachabl
 
 ## diagnostic
 
-task 17 が flow diagnostic を実装するが、この spec は diagnostic class と ordering を固定する。
+task 17 は、現在の phase-10 core surface から判定できる flow diagnostic を実装する。
+
+- unreachable statement。
+- definite assignment 前の use。
+
+`UseBeforeAssignment` は、到達可能な statement-owned expression を対象にする:
+`Let` initializer term、assignment right-hand side、`Assert` formula、`If` condition、
+`While` condition、`While` invariant formula、`While` decreasing term、`Match` scrutinee、
+`Return` value。`Pick` witness formula は、picked binder を locally bound として扱い、
+ambient variable だけを検査する。algorithm-level `requires` / `ensures`、aggregate
+`CoreContractSet.assertions` と `CoreContractSet.invariants`、final obligation-seed metadata は
+Task 17 では検査しない。caller/result substitution や downstream VC context が必要であり、
+phase 10 の責務ではないためである。
+
+use-before diagnostic は具体 class `UseBeforeAssignment { local, var }` を持つ。diagnostic source は、
+uninitialized local に言及した term occurrence の source であり、`statement` は enclosing
+`CoreAlgorithmStmtId` である。`UnreachableStatement { block }` は unreachable statement の source と
+unreachable block id を使う。formula traversal は quantifier scope を尊重する。binder は左から右へ
+処理し、binder は自分自身の guard、後続 binder、body の中で shadow する。先行 binder は後続 guard と
+body で shadow する。unresolved / external variable は source spelling から推測せず無視する。
+
+これ以前の phase-10 task は、loop 外の illegal `break` / `continue`、unsupported
+local-declaration metadata、phase 9 から持ち越された malformed / missing algorithm statement の
+structural diagnostic をすでに emit している。より広い diagnostic catalog は次の通りである。
 
 - loop 外の illegal `break` / `continue`。
 - unsupported local-declaration metadata。
@@ -442,6 +465,12 @@ task 17 が flow diagnostic を実装するが、この spec は diagnostic clas
 - unsupported snapshot / claim payload。
 - phase 9 から持ち越された malformed / missing algorithm statement。
 - unsupported aliasing / lvalue metadata。
+
+immutable parameter / const local への assignment、ghost value の runtime state への流入、
+call / contract instantiation error、unsupported pattern payload、snapshot / claim payload、
+alias / lvalue precision は、現在の `CoreAlgorithmStmtKind` と `CorePlace` surface が公開していない
+checker-owned target / payload metadata を必要とする。これらは deferred のままであり、source spelling から
+推測してはならない。
 
 diagnostic は source order、algorithm id、block id、diagnostic class の順に sort する。
 diagnostic は downstream consumer 向けに algorithm を partial/error と印付けてよいが、
@@ -499,14 +528,10 @@ task 17 の test は次を覆う。
 
 - unreachable statement。
 - use before assignment。
-- immutable-local assignment。
-- ghost-to-runtime leakage。
-- unsupported call / contract payload。
-- unsupported match / pattern payload。
-- unsupported snapshot / claim payload。
-- malformed phase-9 algorithm statement。
-- unsupported alias / lvalue metadata。
-- stable diagnostic ordering。
+- 新しく emit される flow diagnostic の stable diagnostic ordering。
+- checker-owned payload が利用できない間、assignment-to-immutable、
+  ghost-to-runtime、call / contract、pattern、snapshot / claim、alias / lvalue
+  diagnostic を仮造しないこと。
 
 spec-only task 14 は bilingual documentation review と diff check で検証する。Rust 実装と test は
 task 15-17 に deferred する。

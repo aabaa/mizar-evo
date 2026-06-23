@@ -20,7 +20,7 @@
 | core_ir | `core_ir.md`（task 2） | `src/core_ir.rs` | [x] |
 | binder_normalization | `binder_normalization.md`（task 4） | `src/binder_normalization.rs` | [x] |
 | elaborator | `elaborator.md`（task 7） | `src/elaborator.rs` | [~] |
-| control_flow | `control_flow.md`（task 14） | `src/control_flow.rs` | [ ] |
+| control_flow | `control_flow.md`（task 14） | `src/control_flow.rs` | [x] |
 
 `mizar-core` はパイプライン phase 9（elaboration）と phase 10（制御フロー
 準備）を実装する。入力は `ResolvedTypedAst`、出力は `CoreIr` と
@@ -207,7 +207,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       漏れない。
     - 依存: 15。仕様: `control_flow.md`。
 
-17. **フロー診断。** [ ]
+17. **フロー診断。** [x]
     - CFG 上の use-before-assignment と到達不能コードの診断を実装する。
     - テスト: 診断ごとの pass/fail フィクスチャ。安定した診断順。
     - 依存: 15。仕様: `control_flow.md`、

@@ -470,8 +470,36 @@ being silently dropped.
 
 ## Diagnostics
 
-Task 17 implements flow diagnostics, but the spec fixes the diagnostic classes
-and ordering:
+Task 17 implements the flow diagnostics that can be decided from the current
+phase-10 core surface:
+
+- unreachable statement;
+- use before definite assignment.
+
+`UseBeforeAssignment` is checked for reachable statement-owned expressions:
+`Let` initializer terms, assignment right-hand sides, `Assert` formulas, `If`
+conditions, `While` conditions, `While` invariant formulas, `While` decreasing
+terms, `Match` scrutinees, and `Return` values. `Pick` witness formulas are
+checked for ambient variables while treating the picked binder as locally bound.
+Algorithm-level `requires` / `ensures`, aggregate `CoreContractSet.assertions`
+and `CoreContractSet.invariants`, and final obligation-seed metadata are not
+checked by Task 17 because they need caller/result substitution or downstream VC
+context that phase 10 does not own.
+
+Use-before diagnostics have a concrete class
+`UseBeforeAssignment { local, var }`. The diagnostic source is the source of the
+term occurrence that mentions the uninitialized local, and `statement` is the
+enclosing `CoreAlgorithmStmtId`. `UnreachableStatement { block }` uses the
+unreachable statement source and the unreachable block id. Formula traversal
+respects quantifier scoping: binders are processed left-to-right; a binder
+shadows in its own guard and in later binders and the body, while earlier
+binders shadow in later guards and the body. Unresolved/external variables are
+ignored instead of guessed from source spelling.
+
+Earlier phase-10 tasks already emit structural diagnostics for illegal `break`
+or `continue` outside a loop, unsupported local-declaration metadata, and
+malformed or missing algorithm statements carried from phase 9. The broader
+diagnostic catalog is:
 
 - illegal `break` or `continue` outside a loop;
 - unsupported local-declaration metadata;
@@ -484,6 +512,13 @@ and ordering:
 - unsupported snapshot/claim payload;
 - malformed or missing algorithm statement carried from phase 9;
 - unsupported aliasing/lvalue metadata.
+
+Assignment to immutable parameter/const locals, ghost leakage into runtime
+state, call/contract instantiation errors, unsupported pattern payloads,
+snapshot/claim payloads, and alias/lvalue precision require checker-owned
+target/payload metadata that the current `CoreAlgorithmStmtKind` and `CorePlace`
+surface do not expose. They remain deferred and must not be inferred from source
+spelling.
 
 Diagnostics are sorted by source order, then algorithm id, then block id, then
 diagnostic class. A diagnostic may mark an algorithm as partial/error for
@@ -546,14 +581,10 @@ Task 17 tests must cover:
 
 - unreachable statements;
 - use before assignment;
-- immutable-local assignment;
-- ghost-to-runtime leakage;
-- unsupported call/contract payloads;
-- unsupported match/pattern payloads;
-- unsupported snapshot/claim payloads;
-- malformed phase-9 algorithm statements;
-- unsupported alias/lvalue metadata;
-- stable diagnostic ordering.
+- stable diagnostic ordering for newly emitted flow diagnostics;
+- no assignment-to-immutable, ghost-to-runtime, call/contract, pattern,
+  snapshot/claim, or alias/lvalue diagnostics are fabricated while their
+  checker-owned payloads remain unavailable.
 
 Spec-only task 14 is verified by bilingual documentation review and diff
 checks. Rust implementation and tests are deferred to tasks 15-17.

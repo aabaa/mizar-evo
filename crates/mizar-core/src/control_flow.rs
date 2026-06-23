@@ -5,9 +5,10 @@
 
 use crate::core_ir::{
     CoreAlgorithm, CoreAlgorithmId, CoreAlgorithmMatchArm, CoreAlgorithmStmt, CoreAlgorithmStmtId,
-    CoreAlgorithmStmtKind, CoreBinder, CoreDiagnosticId, CoreFormulaId, CoreIr, CoreItemId,
-    CorePlace, CoreProvenance, CoreProvenanceKey, CoreProvenancePhase, CoreSourceRef, CoreTermId,
-    CoreVarRole, GhostEffectKey,
+    CoreAlgorithmStmtKind, CoreBinder, CoreDiagnosticId, CoreFormulaId, CoreFormulaKind, CoreIr,
+    CoreItemId, CorePlace, CoreProvenance, CoreProvenanceKey, CoreProvenancePhase,
+    CoreSourceAnchor, CoreSourceRef, CoreTermId, CoreTermKind, CoreVarId, CoreVarRole,
+    GhostEffectKey,
 };
 use mizar_resolve::resolved_ast::SymbolId;
 use std::{
@@ -61,6 +62,13 @@ macro_rules! table {
             pub fn iter(&self) -> impl Iterator<Item = ($id, &$entry)> {
                 self.entries
                     .iter()
+                    .enumerate()
+                    .map(|(index, entry)| ($id::new(index), entry))
+            }
+
+            pub fn iter_mut(&mut self) -> impl Iterator<Item = ($id, &mut $entry)> {
+                self.entries
+                    .iter_mut()
                     .enumerate()
                     .map(|(index, entry)| ($id::new(index), entry))
             }
@@ -526,6 +534,20 @@ pub enum ControlFlowStatementPlacement {
     },
 }
 
+impl ControlFlowStatementPlacement {
+    const fn block(&self) -> BasicBlockId {
+        match self {
+            Self::Block { block }
+            | Self::Terminator { block }
+            | Self::LoopHeader { header: block, .. }
+            | Self::SwitchArm { block, .. }
+            | Self::LocalBinding { block, .. }
+            | Self::Checkpoint { block }
+            | Self::ErrorSite { block, .. } => *block,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ControlFlowDiagnostic {
     pub kind: ControlFlowDiagnosticKind,
@@ -542,6 +564,8 @@ pub enum ControlFlowDiagnosticKind {
     IllegalBreak,
     IllegalContinue,
     Phase9Error,
+    UnreachableStatement { block: BasicBlockId },
+    UseBeforeAssignment { local: LocalId, var: CoreVarId },
     FlowDiagnostic,
 }
 
@@ -572,6 +596,13 @@ struct LoopTarget {
     loop_id: LoopId,
     header: BasicBlockId,
     exit: BasicBlockId,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct LocalUse {
+    local: LocalId,
+    var: CoreVarId,
+    source: CoreSourceRef,
 }
 
 pub fn build_control_flow_ir(core: &CoreIr) -> ControlFlowOutput {
@@ -716,6 +747,7 @@ impl<'a> FlowBuilder<'a> {
             });
         }
         self.attach_return_ensures();
+        self.sort_diagnostics();
         self.flow
     }
 
@@ -746,6 +778,17 @@ impl<'a> FlowBuilder<'a> {
                     }
                 }
             };
+            if cursor.reachable == Reachability::Unreachable {
+                self.add_diagnostic(ControlFlowDiagnostic {
+                    kind: ControlFlowDiagnosticKind::UnreachableStatement {
+                        block: cursor.block,
+                    },
+                    algorithm: self.algorithm_id,
+                    statement: Some(*statement),
+                    source: self.statement(*statement).source.clone(),
+                    carried_core_diagnostic: None,
+                });
+            }
             let next = self.build_statement(cursor, *statement, loop_stack);
             if let Some(cursor) = next {
                 last_context = cursor.context;
@@ -776,7 +819,10 @@ impl<'a> FlowBuilder<'a> {
                 value,
                 ghost,
             } => Some(self.build_let(cursor, statement_id, &statement, binder, *value, *ghost)),
-            CoreAlgorithmStmtKind::Assign { target, .. } => {
+            CoreAlgorithmStmtKind::Assign { target, value } => {
+                if cursor.reachable == Reachability::Reachable {
+                    self.check_term_uses(*value, cursor.context, statement_id);
+                }
                 self.flow.source_map.statement_placements.insert(
                     statement_id,
                     ControlFlowStatementPlacement::Block {
@@ -796,6 +842,9 @@ impl<'a> FlowBuilder<'a> {
                 Some(BlockCursor { context, ..cursor })
             }
             CoreAlgorithmStmtKind::Assert { formula } => {
+                if cursor.reachable == Reachability::Reachable {
+                    self.check_formula_uses(*formula, cursor.context, statement_id);
+                }
                 self.flow.source_map.statement_placements.insert(
                     statement_id,
                     ControlFlowStatementPlacement::Checkpoint {
@@ -826,39 +875,65 @@ impl<'a> FlowBuilder<'a> {
                 condition,
                 then_body,
                 else_body,
-            } => Some(self.build_if(
-                cursor,
-                statement_id,
-                &statement,
-                *condition,
-                then_body,
-                else_body,
-                loop_stack,
-            )),
+            } => {
+                if cursor.reachable == Reachability::Reachable {
+                    self.check_formula_uses(*condition, cursor.context, statement_id);
+                }
+                Some(self.build_if(
+                    cursor,
+                    statement_id,
+                    &statement,
+                    *condition,
+                    then_body,
+                    else_body,
+                    loop_stack,
+                ))
+            }
             CoreAlgorithmStmtKind::While {
                 condition,
                 invariants,
                 decreasing,
                 body,
-            } => Some(self.build_while(
-                cursor,
-                statement_id,
-                &statement,
-                *condition,
-                invariants,
-                decreasing,
-                body,
-                loop_stack,
-            )),
-            CoreAlgorithmStmtKind::Match { scrutinee, arms } => Some(self.build_match(
-                cursor,
-                statement_id,
-                &statement,
-                *scrutinee,
-                arms,
-                loop_stack,
-            )),
+            } => {
+                if cursor.reachable == Reachability::Reachable {
+                    self.check_formula_uses(*condition, cursor.context, statement_id);
+                    for invariant in invariants {
+                        self.check_formula_uses(*invariant, cursor.context, statement_id);
+                    }
+                    for term in decreasing {
+                        self.check_term_uses(*term, cursor.context, statement_id);
+                    }
+                }
+                Some(self.build_while(
+                    cursor,
+                    statement_id,
+                    &statement,
+                    *condition,
+                    invariants,
+                    decreasing,
+                    body,
+                    loop_stack,
+                ))
+            }
+            CoreAlgorithmStmtKind::Match { scrutinee, arms } => {
+                if cursor.reachable == Reachability::Reachable {
+                    self.check_term_uses(*scrutinee, cursor.context, statement_id);
+                }
+                Some(self.build_match(
+                    cursor,
+                    statement_id,
+                    &statement,
+                    *scrutinee,
+                    arms,
+                    loop_stack,
+                ))
+            }
             CoreAlgorithmStmtKind::Return(value) => {
+                if cursor.reachable == Reachability::Reachable
+                    && let Some(value) = value
+                {
+                    self.check_term_uses(*value, cursor.context, statement_id);
+                }
                 self.flow.source_map.statement_placements.insert(
                     statement_id,
                     ControlFlowStatementPlacement::Terminator {
@@ -963,6 +1038,20 @@ impl<'a> FlowBuilder<'a> {
                 block: cursor.block,
             },
         );
+        if let Some(role) = unsupported_role {
+            self.add_diagnostic(ControlFlowDiagnostic {
+                kind: ControlFlowDiagnosticKind::UnsupportedLocalDeclaration { local, role },
+                algorithm: self.algorithm_id,
+                statement: Some(statement_id),
+                source: binder.source.clone(),
+                carried_core_diagnostic: None,
+            });
+        }
+        if cursor.reachable == Reachability::Reachable
+            && let Some(value) = value
+        {
+            self.check_term_uses(value, cursor.context, statement_id);
+        }
         let mut context = self.context(cursor.context).clone();
         if initialized_at.is_some() {
             push_unique(&mut context.definitely_initialized, local);
@@ -975,15 +1064,6 @@ impl<'a> FlowBuilder<'a> {
         }
         if local_ghost {
             push_unique(&mut context.ghost_visible, local);
-        }
-        if let Some(role) = unsupported_role {
-            self.add_diagnostic(ControlFlowDiagnostic {
-                kind: ControlFlowDiagnosticKind::UnsupportedLocalDeclaration { local, role },
-                algorithm: self.algorithm_id,
-                statement: Some(statement_id),
-                source: binder.source.clone(),
-                carried_core_diagnostic: None,
-            });
         }
         let context = self.add_context(context);
         BlockCursor { context, ..cursor }
@@ -1021,6 +1101,16 @@ impl<'a> FlowBuilder<'a> {
                 block: cursor.block,
             },
         );
+        if cursor.reachable == Reachability::Reachable
+            && let Some(witness_ty) = witness_ty
+        {
+            self.check_formula_uses_with_bound(
+                witness_ty,
+                cursor.context,
+                statement_id,
+                BTreeSet::from([binder.var]),
+            );
+        }
         let effect = self.add_assignment_effect(AssignmentEffect {
             statement: statement_id,
             target: AssignmentEffectTarget::Local(local),
@@ -1658,6 +1748,103 @@ impl<'a> FlowBuilder<'a> {
         id
     }
 
+    fn sort_diagnostics(&mut self) {
+        if self.flow.diagnostics.len() <= 1 {
+            return;
+        }
+        let mut diagnostics = self
+            .flow
+            .diagnostics
+            .entries
+            .iter()
+            .cloned()
+            .enumerate()
+            .map(|(index, diagnostic)| (ControlFlowDiagnosticId::new(index), diagnostic))
+            .collect::<Vec<_>>();
+        diagnostics.sort_by_key(|(old_id, diagnostic)| {
+            (
+                diagnostic_source_sort_key(&diagnostic.source),
+                diagnostic.algorithm,
+                self.diagnostic_block(*old_id, diagnostic),
+                diagnostic_class_rank(&diagnostic.kind),
+                old_id.index(),
+            )
+        });
+
+        let remap = diagnostics
+            .iter()
+            .enumerate()
+            .map(|(new_index, (old_id, _))| (*old_id, ControlFlowDiagnosticId::new(new_index)))
+            .collect::<BTreeMap<_, _>>();
+        self.flow.diagnostics.entries = diagnostics
+            .into_iter()
+            .map(|(_, diagnostic)| diagnostic)
+            .collect();
+        self.remap_diagnostic_ids(&remap);
+    }
+
+    fn diagnostic_block(
+        &self,
+        old_id: ControlFlowDiagnosticId,
+        diagnostic: &ControlFlowDiagnostic,
+    ) -> BasicBlockId {
+        if let ControlFlowDiagnosticKind::UnreachableStatement { block } = diagnostic.kind {
+            return block;
+        }
+        diagnostic
+            .statement
+            .and_then(|statement| {
+                self.flow
+                    .source_map
+                    .statement_placements
+                    .get(&statement)
+                    .map(ControlFlowStatementPlacement::block)
+            })
+            .or_else(|| {
+                self.flow.blocks.iter().find_map(|(block_id, block)| {
+                    matches!(block.terminator, ControlFlowTerminator::Error(id) if id == old_id)
+                        .then_some(block_id)
+                })
+            })
+            .unwrap_or(BasicBlockId::new(usize::MAX))
+    }
+
+    fn remap_diagnostic_ids(
+        &mut self,
+        remap: &BTreeMap<ControlFlowDiagnosticId, ControlFlowDiagnosticId>,
+    ) {
+        for (_, block) in self.flow.blocks.iter_mut() {
+            if let ControlFlowTerminator::Error(diagnostic) = &mut block.terminator
+                && let Some(new_id) = remap.get(diagnostic)
+            {
+                *diagnostic = *new_id;
+            }
+        }
+        for placement in self.flow.source_map.statement_placements.values_mut() {
+            if let ControlFlowStatementPlacement::ErrorSite { diagnostic, .. } = placement
+                && let Some(new_id) = remap.get(diagnostic)
+            {
+                *diagnostic = *new_id;
+            }
+        }
+        for (_, exit) in self.flow.exits.iter_mut() {
+            if let ControlFlowExitKind::Error { diagnostic } = &mut exit.kind
+                && let Some(new_id) = remap.get(diagnostic)
+            {
+                *diagnostic = *new_id;
+            }
+        }
+        self.flow.source_map.diagnostic_sources = self
+            .flow
+            .source_map
+            .diagnostic_sources
+            .iter()
+            .filter_map(|(old_id, source)| {
+                remap.get(old_id).map(|new_id| (*new_id, source.clone()))
+            })
+            .collect();
+    }
+
     fn add_assignment_effect(&mut self, effect: AssignmentEffect) -> AssignmentEffectId {
         let visibility = match &effect.target {
             AssignmentEffectTarget::Local(local) => self
@@ -1830,6 +2017,175 @@ impl<'a> FlowBuilder<'a> {
             })
     }
 
+    fn check_term_uses(
+        &mut self,
+        term: CoreTermId,
+        context: ProgramContextId,
+        statement: CoreAlgorithmStmtId,
+    ) {
+        self.check_term_uses_with_bound(term, context, statement, BTreeSet::new());
+    }
+
+    fn check_term_uses_with_bound(
+        &mut self,
+        term: CoreTermId,
+        context: ProgramContextId,
+        statement: CoreAlgorithmStmtId,
+        bound_vars: BTreeSet<CoreVarId>,
+    ) {
+        let mut uses = Vec::new();
+        self.collect_term_uses(term, &bound_vars, &mut uses);
+        self.emit_use_before_assignment_diagnostics(uses, context, statement);
+    }
+
+    fn check_formula_uses(
+        &mut self,
+        formula: CoreFormulaId,
+        context: ProgramContextId,
+        statement: CoreAlgorithmStmtId,
+    ) {
+        self.check_formula_uses_with_bound(formula, context, statement, BTreeSet::new());
+    }
+
+    fn check_formula_uses_with_bound(
+        &mut self,
+        formula: CoreFormulaId,
+        context: ProgramContextId,
+        statement: CoreAlgorithmStmtId,
+        bound_vars: BTreeSet<CoreVarId>,
+    ) {
+        let mut uses = Vec::new();
+        self.collect_formula_uses(formula, &bound_vars, &mut uses);
+        self.emit_use_before_assignment_diagnostics(uses, context, statement);
+    }
+
+    fn emit_use_before_assignment_diagnostics(
+        &mut self,
+        uses: Vec<LocalUse>,
+        context: ProgramContextId,
+        statement: CoreAlgorithmStmtId,
+    ) {
+        let initialized = self.context(context).definitely_initialized.clone();
+        let mut emitted = Vec::new();
+        for local_use in uses {
+            if initialized.contains(&local_use.local)
+                || emitted.iter().any(|emitted| emitted == &local_use)
+            {
+                continue;
+            }
+            self.add_diagnostic(ControlFlowDiagnostic {
+                kind: ControlFlowDiagnosticKind::UseBeforeAssignment {
+                    local: local_use.local,
+                    var: local_use.var,
+                },
+                algorithm: self.algorithm_id,
+                statement: Some(statement),
+                source: local_use.source.clone(),
+                carried_core_diagnostic: None,
+            });
+            emitted.push(local_use);
+        }
+    }
+
+    fn collect_formula_uses(
+        &self,
+        formula: CoreFormulaId,
+        bound_vars: &BTreeSet<CoreVarId>,
+        uses: &mut Vec<LocalUse>,
+    ) {
+        let formula = self
+            .core
+            .formulas()
+            .get(formula)
+            .expect("validated CoreIr formula id");
+        match &formula.kind {
+            CoreFormulaKind::True | CoreFormulaKind::False | CoreFormulaKind::Error(_) => {}
+            CoreFormulaKind::Atom { args, .. } => {
+                for arg in args {
+                    self.collect_term_uses(*arg, bound_vars, uses);
+                }
+            }
+            CoreFormulaKind::Equals { left, right } => {
+                self.collect_term_uses(*left, bound_vars, uses);
+                self.collect_term_uses(*right, bound_vars, uses);
+            }
+            CoreFormulaKind::TypePred { subject, .. } => {
+                self.collect_term_uses(*subject, bound_vars, uses);
+            }
+            CoreFormulaKind::Not(inner) => self.collect_formula_uses(*inner, bound_vars, uses),
+            CoreFormulaKind::And(items) | CoreFormulaKind::Or(items) => {
+                for item in items {
+                    self.collect_formula_uses(*item, bound_vars, uses);
+                }
+            }
+            CoreFormulaKind::Implies {
+                premise,
+                conclusion,
+            } => {
+                self.collect_formula_uses(*premise, bound_vars, uses);
+                self.collect_formula_uses(*conclusion, bound_vars, uses);
+            }
+            CoreFormulaKind::Iff { left, right } => {
+                self.collect_formula_uses(*left, bound_vars, uses);
+                self.collect_formula_uses(*right, bound_vars, uses);
+            }
+            CoreFormulaKind::Forall { binders, body }
+            | CoreFormulaKind::Exists { binders, body } => {
+                let mut scoped = bound_vars.clone();
+                for binder in binders {
+                    scoped.insert(binder.var);
+                    if let Some(guard) = binder.ty_guard {
+                        self.collect_formula_uses(guard, &scoped, uses);
+                    }
+                }
+                self.collect_formula_uses(*body, &scoped, uses);
+            }
+        }
+    }
+
+    fn collect_term_uses(
+        &self,
+        term: CoreTermId,
+        bound_vars: &BTreeSet<CoreVarId>,
+        uses: &mut Vec<LocalUse>,
+    ) {
+        let term_record = self
+            .core
+            .terms()
+            .get(term)
+            .expect("validated CoreIr term id");
+        match &term_record.kind {
+            CoreTermKind::Var(var) => {
+                if !bound_vars.contains(var)
+                    && let Some(local) = self.local_for_var(*var)
+                {
+                    uses.push(LocalUse {
+                        local,
+                        var: *var,
+                        source: self.term_source(term),
+                    });
+                }
+            }
+            CoreTermKind::Const(_) | CoreTermKind::Error(_) => {}
+            CoreTermKind::Apply { args, .. }
+            | CoreTermKind::Tuple(args)
+            | CoreTermKind::SetEnum(args)
+            | CoreTermKind::Generated { args, .. } => {
+                for arg in args {
+                    self.collect_term_uses(*arg, bound_vars, uses);
+                }
+            }
+            CoreTermKind::Select { base, .. } => self.collect_term_uses(*base, bound_vars, uses),
+        }
+    }
+
+    fn local_for_var(&self, var: CoreVarId) -> Option<LocalId> {
+        self.flow.locals.iter().find_map(|(id, local)| {
+            (local.binder.var == var && !matches!(local.kind, LocalKind::HiddenLoopValue))
+                .then_some(id)
+        })
+    }
+
     fn join_context(
         &mut self,
         contexts: &[ProgramContextId],
@@ -1965,6 +2321,43 @@ fn sort_and_dedup<T: Ord>(values: &mut Vec<T>) {
     values.dedup();
 }
 
+fn diagnostic_source_sort_key(
+    source: &CoreSourceRef,
+) -> (u8, usize, usize, String, String, String, String) {
+    match &source.anchor {
+        CoreSourceAnchor::SourceRange(range) => (
+            0,
+            range.start,
+            range.end,
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+        ),
+        CoreSourceAnchor::GeneratedFrom(generated_from) => (
+            1,
+            0,
+            0,
+            format!("{:?}", generated_from.owner),
+            format!("{:?}", generated_from.kind),
+            generated_from.key.as_str().to_owned(),
+            generated_from.reason.as_str().to_owned(),
+        ),
+    }
+}
+
+const fn diagnostic_class_rank(kind: &ControlFlowDiagnosticKind) -> u8 {
+    match kind {
+        ControlFlowDiagnosticKind::UnsupportedLocalDeclaration { .. } => 0,
+        ControlFlowDiagnosticKind::IllegalBreak => 1,
+        ControlFlowDiagnosticKind::IllegalContinue => 2,
+        ControlFlowDiagnosticKind::Phase9Error => 3,
+        ControlFlowDiagnosticKind::UnreachableStatement { .. } => 4,
+        ControlFlowDiagnosticKind::UseBeforeAssignment { .. } => 5,
+        ControlFlowDiagnosticKind::FlowDiagnostic => 6,
+    }
+}
+
 fn intersection<T>(left: &[T], right: &[T]) -> Vec<T>
 where
     T: Ord + Clone,
@@ -2086,11 +2479,12 @@ mod tests {
         }
 
         fn term_var(&mut self, var: usize, start: usize) -> CoreTermId {
+            self.term(CoreTermKind::Var(CoreVarId::new(var)), start)
+        }
+
+        fn term(&mut self, kind: CoreTermKind, start: usize) -> CoreTermId {
             let source = self.source(start, start + 1);
-            let id = self.parts.terms.insert(CoreTerm::new(
-                CoreTermKind::Var(CoreVarId::new(var)),
-                source.clone(),
-            ));
+            let id = self.parts.terms.insert(CoreTerm::new(kind, source.clone()));
             self.parts.source_map.term_sources.insert(id, source);
             id
         }
@@ -2211,7 +2605,7 @@ mod tests {
     fn control_flow_lowers_straight_line_locals_sources_and_debug_text() {
         let mut fixture = CoreFixture::new();
         let term_x = fixture.term_var(0, 10);
-        let term_y = fixture.term_var(1, 11);
+        let term_y = fixture.term_var(0, 11);
         let condition = fixture.formula(CoreFormulaKind::True, 12);
         let param = fixture.binder(0, "param", 20);
         let result = fixture.binder(1, "result", 21);
@@ -3429,6 +3823,468 @@ mod tests {
                 .terminator,
             ControlFlowTerminator::Return(None)
         ));
+        assert!(flow.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn control_flow_records_use_before_assignment_diagnostics() {
+        let mut fixture = CoreFixture::new();
+        let uninitialized_use = fixture.term_var(2, 31);
+        let self_use = fixture.term_var(3, 41);
+        let shadowed_use = fixture.term_var(2, 51);
+        let shadow_guard = fixture.formula(
+            CoreFormulaKind::Equals {
+                left: shadowed_use,
+                right: shadowed_use,
+            },
+            52,
+        );
+        let mut shadowing_binder = fixture.binder(2, "local:const", 53);
+        shadowing_binder.ty_guard = Some(shadow_guard);
+        let quantified = fixture.formula(
+            CoreFormulaKind::Forall {
+                binders: vec![shadowing_binder],
+                body: shadow_guard,
+            },
+            54,
+        );
+        let uninitialized_binder = fixture.binder(2, "local:var", 20);
+        let declare_uninitialized = fixture.stmt(
+            CoreAlgorithmStmtKind::Let {
+                binder: uninitialized_binder,
+                value: None,
+                ghost: false,
+            },
+            21,
+        );
+        let use_uninitialized = fixture.stmt(
+            CoreAlgorithmStmtKind::Assign {
+                target: CorePlace::new("result"),
+                value: uninitialized_use,
+            },
+            32,
+        );
+        let self_binder = fixture.binder(3, "local:const", 40);
+        let self_initializing_let = fixture.stmt(
+            CoreAlgorithmStmtKind::Let {
+                binder: self_binder,
+                value: Some(self_use),
+                ghost: false,
+            },
+            42,
+        );
+        let shadowed_assert = fixture.stmt(
+            CoreAlgorithmStmtKind::Assert {
+                formula: quantified,
+            },
+            55,
+        );
+        let core = fixture.finish(
+            Vec::new(),
+            None,
+            vec![
+                declare_uninitialized,
+                use_uninitialized,
+                self_initializing_let,
+                shadowed_assert,
+            ],
+        );
+
+        let output = build_control_flow_ir(&core);
+        let flow = only_flow(&output);
+        assert_eq!(flow.diagnostics.len(), 2);
+        let first = flow
+            .diagnostics
+            .get(ControlFlowDiagnosticId::new(0))
+            .expect("first use-before");
+        assert!(matches!(
+            first.kind,
+            ControlFlowDiagnosticKind::UseBeforeAssignment { local, var }
+                if local == LocalId::new(0) && var == CoreVarId::new(2)
+        ));
+        assert_eq!(first.statement, Some(use_uninitialized));
+        assert_eq!(
+            first.source,
+            core.source_map().term_sources[&uninitialized_use]
+        );
+        let second = flow
+            .diagnostics
+            .get(ControlFlowDiagnosticId::new(1))
+            .expect("self use-before");
+        assert!(matches!(
+            second.kind,
+            ControlFlowDiagnosticKind::UseBeforeAssignment { local, var }
+                if local == LocalId::new(1) && var == CoreVarId::new(3)
+        ));
+        assert_eq!(second.statement, Some(self_initializing_let));
+        assert_eq!(second.source, core.source_map().term_sources[&self_use]);
+        assert!(
+            flow.diagnostics
+                .iter()
+                .all(|(_, diagnostic)| diagnostic.statement != Some(shadowed_assert))
+        );
+        for (diagnostic_id, diagnostic) in flow.diagnostics.iter() {
+            assert_eq!(
+                flow.source_map.diagnostic_sources[&diagnostic_id],
+                diagnostic.source
+            );
+            assert!(diagnostic.carried_core_diagnostic.is_none());
+        }
+    }
+
+    #[test]
+    fn control_flow_checks_use_before_at_all_statement_owned_sites() {
+        let mut fixture = CoreFixture::new();
+        let uninitialized_binder = fixture.binder(0, "local:var", 10);
+        let declare_uninitialized = fixture.stmt(
+            CoreAlgorithmStmtKind::Let {
+                binder: uninitialized_binder,
+                value: None,
+                ghost: false,
+            },
+            11,
+        );
+
+        let tuple_late = fixture.term_var(0, 31);
+        let tuple_early = fixture.term_var(0, 30);
+        let tuple = fixture.term(CoreTermKind::Tuple(vec![tuple_late, tuple_early]), 32);
+        let assign = fixture.stmt(
+            CoreAlgorithmStmtKind::Assign {
+                target: CorePlace::new("result"),
+                value: tuple,
+            },
+            33,
+        );
+
+        let let_value = fixture.term_var(0, 40);
+        let let_stmt = fixture.stmt(
+            CoreAlgorithmStmtKind::Let {
+                binder: fixture.binder(1, "local:const", 39),
+                value: Some(let_value),
+                ghost: false,
+            },
+            41,
+        );
+
+        let pick_use = fixture.term_var(0, 42);
+        let pick_witness = fixture.formula(
+            CoreFormulaKind::Equals {
+                left: pick_use,
+                right: pick_use,
+            },
+            43,
+        );
+        let pick = fixture.stmt(
+            CoreAlgorithmStmtKind::Pick {
+                binder: fixture.binder(2, "local:const", 44),
+                witness_ty: Some(pick_witness),
+                ghost: false,
+            },
+            45,
+        );
+
+        let if_use = fixture.term_var(0, 46);
+        let if_condition = fixture.formula(
+            CoreFormulaKind::Equals {
+                left: if_use,
+                right: if_use,
+            },
+            47,
+        );
+        let if_stmt = fixture.stmt(
+            CoreAlgorithmStmtKind::If {
+                condition: if_condition,
+                then_body: Vec::new(),
+                else_body: Vec::new(),
+            },
+            48,
+        );
+
+        let while_condition_use = fixture.term_var(0, 49);
+        let while_condition = fixture.formula(
+            CoreFormulaKind::Equals {
+                left: while_condition_use,
+                right: while_condition_use,
+            },
+            50,
+        );
+        let while_invariant_use = fixture.term_var(0, 51);
+        let while_invariant = fixture.formula(
+            CoreFormulaKind::Equals {
+                left: while_invariant_use,
+                right: while_invariant_use,
+            },
+            52,
+        );
+        let while_decreasing = fixture.term_var(0, 53);
+        let while_stmt = fixture.stmt(
+            CoreAlgorithmStmtKind::While {
+                condition: while_condition,
+                invariants: vec![while_invariant],
+                decreasing: vec![while_decreasing],
+                body: Vec::new(),
+            },
+            54,
+        );
+
+        let match_scrutinee = fixture.term_var(0, 55);
+        let match_stmt = fixture.stmt(
+            CoreAlgorithmStmtKind::Match {
+                scrutinee: match_scrutinee,
+                arms: vec![CoreAlgorithmMatchArm {
+                    pattern: CoreProvenanceKey::new("case:only"),
+                    body: Vec::new(),
+                }],
+            },
+            56,
+        );
+
+        let assert_use = fixture.term_var(0, 57);
+        let assert_formula = fixture.formula(
+            CoreFormulaKind::Equals {
+                left: assert_use,
+                right: assert_use,
+            },
+            58,
+        );
+        let assert_stmt = fixture.stmt(
+            CoreAlgorithmStmtKind::Assert {
+                formula: assert_formula,
+            },
+            59,
+        );
+
+        let return_use = fixture.term_var(0, 60);
+        let return_stmt = fixture.stmt(CoreAlgorithmStmtKind::Return(Some(return_use)), 61);
+        let core = fixture.finish(
+            Vec::new(),
+            None,
+            vec![
+                declare_uninitialized,
+                assign,
+                let_stmt,
+                pick,
+                if_stmt,
+                while_stmt,
+                match_stmt,
+                assert_stmt,
+                return_stmt,
+            ],
+        );
+
+        let output = build_control_flow_ir(&core);
+        let flow = only_flow(&output);
+        let use_before = flow
+            .diagnostics
+            .iter()
+            .map(|(_, diagnostic)| diagnostic)
+            .collect::<Vec<_>>();
+        assert_eq!(use_before.len(), 11);
+        assert!(use_before.iter().all(|diagnostic| {
+            matches!(
+                diagnostic.kind,
+                ControlFlowDiagnosticKind::UseBeforeAssignment { local, var }
+                    if local == LocalId::new(0) && var == CoreVarId::new(0)
+            )
+        }));
+        assert!(use_before.iter().all(|diagnostic| {
+            !matches!(diagnostic.kind, ControlFlowDiagnosticKind::FlowDiagnostic)
+                && diagnostic.carried_core_diagnostic.is_none()
+        }));
+        assert_eq!(
+            use_before
+                .iter()
+                .map(|diagnostic| diagnostic.statement)
+                .collect::<Vec<_>>(),
+            vec![
+                Some(assign),
+                Some(assign),
+                Some(let_stmt),
+                Some(pick),
+                Some(if_stmt),
+                Some(while_stmt),
+                Some(while_stmt),
+                Some(while_stmt),
+                Some(match_stmt),
+                Some(assert_stmt),
+                Some(return_stmt),
+            ]
+        );
+        assert_eq!(
+            use_before
+                .iter()
+                .map(|diagnostic| diagnostic.source.clone())
+                .collect::<Vec<_>>(),
+            vec![
+                core.source_map().term_sources[&tuple_early].clone(),
+                core.source_map().term_sources[&tuple_late].clone(),
+                core.source_map().term_sources[&let_value].clone(),
+                core.source_map().term_sources[&pick_use].clone(),
+                core.source_map().term_sources[&if_use].clone(),
+                core.source_map().term_sources[&while_condition_use].clone(),
+                core.source_map().term_sources[&while_invariant_use].clone(),
+                core.source_map().term_sources[&while_decreasing].clone(),
+                core.source_map().term_sources[&match_scrutinee].clone(),
+                core.source_map().term_sources[&assert_use].clone(),
+                core.source_map().term_sources[&return_use].clone(),
+            ]
+        );
+    }
+
+    #[test]
+    fn control_flow_quantifier_use_before_scope_is_left_to_right() {
+        let mut fixture = CoreFixture::new();
+        let local_binder = fixture.binder(6, "local:var", 10);
+        let declare_uninitialized = fixture.stmt(
+            CoreAlgorithmStmtKind::Let {
+                binder: local_binder,
+                value: None,
+                ghost: false,
+            },
+            11,
+        );
+        let later_binder_use = fixture.term_var(6, 20);
+        let first_guard = fixture.formula(
+            CoreFormulaKind::Equals {
+                left: later_binder_use,
+                right: later_binder_use,
+            },
+            21,
+        );
+        let earlier_binder_use = fixture.term_var(5, 22);
+        let second_guard = fixture.formula(
+            CoreFormulaKind::Equals {
+                left: earlier_binder_use,
+                right: earlier_binder_use,
+            },
+            23,
+        );
+        let body_use = fixture.term_var(6, 24);
+        let body = fixture.formula(
+            CoreFormulaKind::Equals {
+                left: body_use,
+                right: body_use,
+            },
+            25,
+        );
+        let mut first_binder = fixture.binder(5, "local:const", 26);
+        first_binder.ty_guard = Some(first_guard);
+        let mut second_binder = fixture.binder(6, "local:const", 27);
+        second_binder.ty_guard = Some(second_guard);
+        let quantified = fixture.formula(
+            CoreFormulaKind::Exists {
+                binders: vec![first_binder, second_binder],
+                body,
+            },
+            28,
+        );
+        let assert_stmt = fixture.stmt(
+            CoreAlgorithmStmtKind::Assert {
+                formula: quantified,
+            },
+            29,
+        );
+        let core = fixture.finish(Vec::new(), None, vec![declare_uninitialized, assert_stmt]);
+
+        let output = build_control_flow_ir(&core);
+        let flow = only_flow(&output);
+        assert_eq!(flow.diagnostics.len(), 1);
+        let diagnostic = flow
+            .diagnostics
+            .get(ControlFlowDiagnosticId::new(0))
+            .expect("later binder guard diagnostic");
+        assert!(matches!(
+            diagnostic.kind,
+            ControlFlowDiagnosticKind::UseBeforeAssignment { local, var }
+                if local == LocalId::new(0) && var == CoreVarId::new(6)
+        ));
+        assert_eq!(diagnostic.statement, Some(assert_stmt));
+        assert_eq!(
+            diagnostic.source,
+            core.source_map().term_sources[&later_binder_use]
+        );
+    }
+
+    #[test]
+    fn control_flow_records_unreachable_statement_diagnostics() {
+        let mut fixture = CoreFixture::new();
+        let uninitialized_use = fixture.term_var(0, 30);
+        let binder = fixture.binder(0, "local:var", 20);
+        let declare_uninitialized = fixture.stmt(
+            CoreAlgorithmStmtKind::Let {
+                binder,
+                value: None,
+                ghost: false,
+            },
+            21,
+        );
+        let return_stmt = fixture.stmt(CoreAlgorithmStmtKind::Return(None), 22);
+        let unreachable_assign = fixture.stmt(
+            CoreAlgorithmStmtKind::Assign {
+                target: CorePlace::new("result"),
+                value: uninitialized_use,
+            },
+            31,
+        );
+        let true_formula = fixture.formula(CoreFormulaKind::True, 32);
+        let unreachable_assert = fixture.stmt(
+            CoreAlgorithmStmtKind::Assert {
+                formula: true_formula,
+            },
+            33,
+        );
+        let core = fixture.finish(
+            Vec::new(),
+            None,
+            vec![
+                declare_uninitialized,
+                return_stmt,
+                unreachable_assign,
+                unreachable_assert,
+            ],
+        );
+
+        let output = build_control_flow_ir(&core);
+        let flow = only_flow(&output);
+        assert_eq!(flow.diagnostics.len(), 2);
+        let unreachable_assign_block =
+            flow.source_map.statement_placements[&unreachable_assign].block();
+        let unreachable_assert_block =
+            flow.source_map.statement_placements[&unreachable_assert].block();
+        let first = flow
+            .diagnostics
+            .get(ControlFlowDiagnosticId::new(0))
+            .expect("unreachable assign");
+        assert!(matches!(
+            first.kind,
+            ControlFlowDiagnosticKind::UnreachableStatement { block }
+                if block == unreachable_assign_block
+        ));
+        assert_eq!(first.statement, Some(unreachable_assign));
+        assert_eq!(
+            first.source,
+            core.source_map().algorithm_sources[&unreachable_assign]
+        );
+        let second = flow
+            .diagnostics
+            .get(ControlFlowDiagnosticId::new(1))
+            .expect("unreachable assert");
+        assert!(matches!(
+            second.kind,
+            ControlFlowDiagnosticKind::UnreachableStatement { block }
+                if block == unreachable_assert_block
+        ));
+        assert_eq!(second.statement, Some(unreachable_assert));
+        assert_eq!(
+            second.source,
+            core.source_map().algorithm_sources[&unreachable_assert]
+        );
+        assert!(flow.diagnostics.iter().all(|(_, diagnostic)| {
+            !matches!(
+                diagnostic.kind,
+                ControlFlowDiagnosticKind::UseBeforeAssignment { .. }
+            )
+        }));
     }
 
     #[test]
@@ -3454,7 +4310,7 @@ mod tests {
 
         let output = build_control_flow_ir(&core);
         let flow = only_flow(&output);
-        assert_eq!(flow.diagnostics.len(), 4);
+        assert_eq!(flow.diagnostics.len(), 6);
         let core_error_diagnostic = match core
             .algorithm_statements()
             .get(error_stmt)
@@ -3488,9 +4344,23 @@ mod tests {
                 .kind,
             ControlFlowDiagnosticKind::IllegalContinue
         ));
+        assert!(matches!(
+            flow.diagnostics
+                .get(ControlFlowDiagnosticId::new(3))
+                .expect("unreachable continue")
+                .kind,
+            ControlFlowDiagnosticKind::UnreachableStatement { .. }
+        ));
+        assert!(matches!(
+            flow.diagnostics
+                .get(ControlFlowDiagnosticId::new(4))
+                .expect("phase9")
+                .kind,
+            ControlFlowDiagnosticKind::Phase9Error
+        ));
         let phase9 = flow
             .diagnostics
-            .get(ControlFlowDiagnosticId::new(3))
+            .get(ControlFlowDiagnosticId::new(4))
             .expect("phase9");
         assert!(matches!(
             phase9.kind,
@@ -3557,6 +4427,48 @@ mod tests {
             flow.diagnostics
                 .get(ControlFlowDiagnosticId::new(2))
                 .expect("continue")
+                .carried_core_diagnostic
+                .is_none()
+        );
+        assert_eq!(
+            flow.diagnostics
+                .get(ControlFlowDiagnosticId::new(3))
+                .expect("unreachable continue")
+                .statement,
+            Some(continue_stmt)
+        );
+        assert_eq!(
+            flow.diagnostics
+                .get(ControlFlowDiagnosticId::new(3))
+                .expect("unreachable continue")
+                .source,
+            core.source_map().algorithm_sources[&continue_stmt]
+        );
+        assert!(
+            flow.diagnostics
+                .get(ControlFlowDiagnosticId::new(3))
+                .expect("unreachable continue")
+                .carried_core_diagnostic
+                .is_none()
+        );
+        assert_eq!(
+            flow.diagnostics
+                .get(ControlFlowDiagnosticId::new(5))
+                .expect("unreachable phase9")
+                .statement,
+            Some(error_stmt)
+        );
+        assert_eq!(
+            flow.diagnostics
+                .get(ControlFlowDiagnosticId::new(5))
+                .expect("unreachable phase9")
+                .source,
+            core.source_map().algorithm_sources[&error_stmt]
+        );
+        assert!(
+            flow.diagnostics
+                .get(ControlFlowDiagnosticId::new(5))
+                .expect("unreachable phase9")
                 .carried_core_diagnostic
                 .is_none()
         );
