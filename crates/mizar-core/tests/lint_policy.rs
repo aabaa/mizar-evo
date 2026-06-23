@@ -97,22 +97,39 @@ fn core_manifest_dependency_boundary_is_task_one_minimal() {
 }
 
 #[test]
-fn task_one_does_not_expose_public_semantic_api() {
+fn public_semantic_modules_have_owning_specs() {
     let lib_path = crate_root().join("src/lib.rs");
     let source = read_to_string(&lib_path);
+    let modules = public_module_exports(&source);
     let mut violations = Vec::new();
 
-    for (line_index, line) in source.lines().enumerate() {
-        let trimmed = line.trim_start();
-        if public_semantic_declaration(trimmed) {
-            violations.push(format!("{}:{}", lib_path.display(), line_index + 1));
+    if modules != ["core_ir"] {
+        violations.push(format!(
+            "{} must expose exactly the task-3 documented `core_ir` module, found {:?}",
+            lib_path.display(),
+            modules
+        ));
+    }
+
+    for module in modules {
+        for language in ["en", "ja"] {
+            let spec_path = workspace_root()
+                .join("doc/design/mizar-core")
+                .join(language)
+                .join(format!("{module}.md"));
+            if !spec_path.is_file() {
+                violations.push(format!(
+                    "{}: public module `{module}` needs owning spec {}",
+                    lib_path.display(),
+                    spec_path.display()
+                ));
+            }
         }
     }
 
     assert!(
         violations.is_empty(),
-        "task 1 may expose the crate boundary only; semantic public APIs need \
-         their owning module spec first:\n{}",
+        "public core APIs require their owning module spec first:\n{}",
         violations.join("\n")
     );
 }
@@ -129,7 +146,6 @@ fn core_source_stays_off_frontend_and_downstream_boundaries() {
         "mizar_kernel::",
         "mizar_proof::",
         "mizar_resolve::env",
-        "mizar_resolve::resolved_ast",
         "ResolvedAst",
         "SymbolEnv",
         "resolver_env",
@@ -272,6 +288,13 @@ fn public_api_scanner_catches_common_public_surface_shapes() {
     ));
 }
 
+#[test]
+fn public_module_export_scanner_finds_core_ir_module() {
+    let source = "//! docs\n\npub mod core_ir;\n";
+
+    assert_eq!(public_module_exports(source), ["core_ir"]);
+}
+
 fn crate_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 }
@@ -356,6 +379,28 @@ fn assignment_is(line: &str, key: &str, expected: &str) -> bool {
     };
 
     actual_key.trim() == key && actual_value.trim().trim_matches('"') == expected
+}
+
+fn public_module_exports(source: &str) -> Vec<&str> {
+    let mut modules = Vec::new();
+
+    for line in source.lines() {
+        let trimmed = line.trim();
+        let Some(module_name) = trimmed.strip_prefix("pub mod ") else {
+            continue;
+        };
+        let module_name = module_name
+            .trim_end_matches(';')
+            .split_whitespace()
+            .next()
+            .unwrap_or_default();
+        if !module_name.is_empty() {
+            modules.push(module_name);
+        }
+    }
+
+    modules.sort_unstable();
+    modules
 }
 
 fn public_semantic_declaration(line: &str) -> bool {

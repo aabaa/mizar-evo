@@ -17,7 +17,7 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| core_ir | `core_ir.md`（task 2） | `src/core_ir.rs` | [ ] |
+| core_ir | `core_ir.md`（task 2） | `src/core_ir.rs` | [x] |
 | binder_normalization | `binder_normalization.md`（task 4） | `src/binder_normalization.rs` | [ ] |
 | elaborator | `elaborator.md`（task 7） | `src/elaborator.rs` | [ ] |
 | control_flow | `control_flow.md`（task 14） | `src/control_flow.rs` | [ ] |
@@ -90,7 +90,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
    - 依存: 1。仕様: アーキテクチャ 06「Interface Definitions」、
      [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 
-3. **`core_ir` データ形状の実装。** [ ]
+3. **`core_ir` データ形状の実装。** [x]
    - task 2 に従って core の item/項/論理式/証明構造とソースマップを
      実装し、決定的 debug レンダリングを加える。
    - テスト: 構築のラウンドトリップ。item から到達可能なすべてのノードが

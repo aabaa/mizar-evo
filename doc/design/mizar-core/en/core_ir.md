@@ -86,6 +86,7 @@ struct CoreIr {
     formulas: CoreFormulaTable,
     definitions: CoreDefinitionTable,
     proofs: CoreProofTable,
+    proof_nodes: CoreProofNodeTable,
     algorithms: CoreAlgorithmTable,
     algorithm_statements: CoreAlgorithmStmtTable,
     generated: GeneratedOriginTable,
@@ -278,10 +279,17 @@ struct CoreProof {
     source: CoreSourceRef,
 }
 
+enum CoreProofStatus {
+    Open,
+    Assumed,
+    Conditional,
+    Error,
+}
+
 enum CoreProofNodeKind {
     IntroduceBinder { binder: CoreBinder, child: CoreProofNodeId },
-    Assume { label: Option<LabelRef>, formula: CoreFormulaId, child: CoreProofNodeId },
-    Step { label: Option<LabelRef>, formula: CoreFormulaId, justification: CoreJustification },
+    Assume { label: Option<CoreLabelRef>, formula: CoreFormulaId, child: CoreProofNodeId },
+    Step { label: Option<CoreLabelRef>, formula: CoreFormulaId, justification: CoreJustification },
     Branch { kind: ProofBranchKind, children: Vec<CoreProofNodeId> },
     TerminalGoal(ObligationSeedId),
     Error(CoreDiagnosticId),
@@ -296,6 +304,8 @@ Rules:
   dependency facts. Core does not decide ATP premise selection.
 - `open`, `assumed`, and `conditional` statuses are preserved as policy input.
   Core does not accept or reject the proof.
+- `error` is a recovery status only; it records malformed proof skeleton input
+  without accepting or rejecting the proof.
 - Every terminal proof obligation is an `ObligationSeedId`.
 
 ### Algorithm Shells
@@ -331,6 +341,9 @@ facts, reachability diagnostics, or generated VCs.
 
 `CoreAlgorithmStmtTable` owns source-ordered statement-shell rows referenced by
 `CoreAlgorithm.statements`.
+Every statement listed directly or nested through `If`, `While`, or `Match`
+arms must have `owner` equal to the containing `CoreAlgorithmId`; phase 10 may
+trust this owner relation when constructing `ControlFlowIr`.
 
 ```rust
 struct CoreAlgorithmStmt {
@@ -402,7 +415,7 @@ struct ObligationSeed {
     local_path: LocalProofOrProgramPath,
     label: Option<CoreLabelRef>,
     semantic_origin: NormalizedSemanticOrigin,
-    provenance: CoreProvenance,
+    provenance: Vec<CoreProvenance>,
     source: CoreSourceRef,
     core_refs: Vec<CoreNodeRef>,
     status: ObligationSeedStatus,
@@ -485,6 +498,11 @@ struct CoreSourceMap {
 
 `GeneratedFrom` is required when a node has no direct source range. It records
 the owning source/core node, generated-origin kind, normalized key, and reason.
+When a `GeneratedFrom` marker names an item owner, its `(owner, kind, key)` must
+correspond to exactly one `GeneratedOrigin` row. Generated-origin rows are
+unique by owner item, kind, and normalized key. Stable-choice terms still lower
+to ordinary `Apply(choice_T(...))` terms; the `GeneratedOrigin` row records the
+generated symbol and evidence, not a magic term node.
 
 Source maps are required data, not debug extras. Task 3 tests must ensure every
 node reachable from `CoreItem`s maps to direct source or carries
@@ -523,8 +541,8 @@ struct CoreDiagnostic {
 public diagnostic code. Diagnostic rows are ordered by primary source range,
 owner node, class, message key, and dense id tie-breaker. Related source refs
 are sorted by phase, source range, and provenance. Error nodes must reference a
-diagnostic row whose primary source or `GeneratedFrom` marker explains the
-failed lowering site.
+diagnostic row whose owner node, primary source, or `GeneratedFrom` marker
+explains the failed lowering site.
 
 Error nodes preserve invalid lowering sites without turning them into valid
 logical terms or formulas. Downstream phases must treat `Error` nodes and

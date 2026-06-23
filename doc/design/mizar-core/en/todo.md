@@ -18,7 +18,7 @@ architecture 06 and 16.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| core_ir | `core_ir.md` (task 2) | `src/core_ir.rs` | [ ] |
+| core_ir | `core_ir.md` (task 2) | `src/core_ir.rs` | [x] |
 | binder_normalization | `binder_normalization.md` (task 4) | `src/binder_normalization.rs` | [ ] |
 | elaborator | `elaborator.md` (task 7) | `src/elaborator.rs` | [ ] |
 | control_flow | `control_flow.md` (task 14) | `src/control_flow.rs` | [ ] |
@@ -92,7 +92,7 @@ Keep `cargo test -p mizar-core` green after each task (see
    - Deps: 1. Spec: architecture 06 "Interface Definitions",
      [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
 
-3. **Implement `core_ir` data shapes.** [ ]
+3. **Implement `core_ir` data shapes.** [x]
    - Implement the core item/term/formula/proof structures and the source
      map per task 2, plus a deterministic debug rendering.
    - Tests: construction round-trips; every node reachable from items maps

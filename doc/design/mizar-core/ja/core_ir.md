@@ -79,6 +79,7 @@ struct CoreIr {
     formulas: CoreFormulaTable,
     definitions: CoreDefinitionTable,
     proofs: CoreProofTable,
+    proof_nodes: CoreProofNodeTable,
     algorithms: CoreAlgorithmTable,
     algorithm_statements: CoreAlgorithmStmtTable,
     generated: GeneratedOriginTable,
@@ -263,10 +264,17 @@ struct CoreProof {
     source: CoreSourceRef,
 }
 
+enum CoreProofStatus {
+    Open,
+    Assumed,
+    Conditional,
+    Error,
+}
+
 enum CoreProofNodeKind {
     IntroduceBinder { binder: CoreBinder, child: CoreProofNodeId },
-    Assume { label: Option<LabelRef>, formula: CoreFormulaId, child: CoreProofNodeId },
-    Step { label: Option<LabelRef>, formula: CoreFormulaId, justification: CoreJustification },
+    Assume { label: Option<CoreLabelRef>, formula: CoreFormulaId, child: CoreProofNodeId },
+    Step { label: Option<CoreLabelRef>, formula: CoreFormulaId, justification: CoreJustification },
     Branch { kind: ProofBranchKind, children: Vec<CoreProofNodeId> },
     TerminalGoal(ObligationSeedId),
     Error(CoreDiagnosticId),
@@ -280,6 +288,8 @@ enum CoreProofNodeKind {
   保持する。core は ATP premise selection を決めない。
 - `open`、`assumed`、`conditional` status は policy input として保持する。core は proof
   を accept/reject しない。
+- `error` は recovery status に限る。malformed proof skeleton input を記録するが、
+  proof を accept/reject しない。
 - terminal proof obligation はすべて `ObligationSeedId`。
 
 ### algorithm shell
@@ -315,6 +325,9 @@ generated VC は含めない。
 
 `CoreAlgorithmStmtTable` は `CoreAlgorithm.statements` が参照する source-ordered
 statement-shell row を所有する。
+直接列挙された statement と `If`、`While`、`Match` arm からネストして参照される
+statement は、すべて containing `CoreAlgorithmId` と同じ `owner` を持たなければならない。
+phase 10 は `ControlFlowIr` 構築時にこの owner 関係を信頼してよい。
 
 ```rust
 struct CoreAlgorithmStmt {
@@ -383,7 +396,7 @@ struct ObligationSeed {
     local_path: LocalProofOrProgramPath,
     label: Option<CoreLabelRef>,
     semantic_origin: NormalizedSemanticOrigin,
-    provenance: CoreProvenance,
+    provenance: Vec<CoreProvenance>,
     source: CoreSourceRef,
     core_refs: Vec<CoreNodeRef>,
     status: ObligationSeedStatus,
@@ -463,6 +476,11 @@ struct CoreSourceMap {
 
 node が direct source range を持たない場合、`GeneratedFrom` が必須である。これは owning
 source/core node、generated-origin kind、normalized key、reason を記録する。
+`GeneratedFrom` marker が item owner を名指す場合、その `(owner, kind, key)` は
+ちょうど 1 つの `GeneratedOrigin` row に対応しなければならない。`GeneratedOrigin` row は
+owner item、kind、normalized key により一意である。stable choice term は引き続き通常の
+`Apply(choice_T(...))` term へ lower し、`GeneratedOrigin` row は magic term node ではなく
+generated symbol と evidence を記録する。
 
 source map は debug extra ではなく必須 data である。task 3 の test は `CoreItem` から
 到達可能なすべての node が direct source または `GeneratedFrom` を持つことを確認する。
@@ -499,8 +517,9 @@ struct CoreDiagnostic {
 `message_key` は test と debug rendering 用の crate-local stable key であり、public
 diagnostic code ではない。diagnostic row は primary source range、owner node、class、
 message key、dense id tie-breaker により並ぶ。related source ref は phase、source
-range、provenance で sort する。error node は failed lowering site を説明する primary
-source または `GeneratedFrom` marker を持つ diagnostic row を参照しなければならない。
+range、provenance で sort する。error node は failed lowering site を説明する owner
+node、primary source、または `GeneratedFrom` marker を持つ diagnostic row を参照
+しなければならない。
 
 Error node は invalid lowering site を保持するが、それを valid logical term/formula に
 変えてはならない。downstream phase は `Error` node と skipped/partial item を
