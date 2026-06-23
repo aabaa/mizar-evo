@@ -557,7 +557,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       link と comparison basis を記録し、各 pair の sync debt を `none` と記録する。
       `tests/lint_policy.rs` は今後の pair inventory drift を guard する。
 
-34. **module 境界リファクタリング gate。** [ ]
+34. **module 境界リファクタリング gate。** [x]
     - crate を下流 consumer 向けに完了扱いにする前に、source layout を監査し、
       oversized file、混在した責務、module table と module spec 境界に沿って
       分割すべき private helper を洗い出す。review bottleneck になった実装
@@ -569,6 +569,12 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       spec task を要求する。
     - 依存: 33。仕様: 本 TODO、
       [internal 07](../../internal/ja/07.crate_module_layout.md)、全モジュール仕様。
+    - task 34 で完了: [module_boundary_audit.md](./module_boundary_audit.md) は
+      現在の checker Rust source / test-support file すべてを line count、boundary
+      label、owning specification、split decision、hard-gate status とともに
+      inventory する。必須の behavior-neutral split はない。大きい cohesive file は
+      monitored ergonomics note のみであり、`tests/lint_policy.rs` が今後の
+      source-layout audit drift を guard する。
 
 ## 推奨検証
 

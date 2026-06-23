@@ -343,7 +343,7 @@ Correspondence:
 
 | Evidence | Coverage |
 |---|---|
-| `crates/mizar-checker/tests/lint_policy.rs` | Workspace lint opt-in, dependency boundary, no direct syntax imports, documented public modules, explicit overload/resolved-AST boundary guards, public enum forward-compatibility policy, source/spec audit public-surface and MC-G reconciliation guard, bilingual documentation sync pair-inventory / companion-link guard, and documented `allow` exceptions. |
+| `crates/mizar-checker/tests/lint_policy.rs` | Workspace lint opt-in, dependency boundary, no direct syntax imports, documented public modules, explicit overload/resolved-AST boundary guards, public enum forward-compatibility policy, source/spec audit public-surface and MC-G reconciliation guard, bilingual documentation sync pair-inventory / companion-link guard, module-boundary source-layout guard, and documented `allow` exceptions. |
 | `crates/mizar-checker/src/determinism_suite.rs` | Cross-module deterministic reruns and equivalent-order permutations for type normalization, fact queries, cluster closure, overload pipeline, and final `ResolvedTypedAst` projection. |
 | Unit tests in each source module | Task-local behavior tests over explicit checker-owned payloads. These are the active executable coverage for implemented checker seams until source-to-checker extraction and later semantic corpus runners exist. |
 | `tests/coverage/spec_trace.toml` deferred rows | Records formula/statement, cluster/reduction, overload/refinement, and review-audit semantic corpus obligations without pretending they are active fixtures. |
@@ -396,6 +396,7 @@ and no reopened source/spec mismatch in this audit.
 
 Task 32 is complete when this English audit and its Japanese companion are
 committed with the crate plan, todo updates, and the lint-policy audit guard.
-The audit does not claim crate completion; task 33 has since recorded the
-bilingual synchronization audit, and task 34 still needs the module-boundary
-refactor gate review before the final crate exit report.
+The audit does not claim crate completion; tasks 33 and 34 have since recorded
+the bilingual synchronization audit and module-boundary refactor gate. The
+crate exit report and read-only quality review still need to close the
+autonomous crate development protocol.

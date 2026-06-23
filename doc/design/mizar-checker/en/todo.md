@@ -590,7 +590,7 @@ Keep `cargo test -p mizar-checker` green after each task (see
       for each pair, and `tests/lint_policy.rs` guards future pair inventory
       drift.
 
-34. **Module-boundary refactor gate.** [ ]
+34. **Module-boundary refactor gate.** [x]
     - Before treating the crate as ready for downstream consumers, audit the
       source layout for oversized files, mixed responsibilities, and private
       helpers that should be split along the module table and spec boundaries.
@@ -604,6 +604,12 @@ Keep `cargo test -p mizar-checker` green after each task (see
     - Deps: 33. Spec: this TODO,
       [internal 07](../../internal/en/07.crate_module_layout.md), all module
       specs.
+    - Completed by task 34: [module_boundary_audit.md](./module_boundary_audit.md)
+      inventories every current checker Rust source/test-support file with
+      line count, boundary label, owning specification, split decision, and
+      hard-gate status. No behavior-neutral split is required; large cohesive
+      files are monitored ergonomics notes only, and `tests/lint_policy.rs`
+      guards future source-layout audit drift.
 
 ## Recommended Verification
 

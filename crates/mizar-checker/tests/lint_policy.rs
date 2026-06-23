@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     fs,
     path::{Path, PathBuf},
 };
@@ -520,6 +520,119 @@ fn checker_bilingual_sync_audit_covers_design_doc_pairs() {
     assert!(
         violations.is_empty(),
         "checker bilingual documentation sync audit drift:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn checker_module_boundary_audit_covers_source_layout() {
+    let root = crate_root();
+    let docs_root = workspace_root().join("doc/design/mizar-checker");
+    let expected_files = checker_rust_target_files(&root)
+        .into_iter()
+        .map(|path| {
+            let relative = relative_path_string(&root, &path);
+            let lines = read_to_string(&path).lines().count();
+            (relative, lines)
+        })
+        .collect::<BTreeMap<_, _>>();
+    let required_classes = [
+        "spec_gap",
+        "test_gap",
+        "design_drift",
+        "source_drift",
+        "source_undocumented_behavior",
+        "boundary_violation",
+        "external_dependency_gap",
+        "deferred",
+    ];
+    let mut violations = Vec::new();
+
+    for audit_path in [
+        docs_root.join("en/module_boundary_audit.md"),
+        docs_root.join("ja/module_boundary_audit.md"),
+    ] {
+        let audit = read_to_string(&audit_path);
+        if !audit.contains("## Split Gate") {
+            violations.push(format!(
+                "{}: module-boundary audit must contain `## Split Gate`",
+                audit_path.display()
+            ));
+        }
+        let rows = module_boundary_audit_rows(&audit_path, &audit, &mut violations);
+        push_source_layout_inventory_drift(&audit_path, &expected_files, &rows, &mut violations);
+
+        for row in &rows {
+            if let Some(expected_lines) = expected_files.get(&row.path)
+                && row.lines != *expected_lines
+            {
+                violations.push(format!(
+                    "{}: Source Layout Inventory row `{}` must record {expected_lines} lines, not {}",
+                    audit_path.display(),
+                    row.path,
+                    row.lines
+                ));
+            }
+            if row.boundary_label.trim().is_empty() {
+                violations.push(format!(
+                    "{}: Source Layout Inventory row `{}` must record a boundary label",
+                    audit_path.display(),
+                    row.path
+                ));
+            }
+            if row.owning_specification.trim().is_empty() {
+                violations.push(format!(
+                    "{}: Source Layout Inventory row `{}` must record an owning specification",
+                    audit_path.display(),
+                    row.path
+                ));
+            }
+            if row.split_required != "no" {
+                violations.push(format!(
+                    "{}: Source Layout Inventory row `{}` must not leave a required split unresolved: {}",
+                    audit_path.display(),
+                    row.path,
+                    row.split_required
+                ));
+            }
+            if row.hard_gate_finding != "no" {
+                violations.push(format!(
+                    "{}: Source Layout Inventory row `{}` must not leave a hard-gate finding unresolved: {}",
+                    audit_path.display(),
+                    row.path,
+                    row.hard_gate_finding
+                ));
+            }
+            if row.decision.trim().is_empty() {
+                violations.push(format!(
+                    "{}: Source Layout Inventory row `{}` must record a decision",
+                    audit_path.display(),
+                    row.path
+                ));
+            }
+        }
+
+        let classification = markdown_heading_section(&audit, "## Task 34 Classification")
+            .unwrap_or_else(|| {
+                panic!(
+                    "{} must contain `## Task 34 Classification`",
+                    audit_path.display()
+                )
+            });
+        for class in required_classes {
+            let needle = format!("| `{class}` |");
+            if !classification.contains(&needle) {
+                violations.push(format!(
+                    "{}: Task 34 Classification must include `{class}`",
+                    audit_path.display()
+                ));
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "checker module-boundary audit drift:\n{}",
         violations.join("\n")
     );
 }
@@ -1096,6 +1209,130 @@ fn push_bilingual_pair_inventory_drift(
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ModuleBoundaryAuditRow {
+    path: String,
+    lines: usize,
+    boundary_label: String,
+    owning_specification: String,
+    split_required: String,
+    hard_gate_finding: String,
+    decision: String,
+}
+
+fn module_boundary_audit_rows(
+    path: &Path,
+    document: &str,
+    violations: &mut Vec<String>,
+) -> Vec<ModuleBoundaryAuditRow> {
+    let Some(section) = markdown_heading_section(document, "## Source Layout Inventory") else {
+        violations.push(format!(
+            "{}: module-boundary audit must contain `## Source Layout Inventory`",
+            path.display()
+        ));
+        return Vec::new();
+    };
+    let mut rows = Vec::new();
+    let mut saw_header = false;
+    let mut saw_delimiter = false;
+
+    for line in section.lines() {
+        let Some(cells) = markdown_table_cells(line) else {
+            continue;
+        };
+        if cells
+            == [
+                "Path",
+                "Lines",
+                "Boundary label",
+                "Owning specification",
+                "Split required",
+                "Hard-gate finding",
+                "Decision",
+            ]
+        {
+            saw_header = true;
+            continue;
+        }
+        if cells == ["---", "---:", "---", "---", "---", "---", "---"] {
+            saw_delimiter = true;
+            continue;
+        }
+        if cells.len() != 7 {
+            violations.push(format!(
+                "{}: Source Layout Inventory row must have exactly 7 columns: {}",
+                path.display(),
+                line.trim()
+            ));
+            continue;
+        }
+        let Some(row_path) = single_code_span(&cells[0]) else {
+            violations.push(format!(
+                "{}: Source Layout Inventory path must be a code-spanned relative path: {}",
+                path.display(),
+                line.trim()
+            ));
+            continue;
+        };
+        let Ok(lines) = cells[1].parse::<usize>() else {
+            violations.push(format!(
+                "{}: Source Layout Inventory row `{row_path}` must record a numeric line count",
+                path.display()
+            ));
+            continue;
+        };
+        rows.push(ModuleBoundaryAuditRow {
+            path: row_path,
+            lines,
+            boundary_label: cells[2].clone(),
+            owning_specification: cells[3].clone(),
+            split_required: cells[4].clone(),
+            hard_gate_finding: cells[5].clone(),
+            decision: cells[6].clone(),
+        });
+    }
+
+    if !saw_header {
+        violations.push(format!(
+            "{}: Source Layout Inventory must use exact header `| Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |`",
+            path.display()
+        ));
+    }
+    if !saw_delimiter {
+        violations.push(format!(
+            "{}: Source Layout Inventory must use exact delimiter `|---|---:|---|---|---|---|---|`",
+            path.display()
+        ));
+    }
+
+    rows
+}
+
+fn push_source_layout_inventory_drift(
+    path: &Path,
+    expected: &BTreeMap<String, usize>,
+    rows: &[ModuleBoundaryAuditRow],
+    violations: &mut Vec<String>,
+) {
+    let actual = rows.iter().map(|row| row.path.clone()).collect::<Vec<_>>();
+    let actual_set = actual.iter().cloned().collect::<BTreeSet<_>>();
+    let expected_set = expected.keys().cloned().collect::<BTreeSet<_>>();
+    push_duplicate_entries(path, "Source Layout Inventory rows", &actual, violations);
+
+    for missing in expected_set.difference(&actual_set) {
+        violations.push(format!(
+            "{}: Source Layout Inventory must include `{missing}`",
+            path.display()
+        ));
+    }
+    for stale in actual_set.difference(&expected_set) {
+        violations.push(format!(
+            "{}: Source Layout Inventory must not include stale `{stale}`",
+            path.display()
+        ));
+    }
+}
+
 fn push_duplicate_entries(
     path: &Path,
     label: &str,
@@ -1517,6 +1754,13 @@ fn checker_rust_target_files(root: &Path) -> Vec<PathBuf> {
     }
     files.sort();
     files
+}
+
+fn relative_path_string(root: &Path, path: &Path) -> String {
+    path.strip_prefix(root)
+        .unwrap_or(path)
+        .to_string_lossy()
+        .replace('\\', "/")
 }
 
 fn checker_src_files(root: &Path) -> Vec<PathBuf> {
