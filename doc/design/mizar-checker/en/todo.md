@@ -472,13 +472,26 @@ Keep `cargo test -p mizar-checker` green after each task (see
       payloads. It does not derive facts, inspect result types for ordering,
       apply root-selection tie-breakers, join refinements, or insert views.
 
-26. **Root selection, refinement joins, and view insertion.** [ ]
+26. **Root selection, refinement joins, and view insertion.** [x]
     - Select overload roots, join coherent refinement groups, insert `qua`
       views, and preserve failed sites explicitly (architecture 05 Step 5).
     - Tests: selection fixtures including strongest-type, attribute-union, and
       incompatible refinement joins; ambiguity diagnostics with candidate
-      lists; failed sites never become valid output.
+      lists; missing/duplicate/unknown/blocked payload diagnostics; missing or
+      ambiguous ordinary-root candidate diagnostics; deterministic selection
+      rendering; failed sites never become valid output.
     - Deps: 25. Spec: `overload_resolution.md` (selection/views sections).
+    - Completed by task 26: `OverloadSelectionOutput::resolve` consumes
+      `SpecificityGraphOutput` and explicit checker-owned selection payloads.
+      It selects a unique maximal non-redefinition ordinary root candidate from
+      per-site graphs, records `NoMatch`, `Ambiguous`,
+      `IncompatibleRefinementJoin`, and blocked sites as failed outputs,
+      validates same-root redefinition payloads with accepted coherence,
+      accepts strongest-result and attribute-union exposed result metadata only
+      after root selection, records accepted widening/source-`qua` inserted views,
+      and rejects non-selected refinements, missing payloads, narrowing/missing
+      view evidence, or blocked specificity graphs without fabricating success
+      or applying additional root-selection tie-breakers.
 
 27. **Spec: `resolved_typed_ast.md`.** [ ]
     - Write the `ResolvedTypedAst` data-shape spec (English and Japanese, no

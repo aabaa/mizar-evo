@@ -62,6 +62,8 @@ dense_id!(CandidateViabilityId);
 dense_id!(SpecificityGraphId);
 dense_id!(SpecificityComparisonId);
 dense_id!(SpecificityEdgeId);
+dense_id!(OverloadResultId);
+dense_id!(InsertedViewId);
 
 string_key!(OverloadSiteKey);
 string_key!(OverloadNameKey);
@@ -72,6 +74,8 @@ string_key!(TemplateParameterKey);
 string_key!(QuaPathKey);
 string_key!(ViabilityEvidenceKey);
 string_key!(SpecificityReasonKey);
+string_key!(SelectionReasonKey);
+string_key!(InsertedViewReasonKey);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OverloadCollectionOutput {
@@ -209,6 +213,42 @@ impl SpecificityGraphOutput {
         let mut output = String::from("specificity-graph-debug-v1\n");
         write_candidates(&mut output, &self.candidates);
         write_specificity_graphs(&mut output, &self.graphs);
+        write_diagnostics(&mut output, &self.diagnostics);
+        output
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OverloadSelectionOutput {
+    results: OverloadResultTable,
+    inserted_views: InsertedViewTable,
+    diagnostics: OverloadDiagnosticTable,
+}
+
+impl OverloadSelectionOutput {
+    pub fn resolve(
+        graphs: &SpecificityGraphOutput,
+        inputs: impl IntoIterator<Item = OverloadSiteResolutionInput>,
+    ) -> Self {
+        OverloadSelectionBuilder::new(graphs, inputs).finish()
+    }
+
+    pub const fn results(&self) -> &OverloadResultTable {
+        &self.results
+    }
+
+    pub const fn inserted_views(&self) -> &InsertedViewTable {
+        &self.inserted_views
+    }
+
+    pub const fn diagnostics(&self) -> &OverloadDiagnosticTable {
+        &self.diagnostics
+    }
+
+    pub fn debug_text(&self) -> String {
+        let mut output = String::from("overload-selection-debug-v1\n");
+        write_overload_results(&mut output, &self.results);
+        write_inserted_views(&mut output, &self.inserted_views);
         write_diagnostics(&mut output, &self.diagnostics);
         output
     }
@@ -957,6 +997,222 @@ pub enum SpecificityFailureReason {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OverloadSiteResolutionInput {
+    pub site: OverloadSiteId,
+    pub refinements: Vec<OverloadCandidateId>,
+    pub refinement_join: RefinementJoinPayload,
+    pub inserted_views: Vec<InsertedViewInput>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RefinementJoinPayload {
+    pub status: RefinementJoinStatus,
+    pub exposed_result: Option<ExposedResultPayload>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum RefinementJoinStatus {
+    Compatible,
+    Incompatible(RefinementJoinFailure),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum RefinementJoinFailure {
+    IncompatibleResultRadix,
+    ContradictoryAttributes,
+    NoUniqueJoinedType,
+    MissingJoinPayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExposedResultPayload {
+    pub result: Option<NormalizedTypeId>,
+    pub source: ExposedResultSource,
+    pub evidence: Vec<TypeFactId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum ExposedResultSource {
+    SelectedRoot,
+    StrongestRefinement,
+    AttributeUnion,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InsertedViewInput {
+    pub argument: TypedSiteRef,
+    pub target: NormalizedTypeId,
+    pub selected_candidate: OverloadCandidateId,
+    pub kind: InsertedViewKind,
+    pub status: InsertedViewStatus,
+    pub reason: InsertedViewReasonKey,
+    pub evidence_facts: Vec<TypeFactId>,
+    pub path: Option<QuaPathKey>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum InsertedViewKind {
+    Widening,
+    SourceQua,
+    Narrowing,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum InsertedViewStatus {
+    Accepted,
+    MissingEvidence,
+    AmbiguousPath,
+    Rejected,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OverloadResult {
+    pub id: OverloadResultId,
+    pub site: OverloadSiteId,
+    pub graph: SpecificityGraphId,
+    pub status: OverloadResultStatus,
+    pub diagnostics: Vec<OverloadDiagnosticId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct OverloadResultTable {
+    entries: Vec<OverloadResult>,
+}
+
+impl OverloadResultTable {
+    pub const fn new() -> Self {
+        Self {
+            entries: Vec::new(),
+        }
+    }
+
+    pub fn get(&self, id: OverloadResultId) -> Option<&OverloadResult> {
+        self.entries.get(id.index())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (OverloadResultId, &OverloadResult)> {
+        self.entries.iter().map(|entry| (entry.id, entry))
+    }
+
+    pub fn canonical_iter(&self) -> impl Iterator<Item = (OverloadResultId, &OverloadResult)> {
+        let mut entries = self.entries.iter().collect::<Vec<_>>();
+        entries.sort_by_key(|entry| overload_result_order_key(entry));
+        entries.into_iter().map(|entry| (entry.id, entry))
+    }
+
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    fn push(&mut self, result: OverloadResult) {
+        self.entries.push(result);
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum OverloadResultStatus {
+    Resolved {
+        root: OverloadCandidateId,
+        refinements: Vec<OverloadCandidateId>,
+        exposed_result: Option<ExposedResultPayload>,
+        inserted_views: Vec<InsertedViewId>,
+    },
+    NoMatch {
+        rejected: Vec<OverloadCandidateId>,
+    },
+    Ambiguous {
+        candidates: Vec<OverloadCandidateId>,
+    },
+    IncompatibleRefinementJoin {
+        root: OverloadCandidateId,
+        refinements: Vec<OverloadCandidateId>,
+        reason: RefinementJoinFailure,
+    },
+    Blocked {
+        reason: OverloadBlockedReason,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum OverloadBlockedReason {
+    BlockedSpecificityComparison,
+    AmbiguousSelection,
+    MissingSelectionPayload,
+    DuplicateSelectionPayload,
+    UnknownSelectionSite,
+    MissingOrdinaryRootCandidate,
+    AmbiguousOrdinaryRootCandidate,
+    NonSelectedRootPayload,
+    InvalidInsertedView,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InsertedView {
+    pub id: InsertedViewId,
+    pub site: OverloadSiteId,
+    pub argument: TypedSiteRef,
+    pub target: NormalizedTypeId,
+    pub selected_candidate: OverloadCandidateId,
+    pub kind: InsertedViewKind,
+    pub reason: InsertedViewReasonKey,
+    pub evidence_facts: Vec<TypeFactId>,
+    pub path: Option<QuaPathKey>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct InsertedViewTable {
+    entries: Vec<InsertedView>,
+}
+
+impl InsertedViewTable {
+    pub const fn new() -> Self {
+        Self {
+            entries: Vec::new(),
+        }
+    }
+
+    pub fn get(&self, id: InsertedViewId) -> Option<&InsertedView> {
+        self.entries.get(id.index())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (InsertedViewId, &InsertedView)> {
+        self.entries.iter().map(|entry| (entry.id, entry))
+    }
+
+    pub fn canonical_iter(&self) -> impl Iterator<Item = (InsertedViewId, &InsertedView)> {
+        let mut entries = self.entries.iter().collect::<Vec<_>>();
+        entries.sort_by_key(|entry| inserted_view_order_key(entry));
+        entries.into_iter().map(|entry| (entry.id, entry))
+    }
+
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    fn insert(&mut self, mut view: InsertedView) -> InsertedViewId {
+        let id = InsertedViewId::new(self.entries.len());
+        view.id = id;
+        self.entries.push(view);
+        id
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OverloadDiagnostic {
     pub id: OverloadDiagnosticId,
     pub site: Option<OverloadSiteId>,
@@ -1066,6 +1322,7 @@ pub enum OverloadDiagnosticClass {
     TemplateExpansion,
     Viability,
     Specificity,
+    Selection,
     Recovery,
     ExternalDependencyGap,
 }
@@ -1140,6 +1397,18 @@ type CandidateViabilityOrderKey = (usize, usize);
 type SpecificityGraphOrderKey = (usize, usize);
 type SpecificityComparisonKey = (usize, usize);
 type SpecificityEdgeOrderKey = (usize, usize, usize);
+type OverloadResultOrderKey = (usize, usize);
+type InsertedViewOrderKey = (usize, usize, usize);
+type InsertedViewInputOrderKey = (
+    SiteRefOrderKey,
+    usize,
+    usize,
+    InsertedViewKind,
+    InsertedViewStatus,
+    String,
+    u8,
+    String,
+);
 
 struct SiteInputWithOrder {
     input: OverloadSiteInput,
@@ -2567,6 +2836,390 @@ fn specificity_comparison_key(
     }
 }
 
+struct OverloadSelectionBuilder {
+    graphs: SpecificityGraphOutput,
+    inputs: BTreeMap<OverloadSiteId, OverloadSiteResolutionInput>,
+    duplicate_inputs: BTreeSet<OverloadSiteId>,
+    results: OverloadResultTable,
+    inserted_views: InsertedViewTable,
+    diagnostics: OverloadDiagnosticTable,
+}
+
+impl OverloadSelectionBuilder {
+    fn new(
+        graphs: &SpecificityGraphOutput,
+        inputs: impl IntoIterator<Item = OverloadSiteResolutionInput>,
+    ) -> Self {
+        let mut input_map = BTreeMap::new();
+        let mut duplicate_inputs = BTreeSet::new();
+        for input in inputs {
+            let site = input.site;
+            if input_map.insert(site, input).is_some() {
+                duplicate_inputs.insert(site);
+            }
+        }
+        Self {
+            graphs: graphs.clone(),
+            inputs: input_map,
+            duplicate_inputs,
+            results: OverloadResultTable::new(),
+            inserted_views: InsertedViewTable::new(),
+            diagnostics: graphs.diagnostics().clone(),
+        }
+    }
+
+    fn finish(mut self) -> OverloadSelectionOutput {
+        self.insert_unknown_input_diagnostics();
+        let graphs = self
+            .graphs
+            .graphs()
+            .canonical_iter()
+            .map(|(_, graph)| graph.clone())
+            .collect::<Vec<_>>();
+        for graph in graphs {
+            self.resolve_graph(&graph);
+        }
+        OverloadSelectionOutput {
+            results: self.results,
+            inserted_views: self.inserted_views,
+            diagnostics: self.diagnostics,
+        }
+    }
+
+    fn insert_unknown_input_diagnostics(&mut self) {
+        let graph_sites = self
+            .graphs
+            .graphs()
+            .iter()
+            .map(|(_, graph)| graph.site)
+            .collect::<BTreeSet<_>>();
+        let unknown_sites = self
+            .inputs
+            .keys()
+            .filter(|site| !graph_sites.contains(site))
+            .copied()
+            .collect::<Vec<_>>();
+        for _site in unknown_sites {
+            self.insert_selection_diagnostic(None, OverloadBlockedReason::UnknownSelectionSite);
+        }
+    }
+
+    fn resolve_graph(&mut self, graph: &SpecificityGraph) {
+        let result_id = OverloadResultId::new(self.results.len());
+        let (status, diagnostics) = self.resolve_graph_status(graph);
+        self.results.push(OverloadResult {
+            id: result_id,
+            site: graph.site,
+            graph: graph.id,
+            status,
+            diagnostics,
+        });
+    }
+
+    fn resolve_graph_status(
+        &mut self,
+        graph: &SpecificityGraph,
+    ) -> (OverloadResultStatus, Vec<OverloadDiagnosticId>) {
+        if self.duplicate_inputs.contains(&graph.site) {
+            let diagnostic = self.insert_selection_diagnostic(
+                Some(graph.site),
+                OverloadBlockedReason::DuplicateSelectionPayload,
+            );
+            return (
+                OverloadResultStatus::Blocked {
+                    reason: OverloadBlockedReason::DuplicateSelectionPayload,
+                },
+                vec![diagnostic],
+            );
+        }
+
+        if graph.nodes.is_empty() {
+            return (
+                OverloadResultStatus::NoMatch {
+                    rejected: Vec::new(),
+                },
+                Vec::new(),
+            );
+        }
+
+        if graph
+            .comparisons
+            .iter()
+            .any(|comparison| matches!(comparison.status, SpecificityComparisonOutcome::Blocked(_)))
+        {
+            let diagnostic = self.insert_selection_diagnostic(
+                Some(graph.site),
+                OverloadBlockedReason::BlockedSpecificityComparison,
+            );
+            return (
+                OverloadResultStatus::Blocked {
+                    reason: OverloadBlockedReason::BlockedSpecificityComparison,
+                },
+                vec![diagnostic],
+            );
+        }
+
+        let maximal = maximal_candidates(graph);
+        let maximal_non_redefinition_roots = maximal
+            .iter()
+            .filter_map(|candidate| {
+                graph
+                    .nodes
+                    .iter()
+                    .find(|node| node.candidate == *candidate)
+                    .filter(|node| !matches!(node.origin, CandidateOrigin::Redefinition { .. }))
+                    .map(|node| node.ordinary_root.clone())
+            })
+            .collect::<BTreeSet<_>>();
+        if maximal.iter().any(|candidate| {
+            graph.nodes.iter().any(|node| {
+                node.candidate == *candidate
+                    && matches!(node.origin, CandidateOrigin::Redefinition { .. })
+                    && !maximal_non_redefinition_roots.contains(&node.ordinary_root)
+            })
+        }) {
+            let diagnostic = self.insert_selection_diagnostic(
+                Some(graph.site),
+                OverloadBlockedReason::MissingOrdinaryRootCandidate,
+            );
+            return (
+                OverloadResultStatus::Blocked {
+                    reason: OverloadBlockedReason::MissingOrdinaryRootCandidate,
+                },
+                vec![diagnostic],
+            );
+        }
+        if maximal_non_redefinition_roots.len() > 1 {
+            let diagnostic = self.insert_selection_diagnostic(
+                Some(graph.site),
+                OverloadBlockedReason::AmbiguousSelection,
+            );
+            return (
+                OverloadResultStatus::Ambiguous {
+                    candidates: maximal,
+                },
+                vec![diagnostic],
+            );
+        }
+
+        let root = match choose_selected_root(graph, &maximal) {
+            Ok(root) => root,
+            Err(reason) => {
+                let diagnostic = self.insert_selection_diagnostic(Some(graph.site), reason.clone());
+                return (OverloadResultStatus::Blocked { reason }, vec![diagnostic]);
+            }
+        };
+
+        let Some(mut input) = self.inputs.get(&graph.site).cloned() else {
+            let diagnostic = self.insert_selection_diagnostic(
+                Some(graph.site),
+                OverloadBlockedReason::MissingSelectionPayload,
+            );
+            return (
+                OverloadResultStatus::Blocked {
+                    reason: OverloadBlockedReason::MissingSelectionPayload,
+                },
+                vec![diagnostic],
+            );
+        };
+        input.refinements.sort_by_key(|candidate| candidate.index());
+        input
+            .inserted_views
+            .sort_by_key(inserted_view_input_order_key);
+
+        let selected_root = graph
+            .nodes
+            .iter()
+            .find(|node| node.candidate == root)
+            .map(|node| node.ordinary_root.clone())
+            .expect("selected root node");
+        if !input.refinements.iter().all(|candidate| {
+            self.is_active_refinement_candidate(graph, *candidate, &selected_root, root)
+        }) {
+            let diagnostic = self.insert_selection_diagnostic(
+                Some(graph.site),
+                OverloadBlockedReason::NonSelectedRootPayload,
+            );
+            return (
+                OverloadResultStatus::Blocked {
+                    reason: OverloadBlockedReason::NonSelectedRootPayload,
+                },
+                vec![diagnostic],
+            );
+        }
+
+        if let RefinementJoinStatus::Incompatible(reason) = input.refinement_join.status {
+            let diagnostic = self.insert_refinement_diagnostic(Some(graph.site), &reason);
+            return (
+                OverloadResultStatus::IncompatibleRefinementJoin {
+                    root,
+                    refinements: input.refinements,
+                    reason,
+                },
+                vec![diagnostic],
+            );
+        }
+
+        let Some(inserted_views) = self.insert_views(graph.site, root, &input) else {
+            let diagnostic = self.insert_selection_diagnostic(
+                Some(graph.site),
+                OverloadBlockedReason::InvalidInsertedView,
+            );
+            return (
+                OverloadResultStatus::Blocked {
+                    reason: OverloadBlockedReason::InvalidInsertedView,
+                },
+                vec![diagnostic],
+            );
+        };
+
+        (
+            OverloadResultStatus::Resolved {
+                root,
+                refinements: input.refinements,
+                exposed_result: input.refinement_join.exposed_result,
+                inserted_views,
+            },
+            Vec::new(),
+        )
+    }
+
+    fn insert_views(
+        &mut self,
+        site: OverloadSiteId,
+        root: OverloadCandidateId,
+        input: &OverloadSiteResolutionInput,
+    ) -> Option<Vec<InsertedViewId>> {
+        let allowed_candidates = std::iter::once(root)
+            .chain(input.refinements.iter().copied())
+            .collect::<BTreeSet<_>>();
+        if input.inserted_views.iter().any(|view| {
+            !allowed_candidates.contains(&view.selected_candidate)
+                || view.kind == InsertedViewKind::Narrowing
+                || view.status != InsertedViewStatus::Accepted
+        }) {
+            return None;
+        }
+
+        let mut inserted = Vec::new();
+        for view in &input.inserted_views {
+            let id = self.inserted_views.insert(InsertedView {
+                id: InsertedViewId::new(0),
+                site,
+                argument: view.argument.clone(),
+                target: view.target,
+                selected_candidate: view.selected_candidate,
+                kind: view.kind,
+                reason: view.reason.clone(),
+                evidence_facts: view.evidence_facts.clone(),
+                path: view.path.clone(),
+            });
+            inserted.push(id);
+        }
+        Some(inserted)
+    }
+
+    fn is_active_refinement_candidate(
+        &self,
+        graph: &SpecificityGraph,
+        candidate: OverloadCandidateId,
+        selected_root: &SymbolId,
+        root: OverloadCandidateId,
+    ) -> bool {
+        graph.nodes.iter().any(|node| {
+            node.candidate == candidate
+                && node.candidate != root
+                && &node.ordinary_root == selected_root
+                && matches!(node.origin, CandidateOrigin::Redefinition { .. })
+        }) && self
+            .graphs
+            .candidates()
+            .get(candidate)
+            .is_some_and(|candidate| candidate.coherence == Some(CoherenceStatus::Accepted))
+    }
+
+    fn insert_selection_diagnostic(
+        &mut self,
+        site: Option<OverloadSiteId>,
+        reason: OverloadBlockedReason,
+    ) -> OverloadDiagnosticId {
+        self.diagnostics.insert(OverloadDiagnosticDraft {
+            site,
+            site_key: None,
+            candidate: None,
+            provenance: None,
+            class: OverloadDiagnosticClass::Selection,
+            severity: OverloadDiagnosticSeverity::Error,
+            message_key: OverloadDiagnosticMessageKey::new(format!(
+                "overload.selection.{}",
+                overload_blocked_reason_name(&reason)
+            )),
+            recovery: OverloadDiagnosticRecovery::Degraded,
+        })
+    }
+
+    fn insert_refinement_diagnostic(
+        &mut self,
+        site: Option<OverloadSiteId>,
+        reason: &RefinementJoinFailure,
+    ) -> OverloadDiagnosticId {
+        self.diagnostics.insert(OverloadDiagnosticDraft {
+            site,
+            site_key: None,
+            candidate: None,
+            provenance: None,
+            class: OverloadDiagnosticClass::Selection,
+            severity: OverloadDiagnosticSeverity::Error,
+            message_key: OverloadDiagnosticMessageKey::new(format!(
+                "overload.selection.refinement.{}",
+                refinement_join_failure_name(reason)
+            )),
+            recovery: OverloadDiagnosticRecovery::Degraded,
+        })
+    }
+}
+
+fn maximal_candidates(graph: &SpecificityGraph) -> Vec<OverloadCandidateId> {
+    let edges = graph
+        .edges
+        .iter()
+        .map(|edge| (edge.from, edge.to))
+        .collect::<BTreeSet<_>>();
+    graph
+        .nodes
+        .iter()
+        .filter(|node| {
+            !graph.nodes.iter().any(|other| {
+                other.candidate != node.candidate
+                    && edges.contains(&(other.candidate, node.candidate))
+                    && !edges.contains(&(node.candidate, other.candidate))
+            })
+        })
+        .map(|node| node.candidate)
+        .collect()
+}
+
+fn choose_selected_root(
+    graph: &SpecificityGraph,
+    maximal: &[OverloadCandidateId],
+) -> Result<OverloadCandidateId, OverloadBlockedReason> {
+    let roots = maximal
+        .iter()
+        .copied()
+        .filter(|candidate| {
+            graph.nodes.iter().any(|node| {
+                node.candidate == *candidate
+                    && !matches!(node.origin, CandidateOrigin::Redefinition { .. })
+            })
+        })
+        .collect::<Vec<_>>();
+    match roots.as_slice() {
+        [root] => Ok(*root),
+        [] => Err(OverloadBlockedReason::MissingOrdinaryRootCandidate),
+        _ => Err(OverloadBlockedReason::AmbiguousOrdinaryRootCandidate),
+    }
+}
+
 fn site_status(input: &OverloadSiteInput) -> OverloadSiteStatus {
     if !input.kind.is_supported() {
         OverloadSiteStatus::Deferred
@@ -2709,6 +3362,35 @@ fn specificity_graph_order_key(graph: &SpecificityGraph) -> SpecificityGraphOrde
 
 fn specificity_edge_order_key(edge: &SpecificityEdge) -> SpecificityEdgeOrderKey {
     (edge.from.index(), edge.to.index(), edge.id.index())
+}
+
+fn overload_result_order_key(result: &OverloadResult) -> OverloadResultOrderKey {
+    (result.site.index(), result.id.index())
+}
+
+fn inserted_view_order_key(view: &InsertedView) -> InsertedViewOrderKey {
+    (
+        view.site.index(),
+        view.argument.node().index(),
+        view.id.index(),
+    )
+}
+
+fn inserted_view_input_order_key(view: &InsertedViewInput) -> InsertedViewInputOrderKey {
+    let (path_missing, path) = view
+        .path
+        .as_ref()
+        .map_or_else(|| (1, String::new()), |path| (0, path.as_str().to_owned()));
+    (
+        site_ref_order_key(&view.argument),
+        view.selected_candidate.index(),
+        view.target.index(),
+        view.kind,
+        view.status,
+        view.reason.as_str().to_owned(),
+        path_missing,
+        path,
+    )
 }
 
 fn diagnostic_output_key(diagnostic: &OverloadDiagnostic) -> DiagnosticOutputOrderKey {
@@ -3143,6 +3825,106 @@ fn write_specificity_outcome(output: &mut String, outcome: &SpecificityCompariso
     }
 }
 
+fn write_overload_results(output: &mut String, results: &OverloadResultTable) {
+    output.push_str("overload_results:\n");
+    if results.is_empty() {
+        output.push_str("  <none>\n");
+        return;
+    }
+    for (id, result) in results.canonical_iter() {
+        let _ = write!(
+            output,
+            "  result#{} site=site#{} graph=graph#{} status=",
+            id.index(),
+            result.site.index(),
+            result.graph.index()
+        );
+        write_overload_result_status(output, &result.status);
+        output.push_str(" diagnostics=");
+        write_diagnostic_ids(output, &result.diagnostics);
+        output.push('\n');
+    }
+}
+
+fn write_overload_result_status(output: &mut String, status: &OverloadResultStatus) {
+    match status {
+        OverloadResultStatus::Resolved {
+            root,
+            refinements,
+            exposed_result,
+            inserted_views,
+        } => {
+            let _ = write!(output, "resolved(root=candidate#{}", root.index());
+            output.push_str(" refinements=");
+            write_candidate_ids(output, refinements);
+            output.push_str(" exposed_result=");
+            write_exposed_result_payload(output, exposed_result.as_ref());
+            output.push_str(" inserted_views=");
+            write_inserted_view_ids(output, inserted_views);
+            output.push(')');
+        }
+        OverloadResultStatus::NoMatch { rejected } => {
+            output.push_str("no_match(rejected=");
+            write_candidate_ids(output, rejected);
+            output.push(')');
+        }
+        OverloadResultStatus::Ambiguous { candidates } => {
+            output.push_str("ambiguous(candidates=");
+            write_candidate_ids(output, candidates);
+            output.push(')');
+        }
+        OverloadResultStatus::IncompatibleRefinementJoin {
+            root,
+            refinements,
+            reason,
+        } => {
+            let _ = write!(
+                output,
+                "incompatible_refinement_join(root=candidate#{} refinements=",
+                root.index()
+            );
+            write_candidate_ids(output, refinements);
+            let _ = write!(output, " reason={})", refinement_join_failure_name(reason));
+        }
+        OverloadResultStatus::Blocked { reason } => {
+            let _ = write!(
+                output,
+                "blocked(reason={})",
+                overload_blocked_reason_name(reason)
+            );
+        }
+    }
+}
+
+fn write_inserted_views(output: &mut String, views: &InsertedViewTable) {
+    output.push_str("inserted_views:\n");
+    if views.is_empty() {
+        output.push_str("  <none>\n");
+        return;
+    }
+    for (id, view) in views.canonical_iter() {
+        let _ = write!(
+            output,
+            "  view#{} site=site#{} argument={} target=",
+            id.index(),
+            view.site.index(),
+            site_ref_key(&view.argument)
+        );
+        write_type_id(output, view.target);
+        let _ = write!(
+            output,
+            " selected=candidate#{} kind={} reason=\"{}\" facts=",
+            view.selected_candidate.index(),
+            inserted_view_kind_name(view.kind),
+            escaped_display(view.reason.as_str())
+        );
+        write_fact_ids(output, &view.evidence_facts);
+        output.push_str(" path=");
+        write_optional_qua_path(output, view.path.as_ref());
+        output.push('\n');
+    }
+}
+
 fn write_specificity_reasons(output: &mut String, reasons: &[SpecificityReasonKey]) {
     output.push('[');
     for (index, reason) in reasons.iter().enumerate() {
@@ -3557,6 +4339,44 @@ fn write_fact_ids(output: &mut String, ids: &[TypeFactId]) {
     output.push(']');
 }
 
+fn write_candidate_ids(output: &mut String, ids: &[OverloadCandidateId]) {
+    output.push('[');
+    for (index, id) in ids.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(output, "candidate#{}", id.index());
+    }
+    output.push(']');
+}
+
+fn write_inserted_view_ids(output: &mut String, ids: &[InsertedViewId]) {
+    output.push('[');
+    for (index, id) in ids.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
+        }
+        let _ = write!(output, "view#{}", id.index());
+    }
+    output.push(']');
+}
+
+fn write_exposed_result_payload(output: &mut String, payload: Option<&ExposedResultPayload>) {
+    let Some(payload) = payload else {
+        output.push_str("<none>");
+        return;
+    };
+    output.push_str("{result=");
+    write_optional_type(output, payload.result);
+    let _ = write!(
+        output,
+        " source={} evidence=",
+        exposed_result_source_name(&payload.source)
+    );
+    write_fact_ids(output, &payload.evidence);
+    output.push('}');
+}
+
 fn write_qua_paths(output: &mut String, paths: &[QuaPathKey]) {
     output.push('[');
     for (index, path) in paths.iter().enumerate() {
@@ -3729,6 +4549,7 @@ fn diagnostic_class_name(class: OverloadDiagnosticClass) -> &'static str {
         OverloadDiagnosticClass::TemplateExpansion => "template_expansion",
         OverloadDiagnosticClass::Viability => "viability",
         OverloadDiagnosticClass::Specificity => "specificity",
+        OverloadDiagnosticClass::Selection => "selection",
         OverloadDiagnosticClass::Recovery => "recovery",
         OverloadDiagnosticClass::ExternalDependencyGap => "external_dependency_gap",
     }
@@ -3809,6 +4630,47 @@ fn specificity_failure_name(reason: &SpecificityFailureReason) -> &'static str {
         SpecificityFailureReason::UnknownCandidate => "unknown_candidate",
         SpecificityFailureReason::DeferredExternalDependency => "deferred_external_dependency",
         SpecificityFailureReason::MissingRecordedFacts => "missing_recorded_facts",
+    }
+}
+
+fn overload_blocked_reason_name(reason: &OverloadBlockedReason) -> &'static str {
+    match reason {
+        OverloadBlockedReason::BlockedSpecificityComparison => "blocked_specificity_comparison",
+        OverloadBlockedReason::AmbiguousSelection => "ambiguous_selection",
+        OverloadBlockedReason::MissingSelectionPayload => "missing_selection_payload",
+        OverloadBlockedReason::DuplicateSelectionPayload => "duplicate_selection_payload",
+        OverloadBlockedReason::UnknownSelectionSite => "unknown_selection_site",
+        OverloadBlockedReason::MissingOrdinaryRootCandidate => "missing_ordinary_root_candidate",
+        OverloadBlockedReason::AmbiguousOrdinaryRootCandidate => {
+            "ambiguous_ordinary_root_candidate"
+        }
+        OverloadBlockedReason::NonSelectedRootPayload => "non_selected_root_payload",
+        OverloadBlockedReason::InvalidInsertedView => "invalid_inserted_view",
+    }
+}
+
+fn refinement_join_failure_name(reason: &RefinementJoinFailure) -> &'static str {
+    match reason {
+        RefinementJoinFailure::IncompatibleResultRadix => "incompatible_result_radix",
+        RefinementJoinFailure::ContradictoryAttributes => "contradictory_attributes",
+        RefinementJoinFailure::NoUniqueJoinedType => "no_unique_joined_type",
+        RefinementJoinFailure::MissingJoinPayload => "missing_join_payload",
+    }
+}
+
+fn inserted_view_kind_name(kind: InsertedViewKind) -> &'static str {
+    match kind {
+        InsertedViewKind::Widening => "widening",
+        InsertedViewKind::SourceQua => "source_qua",
+        InsertedViewKind::Narrowing => "narrowing",
+    }
+}
+
+fn exposed_result_source_name(source: &ExposedResultSource) -> &'static str {
+    match source {
+        ExposedResultSource::SelectedRoot => "selected_root",
+        ExposedResultSource::StrongestRefinement => "strongest_refinement",
+        ExposedResultSource::AttributeUnion => "attribute_union",
     }
 }
 
@@ -5224,6 +6086,1148 @@ mod tests {
     }
 
     #[test]
+    fn selection_resolves_unique_maximal_root_and_inserted_widening_view() {
+        let source_id = source_id(51);
+        let ordinary = candidate("call", "root", "ordinary", CandidateScope::Local, 0);
+        let mut refinement = candidate("call", "root", "refinement", CandidateScope::Local, 1);
+        refinement.origin = CandidateOrigin::Redefinition {
+            refined: symbol_id("ordinary"),
+        };
+        refinement.coherence = Some(CoherenceStatus::Accepted);
+        refinement.result = Some(NormalizedTypeId::new(20));
+        let other = candidate("call", "other-root", "other", CandidateScope::Local, 2);
+        let viability = viable_output(
+            vec![site(
+                "call",
+                OverloadSiteKind::FunctorApplication,
+                source_id,
+                10,
+            )],
+            vec![ordinary, refinement, other],
+        );
+        let ordinary = candidate_id_by_symbol_in_table(viability.candidates(), "ordinary");
+        let refinement = candidate_id_by_symbol_in_table(viability.candidates(), "refinement");
+        let other = candidate_id_by_symbol_in_table(viability.candidates(), "other");
+        let graphs = SpecificityGraphOutput::build(
+            &viability,
+            [
+                SpecificityComparisonInput {
+                    left: refinement,
+                    right: ordinary,
+                    status: SpecificityComparisonStatus::Equivalent,
+                    reasons: vec![SpecificityReasonKey::new("same-root-refinement")],
+                },
+                SpecificityComparisonInput {
+                    left: refinement,
+                    right: other,
+                    status: SpecificityComparisonStatus::LeftAtLeastRight,
+                    reasons: vec![SpecificityReasonKey::new("refinement-beats-other")],
+                },
+                SpecificityComparisonInput {
+                    left: ordinary,
+                    right: other,
+                    status: SpecificityComparisonStatus::LeftAtLeastRight,
+                    reasons: vec![SpecificityReasonKey::new("ordinary-beats-other")],
+                },
+            ],
+        );
+        let site = site_id_by_candidate_symbol(graphs.candidates(), "ordinary");
+
+        let output = OverloadSelectionOutput::resolve(
+            &graphs,
+            [compatible_resolution_input(
+                site,
+                vec![refinement],
+                Some(ExposedResultSource::StrongestRefinement),
+                vec![
+                    accepted_inserted_view(
+                        TypedSiteRef::Node(TypedNodeId::new(101)),
+                        NormalizedTypeId::new(2),
+                        ordinary,
+                        InsertedViewKind::Widening,
+                        "argument-widening",
+                    ),
+                    accepted_inserted_view(
+                        TypedSiteRef::Role {
+                            node: TypedNodeId::new(102),
+                            role: TypeRole::new("source-qua"),
+                        },
+                        NormalizedTypeId::new(22),
+                        refinement,
+                        InsertedViewKind::SourceQua,
+                        "source-qua-view",
+                    ),
+                ],
+            )],
+        );
+
+        assert_eq!(output.results().len(), 1);
+        assert_eq!(output.inserted_views().len(), 2);
+        assert!(output.diagnostics().is_empty());
+        let (_, result) = output.results().iter().next().expect("selection result");
+        let OverloadResultStatus::Resolved {
+            root,
+            refinements,
+            exposed_result,
+            inserted_views,
+        } = &result.status
+        else {
+            panic!("expected resolved selection, got {:?}", result.status);
+        };
+        assert_eq!(*root, ordinary);
+        assert_eq!(refinements, &[refinement]);
+        assert_eq!(
+            exposed_result.as_ref().map(|payload| &payload.source),
+            Some(&ExposedResultSource::StrongestRefinement)
+        );
+        assert_eq!(inserted_views.len(), 2);
+        let debug = output.debug_text();
+        assert!(debug.contains("status=resolved(root=candidate#"));
+        assert!(debug.contains("source=strongest_refinement"));
+        assert!(debug.contains("kind=widening reason=\"argument-widening\""));
+        assert!(debug.contains("kind=source_qua reason=\"source-qua-view\""));
+    }
+
+    #[test]
+    fn selection_reports_no_match_and_ambiguity_as_failed_sites() {
+        let source_id = source_id(52);
+        let mut template_derived = candidate("ambiguous", "root-b", "b", CandidateScope::Local, 2);
+        template_derived.origin = CandidateOrigin::TemplateDerived {
+            template: symbol_id("template-b"),
+            instantiation: TemplateInstantiationKey::new("T=ambiguous"),
+        };
+        template_derived.result = Some(NormalizedTypeId::new(200));
+        let collection = OverloadCollectionOutput::collect(
+            vec![
+                site("empty", OverloadSiteKind::FunctorApplication, source_id, 10),
+                site(
+                    "ambiguous",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    30,
+                ),
+            ],
+            vec![
+                candidate("empty", "empty-root", "rejected", CandidateScope::Local, 0),
+                candidate("ambiguous", "root-a", "a", CandidateScope::Local, 1),
+                template_derived,
+            ],
+        );
+        let expansion = TemplateExpansionOutput::expand(&collection);
+        let rejected = candidate_id_by_symbol(&expansion, "rejected");
+        let a = candidate_id_by_symbol(&expansion, "a");
+        let b = candidate_id_by_symbol(&expansion, "b");
+        let viability = CandidateViabilityOutput::filter(
+            &expansion,
+            [
+                CandidateViabilityInput {
+                    candidate: rejected,
+                    arguments: vec![
+                        ArgumentViabilityEvidence::Exact {
+                            actual: NormalizedTypeId::new(1),
+                        },
+                        ArgumentViabilityEvidence::Missing {
+                            actual: Some(NormalizedTypeId::new(9)),
+                            target: NormalizedTypeId::new(2),
+                        },
+                    ],
+                },
+                CandidateViabilityInput {
+                    candidate: a,
+                    arguments: vec![
+                        ArgumentViabilityEvidence::Exact {
+                            actual: NormalizedTypeId::new(1),
+                        },
+                        ArgumentViabilityEvidence::Exact {
+                            actual: NormalizedTypeId::new(2),
+                        },
+                    ],
+                },
+                CandidateViabilityInput {
+                    candidate: b,
+                    arguments: vec![
+                        ArgumentViabilityEvidence::Exact {
+                            actual: NormalizedTypeId::new(1),
+                        },
+                        ArgumentViabilityEvidence::Exact {
+                            actual: NormalizedTypeId::new(2),
+                        },
+                    ],
+                },
+            ],
+        );
+        let graphs = SpecificityGraphOutput::build(
+            &viability,
+            [SpecificityComparisonInput {
+                left: candidate_id_by_symbol_in_table(viability.candidates(), "a"),
+                right: candidate_id_by_symbol_in_table(viability.candidates(), "b"),
+                status: SpecificityComparisonStatus::Incomparable,
+                reasons: vec![SpecificityReasonKey::new("distinct-roots")],
+            }],
+        );
+
+        let output = OverloadSelectionOutput::resolve(&graphs, []);
+
+        assert_eq!(output.results().len(), 2);
+        assert!(output.inserted_views().is_empty());
+        let statuses = output
+            .results()
+            .iter()
+            .map(|(_, result)| &result.status)
+            .collect::<Vec<_>>();
+        assert!(
+            statuses
+                .iter()
+                .any(|status| matches!(status, OverloadResultStatus::NoMatch { .. }))
+        );
+        assert!(statuses
+            .iter()
+            .any(|status| matches!(status, OverloadResultStatus::Ambiguous { candidates } if candidates.len() == 2)));
+        assert!(
+            !statuses
+                .iter()
+                .any(|status| matches!(status, OverloadResultStatus::Resolved { .. }))
+        );
+        let debug = output.debug_text();
+        assert!(debug.contains("status=no_match(rejected=[])"));
+        assert!(debug.contains("status=ambiguous(candidates=[candidate#"));
+        assert!(debug.contains("message_key=\"overload.selection.ambiguous_selection\""));
+    }
+
+    #[test]
+    fn selection_reports_missing_duplicate_unknown_and_blocked_payloads() {
+        let source_id = source_id(56);
+        let mut malformed_refinement = candidate(
+            "malformed",
+            "malformed-root",
+            "malformed-refinement",
+            CandidateScope::Local,
+            5,
+        );
+        malformed_refinement.origin = CandidateOrigin::Redefinition {
+            refined: symbol_id("malformed-root-symbol"),
+        };
+        let mut ambiguous_template = candidate(
+            "ambiguous-root",
+            "ambiguous-root",
+            "ambiguous-template",
+            CandidateScope::Local,
+            9,
+        );
+        ambiguous_template.origin = CandidateOrigin::TemplateDerived {
+            template: symbol_id("ambiguous-template-source"),
+            instantiation: TemplateInstantiationKey::new("T=ambiguous-root"),
+        };
+        let viability = viable_output(
+            vec![
+                site(
+                    "missing",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    10,
+                ),
+                site(
+                    "duplicate",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    30,
+                ),
+                site(
+                    "blocked",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    50,
+                ),
+                site(
+                    "malformed",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    70,
+                ),
+                site(
+                    "ambiguous-root",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    90,
+                ),
+            ],
+            vec![
+                candidate(
+                    "missing",
+                    "missing-root",
+                    "missing-root-symbol",
+                    CandidateScope::Local,
+                    0,
+                ),
+                candidate(
+                    "duplicate",
+                    "duplicate-root",
+                    "duplicate-root-symbol",
+                    CandidateScope::Local,
+                    1,
+                ),
+                candidate(
+                    "blocked",
+                    "blocked-root-a",
+                    "blocked-a",
+                    CandidateScope::Local,
+                    2,
+                ),
+                candidate(
+                    "blocked",
+                    "blocked-root-b",
+                    "blocked-b",
+                    CandidateScope::Local,
+                    3,
+                ),
+                candidate(
+                    "malformed",
+                    "malformed-root",
+                    "malformed-root-symbol",
+                    CandidateScope::Local,
+                    4,
+                ),
+                malformed_refinement,
+                candidate(
+                    "ambiguous-root",
+                    "ambiguous-root",
+                    "ambiguous-ordinary",
+                    CandidateScope::Local,
+                    8,
+                ),
+                ambiguous_template,
+            ],
+        );
+        let blocked_a = candidate_id_by_symbol_in_table(viability.candidates(), "blocked-a");
+        let blocked_b = candidate_id_by_symbol_in_table(viability.candidates(), "blocked-b");
+        let malformed_root =
+            candidate_id_by_symbol_in_table(viability.candidates(), "malformed-root-symbol");
+        let malformed_refinement =
+            candidate_id_by_symbol_in_table(viability.candidates(), "malformed-refinement");
+        let ambiguous_ordinary =
+            candidate_id_by_symbol_in_table(viability.candidates(), "ambiguous-ordinary");
+        let ambiguous_template =
+            candidate_id_by_symbol_in_table(viability.candidates(), "ambiguous-template");
+        let graphs = SpecificityGraphOutput::build(
+            &viability,
+            [
+                SpecificityComparisonInput {
+                    left: blocked_a,
+                    right: blocked_b,
+                    status: SpecificityComparisonStatus::Blocked(
+                        SpecificityBlockedReasonKind::DeferredExternalDependency,
+                    ),
+                    reasons: vec![SpecificityReasonKey::new("external-specificity")],
+                },
+                SpecificityComparisonInput {
+                    left: malformed_refinement,
+                    right: malformed_root,
+                    status: SpecificityComparisonStatus::LeftAtLeastRight,
+                    reasons: vec![SpecificityReasonKey::new("refinement-only-maximal")],
+                },
+                SpecificityComparisonInput {
+                    left: ambiguous_ordinary,
+                    right: ambiguous_template,
+                    status: SpecificityComparisonStatus::Equivalent,
+                    reasons: vec![SpecificityReasonKey::new(
+                        "missing-explicit-template-tie-breaker",
+                    )],
+                },
+            ],
+        );
+        let duplicate_site =
+            site_id_by_candidate_symbol(graphs.candidates(), "duplicate-root-symbol");
+        let missing_site = site_id_by_candidate_symbol(graphs.candidates(), "missing-root-symbol");
+        let blocked_site = site_id_by_candidate_symbol(graphs.candidates(), "blocked-a");
+        let malformed_site =
+            site_id_by_candidate_symbol(graphs.candidates(), "malformed-root-symbol");
+        let ambiguous_root_site =
+            site_id_by_candidate_symbol(graphs.candidates(), "ambiguous-ordinary");
+        let duplicate_input =
+            compatible_resolution_input(duplicate_site, Vec::new(), None, Vec::new());
+
+        let output = OverloadSelectionOutput::resolve(
+            &graphs,
+            [
+                duplicate_input.clone(),
+                compatible_resolution_input(OverloadSiteId::new(99), Vec::new(), None, Vec::new()),
+                compatible_resolution_input(malformed_site, Vec::new(), None, Vec::new()),
+                compatible_resolution_input(ambiguous_root_site, Vec::new(), None, Vec::new()),
+                duplicate_input,
+            ],
+        );
+
+        let statuses = output
+            .results()
+            .iter()
+            .map(|(_, result)| (result.site, &result.status))
+            .collect::<BTreeMap<_, _>>();
+        assert!(matches!(
+            statuses.get(&missing_site),
+            Some(OverloadResultStatus::Blocked {
+                reason: OverloadBlockedReason::MissingSelectionPayload
+            })
+        ));
+        assert!(matches!(
+            statuses.get(&duplicate_site),
+            Some(OverloadResultStatus::Blocked {
+                reason: OverloadBlockedReason::DuplicateSelectionPayload
+            })
+        ));
+        assert!(matches!(
+            statuses.get(&blocked_site),
+            Some(OverloadResultStatus::Blocked {
+                reason: OverloadBlockedReason::BlockedSpecificityComparison
+            })
+        ));
+        assert!(matches!(
+            statuses.get(&malformed_site),
+            Some(OverloadResultStatus::Blocked {
+                reason: OverloadBlockedReason::MissingOrdinaryRootCandidate
+            })
+        ));
+        assert!(matches!(
+            statuses.get(&ambiguous_root_site),
+            Some(OverloadResultStatus::Blocked {
+                reason: OverloadBlockedReason::AmbiguousOrdinaryRootCandidate
+            })
+        ));
+        let debug = output.debug_text();
+        assert!(debug.contains("message_key=\"overload.selection.missing_selection_payload\""));
+        assert!(debug.contains("message_key=\"overload.selection.duplicate_selection_payload\""));
+        assert!(debug.contains("message_key=\"overload.selection.unknown_selection_site\""));
+        assert!(
+            debug.contains("message_key=\"overload.selection.blocked_specificity_comparison\"")
+        );
+        assert!(
+            debug.contains("message_key=\"overload.selection.missing_ordinary_root_candidate\"")
+        );
+        assert!(
+            debug.contains("message_key=\"overload.selection.ambiguous_ordinary_root_candidate\"")
+        );
+    }
+
+    #[test]
+    fn selection_blocks_redefinition_only_maximal_roots_before_ambiguity() {
+        let source_id = source_id(57);
+        let mut ref_a = candidate(
+            "malformed",
+            "root-a",
+            "root-a-refinement",
+            CandidateScope::Local,
+            1,
+        );
+        ref_a.origin = CandidateOrigin::Redefinition {
+            refined: symbol_id("root-a-symbol"),
+        };
+        ref_a.coherence = Some(CoherenceStatus::Accepted);
+        let mut ref_b = candidate(
+            "malformed",
+            "root-b",
+            "root-b-refinement",
+            CandidateScope::Local,
+            3,
+        );
+        ref_b.origin = CandidateOrigin::Redefinition {
+            refined: symbol_id("root-b-symbol"),
+        };
+        ref_b.coherence = Some(CoherenceStatus::Accepted);
+        let viability = viable_output(
+            vec![site(
+                "malformed",
+                OverloadSiteKind::FunctorApplication,
+                source_id,
+                10,
+            )],
+            vec![
+                candidate(
+                    "malformed",
+                    "root-a",
+                    "root-a-symbol",
+                    CandidateScope::Local,
+                    0,
+                ),
+                ref_a,
+                candidate(
+                    "malformed",
+                    "root-b",
+                    "root-b-symbol",
+                    CandidateScope::Local,
+                    2,
+                ),
+                ref_b,
+            ],
+        );
+        let root_a = candidate_id_by_symbol_in_table(viability.candidates(), "root-a-symbol");
+        let ref_a = candidate_id_by_symbol_in_table(viability.candidates(), "root-a-refinement");
+        let root_b = candidate_id_by_symbol_in_table(viability.candidates(), "root-b-symbol");
+        let ref_b = candidate_id_by_symbol_in_table(viability.candidates(), "root-b-refinement");
+        let graphs = SpecificityGraphOutput::build(
+            &viability,
+            [
+                SpecificityComparisonInput {
+                    left: ref_a,
+                    right: root_a,
+                    status: SpecificityComparisonStatus::LeftAtLeastRight,
+                    reasons: vec![SpecificityReasonKey::new("ref-a-only-maximal")],
+                },
+                SpecificityComparisonInput {
+                    left: ref_b,
+                    right: root_b,
+                    status: SpecificityComparisonStatus::LeftAtLeastRight,
+                    reasons: vec![SpecificityReasonKey::new("ref-b-only-maximal")],
+                },
+                SpecificityComparisonInput {
+                    left: root_a,
+                    right: root_b,
+                    status: SpecificityComparisonStatus::Incomparable,
+                    reasons: vec![SpecificityReasonKey::new("root-cross")],
+                },
+                SpecificityComparisonInput {
+                    left: root_a,
+                    right: ref_b,
+                    status: SpecificityComparisonStatus::Incomparable,
+                    reasons: vec![SpecificityReasonKey::new("root-a-ref-b-cross")],
+                },
+                SpecificityComparisonInput {
+                    left: ref_a,
+                    right: root_b,
+                    status: SpecificityComparisonStatus::Incomparable,
+                    reasons: vec![SpecificityReasonKey::new("ref-a-root-b-cross")],
+                },
+                SpecificityComparisonInput {
+                    left: ref_a,
+                    right: ref_b,
+                    status: SpecificityComparisonStatus::Incomparable,
+                    reasons: vec![SpecificityReasonKey::new("ref-cross")],
+                },
+            ],
+        );
+
+        let output = OverloadSelectionOutput::resolve(&graphs, []);
+
+        let (_, result) = output.results().iter().next().expect("selection result");
+        assert!(matches!(
+            result.status,
+            OverloadResultStatus::Blocked {
+                reason: OverloadBlockedReason::MissingOrdinaryRootCandidate
+            }
+        ));
+        let debug = output.debug_text();
+        assert!(
+            debug.contains("message_key=\"overload.selection.missing_ordinary_root_candidate\"")
+        );
+        assert!(!debug.contains("status=ambiguous("));
+    }
+
+    #[test]
+    fn selection_handles_refinement_join_payloads() {
+        let source_id = source_id(53);
+        let strongest_root = candidate(
+            "strongest",
+            "strongest-root",
+            "strongest-root-symbol",
+            CandidateScope::Local,
+            0,
+        );
+        let mut strongest_refinement = candidate(
+            "strongest",
+            "strongest-root",
+            "strongest-refinement",
+            CandidateScope::Local,
+            1,
+        );
+        strongest_refinement.origin = CandidateOrigin::Redefinition {
+            refined: symbol_id("strongest-root-symbol"),
+        };
+        strongest_refinement.coherence = Some(CoherenceStatus::Accepted);
+        let attribute_root = candidate(
+            "attribute",
+            "attribute-root",
+            "attribute-root-symbol",
+            CandidateScope::Local,
+            2,
+        );
+        let mut attribute_refinement = candidate(
+            "attribute",
+            "attribute-root",
+            "attribute-refinement",
+            CandidateScope::Local,
+            3,
+        );
+        attribute_refinement.origin = CandidateOrigin::Redefinition {
+            refined: symbol_id("attribute-root-symbol"),
+        };
+        attribute_refinement.coherence = Some(CoherenceStatus::Accepted);
+        let bad_root = candidate(
+            "bad",
+            "bad-root",
+            "bad-root-symbol",
+            CandidateScope::Local,
+            4,
+        );
+        let mut bad_refinement = candidate(
+            "bad",
+            "bad-root",
+            "bad-refinement",
+            CandidateScope::Local,
+            5,
+        );
+        bad_refinement.origin = CandidateOrigin::Redefinition {
+            refined: symbol_id("bad-root-symbol"),
+        };
+        bad_refinement.coherence = Some(CoherenceStatus::Accepted);
+        let viability = viable_output(
+            vec![
+                site(
+                    "strongest",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    10,
+                ),
+                site(
+                    "attribute",
+                    OverloadSiteKind::AttributeApplication,
+                    source_id,
+                    30,
+                ),
+                site("bad", OverloadSiteKind::FunctorApplication, source_id, 50),
+            ],
+            vec![
+                strongest_root,
+                strongest_refinement,
+                attribute_root,
+                attribute_refinement,
+                bad_root,
+                bad_refinement,
+            ],
+        );
+        let strongest_root =
+            candidate_id_by_symbol_in_table(viability.candidates(), "strongest-root-symbol");
+        let strongest_refinement =
+            candidate_id_by_symbol_in_table(viability.candidates(), "strongest-refinement");
+        let attribute_root =
+            candidate_id_by_symbol_in_table(viability.candidates(), "attribute-root-symbol");
+        let attribute_refinement =
+            candidate_id_by_symbol_in_table(viability.candidates(), "attribute-refinement");
+        let bad_root = candidate_id_by_symbol_in_table(viability.candidates(), "bad-root-symbol");
+        let bad_refinement =
+            candidate_id_by_symbol_in_table(viability.candidates(), "bad-refinement");
+        let graphs = SpecificityGraphOutput::build(
+            &viability,
+            [
+                SpecificityComparisonInput {
+                    left: strongest_refinement,
+                    right: strongest_root,
+                    status: SpecificityComparisonStatus::Equivalent,
+                    reasons: vec![SpecificityReasonKey::new("strongest-result")],
+                },
+                SpecificityComparisonInput {
+                    left: attribute_refinement,
+                    right: attribute_root,
+                    status: SpecificityComparisonStatus::Equivalent,
+                    reasons: vec![SpecificityReasonKey::new("attribute-union")],
+                },
+                SpecificityComparisonInput {
+                    left: bad_refinement,
+                    right: bad_root,
+                    status: SpecificityComparisonStatus::Equivalent,
+                    reasons: vec![SpecificityReasonKey::new("bad-refinement")],
+                },
+            ],
+        );
+        let strongest_site =
+            site_id_by_candidate_symbol(graphs.candidates(), "strongest-root-symbol");
+        let attribute_site =
+            site_id_by_candidate_symbol(graphs.candidates(), "attribute-root-symbol");
+        let bad_site = site_id_by_candidate_symbol(graphs.candidates(), "bad-root-symbol");
+
+        let output = OverloadSelectionOutput::resolve(
+            &graphs,
+            [
+                compatible_resolution_input(
+                    strongest_site,
+                    vec![strongest_refinement],
+                    Some(ExposedResultSource::StrongestRefinement),
+                    Vec::new(),
+                ),
+                compatible_resolution_input(
+                    attribute_site,
+                    vec![attribute_refinement],
+                    Some(ExposedResultSource::AttributeUnion),
+                    Vec::new(),
+                ),
+                OverloadSiteResolutionInput {
+                    site: bad_site,
+                    refinements: vec![bad_refinement],
+                    refinement_join: RefinementJoinPayload {
+                        status: RefinementJoinStatus::Incompatible(
+                            RefinementJoinFailure::ContradictoryAttributes,
+                        ),
+                        exposed_result: None,
+                    },
+                    inserted_views: Vec::new(),
+                },
+            ],
+        );
+
+        let statuses = output
+            .results()
+            .iter()
+            .map(|(_, result)| (result.site, &result.status))
+            .collect::<BTreeMap<_, _>>();
+        assert!(matches!(
+            statuses.get(&strongest_site),
+            Some(OverloadResultStatus::Resolved {
+                exposed_result: Some(ExposedResultPayload {
+                    source: ExposedResultSource::StrongestRefinement,
+                    ..
+                }),
+                ..
+            })
+        ));
+        assert!(matches!(
+            statuses.get(&attribute_site),
+            Some(OverloadResultStatus::Resolved {
+                exposed_result: Some(ExposedResultPayload {
+                    source: ExposedResultSource::AttributeUnion,
+                    ..
+                }),
+                ..
+            })
+        ));
+        assert!(matches!(
+            statuses.get(&bad_site),
+            Some(OverloadResultStatus::IncompatibleRefinementJoin {
+                reason: RefinementJoinFailure::ContradictoryAttributes,
+                ..
+            })
+        ));
+        let debug = output.debug_text();
+        assert!(debug.contains("source=strongest_refinement"));
+        assert!(debug.contains("source=attribute_union"));
+        assert!(debug.contains("reason=contradictory_attributes"));
+        assert!(
+            debug
+                .contains("message_key=\"overload.selection.refinement.contradictory_attributes\"")
+        );
+    }
+
+    #[test]
+    fn selection_rejects_non_selected_refinements_and_invalid_views() {
+        let source_id = source_id(54);
+        let viability = viable_output(
+            vec![
+                site(
+                    "nonselected",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    10,
+                ),
+                site(
+                    "invalid-view",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    30,
+                ),
+                site(
+                    "narrow-view",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    50,
+                ),
+                site(
+                    "foreign-view",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    70,
+                ),
+                site(
+                    "ordinary-refinement",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    90,
+                ),
+                site(
+                    "rejected-refinement",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    110,
+                ),
+            ],
+            vec![
+                candidate(
+                    "nonselected",
+                    "root-a",
+                    "selected",
+                    CandidateScope::Local,
+                    0,
+                ),
+                candidate(
+                    "nonselected",
+                    "root-b",
+                    "foreign-refinement",
+                    CandidateScope::Local,
+                    1,
+                ),
+                candidate(
+                    "invalid-view",
+                    "view-root",
+                    "view-root-symbol",
+                    CandidateScope::Local,
+                    2,
+                ),
+                candidate(
+                    "narrow-view",
+                    "narrow-root",
+                    "narrow-root-symbol",
+                    CandidateScope::Local,
+                    3,
+                ),
+                candidate(
+                    "foreign-view",
+                    "foreign-root-a",
+                    "foreign-selected",
+                    CandidateScope::Local,
+                    4,
+                ),
+                candidate(
+                    "foreign-view",
+                    "foreign-root-b",
+                    "foreign-view-candidate",
+                    CandidateScope::Local,
+                    5,
+                ),
+                candidate(
+                    "ordinary-refinement",
+                    "ordinary-root",
+                    "ordinary-root-symbol",
+                    CandidateScope::Local,
+                    6,
+                ),
+                candidate(
+                    "ordinary-refinement",
+                    "ordinary-root",
+                    "zz-ordinary-peer",
+                    CandidateScope::Local,
+                    7,
+                ),
+                candidate(
+                    "rejected-refinement",
+                    "rejected-root",
+                    "rejected-root-symbol",
+                    CandidateScope::Local,
+                    8,
+                ),
+                {
+                    let mut rejected = candidate(
+                        "rejected-refinement",
+                        "rejected-root",
+                        "rejected-refinement-symbol",
+                        CandidateScope::Local,
+                        9,
+                    );
+                    rejected.origin = CandidateOrigin::Redefinition {
+                        refined: symbol_id("rejected-root-symbol"),
+                    };
+                    rejected.coherence = Some(CoherenceStatus::Rejected);
+                    rejected
+                },
+            ],
+        );
+        let selected = candidate_id_by_symbol_in_table(viability.candidates(), "selected");
+        let foreign_refinement =
+            candidate_id_by_symbol_in_table(viability.candidates(), "foreign-refinement");
+        let view_root = candidate_id_by_symbol_in_table(viability.candidates(), "view-root-symbol");
+        let narrow_root =
+            candidate_id_by_symbol_in_table(viability.candidates(), "narrow-root-symbol");
+        let foreign_selected =
+            candidate_id_by_symbol_in_table(viability.candidates(), "foreign-selected");
+        let foreign_view_candidate =
+            candidate_id_by_symbol_in_table(viability.candidates(), "foreign-view-candidate");
+        let ordinary_root =
+            candidate_id_by_symbol_in_table(viability.candidates(), "ordinary-root-symbol");
+        let ordinary_peer =
+            candidate_id_by_symbol_in_table(viability.candidates(), "zz-ordinary-peer");
+        let rejected_root =
+            candidate_id_by_symbol_in_table(viability.candidates(), "rejected-root-symbol");
+        let rejected_refinement =
+            candidate_id_by_symbol_in_table(viability.candidates(), "rejected-refinement-symbol");
+        let graphs = SpecificityGraphOutput::build(
+            &viability,
+            [
+                SpecificityComparisonInput {
+                    left: selected,
+                    right: foreign_refinement,
+                    status: SpecificityComparisonStatus::LeftAtLeastRight,
+                    reasons: vec![SpecificityReasonKey::new("selected-root")],
+                },
+                SpecificityComparisonInput {
+                    left: foreign_selected,
+                    right: foreign_view_candidate,
+                    status: SpecificityComparisonStatus::LeftAtLeastRight,
+                    reasons: vec![SpecificityReasonKey::new("foreign-view-root")],
+                },
+                SpecificityComparisonInput {
+                    left: ordinary_peer,
+                    right: ordinary_root,
+                    status: SpecificityComparisonStatus::RightAtLeastLeft,
+                    reasons: vec![SpecificityReasonKey::new("same-root-not-refinement")],
+                },
+                SpecificityComparisonInput {
+                    left: rejected_refinement,
+                    right: rejected_root,
+                    status: SpecificityComparisonStatus::Equivalent,
+                    reasons: vec![SpecificityReasonKey::new("rejected-coherence")],
+                },
+            ],
+        );
+        let nonselected_site = site_id_by_candidate_symbol(graphs.candidates(), "selected");
+        let invalid_view_site =
+            site_id_by_candidate_symbol(graphs.candidates(), "view-root-symbol");
+        let narrow_view_site =
+            site_id_by_candidate_symbol(graphs.candidates(), "narrow-root-symbol");
+        let foreign_view_site =
+            site_id_by_candidate_symbol(graphs.candidates(), "foreign-selected");
+        let ordinary_refinement_site =
+            site_id_by_candidate_symbol(graphs.candidates(), "ordinary-root-symbol");
+        let rejected_refinement_site =
+            site_id_by_candidate_symbol(graphs.candidates(), "rejected-root-symbol");
+
+        let output = OverloadSelectionOutput::resolve(
+            &graphs,
+            [
+                compatible_resolution_input(
+                    nonselected_site,
+                    vec![foreign_refinement],
+                    None,
+                    Vec::new(),
+                ),
+                compatible_resolution_input(
+                    invalid_view_site,
+                    Vec::new(),
+                    None,
+                    vec![
+                        accepted_inserted_view(
+                            TypedSiteRef::Node(TypedNodeId::new(300)),
+                            NormalizedTypeId::new(2),
+                            view_root,
+                            InsertedViewKind::Widening,
+                            "would-leak-before-invalid",
+                        ),
+                        InsertedViewInput {
+                            argument: TypedSiteRef::Node(TypedNodeId::new(301)),
+                            target: NormalizedTypeId::new(2),
+                            selected_candidate: view_root,
+                            kind: InsertedViewKind::Widening,
+                            status: InsertedViewStatus::MissingEvidence,
+                            reason: InsertedViewReasonKey::new("missing-view-evidence"),
+                            evidence_facts: Vec::new(),
+                            path: Some(QuaPathKey::new("missing-view-path")),
+                        },
+                    ],
+                ),
+                compatible_resolution_input(
+                    narrow_view_site,
+                    Vec::new(),
+                    None,
+                    vec![InsertedViewInput {
+                        argument: TypedSiteRef::Node(TypedNodeId::new(302)),
+                        target: NormalizedTypeId::new(2),
+                        selected_candidate: narrow_root,
+                        kind: InsertedViewKind::Narrowing,
+                        status: InsertedViewStatus::Accepted,
+                        reason: InsertedViewReasonKey::new("narrowing-view"),
+                        evidence_facts: vec![TypeFactId::new(2)],
+                        path: Some(QuaPathKey::new("narrowing-view-path")),
+                    }],
+                ),
+                compatible_resolution_input(
+                    foreign_view_site,
+                    Vec::new(),
+                    None,
+                    vec![accepted_inserted_view(
+                        TypedSiteRef::Node(TypedNodeId::new(303)),
+                        NormalizedTypeId::new(2),
+                        foreign_view_candidate,
+                        InsertedViewKind::Widening,
+                        "foreign-view-candidate",
+                    )],
+                ),
+                compatible_resolution_input(
+                    ordinary_refinement_site,
+                    vec![ordinary_peer],
+                    None,
+                    Vec::new(),
+                ),
+                compatible_resolution_input(
+                    rejected_refinement_site,
+                    vec![rejected_refinement],
+                    None,
+                    Vec::new(),
+                ),
+            ],
+        );
+
+        assert!(output.inserted_views().is_empty());
+        let statuses = output
+            .results()
+            .iter()
+            .map(|(_, result)| (result.site, &result.status))
+            .collect::<BTreeMap<_, _>>();
+        assert!(matches!(
+            statuses.get(&nonselected_site),
+            Some(OverloadResultStatus::Blocked {
+                reason: OverloadBlockedReason::NonSelectedRootPayload
+            })
+        ));
+        assert!(matches!(
+            statuses.get(&invalid_view_site),
+            Some(OverloadResultStatus::Blocked {
+                reason: OverloadBlockedReason::InvalidInsertedView
+            })
+        ));
+        assert!(matches!(
+            statuses.get(&narrow_view_site),
+            Some(OverloadResultStatus::Blocked {
+                reason: OverloadBlockedReason::InvalidInsertedView
+            })
+        ));
+        assert!(matches!(
+            statuses.get(&foreign_view_site),
+            Some(OverloadResultStatus::Blocked {
+                reason: OverloadBlockedReason::InvalidInsertedView
+            })
+        ));
+        assert!(matches!(
+            statuses.get(&ordinary_refinement_site),
+            Some(OverloadResultStatus::Blocked {
+                reason: OverloadBlockedReason::NonSelectedRootPayload
+            })
+        ));
+        assert!(matches!(
+            statuses.get(&rejected_refinement_site),
+            Some(OverloadResultStatus::Blocked {
+                reason: OverloadBlockedReason::NonSelectedRootPayload
+            })
+        ));
+        let debug = output.debug_text();
+        assert!(debug.contains("message_key=\"overload.selection.non_selected_root_payload\""));
+        assert!(debug.contains("message_key=\"overload.selection.invalid_inserted_view\""));
+        assert!(!debug.contains("status=resolved("));
+    }
+
+    #[test]
+    fn selection_rendering_is_deterministic_for_equivalent_payload_order() {
+        let source_id = source_id(55);
+        let ordinary = candidate(
+            "stable",
+            "stable-root",
+            "stable-root-symbol",
+            CandidateScope::Local,
+            0,
+        );
+        let mut ref_a = candidate(
+            "stable",
+            "stable-root",
+            "stable-ref-a",
+            CandidateScope::Local,
+            1,
+        );
+        ref_a.origin = CandidateOrigin::Redefinition {
+            refined: symbol_id("stable-root-symbol"),
+        };
+        ref_a.coherence = Some(CoherenceStatus::Accepted);
+        let mut ref_b = candidate(
+            "stable",
+            "stable-root",
+            "stable-ref-b",
+            CandidateScope::Local,
+            2,
+        );
+        ref_b.origin = CandidateOrigin::Redefinition {
+            refined: symbol_id("stable-root-symbol"),
+        };
+        ref_b.coherence = Some(CoherenceStatus::Accepted);
+        let viability = viable_output(
+            vec![site(
+                "stable",
+                OverloadSiteKind::FunctorApplication,
+                source_id,
+                10,
+            )],
+            vec![ordinary, ref_b, ref_a],
+        );
+        let ordinary =
+            candidate_id_by_symbol_in_table(viability.candidates(), "stable-root-symbol");
+        let ref_a = candidate_id_by_symbol_in_table(viability.candidates(), "stable-ref-a");
+        let ref_b = candidate_id_by_symbol_in_table(viability.candidates(), "stable-ref-b");
+        let graphs = SpecificityGraphOutput::build(
+            &viability,
+            [
+                SpecificityComparisonInput {
+                    left: ref_a,
+                    right: ordinary,
+                    status: SpecificityComparisonStatus::Equivalent,
+                    reasons: vec![SpecificityReasonKey::new("ref-a-root")],
+                },
+                SpecificityComparisonInput {
+                    left: ref_b,
+                    right: ordinary,
+                    status: SpecificityComparisonStatus::Equivalent,
+                    reasons: vec![SpecificityReasonKey::new("ref-b-root")],
+                },
+                SpecificityComparisonInput {
+                    left: ref_a,
+                    right: ref_b,
+                    status: SpecificityComparisonStatus::Equivalent,
+                    reasons: vec![SpecificityReasonKey::new("same-root-equivalent")],
+                },
+            ],
+        );
+        let site = site_id_by_candidate_symbol(graphs.candidates(), "stable-root-symbol");
+        let view_a = accepted_inserted_view(
+            TypedSiteRef::Node(TypedNodeId::new(401)),
+            NormalizedTypeId::new(2),
+            ordinary,
+            InsertedViewKind::Widening,
+            "stable-view-a",
+        );
+        let view_b = accepted_inserted_view(
+            TypedSiteRef::Node(TypedNodeId::new(402)),
+            NormalizedTypeId::new(2),
+            ref_a,
+            InsertedViewKind::SourceQua,
+            "stable-view-b",
+        );
+
+        let output = OverloadSelectionOutput::resolve(
+            &graphs,
+            [compatible_resolution_input(
+                site,
+                vec![ref_b, ref_a],
+                Some(ExposedResultSource::AttributeUnion),
+                vec![view_b.clone(), view_a.clone()],
+            )],
+        );
+        let reversed_output = OverloadSelectionOutput::resolve(
+            &graphs,
+            [compatible_resolution_input(
+                site,
+                vec![ref_a, ref_b],
+                Some(ExposedResultSource::AttributeUnion),
+                vec![view_a, view_b],
+            )],
+        );
+
+        assert_eq!(output.debug_text(), reversed_output.debug_text());
+        assert_eq!(output.inserted_views().len(), 2);
+        let debug = output.debug_text();
+        assert!(debug.contains("refinements=[candidate#"));
+        assert!(debug.contains("inserted_views=[view#0, view#1]"));
+    }
+
+    #[test]
     fn source_qua_and_recovery_site_provenance_are_retained() {
         let source_id = source_id(4);
         let mut input = site(
@@ -5554,6 +7558,58 @@ mod tests {
             .iter()
             .find_map(|(id, candidate)| (candidate.symbol.local().as_str() == symbol).then_some(id))
             .expect("candidate symbol")
+    }
+
+    fn site_id_by_candidate_symbol(
+        candidates: &OverloadCandidateTable,
+        symbol: &str,
+    ) -> OverloadSiteId {
+        candidates
+            .iter()
+            .find_map(|(_, candidate)| {
+                (candidate.symbol.local().as_str() == symbol).then_some(candidate.site)
+            })
+            .expect("candidate site")
+    }
+
+    fn compatible_resolution_input(
+        site: OverloadSiteId,
+        refinements: Vec<OverloadCandidateId>,
+        source: Option<ExposedResultSource>,
+        inserted_views: Vec<InsertedViewInput>,
+    ) -> OverloadSiteResolutionInput {
+        OverloadSiteResolutionInput {
+            site,
+            refinements,
+            refinement_join: RefinementJoinPayload {
+                status: RefinementJoinStatus::Compatible,
+                exposed_result: source.map(|source| ExposedResultPayload {
+                    result: Some(NormalizedTypeId::new(700 + site.index())),
+                    source,
+                    evidence: vec![TypeFactId::new(700 + site.index())],
+                }),
+            },
+            inserted_views,
+        }
+    }
+
+    fn accepted_inserted_view(
+        argument: TypedSiteRef,
+        target: NormalizedTypeId,
+        selected_candidate: OverloadCandidateId,
+        kind: InsertedViewKind,
+        reason: &str,
+    ) -> InsertedViewInput {
+        InsertedViewInput {
+            argument,
+            target,
+            selected_candidate,
+            kind,
+            status: InsertedViewStatus::Accepted,
+            reason: InsertedViewReasonKey::new(reason),
+            evidence_facts: vec![TypeFactId::new(9)],
+            path: Some(QuaPathKey::new(format!("{reason}-path"))),
+        }
     }
 
     fn attach_existing_candidate_diagnostic(

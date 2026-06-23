@@ -444,14 +444,27 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       stable diagnostic を出力する。fact derivation、ordering 用の result type 参照、
       root-selection tie-breaker 適用、refinement join、view insertion は行わない。
 
-26. **根の選択、refinement の結合、view の挿入。** [ ]
+26. **根の選択、refinement の結合、view の挿入。** [x]
     - オーバーロード根を選択し、整合する refinement グループを結合し、
       `qua` view を挿入し、失敗サイトを明示的に保存する（アーキテクチャ
       05 Step 5）。
     - テスト: strongest-type、attribute-union、incompatible refinement join を
       含む選択フィクスチャ。候補リスト付きの曖昧性診断。失敗サイトは
-      決して有効な出力にならない。
+      決して有効な出力にならない。missing / duplicate / unknown / blocked
+      payload diagnostic、missing / ambiguous ordinary-root candidate diagnostic、
+      deterministic selection rendering。
     - 依存: 25。仕様: `overload_resolution.md`（選択/view の節）。
+    - task 26 で完了: `OverloadSelectionOutput::resolve` は
+      `SpecificityGraphOutput` と explicit checker-owned selection payload を
+      消費する。site ごとの graph から unique maximal non-redefinition ordinary
+      root candidate を選択し、`NoMatch`、`Ambiguous`、
+      `IncompatibleRefinementJoin`、blocked site を failed output として記録し、
+      accepted coherence を持つ same-root redefinition payload を検証し、root
+      selection 後に限って strongest-result / attribute-union の exposed result
+      metadata を受け入れ、accepted widening/source-`qua` inserted view を記録する。
+      non-selected refinement、missing payload、narrowing / missing view evidence、
+      blocked specificity graph は成功を捏造せず、additional root-selection
+      tie-breaker も適用せず拒否する。
 
 27. **仕様: `resolved_typed_ast.md`。** [ ]
     - `ResolvedTypedAst` のデータ形状仕様を執筆する（英語と日本語、コード

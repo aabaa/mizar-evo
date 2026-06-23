@@ -369,12 +369,25 @@ edges.
 
 ## Root Selection And Refinement Joins
 
-The selected ordinary root is the unique maximal root in the per-site
-specificity graph after allowed tie-breakers. If no root is viable, the site is
-`NoMatch`. If several unrelated roots remain maximal, the site is `Ambiguous`.
+The selected ordinary root is represented by a unique maximal
+non-redefinition candidate in the per-site specificity graph after allowed
+tie-breakers. If no root is viable, the site is `NoMatch`. If several
+unrelated roots remain maximal, the site is `Ambiguous`.
+At the checker data-layer boundary, "after allowed tie-breakers" means the
+pairwise comparison payloads have already encoded only spec-allowed
+non-template/template or accepted local-shadow decisions as graph edges or
+equivalence. Root selection must not apply new tie-breakers, must not inspect
+return types to order roots, and must leave an unresolved tie as `Ambiguous`.
+Redefinition candidates never serve as the selected root candidate; if a graph
+leaves only redefinitions maximal for an ordinary root, the site is blocked as
+a malformed/missing ordinary-root payload and the redefinitions remain
+refinement-only metadata. If multiple same-root non-redefinition candidates
+remain maximal, for example because a non-template/template tie-breaker was not
+encoded as an edge, the site is blocked as an ambiguous ordinary-root payload.
 
 After selecting a root, the checker gathers accepted viable redefinitions whose
-`ordinary_root` equals the selected root:
+`ordinary_root` equals the selected root and whose coherence metadata is
+`Accepted`:
 
 - no active refinement exposes the root metadata;
 - one active refinement exposes that refinement metadata;
@@ -417,6 +430,25 @@ Inserted views are forbidden for narrowing, missing facts, ambiguous paths, or
 post-hoc overload disambiguation after ambiguity was detected. If multiple
 inheritance paths exist and no source `qua` selects one, the site or candidate
 remains blocked.
+
+### Task 26 Selection And View Data Layer
+
+`OverloadSelectionOutput::resolve` consumes `SpecificityGraphOutput` plus
+explicit checker-owned refinement-join and inserted-view payloads keyed by
+overload site. It computes candidate maximality from the per-site specificity
+graph without applying additional tie-breakers, selects the unique maximal
+non-redefinition ordinary root candidate when one exists, preserves `NoMatch`
+and `Ambiguous` failed-site records when selection cannot succeed, and
+validates that caller-supplied refinement/view payloads refer only to selected-
+root redefinitions with accepted coherence and proof-free widening evidence.
+
+Task 26 may use result metadata only after the ordinary root has been selected:
+strongest result type and same-radix attribute-union payloads are accepted when
+the caller supplies compatible evidence, while incompatible joins become
+`IncompatibleRefinementJoin` failed-site records. Inserted views are recorded
+only for accepted widening/source-`qua` evidence. Narrowing, ambiguous paths,
+missing facts, missing selection payloads, or payloads for non-selected roots
+produce stable failed records and diagnostics instead of fabricated success.
 
 ## Failed-Site Preservation
 
@@ -478,12 +510,11 @@ Deterministic rendering requirements:
 
 ## Deferred And External Gaps
 
-Task 25 deliberately keeps the following deferred:
+Task 26 deliberately keeps the following deferred:
 
-- Rust implementation for task 26;
 - AST-wide source-to-checker extraction of overload sites, candidates,
   template payloads, source `qua` paths, viability evidence, specificity
-  comparison evidence, and
+  comparison evidence, selection/refinement payloads, inserted-view evidence, and
   scheme/theorem roles;
 - parser/resolver exposure for unsupported template and scheme roles noted by
   MC-G006;
@@ -539,8 +570,19 @@ Task 25 specificity:
 Task 26 selection, refinement, and views:
 
 - unique root selection, no-match, ambiguity, blocked path;
+- missing, duplicate, and unknown selection payload diagnostics;
+- missing or ambiguous ordinary-root candidate when the maximal set has zero
+  or multiple non-redefinition roots;
+- blocked specificity graph preservation;
+- no additional root-selection tie-breaker when graph maximal roots remain
+  unrelated;
 - active accepted same-root refinements;
+- rejected/pending coherence redefinitions rejected as inactive refinements;
 - strongest result type, same-radix attribute union, and incompatible
   refinement joins;
 - inserted widening views;
+- rejected narrowing or missing-evidence inserted views;
+- non-selected-root refinement/view payload diagnostics;
+- deterministic rendering for equivalent selection/refinement/view payload
+  orderings;
 - failed sites remain explicit and cannot seed successful output.
